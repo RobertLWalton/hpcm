@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: acm-cont $
-#   $Date: 2000/08/20 20:50:54 $
+#   $Date: 2000/08/21 03:40:24 $
 #   $RCSfile: autoinfo,v $
-#   $Revision: 1.1 $
+#   $Revision: 1.2 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -153,8 +153,6 @@ while { "yes" } {
 }
 close $receive_ch
 
-set file_ch [open "$info_directory/$filename" r]
-
 compose_reply "The file $filename appears below the\
                following request message header."
 
@@ -163,13 +161,9 @@ set reply_ch [open "${reply_file}+" a]
 puts $reply_ch ""
 puts $reply_ch "---------------------- $filename:"
 
-while { "yes" } {
-    set line [gets $file_ch]
-    if { [eof $file_ch] } break
-    puts $reply_ch $line
-}
+putfile "$info_directory/$filename" $reply_ch
+
 close $reply_ch
-close $file_ch
 
 send_reply
 

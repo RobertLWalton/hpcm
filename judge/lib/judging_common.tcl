@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: acm-cont $
-#   $Date: 2000/08/20 20:49:50 $
+#   $Date: 2000/08/21 03:40:27 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.6 $
+#   $Revision: 1.7 $
 #
 
 # Include this code in TCL program via:
@@ -271,6 +271,97 @@ proc send_reply {} {
     file rename -force "${reply_file}+" $reply_file
 
     exec $sendmail_program < $reply_file $to
+}
+
+# The following function returns the subject of the
+# $received_file in the current directory.  Both the
+# `Subject:' and any following whitespace are stripped
+# from the result.  If no subject line is found, "" is
+# returned.
+# 
+proc find_subject {} {
+
+    global From_line_regexp received_file
+
+    set subject ""
+
+    set received_ch [open $received_file r]
+
+    while { "yes" } {
+        set line [gets $received_ch]
+	if { [eof $received_ch] } {
+	    break
+	} elseif { [regexp \
+		"^Subject:\[\ \t\]*(\[^\ \t\].*)\$" \
+		$line all subject] } {
+	    break
+	} elseif { [regexp $From_line_regexp $line] } {
+	    # From line is OK
+	} elseif { [regexp {:} $line] } {
+	    # Non-subject header line is OK
+	} else {
+	    break
+	}
+    }
+    close $received_file
+
+    return $subject
+}
+
+# Find the `From line' as the tail of the current
+# directory name.  Call error if this does not have
+# the form of a `From line'.
+#
+proc find_From_line {} {
+    global From_line_regexp
+
+    set From_line [file tail [pwd]]
+
+    if { ! [regexp $From_line_regexp $From_line] } {
+        error "Current directory name does not end\
+	      "in a `From line':\n\
+	      \    [pwd]"
+    }
+    return $From_line
+}
+
+# Write entire file to channel.
+#
+proc putfile { filename
+               { ch stdout }
+	       { line_count 1000000000 } } {
+
+    set file_ch [open $filename r]
+    set count 0
+
+    while { "yes" } {
+        set line [gets $file_ch]
+	if { [eof $file_ch] } break
+	incr count
+	if { $count <= $line_count } {
+	    puts $ch $line
+	}
+    }
+
+    close $file_ch
+    if { $count > $line_count } {
+    	puts $ch "... THERE ARE\
+	          [expr { $count - $line_count } ]\
+		  MORE LINES ..."
+    }
+}
+
+# Get first line of file.  If file has no first line,
+# return "".
+#
+proc getfile { filename } {
+    set file_ch [open $filename r]
+    set line [gets $file_ch]
+    if { [eof $file_ch] } {
+    	set line ""
+    }
+    close $file_ch
+    return $line
 }
 
 # Set interrupt signal to cause an error.
