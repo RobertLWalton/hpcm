@@ -4,7 +4,7 @@
 #
 # File:		overview
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Jan 20 00:27:56 EST 2002
+# Date:		Fri Feb  1 02:51:51 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/01/20 15:46:20 $
+#   $Date: 2002/02/01 08:52:23 $
 #   $RCSfile: overview,v $
-#   $Revision: 1.55 $
+#   $Revision: 1.56 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -493,6 +493,9 @@ is-
 	    $scoring_instructions_file
 	    $scoring_filter_file
 	    { PROBLEM.ftest PROBLEM.fout PROBLEM.ftest }
+	    { $response_instructions_file 
+	        $response_instructions_file.EXTENSION
+	    	$response_instructions_file }
 
 This value specifies the standard format of a problem as
 was described above.  Here `PROBLEM' denotes the name of
@@ -865,10 +868,14 @@ are:
 	`this_contest' file and re-run `makejudgingdir'.
 
     scoreboard.notes
-        A file appended to the scoreboard by the `make-
-	scoreboard' program when it emails the score-
-	board to other locations for display on the web.
-	This is normally used only for email contests.
+        A file standardly appended to the scoreboard by
+	the `makescoreboard' program when it emails the
+	scoreboard to other locations (e.g., for display
+	on the web).  This is normally used only for
+	email contests.  By changing the scoreboard in-
+	structions in hpcm_judging.rc, different files
+	can be used for this purpose, and the layout of
+	the scoreboard can be changed.
 
     TODO
     	When `makejudgingdir' runs, it appends instruc-
@@ -919,7 +926,7 @@ components that contestants can access.
 	    ~/hpcm/contestant/bin
 
 	in the judging directory.  Note that this means
-	that ~/hpcm and ~/hpcm/contestant must have
+	that ~, ~/hpcm and ~/hpcm/contestant must have
 	a+x permissions, ~/hpcm/contestant/bin must
 	have a+rx permissions, and appropriate programs
 	in the ~/hpcm/contestant/bin must have a+x or
@@ -1048,17 +1055,23 @@ components that contestants can access.
 	are in the `demos' directory instead of the
 	`problems' directory.
 
-	Within each problem directory there is an a+r
-	copy of the `Makefile' of the problem.  It is
-	also possible to include an a+r copy of any file
-	describing the problem, but this is NOT usually
-	done for formal contests, as for these only
-	paper printouts of these files are normally
+	Within each problem directory there is standard-
+	ly an a+r copy of the `Makefile' of the problem.
+	It is also possible to include an a+r copy of a
+	file describing the problem, but this is NOT
+	usually done for formal contests, as for these
+	only paper printouts of these files are normally
 	given to the contestants.  For demonstration
 	problems (in `demos') many a+r file copies may
 	be in the problem directory, as judge's input
 	and output and solutions in different program-
-	ming languages are often provided.
+	ming languages are often provided.  For complex
+	problems (see `Library Data: Complex Problems'
+	above) a+r copies of -SOURCE- files are are in-
+	cluded in place of `Makefile' and a+r copies of
+	-DESCRIPTION- files can be included to describe
+	the problem, if desired, though this is not
+	usually done for formal contests.
 
 	For a formal contest, the contestant's hpcm_get
 	program creates a problem directory ppp in the
@@ -1070,17 +1083,20 @@ components that contestants can access.
 	in the contestant account.  For an informal
 	contest hpcm_get obtains the same information
 	from the `info/problems' directory by email and
-	makes a copy of the files in the contestant
-	account.
-
-	This `problems' directory (unlike the `demos'
-	directory) does not have a+rx permissions when
-	it is made, so that contestants in a formal
-	contest cannot find out about the problems
-	before the contest starts.  The `startcontest'
-	program sets the permissions on this directory
-	to a+rx.
+	makes read-only copies of the files in the con-
+	testant account.  If a one of the files made
+	available in a contestant's directory by hpcm_
+	get has the name xxx.ISF, then hpcm_get makes a
+	writable copy named xxx of that file.
 
+	This `contest/problems' directory (unlike the
+	`contest/demos' directory) does not have a+rx
+	permissions when it is made, so that contestants
+	in a formal contest cannot find out about the
+	problems before the contest starts.  The `start-
+	contest' program sets the permissions on this
+	directory to a+rx.
+
 	This `problems' directory and its contents are
 	made automatically by `makejudgingdir'.  This
 	contest/problems directory is an exact copy for
@@ -1094,23 +1110,34 @@ components that contestants can access.
 
 	The `demos' directory is similarly made and is
 	an exact copy of what would go into info/demos.
-
+
     scoreboard.1head
     scoreboard.2
     scoreboard.3
     scoreboard.4
         The scoreboard, which can be read by the contes-
-	tant `scoreboard' program, can have up to four
-	pages, which are stored in the a+r files
+	tant `scoreboard' program, standardly has up to
+	four pages, which are stored in the a+r files
 	scoreboard.1 through scoreboard.4.  The first of
-	these files is made automatically by the `make-
-	scoreboard' program, which concatenates the
-	scoreboard.1head file to the computed score-
+	these files is standardly made automatically by
+	the `makescoreboard' program, which concatenates
+	the scoreboard.1head file to the computed score-
 	board.  The scoreboard.1head, scoreboard.2,
-	scoreboard.3, and scoreboard.4 files must be
-	edited by hand.  See the documentation of
-	`makescoreboard' and `hpcm/contestant/bin/
-	scoreboard' for details.
+	scoreboard.3, and scoreboard.4 files must be ed-
+	ited by hand.  If non-standard scoreboard in-
+	structions are included in hpcm_judging.rc, and
+	if a scoreboard_map is provided, other files can
+	be used for these purposes, multiple scoreboards
+	may be implemented, and scoreboard layout may be
+	changed.  See hpcm_judging.rc and the documenta-
+	tion of `makescoreboard' and `hpcm/contestant/
+	bin/scoreboard' for details.
+
+    scoreboard_map
+        This file can optionally be provided to map
+	names of contestant accounts and contests onto
+	scoreboard page files.  See `hpcm/contestant/
+	bin/scoreboard' for details.
 
     secure
     	This directory contains files that cannot be
@@ -1396,6 +1423,8 @@ files need special attention:
 	details.
 
     .ssh/authorized_keys
+    or
+    .ssh/authorized_keys2
 
         This file must be included in the prototype home
 	directory setup.tar file as it cannot be symbol-
