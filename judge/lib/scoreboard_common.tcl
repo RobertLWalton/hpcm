@@ -1,12 +1,11 @@
 #!/bin/sh
 #
-# Runs the scorefinder program to get scores, and
-# formats the scores into a table according to
-# parameters set in hpcm_judging.rc.
+# Functions to read scorefinder output into an
+# internal database and help build a scoreboard.
 #
-# File:		scoreboard
+# File:		scoreboard_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Feb  7 08:52:52 EST 2002
+# Date:		Thu Feb  7 13:04:49 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,218 +14,47 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/02/07 13:54:11 $
+#   $Date: 2002/02/07 18:53:46 $
 #   $RCSfile: scoreboard_common.tcl,v $
-#   $Revision: 1.27 $
+#   $Revision: 1.28 $
 #
-# The next line starts tcl \
-exec tcl "$0" "$@"
-
-# Use tcl rather than tclsh so that `signal' is defined.
-
-# Include common code and parameters:
 #
-set lib_directory "[file dirname $argv0]/../lib"
-source $lib_directory/judging_common.tcl
-set log_globally yes
-catch {
+# Note: An earlier version of this code used to be in
+# scoreboard.
 
-set document "
-scoreboard \[ parameter-file-name | \\
-             parameter-name-value-list \] ...
-
-    When this program starts, it processes its arguments
-    as follows.  Any named parameter file is `sourced'.
-    Any argument that begins with a `{' is treated as a
-    TCL list (after the outer `{ }' brackets are re-
-    moved) of items each of the format `{PN V}'.  For
-    each item, the global variable `scoreboard_PN' is
-    set to the value V.
-
-    This program inputs the output of `scorefinder' to
-    get scores, and organizes the scores into a table.
-    A score is ignored unless
-
-    	its submission time is equal to or greater than
-	the value of `scoreboard_start_time', unless
-	that value is \"\" or \"team\";
-
-    	its submission time is equal to or less than
-	the value of `scoreboard_stop_time', unless
-	that value is \"\";
-
-	its problem satisfies the logical expression in
-	`scoreboard_problems', or that expression is an
-	empty list;
-
-	its submitter satisfies the logical expression
-	in `scoreboard_submitters', or that expression
-	is an empty list;
-
-    The logical expressions are TCL lists whose elements
-    are operators, parentheses `(' and `)', and atoms.
-    The allowed operators are `!', `&', `^', and `|' in
-    highest precedence first order, denoting `not',
-    `and', `exclusive-or', and `inclusive-or'.  Opera-
-    tors and parentheses MUST be surrounded by white-
-    space.
+# Table of Contents
+#
+#	Including this Code
+#	Scorefinder Data Base
+#	Scoreboard Data Base
 
-    The atoms `0' and `1' represent `false' and `true'.
-    All other atoms are regular expressions that are
-    matched to the ENTIRE problem name or submitter
-    name, and are true iff they match.
+# Including this Code
+# --------- ---- ----
 
-    Some simple examples of logical expressions are:
-
-      ! count		Match all names but `count'.
-
-      count | pascal	Match only `count' and `pascal'.
-
-      count|pascal	Ditto, but with only one regular
-      			expression atom that contains a
-			`|', instead of two atoms and a
-			`|' logical operator.
-
-      bpi\[0-9]+		Match all names of the\
-      				form
-      			`bpi' followed by one or more
-			digits.
-
-      bpi.* & ! bpit	Match all names beginning with
-			`bpi' except the one name
-			`bpit'.
-
-    The regular expressions are TCL regular expressions.
-    Note that a regular expression must not as a charac-
-    ter string be the same as an operator or parenthesis
-    or special atom `0' or `1'.
-
-    The scoreboard has a line for each submitter of the
-    form
-
-    submitter  score1  score2  ......  time_score
+# Include this code in TCL program via:
+#
+#	set lib_directory \
+#	    "[file dirname $argv0]/../lib"
+#	source $lib_directory/judging_common.tcl
+#	source $lib_directory/scoreboard_common.tcl
+#	catch {
+#
+#	... your program ...
+#	... (do not change argc, argv0, argv)
+#	... terminates with `exit 0' or `error ...'
+#
+#	} caught_output
+#	caught_error
+#
+# See $lib_directory/judging_common.tcl for more
+# details.
 
-    Here each score but the `time_score' is the score
-    for a problem, and has the form `X:YYuN', where X:YY
-    is the time in units u (s = seconds, m = minutes,
-    h = hours, d = days) of the first correct submis-
-    sion, and N is the number of submissions up to and
-    including the first correct submission.  If N = 0,
-    the problem score is `......'.  If there is no cor-
-    rect submission but N != 0, the problem score is
-    `..../N'.  If there is a correct submission but the
-    start time of the problem cannot be computed, the
-    score is `undef/N'.  If a problem time is computed
-    using a non-final score (an automatically computed
-    score that is yet to be reviewed by the human
-    judge), the problem score begins with an `*'.
+# Scorefinder Data Base
+# ---------- ---- ----
 
-    The score for a problem is a time equal to the pro-
-    blem submission time minus the problem start time.
-    The start time of a problem is start time of the
-    contest in the variable `scoreboard_start_time', un-
-    less this variable's value is \"\", in which case
-    each problem's start time is time the problem des-
-    cription was gotten (as recorded in a $gotten_file\
-    				file
-    by autoinfo), or unless `score_start_time's value is
-    \"team\", in which case each problem's start time is
-    the time the team (submitter) got its first scorable
-    problem (i.e., problem allowed and not denied).  The
-    time_score for each submitter is the sum of all the
-    correct problem times for that submitter, plus a
-    penalty times the number of incorrect submissions
-    that are for a problem for which there is a later
-    correct submission.  All times are actually measured
-    in seconds, even though the problem times are often
-    reported on the scoreboard itself only to the near-
-    est minute or hour.  The penalty is the value of
-    `scoreboard_penalty', and is in seconds.
-
-    The total score is given in seconds, and is preceded
-    with an `*' if there is a non-final score involved
-    in its computation.  If the total score cannot be
-    computed because of an `undef' problem score, the
-    total score is `undef'.  If the scoring mode is
-    `auto', all scores are final.  If `manual', only
-    manual scores are considered at all, and automatic
-    scores are totally ignored.  If `auto+manual', then
-    automatic scores other than `Completely Correct' are
-    not final, and other scores are final.
-
-    The scoreboard groups the teams by the number of
-    problems they have correct, and within each group
-    sorts teams by total score.
-
-    A parameters_file may be given to this program that
-    will be loaded into the program after hpcm_jud-
-    ging.rc.  This parameters_file may contain parameter
-    settings, e.g. `scoreboard_problems' etc., in the
-    same manner as the normal parameters file."
-
-# } This closes extra left bracket in documentation so
-# outer {} brackets work.
-
-# On first -doc* argument, print documentation and exit.
-#
-if { [regexp {^-doc} [lindex $argv 0]] } {
-    puts $document
-    exit 1
-}
-
-# Process arguments.
-#
-set LB "{"
-# } to balance left bracket in last line
-#
-foreach arg $argv {
-    if { [regexp "^${LB}" $arg] } {
-	foreach item [lindex $arg 0] {
-	    set name  [lindex $item 0]
-	    set value [lindex $item 1]
-	    if { ! [info exists scoreboard_$name] } {
-	    	error "scoreboard_$name does not exist"
-	    }
-	    set scoreboard_$name $value
-	}
-    } else {
-	source $arg
-    }
-}
-
-# Compile scoreboard_problems and scoreboard_submitters.
-#
-if { [llength $scoreboard_problems] > 0 } {
-    set problem_expression \
-        [compile_logical_expression \
-	    $scoreboard_problems no_abbreviations \
-	    problem_atoms problem_values ]
-} else {
-    set problem_expression ""
-}
-if { [llength $scoreboard_submitters] > 0 } {
-    set submitter_expression \
-        [compile_logical_expression \
-	    $scoreboard_submitters no_abbreviations \
-	    submitter_atoms submitter_values ]
-} else {
-    set submitter_expression ""
-}
-
-# Compile times.
-#
-set start_time $scoreboard_start_time
-if { ! [regexp {^(|team)$} $start_time] } {
-    set start_time [clock scan $start_time]
-}
-set stop_time $scoreboard_stop_time
-if { $stop_time != "" } {
-    set stop_time [clock scan $stop_time]
-}
-
-# The value ${submitter}_array($problem) is a list of
-# items that represent the times and score codes read
-# from the input.  Here the codes are
+# The value scoreboard_array(submitter/problem) is a
+# list of items that represent the times and score codes
+# read from the input.  Here the codes are
 #
 #	dg	problem description gotten
 #	ac	automatically scored correct
@@ -241,86 +69,243 @@ if { $stop_time != "" } {
 # where all the times have 15 digits exactly, so they
 # can be sorted.
 #
+# After the scoreboard_array is `pruned' (see below),
+# an item is added at the beginning of each array ele-
+# ment with code `st' that contains the start time of
+# the problem.
+#
 # An array element may not exist, in which case it
 # should be treated as equal to the empty list.
-
-# The following are the lists of all submitters and
-# problems being processed.
 #
-set submitters ""
-set problems ""
+# Before pruning, all data from scorefinder whose sub-
+# mitter and problem match any regular expressions in
+# the scoreboard_submitters and scoreboard_problems glo-
+# bal variables are present, in unsorted order.
+#
+# After pruning, the items in each array element are
+# sorted and data meets the following requirements:
+#
+#    1. Items latter than a correct (ac or mc) item in
+#	the same array element have been deleted.
+#
+#    2. Items later than the problem stop time have been
+#       deleted.
+#
+#    3. Array elements pertaining to a submitter not
+#       meeting the cut time have been deleted.
 
-# Read the scores and accumulate them in the submitter
-# arrays.
-while { "yes" } {
-    set line [gets stdin]
-    if { [eof stdin] } break
+# Function to read scorefinder output and compute
+# scoreboard_arary.  Scorefinder output is read from
+# input_ch (which is NOT closed by this function).
+#
+proc compute_scoreboard_array { input_ch } {
 
-    if { [llength $line] < 4 } {
-    	error "Bad input line from `scorefinder': $line"
-    }
+    global scoreboard_problems scoreboard_submitters \
+	   problem_atoms problem_values \
+	   submitter_atoms submitter_values \
+           scoreboard_array
 
-    set date		[lindex $line 0]
-    set submitter	[lindex $line 1]
-    set problem		[lindex $line 2]
-    set score		[lindex $line 3]
-
-    if { $problem_expression != "" } {
-         foreach i [array names problem_atoms] {
-	     set problem_values($i) \
-	         [regexp "^$problem_atoms($i)\$" \
-		         $problem]
-	 }
-         if { ! [expr $problem_expression] } \
-	     continue;
-    }
-
-    if { $submitter_expression != "" } {
-         foreach i [array names submitter_atoms] {
-	     set submitter_values($i) \
-	         [regexp "^$submitter_atoms($i)\$" \
-		         $submitter]
-	 }
-         if { ! [expr $submitter_expression] } \
-	     continue;
-    }
-
-    set time [filename_date_to_clock $date]
-
-    if { $start_time != "" && $start_time != "team" \
-         && $time < $start_time } {
-    	continue;
-    }
-
-    if { $stop_time != "" && $time > $stop_time } {
-    	continue;
-    }
-
-    if { ! [lcontain $problems $problem] } {
-	lappend problems $problem
-    }
-
-    if { ! [lcontain $submitters $submitter] } {
-	lappend submitters $submitter
-    }
-
-    if { $start_time == "team" \
-         && $score == "dg" \
-         && ( ! [info exists \
-	              start_time_array($submitter)] \
-	      || $start_time_array($submitter) \
-	         > $time ) } {
-	 set start_time_array($submitter) $time
-    }
-
-    if { [info exists ${submitter}_array($problem)] } {
-	lappend ${submitter}_array($problem) \
-		[list [format {%015d} $time] $score]
+    # Compile scoreboard_problems and scoreboard_
+    # submitters.
+    #
+    if { [llength $scoreboard_problems] > 0 } {
+	set problem_expression \
+	    [compile_logical_expression \
+		$scoreboard_problems no_abbreviations \
+		problem_atoms problem_values ]
     } else {
-	set ${submitter}_array($problem) \
-	    [list [list [format {%015d} $time] $score]]
+	set problem_expression ""
+    }
+    if { [llength $scoreboard_submitters] > 0 } {
+	set submitter_expression \
+	    [compile_logical_expression \
+		$scoreboard_submitters \
+		no_abbreviations \
+		submitter_atoms submitter_values ]
+    } else {
+	set submitter_expression ""
+    }
+
+    # Read the scores and accumulate them in the
+    # scoreboard_array.
+    #
+    if { [array exists scoreboard_array] } {
+	unset scoreboard_array
+    }
+    while { "yes" } {
+	set line [gets $input_ch]
+	if { [eof $input_ch] } break
+
+	if { [llength $line] < 4 } {
+	    error "Bad input line from `scorefinder':\
+	    	   $line"
+	}
+
+	set date	[lindex $line 0]
+	set submitter	[lindex $line 1]
+	set problem	[lindex $line 2]
+	set score	[lindex $line 3]
+
+	if { $problem_expression != "" } {
+	     foreach i [array names problem_atoms] {
+		 set problem_values($i) \
+		     [regexp "^$problem_atoms($i)\$" \
+			     $problem]
+	     }
+	     if { ! [expr $problem_expression] } \
+		 continue;
+	}
+
+	if { $submitter_expression != "" } {
+	     foreach i [array names submitter_atoms] {
+		 set submitter_values($i) \
+		     [regexp "^$submitter_atoms($i)\$" \
+			     $submitter]
+	     }
+	     if { ! [expr $submitter_expression] } \
+		 continue;
+	}
+
+	set time [filename_date_to_clock $date]
+
+	set sap $submitter/$problem
+	if { [info exists \ scoreboard_array($sap)] } {
+	    lappend scoreboard_array(sap) \
+		    [list [format {%015d} $time] $score]
+	} else {
+	    set scoreboard_array(sap) \
+		[list [list [format {%015d} $time] \
+		            $score]]
+	}
     }
 }
+
+# Prune the scoreboard_array.  Uses scoreboard_start_
+# time, scoreboard_stop_time, scoreboard_correct_cut_
+# time, and scoreboard_incorrect_cut_time global vari-
+# ables as inputs.
+#
+proc prune_scoreboard_array { } {
+
+    global scoreboard_start_time \
+           scoreboard_stop_time \
+           scoreboard_correct_cut_time \
+           scoreboard_incorrect_cut_time \
+	   scoreboard_array
+
+    # Compile times.
+    #
+    # start_mode is one of:
+    #
+    #	"" 		no start_time given
+    #	team		start_time is time team gets
+    #			first problem
+    #   absolute	start_time is date and time
+    #
+    # stop_mode, correct_cut_mode, and
+    # incorrect_cut_mode are one of:
+    #
+    #	"" 		no stop_time given
+    #   absolute	stop_time is date and time
+    #   relative	stop_time is relative to problem
+    #			start time
+    #
+    set start_time $scoreboard_start_time
+    if { [regexp {^(|team)$} $start_time] } {
+        set start_mode $start_time
+    } elseif { [regexp {(|-|+)[0-9]+} $start_time] } {
+        error "scoreboard_start_time is relative"
+    if { ! [regexp {^(|team)$} $start_time] } {
+        set start_mode absolute
+	set start_time [clock scan $start_time]
+    }
+    set stop_time $scoreboard_stop_time
+    if { $stop_time == "" } {
+        set stop_mode $stop_time
+    } elseif { [regexp {(|-|+)[0-9]+} $stop_time] } {
+        set stop_mode relative
+    if { ! [regexp {^(|team)$} $stop_time] } {
+        set stop_mode absolute
+	set stop_time [clock scan $stop_time]
+    }
+    set correct_cut_time $scoreboard_correct_cut_time
+    if { $correct_cut_time == "" } {
+        set correct_cut_mode $correct_cut_time
+    } elseif { [regexp {(|-|+)[0-9]+} \
+                       $correct_cut_time] } {
+        set correct_cut_mode relative
+    if { ! [regexp {^(|team)$} $correct_cut_time] } {
+        set correct_cut_mode absolute
+	set correct_cut_time \
+	    [clock scan $correct_cut_time]
+    }
+    set incorrect_cut_time \
+        $scoreboard_incorrect_cut_time
+    if { $incorrect_cut_time == "" } {
+        set incorrect_cut_mode $incorrect_cut_time
+    } elseif { [regexp {(|-|+)[0-9]+} \
+                       $incorrect_cut_time] } {
+        set incorrect_cut_mode relative
+    if { ! [regexp {^(|team)$} $incorrect_cut_time] } {
+        set incorrect_cut_mode absolute
+	set incorrect_cut_time \
+	    [clock scan $incorrect_cut_time]
+    }
+
+    # Sort scoreboard_array elements and compute team
+    # start times.
+    #
+    foreach sap [array names scoreboard_array] {
+        set items [lsort $scoreboard_array($sap)]
+	set scoreboard_array($sap) $items
+	if { $start_mode == "team" } {
+	    regexp {^([^/]*)/([^/]*)$} $sap forget \
+	           submitter problem
+	    set t [lindex [lindex $items 0] 0]
+	    if {    ! [info exists \
+	                    start_array($submitter)] \
+	         || $t < $start_array($submitter) } {
+	        set start_array($submitter) $t
+	    }
+	}
+    }
+
+    # For each scoreboard_array element, add start time,
+    # prune items after stop time, and compute submitter
+    # last correct and last incorrect times.
+    #
+    foreach sap [array names scoreboard_array] {
+        set items $scoreboard_array($sap)
+
+    }
+
+
+
+	if { $start_time != "" && $start_time != "team" \
+	     && $time < $start_time } {
+	    continue;
+	}
+
+	if { $stop_time != "" && $time > $stop_time } {
+	    continue;
+	}
+
+	if { ! [lcontain $problems $problem] } {
+	    lappend problems $problem
+	}
+
+	if { ! [lcontain $submitters $submitter] } {
+	    lappend submitters $submitter
+	}
+
+	if { $start_time == "team" \
+	     && $score == "dg" \
+	     && ( ! [info exists \
+			  start_time_array($submitter)] \
+		  || $start_time_array($submitter) \
+		     > $time ) } {
+	     set start_time_array($submitter) $time
+	}
 
 # Sort the problems alphabetically.
 #
