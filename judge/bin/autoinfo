@@ -4,7 +4,7 @@
 #
 # File:		autoinfo
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Aug 22 06:34:38 EDT 2000
+# Date:		Mon Aug 28 16:32:51 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: acm-cont $
-#   $Date: 2000/08/28 12:32:04 $
+#   $Date: 2000/08/28 20:52:35 $
 #   $RCSfile: autoinfo,v $
-#   $Revision: 1.7 $
+#   $Revision: 1.8 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -39,16 +39,20 @@ cd submission_directory; autoinfo
 
     The body of the mail file must be empty.
 
-    The names are taken relative to the info_directory,
+    The names are taken relative to the info directory,
     and may either files or directories.  A directory
     name is replaced by the names of all readable files
     and subdirectories in the given directory, recur-
     sively.  The result of this is a list of file names.
+
+    File names that begin with `.' or `-' or that
+    contain a `.' right after a `/' are considered
+    illegal.
     
     If all the named files are readable, they are mailed
-    mailed back to the requester.  In this case the
-    list of file names is printed to the standard
-    output, and nothing else is printed.
+    back to the requester.  In this case the list of
+    file names is printed to the standard output, and
+    nothing else is printed.
 
     Otherwise, if any listed file is not readable or if
     the requesting email has even the slightest format-
@@ -56,14 +60,16 @@ cd submission_directory; autoinfo
     file giving reasons why the requesting email is
     invalid.  This `$reply_file' is sent to the email
     address that is part of the current directory name.
-    In this case this program exits with error code 0,
+    In this case this program exits with exit code 0,
     indicating no error, but does not write anything to
     the standard output, indicating no file was sent.
-    
-    This program exits with non-zero error code only if
-    something is very wrong, e.g. the `$received_file'
-    file is not readable or the `$reply_file' file is
-    not writable."
+
+    If something goes very wrong, such as finding that
+    the `$received_file' file is not readable, this
+    program creates an error log file in the current
+    directory, does not print anything on the standard
+    output (but does print on the error output), and
+    exits with exit code 0."
 
 if { $argc != 0 } {
     puts $document
@@ -85,14 +91,22 @@ proc info_error_reply { args } {
     exit 0
 }
 
+# Find the subject.  If bad subject reply.  If other
+# error propagate the error.
+#
 if { [catch { set subject [find_subject -nobody] } \
-            catch_out] } {
-    info_error_reply $catch_out
+            caught_out] } {
+    switch -exact -- $errorCode {
+	FIND_SUBJECT	{ info_error_reply $catch_out }
+	default		{ error $caught_out $errorInfo \
+				$errorCode }
+    }
 }
 
-if { [llength $subject] < 1 \
+if { [llength $subject] < 2 \
      || [lindex $subject 0] != "get" } {
-     info_error_replay "Badly formatted subject line"
+     info_error_reply "Badly formatted subject line:" \
+	"Subject:$message_subject"
 }
 
 # Compute list of readable file names, list of unread-
@@ -108,10 +122,10 @@ proc info_expand { name } {
 
     set file "$info_directory/$name"
 
-    if { [regexp {^\.|\/\.} $name] } {
+    if { [regexp {^\.|^\-|\/\.} $name] } {
     	lappend illegals $name
     } elseif { [file isdirectory $file] } {
-        foreach f [lsort [glob $file/*]] {
+        foreach f [lsort [glob -nocomplain $file/*]] {
 	    if { [file readable $f] } {
 	        info_expand "$name/[file tail $f]"
 	    }
@@ -147,7 +161,7 @@ if { $error_lines != "" } {
 }
 
 compose_reply "The requested files appear below\
-               following request message header."
+               following the request message header."
 
 set reply_ch [open "${reply_file}+" a]
 

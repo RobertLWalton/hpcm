@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Aug 28 07:37:48 EDT 2000
+# Date:		Mon Aug 28 16:32:18 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: acm-cont $
-#   $Date: 2000/08/28 12:32:06 $
+#   $Date: 2000/08/28 20:52:36 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.22 $
+#   $Revision: 1.23 $
 #
 
 # Include this code in TCL program via:
@@ -620,38 +620,49 @@ proc compose_reply { args } {
     close $received_ch
 }
 
-# This function renames `${reply_file}+' to `$reply_
-# file' and emails this file.  It also copies the
-# emailed reply to the end of `$reply_history_file'.
+# This function copies the `${reply_file}+' file into
+# into the `$reply_history_file' file and then emails
+# the `${reply_file}+' file.
+#
+# Before doing the above, this program deletes any
+# $reply_file.  After doing the above, this program
+# renames `${reply_file}+' to `$reply_file'.
 #
 proc send_reply {} {
 
     global reply_file reply_history_file
 
-    set history_ch  [open $reply_history_file a]
+    # Delete any $reply_file.
+    #
+    if { [file exists $reply_file] } {
+	file delete -force $reply_file
+    }
 
+    # Copy to the $reply_history_file.
+    #
+    set history_ch  [open $reply_history_file a]
     puts $history_ch "From [id user]@[info hostname]\
 		      [clock format [clock seconds]]"
-
     put_file "${reply_file}+" $history_ch
 
     # An empty line is needed before the next `From'
     # line so the `From' line will be recognized.
     #
     puts $history_ch ""
-
     close $history_ch
 
-    file rename -force "${reply_file}+" $reply_file
-
-    # Send the reply_file.  If there is a bad `To:'
+    # Send the ${reply_file}+.  If there is a bad `To:'
     # address, there may be an error, which will
     # usually be logged by an error file in the
     # current directory.  Otherwise a bad address
     # will cause return mail from the mailer
     # daemon.
     #
-    send_mail $reply_file
+    send_mail "${reply_file}+"
+
+    # Rename ${reply_file}+
+    #
+    file rename -force "${reply_file}+" $reply_file
 }
 
 # The following function returns the subject of the
@@ -663,7 +674,8 @@ proc send_reply {} {
 # If no `Subject:' line is found in the header, or if
 # the -nobody argument is given and the body contains a
 # non-blank line, then error is called with an appropri-
-# ate error message.
+# ate error message and the errorCode value:
+# "FIND_SUBJECT".
 #
 # Read_header is called and its global message_...
 # variables are set.
@@ -687,7 +699,7 @@ proc find_subject { { option -body } } {
     set subject [prepare_field_value $message_subject]
 
     if { $subject == "" } {
-    	error "Empty subject"
+    	error "Empty subject" "" FIND_SUBJECT
     }
 
     if { $body_option == "no" } {
@@ -702,7 +714,7 @@ proc find_subject { { option -body } } {
 		# blank lines are ok
 	    } else {
 		error "Non-blank body line:\n\
-		      \    $line"
+		      \    $line" "" FIND_SUBJECT
 	    }
 	}
     }

@@ -5,7 +5,7 @@
 #
 # File:		autojudge
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Aug 16 06:43:27 EDT 2000
+# Date:		Mon Aug 28 16:49:30 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: acm-cont $
-#   $Date: 2000/08/28 12:32:05 $
+#   $Date: 2000/08/28 20:52:35 $
 #   $RCSfile: autojudge,v $
-#   $Revision: 1.18 $
+#   $Revision: 1.19 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -41,7 +41,6 @@ cd submission_directory; judge
     submitter by creating and sending `$reply_file' as
     specified by the scoring mode.
 
-
     Specifically, this program calls `extractmail' to
     extract the submitted file from the program.  This
     program then checks the legality of the submitted
@@ -63,7 +62,7 @@ cd submission_directory; judge
     there is a non-empty .cerr file or no binary is
     made, this program writes `Syntax Error' into the
     $auto_score_file file, and skips to the end of this
-    program where a $replay_file containing the auto
+    program where a $reply_file containing the auto
     score may be created and sent to the user.
 
     If the binary file was made without error, this
@@ -89,10 +88,11 @@ cd submission_directory; judge
 
     This program prints information about its progress.
 
-    This program exits with non-zero error code only if
-    something is very wrong, e.g. the `$received_file'
-    file is not readable or the `$reply_file' file is
-    not writable."
+    If something goes very wrong, such as finding that
+    the `$received_file' file is not readable, this
+    program creates an error log file in the current
+    directory, prints information about the error to the
+    standard error output, and exits with exit code 0."
 
 if { $argc != 0 } {
     puts $document
@@ -163,7 +163,7 @@ if { ! [file readable ${submitted_program}.test] } {
          "${submitted_program}.test"
 }
 
-proc auto_score_replay { auto_score } {
+proc auto_score_reply { auto_score } {
 
     global scoring_mode reply_file
 
@@ -198,6 +198,11 @@ if { ! [file readable $submitted_program] \
 	puts "Deleting out-of-date \
 	     ${submitted_program}.cerr"
     	file delete -force "${submitted_program}.cerr"
+    }
+
+    if { [file exists $auto_score_file] } {
+	puts "Deleting out-of-date $auto_score_file"
+    	file delete -force "$auto_score_file"
     }
 
     puts "Making ${submitted_program}"
@@ -248,13 +253,24 @@ if { ! [file readable "${submitted_program}.out"] \
     	file delete -force "${submitted_program}.err"
     }
 
+    if { [file exists $auto_score_file] } {
+	puts "Deleting out-of-date $auto_score_file"
+    	file delete -force "$auto_score_file"
+    }
+
     puts "Making ${submitted_program}.out"
     catch { exec make "${submitted_program}.out" } out
     puts $out
+}
 
-    set auto_score [exec autoscore $submitted_program]
 
-} elseif { ! [file exists $auto_score_file] } {
+if { ! [file readable $auto_score_file] \
+     || [file mtime $auto_score_file] \
+           < [file mtime "${submitted_program}.out"] \
+     || ( [file exists "${submitted_program}.err"] \
+	   && [file mtime $auto_score_file] \
+              < [file mtime \
+		      "${submitted_program}.err"] ) } {
     set auto_score [exec autoscore $submitted_program]
 
 } else {
