@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Feb  5 21:13:07 EST 2002
+# Date:		Sat Feb 16 02:13:20 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/02/06 02:27:55 $
+#   $Date: 2002/02/16 07:21:31 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.84 $
+#   $Revision: 1.85 $
 #
 
 # Table of Contents
@@ -25,7 +25,7 @@
 #	Error Logging Functions
 #	Message Header Functions
 #	Reply Functions
-#	File Read/Write Functions
+#	File Functions
 #	Flag Functions
 #	Logical Expression Compilation
 #	Inline Code
@@ -1144,8 +1144,25 @@ proc blank_body { ch } {
     }
 }
 
-# File Read/Write Functions
-# ---- ---------- ---------
+# File Functions
+# ---- ---------
+
+
+# Remove noise from a file name.  Specifically:
+#    // => /			/./ => /
+#    /foo/../ => /		/.<end> => <end>
+#    /foo/..<end> => <end>	/<end> => <end>
+#
+proc scrub_filename { name } {
+    while { [regsub {//} $name {/} name] > 0 } {}
+    while { [regsub {/([^/.]|\.[^/.])[^/]*/\.\./} \
+		$name {/} name] > 0 } {}
+    while { [regsub {/\./} $name {/} name] > 0 } {}
+    regsub {/\.$} $name {} name
+    regsub {/$} $name {} name
+    regsub {/([^/.]|\.[^/.])[^/]*/\.\.$} $name {} name
+    return $name
+}
 
 
 # Find the scoring instructions in the $scoring_
