@@ -2,7 +2,7 @@
 //
 // File:	scorediff.cc
 // Authors:	Bob Walton (walton@deas.harvard.edu)
-// Date:	Tue Apr 23 13:23:25 EDT 2002
+// Date:	Wed Apr 24 09:51:20 EDT 2002
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: hc3 $
-//   $Date: 2002/04/23 17:22:49 $
+//   $Date: 2002/04/24 13:51:37 $
 //   $RCSfile: scorediff.cc,v $
-//   $Revision: 1.44 $
+//   $Revision: 1.45 $
 
 // This is version 2, a major revision of the first
 // scorediff program.  This version is more explicitly
@@ -212,6 +212,16 @@ char documentation [] =
 "    and the first part of L are NOT equal except for\n"
 "    case, then L is NOT split.\n"
 "\f\n"
+"    Note that failure to separate correctly spelled\n"
+"    words by space will be reported as a spacebreak,\n"
+"    due to word spliting, and in other cases where\n"
+"    word splitting applies, a word difference will\n"
+"    be reported, as one would expect.  However, when\n"
+"    word splitting applies and a word difference is\n"
+"    reported, the tokens reported to be different in\n"
+"    the word difference token-proof (see below) may\n"
+"    not be exactly those one would expect.\n"
+"\n"
 "    Normally when two tokens do not match, both are\n"
 "    skipped over to get to the next tokens which are\n"
 "    then matched with each other.  But if one of a\n"
@@ -238,19 +248,12 @@ char documentation [] =
 "    all cases, mismatches that have occurred before\n"
 "    these special rules are applied are reported\n"
 "    without any attention to the special rules.\n"
-"\n"
-"    Note that failure to separate words by space,\n"
-"    provided the words are otherwise correct except\n"
-"    perhaps for case, will be reported as a space-\n"
-"    break, while failure to have words that are\n"
-"    equal except perhaps for case will be reported\n"
-"    as a word difference without splitting words.\n"
-"\n"
+"\f\n"
 "    It is an error if a token longer than 10,100\n"
 "    characters is found, or if a sequence of con-\n"
 "    secutive whitespace characters longer than\n"
 "    10,100 characters is found.\n"
-"\f\n"
+"\n"
 "    The relative difference between two numbers x\n"
 "    and y is:\n"
 "\n"
@@ -280,13 +283,13 @@ char documentation [] =
 "    the two exponents does not match, then the diff-\n"
 "    erence will always be reported as a `float'\n"
 "    difference and not a `case' difference.\n"
-"\n"
+"\f\n"
 "    To avoid whitespace comparison anomalies, a new\n"
 "    line is added in front of each file before the\n"
 "    file is parsed.  Thus differences in whitespace\n"
 "    beginning the first line of a file are reported\n"
 "    as `beginspace' differences.\n"
-"\f\n"
+"\n"
 "    When an end-of-file (eof) token is matched with\n"
 "    a non-eof token, no check is made of the white-\n"
 "    space preceding the tokens, or of any whitespace\n"
@@ -308,7 +311,7 @@ char documentation [] =
 "                    test-token-begin-column\n"
 "                    test-token-end-column\n"
 "                    proof proof*\n"
-"\n"
+"\f\n"
 "          proof ::= `word' | `case' | `column' |\n"
 "                    `decimal' | `exponent' |\n"
 "                    `sign' | `infinity' |\n"
@@ -325,7 +328,7 @@ char documentation [] =
 "\n"
 "          absolute-difference ::=\n"
 "                    floating-point-number\n"
-"\f\n"
+"\n"
 "          relative-difference ::=\n"
 "                    floating-point-number\n"
 "\n"
@@ -342,7 +345,7 @@ char documentation [] =
 "    line-proof that begins with the line numbers of\n"
 "    the respective lines.  Each line-proof is output\n"
 "    on a line by itself.\n"
-"\n"
+"\f\n"
 "    There is a limit for each difference type to the\n"
 "    number of proofs of that type that will be out-\n"
 "    put.  Specifically, if the limit is N for diff-\n"
@@ -362,7 +365,7 @@ char documentation [] =
 "    argument must NOT begin with a digit).  Thus\n"
 "    `-case' with no following number suppresses all\n"
 "    `case' proofs.\n"
-"\f\n"
+"\n"
 "    The `-float' and `-integer' program options\n"
 "    differ in that they have the forms:\n"
 "\n"
@@ -381,7 +384,7 @@ char documentation [] =
 "    all the types of differences, where N is taken\n"
 "    to be 0 if it is omitted (the next argument must\n"
 "    NOT begin with a digit).\n"
-"\n"
+"\f\n"
 "    If more than one limit setting option affects\n"
 "    the limit of a difference type, the last such\n"
 "    option is the effective option for that type.\n"
