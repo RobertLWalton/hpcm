@@ -2,7 +2,7 @@
 //
 // File:	scorediff.cc
 // Authors:	Bob Walton (walton@deas.harvard.edu)
-// Date:	Mon Oct 30 06:10:10 EST 2000
+// Date:	Tue Jun 12 00:28:29 EDT 2001
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: hc3 $
-//   $Date: 2001/06/06 15:14:54 $
+//   $Date: 2001/06/12 06:36:24 $
 //   $RCSfile: scorediff.cc,v $
-//   $Revision: 1.17 $
+//   $Revision: 1.18 $
 
 // This is version 2, a major revision of the first
 // scorediff program.  This version is more explicitly
@@ -48,64 +48,63 @@ char documentation [] =
 "    non-blank `tokens', and successive tokens of the\n"
 "    two files are matched, along with the whitespace\n"
 "    that precedes the matched tokens.  A token is by\n"
-"    definition either a number, or a non-whitespace\n"
-"    character that is not part of a number, or an\n"
-"    end-of-file (eof).\n"
+"    definition either an end-of-file (eof) or a\n"
+"    number or a word.   A word is just a string of\n"
+"    non-whitespace characters that is not a number.\n"
 "\n"
 "    The types of differences are:\n"
 "\n"
-"    linebreak	For two matching non-eof tokens, the\n"
-"		preceding whitespace of one has a\n"
-"		different number of new lines than\n"
-"		the preceding whitespace of the\n"
-"		other.\n"
+"    linebreak	For two matching tokens, the preced-\n"
+"		ing whitespace of one has a different\n"
+"		number of new lines than the preced-\n"
+"		ing whitespace of the other.\n"
 "\n"
-"    whitespace	For two matching non-eof tokens, the\n"
-"		preceding whitespaces both have no\n"
-"		new lines, and both are non-empty,\n"
-"		but these whitespaces do not match\n"
+"    whitespace	For two matching tokens, the preced-\n"
+"		ing whitespaces both have no new\n"
+"		lines, and both are non-empty, but\n"
+"		these whitespaces do not match\n"
 "		exactly.\n"
 "\n"
-"    spacebreak	For two matching non-eof tokens, one\n"
-"		is preceded by whitespace containing\n"
-"		no new lines, and the other has no\n"
-"		preceding whitespace at all."
+"    spacebreak	For two matching tokens, one is pre-\n"
+"		ceded by whitespace containing no new\n"
+"		lines, and the other has no preceding\n"
+"		whitespace at all.\n"
 "\f\n"
-"    endspace	For two matching non-eof tokens, the\n"
-"		preceding whitespaces have the same\n"
-"		number N >= 1 of new lines, and the\n"
-"		whitespace characters preceding the\n"
-"		first new line for one token do not\n"
-"		exactly match the whitespace charac-\n"
-"		ters preceding the first new line for\n"
-"		the other token.\n"
+"    endspace	For two matching tokens, the preced-\n"
+"		ing whitespaces have the same number\n"
+"		N >= 1 of new lines, and the white-\n"
+"		space characters preceding the first\n"
+"		new line for one token do not exactly\n"
+"		match the whitespace characters pre-\n"
+"		ceding the first new line for the\n"
+"		other token.\n"
 "\n"
-"    linespace	For two matching non-eof tokens, the\n"
-"		preceding whitespaces have the same\n"
-"		number N >= 1 of new lines, and the\n"
-"		whitespace characters between some\n"
-"		pair of matching new lines of the two\n"
-"		token preceding whitespaces do not\n"
-"		exactly agree.\n"
+"    linespace	For two matching tokens, the preced-\n"
+"		ing whitespaces have the same number\n"
+"		N >= 1 of new lines, and the white-\n"
+"		space characters between some pair of\n"
+"		matching new lines of the two token\n"
+"		preceding whitespaces do not exactly\n"
+"		agree.\n"
 "\n"
-"    beginspace	For two matching non-eof tokens, the\n"
-"		preceding whitespaces have the same\n"
-"		number N >= 1 of new lines, and the\n"
-"		whitespace characters following the\n"
-"		last new line for one token do not\n"
-"		exactly match the whitespace charac-\n"
-"		ters following the last new line for\n"
-"		the other token.\n"
+"    beginspace	For two matching tokens, the preced-\n"
+"		ing whitespaces have the same number\n"
+"		N >= 1 of new lines, and the white-\n"
+"		space characters following the last\n"
+"		new line for one token do not exactly\n"
+"		match the whitespace characters\n"
+"		following the last new line for the\n"
+"		other token.\n"
 "\n"
 "    eof1	When the first file ends, the second\n"
-"		file has a remaining token.  In this\n"
-"		case preceding whitespaces are NOT\n"
-"		compared."
+"		file has a remaining non-eof token.\n"
+"		In this case, preceding whitespaces\n"
+"		are NOT compared.\n"
 "\n"
-"    eof2	When second file ends, the first\n"
-"		file has a remaining token.  In this\n"
-"		case preceding whitespaces are NOT\n"
-"		compared."
+"    eof2	When the second file ends, the first\n"
+"		file has a remaining non-eof token.\n"
+"		In this case, preceding whitespaces\n"
+"		are NOT compared.\n"
 "\f\n"
 "    number A R	For two matching number tokens, the\n"
 "		token character strings do not match\n"
@@ -133,24 +132,39 @@ char documentation [] =
 "    column	Two matching tokens end in differ-\n"
 "		ent columns.\n"
 "\n"
-"    nonblank	Two matching tokens are not both\n"
-"		number tokens and are not the same\n"
-"		letter ignoring case."
+"    nonblank	At least one of two matching tokens\n"
+"		is a word token, and it is not true\n"
+"		that both are word tokens of the same\n"
+"		length (see word splitting below)\n"
+"		that are identical except for letter\n"
+"		case.\n"
 "\n"
 "    none	There are no differences in the files\n"
-"		at all.  This may be returned as the\n"
-"		sole contents of an output line that\n"
-"		lists differences.\n"
+"		at all.  This is returned as the sole\n"
+"		contents of an output line that lists\n"
+"		differences.\n"
 "\f\n"
 "    The files are parsed into whitespace, numbers,\n"
-"    and other characters.  A number is an optional\n"
-"    sign followed by digits containing an optional\n"
-"    decimal point followed by an optional exponent.\n"
-"    An exponent is an `e' or `E' followed by an\n"
-"    an optional sign followed by digits.  A number\n"
-"    is scanned by the strtod(3) function.  Numbers\n"
-"    longer than 10,100 characters are arbitrarily\n"
-"    truncated.\n"
+"    words, and end-of-files (eofs).  A number is an\n"
+"    optional sign followed by digits containing an\n"
+"    optional decimal point followed by an optional\n"
+"    exponent.  An exponent is an `e' or `E' followed\n"
+"    by an an optional sign followed by digits.  A\n"
+"    number is scanned by the strtod(3) function.\n"
+"\n"
+"    A word is a string of non-whitespace characers\n"
+"    that does not contain a number.  If two words S\n"
+"    and L are being matched, and S is shorter than\n"
+"    L, then L is split into a first word of the same\n"
+"    length as S and a second word to be matched to\n"
+"    the token that follows S.  Thus any two words\n"
+"    being matched are forced to have the same\n"
+"    length.\n"
+"\n"
+"    It is an error if a token longer than 10,100\n"
+"    characters is found, or if a sequence of con-\n"
+"    secutive whitespace characters longer than\n"
+"    10,100 characters is found.\n"
 "\n"
 "    The relative value of the difference between two\n"
 "    numbers x and y is:\n"
@@ -162,11 +176,14 @@ char documentation [] =
 "    and is never larger than 2.  If x == y == 0 this\n"
 "    relative difference is taken to be zero.\n"
 "\n"
-"    If numbers are too large to compare (either they\n"
-"    or their difference is infinity) then they are\n"
-"    treated as non-numbers whose character string\n"
-"    representations must match exactly, except that\n"
-"    letter case (`e' versus `E') is ignored.\n"
+"    Numbers that match exactly, character by charac-\n"
+"    ter, do not produce any difference indication.\n"
+"    Numbers that match exactly except for the case\n"
+"    of an exponent indicator (`e' versus `E') always\n"
+"    produce a `number 0.0 0.0' difference indica-\n"
+"    tion.  Other than these cases, numbers too large\n"
+"    to compare (either they or their difference are\n"
+"    infinity) cause a `nonblank' difference.\n"
 "\n"
 "    For the purpose of computing the column of a\n"
 "    character, tabs are set every 8 columns.\n"
@@ -179,11 +196,13 @@ char documentation [] =
 "\n"
 "    To avoid whitespace comparison anomalies, a new\n"
 "    line is added in front of each file before the\n"
-"    file is parsed.\n"
+"    file is parsed.  Thus differences in whitespace\n"
+"    beginning a file are always reported as `begin-\n"
+"    space' differences.\n"
 "\f\n"
 "    When an end-of-file (eof) token is matched with\n"
 "    a non-eof token, no check is made of the white-\n"
-"    space preceding the tokens."
+"    space preceding the tokens.\n"
 "\n"
 "    For each kind of difference found in the two\n"
 "    files, the scorediff program outputs a `proof'\n"
@@ -221,8 +240,8 @@ char documentation [] =
 "    test file line numbers are put on the same\n"
 "    proof-line.\n"
 "\f\n"
-"    Program options may be used to surpress proofs\n"
-"    the output of this program.  An option consist-\n"
+"    Program options may be used to suppress the out-\n"
+"    of proofs by this program.  An option consist-\n"
 "    ing of a `-' followed by difference name follow-\n"
 "    ed by an unsigned integer N suppresses all but\n"
 "    the first N proofs with that difference name.\n"
@@ -232,15 +251,15 @@ char documentation [] =
 "    begin with a digit).  Thus `-case' with no\n"
 "    following number suppresses all `case' proofs.\n"
 "\n"
-"    The `-number' option differs in that it has the\n"
-"    form:\n"
+"    The `-number' program option differs in that it\n"
+"    has the form:\n"
 "\n"
 "        -number absolute-diff relative-diff N\n"
 "\n"
 "    and the program outputs only the first N\n"
 "    `number' proofs that have an absolute or\n"
 "    relative difference larger than the values given\n"
-"    in the option.\n"
+"    in the program option.\n"
 "\n"
 "    The first `nonblank' difference found terminates\n"
 "    this program and the search for more differ-\n"
@@ -249,11 +268,10 @@ char documentation [] =
 ;
 
 // A token is either a number token, an end of file
-// (eof) token, or character token.  This last means a
-// any non-whitespace character not in a number.
+// (eof) token, or a word token.
 //
 enum token_type {
-    NUMBER_TOKEN, EOF_TOKEN, CHARACTER_TOKEN };
+    NUMBER_TOKEN, EOF_TOKEN, WORD_TOKEN };
 
 struct file
 {
@@ -262,23 +280,17 @@ struct file
 
     // Token description.
     //
-    token_type type;	// Type of tokens.
-    char tokens [ MAX_SIZE + 1 ]; // The current tokens,
+    token_type type;	// Type of token.
+    char token [ MAX_SIZE + 1 ]; // The current token,
     			// if not an end-of-file (eof).
-    			// There is either just one nu-
-			// meric token, or there
-			// are one or more consecutive
-			// character tokens that were
-			// scanned together for effici-
-			// ency.
-    int count;		// Number of tokens.  1 for
-    			// number or eof token.
+    int length;		// Length of token in charac-
+    			// ters.  0 for eof.
     int line;		// Line number of current
-    			// tokens.  The first line is 1.
+    			// token.  The first line is 1.
     int column;		// Column within the line of
     			// the last character of the
-			// last of the current tokens.
-			// The first column is 0.
+			// the current token.  The first
+			// column is 0.
 
     double number;	// For a number token, the
     			// value of the number.
@@ -292,22 +304,33 @@ struct file
     // Whitespace description.
     //
     char whitespace [ MAX_SIZE + 1 ]; // Whitespace pre-
-    			// ceding the current tokens.
-    int wslength;	// Number of characters of
-    			// whitespace in above.
+    			// ceding the current token.
     int newlines;	// Number of new line characters
     			// in this whitespace.
+
+    // Token split description.
+    //
+    // If a word token is split, this information is
+    // set so the next call to scan a token will return
+    // the remainder of the split token.
+    //
+    int remainder_length;  // Length of remainder.
+    			// 0 if no remainder.
+    char remainder_c;	// First character of remainder.
 
     // Backup description.
     //
     // Set to characters backed over in the input string
-    // when scan_token determines it has not been passed
-    // an exponent.  Possible values are:
+    // when scan_token determines that some characters
+    // encountered scanning a word begin a number or that
+    // some characters encountered scanning a number do
+    // not begin an exponent.  Possible values are:
     //
+    //		+#   -#   .#   +.#  -.#
     //		e    e+   e-   E    E+   E-
     //
-    // Also set to the single character following a
-    // number or sequence of non-number tokens.
+    // where # denotes any digit.  Can also be set to a
+    // single character following a token.
 
     char * back;	// If pointing at `\0', there
     			// are no backed up characters
@@ -342,11 +365,13 @@ int open ( file & f, char * filename )
     f.backup[1]		= '\0';
     f.back		= f.backup;
 
-    f.tokens[0]		= 0;
+    f.token[0]		= 0;
     f.column		= -1;
     f.line		= 0;
-    f.type		= CHARACTER_TOKEN;
+    f.type		= WORD_TOKEN;
     f.whitespace[0]	= 0;
+
+    f.remainder_length	= 0;
 }
 
 // Get next character from file, respecting any backup.
@@ -381,11 +406,27 @@ void token_too_long ( file & f ) {
 }
 
 
-// Scan next token.
+// Scan next token in a file.
 //
 void scan_token ( file & f )
 {
     if ( f.type == EOF_TOKEN ) return;
+
+    if ( f.remainder_length != 0 )
+    {
+        assert ( f.type == WORD_TOKEN );
+
+	char * p = f.token + f.length;
+	char * q = f.token;
+
+	* p = f.remainder_c;
+	while ( * q ++ = * p ++ );
+
+	f.length		= f.remainder_length;
+	f.column		+= f.remainder_length;
+	f.remainder_length	= 0;
+	return;
+    }
 
     int c = get_character ( f );
     int column = f.column + 1;
@@ -419,15 +460,21 @@ void scan_token ( file & f )
 
     * wp = 0;
 
+    // Come here then c is the first character of the
+    // token.
+
     if ( c == EOF ) {
     	f.type		= EOF_TOKEN;
-	f.count		= 1;
+	f.length	= 0;
 	f.column	= column;
-	f.tokens[0]	= 0;
+	f.token[0]	= 0;
 	return;
     }
 
-    char * tp = f.tokens;
+    // Come here when c is the first character of a
+    // word or number token.
+
+    char * tp = f.token;
     char * endtp = tp + MAX_SIZE;
     int decimals = -1;
 
@@ -449,11 +496,11 @@ void scan_token ( file & f )
 	    c = get_character ( f );
 	    ++ column;
 
-	    if ( ! isdigit ( c ) ) goto non_number;
+	    if ( ! isdigit ( c ) ) goto word;
 	    break;
 
 	default:
-	    if ( ! isdigit ( c ) ) goto non_number;
+	    if ( ! isdigit ( c ) ) goto word;
 	}
 	break;
 
@@ -462,11 +509,11 @@ void scan_token ( file & f )
 	c = get_character ( f );
 	++ column;
 	++ decimals;
-	if ( ! isdigit ( c ) ) goto non_number;
+	if ( ! isdigit ( c ) ) goto word;
 	break;
 
     default:
-        if ( ! isdigit ( c ) ) goto non_number;
+        if ( ! isdigit ( c ) ) goto word;
 	break;
     }
 
@@ -542,15 +589,14 @@ void scan_token ( file & f )
 
     if ( c != EOF ) {
 	char * p = f.back;
-	if ( * p == 0 ) p = f.backup;
+	if ( * p == 0 ) p = f.back = f.backup;
 	else p = f.back + strlen ( f.back );
 	* p ++ = c;
 	* p = 0;
-	f.back = f.backup;
     }
 
     char * e;
-    f.number = strtod ( f.tokens, & e );
+    f.number = strtod ( f.token, & e );
     assert ( e == tp || ! finite ( f.number ) );
     	//
     	// If number is too large then f.number is
@@ -561,39 +607,91 @@ void scan_token ( file & f )
     return;
 
 // Come here if we have concluded that the characters
-// scanned into f.tokens so far are not part of a
-// number or eof token.
+// scanned into f.token so far are part of a word,
+// and c is the next character of the word or is a
+// whitespace character.
 //
-non_number:
+word:
 
     while ( 1 ) {
-        if ( isspace ( c )
+        if (    isspace ( c )
 	     || isdigit ( c )
-	     || c == '+'
-	     || c == '-'
-	     || c == '.'
 	     || c == EOF ) break;
 
-	if ( tp >= endtp ) break;
+	switch ( c ) {
 
-	* tp ++ = c;
+	case '+':
+	case '-':
+	case '.':
+
+	    char * np = tp;
+	    int ncolumn = column;
+	    int oldc = c;
+
+	    if ( tp < endtp ) * tp ++ = c;
+	    else token_too_long ( f );
+
+	    c = get_character ( f );
+	    ++ column;
+
+	    if ( c == '.' && oldc != '.' ) {
+		if ( tp < endtp ) * tp ++ = c;
+		else token_too_long ( f );
+
+		c = get_character ( f );
+		++ column;
+	    }
+
+	    if ( isdigit ( c ) ) {
+		assert ( * f.back == 0 );
+		* tp = 0;
+		strcpy ( f.backup, np );
+		f.back = f.backup;
+		tp = np;
+		column = ncolumn;
+		goto end_word;
+	    } else continue;
+	}
+
+	if ( tp < endtp ) * tp ++ = c;
+	else token_too_long ( f );
+
 	c = get_character ( f );
 	++ column;
     }
+
+end_word:
+
     f.column	= -- column;
-    f.count	= tp - f.tokens;
-    f.type	= CHARACTER_TOKEN;
+    f.length	= tp - f.token;
+    f.type	= WORD_TOKEN;
 
     * tp = 0;
 
     if ( c != EOF ) {
-	assert ( * f.back == 0 );
-	f.back = f.backup;
-	f.backup[0] = c;
-	f.backup[1] = 0;
+	char * p = f.back;
+	if ( * p == 0 ) p = f.back = f.backup;
+	else p = f.back + strlen ( f.back );
+	* p ++ = c;
+	* p = 0;
     }
 
     return;
+}
+
+// Split word token so first part has n characters.
+//
+void split_word ( file & f, int n )
+{
+    assert ( f.type == WORD_TOKEN );
+    assert ( n > f.length );
+
+    f.remainder_length = f.length - n;
+    char * p = f.token + n;
+    f.remainder_c = * p;
+    * p = 0;
+    f.length = n;
+    f.column -= f.remainder_length;
 }
 
 // Possible difference types.
@@ -888,15 +986,16 @@ int main ( int argc, char ** argv )
     // tokens, setting flags describing any differences
     // found.
 
-    // Scan the first tokens.
-    //
-    scan_token ( output );
-    scan_token ( test );
-
     bool done		= false;
 
     while ( ! done )
     {
+
+	// Scan next tokens.
+	//
+	scan_token ( output );
+	scan_token ( test );
+
         // Terminate loop if just one file has an
 	// EOF_TOKEN.
 
@@ -954,64 +1053,76 @@ int main ( int argc, char ** argv )
 	// Compare tokens.
 	//
         switch ( output.type ) {
-	case NUMBER_TOKEN:
-	case CHARACTER_TOKEN:
-	    switch ( test.type ) {
-	    case EOF_TOKEN:
-		found_difference ( EOF2 );
-		break;
-	    case NUMBER_TOKEN:
-	    case CHARACTER_TOKEN:
-
-	        if ( output.type != test.type )
-		{
-		    found_difference ( NONBLANK );
-		    break;
-		}
-
-	    	char * tp1 = output.tokens;
-	    	char * tp2 = test.tokens;
-		bool token_case = false;
-
-		while ( * tp1 )
-		{
-		    if ( * tp1 != * tp2 )
-		    {
-			if ( toupper ( * tp1 )
-			     == toupper ( * tp2 ) )
-			    token_case = true;
-			else
-			    break;
-		    }
-		    ++ tp1, ++ tp2;
-		}
-
-	        if ( * tp1 == * tp2 )
-		{
-		    if ( output.type != NUMBER_TOKEN
-		         && token_case )
-		        found_difference ( CASE );
-		    break;
-		}
-
-		else if ( output.type != NUMBER_TOKEN )
-		{
-		    found_difference ( NONBLANK );
-		    done = true;
-		    break;
-		}
-
-		diffnumber ();
-
-		if ( differences[NONBLANK].flag )
-		    done = true;
-		break;
-	    }
-	    break;
 
 	case EOF_TOKEN:
             assert ( test.type == EOF_TOKEN );
 	    done = true;
+	    break;
+
+	case NUMBER_TOKEN:
+	case WORD_TOKEN:
+
+	    assert ( test.type != EOF_TOKEN );
+
+	    if ( output.type != test.type )
+	    {
+		found_difference ( NONBLANK );
+		done = true;
+		break;
+	    }
+
+	    if ( output.type == WORD_TOKEN )
+	    {
+	        assert ( test.type == WORD_TOKEN );
+
+		if ( output.length < test.length )
+		    split_word ( test, output.length );
+		else if ( test.length < output.length )
+		    split_word ( output, test.length );
+	    }
+
+	    char * tp1 = output.token;
+	    char * tp2 = test.token;
+	    bool token_case = false;
+
+	    while ( * tp1 )
+	    {
+		if ( * tp1 != * tp2 )
+		{
+		    if ( toupper ( * tp1 )
+			 == toupper ( * tp2 ) )
+			token_case = true;
+		    else
+			break;
+		}
+		++ tp1, ++ tp2;
+	    }
+
+	    if ( * tp1 == * tp2 )
+	    {
+	        assert ( * tp1 == 0 );
+
+		if ( token_case )
+		    found_difference
+		        ( output.type == NUMBER_TOKEN ?
+			  NUMBER :
+			  CASE );
+	    }
+
+	    else if ( output.type == NUMBER_TOKEN )
+	    {
+	        assert ( test.type == NUMBER_TOKEN );
+		diffnumber ();
+
+		done = differences[NONBLANK].flag;
+	    }
+
+	    else
+	    {
+		found_difference ( NONBLANK );
+		done = true;
+	    }
+
 	    break;
      	}
     }
