@@ -5,7 +5,7 @@
 #
 # File:		printer_pipe
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Wed Jan 16 07:20:58 EST 2002
+# Date:		Sat Mar  9 18:41:56 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/01/16 12:30:28 $
+#   $Date: 2002/03/09 23:49:33 $
 #   $RCSfile: printer_pipe,v $
-#   $Revision: 1.9 $
+#   $Revision: 1.10 $
 
 Pswitch=0
 
@@ -29,7 +29,7 @@ case "$1" in
    	echo "
 printer_pipe [-P] where filename [username]
 
-    Look up the printer in the
+    First, looks up the printer in the
     
     	~/.hpcm_contest/printer_map
 
@@ -39,16 +39,20 @@ printer_pipe [-P] where filename [username]
     
     file otherwise, or if neither file is readable, use
     the PRINTER environment variable.
+
+    Then sends the standard input to the printer and
+    logs a line to the ~/.hpcm_contest/printer_jobs file
+    if that is writable.
     
     The \`printer_map' file has lines with the format:
 
     	regular-expression printer
 
     For the first line whose regular expression matches
-    the user name, the printer is used.  If there are
-    no matches and the file is readable, it is an error
-    (the \`printer' file and PRINTER variable are NOT
-    used).
+    the entire user name, the printer is used.  If there
+    are no matches and the file is readable, it is an
+    error (the \`printer' file and PRINTER variable are
+    NOT used).
 
     The \\ backslash character can be used in the
     printer_map file to continue lines.  If a back-
@@ -88,8 +92,8 @@ printer_pipe [-P] where filename [username]
 
     If ~/.hpcm_contest/printer_jobs is writable, a line
     is written to that file giving the date, the prin-
-    ter, the user account name, the \`where' argument,
-    and the \`filename' argument.
+    ter, the \`where' argument, and the \`filename'
+    argument.
 
     The \`where' and \`filename' arguments are used
     purely for informative purposes in the email subject
@@ -126,7 +130,9 @@ printer_pipe [-P] where filename [username]
 
     This forwards the email on to \`ppp<b@c>' where the
     real printer is.  Here \`ppp' is a password to be 
-    kept secret from contestants."
+    kept secret from contestants.  If outsiders cannot
+    send mail to the judging account, then \`fi@fo'
+    may be the judging account."
 
     	exit 1
 	;;
@@ -217,7 +223,8 @@ then
     exit 0
 fi
 
-# If printer_jobs exists, announce print job therein.
+# If printer_jobs is writable, announce print job
+# therein.
 #
 if test -w ${HOME}/.hpcm_contest/printer_jobs; then
     shortprinter=`expr "$printer" : "\\([^<]*\\)<"`
@@ -226,7 +233,7 @@ if test -w ${HOME}/.hpcm_contest/printer_jobs; then
         shortprinter="$printer"
     fi
     line=`date "+%a %r"`
-    line="$line $shortprinter $filename $user($where)"
+    line="$line $shortprinter $filename $where"
     echo "$line" >> ${HOME}/.hpcm_contest/printer_jobs
 fi
 
@@ -235,7 +242,7 @@ fi
 case "$printer" in
     *@*)
         ( echo "To: $printer"; \
-	  echo "Subject: $filename $user($where)"; \
+	  echo "Subject: $filename $where"; \
 	  echo ""; cat ) | /usr/sbin/sendmail -t
 	exit 0
     	;;
