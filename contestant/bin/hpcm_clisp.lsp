@@ -3,7 +3,10 @@
 ;;;; File:         student.lsp
 ;;;; Author:       CS 51 (Bob Walton)
 ;;;; Modified by:  CS 182 (Attila Bodis)
-;;;; Version:      5
+;;;; Version:      7
+;;;;
+;;;; This file contains environment modifiers and functions that establish
+;;;; a proper environment for CS51 students running COMMONLISP.
 ;;;;
 ;;;; Changes:
 ;;;;
@@ -35,9 +38,6 @@
 ;;;;	 Added TRANSCRIBE-ERROR and HANDLER-CASE.
 ;;;;	 Added various calls to FRESH-LINE and FINISH-LINE.
 ;;;;
-;;;; This file contains environment modifiers and functions that establish
-;;;; a proper environment for CS51 students running Kyoto COMMONLISP.
-;;;;
 ;;;;   Version 6:
 ;;;;
 ;;;;	Added BYE.
@@ -50,6 +50,13 @@
 ;;;;
 ;;;;	while CLISP requires only
 ;;;;  (shell (concatenate 'string "vi '+set lisp sm ai'" file))
+;;;;
+;;;;   Version 7:
+;;;;
+;;;;	 Added setting of SYSTEM::*PRIN-LINELENGTH* for CLISP.
+;;;;	 Added revised TRANSCRIBE-ERROR for CLISP.
+;;;;	 Added calls to PEEK-CHAR to remove spurious blank
+;;;;			lines in CLISP.
 ;;;;
 ;;;;
 
@@ -76,6 +83,16 @@
 (defvar *RUN-INPUT*	nil	"Current input stream of RUN function" )
 (defvar *RUN-OUTPUT*	nil	"Current output stream of RUN function" )
 
+#+clisp
+(defun TRANSCRIBE-ERROR (c)
+  (fresh-line)
+  (princ "ERROR: ")
+  (sys::print-condition c *standard-output*))
+
+;; Note: in CLISP (system::unwind-to-driver) resets to top level,
+;; if this is ever needed.
+
+#+allegro
 (defun TRANSCRIBE-ERROR (c)
   (typecase
    c
@@ -197,9 +214,12 @@
 	(do ((s-expression (read nil nil eof-value)
 			   (read nil nil eof-value)))
 	    ((eq s-expression eof-value))
-	    (fresh-line)
 	    (cond
 	     (out
+	      ;; For some strange reason, the peek-char
+	      ;; eliminates a spurious blank line in CLISP.
+	      #+clisp
+	      (peek-char nil nil nil nil)
 	      (fresh-line)
 	      (princ '|=>|)
 	      (fresh-line)
@@ -219,6 +239,7 @@
 	      (do ()
 		  ((null (read-char-no-hang *terminal-io*))))
 					; Print prompt.
+	      (fresh-line)
 	      (princ '|=> ? |)
 	      (let ((line (read-line *terminal-io*)))
 		(catch error-tag
@@ -226,12 +247,19 @@
 		      (eval (read-from-string line nil))
 		    (throw error-tag nil))))
 	      (dolist (val (multiple-value-list (eval s-expression)))
-		      (write val :escape t :pretty t)))
+		      (write val :escape t :pretty t)
+		      (fresh-line)))
 	     ((not pause)
+	      ;; For some strange reason, the peek-char
+	      ;; eliminates a spurious blank line in CLISP.
+	      #+clisp
+	      (peek-char nil nil nil nil)
+	      (fresh-line)
 	      (princ '|=>|)
 	      (fresh-line)
 	      (dolist (val (multiple-value-list (eval s-expression)))
-		      (write val :escape t :pretty t))))
+		      (write val :escape t :pretty t)
+		      (fresh-line))))
 	    (fresh-line)))
    
    (cond
