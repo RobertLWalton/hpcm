@@ -3,7 +3,7 @@
 ;;;; File:	hpcm_clisp.lsp
 ;;;; Author:	Bob Walton <walton@deas.harvard.edu>
 ;;;; Modifier:  CS 182 (Attila Bodis)
-;;;; Date:	Sat Jan 12 01:50:25 EST 2002
+;;;; Date:	Wed Feb 20 07:18:32 EST 2002
 ;;;;
 ;;;; The authors have placed this program in the public
 ;;;; domain; they make no warranty and accept no
@@ -12,9 +12,9 @@
 ;;;; RCS Info (may not be true date or author):
 ;;;;
 ;;;;   $Author: hc3 $
-;;;;   $Date: 2002/01/12 06:50:31 $
+;;;;   $Date: 2002/02/20 12:18:02 $
 ;;;;   $RCSfile: hpcm_clisp.lsp,v $
-;;;;   $Revision: 1.18 $
+;;;;   $Revision: 1.19 $
 ;;;;
 ;;;;
 ;;;; This file was originally written by the Bob Walton
@@ -269,7 +269,8 @@
 	          (fresh-line)
 	          (princ '|---> ? |)
 		  (fresh-line)
-		  (finish-output) ;; In case crash follows.
+		  (finish-output) ;; In case crash
+		  		  ;; follows.
 	          (let ((line (read-line *terminal-io*
 	                                 nil "")))
 		    (cond
