@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Feb 12 06:09:35 EST 2002
+# Date:		Wed Jul 31 04:30:48 EDT 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/02/12 11:08:53 $
+#   $Date: 2002/07/31 08:25:20 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.14 $
+#   $Revision: 1.15 $
 
 all:	hpcm_sandbox hpcm_sendmail modes
 
@@ -39,7 +39,8 @@ modes:
 	           help hpcm_extract hpcm_get \
 		   hpcm_submit print print2 fprint lpq \
 		   printer_pipe scoreboard xcsh \
-		   hpcm_clisp hpcm_extract_test_replies
+		   hpcm_clisp hpcm_extract_test_replies \
+		   filtered_diff
 	chmod a+r procmailrc hpcm_clisp.lsp
 	chmod a+x .. ../.. ../../..
 
