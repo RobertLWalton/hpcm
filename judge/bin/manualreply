@@ -1,11 +1,11 @@
-#!/bin/sh -f
+#!/bin/sh
 #
 # Manually examine the contents of a directory and
 # possibly reply, maybe with a manual score.
 #
 # File:		manualreply
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Sep 23 08:41:11 EDT 2000
+# Date:		Mon Oct  2 10:24:51 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/09/26 11:33:15 $
+#   $Date: 2000/10/02 15:46:03 $
 #   $RCSfile: manualreply,v $
-#   $Revision: 1.13 $
+#   $Revision: 1.14 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -1029,6 +1029,7 @@ proc send_score_reply {} {
     send_reply
 
     write_file $manual_score_file $proposed_score
+    set_flag $score_flag_file
     set manual_score $proposed_score
     set proposed_score none
 }
@@ -1252,6 +1253,21 @@ $menu"
 		} else {
 		    set window_error "Send ABORTED!"
 		}
+	    }
+	}
+	{^nr$} {
+	    set window_error \
+		"Type line to write into $no_reply_file\
+                 file (or type ^D to abort):"
+	    set window_prompt "> "
+	    display_window
+	    set no_reply_line [string trim [gets stdin]]
+	    if { [eof stdin] } {
+		set window_error \
+		    "$no_reply_file NOT WRITTEN"
+	    } else {
+		write_file $no_reply_file $no_reply_line
+		set window_error "$no_reply_file written"
 	    }
 	}
 	{^ss$} {

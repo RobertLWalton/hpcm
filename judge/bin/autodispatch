@@ -1,11 +1,11 @@
-#!/bin/sh -f
+#!/bin/sh
 #
 # Given a submission directory, dispatch any automatic
 # programs, such as `autojudge' and `autoinfo'.
 #
 # File:		autodispatch
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Sep 15 11:10:40 EDT 2000
+# Date:		Mon Oct  2 10:56:15 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/09/15 16:28:41 $
+#   $Date: 2000/10/02 15:46:01 $
 #   $RCSfile: autodispatch,v $
-#   $Revision: 1.11 $
+#   $Revision: 1.12 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -175,15 +175,28 @@ if { $program != "" } {
 		   $message_subject] } {
     error "Test of the error response system."
 } elseif { $reply_mode == "auto" } {
-    reply -all \
-          "This message cannot be properly answered\
-	   automatically," \
-	  "and there is no person to answer\
-	   this message." \
-	  "" \
-	  "So this message is being IGNORED!" \
-	  "Please send it elsewhere or fix\
-	   the `Subject' field."
+    if { $reply_manager != "" } {
+	reply -all -cc \
+	     "This message cannot be properly answered\
+	       automatically," \
+	      "and there is no person to prompty answer\
+	       this message." \
+	      "" \
+	      "Please fix the subject field or\
+	        wait for" \
+	      "a response from $reply_manager"
+    } else {
+	reply -all \
+	     "This message cannot be properly answered\
+	       automatically," \
+	      "and there is no person to prompty answer\
+	       this message." \
+	      "" \
+	      "Please fix the subject field or\
+	       send the message elsewhere."
+    }
+} else {
+    set_flag $needs_reply_flag_file
 }
 
 # If we did nothing, another program will see there

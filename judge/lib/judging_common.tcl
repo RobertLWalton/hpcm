@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/10/02 15:21:57 $
+#   $Date: 2000/10/02 15:46:05 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.42 $
+#   $Revision: 1.43 $
 #
 
 # Include this code in TCL program via:
@@ -218,7 +218,8 @@ proc log_error { error_output } {
 	   log_manager received_file \
 	   message_From_line message_from \
 	   message_date message_subject \
-	   message_x_hpcm_test_subject
+	   message_x_hpcm_test_subject \
+	   needs_reply_flag_file
 
     # Increment count of calls to log error and if
     # appropriate change log_mode to `none' or exit
