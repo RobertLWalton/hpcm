@@ -4,7 +4,7 @@
 #
 # File:		overview
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Jan 13 05:26:52 EST 2001
+# Date:		Sun Jan 14 00:38:25 EST 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/01/13 16:04:13 $
+#   $Date: 2001/01/14 06:40:00 $
 #   $RCSfile: overview,v $
-#   $Revision: 1.22 $
+#   $Revision: 1.23 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -53,8 +53,12 @@ puts "
 	Contest Raw Data: Get Requests
 	Contest Raw Data: Queries
 	Contest Raw Data: Data Flow
-	Contest Derived Data: Status Files
+	Contest Derived Data: Processing Status Files
 	Contest Derived Data: Scoreboard Files
+	Programs: Contestant
+	Programs: Judging
+	Programs: Contest Making
+	Programs: Maintenance
 
 Features
 --------
@@ -1706,18 +1710,32 @@ is within a *-submission directory, the log file is
 created within this directory; otherwise the log file
 is created within the log_directory.
 
-Contest Derived Data: Status Files
-------- ------- ----- ------ -----
+Contest Derived Data: Procssing Status Files
+------- ------- ----- --------- ------ -----
 
-    flag
-        The flag directory of the contest.  Flag files
-	in this directory are created when certain
-	events happen that may demand attention from
-	background activities, such as scoreboard com-
-	putation, and manual review of submissions.
+During the processing of raw data and the updating of
+the scoreboard, several files are used to keep track of
+the status of data processing and program processes.
+These files and some of their containing directories
+are:
 
-	Specifically, the following are files in the
-	flag directory:
+    flag_directory
+        Normally the `flag' subdirectory of the judging
+	directory.
+
+        Flag files in this directory are created just
+	after information is written into other files
+	that may need to be read by certain programs
+	(makescoreboard or tacker).   The programs that
+	read these other files, when the see that a flag
+	file exists, delete the flag file first, and
+	then read the other files to see what to do.
+	Thus these reader programs know that if the
+	flag files do NOT exist, nothing has changed
+	since the last time they read files.
+
+	Specifically, the following are flag files in
+	the flag directory:
 
 	    $score_flag_file
 	        Created when any $auto_score_file or
@@ -1733,22 +1751,217 @@ Contest Derived Data: Status Files
 		the contest directories and files to see
 		where `manualreply' should be run.
 
-    Scoreboard_PID
-        A file containing the process ID of any `make-
-	scoreboard' program that is running in back-
-	ground.  This file is maintained by the `make-
-	scoreboard' program with its `-start' and
-	`-stop' options.
+    $scoreboard_pid_file
+        A file in the judging directory containing the
+	process ID of any `makescoreboard' program that
+	is running in background.  This file is main-
+	tained by the `makescoreboard' program with its
+	`-start' and `-stop' options.  The `-status'
+	option reads this file and displays the status
+	of the process identified in the file.
 
+    mail_directory/*-submission/$dispatch_pid_file
+        This file is used as a lock to prevent more than
+	one `autojudge' or `manualreply' program from
+	running in a submission subdirectory at once.
+	This file is a lock on the *-submission direc-
+	tory.  The file contains the process ID of the
+	program that has locked the directory.
+
+	If `autojudge' tries to create this file and
+	the file already exists, `autojudge' terminates
+	without error, assuming some other process is
+	processing the directory.  If `manualreply'
+	tries to create this file and the file already
+	exiss, `manualreply' displays the status of the
+	process identified by this file, and asks its
+	user whether to quit or kill the identified
+	process (if it is still running) and continue.
 
 Contest Derived Data: Scoreboard Files
 ------- ------- ----- ---------- -----
 
+The `makescoreboard' program can run in background and
+recompute the scoreboard as necessary.  It computes
+one or both of two files.
+
+    scoreboard.mail
+        A copy of the scoreboard emailed to an address
+	by `makescoreboard'.
+
+    ./contest/scoreboard.1
+        The first of four scoreboard pages visible to
+	the contestant `scoreboard' display program.
+
+See `makescoreboard' for details.
+
+Programs: Contestant
+--------- ----------
+
+The programs runnable by the contestant are documented
+in the help files: see `Library Data: Help Documenta-
+tion'.  All these programs are in the hpcm/contestant/
+bin directory, to which the contestant account's .hpcm_
+contest/bin directory is linked.  A quick summary of
+these programs follows:
+
+    help		Display help files.
+    scoreboard		Display scoreboard.
+    xcsh		Create new xterm windows.
+
+    hpcm_sendmail	Send email from a contestant
+    			to the judge.
+    hpcm_get		Make file get requests using
+    			hpcm_sendmail or link
+    			problem files into contestant
+			account directories.
+    hpcm_extract	Extract files returned in
+    			email by get requests.
+    hpcm_sandbox	Run contestant submissions
+    			in a sandbox.
+    hpcm_submit		Submit a problem solution
+    			file using hpcm_sendmail.
+
+    fprint		Print 56 column files.
+    print		Print 80 column files.
+    print2		Print 80 column files 2 file
+    			pages per print page.
+    lpq			Display printer status.
 
 
+Programs: Judging
+--------- -------
 
+The judge's programs are in hpcm/judge/bin, which is
+placed in the PATH of the judge's account.  A quick
+summary of the programs used during a contest to run
+the contest follows:
 
+    receivemail		Process received email and store
+    			it in a *-submission directory.
+    dispatchmail	Call autodispatch for each
+    			*-submission directory.
+    autodispatch	Call autoinfo or autojudge or
+    			process query, for a *-submis-
+			sion directory.
 
+    autoinfo		Process a get request *-submis-
+    			sion directory.
+    autojudge		Process a solution submit *-
+    			submission directory.
+
+    extractmail		Extract a solution program file
+    			from received email.
+    hpcm_sandbox	Run hpcm_sandbox_x with the
+    			`-core 0' option.
+    hpcm_sandbox_x	Run a program in a sandbox.
+    			Same as contestant/bin/hpcm_
+			sandbox but with root set user
+			ID.
+    autoscore		Compute the score from the .out
+    			and .test files.
+    scorediff		Compare the .out and .test files
+    			and report types of differences.
+
+    startcontest	Change the mode of ./contest/
+    			problems and ./contest/help/pro-
+			blems to make them readable by
+			contestants.
+
+    makescoreboard	Recompute the scoreboard files
+    			at intervals.
+    scoreboard		Compute a scoreboard given the
+    			output of `scorefinder'.
+    scorefinder		Look through all the *-submis-
+    			sion directories for score
+			files and output a summary of
+			all the information found.
+
+    manualreply		Permit a human user (the judge)
+    			to inspect the contents of a
+			*-submission (or error log) dir-
+			ectory and to specify manual
+			scores and email replies.
+    tracker		Identify *-submission director-
+    			ies for which `manualreply'
+			should be run and permit a user
+			to dispatch `manualreply' to
+			these.
+    trackfinder		Look through all the *-submis-
+    			sion directories for information
+			needed by `tracker' and output
+			this information for `tracker'
+			to use.
+    reply		An older simpler version of
+    			`tracker'.
+    lookat		Find *-submission directories
+    			containing a file with a given
+			name and contents, and dispatch
+			`manualreply' to these director-
+			ies.
+
+Note that some of these programs are imported by the
+hcpm/judge/bin/Makefile from other directories.  E.g.,
+hpcm_sandbox_x is a compiled version of hpcm/secure/
+src/hpcm_sandbox.c that is normally installed in /sbin.
+
+Programs: Contest Making
+--------- ------- ------
+
+The following programs are used to make contests:
+
+    hpcm/judge/bin/makejudgingdir
+    	Make the contest definition files starting
+	from parameters to this program (usually
+	contained in a Makefile) and hpcm_judging.rc.
+    	
+    hpcm/judge/bin/fprint
+    	Print 56 column line files 2 file pages per
+	print page.
+
+    hpcm/judge/bin/hpcm_print_passwords
+    	Print contestant account names and passwords
+	each on a separate page with contest specific
+	instructions.
+
+    hpcm/contestant/bin/SETUP_PROTOTYPE
+    	Setup the prototype account and the files needed
+	by TRASH_ACCOUNT.
+
+    hpcm/contestant/bin/TRASH_ACCOUNT
+        Initialize (or reinitialize) the files and dir-
+	ectories of a contestant account.
+
+    hpcm/secure/bin/hpcm_make_accounts
+	Create all the contestant accounts.
+
+    hpcm/secure/bin/hpcm_set_passwords
+	Set passwords for all the contestant accounts.
+
+    hpcm/secure/bin/hpcm_TRASH_ACCOUNTS
+	Run TRASH_ACCOUNT in each contestant account.
+
+Programs: Maintenance
+--------- -----------
+
+The following programs in hpcm/judge/bin are used for
+maintainence.
+
+    overview		Print this document.
+    installing_hpcm	Print the `Installing HPCM'
+    			document.
+
+    makeMakefile	Make problem Makefiles from a
+    			template.
+    testproblems	Test many problems at once.
+    fcheck		Check that a file has 56 column
+    			lines and 40 line pages.
+    fcheckc		Check that a file has 56 column
+    			lines (for code).
+    chkpage		Helper for fcheck(c).
+    difffilter		Diff two directories and filter
+    			certain 1 line differences from
+			the output.
 "
 
 exit 0
