@@ -1,11 +1,11 @@
-PLAIN GEOMETRY PROBLEM HELP Sat Sep  1 08:26:29 EDT 2001
+2D GEOMETRY PROBLEM HELP    Sun Sep  2 03:10:10 EDT 2001
 
 For some reason many young computer scientists think
 that geometry problems are hard, and avoid them.  The
-purpose of this short discussion to demonstrate that
+purpose of this short discussion is to demonstrate that
 geometry problems are fairly easy after all.
 
-We will restrict ourselves here to planar geometry.
+We will restrict ourselves here to 2D geometry.
 
 Basics
 ------
@@ -49,8 +49,8 @@ other, which is the same as saying that
 
 then one can ask what the coordinates of a point p
 would be in the coordinate system in which u is in
-the positive direction of the x axis and v is in the
-positive direction of the y axis.  The answer is
+the positive direction of the x-axis and v is in the
+positive direction of the y-axis.  The answer is
 
 	(u.p, v.p)
 
@@ -62,7 +62,7 @@ Note that
 
 so u and v are the rows of the 2x2 matrix which by left
 multiplication translates from old xy coordinates to new
-uv axis coordinates.
+uv coordinates.
 
 If u is a unit vector, we call (u.v)u the projection of
 v onto u.  Taking vectors as denoting points (the ends
@@ -119,8 +119,9 @@ Simply compute:
     if v.r = v.p then r is on the line.
 
 v is the vector from p to q rotated 90 degrees clock-
-wise, so it points to the right of the line from p to q.
-Then
+wise, so it points to the right of the line through p
+and q.  Then
+
 	 q - p                   v
 	-------		and	---
 	|q - p|                 |v|
@@ -133,13 +134,9 @@ each other and form a coordinate system.  Therefore
 	|v|
 
 is the coordinate in this coordinate system in the
-direction perpendicular to the line from p to q, and
+direction perpendicular to the line through p and q, and
 this is >, =, or < to v.p/|v| according to whether r is
 to the right, on, or to the left of this line.
-
-Note all the lines in this section are infinite lines
-through two points but without the lines having any
-endpoints.
 
 Note that if p, q, and r have integer coordinates, then
 v.r and v.p are integers and are exact, and the clas-
@@ -147,11 +144,11 @@ sification of r as to the right, on, or to the left of
 the line is exact, with no chance of roundoff error.
 
 Sometimes the distance from r to the line from p to q
-is desired.  This is just the length of
+is desired.  This is just
 
-	    v.r  v
-	r - --- ---
-	    |v| |v|
+	    v.r 
+	    ---
+	    |v|
 
 
 Intersection
@@ -168,8 +165,9 @@ splits q1 and q2, and the infinite line through q1 and
 q2 splits p1 and p2, where for an infinite line to split
 two points means that one point must be to the right of
 the line and the other point must be to the left of the
-line.  Note that necessarily p1 != p2 and q1 != q2, as
-otherwise at least one line would not be defined.
+line.  Note that we can assume p1 != p2 and q1 != q2, as
+otherwise at least one of the two finite lines would
+have no interior.
 
 Suppose instead we wanted to know whether the finite
 lines including end points intersect.  Then we change
@@ -184,14 +182,14 @@ Convex Hull
 ------ ----
 
 The convex hull of a set of points V in a plane is a
-sequence of points p1, p2, p3, ..., pN such that for
-every i, all the points of V are on or to the right of
-the line through p(i) and p((i mod N) + 1), and such
-that no point p(j) is on this line except if j != i and
-j != (i mod N) + 1.  Then the finite lines from p(i) to
-p((i mode N) + 1) for i = 1, ..., N are the sides of
-the smallest convex polygon such that all the points of
-V are inside this polygon or on its boundary.
+sequence of points of V, p1, p2, p3, ..., p(N), such
+that for every i, all the points of V are on or to the
+right of the line through p(i) and p((i mod N)+1), and
+such that no point p(j) is on this line except of course
+p(i) and p((i mod N)+1).  Then the finite lines from
+p(i) to p((i mode N)+1) for i = 1, ..., N are the sides
+of the smallest convex polygon such that all the points
+of V are inside this polygon or on its boundary.
 
 To find the convex hull, first find some point p1 on the
 hull, which can be done say by choosing a leftmost point
@@ -223,10 +221,10 @@ by the sort time, O(|V| log|V|).
 Inside Convex Polygons
 ------ ------ --------
 
-Suppose we have a convex hull p1, ..., pN in clockwise
+Suppose we have a convex hull p1, ..., p(N) in clockwise
 order that defines a convex polygon.  So the sides of
 the polygon with a clockwise orientation are the lines
-from p(i) to p((i mod n) + 1), for i = 1, ..., n.
+from p(i) to p((i mod N)+1), for i = 1, ..., N.
 
 Then a point r is inside the convex polygon but not on
 the boundary of the polygon iff r is to the right of
@@ -236,21 +234,33 @@ that extends the side.
 
 So when does the interior of a line from r1 to r2 inter-
 sect the inside of a convex polygon?  It does if the
-interior of the line from r1 to r2 intersects any side
-of the polygon (including the ends of that side).  It
-also does if the ends of r1 and r2 are inside or on the
-boundary of the polygon, but both ends are not on some
-particular side of the polygon (or more specifically, on
-the infinite line extending that side).  These are the
-only two cases where the interior of the line from r1 to
-r2 can intersect the interior of the polygon.
+interior of the line from r1 to r2 intersects the inter-
+ior of any side of the polygon.  It also does if r1 and
+r2 are inside or on the boundary of the polygon, but
+both ends are not on the same side of the polygon (or
+more specifically, on the infinite line extending that
+side).  These are the only two cases where the interior
+of the line from r1 to r2 can intersect the interior of
+the polygon, UNLESS some of the convex hull points p1,
+..., p(N) are in the interior of the line from r1 to
+r2.  In this last case, divide the line up into seg-
+ments whose interiors do not contain any convex hull
+points, and apply the above two cases to see if any
+of these segments intersect the interior of the poly-
+gon.
 
 So all one has to do is take the clockwise sides of the
 polygon and check that the interior of the finite line
 from r1 and r2 intersects some side, or that for each
 polygon side, r1 and r2 are both on or to the right of
 the infinite line extending the side, and not both r1
-and r2 are on that line.
+and r2 are on that line.  During this process one must
+check each side beginning point p to see if it is in
+the interior of the line from r1 to r2, and if it is,
+one then divides the line from r1 to r2 up into two
+segments, one from r1 to p and one from p to r2, and
+applies the algorithm recursively to see if either of
+these segments intersects the interior of the polygon.
 
 
 Polygon Maze
@@ -270,7 +280,12 @@ is a shortest path in an undirected graph whose vertices
 are V such that given points r1 and r2 in V, there is
 an edge in this undirected graph between r1 and r2 iff
 the interior of the line from r1 to r2 does not inter-
-sect the interior of any polygon.
+sect the interior of any polygon.  Actually, we can make
+the computation simpler by also deleting an edge from r1
+to r2 if the interior of the line from r1 to r2 contains
+any member of V, as the shortest path can be composed of
+line segments between members of V that do not contain
+other members of V.
 
 
 Circular Anti-Maze
@@ -288,13 +303,12 @@ Robot Arms
 Suppose we have a planar robot arm.  Such an arm con-
 sists of line segments in an order.  The beginning of
 each segment is a pivot point, around which a servo can
-rotate the arm and anything attached to it (all the
-segments farther along in the order).  The end of a
-segment is attached to the beginning of the next seg-
-ment, or to the robot hand if the segment is the last
-segment of the arm.  We will define the end of the last
-segment to be a pivot point: it could have a servo to
-rotate the hand.
+rotate the segment and anything attached to its end.
+The end of a segment is attached to the beginning of the
+next segment, or to the robot hand if the segment is the
+last segment of the arm.  We will define the end of the
+last segment to also be a pivot point: it could have a
+servo to rotate the hand.
 
 The parameters of the arm are the lengths of the seg-
 ments and the angular settings of the servos.  A servo
@@ -306,7 +320,7 @@ by that angle.  Particular robot arms may use other
 conventions for servo angles.  We will also assume that
 the first pivot point is at the origin, and that the
 setting of 0 degrees for the first servo points the
-first segment along the positive x axis.
+first segment along the positive x-axis.
 
 The position of the pivot points of such an arm can be
 computed recursively by induction on the number of
@@ -315,7 +329,7 @@ only one pivot point (the hand's), and it is at the
 origin.  Otherwise assume for the moment that the first
 segment is such that its end (not its beginning) is at
 the origin and its orientation is in the direction of
-the positive x axis, so its server setting is 0 degrees.
+the positive x-axis, so its server setting is 0 degrees.
 Next compute the positions of the pivot points at the
 ends of the other segments by induction.
 
@@ -329,5 +343,5 @@ Now rotate all the pivot points about the origin by the
 amount indicated by the setting of the first servo.
 This finishes the computation.
 
-This computation is easy if you use induction to build
-the arm from its end, and not from its beginning.
+Thus this computation is easy if you use induction to
+build the arm from its end, and not from its beginning.
