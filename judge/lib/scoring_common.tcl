@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2003/02/07 15:04:28 $
+#   $Date: 2003/02/07 18:27:08 $
 #   $RCSfile: scoring_common.tcl,v $
-#   $Revision: 1.37 $
+#   $Revision: 1.38 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -133,14 +133,14 @@ set fake_instruction_types {
 }
 
 # Function to compute the `instruction_array' using
-# the current value of `find_scoring_instructions'.
+# the current value of `scoring_instructions'.
 #
 proc compute_instruction_array { } {
 
-    global instruction_array
+    global instruction_array scoring_instructions
 
     compute_scoring_array instruction_array \
-    			  [find_scoring_instructions] \
+    			  $scoring_instructions \
 			  "scoring instructions"
 
     if { [info exists instruction_array(number)] } {

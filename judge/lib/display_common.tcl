@@ -2,7 +2,7 @@
 #
 # File:		display_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Oct 27 01:47:25 EDT 2002
+# Date:		Fri Feb  7 11:44:03 EST 2003
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/10/27 05:59:10 $
+#   $Date: 2003/02/07 18:27:05 $
 #   $RCSfile: display_common.tcl,v $
-#   $Revision: 1.38 $
+#   $Revision: 1.39 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -860,18 +860,6 @@ proc read_manual_score {} {
 }
 set read_array($manual_score_file) read_manual_score
 set manual_score None
-
-# Read $scoring_instructions_file
-#
-proc read_scoring_instructions {} {
-
-    global scoring_instructions
-
-    set scoring_instructions [find_scoring_instructions]
-}
-set read_array($scoring_instructions_file) \
-    read_scoring_instructions
-set scoring_instructions $scoring_instructions_default
 
 # Read the received mail header.  Set the submitted_
 # problem, and extension variables.  If the subject is

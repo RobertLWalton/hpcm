@@ -4,7 +4,7 @@
 #
 # File:		overview
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Oct 31 06:12:08 EST 2002
+# Date:		Fri Feb  7 12:28:59 EST 2003
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/10/31 11:14:52 $
+#   $Date: 2003/02/07 18:27:34 $
 #   $RCSfile: overview,v $
-#   $Revision: 1.69 $
+#   $Revision: 1.70 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -509,12 +509,8 @@ is-
 	    PROBLEM.in
 	    { PROBLEM.test PROBLEM.out PROBLEM.test }
 	-OPTIONAL-LINK-
-	    $scoring_instructions_file
 	    $scoring_filter_file
 	    { PROBLEM.ftest PROBLEM.fout PROBLEM.ftest }
-	    { $response_instructions_file 
-	        $response_instructions_file.EXTENSION
-	    	$response_instructions_file }
 
 This value specifies the standard format of a problem as
 was described above.  Here `PROBLEM' denotes the name of
@@ -605,14 +601,13 @@ file named xxx.  The hpcm_get and hpcm_extract programs
 support this by automatically copying xxx.ISF to xxx if
 the latter does not exist, and making xxx writable.
 
-Second, if there is a file named\
-	$response_instructions_file
-linked to the submissions directory, responses from the
-autojudge program can contain extra information about
-scores, including positions of errors or first errors
-in pppp.out, summaries of errors found, and extra com-
-ment lines or copies of information files.  See the
-documentation of autojudge for details.
+Second, by setting the `response_instructions' global
+variable, responses from the autojudge program can be
+configured to contain extra information about scores,
+including positions of errors or first errors in
+pppp.out and extra comment lines or copies of informa-
+tion files.  See the documentation in hpcm_judging.rc
+for details.
 
 Some complex problems are in the directory:
 
@@ -1988,10 +1983,6 @@ more details about many of these files):
  * $scoring_filter_file\
    			Optional output filter program.
  * pppp.ftest		Optional filtered .test file.
- * $scoring_instructions_file\
-			Optional scoring instructions.
- * $response_instructions_file\
-			Optional response instructions.
    pppp			Binary program.
    pppp.cerr		Compiler error output.
    pppp.out		Solution standard output.
@@ -2002,6 +1993,9 @@ more details about many of these files):
    $auto_score_file		Autojudge score.
    $reply_file		Possible final reply.
    $reply_history_file	History of all replies.
+ * pppp.rc		Problem specific parameters for
+ 			judging software.  TCL code
+			sourced after hpcm_judging.rc.
 
 The files marked with a * are linked into the submission
 directory from the problem solution directory (the pro-
@@ -2024,18 +2018,16 @@ $auto_score_file file.
 
 The nature of any automatically generated reply to the
 submitter given that an $auto_score_file file has been
-generated is controlled by the\
-	$response_instructions_file
-file if that is present, or by a default value for that
-file otherwise.  For the default, if the scoring mode is
-`auto', a final reply containing the score is sent.  The
-same is done if the score is `Completely Correct', re-
-gardless of the scoring mode.  Otherwise if the scoring
-mode is `auto+manual', a reply containing the score is
-sent to the contestant, but not as a final score, and NO
-$reply_file file is generated; and if the scoring mode
-is `manual', no reply is sent to the contestant, and no
-$reply_file file is generated.
+generated is controlled by the `response_instructions'
+global variable.  For the default, if the scoring mode
+is `auto', a final reply containing the score is sent.
+The same is done if the score is `Completely Correct',
+regardless of the scoring mode.  Otherwise if the
+scoring mode is `auto+manual', a reply containing the
+score is sent to the contestant, but not as a final
+score, and NO $reply_file file is generated; and if the
+scoring mode is `manual', no reply is sent to the con-
+testant, and no $reply_file file is generated.
 
 The behavior of `autojudge' is similar to the behavior
 of `make' in a contestant's problem directory (see help
@@ -2162,6 +2154,7 @@ follows:
                |
                | autojudge
                v
+            pppp.rc file (if any)
             $files_file (if any)
                |
                | \[is `$files_file' file present and\
@@ -2208,8 +2201,6 @@ follows:
             pppp.test 
             pppp.ftest (if any)
             $scoring_filter_file (if any)
-            $scoring_instructions_file (if any)
-            $response_instructions_file (if any)
             additional linked files\
                          (if `$files_file' file)
                |
@@ -2307,8 +2298,7 @@ follows:
                v
 
                |
-               | \[is $response_instructions_file\
-                               present]
+               | \[non-default response_instructions]
                |
                +--------------------+
                |                    |
@@ -2896,9 +2886,6 @@ mary of these is:
     proc blank_body { ch }
         Check if received email has a blank body.
 
-    proc find_scoring_instructions {}
-        Compute the effective scoring instructions.
-
     proc scrub_filename { filename }
         Remove noise like '/foo/../' from a filename.
 
@@ -2916,6 +2903,9 @@ mary of these is:
 
     proc read_entire_file { filename }
         Read the entire file and return it as a string.
+
+    proc source_file {}
+        Securely source a file if it exists.
 
     proc set_flag { flagfilename }
     proc test_flag { flagfilename }
@@ -3025,7 +3015,7 @@ scores.  A brief summary of these is:
 
     proc compute_instruction_array { }
     	Compute scoring instructions array from the
-	value of `find_scoring_instructions'.
+	value of `scoring_instructions'.
 
     proc compute_score_and_proof_arrays \\
     	    { { score_file_name \"\" } }

@@ -4,7 +4,7 @@
 #
 # File:		extractmail
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Feb  7 09:45:34 EST 2003
+# Date:		Fri Feb  7 12:53:02 EST 2003
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2003/02/07 14:45:53 $
+#   $Date: 2003/02/07 18:27:32 $
 #   $RCSfile: extractmail,v $
-#   $Revision: 1.41 $
+#   $Revision: 1.42 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -55,6 +55,10 @@ cd submission_directory; extractmail
     default is:
 
     	$allowed_extensions
+
+    After the problem name is extracted but before the
+    extension name is checked, any problem .rc file is
+    sourced.
 
     For each file successfully extracted, this program
     writes the line `Extracted FFFF' to the standard
@@ -220,11 +224,10 @@ if { [catch { set len [llength $message_subject] }] \
 	 $message_subject"
 }
 
-# Extract the problem name.
+# Extract the problem name and check it.
 #
 set filename [lindex $message_subject 1]
 set problem [file rootname $filename]
-set extension [file extension $filename]
 if { $problem == "" } {
     extract_error \
 	"ERROR: no problem name in\
@@ -242,6 +245,14 @@ if { $problem == "" } {
          "ERROR: Bad problem name (begins with `-'):\
 	  $problem"
 }
+
+# Source any problem .rc file.
+#
+source_file $problem.rc
+
+# Extract any extension name and check it.
+#
+set extension [file extension $filename]
 if { $extension != "" \
      && ! [lcontain $allowed_extensions $extension] } {
     extract_error \

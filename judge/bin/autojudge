@@ -5,7 +5,7 @@
 #
 # File:		autojudge
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Mar 19 06:09:10 EST 2002
+# Date:		Fri Feb  7 11:49:42 EST 2003
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/03/19 12:20:17 $
+#   $Date: 2003/02/07 18:27:30 $
 #   $RCSfile: autojudge,v $
-#   $Revision: 1.81 $
+#   $Revision: 1.82 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -77,6 +77,8 @@ autojudge \[-manual\] \[problem\[.extension\]\]
     More specifically, this program makes the following
     in order:
 
+      * `PROBLEM.rc' file, if it exists, and if it
+        exists, it is sourced
       * `$files_file' file, if it exists
       . any -SOLUTION-MAKE- files listed in any
 	`$files_file' file; note these files are in
@@ -88,9 +90,7 @@ autojudge \[-manual\] \[problem\[.extension\]\]
 	the -LINK- files are by default:
 	     $make_file, PROBLEM.in, PROBLEM.test
 	and the -OPTIONAL-LINK- files are by default:
-	     $scoring_instructions_file,\
-	     	$scoring_filter_file,
-	     PROBLEM.ftest, $response_instructions_file
+	     PROBLEM.ftest, $scoring_filter_file
       . the program binary file `PROBLEM' and the
 	compiler error file PROBLEM.cerr
       . the program standard output file PROBLEM.out
@@ -131,11 +131,14 @@ autojudge \[-manual\] \[problem\[.extension\]\]
 
     At its beginning, this program verifies the exis-
     tence of a solution directory for the problem and
-    symbolically links the `$files_file' file from this\
-    	di-
-    rectory into the current directory, if that file
-    exists.  If the file does not exist, it is given the
-    default value:
+    symbolically links the `PROBLEM.rc' and\
+    		`$files_file'
+    files from this directory into the current\
+    		directory,
+    if those files exist.  If the `PROBLEM.rc' file\
+    exists, it is sourced.  If the `$files_file' file\
+    		does
+    not exist, it is given the default value:
 
         -LINK-
 	    { $make_file $make_file.EXTENSION\
@@ -143,12 +146,8 @@ autojudge \[-manual\] \[problem\[.extension\]\]
 	    PROBLEM.in
 	    { PROBLEM.test PROBLEM.out PROBLEM.test }
 	-OPTIONAL-LINK-
-	    $scoring_instructions_file
 	    $scoring_filter_file
 	    { PROBLEM.ftest PROBLEM.fout PROBLEM.ftest }
-	    { $response_instructions_file
-	        $response_instructions_file.EXTENSION
-	    	$response_instructions_file }
 
     The `$files_file' file is interpreted as a TCL list
     (with list elements separated by spaces, tabs, or
@@ -733,13 +732,18 @@ proc execute_links { files } {
     }
 }
 
-# Link in any $files_file.
+# Link in any PROBLEM.rc or $files_file.
 #
 execute_links "
     -OPTIONAL-LINK-
+	{ PROBLEM.rc rc.EXTENSION PROBLEM.rc }
 	{ $files_file $files_file.EXTENSION
 		      $files_file }
     "
+
+# Source any PROBLEM.rc file.
+#
+source_file $problem.rc
 
 # Read $files_file.
 #
@@ -762,12 +766,8 @@ if { [file exists $files_file] } {
 	    PROBLEM.in
 	    { PROBLEM.test PROBLEM.out PROBLEM.test }
 	-OPTIONAL-LINK-
-	    $scoring_instructions_file
 	    $scoring_filter_file
 	    { PROBLEM.ftest PROBLEM.fout PROBLEM.ftest }
-	    { $response_instructions_file
-	        $response_instructions_file.EXTENSION
-	    	$response_instructions_file }
 	"
 }
 

@@ -5,7 +5,7 @@
 #
 # File:		manualreply
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Oct  6 16:40:13 EDT 2002
+# Date:		Fri Feb  7 12:24:31 EST 2003
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/10/06 21:18:07 $
+#   $Date: 2003/02/07 18:27:33 $
 #   $RCSfile: manualreply,v $
-#   $Revision: 1.57 $
+#   $Revision: 1.58 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -92,6 +92,8 @@ manualreply \[directory\]
     	unchecked error
     files exist when this program is started, this
     program will suggest that `autojudge' should be run.
+
+    This program sources any problem .rc file it finds.
 
     As a complex interactive program, manualreply has
     extensive builtin help documentation."
@@ -729,14 +731,7 @@ set help($make_file) "
 $make_file	Makefile to make solution binary and\
 		    .out file.  Symbolic link
 		to solution directory.
-
-$scoring_instructions_file	Scoring instructions\
-			    for autoscore program. \
-			    Optional.
-			Symbolic link to solution\
-			    directory.
 "
-set help($scoring_instructions_file) $help($make_file)
 
 set help($files_file) "
 $files_file	A list of files that are to be\
@@ -807,6 +802,12 @@ set help(no-extension) $help(.p2c)
 
 
 set help(.in) "
+.rc	Problem specific parameters, sourced to modify\
+	    hpcm_judging.rc
+        parameters during autojudging and manualreply. \
+	    Symbolic link to
+	solution directory.
+
 .in	Judge's input.  Symbolic link to solution\
 	    directory.
 
@@ -825,6 +826,7 @@ core	Core dump of the solution execution; usually\
 	    only present if the
 	solution crashed.  Does NOT affect score.
 "
+set help(.rc) $help(.in)
 set help(.test) $help(.in)
 set help(.out) $help(.in)
 set help(.err) $help(.in)
@@ -923,7 +925,10 @@ if { [file writable "."] } {
     get_lock
 }
 
+# Initialize file list.
+
 refresh_file_list
+
 
 # If auto score file, reply file, no_reply file,
 # and unchecked errors do not exists, consider running
@@ -958,6 +963,12 @@ It appears that `autojudge' should be run."
 	}
 	continue?
     }
+}
+
+# Source any problem .rc file.
+
+if { $submitted_problem != "" } {
+    source_file $submitted_problem.rc
 }
 
 set menu $main_menu

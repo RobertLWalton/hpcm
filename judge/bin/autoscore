@@ -4,7 +4,7 @@
 #
 # File:		autoscore
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Jan 29 15:17:02 EST 2002
+# Date:		Fri Feb  7 12:18:25 EST 2003
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/01/29 20:29:45 $
+#   $Date: 2003/02/07 18:27:31 $
 #   $RCSfile: autoscore,v $
-#   $Revision: 1.31 $
+#   $Revision: 1.32 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -41,6 +41,9 @@ cd submission_directory; autoscore problem
     	`$auto_score_file'
     file in the submission directory, using purely auto-
     matic (non-manual) means.
+
+    This program begins by sourcing any pppp.rc file
+    that exists in the current directory.
 
     If the error file (pppp.err) exists and is non-
     empty, the score is one of:
@@ -80,18 +83,13 @@ cd submission_directory; autoscore problem
     files do not exist.
 
     Then the score is computed by comparing the first
-    line of the pppp.score file to the whitespace
-    separated items of the first line of any
-    
-	$scoring_instructions_file
+    line of the pppp.score file to the list items of
+    the `scoring_instructions' global variable, which
+    defaults to:
 
-    file in the submission directory.  If this last
-    file is missing, the items default to:
+    	$scoring_instructions
 
-    	$scoring_instructions_default
-
-    The possible $scoring_instructions_file file items\
-                                                 are:
+    The possible scoring_instructions list items are:
 
     	whitespace	Allow matching whitespace in
 			the two files to be not exactly
@@ -289,9 +287,13 @@ if { $argc != 1 || [regexp {^-} [lindex $argv 0]] } {
     exit 1
 }
 
-# Set file names and check file permissions.
+# Source any $problem.rc file.
 #
 set problem	 [lindex $argv 0]
+source_file $problem.rc
+
+# Set file names and check file permissions.
+#
 set output_file  $problem.out
 set foutput_file $problem.fout
 set error_file   $problem.err

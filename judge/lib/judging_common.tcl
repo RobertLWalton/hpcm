@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Feb  7 11:24:53 EST 2003
+# Date:		Fri Feb  7 12:35:12 EST 2003
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2003/02/07 16:24:08 $
+#   $Date: 2003/02/07 18:27:07 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.90 $
+#   $Revision: 1.91 $
 #
 
 # Table of Contents
@@ -1181,21 +1181,6 @@ proc scrub_filename { name } {
 }
 
 
-# Find the scoring instructions in the $scoring_
-# instructions file or in the $default_scoring_
-# instructions.
-#
-proc find_scoring_instructions {} {
-    global scoring_instructions_file \
-	   scoring_instructions_default
-
-    if { ! [file exists $scoring_instructions_file] } {
-	return $scoring_instructions_default
-    } else {
-        return [read_file $scoring_instructions_file]
-    }
-}
-
 # Write entire file to channel.  If number of lines in
 # file is greater than third argument, do not write
 # more lines than specified by the third argument, but
@@ -1266,6 +1251,31 @@ proc read_entire_file { filename } {
     }
     close $file_ch
     return $result
+}
+
+# Source a file if it exists.  Before sourcing file, run
+# a security check: insist that file not be readable by
+# `others', but only by group and owner.  The file is
+# sourced in the caller's level.
+#
+proc source_file { filename } {
+    if { [file exists $filename] } {
+
+	if { ! [file readable $filename] } {
+	    error "$filename not readable"
+	}
+
+	set __p__ \
+	    [file attributes $filename -permissions]
+	if { $__p__ & 4 } {
+	    error "security violation: $filename is\
+		   readable by `others'\n      \
+		   you should execute chmod o-r\
+		   $filename"
+	}
+
+	uplevel "source $filename"
+    }
 }
 
 # Flag Functions
@@ -1438,29 +1448,6 @@ if { [llength $judging_directory] == 1 } {
 	          \     $__d__/$judging_parameters_file"
     }
     error $__m__
-}
-
-# If the current directory is named .../ddd and a file
-# named ddd.rc exists in the current directory, source
-# that file.  Before sourcing file, run a security
-# check: insist that file not be readable by `others',
-# but only by group and owner.
-#
-set __f__ [file tail [pwd]].rc
-if { [file exists $__f__] } {
-
-    if { ! [file readable $__f__] } {
-	error "$__f__ not readable"
-    }
-
-    set __p__ [file attributes $__f__ -permissions]
-    if { $__p__ & 4 } {
-	error "security violation: $__f__ is\
-	       readable by `others'\n      \
-	       you should execute chmod o-r $__f__"
-    }
-
-    source $__f__
 }
 
 # Set signals to cause errors.
