@@ -2,7 +2,7 @@
 #
 # File:		display_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Aug 26 21:34:17 EDT 2001
+# Date:		Wed Sep  5 18:01:07 EDT 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/08/27 03:19:03 $
+#   $Date: 2001/09/06 00:36:02 $
 #   $RCSfile: display_common.tcl,v $
-#   $Revision: 1.10 $
+#   $Revision: 1.11 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -407,16 +407,67 @@ proc clear_lock {} {
 # to be displayed.  Usually these files are in the
 # current directory.
 
-# Compute the names of the files to be displayed.
-# This default function computes files in the current
+# List of files that are currently displayable.  This
+# list is stored in the global `file_list' variable.
+# The N'th item on the list is itself a list of sub-
+# items with the format:
+#
+#	ctime mtime filename comment new
+#
+# The total list is sorted by ctime.  Ctime equals
+# mtime, the file's modification time, with 0's prepend-
+# ed so all ctimes are the same length and alphanumeric
+# comparison of items will be the same as numeric com-
+# parison of mtimes.  If a file does not exists (e.g.,
+# .diff files for which .out and .test files exist),
+# ctime and mtime are `TBD', and items with this ctime
+# get sorted to the end of the list.
+#
+# The comment is to be printed after the filename if
+# the file name is not too long.  Generally non-
+# error log file names are short enough for the comment,
+# and error log file names are too long.
+#
+# `New' is `*' if the file is new since the last time
+# the file list was computed, and the previous file list
+# was not empty.  Otherwise `new' is "".
+#
+# The variable `file_list_origin_mtime' holds the mtime
+# that is to be used as the origin when displaying the
+# listed files.
+#
+# The file list is built by calling `get_listed_files'
+# and using the result of that and the value of the
+# previous `file_list' variable to compute a new
+# `file_list' variable value.  See `get_listed_files'
+# above.
+#
+# This function implements file cacheing (see File
+# Cacheing below) as follows.  When building the file
+# list, the information read by the read_array functions
+# is refreshed as necessary, using corresponding mtime_
+# array information where mtime_array(filename) is the
+# mtime of the file just before read_array(filename) was
+# last called, and mtime_array(filename) does not exist
+# if the file does not exist.  If a file is not in the
+# new list but has an mtime_array entry, this entry is
+# deleted, and the file's read_array function is called.
+#
+set file_list ""
+set file_list_origin_mtime 0
+
+# Compute the names of the files to be displayed.  This
+# default function can be overridden by redefining it
+# in any program.
+#
+# This default function returns files in the current
 # directory, adding an xxx.diff and xxx.bdiff file
 # if these do not already exist for every pair of
 # files xxx.out xxx.test that do exist.
 #
-# Also compute file_list_mtime_origin.
-#
-# This code can be replaced by code specific to the
-# current program.
+# This function also computes file_list_mtime_origin
+# if it can.  This default function sets this to the
+# mtime of $received_file if that file exists.
 #
 proc get_listed_files { } {
 
@@ -445,63 +496,16 @@ proc get_listed_files { } {
 	}
     }
 
+    # Comupte mtime if $received_file exists.
+
     if { [lsearch -exact $listed_files $received_file] \
          >= 0 } {
 	set file_list_origin_mtime \
 	    [file mtime $received_file]
     }
 
-    # Compute
     return [concat $listed_files $extra_files]
 }
-
-# List of files that are currently displayable.  This
-# list is stored in the global `file_list' variable.
-# The N'th item on the list is itself a list of sub-
-# items with the format:
-#
-#	ctime mtime filename comment new
-#
-# The total list is sorted by ctime.  Ctime equals
-# mtime, the file's modification time, with 0's prepend-
-# ed so all ctimes are the same length and alphanumeric
-# comparison of items will be the same as numeric com-
-# parison of mtimes.  If a file does not exists (e.g.,
-# .diff files for which .out and .test files exist),
-# mtime is `TBD', and items with this mtime get sorted
-# to the end of the list.
-#
-# The comment is to be printed after the filename if
-# the file name is not too long.  Generally non-
-# error log file names are short enough for the comment,
-# and error log file names are too long.
-#
-# `New' is `*' if the file is new since the last time
-# the file list was computed, and the previous file list
-# was not empty.  Otherwise `new' is "".
-#
-# The variable `file_list_origin_mtime' holds the mtime
-# that is to be used as the origin when displaying the
-# listed files.
-#
-# The file list is built by calling `get_listed_files'
-# and using the result of that and the value of the
-# previous `file_list' variable to compute a new
-# `file_list' variable value.  See `get_listed_files'
-# above.
-#
-# When building the file list, the information read by
-# the read_array functions is refreshed as necessary,
-# using corresponding mtime_array information where
-# mtime_array(filename) is the mtime of the file just
-# before read_array(filename) was last called, and
-# mtime_array(filename) does not exist if the file does
-# not exist.  If a file is not in the new list but
-# has an mtime_array entry, this entry is deleted, and
-# the file's read_array function is called.
-#
-set file_list ""
-set file_list_origin_mtime 0
 
 # Return item of file with a given name in the file
 # list, or return "" if file is not in the list.
@@ -510,7 +514,7 @@ proc get_file_item { filename } {
 
     global file_list
 
-    if { $file_list == " " } {
+    if { $file_list == "" } {
     	refresh_file_list
     }
 
@@ -532,7 +536,7 @@ proc get_file_items { regexp } {
 
     global file_list
 
-    if { $file_list == " " } {
+    if { $file_list == "" } {
     	refresh_file_list
     }
 
@@ -628,15 +632,12 @@ proc refresh_file_list { } {
 	# read information and it has changed since
 	# last call to refresh_file_list.
 	#
-	if { [info exists read_array($file)] } {
-	    if { ! [info exists mtime_array($file)] \
-	         || ( $mtime != "TBD"
-		      &&
-		      $mtime_array($file) < $mtime ) \
-	       } {
-	    	set mtime_array($file) $mtime
-		eval $read_array($file)
-	    }
+	if { [info exists read_array($file)] \
+	     && $mtime != "TBD" \
+	     && ( ! [info exists mtime_array($file)] \
+	          || $mtime_array($file) < $mtime ) } {
+	    set mtime_array($file) $mtime
+	    eval $read_array($file)
 	}
     }
 
@@ -674,13 +675,15 @@ proc refresh_file_list { } {
 # letter, may be an initial segment of the file name.
 # It is an error if it is ambiguous.
 #
-# Whenever `last_file' is changed, if the new name is of
-# the form xxx.ext for some extension ext, and the array
-# entry make_file_array(.ext) exists, the value of that
-# array entry is called with the file name as argument
-# to make or update the new `last_file' file.  The
-# called procedure may not succeed: its perfectly
-# possible to set `last_file' to a non-existant file.
+# This function implements file creation (see File
+# Creation below) as follows.  Whenever `last_file' is
+# changed, if the new name is of the form xxx.ext for
+# some extension ext, and the array entry make_file_
+# array(.ext) exists, the value of that array entry is
+# called with the file name as argument to make or
+# update the new `last_file' file.  The called procedure
+# may not succeed: its perfectly possible to set
+# `last_file' to a non-existant file.
 #
 proc get_file { id } {
 
@@ -699,7 +702,7 @@ proc get_file { id } {
 	}
     }
 
-    if { [regexp {^[0-9]+$} $id forget] } {
+    if { [regexp {^[0-9]+$} $id] } {
         if { $id < 1 || $id > [llength $file_list] } {
 	    set window_error "Bad file number: $id"
 	    return no
@@ -728,14 +731,15 @@ proc get_file { id } {
 	set l [llength $found]
 	if { $l == 0 } {
 	    set window_error \
-	        "Bad file extension or beginning: $id"
+	        "Bad file extension, beginning, or\
+		 name: $id"
 	    return no
 	} elseif { $l == 1 } {
 	    set last_file $found
 	} else {
 	    set window_error \
-	        "Ambiguous file extension or\
-		 beginning: $id"
+	        "Ambiguous file extension, beginning\
+		 or name: $id"
 	    return no
 	}
     }
@@ -749,68 +753,31 @@ proc get_file { id } {
     return yes
 }
 
-# File Creation
-# ---- --------
-#
-# Following data and functions create files that are
-# one the display list but may not exist yet or may
-# be out of date.
-
-# If a file with name of the form xxx.ext for some
-# extension ext is to be displayed, and the array
-# entry make_file_array(.ext) exists, the value of that
-# array entry is called with the file name as argument
-# to make or update the file.  The called procedure need
-# not succeed: the file need not exist after the
-# procedure finished.
-
-set make_file_array(.diff) make_diff
-set make_file_array(.bdiff) make_diff
-
-# Procedure to make xxx.diff or xxx.bdiff if possible.
-#
-proc make_diff { file } {
-
-    set base [file rootname $file]
-
-    set diff_file $file
-    set out_file  $base.out
-    set test_file $base.test
-
-    if { ! [file readable $out_file] }  return
-    if { ! [file readable $test_file] } return
-
-    if { [file exists $diff_file] } {
-        if { [file mtime $diff_file] \
-	         < [file mtime $out_file] \
-	     || \
-	     [file mtime $diff_file] \
-	         < [file mtime $test_file] } {
-	    file delete -force $diff_file
-	} else {
-	    return
-	}
-    }
-
-    if { [file extension $file] == "diff" } {
-	set command "diff"
-    } else {
-	set command "diff -b"
-    }
-
-    write_file $diff_file \
-	       "===== $command $out_file $test_file"
-    catch { eval exec $command \
-                 [list $out_file $test_file \
-		       >>& $diff_file] }
-}
-
 # File Cacheing
 # ---- --------
 #
 # Following data and functions copy information from
 # files in the display `file_list' into variables within
-# this program whenever the files change.
+# this program whenever the files change.  These func-
+# tions are called by the refresh_file_list function
+# above when the file_list is recomputed.
+
+# Functions to read information from files.  There is
+# one of these per file that can be read.  These
+# functions must take no arguments; they are called
+# when it is discovered their file has been modified.
+#
+# For each of the below files, read_array(filename) is
+# set to the name of the function that reads the file
+#
+# These files are actually read by refresh_file_list
+# (see File List above).  This sets mtime_array(
+# filename) to the mtime of the file just before it is
+# read, if the file exists.  If the file does not exist,
+# mtime_array(filename) must not exist.
+#
+# The variables must be initialized to their settings
+# when the files do not exist.
 
 # Read a 1-line file and return its line.  Check for
 # the file being non-existing, unreadable, and empty,
@@ -835,23 +802,6 @@ proc read_score { score_file } {
     }
 }
 
-
-# Functions to read information from files.  There is
-# one of these per file that can be read.  These
-# functions must take no arguments; they are called
-# when it is discovered their file has been modified.
-#
-# For each of the below files, read_array(filename) is
-# set to the name of the function that reads the file
-#
-# These files are actually read by refresh_file_list
-# below.  This sets mtime_array(filename) to the mtime
-# of the file just before it is read, if the file
-# exists.  If the file does not exist, mtime_array(
-# filename) must not exist.
-#
-# The variables must be initialized to their settings
-# when the files do not exist.
 
 # Read $auto_score_file
 #
@@ -931,10 +881,68 @@ set submitted_program   ""
 set submitted_extension ""
 
 
+# File Creation
+# ---- --------
+#
+# Following data and functions create files that are
+# in the file list but may not exist yet or may be out
+# of date.  This file creation is done by the get_file
+# function when the user designates a specific file to
+# be examined.
+
+# If a file with name of the form xxx.ext for some
+# extension ext is to be displayed, and the array
+# entry make_file_array(.ext) exists, the value of that
+# array entry is called with the file name as argument
+# to make or update the file.  The called procedure need
+# not succeed: the file need not exist after the
+# procedure finishes.
+
+set make_file_array(.diff) make_diff
+set make_file_array(.bdiff) make_diff
+
+# Procedure to make xxx.diff or xxx.bdiff if possible.
+#
+proc make_diff { file } {
+
+    set base [file rootname $file]
+
+    set diff_file $file
+    set out_file  $base.out
+    set test_file $base.test
+
+    if { ! [file readable $out_file] }  return
+    if { ! [file readable $test_file] } return
+
+    if { [file exists $diff_file] } {
+        if { [file mtime $diff_file] \
+	         < [file mtime $out_file] \
+	     || \
+	     [file mtime $diff_file] \
+	         < [file mtime $test_file] } {
+	    file delete -force $diff_file
+	} else {
+	    return
+	}
+    }
+
+    if { [file extension $file] == "diff" } {
+	set command "diff"
+    } else {
+	set command "diff -b"
+    }
+
+    write_file $diff_file \
+	       "===== $command $out_file $test_file"
+    catch { eval exec $command \
+                 [list $out_file $test_file \
+		       >>& $diff_file] }
+}
+
 # Displaying Files
 # ---------- -----
 
-# Set the window display to the file list.  Set the
+# Set the window display to the file_list.  Set the
 # `last_display' variable to `file_list'.
 #
 proc set_file_list_display {} {
@@ -1196,7 +1204,7 @@ proc compose_score_reply {} {
     }
 }
 
-# Send any previously composed replay and set the
+# Send any previously composed reply and set the
 # manual score equal to the proposed score and the
 # proposed score to `none'.
 #
