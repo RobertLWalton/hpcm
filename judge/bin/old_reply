@@ -1,0 +1,193 @@
+#!/bin/sh -f
+#
+# Looks at the subdirectories of the mail directory for
+# submissions requiring manual attention.
+#
+# File:		reply
+# Author:	Bob Walton (walton@deas.harvard.edu)
+# Date:		Fri Sep 22 09:21:45 EDT 2000
+#
+# The authors have placed this program in the public
+# domain; they make no warranty and accept no liability
+# for this program.
+#
+# RCS Info (may not be true date or author):
+#
+#   $Author: hc3 $
+#   $Date: 2000/09/22 18:44:41 $
+#   $RCSfile: old_reply,v $
+#   $Revision: 1.1 $
+#
+# The next line starts tcl \
+exec tcl "$0" "$@"
+
+# Use tcl rather than tclsh so that `signal' is defined.
+
+# Include common code and parameters:
+#
+set lib_directory "[file dirname $argv0]/../lib"
+source $lib_directory/judging_common.tcl
+set log_globally yes
+catch {
+
+set document "
+reply
+
+    This program examines subdirectories of the mail
+    directory that have names of the form:
+
+    	date-<<submitter>>-submission
+
+    It selects subdirectories that should get manual
+    attention using the following rules and calls
+    `manualreply' for these subdirectories.
+
+    Subdirectories that have a file named:
+
+    	$dispatch_pid_file
+
+    which is less than $dispatch_too_old seconds old \
+    			are NOT
+    selected.
+
+    Subdirectories that have one of the files:
+
+    	$reply_file
+    	$no_reply_file
+
+    are NOT selected unless they have a file with
+    name of the form
+
+    	*-unchecked-error
+
+    Subdirectories whose only file is one named:
+
+    	$received_file
+
+    are NOT selected if the `Subject:' in the mail
+    header in this file has one of the forms:
+
+    	get ...
+	submit ...
+
+    which are acceptable to autodispatch.
+
+    All other subdirectories are selected.
+
+    This program logs errors in the log directory."
+
+
+# If any arguments, print documentation and exit.
+#
+if { $argc != 0 } {
+    puts $document
+    exit 1
+}
+
+# Loop until no more calls to manual reply.
+#
+while { "yes" } {
+
+    # Loop through the subdirectory names.
+    #
+    set manualcount 0
+    set autocount 0
+    set waitcount 0
+    set repliedcount 0
+    set autodirs ""
+    set waitdirs ""
+    foreach dir \
+            [glob -nocomplain \
+		  $mail_directory/*-<<*>>-submission] {
+
+	set subdir [file tail $dir]
+
+	if { ! [regexp {^(.*)-<<(.*)>>-submission$} \
+		       $subdir forget \
+		       date submitter] } {
+	    continue;
+	}
+
+	set files [glob -nocomplain $dir/*]
+
+	# Beware that the $dispatch_pid_file may have
+	# disappeared.
+	#
+	if { [lsearch -exact $files \
+	              $dir/$dispatch_pid_file]
+	     >= 0 \
+	     && \
+	     ( ! [catch {
+		   set mtime \
+		     [file mtime \
+			$dir/$dispatch_pid_file] }] ) \
+	     && \
+	     [expr { [clock seconds] - $mtime }] \
+	     <= $dispatch_too_old } {
+	    incr autocount
+	    lappend autodirs $dir
+	    continue
+	}
+
+	if { [lsearch -exact $files $dir/$reply_file]
+	     >= 0 \
+	     || \
+	     [lsearch -exact $files $dir/$no_reply_file] \
+	     >= 0 } {
+	    if { [lsearch -glob $files *-unchecked-error] \
+		 < 0 } {
+		 incr repliedcount
+		 continue
+	    }
+	}
+
+	if { [llength $files] == 1 \
+	     && [lindex $files 0] \
+		== "$dir/$received_file" } {
+	    set received_ch [open $dir/$received_file r]
+	    read_header $received_ch
+	    close $received_ch
+	    if { [llength $message_subject] >= 2 \
+		 && [lsearch -exact {submit get} \
+			     [lindex $message_subject 0]] \
+		    >= 0 } {
+		incr waitcount
+		lappend waitdirs $dir
+		continue
+	    }
+	}
+
+	incr manualcount
+	exec manualreply $dir >@ stdout 2>@ stderr
+    }
+
+    if { $manualcount == 0 } {
+    	if { $autocount != 0 } {
+	    puts "Directories executing `autodispatch':"
+	    foreach d $autodirs {
+	    	puts "    $d"
+	    }
+	}
+    	if { $waitcount != 0 } {
+	    puts "Directories waiting to execute\
+	          `autodispatch':"
+	    foreach d $waitdirs {
+	    	puts "    $d"
+	    }
+	}
+	if { [expr { $autocount + $waitcount }] \
+	     == 0 } {
+	    puts "$repliedcount replies sent:\
+	          EVERYTHING IS ALL DONE!"
+	}
+
+	break
+    }
+}
+
+exit 0
+
+# Include common error catching code:
+#
+} caught_output
+caught_error
