@@ -1,0 +1,15 @@
+#! /bin/csh -f
+set SERVER_SOURCE=~acm-cont/contestant/lib/contest-server
+#set font=courB18
+set font=-adobe-courier-bold-r-normal--18-180-75-75-m-110-iso8859-1
+#set font=-adobe-courier-bold-r-normal--25-180-100-100-m-150-iso8859-1
+set location=80x30+2+100
+set program=""
+if ("$3" != "") set program="-e rlogin $3"
+if ("$3" == "" && -r $SERVER_SOURCE && "`cat $SERVER_SOURCE`" != "`hostname`" ) \
+	set program="-e rlogin `cat $SERVER_SOURCE`"
+if ("$2" != "") set font=$2
+if ("$1" != "") set location=$1
+(xterm  -title `hostname` -name `hostname` \
+	-g $location -fn $font \
+	-sb -ls $program )&

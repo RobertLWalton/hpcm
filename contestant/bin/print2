@@ -1,0 +1,25 @@
+#! /bin/csh -f
+
+if ( -f ~acm-cont/contestant/lib/who-where ) then
+    set whowhere=`fgrep $user ~acm-cont/contestant/lib/who-where`
+    set who = `echo "$whowhere" | cut -d: -f2`
+    set where=`echo "$whowhere" | cut -d: -f3`
+else
+    set who = ""
+    set where=""
+endif
+
+if ( -f ~acm-cont/contestant/lib/contest-printer ) then
+    setenv PRINTER `cat ~acm-cont/contestant/lib/contest-printer`
+endif
+
+set tmp="/tmp/:${$}:"
+rm -f $tmp
+
+eval "banner '' $user '' '$where' '' $who" > $tmp
+enscript -2r -p - $tmp $argv:q | \
+  lpr -h -P$PRINTER
+
+rm -f $tmp
+
+# The lpr at the end is because enscript -h doesn't seem to work.
