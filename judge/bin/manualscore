@@ -1,7 +1,7 @@
 #! /bin/sh -f
 #
-# Manually examine and possibly modify the judge.score
-# file in a submission directory
+# Manually examine and possibly modify the auto score
+# in a submission directory
 #
 # File:		manualscore
 # Author:	Bob Walton (walton@deas.harvard.edu)
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: acm-cont $
-#   $Date: 2000/08/21 05:24:30 $
+#   $Date: 2000/08/21 21:56:06 $
 #   $RCSfile: manualscore,v $
-#   $Revision: 1.6 $
+#   $Revision: 1.7 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -37,7 +37,8 @@ cd submission_directory; manualscore
     $auto_score_file, this program lets a person examine
     the files in the directory and select a manual score
     that is written into the $manual_score_file and
-    sent in an email to the submitter."
+    sent as email to the submitter.  A $reply_file
+    containing this email is created."
 
 if { $argc != 0 } {
     puts $document
@@ -79,7 +80,8 @@ if { $auto_score == "Completely Correct" } {
     exit 0
 }
 
-set From_line [find_From_line]
+set From_line		 [find_From_line]
+set scoring_instructions [find_scoring_instructions]
 
 
 if { [file exists $compiler_error_file] } {
@@ -95,6 +97,7 @@ set manual_score $auto_score
 while { "yes" } {
 
     puts "Scoring $From_line"
+    puts "Scoring Instrutions: $scoring_instructions"
     puts "Auto Score: $auto_score    Current score:\
                                      $manual_score"
 
@@ -103,7 +106,8 @@ while { "yes" } {
     puts -nonewline "
 ------------------------------------------------------
 d = view .diff      b = view .bdiff     o = view .out
-t = view .test      e = view .err       p = view $submitted_extension
+t = view .test      e = view .err       p = view\
+				$submitted_extension
 a = exit accepting current score        c = view .cerr
 r = reject current score, and enter new current score
 x = exit without doing anthing
@@ -113,19 +117,23 @@ x = exit without doing anthing
     if { [eof stdin] } {
     	exit 0
     }
+
+    regexp "^\[\ \t\]*(\[^\ \t\]*)\[\ \t\]*\$" \
+	   $answer all answer
+
     set action "view"
 
-    switch -glob $answer \
-    	d*	{ set last_file $diff_file } \
-    	b*	{ set last_file $bdiff_file } \
-    	o*	{ set last_file $output_file } \
-    	t*	{ set last_file $test_file } \
-    	e*	{ set last_file $error_file } \
-    	c*	{ set last_file $cerror_file } \
-    	p*	{ set last_file $submitted_file } \
-	a*	{ set action "accept" } \
-	r*	{ set action "reject" } \
-	x*	{ set action "exit" } \
+    switch $answer \
+    	d	{ set last_file $diff_file } \
+    	b	{ set last_file $bdiff_file } \
+    	o	{ set last_file $output_file } \
+    	t	{ set last_file $test_file } \
+    	e	{ set last_file $error_file } \
+    	c	{ set last_file $cerror_file } \
+    	p	{ set last_file $submitted_file } \
+	a	{ set action "accept" } \
+	r	{ set action "reject" } \
+	x	{ set action "exit" } \
 	default	{ set action "unknown" }
 
     switch $action \
@@ -135,27 +143,33 @@ x = exit without doing anthing
         accept	{
 		    write_file $manual_score_file \
 		               $manual_score
-
 		    if { $manual_score \
 		         == $auto_score } {
 			reply "Your automatic score of:\
-			       $auto_score" \
+			       \    $auto_score" \
 			      "has been accepted by the\
 			       human judge!"
+		    } elseif { $juding_mode \
+			       == "manual" } {
+			reply "Your submission score\
+				    is:\
+				    \    $manual_score"
 		    } else {
 			reply "Your automatic score of:\
-			       $auto_score" \
+			       \    $auto_score" \
 			      "has been REJECTED by the\
 			       human judge!" \
 			      "" \
 			      "The human judge has\
 			       assigned the FINAL\
-			       SCORE: $manual_score"
+			       SCORE:     $manual_score"
 		    }
 
 		    exit 0
 		}
 	reject	{
+		    puts "Scoring Instructions:\
+			  $scoring_instructions"
 		    puts "Auto Score: $auto_score\
 		         \    Current score:\
 			      $manual_score"
@@ -172,7 +186,11 @@ Please select a new current score:
   
 		    set answer [gets stdin]
 		    if { ! [eof stdin] } {
-			switch -glob $answer \
+
+			regexp \
+	    "^\[\ \t\]*(\[^\ \t\]*)\[\ \t\]*\$" \
+			       $answer all answer
+			switch $answer \
 			    i	{ set manual_score
 			    	      "Incorrect\
 				       Output" } \

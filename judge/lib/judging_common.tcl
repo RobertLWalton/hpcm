@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: acm-cont $
-#   $Date: 2000/08/21 05:24:30 $
+#   $Date: 2000/08/21 21:56:07 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.9 $
+#   $Revision: 1.10 $
 #
 
 # Include this code in TCL program via:
@@ -323,6 +323,21 @@ proc find_From_line {} {
 	      \    [pwd]"
     }
     return $From_line
+}
+
+# Find the scoring instructions in the $scoring_
+# instructions file or in the $default_scoring_
+# instructions.
+#
+prog find_scoring_instructions {} {
+    global scoring_instructions_file \
+	   scoring_instructions_default
+
+    if { ! [file exists $scoring_instructions_file] } {
+	return $scoring_instructions_default
+    } else {
+        return [read_file $scoring_instructions_file]
+    }
 }
 
 # Write entire file to channel.

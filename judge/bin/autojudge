@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: acm-cont $
-#   $Date: 2000/08/21 05:24:29 $
+#   $Date: 2000/08/21 21:56:05 $
 #   $RCSfile: autojudge,v $
-#   $Revision: 1.14 $
+#   $Revision: 1.15 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -157,9 +157,12 @@ if { ! [file readable $submitted_program] \
     	file delete -force $submitted_program
     }
     puts "Making ${submitted_program}"
-    if { [catch { exec make $submitted_program } \
-                out] } {
-        puts $out
+    catch { exec make $submitted_program } out
+    puts $out
+
+    if { [file exists "${submitted_program}.cerr" ] } {
+
+	put_file "${submitted_program}.cerr"
 
 	if { [file exists $auto_score_file] } {
 	    file delete -force $auto_score_file
@@ -168,7 +171,6 @@ if { ! [file readable $submitted_program] \
 	auto_score_reply "Syntax Error"
 	exit 0
     }
-    puts $out
 
     if { ! [file exists $submitted_program" ] } {
         error \
