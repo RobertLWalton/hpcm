@@ -1,0 +1,204 @@
+Subject: submit javaio.java
+X-HPCM-Test-Subject: javaio_correct:
+	score should be Completely Correct
+
+HPCM_BEGIN javaio.java
+..// JAVA IO Demo
+..//
+..// File:     javaio.java
+..// Author:   Bob Walton <walton@deas.harvard.edu>
+..// Date:     Fri Nov  1 06:35:28 EST 2002
+..//
+..// The authors have placed this program in the public
+..// domain; they make no warranty and accept no liability
+..// for this program.
+..//
+..// RCS Info (may not be true date or author):
+..//
+..//   $Author: hc3 $
+..//   $Date: 2002/11/09 06:02:39 $
+..//   $RCSfile: javaio_correct.mail,v $
+..//   $Revision: 1.1 $
+..
+..import java.io.*;
+..import java.text.DecimalFormat;
+..import java.text.NumberFormat;
+..import java.util.Locale;
+..
+..// This program reads input, parses it into tokens,
+..// prints info about the tokens, and prints a summary
+..// at the end.  The program illustrates use of the
+..// StreamTokenizer and DecimalFormat classes.
+..
+..public class javaio {
+..
+..    public static void main (String[] args)
+..	    throws IOException {
+..
+..	// Set up the StreamTokenizer.
+..	//
+..	Reader reader
+..	    = new BufferedReader
+..		  ( new InputStreamReader
+..		        ( System.in ) );
+..	StreamTokenizer tokenizer
+..	    = new StreamTokenizer ( reader );
+..
+..	// Set to read any string of non-whitespace
+..	// characters as a word.
+..	//
+..	tokenizer.resetSyntax();
+..	tokenizer.wordChars ( ' ', '\u00FF' );
+..	tokenizer.whitespaceChars ( '\u0000', ' ' );
+..	//
+..	// The above code is a bit tricky in that is
+..	// first sets ' ' to a wordChar and then to
+..	// a whitespaceChar.
+..
+..	// Set to read end of line as a token.
+..	// If this function is not called, end of
+..	// line is treated as a simple space character.
+..	//
+..	tokenizer.eolIsSignificant ( true );
+..
+..	// Read numbers as tokens.  If not called,
+..	// numbers are not handled specially.
+..	//
+..	// WARNING: This makes isolated '.'s input as
+..	// the the number 0, while `-'s may input as
+..	// a separator.
+..	//
+..	tokenizer.parseNumbers();
+..
+..	// Parse certain characters as 1-character
+..	// tokens.
+..	//
+..	tokenizer.ordinaryChar ( ',' );
+..	tokenizer.ordinaryChar ( '(' );
+..	tokenizer.ordinaryChar ( ')' );
+..
+..	// Set up number formatter.  Note that it is
+..	// important in ACM programming contests to
+..	// insist on an ENGLISH formatter.
+..	//
+..	// Also, do NOT put commas in the output.
+..	//
+..	DecimalFormat formatter = (DecimalFormat)
+..	    NumberFormat.getInstance ( Locale.ENGLISH );
+..	formatter.applyPattern ( "#0.00" );
+..
+..
+..	// Process a paragraph.  Paragraphs are
+..	// separated by blank lines.
+..	//
+..	int paragraph = 1;
+..	boolean eof_seen = false;
+..	while ( ! eof_seen )
+..	{
+..	    int numbers = 0;
+..	    int words = 0;
+..	    int separators = 0;
+..	    int lines = 0;
+..
+..	    boolean eop_seen = false;
+..	    boolean line_is_blank = true;
+..
+..	    while ( ! eop_seen && ! eof_seen )
+..	    {
+..	        tokenizer.nextToken();
+..	        switch ( tokenizer.ttype )
+..		{
+..
+..		case StreamTokenizer.TT_EOF:
+..
+..		    if ( line_is_blank )
+..		    {
+..			eof_seen = true;
+..			break;
+..		    } else
+..		        throw new RuntimeException
+..			    ( "EOF in bad place" );
+..
+..		case StreamTokenizer.TT_EOL:
+..
+..		    if ( ! line_is_blank )
+..		        ++ lines;
+..		    else if ( lines != 0 )
+..		        eop_seen = true;
+..		    line_is_blank = true;
+..		    break;
+..
+..		case StreamTokenizer.TT_NUMBER:
+..
+..		    System.out.print ( "NUMBER ");
+..		    System.out.print ( tokenizer.nval );
+..		    System.out.print ( " = ");
+..		    System.out.print
+..		        ( formatter.format
+..			      ( tokenizer.nval ) );
+..		    System.out.println();
+..		    line_is_blank = false;
+..		    ++ numbers;
+..		    break;
+..
+..		case StreamTokenizer.TT_WORD:
+..		    System.out.print ( "WORD ");
+..		    System.out.print ( tokenizer.sval );
+..		    System.out.println();
+..		    line_is_blank = false;
+..		    ++ words;
+..		    break;
+..
+..		case '(':
+..		case ')':
+..		case ',':
+..		case '-':
+..		    System.out.print ( "SEPARATOR ");
+..		    System.out.print
+..		        ( (char) tokenizer.ttype );
+..		    System.out.println();
+..		    line_is_blank = false;
+..		    ++ separators;
+..		    break;
+..
+..		default:
+..		    throw new RuntimeException
+..			( "Bad token type "
+..			  + tokenizer.ttype );
+..		}
+..	    }
+..
+..	    if ( lines > 0  )
+..	    {
+..		System.out.println
+..		    ( "Paragraph " + paragraph + ":" );
+..
+..		System.out.println
+..		    ( "    " + lines + " lines, "
+..		             + words + " words, "
+..			     + numbers + " numbers, "
+..		             + separators
+..			     + " separators." );
+..
+..		double m =
+..		    ( (double) 100.0 )
+..		    / ( words + numbers + separators );
+..
+..		System.out.println
+..		    ( "    "
+..		      + formatter.format
+..		            ( m * words )
+..		      + "% words, "
+..		      + formatter.format
+..		            ( m * numbers )
+..		      + "% numbers, "
+..		      + formatter.format
+..		            ( m * separators )
+..		      + "% separators." );
+..
+..		++ paragraph;
+..	    }
+..	}
+..    }
+..}
+HPCM_END javaio.java
