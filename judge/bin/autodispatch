@@ -5,7 +5,7 @@
 #
 # File:		autodispatch
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Aug 27 20:28:20 EDT 2000
+# Date:		Mon Aug 28 08:07:17 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,28 +14,27 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: acm-cont $
-#   $Date: 2000/08/28 03:59:42 $
+#   $Date: 2000/08/28 12:32:04 $
 #   $RCSfile: autodispatch,v $
-#   $Revision: 1.4 $
+#   $Revision: 1.5 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
 
 # Use tcl rather than tclsh so that `signal' is defined.
 
-# If an argument is given, use it as a name of a
-# directory to make current, and consume the argument.
-# This must be done before looking for the parameters
-# file.
+# If an subdirectory name is given, make it current, and
+# consume the subdirectory name argument.  This must be
+# done before looking for the parameters file.
 #
 # Don't change argc or argv so error output will work.
 #
 set my_argc $argc
 set my_argv $argv
 if { $argc >= 1 && ! [regexp {^-} [lindex $argv 0]] } {
-    cd [lindex $argv 0]
-    set my_argv [lreplace $argv 0 0]
-    set my_argc [expr { $argc - 1 }]
+    cd [lindex $my_argv 0]
+    set my_argv [lreplace $my_argv 0 0]
+    set my_argc [expr { $my_argc - 1 }]
 }
 
 # Include common code and parameters:
@@ -45,7 +44,7 @@ source "$lib_directory/judging_common.tcl"
 catch {
 
 set document "
-autodispatch \[directory\]
+autodispatch \[directory\] \[-force\]
 
     If the directory argument is given, this program
     makes that directory current before searching for
@@ -72,9 +71,11 @@ autodispatch \[directory\]
     	$reply_file
 	$auto_score_file
 	${reply_file}+
-	*-<<E[UC]>>-*
+	*-<<*>>-unchecked-error
+	*-<<*>>-checked-error
 
-    exist.
+    exist.  The `-force' option deletes the last entry
+    in this list.
 
     Otherise, if the use_authentication global variable
     equals `yes', this program next authenticates the
@@ -97,7 +98,18 @@ autodispatch \[directory\]
     or output (except for output produced by autojudge
     or other called program)."
 
+# Check for and consume -force option.
+#
+set force_option no
+if { $argc >= 1 && [lindex $argv 0] -- "-force" } {
+    set force_option yes
+    set my_argv [lreplace $my_argv 0 0]
+    set my_argc [expr { $my_argc - 1 }]
+}
 
+# If there are leftover arguments, print document and
+# exit with error.
+#
 if { $my_argc != 0 } {
     puts $document
     exit 1
@@ -124,11 +136,15 @@ set_current_pgid
 
 # If one of several files exists, exit without error.
 #
-if { [llength [glob -nocomplain -- \
-		    $reply_file \
-		    ${reply_file}+ \
-                    $auto_score_file \
-		    *-<<E[UC]>>-*] ] != 0 } {
+set patterns [list $reply_file \
+		   "${reply_file}+" \
+		   $auto_score_file \
+		   *-<<*>>-unchecked-error ]
+if { $force_option == "no" } {
+    lappend patterns *-<<*>>-checked-error
+}
+if { [llength [eval glob -nocomplain $patterns]] \
+     != 0 } {
     exit_cleanup
     exit 0
 }

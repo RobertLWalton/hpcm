@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Aug 28 00:06:26 EDT 2000
+# Date:		Mon Aug 28 07:37:48 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: acm-cont $
-#   $Date: 2000/08/28 03:59:42 $
+#   $Date: 2000/08/28 12:32:06 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.21 $
+#   $Revision: 1.22 $
 #
 
 # Include this code in TCL program via:
@@ -93,51 +93,51 @@ proc filename_date_to_clock { date } {
 	    "$month/$day/$year $hour:$minute:$second"]
 }
 
-# Returns 1 iff the current directory is checked, and 0
-# iff it is unchecked.  Calls error if the directory has
-# no check mark.
+# Returns 1 iff the filename is checked, and 0 iff it is
+# unchecked.  Calls error if the filename has no check
+# mark.
 #
-# To have a check mark, the current directory must have
-# a name of the form ....[<...U>]... if it is unchecked,
-# or ....[<...C>]... if it is checked.
+# To have a check mark, the filename must have the form
+# ...<<...>>-checked-... or ...<<...>>-unchecked-... .
+# Note that characters in the ...'s after the << must
+# not contain < or >.
 #
-proc is_checked {} {
-    set old_dir [file tail [pwd]]
-    if { ! [regexp {^(.*\[<[^>]*)([UC])(>\].*)$} \
-                   $old_dir a b c] } {
-	error "$old_dir does not include a checkmark"
+proc is_checked { filename } {
+    set e \
+	{^(.*<<[^<>]*>>-)(unchecked|checked)(-[^<>]*)$}
+    if { ! [regexp $e $filename forget a b c] } {
+	error "$filename does not include a checkmark"
     }
-    return [expr { $b == "C" }]
+    return [expr { $b == "checked" }]
     }
 }
 
-# Function to change the name of the current directory
-# from ...[<...U>]... to ...[<...C>]...; that is, the U
-# meaning `unchecked' is changed to C meaning `checked'.
+# Function to change the name of a file from
+# ...<<...>>-unchecked-... to ...<<...>>-checked-...;
 #
-proc make_checked {} {
-    set old_dir [file tail [pwd]]
-    if { ! [regexp {^(.*\[<[^>]*)([UC])(>\].*)$} \
-                   $old_dir a b c] } {
-	error "$old_dir does not include a checkmark"
+proc make_checked { filename } {
+    set e \
+	{^(.*<<[^<>]*>>-)(unchecked|checked)(-[^<>]*)$}
+    if { ! [regexp $e $filename forget a b c] } {
+	error "$filename does not include a checkmark"
     }
-    if { $b != "C" } {
-	file rename "../$old_dir" "../${a}C${c}"
+    if { $b != "checked" } {
+	file rename "../$filename" "../${a}checked${c}"
     }
 }
 
-# Function to change the name of the current directory
-# from ...[<...C>]... to ...[<...U>]...; that is, the C
-# meaning `checked' is changed to U meaning `unchecked'.
+# Function to change the name of a file from
+# ...<<...>>-checked-... to ...<<...>>-unchecked-...;
 #
-proc make_unchecked {} {
-    set old_dir [file tail [pwd]]
-    if { ! [regexp {^(.*\[<[^>]*)([UC])(>\].*)$} \
-                    $old_dir a b c] } {
-	error "$old_dir does not include a checkmark"
+proc make_unchecked { filename } {
+    set e \
+	{^(.*<<[^<>]*>>-)(unchecked|checked)(-[^<>]*)$}
+    if { ! [regexp $e $filename forget a b c] } {
+	error "$filename does not include a checkmark"
     }
-    if { $b != "U" } {
-	file rename "../$old_dir" "../${a}U${c}"
+    if { $b != "unchecked" } {
+	file rename "../$filename" \
+	            "../${a}unchecked${c}"
     }
 }
 
@@ -168,16 +168,14 @@ proc caught_error {} {
 # as an emergency last resort.  The format of the file
 # name is:
 #
-#	dddd-[<EU>]-{<pppp>}-uuuu
+#	dddd-uuuu-<<pppp>>-unchecked-error
 #
 # where dddd = is the date in filename date format
 #       uuuu = random 6 digit number for uniqueness
 #       pppp = name of executing program
 #
-# EU means the file is for an Error that is Unchecked,
-# i.e., not yet seen by a person.  This part of the
-# file name may be change to EC when a person checks off
-# on the error.
+# The word `unchecked' in the name will be changed to
+# `checked' when a person checks off on the error.
 #
 proc log_error { error_output } {
 
@@ -187,8 +185,8 @@ proc log_error { error_output } {
 
     # Write error to standard output.
     #
-    puts "ERROR during $argv0 $argv"
-    puts $error_output
+    puts stderr "ERROR during $argv0 $argv"
+    puts stderr $error_output
 
     # Compute $log_dir, the logging directory
     # to be used.  Make it if necessary.  Be
@@ -216,9 +214,10 @@ proc log_error { error_output } {
         set u [format %06d \
 		  [expr { [clock clicks] % 1000000 } ]]
         set p [file tail $argv0]
+	regsub -all {<} $p "{{" p
+	regsub -all {>} $p "}}" p
         set log_file \
-	    "$log_dir/${d}-\[<EU>\]-{<${p}>}-${u}"
-							.
+	  "$log_dir/${d}-${u}-<<${p}>>-unchecked-error"
 
 	if { ! [catch { create_file $log_file } ] } {
 	    break
@@ -231,14 +230,14 @@ proc log_error { error_output } {
 	    # Desparation move.  Should never happen.
 	    #
 	    set e LOGGING-FILENAME-GENERATION-ERROR
-	    set log_file "$log_dir/${e}-\[<EU>\]"
+	    set log_file "$log_dir/$e"
 	    break
 	}
     }
 
     # Write error to $log_file file.
     #
-    puts "Logging to $log_file"
+    puts stderr "Logging to $log_file"
     set log_ch [open $log_file a]
     puts $log_ch "----------------------------------"
     puts $log_ch "$argv0 $argv"

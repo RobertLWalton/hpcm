@@ -1,11 +1,11 @@
 #!/bin/sh -f
 #
-# Receive incoming mail, write it into separate
-# directories, and call dispatchmail. 
+# Receive incoming mail and write it into separate
+# mail directory subdirectories.
 #
 # File:		receivemail
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Aug 27 07:45:04 EDT 2000
+# Date:		Mon Aug 28 07:45:59 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: acm-cont $
-#   $Date: 2000/08/27 11:51:00 $
+#   $Date: 2000/08/28 12:32:05 $
 #   $RCSfile: receivemail,v $
-#   $Revision: 1.16 $
+#   $Revision: 1.17 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -54,14 +54,14 @@ receivemail \[directory\]
     its reply, and any program file extracted from the
     message, binary of that program, output of that
     program, etc.  The message is copied into the
-    `$received_file' in that directory and the
-    `dispatchmail' program is called with that directory
-    as the current directory to dispatch a program to
-    reply to the message.
+    `$received_file' in that directory and the name
+    of the subdirectory is output.  The output can be
+    piped to the `dispatchmail' program in order to
+    call `autodispatch' for the subdirectory.
 
     The name of the subdirectory for a message has the
     form:
-		dddd-[<SU>]-{<tttt>}
+		dddd-<<tttt>>-submission
 
     where dddd is the message date in filename format
     and tttt is the email address to reply to, or is
@@ -81,10 +81,11 @@ receivemail \[directory\]
     line in the input, these are organized into a spec-
     ial message from the user `UNKNOWN' and date equal
     to the current time.  The subject of this message is
-    something ignored by `dispatchmail'.
+    something ignored by `autodispatch'.
 
-    This program outputs the names of the directories
-    actually created."
+    This program outputs the names of the subdirector-
+    ies of the mail directory that are actually created.
+    This can be piped into the `dispatchmail' program"
 
 if { $my_argc != 0 } {
     puts $document
@@ -174,7 +175,7 @@ while { "yes" } {
     set date [compute_message_date]
 
     set dddd [clock_to_filename_date [clock scan $date]]
-    set dirname "$dddd-\[<SU>\]-{<$reply_to>}"
+    set dirname "$dddd-<<$reply_to>>-submission"
     	
 
     # Make directory for message.  On sucess copy
@@ -200,7 +201,6 @@ while { "yes" } {
     	# Directory did NOT exist, and was just made.
 	# Copy message.
 	#
-	puts $dirname
 	set d "$mail_directory/$dirname"
 	set message_ch [open "$d/$received_file" w]
 
@@ -223,14 +223,7 @@ while { "yes" } {
 
 	close $message_ch
 
-	# Dispatch for new directory:
-	#
-	if { [catch {
-		exec < /dev/null >& /dev/null \
-		     dispatchmail \
-		     "$mail_directory/$dirname" &
-	     } catch_out ] } {
-	    log_error $catch_out
+	puts $dirname
 	}
     }
 
