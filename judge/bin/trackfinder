@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/10/03 19:45:08 $
+#   $Date: 2000/10/04 06:30:27 $
 #   $RCSfile: trackfinder,v $
-#   $Revision: 1.2 $
+#   $Revision: 1.3 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -57,7 +57,6 @@ trackfinder \[directory ...\]
 
     	rec  time {subject}	Mtime of and `Subject'
 				field of $received_file.
-	got  time		Mtimes of $gotten_file.
     	ext  time {filename}	Mtime of and name of
 				file extracted from
 				$received_file, if this
@@ -77,10 +76,17 @@ trackfinder \[directory ...\]
 	rep   time1 time2	Mtimes of $reply_file
 				and $no_reply_file,
 				respectively.
+	got  time		Mtimes of $gotten_file.
 	pid   time1 time2	Mtime of\
 				    $dispatch_pid_file,
 				and time mtime was
 				read, respectively.
+	err   time {file}	Mtime of file with name
+				matching:
+				    *-unchecked-error
+	chk   time {file}	Mtime of file with name
+				matching:
+				    *-checked-error
 
     If any file is missing, its time is `{}', and any
     contents are also `{}', as for a missing score file.
@@ -166,20 +172,22 @@ foreach dir $directories {
 
     set subdir [file tail $dir]
 
-    if { ! [regexp {^(.*)-<<(.*)>>-submission$} \
+    if { [regexp {^(.*)-<<(.*)>>-submission$} \
     		   $subdir forget date submitter] } {
+
+	set submitter [string trim $submitter]
+	if { $submitter == "" } {
+	    set submitter UNKNOWN
+	}
+	puts "sub $date {$submitter}"
+
+    } else {
+
 	if { $argc == 0 } continue;
 	set date [clock_to_filename_date \
 		     [file mtime $dir]]
-	set submitter UNKNOWN
+	puts "dir $date {$dir}"
     }
-
-    set submitter [string trim $submitter]
-    if { $submitter == "" } {
-	set submitter UNKNOWN
-    }
-
-    puts "sub $date {$submitter}"
 
     set submit_time [filename_date_to_clock $date]
 
@@ -257,10 +265,20 @@ foreach dir $directories {
     }
 
     foreach file \
-        [lsort [glob -nocomplain $dir/*checked-error]] {
+            [lsort [glob -nocomplain \
+	    		 $dir/*-checked-error]] {
 	set mtime [get_mtime $file]
 	if { $mtime != "{}" } {
-	    puts "log $mtime {[file tail $file]}"
+	    puts "chk $mtime {[file tail $file]}"
+	}
+    }
+
+    foreach file \
+            [lsort [glob -nocomplain \
+	    	         $dir/*-unchecked-error]] {
+	set mtime [get_mtime $file]
+	if { $mtime != "{}" } {
+	    puts "err $mtime {[file tail $file]}"
 	}
     }
 }

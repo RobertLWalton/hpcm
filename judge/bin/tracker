@@ -1,0 +1,339 @@
+#!/bin/sh
+#
+# Runs the trackfinder program to get tracking informa-
+# tion, formats the results into a tables upon request,
+# and dispatches the `manualreply' program to work on
+# directories upon request.
+#
+# File:		tracker
+# Author:	Bob Walton (walton@deas.harvard.edu)
+# Date:		Mon Oct  2 14:02:08 EDT 2000
+#
+# The authors have placed this program in the public
+# domain; they make no warranty and accept no liability
+# for this program.
+#
+# RCS Info (may not be true date or author):
+#
+#   $Author: hc3 $
+#   $Date: 2000/10/04 06:31:14 $
+#   $RCSfile: tracker,v $
+#   $Revision: 1.1 $
+#
+# The next line starts tcl \
+exec tcl "$0" "$@"
+
+# Use tcl rather than tclsh so that `signal' is defined.
+
+# Include common code and parameters:
+#
+set lib_directory "[file dirname $argv0]/../lib"
+source $lib_directory/judging_common.tcl
+set log_mode none
+catch {
+
+set document "
+tracker
+
+    This program inputs the output of `trackfinder' to
+    get tracking information.  This program is menu
+    driven, with commmands that permit the tracking
+    information to be displayed in various ways, and
+    commands that permit the `manualreply' program to
+    be dispatched for a subdirectory.
+
+    Unlike most HPCM judging programs, errors made by
+    this program are not written to log files, but are
+    announced on standard error."
+
+
+# If any arguments, print documentation and exit.
+#
+if { $argc > 0 } {
+    puts $document
+    exit 1
+}
+
+# The value of info_array($dirname) is a list of input
+# lines that concern the directory.  The $dirname is
+# calculated from the line
+#
+#	sub date {submitter}
+#
+# has the form `date-<<submitter>>-submission', or is
+# taken from the line
+#
+#	dir date {dirname}
+#
+# The value of xxx_array($dirname) exists for every
+# dirname with a `xxx' line, and equals that line.  This
+# can be used to compute statistics of various kinds.
+#
+# The exception is for `chk' and `err' lines. For these
+# there are arrays
+#
+#	chk_array($dirname)
+#	err_array($dirname)
+#
+# whose values are merely lists of the filenames taken
+# from the `chk' and `err' lines.  Note these filenames
+# begin with a date and sorting on filename sorts on the
+# dates.
+
+# Read the scores from the input channel and accumulate
+# them in the approprate arrays.
+#
+proc read_input { ch } {
+
+    global info_array rec_array ext_array bin_array \
+           out_array sco_array rep_array got_array \
+	   pid_array chk_array err_array
+
+    set line [gets $ch]
+    if { [eof $ch] } return
+
+    while { "yes" } {
+	if { [llength $line] < 3 \
+	     || [lsearch {sub dir} \
+	     		 [lindex $line 0]] < 0 } {
+	    error "Non `sub' or `dir' line from\
+	           `trackfinder':\n    $line"
+	}
+
+	set date	[lindex $line 1]
+	set submit_time	[filename_date_to_clock $date]
+	if { [lindex $line 0] == "sub" } {
+	    set submitter [lindex $line 2]
+	    set dirname \
+	        "$date-<<$submitter>>-submission"
+	} else {
+	    set dirname [lindex $line 2]
+	}
+
+	if { [info exists info_array($dirname)] } {
+	    unset info_array($dirname)
+	    if { [info exists rec_array($dirname)] } {
+		unset rec_array($dirname)
+	    }
+	    if { [info exists ext_array($dirname)] } {
+		unset ext_array($dirname)
+	    }
+	    if { [info exists bin_array($dirname)] } {
+		unset bin_array($dirname)
+	    }
+	    if { [info exists out_array($dirname)] } {
+		unset out_array($dirname)
+	    }
+	    if { [info exists sco_array($dirname)] } {
+		unset sco_array($dirname)
+	    }
+	    if { [info exists rep_array($dirname)] } {
+		unset rep_array($dirname)
+	    }
+	    if { [info exists got_array($dirname)] } {
+		unset got_array($dirname)
+	    }
+	    if { [info exists chk_array($dirname)] } {
+		unset chk_array($dirname)
+	    }
+	    if { [info exists err_array($dirname)] } {
+		unset unchk_array($dirname)
+	    }
+	    if { [info exists pid_array($dirname)] } {
+		unset pid_array($dirname)
+	    }
+	}
+
+	set info_array($dirname) [list $line]
+
+	while { "yes" } {
+	    set line [gets $ch]
+	    if { [eof $ch] } break
+
+	    if { [llength $line] == 0 } continue
+	    switch [lindex $line 0] {
+	    sub {
+		    break
+		}
+	    dir {
+		    break
+		}
+	    rec {
+		    if { [info exists \
+			       rec_array($dirname)] } {
+			error "Too many `rec' lines for\
+			      $dirname"
+		    } elseif { [llength $line] < 3 } {
+			error "Badly formatted `rec'\
+			       line:\n    $line"
+		    } else {
+			set rec_array($dirname) $line
+		    }
+		}
+	    ext {
+		    if { [info exists \
+			       ext_array($dirname)] } {
+			error "Too many `ext' lines for\
+			      $dirname"
+		    } elseif { [llength $line] < 3 } {
+			error "Badly formatted `ext'\
+			       line:\n    $line"
+		    } else {
+			set ext_array($dirname) $line
+		    }
+		}
+	    bin {
+		    if { [info exists \
+			       bin_array($dirname)] } {
+			error "Too many `bin' lines for\
+			      $dirname"
+		    } elseif { [llength $line] < 3 } {
+			error "Badly formatted `bin'\
+			       line:\n    $line"
+		    } else {
+			set bin_array($dirname) $line
+		    }
+		}
+	    out {
+		    if { [info exists \
+			       out_array($dirname)] } {
+			error "Too many `out' lines for\
+			      $dirname"
+		    } elseif { [llength $line] < 3 } {
+			error "Badly formatted `out'\
+			       line:\n    $line"
+		    } else {
+			set out_array($dirname) $line
+		    }
+		}
+	    sco {
+		    if { [info exists \
+			       sco_array($dirname)] } {
+			error "Too many `sco' lines for\
+			      $dirname"
+		    } elseif { [llength $line] < 4 } {
+			error "Badly formatted `sco'\
+			       line:\n    $line"
+		    } else {
+			set sco_array($dirname) $line
+		    }
+		}
+	    rep {
+		    if { [info exists \
+			       rep_array($dirname)] } {
+			error "Too many `rep' lines for\
+			      $dirname"
+		    } elseif { [llength $line] < 3 } {
+			error "Badly formatted `rep'\
+			       line:\n    $line"
+		    } else {
+			set rep_array($dirname) $line
+		    }
+		}
+	    got {
+		    if { [info exists \
+			       got_array($dirname)] } {
+			error "Too many `got' lines for\
+			      $dirname"
+		    } elseif { [llength $line] < 2 } {
+			error "Badly formatted `got'\
+			       line:\n    $line"
+		    } else {
+			set got_array($dirname) $line
+		    }
+		}
+	    pid {
+		    if { [info exists \
+			       pid_array($dirname)] } {
+			error "Too many `pid' lines for\
+			      $dirname"
+		    } elseif { [llength $line] < 3 } {
+			error "Badly formatted `pid'\
+			       line:\n    $line"
+		    } else {
+			set pid_array($dirname) $line
+		    }
+		}
+	    chk {
+		    if { [llength $line] < 3 } {
+			error "Badly formatted `chk'\
+			       line:\n    $line"
+		    } else {
+			set file [lindex $line 2]
+			if { ! [info \
+			          exists \
+				  chk_array($dirname)] \
+				  } {
+			    set chk_array($dirname) \
+			        [list $file]
+			} else {
+			    lappend \
+			        chk_array($dirname) \
+				$file
+			}
+		    }
+		}
+	    err {
+		    if { [llength $line] < 3 } {
+			error "Badly formatted `err'\
+			       line:\n    $line"
+		    } else {
+			set file [lindex $line 2]
+			if { ! [info \
+			          exists \
+				  err_array($dirname)] \
+				  } {
+			    set err_array($dirname) \
+			        [list $file]
+			} else {
+			    lappend \
+			        err_array($dirname) \
+				$file
+			}
+		    }
+		}
+	    }
+	    lappend info_array($dirname) $line
+	}
+
+	if { [eof $ch] } break
+    }
+}
+
+# Return a time in 6 characters or less, the last
+# character indicating unit.  The format is either
+#
+#	MM:SSs		s = denotes seconds
+#	HH:MMm		m = denotes minutes
+#	DD:HHh		h = denotes hours
+#	DDDDDd		d = denotes days
+#
+proc format_time { time } {
+    set MM [expr { $time / 60 }]
+    set SS [expr { $time - 60 * $MM } ] 
+    set HH [expr { $MM / 60 }]
+    set MM [expr { $MM - 60 * $HH }]
+    set DD [expr { $HH / 24 }]
+    set HH [expr { $HH - 24 * $DD }]
+    if { $DD > 99 } {
+    	return "${DD}d"
+    } elseif { $DD > 0 } {
+    	return "[format {%d:%02d} $DD $HH]h"
+    } elseif { $HH > 0 } {
+    	return "[format {%d:%02d} $HH $MM]m"
+    } else {
+    	return "[format {%d:%02d} $MM $SS]s"
+    }
+}
+
+read_input stdin
+
+puts [array get chk_array]
+
+exit 0
+
+# Include common error catching code:
+#
+} caught_output
+caught_error
+
