@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Jan 19 15:14:39 EST 2002
+# Date:		Fri Jan 25 09:55:42 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,11 +11,24 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/01/19 20:18:26 $
+#   $Date: 2002/01/25 15:18:18 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.86 $
-#
+#   $Revision: 1.87 $
 
+# Table of Contents:
+#
+#	About This File
+#	Scoreboard Parameters
+#	Scoring Parameters
+#	Submission Parameters
+#	Logging Parameters
+#	Info Parameters
+#	Display Parameters
+#	Maintenance Parameters
+
+# About This File
+# ----- ---- ----
+#
 # An optionally modified copy of this file must be
 # placed in (or symbolically linked into) the current
 # directory of an executing judging program, or one
@@ -31,7 +44,8 @@
 # be sourced with any descendant directory as the
 # current directory.
 
-# Scoreboard Parameters.
+# Scoreboard Parameters
+# ---------- ----------
 #
 # All times are in a format that TCL `clock scan'
 # can convert.  Most date formats work.
@@ -60,7 +74,7 @@
 # The freeze time is only used as a parameter in score-
 # board instructions used by the `makescoreboard' pro-
 # gram, and is usually used only for formal contests.
-
+ 
 # The default values are for scoreboarding a practice
 # facility that operates 24 hours a day, every day.
 #
@@ -96,7 +110,7 @@ set scoreboard_penalty 0
 # `|' in highest precedence first order, denoting `not',
 # `and', `exclusive-or', and `inclusive-or'.  Operators
 # and parentheses MUST be surrounded by whitespace.
-
+ 
 # The atoms `0' and `1' represent `false' and `true'.
 # All other atoms are regular expressions that are
 # matched to the ENTIRE problem name or submitter name,
@@ -135,7 +149,7 @@ set scoreboard_penalty 0
 set scoreboard_problems { }
 set scoreboard_submitters { }
 
-
+ 
 # Maximum width of scoreboard in columns.
 #
 set scoreboard_width 80
@@ -169,7 +183,7 @@ set scoreboard_addresses { }
 # scoreboard.
 #
 set scoreboard_interval 60
-
+ 
 # Scoreboard instructions.   These determine which
 # scoreboards the `makescoreboard' program will compute
 # and how it will compute them.  The syntax is:
@@ -197,7 +211,7 @@ set scoreboard_interval 60
 #	    <any XXX such that `scoreboard_XXX' is a
 #	     global variable after judging directory
 #	     hpcm_judging.rc is read>
-
+#
 # The scoreboard instructions do the following:
 #
 #     { OUTPUT filename [start [stop] }
@@ -230,7 +244,7 @@ set scoreboard_interval 60
 #		Include a copy of a first readable file
 #		in the list of files.  Do nothing of no
 #		listed file is readable.
-
+#
 #     { LINE left-text [center-text [right-text]] }
 #		Include a line that has left-text left
 #		justified, center-text centered, and
@@ -262,7 +276,7 @@ set scoreboard_interval 60
 # equal to or greater than the stop time.  Setting the
 # start and stop times equal will produced an output
 # just once after the given time.
-
+#
 # The start and stop times of an OUTPUT command, the
 # values of a parameter, and the texts of a LINE com-
 # mand can be the special abbreviations TIME, START,
@@ -295,7 +309,7 @@ set email_scoreboard_instructions {
     BLANK
     BAR
 }
-
+
 # Standard scoreboard instructions for an informal
 # contest:
 set informal_scoreboard_instructions {
@@ -310,7 +324,7 @@ set informal_scoreboard_instructions {
     BOARD
     BAR
 }
-
+
 # Standard scoreboard instructions for a formal
 # contest:
 set formal_scoreboard_instructions {
@@ -344,7 +358,7 @@ set formal_scoreboard_instructions {
     BAR
 
     { OUTPUT contest/scoreboard.current FREEZE STOP }
-
+
     { LINE NAME "Current Scoreboard" TIME }
     BLANK
     BAR
@@ -368,16 +382,96 @@ set formal_scoreboard_instructions {
 
 set scoreboard_instructions \
     $email_scoreboard_instructions
+
+# Scoring Parameters
+# ------- ----------
 
-# End of scoreboard parameters.
-
-
+# Scoring Mode:
+#
+#	auto		Automatic scoring only; auto-
+#			judge sends the score to the
+#			contestant as final.
+#	auto+manual	Automatic scoring plus manual
+#			review of everything not `Com-
+#			pletely Correct'; autojudge
+#			sends the score to the contest-
+#			ant as final if the score is
+#			`Completely Correct', and as
+#			to-be-reviewed otherwise.
+#	manual		Manual scoring only; auto-
+#			judge does not send the score
+#			to the contestant.
+#
+set scoring_mode auto
 
 # Maximum number of proofs for each type of difference
 # that are recorded in the .score file.
 #
 set difference_type_proof_limit 100
+
+# .err File Regexps:
+#
+# Regexp expressions matched to lines in .err file to
+# detect limit overruns.  Letter case is ignored.
+# The regular expressions match successfully if they
+# match any part of a line.
+#
+set time_limit_regexp {cpu time limit exceeded}
+set output_limit_regexp {file size limit exceeded}
+
 
+# Submission Parameters
+# ---------- ----------
+
+# Set the following to `yes' if submissions must have
+# files in the format:
+#
+#	HPCM_BEGIN filename
+#	..first line of file
+#	..second line of file
+#	.. . . . more lines of file
+#	HPCM_END filename
+#
+# Set following to `no' if submissions may also have
+# the file as exactly the body of the submission mes-
+# sage (the file may not begin with HPCM_BEGIN, any
+# initial blank lines in the file are deleted, and
+# blank lines may be added to end of the file).
+#
+set format_submissions no
+
+# Authentication Switch: yes or no
+#
+set use_authentication no
+
+# Authentication Keys:
+#
+#     array set authentication_keys {
+#		keyname1	key1
+#		keyname2	key2
+#		keyname3	key3
+#		.  .  .  .  .  .  .
+#	}
+#
+# where each keyname and key is any list item.  If
+# there is whitespace in a keyname or key enclose
+# it in {}'s, as in:
+#
+#	{feedso's key}	{I'm happy to mEt U}
+#
+# There should be no beginning or ending whitespace
+# to either a key or a keyname.
+#
+array set authentication_keys {
+}
+
+# Allowed Extensions:
+#
+# Whitespace separated list of allowed extensions for
+# submitted programs:
+#
+set allowed_extensions ".c .cc .java .p .lsp"
+
 # Submitter compress function.  Used to compress the
 # full submitter email name when displaying the sub-
 # mitters name, e.g., on the scoreboard.
@@ -414,43 +508,8 @@ proc submitter_compress { submitter } {
 	return $short_submitter
     }
 }
-
-# Set the following to `yes' if submissions must have
-# files in the format:
-#
-#	HPCM_BEGIN filename
-#	..first line of file
-#	..second line of file
-#	.. . . . more lines of file
-#	HPCM_END filename
-#
-# Set following to `no' if submissions may also have
-# the file as exactly the body of the submission mes-
-# sage (the file may not begin with HPCM_BEGIN, any
-# initial blank lines in the file are deleted, and
-# blank lines may be added to end of the file).
-#
-set format_submissions no
 
 
-# Scoring Mode:
-#
-#	auto		Automatic scoring only; auto-
-#			judge sends the score to the
-#			contestant as final.
-#	auto+manual	Automatic scoring plus manual
-#			review of everything not `Com-
-#			pletely Correct'; autojudge
-#			sends the score to the contest-
-#			ant as final if the score is
-#			`Completely Correct', and as
-#			to-be-reviewed otherwise.
-#	manual		Manual scoring only; auto-
-#			judge does not send the score
-#			to the contestant.
-#
-set scoring_mode auto
-
 # Reply Mode:
 #
 #	auto		Automatic reply only; dispatch-
@@ -475,6 +534,9 @@ set reply_mode auto
 #
 set reply_manager ""
 
+# Logging Parameters
+# ------- ----------
+
 # Log Mode:		Action on Error:
 #
 #	manual		Write error to log file; do not
@@ -509,8 +571,9 @@ set log_manager ""
 set log_error_maximum 10
 
 
-# Info control parameters:
-#
+# Info Parameters
+# ---- ----------
+
 # info_map(name) if it exists is a list of names which
 # replace `name' when a `get name' request is made.
 #
@@ -537,8 +600,9 @@ array set info_tail_map {
 }
 
 
-# Manual reply and tracking control parameters:
-#
+# Display Parameters
+# ------- ----------
+
 # Window heights.  The window_height is the height of
 # the non-blank part of the window, and the window_
 # blank_height is the number of blank lines that should
@@ -563,55 +627,14 @@ set highlight_on  "\x1b\[1m"
 set highlight_off "\x1b\[0m"
 
 
-# Authentication Switch: yes or no
-#
-set use_authentication no
-
-# Authentication Keys:
-#
-#     array set authentication_keys {
-#		keyname1	key1
-#		keyname2	key2
-#		keyname3	key3
-#		.  .  .  .  .  .  .
-#	}
-#
-# where each keyname and key is any list item.  If
-# there is whitespace in a keyname or key enclose
-# it in {}'s, as in:
-#
-#	{feedso's key}	{I'm happy to mEt U}
-#
-# There should be no beginning or ending whitespace
-# to either a key or a keyname.
-#
-array set authentication_keys {
-}
-
-
-# .err File Regexps:
-#
-# Regexp expressions matched to lines in .err file to
-# detect limit overruns.  Letter case is ignored.
-# The regular expressions match successfully if they
-# match any part of a line.
-#
-set time_limit_regexp {cpu time limit exceeded}
-set output_limit_regexp {file size limit exceeded}
-
-
-# Allowed Extensions:
-#
-# Whitespace separated list of allowed extensions for
-# submitted programs:
-#
-set allowed_extensions ".c .cc .java .p"
-
+# Maintenance Parameters
+# ----------- ----------
 
 # Default list of problem description file extensions:
 #
 set problem_description_extensions \
     ".txt .html .htm .ps"
+
 
 
 ###### Functions to call operating system programs #####
@@ -637,7 +660,7 @@ proc send_mail { message_file } {
 proc send_message { message } {
     exec /usr/sbin/sendmail -oi -t << $message
 }
-
+
 # Function to compute the md5sum of a value.
 #
 proc compute_signature { value } {
@@ -674,7 +697,7 @@ proc create_file { filename } {
 proc create_directory { dirname } {
     exec mkdir $dirname
 }
-
+
 # Function to symbolically link a file.  This is like
 # copying, but the modification date on the target
 # tracks the date on the source.  If no target is given,
@@ -683,7 +706,7 @@ proc create_directory { dirname } {
 proc link_file { source { target . } } {
     exec ln -s $source $target
 }
-
+
 # Function to change the permissions of a file or direc-
 # tory.
 #
@@ -720,7 +743,7 @@ proc grant_access { filename { allow rx } } {
 	chmod "a+$perm" $filename
     }
 }
-
+
 # Return global (everyone) permissions of a file as a
 # three character string, RWX, where R = r if the file
 # is a+r and `-' otherwise, W = w if the file is a+w and
@@ -758,7 +781,7 @@ proc get_access { filename } {
 proc deny_access { filename } {
     chmod o-rwx,g-w $filename
 }
-
+
 # Function to view a file.  Change to your favorite
 # editor or display program.
 #
@@ -792,7 +815,7 @@ proc make_file { name err_file } {
 proc diff_directories { directory1 directory2 } {
     return [exec diff -r $directory1 $directory2]
 }
-
+
 # Diff two files.  Write all output, including error
 # output, to a third file, with a header line in that
 # file saying what was done.  Errors are ignored as
@@ -831,7 +854,7 @@ proc exec_in_directory { directory command args } {
 proc current_pid {} {
     return [id process]
 }
-
+
 # Function to display the state of processes within
 # a process tree rooted at a given process.  Return
 # value is the display.
@@ -853,7 +876,7 @@ proc process_found { display } {
         !  [regexp {^No process with PID .* exists} \
 		   $display] }]
 }
-
+
 # Function to send signal to process subtree.  Signal
 # must be KILL or INT.
 #
@@ -887,7 +910,7 @@ proc make_signals_errors {} {
 	signal error { HUP INT QUIT ALRM TERM }
     }
 }
-
+
 # Function to cause signals to be ignored.
 #
 proc make_signals_ignored {} {
