@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Aug 18 05:21:41 EDT 2000
+# Date:		Sat Aug 26 23:01:40 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: acm-cont $
-#   $Date: 2000/08/27 02:54:03 $
+#   $Date: 2000/08/27 04:06:01 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.18 $
+#   $Revision: 1.19 $
 #
 
 # Include this code in TCL program via:
@@ -30,10 +30,17 @@
 #	} caught_output
 #	caught_error
 #
+# Put the command:
+#
+#	set log_globally yes
+#
+# in front of the `catch {' if you want errors to be
+# logged in the log directory instead of the current
+# directory.  See `log_error' below.
 
 # The catch and `caught_error' function catches all
 # program errors and causes them to be announced on the
-# standard output, be logged in the error log file, and
+# standard output, be logged in an error log file, and
 # return an exit code of 1 from the program.
 
 # Default error log directory name.  For use if we
@@ -54,7 +61,7 @@ proc prepare_field_value { value } {
 
     regsub -all "\n" $value "\ " value
 
-    return [string trim value]
+    return [string trim $value]
 }
 
 # Convert a [clock seconds] value into a date in
@@ -71,7 +78,7 @@ proc clock_to_filename_date { clock } {
 #
 proc filename_date_to_clock { date } {
     set n {([0-9]+)}
-    if { ! [regexp "^$n-$n-$n-$n:$n:$n\$" $date all \
+    if { ! [regexp "^$n-$n-$n-$n:$n:$n\$" $date forget \
     	           year month day \
 		   hour minute second] } {
 	error "Not a legal filename date:    $date"
@@ -80,13 +87,17 @@ proc filename_date_to_clock { date } {
 	    "$month/$day/$year $hour:$minute:$second"]
 }
 
-# Returns 1 iff the current directory is checkeed, 0 if
-# it is unchecked, and calls error if the directory has
+# Returns 1 iff the current directory is checked, and 0
+# iff it is unchecked.  Calls error if the directory has
 # no check mark.
+#
+# To have a check mark, the current directory must have
+# a name of the form ....[<...U>]... if it is unchecked,
+# or ....[<...C>]... if it is checked.
 #
 proc is_checked {} {
     set old_dir [file tail [pwd]]
-    if { ! [regexp {^(.*{<[^>]*)([UC])(>}.*)$} \
+    if { ! [regexp {^(.*\[<[^>]*)([UC])(>\].*)$} \
                    $old_dir a b c] } {
 	error "$old_dir does not include a checkmark"
     }
@@ -95,12 +106,12 @@ proc is_checked {} {
 }
 
 # Function to change the name of the current directory
-# from ...{<...U>}... to ...{<...C>}...; that is, the U
+# from ...[<...U>]... to ...[<...C>]...; that is, the U
 # meaning `unchecked' is changed to C meaning `checked'.
 #
 proc make_checked {} {
     set old_dir [file tail [pwd]]
-    if { ! [regexp {^(.*{<[^>]*)([UC])(>}.*)$} \
+    if { ! [regexp {^(.*\[<[^>]*)([UC])(>\].*)$} \
                    $old_dir a b c] } {
 	error "$old_dir does not include a checkmark"
     }
@@ -110,12 +121,12 @@ proc make_checked {} {
 }
 
 # Function to change the name of the current directory
-# from ...{<...C>}... to ...{<...U>}...; that is, the C
+# from ...[<...C>]... to ...[<...U>]...; that is, the C
 # meaning `checked' is changed to U meaning `unchecked'.
 #
 proc make_unchecked {} {
     set old_dir [file tail [pwd]]
-    if { ! [regexp {^(.*{<[^>]*)([UC])(>}.*)$} \
+    if { ! [regexp {^(.*\[<[^>]*)([UC])(>\].*)$} \
                     $old_dir a b c] } {
 	error "$old_dir does not include a checkmark"
     }
@@ -148,11 +159,11 @@ proc caught_error {} {
 # as an emergency last resort.  The format of the file
 # name is:
 #
-#	d-[<EU>]-{<p>}-u
+#	dddd-[<EU>]-{<pppp>}-uuuu
 #
-# where d = is the date in filename date format
-#       u = random 6 digit number for uniqueness
-#       p = name of executing program
+# where dddd = is the date in filename date format
+#       uuuu = random 6 digit number for uniqueness
+#       pppp = name of executing program
 #
 # EU means the file is for an Error that is Unchecked,
 # i.e., not yet seen by a person.  This part of the
@@ -167,7 +178,7 @@ proc log_error { error_output } {
 
     # Write error to standard output.
     #
-    puts "ERROR caught for $argv0 $argv"
+    puts "ERROR during $argv0 $argv"
     puts $error_output
 
     # Compute $log_dir, the logging directory
@@ -192,12 +203,13 @@ proc log_error { error_output } {
     #
     set count 0
     while { "yes" } {
-        set t [clock_to_filename_date [clock seconds]]
+        set d [clock_to_filename_date [clock seconds]]
         set u [format %06d \
 		  [expr { [clock clicks] % 1000000 } ]]
         set p [file tail $argv0]
         set log_file \
-	    "$log_dir/${t}-\[<EU>\]-{<${p}>}-${u}"
+	    "$log_dir/${d}-\[<EU>\]-{<${p}>}-${u}"
+							.
 
 	if { ! [catch { create_file $log_file } ] } {
 	    break
@@ -235,7 +247,7 @@ proc log_error { error_output } {
 # Read an email message header from the channel. If
 # given, the first line of the header is the second
 # argument (note that email header lines cannot be
-# empty.  Stop reading at the first empty line and
+# empty).  Stop reading at the first empty line and
 # discard that line.
 #
 # The results are returned in global variables:
@@ -249,24 +261,43 @@ proc log_error { error_output } {
 #	message_reply_to	`Reply-To:' field value.
 #	message_subject		`Subject:' field value.
 #	message_date		`Date:' field value.
+#	message_x_hpcm_date	`X-HPCM-date:' field
+#				value.
+#	message_x_hpcm_reply_to	`X-HPCM-reply-to:'
+#				field value.
+#	message_x_hpcm_signature `X-HPCM-signature:'
+#				field value.
+#	message_x_hpcm_signature_ok
+#				`X-HPCM-signature-ok:'
+#				field value.
 #
 # All the values have the final \n stripped off.  All
 # the field values have the `field-name:' stripped off.
 # If there are two copies of a field, only the last is
-# recorded.
+# recorded.  If there are no copies of a field in the
+# message, the message_... global variable for that
+# field is set to "".
 #
 proc read_header { ch { first_line "" } } {
     global message_header message_From_line \
            message_from message_to message_date \
 	   message_reply_to message_subject
 
-    set message_header		""
-    set message_From_line	""
-    set message_from		""
-    set message_to		""
-    set message_date		""
-    set message_reply_to	""
-    set message_subject		""
+    set message_header			""
+    set message_From_line		""
+    set message_from			""
+    set message_to			""
+    set message_date			""
+    set message_reply_to		""
+    set message_subject			""
+    set message_x_hpcm_date		""
+    set message_x_hpcm_reply_to		""
+    set message_x_hpcm_signature	""
+    set message_x_hpcm_signature_ok	""
+
+    set fields "header from to date reply-to subject\
+                x-hpcm-reply-to x-hpcm-date\
+		x-hpcm-signature x-hpcm-signature-ok"
 
     set line $first_line
     if { $line == "" } {
@@ -282,11 +313,10 @@ proc read_header { ch { first_line "" } } {
     	if { $line == "" } break
 
 	set found_field no
-	foreach fieldname \
-	        "to subject from date reply-to" {
+	foreach fieldname $fields {
 	    if { [regexp -nocase \
 	                 "^${fieldname}:(.*)\$"
-			 wholeline fieldvalue] } {
+			 forget fieldvalue] } {
 		set varname "message_$fieldname"
 		subexp -all -- "-" $varname "_" varname
 		set $varname $fieldvalue
@@ -294,7 +324,9 @@ proc read_header { ch { first_line "" } } {
 		while { "yes" } {
 		    set line [gets $ch]
 		    if { [eof $ch] \\
-			 || ! [regexp "^\ \t" $line] } \
+			 || ! [regexp \
+			           "^\[\ \t\]" \
+				   $line] } \
 			break;
 		    set $varname \
 			"[set $varname]\n$line"
@@ -317,23 +349,110 @@ proc read_header { ch { first_line "" } } {
 
 # Using information from the last call to read_header,
 # return the `To:' field value for a reply to that
-# message.  This is the message `Reply-to' field if that
-# is not empty, or the message `From' filed if that is
-# not empty, or `UNKNOWN' as a last resort.
+# message.  This is the message `X-HPCM-reply-to' field
+# if that is not empty, or the`Reply-to' field if that
+# is not empty, or the message `From' field if that is
+# not empty, or the address in a `From' line if that
+# is not empty, or `UNKNOWN' as a last resort.
 #
 proc compute_message_reply_to {} {
 
-    global message_from message_reply_to
+    global message_x_hpcm_reply_to message_reply_to \
+           message_from message_From_line
 
-    if { $message_reply_to != "" } {
+    if { [regexp "\[\ \t\n\]" \
+	         $message_x_hpcm_reply_to] } {
+	return $message_x_hpcm_reply_to
+    } elseif { [regexp "\[\ \t\n\]" \
+                       $message_reply_to] } {
 	return $message_reply_to
-    } elseif { $message_reply_from != "" } {
-	return $message_reply_from
+    } elseif { [regexp "\[\ \t\n\]" \
+                       $message_from] } {
+	return $message_from
+    } elseif { [llength $message_From_line] >= 2 } {
+	return [lindex $message_From_line 1]
     } else {
     	return "UNKNOWN"
     }
 }
-    
+
+# Using information from the last call to read_header,
+# return the date that best timestamps the message.
+# This is the message `X-HPCM-date' field if that is not
+# empty, or the `Date' field if that is not empty, or
+# the date in the message `From' line if that is not
+# empty, or the current date and time as a last resort.
+#
+proc compute_message_date {} {
+
+    global message_x_hpcm_date message_date \
+           message_From_line
+
+    if { [regexp "\[\ \t\n\]" \
+	         $message_x_hpcm_date] } {
+	return $message_x_hpcm_date
+    } elseif { [regexp "\[\ \t\n\]" \
+                       $message_date] } {
+	return $message_date
+    } elseif { [llength $message_From_line] >= 3 } {
+	return [lreplace $message_From_line 0 1]
+    } else {
+    	return "UNKNOWN"
+    }
+}
+
+# Compute whether the header just read by read_header
+# is authentic.  Return `yes' if it is, `no' if it is
+# not.  If the header does not already have the same
+# answer recorded in its last `X-HPCM-signature-ok'
+# field, add that field with the newly computed value
+# to the end of the header as it is stored in the
+# message_... global variables.
+#
+proc authenticate_header {} {
+
+    global message_x_hpcm_reply_to \
+           message_x_hpcm_from \
+	   message_x_hpcm_signature \
+           message_x_hpcm_signature_ok
+
+    if { [llength $message_x_hpcm_signature] < 2 } {
+    	set result no
+    } else {
+        set keyname \
+	    [lindex $message_x_hpcm_signature 0]
+        set signature \
+	    [lindex $message_x_hpcm_signature 1]
+	if { [catch
+	        { set key \
+		      $authentication_key($keyname) \
+		      }] } {
+	    set result no
+	} else {
+	    set d "X-HPCM-date:$message_x_hpcm_date\n"
+	    set f "X-HPCM-from:$message_x_hpcm_from\n"
+	    set v "$d$f$key"
+	    set computed_signature \
+	        [compute_signature $v]
+	    if { $signature == $computed_signature } {
+	    	set result yes
+	    } else {
+	        set result no
+	    }
+	}
+    }
+
+    if { [string trim $message_x_hpcm_signature_ok] \
+         != $result } {
+        set message_x_hpcm_signature_ok " $result"
+	set message_header \
+	    "$message_header\nX-HPCM-signature_ok:\
+	     $result"
+    }
+
+    return $result
+}
+
 # Construct a mail reply file and send it to the sender
 # of any received mail file.  The From, To, Subject, and
 # Date fields of the received mail Header are copied at
