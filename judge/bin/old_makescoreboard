@@ -4,7 +4,7 @@
 #
 # File:		makescoreboard
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Oct 28 09:53:17 EST 2001
+# Date:		Sun Oct 28 10:31:56 EST 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/10/28 15:00:51 $
+#   $Date: 2001/10/28 16:47:38 $
 #   $RCSfile: old_makescoreboard,v $
-#   $Revision: 1.21 $
+#   $Revision: 1.22 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -230,7 +230,8 @@ proc process_arguments { { first_time no } } {
 	global scoreboard_$name
     }
 
-    if { ! [file_changed $parameter_mtime_list] } {
+    if { [file_changed $parameter_mtime_list] \
+         == "no" } {
 
         foreach name [array names parameters_array] {
 	    set scoreboard_$name \
@@ -370,9 +371,9 @@ proc process_instructions {} {
     # If we have no reason to rerun scoreboard instruc-
     # tions, return.
     #
-    if {    $last_parameters_mtime \
+    if {    [file_changed $file_mtime_list] == "no"
+         && $last_parameters_mtime \
                >= $parameters_mtime \
-	 && ! [file_changed $file_mtime_list]
 	 && $time < $earliest_future_time } {
 
         return
@@ -395,6 +396,24 @@ proc process_instructions {} {
     #
     make_signals_ignored
 
+
+    # Set file_mtime_list so that if there is an error
+    # processing instructions, and we are recalled to
+    # try again, the instructions will be reprocessed.
+    # Errors may occur due to files changing dynamically
+    # while makescoreboard runs asynchronously.
+    #
+    set file_mtime_list changed
+
+    # Accumulate new parameter_mtime_list value in this
+    # local variable until we have succeeded.
+    #
+    set mtime_list ""
+
+    # Accumulate new earliest_future_time value in eft.
+    #
+    set eft ""
+
     # Loop to process instructions for first pass.
     #
     # Instructions are stored as list to make computa-
@@ -407,9 +426,6 @@ proc process_instructions {} {
     set instructions [concat $scoreboard_instructions]
     set pc 0
     set end_pc [llength $instructions]
-
-    set earliest_future_time ""
-    set last_parameters_mtime $parameters_mtime
     set output_found no
 
     while { "yes" } {
@@ -456,10 +472,10 @@ proc process_instructions {} {
 
 	# Perform first pass on instruction.
 	#
-	switch $output_found-$opcode {
+	switch ${output_found}_$opcode {
 
-	    no-OUTPUT -
-	    yes-OUTPUT {
+	    no_OUTPUT -
+	    yes_OUTPUT {
 
 	        # Compute output file.
 		#
@@ -469,7 +485,7 @@ proc process_instructions {} {
 		              $out_file]
 
 		# Compute start and stop times and
-		# update earliest_future_time.
+		# update eft.
 		#
 		set out_start [lindex $instruction 2]
 		set out_start [unabbreviate $out_start]
@@ -477,12 +493,9 @@ proc process_instructions {} {
 		    set out_start \
 		        [clock scan $out_start]
 		    if { $out_start > $time \
-		         && (    $earliest_future_time \
-			 	     == "" \
-			      || $earliest_future_time \
-			             > $out_start ) } {
-		        set earliest_future_time \
-			    $out_start
+		         && (    $eft == "" \
+			      || $eft > $out_start ) } {
+		        set eft $out_start
 		    }
 		}
 		set out_stop  [lindex $instruction 3]
@@ -491,12 +504,9 @@ proc process_instructions {} {
 		    set out_stop \
 		        [clock scan $out_stop]
 		    if { $out_stop > $time \
-		         && (    $earliest_future_time \
-			 	     == "" \
-			      || $earliest_future_time \
-			             > $out_stop ) } {
-		        set earliest_future_time \
-			    $out_stop
+		         && (    $eft == "" \
+			      || $eft > $out_stop ) } {
+		        set eft $out_stop
 		    }
 		}
 
@@ -518,20 +528,18 @@ proc process_instructions {} {
 	        set out_pc $pc
 		set output_found yes
 
-		# Remember output file in file_mtime_
-		# list.
+		# Remember output file in mtime_list.
 		#
-		lappend file_mtime_list \
-			[list out $out_file]
+		lappend mtime_list [list out $out_file]
 	    }
 
-	    yes-SEND {}
-	    yes-GRANT_ACCESS {}
+	    yes_SEND {}
+	    yes_GRANT_ACCESS {}
 
-	    yes-BLANK {}
+	    yes_BLANK {}
 
-	    yes-BAR -
-	    yes-LINE {
+	    yes_BAR -
+	    yes_LINE {
 
 	        # If scoreboard_width might have changed
 		# force update.
@@ -542,7 +550,7 @@ proc process_instructions {} {
 		}
 	    }
 
-	    yes-INPUT {
+	    yes_INPUT {
 
 	        # Loop through input files until a read-
 		# able one is found.
@@ -554,7 +562,7 @@ proc process_instructions {} {
 		        [file join $judging_directory \
 			           $in_file]
 
-		    # Add input file to file_mtime_list.
+		    # Add input file to mtime_list.
 		    #
 		    if { [file readable $in_file] } {
 			set mtime [file mtime $in_file]
@@ -568,17 +576,17 @@ proc process_instructions {} {
 			    set update yes
 			}
 
-			lappend file_mtime_list \
+			lappend mtime_list \
 			        [list $mtime $in_file]
 			break;
 		    } else {
-			lappend file_mtime_list \
+			lappend mtime_list \
 				[list none $in_file]
 		    }
 		}
 	    }
 
-	    yes-BOARD {
+	    yes_BOARD {
 
 	        # If scoreboard_ parameters might have
 		# changed, force update.
@@ -597,22 +605,22 @@ proc process_instructions {} {
 			 && $mtime > $out_mtime } {
 			set update yes
 		    }
-		    lappend file_mtime_list \
+		    lappend mtime_list \
 		            [list $mtime $finder_file]
 		} else {
-		    lappend file_mtime_list \
+		    lappend mtime_list \
 			    [list none $finder_file]
 		}
 
 	    }
 
-	    no-SEND -
-	    no-GRANT_ACCESS -
-	    no-BLANK -
-	    no-BAR -
-	    no-LINE -
-	    no-INPUT -
-	    no-BOARD {
+	    no_SEND -
+	    no_GRANT_ACCESS -
+	    no_BLANK -
+	    no_BAR -
+	    no_LINE -
+	    no_INPUT -
+	    no_BOARD {
 	        error "`$instruction' appears before\
 		       OUTPUT instruction"
 	    }
@@ -631,6 +639,10 @@ proc process_instructions {} {
 	}
     }
 
+    set earliest_future_time $eft
+    set last_parameters_mtime $parameters_mtime
+    set file_mtime_list $mtime_list
+
     # End of instruction processing loop.  Reenable
     # interrupts.
     #
@@ -644,8 +656,8 @@ proc process_instructions {} {
 #
 proc pass2 { instructions pc end_pc update } {
 
-    global parameters_array scoreboard_instructions \
-           judging_directory finder_file space
+    global parameters_array judging_directory \
+    	   finder_file space errorInfo errorCode
     foreach name [array names parameters_array] {
 	global scoreboard_$name
     }
@@ -683,7 +695,7 @@ proc pass2 { instructions pc end_pc update } {
 	set opcode [lindex $instruction 0]
 	incr pc
 
-	switch $opcode_$update {
+	switch ${opcode}_$update {
 
 	    SEND_yes {
 
@@ -942,27 +954,42 @@ proc pass2 { instructions pc end_pc update } {
 
     if { $update } {
 
-	# Write output file.
+	# Write output file.  If error, delete file.
 	#
-	set ch [open $out_file w]
-        puts -nonewline $ch $contents
-	close $ch
-	if { $grant_access } {
-	    grant_access $out_file
-	}
+	if { [catch {
 
-	# Send email.
-	#
-	if { $send } {
-	    foreach to $send_addresses {
-	        if { $send_qualifier != "" \
-	             && ! [regexp {<} $to] } {
-		    set to "<$to>"
-	        }
-	        send_message \
-	           "To: $send_qualifier$to\n\n$contents"
-	    }
-    	}
+		set ch [open $out_file w]
+		puts -nonewline $ch $contents
+		close $ch
+		if { $grant_access } {
+		    grant_access $out_file
+		}
+
+		# Send email.
+		#
+		if { $send } {
+		    set sq $send_qualifier
+		    foreach to $send_addresses {
+			if { $sq != "" } {
+			    if { [regexp {<} $to] } {
+				set to "$sq-$to"
+			    } else {
+				set to "$sq<$to>"
+			    }
+			}
+			send_message \
+			   "To: $to\n\n$contents"
+		    }
+		}
+	    } error_message] } {
+
+	    # On error, delete output file and rethrow
+	    # the error.  When we are rerun, the output
+	    # file will be recomputed and remailed.
+	    #
+	    file delete -force -- $out_file
+	    error $error_message $errorInfo $errorCode
+	}
     }
 }
 
@@ -1067,19 +1094,19 @@ switch $command {
 		 puts "Killing previous makescoreboard:"
 		 puts $display
 
-		 # Try to kill up to 10 times, checking
+		 # Try to kill up to 30 times, checking
 		 # after each attempt for death.  The
-		 # first 5 times are with HUP, the 2nd
-		 # 5 5imes are with KILL.
+		 # first 20 times are with HUP, the next
+		 # 10 5imes are with KILL.
 		 #
 		 set count 0
 		 while { "true" } {
 		     incr count 1
-		     if { $count <= 5 } {
+		     if { $count <= 20 } {
 			 catch { signal_process_tree \
 				 HUP $pid } out
 			 puts $out
-		     } elseif { $count <= 10 } {
+		     } elseif { $count <= 30 } {
 			 catch { signal_process_tree \
 				 KILL $pid } out
 			 puts $out
