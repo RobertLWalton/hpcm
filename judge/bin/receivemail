@@ -1,12 +1,12 @@
 #! /bin/sh -f
-# file:		extract
+# file:		receive_submissions
 # author:	Bob Walton (walton@deas.harvard.edu)
-# The next line starts tcl \
-exec tcl "$0" "$@"
+# The next line starts tclsh \
+exec tclsh "$0" "$@"
 
-if { $argc < 2 } {
-    puts "
-extract mail_file judging_directory
+set document "
+receive_submissions mail_file judging_directory
+
     For each submission in the mail_file builds a sub-
     directory of the judging_directory containing the
     submitted file.  The subdirectory name is the entire
@@ -19,6 +19,15 @@ extract mail_file judging_directory
 
     Errors are both logged and announced."
 
+set allowed_extensions_filename \
+    "allowed_submission_extensions"
+set allowed_extensions_default \
+    ".c .cc .java"
+
+
+
+if { $argc != 2 } {
+    puts $document
     exit 0
 }
 
@@ -26,7 +35,7 @@ set mail_file [lindex $argv 0]
 set judging_directory [lindex $argv 1]
 
 if { ! [file readable $mail_file] } {
-    puts "ERROR: not a directory:"
+    puts "ERROR: not readale:"
     puts "       $mail_file"
     exit 1
 }
@@ -45,12 +54,14 @@ puts $log_fd \
      "-----------------------------------------------"
 puts $log_fd \
      "Starting Run: [clock format [clock seconds]]"
+puts $log_fd \
+     "    Mail File: $mail_file"
 
 set program_directory [file dirname $argv0]
 set lib_directory "$program_directory/../lib"
 
 set allowed_extensions_file \
-    "$lib_directory/allowed_submission_extensions"
+    "$lib_directory/$allowed_extensions_filename"
 
 if { [file readable $allowed_extensions_file ] } {
     set allowed_extensions_fd \
@@ -63,7 +74,7 @@ if { [file readable $allowed_extensions_file ] } {
                       $allowed_extensions_file:"
     puts $log_fd "        $allowed_extensions"
 } else {
-    set allowed_extensions ".c .cc .java"
+    set allowed_extensions $allowed_extensions_default
     puts $log_fd "    No file $allowed_extensions_file"
     puts $log_fd "    Allowed extensions default to:"
     puts $log_fd "        $allowed_extensions"
@@ -72,6 +83,129 @@ if { [file readable $allowed_extensions_file ] } {
 set mail_fd [open $mail_file r]
 
 if { [info exists From_line] } { unset From_line }
+
+proc flush_submitted_file {} {
+    global mail_fd
+
+    while {1} {
+	set line [gets $mail_fd]
+	if { [eof $mail_fd] } {
+	    break
+	} elseif {
+	    [regexp \
+		{^\[\[\.\.ACM\.\.END\.\.\]\]} \
+		$line] } {
+	    break
+	}
+    }
+}
+
+proc output_error { score_fd
+		    score_file
+		    error_message_line } {
+    global log_fd From_line
+    if { $score_fd == "no" } {
+	puts $log_fd \
+	     "    Creating $score_file"
+	set score_fd \
+	    [open $score_file w]
+	puts $score_fd "Bad Submission"
+	puts $From_line
+    }
+    puts $log_fd   $error_message_line
+    puts $score_fd $error_message_line
+    puts           $error_message_line
+
+    return $score_fd
+}
+
+proc copy_file { directory submitted_file } {
+    global From_line mail_fd log_fd
+
+    set submitted_program \
+        [file rootname $submitted_file]
+    set submitted_extension \
+        [file extension $submitted_file]
+    set output_file \
+	"$directory/$submitted_file"
+    set score_file \
+	"$directory/${submitted_program}.score"
+
+    puts $log_fd $From_line
+    puts $log_fd \
+	 "    Making directory $directory"
+    file mkdir $directory
+
+    puts $log_fd "    Creating $output_file"
+    set output_fd [open $output_file w]
+
+    set number_of_good_lines 0
+    set number_of_bad_lines 0
+
+    set score_fd no
+
+    while {1} {
+	set line [gets $mail_fd]
+	if { [eof $mail_fd] } {
+	    set score_fd \
+	        [output_error $score_fd $score_file \
+		 "    ERROR: unexpected eof at\
+			 end of submitted file" ]
+	    puts $output_fd \
+		 "ERROR: unexpected eof at end\
+			 of this submitted file"
+	    break
+	} elseif { [regexp {^\.\.(.*)$} $line \
+			   all real_part] } {
+	    incr number_of_good_lines
+	    puts $output_fd $real_part
+	} elseif {
+	    [regexp \
+	     {^\[\[\.\.ACM\.\.END\.\.\]\]} \
+	     $line] } {
+	    break
+	} else {
+	    if { ! [info exists score_fd] } {
+		puts $log_fd \
+		     "    Creating $score_file"
+		set score_fd \
+		    [open $score_file w]
+		puts $score_fd "Bad Submission"
+		puts $From_line
+	    }
+	    incr number_of_bad_lines
+	    puts $output_fd "ERROR: bad line in\
+				submitted file:"
+	    puts $output_fd $line
+	    if { $number_of_bad_lines == 1 } {
+		set score_fd \
+		    [output_error $score_fd \
+		                  $score_file \
+			"    ERROR: bad lines in\
+				  submitted file:" ]
+	    }
+	    if { $number_of_bad_lines <= 5 } {
+		set score_fd \
+		    [output_error $score_fd \
+		                  $score_file \
+			"           $line" ]
+	    } elseif {
+		  $number_of_bad_lines == 6 } {
+		set score_fd \
+		    [output_error $score_fd \
+		                  $score_file \
+		     "           AND THERE ARE\
+			     MORE BAD LINES!" ]
+	    }
+	}
+    }
+
+    puts $log_fd \
+	 "    There were $number_of_good_lines\
+	      good lines in file."
+    close $output_fd
+}
+
 set number_of_files 0
 
 while {1} {
@@ -81,28 +215,20 @@ while {1} {
     if  { [regexp {^From\ } $line] } {
     	set From_line $line
 	set number_of_files 0
+	set directory \
+	    "$judging_directory/$From_line"
     } elseif {
 	    [regexp {^\[\[\.\.ACM\.\.BEGIN\.\.\]\]} \
 		    $line] } {
 
 	incr number_of_files
 
-	set submitted_file [lindex $line 1]
-
-	if { ! [regexp {^(.*)(\.[^.]*)$} \
-	               $submitted_file \
-		       all submitted_program \
-		       submitted_extension] } {
-	    set submitted_program $submitted_file
-	    set submitted_extension ""
-	}
-
-	if { [info exists From_line] } {
-	    set directory \
-	        "$judging_directory/$From_line"
-	    set score_file \
-	        "$directory/$submitted_program.score"
-	}
+	set submitted_file \
+	    [lindex $line 1]
+	set submitted_program \
+	    [file rootname $submitted_file]
+	set submitted_extension \
+	    [file extension $submitted_file]
 
 	if { ! [info exists From_line] } {
 	    puts $log_fd \
@@ -112,23 +238,16 @@ while {1} {
 		 "ERROR: file before any mail message:\
 		         $submitted_file"
 
-	    while {1} {
-		set line [gets $mail_fd]
-		if { [eof $mail_fd] } {
-		    break
-		} elseif {
-		    [regexp \
-			{^\[\[\.\.ACM\.\.END\.\.\]\]} \
-			$line] } {
-		    break
-		}
-	    }
+	    flush_submitted_file
 	} elseif { [file isdirectory $directory] } {
 	    if { $number_of_files > 1 } {
 		puts $log_fd $From_line
 		puts $log_fd
 		     "    Making directory $directory"
 		file mkdir $directory
+
+		set score_file \
+		    "$directory/${submitted_program}.score"
 
 		if { ! [file exists $score_file] } {
 		    puts $log_fd \
@@ -140,33 +259,15 @@ while {1} {
 		}
 		puts $From_line
 
-		puts $log_fd \
+		set score_fd [output_error no \
+					   $score_file \
 		     "    ERROR: extra file in\
 		                 submission:\
-				 $submitted_file"
-		puts $score_fd \
-		     "    ERROR: extra file in\
-		                 submission:\
-				 $submitted_file"
-		puts \
-		     "    ERROR: extra file in\
-		                 submission:\
-				 $submitted_file"
-
+				 $submitted_file"]
 		close $score_fd
 	    }
 
-	    while {1} {
-		set line [gets $mail_fd]
-		if { [eof $mail_fd] } {
-		    break
-		} elseif {
-		    [regexp \
-		     {^\[\[\.\.ACM\.\.END\.\.\]\]} \
-		     $line] } {
-		    break
-		}
-	    }
+	    flush_submitted_file
 	} elseif { [lsearch \
 	            -exact $allowed_extensions \
 		    $submitted_extension] < 0 } {
@@ -174,6 +275,9 @@ while {1} {
 	    puts $log_fd \
 	         "    Making directory $directory"
 	    file mkdir $directory
+
+	    set score_file \
+		"$directory/${submitted_program}.score"
 
 	    puts $log_fd "    Creating $score_file"
 	    set score_fd [open $score_file w]
@@ -192,119 +296,9 @@ while {1} {
 
 	    close $score_fd
 
-	    while {1} {
-		set line [gets $mail_fd]
-		if { [eof $mail_fd] } {
-		    break
-		} elseif {
-		    [regexp \
-		     {^\[\[\.\.ACM\.\.END\.\.\]\]} \
-		     $line] } {
-		    break
-		}
-	    }
+	    flush_submitted_file
 	} else {
-	    puts $log_fd $From_line
-	    puts $log_fd \
-	         "    Making directory $directory"
-	    file mkdir $directory
-
-	    set output_file \
-	        "$directory/$submitted_file"
-
-	    puts $log_fd "    Creating $output_file"
-	    set output_fd [open $output_file w]
-
-	    set number_of_good_lines 0
-	    set number_of_bad_lines 0
-
-	    if { [info exists score_fd] } {
-		unset score_fd
-	    }
-
-	    while {1} {
-		set line [gets $mail_fd]
-		if { [eof $mail_fd] } {
-		    if { ! [info exists score_fd] } {
-			puts $log_fd \
-			     "    Creating $score_file"
-		    	set score_fd \
-			    [open $score_file w]
-			puts $score_fd "Bad Submission"
-			puts $From_line
-		    }
-		    puts $output_fd \
-			 "ERROR: unexpected eof at end\
-			         of this submitted file"
-		    puts $log_fd \
-		         "    ERROR: unexpected eof at\
-			         end of submitted file"
-		    puts $score_fd \
-		         "    ERROR: unexpected eof at\
-			         end of submitted file"
-		    puts \
-		         "    ERROR: unexpected eof at\
-			         end of submitted file"
-		    break
-		} elseif { [regexp {^\.\.(.*)$} $line \
-		                   all real_part] } {
-		    incr number_of_good_lines
-		    puts $output_fd $real_part
-		} elseif {
-		    [regexp \
-		     {^\[\[\.\.ACM\.\.END\.\.\]\]} \
-		     $line] } {
-		    break
-		} else {
-		    if { ! [info exists score_fd] } {
-			puts $log_fd \
-			     "    Creating $score_file"
-		    	set score_fd \
-			    [open $score_file w]
-			puts $score_fd "Bad Submission"
-			puts $From_line
-		    }
-		    incr number_of_bad_lines
-		    puts $output_fd "ERROR: bad line in\
-		                        submitted file:"
-		    puts $output_fd $line
-		    if { $number_of_bad_lines == 1 } {
-			puts $log_fd \
-			     "    ERROR: bad lines in\
-				      submitted file:"
-			puts $score_fd \
-			     "    ERROR: bad lines in\
-				      submitted file:"
-			puts \
-			     "    ERROR: bad lines in\
-				      submitted file:"
-		    }
-		    if { $number_of_bad_lines <= 5 } {
-		        puts $log_fd \
-			     "           $line"
-		        puts $score_fd \
-			     "           $line"
-		        puts \
-			     "           $line"
-		    } elseif {
-			  $number_of_bad_lines == 6 } {
-		        puts $log_fd \
-			     "           AND THERE ARE\
-				     MORE BAD LINES!"
-		        puts $score_fd \
-			     "           AND THERE ARE\
-			             MORE BAD LINES!"
-		        puts \
-			     "           AND THERE ARE\
-			             MORE BAD LINES!"
-		    }
-		}
-	    }
-
-	    puts $log_fd \
-	         "    There were $number_of_good_lines\
-		      good lines in file."
-	    close $output_fd
+	    copy_file $directory $submitted_file
 	}
     }
 	
