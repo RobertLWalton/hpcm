@@ -2,7 +2,7 @@
 #
 # File:		scoring_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Mar  9 09:35:57 EST 2002
+# Date:		Sat Mar  9 10:12:14 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/03/09 15:09:22 $
+#   $Date: 2002/03/09 15:23:20 $
 #   $RCSfile: scoring_common.tcl,v $
-#   $Revision: 1.27 $
+#   $Revision: 1.28 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -602,8 +602,11 @@ proc compose_response { { compose_reply_options "" } } {
     }
 
     # Execute first pass over response instructions
-    # and compute a list of action response instructions
-    # to be executed in `commands'.
+    # and compute in `commands' a list of response
+    # instructions to be executed in the second pass.
+    # The first pass removes if ... elseif ... else
+    # and produces a linear list of unconditional
+    # response instructions. 
     #
     set commands ""
     parse_block $response_instructions commands
