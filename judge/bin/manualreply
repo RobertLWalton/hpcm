@@ -5,7 +5,7 @@
 #
 # File:		manualreply
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri May 17 07:16:17 EDT 2002
+# Date:		Sat Jul 27 16:48:29 EDT 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/05/17 11:17:20 $
+#   $Date: 2002/07/27 21:13:21 $
 #   $RCSfile: manualreply,v $
-#   $Revision: 1.53 $
+#   $Revision: 1.54 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -158,6 +158,22 @@ Gives help for WHAT, where WHAT can be:
     
 Type `? topics' for list of help topics.
 "
+
+set help($dispatch_pid_file) "
+$dispatch_pid_file	A file containing the process\
+			    ID (pid) of a program
+		that has locked the current directory. \
+			    For example, the
+		manualreply program locks the directory\
+			    it is looking at.
+
+$gotten_file	A list of files gotten from the current\
+			    directory by a
+	get request.  Means the current directory is\
+			    NOT a solution
+	submission.
+"
+set help($gotten_file) $help($dispatch_pid_file)
 
 set help(#) "
 #			# denotes a `file\
@@ -665,6 +681,50 @@ $scoring_instructions_file	Scoring instructions\
 			    directory.
 "
 set help($scoring_instructions_file) $help($make_file)
+
+set help($files_file) "
+$files_file	A list of files that are to be\
+		    submitted and of files that are
+	to be linked from the solution directory. \
+		    Optional.  A symbolic link
+	to the solution directory.  Used by autojudge,\
+		    extractmail, and
+	trackfinder.
+
+$response_instructions_file	Instructions for\
+			    composing a response to a
+			submission after scoring.  Used\
+			    by the autojudge and
+			manualreply programs. \
+			    Optional.  A symbolic link\
+			    to
+			the solution directory.
+"
+set help($response_instructions_file) $help($files_file)
+
+
+set help($scoring_filter_file) "
+$scoring_filter_file	A program that filters the .out\
+			    file to produce the
+		.fout file, and the .test file to\
+			    produce the .ftest file.
+		These latter files are diff'ed instead\
+			    of the .out and .test
+		files by the autojudge program to\
+			    produce an auto score.
+		Optional.  A symbolic link to the\
+			    solution directory.
+
+.fout	The result of filtering the .out file through\
+			    the $scoring_filter_file
+	program.
+
+.ftest	The result of filtering the .test file through\
+			    the $scoring_filter_file
+	program.
+"
+set help(.fout) $help($scoring_filter_file)
+set help(.ftest) $help($scoring_filter_file)
 
 
 set help(.p2c) "
