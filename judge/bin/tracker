@@ -7,7 +7,7 @@
 #
 # File:		tracker
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Jan  9 09:31:37 EST 2002
+# Date:		Tue Jan 29 10:26:08 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -16,9 +16,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/01/09 14:36:20 $
+#   $Date: 2002/01/29 15:57:26 $
 #   $RCSfile: tracker,v $
-#   $Revision: 1.17 $
+#   $Revision: 1.18 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -796,8 +796,9 @@ proc add_queries {} {
 	    continue
 	}
 	set subject [lindex $rec_line 2]
-	set dword [lindex $subject 0]
-	if { [llength $subject] >= 1 \
+	if {    ! [catch { set dword \
+			       [lindex $subject 0] }] \
+	     && [llength $subject] >= 1 \
 	     && [info exists \
 	              autodispatch_map($dword)] } {
 	    continue
@@ -902,8 +903,9 @@ proc add_auto {} {
 	    continue
 	}
 	set subject [lindex $rec_line 2]
-	set dword [lindex $subject 0]
-	if { [llength $subject] < 1 \
+	if {    [catch { set dword \
+			       [lindex $subject 0] }] \
+	     || [llength $subject] < 1 \
 	     || ! [info exists \
 	                autodispatch_map($dword)] } {
 	    continue
@@ -962,8 +964,10 @@ proc summary {} {
     foreach dir [array names rec_array] {
         set rec_line $rec_array($dir)
 	set subject [lindex $rec_line 2]
-	set dword [lindex $subject 0]
-	if { $dword == "submit" } {
+	if { [catch { set dword \
+			  [lindex $subject 0] }] } {
+	    incr queries
+	} elseif { $dword == "submit" } {
 	    incr submits
 	} elseif { $dword == "get" } {
 	    incr gets

@@ -5,7 +5,7 @@
 #
 # File:		autojudge
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Jan 29 08:21:18 EST 2002
+# Date:		Tue Jan 29 10:02:19 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/01/29 14:54:22 $
+#   $Date: 2002/01/29 15:57:25 $
 #   $RCSfile: autojudge,v $
-#   $Revision: 1.72 $
+#   $Revision: 1.73 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -504,14 +504,14 @@ proc execute_links { files } {
     #
     set needs_extension no
     
-    # List of -LINK- targets that will fail regardless of
-    # .EXTENSION value.
+    # List of -LINK- targets that will fail regardless
+    # of .EXTENSION value.
     #
     set hard_link_failures ""
 
-    # List of -LINK- targets that fail because .EXTENSION
-    # is wrong, and list of .EXTENSION values that would
-    # permit ALL these targets to succeed.
+    # List of -LINK- targets that fail because
+    # .EXTENSION is wrong, and list of .EXTENSION values
+    # that would permit ALL these targets to succeed.
     #
     set soft_link_failures ""
     set legal_exts not-set-yet
@@ -776,8 +776,8 @@ while { "yes" } {
     incr count
 
     if { $count >= 10 } {
-    	puts "CANNOT LOCK $solution_directory: giving up\
-	      on make $solution_make_files"
+    	puts "CANNOT LOCK $solution_directory: giving\
+	      up on make $solution_make_files"
 	break
     }
 
@@ -845,15 +845,16 @@ proc auto_score_reply { score } {
     set manual_score None
     set proposed_score None
     set return_commands [compose_response]
+    send_response $return_commands
 
     if { [lcontain $return_commands FINAL] } {
 	puts "Emailed final auto-score:\
 	      \    $auto_score"
-    } else if { [lcontain $return_commands NOT-FINAL] } {
+    } elseif { [lcontain $return_commands NOT-FINAL] } {
 	set_flag $needs_reply_flag_file
 	puts "Emailed auto-score (review later):\
 	      \    $auto_score"
-    } else if { [lcontain $return_commands NO-REPLY] } {
+    } elseif { [lcontain $return_commands NO-REPLY] } {
 	set_flag $needs_reply_flag_file
 	puts "Auto-score (NOT emailed):\
 	      \    $auto_score"

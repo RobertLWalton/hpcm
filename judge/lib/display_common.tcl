@@ -2,7 +2,7 @@
 #
 # File:		display_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Jan 27 10:01:19 EST 2002
+# Date:		Tue Jan 29 10:55:18 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/01/27 15:32:45 $
+#   $Date: 2002/01/29 16:00:53 $
 #   $RCSfile: display_common.tcl,v $
-#   $Revision: 1.26 $
+#   $Revision: 1.27 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -848,7 +848,7 @@ set scoring_instructions $scoring_instructions_default
 proc read_received_file {} {
 
     global received_file message_subject \
-	   submitted_program submitted_extension
+	   submitted_problem submitted_extension
 
     if { ! [file readable $received_file] } {
 	set submitted_problem   ""

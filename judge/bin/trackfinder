@@ -6,7 +6,7 @@
 #
 # File:		trackfinder
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Jan 27 10:10:31 EST 2002
+# Date:		Tue Jan 29 10:27:24 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/01/27 15:55:57 $
+#   $Date: 2002/01/29 15:57:27 $
 #   $RCSfile: trackfinder,v $
-#   $Revision: 1.10 $
+#   $Revision: 1.11 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -192,7 +192,7 @@ foreach dir $directories {
 	if { $submitter == "" } {
 	    set submitter UNKNOWN
 	}
-	puts "sub $date {$submitter}"
+	puts [list sub $date $submitter]
 
     } else {
 
@@ -202,7 +202,7 @@ foreach dir $directories {
 	}
 	set date [clock_to_filename_date \
 		     [file mtime $dir]]
-	puts "dir $date {$dir}"
+	puts [list dir $date $dir]
     }
 
     set submit_time [filename_date_to_clock $date]
@@ -221,9 +221,11 @@ foreach dir $directories {
 	regsub "\[\ \t\]*\n\[\ \t\]*" $subject { } \
 	       subject
 
-	puts "rec $mtime {$subject}"
+	puts [list rec $mtime $subject]
 
-	if { [llength $subject] == 2 \
+	if {    ! [catch { set sublen \
+			       [llength $subject] }] \
+	     && $sublen == 2 \
 	     && [lindex $subject 0] == "submit" } {
 	    set submitted_name [lindex $subject 1]
 	    set submitted_problem \
@@ -233,14 +235,14 @@ foreach dir $directories {
 
     set mtime [get_mtime $dir/$gotten_file]
     if { $mtime != "{}" } {
-	puts "got $mtime"
+	puts [list got $mtime]
     }
 
     if { $submitted_name != "" } {
 
         set mtime [get_mtime $dir/$submitted_name]
     	if { $mtime != "{}" } {
-	    puts "ext $mtime {$submitted_name}"
+	    puts [list ext $mtime $submitted_name]
 	}
 
 	set mtime1 \
@@ -248,7 +250,7 @@ foreach dir $directories {
 	set mtime2 \
 	    [get_mtime $dir/$submitted_problem.cerr]
 	if { $mtime1 != "{}" || $mtime2 != "{}" } {
-	    puts "bin $mtime1 $mtime2"
+	    puts [list bin $mtime1 $mtime2]
 	}
 
 	set mtime1 \
@@ -256,7 +258,7 @@ foreach dir $directories {
 	set mtime2 \
 	    [get_mtime $dir/$submitted_problem.err]
 	if { $mtime1 != "{}" || $mtime2 != "{}" } {
-	    puts "out $mtime1 $mtime2"
+	    puts [list out $mtime1 $mtime2]
 	}
     }
 
@@ -265,27 +267,27 @@ foreach dir $directories {
     set mtime2 \
 	[get_mtime $dir/$manual_score_file]
     if { $mtime1 != "{}" || $mtime2 != "{}" } {
-	puts "sco $mtime1 $mtime2\
+	puts [list sco $mtime1 $mtime2 \
 	      [get_file $dir/$auto_score_file] \
-	      [get_file $dir/$manual_score_file]"
+	      [get_file $dir/$manual_score_file]]
     }
 
     set mtime1 [get_mtime $dir/$reply_file]
     set mtime2 [get_mtime $dir/$no_reply_file]
     if { $mtime1 != "{}" || $mtime2 != "{}" } {
-	puts "rep $mtime1 $mtime2"
+	puts [list rep $mtime1 $mtime2]
     }
 
     set mtime [get_mtime $dir/$reply_history_file]
     if { $mtime != "{}" } {
-	puts "his $mtime [expr { [clock seconds] \
-				 - $submit_time }]"
+	puts [list his $mtime [expr { [clock seconds] \
+				      - $submit_time }]]
     }
 
     set mtime [get_mtime $dir/$dispatch_pid_file]
     if { $mtime != "{}" } {
-	puts "pid $mtime [expr { [clock seconds] \
-				 - $submit_time }]"
+	puts [list pid $mtime [expr { [clock seconds] \
+				      - $submit_time }]]
     }
 
     foreach file \
@@ -294,7 +296,7 @@ foreach dir $directories {
 	if { [regexp "\n" $file] } continue
 	set mtime [get_mtime $file]
 	if { $mtime != "{}" } {
-	    puts "chk $mtime {[file tail $file]}"
+	    puts [list chk $mtime [file tail $file]]
 	}
     }
 
@@ -304,7 +306,7 @@ foreach dir $directories {
 	if { [regexp "\n" $file] } continue
 	set mtime [get_mtime $file]
 	if { $mtime != "{}" } {
-	    puts "err $mtime {[file tail $file]}"
+	    puts [list err $mtime [file tail $file]]
 	}
     }
 }
