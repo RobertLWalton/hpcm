@@ -5,7 +5,7 @@
 #
 # File:		autojudge
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Jan  6 08:46:39 EST 2002
+# Date:		Sun Jan  6 09:33:47 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/01/06 13:47:03 $
+#   $Date: 2002/01/06 14:54:39 $
 #   $RCSfile: autojudge,v $
-#   $Revision: 1.54 $
+#   $Revision: 1.55 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -41,10 +41,10 @@ autojudge \[problem\[.extension\]\]
     	that
     file.  This program may report the score to the sub-
     mitter by creating and sending `$reply_file' as
-    specified by the scoring mode.
+    specified by the `scoring_mode' global variable.
 
-    If the the problem name and optional extension is
-    not given as an argument, it is extracted from the
+    If the problem name and optional extension are not
+    given as an argument, they are extracted from the
 
     	Subject: problem\[.extension\]
 
@@ -57,49 +57,53 @@ autojudge \[problem\[.extension\]\]
     value, which by default is:
     
     	$allowed_extensions
- 
-    Specifically, this program makes the following in
-    order:
 
-	* `$files_file' file, if it exists
-	. any -SOLUTION-MAKE- files listed in any
-	  `$files_file' file; note these files are in
-	  the solution directory
-	. submitted files made by calling extractmail
-	* any -LINK- files listed in any `$files_file'\
-		file;
-	  if there is no `$files_file' file, the list of
-	  -LINK- files defaults to:
+    In this document and in the `$files_file' file\
+    	mentioned
+    below, the words `PROBLEM' and `EXTENSION' are used
+    to denote the problem name and extension as given in
+    an argument or `Subject:' field.
+ 
+    More specifically, this program makes the following
+    in order:
+
+      * `$files_file' file, if it exists
+      . any -SOLUTION-MAKE- files listed in any
+	`$files_file' file; note these files are in
+	the solution directory
+      . submitted files made by calling extractmail
+      * any -LINK- or -OPTIONAL-LINK- files listed in
+	any `$files_file' file; if there is no\
+	  	`$files_file' file,
+	the -LINK- files are by default:
 	     $make_file, PROBLEM.in, PROBLEM.test
-	* any -OPTIONAL-LINK- files listed in any
-	  `$files_file' file; if there is no\
-	  	`$files_file'
-	  file, the list of -OPTIONAL-LINK- files de-
-	  faults to:
+	and the -OPTIONAL-LINK- files are by default:
 	     $scoring_instructions_file,\
 	     	$scoring_filter_file,
 	     PROBLEM.ftest
-	. program binary file `PROBLEM' and compiler
-	  error file PROBLEM.cerr
-	. program standard output file PROBLEM.out and
-	  program standard error file PROBLEM.err
-	. filtered outfile file PROBLEM.fout, if the
-	  $scoring_filter_file file exists
-	. PROBLEM.score file made by calling autoscore
-	. $auto_score_file file made by ditto
-	. $reply_file file, sometimes
+      . the program binary file `PROBLEM' and the
+	compiler error file PROBLEM.cerr
+      . the program standard output file PROBLEM.out
+	and the program standard error file PROBLEM.err
+      . the filtered outfile file PROBLEM.fout, if the
+	$scoring_filter_file file exists
+      . the PROBLEM.score file made by calling autoscore
+      . the $auto_score_file file made by ditto
+      . the $reply_file file, sometimes
 
     Here files marked with * are linked into the current
     submission directory from the problem's solution
     directory.  This program checks any other file that
-    already exists to see if it is older than the pre-
-    vious files upon which it dependes (starting with
-    submitted files not being older than the
-    $received_file file), and if the file is older and
-    hence out-of-date, this program remakes the file.
-    Errors in making the program binary can cause
-    $auto_score_file and maybe $reply_file to be gener-
-    ated early.
+    already exists to see if it is younger than the pre-
+    vious files upon which it depends (starting with
+    submitted files being younger than the\
+    	$received_file
+    file), and if a file is younger and hence up to
+    date, this program skips remaking the file.  Inabil-
+    ity to make a program binary or a .out file, or an
+    empty .out file, can cause $auto_score_file and\
+    	maybe
+    $reply_file to be generated early.
 
     First, this program verifies the existence of a so-
     lution directory for the problem and symbolically
