@@ -2,7 +2,7 @@
 #
 # File:		scoring_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Feb  7 01:05:58 EST 2003
+# Date:		Fri Feb  7 10:00:05 EST 2003
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2003/02/07 06:16:18 $
+#   $Date: 2003/02/07 15:04:28 $
 #   $RCSfile: scoring_common.tcl,v $
-#   $Revision: 1.36 $
+#   $Revision: 1.37 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -732,11 +732,12 @@ proc parse_block { block commands } {
 # Function to evaluate if-statement expression.
 #
 proc eval_response_if { item } {
-    global scoring_mode auto_score manual_score \
-           proposed_score response_instructions_globals
+    global response_instructions_globals
+    foreach g $response_instructions_globals {
+    	global $g
+    }
     set manual [expr { $manual_score != "None" }]
     set proposed [expr { $proposed_score != "None" }]
-    eval global $response_instructions_globals
     return [expr $item]
 }
 
@@ -1302,7 +1303,8 @@ proc get_proof { args } {
 #	compute_proof_info
 #
 # The files referenced in the proof are $basename.out
-# and $basename.test where $basename is the base of
+# and $basename.test (or $basename.fout and
+# $basename.ftest) where $basename is the base of
 # $score_filename.
 #
 # If there is no error, window_error is set to "" and
@@ -1314,8 +1316,9 @@ proc get_proof { args } {
 # returns `no'.
 #
 # This function calls compute_file_display for
-# $basename.out and out_file_array and for
-# $basename.test and test_file_array.
+# $basename.out (or $basename.fout) and out_file_array
+# and for $basename.test (or $basename.ftest) and
+# test_file_array.
 #
 # If there is no error, this function sets the
 # `last_display' variable to `proof'.
@@ -1368,13 +1371,22 @@ proc set_proof_display { } {
     if { $tmin < 1 } { set tmin 1 }
 
     set basename [file rootname $score_filename]
+
+    if { [file exists $basename.fout] } {
+        set out_file $basename.fout
+	set test_file $basename.ftest
+    } else {
+        set out_file $basename.out
+	set test_file $basename.test
+    }
+
     set_window_display \
-        "[compute_file_display $basename.out \
+        "[compute_file_display $out_file \
 	                       out_file_array \
 			       $omin \
 			       [expr { $oline + $L }] \
 			       $oh \
-        ][compute_file_display $basename.test \
+        ][compute_file_display $test_file \
 	                       test_file_array \
 			       $tmin \
 			       [expr { $tline + $L }] \
