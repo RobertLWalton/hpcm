@@ -5,7 +5,7 @@
 #
 # File:		manualreply
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Feb 10 07:20:13 EST 2002
+# Date:		Tue Mar 19 06:48:11 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/02/10 15:52:02 $
+#   $Date: 2002/03/19 12:20:18 $
 #   $RCSfile: manualreply,v $
-#   $Revision: 1.51 $
+#   $Revision: 1.52 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -217,11 +217,14 @@ directory mentioned in a query created by the sq\
 set help(aj) "
 aj
 
-Call `autojudge' in the current directory.  The\
-    autojudge program makes
-any missing or out of date Auto_Score file and any\
-    missing or out of date
-files needed to make a new Auto_Score file.
+
+Call `autojudge -manual' in the current directory.  The\
+    autojudge
+program makes any missing or out of date\
+    $auto_score_file file and any missing
+or out of date files needed to make a new\
+    $auto_score_file file.  The -manual
+option suppresses sending email to the submitter.
 "
 
 set help(v) "
@@ -1351,13 +1354,14 @@ while { "yes" } {
 	{^aj$} {
 	    if { [not_readonly] } {
 
-		puts "Running autojudge"
-		catch { exec autojudge >&@ stdout }
+		puts "Running autojudge -manual"
+		catch { exec autojudge -manual \
+		             >&@ stdout }
 
 		if { ! [file exists $auto_score_file] \
 			} {
-		    puts "autojudge FAILED to make\
-			 $auto_score_file"
+		    puts "autojudge -manual FAILED to\
+		          make $auto_score_file"
 		}
 		continue?
 		refresh_file_list

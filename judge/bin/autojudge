@@ -5,7 +5,7 @@
 #
 # File:		autojudge
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Feb  5 08:00:23 EST 2002
+# Date:		Tue Mar 19 06:09:10 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/02/06 00:33:03 $
+#   $Date: 2002/03/19 12:20:17 $
 #   $RCSfile: autojudge,v $
-#   $Revision: 1.80 $
+#   $Revision: 1.81 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -32,7 +32,7 @@ catch {
 
 set document "
 cd submission_directory
-autojudge \[problem\[.extension\]\]
+autojudge \[-manual\] \[problem\[.extension\]\]
 
     Given the submission directory as the current dir-
     ectory, and given that the submission directory
@@ -43,6 +43,11 @@ autojudge \[problem\[.extension\]\]
     file.  This program may report the score to the sub-
     mitter by creating and sending `$reply_file' as
     specified by the `scoring_mode' global variable.
+
+    If the -manual program option is given, it sets the
+    scoring_mode to `manual' while this program is run-
+    ning.  This suppresses sending email to the submit-
+    ter.
 
     If the problem name and optional extension are not
     given as an argument, they are extracted from the
@@ -58,7 +63,7 @@ autojudge \[problem\[.extension\]\]
     sions' global variable value, which by default is:
     
     	$allowed_extensions
-
+
     In this document and in the `$files_file' file\
     	mentioned
     below, the words `PROBLEM' and `EXTENSION' are used
@@ -68,7 +73,7 @@ autojudge \[problem\[.extension\]\]
     solutions directory, i.e., the directory with name:
 
     	\$solutions_directory/PROBLEM
- 
+
     More specifically, this program makes the following
     in order:
 
@@ -95,7 +100,7 @@ autojudge \[problem\[.extension\]\]
       . the PROBLEM.score file made by calling autoscore
       . the $auto_score_file file made by ditto
       . the $reply_file file, sometimes
-
+
     Here files marked with * are linked into the current
     submission directory from the problem's solution
     directory.  This program checks any other file that
@@ -109,7 +114,7 @@ autojudge \[problem\[.extension\]\]
     empty .out file, can cause $auto_score_file and\
     	maybe
     $reply_file to be generated early.
-
+
     In general, this program may detect two kinds of
     errors: system errors and submitter errors.  A
     system error means the judging files are incorrectly
@@ -131,7 +136,7 @@ autojudge \[problem\[.extension\]\]
     rectory into the current directory, if that file
     exists.  If the file does not exist, it is given the
     default value:
-
+
         -LINK-
 	    { $make_file $make_file.EXTENSION\
 	    	$make_file }
@@ -144,7 +149,7 @@ autojudge \[problem\[.extension\]\]
 	    { $response_instructions_file
 	        $response_instructions_file.EXTENSION
 	    	$response_instructions_file }
-
+
     The `$files_file' file is interpreted as a TCL list
     (with list elements separated by spaces, tabs, or
     new lines) whose elements are special symbols, file
@@ -165,7 +170,7 @@ autojudge \[problem\[.extension\]\]
 			-LINK- name files that are to be
 			linked from the solution direc-
 			tory to the current directory.
-    
+
     	-OPTIONAL-LINK-	The list items governed by
 			-OPTIONAL-LINK- name files that
 			are to be linked from the solu-
@@ -182,14 +187,14 @@ autojudge \[problem\[.extension\]\]
     name can appear several times in the list: e.g.,
     a file name can appear governed by -SOLUTION-MAKE-
     and then again governed by -LINK-.
-
+
     Each item governed by one of the three special
     symbols listed above is either a file name or a list
     of file names.  In any file name, the basename
     `PROBLEM' is replaced by the problem name and the
     extension `.EXTENSION' is replaced by the submission
     extension.
-
+
     -LINK- and -OPTIONAL-LINK- items may be a { } brac-
     ketted list of file names.  In this case, the first
     file name F is the file name in the current direc-
@@ -406,10 +411,25 @@ autojudge \[problem\[.extension\]\]
     	$response_instructions_file
     file is misformatted."
 
+# Do not change argc or argv so error printouts will be
+# correct.
+#
+set my_argc $argc
+set my_argv $argv
+
+# Process any -manual argument.
+#
+if { [lindex $my_argv 0] == "-manual" } {
+    set scoring_mode manual
+    set my_argv [lrange $my_argv 1 end]
+    incr my_argc -1
+}
+
 # If too many arguments or -doc argument, print docu-
 # mentation and exit.
 #
-if { $argc > 1 || [regexp {^-doc} [lindex $argv 0]] } {
+if {    $my_argc > 1 \
+     || [regexp {^-doc} [lindex $my_argv 0]] } {
     puts $document
     exit 1
 }
@@ -435,8 +455,8 @@ proc subject_error { what } {
 
 # Compute problem name and extension.
 #
-if { $argc == 1 } {
-    set argument [lindex $argv 0]
+if { $my_argc == 1 } {
+    set argument [lindex $my_argv 0]
 } else {
 
     # Read message header.
