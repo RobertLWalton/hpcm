@@ -2,7 +2,7 @@
 #
 # File:		scoring_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Sep  7 22:14:18 EDT 2001
+# Date:		Sat Sep  8 07:43:05 EDT 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/09/08 02:48:04 $
+#   $Date: 2001/09/08 13:03:11 $
 #   $RCSfile: scoring_common.tcl,v $
-#   $Revision: 1.13 $
+#   $Revision: 1.14 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -186,7 +186,7 @@ proc compute_score_and_proof_arrays { args } {
 		error "Too many *.score files"
 	    }
 
-	    set filename [lindex [lindex 1 $items] 2]
+	    set filename [lindex [lindex $items 0] 2]
 	}
 	1 {
 	    set filename [lindex $args 0]
@@ -538,7 +538,7 @@ proc get_proof { args } {
         set type [lindex [array names proof_array] 0]
     }
 
-    if { [info exists $current_proof_array($type)] } {
+    if { [info exists current_proof_array($type)] } {
         set n $current_proof_array($type)
     } else {
         set n 1
@@ -549,7 +549,10 @@ proc get_proof { args } {
         if { [regexp {^[a-z][a-z]} $arg] } {
 	    set found ""
 	    foreach t [array names proof_array] {
-	        if { [regexp "^$arg" $t] } {
+	        if { $arg == $t } {
+		    set found $t
+		    break
+	        } elseif { [regexp "^$arg" $t] } {
 		    lappend found $t
 		}
 	    }
@@ -569,7 +572,7 @@ proc get_proof { args } {
 	        set type [lindex $found 0]
 
 		if { [info exists \
-		      $current_proof_array($type)] } {
+		      current_proof_array($type)] } {
 		    set n $current_proof_array($type)
 		} else {
 		    set n 1
@@ -642,25 +645,27 @@ proc set_proof_display { } {
 	   window_error \
 	   last_display
 
-    if { [get_proof] == "no" } return no
+    if { [get_proof] == "no" } {
+    	return no
+    }
 
     set proofs $proof_array($current_type)
 
     set i $current_proof_array($current_type)
-    incr i -1
 
-    set proof [lindex $proofs $i]
+    set proof [lindex $proofs [expr { $i - 1 }]]
 
-    set oline [lindex $proof 0]
-    set tline [lindex $proof 1]
-    set oc1   [lindex $proof 2]
-    set oc2   [lindex $proof 3]
-    set tc1   [lindex $proof 4]
-    set tc2   [lindex $proof 5]
+    set oline [lindex $proof 1]
+    set tline [lindex $proof 2]
+    set oc1   [lindex $proof 3]
+    set oc2   [lindex $proof 4]
+    set tc1   [lindex $proof 5]
+    set tc2   [lindex $proof 6]
     set oh    [list [list $oline $oc1 $oc2]]
     set th    [list [list $tline $tc1 $tc2]]
     set desc  [concat $current_type \
-    		      [lrange $proof 6 end]]
+    		      [lrange $proof 7 end]]
+    set desc  "\[$i\]  $desc"
 
     # L is the number of lines of each file that are to
     # be displayed before and after the principal
@@ -672,17 +677,22 @@ proc set_proof_display { } {
                         - $window_info_height - 8 ) \
 		      / 4 }]
 
+    set omin [expr $oline - $L]
+    if { $omin < 1 } { set omin 1 }
+    set tmin [expr $tline - $L]
+    if { $tmin < 1 } { set tmin 1 }
+
     set basename [file rootname $score_filename]
     set_window_display \
         "[compute_file_display $basename.out \
 	                       out_file_array \
-			       [expr { $oline - L }] \
-			       [expr { $oline + L }] \
+			       $omin \
+			       [expr { $oline + $L }] \
 			       $oh \
         ][compute_file_display $basename.test \
 	                       test_file_array \
-			       [expr { $tline - L }] \
-			       [expr { $tline + L }] \
+			       $tmin \
+			       [expr { $tline + $L }] \
 			       $th \
 	][bar_with_text $desc]"
 
@@ -705,7 +715,7 @@ proc set_proof_info { extra } {
            incomplete_output_types \
 	   formatting_error_types \
 	   proof_array score_array \
-	   window_info_lines
+	   window_info_height
 
     set error_types \
         [concat $incorrect_output_types \
@@ -735,8 +745,8 @@ proc set_proof_info { extra } {
     }
     set info "$info    n = next proof    p\
                          = previous proof$extra"
-    incr lines 1
-    incr [llength [split $extra "\n"]]
+    incr lines 2
+    incr lines [llength [split $extra "\n"]]
 
     set window_info_height $lines
     set_window_info $info

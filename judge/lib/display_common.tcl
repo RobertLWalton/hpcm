@@ -2,7 +2,7 @@
 #
 # File:		display_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Sep  7 22:20:48 EDT 2001
+# Date:		Sat Sep  8 07:40:18 EDT 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/09/08 02:48:04 $
+#   $Date: 2001/09/08 13:03:11 $
 #   $RCSfile: display_common.tcl,v $
-#   $Revision: 1.14 $
+#   $Revision: 1.15 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -543,7 +543,7 @@ proc get_file_items { regexp } {
     set result ""
 
     foreach item $file_list {
-        if { [regexp "^$regexp\$" $filename] } {
+        if { [regexp "^$regexp\$" [lindex $item 2]] } {
 	    lappend result $item
 	}
     }
@@ -1109,7 +1109,7 @@ proc read_file_array { filename xxx_array linenumber } {
 
     }
 
-    if { $ch = "CLOSED" } return
+    if { $ch == "CLOSED" } return
 
     while { $lastline < $linenumber } {
 	set line [gets $ch]
@@ -1163,7 +1163,7 @@ proc tab_expand { line } {
 	    set output \
 	        "$output[string range $blanks 0 $b]"
 	}
-	set $output "$output$segment"
+	set output "$output$segment"
         incr column [string length $segment]
     }
 
@@ -1209,6 +1209,7 @@ proc compute_file_display \
 
     set output [bar_with_text "$filename: lines\
     		$first_line_number-$last_line_number:"]
+    set output "$output\n"
 
     set i $first_line_number
     set eofyet no
@@ -1223,12 +1224,12 @@ proc compute_file_display \
 
         if { ! [info exists array($i)] } {
 	    if { $eofyet } {
-	        set line "\n"
+	        set line ""
 	    } else {
 	        set eofyet yes
 	        set line "----------\
 			  END OF FILE\
-			  ----------\n"
+			  ----------"
 	    }
 	} else {
 
@@ -1236,8 +1237,8 @@ proc compute_file_display \
 	    if { $j == $i } {
 	        set line [tab_expand $line]
 		set k 0
-		while { "yes } {
-		    set h [lindex $highlights]
+		while { "yes" } {
+		    set h [lindex $highlights 0]
 		    set c1 [lindex $h 1]
 		    set c2 [lindex $h 2]
 		    incr c1 $k
@@ -1253,7 +1254,7 @@ proc compute_file_display \
 		    set line "$l1$hon$l2$hoff$l3"
 
 		    set highlights \
-		        [lrange $hightlights 1 end]
+		        [lrange $highlights 1 end]
 		    set j [lindex [lindex $highlights \
 		                          0] 0]
 		    if { $j == "" || $j != $i } break
@@ -1261,6 +1262,7 @@ proc compute_file_display \
 	    }
 	}
 	set output "$output$line\n"
+	incr i
     }
 
     return $output
