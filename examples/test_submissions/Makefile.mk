@@ -2,7 +2,7 @@
 #
 # File:		Makefile.mk
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Mar  9 20:55:09 EST 2002
+# Date:		Mon Mar 18 09:51:45 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,16 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/03/10 01:57:02 $
+#   $Date: 2002/03/18 14:56:25 $
 #   $RCSfile: Makefile.mk,v $
-#   $Revision: 1.5 $
+#   $Revision: 1.6 $
+
+diff_replies:
+	for x in *.reply; do \
+	    filtered_diff $$x $S/$$x \
+	        DATE RECEIVED_BY MESSAGE_ID \
+		TO FROM ERROR SUBMISSION; \
+	done
 
 test_email:	test_count_correct \
 		test_count_incorrect \

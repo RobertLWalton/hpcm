@@ -1,0 +1,175 @@
+#!/bin/sh
+#
+# Check files for differences after filtering out
+# some things.
+#
+# File:		filtered_diff
+# Author:	Bob Walton (walton@deas.harvard.edu)
+# Date:		Mon Mar 18 10:00:14 EST 2002
+#
+# The authors have placed this program in the public
+# domain; they make no warranty and accept no liability
+# for this program.
+#
+# RCS Info (may not be true date or author):
+#
+#   $Author: hc3 $
+#   $Date: 2002/03/18 14:57:46 $
+#   $RCSfile: filtered_diff,v $
+#   $Revision: 1.1 $
+#
+# The next line starts tcl \
+exec tcl "$0" "$@"
+
+# Use tcl rather than tclsh so that `signal' is defined.
+
+set DAY {(mo|tu|we|th|fr|sa|su)[a-z]*}
+set MONTH {(jan|feb|mar|ap|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*}
+set N {[0-9]+}
+set ZONE {( [a-z]+|)}
+set Z {( -[0-9]+| \+[0-9+]|)}
+set NW "\[^\ \t\]"
+set NWSEMI "\[^\ \t;\]"
+
+
+# All abbreviation names must consist solely of capital
+# letters, digits, -, and _.
+#
+set DATE1 "$DAY $MONTH $N $N:$N:$N$ZONE $N"
+set DATE2 "$DAY, $N $MONTH $N $N:$N:$N$Z"
+set DATE3 "$N/$N/$N $N:$N:$N"
+set abbreviations(DATE) \
+    "{NC}{WB}($DATE1|$DATE2|$DATE3)"
+set abbreviations(RECEIVED_BY) \
+    "{WB}by $NW+ \\($N.$N.$N/$N.$N.$N\\) id $NWSEMI+;"
+set abbreviations(MESSAGE_ID) \
+    "{NC}^Message-Id: <$N.\[^>@\]+@\[^>\]+>\$"
+set abbreviations(TO) \
+    "{NC}^To: \[^<]*<\[^>@\]+@\[^>\]+>\$"
+set FROM1 "From $NW+ $DATE1"
+set FROM2 "From: \[^<]*<\[^>@\]+@\[^>\]+>"
+set abbreviations(FROM) \
+    "{NC}^($FROM1|$FROM2)\$"
+set abbreviations(ERROR) \
+    "$N-$N-$N-$N:$N:$N-$N-<<\[^>]*>>-(un|)checked-error"
+set abbreviations(SUBMISSION) \
+    "$N-$N-$N-$N:$N:$N-<<\[^>]*>>-submission"
+
+# Make a list of abbreviations for documentation.
+#
+proc abbreviations_doc { } {
+
+    global abbreviations
+
+    set result ""
+    foreach abbrev [lsort [array names abbreviations]] {
+	set value $abbreviations($abbrev)
+	if { [string length $value] > 27 } {
+	    set v "[string range $value 0 12]  ..... "
+	    set value "$v[string range $value \
+	    			 end-12 end]"
+	}
+        set result "$result       \
+	    $abbrev	$value\n"
+    }
+    return $result
+}
+
+set document "
+filtered_diff file1 file2 regular-expression ...
+
+    Check whether file1 and file2 differ after all
+    text within a line that matches any of the given
+    regular expressions is replaced by XXX.  Exits
+    with 0 status code if there are no differences;
+    otherwise exists with status code 1 and annotates
+    the first difference in stderr.
+    
+    If a regular expression begins with `{NC}' then
+    letter case is ignored in matching the regular
+    expression.  If a regular expression begins with
+    `{WB}' then whitespace must surround what the
+    regular expression matches.
+
+    The following abbreviations are recognized for reg-
+    ular expressions:
+
+[abbreviations_doc]
+    "
+
+# If less than 2 argument given print documentation and
+# exit.
+#
+if { $argc < 2 } {
+    puts $document
+    exit 1
+}
+
+set file1 [lindex $argv 0]
+set file2 [lindex $argv 1]
+set ch1 [open $file1 r]
+set ch2 [open $file2 r]
+
+set count 0
+
+while { "yes" } {
+
+    set line1 [gets $ch1]
+    set line2 [gets $ch2]
+    if { [eof $ch1] } {
+         if { [eof $ch2] } break
+
+	 puts stderr "$file1 is shorter than $file2"
+	 exit 1
+    } elseif { [eof $ch2] } {
+
+	 puts stderr "$file2 is shorter than $file1"
+	 exit 1
+    }
+
+    incr count
+
+    set line1s $line1
+    set line2s $line2
+    foreach regexp [lrange $argv 2 end] {
+
+	if { [regexp {^[-_A-Z0-9]+$} $regexp] \
+	     && [info exists abbreviations($regexp)] } {
+	    set regexp $abbreviations($regexp)
+	}
+	set NC no
+	set WB no
+        while { [regexp {^{(NC|WB)}(.*)$} $regexp \
+	                forget option regexp] } {
+	    set $option yes
+	}
+
+	set replace XXX
+	if { $WB } {
+	    set replace " XXX "
+	    set regexp "(^|\ |\t)${regexp}(\$|\ |\t)"
+	}
+	if { $NC } {
+	    regsub -nocase -all -- $regexp $line1s \
+	           $replace line1s
+	    regsub -nocase -all -- $regexp $line2s \
+	           $replace line2s
+	} else {
+	    regsub -all -- $regexp $line1s \
+	           $replace line1s
+	    regsub -all -- $regexp $line2s \
+	           $replace line2s
+	}
+    }
+
+    if { $line1s != $line2s } {
+	puts stderr \
+	     "$file1 and $file2 differ at line\
+	      $count:"
+	puts stderr "  $line1"
+	puts stderr "  $line2"
+	exit 1
+    }
+}
+
+exit 0
