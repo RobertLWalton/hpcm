@@ -1,7 +1,7 @@
 # Makefile for the `count' Demonstration Problem
 #
 # File:		Makefile
-# Date:		Tue Dec  5 07:20:27 EST 2000
+# Date:		Mon Jan 28 03:52:38 EST 2002
 #
 # Exactly ONE of the four files count.c (C), count.cc
 # (C++), count.p (Pascal), or count.java (Java) should
@@ -81,8 +81,8 @@ count.out:	count count.in
 	rm -f count.out core
 	chmod a+x . count
 	hpcm_sandbox -cputime 60 \
-	             -datasize 2m \
-		     -stacksize 1m \
+	             -datasize 8m \
+		     -stacksize 2m \
 		     -filesize 50k \
 		     -watch \
 		     count \
@@ -108,6 +108,6 @@ clean:
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/12/05 12:17:56 $
+#   $Date: 2002/01/28 08:52:57 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.16 $
+#   $Revision: 1.17 $
