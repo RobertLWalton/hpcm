@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Sep  4 04:08:14 EDT 2000
+# Date:		Sat Sep 30 08:54:54 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/09/19 10:09:57 $
+#   $Date: 2000/09/30 13:46:12 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.1 $
+#   $Revision: 1.2 $
 
 all:	modes
 
@@ -22,6 +22,8 @@ all:	modes
 .SUFFIXES:
 
 modes:
-	chmod a+r *.help
+	for x in common formal informal email; do \
+	    if test -d $$x; then chmod a+r $$x/*; fi; \
+	done
 
 clean:
