@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Feb  8 03:46:32 EST 2002
+# Date:		Fri Feb  8 03:51:05 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/02/08 08:48:48 $
+#   $Date: 2002/02/08 08:57:43 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.99 $
+#   $Revision: 1.100 $
 
 # Table of Contents:
 #
@@ -441,16 +441,17 @@ set output_limit_regexp {file size limit exceeded}
 set default_response_instructions {
 
     if { ! $manual && ! $proposed } {
-	if {    $scoring_mode == "auto" \
-	     || $auto_score == "Completely Correct" } {
+	if { $scoring_mode == "manual" } {
+	    NO-REPLY
+	    EXIT
+	} elseif {    $scoring_mode == "auto" \
+	           || $auto_score \
+		          == "Completely Correct" } {
 	    { LINE "For -PROBLEM- the automatically\
 	    	    determined final score is:" }
 	    BLANK
 	    { LINE "    -AUTO-SCORE-" }
 	    FINAL
-	} elseif { $scoring_mode == "manual" } {
-	    NO-REPLY
-	    EXIT
 	} elseif { [lcontain {auto+manual manual+auto} \
 			     $scoring_mode] } {
 
@@ -466,19 +467,14 @@ set default_response_instructions {
 	}
     } elseif { ! $manual && $proposed } {
 	FINAL
-	if { $scoring_mode == "manual" \
-	     && $auto_score != "Completely Correct" } {
+	if { $scoring_mode == "manual" } {
 	    { LINE "For -PROBLEM- your final score\
 	    	    is:" }
 	    BLANK
 	    { LINE "    -PROPOSED-SCORE-" }
-	} elseif { [regexp {auto} $scoring_mode] \
-	           || $auto_score \
-		        == "Completely Correct" } {
+	} elseif { [regexp {auto} $scoring_mode] } {
 
-	    if { $scoring_mode == "auto" \
-	         || $auto_score \
-		        == "Completely Correct" } {
+	    if { $scoring_mode == "auto" } {
 	    	EDIT
 	    }
 
@@ -500,9 +496,7 @@ set default_response_instructions {
 
 	    } else {
 
-		if { $scoring_mode != "auto" \
-	             && $auto_score \
-		           != "Completely Correct" } {
+		if { $scoring_mode != "auto" } {
 
 		    { LINE "has been OVERRIDDEN by the\
 		    	    human judge!" }
@@ -557,12 +551,16 @@ set default_response_instructions {
 # The following is a regular expression that matches
 # all the $auto_score_file values which cause some
 # reply (maybe not final) to be sent to the submitter.
-# Scorefinder ignores other $auto_score_file values.
-# This must match the definition of scoring mode
-# implicit in the response instructions.
+# The regular expression is matched to the ENTIRE
+# $auto_score_file value.
+#
+# This regular expression must be compatible with the
+# definition of scoring mode implicit in the response
+# instructions.  Scorefinder ignores other # $auto_
+# score_file values.
 # 
 if { $scoring_mode == "manual" } {
-    set reply_auto_scores {Complely Correct}
+    set reply_auto_scores {No Match}
 } else {
     set reply_auto_scores {.*}
 }
