@@ -6,7 +6,7 @@
 #
 # File:		lookat
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Sep 23 07:50:37 EDT 2001
+# Date:		Thu Sep 27 04:44:54 EDT 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/09/23 11:44:56 $
+#   $Date: 2001/09/27 08:52:19 $
 #   $RCSfile: lookat,v $
-#   $Revision: 1.7 $
+#   $Revision: 1.8 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -34,6 +34,29 @@ catch {
 # Maximum number of bytes in a file that are read.
 #
 set size_limit 100000
+
+# Abbreviations for atoms.
+#
+array set abbreviations {
+    SUBJECT	{^Received_Mail$::^Subject:}
+    AUTO	{^Auto_Score$::.}
+    MANUAL	{^Manual_Score$::.}
+    GOTTEN	{^Gotten$::\\.(txt|html|htm|ps)$}
+}
+
+# Make a list of abbreviations for documentation.
+#
+proc abbreviations_doc { } {
+
+    global abbreviations
+
+    set result ""
+    foreach abbrev [lsort [array names abbreviations]] {
+        set result "$result       \
+	    $abbrev	$abbreviations($abbrev)\n"
+    }
+    return $result
+}
 
 set document "
 lookat 'logical-expression'
@@ -71,10 +94,14 @@ lookat 'logical-expression'
     a file name or file line.  A `^' matches the
     beginning of the name or line, and a `\$' matches
     the end of the name or line.
+
+    There are some abbreviations of atoms that are re-
+    cognized, namely the following:
 
+[abbreviations_doc]
     If a file is larger than $size_limit bytes, at most
     the first $size_limit bytes of the file are read.
-
+
     After the list of subdirectories is computed, the
     list is displayed.  For each subdirectory and each
     logical expression atom that matches within the
@@ -88,7 +115,7 @@ lookat 'logical-expression'
     Unlike most HPCM judging programs, errors made by
     this program are not written to log files, but are
     announced on standard error.
-
+
     Some examples:
 
     	lookat '^foo@fee'
@@ -99,13 +126,23 @@ lookat 'logical-expression'
 	    its Auto_Score file and Received_Mail
 	    `Subject:' line.
 
+	lookat 'AUTO & RECEIVED'
+	    Ditto in effect, usually, though in this
+	    form the file names are more carefully
+	    specific.
+
 	lookat '! Auto::. & Received::^Subject:'
 	    Lists non-autoscored submissions and for
 	    each its Received_Mail `Subject:' line.
 
-	lookat '! Auto::. & ( 1 | Gotten::\\.txt$ )'
+	lookat '! Auto::. & ( 1 | Gotten::\\\\.txt\$ )'
 	    Lists non-autoscored submissions and for
-	    each any Gotten file line for a .txt file."
+	    each any Gotten file line for a .txt file.
+
+	lookat '! AUTO & ( 1 | GOTTEN )'
+	    Ditto but file names are more specific and
+	    .html, .htm, and .ps Gotten file lines are
+	    also listed."
 
 
 # If wrong number of arguments or first argument
@@ -145,6 +182,19 @@ foreach token [lindex $argv 0] {
 	|   { }
 
 	default {
+
+	    # Replace abbreviation tokens.
+	    #
+	    foreach abbrev [array names abbreviations] {
+		if { $abbrev == $token } {
+		    set token $abbreviations($abbrev)
+		    break
+		}
+	    }
+
+	    # Extract f(ilename-)regexp and
+	    # l(ine-)regexp.
+	    #
 	    if { [regexp {^(.*)::(.*)$} $token \
 	                 forget fregexp lregexp] } {
 	        if {    [regexp {:(:|$)} $fregexp] \
@@ -155,6 +205,10 @@ foreach token [lindex $argv 0] {
 	        set fregexp ""
 		set lregexp $token
 	    }
+
+	    # Save extracted regexps and replace token
+	    # with `$value(N)'.
+	    #
 	    incr N
 	    set filename_regexp($N) $fregexp
 	    set line_regexp($N) $lregexp
@@ -162,9 +216,15 @@ foreach token [lindex $argv 0] {
 	}
     }
 
+    # Append token to logical expression.
+    #
     set logical_expression \
         "$logical_expression $token"
 }
+
+# Logical expression complete.  Check for unclosed
+# parentheses.
+#
 if { $depth != 0 } {
     error "Parentheses mismatch."
 }
