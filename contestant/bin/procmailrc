@@ -1,0 +1,31 @@
+# This code should become part of ~/.procmailrc.
+
+# Be sure we are using a valid shell.
+#
+SHELL=/bin/sh
+
+# Select replies from hpcm_get messages,
+# and avoid selecting output of hpcm_extract.
+#
+:0
+* ^Subject:[ 	]+RE:[ 	]+get
+* ! ^X-HPCM-Subject:
+{
+  # Pipe the reply through hpcm_extract and send
+  # the output of that as mail to ourselves.
+  #
+  :0 c: get_mbox$LOCKEXT
+  | .hpcm_contest/bin/hpcm_extract | \
+	procmail -m .procmailrc
+
+  # Save the same reply in get_mbox.  Its rare
+  # to want to see the reply itself, but this saves
+  # it in case hpcm_extract fails oddly.
+  #
+  :0:
+  get_mbox
+}
+
+# Note: if you get a name such as .hpcm_contest/bin/
+# hpcm_extract wrong, mail typically vanishes without
+# any error messages.

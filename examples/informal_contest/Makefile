@@ -1,7 +1,7 @@
 # Makefile for an `informal' Contest
 #
 # File:		Makefile
-# Date:		Sun Dec 10 05:03:15 EST 2000
+# Date:		Sun Dec 10 06:31:27 EST 2000
 #
 # To make an informal contest named `foo':
 #
@@ -120,23 +120,45 @@
 #
 #	~/hpcm/contestant/bin/SETUP_PROTOTYPE -doc
 #
-#     This makes a prototype directory, with a name like
+#     Following these directions, you first make a brand
+#     new account, the prototype account.  Then you make
+#     a prototype directory inside the judge's account,
+#     with a name like
 #
 #	~/prototype_home
 #
-#     Symbolically link this directory to the name
-#     ~/contest_foo/home by executing inside the contest
-#     directory:
+#     This directory is owned by the prototype account,
+#     and is a+rx.  This directory is then symbolically
+#     linked to the name ~/contest_foo/home by executing
+#     inside the contest directory:
 #
 #	ln -s ~/prototype_home home
+#
+#     Next, before you run SETUP_PROTOTYPE in the proto-
+#     type account, move the `procmailrc' file from the
+#     judging account to the prototype account home dir-
+#     ectory, changing its name to `.procmailrc' in that
+#     directory.  This is a bit tricky, since you are
+#     moving a file across accounts: be sure the result
+#     has mode 660 and owner and group of the prototype
+#     account.  The `.procmailrc' file must be owned by
+#     the account in whose home directory it is placed:
+#     this is why it cannot be put in ~/prototype_home
+#     like other files (e.g., .cshrc).
+#
+
+#     Then run:
+#	  ~JJJ/contest_foo/bin/SETUP_PROTOTYPE \
+#             ~JJJ/contest_foo in the
+#     in prototype account, according to the directions
+#     in the documentation of SETUP_PROTOTYPE.
 #
 #     One prototype directory can be used for many con-
 #     tests, so you may not need to make a new prototype
 #     directory for this contest, but you will need to
 #     symbolically link ~/contest_foo/home.
 #
-
-#     Be sure you follow the instructions in the SETUP_
+# 15. Be sure you follow the instructions in the SETUP_
 #     PROTOTYPE documentation about editing prototype
 #     home directory files such as .cshrc to setup the
 #     right contestant environment.  Adding ~/.hpcm_
@@ -149,7 +171,21 @@
 #     setup.tar is only a symbolic link to ~/.hpcm_
 #     contest/home/.cshrc.
 #
-# 15. Be sure there are appropriate account names and
+#     Any such editing must be done by logging into
+#     the prototype account and cd'ing to .hpcm_
+#     contest/home in that account.
+#
+#     Another good thing to add to the environment is
+#     `alias ll -lL'.  This is actually of more use in
+#     formal contests, where gotten files are symbol-
+#     ically linked, and contestants may be confused by
+#     all the symbolic links.  But prototype home dir-
+#     ectories may be shared between informal and for-
+#     mal contests, so it is useful to have this envir-
+#     onment setting.
+#
+
+# 16. Be sure there are appropriate account names and
 #     passwords in the file ./contest/secure/passwords,
 #     as you are about to make these accounts and set
 #     these passwords.  The command
@@ -170,15 +206,15 @@
 #     be a test account that you can use to check
 #     whether the system is running.
 #
-
-# 16. Run `make trashable' in your judging directory.
+# 17. Run `make trashable' in your judging directory.
 #     This makes the file ./contest/trashable which
 #     lists the contestant accounts that can be reini-
 #     tialized by `TRASH_ACCOUNT'.  These accounts have
 #     presumably not been made yet (but its OK if they
 #     already exist).
 #
-# 17. Then as root (you must log into the root account,
+
+# 18. Then as root (you must log into the root account,
 #     you cannot use `su', as the paths will not be
 #     right), run the following commands:
 #
@@ -200,15 +236,14 @@
 #     regardless of which contest ~/.hpcm_contest was
 #     linked to in the prototype account).
 #
-# 18. Run `make nontrashable' in your judging directory.
+# 19. Run `make nontrashable' in your judging directory.
 #     This removes the file ./contest/trashable and pre-
 #     vents any contestants from accidentally trashing
 #     their own account by running TRASH_ACCOUNT (which
 #     requires the contestant's account name appear in
 #     ~JJJ/contest_foo/trashable).
 #
-
-# 19. Run `makescoreboard -start' to start the score-
+# 20. Run `makescoreboard -start' to start the score-
 #     board background process.  This process makes
 #		./contest/scoreboard.1
 #     at intervals if something has changed.  This
@@ -216,7 +251,8 @@
 #     `makescoreboard -stop' command, and its status
 #     can be checked by `makescoreboard -status'.
 #
-# 20. Contest judging is automatic.  If you set the
+
+# 21. Contest judging is automatic.  If you set the
 #     `reply_manager' and `log_manager' variables to
 #     your email address, you will be notified of any
 #     errors or questions.  You many use the `tracker'
@@ -279,6 +315,6 @@ update_scoreboard:
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/12/10 10:28:57 $
+#   $Date: 2000/12/10 11:49:31 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.7 $
+#   $Revision: 1.8 $
