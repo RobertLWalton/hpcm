@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Apr  1 05:22:13 EST 2003
+# Date:		Thu Oct 23 04:09:26 EDT 2003
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2003/04/01 10:56:37 $
+#   $Date: 2003/10/23 08:13:54 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.39 $
+#   $Revision: 1.40 $
 
 # See STATUS file for description of versions.
 #
@@ -108,6 +108,7 @@ cvssignatures:	HPCM_${VERSION}_CVS_MD5_Signatures
 #
 aux auxiliary:	submakes
 	@echo Setting Group Permissions
+	chmod g+rx ..
 	find . -perm +g+r -or \
 	       -perm +u+r -print -exec chmod g+r {} \;
 	find . -perm +g+x -or \
