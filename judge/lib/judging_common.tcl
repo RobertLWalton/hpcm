@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Jan 29 10:13:38 EST 2002
+# Date:		Tue Jan 29 23:24:15 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/01/29 15:44:57 $
+#   $Date: 2002/01/30 04:29:42 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.80 $
+#   $Revision: 1.81 $
 #
 
 # Table of Contents
@@ -1157,8 +1157,9 @@ proc blank_body { ch } {
 # manual_score, and proposed_score must be set.  The
 # latter two can be set to `None' if unused.
 #
-# The global variable `problem' must be set to the
-# problem name.
+# The global variables `submitted_problem' and
+# `submitted_extension' must be set to the problem name
+# and extension.
 #
 # Returns a list of commands whose execution merely
 # serves to specify options for disposition of
@@ -1309,8 +1310,11 @@ proc eval_response_if { item } {
 proc execute_response_commands \
 	{ compose_reply_options commands } {
 
-    global response_instructions_file problem \
-    	   auto_score manual_score proposed_score
+    global response_instructions_file \
+    	   auto_score manual_score proposed_score \
+	   submitted_problem submitted_extension
+
+    set problem $submitted_problem$submitted_extension
 
     set processed_commands ""
     set return_commands ""
