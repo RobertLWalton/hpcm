@@ -6,7 +6,7 @@
 #
 # File:		scoreboard
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Oct 20 17:01:14 EDT 2000
+# Date:		Sun Nov  5 06:34:59 EST 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/10/20 21:01:24 $
+#   $Date: 2000/11/05 12:16:50 $
 #   $RCSfile: old_scoreboard,v $
-#   $Revision: 1.10 $
+#   $Revision: 1.11 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -40,7 +40,7 @@ scoreboard \[parameters_file\]
 
     	its submission time is equal to or greater than
 	the value of `scoreboard_start_time', unless
-	that value is \"\";
+	that value is \"\" or \"team\";
 
     	its submission time is equal to or less than
 	the value of `scoreboard_stop_time', unless
@@ -48,39 +48,56 @@ scoreboard \[parameters_file\]
 
 	its problem is in the list which is the value of
 	`scoreboard_problems', unless that list is
-	empty;
+	empty; and the problem is NOT in the list which
+	is the value of `scoreboard_problems_deny';
 
 	its submitter is in the list which is the value
 	of `scoreboard_submitters', unless that list is
-	empty.
+	empty; and the submitter is NOT in the list
+	which is the value of `scoreboard_submitters_
+	deny';
 
     The scoreboard has a line for each submitter of the
     form
 
     submitter  score1  score2  ......  time_score
 
-    Here each score is the score for a problem, and has
-    the form `X:YYuN', where X:YY is the time in units u
-    (s = seconds, m = minutes, h = hours, d = days) the
-    first correct submission, and N is the number of
-    submissions up to and including the first submis-
-    sion.  If N = 0, the problem score is `......'.  If
-    there is no correct submission but n != 0, the
-    problem score is `..../N'.  If there is a correct
-    submission but the start time of the problem cannot
-    be computed, the score is `undef/N'.
+    Here each score but the `time_score' is the score
+    for a problem, and has the form `X:YYuN', where X:YY
+    is the time in units u (s = seconds, m = minutes,
+    h = hours, d = days) of the first correct submis-
+    sion, and N is the number of submissions up to and
+    including the first correct submission.  If N = 0,
+    the problem score is `......'.  If there is no cor-
+    rect submission but n != 0, the problem score is
+    `..../N'.  If there is a correct submission but the
+    start time of the problem cannot be computed, the
+    score is `undef/N'.  If a problem time is computed
+    using a non-final score (an automatically computed
+    score that is yet to be reviewed by the human
+    judge), the problem score begins with an `*'.
 
-    Submission times are measured from the `scoreboard_
-    start_time', and are actually measured in seconds,
-    unless the `scoreboard_start_time' is \"\", in which
-    case each problem's submission time is the time the
-    problem description was gotten.  The time_score is
-    the sum of all the correct submission times, plus a
-    penalty time the number of incorrect submissions
-    that are for a problem for which there is a later
-    correct submission, where all times are in seconds.
-    The penalty is the value of `scoreboard_penalty',
-    and is in seconds.
+    The score for a problem is a time equal to the pro-
+    blem submission time minus the problem start time.
+    The start time of a problem is start time of the
+    contest in the variable `scoreboard_start_time', un-
+    less this variable's value is \"\", in which case
+    each problem's start time is time the problem des-
+    cription was gotten (as recorded in a $gotten_file\
+    				file
+    by autoinfo), or unless `score_start_time's value is
+    \"team\", in which case each problem's start time is
+    the time the team (submitter) got its first scorable
+    problem (i.e., problem allowed and not denied).  The
+    time_score is the sum of all the correct problem
+    times, plus a penalty times the number of incorrect
+    submissions that are for a problem for which there
+    is a later correct submission.  All times are actu-
+    ally measured in seconds, even though the problem
+    times are often reported on the scoreboard itself
+    only to the nearest minute or hour.  The penalty is
+    the value of `scoreboard_penalty', and is in sec-
+    onds.
 
     The total score is given in seconds, and is preceded
     with an `*' if there is a non-final score involved
@@ -181,6 +198,19 @@ while { "yes" } {
     	continue;
     }
 
+    set time [filename_date_to_clock $date]
+
+    if { $scoreboard_start_time != "" \
+         && $scoreboard_start_time != "team" \
+         && $time < $scoreboard_start_time } {
+    	continue;
+    }
+
+    if { $scoreboard_stop_time != "" \
+         && $time > $scoreboard_stop_time } {
+    	continue;
+    }
+
     if { [lsearch -exact $problems $problem] < 0 } {
 	lappend problems $problem
     }
@@ -189,16 +219,13 @@ while { "yes" } {
 	lappend submitters $submitter
     }
 
-    set time [filename_date_to_clock $date]
-
-    if { $scoreboard_start_time != "" \
-         && $time < $scoreboard_start_time } {
-    	continue;
-    }
-
-    if { $scoreboard_stop_time != "" \
-         && $time > $scoreboard_stop_time } {
-    	continue;
+    if { $scoreboard_start_time == "team" \
+         && $score == "dg" \
+         && ( ! [info exists \
+	              start_time_array($submitter)] \
+	      || $start_time_array($submitter) \
+	         > $time ) } {
+	 set start_time_array($submitter) $time
     }
 
     if { [info exists ${submitter}_array($problem)] } {
@@ -313,6 +340,12 @@ foreach submitter $submitters {
 	}
 
 	set problem_start_time $scoreboard_start_time
+	if { $problem_start_time == "team"
+	     && [info exists \
+	              start_time_array($submitter)] } {
+	    set problem_start_time \
+		$start_time_array($submitter)
+	}
 
 	foreach item [lsort $problem_list] {
 	    set score [lindex $item 1]
@@ -324,7 +357,9 @@ foreach submitter $submitters {
 	    }
 	    if { [lsearch -exact $ccodes $score] \
                  >= 0 } {
-		if { $problem_start_time != "" } {
+		if { $problem_start_time != "" \
+		     && $problem_start_time != "team" \
+		     		} {
 		    set problem_time \
 			[expr \
 			  { $item_time \
