@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: acm-cont $
-#   $Date: 2000/08/18 15:20:27 $
+#   $Date: 2000/08/19 15:56:06 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.3 $
+#   $Revision: 1.4 $
 #
 
 # Include this code in TCL program via:
@@ -37,6 +37,120 @@ proc fatal_error { args } {
     	puts "             $m"
     }
     exit 1
+}
+
+# Construct a mail reply file and send it to the
+# sender of any received mail file.  The option `-all'
+# causes the entire received mail file to be included
+# immediately at the end of the message.  Otherwise
+# just the header is included.  In either case this
+# information is separated from the rest of the message
+# by a blank space and a line containing `-----'
+#
+# Non-option arguments are lines to be copied into the
+# body of the reply.  The reply header is automatically
+# produced.
+#
+# When the message is sent it is copied to the history
+# file.
+#
+# Any previous reply file is deleted.
+#
+proc reply { args } {
+
+    global received_file reply_file history_file \
+           From_line_regexp sendmail_program
+
+    set all_option no
+    if { [llength $args] >= 1 \
+         && [lindex $args 0] == "-all" } {
+        set all_option yes
+	set args [lreplace $args 0 0]
+    }
+
+    set From_line [file tail [pwd]]
+    if { ! [regexp $From_line_regexp $From_line] } {
+        fatal_error \
+	    "Current directory name is not\
+	     a mail file `From line':" \
+	     $From_line
+    }
+
+    set to [lindex $From_line 1]
+
+    if { ! [file readable $received_file] } {
+        fatal_error \
+	    "Cannot read $received_file"
+    }
+    set received_ch [open $received_file r]
+
+    set subject ""
+
+    while { "yes" } {
+    	set line [gets $received_ch]
+	if { [eof $received_ch] } break
+	if { [regexp {^Subject:(.*)$} \
+	             $line all subject] } break
+    }
+    close $received_ch
+
+    if { [file exists $history_file] \
+         && ! [file writable $history_file] } {
+	 fatal_error \
+	     "Cannot write $history_file"
+    }
+
+    if { [file exists $reply_file] } {
+    	file delete -force $reply_file
+    }
+
+    set reply_ch    [open $reply_file w]
+    set history_ch  [open $history_file a]
+    set received_ch [open $received_file]
+
+    puts $history_ch "From [id user]@[info hostname]\
+		      [clock format [clock seconds]]"
+    puts $reply_ch   "To: $to"
+    puts $history_ch "To: $to"
+    puts $reply_ch   "Subject: RE:$subject"
+    puts $history_ch "Subject: RE:$subject"
+    puts $reply_ch   ""
+    puts $history_ch ""
+    foreach line $args {
+        puts $reply_ch   $line
+        puts $history_ch $line
+    }
+    puts $reply_ch   ""
+    puts $history_ch ""
+    set dashes \
+        "----------------------------------------"
+    puts $reply_ch   "$dashes This message replies to:"
+    puts $history_ch "$dashes This message replies to:"
+
+    while { "yes" } {
+	set line [gets $received_ch]
+	if { [eof $received_ch] } {
+	    break
+	} elseif { [regexp $From_line_regexp \
+			   $line] } {
+	    set line ">$line"
+	} elseif { ( $all_option != "yes" ) \
+		   && ! [regexp {:} $line] } {
+	    break
+	}
+	puts $reply_ch  $line
+	puts $history_ch $line
+    }
+    # A blank line is needed before the next `From'
+    # line so the `From' line will be recognized.
+    #
+    puts $history_ch ""
+
+    close $reply_ch
+    close $history_ch
+    close $received_ch
+
+    exec $sendmail_program < $reply_file $to
 }
 
 # Set interrupt signal to cause an error.

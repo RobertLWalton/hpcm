@@ -13,12 +13,14 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: acm-cont $
-#   $Date: 2000/08/19 10:35:17 $
+#   $Date: 2000/08/19 15:56:05 $
 #   $RCSfile: autoscore,v $
-#   $Revision: 1.7 $
+#   $Revision: 1.8 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
+
+# Use tcl rather than tclsh so that `signal' is defined.
 
 # Include common code and parameters:
 #
@@ -33,9 +35,9 @@ cd submission_directory; autoscore program_name
     given the output file (pppp.out), optional error
     file (pppp.err), and test file (pppp.test, the
     judge's solution's version of the output file),
-    computes the `$score_file' file in the submission
-    directory, using purely automatic (non-manual
-    means).
+    computes the `$auto_score_file' file in the
+    submission directory, using purely automatic
+    (non-manual means).
 
     If the error file (pppp.err) exists and is non-
     empty, the score is one of:
@@ -112,14 +114,14 @@ cd submission_directory; autoscore program_name
     reports `eof1' the output is incomplete.  Otherwise
     the output is correct.
 
-    The score is written to the `$score_file' file in
-    the submission directory and is also written as a
+    The score is written to the `$auto_score_file' file
+    in the submission directory and is also written as a
     single line to the standard output."
 
 # If wrong number of arguments print documentation and
 # exit with error.
 #
-if { $argc != 1 } {
+if { $argc != 1 || [regexp {^-} [lindex $argv 1]] } {
     puts $document
     exit 1
 }
@@ -139,9 +141,9 @@ if { ! [file readable $test_file] } {
     fatal_error "Not readable: $test_file"
 }
 
-if { [file exists $score_file] \
-     && ! [file writable $score_file] } {
-    fatal_error "Not writable: $score_file"
+if { [file exists $auto_score_file] \
+     && ! [file writable $auto_score_file] } {
+    fatal_error "Not writable: $auto_score_file"
 }
 
 if { [file exists $instructions_file] \
@@ -301,7 +303,7 @@ if { $score == "" } {
     set score "Completely Correct"
 }
 
-set score_fd [open $score_file w]
+set score_fd [open $auto_score_file w]
 puts $score_fd $score
 close $score_fd
 
