@@ -7,7 +7,7 @@
 #
 # File:		tracker
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat May 18 05:03:37 EDT 2002
+# Date:		Sat May 18 05:58:08 EDT 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -16,9 +16,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/05/18 09:30:54 $
+#   $Date: 2002/05/18 10:16:29 $
 #   $RCSfile: tracker,v $
-#   $Revision: 1.28 $
+#   $Revision: 1.29 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -1034,8 +1034,16 @@ proc display_directory_list {} {
 
     if { $directory_list_length == 0 } {
 
+    	# Come here if only directories that might be
+	# interesting are those being processed by
+	# autodispatch.
+
 	set auto_list [add_auto]
 	if { $directory_list_length != 0 } {
+
+	    # If there are directories being
+	    # processed, rerun trackfinder on
+	    # these and relist them.
 
 	    set list ""
 	    foreach dir $directory_list {
@@ -1065,6 +1073,12 @@ proc display_directory_list {} {
 	    puts [clip $auto_list 0 5]
 	}
     } else {
+
+    	# Come here if there are directories ready
+	# for error analysis, query response,
+	# manual scoring, or checking for too old
+	# Dispatch_PID files.
+
 	set o ""
 	set f 0
 	if { $err_list != "" } {
@@ -1164,7 +1178,7 @@ pr = display by problem counts of the number of\
      final scores.  Type `? pr' for more details.
 su = display by submitter counts of the number of\
             submissions with different
-     final scores.  Type `? pr' for more details."
+     final scores.  Type `? su' for more details."
 	return yes
 	}
 
@@ -1180,7 +1194,8 @@ ti \[min\] \[med\] \[avg\] \[max\] = display by problem\
 	rec = mtime of $received_file in which\
 		    submission email is stored
 	ext = mtime of source (.c, .cc, .java, etc.)\
-		    file extracted from email
+		    file most recently
+	      extracted from email
 	bin = max of mtimes of binary output and .cerr\
 		    files
 	out = max of mtimes of .out and .err files
@@ -1189,7 +1204,10 @@ ti \[min\] \[med\] \[avg\] \[max\] = display by problem\
 
     sub-rec is the time in seconds from sub to rec,
     rec-ext is the time in seconds from rec to ext,
-    etc."
+    etc.
+    
+    By `mtime' of a file we mean the time the file was\
+		    last modified."
 	return yes
 	}
 
@@ -1212,6 +1230,7 @@ The column headings denote score values as follows:
     pc = Program Crashed       oe = Output Size Limit\
 					Exceeded
 "
+	    return yes
 	}
 	default {
 	    return no
