@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Sep 11 21:47:33 EDT 2000
+# Date:		Wed Sep 13 18:29:59 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,16 +11,16 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: acm-cont $
-#   $Date: 2000/09/13 03:41:13 $
+#   $Date: 2000/09/13 22:37:06 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.32 $
+#   $Revision: 1.33 $
 #
 
 # Include this code in TCL program via:
 #
 #	set lib_directory \
 #	    "[file dirname $argv0]/../lib"
-#	source "$lib_directory/judging_common.tcl"
+#	source $lib_directory/judging_common.tcl
 #	catch {
 #
 #	... your program ...
@@ -38,24 +38,25 @@
 # logged in the log directory instead of the current
 # directory.  Put
 #
-#	set log_errors no
+#	set log_mode none
 #
 # If you do not want any errors written to log files.
 # See `log_error' below.
 
 # The catch and `caught_error' function catches all
 # program errors and causes them to be announced on the
-# standard output, be logged in an error log file, and
-# return an exit code of 1 from the program.
+# standard output and be logged according to the log_
+# mode setting.  This can cause errors to be recorded
+# in an error file and to generate email notification.
 
 # Default error log directory name.  For use if we
 # cannot find judging parameters.
 #
-set default_log_directory "~/HPCM_Error_Log"
+set default_log_directory ~/HPCM_Error_Log
 
 # Judging parameters file name:
 #
-set judging_parameters_file "hpcm_judging.rc"
+set judging_parameters_file hpcm_judging.rc
 
 # Exit cleanup.  Called to do special cleanup before
 # exit.  Default does nothing.  This proc may be
@@ -72,6 +73,11 @@ proc dispatch_lock {} {
     global dispatch_pid_file
 
     if { [create_file $dispatch_pid_file] } {
+
+	# Make the current process a process group
+	# leader, and store the current process ID in
+	# $dispatch_pid_file.
+	#
 	set_current_pgid
 	write_file $dispatch_pid_file [current_pid]
 	return yes
@@ -87,10 +93,6 @@ proc dispatch_unlock {} {
     global dispatch_pid_file
     file delete -force $dispatch_pid_file
 }
-
-# Store current process ID in $dispatch_pid_file and
-# make the current process a process group leader.
-#
 
 # Convert a [clock seconds] value into a date in
 # the form yyyy-mm-dd-hh:mm:ss that is useable as
@@ -144,9 +146,9 @@ proc make_checked { filename } {
 	error "$filename does not include a checkmark"
     }
     if { $b != "checked" } {
-	file rename $filename "${a}checked${c}"
+	file rename -force $filename ${a}checked${c}
     }
-    return "${a}checked${c}"
+    return ${a}checked${c}
 }
 
 # Function to change the name of a file from
@@ -160,9 +162,9 @@ proc make_unchecked { filename } {
 	error "$filename does not include a checkmark"
     }
     if { $b != "unchecked" } {
-	file rename $filename "${a}unchecked${c}"
+	file rename -force $filename ${a}unchecked${c}
     }
-    return "${a}unchecked${c}"
+    return ${a}unchecked${c}
 }
 
 # Function called at end of program when a fatal error
@@ -179,21 +181,23 @@ proc caught_error {} {
 
 # Function called to log an error when the program
 # may want to continue.  The error is printed on the
-# standard output.  Unless the `log_errors' variable
-# exists and equals `no', the error is also written
-# to a file.
+# standard output.  Unless `log_mode' is `none', the
+# error is also written to a file.  If `log_mode' is
+# `auto', the error is also emailed to any submitter/
+# requester identified in $received_mail and to any
+# HPCM system manager.
 #
-# The error information is written as a separate file.
-# If the log_globally variable does not exist or does
-# not equal `yes' and the current directory is writable,
-# the file is written into the current directory.
-# Otherwise if the log_directory variable exists and
-# names a directory that exists or can be made and is
-# writable once it is made, then the file is written
-# into this directory.  Otherwise the file is written
-# into $default_log_directory, which is defined above
-# as an emergency last resort.  The format of the file
-# name is:
+# When the error information is written to a file, a
+# separate file is created for each error.  If the
+# log_globally variable does not exist or does not equal
+# `yes' and the current directory is writable, the file
+# is written into the current directory.  Otherwise if
+# the log_directory variable exists and names a direc-
+# tory that exists or can be made and is writable once
+# it is made, then the file is written into this direc-
+# tory.  Otherwise the file is written into $default_
+# log_directory, which is defined above as an emergency
+# last resort.  The format of the file name is:
 #
 #	dddd-uuuu-<<pppp>>-unchecked-error
 #
@@ -208,20 +212,18 @@ proc log_error { error_output } {
 
     global argv0 argv errorCode errorInfo \
 	   default_log_directory \
-	   log_directory log_globally \
-	   log_errors
+	   log_directory log_globally log_mode
 
     # Write error to standard output.
     #
-    puts stderr "ERROR during $argv0 $argv"
-    puts stderr $error_output
+    puts "ERROR during $argv0 $argv"
+    puts ""
+    puts $error_output
 
-    # If `set log_errors no' has happened, return
-    # without writing a file, but write errorCode
-    # an errorInfo to standard output.
+    # If `log_mode' is `none', do not write to file, but
+    # print errorCode an errorInfo to standard output.
     #
-    if { ( [info exists log_errors] \
-           && $log_errors == "no" ) } {
+    if { $log_mode == "none" } {
 	puts ""
 	puts "errorCode: $errorCode"
 	puts "errorInfo:"
@@ -229,15 +231,15 @@ proc log_error { error_output } {
 	return
     }
 
-    # Compute $log_dir, the logging directory
-    # to be used.  Make it if necessary.  Be
-    # sure its writable.
+    # Compute $log_dir, the logging directory to be
+    # used.  Make it if necessary.  Be sure it is
+    # writable.
     #
     if { ( ! [info exists log_globally] \
            ||  $log_globally != "yes" ) \
 	 && [file writable "."] } {
         set log_dir "."
-    } elseif { [info exists log_directory] \
+    } elseif { [info exists $log_directory] \
 	       && ! [catch { file mkdir \
 	                          $log_directory } ] \
 	       && [file writable $log_directory] } {
@@ -271,14 +273,16 @@ proc log_error { error_output } {
 	    # Desparation move.  Should never happen.
 	    #
 	    set e LOGGING-FILENAME-GENERATION-ERROR
-	    set log_file "$log_dir/$e"
+	    set log_file $log_dir/$e
 	    break
 	}
     }
 
     # Write error to $log_file file.
     #
-    puts stderr "Logging to $log_file"
+    puts ""
+    puts "Logging to $log_file"
+
     set log_ch [open $log_file a]
     puts $log_ch "----------------------------------"
     puts $log_ch "$argv0 $argv"
@@ -291,6 +295,79 @@ proc log_error { error_output } {
     puts $log_ch "errorInfo:"
     puts $log_ch $errorInfo
     close $log_ch
+
+    # If log_mode is `auto' try to send mail.
+    #
+    if { $log_mode == "auto" } {
+
+	# `to' is not "" if target address was comput-
+	# able.  `received_ch' is not "" if $received_
+	# file header was read.
+	#
+	set to [string trim $manager]
+	set received_ch ""
+
+        if { $log_dir == "." \
+	     && [file exists $received_file] } {
+
+	    set received_ch $received_file
+	    read_header $received_file
+	    close $received_ch
+
+	    set to2 [compute_message_reply_to]
+
+	    if { $to2 != "" } {
+		if { $to != "" } {
+		    set to "$to, $to2"
+		} else {
+		    set to $to2
+		}
+	    }
+	}
+
+	# If `to' is not "" and we have not done this
+	# before, compute and send mail.
+	#
+	if { $to != "" \
+	     && ! [file exists $log_file.mail] } {
+
+	    set mail_ch [open $log_file.email w]
+	    puts $mail_ch "To: $to"
+	    puts $mail_ch "Subject: $log_file"
+	    puts $mail_ch ""
+	    if { $received_ch != "" } {
+		puts $mail_ch "System error while\
+			       processing:"
+		puts $mail_ch ""
+		puts $mail_ch $message_From_line
+		puts $mail_ch "From: $message_from"
+		puts $mail_ch "Date: $message_date"
+		puts $mail_ch \
+		     "Subject: $message_subject"
+		puts $mail_ch ""
+		puts $mail_ch \
+		     "System is automatic without\
+                      normal human monitoring."
+		if { $manager != "" } {
+		    puts $mail_ch \
+			 "Please correct and resubmit,\
+		          or wait for response from\
+			  $manager"
+		} else {
+		    puts $mail_ch \
+			 "Please correct and resubmit,\
+		          or contact the person\
+			  responsible for this site."
+		}
+		puts $mail_ch ""
+	    }
+	    puts $mail_ch "========= $log_file"
+	    put_file $log_file $mail_ch
+	    close $mail_ch
+
+	    send_mail $log_file.mail
+	}
+    }
 }
 
 # Read an email message header from the channel. If
@@ -405,7 +482,7 @@ proc read_header { ch { first_line "" }
 		if { [lsearch -exact \
 		              $omit_fields \
 			      $fieldname]  < 0 } {
-		    set varname "message_$fieldname"
+		    set varname message_$fieldname
 		    regsub -all -- "-" $varname "_" \
 		           varname
 		    set $varname $fieldvalue
@@ -595,7 +672,7 @@ proc reply { args } {
 }
 
 # This composes the message to be sent by `reply' in
-# the file `${reply_file}+'.  This reply can then be
+# the file `$reply_file+'.  This reply can then be
 # manually edited before sending it with `send_reply'.
 #
 proc compose_reply { args } {
@@ -620,11 +697,11 @@ proc compose_reply { args } {
 
     read_header $received_ch
 
-    if { [file exists ${reply_file}+] } {
-    	file delete -force ${reply_file}+
+    if { [file exists $reply_file+] } {
+    	file delete -force $reply_file+
     }
 
-    set reply_ch    [open ${reply_file}+ w]
+    set reply_ch    [open $reply_file+ w]
 
     puts $reply_ch   "To:[compute_message_reply_to]"
     puts $reply_ch   "Subject: RE:$message_subject"
@@ -683,13 +760,13 @@ proc compose_reply { args } {
     close $received_ch
 }
 
-# This function copies the `${reply_file}+' file into
+# This function copies the `$reply_file+' file into
 # into the `$reply_history_file' file and then emails
-# the `${reply_file}+' file.
+# the `$reply_file+' file.
 #
 # Before doing the above, this program deletes any
 # $reply_file.  After doing the above, this program
-# renames `${reply_file}+' to `$reply_file'.
+# renames `$reply_file+' to `$reply_file'.
 #
 proc send_reply {} {
 
@@ -706,7 +783,7 @@ proc send_reply {} {
     set history_ch  [open $reply_history_file a]
     puts $history_ch "From [id user]@[info hostname]\
 		      [clock format [clock seconds]]"
-    put_file "${reply_file}+" $history_ch
+    put_file $reply_file+ $history_ch
 
     # An empty line is needed before the next `From'
     # line so the `From' line will be recognized.
@@ -714,18 +791,18 @@ proc send_reply {} {
     puts $history_ch ""
     close $history_ch
 
-    # Send the ${reply_file}+.  If there is a bad `To:'
+    # Send the $reply_file+.  If there is a bad `To:'
     # address, there may be an error, which will
     # usually be logged by an error file in the
     # current directory.  Otherwise a bad address
     # will cause return mail from the mailer
     # daemon.
     #
-    send_mail "${reply_file}+"
+    send_mail $reply_file+
 
-    # Rename ${reply_file}+
+    # Rename $reply_file+
     #
-    file rename -force "${reply_file}+" $reply_file
+    file rename -force $reply_file+ $reply_file
 }
 
 # Read lines from channel.  Return `yes' if eof encoun-
@@ -820,9 +897,9 @@ if { [info command signal] == "signal" } {
 set judging_parameters_file_list ""
 foreach __d__ ". .. ../.. ../../.. ../../../.." {
     if { [file exists \
-	       "$__d__/$judging_parameters_file"] } {
+	       $__d__/$judging_parameters_file] } {
 	lappend judging_parameters_file_list \
-		"$__d__/$judging_parameters_file"
+		$__d__/$judging_parameters_file
 	set judging_parameters_directory $__d__
     }
 }
