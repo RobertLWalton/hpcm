@@ -5,7 +5,7 @@
 #
 # File:		scorefinder
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Feb  8 04:05:23 EST 2002
+# Date:		Fri Feb  8 10:08:13 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/02/08 09:13:20 $
+#   $Date: 2002/02/08 15:31:10 $
 #   $RCSfile: scorefinder,v $
-#   $Revision: 1.16 $
+#   $Revision: 1.17 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -38,8 +38,19 @@ scorefinder \[-gotten\]
 
     	date-<<submitter>>-submission
 
-    It selects subdirectories that have one or both of
-    the score files:
+    It selects subdirectories that have a
+    
+    	$reply_history_file
+
+    file, that have a
+
+    	$received_file
+
+    file whose `Subject:' field has the form
+
+    	Subject: submit problem\[.extension\]
+
+    and that have one or both of the score files:
 
     	$auto_score_file
     	$manual_score_file
@@ -54,42 +65,36 @@ scorefinder \[-gotten\]
     directory name and passed through the submitter_
     compress function, which for some contests strips
     any `@' and following characters, and for other con-
-    tests compresses what follows the `@'.  The program
-    is the submitted file name with its extension re-
-    moved; this is found by reading the subject field of
-    any $received_file file in the subdirectory, and
-    using the problem name `UNKNOWN' if this cannot be
-    done or the subject field has the wrong format.  The
-    code is one of:
-
-      mc  $manual_score_file	== `Completely Correct'
-      mi  $manual_score_file	!= `Completely Correct'
-      ac  $auto_score_file	== `Completely Correct'
-      ai  $auto_score_file	!= `Completely Correct'
+    tests compresses what follows the `@'.  The problem
+    is taken from the $received_file file `Subject'
+    field.
 
-    where the $auto_score_file file is ignored if the
-    $manual_score_file file exits.  The score is the
-    actual score used to compute the code, quoted by
-    \"'s.
+    The code is of the form ACF where
 
-    Output lines that would contain ac or ai are sup-
-    pressed, and not output, if the $auto_score_file\
-    	file
-    value does not in its entirety match the regular ex-
-    pression in the `reply_auto_scores' global vari-
-    able.
+    	A = a   if score is from an $auto_score_file\
+			file
+    	  = m   if score is from a $manual_score_file\
+	    		file
+
+	C = c   if score is `Completely Correct'
+	  = i   otherwise
+
+	F = f   if the $received_file file exists
+	  = n   otherwise
+
+    The $auto_score_file file is ignored if the\
+    	$manual_score_file
+    file exits.  The score is the actual score used to
+    compute the code.  Each output line is a TCL list.
 
     If the -gotten option is present, this program also
-    selects subdirectories which contain the file:
+    selects subdirectories which contain the files:
 
     	$gotten_file
     							
-    If this file indicates that a file whose last two
-    name components are `pppp/pppp.eee' for some problem
-    statement file extension `.eee' was gotten at a
-    certain date,  this program outputs the line
+    For these directories this program outputs the line:
 
-    	date submitter problem dg
+    	date submitter problem g
 
     where the problem is `pppp' and `dg' stands for
     `description gotten'.  Here the date is taken from
@@ -113,8 +118,8 @@ set gotten_option no
 if { $my_argc >= 1 \
      && [lindex $my_argv 0] == "-gotten" } {
     set gotten_option yes
-    set my_argv [lreplace $my_argv 0 0]
-    set my_argc [expr { $my_argc - 1 }]
+    set my_argv [lrange $my_argv 1 end]
+    incr my_argc -1
 } elseif { $scoreboard_start_time == "" } {
     set gotten_option yes
 } elseif { $scoreboard_start_time == "team" } {
@@ -141,102 +146,76 @@ foreach dir [glob -nocomplain \
     	continue;
     }
 
+    if { $date == "" } {
+	error "data is empty in `$subdir'"
+    }
     set submitter [submitter_compress $submitter]
     if { $submitter == "" } {
-	set submitter UNKNOWN
+	error "submitter compresses to empty in\
+	       `$subdir'"
     }
 
     # Process any $gotten_file.
     #
-    if { [file readable $dir/$gotten_file] } {
+    if { [file exists $dir/$gotten_file] } {
 
-    	if { $gotten_option == "no" } continue
-
-	set gotten_ch [open $dir/$gotten_file r]
-	set date UNKNOWN
-	while { "yes" } {
-	    set line [gets $gotten_ch]
-	    if { [eof $gotten_ch] } break
-	    if { [regexp {^Date:(.*)$} $line \
-	    		 forget date] } {
-		set date [clock_to_filename_date \
-			     [clock scan $date]]
-	    } elseif { [regexp {^File:(.*)$} $line \
-	    		     forget file] } {
-		set file [string trim $file]
-		set pde $problem_description_extensions
-		if { [regexp \
-		  {^(.*/)([^/]*)/([^/]*)\.([^./]*)$} \
-			 $file forget forget2 \
-			 name1 name2 ext] \
-		     && [lcontain $pde .$ext] \
-		     && $name1 == $name2 } {
-		    puts [list $date $submitter $name1 \
-		               dg]
-		}
-	    }
+    	if { $gotten_option } {
+	    puts [list $date $submitter $name1 g]
 	}
-	close $gotten_ch
-    } else {
 
-	set code ""
+    } elseif {    [file exists $dir/$received_file] \
+               && [file exists \
+	                $dir/$reply_history_file] } {
 
-	# Process any $manual_score_file file.
+	# Get problem name.
 	#
-	if { [file readable $dir/$manual_score_file] } {
+	set received_ch [open $dir/$received_file r]
+	read_header $received_ch
+	close $received_ch
+
+	if {    ! [catch { \
+		      set sublen \
+			  [llength \
+			       $message_subject] \
+			 }] \
+	     && $sublen == 2 \
+	     && [lindex $message_subject 0] \
+		== "submit" } {
+	    set problem [lindex $message_subject 1]
+	    set problem [file rootname $problem]
+	} else {
+	    continue
+	}
+
+	# Get score.
+	#
+	set score ""
+	if { [file exists $dir/$manual_score_file] } {
 	    set score \
 		[read_file $dir/$manual_score_file]
-	    if { $score == "Completely Correct" } {
-		set code mc
-	    } elseif { $score != "" } {
-		set code mi
-	    }
-	}
-
-	# If no $manual_score_file file, process any
-	# $auto_score_file file.
-	#
-	if { $code == "" \
-	     && [file readable $dir/$auto_score_file] \
-	     } {
+	    set code m
+	} elseif { [file exists $dir/$auto_score_file] \
+		     } {
 	    set score \
 		[read_file $dir/$auto_score_file]
-
-	    if { [regexp $reply_auto_scores $score] } {
-		if { $score == "Completely Correct" } {
-		    set code ac
-		} elseif { $score != "" } {
-		    set code ai
-		}
-	    }
+	    set code a
 	}
 
-	if { $code == "" } continue;
+	if { $score == "" } continue
 
-	if { $date == "" } {
-	    set date UNKNOWN
+	if { $score == "Completely Correct" } {
+	    set code ${code}c
+	} else {
+	    set code ${code}i
 	}
 
-	set program UNKNOWN
-	if { [file readable $dir/$received_file] } {
-	    set received_ch [open $dir/$received_file r]
-	    read_header $received_ch
-	    close $received_ch
-
-	    if {    ! [catch { \
-	    		  set sublen \
-	    		      [llength \
-			           $message_subject] \
-			     }] \
-	         && $sublen == 2 \
-		 && [lindex $message_subject 0] \
-		    == "submit" } {
-		set program [lindex $message_subject 1]
-		set program [file rootname $program]
-	    }
+	if { [file exists $dir/$reply_file] } {
+	    set code ${code}f
+	} else {
+	    set code ${code}n
 	}
 
-	puts [list $date $submitter $program $code \
+	puts [list $date $submitter $problem $code \
 		   $score]
     }
 }

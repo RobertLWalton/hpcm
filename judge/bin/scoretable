@@ -6,7 +6,7 @@
 #
 # File:		scoreboard
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Feb  8 04:16:20 EST 2002
+# Date:		Fri Feb  8 10:19:20 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/02/08 09:16:11 $
+#   $Date: 2002/02/08 15:31:10 $
 #   $RCSfile: scoretable,v $
-#   $Revision: 1.28 $
+#   $Revision: 1.29 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -228,11 +228,15 @@ if { $stop_time != "" } {
 # items that represent the times and score codes read
 # from the input.  Here the codes are
 #
-#	dg	problem description gotten
-#	ac	automatically scored correct
-#	ai	automatically scored incorrect
-#	mc	manually scored correct
-#	mi	manually scored incorrect
+#	g	problem description gotten
+#	acf	automatically scored final correct
+#	acn	automatically scored non-final correct
+#	aif	automatically scored final incorrect
+#	ain	automatically scored non-final incorrect
+#	mcf	manually scored final correct
+#	mcn	manually scored non-final correct
+#	mif	manually scored final incorrect
+#	min	manually scored non-final incorrect
 #
 # Each item has the form
 #
@@ -434,7 +438,7 @@ foreach submitter $submitters {
 		set item_time 0
 	    }
 
-	    if { [lcontain {mc ac} $score] } {
+	    if { [regexp {.c.} $score] } {
 
 		# Score is correct.
 
@@ -452,18 +456,14 @@ foreach submitter $submitters {
 		incr submissions
 		break
 
-	    } elseif { [lcontain {mi ai} $score] } {
+	    } elseif { [regexp {.i.} $score] } {
 
 		# Score is incorrect.
 
-		if { $score == "ai" \
-		     && $scoring_mode != "auto" } {
-		    set problem_modifier n
-		}
 		incr problem_incorrect
 		incr submissions
 
-	    } elseif { $score == "dg" } {
+	    } elseif { $score == "g" } {
 
 		# Time is when problem was gotten.
 
@@ -471,6 +471,10 @@ foreach submitter $submitters {
 		    set problem_start_time \
 		    	$item_time
 		}
+	    }
+
+	    if { [regexp {..n} $score] } {
+		set problem_modifier n
 	    }
 	}
 
