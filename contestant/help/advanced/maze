@@ -1,0 +1,141 @@
+MAZE PROBLEM HELP	    Fri Mar 16 05:42:48 EST 2001
+
+Maze problems can be fairly difficult, and it is impor-
+tant to pre-prepare code for at least one maze problem
+before you tackle one in a contest.
+
+The essence of maze problems is breadth first search to
+find the shortest path in a graph from a single start
+node to one of several goal nodes.
+
+It is better to have your maze code separated into two
+parts, a general part that does not change from one maze
+to the other, and a special part that changes with each
+maze.
+
+The general part should:
+
+1. Define a `node' type whose components include:
+
+	A list of pointers to children (targets of
+	arrows of which the node is the source).
+
+	Optionally a flag that tells whether the
+	children of the node have been computed yet.
+	In some mazes, nodes must be computed as
+	needed, for there are too many nodes to
+	consider them all.  This is done by computing
+	the children of a node the first time these
+	children are needed by the search algorithm.
+
+	A goal flag, indicating whether the node is a
+	goal.
+
+	A pointer to a parent node.  This is computed
+	by the search.
+
+	A depth number, also computed by the search.
+
+	Maze specific fields that name the node.
+
+	Fields that permit nodes to be put on various
+	lists.  There may be a list of all nodes, useful
+	for freeing nodes.  There may be a list of all
+	nodes of the next search depth.  Eventually
+	there should be a list of nodes from a start
+	node to a goal.
+
+	Nodes need to be looked up by name.  If this
+	cannot be done with arrays, it must be done
+	with a hash table, so a field is needed for
+	the list of all nodes in one hash bin.
+
+   You may or may not want to permit general lists of
+   nodes.  If yes, you need to define a cons cell with
+   a pointer to a node as its `first' component and a
+   pointer to another cons cell as its `rest' component.
+   You can get out of this by using a fixed sized vector
+   to list all the children of a node, as most maze
+   problems have a small upper bound on the number of
+   possible children.  The size of the vector should be
+   a resettable parameter, of course.
+
+2. Write utility functions to manipulate the node data
+   structures.  An allocator that fills in NULLs is
+   good.  If you use cons cells, a deallocator for a
+   list of cons cells and an allocator for a cons
+   cell is good.  A deallocator for all nodes is good,
+   as is a function that goes through all nodes and
+   reinitializes depth and parent fields.  These last
+   are why a list of all nodes is good.
+
+3. Write a search function.  This finds a spanning tree
+   in the graph of nodes rooted at a particular start
+   node.  It computes the depth and parent for each
+   reachable node.  You may stop if a goal node is
+   reached.
+
+   You are assuming that there will be a unique shortest
+   solution if there is any solution, or that if the
+   shortest solution is not unique, any shortest
+   solution will do.  This seems a reasonable assumption
+   for ALL maze problems.
+
+   The reason you use breadth first search is to keep
+   computation time bounded, and to find the shortest
+   path where required.  Contest maze problems have
+   search graphs with a very limited number of total
+   nodes.  If this were not true, depth first searches
+   could get lost in large sections of the graph for no
+   good reason, and the maze would be a bad problem for
+   a contest (though it might be a good problem for
+   learning how the real world works).
+
+   In some mazes, the total number of nodes is not
+   sufficiently small, but the number that need to be
+   looked at by a breadth first search is small.  For
+   these mazes, you need to generate the children of
+   a node on the fly when the breadth first search
+   needs to first see them.  Also, you will need a
+   hash table to look up a newly generated child name
+   to see if the child node already exists.
+
+   The search has one twist: in some mazes, the start
+   is also a goal.  So instead of leaving the start node
+   as depth 0, if it is reachable at another depth it
+   should be given that depth and given a parent.
+
+4. Write a utility function that takes a list of goals
+   and the start node and finds a path from the start to
+   one of the goals.  It has to reverse the order of the
+   parent list from goal to start.
+
+   Be wary of the situation where the start node is also
+   the goal.  The path may need to be represented by
+   a start node, goal node pair plus a pointer in each
+   node and the assumption that the path is not empty.
+   Or you could use cons cells.
+
+5. You may also want to insert optional print code where
+   the parent field is set during the search, for
+   debugging.  This may have to be specific to the
+   application since the node names are.
+
+You can test your general code by creating for yourself
+a simple maze problem that has nodes numbered from 1 to
+100, inputs a list of children specifications each con-
+sisting of a node number and a list of its children
+numbers, and then inputs a list of queries each con-
+sisting of a start node number and a list of goal node
+numbers.
+
+You should now have a good set of general code and be
+ready for real maze problems.  You will need to solve
+several maze problems to get the hang of it and to
+tweak your general code.
+
+It is better if you prepare by writing your own general
+code and solving at least 3 mazes with it.  You should
+then have a better command of your code and maze
+problems, and it should also be more fun and a better
+learning experience.
