@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Jan 26 22:06:00 EST 2002
+# Date:		Sun Jan 27 08:34:38 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,14 +11,15 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/01/27 03:31:39 $
+#   $Date: 2002/01/27 13:56:16 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.75 $
+#   $Revision: 1.76 $
 #
 
 # Table of Contents
 #
 #	Including this Code
+#	Computational Functions
 #	Dispatch Locking Functions
 #	Date Functions
 #	Checked File Functions
@@ -84,6 +85,16 @@ set judging_parameters_file hpcm_judging.rc
 # redefined by program.
 #
 proc exit_cleanup {} {}
+
+# Computational Functions
+# ------------- ---------
+
+# Return the intersection of list1 and list2, in some
+# arbitrary order.
+#
+proc intersect { list1 list2 } {
+    return [lindex [intersect3 $list1 $list2] 1]
+}
 
 # Dispatch Locking Functions
 # -------- ------- ---------
@@ -1165,7 +1176,9 @@ proc blank_body { ch } {
 # NO-REPLY, or EDIT commands that are executed are
 # merely returned in this list, and have no direct
 # effect on the contents of $reply_file+.  This list
-# may be passed to send_response.
+# is guarenteed to have exactly one of FINAL, NOT-
+# FINAL, or NO-REPLY, and may be passed to send_
+# response.
 #
 proc compose_response { { compose_reply_options "" } } {
 
@@ -1192,25 +1205,30 @@ proc compose_response { { compose_reply_options "" } } {
 # returned by compose_response.  Does the following
 #
 # If the list contains FINAL: calls send_reply.
-# Else if the list contains NOT-FINAL: calls
+# If the list contains NOT-FINAL: calls
 #      send_reply -notfinal.
-# Else if the list contains NO-REPLY: does nothing.
-# Else calls error.
+# If the list contains NO-REPLY: does nothing.
+# If none or more than one of the above applies,
+# call error instead.
 #
 proc send_response { commands } {
 
     global response_instructions_file
 
+    if { [llength [intersect \
+    		      {FINAL NOT-FINAL NO-REPLY} \
+		      $commands]] != 1 } {
+	error "In $response_instructions_file file\
+	       value, not exactly one of NO-REPLY,\
+	       FINAL, and NOT-FINAL were executed:\
+	       $commands"
+    }
     if { [lcontain $commands FINAL] } {
     	send_reply
     } elseif { [lcontain $commands NOT-FINAL] } {
     	send_reply -notfinal
     } elseif { [lcontain $commands NO-REPLY] } {
     	return
-    } else {
-	error "In $response_instructions_file file\
-	       value, none of NO-REPLY, FINAL, or\
-	       NOT-FINAL were executed."
     }
 }
 
@@ -1395,15 +1413,19 @@ proc execute_response_commands \
 	}
     }
 
+    if { [llength [intersect \
+    		      {FINAL NOT-FINAL NO-REPLY} \
+		      $return_commands]] != 1 } {
+	error "In $response_instructions_file file\
+	       value, not exactly one of NO-REPLY,\
+	       FINAL, and NOT-FINAL were executed:\
+	       $return_commands"
+    }
+
     if {    [lcontain $return_commands FINAL] \
          || [lcontain $return commands NOT-FINAL] } {
 	eval compose_reply $compose_reply_options \
 			   $processed_commands
-    } elseif { ! [lcontain $return_commands NO-REPLY] \
-    			} {
-	error "In $response_instructions_file file\
-	       value, none of NO-REPLY, FINAL, or\
-	       NOT-FINAL were executed."
     }
     return $return_commands
 }
