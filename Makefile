@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Jan 25 03:41:59 EST 2003
+# Date:		Sun Feb  9 04:16:54 EST 2003
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,19 +11,79 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2003/01/25 08:47:21 $
+#   $Date: 2003/02/09 10:02:56 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.24 $
+#   $Revision: 1.25 $
 
 # See STATUS file for description of versions.
 #
 VERSION=1.000
 
+# Tar extension, zip option, and unzip option.
+# Can be set to use zipped or unzipped tar files.
+#
+TAREXT = .tar.gz
+TARZIP = --gzip
+TARUNZIP = --gunzip
+# TAREXT = .tar
+# TARZIP =
+# TARUNZIP =
+
+# Commands.
+#
+# make
+# make all
+#	Set up hpcm, e.g., set o+x permissions on files
+#	that need it, compile binaries that need it.
+#
+# make aux
+# make auxiliary
+#	Set up hpcm so it can be used both normally
+#	and by auxiliary judges.  Like `make all' but
+#	also adds group permissions to files and
+#	directories.
+#
+# make slocs
+#	Make sloc count files, source.slocs and
+#	solution.slocs.
+#
+# make tar
+#	Make distributable and non-distributable tar
+#	files, hpcm_${VERSION}${TAREXT} and
+#       hpcm_non_distributable_${VERSION}${TAREXT}
+#
+# make signatures
+#	Make HPCM_MD5_Signatures file, a copyrighted
+#	file with signatures of all tar'able files.
+#
+# make md5check
+#	Check the signatures in HPCM_MD5_Signatures.
+#
+# make cvssignatures
+#	Make HPCM_CVS_MD5_Signatures file from
+#	hpcm_cvs_${VERSION}${TAREXT}.  You must make
+#	this last file by hand; it is a tar file con-
+#	taining the CVS root for HPCM.  The signatures
+#	file is a copyrighted file with signatures
+#	of all files in the cvs tar file.
+#
+# make md5cvscheck
+#	Check the signatures in HPCM_CVS_MD5_Signatures.
+#
+# make clean
+#	Clean everything in this directory.
+#
+# make cleanall
+#	Clean everything in this directory and all its
+#	subdirectories that have Makefiles.  Runs
+#	`make clean' in all these directories.
+
+HPCM_CVS_MD5_Signatures:	signatures_header cvstmp
+
 all:	submakes
 
 signatures:	HPCM_MD5_Signatures
-
-# slocs:	make .sloc files: see below.
+cvssignatures:	HPCM_CVS_MD5_Signatures
 
 # Kill all implicit rules
 #
@@ -98,9 +158,64 @@ HPCM_MD5_Signatures:	signatures_header \
 
 # Check MD5 Signatures
 #
-md5_check:
+md5check:
 	cd ..; \
 	   sed < hpcm/HPCM_MD5_Signatures \
+	       -e '1,/^ ====== /'d | \
+	       md5sum --check 2>&1 | \
+	       sed -e '/^[^ 	]*: OK$$/d'
+
+# Make cvstmp, a directory that holds the cvs files
+# to be MD5 summed.  You must make hpcm_cvs_
+# ${VERSION}${TAREXT} by hand.
+#
+cvstmp:	hpcm_cvs_${VERSION}${TAREXT}
+	rm -rf cvstmp
+	mkdir cvstmp
+	cd cvstmp; \
+	    tar xf ../hpcm_cvs_${VERSION}${TAREXT} \
+	        ${TARUNZIP}
+	cp hpcm_cvs_${VERSION}${TAREXT} cvstmp
+
+# Make MD5 CVS Signatures File:
+#
+HPCM_CVS_MD5_Signatures:	signatures_header cvstmp
+	@if test "${COPYRIGHT}" = ""; \
+	then echo COPYRIGHT not defined; exit 1; fi
+	rm -f HPCM_CVS_MD5_Signatures
+	echo "HPCM CVS MD5 SIGNATURES" \
+	     > HPCM_CVS_MD5_Signatures
+	echo "---- --- --- ----------" \
+	     >> HPCM_CVS_MD5_Signatures
+	echo "" \
+	     >> HPCM_CVS_MD5_Signatures
+	echo "${COPYRIGHT}" \
+	     >> HPCM_CVS_MD5_Signatures
+	echo "" \
+	     >> HPCM_CVS_MD5_Signatures
+	cat signatures_header \
+	     >>  HPCM_CVS_MD5_Signatures
+	echo "" \
+	     >> HPCM_CVS_MD5_Signatures
+	echo "HPCM Version: ${VERSION}" \
+	     >>  HPCM_CVS_MD5_Signatures
+	echo "Date of Signatures:" \
+	     "`date`" \
+	     >>  HPCM_CVS_MD5_Signatures
+	echo " ====== " " ====== " \
+	     " ====== " " ====== " \
+	     " ====== " " ====== " \
+	     " ====== " " ====== " \
+	     >> HPCM_CVS_MD5_Signatures
+	cd cvstmp; \
+	   md5sum `find . -type f -print` \
+	      >>  ../HPCM_CVS_MD5_Signatures
+
+# Check CVS MD5 Signatures
+#
+md5cvscheck:	cvstmp
+	cd cvstmp; \
+	   sed < ../HPCM_CVS_MD5_Signatures \
 	       -e '1,/^ ====== /'d | \
 	       md5sum --check 2>&1 | \
 	       sed -e '/^[^ 	]*: OK$$/d'
@@ -108,23 +223,30 @@ md5_check:
 
 # Make tar files.
 #
-tar:	cleantar hpcm_${VERSION}.tar \
-        hpcm_non_distributable_${VERSION}.tar
+tar:	cleantar hpcm_${VERSION}${TAREXT} \
+        hpcm_non_distributable_${VERSION}${TAREXT}
 
-hpcm_${VERSION}.tar:	HPCM_MD5_Signatures \
+hpcm_${VERSION}${TAREXT}:	HPCM_MD5_Signatures \
                         distributable_files_${VERSION}
-	rm -f hpcm_${VERSION}.tar
-	cd ..; tar cf hpcm/hpcm_${VERSION}.tar \
+	d=`pwd`;d=`basename $$d`; test $$d = hpcm
+	rm -f hpcm_${VERSION}${TAREXT}
+	cd ..; tar cf hpcm/hpcm_${VERSION}${TAREXT} \
 	   hpcm/HPCM_MD5_Signatures \
-	   `cat hpcm/distributable_files_${VERSION}`
+	   `cat hpcm/distributable_files_${VERSION}` \
+	   ${TARZIP}
 
-hpcm_non_distributable_${VERSION}.tar:	\
+hpcm_non_distributable_${VERSION}${TAREXT}:	\
 		non_distributable_files_${VERSION}
-	rm -f hpcm_non_distributable_${VERSION}.tar
+	d=`pwd`;d=`basename $$d`; test $$d = hpcm
+	rm -f hpcm_non_distributable_${VERSION}${TAREXT}
 	cd ..; tar cf \
-	   hpcm/hpcm_non_distributable_${VERSION}.tar \
-	   `cat hpcm/non_distributable_files_${VERSION}`
+	   hpcm/hpcm_non_distributable_${VERSION}${TAREXT} \
+	   `cat hpcm/non_distributable_files_${VERSION}` \
+	   ${TARZIP}
 
+# Make files that list all distributable and non-
+# distributable files.  Begin each file name with `hpcm/'.
+#
 distributable_files_${VERSION}:	File_List Makefile
 	rm -f distributable_files_${VERSION}
 	file_list public \
@@ -144,14 +266,18 @@ cleanall:
 	    ( cd `dirname $$x`; make clean ) \
 	    done
 
-clean:	cleantar cleanslocs
+clean:	cleantar cleanslocs cleancvs
 
 cleantar:
 	rm -f HPCM_MD5_Signatures \
 	      distributable_files_${VERSION} \
 	      non_distributable_files_${VERSION} \
-	      hpcm_${VERSION}.tar \
-	      hpcm_non_distributable_${VERSION}.tar
+	      hpcm_${VERSION}${TAREXT} \
+	      hpcm_non_distributable_${VERSION}${TAREXT}
 
 cleanslocs:
 	rm -f *.slocs
+
+cleancvs:
+	rm -rf cvstmp
+	rm -f HPCM_CVS_MD5_Signatures
