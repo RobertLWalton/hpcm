@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Oct  1 11:05:07 EDT 2003
+# Date:		Wed Oct  1 13:27:48 EDT 2003
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2003/10/01 15:53:08 $
+#   $Date: 2003/10/01 17:40:45 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.13 $
+#   $Revision: 1.14 $
 
 # To make web help pages, execute `make web' and copy
 # the `web' directory to you web server, where it will
@@ -23,9 +23,54 @@
 
 all:	emailsh
 
+ps:	help.ps demos.ps
+
 # Kill all implicit rules
 #
 .SUFFIXES:
+
+HELP_FILES = \
+	formal/formal_contest \
+	informal/informal_contest \
+	common/xterminals \
+	email/email_contest \
+	email/email_unix_tools \
+	common/solving \
+	common/input \
+	common/output \
+	common/print \
+	common/commonlisp \
+	common/scores \
+	common/scoreboard \
+	common/c++ \
+	common/java \
+	common/advice \
+	advanced/breadth_first_search \
+	advanced/dynamic_programming \
+	advanced/2D_geometry \
+	advanced/3D_geometry \
+	advanced/network_flows \
+	advanced/optimal_matchings
+
+DEMOS_FILES = \
+	../../problem_library/demos/count/Makefile \
+	../../problem_library/demos/count/README \
+	../../problem_library/demos/count/count.in \
+	../../problem_library/demos/count/count.test \
+	../../problem_library/demos/count/count.txt \
+	../../problem_library/demos/count/count1.c \
+	../../problem_library/demos/count/count1.cc \
+	../../problem_library/demos/count/count1.java \
+	../../problem_library/demos/count/count1.p \
+	../../problem_library/demos/count/count1.lsp \
+	../../problem_library/demos/javaio/javaio.java \
+	../../problem_library/demos/javaio/Makefile \
+	../../problem_library/demos/javaio/javaio.in \
+	../../problem_library/demos/javaio/javaio.test \
+	../../problem_library/demos/pascal/pascal.p \
+	../../problem_library/demos/pascal/Makefile \
+	../../problem_library/demos/pascal/pascal.in \
+	../../problem_library/demos/pascal/pascal.test
 
 help_index:	index
 	rm -f help_index
@@ -61,6 +106,16 @@ demos_index:	../../problem_library/index
 	    -e '/^[^[:space:]].* Problems/,$$d' \
 	    -e '/^\*\*\*[[:space:]]/d' \
 	    -e 'p'
+
+help.ps:	help_index ${HELP_FILES}
+	rm -rf help.ps
+	../../judge/bin/fprint > help.ps -o \
+	    help_index ${HELP_FILES}
+
+demos.ps:	demos_index ${DEMOS_FILES}
+	rm -rf demos.ps
+	../../judge/bin/fprint > demos.ps -o \
+	    demos_index ${DEMOS_FILES}
 
 emailsh:	email/sh/hpcm_extract \
 		email/sh/hpcm_submit \
@@ -110,4 +165,5 @@ clean:
 	       email/sh/hpcm_clisp \
 	       email/sh/hpcm_clisp.lsp \
 	       web web.tar \
-	       help_index demos_index
+	       help_index demos_index \
+	       help.ps demos.ps
