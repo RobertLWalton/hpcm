@@ -4,7 +4,7 @@
 #
 # File:		TRASH_ACCOUNT
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Sat Mar  9 19:19:13 EST 2002
+# Date:		Wed Oct 22 07:01:41 EDT 2003
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/03/10 00:18:18 $
+#   $Date: 2003/10/22 11:46:31 $
 #   $RCSfile: TRASH_ACCOUNT,v $
-#   $Revision: 1.10 $
+#   $Revision: 1.11 $
 
 # Change to the accounts home directory.
 #
@@ -52,7 +52,13 @@ TRASH_ACCOUNT [contest]
     contest argument is not given, it is taken to be the
     target of the symbolic link ~/.hpcm_contest, if that
     exists.  If this program succeeds, it links ~/.hpcm_
-    contest to the value of the contest argument."
+    contest to the value of the contest argument.
+
+    After doing the above successfully, if the file
+    .hpcm_contest/extra_setup.tar is readable, this
+    program executes in the account home directory
+    
+    	tar xpvf .hpcm_contest/extra_setup.tar"
 	exit 1
 	;;
     * )
@@ -71,7 +77,7 @@ case "$contest" in
     	;;
 esac
 
-# Be sure the files we need are readable.
+# Be sure the files we require are readable.
 #
 if test ! -r $contest/home/setup.tar
 then
@@ -141,5 +147,13 @@ ls -aR | diff $contest/home/setup.ls -
 #
 rm -f .hpcm_contest
 ln -s $contest .hpcm_contest
+
+# If .hpcm_contest/extra_setup.tar is readable,
+# untar it.
+#
+if test -r .hpcm_contest/extra_setup.tar
+then
+	tar xpvf .hpcm_contest/extra_setup.tar
+fi
 
 exit 0
