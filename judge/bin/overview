@@ -4,7 +4,7 @@
 #
 # File:		overview
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Oct 16 23:46:55 EDT 2001
+# Date:		Wed Oct 17 00:31:06 EDT 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/10/17 04:03:11 $
+#   $Date: 2001/10/17 04:40:30 $
 #   $RCSfile: overview,v $
-#   $Revision: 1.35 $
+#   $Revision: 1.36 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -1337,7 +1337,7 @@ HPCM has the following security goals:
    .class files.
 
    To reduce the chances of this working, the `auto-
-   judge' program removes a+x permissions from a *-
+   judge' program removes a+x permissions from a
    submission directory immediately after running a
    solution program in that directory.  This means that
    the time window for reading any .class files in that
@@ -1367,10 +1367,10 @@ HPCM has the following security goals:
    In order to execute a submitted program with hpcm_
    sandbox changing real and effective user and group
    IDs to those of the `sandbox' account, both the
-   *-submission directory and the submitted program must
+   submission directory and the submitted program must
    be made a+x first.  If the mail directory were not
    also a+x, there would be no way for outsiders to get
-   into the *-submission directory.  But because of the
+   into the submission directory.  But because of the
    JAVA bug, the mail directory is also a+x.
 
    Thus one contestant's submission can guess the time
@@ -1380,7 +1380,7 @@ HPCM has the following security goals:
    the submission of another contestant.
 
    To reduce the probability of success, the `autojudge'
-   program removes a+x directories from any *-submission
+   program removes a+x directories from any submission
    directory right after running a solution in that dir-
    ectory.  This means that the time window in which
    another contestant might be able to run this solution
@@ -1429,11 +1429,12 @@ Raw data is stored in the following directories:
 
     mail_directory/dddd-<<ssssss>>-submission
 
-        This is the subdirectory of the mail_directory
-	created to process an email sent to the judge by
-	the submitter ssssss at a time indicated by the
-	date dddd.  A specific example of the last name
-	component of the subdirectory is:
+        This is a submission directory, which is a sub-
+	directory of the mail_directory created to pro-
+	cess one email message sent to the judge by the
+	submitter ssssss at a time indicated by the date
+	dddd.  A specific example of the last component
+	of the subdirectory name is:
 
 	2000-12-10-06:30:49-<<hpcm-t@gigue>>-submission
 
@@ -1477,7 +1478,7 @@ Raw data is stored in the following directories:
 	directory.
 
         Errors that are not particular to one submission
-	and therefore cannot be placed in a *-submission
+	and therefore cannot be placed in a submission
 	directory are placed here, each in their own
 	file with the same name structure (including
 	`checking') as errors put in submission direc-
@@ -1513,10 +1514,10 @@ has a name of the form:
 
 See above for details concerning dddd and ssssss.
 
-Files in the email's *-submission directory that are
+Files in the email's submission directory that are
 specific to each kind of email are described in separate
 sections below.  Files that can exist in all kinds of
-*-submission directories are as follows:
+submission directories are as follows:
 
     $received_file
 	This is a read-only file that holds the piece of
@@ -1527,7 +1528,7 @@ sections below.  Files that can exist in all kinds of
 	This is the FINAL reply email sent by the judge
 	concerning this directory.  Thus the presence of
 	this file indicates that the judge is done with
-	this *-submission directory.
+	this submission directory.
 
 	The judge can also send non-final email replies,
 	which are NOT stored in this file.
@@ -1542,7 +1543,7 @@ sections below.  Files that can exist in all kinds of
 
     $no_reply_file
 	This file is created by the judge to indicate
-	the judge is done with this *-submission direc-
+	the judge is done with this submission direc-
 	tory, but does not intend to send an email reply
 	to the contestant.  Typically this\
 					$no_reply_file
@@ -1577,9 +1578,9 @@ sections below.  Files that can exist in all kinds of
 	system error.
 
 	If an error occurs in an HPCM program that is
-	NOT processing a *-submission directory, this
+	NOT processing a submission directory, this
 	error log file is put in the log_directory (see
-	above), instead of in a *-submission directory.
+	above), instead of in a submission directory.
 
     dddd-rrrr-<<ppppp>>-checked-error
 	This is an `unchecked-error' file (see just
@@ -1603,7 +1604,7 @@ sections below.  Files that can exist in all kinds of
 
 
 The section `Contest Raw Data: Data Flow' below outlines
-the creation of raw data files in a *-submission direc-
+the creation of raw data files in a submission direc-
 tory.
 
 Contest Raw Data: Solution Submissions
@@ -1694,7 +1695,7 @@ some more details for solution submission directories.
 
 If the `autojudge' does not produce a final reply, it
 creates a $needs_reply_flag_file file in the flag dir-
-ectory to signal that this *-submission directory needs
+ectory to signal that this submission directory needs
 the attentions of `manualreply'.  The `manualreply'
 program must then be run to assign a manual score, which
 is stored in a `$manual_score_file' file.   Email con-
@@ -1716,7 +1717,7 @@ See the documentation of the `autoinfo' program, which
 processes get requests, for details.
 
 The `autoinfo' program produces the following files in
-the email's *-submission directory:
+the email's submission directory:
 
     $reply_file		Final reply.
     $reply_history_file	History of all replies.
@@ -1899,7 +1900,7 @@ follows:
 If a system error occurs at any point, which can only
 happen if HPCM has a bug, then processing stops and
 an unchecked error log file is created.  If processing
-is within a *-submission directory, the log file is
+is within a submission directory, the log file is
 created within this directory; otherwise the log file
 is created within the log_directory.
 
@@ -1957,8 +1958,8 @@ are:
     mail_directory/*-submission/$dispatch_pid_file
         This file is used as a lock to prevent more than
 	one `autojudge' or `manualreply' program from
-	running in a *-submission subdirectory at once.
-	This file is a lock on the *-submission direc-
+	running in a submission subdirectory at once.
+	This file is a lock on the submission direc-
 	tory.  The file contains the process ID of the
 	program that has locked the directory.
 
@@ -2038,16 +2039,16 @@ summary of the programs used during a contest to run
 the contest follows:
 
     receivemail		Process received email and store
-    			it in a *-submission directory.
+    			it in a submission directory.
     dispatchmail	Call autodispatch for each
-    			*-submission directory.
+    			submission directory.
     autodispatch	Call autoinfo or autojudge or
-    			process query, for a *-submis-
+    			process query, for a submis-
 			sion directory.
 
-    autoinfo		Process a get request *-submis-
+    autoinfo		Process a get request submis-
     			sion directory.
-    autojudge		Process a solution submit *-
+    autojudge		Process a solution submit
     			submission directory.
 
     extractmail		Extract a solution program file
@@ -2073,22 +2074,22 @@ the contest follows:
     			at intervals.
     scoreboard		Compute a scoreboard given the
     			output of `scorefinder'.
-    scorefinder		Look through all the *-submis-
+    scorefinder		Look through all the submis-
     			sion directories for score
 			files and output the information
 			found.
 
     manualreply		Permit a human user (the judge)
     			to inspect the contents of a
-			*-submission (or error log) dir-
+			submission (or error log) dir-
 			ectory and to specify manual
 			scores and email replies.
-    tracker		Identify *-submission director-
+    tracker		Identify submission director-
     			ies for which `manualreply'
 			should be run and permit a user
 			to dispatch `manualreply' to
 			these.
-    trackfinder		Look through all the *-submis-
+    trackfinder		Look through all the submis-
     			sion directories for information
 			needed by `tracker' and output
 			this information for `tracker'
@@ -2096,7 +2097,7 @@ the contest follows:
     reply		An older simpler version of
     			`tracker' (that does NOT use
 			`trackfinder').
-    lookat		Find *-submission directories
+    lookat		Find submission directories
     			containing a file with a given
 			name and contents, and dispatch
 			`manualreply' to these director-
@@ -2191,12 +2192,14 @@ mary of these is:
 
     proc dispatch_lock {}
     proc dispatch_unlock {}
-    	Manage the *-submission/$dispatch_pid_file file.
+    	Manage the submission directory\
+		$dispatch_pid_file
+	file.
 
     proc clock_to_filename_date { clock }
     proc filename_date_to_clock { date }
         Convert standard data formats to/from the date
-	format used in *-submission directory names and
+	format used in submission directory names and
 	error log file names.
 
     proc is_checked { filename }
