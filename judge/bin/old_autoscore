@@ -4,7 +4,7 @@
 #
 # File:		autoscore
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Aug 31 00:33:55 EDT 2000
+# Date:		Mon Sep 11 10:07:53 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: acm-cont $
-#   $Date: 2000/08/31 04:26:50 $
+#   $Date: 2000/09/11 14:28:51 $
 #   $RCSfile: old_autoscore,v $
-#   $Revision: 1.15 $
+#   $Revision: 1.16 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -105,6 +105,28 @@ cd submission_directory; autoscore program_name
 			much as R, where A and R are
 			floating point values.
 
+	decimal		Allow two files to have matching
+			numbers that have different
+			numbers of decimal digits, or
+			for which only one of the
+			matching numbers has a decimal
+			point.
+
+	exponent	Allow two files to have matching
+			numbers just one of which has an
+			exponent.
+
+	case		Allow two files to have letters
+			outside of numbers that match
+			but for case.
+
+	column		Allow to files to have matching
+			numbers that do not end in the
+			same line column, or matching
+			non-whitespace characters that
+			do not end in the same line
+			column.
+
     The possible scores (with empty error file and
     extant output file) are:
 
@@ -135,7 +157,10 @@ cd submission_directory; autoscore program_name
 
     The score is written to the `$auto_score_file' file
     in the submission directory and is also written as a
-    single line to the standard output."
+    single line to the standard output.
+
+    For the purpose of computing character line column
+    positions, tabs are set every 8 columns."
 
 # If wrong number of arguments print documentation and
 # exit with error.
@@ -204,6 +229,10 @@ if { $score == "" } {
     set linebreak_ok	no
     set whitespace_ok	no
     set number_ok	no
+    set decimal_ok	no
+    set exponent_ok	no
+    set case_ok		no
+    set column_ok	no
     set number_absdiff	0.0
     set number_reldiff	0.0
 
@@ -228,6 +257,14 @@ if { $score == "" } {
 	} elseif { $i == "number" } {
 	    set number_ok yes
 	    set last number
+	} elseif { $i == "decimal" } {
+	    set decimal_ok yes
+	} elseif { $i == "exponent" } {
+	    set exponent_ok yes
+	} elseif { $i == "case" } {
+	    set case_ok yes
+	} elseif { $i == "column" } {
+	    set column_ok yes
 	} elseif { $i == "spacebreak" } {
 	    set spacebreak_ok yes
 	} elseif { $i == "linebreak" } {
@@ -282,6 +319,22 @@ if { $score == "" } {
 	} elseif { $d == "eof2" } {
 	    set score "Incorrect Output"
 	    break
+	} elseif { $d == "decimal" } {
+	    if { $decimal_ok == "no" } {
+		set score "Formatting Error" 
+	    }
+	} elseif { $d == "exponent" } {
+	    if { $exponent_ok == "no" } {
+		set score "Formatting Error" 
+	    }
+	} elseif { $d == "case" } {
+	    if { $case_ok == "no" } {
+		set score "Formatting Error" 
+	    }
+	} elseif { $d == "column" } {
+	    if { $column_ok == "no" } {
+		set score "Formatting Error" 
+	    }
 	} elseif { $d == "whitespace" } {
 	    if { $whitespace_ok == "no" } {
 		set score "Formatting Error" 

@@ -2,7 +2,7 @@
 //
 // File:	scorediff.cc
 // Authors:	Bob Walton (walton@deas.harvard.edu)
-// Date:	Wed Aug 30 03:46:09 EDT 2000
+// Date:	Mon Sep 11 09:51:47 EDT 2000
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: acm-cont $
-//   $Date: 2000/08/30 07:39:24 $
+//   $Date: 2000/09/11 14:28:52 $
 //   $RCSfile: scorediff.cc,v $
-//   $Revision: 1.7 $
+//   $Revision: 1.8 $
 
 #include <stdlib.h>
 #include <iostream.h>
@@ -31,19 +31,25 @@ char documentation [] =
 "    differences are:\n"
 "\n"
 "    none	There were no differences.\n"
+"\n"
 "    spacebreak	One file had whitespace in a line\n"
 "		where there the other file did not.\n"
+"\n"
 "    linebreak	One file had a line break where the\n"
 "		other file did not.\n"
+"\n"
 "    whitespace	Both files had whitespace in the same\n"
 "		place, but these whitespaces did not\n"
 "		exactly match.\n"
+"\n"
 "    eof1	The first file ended and the second\n"
 "		file had remaining non-whitespace\n"
 "		characters.\n"
+"\n"
 "    eof2	The second file ended and the first\n"
 "		file had remaining non-whitespace\n"
 "		characters.\n"
+"\n"
 "    number A R	Two files had a number in the same\n"
 "		place, but the numbers were not\n"
 "		represented by the same character\n"
@@ -52,12 +58,34 @@ char documentation [] =
 "		number pairs was A and the maximum\n"
 "		relative value of the difference of\n"
 "		of all such number pairs was R.\n"
+"\n"
+"    decimal	Two numbers that were compared had\n"
+"		different numbers of decimal places,\n"
+"		or one had a decimal point and the\n"
+"		other did not.\n"
+"\n"
+"    exponent	Two numbers were compared and one had\n"
+"		an exponent but the other did not.\n"
+"\n"
+"    case	There were different non-whitespace\n"
+"		characters at some place in the file\n"
+"		other than those in matching numbers,\n"
+"		and both were the same letter, but of\n"
+"		different case.\n"
+"\n"
+"    column	Two non-whitespace characters were\n"
+"		compared that were outside of numbers\n"
+"		and these were in different columns,\n"
+"		or two numbers were compared that did\n"
+"		not end in the same column.\n"
+"\n"
 "    nonblank	There were different non-whitespace\n"
 "		characters at some place in the file\n"
-"		other than those in matching numbers.\n"
-"		When this is discovered, the search\n"
-"		for other kinds of differences ter-\n"
-"		minates.\n"
+"		other than those in matching numbers\n"
+"		or in letters that match but for\n"
+"		case.  When this is discovered, the\n"
+"		search for other kinds of differences\n"
+"		terminates.\n"
 "\n"
 "    The files are parsed into whitespace, numbers,\n"
 "    and other characters.  A number is an optional\n"
@@ -81,11 +109,21 @@ char documentation [] =
 "    If numbers are too large to compare (either they\n"
 "    or their difference is infinity) then they are\n"
 "    treated as non-numbers whose character string\n"
-"    representations must match exactly.\n" ;
+"    representations must match exactly.\n"
+"\n"
+"    For the purpose of computing the column of a\n"
+"    character, tabs are set every 8 columns.\n" ;
 
 struct file
 {
     ifstream stream;	// Input stream.
+    int column;		// Column within the line of
+    			// the last character returned.
+			// If this character is a \n,
+			// this column is the length
+			// of the line.  The first
+			// column is 0.
+    int nextcolumn;	// Next value for column.
 
     // Set by scanspace:
 
@@ -95,6 +133,12 @@ struct file
 
     bool isnumber;	// True iff a number is found.
     double number;	// Value of any found number.
+    int decimals;	// Number of digits after the
+    			// decimal point in the number,
+			// or -1 if there is no decimal
+			// point.
+    bool hasexponent;	// True iff number has an exp-
+    			// onent.
     char buffer [ 4000 ];
     			// The character string of
     			// any found number.
@@ -137,6 +181,8 @@ int open ( file & f, char * filename )
 
     f.back = f.backup;
     * f.back = 0;
+
+    f.nextcolumn = 0;
 }
 
 // Get next character from file, respecting any backup.
@@ -146,13 +192,19 @@ inline int getc ( file & f )
 {
     int c = * f.back;
 
-    if ( c != 0 )
-    {
-        ++ f.back;
-        return c;
-    }
+    if ( c != 0 )	++ f.back;
+    else		c = f.stream.get();
+
+    f.column = f.nextcolumn;
+
+    if ( c == '\n' )
+	f.nextcolumn = 0;
+    else if ( c == '\t' )
+	f.nextcolumn += 8 - ( f.nextcolumn % 8 );
     else
-        return f.stream.get();
+	++ f.nextcolumn;
+
+    return c;
 }
 
 // Skips over whitespace in file, returning first non-
@@ -174,8 +226,10 @@ inline int scanspace ( file & f, int c )
 }
 
 // Put string s followed by character c in backup of
-// file f.  Then return the getc of the file.  c == EOF
-// is allowed.
+// file f.  Then return the getc of the file.  c must
+// be the last character gotten by getc of the file.
+// All the string s characters must be non-whitespace,
+// but c can be anything, including EOF.
 //
 inline int backup ( file & f, char * s, int c )
 {
@@ -184,11 +238,16 @@ inline int backup ( file & f, char * s, int c )
     char * end   = f.backup;
     char * limit = f.backup + sizeof ( f.backup ) - 2;
 
+    f.nextcolumn = f.column;
+
     int c2;
     while ( c2 = * s ++ )
     {
         assert ( end < limit );
 	* end ++ = c2;
+
+	assert ( ! isspace ( c2 ) );
+	-- f.nextcolumn;
     }
     if ( c != EOF ) * end ++ = c;
     * end = 0;
@@ -209,6 +268,9 @@ inline int backup ( file & f, char * s, int c )
 // of the file to the value of the number.  Note that
 // this value may be an infinity if the number is too
 // large.
+//
+// Also sets the `decimals' and `hasexponent' members
+// of the file if `isnumber' is set true.
 //
 // If the second input character is supplied, the first
 // character MUST be a legal first character of a
@@ -232,6 +294,9 @@ int scannumber ( file & f, int c1, int c2 = 0 )
     bool found_point = ( c1 == '.' );
     bool found_digit = isdigit ( c1 );
 
+    f.decimals = found_point ? 0 : -1;
+    f.hasexponent = false;
+
     char c = ( c2 == 0 ? getc ( f ) : c2 );
 
     while (1) {
@@ -242,10 +307,18 @@ int scannumber ( file & f, int c1, int c2 = 0 )
 	{
 	    if ( found_point ) 
 		break;
-	    else found_point = true;
+	    else
+	    {
+		found_point = true;
+		f.decimals = 0;
+	    }
 	}
 	else if ( isdigit ( c ) )
+	{
 	    found_digit = true;
+	    if ( found_point )
+	    	++ f.decimals;
+	}
 	else break;
 
 	* f.end ++ = c;
@@ -282,6 +355,7 @@ int scannumber ( file & f, int c1, int c2 = 0 )
 		* f.end ++ = c;
 		c = getc ( f );
 	    }
+	    f.hasexponent = true;
 	}
 	else
 	{
@@ -323,9 +397,16 @@ int scannumber ( file & f, int c1, int c2 = 0 )
 inline void diffnumber
 	( file & file1, file & file2,
 	  bool & nonblank, bool & number,
+	  bool & decimal, bool & exponent,
 	  double & number_absdiff,
 	  double & number_reldiff )
 {
+    if ( file1.decimals != file2.decimals )
+    	decimal = true;
+
+    if ( file1.hasexponent != file2.hasexponent )
+    	exponent = true;
+
     if ( ! finite ( file1.number )
 	 ||
 	 ! finite ( file2.number ) )
@@ -406,6 +487,10 @@ int main ( int argc, char ** argv )
     bool eof1		= false;
     bool eof2		= false;
     bool number		= false;
+    bool decimal	= false;
+    bool exponent	= false;
+    bool caseflag	= false;
+    bool column		= false;
     bool nonblank	= false;
 
     double number_absdiff	= 0.0;	// Numeric
@@ -425,21 +510,21 @@ int main ( int argc, char ** argv )
 	//	a character not in a number or
 	//		whitespace
 	//
+	// Furthermore, one of these things preceeds c1
+	// in file1 iff the same kind of thing preceeds
+	// c2 in file2.
+	//
 	// Scanned numbers and whitespace are as long as
 	// possible, so a character c1 or c2 could not
 	// be part of a preceeding number or whitespace.
 	// Exceptions to this rule are made if:
 	//
 	//	(1) c1 and c2 are both preceeded by
-	//	    an equal sign character, + or -,
+	//	    equal sign characters, + or -,
 	//	    that may start a number
 	//      (2) c1 and c2 are both whitespace
 	//          characters and are preceeded by
 	//          identical whitespace
-	//
-	// Furthermore, one of these things preceeds c1
-	// in file1 iff the same kind of thing preceeds
-	// c2 in file2.
 
         if ( c1 == EOF )
 	{
@@ -520,34 +605,54 @@ int main ( int argc, char ** argv )
 		{
 		    c1 = scannumber ( file1, '.', c1 );
 		    c2 = scannumber ( file2, '.', c2 );
+
+		    assert ( file1.isnumber );
+		    assert ( file2.isnumber );
+
+		    if ( file1.column != file2.column )
+		    	column = true;
+
 		    if ( strcmp ( file1.buffer,
 		                  file2.buffer )
 			 != 0 )
 		    {
-		        assert ( file1.isnumber );
-		        assert ( file2.isnumber );
-
 			diffnumber ( file1, file2,
 			             nonblank, number,
+				     decimal, exponent,
 				     number_absdiff,
 				     number_reldiff );
 		        if ( nonblank ) break;
 		    }
+		}
+		else
+		{
+		    // As previous character in both
+		    // files was `.', its OK that we
+		    // make this comparison one
+		    // character later than we should.
+		    //
+		    if ( file1.column != file2.column )
+		    	column = true;
 		}
 	    }
 	    else if ( isdigit ( c1 ) )
 	    {
 		c1 = scannumber ( file1, c1 );
 		c2 = scannumber ( file2, c2 );
+
+		assert ( file1.isnumber );
+		assert ( file2.isnumber );
+
+		if ( file1.column != file2.column )
+		    column = true;
+
 		if ( strcmp ( file1.buffer,
 			      file2.buffer )
 		     != 0 )
 		{
-		    assert ( file1.isnumber );
-		    assert ( file2.isnumber );
-
 		    diffnumber ( file1, file2,
 				 nonblank, number,
+				 decimal, exponent,
 				 number_absdiff,
 				 number_reldiff );
 		    if ( nonblank ) break;
@@ -555,6 +660,9 @@ int main ( int argc, char ** argv )
 	    }
 	    else
 	    {
+		if ( file1.column != file2.column )
+		    column = true;
+
 	        // If c1 and c2 are matching signs we
 		// do not include them in numbers, as
 		// in this case only absolute values of
@@ -578,13 +686,35 @@ int main ( int argc, char ** argv )
 	}
 	else if ( ( c1 = scannumber ( file1, c1 ),
 		    c2 = scannumber ( file2, c2 ),
-		    file1.isnumber && file2.isnumber ) )
+		    file1.isnumber || file2.isnumber ) )
 	{
+	    if ( ( ! file1.isnumber )
+	         ||
+		 ( ! file2.isnumber ) )
+	    {
+		nonblank = true;
+		break;
+	    }
+
+	    if ( file1.column != file2.column )
+		column = true;
+
 	    diffnumber ( file1, file2,
 			 nonblank, number,
+			 decimal, exponent,
 			 number_absdiff,
 			 number_reldiff );
 	    if ( nonblank ) break;
+	}
+	else if ( toupper ( c1 ) == toupper ( c2 ) )
+	{
+	    caseflag = true;
+
+	    if ( file1.column != file2.column )
+		column = true;
+
+	    c1 = getc ( file1 );
+	    c2 = getc ( file2 );
 	}
         else
 	{
@@ -623,6 +753,22 @@ int main ( int argc, char ** argv )
     	cout << (any ? " number " : "number ")
 	     << number_absdiff << " "
 	     << number_reldiff;
+	any = true;
+    }
+    if ( decimal ) {
+    	cout << (any ? " decimal" : "decimal");
+	any = true;
+    }
+    if ( exponent ) {
+    	cout << (any ? " exponent" : "exponent");
+	any = true;
+    }
+    if ( caseflag ) {
+    	cout << (any ? " case" : "case");
+	any = true;
+    }
+    if ( column ) {
+    	cout << (any ? " column" : "column");
 	any = true;
     }
     if ( nonblank ) {
