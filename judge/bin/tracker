@@ -7,7 +7,7 @@
 #
 # File:		tracker
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat May 18 04:53:22 EDT 2002
+# Date:		Sat May 18 05:03:37 EDT 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -16,9 +16,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/05/18 08:59:12 $
+#   $Date: 2002/05/18 09:30:54 $
 #   $RCSfile: tracker,v $
-#   $Revision: 1.27 $
+#   $Revision: 1.28 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -729,7 +729,7 @@ proc clear_list {} {
 # Add directories with unchecked errors to directory
 # list, and return printable summary string.  Director-
 # ies are listed so ones with the oldest unchecked error
-# files are first.  The oldest error file is named for
+# files are first.  The oldest error file is listed for
 # each directory.
 #
 proc add_err {} {
@@ -758,8 +758,11 @@ proc add_err {} {
 }
 
 # Add directories with `Subject:'s not handled by auto-
-# dispatch and no reply or no_reply to directory list,
-# and return printable summary string.
+# dispatch and without any Reply_Mail or No_Reply file
+# to the directory list, and return a printable summary
+# string.  Directories are sorted by directory name.
+# The subject of the Received_Mail in each directory is
+# listed.
 #
 proc add_queries {} {
 
@@ -768,10 +771,10 @@ proc add_queries {} {
 
     set result ""
     foreach dir [lsort [array names rec_array]] {
-        set rec_line $rec_array($dir)
 	if { [info exists rep_array($dir)] } {
 	    continue
 	}
+        set rec_line $rec_array($dir)
 	set subject [lindex $rec_line 2]
 	if {    ! [catch { set dword \
 			       [lindex $subject 0] }] \
@@ -792,8 +795,11 @@ proc add_queries {} {
     return $result
 }
 
-# Add directories with too old dispatch pid files to
+# Add directories with too old Dispatch_PID files to
 # directory list, and return printable summary string.
+# The directories are sorted by name, and the elapsed
+# time between when the Dispatch_PID file was created
+# and when trackfinder was run is listed.
 #
 proc add_pid { { too_old "" } } {
 
@@ -825,6 +831,8 @@ proc add_pid { { too_old "" } } {
 
 # Add directories with Auto_Score file and no
 # Reply_Mail, No_Reply, or Dispatch_PID file.
+# The directories are sorted by name, and the subject
+# of the Received_Mail in each directory is listed.
 #
 proc add_score {} {
 
@@ -863,8 +871,13 @@ proc add_score {} {
 }
 
 # Add directories with `Subject:'s handled by autodis-
-# patch and no reply or no_reply to directory list,
-# and return printable summary string.
+# patch and without any Reply_Mail or No_Reply files
+# to the directory list, and return a printable summary
+# string.  The directories are sorted by name, and the
+# `Subject"' of each directory is listed.  If a direc-
+# tory has a Dispatch_PID file, the elapsed time between
+# when that file was created and when trackfinder was
+# run is also listed.
 #
 proc add_auto {} {
 
@@ -874,10 +887,10 @@ proc add_auto {} {
 
     set result ""
     foreach dir [lsort [array names rec_array]] {
-        set rec_line $rec_array($dir)
 	if { [info exists rep_array($dir)] } {
 	    continue
 	}
+        set rec_line $rec_array($dir)
 	set subject [lindex $rec_line 2]
 	if {    [catch { set dword \
 			       [lindex $subject 0] }] \
@@ -911,6 +924,7 @@ proc add_auto {} {
 }
 
 # Clip output of add functions to n - m directories.
+# Returns empty string if n - m <= 0.
 #
 proc clip { out m n } {
     set limit [expr { $n - $m }]
@@ -923,7 +937,8 @@ proc clip { out m n } {
     return $out
 }
 
-# Return summary of successful replies, etc.
+# Return summary of successful replies, etc. as one or
+# two lines without any beginning or ending "\n".
 #
 proc summary {} {
 
