@@ -5,7 +5,7 @@
 #
 # File:		manualscore
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Aug 16 07:06:59 EDT 2000
+# Date:		Mon Sep  4 14:38:15 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: acm-cont $
-#   $Date: 2000/08/28 12:32:05 $
+#   $Date: 2000/09/04 20:39:27 $
 #   $RCSfile: manualscore,v $
-#   $Revision: 1.11 $
+#   $Revision: 1.12 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -34,10 +34,11 @@ cd submission_directory; manualscore
 
     Given the submission directory as the current dir-
     ectory, and given that this directory contains an
-    $auto_score_file, this program lets a person examine
+    $auto_score_file file, this program lets a person\
+    	examine
     the files in the directory and select a manual score
-    that is written into the $manual_score_file and
-    sent as email to the submitter.  A $reply_file
+    that is written into the $manual_score_file file and
+    sent as email to the submitter.  A $reply_file file
     containing this email is created."
 
 if { $argc != 0 } {
@@ -45,31 +46,44 @@ if { $argc != 0 } {
     exit 1
 }
 
-set subject [find_subject]
+set received_ch [open $received_file r]
+read_header $received_ch
+close $received_ch
 
-if { ! [regexp {^submit (.*)$} all submitted_file] } {
-    error "Bad subject: $subject"
+if { [llength $message_subject] != 2 \
+     || [lindex $message_subject 0] != "submit" } {
+    puts "Bad subject for manual scoring:"
+    puts "    $message_subject"
+    puts "Exiting manualscore"
+    exit 0
 }
 
+set submitted_file [lindex $message_subject 1]
 set submitted_program \
-    [file rootname $submitted_program]
+    [file rootname $submitted_file]
 set submitted_extension \
-    [file extension $submitted_program]
-set output_file 	"${program_name}.out"
-set error_file  	"${program_name}.err"
-set compiler_error_file	"${program_name}.cerr"
-set test_file   	"${program_name}.test"
-set diff_file   	"${program_name}.diff"
-set bdiff_file   	"${program_name}.bdiff"
+    [file extension $submitted_file]
+set output_file 	"${submitted_program}.out"
+set error_file  	"${submitted_program}.err"
+set compiler_error_file	"${submitted_program}.cerr"
+set test_file   	"${submitted_program}.test"
+set diff_file   	"${submitted_program}.diff"
+set bdiff_file   	"${submitted_program}.bdiff"
 
 if { ! [file readable $auto_score_file] } {
     puts "No $auto_score_file; Executing autojudge"
     exec autojudge
+    if { ! [file readable $auto_score_file] } {
+        puts "autojudge failed to make\
+	      $auto_score_file file"
+	puts "Exiting manualscore"
+	exit 0
+    }
 }
 
-if { [file exists $reply_file] } }
-    puts "$reply_file exists; Terminating manual\
-          scoring"
+if { [file exists $reply_file] } {
+    puts "$reply_file exists"
+    puts "Exiting manualscore"
     exit 0
 }
 
@@ -80,9 +94,110 @@ set scoring_instructions \
     [find_scoring_instructions]
 
 
+proc make_diff {} {
+
+    global output_file test_file diff_file
+
+    if { [file exists $diff_file] } {
+        if { ( [file exists $output_file] \
+	       && [file mtime $diff_file] \
+	          < [file mtime $output_file] ) \
+	     || \
+             ( [file exists $test_file] \
+	       && [file mtime $diff_file] \
+	          < [file mtime $test_file] ) } {
+	    file delete -force $diff_file
+	} else {
+	    return $diff_file
+	}
+    }
+
+    set l "==================================="
+    write_file $diff_file \
+	       "diff $output_file $test_file\n$l"
+    catch { exec diff $output_file $test_file \
+                      >>& $diff_file }
+    return $diff_file
+}
+
+proc make_bdiff {} {
+
+    global output_file test_file bdiff_file
+
+    if { [file exists $bdiff_file] } {
+        if { ( [file exists $output_file] \
+	       && [file mtime $bdiff_file] \
+	          < [file mtime $output_file] ) \
+	     || \
+             ( [file exists $test_file] \
+	       && [file mtime $bdiff_file] \
+	          < [file mtime $test_file] ) } {
+	    file delete -force $bdiff_file
+	} else {
+	    return $bdiff_file
+	}
+    }
+
+    set l "==================================="
+    write_file $bdiff_file \
+	     "diff -b $output_file $test_file\n$l"
+    catch { exec diff -b $output_file $test_file \
+                      >>& $bdiff_file }
+    return $bdiff_file
+}
+
+proc get_new_score {} {
+
+    global manual_score auto_score \
+           scoring_instructions
+
+    puts "Scoring Instructions:\
+          $scoring_instructions"
+    puts "Auto Score: $auto_score\
+	 \    Current score: $manual_score"
+    puts ""
+    puts -nonewline "
+======================================================
+Please select a new current score:
+  i = Incorrect Output      cc = Completely Correct
+  f = Formatting Error      ic = Incomplete Output
+  s = Syntax Error          te = Cpu Time Limit Exceeded
+  c = Program Crashed       oe = Output Size Exceeded
+  k = keep old current score
+
+> "
+
+    set answer [gets stdin]
+    if { [eof stdin] } {
+	exit 0
+    } elseif { [llength $answer] > 1 } {
+	puts "Unknown: $answer"
+    } elseif { [llength $answer] == 1 } {
+	switch [lindex $answer 0] \
+	    i	{ set manual_score \
+	              "Incorrect Output" } \
+	    f	{ set manual_score \
+		      "Formatting Error" } \
+	    s	{ set manual_score \
+		      "Syntax Error" } \
+	    c	{ set manual_score \
+		      "Program Crashed" } \
+	    cc	{ set manual_score \
+		      "Completely Correct" } \
+	    ic	{ set manual_score \
+		      "Incomplete Output" } \
+	    te	{ set manual_score \
+		      "Cpu Time Limit Exceeded" } \
+	    oe	{ set manual_score \
+		      "Output Size Limit Exceeded" } \
+	    k   {} \
+	    default	{ puts "Unknown: $answer" }
+    }
+}
+
 if { [file exists $compiler_error_file] } {
     set last_file $compiler_error_file
-} elseif { [file exists $error_file } {
+} elseif { [file exists $error_file] } {
     set last_file $error_file
 } else {
     set last_file [make_bdiff]
@@ -92,15 +207,16 @@ set manual_score $auto_score
 
 while { "yes" } {
 
-    puts "Scoring [file tail [pwd]"
+    puts "Scoring [file tail [pwd]]"
     puts "Scoring Instructions: $scoring_instructions"
     puts "Auto Score: $auto_score    Current score:\
                                      $manual_score"
 
+    puts "=========================== $last_file:"
     put_file $last_file stdout 10
 
     puts -nonewline "
-------------------------------------------------------
+======================================================
 d = view .diff      b = view .bdiff     o = view .out
 t = view .test      e = view .err       p = view\
 				$submitted_extension
@@ -114,20 +230,22 @@ x = exit without doing anthing
     	exit 0
     }
 
-    regexp "^\[\ \t\]*(\[^\ \t\].*)\$" $answer all \
-					       answer
-    regexp "^(.*\[^\ \t\])\[\ \t\]*\$" $answer all \
-					       answer
+    if { [llength $answer] == 0 } {
+    	continue;
+    } elseif { [llength $answer] > 1 } {
+        puts "Unknown: $answer"
+	continue;
+    }
 
     set action "view"
 
-    switch $answer \
+    switch [lindex $answer 0] \
     	d	{ set last_file [make_diff] } \
     	b	{ set last_file [make_bdiff] } \
     	o	{ set last_file $output_file } \
     	t	{ set last_file $test_file } \
     	e	{ set last_file $error_file } \
-    	c	{ set last_file $cerror_file } \
+    	c	{ set last_file $compiler_error_file } \
     	p	{ set last_file $submitted_file } \
 	a	{ set action "accept" } \
 	r	{ set action "reject" } \
@@ -137,97 +255,48 @@ x = exit without doing anthing
     switch $action \
     	view	{
 		    catch { view_file $last_file }
-		}
+		} \
         accept	{
 		    write_file $manual_score_file \
 		               $manual_score
 		    if { $manual_score \
 		         == $auto_score } {
 			reply "For $submitted_file your\
-			       automatic score of:\
-			       \    $auto_score" \
+			       automatic score of:" \
+			      "" \
+			      "    $auto_score" \
+			      "" \
 			      "has been accepted by the\
 			       human judge!"
 		    } elseif { $scoring_mode \
 			       == "manual" } {
 			reply "For $submitted_file your\
-			       final score is:\
-			       \    $manual_score"
+			       final score is:" \
+			      "" \
+			      "    $manual_score"
 		    } else {
 			reply "For $submitted_file your\
-			       automatic score of:\
-			       \    $auto_score" \
+			       automatic score of:" \
+			      "" \
+			      "    $auto_score" \
+			      "" \
 			      "has been OVERRIDDEN by\
 			       the human judge!" \
 			      "" \
 			      "The human judge has\
 			       assigned the FINAL\
-			       SCORE:     $manual_score"
+			       SCORE:" \
+			      "" \
+			      "    $manual_score"
 		    }
 
+		    puts "Accepted Manual Score:\
+		          \    $manual_score"
 		    exit 0
-		}
-	reject	{
-		    puts "Scoring Instructions:\
-			  $scoring_instructions"
-		    puts "Auto Score: $auto_score\
-		         \    Current score:\
-			      $manual_score"
-		    puts ""
-		    puts -nonewline "
-Please select a new current score:
-  i = Incorrect Output      cc = Completely Correct
-  f = Formatting Error      ic = Incomplete Output
-  s = Syntax Error          te = Cpu Time Limit Exceeded
-  c = Program Crashed       oe = Output Size Exceeded
-  k = keep old current score
-
-> "
-  
-		    set answer [gets stdin]
-		    if { ! [eof stdin] } {
-
-			regexp \
-			   "^\[\ \t\]*(\[^\ \t\].*)\$" \
-			   $answer all answer
-			regexp \
-			   "^(.*\[^\ \t\])\[\ \t\]*\$" \
-			   $answer all answer
-
-			switch $answer \
-			    i	{ set manual_score
-			    	      "Incorrect\
-				       Output" } \
-			    f	{ set manual_score
-			    	      "Formatting\
-				       Error" } \
-			    s	{ set manual_score
-			    	      "Syntax\
-				       Error" } \
-			    c	{ set manual_score
-			    	      "Program\
-				       Crashed" } \
-			    cc	{ set manual_score
-			    	      "Completely\
-				       Correct" } \
-			    ic	{ set manual_score
-			    	      "Incomplete\
-				       Output" } \
-			    te	{ set manual_score
-			    	      "Cpu Time Limit\
-				       Exceeded" } \
-			    oe	{ set manual_score
-			    	      "Output Size\
-				       Limit\
-				       Exceeded" } \
-			    k   {} \
-			    default	\
-			    	{ puts "Unknown:\
-				        $answer" }
-		    }
 		} \
+	reject	{ get_new_score } \
 	exit	{ exit 0 } \
-	unknown	{ puts "Unknown: $answer }
+	unknown	{ puts "Unknown: $answer" }
 }
 
 
