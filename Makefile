@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Feb 20 09:49:16 EST 2004
+# Date:		Sun Dec 12 21:19:49 EST 2004
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2004/02/20 14:51:59 $
+#   $Date: 2004/12/13 03:00:02 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.42 $
+#   $Revision: 1.43 $
 
 # See STATUS file for description of versions.
 #
@@ -300,6 +300,30 @@ hpcm_${VERSION}_${NONDIS}.files:	File_List
 	file_list '! public' \
 	     | sed -e 's/^\.\//hpcm\//' \
 	     > hpcm_${VERSION}_${NONDIS}.files
+
+# Make a sorted list of all files in a distribution.
+#
+distribution.files:	hpcm_${VERSION}.files \
+		hpcm_${VERSION}_solutions.files \
+		hpcm_${VERSION}_${NONDIS}.files
+	rm -f distribution.files
+	cat hpcm_${VERSION}.files \
+	    hpcm_${VERSION}_solutions.files \
+	    hpcm_${VERSION}_${NONDIS}.files | \
+	    sort > distribution.files
+
+# Make a sorted list of all files checked into cvs.
+# This can be diff'ed with distribution.files to see
+# which files are missing from the distribution.
+#
+CVSEXP = ^.*cvsroot\/hpcm\/\(.*\),v$$
+cvs.files:
+	rm -f cvs.files
+	cvs log -R | \
+	    sed -n '-e/${CVSEXP}/s//hpcm\/\1/p' | \
+	    grep -v '\/Attic\/' | \
+	    grep -v '\/\.cvsignore$$' | \
+	    sort > cvs.files
 
 # Make web directory to distribute HPCM.
 #
