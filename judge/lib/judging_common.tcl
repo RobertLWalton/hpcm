@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Oct 17 08:28:30 EDT 2001
+# Date:		Wed Oct 17 09:56:29 EDT 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/10/17 12:36:09 $
+#   $Date: 2001/10/17 14:02:35 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.56 $
+#   $Revision: 1.57 $
 #
 
 # Table of Contents
@@ -1144,6 +1144,21 @@ proc write_file { filename line } {
     set file_ch [open $filename w]
     puts $file_ch $line
     close $file_ch
+}
+
+# Return entire file as a string.  Each line in the
+# string terminates with a line feed.
+#
+proc read_entire_file { filename } {
+    set file_ch [open $filename r]
+    set result ""
+    while { "yes" } {
+	set line [gets $file_ch]
+	if { [eof $file_ch] } break
+	set result "$result$line\n"
+    }
+    close $file_ch
+    return $result
 }
 
 # Flag Functions
