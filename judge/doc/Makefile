@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/11/27 20:07:04 $
+#   $Date: 2000/11/27 20:45:42 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.1 $
+#   $Revision: 1.2 $
 
 DOCS=	autodispatch.doc \
 	autoinfo.doc \
@@ -40,11 +40,17 @@ DOCS=	autodispatch.doc \
 	tracker.doc \
 	trackfinder.doc
 
-all:	${DOCS}
+all:	${DOCS} overview.doc
 
 # Kill all implicit rules
 #
 .SUFFIXES:
+
+fprint:	${DOCS} overview.doc
+	fprint overview.doc ${DOCS}
+
+fcheck:	${DOCS}
+	fcheck ${DOCS}
 
 hpcm_judging.rc:
 	ln -s ../lib/hpcm_judging.rc
@@ -100,6 +106,10 @@ manualreply.doc:	hpcm_judging.rc \
 			../bin/manualreply
 	rm -f manualreply.doc
 	-../bin/manualreply -doc >manualreply.doc
+overview.doc:	hpcm_judging.rc \
+			../bin/overview
+	rm -f overview.doc
+	-../bin/overview -doc >overview.doc
 receivemail.doc:	hpcm_judging.rc \
 			../bin/receivemail
 	rm -f receivemail.doc
