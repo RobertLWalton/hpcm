@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Feb 16 02:41:39 EST 2002
+# Date:		Sat Mar  9 19:30:41 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/02/16 07:44:32 $
+#   $Date: 2002/03/10 00:33:43 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.11 $
+#   $Revision: 1.12 $
 
 # To make a formal contest named `foo':
 #
@@ -267,10 +267,34 @@
 #     of the contest, follow the directions in
 #     `makescoreboard -doc'.
 
-# 19. Test the contest using the test contestant
-#     account.
 #
-# 20. You may want to print out handouts.  The following
+# 19. Test the contest by using the test contestant
+#     account.  Try submitting the demos/count solution.
+#
+# 20. You can also test the contest by executing `make
+#     test'.  Then read the email replies and compare
+#     the X-HPCM-Test-Subject field with the results in
+#     the body of the email.  You can also extract the
+#     replies from your email, if you like, with the
+#     help of the hpcm_extract_test_replies program, and
+#     compare them with the .reply files in the hpcm/
+#     examples/test_submissions directory.
+#
+#     It is also possible to transmit the contents of
+#     the hpcm/examples/test_submissions directory to
+#     the test contestant account and in the test ac-
+#     count directory use `make test_formal' to send
+#     test submissions.
+#
+#     Note that one of the submissions times out, and
+#     for that the autojudge will take over a minute to
+#     reply.
+#
+#     You can run subsets of the tests by using `make
+#     test_xxx' for various `xxx;: see hpcm/examples/
+#     test_submissions/Makefile.mk.
+#
+# 21. You may want to print out handouts.  The following
 #     is a suggestion.  Execute `make print_help', re-
 #     move the `demos' and `problems' pages, and reorder
 #     the other pages so `index' is first and the other
@@ -299,6 +323,15 @@
 # The location of the hpcm directory.
 #
 HPCM=${HOME}/hpcm
+
+# Parameters for running tests
+#
+S=${HPCM}/examples/test_submissions
+
+# Kill all implicit rules
+#
+.SUFFIXES:
+.SUFFIXES:	.mail .send
 
 # INDICES below is a description of the help, problems,
 # and demos files to be available to contestants.
