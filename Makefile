@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Feb 22 04:49:18 EST 2003
+# Date:		Sat Feb 22 06:52:08 EST 2003
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2003/02/22 11:34:06 $
+#   $Date: 2003/02/22 13:02:06 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.30 $
+#   $Revision: 1.31 $
 
 # See STATUS file for description of versions.
 #
@@ -56,8 +56,8 @@ NONDIS = non_distributable
 #	files:
 #
 #		hpcm_${VERSION}${TAREXT}
-#		hpcm_solutions_${VERSION}${TAREXT}
-#       	hpcm_${NONDIS}_${VERSION}${TAREXT}
+#		hpcm_${VERSION}_solutions${TAREXT}
+#       	hpcm_${VERSION}_${NONDIS}${TAREXT}
 #
 # make signatures
 #	Make HPCM_${VERSION}_MD5_Signatures file, a
@@ -70,7 +70,7 @@ NONDIS = non_distributable
 #
 # make cvssignatures
 #	Make HPCM_${VERSION}_CVS_MD5_Signatures file
-#	from hpcm_cvs_${VERSION}${TAREXT}.  You must
+#	from hpcm_${VERSION}_cvs${TAREXT}.  You must
 #	make this last file by hand; it is a tar file
 #	containing the CVS root for HPCM.  The
 #	signatures file is a copyrighted file with
@@ -134,8 +134,8 @@ slocs:
 #
 HPCM_${VERSION}_MD5_Signatures:	signatures_header \
 			hpcm_${VERSION}.files \
-		    hpcm_solutions_${VERSION}.files \
-		    hpcm_${NONDIS}_${VERSION}.files
+		    hpcm_${VERSION}_solutions.files \
+		    hpcm_${VERSION}_${NONDIS}.files
 	@if test "${COPYRIGHT}" = ""; \
 	then echo COPYRIGHT not defined; exit 1; fi
 	rm -f HPCM_${VERSION}_MD5_Signatures
@@ -166,8 +166,8 @@ HPCM_${VERSION}_MD5_Signatures:	signatures_header \
 	cd ..; \
 	   md5sum `cat \
 	      hpcm/hpcm_${VERSION}.files \
-	      hpcm/hpcm_solutions_${VERSION}.files \
-	      hpcm/hpcm_${NONDIS}_${VERSION}.files \
+	      hpcm/hpcm_${VERSION}_solutions.files \
+	      hpcm/hpcm_${VERSION}_${NONDIS}.files \
 	            ` \
 	      >>  hpcm/HPCM_${VERSION}_MD5_Signatures
 
@@ -184,13 +184,13 @@ md5check:
 # to be MD5 summed.  You must make hpcm_cvs_
 # ${VERSION}${TAREXT} by hand.
 #
-cvstmp:	hpcm_cvs_${VERSION}${TAREXT}
+cvstmp:	hpcm_${VERSION}_cvs${TAREXT}
 	rm -rf cvstmp
 	mkdir cvstmp
 	cd cvstmp; \
-	    tar xf ../hpcm_cvs_${VERSION}${TAREXT} \
+	    tar xf ../hpcm_${VERSION}_cvs${TAREXT} \
 	        ${TARUNZIP}
-	cp hpcm_cvs_${VERSION}${TAREXT} cvstmp
+	cp hpcm_${VERSION}_cvs${TAREXT} cvstmp
 
 # Make MD5 CVS Signatures File:
 #
@@ -201,7 +201,7 @@ HPCM_${VERSION}_CVS_MD5_Signatures:	\
 	rm -f HPCM_${VERSION}_CVS_MD5_Signatures
 	echo "HPCM_${VERSION} CVS MD5 SIGNATURES" \
 	     > HPCM_${VERSION}_CVS_MD5_Signatures
-	echo "---- --- --- ----------" \
+	echo "---- ------ --- --- ----------" \
 	     >> HPCM_${VERSION}_CVS_MD5_Signatures
 	echo "" \
 	     >> HPCM_${VERSION}_CVS_MD5_Signatures
@@ -240,61 +240,64 @@ md5cvscheck:	cvstmp
 # Make tar files.
 #
 tar:	hpcm_${VERSION}${TAREXT} \
-        hpcm_solutions_${VERSION}${TAREXT} \
-        hpcm_${NONDIS}_${VERSION}${TAREXT}
+        hpcm_${VERSION}_solutions${TAREXT} \
+        hpcm_${VERSION}_${NONDIS}${TAREXT}
 
 hpcm_${VERSION}${TAREXT}:	\
 		HPCM_${VERSION}_MD5_Signatures \
+		HPCM_${VERSION}_CVS_MD5_Signatures \
 		hpcm_${VERSION}.files
 	d=`pwd`;d=`basename $$d`; test $$d = hpcm
 	rm -f hpcm_${VERSION}${TAREXT}
 	cd ..; tar cf hpcm/hpcm_${VERSION}${TAREXT} \
 	   hpcm/HPCM_${VERSION}_MD5_Signatures \
+	   hpcm/HPCM_${VERSION}_CVS_MD5_Signatures \
 	   `cat hpcm/hpcm_${VERSION}.files` \
 	   ${TARZIP}
 
-hpcm_solutions_${VERSION}${TAREXT}:	\
-                        hpcm_solutions_${VERSION}.files
+hpcm_${VERSION}_solutions${TAREXT}:	\
+                        hpcm_${VERSION}_solutions.files
 	d=`pwd`;d=`basename $$d`; test $$d = hpcm
-	rm -f hpcm_solutions_${VERSION}${TAREXT}
+	rm -f hpcm_${VERSION}_solutions${TAREXT}
 	cd ..; \
 	   tar cf \
-	       hpcm/hpcm_solutions_${VERSION}${TAREXT} \
-	   `cat hpcm/hpcm_solutions_${VERSION}.files` \
+	       hpcm/hpcm_${VERSION}_solutions${TAREXT} \
+	   `cat hpcm/hpcm_${VERSION}_solutions.files` \
 	   ${TARZIP}
 
-hpcm_${NONDIS}_${VERSION}${TAREXT}:	\
-		hpcm_${NONDIS}_${VERSION}.files
+hpcm_${VERSION}_${NONDIS}${TAREXT}:	\
+		hpcm_${VERSION}_${NONDIS}.files
 	d=`pwd`;d=`basename $$d`; test $$d = hpcm
-	rm -f hpcm_${NONDIS}_${VERSION}${TAREXT}
+	rm -f hpcm_${VERSION}_${NONDIS}${TAREXT}
 	cd ..; tar cf \
-	   hpcm/hpcm_${NONDIS}_${VERSION}${TAREXT} \
-	   `cat hpcm/hpcm_${NONDIS}_${VERSION}.files` \
+	   hpcm/hpcm_${VERSION}_${NONDIS}${TAREXT} \
+	   `cat hpcm/hpcm_${VERSION}_${NONDIS}.files` \
 	   ${TARZIP}
 
 # Make files that list all distributable non-solution,
 # all distributable solution, and all non-distributable
 # files.  Begin each file name with `hpcm/'.
 #
-hpcm_${VERSION}.files:	File_List Makefile
+hpcm_${VERSION}.files:	File_List
 	rm -f hpcm_${VERSION}.files
 	file_list 'public & ! solution' \
 	     | sed -e 's/^\./hpcm/' \
 	     > hpcm_${VERSION}.files
 
-hpcm_solutions_${VERSION}.files:	File_List \
-					Makefile
-	rm -f hpcm_solutions_${VERSION}.files
+hpcm_${VERSION}_solutions.files:	File_List
+	rm -f hpcm_${VERSION}_solutions.files
 	file_list 'public & solution' \
 	     | sed -e 's/^\./hpcm/' \
-	     > hpcm_solutions_${VERSION}.files
+	     > hpcm_${VERSION}_solutions.files
 
-hpcm_${NONDIS}_${VERSION}.files:	\
-				File_List Makefile
-	rm -f hpcm_${NONDIS}_${VERSION}.files
+hpcm_${VERSION}_${NONDIS}.files:	File_List
+	rm -f hpcm_${VERSION}_${NONDIS}.files
 	file_list '! public' \
 	     | sed -e 's/^\./hpcm/' \
-	     > hpcm_${NONDIS}_${VERSION}.files
+	     > hpcm_${VERSION}_${NONDIS}.files
+
+f:
+	M=`echo hi` echo $${M}
 
 web:	cleanweb hpcm_${VERSION}${TAREXT} \
 		 HPCM_${VERSION}_MD5_Signatures \
@@ -308,18 +311,24 @@ web:	cleanweb hpcm_${VERSION}${TAREXT} \
 			   judging.doc
 	mkdir web
 	cp -p hpcm_${VERSION}${TAREXT} \
-	      hpcm_solutions_${VERSION}${TAREXT} \
 	      HPCM_${VERSION}_MD5_Signatures \
 	      HPCM_${VERSION}_CVS_MD5_Signatures \
 	      web
 	cp -p judge/doc/overview.doc \
-	      judge/doc/installing_hpcm.doc \
-	      judge/doc/judging.doc \
-	      web
-	sed   <web_index.html \
+	      web/overview
+	cp -p judge/doc/installing_hpcm.doc \
+	      web/installing_hpcm
+	cp -p judge/doc/judging.doc \
+	      web/judging
+	MD5SUM=`md5sum web/hpcm_${VERSION}${TAREXT}`; \
+	   MD5SUM=`expr "$${MD5SUM}" : \
+	                 '[ 	]*\([^ 	]*\)[ 	]' `; \
+	   sed \
+	      <web_index.html \
 	      -e '/VERSION/s//${VERSION}/g' \
 	      -e '/TAREXT/s//${TAREXT}/g' \
 	      -e '/CONTACT/s//${HPCM_WEB_CONTACT}/g' \
+	      -e '/MD5SUM/s//'$${MD5SUM}'/g' \
 	      > web/index.html
 	chmod 444 web/*
 	chmod 755 web
@@ -329,17 +338,24 @@ web:	cleanweb hpcm_${VERSION}${TAREXT} \
 	else make web_solutions; fi
 
 web_solutions:	web/index.html \
-		hpcm_solutions_${VERSION}${TAREXT}
+		web_solutions_index.html \
+		hpcm_${VERSION}_solutions${TAREXT}
 	test "${HPCM_WEB_PASSWORD}" != ""
 	mkdir web/private 
 	mkdir web/private/${HPCM_WEB_PASSWORD}
 	chmod 711 web/private
 	chmod 755 web/private/${HPCM_WEB_PASSWORD}
-	cp -p hpcm_solutions_${VERSION}${TAREXT} \
+	cp -p hpcm_${VERSION}_solutions${TAREXT} \
 	      web/private/${HPCM_WEB_PASSWORD}
-	sed <web_solutions_index.html \
+	MD5SUM=`md5sum web/private/*/*${TAREXT}` ; \
+	  MD5SUM=`expr "$${MD5SUM}" : \
+	               '[ 	]*\([^ 	]*\)[ 	]' `; \
+	  sed \
+	    <web_solutions_index.html \
 	    -e '/VERSION/s//${VERSION}/g' \
 	    -e '/TAREXT/s//${TAREXT}/g' \
+	    -e '/CONTACT/s//${HPCM_WEB_CONTACT}/g' \
+	    -e '/MD5SUM/s//'$${MD5SUM}'/g' \
 	    >web/private/${HPCM_WEB_PASSWORD}/index.html
 	chmod 444 web/private/${HPCM_WEB_PASSWORD}/*
 
@@ -355,11 +371,11 @@ clean:	cleantar cleanslocs cleancvs cleanweb
 cleantar:
 	rm -f HPCM_${VERSION}_MD5_Signatures \
 	      hpcm_${VERSION}.files \
-	      hpcm_solutions_${VERSION}.files \
-	      hpcm_${NONDIS}_${VERSION}.files \
+	      hpcm_${VERSION}_solutions.files \
+	      hpcm_${VERSION}_${NONDIS}.files \
 	      hpcm_${VERSION}${TAREXT} \
-	      hpcm_solutions_${VERSION}${TAREXT} \
-	      hpcm_${NONDIS}_${VERSION}${TAREXT}
+	      hpcm_${VERSION}_solutions${TAREXT} \
+	      hpcm_${VERSION}_${NONDIS}${TAREXT}
 
 cleanslocs:
 	rm -f *.slocs
