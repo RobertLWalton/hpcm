@@ -2,7 +2,7 @@
 #
 # File:		scoring_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Sep  6 09:07:36 EDT 2001
+# Date:		Fri Sep  7 06:59:33 EDT 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/09/06 13:32:11 $
+#   $Date: 2001/09/07 11:45:26 $
 #   $RCSfile: scoring_common.tcl,v $
-#   $Revision: 1.10 $
+#   $Revision: 1.11 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -112,6 +112,11 @@
 # the proofs in the list first by output-line number and
 # second by test-line number.
 #
+# The following global variable is the file name of the
+# of the score file used to load the proof_array.
+#
+set score_filename ""
+#
 # The following is a list of the fake `instruction_
 # array' difference types that cannot be in `score_
 # array' and therefore should not be passed as options
@@ -162,12 +167,13 @@ proc compute_instruction_array { } {
 # it is the *.score file name.  Otherwise, the file name
 # is retrieved using `get_listed_files' and code in the
 # `display_common.tcl' function package, which must be
-# loaded in this case.  In this case there must be at
-# most one *.score file in the list of file names ret-
-# urned by `get_listed_files'.
+# loaded in this case.  In this case there must be
+# exactly one *.score file in the list of file names
+# returned by `get_listed_files'.
 #
 proc compute_score_and_proof_arrays { args } {
-    global proof_array
+
+    global proof_array score_filename
 
     switch [llength $args] {
         0 {
@@ -191,6 +197,7 @@ proc compute_score_and_proof_arrays { args } {
     }
 
     set score_ch [open $filename r]
+    set score_filename $filename
 
     compute_scoring_array score_array [gets $score_ch] \
 			  ".score file first line"
@@ -481,12 +488,128 @@ set current_type ""
 #
 # If the current_type is "", it should be taken to be
 # the first element of [concat $incorrect_output_types
-# $incomplete_output_types $formatting_error_tpes].
+# $incomplete_output_types $formatting_error_types].
 #
-# current_proof_array(type) is the index of the current
-# proof in proof_array(type).  If current_proof_array(
-# type) is unset, it should be taken as if it were set
-# to 0.
+# current_proof_array(type) is the index+1 of the
+# current proof in proof_array(type).  If current_
+# proof_array(type) is unset, it should be taken as if
+# it were set to 1.
+
+# Function to set the current_type and its current_
+# proof_array element.  Takes a list of arguments which
+# are processed in order.  An alphabetic argument with
+# at least two letters is matched to the beginning of a
+# difference type name that has some proofs in proof_
+# array, and switches to that difference type.  A number
+# N switches to the N'th proof of the current_type.  An
+# `n' goes to the next proof of the current_type; a `p'
+# to the previous proof of the current type.  After all
+# arguments are processed, checks that the result
+# designates an existing proof.
+#
+# If called with no arguments, merely ensures that
+# current_type and its current_proof_array element are
+# set if they can be set without error.
+#
+# If there is no error, window_error is set to "" and
+# `yes' is returned.  Otherwise window_error is set to
+# an error description, `no' is returned, and no change
+# is made in current_type or current_proof_array.
+#
+proc get_proof { args } {
+
+    global window_error proof_array \
+           current_type current_proof_array \
+    	   incorrect_output_types \
+           incomplete_output_types \
+	   formatting_error_types
+
+    set type $current_type
+
+    if { $type == "" } {
+        set type [lindex [concat \
+			    $incorrect_output_types \
+			    $incomplete_output_types \
+			    $formatting_error_types] 0]
+    }
+
+    if { $type == "" } {
+        set type [lindex [array names proof_array] 0]
+    }
+
+    if { [info exists $current_proof_array($type)] } {
+        set n $current_proof_array($type)
+    } else {
+        set n 1
+    }
+
+    foreach arg $args {
+
+        if { [regexp {^[a-z][a-z]} $arg] } {
+	    set found ""
+	    foreach t [array names proof_array] {
+	        if { [regexp "^$arg" $t] } {
+		    lappend found $t
+		}
+	    }
+	    if { [llength $found] == 0 } {
+		set window_error \
+		    "There are no proofs whose\
+		     difference type begins with\
+		     `$arg'"
+		return no
+	    } elseif { [llength $found] > 1 } {
+		set window_error \
+		    "There is more than one difference\
+		     type with proofs whose name begins\
+		     with `$arg'"
+		return no
+	    } else {
+	        set type [lindex $found 0]
+
+		if { [info exists \
+		      $current_proof_array($type)] } {
+		    set n $current_proof_array($type)
+		} else {
+		    set n 1
+		}
+	    }
+	} elseif { [regexp {^[0-9]+$} $arg] } {
+	    set n $arg
+	} else {
+	    switch -exact $arg {
+	        n { incr n }
+		p { incr n -1 }
+	    }
+	}
+    }
+
+    if { $type == "" } {
+        set window_error \
+	    "There are no displayable proofs."
+	return no
+    }
+
+    if { ! [info exists proof_array($type)] \
+         || [llength $proof_array($type)] \
+	    == 0 } {
+        set window_error \
+	    "There are no displayable proofs of type\
+	     `$type'"
+	return no
+    }
+
+    set max [llength $proof_array($type)]
+
+    if { $n < 1 || $max < $n } {
+        set window_error \
+	    "There is no $n'th proof of type `$type'"
+	return no
+    }
+
+    set current_type $type
+    set current_proof_array($type) $n
+}
 
 # Display the current proof.  The following functions
 # must have been called first:
@@ -504,52 +627,22 @@ set current_type ""
 #
 # Sets the `last_display' variable to `proof'.
 #
-proc set_proof_display { basename } {
+proc set_proof_display { } {
 
-    global current_type \
-    	   incorrect_output_types \
-           incomplete_output_types \
-	   formatting_error_types \
-	   window_error window_bar \
+    global current_type current_proof_array \
+    	   proof_array score_filename \
+	   window_height window_info_height \
+	   window_error \
 	   last_display
 
-    if { $current_type == "" } {
-        set current_type [lindex [concat \
-	    $incorrect_output_types \
-	    $incomplete_output_types \
-	    $formatting_error_types] 0]
-    }
-
-    if { $current_type == "" } {
-        set window_error \
-	    "There are no displayable proofs."
-	return no
-    }
-
-    if { ! [info exists proof_array($current_type)] } {
-        set window_error \
-	    "There are no displayable proofs of type\
-	     `$type'"
-	return no
-    }
+    if { [get_proof] == "no" } return no
 
     set proofs $proof_array($current_type)
 
-    if { ! [info exists current_proof_array(\
-                                $current_type)] } {
-	set current_proof_array($current_type) 0
-    }
-
     set i $current_proof_array($current_type)
+    incr i -1
 
     set proof [lindex $proofs $i]
-
-    if { $proof == "" } {
-        set window_error \
-	    "You have run out of displayable proofs\
-	     of type `$type'"
-	return no
-    }
 
     set oline [lindex $proof 0]
     set tline [lindex $proof 1]
@@ -559,6 +652,8 @@ proc set_proof_display { basename } {
     set tc2   [lindex $proof 5]
     set oh    [list [list $oline $oc1 $oc2]]
     set th    [list [list $tline $tc1 $tc2]]
+    set desc  [concat $current_type \
+    		      [lrange $proof 6 end]]
 
     # L is the number of lines of each file that are to
     # be displayed before and after the principal
@@ -570,6 +665,7 @@ proc set_proof_display { basename } {
                         - $window_info_height - 8 ) \
 		      / 4 }]
 
+    set basename [file rootname $score_filename]
     set_window_display \
         "[compute_file_display $basename.out \
 	                       out_file_array \
@@ -581,7 +677,55 @@ proc set_proof_display { basename } {
 			       [expr { $tline - L }] \
 			       [expr { $tline + L }] \
 			       $th \
-	]$window_bar"
+	][bar_with_text $desc]"
 
     set last_display proof
+}
+
+# Display summary information about existing proofs in
+# the info part of the display.  The following functions
+# must have been called first:
+#
+#	compute_instruction_array
+#	compute_score_and_proof_arrays
+#	compute_score
+#
+proc set_proof_info {} {
+
+    global incorrect_output_types \
+           incomplete_output_types \
+	   formatting_error_types \
+	   score_array \
+	   window_info_lines
+
+    set error_types \
+        [concat $incorrect_output_types \
+	        $incomplete_output_types \
+	        $formatting_error_types]
+    set non_error_types ""
+    foreach type [array names score_array] {
+        if { [lsearch -exact $error_types $type] < 0 } {
+	    lappend non_error_types
+	}
+    }
+
+    set info ""
+    set lines 0
+
+    foreach x {Incorrect_Output Incomplete_Output \
+                                Formatting_Error \
+				Non_Error } {
+	set types [set [string tolower $x]_types]
+	if { $types == "" } continue
+	set info "$info[split $x "_"]:"
+	foreach t $types {
+	    set info "$info $score_array($t)"
+	}
+	set info "$info\n"
+	incr lines
+    }
+    set info "$info    n = next proof    p = previous proof"
+    incr lines 2
+    set window_info_height $lines
+    set_window_info $info
 }
