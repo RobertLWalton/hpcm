@@ -5,7 +5,7 @@
 #
 # File:		manualreply
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Jul 28 05:55:17 EDT 2002
+# Date:		Sun Oct  6 16:40:13 EDT 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/07/28 10:32:49 $
+#   $Date: 2002/10/06 21:18:07 $
 #   $RCSfile: manualreply,v $
-#   $Revision: 1.56 $
+#   $Revision: 1.57 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -1039,11 +1039,21 @@ Scores:  Auto: $auto_score   Manual: $manual_score
 proc refresh_proofs_info { } {
 
     global window_info_height scoring_instructions \
-	   auto_score proposed_score
+	   auto_score proposed_score manual_score
+
+
+    if { $manual_score == "None" } {
+	set scoring_info \
+	    "Auto: $auto_score   \
+	     Proposed: $proposed_score"
+    } else {
+	set scoring_info \
+	    "Auto: $auto_score   \
+	     Manual: $manual_score"
+    }
 
     set info "[compute_proof_info]   \
-        Scores:  Auto: $auto_score   Proposed:\
-			        $proposed_score\n   \
+        Scores:  $scoring_info\n   \
 	Scoring Instructions:\
 	    $scoring_instructions\n   \
         n|p = goto next|previous proof  \

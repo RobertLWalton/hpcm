@@ -3,7 +3,7 @@
 #
 # File:		scoreboard_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Sep 24 08:11:47 EDT 2002
+# Date:		Sun Oct  6 14:37:47 EDT 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -12,9 +12,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/09/24 12:11:04 $
+#   $Date: 2002/10/06 21:16:21 $
 #   $RCSfile: scoreboard_common.tcl,v $
-#   $Revision: 1.41 $
+#   $Revision: 1.42 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -773,7 +773,7 @@ proc compute_scoreboard_list {} {
 	} else {
 	    set ccc \
 	        [format {%03d} \
-		        [expr { 1000 \
+		        [expr { 999 \
 			        - $problems_correct }]]
 	    if { $scoreboard_start_time == "" } {
 		set sort_code $ccc.$submitter
@@ -784,7 +784,7 @@ proc compute_scoreboard_list {} {
 		if { $scoreboard_display_incorrect } {
 		    set sss \
 		        [format {%03d} \
-			        [expr { 1000 \
+			        [expr { 999 \
 				        - $submissions \
 					}]]
 		    set sort_code $ccc.$ttttttttt.$sss
