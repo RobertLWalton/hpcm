@@ -5,7 +5,7 @@
 #
 # File:		autojudge
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Nov 24 20:34:17 EST 2001
+# Date:		Thu Jan  3 05:44:54 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/11/25 03:53:28 $
+#   $Date: 2002/01/03 15:21:24 $
 #   $RCSfile: autojudge,v $
-#   $Revision: 1.43 $
+#   $Revision: 1.44 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -37,125 +37,218 @@ autojudge \[problem\[.extension\]\]
     ectory, and given that the submission directory
     contains the file `$received_file', this program
     makes everything needed to compute the score file,
-    `$auto_score_file', and automatically computes that
-    file.  Then this program may report the score to the
-    submitter by creating and sending `$reply_file' as
+    `$auto_score_file', and then automatically computes\
+    	that
+    file.  This program may report the score to the sub-
+    mitter by creating and sending `$reply_file' as
     specified by the scoring mode.
 
     If the the problem name and optional extension is
     not given as an argument, it is extracted from the
 
-    	Subject: problemname\[.extension\]
+    	Subject: problem\[.extension\]
 
-    field of the message in the $received_file file. \
-    	The
-    `problem' names the problem and the solution binary,
-    and is the basename of the .in, .out, .test, .cerr,
-    .err, and .score files.  The extension, if given,
-    tells the language being used, and must be a member
-    of the `allowed_extensions' global variable value,
-    which by default is:
+    field of the message in the $received_file file.
+    Here `problem' names the problem and the solution
+    binary, and is the basename of the .in, .out, .test,
+    .cerr, .err, and .score files.  If `extension' is
+    given, it tells the language being used, and must be
+    a member of the `allowed_extensions' global variable
+    value, which by default is:
     
     	$allowed_extensions
  
     Specifically, this program makes the following in
     order:
 
-	* $files_file file, if it exists
+	* `$files_file' file, if it exists
+	. any -SOLUTION-MAKE- files listed in any
+	  `$files_file' file; note these files are in the
+	  solution directory
 	. submitted files made by calling extractmail
-	* $make_file file
-	* any -LINK- files in any $files_file file
-	* $scoring_instructions_file file, if it exists
-	* $scoring_filter_file file, if it exists
-	* .in solution input file
-	* .test solution output file
-	* .ftest solution output file, if it exists
-	. the program binary (and .cerr file)
-	. the .out file (and .err file)
-	. the .fout file, sometimes
-	. the .score file made by calling autoscore
-	. the $auto_score_file file made by ditto
-	. the $reply_file file, sometimes
+	* any -LINK- files listed in any `$files_file'\
+		file;
+	  if there is no `$files_file' file, the list of
+	  -LINK- files defaults to:
+	     $make_file, PROBLEM.in, PROBLEM.test
+	* any -OPTIONAL-LINK- files listed in any
+	  `$files_file' file; if there is no\
+	  	`$files_file'
+	  file, the list of -OPTIONAL-LINK- files de-
+	  faults to:
+	     $scoring_instructions_file,\
+	     	$scoring_filter_file,
+	     PROBLEM.ftest
+	. program binary file `PROBLEM' and compiler
+	  error file PROBLEM.cerr
+	. program standard output file PROBLEM.out and
+	  program standard error file PROBLEM.err
+	. filtered outfile file PROBLEM.fout, if the
+	  $scoring_filter_file file exists
+	. PROBLEM.score file made by calling autoscore
+	. $auto_score_file file made by ditto
+	. $reply_file file, sometimes
 
-    Here the files marked with * are linked into the
-    current submission directory from the problem's so-
-    lution directory.  For any other file, if it already
-    exists, this program checks to be sure it is not
-    older than the previous files (starting with sub-
-    mitted files not being older than the $received_file
-    file), and remakes any of the above files that are
-    out-of-date.  Errors in making the program binary
-    can cause $auto_score_file and maybe $reply_file to
-    be generated early.
+    Here files marked with * are linked into the current
+    submission directory from the problem's solution
+    directory.  This program checks any other file that
+    already exists to see if it is older than the pre-
+    vious files upon which it dependes (starting with
+    submitted files not being older than the
+    $received_file file), and if the file is older and
+    hence out-of-date, this program remakes the file.
+    Errors in making the program binary can cause
+    $auto_score_file and maybe $reply_file to be gener-
+    ated early.
 
     First, this program verifies the existence of a so-
     lution directory for the problem and symbolically
-    links the $files_file file from this directory into
-    the current directory, if that file exists.  Then
-    this program calls `extractmail' to extract the
+    links the `$files_file' file from this directory\
+    	into
+    the current directory, if that file exists.  If this
+    file does not exist, it is given the default value:
+
+        -LINK-
+	    { $make_file $make_file.EXTENSION\
+	    	$make_file }
+	    PROBLEM.in
+	    { PROBLEM.test PROBLEM.out PROBLEM.test }
+	-OPTIONAL-LINK-
+	    $scoring_instructions_file
+	    $scoring_filter_file
+	    { PROBLEM.ftest PROBLEM.fout PROBLEM.ftest }
+
+    The `$files_file' file is interpreted as a TCL list
+    (with list elements separated by spaces, tabs, or
+    new lines) whose elements are special symbols, file
+    names, and { } bracketed sublists.  The special
+    symbols consist of upper case letters and the `-'
+    character, and begin and end with `-'.  All list
+    items following a special symbol S but before the
+    next special symbol are governed by S.  This program
+    understands the following three special symbols:
+
+    	-SOLUTION-MAKE-	The list items governed by
+			-SOLUTION-MAKE- are the names of
+			files that are to be `made' in
+			the solution directory if they
+			do not exist.
+    
+    	-LINK-		The list items governed by
+			-LINK- name files that are to be
+			linked from the solution direc-
+			tory to the current directory.
+    
+    	-OPTIONAL-LINK-	The list items governed by
+			-OPTIONAL-LINK- name files that
+			are to be linked from the solu-
+			tion directory to the current
+			directory if they exist in the
+			solution directory.
+
+    List items governed by other special symbols are
+    ignored by this program.  There is an implied
+    `-REQUIRED-' before the beginning of the list, that
+    governs list items appearing before any special
+    symbol in the list.  The same special symbol can
+    appear multiple times in the list.  The same file
+    name can appear several times in the list: e.g.,
+    a file name can appear governed by -SOLUTION-MAKE-
+    and then again governed by -LINK-.
+
+    Each item governed by one of the three special
+    symbols listed above is either a file name or a list
+    of file names.  In any file name, the basename
+    `PROBLEM' is replaced by the problem name and the
+    extension name `EXTENSION' is replaced by the sub-
+    mission extension name.
+
+    -LINK- and -OPTIONAL-LINK- items may be a list of
+    file names.  In this case, the first file name F
+    names the file name in the current directory which
+    is to be created by the link, and the rest of the
+    file names name files in the solution directory that
+    may be linked to F.  The first of these solution
+    directory files that exists is chosen.  If F already
+    exists in the current directory it is relinked to
+    the chosen solution directory file unless F is not
+    a link.
+
+    A -LINK- or -OPTIONAL-LINK- item that is a single
+    file name F is equivalent to the item `{ F F }'.
+
+    The only difference between -LINK- and -OPTIONAL-
+    LINK- is that for -LINK- it is a system error if
+    after taking the above actions the file F being
+    created in the local directory does not exist;
+    whereas for -OPTIONAL-LINK- it is no error at all
+    in this case.
+
+    In the above, a dangling link does not count as an
+    existing file.  Thus if the solution directory con-
+    tains a dangling link F2, i.e., a link to an non-
+    existant file, then F2 does not exist.
+
+    If no extension is given to this program with the
+    problem name, any file name whose extension is
+    `EXTENSION' is treated as naming a file that does
+    not exist and cannot be created.  It is a system
+    error to try to create such a file, but it is not an
+    error to try to use such a file if it is not an
+    error for the file not to exist.
+
+    Thus in the default value of the `$files_file' file
+    given above, the file named $make_file in the cur-
+    rent directory is linked to the file named
+    `$make_file.EXTENSION' if an extension was given
+    with the problem name to this program and if the
+    indicated file exists in the solution directory.
+    Otherwise the file is linked to $make_file in the
+    solution directory, if that file exists.  Otherwise
+    there is a system error, as $make_file is -LINK- and
+    not -OPTIONAL-LINK-.
+
+    In linking any `$files_file' file from the solution
+    directory, this program behaves as if there were
+    an initial `$files_file' file value of:
+
+    	-OPTIONAL-LINK-
+	    { $files_file $files_file.EXTENSION\
+	      $files_file }
+
+    Thus in the solution directory,\
+    	$files_file.EXTENSION
+    is preferred over `$files_file'.
+
+    After linking any `$files_file' file from the\
+    	solution
+    directory, this program makes any files governed
+    by -SOLUTION-MAKE- in the `$files_file' file.  If
+    there is such a file F listed, and it does not al-
+    ready exist in the solution directory, this program
+    excutes `make F' in the solution directory.  During
+    this process this program locks the solution direc-
+    tory with a $dispatch_pid_file file.
+
+    Next this program calls `extractmail' to extract the
     submitted files from the program.  If there is a
     non-system error in this extraction, this program
     generates and sends `$reply_file' automatically to
-    the submitter.
+    the submitter, and then this program terminates.
  
-    If the extraction had no errors, this program sym-
-    bolically links the following solution directory
-    files into the current directory:
-
-	$make_file file
-	any -LINK- files in any $files_file file
-	$scoring_instructions_file file, if it exists
-	$scoring_filter_file file, if it exists
-	.in solution input file
-	.test solution output file
-	.ftest solution output file, if it exists
-
-    In the solution directory, the `$files_file' file
-    may be present in several forms under names of the
-    form `$files_file.extension'.  If one of these forms
-    has an extension matching that given with the pro-
-    blem name, it is linked into the current directory
-    under the name `$files_file'.  Otherwise there is an
-    error.  The `$make_file' file is treated similarly.
-
-    If a `$files_file' file is linked into the current\
-    			direc-
-    tory, it is read to find other files to link into
-    the current directory.  This file is interpreted as
-    a TCL list (with list elements separated by spaces,
-    tabs, or new lines) whose elements are file names
-    and the special symbols:
- 
-    	-REQUIRED-	Indicates that the following
-			file names name files that MUST
-			be submitted.
-    
-    	-OPTIONAL-	Indicates that the following
-			file names name files that may
-			optionally be submitted.
-    
-    	-LINK-		Indicates that the following
-			file names name files that MUST
-			be linked from the problem
-			solution directory.
-
-    File names before any special symbol are treated as
-    `-REQUIRED-'.  Special symbols can appear any number
-    of times in the list and apply to all file names
-    following them but before the next special symbol in
-    the list.  The `autojudge' program ignores non-
-    `-LINK-' file names.
-
-    The .test file is linked to the solution .out file
-    if that exists, or the solution .test file other-
-    wise.  If the solution .out file exists and the
-    the current directory .test file is linked to the
-    solution directory .test file, the current directory
-    .test file is relinked to the solution .out file.
-    Thus the solution .out file always has preference
-    over the solution .test file.  The .ftest file is
-    similarly linked to the solution .fout file in
-    preference to the solution .ftest file.
+    If the extraction has no errors, this program sym-
+    bolically links solution directory files into the
+    current directory, according to instructions encoded
+    by the -LINK- and -OPTIONAL-LINK- special symbols in
+    the `$files_file' file.  Note that a file may be\
+    	listed
+    as both -OPTIONAL- and -LINK-: if submitted the sub-
+    mitted version will be used, and if not submitted,
+    the solution directory version will be used.  Also
+    note that a file listed as -LINK- or -OPTIONAL-LINK-
+    may be made as a consequence of a -SOLUTION-MAKE-
+    item (which may or may not name the file to be link-
+    ed directly).
 
     Next this program makes the program binary by using
     the $make_file.  Any compiler error messages are
@@ -164,7 +257,7 @@ autojudge \[problem\[.extension\]\]
     $auto_score_file file, and skips to the end of this
     program where a $reply_file file containing the auto
     score may be created and sent to the user.
- 
+ 
     If an executable binary file was made, this program
     makes a .out output file by using the $make_file,
     and captures any error output in a .err file.  If
@@ -173,7 +266,7 @@ autojudge \[problem\[.extension\]\]
     runs
 
     	$scoring_filter_file <PPP.out >PPP.fout
-
+
     to make the .fout file, where PPP is the problem
     name.  It is a system error if the\
         $scoring_filter_file
@@ -198,7 +291,7 @@ autojudge \[problem\[.extension\]\]
     rect', the email informs its receiver that the score
     is preliminary and will be manually reviewed and
     possibly changed.
- 
+ 
     If the score is to be manually reviewed, this prog-
     ram does not create a $reply_file file, even when it
     sends a reply (the reply is recorded in any case in
@@ -209,7 +302,7 @@ autojudge \[problem\[.extension\]\]
     erate a final reply.
 
     This program prints information about its progress.
- 
+ 
     Unless this program creates a $reply_file file that
     is intended to be the final reply to the submitter
     (because the score is `Completely Correct' or the
