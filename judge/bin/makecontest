@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/11/03 17:38:13 $
+#   $Date: 2000/11/03 18:20:56 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.36 $
+#   $Revision: 1.37 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -1805,12 +1805,12 @@ if { $who_where_option } {
 	    set line [gets $passwords_ch]
 	    if { [eof $passwords_ch] } break
 	    regexp {^([^:]*):} $line forget account
-	    set rest ":"
-	    regexp {^[^:]*:[^:]*(:.*)$} $line \
+	    set rest ""
+	    regexp {^[^:]*:[^:]*:(.*)$} $line \
 	           forget rest
 	    if { $account != "none" } {
 		puts $who_where_ch \
-		     "$account:WHERE$rest"
+		     "$account:WHERE:$rest"
 	    }
 	}
 	close $passwords_ch
@@ -1908,11 +1908,13 @@ if { $who_where_option } {
         # If $changed is `yes', write $new_who_where.
 	#
 	if { $changed } {
+	    file delete -force $c_d/who_where
 	    set who_where_ch [open $c_d/who_where w]
 	    foreach line $new_who_where {
 		puts $who_where_ch $line
 	    }
 	    close $who_where_ch
+	    grant_access $c_d/who_where
 
 	    TODO "edit $c_d/who_where"
 	}
@@ -1929,6 +1931,9 @@ if { $trashable_option } {
 	       || [file mtime $c_d/trashable] \
 	          < [file mtime $c_d/secure/passwords] \
 		  	} {
+	if { [file exists $c_d/trashable] } {
+	    file delete -force $c_d/trashable
+	}
 	set trashable_ch [open $c_d/trashable w]
 	set passwords_ch [open $c_d/secure/passwords r]
 	while { "yes" } {
@@ -1944,7 +1949,8 @@ if { $trashable_option } {
 	close $trashable_ch
 	grant_access $c_d/trashable
 
-	TODO "check and maybe edit $c_d/trashable"
+	TODO "remember to delete $c_d/trashable" \
+	     "when your are done trashing accounts"
     }
 }
 
@@ -1964,6 +1970,17 @@ if { $printer_option \
     TODO "edit $c_d/printer"
 }
 
+# Make $c_d/printer_jobs
+#
+if { $printer_option \
+     && ! [file readable $c_d/printer_jobs] } {
+    close [open $c_d/printer_jobs w]
+    exec chmod a+w $c_d/printer_jobs
+
+    TODO "delete $c_d/printer_jobs if you do not" \
+         "want it to list all printer jobs"
+}
+
 # Check for $c_d/home directory.
 #
 if { $home_option } {
@@ -1976,6 +1993,9 @@ if { $home_option } {
 		} {
 	TODO "run SETUP_PROTYPE in prototype account" \
 	     "and rerun `makejudgingdir -home'"
+    }
+    if { ! [regexp {r.x} [get_access $c_d/home]] } {
+    	TODO "chmod a+rx $c_d/home"
     }
 }
 

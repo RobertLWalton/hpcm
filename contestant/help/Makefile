@@ -11,21 +11,17 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/10/02 07:51:44 $
+#   $Date: 2000/11/03 18:24:27 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.3 $
+#   $Revision: 1.4 $
 
-all:	modes
+all:	submakes
 
 # Kill all implicit rules
 #
 .SUFFIXES:
 
-modes:
-	for x in common formal informal email; do \
-	    if test -d $$x; then \
-		chmod a+x $$x; chmod a+r $$x/*; fi; \
-	done
-	chmod a+x . .. ../..
+submakes:
+	(cd email/sh; make)
 
 clean:
