@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Feb 10 07:00:04 EST 2002
+# Date:		Sun Feb 10 11:21:44 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/02/10 15:53:57 $
+#   $Date: 2002/02/10 16:27:09 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.103 $
+#   $Revision: 1.104 $
 
 # Table of Contents:
 #
@@ -1004,8 +1004,10 @@ set reply_manager ""
 #			to log_manager if that is not
 #			"".  Reply email does NOT use
 #			normal reply mechanism.
-#	none		Write all error info to standard
-#			output.
+#	none		Error is NOT logged to a file.
+#
+# Errors are always printed to the standard error
+# output.
 #
 set log_mode auto
 
@@ -1018,8 +1020,9 @@ set log_manager ""
 
 # Maximum Logged Errors:
 #
-# If more errors than this are logged, the log mode is
-# automatically changed to `none'.
+# If more errors than this are logged by a single
+# program execution, the log mode is automatically
+# changed to `none' for that program execution.
 #
 set log_error_maximum 10
 
@@ -1076,7 +1079,7 @@ set dispatch_too_old 120
 #	35 for magenta, 36 for cyan, 41-46 to change
 #	background instead of character color
 #
-set highlight_on  "\x1b\[1m"
+set highlight_on  "\x1b\[7m"
 set highlight_off "\x1b\[0m"
 
 
@@ -1152,10 +1155,10 @@ proc create_directory { dirname } {
     exec mkdir $dirname
 }
 
-# Function to symbolically link a file.  This is like
-# copying, but the modification date on the target
-# tracks the date on the source.  If no target is given,
-# link the file into the current directory.
+# Function to symbolically link a file.  The source is
+# the existing file name and the target is the new name
+# linked to the source.  If no target is given, link the
+# file into the current directory.
 #
 proc link_file { source { target . } } {
     exec ln -s $source $target
