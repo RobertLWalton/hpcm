@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Jan 15 08:57:34 EST 2001
+# Date:		Mon Sep 10 11:58:53 EDT 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/01/15 15:43:38 $
+#   $Date: 2001/09/10 15:47:32 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.8 $
+#   $Revision: 1.9 $
 
 # make
 #	Makes documentation as fprintable .doc files in
@@ -63,6 +63,7 @@ DOCS=	overview.doc \
 	judge/manualreply.doc \
 	contestant/print.doc \
 	contestant/print2.doc \
+	contestant/printer_pipe.doc \
 	judge/receivemail.doc \
 	judge/reply.doc \
 	contestant/scoreboard.doc \
@@ -325,6 +326,11 @@ contestant/print2.doc:	../../contestant/bin/print2
 	rm -f contestant/print2.doc
 	-../../contestant/bin/print2 -doc \
 	    >contestant/print2.doc
+contestant/printer_pipe.doc:	\
+	    ../../contestant/bin/printer_pipe
+	rm -f contestant/printer_pipe.doc
+	-../../contestant/bin/printer_pipe -doc \
+	    >contestant/printer_pipe.doc
 contestant/scoreboard.doc:	\
 		../../contestant/bin/scoreboard
 	rm -f contestant/scoreboard.doc
