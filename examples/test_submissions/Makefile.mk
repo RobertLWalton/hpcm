@@ -2,7 +2,7 @@
 #
 # File:		Makefile.mk
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Nov  9 01:07:53 EST 2002
+# Date:		Sat Feb  8 00:19:10 EST 2003
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/11/09 06:10:21 $
+#   $Date: 2003/02/08 05:52:15 $
 #   $RCSfile: Makefile.mk,v $
-#   $Revision: 1.15 $
+#   $Revision: 1.16 $
 
 extract_replies:	mbox
 	rm -rf replies
@@ -68,6 +68,9 @@ test_javaio_correct:	${TEST_PREREQUISITES} \
 	$S/javaio_correct.send
 
 test_count_incorrect:	${TEST_PREREQUISITES} \
+	$S/count_incorrect_output.c.send \
+	$S/count_incomplete_output.cc.send \
+	$S/count_formatting_error.java.send \
 	$S/count_crash.cc.send \
 	$S/count_timeout.java.send \
 	$S/count_too_much_output.c.send
