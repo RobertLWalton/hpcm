@@ -5,7 +5,7 @@
 #
 # File:		autojudge
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Oct 26 08:30:39 EDT 2000
+# Date:		Sun Dec  3 10:51:55 EST 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/10/26 12:30:11 $
+#   $Date: 2000/12/03 16:02:22 $
 #   $RCSfile: autojudge,v $
-#   $Revision: 1.27 $
+#   $Revision: 1.28 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -91,7 +91,7 @@ cd submission_directory; autojudge
     over the solution .test file.
 
     Next this program makes the program binary by using
-    the $make_file.  Any compliler error messages are
+    the $make_file.  Any compiler error messages are
     captured in a .cerr file.  If no executable binary
     is made, this program writes `Syntax Error' into the
     $auto_score_file file, and skips to the end of this
@@ -123,6 +123,17 @@ cd submission_directory; autojudge
 
     This program prints information about its progress.
 
+    Unless this program creates a $reply_file file that
+    is intended to be the final reply to the submitter
+    (because the score is `Completely Correct' or the
+    scoring mode is `auto'), this program sets the
+    `needs reply' flag (the $needs_reply_flag_file\
+    			file in
+    the flag directory).  This signals other programs
+    (e.g. tracker) that they should search for submis-
+    sion directories for which the manualreply program
+    should be called.
+
     Note that if the `autoscore' program writes the
     $auto_score_file file, that program will set the\
 					    score
@@ -233,7 +244,8 @@ if { ! [file readable $submitted_program.test] \
 #
 proc auto_score_reply { auto_score } {
 
-    global scoring_mode reply_file submitted_file
+    global scoring_mode reply_file submitted_file \
+           needs_reply_flag_file
 
     if { $auto_score == "Completely Correct" \
          || $scoring_mode == "auto" } {
@@ -253,9 +265,11 @@ proc auto_score_reply { auto_score } {
 	      "However, this score WILL BE REVIEWED by\
 	       the human judge (soon)."
 	send_reply -notfinal
+	set_flag $needs_reply_flag_file
 	puts "Emailed auto-score (review later):\
 	      \    $auto_score"
     } else {
+	set_flag $needs_reply_flag_file
 	puts "Auto-score (NOT emailed):\
 	      \    $auto_score"
     }

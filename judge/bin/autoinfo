@@ -4,7 +4,7 @@
 #
 # File:		autoinfo
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Oct 26 06:31:56 EDT 2000
+# Date:		Sun Dec  3 10:45:26 EST 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/10/26 10:35:05 $
+#   $Date: 2000/12/03 16:02:21 $
 #   $RCSfile: autoinfo,v $
-#   $Revision: 1.23 $
+#   $Revision: 1.24 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -106,14 +106,15 @@ cd submission_directory; autoinfo
 
     If the recursion involved in mapping gets to too
     great a depth, the system error function is called
-    and there is no response.
+    because the TCL stack overflows, and there is no
+    reply mail.
 
     Next the name is checked for legality.  If the name
     begins with `.' or `-', or contains a `.' or `-'
     right after a `/', it is considered to be illegal,
     and is consigned to the list of illegal names.
 
-    Then the name is checked for readablilty.  If the
+    Then the name is checked for readability.  If the
     name does not name a readable existing ordinary file
     or directory within the info directory, after sym-
     bolic links are followed, the name is consigned to
@@ -121,11 +122,11 @@ cd submission_directory; autoinfo
 
     Next, if relative to the info directory the name
     names a directory D, the name is replaced by the
-    names relative to the info directory of the read-
-    able ordinary file or directory components (after
-    symbolic links are followed) of the directory D
-    (excluding as usual components whose names begin
-    with `.').
+    names relative to the info directory of the compo-
+    nents of D (excluding as usual those whose component
+    names begin with `.') that are readable ordinary
+    files or directories after symbolic links are fol-
+    lowed.
 
     If the name gets to this point without having been
     put on a list or replaced, it is put on the list
@@ -140,7 +141,6 @@ cd submission_directory; autoinfo
     gotten files.
 
     This program writes the date and the names of the
-    							
     gotten files into the `$gotten_file' file.  The\
 					    first line
     of this file has the form:
