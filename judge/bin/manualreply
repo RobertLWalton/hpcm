@@ -5,7 +5,7 @@
 #
 # File:		manualreply
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Jul 28 02:49:30 EDT 2002
+# Date:		Sun Jul 28 05:55:17 EDT 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/07/28 08:30:21 $
+#   $Date: 2002/07/28 10:32:49 $
 #   $RCSfile: manualreply,v $
-#   $Revision: 1.55 $
+#   $Revision: 1.56 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -506,16 +506,17 @@ sh
 
 Execute a shell (such as csh) in the current directory\
     as a subprogram.
-When the shell is exited, this program resumes.
+When the shell is exited, this `manualreply' program\
+    resumes.
 "
 
 set help(ir) "
 ir
 
-Create a reply file (named $reply_file+) and invoke an\
-    editor (e.g., vi)
-for that file.  If a reply file already exists, it is\
-    overwritten.
+Initialize (create) a reply file (named $reply_file+)\
+    and invoke an editor
+(e.g., vi) for that file.  If a reply file already\
+    exists, it is overwritten.
 "
 
 set help(er) "
@@ -540,7 +541,7 @@ $reply_file+ that is created by the `ir' or `er'\
 set help(nr) "
 nr
 
-Has the user type a line that is then written into a\
+Lets the user type a line that is then written into a\
     newly created one line
 $no_reply_file file.  The presence of this file\
     indicates to HPCM that no
@@ -550,12 +551,13 @@ the `tracker' program searches for submission\
     directories that do NOT contain
 either a $reply_file file or a $no_reply_file file.
 
-The `lookat' program can search for submission\
-    directories whose $no_reply_file
-files have contents matching a regular expression, so\
-    what is written into the
-$no_reply_file can be used to find the submission\
-    directory later.
+The `lookat \"${no_reply_file}::regexp\"' program\
+    command searches for submission
+directories whose $no_reply_file files have contents\
+    matching the regular expression
+`regexp', so what is written into the $no_reply_file\
+    file can be used to find the
+submission directory later.
 "
 
 set help(sm) "
@@ -606,8 +608,16 @@ fe = Formatting Error    ic = Incomplete Output
 se = Syntax Error        te = Cpu Time Limit Exceeded
 pc = Program Crashed     oe = Output Size Limit Exceeded
 
-Set the proposed score to the indicated value.
+These commands set the proposed score to the value\
+    indicated by the command.
 "
+set help(cc) $help(io)
+set help(fe) $help(io)
+set help(ic) $help(io)
+set help(se) $help(io)
+set help(te) $help(io)
+set help(pc) $help(io)
+set help(oe) $help(io)
 
 set help(ps) "
 
@@ -624,14 +634,6 @@ when displaying proofs with the `pr' command.  When\
 	the main or scoring menus
 are displayed, XX can be typed by itself as a command.
 "
-
-set help(cc) $help(io)
-set help(fe) $help(io)
-set help(ic) $help(io)
-set help(se) $help(io)
-set help(te) $help(io)
-set help(pc) $help(io)
-set help(oe) $help(io)
 
 
 set help($reply_file) "
@@ -689,7 +691,7 @@ $auto_score_file	The score produced\
 		(which calls autoscore to produce the\
 		    score).
 
-$manual_score_file	The score enterred manually\
+$manual_score_file	The score entered manually\
 		    by using the `manualreply' program.
 		See the `sm' and `ss' commands.
 
@@ -788,7 +790,7 @@ set help(.p2c) "
 
 .class	JAVA relocatable binary (byte code) file.
 
-.cerr	Solution compiler error output.  Does NOT\
+.cerr	Solution compilation error output.  Does NOT\
 	    affect score.
 
 No extension; with same basename as solution source.
@@ -800,6 +802,7 @@ No extension; with same basename as solution source.
 "
 set help(.class) $help(.p2c)
 set help(.cerr) $help(.p2c)
+set help(no-extension) $help(.p2c)
 
 
 
@@ -845,7 +848,13 @@ List of help topics:
 
 "
 set c 0
-foreach topic [lsort [array names help]] {
+proc topic_compare { t1 t2 } {
+    regsub {\.} $t1 "" t1
+    regsub {\.} $t2 "" t2
+    return [string compare -nocase $t1 $t2]
+}
+foreach topic [lsort -command topic_compare \
+                     [array names help]] {
     set l [string length $topic]
     incr l 4
     incr c $l
@@ -957,6 +966,7 @@ set directory [file tail [pwd]]
 set proposed_score None
 set last_file ""
 set last_display ""
+set last_help ""
 
 # Procedure to recompute window_display for menu loop.
 #
@@ -1119,7 +1129,12 @@ proc display_help { } {
     set last_display help
 }
 
-# Function to run proof display loop.
+# Function to run proof display loop.  Returns an action
+# to be performed after the loop as follows:
+#
+#	"mm" = switch to main menu
+#	"sm" = switch to scoring menu
+#	""   = do nothing
 #
 proc display_proofs {} {
 
@@ -1133,7 +1148,7 @@ proc display_proofs {} {
 		    compute_score
 
 		} out] } {
-	set window_error $out
+	out_check $out
 	return ""
     }
 
@@ -1161,53 +1176,61 @@ proc display_proofs {} {
 		return mm
 	    }
 	    "^ps[ \t]" {
-		set l [llength $answer]
-		switch ${l}_[lindex $answer 1] {
-		    2_io {
-			set proposed_score \
-			    "Incorrect Output"
-			refresh_proofs_info
-		    }
-		    2_cc {
-			set proposed_score \
-			    "Completely Correct"
-			refresh_proofs_info
-		    }
-		    2_fe {
-			set proposed_score \
-			    "Formatting Error"
-			refresh_proofs_info
-		    }
-		    2_ic {
-			set proposed_score \
-			    "Incomplete Output"
-			refresh_proofs_info
-		    }
-		    2_se {
-			set proposed_score \
-			    "Syntax Error"
-			refresh_proofs_info
-		    }
-		    2_te {
-			set proposed_score \
-			    "Cpu Time Limit Exceeded"
-			refresh_proofs_info
-		    }
-		    2_pc {
-			set proposed_score \
-			    "Program Crashed"
-			refresh_proofs_info
-		    }
-		    2_oe {
-			set proposed_score \
-			    "Output Size Limit\
-			                 Exceeded"
-			refresh_proofs_info
-		    }
-		    default {
+		if { [catch { set l [llength $answer] \
+		            }] } {
 			set window_error \
 			    "ERROR: cannot understand\
 					  `$answer'!"
+		} else {
+		    switch ${l}_[lindex $answer 1] {
+			2_io {
+			    set proposed_score \
+				"Incorrect Output"
+			    refresh_proofs_info
+			}
+			2_cc {
+			    set proposed_score \
+				"Completely Correct"
+			    refresh_proofs_info
+			}
+			2_fe {
+			    set proposed_score \
+				"Formatting Error"
+			    refresh_proofs_info
+			}
+			2_ic {
+			    set proposed_score \
+				"Incomplete Output"
+			    refresh_proofs_info
+			}
+			2_se {
+			    set proposed_score \
+				"Syntax Error"
+			    refresh_proofs_info
+			}
+			2_te {
+			    set proposed_score \
+				"Cpu Time Limit\
+				          Exceeded"
+			    refresh_proofs_info
+			}
+			2_pc {
+			    set proposed_score \
+				"Program Crashed"
+			    refresh_proofs_info
+			}
+			2_oe {
+			    set proposed_score \
+				"Output Size Limit\
+					     Exceeded"
+			    refresh_proofs_info
+			}
+			default {
+			    set window_error \
+				"ERROR: cannot\
+				        understand\
+				        `$answer'!"
+			}
 		    }
 		}
 	    }
@@ -1376,7 +1399,7 @@ while { "yes" } {
 	{^ir$} {
 	    if { [not_readonly] } {
 		compose_reply \
-		    {LINE "EDIT YOUR REPONSE HERE"} \
+		    { LINE "EDIT YOUR REPONSE HERE" } \
 		    BLANK \
 		    { BAR "this message replies to:" } \
 		    RECEIVED-HEADER \
@@ -1393,8 +1416,8 @@ while { "yes" } {
 	    if { [not_readonly] } {
 		if { ! [file exists $reply_file+] } {
 		    compose_reply \
-			{LINE "EDIT YOUR REPONSE\
-			       HERE"} \
+			{ LINE "EDIT YOUR REPONSE\
+			        HERE" } \
 			BLANK \
 			{ BAR "this message replies\
 			       to:" } \
