@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/09/11 04:01:58 $
+#   $Date: 2001/09/11 07:11:05 $
 #   $RCSfile: manualreply,v $
-#   $Revision: 1.33 $
+#   $Revision: 1.34 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -640,16 +640,21 @@ Scores:    Auto:     $auto_score    Manual:\
 proc display_proofs {} {
 
     global last_file window_error window_prompt \
-           window_info_height
+           window_info_height scoring_instructions \
+	   auto_score proposed_score
 
     compute_instruction_array
     compute_score_and_proof_arrays
     compute_score
     set info "[compute_proof_info]   \
-              n = goto next proof        \
-	      p = goto previous proof\n   \
-	      mm = return to main menu   \
-	      sm = return to scoring menu"
+        Scores:    Auto: $auto_score    Proposed:\
+			        $proposed_score\n   \
+	Scoring Instructions:\
+	    $scoring_instructions\n   \
+        n = goto next proof        \
+        p = goto previous proof\n   \
+        mm = return to main menu   \
+        sm = return to scoring menu"
 
     set window_info_height [llength [split $info "\n"]]
     set_window_info $info
