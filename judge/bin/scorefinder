@@ -5,7 +5,7 @@
 #
 # File:		scorefinder
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Sep 29 07:30:39 EDT 2000
+# Date:		Sun Nov  5 08:40:26 EST 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/10/03 03:16:08 $
+#   $Date: 2000/11/05 13:43:56 $
 #   $RCSfile: scorefinder,v $
-#   $Revision: 1.5 $
+#   $Revision: 1.6 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -69,15 +69,15 @@ scorefinder \[-gotten\]
     $manual_score_file file exits.  The score is the
     actual score used to compute the code, quoted by
     \"'s.
-
+
     If the -gotten option is present, this program also
     selects subdirectories which contain the file:
 
     	$gotten_file
-
-    If this file indicates a file named `pppp/pppp.txt'
-    was gotten at a certain date,  this program outputs
-    the line
+    							
+    If this file indicates that a file whose last two
+    name components are `pppp/pppp.txt' was gotten at a
+    certain date,  this program outputs the line
 
     	date submitter problem dg
 
@@ -86,7 +86,8 @@ scorefinder \[-gotten\]
     the $gotten_file file `Date:' field.
 
     The -gotten flag is set automatically if the
-    `scoreboard_start_time' variable equals \"\".
+    `scoreboard_start_time' variable equals \"\" or
+    \"team\".
 
     This program logs errors in the log directory."
 
@@ -106,6 +107,8 @@ if { $my_argc >= 1 \
     set my_argc [expr { $my_argc - 1 }]
 } elseif { $scoreboard_start_time == "" } {
     set gotten_option yes
+} elseif { $scoreboard_start_time == "team" } {
+    set gotten_option yes
 }
 
 # If there are leftover arguments, print document and
@@ -123,7 +126,7 @@ foreach dir [glob -nocomplain \
 
     set subdir [file tail $dir]
 
-    if { ! [regexp {^(.*)-<<(.*)>>-submission$} \
+    if { ! [regexp {^([^<>]*)-<<(.*)>>-submission$} \
     		   $subdir forget date submitter] } {
     	continue;
     }
