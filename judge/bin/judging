@@ -4,7 +4,7 @@
 #
 # File:		judging
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Nov 12 10:17:50 EST 2001
+# Date:		Wed Nov 14 10:11:11 EST 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/11/12 17:18:16 $
+#   $Date: 2001/11/14 15:08:42 $
 #   $RCSfile: judging,v $
-#   $Revision: 1.6 $
+#   $Revision: 1.7 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -86,7 +86,7 @@ of that account.
 If you are using csh or tcsh, you may want to turn on
 mail notification by using
 
-	set mail=(5 /var/spool/mail/$USER)
+	set mail=(5 /var/spool/mail/\$USER)
 
 This checks every 5 seconds for new mail and prints a
 message before the shell prompt if there is such mail.
@@ -188,7 +188,7 @@ One must add the main judging account's hpcm/judge/bin
 directory to the PATH of the auxilary account.  This
 might be done by putting
 
-	setenv PATH "/home/JJJ/hpcm/judge/bin:$PATH"
+	setenv PATH \"/home/JJJ/hpcm/judge/bin:\$PATH\"
 
 in the .cshrc file of the auxilary account, for example,
 where JJJ is the name of the main judging account.
@@ -293,9 +293,91 @@ The following is an example emergency from BOSPRE 2001.
 It illustrates what can happen and how to fix the
 situation.
 
-TBD
+The first two hours of the contest ran normally, but
+then the operating system (Linux RedHat 6.1) started to
+send out error messages saying there were too many open
+files, and processes started dying spontaneously.  The
+judge as concerned since he though this kind of problem
+had been solved by UNIX kernels and would not appear.
 
+The contest was a distributed contest, with a judge at
+one school and two sites with contestants at other
+schools.  The judge and one of the site managers talked
+by phone promptly, and the judge asked the site manager
+to have contestants clean up any excess processes they
+might have.  The judge also posted a notice at the top
+of the scoreboard (which contestants can put in one of
+their winodws), which asked contestants to be careful
+about how many processes they ran.  With the help of
+these actions, the problem went away within about 10
+minutes, though there was aftermath which we will
+describe below.
 
+One piece of good news is that the judge had a backup
+person available who had some rough knowledge of Linux
+OS issues.  He found, after a few tens of minutes of
+research, that Linux has a bound on the total number
+of open files in /proc/sys/fs/file-max that can be set
+by root using `echo >/proc/sys/fs/file-max XXX'.  The
+normal setting was 4096, which seemed to be rather
+large enough.  There are also three numbers in the
+read-only file /proc/sys/fs/file-nr, the middle of which
+is supposed to be the current number of open files.
+
+The backup person also know about the lsof command, that
+lists all the open files in the system, when run by
+root.  By using this command in conjuction with grep,
+the judge and backup were able to figure out how many
+open files each contestant account had.  By successive
+monitoring, one team was identified that seemed to
+increasing their number of open files by 200 per 10
+minutes.  This was done after teams had been asked to
+watch their processes.  The site manager for that team
+was contacted and asked to work with the team to reduce
+their number of open files.  There were no subsequent
+operating system problems with the contest.
+
+However, because processes died spontaneously, some
+submissions were not handled correctly, and fixup was
+required.  The contestants were told to resubmit,
+but the existing problematic submissions were also fixed
+using a rough knowledge of how the `autojudge' program
+works.
+
+One common problem that occurred in this case is erron-
+eous scores of `Syntax Error'.  This error occurs when
+the `autojudge' program cannot make an executable binary
+from the submitted source.  In the case of BOSPRE 2001,
+this happened because files could not be opened, but in
+BOSPRE 2000 this also happened but for a different rea-
+son: the judge's account at the beginning of BOSPRE 2000
+had the wrong JAVA compiler installed, and this wrong
+compiler lacked an important part of the subroutine
+library.
+
+The `tracker' program selects submissions with the
+score of `Syntax Error' for review (if the scoring mode
+is `auto+manual', as it was in BOSPRE 2001).  The gener-
+al recovery procedure for this situation is to use the
+`sh' command of `manualreply' to start a shell in the
+submission directory, use the shell `rm' command to re-
+move the submission source file (the .c, .cc, or .java
+file), and then run the `autojudge' program.  Deleting
+the source file is necessary to cause `autojudge' to
+go through all the steps of recomputing the auto score.
+Note, however, if the scoring mode is `auto+manual',
+this results in sending a second auto score to the
+contestant.  One then uses the shell `exit' command to
+return to `manualreply'.  After manual review and con-
+firmation of the auto score, the `er' and `sr' commands
+in manual reply may be used to send an explanation to
+the contestant, stating why the auto score was recom-
+puted.
+
+Note that the `lookat' program can also be used to
+display some information about submissions in a rough
+time range (by using `DATE::<regular-expression>'),
+and double check that everything has been fixed up.
 
 
 Judging non-Formal Contests
