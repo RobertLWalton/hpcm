@@ -4,7 +4,7 @@
 #
 # File:		extractmail
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Aug 28 15:17:10 EDT 2000
+# Date:		Thu Aug 31 02:27:20 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: acm-cont $
-#   $Date: 2000/08/28 20:52:35 $
+#   $Date: 2000/08/31 06:31:26 $
 #   $RCSfile: extractmail,v $
-#   $Revision: 1.10 $
+#   $Revision: 1.11 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -54,10 +54,10 @@ cd submission_directory; extract
     If the submission email has a `Subject' line as
     above and the filename given is for an already
     existing readable file whose modification time is
-    more recent that that of the `$received_file', this
-    program terminates without error and without doing
-    anything beyond reading the `Subject' line and
-    printing the name of the submitted file to the
+    more recent that that of the `$received_file' file,
+    this program terminates without error and without
+    doing anything beyond reading the `Subject' line
+    and printing the name of the submitted file to the
     standard output.
 
     If this program succeeds in extracting the submitted
@@ -66,21 +66,27 @@ cd submission_directory; extract
     single line, and prints nothing else.
 
     Otherwise, if the submitted email has even the
-    slightest formatting error, this program constructs
-    a `$reply_file' file giving reasons why the sub-
-    mission email is invalid.  This `$reply_file' is
-    sent to the email address that is part of the
-    current directory name.  In this case this program
-    exits with exit code 0, indicating no error, but
-    does not print anything to the standard output,
-    indicating no file was extracted.
+    slightest formatting error, of if the filename is
+    illegal (contains a `/', or begins with either `.'
+    or `-') this program constructs a `$reply_file' file
+    giving reasons why the submission email is invalid.
+    This `$reply_file' file is emailed to the submitter.
+    In this case this program exits with exit code 0,
+    indicating no error, but does not print anything to
+    the standard output, indicating no file was
+    extracted.
 
     If something goes very wrong, such as finding that
     the `$received_file' file is not readable, this
     program creates an error log file in the current
     directory, does not print anything on the standard
     output (but does print on the error output), and
-    exits with exit code 0."
+    exits with exit code 0.  The program also does this
+    if the `Subject:' field value is such that `auto-
+    dispatch' will not invoke the `autojudge' program
+    (the value has less than two items when viewed as
+    a list, or does not have a first item equal to
+    `submit'."
 
 if { $argc != 0 } {
     puts $document
@@ -99,6 +105,7 @@ proc extract_error_reply { args } {
 	 {"THIS SUBMISSION (see below) IGNORED"} \
 	 {"YOU MUST RESUBMIT"}
 
+    exit_cleanup
     exit 0
 }
 
@@ -109,11 +116,15 @@ read_header $received_ch
 
 # Check for legallity of subject line:
 #
-if { [llength $subject] == 0 } {
-    extract_error_reply \
-	"Missing or empty `Subject:' field"
-} elseif { [llength $subject] != 2 \\
-     || [lindex $subject 0] != "submit" } {
+if { [llength $message_subject] == 0 } {
+    error "Missing or empty `Subject:' field"
+} elseif { [llength $message_subject] < 2 \
+           || [lindex $message_subject 0] \
+	      != "submit" } {
+    error \
+	"Badly formatted subject field:" \
+	"Subject: $message_subject"
+} elseif { [llength $message_subject] != 2 } {
     extract_error_reply \
 	"Badly formatted subject field:" \
 	"Subject: $message_subject"
@@ -121,20 +132,21 @@ if { [llength $subject] == 0 } {
 
 # Extract the filename and check its legality.
 #
-set filename [lindex $subject 1]
+set filename [lindex $message_subject 1]
 
-if { [regexp {^\.|\/} $filename] } {
+if { [regexp {^\.|^\-|\/} $filename] } {
     extract_error_reply \
-        "Illegal filename (has `/' or beginning `.'):\
+        "Illegal filename (has `/' or beginning `.'\
+	                                     or `-'):\
 	 $filename"
 }
 
 # If named file is readable and is more recent than the
-# received mail file, then print# the file name and exit
+# received mail file, then print the file name and exit
 # without error.
 #
 if { [file readable $filename] \
-     && [file mtime $recived_file] \
+     && [file mtime $received_file] \
 	 <= [file mtime $filename] } {
     puts $filename
     exit 0
@@ -172,11 +184,17 @@ while { "yes" } {
 #
 set file_ch [open $filename w]
 
+# Set cleanup for error exits.
+#
+proc exit_cleanup {} {
+    global file_ch filename
+    close $file_ch
+    file delete -force $filename
+}
+
 while { "yes" } {
     set line [gets $received_ch]
     if { [eof $received_ch] } {
-        close $file_ch
-	file delete -force $filename
         extract_error_reply \
 	    "Could not find END line."
     } elseif { [regexp {^\.\.(.*)$} $line \
@@ -185,19 +203,13 @@ while { "yes" } {
     } elseif { [regexp "^END $filename\$" $line] } {
     	break
     } elseif { [regexp "^END" $line] } {
-        close $file_ch
-	file delete -force $filename
         extract_error_reply \
 	    "Badly formatted END line:" $line
     } else {
-        close $file_ch
-	file delete -force $filename
         extract_error_reply \
 	    "Bad line between BEGIN and END:" $line
     }
 }
-
-close $file_ch
 
 # Look for extaneous non-blank text after END line.
 #
@@ -208,15 +220,15 @@ while { "yes" } {
     } elseif { [regexp "^\[\ \t\]*\$" $line] } {
     	# blank lines are ok
     } else {
-	file delete -force $filename
         extract_error_reply \
 	    "Bad line after END:" $line
     }
 }
 
-# Close received email file, print name of submitted
-# file, and exit without error.
+# Close files, print name of submitted file, and exit
+# without error.
 #
+close $file_ch
 close $received_ch
 puts $filename
 exit 0
