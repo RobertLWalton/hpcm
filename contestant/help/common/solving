@@ -1,4 +1,4 @@
-Solving Problems Help	    Sat Jun 30 02:37:51 EDT 2001
+Solving Problems Help	    Mon Feb 18 07:05:52 EST 2002
 
 
 What Problems?
@@ -31,8 +31,9 @@ Each problem has its own subdirectory in the `problems'
 subdirectory.  Thus a problem named `pppp' would have
 a problem directory named `~/problems/pppp'.
 
-You can display an index of the problems and an estimate
-of their relative difficulty by using the command:
+You can display an index of the problems and sometimes
+an estimate of their relative difficulty by using the
+command:
 
 	help problems
 
@@ -40,9 +41,9 @@ In an informal or email contest you have to get each
 problem one at a time, because the scoreboard uses the
 time you get a problem as the problem start time (or may
 use the time your team gets its first problem as the
-start time for all your teams problems).  To get a prob-
-lem named `pppp' in an informal or email contest use the
-command:
+start time for all your team's problems).  To get a
+problem named `pppp' in an informal or email contest use
+the command:
 
 	hpcm_get problems/pppp
 
@@ -57,14 +58,16 @@ Working on a Problem
 --------------------
 
 For a problem named `pppp' you should write a file named
-`pppp.c', `pppp.cc', `pppp.java', or `pppp.p' in your
-`problems/pppp' directory.  The suffix of the file you
-write determines the programming language you are using:
+`pppp.c', `pppp.cc', `pppp.java', `pppp.p', or
+`pppp.lsp' in your `problems/pppp' directory.  The suf-
+fix of the file you write determines the programming
+language you are using:
 
 	.c 	for C
 	.cc	for C++
 	.java	for JAVA
 	.p	for PASCAL
+	.lsp	for COMMONLISP
 
 You must write only ONE of these files; you CANNOT
 have a solution in two different languages at once.
@@ -85,7 +88,8 @@ means using functions such as `gets', `scanf', and
 `printf' that implicitly use `stdin' for input and
 `stdout' for output.  In C++ this means using `cin' and
 `cout'.  In JAVA this means using `System.in' and
-`System.out'.
+`System.out'.  In COMMONLISP this means using
+`*standard-input*' and `*standard-output*'.
 
 You should NOT under any circumstances open a file in
 your code.  In the judge's program execution environ-
@@ -109,11 +113,20 @@ this directory for more instructions.
 
     make pppp	Makes the binary program file `pppp' by
                 running gcc on pppp.c, or g++ on
-		pppp.cc, javac on pppp.java, or p2c on
-	        pppp.p., depending upon which of pppp.c,
-		pppp.cc, pppp.java or pppp.p exist.
-		Does nothing if `pppp' is more up to
-		date than pppp.c, pppp.cc, etc.
+		pppp.cc, javac on pppp.java, p2c on
+	        pppp.p., or a commonlisp compiler on
+		pppp.lsp, depending upon which of
+		pppp.c, pppp.cc, pppp.java, pppp.p,
+		or pppp.lsp exist.  Does nothing if
+		`pppp' is more up to date than pppp.c,
+		pppp.cc, etc.
+
+		In addition to making `pppp', other
+		files may be made for some languages,
+		such as pppp.p2c which is made from
+		pppp.p, pppp.class which is made from
+		pppp.java, or pppp.fas which is made
+		from pppp.lsp.
 
     make pppp.out
 		Makes `pppp' as above and then runs it
@@ -129,13 +142,13 @@ this directory for more instructions.
     make submit
 		Makes `pppp.out' just to be sure that
 		nothing crashes, and then e-mails
-		pppp.c, pppp.cc, ppp.java, or pppp.p to
-		the judges.  Note the pppp.in file MUST
-		exist to submit, to make pppp.out, but
-		pppp.in can be the minimum needed to
-		keep your program from crashing (often
-		ppp.in can be empty).
-
+		pppp.c, pppp.cc, ppp.java, pppp.p, or
+		pppp.lsp to the judges.  Note the
+		pppp.in file MUST exist to submit, to
+		make pppp.out, but pppp.in can be the
+		minimum needed to keep your program from
+		crashing (often pppp.in can be empty).
+
     make clean	Removes `pppp' and pppp.out.
 
 The `make' UNIX commands work because of the way the
@@ -144,7 +157,15 @@ It is this file that causes `pppp.in' to be presented
 to your program as if it were input from a terminal,
 and causes output your program writes to a terminal to
 be stored in `pppp.out' instead.
-
+
+The `Makefile' file contains some oddities resulting
+from the fact that judges, who use the same `Makefile'
+as contestants, run solutions in a sandbox account that
+has permission problems accessing judge's files.  Any
+file, directory, or program that must be accessed from
+the sandbox account has to have permissions making it
+accessible to everyone.
+
 
 Resource Limits
 -------- ------
@@ -153,15 +174,15 @@ If you look at the `Makefile' in the problem directory
 you will see that it contains memory and time resource
 limits which constrain your problem.  Memory limits
 are typically several megabytes and time limits are
-typically 60 seconds.  Harder problems require care to
-be sure you stay within these limits.
+typically 10 to 60 seconds.  Harder problems require
+care to be sure you stay within these limits.
 
 Most problems are such that solutions in C or C++ will
 run in a few seconds.  If you have long running times,
 you may have chosen an algorithm too inefficient to
 avoid the time limit.
 
-
+
 Debugging
 ---------
 
@@ -176,14 +197,17 @@ not be applied if you do not use pppp.in and `make'.
 The gdb debugger works for C and C++.  Gdb works well
 under EMACS.
 
-For java, making pppp also makes pppp.class, which can
+For JAVA, making pppp also makes pppp.class, which can
 be run with the debugger jdb.
+
+See `help commonlisp' for COMMONLISP debugging.
 
 The contest staff will answer questions about debuggers
 and editors as best they can.
 
 
-
+
+
 File:		solving
 Author:		Bob Walton <walton@deas.harvard.edu>
 Date:		See top of file.
@@ -195,6 +219,6 @@ file.
 RCS Info (may not be true date or author):
 
     $Author: hc3 $
-    $Date: 2001/09/15 10:25:12 $
+    $Date: 2002/02/18 12:57:14 $
     $RCSfile: solving,v $
-    $Revision: 1.7 $
+    $Revision: 1.8 $
