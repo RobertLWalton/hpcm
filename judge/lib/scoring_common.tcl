@@ -2,7 +2,7 @@
 #
 # File:		scoring_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Feb  2 10:53:52 EST 2003
+# Date:		Mon Feb  3 06:03:19 EST 2003
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2003/02/02 19:06:26 $
+#   $Date: 2003/02/03 19:22:01 $
 #   $RCSfile: scoring_common.tcl,v $
-#   $Revision: 1.33 $
+#   $Revision: 1.34 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -811,6 +811,53 @@ proc compute_solution_files { } {
     return $files
 }
 
+# Helper function for execute_response_commands below.
+# Just processes FIRST or SUMMARY command out-of-line to
+# make code neater.
+#
+proc process_first_or_summary_command \
+	{ command processed_commands } {
+
+    upvar $processed_commands pc
+
+    global submitted_problem proof_array
+
+    set sfile ${submitted_problem}.score
+    if { ! [file exists $sfile] } {
+	lappend pc [list LINE "Sorry, no scoring\
+			       information is\
+			       available."]
+    } else {
+
+	# We need to find the difference types that
+	# support the automatically determined score.
+
+	compute_instruction_array
+	compute_score_and_proof_arrays $sfile
+	score [compute_score]
+
+	foreach x {
+	    {incorrect_output {Incorrect Output}}
+	    {incomplete_output {Incomplete Output}}
+	    {formatting_error {Formatting Error}} } {
+	    set xname  [lindex $x 0]
+	    set xscore [lindex $x 1]
+	    global ${xname}_types
+	    set proofs ""
+	    foreach difference [set ${xname}_types] {
+	        set proofs \
+		    [concat proofs \
+		            proof_array($difference)]
+	    }
+	    set proofs [lsort $proofs]
+	    if { $command == "FIRST" } {
+	    } elseif { $command == "SUMMARY" } {
+	    }
+	}
+    }
+    error "Not implemented yet: $command"
+}
+
 # Function to execute response instruction commands
 # after if-statement processing.
 #
@@ -923,7 +970,8 @@ proc execute_response_commands \
 	    	if { $length != 1 } {
 		    response_error $command
 		}
-	        error "Not implemented yet: $command"
+		process_first_or_summary \
+		    $command processed_commands
 	    }
 
 	    default	{
