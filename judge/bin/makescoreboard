@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/10/27 15:42:01 $
+#   $Date: 2001/10/28 03:13:26 $
 #   $RCSfile: makescoreboard,v $
-#   $Revision: 1.17 $
+#   $Revision: 1.18 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -622,24 +622,35 @@ proc process_instructions {} {
     make_signals_default
 }
 
+# Execute scoreboard instructions during second pass.
+# Instruction at pc is an OUTPUT instruction, and
+# instruction at endpc is the next OUTPUT instruction
+# or is just beyond the end of all instructions.
+#
 proc pass2 { instructions pc end_pc update } {
 
     global parameters_array scoreboard_instructions \
-           judging_directory finder_file
+           judging_directory finder_file space
     foreach name [array names parameters_array] {
 	global scoreboard_$name
     }
 
-    set instructions $scoreboard_instructions
+    # Compute output file and step past OUTPUT instruc-
+    # tion.
+    #
     set out_file [lindex [lindex $instructions $pc] 1]
     set out_file \
         [file join $judging_directory $out_file]
-
     incr pc
+
+    # Compute output file in `contents' variable.
+    #
     set contents ""
     set send no
     set grant_access no
 
+    # Compute BAR.
+    #
     set bar ""
     set w [expr { $scoreboard_width / 5 } ]
     while { $w > 0 } {
@@ -647,13 +658,23 @@ proc pass2 { instructions pc end_pc update } {
 	incr w -1
     }
 
+    # Loop through remaining instructions.
+    #
     while { $pc < $end_pc } {
+
+	# Compute instruction and opcode and update pc.
+	#
 	set instruction [lindex $instructions $pc]
-	incr pc
 	set opcode [lindex $instruction 0]
+	incr pc
+
 	switch $opcode_$update {
 
 	    SEND_yes {
+
+	        # Compute send_qualifier and send_
+		# addresses for use when output done.
+		#
 		set send_qualifier \
 		    [lindex $instruction 1]
 		set name [lindex $instruction 2]
@@ -667,10 +688,13 @@ proc pass2 { instructions pc end_pc update } {
 		   set send_addresses \
 		       [set scoreboard_$name]
 		}
+
+		# Set switch to indicate SEND happened.
+		#
 		set send yes
 	    }
 
-	    GRANT_ACCESS {
+	    GRANT_ACCESS_yes {
 		set grant_access yes
 	    }
 
@@ -684,9 +708,15 @@ proc pass2 { instructions pc end_pc update } {
 
 	    LINE_yes {
 
+		# Make sure `space is long enough'.
+		#
 		if { $scoreboard_width > 256 } {
 		    error "scoreboard width > 256"
 		}
+
+		# Compute left, center, and right
+		# text.
+		#
 		set left   [lindex $instruction 1]
 		set center [lindex $instruction 2]
 		set right  [lindex $instruction 3]
@@ -695,6 +725,10 @@ proc pass2 { instructions pc end_pc update } {
 		set center [unabbreviate $center]
 		set right  [unabbreviate $right]
 
+		# Compute columns of beginning and/or
+		# end for each of the three texts.
+		# Columns are numbered 0, 1, ...
+		#
 		set left_end [string length $left]
 		incr left_end -1
 		set right_begin \
@@ -709,24 +743,34 @@ proc pass2 { instructions pc end_pc update } {
 		    [expr { $center_begin \
 			    + $center_length - 1 }]
 
+		# Make sure texts are short enough so
+		# that their ends are within limits.
+		#
 		if { $left_end >= $scoreboard_width } {
 		    error "LINE left text too wide:\
 		           $left"
 		} else if { $right_end < 0 } {
 		    error "LINE right text too wide:\
 		           $right"
-		} else if { $center_begin < 0 \
+		} else if {    $center_begin < 0 \
 		            || $center_end \
 			       >= $scoreboard_width } {
 		    error "LINE center text too wide:\
 		           $center"
 		}
 
+		# Compute line.  Start with left text.
+		#
 		set line "$left"
 
 		set center_done no
 		set right_done  no
 
+		# If center is non-empty and has a 2
+		# space gap between it and any other
+		# non-empty text, add the center to the
+		# line.
+		#
 		if {    $center != ""
 		     && ( $left == "" \
 		          || $left_end + 2 \
@@ -745,7 +789,12 @@ proc pass2 { instructions pc end_pc update } {
 		    set center_done yes
 		    set left_end $center_end
 		}
-		if { $right != ""
+
+		# If right text is non-empty and has a 2
+		# space gap with the part of the line
+		# to its left, add it to line.
+		#
+		if {    $right != ""
 		     && ( $left_end == -1 \
 		          || $left_end + 2 \
 			     < $right_begin ) } {
@@ -759,6 +808,11 @@ proc pass2 { instructions pc end_pc update } {
 		    set line "$line$right"
 		    set right_done yes
 		}
+
+		# If center text did not get added to
+		# first line, put it on a line by it-
+		# self.
+		#
 		if { $center != "" && \
 		     $center_done == "no" } {
 		    incr center_begin -1
@@ -768,6 +822,11 @@ proc pass2 { instructions pc end_pc update } {
 				    0 $center_begin]
 		    set line "$line$center"
 		}
+
+		# If right text did not get added to
+		# first line, put it on a line by it-
+		# self.
+		#
 		if { $right != "" \
 		     && $right_done == "no" } {
 		    incr right_begin -1
@@ -777,15 +836,26 @@ proc pass2 { instructions pc end_pc update } {
 				    0 $right_begin]
 		    set line "$line$right"
 		}
+
+		# Add line to contents of output.
+		#
 		set contents "$contents$line\n"
 	    }
 
 	    INPUT_yes {
+
+	        # Loop through input files.
+		#
 		foreach in_file \
 		        [lrange $instruction 1 end] {
+
 		    set in_file \
 		        [file join $judging_directory \
 			           $in_file]
+
+		    # Add first readable input file to
+		    # the output contents.
+		    #
 		    if { [file readable $in_file] } {
 			if { [file size $in_file] > 0 \
 					} {
@@ -797,7 +867,12 @@ proc pass2 { instructions pc end_pc update } {
 		    }
 		}
 	    }
+
 	    BOARD_yes {
+
+	        # Compute parameters to be passed to
+		# the scoreboard program.
+		#
 	        set parameters ""
 		foreach name \
 		        [array names parameters_array] {
@@ -805,6 +880,10 @@ proc pass2 { instructions pc end_pc update } {
 		        [list $name \
 			      [set scoreboard_$name]]
 		}
+
+		# Call the scoreboard program to compute
+		# the board.
+		#
 		set scoreboard \
 		    [exec scoreboard "{ $parameters }" \
 				     < $finder_file]
@@ -818,21 +897,38 @@ proc pass2 { instructions pc end_pc update } {
 			 EMPTY!  Nothing must have\
 			 happened yet."
 		}
+
+		# Add the scoreboard to the output file
+		# contents.
+		#
 	        set contents "$contents$scoreboard\n"
 	    }
+
+
+	    # If update is `no' most instructions do
+	    # nothing.
+	    #
+	    SEND_no {}
+	    GRANT_ACCESS_no {}
 	    BLANK_no {}
 	    BAR_no {}
 	    LINE_no {}
 	    INPUT_no {}
 	    BOARD_no {}
-	    SEND_no {}
+
 	    default {
+	        # Execute parameter setting instruction
+		# regardless of update value.
+		#
 		set_parameter $instruction
 	    }
 	}
     }
 
     if { $update } {
+
+	# Write output file.
+	#
 	set ch [open $out_file w]
         puts -nonewline $ch $contents
 	close $ch
@@ -840,6 +936,8 @@ proc pass2 { instructions pc end_pc update } {
 	    grant_access $out_file
 	}
 
+	# Send email.
+	#
 	if { $send } {
 	    foreach to $send_addresses {
 	        if { $send_qualifier != "" \
@@ -858,9 +956,14 @@ proc pass2 { instructions pc end_pc update } {
 #
 set saved_log_mode $log_mode
 set log_mode none
+
 switch $command {
 
     start {
+
+	# Check pid_file and delete it if its process
+	# is no longer running.
+	# 
 	if { [file exists $pid_file] } {
 	     set pid [read_file $pid_file]
 	     set display [display_process_tree $pid]
@@ -875,16 +978,30 @@ switch $command {
 	     file delete -force $pid_file
 	}
 
+	# Save interval before processing instructions.
+	#
 	set interval $scoreboard_interval
 
         process_instructions
 
+	# Set pid file and restore log mode.
+	#
 	write_file $pid_file [current_pid]
 	set log_mode $saved_log_mode
 
+	# Resume a periodic intervals.
+	#
 	while { "yes" } {
 	    sleep $interval
 	    set c 0
+
+	    # Run up to 4 time ignoring errors.
+	    # Then if there are 4 erroneous runs, try
+	    # a run in which errors stop the program.
+	    #
+	    # We do this because changes to files during
+	    # a run may cause spurious errors.
+	    #
 	    while { "yes" } {
 	        incr c
 		if { $c < 5 } {
@@ -892,6 +1009,7 @@ switch $command {
 		              process_instructions }] \
 			          } break
 		    sleep 10
+		    set file_mtime_list changed
 		} else {
 		    process_instructions
 		}
@@ -900,6 +1018,7 @@ switch $command {
     }
 
     status {
+
 	if { [file exists $pid_file] } {
 	     set pid [read_file $pid_file]
 	     set display [display_process_tree $pid]
@@ -932,6 +1051,12 @@ switch $command {
 			    $display] } {
 		 puts "Killing previous makescoreboard:"
 		 puts $display
+
+		 # Try to kill up to 10 times, checking
+		 # after each attempt for death.  The
+		 # first 5 times are with HUP, the 2nd
+		 # 5 5imes are with KILL.
+		 #
 		 set count 0
 		 while { "true" } {
 		     incr count 1
