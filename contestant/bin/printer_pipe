@@ -5,7 +5,7 @@
 #
 # File:		printer_pipe
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Sat Mar  9 18:41:56 EST 2002
+# Date:		Tue Oct 22 22:39:19 EDT 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/03/09 23:49:33 $
+#   $Date: 2002/10/23 04:04:05 $
 #   $RCSfile: printer_pipe,v $
-#   $Revision: 1.10 $
+#   $Revision: 1.11 $
 
 Pswitch=0
 
@@ -90,15 +90,21 @@ printer_pipe [-P] where filename [username]
     input is emailed to the printer name.  Otherwise
     the standard input is piped to \`lpr -Pprinter'.
 
+    If the printer name begins with an \`@', the email
+    has the standard input as an attachment, and the
+    initial \`@' is stripped from the name before it is
+    used as an email address.  Otherwise the standard
+    input becomes the body of the email message.
+
     If ~/.hpcm_contest/printer_jobs is writable, a line
     is written to that file giving the date, the prin-
     ter, the \`where' argument, and the \`filename'
     argument.
-
+
     The \`where' and \`filename' arguments are used
     purely for informative purposes in the email subject
     and in ~/.hpcm_contest/printer_jobs.
-
+
     When the standard input is emailed to a printer with
     a name like \`fee<fi@fo>', one typically puts the
     following entry in the \`.procmailrc' file of the
@@ -240,6 +246,24 @@ fi
 # Send the print job to the printer.
 
 case "$printer" in
+    @*)
+	t=/tmp/printer_pipe$$
+	trap "rm -f $t" 0
+	cat > $t
+	a=` expr "$printer" : '@\(.*\)$' `
+	if ( head -1 $t | grep -s '^%!PS' )
+	then
+	    m=application/postscript
+	    D="$filename postscript"
+	else
+	    m=text/plain
+	    D="$filename"
+	fi
+	metasend -b -s "$filename $where" -t "$a" \
+	         -e base64 -m $m -D "$D" -f $t
+	rm -f $t
+	exit 0
+    	;;
     *@*)
         ( echo "To: $printer"; \
 	  echo "Subject: $filename $where"; \
