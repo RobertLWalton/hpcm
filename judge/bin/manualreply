@@ -5,7 +5,7 @@
 #
 # File:		manualreply
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Sep 11 00:12:40 EDT 2001
+# Date:		Sat Sep 22 03:53:08 EDT 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/09/11 07:11:05 $
+#   $Date: 2001/09/22 08:25:48 $
 #   $RCSfile: manualreply,v $
-#   $Revision: 1.34 $
+#   $Revision: 1.35 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -523,14 +523,23 @@ set help(oe) $help(io)
 # Menu Initialization
 # ---- --------------
 
-get_lock
+# Set if in readonly mode.
+#
+set readonly_mode yes
+
+if { [file writable "."] } {
+    set readonly_mode no
+    get_lock
+}
+
 refresh_file_list
 
 # If auto score file, reply file, no replay file,
 # and unchecked errors do not exists, consider running
-# autojudge.
+# autojudge, if not in readonly mode.
 #
-if { $submitted_program != "" \
+if { $readonly_mode == "no" \
+     && $submitted_program != "" \
      && [llength [glob -nocomplain \
                        $reply_file \
                        $no_reply_file \
@@ -699,7 +708,27 @@ refresh_file_list
 refresh_info
 set_file_list_display
 
-set window_error ""
+
+if { $readonly_mode } {
+    set window_error "You are in read only mode."
+} else {
+    set window_error ""
+}
+
+# Helper function to verify we are not in readonly
+# mode or to set window_error if we are.
+#
+proc not_readonly {} {
+    global readonly_mode window_error answer
+    if { $readonly_mode } {
+        set window_error \
+	    "You are in readonly mode and cannot do\
+	     `$answer'."
+	return no
+    } else {
+    	return yes
+    }
+}
 
 while { "yes" } {
 
@@ -736,7 +765,7 @@ while { "yes" } {
 	}
 	{^e *[0-9]*$} {
 	    regexp {^e *([0-9]*)$} $answer forget n
-	    if { [get_file $n] } {
+	    if { [not_readonly] && [get_file $n] } {
 		edit_file $last_file
 		set last_display file
 	    }
@@ -746,7 +775,7 @@ while { "yes" } {
 	}
 	{^e } {
 	    regexp {^e +([^ ]*)$} $answer forget id
-	    if { [get_file $id] } {
+	    if { [not_readonly] && [get_file $id] } {
 		edit_file $last_file
 		set last_display file
 	    }
@@ -756,7 +785,7 @@ while { "yes" } {
 	}
 	{^c *[0-9]*$} {
 	    regexp {^c *([0-9]*)$} $answer forget n
-	    if { [get_file $n] } {
+	    if { [not_readonly] && [get_file $n] } {
 	        set mail_file $last_file.mail
 		if { [catch { set last_file \
 			          [make_checked \
@@ -780,7 +809,7 @@ while { "yes" } {
 	}
 	{^u *[0-9]*$} {
 	    regexp {^u *([0-9]*)$} $answer forget n
-	    if { [get_file $n] } {
+	    if { [not_readonly] && [get_file $n] } {
 	        set mail_file $last_file.mail
 		if { [catch { set last_file \
 			          [make_unchecked \
@@ -808,28 +837,32 @@ while { "yes" } {
 	    set_file_list_display
 	}
 	{^ir$} {
-	    compose_reply -all
-	    set last_file $reply_file+
-	    edit_file $last_file
-	    refresh_file_list
-	    refresh_info
-	    set_file_display $last_file
+	    if { [not_readonly] } {
+		compose_reply -all
+		set last_file $reply_file+
+		edit_file $last_file
+		refresh_file_list
+		refresh_info
+		set_file_display $last_file
+	    }
 	}
 	{^er$} {
-	    if { ! [file exists $reply_file+] } {
-		compose_reply -all
+	    if { [not_readonly] } {
+		if { ! [file exists $reply_file+] } {
+		    compose_reply -all
+		}
+		set last_file $reply_file+
+		edit_file $last_file
+		refresh_file_list
+		refresh_info
+		set_file_display $last_file
 	    }
-	    set last_file $reply_file+
-	    edit_file $last_file
-	    refresh_file_list
-	    refresh_info
-	    set_file_display $last_file
 	}
 	{^sr$} {
 	    if { ! [file exists $reply_file+] } {
 		set window_error \
 		    "ERROR: No reply composed!"
-	    } else {
+	    } elseif { [not_readonly] } {
 		set_file_display $reply_file+
 		set window_error ""
 		set window_prompt \
@@ -858,26 +891,33 @@ while { "yes" } {
 	    refresh_display
 	}
 	{^nr$} {
-	    set window_error \
-		"Type line to write into $no_reply_file\
-                 file (or type ^D to abort):"
-	    set window_prompt "> "
-	    display_window
-	    set no_reply_line [string trim [gets stdin]]
-	    if { [eof stdin] } {
+	    if { [not_readonly] } {
 		set window_error \
-		    "$no_reply_file NOT WRITTEN"
-	    } else {
-		write_file $no_reply_file $no_reply_line
-		set window_error \
-		    "$no_reply_file written"
+		    "Type line to write into\
+		     $no_reply_file file (or type ^D\
+		     to abort):"
+		set window_prompt "> "
+		display_window
+		set no_reply_line \
+		    [string trim [gets stdin]]
+		if { [eof stdin] } {
+		    set window_error \
+			"$no_reply_file NOT WRITTEN"
+		} else {
+		    write_file $no_reply_file \
+		               $no_reply_line
+		    set window_error \
+			"$no_reply_file written"
+		}
+		refresh_file_list
+		refresh_info
+		refresh_display
 	    }
-	    refresh_file_list
-	    refresh_info
-	    refresh_display
 	}
 	{^ss$} {
-	    if { $proposed_score == "none" } {
+	    if { [not_readonly] == "no" } {
+	    	# do nothing
+	    } elseif { $proposed_score == "none" } {
 	        set window_error "ERROR: set the\
 		    proposed score before sending it"
 	    } elseif { [compose_score_reply] } {
@@ -917,23 +957,28 @@ while { "yes" } {
 		    set last_display file_list
 		}
 	    }
-	    set menu $main_menu
-	    refresh_file_list
-	    refresh_info
-	    refresh_display
+	    if { [not_readonly] } {
+		set menu $main_menu
+		refresh_file_list
+		refresh_info
+		refresh_display
+	    }
 	}
 	{^aj$} {
-	    puts "Running autojudge"
-	    exec autojudge >@ stdout 2>@ stderr
+	    if { [not_readonly] } {
+		puts "Running autojudge"
+		exec autojudge >@ stdout 2>@ stderr
 
-	    if { ! [file exists $auto_score_file] } {
-		puts "autojudge FAILED to make\
-		     $auto_score_file"
+		if { ! [file exists $auto_score_file] \
+			} {
+		    puts "autojudge FAILED to make\
+			 $auto_score_file"
+		}
+		continue?
+		refresh_file_list
+		refresh_info
+		refresh_display
 	    }
-	    continue?
-	    refresh_file_list
-	    refresh_info
-	    refresh_display
 	}
 	{^sh$} {
 	    call_shell
@@ -942,11 +987,13 @@ while { "yes" } {
 	    refresh_display
 	}
 	{^ai$} {
-	    exec autoinfo >@ stdout 2>@ stderr
-	    continue?
-	    refresh_file_list
-	    refresh_info
-	    refresh_display
+	    if { [not_readonly] } {
+		exec autoinfo >@ stdout 2>@ stderr
+		continue?
+		refresh_file_list
+		refresh_info
+		refresh_display
+	    }
 	}
 	{^sm$} {
 	    set menu $scoring_menu
