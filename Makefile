@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Oct 23 04:17:05 EDT 2003
+# Date:		Fri Feb 20 09:49:16 EST 2004
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2003/10/23 08:21:31 $
+#   $Date: 2004/02/20 14:51:59 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.41 $
+#   $Revision: 1.42 $
 
 # See STATUS file for description of versions.
 #
@@ -140,9 +140,9 @@ HPCM_${VERSION}_MD5_Signatures:	signatures_header \
 	@if test "${HPCM_COPYRIGHT}" = ""; \
 	then echo HPCM_COPYRIGHT not defined; exit 1; fi
 	rm -f HPCM_${VERSION}_MD5_Signatures
-	echo "HPCM ${VERSION} MD5 SIGNATURES" \
+	echo "HPCM ${VERSION}" \
 	     > HPCM_${VERSION}_MD5_Signatures
-	echo "---- ------ --- ----------" \
+	echo "---- ------" \
 	     >> HPCM_${VERSION}_MD5_Signatures
 	echo "" \
 	     >> HPCM_${VERSION}_MD5_Signatures
@@ -200,9 +200,9 @@ HPCM_${VERSION}_CVS_MD5_Signatures:	\
 	@if test "${HPCM_COPYRIGHT}" = ""; \
 	then echo HPCM_COPYRIGHT not defined; exit 1; fi
 	rm -f HPCM_${VERSION}_CVS_MD5_Signatures
-	echo "HPCM ${VERSION} CVS MD5 SIGNATURES" \
+	echo "HPCM ${VERSION} CVS" \
 	     > HPCM_${VERSION}_CVS_MD5_Signatures
-	echo "---- ------ --- --- ----------" \
+	echo "---- ------ ---" \
 	     >> HPCM_${VERSION}_CVS_MD5_Signatures
 	echo "" \
 	     >> HPCM_${VERSION}_CVS_MD5_Signatures
