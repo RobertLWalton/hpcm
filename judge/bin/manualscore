@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: acm-cont $
-#   $Date: 2000/09/05 04:27:07 $
+#   $Date: 2000/09/10 10:42:15 $
 #   $RCSfile: manualscore,v $
-#   $Revision: 1.13 $
+#   $Revision: 1.14 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -30,7 +30,7 @@ source "$lib_directory/judging_common.tcl"
 catch {
 
 set document "
-cd submission_directory; manualscore
+cd submission_directory; manualscore \[-force\]
 
     Given the submission directory as the current dir-
     ectory, and given that this directory contains an
@@ -39,17 +39,40 @@ cd submission_directory; manualscore
     the files in the directory and select a manual score
     that is written into the $manual_score_file file and
     sent as email to the submitter.  A $reply_file file
-    containing this email is created."
+    containing this email is created.
 
-if { $argc != 0 } {
+    Normally this program will not run if a $reply_file
+    file exists.  The -force option cause this program
+    to run even if a $reply_file file exists."
+
+# Consume any -force option.
+#
+set my_argc $argc
+set my_argv $argv
+if { $argc >= 1 && [lindex $argv 0] == "-force" } {
+    set force_option yes
+    set my_argc [expr { $my_argc - 1 }]
+    set my_argv [lreplace $my_argv 0 0]
+} else {
+    set force_option no
+}
+
+# If any arguments left, print document and exit.
+#
+if { $my_argc != 0 } {
     puts $document
     exit 1
 }
 
+# Read received mail header.
+#
 set received_ch [open $received_file r]
 read_header $received_ch
 close $received_ch
 
+# If subject inappropriate for manual scoring, announce
+# error.
+#
 if { [llength $message_subject] != 2 \
      || [lindex $message_subject 0] != "submit" } {
     puts "Bad subject for manual scoring:"
@@ -58,6 +81,8 @@ if { [llength $message_subject] != 2 \
     exit 0
 }
 
+# Compute file names from message subject.
+#
 set submitted_file [lindex $message_subject 1]
 set submitted_program \
     [file rootname $submitted_file]
@@ -70,6 +95,8 @@ set test_file   	"${submitted_program}.test"
 set diff_file   	"${submitted_program}.diff"
 set bdiff_file   	"${submitted_program}.bdiff"
 
+# Make $auto_score_file if necessary.
+#
 if { ! [file readable $auto_score_file] } {
     puts "No $auto_score_file; Executing autojudge"
     exec autojudge
@@ -81,19 +108,24 @@ if { ! [file readable $auto_score_file] } {
     }
 }
 
-if { [file exists $reply_file] } {
+# Exit if $reply_file exists and no -force option.
+#
+if { [file exists $reply_file] \
+     && $force_option == "no" } {
     puts "$reply_file exists"
     puts "Exiting manualscore"
     exit 0
 }
 
+# Get some info.
+#
 set auto_score [read_file $auto_score_file]
+set scoring_instructions [find_scoring_instructions]
 
 
-set scoring_instructions \
-    [find_scoring_instructions]
-
-
+# Procedure to make $diff_file if necessary, and
+# return its name in any case.
+#
 proc make_diff {} {
 
     global output_file test_file diff_file
@@ -119,6 +151,9 @@ proc make_diff {} {
     return $diff_file
 }
 
+# Procedure to make $bdiff_file if necessary, and
+# return its name in any case.
+#
 proc make_bdiff {} {
 
     global output_file test_file bdiff_file
@@ -144,6 +179,9 @@ proc make_bdiff {} {
     return $bdiff_file
 }
 
+# Procedure to get a new manual_score by manual entry by
+# the program user.
+#
 proc get_new_score {} {
 
     global manual_score auto_score \
@@ -193,6 +231,8 @@ Please select a new current score:
     }
 }
 
+# Set up name of first file to display in $last_file.
+#
 if { [file exists $compiler_error_file] \
      && [file size $compiler_error_file] > 0 } {
     set last_file $compiler_error_file
@@ -203,10 +243,19 @@ if { [file exists $compiler_error_file] \
     set last_file [make_bdiff]
 }
 
+# Set initial manual_score equal to auto_score.
+#
 set manual_score $auto_score
 
+# Main program loop.  Print info, read command, execute
+# command, repeat.
+#
 while { "yes" } {
 
+    # Print out name of directory, scoring instructions,
+    # current scores, part of last file of interest,
+    # and command menu.
+    #
     puts "Scoring [file tail [pwd]]"
     puts "Scoring Instructions: $scoring_instructions"
     puts "Auto Score: $auto_score    Current score:\
@@ -226,11 +275,13 @@ r = reject current score, and enter new current score
 x = exit without doing anthing
 
 > "
+
+    # Input and check answer.
+    #
     set answer [gets stdin]
     if { [eof stdin] } {
     	exit 0
     }
-
     if { [llength $answer] == 0 } {
     	continue;
     } elseif { [llength $answer] > 1 } {
@@ -238,8 +289,9 @@ x = exit without doing anthing
 	continue;
     }
 
+    # Compute action and file of interest.
+    #
     set action "view"
-
     switch [lindex $answer 0] \
     	d	{ set last_file [make_diff] } \
     	b	{ set last_file [make_bdiff] } \
@@ -253,6 +305,8 @@ x = exit without doing anthing
 	x	{ set action "exit" } \
 	default	{ set action "unknown" }
 
+    # Perform action.
+    #
     switch $action \
     	view	{
 		    catch { view_file $last_file }
