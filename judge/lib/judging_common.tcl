@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/01/23 03:30:22 $
+#   $Date: 2002/01/24 15:59:11 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.67 $
+#   $Revision: 1.68 $
 #
 
 # Table of Contents
@@ -25,6 +25,7 @@
 #	Error Logging Functions
 #	Message Header Functions
 #	Reply Functions
+#	Scoring Reply Functions
 #	File Read/Write Functions
 #	Flag Functions
 #	Logical Expression Compilation
@@ -1131,6 +1132,179 @@ proc blank_body { ch } {
 	    return no
 	}
     }
+}
+
+# Scoring Reply Functions
+# ------- ----- ---------
+
+# Function to execute response instruction commands
+# after if-statement processing.
+#
+proc execute_response_commands { options commands } {
+
+    set count 0
+    set mode ""
+    set processed_commands ""
+    foreach command $commands {
+        incr count
+	if { [catch { llength $command }] } {
+	    error "In $response_instructions_file file\
+	           value, badly formatted command:\
+		   $command."
+	}
+        switch -- [lindex $command 0] {
+	    FINAL	-
+	    NON-FINAL	-
+	    NO-REPLY	{
+	        if { $count != 1 } {
+		    error "In\
+		           $response_instructions_file\
+			   file value, $command is not\
+			   the first executable\
+			   command."
+		}
+	    }
+	    BLANK		-
+	    INPUT		-
+	    RECEIVED-HEADER	-
+	    RECEIVED-BODY	{
+	        lappend processed_commands $command
+	    }
+
+	    LINE	-
+	    LINES	-
+	    BAR		{
+	        set new_command [lindex $command 0]
+		foreach string  \
+			[lrange $command 1 end] {
+		    regsub -all -- {-PROBLEM-} \
+		           $string $problem string
+		    regsub -all -- {-AUTO-SCORE-} \
+		           $string $auto_score string
+		    regsub -all -- {-MANUAL-SCORE-} \
+		           $string $manual_score string
+		    regsub -all -- {-PROPOSED-SCORE-} \
+		           $string $proposed_score string
+		    lappend new_command $string
+		}
+		lappend processed_commands $command
+	    }
+
+	    FIRST	-
+	    SUMMARY	{
+	        error "Not implemented yet: $command"
+	    }
+
+	    default	{
+		error "In $response_instructions_file\
+		       file, unrecognized command:\
+		       $command"
+	    }
+	}
+    }
+
+    if { $mode == "" } {
+	error "In $response_instructions_file file\
+	       first executable command is not\
+	       FINAL, NON-FINAL, or NO-REPLY"
+    }
+
+    eval compose_reply $options \
+         [list $processed_commands]
+}
+
+# Function to evaluate if-statement expression.
+#
+proc eval_response_if { item } {
+    global scoring_mode auto_score manual_score \
+           proposed_score
+    set manual [expr { $manual_score != "None" }]
+    set proposed [expr { $proposed_score != "None" }]
+    return [expr $item]
+}
+
+# Function to execute the if-statements in a block and
+# add to the list of commands.  Stop at end of block or
+# at EXIT.  Return `yes' if EXIT found, `no' otherwise.
+#
+proc parse_block { block commands } {
+
+    upvar $commands c
+
+    set mode none
+    foreach item $block {
+        switch $mode {
+	    if_expression {
+	        set if_value \
+		    [expr { ! $if_done \
+		            && \
+		            [eval_response_if $item] }]
+		set mode if_block
+	    }
+	    if_block {
+	        if { $if_value } {
+		    if { [parse_block $item c] } {
+		        return yes
+		    }
+		    set if_done 1
+		}
+		set mode after_if_block
+	    }
+	    after_if_block {
+	        switch -- $item {
+		    elseif {
+			set mode if_expression
+		    }
+		    else {
+		        set if_expresion \
+			    [expr { ! $if_done }]
+			set mode if_block
+		    }
+		    default {
+		        set mode none
+		    }
+		}
+	    }
+	}
+
+	if { $mode == "none" } {
+	    switch -- $item {
+		EXIT {
+		    return yes
+		}
+		if {
+		    set mode if_expression
+		    set if_done 0
+		}
+		default {
+		    lappend c $item
+		}
+	    }
+	}
+    }
+    return no
+}
+
+# Function to process $response_instructions_file value.
+# The global variables scoring_mode, auto_score,
+# manual_score, and proposed_score must be set.  The
+# latter two can be set to `None' if unused.
+#
+proc execute_response_instructions \
+    { args } {
+
+    set i [llength $args]
+    incr i -1
+    set response_instructions [lindex $args $i]
+    incr i -1
+    set options [lrange $args 0 $i]
+
+    set commands ""
+    parse_block \
+        [concat $response_instructions \
+		$default_response_instructions] \
+	commands
+    execute_response_commands $options $commands
 }
 
 # File Read/Write Functions
