@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Feb 11 20:20:19 EST 2003
+# Date:		Fri Mar 14 02:11:50 EST 2003
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2003/02/12 01:22:08 $
+#   $Date: 2003/03/14 08:45:12 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.92 $
+#   $Revision: 1.93 $
 #
 
 # Table of Contents
@@ -533,7 +533,9 @@ proc log_error { error_output } {
 # empty).  Stop reading at the first empty line and
 # discard that line.
 #
-# The results are returned in global variables:
+# The results are returned in global variables.  Unless
+# otherwise indicated, header fields are for the main
+# message header and not for a part.
 #
 #	message_header		All the lines of the
 #				header (but NOT the
@@ -545,6 +547,20 @@ proc log_error { error_output } {
 #	message_reply_to	`Reply-To:' field value.
 #	message_subject		`Subject:' field value.
 #	message_date		`Date:' field value.
+#	message_content_transfer_encoding
+#				`Content-Transfer-
+#				 Encoding:' field value.
+#				For multi-part messages,
+#				this is for the part.
+#	message_content_type	`Content-Type:' field
+#				value.  For multi-part
+#				messages, this is for
+#				the part.
+#	message_part_boundary	`boundary=' parameter
+#				value within the
+#				`Content-Type:' field
+#				value, for the main
+#				message (not a part).
 #	message_x_hpcm_date	`X-HPCM-Date:' field
 #				value.
 #	message_x_hpcm_reply_to	`X-HPCM-Reply-To:'
@@ -573,15 +589,28 @@ proc log_error { error_output } {
 #
 #	{ x-hpcm-signature-ok }
 #
+# The global message_header_error is set non-"" if
+# there is some error.  Only multipart messages can
+# have an error.
+#
+# The global message_terminator is set to a regexp that
+# matches a line that terminates the message (part)
+# body, or is set to "" if there is no such regexp.
+#
 proc read_header { ch { first_line "" }
                       { omit_fields "" } } {
     global message_header \
+	   message_header_error \
+	   message_terminator \
 	   message_From_line \
            message_from \
 	   message_to \
 	   message_date \
 	   message_reply_to \
 	   message_subject \
+	   message_content_transfer_encoding \
+	   message_content_type \
+	   message_part_boundary \
 	   message_x_hpcm_date \
 	   message_x_hpcm_reply_to \
 	   message_x_hpcm_signature \
@@ -589,12 +618,17 @@ proc read_header { ch { first_line "" }
 	   message_x_hpcm_test_subject
 
     set message_header			""
+    set message_header_error		""
+    set message_terminator		""
     set message_From_line		""
     set message_from			""
     set message_to			""
     set message_date			""
     set message_reply_to		""
     set message_subject			""
+    set message_content_transfer_encoding ""
+    set message_content_type		""
+    set message_part_boundary		""
     set message_x_hpcm_date		""
     set message_x_hpcm_reply_to		""
     set message_x_hpcm_signature	""
@@ -602,6 +636,7 @@ proc read_header { ch { first_line "" }
     set message_x_hpcm_test_subject	""
 
     set fields "from to date reply-to subject\
+    	        content-transfer-encoding content-type \
                 x-hpcm-reply-to x-hpcm-date\
 		x-hpcm-signature x-hpcm-signature-ok \
 		x-hpcm-test-subject"
@@ -633,10 +668,11 @@ proc read_header { ch { first_line "" }
 	# Loop through field names we are looking for.
 	#
 	foreach fieldname $fields {
-	    if { [regexp -nocase \
-	                 "^(${fieldname}):(.*)\$" \
-			 $line forget \
-			 realname fieldvalue] } {
+	    if { [regexp \
+	    	    -nocase \
+		    "^(${fieldname})(\ \t)*:(.*)\$" \
+		    $line forget realname forget \
+		    fieldvalue] } {
 
 		# Come here when line is for the
 		# field we are looking for.
@@ -701,6 +737,114 @@ proc read_header { ch { first_line "" }
 	# If next line is really and EOF, break.
 	#
 	if { [eof $ch] } break
+    }
+
+    # If multipart message, skip to first part satisfy-
+    # ing contraints imposed by the content-type-values
+    # and content-transfer-encoding-values global
+    #
+    set ws "\[\t\ \n\r\]"
+    set nws "\[^\t\ \n\r\]"
+    if { [regexp -nocase "^${ws}*multipart" \
+    		 $message_content_type] } {
+
+	set b1 "${ws}*boundary=\"(\[^"\])\""
+	set b2 "${ws}*boundary=(${nws}*)(${ws}|\$)"
+	if { [regexp -nocase $b1 \
+		     $message_content_type \
+		     forget boundary] } {
+	} elseif { [regexp -nocase $b2 \
+		     $message_content_type \
+		     forget boundary] } {
+	} else {
+	    set message_header_error \
+	        "No boundary parameter in Content-Type\
+		 field value of multipart message"
+	    break
+	}
+	set message_part_boundary $boundary
+
+	regsub {.} $bound {\\&} terminator
+	set terminator "--${terminator}"
+
+	# Loop through parts until one found with
+	# legal Content-Type and Content-Transfer-
+	# Encoding.
+	#
+	set type ""
+	set encoding $message_content_transfer_encoding
+	set len [string length $boundary]
+	while { "yes" } {
+
+	    set line [gets $ch]
+
+	    if { [eof $ch] } {
+	        set message_header_error \
+		    "Did not find multipart message part\
+		     that had acceptable Content-Type
+		     and Content-Transfer-Encoding"
+		break
+	    }
+
+	    if { [regexp "^${terminator}" $line] } {
+
+		# Read part header.  Get type and
+		# encoding.
+		#
+		set ct "${ws}*content-type${ws}*:"
+		set ct "${ct}${ws}*(${nws}*)(${ws}|\$)"
+		set cte \
+		    "${ws}*content-transfer-encoding"
+		set cte "${cte}${ws}:""
+		set cte "${cte}${ws}*(${nws}*)(${ws}|\$)"
+		while { "yes" } {
+
+		    set line [gets $ch]
+		    if { [eof $ch] } break
+		    if { $line == "" } break
+		    if { [regexp $ct $line \
+		                 forget type] } {
+		    } elseif { [regexp $cte $line \
+		                       forget \
+				       encoding] } {
+		    }
+		}
+
+		# If type and encoding are legal, break
+		# out with legal part found.
+		#
+		set ctv $content-type-values
+		set ctev \
+		    $content-transfer-encoding-values
+		if { [regexp "^(${ctv})\$" $type] \
+		     && [regexp "^(${ctev})\$" \
+		     	        $encoding] } break
+	    }
+	}
+
+	# Come here if legal multipart part found or
+	# message body was exhausted looking for legal
+	# part (message_header_error is set).
+
+	if { $message_header_error != "" } {
+	} elseif { $format_submissions \
+	     || $unformatted_part_end_line == "" } {
+	    set message_terminator "^${terminator}.*\$"
+	} else {
+	    set upel $unformatted_part_end_line
+	    set message_terminator \
+	        "^${terminator}.*|($upel)\$"
+	}
+    } else {
+
+        # Come here if not multi-part message.
+	#
+	if { $message_header_error != "" \
+	     && $format_submissions == "no" \
+	     && $unformatted_end_line != "" } {
+	    set message_terminator \
+	        "^${unformatted_end_line}.*\$"
+	}
     }
 }
 
