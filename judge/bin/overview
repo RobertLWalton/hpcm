@@ -4,7 +4,7 @@
 #
 # File:		makeoverview
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Dec  5 06:58:40 EST 2000
+# Date:		Tue Dec  5 20:48:50 EST 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/12/05 12:43:08 $
+#   $Date: 2000/12/06 17:01:07 $
 #   $RCSfile: overview,v $
-#   $Revision: 1.4 $
+#   $Revision: 1.5 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -36,7 +36,8 @@ puts "
 	Features
 	Creating a Contest
 	Data and Programs
-	Library Data
+	Library Data: Problem Directories
+	Library Data: Help Documentation Files
 
 Features
 --------
@@ -144,8 +145,13 @@ Maintenance Programs
     Programs run to maintain the library or test the
     HPCM system.
 
-Library Data
-------- ----
+Library Data: Problem Directories
+------- ----- ------- -----------
+
+The problem library consists of the subdirectory tree
+rooted at
+
+	hpcm/problem_library
 
 Each problem (and each demonstration problem) has its
 own directory within the problem library.  The last
@@ -165,18 +171,45 @@ These files are made available to the contestant, though
 in a formal contest only a printout of the pppp.txt file
 is made available.
 
-The solution to the problem is written in a file whose
-extension indicates the programming language of the
-solution.  Typical possibilities are:
+In order to be able to score a problem, three more files
+are placed in the problem directory within the program
+library:
+
+    pppp.in		    The judges test input.
+    pppp.test		    The judges test output.
+    Scoring_Instructions    Optional file containing
+    			    parameters that control how
+			    the automatic scoring is
+			    done (e.g., what numeric
+			    tolerances are permitted).
+
+A contest has a solutions directory that contains sym-
+bolic links to the library problem directories for every
+problem that can be judged during the contest.  The
+files just mentioned become input to the judging.
+
+In addition to the files already mentioned, the library
+problem directory usually contains a judges solution
+written in one of the contest programming languages.
+The solution is written as a file whose extension indi-
+cates the programming language of the solution.  Typical
+possibilities are:
 
     pppp.c	C language solution.
     pppp.cc	C++ language solution.
     pppp.java	JAVA language solution.
     pppp.p	PASCAL language solution.
 
-Different contests may support different languages, so
-you need to know what extensions are supported by a
-contest.  The Makefile should tell you this.
+The programming languages allowed may vary; but every
+solution language must be explicitly supported by the
+problem Makefile.
+
+It is possible to compile and run the solution within
+the library problem directory in the same manner as
+a problem is compiled and run by contestants and by the
+judge.  Doing this results in making temporary files
+that can be removed by the `make clean' command in the
+problem directory.
 
 Compilation creates a binary file named `pppp' and may
 create other files for some languages:
@@ -200,12 +233,63 @@ the Makefile reads or creates the following files:
 Its important to note that the solutions do NOT open any
 files.
 
-When a solution is judged it is given a directory by
-itself, but there are additional files in this directory
-(e.g., a Scoring_Instructions and Auto_Score file), and
-the last component of this judging directory's name is
-NOT `pppp'.
+The `make' command in the problem directory makes the
+binary program if that does not exist or it is older
+than the solution source file, and then makes the
+pppp.out file if that does not exist or it is older than
+the binary file.
 
+If a problem directory symbolically linked into a con-
+test solutions directory has pppp.out file, this file
+will be treated as the judge's output in PREFERENCE to
+any pppp.test file.  Thus if a judge finds an error in
+the judge's solution, the judge merely needs to fix
+the solution file and run the `make' command in the
+problem directory to fix the judge's output.  After the
+contest the judge can replace the pppp.test file by
+a copy of the correct pppp.out file.
+
+The `make clean' command in the problem directory de-
+letes all temporary files, including `pppp', `pppp.out',
+and `core'.
+
+The library problem directories are placed within one of
+three subdirectories of the hpcm/problem_library direc-
+tory:
+
+	demos	Demonstration problems.
+
+	public	Problems that can be freely distributed
+		to the public, without any restriction
+		on verbatim copying, and with no re-
+		striction on alteration and redistribu-
+		tion unless otherwise indicated.
+
+	private	Problems that cannot be redistributed
+		to the public.  These have been taken
+		off the web in most cases, and can be
+		distributed to true friends and colla-
+		borators or other members of your uni-
+		versity, but cannot be placed on the web
+		or be made available to strangers.
+
+The problem directories are listed in the
+
+	hpcm/problem_library/index
+
+file, which can be input to the makejudgingdir program
+to define which problems are to be used in a particular
+contest, and to create an index of these problems.
+
+Emails giving permission to make various problems public
+is in the directory
+
+	hpcm/problem_library/legal
+
+
+
+Library Data: Help Documentation Files
+------- ----- ---- ------------- -----
 
 
 "
@@ -216,4 +300,3 @@ exit 0
 #
 } caught_output
 caught_error
-
