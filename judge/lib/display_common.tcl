@@ -2,7 +2,7 @@
 #
 # File:		display_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Aug 25 10:04:44 EDT 2001
+# Date:		Sat Aug 25 21:36:24 EDT 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/08/25 15:45:17 $
+#   $Date: 2001/08/26 02:39:25 $
 #   $RCSfile: display_common.tcl,v $
-#   $Revision: 1.7 $
+#   $Revision: 1.8 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -903,7 +903,7 @@ set submitted_extension ""
 # ---------- -----
 
 # Set the window display to the file list.  Set the
-# last_display variable to `file_list'.
+# `last_display' variable to `file_list'.
 #
 proc set_file_list_display {} {
 
@@ -977,7 +977,7 @@ proc set_file_list_display {} {
 }
 
 # Set the window display to display the first lines
-# of the file.  Set the last_display variable to
+# of the file.  Set the `last_display' variable to
 # `file'.  If the file is unreadable or is not a plain
 # file, switch to displaying the file list instead.
 #
