@@ -4,7 +4,7 @@
 #
 # File:		print
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Mon Jun 25 05:33:09 EDT 2001
+# Date:		Sun Sep  9 10:00:03 EDT 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/06/25 09:45:10 $
+#   $Date: 2001/09/09 21:33:16 $
 #   $RCSfile: print,v $
-#   $Revision: 1.12 $
+#   $Revision: 1.13 $
 
 case "$1" in
    -doc* )
@@ -28,21 +28,18 @@ print [filename ...]
     puts 1 file page per paper page, and permits at
     least 60 lines on a file page.
 
-    If ~/.hpcm_contest/printer is readable the name of
-    the printer is read from this file.
-
     If ~/.hpcm_contest/who_where is readable the name of
     the current account is mapped so this file's WHERE
     field is printed in the page header in place of the
     current account name.
 
-    If ~/.hpcm_contest/printer_jobs is writable a line
-    giving the date and WHERE field (or account name)
-    is written to that file."
+    The \`printer_pipe' program is used to locate the
+    printer and update ~/.hpcm_contest/printer_jobs."
 
     	exit 1
 	;;
 esac
+
 
 
 # Compute `where' from who_where if that exists.
@@ -62,24 +59,11 @@ else
     where="$user"
 fi
 
-# Compute printer.
-#
-if test -r ${HOME}/.hpcm_contest/printer; then
-    PRINTER=`cat ${HOME}/.hpcm_contest/printer`
-fi
-
-# If printer_jobs exists, announce print job therein.
-#
-if test -w ${HOME}/.hpcm_contest/printer_jobs; then
-    line="`date`   ***   $where"
-    echo "$line" >> ${HOME}/.hpcm_contest/printer_jobs
-fi
-
 # Print files.
 #
 enscript -j -b "\$n|%W  %C  $where|\$% of \$=" \
 	--margins=48:48:: \
 	-F Courier-Bold12 -f Courier10 \
-	-P $PRINTER "$@"
+	-o - "$@" | printer_pipe "$where"
 
 exit 0

@@ -5,7 +5,7 @@
 #
 # File:		manualreply
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Sep  8 15:27:46 EDT 2001
+# Date:		Sun Sep  9 01:06:19 EDT 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/09/08 19:14:43 $
+#   $Date: 2001/09/09 21:33:39 $
 #   $RCSfile: manualreply,v $
-#   $Revision: 1.28 $
+#   $Revision: 1.29 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -132,7 +132,8 @@ pr = lookat proofs"
 # blank lines are changed to window bars by code.
 
 set help(?) "
-? WHAT		gives help for WHAT, where WHAT can be:
+? WHAT		E.g., `? ls'.  Gives help for WHAT,\
+                where WHAT can be:
 
 #  = file identifier\
 ?  = help           \
@@ -166,13 +167,12 @@ oe = Output Size Exceeded
 "
 
 set help(#) "
-#
-
-# denotes a `file identifier'.   This is one of:
+#			# denotes a `file\
+                        identifier'.   This is one of:
 
     A decimal integer, denoting the file with the given\
     	number listed
-    by the `ls' command.
+    by the last `ls' command.
 
     A file extension, beginning with a `.'.  This\
     	denotes the file with the
@@ -182,7 +182,7 @@ set help(#) "
         character of the name is
     a CAPITAL letter.  This denotes the file with the\
     	given name, if that
-    is unambigously defined.
+    is unambiguously defined.
 
 Typing a file identifier by itself as a command\
     displays the file.
@@ -191,7 +191,8 @@ Typing a file identifier by itself as a command\
 set help(x) "
 x
 
-Exit from the current program.
+Exit from the current program.  You can also do this by\
+    typing control-D.
 "
 
 set help(aj) "
@@ -277,7 +278,14 @@ is not that reliable.
 "
 
 set help(ai) "
-= autoinfo
+ai
+
+Run the `autoinfo' program in the current\
+    directory.  If the $received_file
+file has a subject of the form `get ...', the autoinfo\
+    program will send
+an email response containing the files named in the\
+    subject.
 "
 
 set help(pr) "
@@ -285,31 +293,100 @@ set help(pr) "
 "
 
 set help(c) "
-= checkoff #
+c
+c #
+
+Change the unchecked error file identified by # (or the\
+    last file displayed
+if # is omitted) to be a checked error file.  This is\
+    done by renaming the
+file so the `unchecked' part of the name becomes\
+    `checked'.
+
+Unchecked error files are searched for by programs such\
+    as `tracker', and
+brought to the attention of a person.  But checked\
+    error files are ignored by
+these programs, as they assume a checked error file\
+    has been read by a person.
 "
 
 set help(u) "
-= uncheckoff #
+u
+u #
+
+Change the checked error file identified by # (or the\
+    last file displayed
+if # is omitted) to be a unchecked error file.  This is\
+    done by renaming the
+file so the `checked' part of the name becomes\
+    `unchecked'.
+
+Unchecked error files are searched for by programs such\
+    as `tracker', and
+brought to the attention of a person.  But checked\
+    error files are ignored by
+these programs, as they assume a checked error file\
+    has been read by a person.
+
+It is unusual for a checked file to be made unchecked.
 "
 
 set help(sh) "
-= shell
+sh
+
+Execute a shell (such as csh) in the current directory\
+    as a subprogram.
+When the shell is exited, this program resumes.
 "
 
 set help(ir) "
-= initiate reply
+ir
+
+Create a reply file (named $reply_file+) and invoke an\
+    editor (e.g., vi)
+for that file.  If a reply file already exists, it is\
+    overwritten.
 "
 
 set help(er) "
-= edit reply
+er
+
+Edit an existing reply file (the file named\
+    $reply_file+), creating the
+file first if it does not already exist.
 "
 
 set help(sr) "
-= send reply
+sr
+
+Send the reply file to the submitter, after first\
+    displaying it and asking
+the user to be sure it should be send.  The reply file\
+    is the file named
+$reply_file+ that is created by the `ir' or `er'\
+    commands.
 "
 
 set help(nr) "
-= no reply
+nr
+
+Has the user type a line that is then written into a\
+    newly created one line
+$no_reply_file file.  The presence of this file\
+    indicates to HPCM that no
+reply needs to be generated for the current submission\
+    directory.  For example,
+the `tracker' program searches for submission\
+    directories that do NOT contain
+either a $reply_file file or a $no_reply_file file.
+
+The `lookat' program can search for submission\
+    directories whose $no_reply_file
+files have contents matching a regular expression, so\
+    what is written into the
+$no_reply_file can be used to find the submission\
+    directory later.
 "
 
 set help(sm) "
@@ -337,7 +414,20 @@ commands listed on both menus can be entered.
 "
 
 set help(ss) "
-= send score + mm
+ss
+
+Composes a reply message ($reply_file+ file) containing\
+    the proposed score
+and sends that message.  Sets the manual score (in the\
+    $manual_score_file file)
+to this proposed score.  If anything unusual exists,\
+    such as the presence of a
+previous manual score, the user is given a chance to\
+    edit and abort the
+message before it is sent.
+
+After the message is sent this command restores the\
+    main menu.
 "
 
 set help(io) "
@@ -828,7 +918,7 @@ while { "yes" } {
 	    refresh_info
 	}
 	{^\?} {
-	    regexp {^? *([^ ]*)$} $answer forget what
+	    regexp {^\? *([^ ]*)$} $answer forget what
 	    if { $what == "" } {
 	        set what "?"
 	    } elseif { ! [info exists help($what)] } {

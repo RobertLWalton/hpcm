@@ -1,0 +1,129 @@
+#! /bin/sh
+#
+# Pipe a postscript file to the printer associated with
+# an account.
+#
+# File:		printer_pipe
+# Author:	Bob Walton <walton@deas.harvard.edu>
+# Date:		Sun Sep  9 01:20:14 EDT 2001
+#
+# The authors have placed this program in the public
+# domain; they make no warranty and accept no liability
+# for this program.
+#
+# RCS Info (may not be true date or author):
+#
+#   $Author: hc3 $
+#   $Date: 2001/09/09 21:33:16 $
+#   $RCSfile: printer_pipe,v $
+#   $Revision: 1.1 $
+
+case "$1" in
+   -doc* )
+   	echo "
+printer_pipe where [username]
+
+    Look up the printer in the
+    
+    	~/.hpcm_contest/printer_map
+
+    file if that is readable, or the
+    
+    	~/.hpcm_contest/printer
+    
+    file otherwise, or if neither file is readable, use
+    the PRINTER environment variable.
+    
+    The printer_map file has lines with the format:
+
+    	regular-expression printer
+
+    For the first line whose regular expression matches
+    the user name, the printer is used.  If there are
+    no matches and the file exists, it is an error
+    (the `printer' file and PRINTER variable are NOT
+    used).
+
+    The `printer' file contents just name the printer.
+
+    If the user name is not given, the current account
+    name is used.
+
+    The standard input to this program should be a
+    file to be piped to the printer.  It is usually a
+    postscript file, but can be ASCII with form feeds.
+
+    If ~/.hpcm_contest/printer_jobs is writable a line
+    giving the date and where field is written to that
+    file."
+    	exit 1
+	;;
+    *)
+        where=$1
+	;;
+esac
+
+case "$2" in
+    "" )
+	user=`id -un`
+	;;
+    *)
+        user=$2
+	;;
+esac
+
+set -o noglob
+
+if test -r "${HOME}/.hpcm_contest/printer_map"
+then
+
+    # Open print map.
+    #
+    exec 3<"${HOME}/.hpcm_contest/printer_map"
+
+    # Read print map lines until match found.
+    #
+    while test x = x
+    do
+	read -r <&3 regexp printer
+	if test $? -ne 0
+	then
+	    echo >&2 Could not find printer in \
+	             printer_map.
+	    exit 1
+	fi
+
+	result=`expr "$user" : "$regexp\\\$"`
+	if test $result -ne 0
+	then
+	    break
+	fi
+    done
+
+elif test -r "${HOME}/.hpcm_contest/printer"
+then
+    printer=`cat "${HOME}/.hpcm_contest/printer"`
+elif test "${PRINTER:-}" -ne ""
+then
+    printer=PRINTER
+else
+    echo >&2 Could not find printer.
+    exit 1
+fi
+
+# If printer_jobs exists, announce print job therein.
+#
+if test -w ${HOME}/.hpcm_contest/printer_jobs; then
+    line="`date`   ***   $where   ***    $printer"
+    echo "$line" >> ${HOME}/.hpcm_contest/printer_jobs
+fi
+
+# Send the print job to the printer.
+
+case "$printer" in
+    *@*)
+    	;;
+    *)
+	exec lpr -P$printer
+    	;;
+esac
