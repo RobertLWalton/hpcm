@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Jan 14 14:10:01 EST 2002
+# Date:		Tue Jan 29 06:19:45 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/01/14 19:14:14 $
+#   $Date: 2002/01/29 11:19:49 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.11 $
+#   $Revision: 1.12 $
 
 # make
 #	Makes documentation as fprintable .doc files in
@@ -83,7 +83,7 @@ DOCS=	overview.doc \
 	contestant/TRASH_ACCOUNT.doc \
 	contestant/xcsh.doc
 
-all:	judge contestant secure test ${DOCS}
+all:	bin judge contestant secure test ${DOCS}
 
 # Kill all implicit rules
 #
@@ -101,6 +101,9 @@ fcheck:	${DOCS}
 
 hpcm_judging.rc:
 	ln -s ../lib/hpcm_judging.rc
+
+bin:
+	cd ../bin; make
 
 judge:
 	mkdir judge
