@@ -2,7 +2,7 @@
  *
  * File:	hpcm_sendmail.c
  * Authors:	Bob Walton (walton@deas.harvard.edu)
- * Date:	Wed Apr  3 09:22:43 EST 2002
+ * Date:	Wed Apr  3 11:37:26 EST 2002
  *
  * The authors have placed this program in the public
  * domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
  * RCS Info (may not be true date or author):
  *
  *   $Author: hc3 $
- *   $Date: 2002/04/03 15:10:12 $
+ *   $Date: 2002/04/03 16:43:48 $
  *   $RCSfile: hpcm_sendmail.c,v $
- *   $Revision: 1.11 $
+ *   $Revision: 1.12 $
  */
 
 #include <stdlib.h>
@@ -100,10 +100,12 @@ char documentation [] =
 "\n"
 "            /usr/sbin/sendmail -oi -t\n"
 "\n"
-"    except that this program supplies the To: field\n"
-"    value and authentication field values that will\n"
-"    send the mail to the appropriate HPCM judge and\n"
-"    will ensure that replies are sent to the sender.\n"
+"    except that this program supplies the `To:'\n"
+"    field value and authentication field values that\n"
+"    will send the mail to the appropriate HPCM judge\n"
+"    and will ensure that replies are sent to the\n"
+"    sender.  This program also supplies a `Cc:'\n"
+"    field that cc's the mail to the sender.\n"
 "\n"
 "    This program is normally setuid to a judging\n"
 "    account so it can read certain authentication\n"
