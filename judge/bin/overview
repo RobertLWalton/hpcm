@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/01/09 11:55:07 $
+#   $Date: 2001/01/09 17:07:32 $
 #   $RCSfile: overview,v $
-#   $Revision: 1.19 $
+#   $Revision: 1.20 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -51,6 +51,7 @@ puts "
 	Contest Raw Data: Submissions
 	Contest Raw Data: Get Requests
 	Contest Raw Data: Queries
+	Contest Raw Data: Data Flow
 	Contest Derived Data: Status Files
 	Contest Derived Data: Scoreboard Files
 
@@ -1397,6 +1398,92 @@ Contest Raw Data: Get Requests
 Contest Raw Data: Queries
 ------- --- ----- -------
 
+
+Contest Raw Data: Data Flow
+------- --- ----- ---- ----
+
+The flow of raw data through the HPCM system is as
+follows:
+
+		email to judge
+		     |
+		     | receivemail (called
+		     | from ~/.procmailrc)
+		     |
+		     v
+	mail_directory/dddd-<<sssss>>-submission
+	    $received_file
+		     |
+		     | dispatchmail (called
+		     | from ~/.procmailrc)
+		     | autodispatch (called
+		     | by dispatchmail)
+		     |
+		     v Test `Subject:'
++-----+-----+---------
+|     |     | Subject: not `submit ...' or `get ...'
+|     |     |
+|     |     +---> flag_directory/$needs_reply_flag_file,
+|     |           if reply_mode is not `auto';
+|     |           or $reply_file if reply_mode is `auto'
+|     |
+|     | Subject: `get ...'
+|     | autoinfo (called from autodispatch)
+|     |
+|     +----> $reply_file, $gotten_file
+|
+| Subject: `submit: pppp.eee'
+| autojudge (called from autodispatch)
++--------------+
+	       | extractmail (called from autojudge)
+	       |                 |
+	       | \[no error]      | \[error]
+	       v                 v
+	    pppp.eee        $reply_file
+	       |
+	       | autojudge
+	       | (importing from ../solutions/pppp)
+	       |
+	       v
+	    $make_file
+	    pppp.test 
+	    $scoring_instructions_file (if any)
+	       |
+	       | make pppp (called from autojudge)
+	       |
+	       v
+	    pppp (if no error)
+	    pppp.cerr (compiler standard error output)
+	       |		 |
+	       | \[pppp exists]   | \[pppp does not exist]
+	       |		 |
+	       |                 | autojudge
+	       |                 v
+	       |            $auto_score_file
+	       |		= `Syntax Error'
+	       |            $reply_file unless scoring
+	       |		is `manual'
+	       |
+	       | make pppp.out (called from autojudge)
+	       |
+	       v
+	    pppp.out (standard output)
+	    pppp.err (standard error output)
+	       |                 |
+	       | \[empty .err]    | \[non-empty .err]
+	       |                 |
+	       |                 | autojudge
+	       |                 v
+	       |            $auto_score_file
+	       |            $reply_file unless scoring
+	       |		is `manual'
+	       |
+	       | autoscore (called by autojudge)
+	       |     scorediff (called by autoscore)
+	       v
+       $auto_score_file
+       $reply_file unless scoring
+	   is `manual'
 
 Contest Derived Data: Status Files
 ------- ------- ----- ------ -----
