@@ -7,7 +7,7 @@
 #
 # File:		tracker
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Nov  2 01:30:26 EST 2001
+# Date:		Sat Nov  3 01:06:22 EST 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -16,9 +16,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/11/02 07:00:17 $
+#   $Date: 2001/11/03 07:27:37 $
 #   $RCSfile: tracker,v $
-#   $Revision: 1.11 $
+#   $Revision: 1.12 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -98,7 +98,8 @@ proc save_line { line type minlength dirname } {
 }
 
 # Read the scores from the input channel and accumulate
-# them in the approprate arrays.
+# them in info_array, rec_array, ..., chk_array,
+# err_array.
 #
 proc read_input { ch } {
 
@@ -250,6 +251,59 @@ proc read_input { ch } {
 	if { [eof $ch] } break
     }
 }
+
+# Read or re-read all input sources.
+#
+proc read_all_sources {} {
+
+    global log_directory default_log_directory \
+           judging_parameters_file judging_directory
+
+    # Read from judging directory.
+    #
+    set ch [open "|trackfinder" r]
+    read_input $ch
+    close $ch
+
+    # Read from log directory.
+    #
+    if { [file isdirectory $log_directory] } {
+	set ch [open "|trackfinder $log_directory" r]
+	read_input $ch
+	close $ch
+    }
+
+    # Read from default log directory.
+    #
+    if { [file isdirectory $default_log_directory] } {
+
+    	# Be sure judging_parameters_file (hpcm_
+	# judging.rc) is symbolically linked into this
+	# directory so trackfinder and manual reply
+	# can work in the directory.
+	#
+	set jp $judging_parameters_file
+	set dldjp $default_log_directory/$jp
+        if { ! [file readable $dldjp] } {
+            set jdjp $judging_directory/$jp
+	    if { ! [regexp {^/} $jdjp] } {
+	        set jdjp "[pwd]/$jdjp"
+	    }
+	    while { [regsub \
+	             {/([^/.]|\.[^/.])[^/]*/\.\./} \
+		     $jdjp {/} jdjp] > 0 } {}
+	    file delete -force $dldjp
+	    link_file $jdjp $dldjp
+	}
+
+	# Read from default logging directory.
+	#
+	set ch [open "|trackfinder\
+	              $default_log_directory" r]
+	read_input $ch
+	close $ch
+    }
+}
 
 # Function to return time summary by problem.
 # Arguments are possible times: min, med(ian), avg, max.
@@ -268,9 +322,9 @@ proc time_summary { args } {
     }
 
     set r "
-			    Times in Seconds
-Problem		rec-ext	ext-bin	bin-out	out-sco\
-		bin-sco rec-sco
+			            Times in Seconds
+Problem		  sub-rec rec-ext ext-bin bin-out\
+                  out-sco bin-sco   sub-sco
 "
 
     foreach dir [array names rec_array] {
@@ -286,6 +340,14 @@ Problem		rec-ext	ext-bin	bin-out	out-sco\
 	if { ! [regexp {^(.*)\.} \
 	               $filename forget problem] } \
 	    continue
+
+	if { ! [info exists sub_rec_array($problem)] } {
+	    set sub_rec_array($problem) \
+	        [list $rec_time]
+	} else {
+	    lappend sub_rec_array($problem) \
+	            $rec_time
+	}
 
 	set rec_ext_time \
 	    [expr { $ext_time - $rec_time }]
@@ -360,47 +422,51 @@ Problem		rec-ext	ext-bin	bin-out	out-sco\
 	            $bin_sco_time
 	}
 
-	set rec_sco_time \
-	    [expr { $sco_time - $rec_time }]
-	if { ! [info exists rec_sco_array($problem)] } {
-	    set rec_sco_array($problem) \
-	        [list $rec_sco_time]
+	if { ! [info exists sub_sco_array($problem)] } {
+	    set sub_sco_array($problem) \
+	        [list $sco_time]
 	} else {
-	    lappend rec_sco_array($problem) \
-	            $rec_sco_time
+	    lappend sub_sco_array($problem) \
+	            $sco_time
 	}
     }
 
     foreach problem \
-            [lsort [array names rec_ext_array]] {
+            [lsort [array names sub_rec_array]] {
 
         set min_time ""
         set avg_time ""
         set med_time ""
         set max_time ""
 
-	foreach xxx_yyy { rec_ext ext_bin bin_out \
-	                  out_sco bin_sco rec_sco } {
+	foreach xxx_yyy { sub_rec rec_ext ext_bin \
+	                  bin_out out_sco bin_sco \
+			  sub_sco } {
 	    if { ! [info exists \
 	                 ${xxx_yyy}_array($problem)] } \
 		 break
+	    if { [regexp {^sub_} $xxx_yyy] } {
+	        set format { %9d}
+	    } else {
+	        set format { %7d}
+	    }
 	    set times \
 		[lsort [set ${xxx_yyy}_array($problem)]]
 	    set min \
-		[format { %7d} [lindex $times 0]]
+		[format $format [lindex $times 0]]
 	    set len [llength $times]
 	    set med [expr { $len / 2 }]
 	    set med \
-		[format { %7d} [lindex $times $med]]
+		[format $format [lindex $times $med]]
 	    set avg 0
 	    foreach t $times {
 	        incr avg $t
 	    }
 	    set avg \
-		[format { %7d} [expr { $avg / $len }]]
+		[format $format [expr { $avg / $len }]]
 	    incr len -1
 	    set max \
-		[format { %7d} [lindex $times $len]]
+		[format $format [lindex $times $len]]
 
 	    set min_time "$min_time$min"
 	    set med_time "$med_time$med"
@@ -568,7 +634,7 @@ Problem		  cc    io    fe    ic    se    te   \
 		    "$line[format {%6d} [set $xx]]"
 	    }
 	}
-	set r "$r\n\n$line"
+	set r "$r\n$line"
     }
     
     return $r
@@ -610,7 +676,7 @@ Submitter	  cc    io    fe    ic    se    te   \
 		    "$line[format {%6d} [set $xx]]"
 	    }
 	}
-	set r "$r\n\n$line"
+	set r "$r\n$line"
     }
     
     return $r
@@ -629,6 +695,11 @@ proc clear_list {} {
     set directory_list		""
     set directory_list_length	0
 }
+
+# All the add_xxx functions return a printable
+# summary string that contains two lines per directory.
+# There is a blank line (initial \n) at the beginning
+# of the returned string and NO \n after the last line.
 
 # Add directories with unchecked errors to directory
 # list, and return printable summary string.
@@ -813,6 +884,19 @@ proc add_auto {} {
     return $result
 }
 
+# Clip output of add functions to n - m directories.
+#
+proc clip { out m n } {
+    set limit [expr { $n - $m }]
+    set outlist [split $out "\n"]
+    set len [llength $outlist]
+    if { 2 * $limit < $len - 1 } {
+	set offset [expr { 2 * $limit }]
+	set out [join [lrange $outlist 0 $offset] "\n"]
+    }
+    return $out
+}
+
 # Return summary of successful replies, etc.
 #
 proc summary {} {
@@ -886,6 +970,101 @@ proc summary {} {
     return $r
 }
 
+# Recompute and display list of directories.  If list
+# is empty, display summary.
+#
+proc display_directory_list {} {
+
+    global directory_list_length scoring_mode \
+    	   directory_list mail_directory
+
+    clear_list
+
+    set err_list [add_err]
+    set err_last $directory_list_length
+    set queries_list [add_queries]
+    set queries_last $directory_list_length
+    set pid_list [add_pid]
+    set pid_last $directory_list_length
+    if { $scoring_mode != "auto" } {
+	set score_list [add_score]
+    } else {
+	set score_list ""
+    }
+    set score_last $directory_list_length
+
+    if { $directory_list_length == 0 } {
+
+	set auto_list [add_auto]
+	if { $directory_list_length != 0 } {
+
+	    set list ""
+	    foreach dir $directory_list {
+		if { [regexp \
+		      {^[^<>]*-<<.*>>-submission$} \
+		      $dir] } {
+		    set dir $mail_directory/$dir
+		}
+		lappend list $dir
+	    }
+	    set ch [open "|trackfinder\
+			  [join $list]" r]
+	    read_input $ch
+	    close $ch
+	    clear_list
+	    set auto_list [add_auto]
+	}
+
+	if { $directory_list_length == 0 } {
+	    puts "\n\n\n\n\n\n\n\n[summary]"
+	} else {
+	    puts "1-$directory_list_length.\
+		  Are being automatically\
+		  processed;"
+	    puts "You should not need to do\
+		  anything."
+	    puts [clip $auto_list 0 5]
+	}
+    } else {
+	set o ""
+	set f 0
+	if { $err_list != "" } {
+	    incr f
+	    set o "$o\n$f-$err_last. \
+		   Unchecked Errors"
+	    set o \
+		"$o[clip $err_list 0 5]"
+	    set f $err_last
+	}
+	if { $queries_list != "" } {
+	    incr f
+	    set o "$o\n$f-$queries_last. \
+		   Queries"
+	    set o \
+		"$o[clip $queries_list $err_last 5]"
+	    set f $queries_last
+	}
+	if { $pid_list != "" } {
+	    incr f
+	    set o "$o\n$f-$pid_last. \
+		   Stuck Submissions"
+	    set o \
+		"$o[clip $pid_list $queries_last 5]"
+	    set f $pid_last
+	}
+	if { $score_list != "" } {
+	    incr f
+	    set o "$o\n$f-$score_last. \
+		   Submissions Needing Manual\
+		   Scoring"
+	    set o \
+		"$o[clip $score_list $pid_last 5]"
+	    set f $score_last
+	}
+	puts $o
+    }
+}
+
 # Given the number of an entry in the directory list,
 # call manualreply for that directory, and on return
 # reread that directory.  Return a string that can be
@@ -916,174 +1095,65 @@ proc call_manualreply { index } {
 
     return "Done with [file tail $dir]"
 }
-
-# Clip output of add functions to n - m directories.
+
+# Initialize data base.
 #
-proc clip { out m n } {
-    set limit [expr { $n - $m }]
-    set outlist [split $out "\n"]
-    set len [llength $outlist]
-    if { 2 * $limit < $len - 1 } {
-	set offset [expr { 2 * $limit }]
-	set out [join [lrange $outlist 0 $offset] "\n"]
-    }
-    return $out
-}
+read_all_sources
 
-# Loop until eof.
+# Main menu loop.
 #
+# The display consists of what the command prints
+# followed by a blank line, a second line (or lines)
+# equal to $output, and then the prompt line.
+#
+set default_output "? == help  ls == directory list \
+                    # = manualreply directory #\
+		    ti = times  etc"
+set output $default_output
+display_directory_list
 while { "yes" } {
 
-    # Read or re-read all input sources.
-    #
-    set ch [open "|trackfinder" r]
-    read_input $ch
-    close $ch
-    if { [file isdirectory $log_directory] } {
-	set ch [open "|trackfinder $log_directory" r]
-	read_input $ch
-	close $ch
-    }
-    if { [file isdirectory $default_log_directory] } {
-	set jp $judging_parameters_file
-	set dldjp $default_log_directory/$jp
-        if { ! [file readable $dldjp] } {
-            set jdjp $judging_directory/$jp
-	    if { ! [regexp {^/} $jdjp] } {
-	        set jdjp "[pwd]/$jdjp"
-	    }
-	    while { [regsub \
-	             {/([^/.]|\.[^/.])[^/]*/\.\./} \
-		     $jdjp {/} jdjp] > 0 } {}
-	    file delete -force $dldjp
-	    link_file $jdjp $dldjp
-	}
-	set ch [open "|trackfinder\
-	              $default_log_directory" r]
-	read_input $ch
-	close $ch
-    }
+    puts ""
+    puts "$output"
+    puts -nonewline "> "
+    flush stdout
 
-    set output ""
-    while { "yes" } {
-        clear_list
-
-	set err_list [add_err]
-	set err_last $directory_list_length
-	set queries_list [add_queries]
-	set queries_last $directory_list_length
-	set pid_list [add_pid]
-	set pid_last $directory_list_length
-	if { $scoring_mode != "auto" } {
-	    set score_list [add_score]
-	} else {
-	    set score_list ""
-	}
-	set score_last $directory_list_length
-
-	if { $directory_list_length == 0 } {
-
-	    set auto_list [add_auto]
-	    if { $directory_list_length != 0 } {
-
-		set list ""
-		foreach dir $directory_list {
-		    if { [regexp \
-		          {^[^<>]*-<<.*>>-submission$} \
-			  $dir] } {
-			set dir $mail_directory/$dir
-		    }
-		    lappend list $dir
-		}
-		set ch [open "|trackfinder\
-			      [join $list]" r]
-		read_input $ch
-		close $ch
-		clear_list
-		set auto_list [add_auto]
-	    }
-
-	    if { $directory_list_length == 0 } {
-		puts "\n[summary]"
-	    } else {
-	        puts "1-$directory_list_length.\
-		      Are being automatically\
-		      processed;"
-		puts "You should not need to do\
-		      anything."
-		puts [clip $auto_list 0 5]
-	    }
-	} else {
-	    set o ""
-	    set f 0
-	    if { $err_list != "" } {
-	        incr f
-	        set o "$o\n$f-$err_last. \
-		       Unchecked Errors"
-	        set o \
-		    "$o[clip $err_list 0 5]"
-		set f $err_last
-	    }
-	    if { $queries_list != "" } {
-	        incr f
-	        set o "$o\n$f-$queries_last. \
-		       Queries"
-	        set o \
-		    "$o[clip $queries_list $err_last 5]"
-		set f $queries_last
-	    }
-	    if { $pid_list != "" } {
-	        incr f
-	        set o "$o\n$f-$pid_last. \
-		       Stuck Submissions"
-	        set o \
-		    "$o[clip $pid_list $queries_last 5]"
-		set f $pid_last
-	    }
-	    if { $score_list != "" } {
-	        incr f
-	        set o "$o\n$f-$score_last. \
-		       Submissions Needing Manual\
-		       Scoring"
-	        set o \
-		    "$o[clip $score_list $pid_last 5]"
-		set f $score_last
-	    }
-	    puts $o
-	}
-	puts ""
-	puts "$output"
-	puts -nonewline "> "
-	flush stdout
-	set answer [string trim [gets stdin]]
-	if { [eof stdin] } break
-	switch -regexp -- $answer {
-	    {^ti} {
-		set args [lrange $answer 1 end]
-		if { [llength $args] == 0 } {
-		    set args {med avg}
-		}
-	        puts [eval time_summary $args]
-		continue?
-	    }
-	    {^pr} {
-	        puts [problem_score_summary]
-		continue?
-	    }
-	    {^su} {
-	        puts [submitter_score_summary]
-		continue?
-	    }
-	    default {
-		if { ! [catch { expr { $answer } }] } {
-		    set output \
-		    	[call_manualreply $answer]
-		}
-	    }
-	}
-    }
-
+    set answer [string trim [gets stdin]]
     if { [eof stdin] } break
+
+    set output $default_output
+    switch -regexp -- $answer {
+	{^ti} {
+	    set args [lrange $answer 1 end]
+	    if { [llength $args] == 0 } {
+		set args {med avg}
+	    }
+	    puts [eval time_summary $args]
+	    set output "ti \[min\] \[med\] \[avg\]\
+	                \[max\] = display min, median,\
+			average, max times"
+	}
+	{^pr} {
+	    puts [problem_score_summary]
+	}
+	{^su} {
+	    puts [submitter_score_summary]
+	}
+	{^ls$} -
+	{^di} -
+	{^li} {
+	    display_directory_list
+	}
+	{^[0-9]+$} {
+	    set output [call_manualreply $answer]
+	    display_directory_list
+	}
+	default {
+	    set output "Did not understand `$answer'.  \
+	                Type ? for help."
+	    display_directory_list
+	}
+    }
 }
 
 exit 0
