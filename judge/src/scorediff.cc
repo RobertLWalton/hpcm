@@ -2,7 +2,7 @@
 //
 // File:	scorediff.cc
 // Authors:	Bob Walton (walton@deas.harvard.edu)
-// Date:	Sat Nov  3 05:43:37 EST 2001
+// Date:	Sat Nov  3 06:57:20 EST 2001
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: hc3 $
-//   $Date: 2001/11/03 11:44:44 $
+//   $Date: 2001/11/03 12:11:22 $
 //   $RCSfile: scorediff.cc,v $
-//   $Revision: 1.38 $
+//   $Revision: 1.39 $
 
 // This is version 2, a major revision of the first
 // scorediff program.  This version is more explicitly
@@ -215,19 +215,23 @@ char documentation [] =
 "    not identical with case ignored), then special\n"
 "    rules apply if one of the tokens is a number or\n"
 "    if one of the tokens is a remainder of a split\n"
-"    word.  Specifically, if one of the tokens is a\n"
-"    number and one is a word, only the word is skip-\n"
-"    ped over, on the theory that if consecutive\n"
-"    numbers in the files are equal then any word\n"
-"    mismatches may be formatting errors (or they may\n"
-"    not be, as this is not up to scorediff to de-\n"
-"    cide).  If both tokens are words, but one is a\n"
-"    remainder of a split word, then only this re-\n"
-"    mainder is skipped, on the theory that it should\n"
-"    have been part of the previous match.  In all\n"
-"    cases, mismatches that have occurred before\n"
-"    these special rules are applied are reported\n"
-"    without any attention to the special rules.\n"
+"    word.  Specifically, if both tokens are words,\n"
+"    but one is a remainder of a split word, then\n"
+"    only this remainder is skipped, on the theory\n"
+"    that it should have been part of the previous\n"
+"    match.  Otherwise, if one of the tokens is fol-\n"
+"    lowed by white space containing a new line or\n"
+"    ending with an end of file, and the other token\n"
+"    is not so followed, only the second token is\n"
+"    skipped, on the theory that line ends should\n"
+"    match.  And if neither of the last two rules\n"
+"    apply, but one of the tokens is a number and one\n"
+"    is a word, only the word is skipped over, on the\n"
+"    theory consecutive numbers in the files should\n"
+"    be matched.  In all cases, mismatches that have\n"
+"    occurred before these special rules are applied\n"
+"    are reported without any attention to the\n"
+"    special rules.\n"
 "\n"
 "    Note that failure to separate words by space,\n"
 "    provided the words are otherwise correct except\n"
@@ -409,7 +413,7 @@ struct file
     			// from a split token.
 
     // One of the following two switches is set by scan-
-    // ning whitespace into `back' if by the before_nl
+    // ning whitespace into `back' by the before_nl
     // function.
     //
     bool before_nl;	// True if whitespace following
@@ -472,7 +476,8 @@ struct file
     // where # denotes any digit.  Can also be set to a
     // single character following a token.  Can also
     // set set to part of the whitespace following a
-    // token (by before_nl).
+    // token (by before_nl), and this whitespace can
+    // be followed by a single non-whitespace character.
 
     char * back;	// If pointing at `\0', there
     			// are no backed up characters
@@ -551,10 +556,10 @@ void token_too_long ( file & f ) {
 //
 void scan_token ( file & f )
 {
+    if ( f.type == EOF_TOKEN ) return;
+
     f.before_nl		= false;
     f.not_before_nl	= false;
-
-    if ( f.type == EOF_TOKEN ) return;
 
     if ( f.remainder_length != 0 )
     {
