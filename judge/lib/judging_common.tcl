@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/10/02 14:01:21 $
+#   $Date: 2000/10/02 14:30:02 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.40 $
+#   $Revision: 1.41 $
 #
 
 # Include this code in TCL program via:
@@ -992,6 +992,7 @@ proc write_file { filename line } {
 # Set flag.
 #
 proc set_flag { flagfilename } {
+    global flag_directory
     mkdir $flag_directory
     set file_ch [open $flag_directory/$flagfilename w]
     close $file_ch
@@ -999,13 +1000,15 @@ proc set_flag { flagfilename } {
 
 # Test flag.
 #
-proc set_flag { flagfilename } {
+proc test_flag { flagfilename } {
+    global flag_directory
     return [file exists $flag_directory/$flagfilename]
 }
 
 # clear flag.
 #
-proc set_flag { flagfilename } {
+proc clear_flag { flagfilename } {
+    global flag_directory
     file delete -force $flag_directory/$flagfilename
 }
 
