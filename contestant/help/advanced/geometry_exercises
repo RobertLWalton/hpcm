@@ -1,6 +1,6 @@
-GEOMETRY EXERCISES HELP    Mon Mar 15 07:47:38 EST 2004
+GEOMETRY EXERCISES HELP    Fri Mar 19 01:20:41 EST 2004
 
-These are programming excercises you can do to help
+These are programming exercises you can do to help
 strengthen your geometry problem skills.
 
 Distances:
@@ -29,8 +29,9 @@ Ditto for the finite line segment from (x1,y1) to
 (x2,y2).
 
     Method: Change coordinates so the finite line seg-
-    ment is from (0,0) to (k,0).  Then  divide into
-    three cases: x < 0, x > k, 0 <= x <= k.
+    ment is from (0,0) to (k,0) and the point coordi-
+    nates are (x',y').  Then  divide into three cases:
+    x' < 0, 0 <= x' <= k, k < x'.
 
 Compute the distance between the finite line segment
 from (xa1,ya1) to (xa2,ya2) and the finite line segment
@@ -41,11 +42,11 @@ from (xb1,yb1) to (xb1,yb2).
     segment into three segments at the intersections of
     the lines x = 0 and x = k.  For the middle segment
     the distance is the minimum of the absolute value
-    of the y corrdinates at the end points.  For the
+    of the y coordinates at the end points.  For the
     other segments it is the distance between the other
     segment and either (0,0) or (k,0).  Take the  min-
-    imum of the three distances (one or two of which may
-    be missing).
+    imum of the three distances (some of which may be
+    missing if their segment is missing).
 
 Compute the distance between a point (x,y,z) and an
 infinite line through points (x1,y1,z1) and (x2,y2,z2).
@@ -72,14 +73,16 @@ infinite line through points (x1,y1,z1) and (x2,y2,z2).
     rotations of the order UX,UY,UZ.
 
     Examine U1 x UX, U1 x UY, U1 x UZ and take the first
-    of these that has length > 0.5 (one will).  Normal-
-    ize this to a unit vector, call it U2, and take
-    U3 = U1 x U2.  Then U1, U2, U3 are an orthogonal
-    basis and U1 is in the direction of the line.  By
-    computing coordinates of the line and point in the
-    directions U2 and U3, and taking the difference,
-    one can compute the distance between the line and
-    point.
+    of these that has length > 0.5 (at least one will
+    qualify).  Normalize this to a unit vector, call it
+    U2, and take U3 = U1 x U2.  Then U1, U2, U3 are an
+    orthogonal basis and U1 is in the direction of the
+    line.  By computing coordinates of the line and point
+    in the directions U2 and U3, one can project both
+    on a plane perpendicular to the line, in which case
+    the line is projected to a point, and the distance
+    required is the 2D distance of the two projection
+    points.
 
 Compute the distance between a point (x,y,z) and an
 finite line from (x1,y1,z1) to (x2,y2,z2).
@@ -104,14 +107,14 @@ ments.
 
     Method: Change coordinates so one segment is from
     (0,0,0) to (k,0,0).  Divide the other segment into
-    three using the intersections of that segment with
-    the x = 0 and x = k planes.  Compute the distance
-    from the three parts to (0,0,0), the x-axis, and
-    (k,0,0) respectively and take the minimum of the
+    three parts using the intersections of that segment
+    with the x = 0 and x = k planes.  Compute the dis-
+    tance from the three parts to (0,0,0), the x-axis,
+    and (k,0,0) respectively and take the minimum of the
     three distances.
 
 Intersection of a line segment B from (x1,y1) to (x2,y2)
-with an other line segment C from (x3,y3) to (x4,y4),
+with another line segment C from (x3,y3) to (x4,y4),
 with `corner cases'.
 
     Compute (dx,dy) = (x2-x1,y2-x1) so that (dy,-dx) is
@@ -120,34 +123,45 @@ with `corner cases'.
     you can compute whether any point is to the right
     of, on, or to the left of the infinite directed
     line extending B by comparing the dot product of
-    the pointe with (dy,-dx) with the dot product of
-    (x1,y1) with (dy,-dx).  The computation of being
-    `on' the line requires that the corrdinates all be
-    multiples of some quantum Q.  Then dot products are
-    taken as equal if they are within Q**2/2 of each
-    other, assuming the accuracy of computation is much
-    better than Q**2.
+    the point with (dy,-dx) with the dot product of
+    (x1,y1) (or equivalently (x2,y2)) with (dy,-dx).
+    The computation of being `on' the line requires that
+    the coordinates all be multiples of some quantum Q.
+    Then dot products are taken as equal if they are
+    within Q**2/4 of each other, assuming the accuracy
+    of computation is much better than Q**2.  If the
+    coordinates are integers, you can dispense with
+    Q and use integer arithmetic for the dot products
+    and comparisons.
 
     In order for the line segments to intersect at a
     mid-point of both segments, the end points of each
     segment must be on opposite sides of the other seg-
-    ment, and this suffices.  Interpolition using the
+    ment, and this suffices.  Interpolation using the
     values of dot products with (-dy,dx) can be used
-    to easily determine the location of the intersec-
-    tion.
+    to determine the location of the intersection.
 
-    If the end points of each segment are NOT on the
-    same side of the other segment, either there is
-    an intersection which is one of the end points, or
-    the two segments are parellel.  The later case is
+    Otherwise, if the end points of each segment are NOT
+    on the same side of the other segment, either there
+    is an intersection which is one of the end points,
+    or the two segments are parallel.  The later case is
     just that in which both endpoints of one segment are
     on the infinite line extending the other segment,
     in which case the same statement is true with the
     segments switched.  In the parallel case it is
     possible for the segments to overlap or be separate.
+    You need to take dot products with (dx,dy) and
+    compare these to see if there is an overlap.
+
+A non-degenerate polygon is a sequence of vertices in
+clockwise (or counterclockwise) order defining the
+line segments of the boundary of the polygon, such that
+the only intersections of two segments are those at the
+endpoints of successive segments in the circular list
+of segments.
 
 Find all the intersections of a 2D line segment and a
-boundary of a polygon.
+boundary of a non-degenerate polygon.
 
     Method: You can find all the intersections of the
     line segment and the polygon side segments.  The
@@ -158,10 +172,11 @@ Determine if a 2D line segment intersects the interior
 of a non-degenerate polygon.
 
     Method: Find the intersections of the line segment
-    and the boundary of the polygon.  The hard case
-    is when an intersection is a vertex of the polygon:
-    the line segment might pass into the interior or
-    be tangential to the polygon.
+    and the boundary of the polygon.
+    
+    One hard case is when an intersection is a vertex of
+    the polygon: the line segment might pass into the
+    interior or be tangential to the polygon.
 
     You therefore have a vertex with up to 4 line seg-
     ments leaving it: two polygon sides and 1 or 2 parts
@@ -172,12 +187,13 @@ of a non-degenerate polygon.
     Treating polygon sides as clockwise directed, let
     OUT be the outgoing side and IN the incoming side
     and LINE a line part directed out from the vertex.
-    Measure the counterclockwise angles from OUT to the
-    segments -IN and LINE, and normalize these angles to
-    the range [0,2pi).  Then letting OUT, -IN, and LINE
-    denote the angles, so OUT = 0 and -IN > 0, we have
-    that LINE goes into the interior of the polygon iff
-    LINE > -IN.
+    Let -IN bet the incoming side with direction revers-
+    ed.  Measure the counterclockwise angles from OUT to
+    the segments -IN and LINE, and normalize these
+    angles to the range [0,2pi).  Then letting OUT, -IN,
+    and LINE denote the angles, so OUT = 0 and -IN > 0,
+    we have that LINE goes into the interior of the
+    polygon iff LINE > -IN.
 
     You need to decide when angles are exactly equal.
     Let point coordinates all have absolute value less
@@ -195,232 +211,104 @@ of a non-degenerate polygon.
     	while ( X < - ACC ) X += 2pi
     	while ( X > 2pi - ACC ) X -= 2pi
 
+    The other hard case is when the line segment and
+    a boundary segment are parallel on the same infinite
+    line.  Then one of there vertices may be in both
+    segments, and this vertex can be treated as the
+    intersection vertex and the above methods applied
+    after identifying OUT, IN, and LINE.  If the vertex
+    is not a vertex of the polygon, then we will have
+    OUT = IN direction-wise.
 
-
-    
-
-with a little algebra.
-
-A clockwise rotation R(theta) of a vector v=(vx,vy) by
-an angle theta is
-
-	         |   cos(theta)   sin(theta) | | vx |
-    R(theta).v = |                           | |    |
-	         | - sin(theta)   cos(theta) | | vy |
-
-	      |   vx cos(theta) + vy sin(theta) |
-	    = |                                 |
-	      | - vx sin(theta) + vy cos(theta) |
-
-Most particularly, if theta = 90 degrees, then
-
-		
-	                |  0   1 |
-	R(90 degrees) = |        |
-	                | -1   0 |
-
-
-        R(90 degrees).v =  (vy,-vx)
-
-These are all the basics you need to know.  However,
-you need to know these basics very well.
-
-
-Lines Dividing Planes
------ -------- ------
-
-The line through points p and q, oriented in the
-direction from p to q (p != q is assumed), divides the
-plane into three parts: points to the right of the
-line (facing in the direction from p to q), points to
-the left of the line, and points on the line.  How do
-we find out whether a point r is to the right, left,
-or on the line?
-
-Simply compute:
-
-    v = R(90 degrees).(q-p) = (qy-py,-qx+px)
-
-    Note: then v.q = v.p.
-
-    if v.r > v.p then r is to the right of the line;
-    if v.r < v.p then r is to the left of the line;
-    if v.r = v.p then r is on the line.
-
-v is the vector from p to q rotated 90 degrees clock-
-wise, so it points to the right of the line through p
-and q.  Then
-
-	 q - p                   v
-	-------		and	---
-	|q - p|                 |v|
-
-are a pair of unit length vectors at right angles to
-each other and form a coordinate system.  Therefore
-
-	v.r
-	---
-	|v|
-
-is the coordinate in this coordinate system in the
-direction perpendicular to the line through p and q, and
-this is >, =, or < to v.p/|v| according to whether r is
-to the right, on, or to the left of this line.
-
-Note that if p, q, and r have integer coordinates, then
-v.r and v.p are integers and are exact, and the clas-
-sification of r as to the right, on, or to the left of
-the line is exact, with no chance of roundoff error.
-
-Sometimes the distance from r to the line from p to q
-is desired.  This is just the absolute value of
-
-	    v.r 
-	    ---
-	    |v|
-
-
-The Distance of a Point to a Finite Line
---- -------- -- - ----- -- - ------ ----
-
-We just indicated how to find the distance between a
-point r and an infinite line that runs through two
-points p and q.  What if the line is finite with ends p
-and q.
-
-This can be readily solved if the line is parallel to
-the x-axis.  Suppose it is and the x coordinates of p
-and q are px < qx, and the x coordinate of r is rx.
-Then if rx <= px, the distance from r to the line is the
-distance from r to p.  Similarly if rx >= qx then the
-distance from r to the line is the distance from r to q.
-But if px < rx < qx, then distance from r to the line is
-the distance from r to the point on the line with the
-same x coordinate as r.  This is just the absolute value
-of ry - py (note py = qy).
-
-In order to find the distance when the line is not
-parallel to the x-axis, we introduce new coordinates in
-which the line will be parallel to the x-axis.  To do
-this we find orthogonal unit vectors u and v such that
-u is parallel to the line.  Then the new x coordinates
-are u.r, u.p, u.q and the new y coordinates are v.r and
-v.p = v.q.
-
-
-Intersection
-------------
-
-Suppose we are given four points, p1, p2, q1, q2.
-Question: Does the interior of the finite line from p1
-to p2 intersect the interior of the finite line from q1
-to q2.  By the interior of a line we mean the part of
-the line that excludes its end points.  Also, we do NOT
-count as intersections parallel lines that overlap.
-
-Answer: It does iff the infinite line through p1 and p2
-splits q1 and q2, and the infinite line through q1 and
-q2 splits p1 and p2, where for an infinite line to split
-two points means that one point must be to the right of
-the line and the other point must be to the left of the
-line.  Note that we can assume p1 != p2 and q1 != q2, as
-otherwise at least one of the two finite lines would
-have no interior.
-
-Suppose instead we wanted to know whether the finite
-lines including end points intersect.  Then we change
-the definition of split so that an infinite line splits
-two points iff one point is on or to the right of the
-line and the other point is on or to the left.  Also
-we can mix our two definitions of `split' to test
-whether one finite line, including its end points,
-intersects the interior of another finite line.
-
-
-Convex Hull
------- ----
+A polygon is convex if and only if every line segment
+between two points inside the polygon is completely
+inside the polygon.
 
 The convex hull of a set of points V in a plane is a
-sequence of points of V, p1, p2, p3, ..., p(N), such
-that for every i, all the points of V are on or to the
-right of the line through p(i) and p((i mod N)+1), and
-such that no point p(j) is on this line except of course
-p(i) and p((i mod N)+1).  Then the finite lines from
-p(i) to p((i mode N)+1) for i = 1, ..., N are the sides
-of the smallest convex polygon such that all the points
-of V are inside this polygon or on its boundary.
+sequence of points of V, p(1), ..., p(N), such that
+for every i, all the points of V are on or to the
+right of the line through p(i) and p((i mod N)+1),
+and such that no point p(j) is on this line except
+of course p(i) and p((i mod N)+1).  Then the finite
+lines from p(i) to p((i mod N)+1) for i = 1, ..., N
+are the sides of the smallest convex polygon such
+that all the points of V are inside this polygon or
+on its boundary.
 
-To find the convex hull, first find some point p1 on the
-hull, which can be done say by choosing a leftmost point
-in V and given two leftmost points choosing the highest.
-Then extend the hull recursively from p(i) to p(i+1)
-by using the following.
+Find the convex hull of a set of 2D points.
 
-Given a point p, define a relation among points q1, q2
-that are not equal to p as follows:
+    To find the convex hull, first find some point p(1)
+    on the hull, which can be done say by choosing a
+    leftmost point in V and given two leftmost points
+    choosing the highest.  Then extend the hull recur-
+    sively from p(i) to p(i+1) by using the following.
 
-    definition:  q1 > q2 iff q2 is to the right of
-			     the line from p to q1
-			     or q2 is on this line and
-			     closer to p that q1 is.
+    Given a point p, define a relation among points q1,
+    q2 that are not equal to p as follows:
 
-If p is a hull point, this relation is antisymmetric and
-transitive (proof to reader).  So given the hull up to
-p(i), choose p(i+1) to be the maximum point in V accord-
-ing to this relation.  Stop when p(i+1) = p1, in which
-case N=i.
+	definition:  q1 > q2 iff q2 is to the right of
+				 the line from p to q1
+				 or q2 is on this line
+				 and closer to p than
+				 q1 is.
 
-This is not the fastest algorithm, as it has time
-O(|V|**2) where |V| is the number of points in V.  The
-fastest algorithm is the Gram-Schmidt algorithm that
-begins with a sort of V and has running time dominated
-by the sort time, O(|V| log|V|).
+    If p is a hull point, this relation is antisymmetric
+    and transitive (proof to reader).  So given the hull
+    up to p(i), choose p(i+1) to be the maximum point in
+    V according to this relation.  Stop when p(i+1) =
+    p(1), in which case N=i.
 
-
-Inside Convex Polygons
------- ------ --------
+    This is not the fastest algorithm, as it has time
+    O(|V|**2) where |V| is the number of points in V.
+    The fastest algorithm is the Gram-Schmidt algorithm
+    that begins with a sort of V and has running time
+    dominated by the sort time, O(|V| log|V|).
 
-Suppose we have a convex hull p1, ..., p(N) in clockwise
-order that defines a convex polygon.  So the sides of
-the polygon with a clockwise orientation are the lines
-from p(i) to p((i mod N)+1), for i = 1, ..., N.  We
-assume no three of these points lie on the same line.
+Find whether some point r is inside a convex polygon.
 
-Then a point r is inside the convex polygon but not on
-the boundary of the polygon iff r is to the right of
-each clockwise oriented side of the polygon.  Or more
-specifically, r is to the right of the infinite line
-that extends the side.
+TBD
 
-So when does the interior of a line from r1 to r2 inter-
-sect the inside of a convex polygon?  It does if the
-interior of the line from r1 to r2 intersects the inter-
-ior of any side of the polygon.  It also does if r1 and
-r2 are both inside or on the boundary of the polygon,
-but are not both on the same single side of the polygon.
+    Suppose we have a convex hull p(1), ..., p(N) in clockwise
+    order that defines a convex polygon.  So the sides of
+    the polygon with a clockwise orientation are the lines
+    from p(i) to p((i mod N)+1), for i = 1, ..., N.  We
+    assume no three of these points lie on the same line.
 
-These are the only two cases where the interior of the
-line from r1 to r2 can intersect the interior of the
-polygon, UNLESS some of the convex hull points p1, ...,
-p(N) are in the interior of the line from r1 to r2.  In
-this last case, use a convex hull point in the interior
-of the line to divide the line in two, and recursively
-ask if the interiors of either of the two new line seg-
-ments intersect the interior of the polygon.
-
-So all one has to do is take the clockwise sides of the
-polygon and check that the interior of the finite line
-from r1 and r2 intersects the interior of some side, or
-that for each polygon side, r1 and r2 are both on or to
-the right of the infinite line extending the side, and
-r1 and r2 are not both on that line.  During this pro-
-cess one checks each convex hull point p to see if it is
-in the interior of the line from r1 to r2, and if it is,
-one then divides the line from r1 to r2 up into two
-segments, one from r1 to p and one from p to r2, and
-then one applies the algorithm recursively to see if the
-interior of either of these two segments intersects the
-interior of the polygon.
+    Then a point r is inside the convex polygon but not on
+    the boundary of the polygon iff r is to the right of
+    each clockwise oriented side of the polygon.  Or more
+    specifically, r is to the right of the infinite line
+    that extends the side.
+
+    So when does the interior of a line from r1 to r2 inter-
+    sect the inside of a convex polygon?  It does if the
+    interior of the line from r1 to r2 intersects the inter-
+    ior of any side of the polygon.  It also does if r1 and
+    r2 are both inside or on the boundary of the polygon,
+    but are not both on the same single side of the polygon.
+
+    These are the only two cases where the interior of the
+    line from r1 to r2 can intersect the interior of the
+    polygon, UNLESS some of the convex hull points p1, ...,
+    p(N) are in the interior of the line from r1 to r2.  In
+    this last case, use a convex hull point in the interior
+    of the line to divide the line in two, and recursively
+    ask if the interiors of either of the two new line seg-
+    ments intersect the interior of the polygon.
+
+    So all one has to do is take the clockwise sides of the
+    polygon and check that the interior of the finite line
+    from r1 and r2 intersects the interior of some side, or
+    that for each polygon side, r1 and r2 are both on or to
+    the right of the infinite line extending the side, and
+    r1 and r2 are not both on that line.  During this pro-
+    cess one checks each convex hull point p to see if it is
+    in the interior of the line from r1 to r2, and if it is,
+    one then divides the line from r1 to r2 up into two
+    segments, one from r1 to p and one from p to r2, and
+    then one applies the algorithm recursively to see if the
+    interior of either of these two segments intersects the
+    interior of the polygon.
 
 
 Polygon Maze
@@ -455,6 +343,29 @@ Find the shortest path between two points in a plane
 that has circular holes in it.  The part of a path
 that transverses a hole does NOT count toward the
 length of the path.
+
+Rotate 2D coordinates.
+
+    A clockwise rotation R(theta) of a vector v=(vx,vy)
+    by an angle theta is
+
+		   |   cos(theta)   sin(theta) | | vx |
+      R(theta).v = |                           | |    |
+		   | - sin(theta)   cos(theta) | | vy |
+
+		  |   vx cos(theta) + vy sin(theta) |
+		= |                                 |
+		  | - vx sin(theta) + vy cos(theta) |
+
+    Most particularly, if theta = 90 degrees, then
+
+		    
+			    |  0   1 |
+	    R(90 degrees) = |        |
+			    | -1   0 |
+
+
+	    R(90 degrees).v =  (vy,-vx)
 
 
 Robot Arms
@@ -518,7 +429,7 @@ file.
 RCS Info (may not be true date or author):
 
     $Author: hc3 $
-    $Date: 2004/03/15 19:24:35 $
+    $Date: 2004/03/19 07:00:16 $
     $RCSfile: geometry_exercises,v $
-    $Revision: 1.1 $
+    $Revision: 1.2 $
 
