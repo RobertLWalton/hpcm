@@ -6,7 +6,7 @@
 #
 # File:		makejudgingdir
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Nov  2 21:51:42 EST 2000
+# Date:		Fri Nov  3 05:56:27 EST 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/11/03 02:54:40 $
+#   $Date: 2000/11/03 11:52:50 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.34 $
+#   $Revision: 1.35 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -472,18 +472,17 @@ makejudgingdir option ... index_specification ...
     The ./contest/secure/passwords file consists of
     lines of the form
 
-    	account:password:who:c-email:p-email:comment
+    	account:password:who:c-email:t-email:comment
 
     Here `account' is a the login name of the contes-
     tant, `who' is a description of who the contestant
-    is, and the `c-email' and `p-email' fields are the
+    is, and the `c-email' and `t-email' fields are the
     email addresses used to contact the coach and to
-    contact the contestants using the account them-
-    selves, respectively.  The account name `none' may
-    be used to indicate a line is not associated with an
-    account, and the password `none' may be used to
-    indicate the password is to be assigned by other
-    means.
+    contact the team members using the account, respec-
+    tively.  The account name `none' may be used to
+    indicate a line is not associated with an account,
+    and the password `none' may be used to indicate the
+    password is to be assigned by other means.
 
     The -secure program option also causes any existing
     ./contest/secure/passwords file to be inspected for
@@ -1528,7 +1527,7 @@ proc diff_directories { dir1 dir2 } {
 
     while { [llength $out] > 0 } {
 	set diffexp \
-	  {^diff -r .*/help/([^/ ]*) .*/help/([^/ ]*)$}
+	  {^diff -r .*/([^/ ]*) .*/([^/ ]*)$}
 	if { [regexp $diffexp [lindex $out 0] \
 	             forget index1 index2] \
 	     && $index1 == $index2 \
@@ -1698,7 +1697,11 @@ if { $secure_option } {
     if { ! [file readable $c_d/secure/passwords] } {
 	close [open $c_d/secure/passwords w]
 	deny_access $c_d/secure/passwords
-	TODO "edit $c_d/secure/passwords"
+	set apw account:password:who
+    	set ctc coaches-email:team-email:comment
+	TODO "edit $c_d/secure/passwords" \
+	     "each of its lines has the format:" \
+	     "$apw:$ctc"
     } else {
         set passwords_ch [open $c_d/secure/passwords r]
 	set lines ""
@@ -1737,19 +1740,45 @@ if { $secure_option \
      && ! [file readable \
      		$c_d/secure/hpcm_sendmail.rc] } {
     set rc_ch [open $c_d/secure/hpcm_sendmail.rc w]
-    puts $rc_ch \
-	 "To: [make_password]<[id user]@[id host]>"
-    puts $rc_ch "Key: [make_password]"
+    set to_password [make_password]
+    puts $rc_ch "To: $to_password<[id user]@[id host]>"
+    set key [make_password]
+    puts $rc_ch "Key: $key"
     set key_name [file tail [pwd]]
     regexp {^(.*)(-|_)[^-_]*$} $key_name \
 	   forget key_name forget2
     puts $rc_ch "Key-Name: $key_name"
     close $rc_ch
     deny_access $c_d/secure/hpcm_sendmail.rc
+
     TODO "edit $c_d/secure/hpcm_sendmail.rc" \
 	 "either remove the Key and Key-Name" \
 	 "or edit the hpcm_judging.rc\
-	  authorization variables"
+	  authorization variables" \
+	 "to contain the line:" \
+	 "" \
+	 "    $key_name $key"    
+
+    set j_d $judging_directory
+    if { ! [regexp {^/} $j_d] } {
+    	set j_d "[pwd]/$j_d"
+    }
+    while { [regsub {/[^/]+/+\.\./} \
+		    $j_d {/} j_d] > 0 } {}
+    while { [regsub {/\./} $j_d {/} j_d] > 0 } {}
+    regsub {/\.$} $j_d {} j_d
+    while { [regsub {//} $j_d {/} j_d] > 0 } {}
+    if { [info exists env(HOME)] } {
+        set hd $env(HOME)
+	regexp "^$hd/(.*)\$" $j_d forget j_d
+    }
+
+    TODO "edit ~/.procmailrc to contain:" \
+         "" \
+	 ":0" \
+	 "* ^To:.*$to_password" \
+	 "| receivemail $j_d | \\" \
+  	 "  dispatchmail $j_d"
 }
 
 # Check contest/bin/hpcm_sendmail mode.
