@@ -130,8 +130,8 @@
 #+clisp
 (defun flush-line-feed (s-expression)
   (do ()
-      ((= 0 (system::line-position)))
-      (read-char nil nil nil)))
+      ((or (= 0 (system::line-position))
+           (not (read-char nil nil nil))))))
 
   ;; Old code that used to work:
   ;;
