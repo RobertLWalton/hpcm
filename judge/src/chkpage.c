@@ -3,7 +3,7 @@
 **
 ** Author:	Bob Walton (walton@deas.harvard.edu)
 ** File:	chkpage.c
-** Date:	Tue Apr 23 05:26:14 EDT 2002
+** Date:	Tue Apr 23 06:22:05 EDT 2002
 **
 ** The authors have placed this program in the public
 ** domain; they make no warranty and accept no liability
@@ -12,9 +12,9 @@
 ** RCS Info (may not be true date or author):
 **
 **   $Author: hc3 $
-**   $Date: 2002/04/23 09:24:13 $
+**   $Date: 2002/04/23 10:31:36 $
 **   $RCSfile: chkpage.c,v $
-**   $Revision: 1.5 $
+**   $Revision: 1.6 $
 */
 
 #include <stdio.h>
@@ -61,19 +61,28 @@ void checkfile
     int line_in_file = 1;
     int line_in_page = 1;
     int column = 1;
-    int illegal_character = 0;
     int line_not_empty = 0;
+
+    /* line_not_empty means line before \n or \f or EOF
+    ** has something besides \r's.
+    */
+
     int line_too_long = 0;
     int page_too_long = 0;
+    int illegal_character = '.';
+
+    /* '.' means there is no illegal character */
 
     while ( 1 )
     {
+        /* Loop through all characters of file. */
+
         int c = getc ( in );
 
 	if ( c == '\t' )
 	{
 	    column += 8 - ( ( column - 1 ) % 8 );
-	    if ( column > maxcolumn + 1 )
+	    if ( column - 1 > maxcolumn )
 		line_too_long = 1;
 	    line_not_empty = 1;
 	    if ( bp < endbp ) * bp ++ = c;
@@ -99,14 +108,14 @@ void checkfile
 	    * bp ++ = '\n';
 	    * bp = 0;
 
-	    if ( illegal_character != 0 )
+	    if ( illegal_character != '.' )
 	    {
 		printf ( "LINE CONTAINS \\0%o: ",
 		          illegal_character );
 		if ( name ) printf ( "%s: ", name );
 		printf ( "%d: %s", line_in_file,
 		         buffer );
-		illegal_character = 0;
+		illegal_character = '.';
 	    }
 
 	    if ( line_too_long )
@@ -158,7 +167,7 @@ void checkfile
 	    line_not_empty = 0;
 	    bp = buffer;
 	}
-	else if ( c < 032 || c >= 0177 )
+	else if ( c < 040 || c >= 0177 )
 	{
 	    illegal_character = c;
 	    line_not_empty = 1;
