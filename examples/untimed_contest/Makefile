@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/09/16 06:36:50 $
+#   $Date: 2001/09/16 06:42:59 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.19 $
+#   $Revision: 1.20 $
 
 # To make an email contest named `foo':
 #
@@ -90,6 +90,13 @@
 #    other output in the message.  Note that one of the
 #    submissions times out, and for that the judge will
 #    take over a minute to reply.
+
+#    Note also that some or all of the submissions gen-
+#    erated by the `test_submit' part of `make' may be
+#    for problems you did not include in your contest,
+#    and these will generate `illegal name' messages
+#    instead of `Completely Correct' messages.  You may
+#    wish to edit hpcm/judge/test/Makefile to fix this.
 
 # The location of the hpcm directory.
 #
