@@ -2,7 +2,7 @@
  *
  * File:	hpcm_sendmail.c
  * Authors:	Bob Walton (walton@deas.harvard.edu)
- * Date:	Wed Apr  3 11:37:26 EST 2002
+ * Date:	Wed Apr  3 12:14:35 EST 2002
  *
  * The authors have placed this program in the public
  * domain; they make no warranty and accept no liability
@@ -11,15 +11,16 @@
  * RCS Info (may not be true date or author):
  *
  *   $Author: hc3 $
- *   $Date: 2002/04/03 16:43:48 $
+ *   $Date: 2002/04/03 17:17:04 $
  *   $RCSfile: hpcm_sendmail.c,v $
- *   $Revision: 1.12 $
+ *   $Revision: 1.13 $
  */
 
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <netdb.h>
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -631,6 +632,8 @@ int main ( int argc, char ** argv )
     	struct passwd * passwd;
 	char * p = reply_to;
 	char * endp = reply_to + sizeof ( reply_to );
+	char hostname[MAXLEN];
+	struct hostent * hostentp;
 
 	endp[-1] = 0;
 
@@ -660,11 +663,21 @@ int main ( int argc, char ** argv )
 	strcpy ( cc, reply_to );
 
 	* p ++ = '@';
-	if ( gethostname ( p, ( endp - p ) - 5 ) < 0 )
+
+	/* We have to use gethostbyname to get the
+	   full name of the current host. */
+
+	if ( gethostname ( hostname, MAXLEN - 5 ) < 0 )
 	    errno_exit ( "gethostname" );
-	p += strlen ( p );
-	if ( p > endp - 10 )
+	if ( strlen ( hostname ) > MAXLEN - 10 )
+	    too_big_exit ( "hostname" );
+	hostentp = gethostbyname ( hostname );
+	if ( hostentp == NULL )
+	    errno_exit ( "gethostbyname" );
+	if ( p + strlen ( hostentp->h_name )
+	         > endp - 10 )
 	    too_big_exit ( "Reply-To: field value" );
+	strcpy ( p, hostentp->h_name );
     }
 
     /* Compute date. */
