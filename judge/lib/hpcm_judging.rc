@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Oct 24 12:13:17 EDT 2001
+# Date:		Sat Oct 27 07:10:31 EDT 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/10/24 16:13:30 $
+#   $Date: 2001/10/27 11:24:15 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.75 $
+#   $Revision: 1.76 $
 #
 
 # An optionally modified copy of this file must be
@@ -33,12 +33,14 @@
 
 # Scoreboard Parameters.
 #
+# All times are in a format that TCL `clock scan'
+# can convert.  Most date formats work.
 
 # Contest start, stop, and freeze times.
 #
 # The start and stop times are used in actually com-
 # puting the scoreboard proper (by the `scoreboard'
-# program, as follows.
+# program), as follows.
 #
 # If the start time is not "" or "team", all submis-
 # sions and problem gettings before the given start time
@@ -63,13 +65,13 @@
 # facility that operates 24 hours a day, every day.
 #
 set scoreboard_start_time ""
-#   [clock scan "Jan 1 10:00:00 EDT 2000"]
+#   "Jan 1 10:00:00 EDT 2000"
 #
 set scoreboard_freeze_time ""
-#   [clock scan "Jan 1 14:00:00 EDT 2000"]
+#   "Jan 1 14:00:00 EDT 2000"
 #
 set scoreboard_stop_time ""
-#   [clock scan "Jan 1 15:00:00 EDT 2000"]
+#   "Jan 1 15:00:00 EDT 2000"
 
 # Scoreboard name.  Typically just the name of the
 # contest.
@@ -163,6 +165,9 @@ set scoreboard_interval 60
 #
 #	scoreboard_instruction ::=
 #	      { OUTPUT filename [start [stop]] }
+#	    | { SEND [qualifier [parameter-name]] }
+#	    | SEND
+#	    | GRANT_ACCESS
 #	    | BLANK
 #	    | BAR
 #           | { LINE left-text [center-text
@@ -182,44 +187,58 @@ set scoreboard_interval 60
 # The scoreboard instructions do the following:
 #
 #     { OUTPUT filename [start [stop] }
-#			   Set the output file name.
-#			   See below for start and stop.
+#		Set the output file name. See below for
+#		start and stop.
 #
-#     BLANK		   Include a blank line.
+#     { SEND [qualifier [parameter-name]] }
+#		Whenever the output file is written,
+#		email the file to each address ADR in
+#		the list of addresses in the global var-
+#		iable `scoreboard_PN', where PN is the
+#		parametername.  If the qualifier is not
+#		empty, the email address actually used
+#		is `qualifier<ADR>' when ADR contains
+#		no `<', and `qualifier-ADR' when ADR
+#		contains a `<'.  If `scoreboard_PN' is
+#		empty or does not exist, nothing is
+#		done.  PN defaults to `addresses'.
+#		Qualifier defaults to "".
 #
-#     BAR		   Include a ===== bar line.
+#     GRANT_ACCESS
+#		Whenever the output file is written,
+#		it is made readable by everyone.
+#
+#     BLANK	Include a blank line.
+#
+#     BAR	Include a ===== bar line.
 #
 #     { INPUT filename ... }
-#			   Include a copy of a first
-#			   readable file in the list of
-#			   files.  Do nothing of no
-#			   listed file is readable.
+#		Include a copy of a first readable file
+#		in the list of files.  Do nothing of no
+#		listed file is readable.
 #
 #     { LINE left-text [center-text [right-text]] }
-#			   Include a line that has
-#			   left-text left justified,
-#			   center-text centered, and
-#			   right-text right justified.
-#			   The right-text or both the
-#			   center- and right- texts can
-#			   be omitted.
+#		Include a line that has left-text left
+#		justified, center-text centered, and
+#		right-text right justified.  The right-
+#		text or both the center- and right-
+#		texts can be omitted.  If texts would
+#		overlap, two or three lines are in-
+#		cluded to avoid overlap.
 #
 #     { parameter_name value }
-#			Set the named parameter to the
-#			given value for the purposes of
-#			computing a board.
+#		Set the named parameter to the given
+#		value for the purposes of computing a
+#		board.
 #
-#     BOARD		Include a scoreboard computed
-#			with the previous parameters.
+#     BOARD	Include a scoreboard computed
+#		with the previous parameters.
 #
 # An output file is not actually written until the next
-# OUTPUT command or the end of the instructions.  When
-# the output file is written, it is emailed to all the
-# addresses in the current `scoreboard_addresses' para-
-# meter.  All file names are relative to the judging
-# directory.  The current value of the `scoreboard_
-# width' parameter is used to right justify text and
-# produce the ===== BAR lines.
+# OUTPUT command or the end of the instructions. All
+# file names are relative to the judging directory.  The
+# current value of the `scoreboard_width' parameter is
+# used by the LINE and BAR instructions.
 #
 # If a non "" start time is given in an OUTPUT instruc-
 # tion, that output will not be produced until after
@@ -251,6 +270,7 @@ set scoreboard_interval 60
 #
 set email_scoreboard_instructions {
     { OUTPUT scoreboard.mail }
+    { SEND scoreboard }
     { LINE "See notes below." NAME TIME }
     BLANK
     BAR
@@ -263,6 +283,7 @@ set email_scoreboard_instructions {
 # contest:
 set informal_scoreboard_instructions {
     { OUTPUT contest/scoreboard.1 }
+    GRANT_ACCESS
     { LINE NAME "" TIME }
     BLANK
     { INPUT contest/scoreboard.1head }
@@ -286,10 +307,12 @@ set formal_scoreboard_instructions {
     { LINE "announced at the post contest meeting." }
 
     { OUTPUT contest/scoreboard.public START FREEZE }
+
     { stop_time FREEZE }
     BOARD
 
     { OUTPUT contest/scoreboard.1 }
+    GRANT_ACCESS
 
     { LINE NAME "Public Scoreboard" TIME }
     { INPUT contest/scoreboard.freeze }
@@ -322,7 +345,9 @@ set formal_scoreboard_instructions {
     { INPUT contest/who_where }
     BAR
 }
-set scoreboard_instructions $email_scoreboard_instructions
+
+set scoreboard_instructions \
+    $email_scoreboard_instructions
 
 # End of scoreboard parameters.
 
