@@ -29,14 +29,18 @@
 
 HPCM=${HOME}/hpcm
 
-INDICES=    ${HPCM}/user/index \
+INDICES=    help/index, \
+	    =help/ \
+	    ${HPCM}/contestant/help/index, \
+	    common/=help/, \
+	    common:include \
 	    ${HPCM}/problem_library/index, \
 	    public/=problems/, \
 	    private/=problems/, \
-	    demo:'include', \
-	    preliminary96:'include', \
-	    selection96:'include', \
-	    selection97:'include'
+	    demo:include, \
+	    preliminary96:include, \
+	    selection96:include, \
+	    selection97:include
 
 all:
 	makejudgingdir -email ${INDICES}
@@ -49,7 +53,7 @@ start_scoreboard:
 	crontab crontab
 
 update_scoreboard:
-        sendscoreboard '"wyg2bpitbp scoreboard"<hc3@deas.harvard.edu>'
+	sendscoreboard '"wyg2bpitbp scoreboard"<hc3@deas.harvard.edu>'
 
 clean:
 	rm -rf info solutions mail help
@@ -63,6 +67,6 @@ clean:
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/10/28 02:18:04 $
+#   $Date: 2000/11/07 06:15:13 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.2 $
+#   $Revision: 1.3 $
