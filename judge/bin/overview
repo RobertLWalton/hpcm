@@ -4,7 +4,7 @@
 #
 # File:		overview
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Oct 15 10:35:31 EDT 2001
+# Date:		Mon Oct 15 11:49:20 EDT 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/10/15 15:01:39 $
+#   $Date: 2001/10/15 16:08:52 $
 #   $RCSfile: overview,v $
-#   $Revision: 1.32 $
+#   $Revision: 1.33 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -104,7 +104,7 @@ Requirements
 ------------
 
 HPCM currently requires a UNIX system with Bourne shell
-and TCL language interpreters.  If JAVA is to be useable
+and TCL language interpreters.  If JAVA is to be usable
 by contestants, an appropriate version of JAVA is also
 required.
 
@@ -113,7 +113,7 @@ command, a Bourne shell `echo' command that does not
 specially interpret the `\\' character, or a `test -e'
 command.  If you are using a UNIX system whose Bourne
 shell does not support these features (which is likely
-if you are not using a linux), the simplest fix is to
+if you are not using a Linux), the simplest fix is to
 import the GNU Bourne shell, bash, and fix your path
 to contain this shell under the name `bash', so that
 `which bash' can find it.  The HPCM programs that have
@@ -463,7 +463,7 @@ as follows:
 
     advanced	Help files that describe algorithms a
     		contestant should know or learn in
-		order to be more competative.
+		order to be more competitive.
 
 The `email/sh' subdirectory contains actual code.  If
 similar code is written in other languages, e.g. tcl,
@@ -838,15 +838,17 @@ components that contestants can access.
 	ming languages are often provided.
 
 	For a formal contest, the contestant's hpcm_get
-	program creates a problem directory in the con-
-	testant's account and symbolically links into
-	that directory all files in the problem direc-
-	tory within the .hpcm/contest/problems direc-
-	tory, i.e., the contest directory in the judge's
-	account.  For an informal contest hpcm_get ob-
-	tains the same information from the `info/
-	problems' directory by email and makes a copy of
-	the files in the contestant account.
+	program creates a problem directory ppp in the
+	contestant's account, and symbolically links
+	into that directory all files in the contest/
+	problems/ppp directory in the judge's account,
+	by using the fact that this directory can be
+	accessed by the name .hpcm_contest/problems/ppp
+	in the contestant account.  For an informal
+	contest hpcm_get obtains the same information
+	from the `info/problems' directory by email and
+	makes a copy of the files in the contestant
+	account.
 
 	This `problems' directory (unlike the `demos'
 	directory) does not have a+rx permissions when
@@ -855,7 +857,7 @@ components that contestants can access.
 	before the contest starts.  The `startcontest'
 	program sets the permissions on this directory
 	to a+rx.
-
+
 	This `problems' directory and its contents are
 	made automatically by `makejudgingdir'.  This
 	contest/problems directory is an exact copy for
@@ -863,8 +865,10 @@ components that contestants can access.
 	for informal and email contests, except that
 	contest/problems does not have problem descrip-
 	tion (e.g., .txt) files (unless the makejudging-
-	dir -description option is used).
-
+	dir -description option is used), and the files
+	in contest/problems are copies, while the files
+	in info/problems are symbolic links.
+
 	The `demos' directory is similarly made and is
 	an exact copy of what would go into info/demos.
 
@@ -892,23 +896,23 @@ components that contestants can access.
 	hpcm_sendmail program which can be run by
 	contestants but sets its user id (by the UNIX
 	setuid mechanism) to the judging account.
-	
+
 	This directory, if it does not already exist,
 	will be made by the `makejudgingdir' program,
 	as will some of the files in the directory.
 	The files in this directory are:
-
-	    hpcm_sendmail.rc
+
+	    secure/hpcm_sendmail.rc
 	        This file contains parameters for hpcm_
 		sendmail.  Specifically, the email
 		address to send mail to in order to
 		contact the judge (this email address
 		typically contains a password), and the
-		key-name and key to use in signing the
-		email (or more specifically, the HPCM
-		return email address and date fields of
-		the email).  An example hpcm_sendmail.rc
-		file is:
+		key-name and key to use in signing parts
+		of the email (more specifically, the
+		HPCM return email address and date
+		fields of the email).  An example
+		hpcm_sendmail.rc file is:
 
 		    To: 13cc299bd7<walton@walton1>
 		    Key: 55071403c7
@@ -925,14 +929,14 @@ components that contestants can access.
 		This file is made by the makejudgingdir
 		program, which creates random passwords
 		for the email address and key.
-
-	    passwords
+
+	    secure/passwords
 	    	This file lists the contestant accounts,
 		and is used to create these accounts.
 		Each line of this file has the format:
 
 		    account:password:who:C:T:comment
-
+
 	        where C is the coach's email address and
 		and T is the team's email address.  The
 		first field is the contestant account
@@ -944,7 +948,10 @@ components that contestants can access.
 		of the file must be made by hand.
 
 		Only the account and password fields are
-		needed by HPCM to run a contest.
+		needed by HPCM to run a contest.  The
+		coach's email address is used by the
+		hpcm_email_passwords program to send
+		passwords to coaches.
 
 		Note that in making up a list of contes-
 		tant accounts, you should include one
@@ -953,15 +960,19 @@ components that contestants can access.
 		should NOT include the prototype account
 		in which SETUP_PROTOTYPE is run.
 
-	    passwords_header
+	    secure/passwords_header
 	        This is a file used by hpcm_print_pass-
-		words.  This program prints each account
+		words or hpcm_email_passwords.  Hpcm_
+		print_passwords prints each account
 		name and password on a separate page
 		with the contents of this file at the
 		beginning of the page.  It is used only
 		when account names and passwords are to
 		be handed to contestants: typically this
-		is only in an informal contest.
+		is only in an informal contest.  Hpcm_
+		email_passwords is similar, but emails
+		the results to the coaches instead of
+		printing.
 
     who_where
         This file is a copy of the secure/passwords file
