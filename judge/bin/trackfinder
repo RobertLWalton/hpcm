@@ -6,7 +6,7 @@
 #
 # File:		trackfinder
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Nov  7 01:27:33 EST 2000
+# Date:		Wed Sep 26 05:36:56 EDT 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/12/04 15:08:55 $
+#   $Date: 2001/09/26 09:38:00 $
 #   $RCSfile: trackfinder,v $
-#   $Revision: 1.8 $
+#   $Revision: 1.9 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -185,7 +185,8 @@ foreach dir $directories {
     set subdir [file tail $dir]
 
     if { [regexp {^([^<>]*)-<<(.*)>>-submission$} \
-    		   $subdir forget date submitter] } {
+    		   $subdir forget date submitter] \
+	 && ! [regexp "\n" $subdir] } {
 
 	set submitter [string trim $submitter]
 	if { $submitter == "" } {
@@ -217,6 +218,8 @@ foreach dir $directories {
 	close $received_ch
 
 	set subject [string trim $message_subject]
+	regsub "\[\ \t\]*\n\[\ \t\]*" $subject { } \
+	       subject
 
 	puts "rec $mtime {$subject}"
 
@@ -288,6 +291,7 @@ foreach dir $directories {
     foreach file \
             [lsort [glob -nocomplain \
 	    		 $dir/*-checked-error]] {
+	if { [regexp "\n" $file] } continue
 	set mtime [get_mtime $file]
 	if { $mtime != "{}" } {
 	    puts "chk $mtime {[file tail $file]}"
@@ -297,6 +301,7 @@ foreach dir $directories {
     foreach file \
             [lsort [glob -nocomplain \
 	    	         $dir/*-unchecked-error]] {
+	if { [regexp "\n" $file] } continue
 	set mtime [get_mtime $file]
 	if { $mtime != "{}" } {
 	    puts "err $mtime {[file tail $file]}"
