@@ -2,7 +2,7 @@
 //
 // File:	scorediff.cc
 // Authors:	Bob Walton (walton@deas.harvard.edu)
-// Date:	Tue Apr 23 13:19:23 EDT 2002
+// Date:	Tue Apr 23 13:23:25 EDT 2002
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: hc3 $
-//   $Date: 2002/04/23 17:18:44 $
+//   $Date: 2002/04/23 17:22:49 $
 //   $RCSfile: scorediff.cc,v $
-//   $Revision: 1.43 $
+//   $Revision: 1.44 $
 
 // This is version 2, a major revision of the first
 // scorediff program.  This version is more explicitly
@@ -76,7 +76,7 @@ char documentation [] =
 "		empty, and one preceding whitespace\n"
 "		has a different number of new lines\n"
 "		than the other.\n"
-"\n"
+"\f\n"
 "    whitespace	For two matching tokens, the preced-\n"
 "		ing whitespaces both have no new\n"
 "		lines, and both are non-empty, but\n"
@@ -86,7 +86,7 @@ char documentation [] =
 "		However, this difference is NOT re-\n"
 "		cognized if either following matching\n"
 "		token is a floating point number.\n"
-"\f\n"
+"\n"
 "    endspace	For two matching tokens, the preced-\n"
 "		ing whitespaces have the same number\n"
 "		N >= 1 of new lines, and the white-\n"
