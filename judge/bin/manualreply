@@ -5,7 +5,7 @@
 #
 # File:		manualreply
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Sep 25 22:06:09 EDT 2001
+# Date:		Wed Sep 26 03:49:11 EDT 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/09/26 07:42:48 $
+#   $Date: 2001/09/26 08:48:44 $
 #   $RCSfile: manualreply,v $
-#   $Revision: 1.38 $
+#   $Revision: 1.39 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -96,10 +96,10 @@ if { $my_argc != 0 } {
 # Menus.
 
 set main_menu "
-                    \
-? = help            \
+    ? = help        \
 x = exit            \
-sm = scoring menu
+sm = scoring menu   \
+ss = send score
 #  = look at #      \
 v# = view #         \
 e# = edit #         \
@@ -113,9 +113,9 @@ er = edit reply     \
 sr = send reply     \
 nr = no reply
 sq = send query     \
+xq = examine query  \
 aj = autojudge      \
-ai = autoinfo       \
-ss = send score"
+ai = autoinfo"
 
 set scoring_menu "
                          ? = help                     \
@@ -135,54 +135,29 @@ pr = lookat proofs"
 # blank lines are changed to window bars by code.
 
 set help(?) "
-? WHAT		E.g., `? ls'.  Gives help for WHAT,\
-                where WHAT can be:
+? WHAT
 
-#  = file identifier\
-?  = help           \
-x  = exit           \
-aj = autojudge
-v  = view #         \
-e  = edit #         \
-ls = list files     \
-ai = autoinfo
-pr = lookat proofs  \
-c  = checkoff #     \
-u  = uncheckoff #   \
-sh = shell
-ir = initiate reply \
-er = edit reply     \
-sr = send reply     \
-nr = no reply
+Gives help for WHAT, where WHAT can be:
 
-sm = goto scoring menu   \
-mm = goto main menu      \
-ss = send score + mm
+    Any command listed in the main or scoring menu.  E.g. `? ls'.
+    Note that any command in either menu can be executed even
+    if the other menu is being displayed.
 
-io = Incorrect Output    \
-cc = Completely Correct 
-fe = Formatting Error    \
-ic = Incomplete Output 
-se = Syntax Error        \
-te = Cpu Time Limit Exceeded
-pc = Program Crashed     \
-oe = Output Size Exceeded
+    Any standard filename, e.g. `? Received_Mail', or any standard file
+    extension, e.g., `? .diff'.
 "
 
 set help(#) "
 #			# denotes a `file\
                         identifier'.   This is one of:
 
-    The decimal integer number of a file listed by the\
+  - The decimal integer number of a file listed by the\
     	last `ls' command.
-
-    A file extension, beginning with a `.'.
-
-    The beginning of a file name, if the first\
+  - A file extension, beginning with a `.'.
+  - The beginning of a file name, if the first\
         character of the name is
     a CAPITAL letter.
-
-    The full name of the file.
+  - The full name of the file.
 
 Typing a file identifier by itself is recoginzed as a\
     command to display
@@ -194,6 +169,45 @@ x
 
 Exit from the current program.  You can also do this by\
     typing control-D.
+"
+
+set help(sq) "
+sq
+
+Send a query to the judge about the current submission.
+
+You can do this if you are the judge or are an auxilary\
+    `read only' judge.
+
+A file to be emailed to the judge is created in the\
+    /tmp directory and the
+editor is called on that file.  The subject of the\
+    email is set to indicate
+the current submission directory, and this subject\
+    SHOULD NOT be changed.
+You should edit the body of the message, and upon\
+    return from the editor,
+you will be asked if you want to send the message to\
+    the judge, or continue
+editing the message, or abort the message.
+"
+
+set help(xq) "
+xq
+
+Examine a submission mentioned in the subject of a\
+    query to the judge.
+
+If the current submission is a query whose `Subject:'\
+    is of the form
+`About SUBMISSION-DIRECTORY', this command executes\
+    `manualreply' on the
+indicated submission directory.  This is useful in\
+    examining the submission
+directory mentioned in a query created by the sq\
+    command.  When the
+`manualreply' executed returns, this `manualreply'\
+    continues.
 "
 
 set help(aj) "
@@ -215,6 +229,7 @@ View the file identified by the file identifier # (or\
 if # is missing) using an editor in read only mode,\
     such as UNIX `view'.
 "
+set help(v#) $help(v)
 
 set help(e) "
 e
@@ -224,6 +239,7 @@ Edit the file identified by the file identifier # (or\
     the last file displayed
 if # is missing) using an editor such as UNIX `vi'.
 "
+set help(e#) $help(e)
 
 set help(ls) "
 ls
@@ -248,9 +264,8 @@ Type `? ls2' for more information.
 set help(ls2) "
 ls      (2 of 3)
 
-After each file name listed a comment may appear if\
-    there is room.  Some of
-these are:
+After each listed file name one of the following may\
+    appear if there is room:
 
     (DDDDDb)		DDDDD is size of the file in\
 			    bytes.
@@ -258,13 +273,8 @@ these are:
     (directory)		The file is a directory.
     (dangling link)	The file is a link with no\
 			    resolution.
-    			If a link can be resolved,\
-			    the file it resolves to is
-			the file named.
-    {CCC}		CCC is the contents of the\
-			    file, if the file is a
-    			single line file with contents\
-			    CCC.
+    {CCC}		CCC is the contents of a single\
+			    line file.
 
 Type `? ls3' for more information.
 "
@@ -382,6 +392,7 @@ brought to the attention of a person.  But checked\
 these programs, as they assume a checked error file\
     has been read by a person.
 "
+set help(c#) $help(c)
 
 set help(u) "
 u
@@ -403,6 +414,7 @@ these programs, as they assume a checked error file\
 
 It is unusual for a checked file to be made unchecked.
 "
+set help(u#) $help(u)
 
 set help(sh) "
 sh
@@ -723,8 +735,8 @@ proc not_readonly {} {
     global readonly_mode window_error answer
     if { $readonly_mode } {
         set window_error \
-	    "You are in readonly mode and cannot do\
-	     `$answer'."
+	    "ERROR: You are in readonly mode and\
+	     cannot do `$answer'."
 	return no
     } else {
     	return yes
@@ -997,7 +1009,35 @@ while { "yes" } {
 	    }
 	}
 	{^sq$} {
-	    send_query "Subject: About $directory"
+	    send_query "Subject: About\n  $directory"
+	}
+	{^xq$} {
+	    if { ! [info exists message_subject] } {
+	        set window_error \
+		    "ERROR: No $received_file file."
+	    } else {
+	        set ws "\[\ \t\n\]"
+	        set nws "\[^\ \t\n\]"
+		set about ""
+		regexp "^$ws*About$ws+($nws+)$ws*\$" \
+		       $message_subject forget about
+		set d $mail_directory/$about
+		if { $about == "" } {
+		    set window_error \
+			"ERROR: $received_file subject\
+				does not have the form\
+				`About DIRECTORY'."
+		} elseif { ! [file isdirectory $d] } {
+		    set window_error \
+			"ERROR: $d is not a directory."
+		} elseif { [catch { exec manualreply \
+					 $d \
+				         >& /dev/tty } \
+				   out] } {
+		    puts $out
+		    continue?
+		}
+	    }
 	}
 	{^sm$} {
 	    set menu $scoring_menu

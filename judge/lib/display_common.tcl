@@ -2,7 +2,7 @@
 #
 # File:		display_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Sep 25 22:05:45 EDT 2001
+# Date:		Wed Sep 26 03:45:13 EDT 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/09/26 02:19:55 $
+#   $Date: 2001/09/26 08:49:16 $
 #   $RCSfile: display_common.tcl,v $
-#   $Revision: 1.18 $
+#   $Revision: 1.19 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -1426,7 +1426,8 @@ proc send_score_reply {} {
 
 # Create and mail a query to the judge.  Part of the
 # header is given as a single argument, which may
-# include several lines, each ending with a line feed.
+# include several lines, all but the last ending in
+# a line feed.
 #
 proc send_query { header } {
 
@@ -1440,7 +1441,7 @@ proc send_query { header } {
 	incr i
     }
     set ch [open $filename w]
-    puts -nonewline $ch "$header\n\n"
+    puts -nonewline $ch "$header\n\nEDIT THIS BODY"
     close $ch
 
     while { "yes" } {
