@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/08/25 10:14:46 $
+#   $Date: 2001/08/25 11:23:02 $
 #   $RCSfile: display_common.tcl,v $
-#   $Revision: 1.3 $
+#   $Revision: 1.4 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -23,10 +23,10 @@
 #
 #	Including this Code
 #	Display
-#	Reading Files
-#	File List
 #	Response Functions
 #	Locking Functions
+#	Reading Files
+#	File List
 #	Reply Functions
 
 # Including this Code
@@ -201,6 +201,202 @@ proc bar_with_text { text } {
     set l [expr 80 - 2 - [string length $text]]
     return "[string range $window_bar 0 $l] $text"
 }
+
+# Response Functions
+# -------- ---------
+
+# Wait for an answer line to be input.  If it is y, Y,
+# yes, or YES, return `yes'.  If it is n, N, no, or NO,
+# return no.  If it is an end of file, exit program.
+# Otherwise redisplay with an error message saying the
+# answer could not be understood.  Upon return, window_
+# error is set to "".
+#
+proc yes? {} {
+
+    global window_error argv0
+
+    while { "yes" } {
+    	set answer [string trim [gets stdin]]
+	if { [eof stdin] } {
+	    puts "\nExiting $argv0"
+	    exit_cleanup
+	    exit 0
+	}
+        set window_error ""
+	switch -- $answer {
+	    y	-
+	    yes	-
+	    Y	-
+	    YES	{ return yes }
+	    n	-
+	    no	-
+	    N	-
+	    NO	{ return no }
+	}
+	if { $answer == "" } {
+	    set window_error "ERROR: empty input"
+	} else {
+	    set window_error \
+		    "ERROR: could not understand\
+		    	    `$answer'"
+	}
+	display_window
+    }
+}
+
+
+# Print `\nType ENTER or RETURN to continue ', and then
+# wait for any line to be input.  When a line is input,
+# return, but if an end of file is input, exit
+# program.
+#
+proc continue? {} {
+
+    global argv0
+
+    puts -nonewline \
+         "\nType ENTER or RETURN to continue "
+    flush stdout
+    gets stdin
+    if { [eof stdin] } {
+	puts "\nExiting $argv0"
+	exit_cleanup
+	exit 0
+    }
+}
+ 
+# If the character string argument is not empty, print
+# it (with appended newline), and call `continue?'.
+#
+proc out_check { out } {
+    if { $out == "" } return
+    puts $out
+    continue?
+}
+
+
+# Locking Functions
+# ------- ---------
+
+# Lock current directory with $dispatch_pid_file.  If
+# $dispatch_pid_file already exists, communicate with
+# the user through the window an let the user take
+# corrective action.
+#
+proc get_lock {} {
+
+    global dispatch_pid_file window_error window_bar \
+    	   window_prompt
+
+
+    while { "yes" } {
+
+	if { [dispatch_lock] == "yes" } break
+
+	set time [expr { [clock seconds] - \
+			 [file mtime \
+			       $dispatch_pid_file] }]
+
+	if { ! [catch {
+		   set pid \
+		       [read_file \
+			   $dispatch_pid_file] }] } {
+	    set tree_display \
+		[display_process_tree $pid]
+	    set tree_display \
+		"Process Tree:\n\n$tree_display"
+	    set window_error ""
+	    set b $window_bar
+	    set_window_display "$b\n$tree_display\n$b"
+	} else {
+	    refresh_file_list
+	    set_file_list_display
+	    set window_error \
+		"ERROR: cannot read $dispatch_pid_file"
+	}
+
+	set window_info_height 8
+	set_window_info "
+$dispatch_pid_file file exists and is $time seconds old.
+Maybe `autodispatch' or another `manualreply' is\
+					      running.
+
+u = update above info		d = delete\
+				    $dispatch_pid_file
+k = kill -INT process tree	x = exit this program
+m = kill -KILL process tree"
+
+	set window_prompt "> "
+
+	while { "yes" } {
+	
+	    display_window
+
+	    set answer [string trim [gets stdin]]
+	    set window_error ""
+	    switch -- $answer {
+		u   {   break
+		    }
+		k   {   catch {
+			    signal_process_tree INT \
+				[read_file \
+				    $dispatch_pid_file]
+			} out
+			out_check $out
+			break
+		    }
+		m   {   catch {
+			    signal_process_tree KILL \
+				[read_file \
+				    $dispatch_pid_file]
+			} out
+			out_check $out
+			break
+		    }
+		d   {   file delete -force \
+				    $dispatch_pid_file
+			break
+		    }
+		x   {
+			exit_cleanup
+			exit 0
+		    }
+		""   {   if { [eof stdin] } {
+			    exit_cleanup
+			    exit 0
+			} else {
+			    set window_error \
+				"ERROR: empty input"
+			}
+		    }
+		default
+		    {
+			set window_error \
+			    "ERROR: unknown\
+			     answer `$answer'!"
+		    }
+	    }
+	}
+    }
+
+    # Set exit_cleanup function (called before all exits
+    # in judging common code) to unlock current
+    # directory.
+    #
+    proc exit_cleanup {} {
+	dispatch_unlock
+    }
+}
+
+# Unlock current directory.
+#
+proc clear_lock {} {
+
+    dispatch_unlock
+    proc exit_cleanup {} {}
+}
+
 
 # Set the window display to display the first lines
 # of the file.  Set the last_display variable to
@@ -783,200 +979,6 @@ proc make_bdiff {} {
                       >>& $bdiff_file }
 }
 set make_file_array(.bdiff) make_bdiff
-
-
-# Response Functions
-# -------- ---------
-
-# Wait for an answer line to be input.  If it is y, Y,
-# yes, or YES, return `yes'.  If it is n, N, no, or NO,
-# return no.  If it is an end of file, exit manualreply.
-# Otherwise redisplay with an error message saying the
-# answer could not be understood.  Upon return, window_
-# error is set to "".
-#
-proc yes? {} {
-
-    global window_error
-
-    while { "yes" } {
-    	set answer [string trim [gets stdin]]
-	if { [eof stdin] } {
-	    puts "Exiting manualreply"
-	    exit_cleanup
-	    exit 0
-	}
-        set window_error ""
-	switch -- $answer {
-	    y	-
-	    yes	-
-	    Y	-
-	    YES	{ return yes }
-	    n	-
-	    no	-
-	    N	-
-	    NO	{ return no }
-	}
-	if { $answer == "" } {
-	    set window_error "ERROR: empty input"
-	} else {
-	    set window_error \
-		    "ERROR: could not understand\
-		    	    `$answer'"
-	}
-	display_window
-    }
-}
-
-
-# Print `\nType ENTER or RETURN to continue ', and then
-# wait for any line to be input.  When a line is input,
-# return, but if an end of file is input, exit
-# manualreply.
-#
-proc continue? {} {
-
-    puts -nonewline \
-         "\nType ENTER or RETURN to continue "
-    flush stdout
-    gets stdin
-    if { [eof stdin] } {
-	puts "Exiting manualreply"
-	exit_cleanup
-	exit 0
-    }
-}
- 
-# If the character string argument is not empty, print
-# it (with appended newline), and wait for ENTER or
-# RETURN to be typed by the user before continuing.
-#
-proc out_check { out } {
-    if { $out == "" } return
-    puts $out
-    continue?
-}
-
-
-# Locking Functions
-# ------- ---------
-
-# Lock current directory with $dispatch_pid_file.  If
-# $dispatch_pid_file already exists, let our user
-# take corrective action.
-#
-proc get_lock {} {
-
-    global dispatch_pid_file window_error window_bar \
-    	   window_prompt
-
-
-    while { "yes" } {
-
-	if { [dispatch_lock] == "yes" } break
-
-	set time [expr { [clock seconds] - \
-			 [file mtime \
-			       $dispatch_pid_file] }]
-
-	if { ! [catch {
-		   set pid \
-		       [read_file \
-			   $dispatch_pid_file] }] } {
-	    set tree_display \
-		[display_process_tree $pid]
-	    set tree_display \
-		"Process Tree:\n\n$tree_display"
-	    set window_error ""
-	    set b $window_bar
-	    set_window_display "$b\n$tree_display\n$b"
-	} else {
-	    refresh_file_list
-	    set_file_list_display
-	    set window_error \
-		"ERROR: cannot read $dispatch_pid_file"
-	}
-
-	set window_info_height 8
-	set_window_info "
-$dispatch_pid_file file exists and is $time seconds old.
-Maybe `autodispatch' or another `manualreply' is\
-					      running.
-
-u = update above info		d = delete\
-				    $dispatch_pid_file
-k = kill -INT process tree	x = exit this program
-m = kill -KILL process tree"
-
-	set window_prompt "> "
-
-	while { "yes" } {
-	
-	    display_window
-
-	    set answer [string trim [gets stdin]]
-	    set window_error ""
-	    switch -- $answer {
-		u   {   break
-		    }
-		k   {   catch {
-			    signal_process_tree INT \
-				[read_file \
-				    $dispatch_pid_file]
-			} out
-			out_check $out
-			break
-		    }
-		m   {   catch {
-			    signal_process_tree KILL \
-				[read_file \
-				    $dispatch_pid_file]
-			} out
-			out_check $out
-			break
-		    }
-		d   {   file delete -force \
-				    $dispatch_pid_file
-			break
-		    }
-		x   {
-			exit_cleanup
-			exit 0
-		    }
-		""   {   if { [eof stdin] } {
-			    exit_cleanup
-			    exit 0
-			} else {
-			    set window_error \
-				"ERROR: empty input"
-			}
-		    }
-		default
-		    {
-			set window_error \
-			    "ERROR: unknown\
-			     answer `$answer'!"
-		    }
-	    }
-	}
-    }
-
-    # Set exit_cleanup function (called before all exits
-    # in judging common code) to unlock current
-    # directory.
-    #
-    proc exit_cleanup {} {
-	dispatch_unlock
-    }
-}
-
-# Unlock current directory.
-#
-proc clear_lock {} {
-
-    dispatch_unlock
-    proc exit_cleanup {} {}
-}
 
 
 # Reply Functions
