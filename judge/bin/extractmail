@@ -4,7 +4,7 @@
 #
 # File:		extractmail
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Nov 18 14:20:03 EST 2001
+# Date:		Sun Nov 18 20:16:26 EST 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/11/18 19:17:28 $
+#   $Date: 2001/11/19 01:13:46 $
 #   $RCSfile: extractmail,v $
-#   $Revision: 1.21 $
+#   $Revision: 1.22 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -196,7 +196,8 @@ if { [file exists $files_file] } {
     }
 
     if { $filename != $problem \\
-         && [lsearch $filenames $filename] < 0 } {
+         && [lsearch -exact $filenames $filename] \
+	        < 0 } {
         extract_error \
 	    "ERROR: bad file name in\
 	     `Subject: $message_subject'"
@@ -205,7 +206,7 @@ if { [file exists $files_file] } {
     set filenames ""
     if { $filename != $problem } {
 	set extension [file extension $filename]
-	if { [lsearch $allowed_extensions \
+	if { [lsearch -exact $allowed_extensions \
 		      $extension] < 0 } {
 	    extract_error \
 		"ERROR: bad file name extension in\
@@ -246,10 +247,11 @@ proc open_file { filename } {
     global filenames problem received_mtime file_ch \
            cleanup_filename
 
-    if { [lsearch $filenames $filename] < 0 \
+    if { [lsearch -exact $filenames $filename] < 0 \
          && (    [llength $filenames] > 0 \
               || [file rootname $filename] != $problem \
-	      || [lsearch [file extension $filename] \
+	      || [lsearch -exact \
+	      		  [file extension $filename] \
 	                  $allowed_extensions] < 0 ) } {
         extract_error "ERROR: Bad file name: $filename"
     }
@@ -382,13 +384,104 @@ if { [regexp {^HPCM_BEGIN} $line] } {
 	set line [read_non_blank_line]
 	if { $line == "" } break
     }
+
 } else {
+
     if { [info exists format_submissions] \
 	 && $format_submissions == "yes" } {
 	extract_error \
 	    "ERROR: Bad line in body before\
 	     `HPCM_BEGIN' line or unformatted\
 	     file:\n$line"
+    }
+
+    # Input is unformatted.  Loop through files in
+    # input.
+    #
+    set file_ch ""
+    set mode none
+    set blank_lines ""
+    while { ! [eof $received_ch] } {
+
+	# Accumulate non-blank lines and look for
+	# filename.
+	#
+	set lines ""
+	set filename ""
+    	while { [regexp $NWS $line] } {
+
+	    if { [regexp \
+	    	    "(^|$WS)File:$WS*($NWS+)(\$|$WS)" \
+		    $line forget1 forget2 fname \
+		    forget3] } {
+		lappend filename $fname
+	    }
+	    lappend lines $line
+	    set line [gets $received_ch]
+	    if { [eof $received_ch] } break
+	}
+
+	switch [llength $filename] {
+	    0 {
+		if { $mode == "none" } {
+		    if { [llength $filenames] != 1 } {
+			extract_error \
+			    "ERROR: no file name in\
+			     `Subject"' field or body"
+		    }
+		    set mode \
+			[open_file [lindex $filenames \
+					   0]]
+		} else {
+		    set lines \
+		        [concat $blank_lines $lines]
+	        }
+	    }
+	    1 {
+	        if { $mode != "none" } {
+		    close_file
+		}
+		set mode \
+		    [open_file [lindex $filename 0]]
+	    }
+	    default {
+	        extract_error \
+		    "ERROR: too many file names:\
+		     $filename"
+	    }
+	}
+
+	switch $mode {
+	    read {
+	        foreach line $lines {
+		    set file_line [gets $file_ch]
+		    if { $file_line != $real_line } {
+			extract_error \
+			    "SYSTEM ERROR: file\
+			     mismatch for `$filename'
+		    }
+		}
+	    }
+	    write {
+	        foreach line $lines {
+		    puts $file_ch $line
+		}
+	    }
+	}
+
+	# Accumulate blank lines.
+	#
+	set blank_lines ""
+	while { ! [eof $received_ch] } {
+	    lappend blank_lines $line
+	    set line [gets $received_ch]
+	    if { [regexp $NWS $line] } break
+	}
+
+	if { [eof $received_ch] } {
+	    if { $mode != none } close_file
+	    break
+	}
     }
 }
 
