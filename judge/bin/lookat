@@ -1,12 +1,12 @@
 #!/bin/sh
 #
 # Looks at all the subdirectories of the mail directory
-# that have files containing a lines matching regular
+# that have files containing lines matching regular
 # expressions.
 #
 # File:		lookat
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Apr 29 09:11:54 EDT 2002
+# Date:		Mon Apr 29 09:53:45 EDT 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/04/29 13:50:32 $
+#   $Date: 2002/04/29 14:04:31 $
 #   $RCSfile: lookat,v $
-#   $Revision: 1.15 $
+#   $Revision: 1.16 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -29,6 +29,7 @@ exec tcl "$0" "$@"
 set lib_directory "[file dirname $argv0]/../lib"
 source $lib_directory/judging_common.tcl
 source $lib_directory/display_common.tcl
+# (Need display_common.tcl for continue? function.)
 set log_mode none
 catch {
 
@@ -116,11 +117,6 @@ lookat 'logical-expression'
     However, if atoms contain whitespace, they can be
     quoted with \"'s or {}'s.
 
-    is processed by this program, any backslashes (\\)
-    in the argument must be doubled.  Thus to get
-    `\\.' into a regular expression, one must put
-    `\\\\.' into the logical-expression argument.
-
     There are some abbreviations of atoms that are re-
     cognized, namely the following:
 
@@ -137,11 +133,11 @@ lookat 'logical-expression'
     ing its number within the list of the subdirector-
     ies.  Upon return from manualreply, the list is re-
     displayed, but it is NOT recomputed.
-
+
     Unlike most HPCM judging programs, errors made by
     this program are not written to log files, but are
-    announced on standard error.
-
+    written to the standard error output.
+
     This program is interactive.  A summary of its
     commands is:
 
@@ -199,18 +195,19 @@ lookat 'logical-expression'
 	    also listed."
 
 set help "
-# = call manualreply on mail subdirectory #
+# = call manualreply on mail subdirectory number # in\
+	the subdirectory list
 
 e logical-expression = change the logical expression to\
 	a new value.  List
-   all the mail subdirectories satisfying the new\
+  all the mail subdirectories satisfying the new\
    	expression.  For each
-   expression atom that matches a file line, display\
+  expression atom that matches a file line, display\
    	the first line matched.
 
-   Note: if you get an empty list, or file lines you\
+  Note: if you get an empty list, or file lines you\
    	expected are not listed,
-   there is a good chance you mistyped the expression.
+  there is a good chance you mistyped the expression.
 
 u = move up in the subdirectory list      \
 	p = ditto (previous)
@@ -223,7 +220,7 @@ x = exit      control-D = exit     \
 
 
 # If wrong number of arguments or first argument
-# begins with a `-doc', print documentation and exit.
+# begins with `-doc', print documentation and exit.
 #
 if { $argc != 1 || [regexp {^-doc} [lindex $argv 0]] } {
     puts $document
@@ -569,9 +566,11 @@ if { $manualcount == 0 } {
 	        }
 	    }
 	    {^a$} {
-	        puts [abreviations_doc]
+		puts ""
+	        puts [abbreviations_doc]
 		puts ""
 		continue?
+	    }
 	    {^\?} {
 	        puts $help
 		puts ""
