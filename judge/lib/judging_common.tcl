@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Jan  4 09:21:42 EST 2002
+# Date:		Sun Jan 20 09:05:30 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/01/04 14:31:27 $
+#   $Date: 2002/01/20 15:16:36 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.62 $
+#   $Revision: 1.63 $
 #
 
 # Table of Contents
@@ -1301,12 +1301,21 @@ foreach __d__ ". .. ../.. ../../.. ../../../.." {
 
 # If directory containing judging parameters file
 # is unique, source the file.  Otherwise call error.
+# Before sourcing file, run a security check: insist
+# that file not be readable by `others', but only by
+# group and owner.
 #
 if { [llength $judging_directory] == 1 } {
     set __d__ $judging_directory
     if { [file readable \
                $__d__/$judging_parameters_file] } {
-	source $__d__/$judging_parameters_file
+	set f $__d__/$judging_parameters_file
+	set p [file attributes $f -permissions]
+	if { $p & 4 } {
+	    error "security violation: $f is readable\
+	    	   by `others'"
+	}
+	source $f
     } else {
 	error "$__d__/$judging_parameters_file\
 	       not readable"
