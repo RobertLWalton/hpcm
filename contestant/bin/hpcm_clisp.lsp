@@ -112,6 +112,14 @@
 	    `(EXPECTED-TYPE ,(type-error-expected-type c))))
    (t
     (list c))))
+
+#+clisp
+(defun flush-line-feed (s-expression)
+  ;; In CLISP, a peek-char is needed after reading a (...)
+  ;; to get past the following line feed.
+
+  (if (/= 0 (system::line-position))
+      (peek-char nil nil nil nil)))
 
 (defun RUN (&key (IN *run-in*) (OUT *run-out*) (PAUSE *run-pause*))
   
@@ -216,10 +224,8 @@
 	    ((eq s-expression eof-value))
 	    (cond
 	     (out
-	      ;; For some strange reason, the peek-char
-	      ;; eliminates a spurious blank line in CLISP.
 	      #+clisp
-	      (peek-char nil nil nil nil)
+	      (flush-line-feed s-expression)
 	      (fresh-line)
 	      (princ '|=>|)
 	      (fresh-line)
@@ -241,7 +247,7 @@
 					; Print prompt.
 	      (fresh-line)
 	      (princ '|=> ? |)
-	      (let ((line (read-line *terminal-io*)))
+	      (let ((line (read-line *terminal-io* nil)))
 		(catch error-tag
 		  (unwind-protect
 		      (eval (read-from-string line nil))
@@ -250,10 +256,8 @@
 		      (write val :escape t :pretty t)
 		      (fresh-line)))
 	     ((not pause)
-	      ;; For some strange reason, the peek-char
-	      ;; eliminates a spurious blank line in CLISP.
 	      #+clisp
-	      (peek-char nil nil nil nil)
+	      (flush-line-feed s-expression)
 	      (fresh-line)
 	      (princ '|=>|)
 	      (fresh-line)
