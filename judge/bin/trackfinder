@@ -6,7 +6,7 @@
 #
 # File:		trackfinder
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Sep 29 07:30:39 EDT 2000
+# Date:		Tue Oct  3 15:26:06 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/10/03 03:16:09 $
+#   $Date: 2000/10/03 19:45:08 $
 #   $RCSfile: trackfinder,v $
-#   $Revision: 1.1 $
+#   $Revision: 1.2 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -32,7 +32,7 @@ set log_globally yes
 catch {
 
 set document "
-trackfinder
+trackfinder \[directory ...\]
 
     This program examines subdirectories of the mail
     directory that have names of the form:
@@ -57,6 +57,7 @@ trackfinder
 
     	rec  time {subject}	Mtime of and `Subject'
 				field of $received_file.
+	got  time		Mtimes of $gotten_file.
     	ext  time {filename}	Mtime of and name of
 				file extracted from
 				$received_file, if this
@@ -76,8 +77,10 @@ trackfinder
 	rep   time1 time2	Mtimes of $reply_file
 				and $no_reply_file,
 				respectively.
-	pid   time		Mtime of\
-				    $dispatch_pid_file.
+	pid   time1 time2	Mtime of\
+				    $dispatch_pid_file,
+				and time mtime was
+				read, respectively.
 
     If any file is missing, its time is `{}', and any
     contents are also `{}', as for a missing score file.
@@ -88,17 +91,45 @@ trackfinder
     seconds relative to the date in the `sub' line that
     begins the set of lines for a subdirectory.
 
+    If arguments are given, these are taken as the
+    names of the directories to look at.  These must
+    be valid relative to the current directory, and
+    can include names not of the form
+
+    	date-<<submitter>>-submission
+
+    in which case instead of a `sub' line there will be
+    a line of the form
+
+	dir date {directory-name}
+
+    where the date is taken as the mtime of the direc-
+    tory.
+
     This program logs errors in the log directory."
 
 
-# If there are any arguments, print document and
-# exit with error.
+# If the first argument begins with `-', print docu-
+# mentation and exit with error.
 #
-if { $argc != 0 } {
+if { $argc >= 1 && [regexp {^-} [lindex $argv 0]] } {
     puts $document
     exit 1
 }
 
+# Set list of directories to look at:
+#
+if { $argc > 0 } {
+    set directories $argv
+} else {
+    set directories \
+	[lsort [glob -nocomplain \
+	          $mail_directory/*-<<*>>-submission]]
+}
+
+# Return mtime of file, or "{}" if file is not
+# readable.
+#
 proc get_mtime { file } {
 
     global submit_time
@@ -111,6 +142,10 @@ proc get_mtime { file } {
     }
 }
 
+
+# Return first line file, or "{}" if file is not
+# readable or empty.
+#
 proc get_file { file } {
 
     if { ! [file readable $file] } {
@@ -123,15 +158,20 @@ proc get_file { file } {
 
 # Loop through the subdirectory names.
 #
-foreach dir \
-    [lsort [glob -nocomplain \
-	         $mail_directory/*-<<*>>-submission]] {
+foreach dir $directories {
+
+    if { ! [file isdirectory $dir] } {
+	error "$file is not a directory"
+    }
 
     set subdir [file tail $dir]
 
     if { ! [regexp {^(.*)-<<(.*)>>-submission$} \
     		   $subdir forget date submitter] } {
-    	continue;
+	if { $argc == 0 } continue;
+	set date [clock_to_filename_date \
+		     [file mtime $dir]]
+	set submitter UNKNOWN
     }
 
     set submitter [string trim $submitter]
@@ -163,6 +203,11 @@ foreach dir \
 	    set submitted_program \
 	        [file rootname $submitted_file]
 	}
+    }
+
+    set mtime [get_mtime $dir/$gotten_file]
+    if { $mtime != "{}" } {
+	puts "got $mtime"
     }
 
     if { $submitted_file != "" } {
@@ -207,7 +252,8 @@ foreach dir \
 
     set mtime [get_mtime $dir/$dispatch_pid_file]
     if { $mtime != "{}" } {
-	puts "pid $mtime"
+	puts "pid $mtime [expr { [clock seconds] \
+				 - $submit_time }]"
     }
 
     foreach file \
