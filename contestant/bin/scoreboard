@@ -1,10 +1,10 @@
-#!/bin/sh -f
+#!/bin/sh
 #
 # Display scoreboard.
 #
 # File:		scoreboard
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Sun Sep 17 21:50:27 EDT 2000
+# Date:		Mon Nov 13 10:18:44 EST 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,33 +13,42 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/09/18 02:24:18 $
+#   $Date: 2000/11/13 15:24:22 $
 #   $RCSfile: scoreboard,v $
-#   $Revision: 1.2 $
+#   $Revision: 1.3 $
 
+# Time between refreshes.
+#
 time=30
 
+# Process agument.
+#
 case "$1" in
     [1-9] )
-	if test ! -r ~/.hpcm_contest/scoreboard.$1
+    	# Argument is page number.
+	#
+	page=${HOME}/.hpcm_contest/scoreboard.$1
+	if test ! -r $page
 	then
-	    echo cannot read \
-	         ~/.hpcm_contest/scoreboard.$1
+	    echo cannot read $page
 	    exit 1
 	fi
 
 	while test 1 = 1
 	do
 	    clear
-	    cat ~/.hpcm_contest/scoreboard.$1
+	    cat $page
 	    sleep $time
 	done
 	;;
     "" )
-	if test ! -r ~/.hpcm_contest/scoreboard.1
+        # No argument: display all readable pages.
+	# Page 1 must be readable.
+	#
+	page=${HOME}/.hpcm_contest/scoreboard.1
+	if test ! -r $page
 	then
-	    echo cannot read \
-	         ~/.hpcm_contest/scoreboard.1
+	    echo cannot read $page
 	    exit 1
 	fi
 	
@@ -47,23 +56,27 @@ case "$1" in
 	do
 	    for i in 1 2 3 4
 	    do
-		if test -r ~/.hpcm_contest/scoreboard.$i
+		page=${HOME}/.hpcm_contest/scoreboard.$i
+		if test -r $page
 		then
 		    clear
-		    cat ~/.hpcm_contest/scoreboard.$i
+		    cat $page
 		    sleep $time
 		fi
 	    done
 	done
 	;;
     * )
+        # Other argument.  Display documentation and
+	# exit with an error.
+	#
     	echo "
 scoreboard [page]
 
     Displays each page of the scoreboard for $time sec-
     conds and then repeats, if no page argument given.
-    Otherwise just displays the page given page, and
-    refreshes the display every $time seconds."
+    Otherwise just displays the given page, and refresh-
+    es the display every $time seconds."
     	exit 1
 	;;
 esac
