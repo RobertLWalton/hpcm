@@ -4,7 +4,7 @@
 #
 # File:		SETUP_PROTOTYPE
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Sun Dec 10 06:26:25 EST 2000
+# Date:		Sun Dec 10 09:25:45 EST 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,14 +13,18 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/12/10 11:23:59 $
+#   $Date: 2000/12/10 14:32:58 $
 #   $RCSfile: SETUP_PROTOTYPE,v $
-#   $Revision: 1.6 $
+#   $Revision: 1.7 $
+
+# List of files to remove before making tar.
+#
+remove=".Xauthority .history"
 
 # Default list of files and directories that are NOT
 # to be moved to $contest/home.
 #
-keep=".ssh .snapshot .Xauthority .history .procmailrc"
+keep=".ssh .snapshot .procmailrc"
 
 # Change to the accounts home directory.
 #
@@ -83,13 +87,19 @@ SETUP_PROTOTYPE
     count, or one can log in as root and make this
     directory.
 
-    SETUP_PROTOTYPE takes all ordinary files and direc-
-    tories that it finds in ~ (the prototype account
-    home directory) and moves then to the contest/home
-    directory.  For every file or directory foo moved,
-    SETUP_PROTOTYPE links ~/foo to .hpcm_contest/home/
-    foo.  There are some exceptions that are NOT moved,
-    namely:
+    First, SETUP_PROTOTYPE does a \`cd' to the home
+    directory of the current (prototype) account and
+    removes the files:
+
+    	$remove
+
+    Then SETUP_PROTOTYPE takes all ordinary files and
+    directories that it finds in ~ (the prototype
+    account home directory) and moves then to the
+    contest/home directory.  For every file or directory
+    foo moved, SETUP_PROTOTYPE links ~/foo to .hpcm_
+    contest/home/foo.  There are some exceptions that
+    are NOT moved, namely:
 
     	$keep
 
@@ -124,7 +134,7 @@ SETUP_PROTOTYPE
     directory has u+x permissions).  It sets the per-
     mission of empty.ls, setup.tar, and setup.ls to a+r.
 
-    After running SETUP_PROTYTPE for the first time,
+    After running SETUP_PROTOTYPE for the first time,
     you should edit .cshrc and/or .bashrc to include
     .hpcm_contest/bin in the program search PATH.
 
@@ -230,6 +240,23 @@ then
     echo Guess not: exiting
     exit 0
 fi
+
+
+# Remove designated files.
+#
+for f in $remove
+do
+        if test -e "$f"
+	then
+	    if rm -f "$f"
+	    then
+		    echo "removed $f"
+	    else
+		    echo ERROR in rm -f "$f"
+		    exit 1
+	    fi
+	fi
+done
 
 
 # Move everything in the home directory that is not
