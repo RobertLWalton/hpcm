@@ -6,7 +6,7 @@
 #
 # File:		scoreboard
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Sep 16 07:30:27 EDT 2000
+# Date:		Mon Sep 18 11:12:40 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/09/16 11:24:21 $
+#   $Date: 2000/09/18 15:28:34 $
 #   $RCSfile: scoreboard_common.tcl,v $
-#   $Revision: 1.2 $
+#   $Revision: 1.3 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -177,12 +177,6 @@ while { "yes" } {
 }
 close $scores_ch
 
-# Test
-foreach submitter $scoreboard_submitters {
-    puts [array get $submitter-array]
-    puts ""
-}
-
 # Sort the problems alphabetically.
 #
 set sorted_problems [lsort $scoreboard_problems]
@@ -283,12 +277,9 @@ foreach submitter $scoreboard_submitters {
 
     lappend score_list \
 	    "[format {%03d} $problems_correct]\
-	     [format {%010d} $time_score]\
+	     [format {%09d} [expr 1000000000 - $time_score]]\
 	     $modifier $submitter $problem_scores"
 }
-
-puts $score_list
-puts ""
 
 # Start output of scoreboard.
 #
@@ -319,12 +310,11 @@ proc label_problems {} {
     puts ""
 }
 
-# Loop thought sorted score_list and output each
+# Loop though sorted score_list and output each
 # submitter.
 #
 set current_problems_correct ""
-foreach item $score_list {
-}
+foreach item [lsort -decreasing $score_list] {
     set problems_correct \
     	[string trimleft [lindex $item 0] "0"]
     if { $problems_correct == "" } {
@@ -332,6 +322,10 @@ foreach item $score_list {
     }
     set time_score \
     	[string trimleft [lindex $item 1] "0"]
+    if { $time_score == "" } {
+    	set time_score 0
+    }
+    set time_score [expr 1000000000 - $time_score]
     set modifier [lindex $item 2]
     set submitter [lindex $item 3]
     set problem_scores [lreplace $item 0 3]
