@@ -5,7 +5,7 @@
 #
 # File:		scorefinder
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Dec  4 10:03:51 EST 2000
+# Date:		Fri Jun 29 17:37:48 EDT 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/12/04 15:01:14 $
+#   $Date: 2001/06/29 21:57:20 $
 #   $RCSfile: scorefinder,v $
-#   $Revision: 1.7 $
+#   $Revision: 1.8 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -76,7 +76,8 @@ scorefinder \[-gotten\]
     	$gotten_file
     							
     If this file indicates that a file whose last two
-    name components are `pppp/pppp.txt' was gotten at a
+    name components are `pppp/pppp.eee' for some problem
+    statement file extension `.eee' was gotten at a
     certain date,  this program outputs the line
 
     	date submitter problem dg
@@ -155,9 +156,12 @@ foreach dir [glob -nocomplain \
 	    		     forget file] } {
 		set file [string trim $file]
 		if { [regexp \
-		         {^(|.*/)([^/]*)/([^/]*).txt$} \
+		     {^(|.*/)([^/]*)/([^/]*).([^.]*)$} \
 			 $file forget forget2 \
-			 name1 name2] \
+			 name1 name2 ext] \
+		     && [lsearch -exact \
+		         $problem_statement_extensions \
+			 .$ext] >= 0 \
 		     && $name1 == $name2 } {
 		    puts "$date $submitter $name1 dg"
 		}

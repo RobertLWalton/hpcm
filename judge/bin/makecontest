@@ -6,7 +6,7 @@
 #
 # File:		makejudgingdir
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Apr  6 09:48:54 EDT 2001
+# Date:		Fri Jun 29 15:55:40 EDT 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/04/06 13:51:18 $
+#   $Date: 2001/06/29 21:57:19 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.50 $
+#   $Revision: 1.51 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -51,21 +51,25 @@ makejudgingdir option ... index_specification ...
     -email	Sets up an email contest.  Equals -info,
     		-solutions, -mail, and -this_contest.
     -formal     Sets up a formal contest.  Equals all
-    		options but -info, -trashable, and -txt.
+    		options but -info, -trashable, and
+		-statement.
     -informal   Sets up an informal contest.  Equals all
     		options but -problems, -demos,
-		-trashable, and -txt.
+		-trashable, and -statement.
     -info	Make ./info, ./info/help/index,
     		./info/help/problems, ./info/help/demos.
     -solutions  Make ./solutions
-    -problems	Make ./contest/problems.  Includes .txt
-    		files for non-`all' directory entries
-		only if -txt given.
-    -demos	Make ./contest/demos.  Includes .txt
-    		files for non-`all' directory entries
-		only if -txt given.
-    -txt	Include .txt files in ./contest/
-		problems or ./contest/demos. 
+    -problems	Make ./contest/problems.  Includes
+    		problem statement files for non-`all'
+		directory entries only if -statement
+		is given.
+    -demos	Make ./contest/demos.  Includes
+    		problem statement files for non-`all'
+		directory entries only if -statement
+		is given.
+    -statement	Include problem statement (.txt, .html,
+    		.gif, etc.) files in ./contest/problems
+		or ./contest/demos. 
     -help	Make ./contest/help,
     		     ./contest/help/index,
     		     ./contest/help/problems,
@@ -81,6 +85,16 @@ makejudgingdir option ... index_specification ...
     -trashable  Make ./contest/trashable
     -printer    Make ./contest/printer
     -home	Make ./contest/home
+    -psexts "extension:..."
+    		Change the list of problem statement
+		file extensions.  These will be copied
+		into ./info, ./contest/problems, or
+		./contest/demos directories according to
+		the setting of other options.  The de-
+		fault problem statement file extensions
+		are:
+
+		    $problem_statement_extensions
 
   Index Specification:
 
@@ -161,9 +175,10 @@ makejudgingdir option ... index_specification ...
     item `all' option, or if it is a file.  If it is
     a directory with no `all' option, a new directory
     is created containing a symbolic link to any
-    Makefile and any .txt file in the directory.  The
-    .txt link is included within the ./info directory
-    even if no -txt program option is given.
+    Makefile and any problem statement files in the
+    directory.  The problem statement file links are
+    included within the ./info directory even if no
+    -statement program option is given.
 
     When an item is included in the ./contest directory
     (i.e., in ./contest/demos, ./contest/problems, or
@@ -177,11 +192,12 @@ makejudgingdir option ... index_specification ...
     are left with og-rx mode.  The `startcontest' prog-
     ram sets the mode of these to a+rx.  For a directory
     item with no `all' option, the item's Makefile is
-    copied, and the item's .txt file is copied if and
-    only if the -txt option is given.  For directory
-    items with the `all' option, the directory is copied
-    recursively, except no subdirectories whose last
-    component name is `CVS' or `RCS' are copied.
+    copied, and the item's problem statement files are
+    copied if and only if the -statement option is
+    given.  For directory items with the `all' option,
+    the directory is copied recursively, except no
+    subdirectories whose last component name is `CVS' or
+    `RCS' are copied.
 
     If we consider the directory pairs:
 
@@ -191,13 +207,14 @@ makejudgingdir option ... index_specification ...
 
     then if both directories of a pair are made, both
     are identical after symbolic links are followed,
-    except that if there is no -txt option, .txt files
-    are generally copied into ./info/demos and ./info
-    /problems subdirectories but not into ./contest
-    /demos or ./contest/problems subdirectories.  But
-    if the -txt option is given, the UNIX `diff -r'
-    command should report the two directories in each
-    of the above pairs to be identical.
+    except that if there is no -statement option,
+    problem statement files are generally copied into
+    ./info/demos and ./info/problems subdirectories but
+    not into ./contest /demos or ./contest/problems
+    subdirectories.  But if the -statement option is
+    given, the UNIX `diff -r' command should report the
+    two directories in each of the above pairs to be
+    identical.
 
     Directory items may also be included in the
     ./solutions directory.  In this directory the item
@@ -310,14 +327,13 @@ makejudgingdir option ... index_specification ...
 
 		  Otherwise, if the item does not have
 		  an `all' option, only the Makefile and
-		  *.txt file in the item directory will
-		  be included, with the *.txt file being
-		  included always for ./info subdirec-
-		  tories, but only if the `-txt' pro-
-		  gram option is given to the `make-
-		  judgingdir' program for ./contest
-		  subdirectories.  There must be at most
-		  one *.txt file if it is included.
+		  problem statement files in the item
+		  directory will be included, with the
+		  problem statement files being included
+		  always for ./info subdirectories, but
+		  only if the `-statement' program op-
+		  tion is given to the `makejudgingdir'
+		  program for ./contest subdirectories.
 
     The `include' option is rarely encoded directly in
     the index files.  Instead options categorizing the
@@ -573,7 +589,7 @@ set info_option			no
 set solutions_option		no
 set problems_option		no
 set demos_option 		no
-set txt_option			no
+set statement_option		no
 set help_option			no
 set help2_option		no
 set this_contest_option		no
@@ -584,6 +600,7 @@ set who_where_option		no
 set trashable_option		no
 set printer_option		no
 set home_option			no
+set psexts	$problem_statement_extensions
 #
 while { "yes" } {
     if { $argi >= $argc } break;
@@ -622,7 +639,7 @@ while { "yes" } {
         -solutions	{ set solutions_option 	yes }
         -problems	{ set problems_option 	yes }
         -demos		{ set demos_option 	yes }
-        -txt		{ set txt_option 	yes }
+        -statement	{ set statement_option 	yes }
         -help		{ set help_option 	yes }
         -help2		{ set help2_option 	yes }
 	-this_contest	{ set this_contest_option \
@@ -634,6 +651,12 @@ while { "yes" } {
         -trashable	{ set trashable_option 	yes }
         -printer	{ set printer_option 	yes }
         -home		{ set home_option 	yes }
+	-psexts		{ incr argi
+                          set psexts \
+			      [split [lindex $argv \
+			                     $argi] \
+				     ":"]
+			}
 	default		{ break }
     }
     incr argi
@@ -900,7 +923,7 @@ proc process_index_specification {} {
 	   demos_index_chs \
            info_option solutions_option \
 	   problems_option demos_option \
-	   help_option txt_option \
+	   help_option statement_option \
            info_directory solutions_directory \
 	   c_d
 
@@ -1067,16 +1090,18 @@ proc process_index_specification {} {
 			file mkdir $destination
 			link_file $source/Makefile \
 				  $destination/Makefile
-			set problem [glob -nocomplain \
-					  -- \
-			                  $source/*.txt]
-			if { [llength $problem] != 1 } {
-			    error "Too many or too few\
-				   $source/*.txt files"
+			foreach ext $psexts {
+			    foreach file \
+				[glob -nocomplain \
+				      -- \
+				      "$source/*$ext"] {
+				set file \
+				    [file tail $file]
+				link_file \
+				    $source/$file \
+				    $destination/$file
+			    }
 			}
-			set problem [file tail $problem]
-			link_file $source/$problem \
-				  $destination/$problem
 		    }
 		}
 
@@ -1104,27 +1129,22 @@ proc process_index_specification {} {
 				      $dest/Makefile
 			    grant_access $dest/Makefile
 
-			    if { $txt_option } {
-				set problem \
-				    [glob -nocomplain \
-				          -- \
-					  $source/*.txt]
-				if { [llength \
-				          $problem] \
-				     != 1 } {
-				    error \
-					"Too many or\
-					 too few\
-					 $source/*.txt\
-					 files"
-				}
-				set problem \
-				    [file tail $problem]
-				file copy \
-				    $source/$problem \
-				    $dest/$problem
-				grant_access \
-				    $dest/$problem
+			    if { $statement_option } {
+			      foreach ext $psexts {
+				foreach file \
+				    [glob
+				      -nocomplain \
+				      -- \
+				      "$source/*$ext"] {
+				  set file \
+				      [file tail $file]
+				  file copy \
+				      $source/$file \
+				      $dest/$file
+				  grant_access \
+				      $dest/$file
+			        }
+			      }
 			    }
 			}
 		    } else {
@@ -1404,9 +1424,10 @@ question into a file qqq and use the command:
 	hpcm_sendmail < qqq
 
 The print commands are not supported for an informal
-contest.  The problem descriptions are .txt files in
-the problem directories, and these can be emailed to
-your home computer to be printed there.
+contest.  The problem descriptions are files in the
+problem directories (.txt, .html, etc. files), and
+these can be emailed to your home computer to be
+printed there.
 
 In order to get good scores on problems, you must AVOID
 getting a problem description (with hpcm_get) UNTIL you
