@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/09/11 19:24:09 $
+#   $Date: 2001/09/11 19:31:18 $
 #   $RCSfile: old_scoreboard,v $
-#   $Revision: 1.18 $
+#   $Revision: 1.19 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -468,13 +468,16 @@ set spaces256 $spaces128$spaces128
 
 # Compute number of problems per line (ppl).
 # Also max_column of output (first column is 0).
+# But if there are no problems, exit program without
+# producing any output.
 #
 # scoreboard_width is the number of columns in the
 # scoreboard.
 
 set ppl [expr { ( $scoreboard_width - 20 ) / 10 } ]
 set np [llength $sorted_problems]
-if { 0 < $np && $np < $ppl } { set ppl $np }
+if { $np == 0 } { exit 0 }
+if { $np < $ppl } { set ppl $np }
 set max_column [expr { 20 + 10 * $ppl - 1 }]
 
 # Compute line marker characters.  First and last
