@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Oct 24 23:01:53 EDT 2002
+# Date:		Fri Oct 25 08:32:01 EDT 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/10/25 03:01:16 $
+#   $Date: 2002/10/25 12:44:40 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.121 $
+#   $Revision: 1.122 $
 
 # Table of Contents:
 #
@@ -490,8 +490,20 @@ set informal_scoreboard_instructions {
 #
 #	$judging_directory/contest/scoreboard.public
 #
-# is just a plain scoreboard with the freeze time as its
-# stop time.  The file
+# has two versions, one computed before the contest
+# start time, and one computed between the contest start
+# time and the contest freeze time.  Before the contest
+# start time it is a plain scoreboard computed with ""
+# start time, so dates and not problem times are
+# displayed, that includes demo problems and test
+# accounts, with the plain scoreboard being prefixed by
+# a comment that after the start time problem times will
+# be displayed and demos will not be.  After the contest
+# start time it is just a plain scoreboard with the
+# freeze time as stop time, no demos, and no test
+# accounts.
+#
+# The file
 #
 #	$judging_directory/contest/scoreboard.freeze
 #
@@ -532,10 +544,32 @@ set formal_scoreboard_instructions {
             scoreboard after winners have been" }
     { LINE "announced at the post contest meeting." }
 
+    { OUTPUT contest/scoreboard.public "" START }
+
+    { start_time "" }
+    { stop_time FREEZE }
+    { LINE "The demo problem `count' will disappear\
+            from the scoreboard once the contest" }
+    { LINE "starts.  Until the contest starts, dates of\
+            first correct submission are" }
+    { LINE "displayed (for demo problems).  After the\
+            contest starts, problem times" }
+    { LINE "(differences of first correct submission\
+            times and contest start time)" }
+    { LINE "will be displayed." }
+    BAR
+    BOARD
+    BAR
+
     { OUTPUT contest/scoreboard.public START FREEZE }
 
+    { start_time START }
     { stop_time FREEZE }
+    { problems { ! count } }
+    { submitters { ! test-account } }
+    BAR
     BOARD
+    BAR
 
     { OUTPUT contest/scoreboard.1 }
     GRANT_ACCESS
@@ -552,19 +586,23 @@ set formal_scoreboard_instructions {
 
     { LINE NAME "Current Scoreboard" TIME }
     BLANK
+    BAR
     { stop_time STOP }
     BOARD
-    BLANK
+    BAR
     { INPUT contest/who_where }
+    BAR
 
     { OUTPUT contest/scoreboard.final STOP STOP }
 
     { LINE NAME "Final Results" "" STOP }
     BLANK
+    BAR
     { stop_time STOP }
     BOARD
-    BLANK
+    BAR
     { INPUT contest/who_where }
+    BAR
 }
 
 # Set default scoreboard instructions to those for
