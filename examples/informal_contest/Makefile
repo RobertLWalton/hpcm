@@ -1,7 +1,7 @@
 # Makefile for an `informal' Contest
 #
 # File:		Makefile
-# Date:		Sat Dec  9 02:30:12 EST 2000
+# Date:		Sun Dec 10 05:03:15 EST 2000
 #
 # To make an informal contest named `foo':
 #
@@ -172,12 +172,15 @@
 #
 
 # 16. Run `make trashable' in your judging directory.
-#     This makes the file ~/contest_foo/trashable which
-#     lists the contestant accounts that can be
-#     reinitialized by `TRASH_ACCOUNT'.  These accounts
-#     have presumably not been made yet.
+#     This makes the file ./contest/trashable which
+#     lists the contestant accounts that can be reini-
+#     tialized by `TRASH_ACCOUNT'.  These accounts have
+#     presumably not been made yet (but its OK if they
+#     already exist).
 #
-# 17. As root, run the following commands:
+# 17. Then as root (you must log into the root account,
+#     you cannot use `su', as the paths will not be
+#     right), run the following commands:
 #
 #	cd ~JJJ/hpcm/secure/bin
 #	./hpcm_make_accounts ~JJJ/contest_foo
@@ -198,11 +201,11 @@
 #     linked to in the prototype account).
 #
 # 18. Run `make nontrashable' in your judging directory.
-#     This removes the file ~/contest_foo/trashable
-#     and prevents any contestants from accidentally
-#     trashing their own account by running TRASH_
-#     ACCOUNT (which requires the contestant's account
-#     name appear in ~/contest_foo/trashable).
+#     This removes the file ./contest/trashable and pre-
+#     vents any contestants from accidentally trashing
+#     their own account by running TRASH_ACCOUNT (which
+#     requires the contestant's account name appear in
+#     ~JJJ/contest_foo/trashable).
 #
 
 # 19. Run `makescoreboard -start' to start the score-
@@ -210,7 +213,8 @@
 #		./contest/scoreboard.1
 #     at intervals if something has changed.  This
 #     background process can be stopped by the
-#     `makescoreboard -stop' command.
+#     `makescoreboard -stop' command, and its status
+#     can be checked by `makescoreboard -status'.
 #
 # 20. Contest judging is automatic.  If you set the
 #     `reply_manager' and `log_manager' variables to
@@ -255,6 +259,9 @@ scoreboard:
 start_scoreboard:
 	makescoreboard -start
 
+stat_scoreboard:
+	makescoreboard -status
+
 stop_scoreboard:
 	makescoreboard -stop
 
@@ -272,6 +279,6 @@ update_scoreboard:
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/12/09 18:36:01 $
+#   $Date: 2000/12/10 10:28:57 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.6 $
+#   $Revision: 1.7 $
