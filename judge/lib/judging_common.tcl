@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Mar 23 05:06:35 EST 2003
+# Date:		Sat Mar 29 03:51:00 EST 2003
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2003/03/23 10:04:34 $
+#   $Date: 2003/03/29 09:00:36 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.107 $
+#   $Revision: 1.108 $
 #
 
 # Table of Contents
@@ -609,8 +609,8 @@ proc read_header { ch { first_line "" }
     set message_date			""
     set message_reply_to		""
     set message_subject			""
-    set message_content_transfer_encoding 7bit
-    set message_content_type		text/plain
+    set message_content_transfer_encoding ""
+    set message_content_type		""
     set message_x_hpcm_date		""
     set message_x_hpcm_reply_to		""
     set message_x_hpcm_signature	""
@@ -648,7 +648,25 @@ proc read_header { ch { first_line "" }
     while { "yes" } {
     	if { $line == "" } break
 
-	set found_field no
+	# Process any extra lines in a multi-line field,
+	# and read first line AFTER field value (or
+	# EOF).
+	#
+	set lines $line
+	while { "yes" } {
+	    set line [gets $ch]
+	    if { [eof $ch] \
+		 || ! [regexp \
+			   "^\[\ \t\]" \
+			   $line] } \
+		break;
+	    set lines "$lines\n$line"
+	}
+	if { $message_header == "" } {
+	    set message_header $lines
+	} else {
+	    set message_header $message_header\n$lines"
+	}
 
 	# Loop through field names we are looking for.
 	#
@@ -656,26 +674,11 @@ proc read_header { ch { first_line "" }
 	    if { [regexp \
 	    	    -nocase \
 		    "^(${fieldname})${ws}*:(.*)\$" \
-		    $line \
+		    $lines \
 		    forget realname fieldvalue] } {
 
-		# Come here when line is for the
+		# Come here when lines is for the
 		# field we are looking for.
-
-		# Process any extra lines in a
-		# multi-line field, and read first
-		# line AFTER field value (or EOF).
-		#
-		while { "yes" } {
-		    set line [gets $ch]
-		    if { [eof $ch] \
-			 || ! [regexp \
-			           "^\[\ \t\]" \
-				   $line] } \
-			break;
-		    set fieldvalue \
-			"$fieldvalue\n$line"
-		}
 
 		# If field is not to be omitted, set
 		# the global variables for it and for
@@ -688,35 +691,10 @@ proc read_header { ch { first_line "" }
 		           varname
 		    set $varname $fieldvalue
 		    set f "${realname}:${fieldvalue}"
-		    if { $message_header == "" } {
-		    	set message_header $f
-		    } else {
-			set message_header \
-			    "$message_header\n$f"
-		    }
 		}
 
-		# Indicate we found a field for the
-		# line and got next line after field,
-		# and stop looking at field names.
-		#
-		set found_field yes
 		break
 	    }
-	}
-
-	# If we did not find a field matching line,
-	# store line in message header and get next
-	# line.
-	#
-	if { $found_field == "no" } {
-	    if { $message_header == "" } {
-		set message_header $line
-	    } else {
-		set message_header \
-		    "$message_header\n$line"
-	    }
-	    set line [gets $ch]
 	}
 
 	# If next line is really and EOF, break.
@@ -760,15 +738,14 @@ proc read_header { ch { first_line "" }
 #				of message part, or of
 #				whole message for non-
 #				multipart messages.
-#				Defaults to main message
-#				header value.
+#				Defaults to 7bit.
 #	message_part_content_type
 #				`Content-Type:' field
 #				value of message part,
 #				or of whole message for
 #				non-multipart messages.
-#				Defaults to main message
-#				header value.
+#				Defaults to
+#				`text/plain'.
 #	message_part_error	Set to error message if
 #			        there is an error, or to
 #				"" if there is no error.
@@ -931,9 +908,15 @@ proc read_part_header { ch } {
 	if { ! $multipart } {
 	    set type \
 	        [string trim $message_content_type]
+	    if { $type == "" } {
+	        set type text/plain
+	    }
 	    set encoding \
 	        [string trim \
 		    $message_content_transfer_encoding]
+	    if { $encoding == "" } {
+	        set encoding 7bit
+	    }
 	}
 
 	# If type and encoding are not legal, continue
