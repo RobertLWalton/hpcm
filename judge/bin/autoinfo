@@ -4,7 +4,7 @@
 #
 # File:		autoinfo
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Jan 22 21:41:41 EST 2002
+# Date:		Sun Jan 27 21:07:25 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/01/23 02:42:43 $
+#   $Date: 2002/01/28 02:16:42 $
 #   $RCSfile: autoinfo,v $
-#   $Revision: 1.25 $
+#   $Revision: 1.26 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -32,7 +32,7 @@ set document "
 cd submission_directory; autoinfo
 
     Reads the `$received_file' file in the current
-    directory.  Thus file must contain a single email
+    directory.  This file must contain a single email
     request message with a subject line of the form:
 
     	Subject: get name ...
@@ -176,6 +176,10 @@ if { $argc != 0 } {
 #
 set received_ch [open $received_file r]
 read_header $received_ch
+if { [catch { llength $message_subject }] } {
+    error "Bad `Subject:' field in message:\n\
+	  \   Subject:$message_subject"
+}
 switch [llength $message_subject] {
 
     0		{
@@ -287,13 +291,13 @@ proc info_expand { name } {
     }
 }
 
-foreach n [lreplace $message_subject 0 0] {
+foreach n [lrange $message_subject 1 end] {
     info_expand $n
 }
 
 set lines ""
 
-if { $forbiddens != "" } {
+if { [llength $forbiddens] > 0 } {
     lappend lines \
 	    "Some requested file names are forbidden:"
     foreach item $forbiddens {
@@ -302,20 +306,20 @@ if { $forbiddens != "" } {
     }
     lappend lines ""
 } 
-if { $illegals != "" } {
+if { [llength $illegals] > 0 } {
     lappend lines \
 	    "Some requested file names are illegal:"
-    while { $illegals != "" } {
+    while { [llength $illegals] > 0 } {
 	lappend lines \
 		"    [lrange $illegals 0 2]"
 	set illegals [lrange $illegals 3 end]
     }
     lappend lines ""
 } 
-if { $unreadables != "" } {
+if { [llength $unreadables] > 0 } {
     lappend lines \
 	    "Some requested file names are unreadable:"
-    while { $unreadables != "" } {
+    while { [llength $unreadables] > 0 } {
 	lappend lines \
 		"    [lrange $unreadables 0 2]"
 	set unreadables [lrange $illegals 3 end]
@@ -323,8 +327,8 @@ if { $unreadables != "" } {
     lappend lines ""
 } 
 
-if { $lines != "" } {
-    if { $ok_names == "" } {
+if { [llength $lines] > 0 } {
+    if { [llength $ok_names] == 0 } {
 	lappend lines \
 		"There were no OK file names provided\
 		 in the requesting message."
@@ -333,7 +337,11 @@ if { $lines != "" } {
 		 should have the form:"
 	lappend lines \
 		"    Subject: get filename ..."
-	eval compose_reply -errors $lines
+	eval compose_reply -errors \
+	    [concat LINES $lines] \
+	    BLANK \
+	    { BAR "this message replies to:" } \
+	    RECEIVED-HEADER
 	send_reply
     } else {
 	lappend lines \
@@ -348,14 +356,14 @@ if { $lines != "" } {
     }
 }
 
-if { $ok_names != "" } {
+if { [llength $ok_names] > 0 } {
 
     set lines ""
     lappend lines \
 	    "The following requested files appear\
 	     below after the request message header:"
     set fs $ok_names
-    while { $fs != "" } {
+    while { [llength $fs] > 0 } {
 	lappend lines "    [lrange $fs 0 2]"
 	set fs [lrange $fs 3 end]
     }
@@ -365,7 +373,9 @@ if { $ok_names != "" } {
 	    [concat LINES $lines] \
 	    BLANK \
 	    { BAR "this message replies to:" } \
-	    RECEIVED-HEADER
+	    RECEIVED-HEADER \
+	    BAR \
+	    BLANK
 
     set reply_ch [open $reply_file+ a]
 
