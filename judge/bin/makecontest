@@ -6,7 +6,7 @@
 #
 # File:		makejudgingdir
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Jun 29 15:55:40 EDT 2001
+# Date:		Sat Jun 30 02:53:47 EDT 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/06/29 21:57:19 $
+#   $Date: 2001/06/30 07:10:39 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.51 $
+#   $Revision: 1.52 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -52,24 +52,24 @@ makejudgingdir option ... index_specification ...
     		-solutions, -mail, and -this_contest.
     -formal     Sets up a formal contest.  Equals all
     		options but -info, -trashable, and
-		-statement.
+		-description.
     -informal   Sets up an informal contest.  Equals all
     		options but -problems, -demos,
-		-trashable, and -statement.
+		-trashable, and -description.
     -info	Make ./info, ./info/help/index,
     		./info/help/problems, ./info/help/demos.
     -solutions  Make ./solutions
     -problems	Make ./contest/problems.  Includes
-    		problem statement files for non-`all'
-		directory entries only if -statement
+    		problem description files for non-`all'
+		directory entries only if -description
 		is given.
     -demos	Make ./contest/demos.  Includes
-    		problem statement files for non-`all'
-		directory entries only if -statement
+    		problem description files for non-`all'
+		directory entries only if -description
 		is given.
-    -statement	Include problem statement (.txt, .html,
-    		.gif, etc.) files in ./contest/problems
-		or ./contest/demos. 
+    -description     Include problem description (.txt,
+    		.html, .ps, etc.) files in ./contest/
+		problems or ./contest/demos. 
     -help	Make ./contest/help,
     		     ./contest/help/index,
     		     ./contest/help/problems,
@@ -83,19 +83,20 @@ makejudgingdir option ... index_specification ...
 		     ./contest/secure/hpcm_sendmail.rc
     -who_where  Make ./contest/who_where
     -trashable  Make ./contest/trashable
+
     -printer    Make ./contest/printer
     -home	Make ./contest/home
-    -psexts "extension:..."
-    		Change the list of problem statement
-		file extensions.  These will be copied
-		into ./info, ./contest/problems, or
-		./contest/demos directories according to
-		the setting of other options.  The de-
-		fault problem statement file extensions
-		are:
+    -pdexts \"extension:...\"
+    		Change the list of problem description
+		file extensions.  Files with these ext-
+		ensions will be copied into ./info,
+		./contest/problems, or ./contest/demos
+		directories according to the setting of
+		other options.  The default problem
+		description file extensions are:
 
-		    $problem_statement_extensions
-
+		    $problem_description_extensions
+
   Index Specification:
 
     index_file\[: index_directory\], name1s=name1t, \\
@@ -119,7 +120,7 @@ makejudgingdir option ... index_specification ...
     directory, according to instructions in the index
     specifications and options.  The form of the index
     specifications and options is given above.
-
+
     The `./contest' directory, if any, should be symbol-
     ically linked to the actual contest directory before
     this program is run.  If the `./contest' directory
@@ -134,7 +135,7 @@ makejudgingdir option ... index_specification ...
     edit certain files and run certain programs to the
     ./TODO file, and prints this file at the end of this
     program (unless it is empty).
-
+
     The index files are read and used to generate a list
     of items to be included in the ./info and ./contest
     directories.  Each item is a file or directory, and
@@ -155,7 +156,7 @@ makejudgingdir option ... index_specification ...
     `help/', the `help/problems' file if the item name
     begins with `problems/', or the `help/demos' file
     if the item name begins with `demos/'.
-
+
     When an item entry is copied to an output index,
     the `***' in the first line of the entry is replace
     by 3 space characters, the item name is replaced by
@@ -169,16 +170,16 @@ makejudgingdir option ... index_specification ...
     put index.  More specifically, a header entry is
     copied if it is separated from the item entry being
     copied only by other item entries.
-
+
     When an item is included in the ./info directory,
     a symbolic link is made to the item if it has the
     item `all' option, or if it is a file.  If it is
     a directory with no `all' option, a new directory
     is created containing a symbolic link to any
-    Makefile and any problem statement files in the
-    directory.  The problem statement file links are
+    Makefile and any problem description files in the
+    directory.  The problem description file links are
     included within the ./info directory even if no
-    -statement program option is given.
+    -description program option is given.
 
     When an item is included in the ./contest directory
     (i.e., in ./contest/demos, ./contest/problems, or
@@ -188,12 +189,12 @@ makejudgingdir option ... index_specification ...
     
     		./contest/problems 
     		./contest/help/problems
-
+
     are left with og-rx mode.  The `startcontest' prog-
     ram sets the mode of these to a+rx.  For a directory
     item with no `all' option, the item's Makefile is
-    copied, and the item's problem statement files are
-    copied if and only if the -statement option is
+    copied, and the item's problem description files are
+    copied if and only if the -description option is
     given.  For directory items with the `all' option,
     the directory is copied recursively, except no
     subdirectories whose last component name is `CVS' or
@@ -204,18 +205,18 @@ makejudgingdir option ... index_specification ...
     	./info/demos		./contest/demos
     	./info/problems		./contest/problems
     	./info/help		./contest/help
-
+
     then if both directories of a pair are made, both
     are identical after symbolic links are followed,
-    except that if there is no -statement option,
-    problem statement files are generally copied into
+    except that if there is no -description option,
+    problem description files are generally copied into
     ./info/demos and ./info/problems subdirectories but
     not into ./contest /demos or ./contest/problems
-    subdirectories.  But if the -statement option is
+    subdirectories.  But if the -description option is
     given, the UNIX `diff -r' command should report the
     two directories in each of the above pairs to be
     identical.
-
+
     Directory items may also be included in the
     ./solutions directory.  In this directory the item
     name after substitutions is stripped of any direc-
@@ -244,11 +245,11 @@ makejudgingdir option ... index_specification ...
     		./info-	    becomes    ./info--
     		./info	    becomes    ./info-
     		./info+	    becomes    ./info
-
+
     A similar stratagem is followed for ./solutions,
     ./contest/problems, ./contest/demos, and .contest/
     help.
-
+
     The item entries and header entries are in input
     index files, each of which is referenced in a sep-
     arate index specification.  The format of an index
@@ -327,13 +328,14 @@ makejudgingdir option ... index_specification ...
 
 		  Otherwise, if the item does not have
 		  an `all' option, only the Makefile and
-		  problem statement files in the item
+		  problem description files in the item
 		  directory will be included, with the
-		  problem statement files being included
-		  always for ./info subdirectories, but
-		  only if the `-statement' program op-
-		  tion is given to the `makejudgingdir'
-		  program for ./contest subdirectories.
+		  problem description files being in-
+		  cluded always for ./info subdirector-
+		  ies, but only if the `-description'
+		  program option is given to the
+		  `makejudgingdir' program for ./contest
+		  subdirectories.
 
     The `include' option is rarely encoded directly in
     the index files.  Instead options categorizing the
@@ -589,7 +591,7 @@ set info_option			no
 set solutions_option		no
 set problems_option		no
 set demos_option 		no
-set statement_option		no
+set description_option		no
 set help_option			no
 set help2_option		no
 set this_contest_option		no
@@ -600,7 +602,7 @@ set who_where_option		no
 set trashable_option		no
 set printer_option		no
 set home_option			no
-set psexts	$problem_statement_extensions
+set pdexts	$problem_description_extensions
 #
 while { "yes" } {
     if { $argi >= $argc } break;
@@ -639,7 +641,8 @@ while { "yes" } {
         -solutions	{ set solutions_option 	yes }
         -problems	{ set problems_option 	yes }
         -demos		{ set demos_option 	yes }
-        -statement	{ set statement_option 	yes }
+        -description	{ set description_option \
+						yes }
         -help		{ set help_option 	yes }
         -help2		{ set help2_option 	yes }
 	-this_contest	{ set this_contest_option \
@@ -651,8 +654,8 @@ while { "yes" } {
         -trashable	{ set trashable_option 	yes }
         -printer	{ set printer_option 	yes }
         -home		{ set home_option 	yes }
-	-psexts		{ incr argi
-                          set psexts \
+	-pdexts		{ incr argi
+                          set pdexts \
 			      [split [lindex $argv \
 			                     $argi] \
 				     ":"]
@@ -923,7 +926,7 @@ proc process_index_specification {} {
 	   demos_index_chs \
            info_option solutions_option \
 	   problems_option demos_option \
-	   help_option statement_option \
+	   help_option description_option \
            info_directory solutions_directory \
 	   c_d
 
@@ -1090,7 +1093,7 @@ proc process_index_specification {} {
 			file mkdir $destination
 			link_file $source/Makefile \
 				  $destination/Makefile
-			foreach ext $psexts {
+			foreach ext $pdexts {
 			    foreach file \
 				[glob -nocomplain \
 				      -- \
@@ -1129,8 +1132,8 @@ proc process_index_specification {} {
 				      $dest/Makefile
 			    grant_access $dest/Makefile
 
-			    if { $statement_option } {
-			      foreach ext $psexts {
+			    if { $description_option } {
+			      foreach ext $pdexts {
 				foreach file \
 				    [glob
 				      -nocomplain \
