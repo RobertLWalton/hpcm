@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Mar 14 02:11:50 EST 2003
+# Date:		Fri Mar 14 03:49:25 EST 2003
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2003/03/14 08:45:12 $
+#   $Date: 2003/03/14 08:52:06 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.93 $
+#   $Revision: 1.94 $
 #
 
 # Table of Contents
@@ -748,7 +748,7 @@ proc read_header { ch { first_line "" }
     if { [regexp -nocase "^${ws}*multipart" \
     		 $message_content_type] } {
 
-	set b1 "${ws}*boundary=\"(\[^"\])\""
+	set b1 "${ws}*boundary=\"(\[^\"\])\""
 	set b2 "${ws}*boundary=(${nws}*)(${ws}|\$)"
 	if { [regexp -nocase $b1 \
 		     $message_content_type \
@@ -764,7 +764,7 @@ proc read_header { ch { first_line "" }
 	}
 	set message_part_boundary $boundary
 
-	regsub {.} $bound {\\&} terminator
+	regsub {.} $boundary {\\&} terminator
 	set terminator "--${terminator}"
 
 	# Loop through parts until one found with
@@ -795,7 +795,7 @@ proc read_header { ch { first_line "" }
 		set ct "${ct}${ws}*(${nws}*)(${ws}|\$)"
 		set cte \
 		    "${ws}*content-transfer-encoding"
-		set cte "${cte}${ws}:""
+		set cte "${cte}${ws}:"
 		set cte "${cte}${ws}*(${nws}*)(${ws}|\$)"
 		while { "yes" } {
 
