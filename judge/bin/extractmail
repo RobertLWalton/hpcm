@@ -4,7 +4,7 @@
 #
 # File:		extractmail
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Mar 15 04:36:23 EST 2003
+# Date:		Wed Mar 19 00:45:25 EST 2003
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2003/03/15 09:39:17 $
+#   $Date: 2003/03/19 06:16:30 $
 #   $RCSfile: extractmail,v $
-#   $Revision: 1.46 $
+#   $Revision: 1.47 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -212,11 +212,7 @@ if { [catch { set received_ch \
         "SYSTEM ERROR: cannot read $received_file"
 }
 set received_mtime [file mtime $received_file]
-read_header $received_ch yes
-
-if { $message_header_error != "" } {
-    extract_error "ERROR: $message_header_error"
-}
+read_header $received_ch
 
 # Check for legality of subject line:
 #
@@ -248,6 +244,12 @@ if { $problem == "" } {
     extract_error \
          "ERROR: Bad problem name (begins with `-'):\
 	  $problem"
+}
+
+# Read part.
+read_part_header $received_ch
+if { $message_part_error != "" } {
+    extract_error "ERROR: $message_part_error"
 }
 
 # Source any problem .rc file.
@@ -439,7 +441,7 @@ proc read_non_blank_line { eof } {
     upvar $eof e
 
     while { "yes" } {
-	set line [read_body $received_ch e]
+	set line [read_part_line $received_ch e]
 	if { $e } {
 	    return ""
 	} elseif { [regexp $NWS $line] } {
@@ -507,7 +509,7 @@ if { [regexp {^HPCM_BEGIN} $line] } {
 	# HPCM_END line found.
 	#
 	while { "yes" } {
-	    set line [read_body $received_ch eof]
+	    set line [read_part_line $received_ch eof]
 	    if { $eof } {
 		extract_error \
 		    "ERROR: Could not find\
@@ -613,7 +615,7 @@ if { [regexp {^HPCM_BEGIN} $line] } {
 		}
 	    }
 	    lappend lines $line
-	    set line [read_body $received_ch eof]
+	    set line [read_part_line $received_ch eof]
 	    if { $eof } break
 	}
 
@@ -695,7 +697,7 @@ if { [regexp {^HPCM_BEGIN} $line] } {
 	set blank_lines ""
 	while { $eof == "no" } {
 	    lappend blank_lines $line
-	    set line [read_body $received_ch eof]
+	    set line [read_part_line $received_ch eof]
 	    if { [regexp $NWS $line] } break
 	}
 
