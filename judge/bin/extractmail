@@ -4,7 +4,7 @@
 #
 # File:		extractmail
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Feb 12 01:52:53 EST 2003
+# Date:		Sat Mar 15 00:46:28 EST 2003
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2003/02/12 06:51:28 $
+#   $Date: 2003/03/15 06:34:28 $
 #   $RCSfile: extractmail,v $
-#   $Revision: 1.44 $
+#   $Revision: 1.45 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -212,7 +212,11 @@ if { [catch { set received_ch \
         "SYSTEM ERROR: cannot read $received_file"
 }
 set received_mtime [file mtime $received_file]
-read_header $received_ch
+read_header $received_ch yes
+
+if { $message_header_error != "" } {
+    extract_error "ERROR: $message_header_error"
+}
 
 # Check for legality of subject line:
 #
@@ -425,16 +429,18 @@ proc open_file { filename } {
     return write
 }
 
-# Return next non-blank line in received_ch.  Return ""
-# on end of file.
+# Return next non-blank line in received_ch.  Set eof
+# variable on end of file.  Return "" on eof.
 #
-proc read_non_blank_line {} {
+proc read_non_blank_line { eof } {
 
     global received_ch NWS
 
+    upvar $eof e
+
     while { "yes" } {
-	set line [gets $received_ch]
-	if { [eof $received_ch] } {
+	set line [read_body $received_ch e]
+	if { $e } {
 	    return ""
 	} elseif { [regexp $NWS $line] } {
 	    return $line
@@ -474,8 +480,8 @@ proc close_file { filename } {
 
 # Skip over blank lines at start of body.
 #
-set line [read_non_blank_line]
-if { $line == "" } {
+set line [read_non_blank_line eof]
+if { $eof } {
     extract_error "ERROR: message body is blank"
 }
 
@@ -501,8 +507,8 @@ if { [regexp {^HPCM_BEGIN} $line] } {
 	# HPCM_END line found.
 	#
 	while { "yes" } {
-	    set line [gets $received_ch]
-	    if { [eof $received_ch] } {
+	    set line [read_body $received_ch eof]
+	    if { $eof } {
 		extract_error \
 		    "ERROR: Could not find\
 		     `HPCM_END $filename' line"
@@ -573,7 +579,7 @@ if { [regexp {^HPCM_BEGIN} $line] } {
     set file_ch ""
     set mode none
     set blank_lines ""
-    while { ! [eof $received_ch] } {
+    while { $eof == "no" } {
 
 	# Accumulate non-blank lines and look for
 	# filename.
@@ -607,8 +613,8 @@ if { [regexp {^HPCM_BEGIN} $line] } {
 		}
 	    }
 	    lappend lines $line
-	    set line [gets $received_ch]
-	    if { [eof $received_ch] } break
+	    set line [read_body $received_ch eof]
+	    if { $eof } break
 	}
 
 	# If no filename found and no previous file
@@ -687,9 +693,9 @@ if { [regexp {^HPCM_BEGIN} $line] } {
 	# Accumulate blank lines.
 	#
 	set blank_lines ""
-	while { ! [eof $received_ch] } {
+	while { $eof == "no" } {
 	    lappend blank_lines $line
-	    set line [gets $received_ch]
+	    set line [read_body $received_ch eof]
 	    if { [regexp $NWS $line] } break
 	}
 
@@ -697,7 +703,7 @@ if { [regexp {^HPCM_BEGIN} $line] } {
 	# current directory and end loop processing
 	# received message.
 	#
-	if { [eof $received_ch] } {
+	if { $eof } {
 	    if { $mode != "none" } {
 	        close_file $opened_filename
 	    }

@@ -4,7 +4,7 @@
 #
 # File:		autoinfo
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Feb  5 07:56:18 EST 2002
+# Date:		Sat Mar 15 01:18:34 EST 2003
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/02/06 00:33:03 $
+#   $Date: 2003/03/15 06:34:28 $
 #   $RCSfile: autoinfo,v $
-#   $Revision: 1.31 $
+#   $Revision: 1.32 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -172,13 +172,32 @@ if { $argc != 0 } {
     exit 1
 }
 
+# Reply with error.
+#
+proc request_error { what } {
+    reply { LINE "ERROR while reading requesting\
+                  email:" } \
+          [list LINE $what] \
+	  BLANK \
+	  {LINE "THIS REQUEST (see below) IGNORED" } \
+	  {LINE "YOU MUST RESUBMIT" } \
+	  BLANK \
+	  { BAR "this message replies to:" } \
+	  RECEIVED-HEADER \
+	  BLANK \
+	  RECEIVED-BODY
+    exit 0
+}
+
 # Find the subject.  If bad subject call error.
 #
 set received_ch [open $received_file r]
-read_header $received_ch
+read_header $received_ch yes
 if { [catch { llength $message_subject }] } {
     error "Bad `Subject:' field in message:\n\
 	  \   Subject:$message_subject"
+} elseif { $message_header_error != "" } {
+    reply_error $message_header_error
 }
 switch [llength $message_subject] {
 
@@ -197,18 +216,7 @@ switch [llength $message_subject] {
 # If non-empty body reply with error.
 #
 if { [blank_body $received_ch] == "no" } {
-    reply { LINE "ERROR while reading requesting\
-                  email:" } \
-          { LINE "    Non-blank body in message." } \
-	  BLANK \
-	  {LINE "THIS REQUEST (see below) IGNORED" } \
-	  {LINE "YOU MUST RESUBMIT" } \
-	  BLANK \
-	  { BAR "this message replies to:" } \
-	  RECEIVED-HEADER \
-	  BLANK \
-	  RECEIVED-BODY
-    exit 0
+    reply_error "    Non-blank body in message."
 }
 close $received_ch
 

@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Mar 14 23:02:21 EST 2003
+# Date:		Sat Mar 15 01:26:07 EST 2003
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2003/03/15 04:18:07 $
+#   $Date: 2003/03/15 06:34:18 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.98 $
+#   $Revision: 1.99 $
 #
 
 # Table of Contents
@@ -527,11 +527,17 @@ proc log_error { error_output } {
 # ------- ------ ---------
 
 
-# Read an email message header from the channel. If
-# given, the first line of the header is the second
-# argument (note that email header lines cannot be
+# Read an email message header from the channel. If the
+# first_line argument is given, it is the first line of
+# the header (note that email header lines cannot be
 # empty).  Stop reading at the first empty line and
 # discard that line.
+#
+# But if the find_part argument is set to "yes", and the
+# message is multipart, skip to the first part that has
+# an acceptable Content-Type and Content-Transfer-
+# Encoding, as determined by the content_type_values and
+# content_transfer_encoding_values global variables.
 #
 # The results are returned in global variables.  Unless
 # otherwise indicated, header fields are for the main
@@ -552,6 +558,8 @@ proc log_error { error_output } {
 #				 Encoding:' field value.
 #				For multi-part messages,
 #				this is for the part.
+#				May be "quoted-
+#				printable".
 #	message_content_type	`Content-Type:' field
 #				value.  For multi-part
 #				messages, this is for
@@ -582,8 +590,8 @@ proc log_error { error_output } {
 # message_... global variable for that field is set to
 # "".
 #
-# If a third argument is given, it is a list of field
-# names (written with all lower case letters) that
+# If an omit_fields argument is given, it is a list of
+# field names (written with all lower case letters) that
 # are to be deleted from the header as it is read, and
 # thereby completely ignored.  The typical value is:
 #
@@ -591,13 +599,14 @@ proc log_error { error_output } {
 #
 # The global message_header_error is set non-"" if
 # there is some error.  Only multipart messages can
-# have an error.
+# have an error, and only if find_part is "yes".
 #
 # The global message_terminator is set to a regexp that
 # matches a line that terminates the message (part)
 # body, or is set to "" if there is no such regexp.
 #
-proc read_header { ch { first_line "" }
+proc read_header { ch { find_part no }
+		      { first_line "" }
                       { omit_fields "" } } {
     global message_header \
 	   message_header_error \
@@ -626,8 +635,8 @@ proc read_header { ch { first_line "" }
     set message_date			""
     set message_reply_to		""
     set message_subject			""
-    set message_content_transfer_encoding ""
-    set message_content_type		""
+    set message_content_transfer_encoding 7bit
+    set message_content_type		text/plain
     set message_part_boundary		""
     set message_x_hpcm_date		""
     set message_x_hpcm_reply_to		""
@@ -747,8 +756,9 @@ proc read_header { ch { first_line "" }
     # and content-transfer-encoding-values global
     # variables.
     #
-    if { [regexp -nocase "^${ws}*multipart" \
-    		 $message_content_type] } {
+    if { $find_part \
+         && [regexp -nocase "^${ws}*multipart" \
+    		    $message_content_type] } {
 
 	set b1 "${ws}boundary${ws}*=${ws}*"
 	set b1 "${b1}\"(\[^\"\])\""
@@ -819,6 +829,10 @@ proc read_header { ch { first_line "" }
 		# If type and encoding are legal, break
 		# out with legal part found.
 		#
+		if { [regexp {^quoted-printable} \
+			     $encoding] } {
+		    set encoding quoted-printable
+		}
 		set ctv $content-type-values
 		set ctev \
 		    $content-transfer-encoding-values
@@ -851,13 +865,62 @@ proc read_header { ch { first_line "" }
 
         # Come here if not multi-part message.
 	#
-	if { $message_header_error != "" \
+	if {    $message_header_error != "" \
 	     && $format_submissions == "no" \
 	     && $unformatted_end_line != "" } {
 	    set message_terminator \
 	        "^${unformatted_end_line}\$"
 	}
     }
+}
+
+# Using information from the last call to read_header,
+# return the next body line.  Set the end_of_file
+# variable to "yes" if at end of file or next line
+# is terminator, and to "no" otherwise.  Return line,
+# or return "" on end of file.
+#
+# If message_terminator is not "", a line matching it
+# indicates end of file.
+#
+# If message_content_transfer_encoding is "quoted-
+# printable", common =XX sequences are translated.
+#
+proc read_body { ch end_of_file } {
+
+    global message_content_transfer_encoding \
+           message_terminator
+
+    upvar $end_of_file eof
+    set line [gets $ch]
+    if { [eof $ch] } {
+        set eof yes
+	return ""
+    }
+
+    if { $message_content_transfer_encoding \
+         == "quoted-printable" \
+	 && [regexp {=} $line] } {
+
+	 while { [regexp {^(.*)=$} $line forget line] \
+	 		} {
+	     set line "${line}[gets $ch]"
+	 }
+
+	 regsub -all {=09} $line "\t" line
+	 regsub -all {=0C} $line "\f" line
+	 regsub -all {=20} $line "\ " line
+	 regsub -all {=3D} $line "=" line
+    }
+
+    if { $message_terminator != "" \
+         && [regexp $message_terminator $line] } {
+	set eof yes
+	return ""
+    }
+
+    set eof no
+    return $line
 }
 
 # Using information from the last call to read_header,
@@ -1298,25 +1361,19 @@ proc send_reply { args } {
     }
 }
 
-# Read lines from channel.  Return `yes' if eof or a
-# message_terminator line  encountered before a non-
-# blank line.  Return `no' if other non-blank line
+# Read message body lines from channel.  Return `yes' if
+# eof or a message_terminator line encountered before a
+# non-blank line.  Return `no' if other non-blank line
 # encountered.
 #
 proc blank_body { ch } {
 
-    global message_terminator
-
     while { "yes" } {
-	set line [gets $ch]
-	if { [eof $ch] } {
+	set line [read_body $ch eof]
+	if { $eof } {
 	    return yes
 	} elseif { [regexp "^\[\ \t\]*\$" $line] } {
 	    # blank lines are ok
-	} elseif { $message_terminator != "" \
-	           && [regexp $message_terminator \
-			      line] }{
-	    return yes
 	} else {
 	    return no
 	}
