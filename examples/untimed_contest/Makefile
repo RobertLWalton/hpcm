@@ -31,6 +31,12 @@
 #    crontab job.  Use `make check_scoreboard' to check
 #    the crontab job status, and `make stop_scoreboard'
 #    to stop the crontab job.
+#
+# 7. Contest judging is automatic.  If you set the
+#    `reply_manager' variable to your email address, you
+#    will be notified of any errors or questions.  You
+#    many use the `tracker' program to find unchecked
+#    errors.
 
 HPCM=${HOME}/hpcm
 
@@ -81,6 +87,6 @@ clean:
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/12/01 01:09:38 $
+#   $Date: 2000/12/01 02:35:58 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.5 $
+#   $Revision: 1.6 $
