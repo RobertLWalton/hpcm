@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Jan 29 23:24:15 EST 2002
+# Date:		Wed Jan 30 00:39:37 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/01/30 04:29:42 $
+#   $Date: 2002/01/30 05:49:07 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.81 $
+#   $Revision: 1.82 $
 #
 
 # Table of Contents
@@ -1176,13 +1176,29 @@ proc compose_response { { compose_reply_options "" } } {
     global default_response_instructions \
            response_instructions_file
 
-    set response_instructions \
-	$default_response_instructions
+    if { [catch { llength \
+		      $default_response_instructions \
+		      		}] } {
+	error "Badly formatted \
+	       default_response_instructions value"
+    }
+
     if { [file exists $response_instructions_file] } {
         set response_instructions \
-            [concat [read_entire_file \
-	                 $response_instructions_file] \
-		    $response_instructions]
+            [read_entire_file \
+	         $response_instructions_file]
+	if { [catch { llength \
+			  $response_instructions }] } {
+	    error "Badly formatted \
+	    	   $response_instructions_file file\
+		   value"
+	}
+        set response_instructions \
+            [concat $response_instructions \
+	    	    $default_response_instructions]
+    } else {
+	set response_instructions \
+	    $default_response_instructions
     }
 
     set commands ""
@@ -1228,6 +1244,12 @@ proc send_response { commands } {
 # at EXIT.  Return `yes' if EXIT found, `no' otherwise.
 #
 proc parse_block { block commands } {
+
+    if { [catch { llength $block }] } {
+	error "Badly formatted \
+	       $response_instructions_file file\
+	       value part:\n    $block"
+    }
 
     upvar $commands c
 
