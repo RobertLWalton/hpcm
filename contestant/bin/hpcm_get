@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/10/08 06:39:27 $
+#   $Date: 2000/10/08 08:50:12 $
 #   $RCSfile: hpcm_get
-#   $Revision: 1.2 $
+#   $Revision: 1.3 $
 
 cd
 
@@ -199,10 +199,26 @@ do
 	    #
 	    if test -d "$contest/$name"
 	    then
-	        ds2=`cd "$contest"; \
-		    find $name -type d -print`
-	        fs=`cd "$contest"; \
-		    find $name -type f -print`
+		# $contest man not be readable and
+		# therefore cannot be the first
+		# argument to find.
+		#
+	        ds3=`cd "$contest/$name"; \
+		    find . -type d -print`
+	        fs3=`cd "$contest/$name"; \
+		    find . -type f -print`
+		ds2=""
+		for d in $ds3
+		do
+		    d=`expr "$d" : '\./\(.*\)$' `
+		    ds2="$ds2 $name/$d"
+		done
+		fs=""
+		for f in $fs3
+		do
+		    f=`expr "$f" : '\./\(.*\)$' `
+		    fs="$fs $name/$f"
+		done
 	    else
 	        ds2=""
 	        fs=$name
