@@ -1,12 +1,15 @@
 PLANAR GEOMETRY PROBLEM HELP
-			    Fri Aug 17 22:28:35 EDT 2001
+			    Sat Aug 18 02:08:15 EDT 2001
 
 For some reason many young computer scientists think
-that geometry problems are hard, and avoid them.  Its
-the purpose of this blurb to demonstrate that geometry
-problems are easy after all.
+that geometry problems are hard, and avoid them.  The
+purpose of this short discussion to demonstrate that
+geometry problems are easy after all.
 
 We will restrict ourselves here to planar geometry.
+
+Basics
+------
 
 Let
 	p = (px,py) and q = (qx,qy)
@@ -35,6 +38,32 @@ Note that
 
 	|v| = sqrt (v.v)
 
+If u and v are unit vectors at right angles to each
+other, which is the same as saying that
+
+	|u| = 1,  |v| = 1,  u.v = 0
+
+then one can ask what the coordinates of a point p
+would be in the coordinate system in which u is in
+the positive direction of the x axis and v is in the
+positive direction of the y axis.  The answer is
+
+	(u.p, v.p)
+
+Note that
+
+	| u.p |   | ux  uy | | px |
+	|     | = |        | |    |
+	| v.p |   | vx  vy | | py |
+
+so u and v are the rows of the 2x2 matrix which by left
+multiplication translates from old xy coordinates to new
+uv axis coordinates.
+
+from the u thought of as a point to the line through
+the origin in the direction of v, with the + sign if
+u is in the same direction as v, and the = sign if
+
 A clockwise rotation R(theta) of a vector v=(vx,vy) by
 an angle theta is
 
@@ -42,9 +71,9 @@ an angle theta is
 	R(theta).v = |                          | |    |
 	             | - sin theta    cos theta | | vy |
 
-	      | vx cos theta + vy sin theta |
-	    = |                             |
-	      | vx sin theta - vy cos theta |
+	      |   vx cos theta + vy sin theta |
+	    = |                               |
+	      | - vx sin theta + vy cos theta |
 
 Most particularly, if theta = 90 degrees, then
 
@@ -78,22 +107,94 @@ Simply compute:
 
     if v.r > v.p then r is to the right of the line;
     if v.r < v.p then r is to the left of the line;
-    if v.r == v.p then r is on the line.
+    if v.r = v.p then r is on the line.
+
+v is the vector from p to q rotated 90 degrees clock-
+wise, so it points to the right of the line from p to q.
+Then
+	 p - q                   v
+	-------		and	---
+	|p - q|                 |v|
+
+are a pair of unit length vectors at right angles to
+each other and form a coordinate system.
+
+	v.r
+	---
+	|v|
+
+is the coordinate in this coordinate system in the
+direction perpendicular to the line from p to q, and
+this is then > 0, = 0, or < 0 according to whether r is
+to the right, on, or to the left of this line.
+
+Note that if p, q, and r have integer coordinates, then
+v.r is an integer and is exact, and the classification
+of r into right, on, or left of the line is precise,
+with no chance of roundoff error.
 
 Intersection
 ------------
 
-    Suppose we are given four points, p1, p2, q1, q2.
-    Question: does the interior of the line from p1 to
-    p2 intersect the interior of the line from q1 to q2.
+Suppose we are given four points, p1, p2, q1, q2.
+Question: Does the interior of the line from p1 to p2
+intersect the interior of the line from q1 to q2.
 
-    Answer: it does iff the line from p1 to p2 splits
-    q1 and q2, and the line from q1 to q2 splits p1 and
-    p2, where for a line to split two points means that
-    one point must be to the right of the line and the
-    other point must be to the left of the line.  Note
-    that necessarily p1 != p2 and q1 != q2, as otherwise
-    at least one line would not be defined.
+Answer: It does iff the line from p1 to p2 splits q1 and
+q2, and the line from q1 to q2 splits p1 and p2, where
+for a line to split two points means that one point must
+be to the right of the line and the other point must be
+to the left of the line.  Note that necessarily p1 != p2
+and q1 != q2, as otherwise at least one line would not
+be defined.
+
+Rectangle Maze
+--------- ----
+
+Problem: Given a set of polygons in a plane, and two
+points p and q outside any polygon, find the shortest
+path from p to q that does not go inside any polygon.
+
+Solution: Let V be the set of vertices of the polygons
+plus the two points p and q.  Then the path to be found
+can be represented as a sequence of straight line
+segments with vertices in V (proof to reader).  So it
+is a shortest path in an undirected graph whose vertices
+are V such that given points r1 and r2 in V, there is
+an edge in this undirected graph between r1 and r2 iff
+the interior of the line from r1 to r2 does not inter-
+sect the interior of any line that is an edge of any
+polygon, and in this case the length of the edge is the
+distance between r1 and r2.
 
 
+Convex Hull
+------ ----
 
+The convex hull of a set of points V in a plane is a
+sequence of points p1, p2, p3, ..., pN such that for
+every i, all the points of V are on or to the right
+of the line from p(i) to p((i mod N) + 1).  To find
+the convex hull, first find some point p1 on the hull,
+which can be done say by choosing a leftmost point in V
+and given two leftmost points choosing the highest.
+Then extend the hull recursively from p(i) to p(i+1)
+by using the following.  Given a point p, define a
+relation amoung points q1, q2 that are not equal to
+p as follows:
+
+    definition:  q1 > q2 iff q2 is to the right of
+			     the line from p to q1
+			     or q2 is on this line and
+			     closer to p that q1 is.
+
+Then if p is on the hull, this relation is antisymmetric
+and transitive.  So given the hull up to p(i), choose
+p(i+1) to be the maximum point in V according to this
+relation.
+
+This is not the fastest algorithm, as it has time
+O(|V|**2) where |V| is the number of points in V.  The
+fastest algorithm is the Gram-Schmidt algorithm that
+begins with a sort of V and has running time dominated
+by the sort time, O(|V| log|V|).
