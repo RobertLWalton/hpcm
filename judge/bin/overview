@@ -4,7 +4,7 @@
 #
 # File:		overview
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Feb  1 23:43:11 EST 2002
+# Date:		Sat Feb  2 21:37:03 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/02/02 06:04:08 $
+#   $Date: 2002/02/03 02:44:12 $
 #   $RCSfile: overview,v $
-#   $Revision: 1.58 $
+#   $Revision: 1.59 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -2295,9 +2295,6 @@ are:
 	read these other files, when they see that a
 	flag file exists, delete the flag file first,
 	and then read the other files to see what to do.
-	Thus these reader programs know that if the
-	flag files do NOT exist, nothing has changed
-	since the last time they read files.
 
 	Specifically, the following are flag files in
 	the flag directory:
@@ -2307,7 +2304,7 @@ are:
 		$manual_score_file file is written;  the
 		`makescoreboard' program sees this flag
 		and recomputes the scoreboard.
-
+
 	    $needs_reply_flag_file
 	        Created when any action that will re-
 		quire a person to use the `manualreply'
@@ -2315,13 +2312,13 @@ are:
 		sees this flag and then looks throughout
 		the contest directories and files to see
 		where `manualreply' should be run.
-
+
     judging_directory/$scoreboard_pid_file
         A file in the judging directory containing the
 	process ID of any `makescoreboard' program that
 	is running in background.  This file is main-
 	tained by the `makescoreboard' program with its
-	`-start' and `-stop' options.  The `-status'
+	`start' and `stop' options.  The `status'
 	option reads this file and displays the status
 	of the process identified in the file.
 
@@ -2343,25 +2340,75 @@ are:
 	user whether to quit or kill the identified
 	process (if it is still running) and continue.
 
+    solutions_directory/pppp/$dispatch_pid_file
+        This file is used as a lock to prevent more than
+	one `autojudge' program from making files in the
+	same problem solution directory at one time.
+	See the -SOLUTION-MAKE- feature of the autojudge
+	program.
+
 
 Contest Derived Data: Scoreboard Files
 ------- ------- ----- ---------- -----
 
 The `makescoreboard' program can run in background and
-recompute the scoreboard as necessary.  It computes
-one or both of two files.
+recompute the scoreboard as necessary.  It always com-
+putes the following file:
+
+    judging_directory/$scorefinder_output_file
+        Output of the scorefinder program, for use as
+	input to the scoreboard program.
+
+The other scoreboard files depend upon the scoreboard
+instructions in hpcm_judging.rc.  The standard instruc-
+tions for different types of contests compute the fol-
+lowing files (non-standard instructions may compute
+different files):
+
+  For email contests:
 
     judging_directory/scoreboard.mail
         A copy of the scoreboard emailed to an address
-	by `makescoreboard'.
+	by `makescoreboard'.  Concatenation of an actual
+	scoreboard with scoreboard.notes
+
+  For informal contests:
 
     contest_directory/scoreboard.1
         The first of four scoreboard pages visible to
 	the contestant `scoreboard' display program.
+	Concatenation of scoreboard.1head with the
+	actual scoreboard.
+
+  For formal contests:
 
-See `makescoreboard' for details.
+    contest_directory/scoreboard.public
+        The scoreboard proper containing submissions
+	up until the freeze time.
 
+    contest_directory/scoreboard.freeze
+        A special freeze announcement created at the
+	freeze time.
 
+    contest_directory/scoreboard.1
+        The first of four scoreboard pages visible to
+	the contestant `scoreboard' display program.
+	Concatenation of scoreboard.1head, scoreboard.
+	freeze (if that exists), and scoreboard.public.
+
+    contest_directory/scoreboard.current
+        The current scoreboard.  Only readable by
+	judges.
+
+    contest_directory/scoreboard.final
+        The final scoreboard suitable for printing,
+	and containing a copy of the who_where file.
+	Only readable by judges.
+
+See `makescoreboard' and the scoreboard parameters in
+hpcm_judging.rc for details.
+
+
 Programs: Contestant
 --------- ----------
 
@@ -2377,7 +2424,6 @@ A brief summary of these programs follows:
     help		Display help files.
     scoreboard		Display scoreboard.
     xcsh		Create new xterm windows.
-
     hpcm_sendmail	Send email from a contestant to
     			the judge.
     hpcm_get		Make `get file' requests using
