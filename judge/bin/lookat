@@ -6,7 +6,7 @@
 #
 # File:		lookat
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Sep 27 05:00:44 EDT 2001
+# Date:		Sat Oct 20 08:46:30 EDT 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/09/27 09:02:34 $
+#   $Date: 2001/10/20 13:11:00 $
 #   $RCSfile: lookat,v $
-#   $Revision: 1.9 $
+#   $Revision: 1.10 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -155,81 +155,33 @@ if { $argc != 1 || [regexp {^-doc} [lindex $argv 0]] } {
     exit 1
 }
 
-# Compilation of atoms and logical expression.
+# Compile logical expression.  For each atom(i),
+# filename_regexp(i) and line_regexp(i) are the parts of
+# the atom.
 #
-# The atoms are numbered 1, 2, ..., N.  For each atom
-# i, value(i) is 0 or 1 according to whether the atom
-# is true in a given directory, filename_regexp(i) and
-# line_regexp(i) are the parts of the atom.  The vari-
-# able `logical_expression' holds the logical-expression
-# with the atoms replaced by `$value(i)' for i - 1, ...,
-# N.
-#
-set N 0
-set depth 0
-set logical_expression ""
-foreach token [lindex $argv 0] {
-    switch -- $token {
-        (   {	incr depth }
-	)   {	if { $depth < 0 } {
-		    error "Parentheses mismatch."
-		}
-		incr depth -1
+set logical_expression \
+    [compile_logical_expression \
+        [lindex $argv 0] abbreviations atom value]
+foreach i [array names atom] {
+
+    # Extract f(ilename-)regexp and
+    # l(ine-)regexp.
+    #
+    if { [regexp {^(.*)::(.*)$} $atom($i) \
+		 forget fregexp lregexp] } {
+	if {    [regexp {:(:|$)} $fregexp] \
+	     || [regexp {(^|:):} $lregexp] } {
+	    error "Ambiguous atom: `$atom($i)'."
 	}
-	0   -
-	1   -
-	!   -
-	&   -
-	^   -
-	|   { }
-
-	default {
-
-	    # Replace abbreviation tokens.
-	    #
-	    foreach abbrev [array names abbreviations] {
-		if { $abbrev == $token } {
-		    set token $abbreviations($abbrev)
-		    break
-		}
-	    }
-
-	    # Extract f(ilename-)regexp and
-	    # l(ine-)regexp.
-	    #
-	    if { [regexp {^(.*)::(.*)$} $token \
-	                 forget fregexp lregexp] } {
-	        if {    [regexp {:(:|$)} $fregexp] \
-		     || [regexp {(^|:):} $lregexp] } {
-		    error "Ambiguous atom: `$token'."
-		}
-	    } else {
-	        set fregexp ""
-		set lregexp $token
-	    }
-
-	    # Save extracted regexps and replace token
-	    # with `$value(N)'.
-	    #
-	    incr N
-	    set filename_regexp($N) $fregexp
-	    set line_regexp($N) $lregexp
-	    set token "\$value($N)"
-	}
+    } else {
+	set fregexp ""
+	set lregexp $atom($i)
     }
 
-    # Append token to logical expression.
-    #
-    set logical_expression \
-        "$logical_expression $token"
+    set filename_regexp($i) $fregexp
+    set line_regexp($i) $lregexp
 }
 
-# Logical expression complete.  Check for unclosed
-# parentheses.
-#
-if { $depth != 0 } {
-    error "Parentheses mismatch."
-}
 
 # List of directories matched and length of list.
 # Manualcount is the number of entries in manualdirs.
@@ -270,9 +222,7 @@ foreach dir \
 
     # Initialize the atom values.
     #
-    set i 0
-    while { $i < $N } {
-        incr i
+    foreach i [array names atom] {
 	set value($i) 0
 	set not_file($i) yes
 
@@ -297,9 +247,7 @@ foreach dir \
 
 	# Loop through the atoms.
 	#
-	set i 0
-	while { $i < $N } {
-	    incr i
+	foreach i [array names atom] {
 
 	    if { $value($i) || $not_file($i) } continue
 
