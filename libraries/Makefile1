@@ -1,7 +1,7 @@
 # Prototype Makefile
 #
 # File:		Makefile
-# Date:		Wed Feb 13 01:14:08 EST 2002
+# Date:		Wed Feb 13 02:04:47 EST 2002
 #
 # See demonstration Makefile for documentation.
 #
@@ -10,7 +10,7 @@
 P = problem_name
 
 .SUFFIXES:
-.SUFFIXES: .c .cc .java .p
+.SUFFIXES: .c .cc .java .p .lsp
 
 default:	$P.out
 
@@ -28,13 +28,20 @@ default:	$P.out
 	gcc -g -o $* -x c $*.p2c -lp2c -lm
 
 .java:
-	rm -f $* $*.class core
+	rm -f $* *.class core
 	javac -g $*.java
 	echo >$* '#!/bin/sh'
 	echo >>$* "exec `which java` $*"
 	chmod a+r *.class
 	chmod a+rx $*
+
 #
+.lsp:
+	rm -f $* core
+	echo >$* '#!/bin/sh'
+	echo >>$* "exec `which hpcm_clisp` t"
+	chmod a+r $*.lsp
+	chmod a+rx $*
 
 $P.out:	$P $P.in
 	rm -f $P.out core
@@ -56,9 +63,10 @@ submit:		$P.out
 	hpcm_submit $P
 
 clean:
-	rm -f $P $P.class $P.p2c core $P.out
+	rm -f $P *.class $P.p2c core $P.out
 
 
+#
 # Author:	walton@deas.harvard.edu
 #
 # The authors have placed this file in the public
@@ -68,6 +76,6 @@ clean:
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/02/13 06:49:44 $
+#   $Date: 2002/02/13 07:08:09 $
 #   $RCSfile: Makefile1,v $
-#   $Revision: 1.2 $
+#   $Revision: 1.3 $
