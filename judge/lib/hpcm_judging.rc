@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Oct 21 03:17:53 EDT 2001
+# Date:		Sun Oct 21 23:43:48 EDT 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/10/21 07:33:22 $
+#   $Date: 2001/10/22 04:43:47 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.71 $
+#   $Revision: 1.72 $
 #
 
 # An optionally modified copy of this file must be
@@ -118,6 +118,93 @@ set scoreboard_width 80
 # two lines worth of problems.
 #
 set scoreboard_markers "|+@#$%&<>"
+
+# List of addresses for `makescoreboard' to email
+# scoreboard to.
+#
+set scoreboard_addresses { }
+
+# Scoreboard instructions.   These determine which
+# scoreboards the `makescoreboard' program will compute
+# and how it will compute them.  The syntax is:
+#
+#	scoreboard_instructions ::=
+#	    { scoreboard_instruction* }
+#
+#	scoreboard_instruction ::=
+#	      { OUTPUT filename }
+#	    | BLANK
+#	    | BAR
+#           | { LINE left-text [center-text
+#                                   [right-text]] }
+#	    | { INPUT filename }
+#	    | { parameter_name value }
+#	    | BOARD
+#
+#	parameter_name ::=
+#	    <any XXX such that `scoreboard_XXX' is a
+#	     global variable after judging directory
+#	     hpcm_judging.rc is read>
+#
+# The scoreboard instructions do the following:
+#
+#     { OUTPUT filename }  Set the output file name.
+#     BLANK		   Include a blank line.
+#     BAR		   Include a ===== bar line.
+#     { INPUT filename }   Include a copy of a file.
+#     { LINE left-text [center-text [right-text]] }
+#			   Include a line that has
+#			   left-text left justified,
+#			   center-text centered, and
+#			   right-text right justified.
+#			   If any -text is DATE, it is
+#			   replaced by the current date.
+#			   The right-text or both the
+#			   center- and right- texts can
+#			   be omitted.
+#     { parameter_name value }
+#			Set the named parameter to the
+#			given value for the purposes of
+#			computing a board.
+#     BOARD		Include a scoreboard computed
+#			with the previous parameters.
+#
+# An output file is not actually written until the next
+# OUTPUT command or the end of the instructions.  When
+# the output file is written, it is emailed to all the
+# addresses in the current `scoreboard_addresses' para-
+# meter.  All file names are relative to the judging
+# directory.  The current value of the `scoreboard_
+# width' parameter is used to right justify text and
+# produce the ===== BAR lines.
+#
+# Standard scoreboard instructions for an email contest:
+#
+set scoreboard_instructions {
+    { OUTPUT scoreboard.mail }
+    { LINE "See notes below." "" DATE }
+    BLANK
+    BAR
+    BOARD
+    BAR
+    BLANK
+    { INPUT scoreboard.notes }
+}
+#
+# Standard scoreboard instructions for an informal or
+# formal contest:
+#
+# set scoreboard_instructions {
+#     { OUTPUT contest/scoreboard.1 }
+#     { LINE contest-name "" DATE }
+#     BLANK
+#     { INPUT contest/scoreboard.1head }
+#     BLANK
+#     BAR
+#     BOARD
+#     BAR
+# }
+
 
 # End of scoreboard parameters.
 
