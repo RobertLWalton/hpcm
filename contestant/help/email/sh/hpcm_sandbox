@@ -4,7 +4,7 @@
 #
 # File:		hpcm_sandbox
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Mon Dec  4 07:58:49 EST 2000
+# Date:		Thu Sep 13 13:24:52 EDT 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/12/04 13:06:11 $
+#   $Date: 2001/09/13 17:25:21 $
 #   $RCSfile: hpcm_sandbox,v $
-#   $Revision: 1.11 $
+#   $Revision: 1.12 $
 
 # This works as-is for LINUX systems.  See comments
 # below for SUN UNIX operating systems.  For other UNIX
@@ -187,12 +187,15 @@ ulimit -f `expr $filesize / 1024`
 ulimit -s `expr $stacksize / 1024`
 ulimit -c `expr $core / 1024`
 #
-# Comment the next two ulimits out if you are running
-# a SUN OS.  -u is not recognized by SUN ulimit, and
-# -n causes problems for java somehow.
+# Do not execute the next two ulimits if you are running
+# a SUN OS.  -u is not recognized by SUN ulimit, and -n
+# causes problems for java somehow.
 #
-ulimit -u $processes
-ulimit -n $openfiles
+if test ulimit -u 1>/dev/null 2>&1
+then
+    ulimit -u $processes
+    ulimit -n $openfiles
+fi
 
 # Execute the program.  If -watch given, look to see if
 # the program returned with a signal, and if yes, print
