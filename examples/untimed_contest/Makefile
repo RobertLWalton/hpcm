@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Oct 29 08:43:21 EST 2001
+# Date:		Tue Oct 30 10:50:08 EST 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/10/29 13:46:17 $
+#   $Date: 2001/10/30 15:51:59 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.24 $
+#   $Revision: 1.25 $
 
 # To make an email contest named `foo':
 #
@@ -98,12 +98,6 @@
 # The location of the hpcm directory.
 #
 HPCM=${HOME}/hpcm
-
-# The email address to send the scoreboard to if
-# the scoreboard is being copied to a remote
-# location by email.
-#
-SCOREBOARD_ADDRESS="password"<account@computer>
 
 # INDICES below is a description of the help, problems,
 # and demos files to be available to contestants.
