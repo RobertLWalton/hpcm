@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: acm-cont $
-#   $Date: 2000/08/19 02:33:36 $
+#   $Date: 2000/08/19 18:16:13 $
 #   $RCSfile: autojudge,v $
-#   $Revision: 1.9 $
+#   $Revision: 1.10 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -35,14 +35,14 @@ cd submission_directory; judge
     ectory, and given that the submission directory
     contains the file `$received_file', this program
     makes everything needed to compute the score file,
-    `$score_file', and automatically computes that
+    `$auto_score_file', and automatically computes that
     file.  Then this program reports the score to the
-    submitter by creating and sending `$replied_file'.
+    submitter by creating and sending `$reply_file'.
 
     Specifically, this program calls `extract' to
     extract the submitted file from the program.  This
     program then checks the legality of the submitted
-    file name, and generates and sends `$replied_file'
+    file name, and generates and sends `$reply_file'
     automatically if the name is illegal.
     
     If the file name is legal, this program symbolical-
@@ -59,9 +59,9 @@ cd submission_directory; judge
     .err error file.
 
     Next this program runs `autoscore' to produce a
-    `$score_file'.
+    `$auto_score_file'.
 
-    Lastly, this program may create a `$replied_file'
+    Lastly, this program may create a `$reply_file'
     and send it as email to the submitter.  It does this
     if the score is `Completely Correct' or the scoring_
     mode is `auto' or `auto+manual'.  If the mode is
@@ -72,7 +72,7 @@ cd submission_directory; judge
     
     If the score is mailed to the submitter and is NOT
     to be manually reviewed, this program also creates
-    a `$done_file' in current directory to indicate that
+    a `done_file' in current directory to indicate that
     directory processing is done."
 
 if { $argc != 0 } {
@@ -80,53 +80,44 @@ if { $argc != 0 } {
     exit 1
 }
 
-proc error_for_score_file { args } {
-    global score_file
-    set score_fd [open $score_file w]
-    puts $score_fd [lindex $args 0]
-    puts "ERROR: [lindex $args 0]"
-    set args [lreplace $args 0 0]
-    foreach m $args {
-	puts $score_fd $m
-    	puts "       $m"
-    }
-    close $score_fd
-    exit 1
-}
-
-proc submission_error { args } {
-    eval "error_for_score_file {Submission Error} $args"
+proc submission_file_error { filename } {
+    reply -all \
+          "ERROR: submitted file has illegal name:\
+	  $filename" \
+	  ""  \
+	  "THIS SUBMISSION (see below) IGNORED"  \
+	  "YOU MUST RESUBMIT WITH A LEGAL FILENAME"
+    puts "SUBMISSION ERROR: submitted file has illegal\
+          name: $filename"
+    exit 0
 }
 
 set submitted_file [exec extract]
 
 if { $submitted_file == "" } {
-    if { [file readable $replied_file] } {
+    if { [file readable $reply_file] } {
         exit 0
-    } elseif { [file exits $replied_file] } {
-	fatal_error "Unreadable $replied_file exits"
+    } elseif { [file exits $reply_file] } {
+	fatal_error "Unreadable $reply_file exits"
     } else {
 	fatal_error \
-	    "Extract failed but no $replied_file exits"
+	    "Extract failed but no $reply_file exits"
     }
 }
 
 set submitted_program [file rootname $submitted_file]
 set submitted_extension [file extension $submitted_file]
 
-set program_solution = \
+set program_solution \
     "$solutions_directory/$submitted_program"
 
 if { ! [file isdirectory $program_solution] } {
-    [submission_error \
-	"unknown program name: $submitted_program]
+    submission_file_error $submitted_file
 }
 
 if { [lsearch -exact $allowed_extensions \
                      $submitted_extension] < 0 } {
-    [submission_error \
-	"unknown program extension:\
-	         $submitted_extension]
+    submission_file_error $submitted_file
 }
 
 if { ! [file readable $make_file] } {
@@ -143,19 +134,22 @@ if { ! [file readable $instructions_file] \
 
 if { ! [file readable ${submitted_program}.in] } {
     puts "Linking ${submitted_program}.in"
-    exec ln -s "$program_solution/${submitted_program}.in" .
+    exec ln -s \
+         "$program_solution/${submitted_program}.in" .
 }
 
 if { ! [file readable ${submitted_program}.test] } {
-    puts "Linking ${submitted_program}.test to ${submitted_program}.out"
-    exec ln -s "$program_solution/${submitted_program}.out" \
-               "$program_solution/${submitted_program}.test"
+    puts "Linking ${submitted_program}.test to\
+          ${submitted_program}.out"
+    exec ln -s \
+         "$program_solution/${submitted_program}.out" \
+         "$program_solution/${submitted_program}.test"
 }
 
 if { ! [file readable $submitted_program] \
-     || [file mtime $submitted_program \
+     || [file mtime $submitted_program] \
            < [file mtime Makefile] \
-     || [file mtime $submitted_program \
+     || [file mtime $submitted_program] \
            < [file mtime $submitted_file] } {
 
     if { [file exists $submitted_program] } {
@@ -166,13 +160,22 @@ if { ! [file readable $submitted_program] \
     if { [catch { exec make $submitted_program } \
                 out] } {
         puts $out
-        error_for_score_file "Syntax Error"
+
+	if { [file exists $auto_score_file] } {
+	    file delete -force $auto_score_file
+	}
+	set auto_score_ch [open $auto_score_file w]
+	puts $auto_score_ch "Syntax Error"
+	close $auto_score_ch
+	auto_score_reply "Syntax Error"
+	exit 0
     }
     puts $out
 
     if { ! [file exists $submitted_program" ] } {
         fatal_error \
-	    "Make of $submitted_program failed"
+	    "Make of $submitted_program failed\
+	     without error indication."
     }
 
     exec chmod a+x $submitted_program
@@ -185,17 +188,20 @@ if { ! [file readable "${submitted_program}.out"] \
            < [file mtime "${submitted_program}.in"] } {
 
     if { [file exists "${submitted_program}.out"] } {
-	puts "Deleting out-of-date ${submitted_program}.out"
+	puts "Deleting out-of-date\
+	               ${submitted_program}.out"
     	file delete -force "${submitted_program}.out"
     }
 
     if { [file exists "${submitted_program}.err"] } {
-	puts "Deleting out-of-date ${submitted_program}.err"
+	puts "Deleting out-of-date\
+	               ${submitted_program}.err"
     	file delete -force "${submitted_program}.err"
     }
 
     puts "Making ${submitted_program}.out"
-    exec make "${submitted_program}.out"
+    catch { exec make "${submitted_program}.out" } out
+    puts $out
 
     if { ! [file exists "${submitted_program}.out" ] } {
         fatal_error \
@@ -203,44 +209,37 @@ if { ! [file readable "${submitted_program}.out"] \
     }
 }
 
-if { ! [file readable $score_file] \
-     || [file mtime $score_file] \
+if { ! [file readable $auto_score_file] \
+     || [file mtime $auto_score_file] \
            < [file mtime ${submitted_program}.out] } {
 
-    if { [file exists $score_file] } {
-	puts "Deleting out-of-date $score_file"
-    	file delete -force $score_file
+    if { [file exists $auto_score_file] } {
+	puts "Deleting out-of-date $auto_score_file"
+    	file delete -force $auto_score_file
     }
 
-    set score [exec autoscore $submitted_program]
+    set auto_score [exec autoscore $submitted_program]
 
-    if { ! [file exists $score_file] } {
+    if { ! [file exists $auto_score_file] } {
         fatal_error \
 	    "Autoscore did not make $score_file"
     }
-} else {
-    set score_ch [open $score_file r]
-    set score [gets $score_ch]
-    close $score_ch
-}
-
-if { ! [file readable $replied_file] \
-     || [file mtime $replied_file] \
-           < [file mtime $score_file] } {
 
     set From_line [file tail [pwd]]
 
     if { $score == "Completely Correct" \
          || $scoring_mode == "auto" } {
-	reply "${submitted_file} score is: $score" \
-	      "for submission $From_line"
+	reply "${submitted_file} automatically\
+	       determined score is:     $score"
     } elseif { [regexp {auto} $scoring_mode] } {
-	reply "${submitted_file} automatically determined score is:"
-	       "" "    $score" "" \
-	      "for submission $From_line" \
-	      "Score will be REVIEWED BY THE JUDGE soon"
+	reply "${submitted_file} automatically\
+	       determined score is:     $score" \
+	      "" \
+	      "Score will be REVIEWED BY THE JUDGE\
+	       soon"
+	file delete -force $reply_file
     }
+    puts "Automatic Score:    $score"
 }
-
 
 exit 0
