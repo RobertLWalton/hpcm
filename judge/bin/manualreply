@@ -5,7 +5,7 @@
 #
 # File:		manualreply
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Oct  2 10:24:51 EDT 2000
+# Date:		Mon Oct  2 13:38:08 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/10/02 15:46:03 $
+#   $Date: 2000/10/02 18:03:30 $
 #   $RCSfile: manualreply,v $
-#   $Revision: 1.14 $
+#   $Revision: 1.15 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -1024,7 +1024,7 @@ proc compose_score_reply {} {
 proc send_score_reply {} {
 
     global manual_score_file proposed_score \
-           manual_score
+           manual_score score_flag_file
 
     send_reply
 
@@ -1115,6 +1115,13 @@ while { "yes" } {
 
     refresh_file_list
 
+    if { $proposed_score == "none" } {
+	if { $manual_score != "none" } {
+	    set proposed_score $manual_score
+	} else {
+	    set proposed_score $auto_score
+	}
+    }
     if { $submitted_program == "" } {
     	set scoring_info ""
 	set window_info_height 6

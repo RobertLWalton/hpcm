@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Oct  2 10:59:11 EDT 2000
+# Date:		Mon Oct  2 14:00:09 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/10/02 15:46:05 $
+#   $Date: 2000/10/02 18:00:17 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.43 $
+#   $Revision: 1.44 $
 #
 
 # Include this code in TCL program via:
@@ -762,7 +762,8 @@ proc compose_reply { args } {
            message_From_line \
            message_from message_to message_date \
 	   message_reply_to message_subject \
-	   message_x_hpcm_test_subject
+	   message_x_hpcm_test_subject \
+	   reply_manager
 
     # If -all is present, set `all_option' to `yes' and
     # shift the arguments left.  Ditto -cc.

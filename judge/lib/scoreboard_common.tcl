@@ -6,7 +6,7 @@
 #
 # File:		scoreboard
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Sep 29 09:15:36 EDT 2000
+# Date:		Mon Oct  2 14:02:08 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/09/29 17:51:39 $
+#   $Date: 2000/10/02 18:03:30 $
 #   $RCSfile: scoreboard_common.tcl,v $
-#   $Revision: 1.8 $
+#   $Revision: 1.9 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -166,10 +166,18 @@ while { "yes" } {
                          $problem] < 0 } {
     	continue;
     }
+    if { [lsearch -exact $scoreboard_problems_deny \
+			 $problem] >= 0 } {
+    	continue;
+    }
 
     if { [llength $scoreboard_submitters] > 0 \
          && [lsearch -exact $scoreboard_submitters \
                          $submitter] < 0 } {
+    	continue;
+    }
+    if { [lsearch -exact $scoreboard_submitters_deny \
+                         $submitter] >= 0 } {
     	continue;
     }
 
