@@ -62,11 +62,12 @@ default:	count.out
 	chmod u+x $*
 
 count.out:	count count.in
+	rm -f count.out count.err
 	-csh -c 'limit cputime 30; \
 		 limit datasize 2m; \
 		 limit filesize 50k; count' \
-			<count.in >count.out 2>&1
-	: =============; cat count.out; : ==============
+			<count.in >count.out 2>count.err
+	: ========; cat count.err count.out; : =========
 
 #
 
