@@ -5,7 +5,7 @@
 #
 # File:		autodispatch
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Aug 29 08:43:32 EDT 2000
+# Date:		Mon Sep  4 11:42:28 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: acm-cont $
-#   $Date: 2000/08/29 12:39:50 $
+#   $Date: 2000/09/04 18:12:14 $
 #   $RCSfile: autodispatch,v $
-#   $Revision: 1.6 $
+#   $Revision: 1.7 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -48,12 +48,12 @@ autodispatch \[directory\] \[-force\]
 
     If the directory argument is given, this program
     makes that directory current before searching for
-    the `$judging_parameters_file' file or doing
+    the `$judging_parameters_file' file or doing\
     anything else.
 
     This program next creates the $dispatch_pid_file
     file containing the process ID of this program's
-    process.  If this file aleady exists, this program
+    process.  If this file already exists, this program
     exits without error or output.
 
     Otherwise this program makes its process into a
@@ -69,39 +69,42 @@ autodispatch \[directory\] \[-force\]
     any of the files:
 
     	$reply_file
-	$auto_score_file
-	${reply_file}+
+    	$no_reply_file
 	*-<<*>>-unchecked-error
 	*-<<*>>-checked-error
 
     exist.  The `-force' option deletes the last entry
     in this list.
 
-    Otherise, if the use_authentication global variable
+    Otherwise, if the use_authentication global variable
     equals `yes', this program next authenticates the
-    mail in $received_mail.  If the mail is NOT
+    mail in $received_file file.  If the mail is NOT
     authentic, this program produces an error log file
     and exits without error code or output.
 
     Otherwise this program inspects the `Subject' line
-    in the current directory's $received_file and based
-    on this may call one of the following:
+    in the current directory's $received_file file and
+    based on this may call one of the following:
     
 	autojudge
 	autoinfo
 
     If the `Subject' is not suitable for one of these
     programs, this program does not call any other
-    program.
+    program.  But if the reply mode is `auto', this
+    program will compose a reply indicating that
+    no-one will look at the message.
 
-    At this point this program exits without error
-    or output (except for output produced by autojudge
-    or other called program)."
+    							
+    Finally this program exits without error or output,
+    except for output produced by autojudge or other
+    called program."
 
 # Check for and consume -force option.
 #
 set force_option no
-if { $argc >= 1 && [lindex $argv 0] -- "-force" } {
+if { $my_argc >= 1 \
+     && [lindex $my_argv 0] == "-force" } {
     set force_option yes
     set my_argv [lreplace $my_argv 0 0]
     set my_argc [expr { $my_argc - 1 }]
@@ -118,6 +121,9 @@ if { $my_argc != 0 } {
 # Create $dispatch_pid_file.  Exit if it already
 # exits.
 #
+if { ! [file writable "."] } {
+    error "Current directory is not writable"
+}
 if { [catch { create_file $dispatch_pid_file }] } {
     exit 0
 }
@@ -127,18 +133,20 @@ if { [catch { create_file $dispatch_pid_file }] } {
 # file.
 #
 proc exit_cleanup {} {
+    global dispatch_pid_file
     file delete -force $dispatch_pid_file
 }
 
+# Store current process ID in $dispatch_pid_file and
+# make the current process a process group leader.
+#
 write_file $dispatch_pid_file [current_pid]
-
 set_current_pgid
 
 # If one of several files exists, exit without error.
 #
 set patterns [list $reply_file \
-		   "${reply_file}+" \
-		   $auto_score_file \
+		   $no_reply_file \
 		   *-<<*>>-unchecked-error ]
 if { $force_option == "no" } {
     lappend patterns *-<<*>>-checked-error
@@ -152,27 +160,43 @@ if { [llength [eval glob -nocomplain $patterns]] \
 # Read header.
 #
 set received_ch [open $received_file r]
-read_header
+read_header $received_ch
+close $received_ch
 
 # Check authentication if $use_authentication is `yes'.
-# If not authorized, write log error and exit.
+# If not authenticated, write log error and exit.
 #
-if { ! [header_is_authentic] } {
-    log_error "Received message header is not authentic"
+if { [header_is_authentic] == "no" } {
+    error "Received message header is not authentic"
 }
 
 # Execute any program appropriate to the subject.
 #
-if { [length $message_subject] >= 1 } {
+set program ""
+if { [llength $message_subject] >= 1 } {
     switch -exact [lindex $message_subject 0] {
-        get	{ exec autoinfo }
-	submit	{ exec autojudge }
+        get	{ set program autoinfo }
+	submit	{ set program autojudge }
     }
 }
 
+if { $program != "" } {
+    puts [exec $program]
+} elseif { $reply_mode == "auto" } {
+    reply -all \
+          "This message cannot be properly answered\
+	   automatically," \
+	  "and there is no person to answer\
+	   this message." \
+	  "" \
+	  "So this message is being IGNORED!" \
+	  "Please send it elsewhere or fix\
+	   the `Subject' field."
+}
+
 # If we did nothing, another program will see there
-# is no $dispatch_pid_file or $reply_file and schedule
-# manual action.
+# is no $dispatch_pid_file, $reply_file, etc., and
+# schedule# manual action.
 
 exit_cleanup
 exit 0
