@@ -70,7 +70,7 @@ count.out:	count count.in
 	             -datasize 1m \
 		     -stacksize 1m \
 		     -filesize 50k \
-		     -openfiles 3 \
+		     -watch \
 		     count \
 	    <count.in >count.out 2>count.err
 
