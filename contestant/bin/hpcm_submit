@@ -4,7 +4,7 @@
 #
 # File:		hpcm_submit
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Sun Feb 17 07:04:27 EST 2002
+# Date:		Sat Mar  9 18:36:54 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/02/17 12:05:11 $
+#   $Date: 2002/03/09 23:37:27 $
 #   $RCSfile: hpcm_submit,v $
-#   $Revision: 1.5 $
+#   $Revision: 1.6 $
 
 extensions=".c .cc .java .p .lsp"
 files=""
@@ -28,8 +28,9 @@ hpcm_submit problem[.extension] [file ...]
     Submits the files for the problem.
 
     If no files are given, the problem name with exten-
-    sion is.  If in this case there is no extension, one
-    of the following extensions is selected
+    sion is taken to be the name of a single file.  If
+    in this case there is no extension, one of the fol-
+    lowing extensions is selected
 
     	$extensions
     
@@ -86,7 +87,7 @@ fi
   do \
       echo ""; \
       echo HPCM_BEGIN "$file"; \
-      cat "$file" | sed -e '/^/s//../'; \
+      sed -e '/^/s//../' < "$file"; \
       echo HPCM_END "$file"; \
   done ) \
 | hpcm_sendmail
