@@ -6,7 +6,7 @@
 #
 # File:		makejudgingdir
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Sep 24 20:18:30 EDT 2000
+# Date:		Sun Sep 24 23:11:51 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/09/25 02:38:50 $
+#   $Date: 2000/09/25 03:45:55 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.8 $
+#   $Revision: 1.9 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -35,42 +35,39 @@ set document "
 cd judging_directory
 makejudgingdir options index_spec ...
 
-    Options:
-      -judging	    Equals -info, -solution, -mail
-      -contest      Equals -problems, -solutions,
-		    -help1, -help2, -bin, -secure,
-		    -who_where, -printer, -setup
-      -info	    Make ./info
-      -solutions    Make ./solutions
-      -problems	    Make ./contest/problems
-      -mail	    Make ./mail
-      -help1	    Make ./contest/help1/problems.help,
-		     ./contest/help1/this_contest.help
-      -help2	    Make ./contest/help2 link
-      -bin	    Make ./contest/bin link
-      -secure	    Make ./contest/secure/passwords,
+  Options:
+    -practice	Equals -info, -solutions, -mail
+    -contest    Equals all options but -info and
+		-trashable
+    -info	Make ./info
+    -solutions  Make ./solutions
+    -problems	Make ./contest/problems
+    -mail	Make ./mail
+    -help	Make ./contest/help1/problems.help,
+		     ./contest/help1/this_contest.help,
+		     ./contest/help2 link
+    -bin	Make ./contest/bin link
+    -secure	Make ./contest/secure/passwords,
 		     ./contest/secure/hpcm_sendmail.rc
-      -who_where    Make ./contest/who_where
-      -printer	    Make ./contest/printer
-      -setup	    Import stuff from /tmp/hpcm_setup
-		    to ./contest.  This should include
-		    ./contest/empty.ls,
-		    ./contest/setup.ls, 
-		    ./contest/setup.tar
-      -trashable    Make ./trashable
-      -prototype    Make ./prototype
+    -who_where  Make ./contest/who_where
+    -printer    Make ./contest/printer
+    -setup      Import stuff from /tmp/hpcm_setup to
+		./contest.  This should include
+		empty.ls, setup.ls, and setup.tar
+    -trashable  Make ./trashable
+    -prototype  Make ./prototype
 
-    Index Specification:
+  Index Specification:
 
-      index_file\[: index_directory\], name1s=name1t, \\
-	    option1s:'option11t option12t ...', \\
-	    name2s=name2t, ...
+    index_file\[: index_directory\], name1s=name1t, \\
+	  option1s:'option11t option12t ...', \\
+	  name2s=name2t, ...
 
-    Pre-Existing Files and Links:
+  Pre-Existing Files and Links:
 
-      ./hpcm_judging.rc	 Parameters file.
-      ./contest		 Link to contest directory.
-      ./contestant	 Link to hpcm/contestant.
+    ./hpcm_judging.rc	 Parameters file.
+    ./contest		 Link to contest directory.
+    ./contest/contestant Link to hpcm/contestant.
 
     Given a judging directory as the current directory,
     complete with hpcm_judging.rc file, this program
@@ -81,9 +78,10 @@ makejudgingdir options index_spec ...
     index specifications and options is given above.
     The `./contest' directory, if any, should be symbol-
     ically linked to the actual contest directory before
-    this program is run.  In some cases `./contestant'
-    should be symbolically linked to the ..../hpcm/
-    contestant directory before this program is run.
+    this program is run.  In some cases `./contest
+    /contestant' should be symbolically linked to the
+    `..../hpcm/contestant' directory before this program
+    is run.
 
     This program appends instructions for its user to
     edit certain files to the ./TODO file, and prints
@@ -91,7 +89,7 @@ makejudgingdir options index_spec ...
 
     The index files are read and concatenated to form
     the `index' file in any new info directory and a
-    `problems.help' file in any new help1 directory,
+    `problems.help' file in any new problems directory,
     with unused entries omitted.
     
     If an info directory is being made, symbolic links
@@ -119,13 +117,14 @@ makejudgingdir options index_spec ...
     and ./contest/problems directories.
 
     Other files and directories are made if they do
-    not exist or are out of date.  This program is
-    interactive whenever it may not have enough
-    information to make the files completely.
+    not exist or are out of date.  If this program does
+    not have adequate information to make a file or
+    directory, it writes instructions to the user in
+    ./TODO.
 
     Each input index file is associated with an index
     directory.  An unedited version of the index file is
-    normally found in its index directory.  Often an
+    normally found in its index directory.  Sometimes an
     edited copy of this index file is placed in the
     current judging directory, with the editing consist-
     ing of changes to the item entry options described
@@ -198,7 +197,7 @@ makejudgingdir options index_spec ...
     file that is included in the problems directory.
     No header items are included in the problems.help
     file.  However, if no items at all from any of the
-    input index files are included in the new info
+    input index files are included in the new problems
     directory, no problems.help file is created, and
     the new problems directory is completely empty.
 
@@ -236,18 +235,20 @@ makejudgingdir options index_spec ...
     the items within the info directory.
 
     When an item entry is copied to the index file of
-    the new info directory,  or to a problems.help file,
+    the new info directory, or to a problems.help file,
     the `***' in the first line of the entry is replace
     by 3 space characters, the item name is replaced by
-    the modified version of the item name, and the
-    options are removed.
+    the name of the item directory within the info dir-
+    ectory for ./info/index or the problems directory
+    for ./problems/problems.help, and the options are
+    removed.
 
     When ./mail is made (by -mail) its mode is set to
     a+x.
 
-    When ./contest/help1 is made (by -help1) its mode is
+    When ./contest/help1 is made (by -help) its mode is
     set to a+rx.  Then ./contest/help1 /problems.help is
-    symbolically linked to ./contest /problems/problems
+    symbolically linked to ./contest/problems/problems
     .help, and a default ./contest/help1/this_contest
     .help file is made.  None of these things is done if
     the directories and files to be made already exist.
@@ -264,12 +265,16 @@ makejudgingdir options index_spec ...
 
     When the ./secure directory is made (by -secure) its
     mode is set to go-rwx, as is the mode of every file
-    made in this directory.  When the ./secure/password
+    made in this directory.  When the ./secure/passwords
     file is made, instructions for editing it are
     written to ./TODO, but the file made automatically
     is empty.  If the ./secure/hpcm_sendmail.rc file is
     made, instructions for editing it and the
     ~/.procmailrc file are written into ./TODO.
+
+    If -secure is given and any line in ./secure
+    /passwords has an empty password, a random password
+    is generated and inserted in that file.
 
     When ./who_where is made, additions to any existing
     file are appended listing accounts in ./secure
@@ -293,7 +298,7 @@ makejudgingdir options index_spec ...
     The ./trashable file is a list of contestant
     accounts made from ./secure/passwords.  The
     ./prototype file is the list of prototype contes-
-    tant accounts (usually only one).  It run TRASH_
+    tant accounts (usually only one).  To run TRASH_
     ACCOUNT an account must be listed in ./trashable.
     To run TRASH_PROBLEMS it must be listed in
     ./prototye or ./trashable.  To run SETUP_PROTOTYE
@@ -306,17 +311,110 @@ makejudgingdir options index_spec ...
     If anything is made in ./contest, a+x is set for
     that directory and all its ancestors.  If anything
     is linked to ./contestant, ditto.  If ./mail is
-    made, ditto.
+    made, ditto.  Note that `cd .../hpcm; make' should
+    be run to set up the contestant directory.  If any
+    file or directory modes seem wrong, notes are
+    written to ./TODO.
+
+    The `./mail' directory name above is actually
+    specified as a hpcm_judging.rc parameter, and could
+    be set to something else.  Ditto for `./info' and
+    `./solutions'.  All other names are NOT determined
+    by hpcm_judging.rc, and are literally as given
+    above.
     
     Unlike most HPCM judging programs, errors made by
-    this program are not written to log files."
+    this program are not written to log files, but are
+    announced on standard error."
 
-# If no arguments or first argument begins with `-',
-# print documentation and exit with error.
+# Argi is the index of the current argument, for use in
+# lindex.
 #
-if { $argc == 0 || [regexp {^-} [lindex $argv 0]] } {
+set argi 0
+
+# Set options, consuming option arguments.
+#
+set info_option		no
+set solutions_option	no
+set problems_option	no
+set mail_option		no
+set help_option		no
+set bin_option		no
+set secure_option	no
+set who_where_option	no
+set printer_option	no
+set setup_option	no
+set trashable_option	no
+set prototype_option	no
+#
+while { "yes" } {
+    if { $argi >= $argc } break;
+    switch -- [lindex $argv $argi] {
+        -practice	{ set info_option 	yes
+			  set solutions_option	yes
+			  set mail_option	yes }
+        -contest	{ set solutions_option	yes
+			  set problems_option	yes
+			  set mail_option	yes
+			  set help_option	yes
+			  set bin_option	yes
+			  set secure_option	yes
+			  set who_where_option	yes
+			  set printer_option	yes
+			  set setup_option	yes
+			  set prototype_option	yes }
+        -info		{ set info_option 	yes }
+        -solutions	{ set solutions_option 	yes }
+        -problems	{ set problems_option 	yes }
+        -mail		{ set mail_option 	yes }
+        -help		{ set help_option 	yes }
+        -bin		{ set bin_option 	yes }
+        -secure		{ set secure_option 	yes }
+        -who_where	{ set who_where_option 	yes }
+        -printer	{ set printer_option 	yes }
+        -setup		{ set setup_option 	yes }
+        -trashable	{ set trashable_option 	yes }
+        -prototype	{ set prototype_option 	yes }
+	default		{ break }
+    }
+    incr argi
+}
+
+# If no arguments left or first remaining argument
+# begins with `-', print documentation and exit with
+# error.
+#
+if { $argi >= $argc \
+     || [regexp {^-} [lindex $argv $argi]] } {
     puts $document
     exit 1
+}
+
+# Check for some elementary errors, such as ./contest
+# not existing if it is needed.
+#
+if { $problems_option \
+     || $help_option \
+     || $bin_option \
+     || $secure_option \
+     || $who_where_option \
+     || $setup_option \
+     || $trashable_option \
+     || $prototype_option } {
+    if { ! [file isdirectory "contest"] \
+         || ! [file executable "contest"] \
+         || ! [file readable "contest"] } {
+	error "`./contest' is not a useable directory"
+    }
+}
+if { $help_option \
+     || $bin_option } {
+    if { ! [file isdirectory "contest/contestant"] \
+         || ! [file executable "contest/contestant"] \
+         || ! [file readable "contest/contestant"] } {
+	error "`./contest/contestant' is not a useable\
+	       directory"
+    }
 }
 
 # Set up info+ and solutions+ directories and new
@@ -541,7 +639,7 @@ set mode file
 # Mode indicates what next argument should be: file,
 # directory, or substitution.
 #
-foreach arg $argv {
+foreach arg [lreplace $argv 0 [expr { $argi - 1 }]] {
 
     # Process next argument.  Whether argument ends in
     # `,' or `:' tells mode of next argument.
