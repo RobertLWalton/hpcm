@@ -4,7 +4,7 @@
 #
 # File:		hpcm_extract
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Sat Sep 30 01:35:30 EDT 2000
+# Date:		Sat Sep 30 06:18:17 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,10 +13,12 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/09/30 05:34:14 $
+#   $Date: 2000/09/30 12:09:38 $
 #   $RCSfile: hpcm_extract,v $
-#   $Revision: 1.1 $
+#   $Revision: 1.2 $
 
+# Print documentation if no argument or -... argument.
+#
 case "$1" in
     "" | -*)
 	echo "
@@ -48,13 +50,6 @@ hpcm_extract directory
 
 	exit 1
 	;;
-    * )
-	if test ! -d "$1";
-	then
-	    echo "$1 is not a directory."
-	    exit 1
-	fi
-	;;
 esac
 
 # Mode is one of:
@@ -72,26 +67,43 @@ subject=
 From=
 from=
 date=
+
+# Loop through lines of stdin.
+#
 while test x = x
 do
+    # Read puts line in '$REPLY' and sets '$?' non-zero
+    # iff there is an eof.
+    #
     read
+
     if test $? -ne 0
     then
         if test $mode != header
 	then
+	    # Create fake missing end of file.
+	    #
 	    echo "Missing end of file line."
 	    has_errors=yes
 REPLY="---<>--<>---<>--<>---<>----- end of file"
 	else
+	    # Real end of file, end loop.
+	    #
 	    break
 	fi
     fi
+
     case $mode in
 
     header)
+        # For headers, save parts of header.
+	#
     	case "$REPLY" in
 	From\ *)
 	    From="$REPLY"
+	    from=
+	    date=
+	    subject=
 	    ;;
 	From:*)
 	    from="$REPLY"
@@ -99,8 +111,12 @@ REPLY="---<>--<>---<>--<>---<>----- end of file"
 	Date:*)
 	    date="$REPLY"
 	    ;;
+
 	Subject:*)
 	    subject="$REPLY"
+	    # Set subject_ok according to whether
+	    # subject is `get ...'
+	    #
 	    ok=`expr "$REPLY" : "Subject:[ 	]*get" `
 	    if test $ok -ne 0
 	    then
@@ -109,17 +125,25 @@ REPLY="---<>--<>---<>--<>---<>----- end of file"
 	    	subject_ok=no
 	    fi
 	    ;;
+
 	'---<>--<>---<>--<>---<>-----'*)
-	    mode=look
-	    echo -e "----------"
+	    # Start of file.  Print header of a new
+	    # message containing the output of hpcm_
+	    # extract.
+	    #
 	    if test "$From" != ""
-	    then echo ">$From"; fi
+	    then echo "$From"; fi
 	    if test "$from" != ""
 	    then echo "$from"; fi
 	    if test "$date" != ""
 	    then echo "$date"; fi
 	    if test "$subject" != ""
 	    then echo "$subject"; fi
+	    echo "X-HPCM-Subject:" \
+		 "output of hpcm_extract"
+	    echo ""
+
+	    mode=look
 	    has_errors=no
 	    ;;
 	esac
@@ -128,10 +152,14 @@ REPLY="---<>--<>---<>--<>---<>----- end of file"
     extract)
     	case "$REPLY" in
 	'---<>--<>---<>--<>---<>-----'*)
+	    # End of file being extracted.  Close fd 3.
+	    #
 	    exec 3>&-
 	    mode=look
 	    ;;
 	*)
+	    # Line in file being extacted.
+	    #
 	    echo "$REPLY" >&3
 	    ;;
 	esac
@@ -140,10 +168,13 @@ REPLY="---<>--<>---<>--<>---<>----- end of file"
     diff)
     	case "$REPLY" in
 	'---<>--<>---<>--<>---<>-----'*)
+	    # End of file being diffed.  Close fd 3.
+	    #
 	    exec 3<&-
 	    if test $diff = yes
 	    then
-	    	echo "Received new $file different" \
+	    	echo "Received new $file"
+		echo "that is different" \
 		     "from previous version."
 		echo "Left previous version intact."
 		has_errors=yes
@@ -151,6 +182,8 @@ REPLY="---<>--<>---<>--<>---<>----- end of file"
 	    mode=look
 	    ;;
 	*)
+	    # Line in file being diffed.
+	    #
 	    line="$REPLY"
 	    read <&3
 	    if test "$REPLY" != "$line"
@@ -164,6 +197,8 @@ REPLY="---<>--<>---<>--<>---<>----- end of file"
     skip)
     	case "$REPLY" in
 	'---<>--<>---<>--<>---<>-----'*)
+	    # End of file being skipped.
+	    #
 	    mode=look
 	    ;;
 	esac
@@ -178,6 +213,12 @@ REPLY="---<>--<>---<>--<>---<>----- end of file"
 		   '[ 	]*\([^ 	].*\)$' `
 	file=`expr "$file" : \
 		   '\(.*[^ 	]\)[ 	]*$' `
+	case "$file" in
+	*:)
+	    file=`expr "$file" : \
+		       '\(.*[^ 	]\):$' `
+	    ;;
+	esac
 
 	dirs=""
 	dir=`dirname "$file"`
@@ -206,7 +247,13 @@ REPLY="---<>--<>---<>--<>---<>----- end of file"
 	    then
 	    	echo NO ERRORS IN EXTRACTION
 	    fi
+	    echo ""
 	    mode=header
+	elif test ! -d "$1";
+	then
+	    mode=skip
+	    echo "$1 is not a directory."
+	    has_errors=yes
 	elif test -r "$1/$file"
 	then
 	    mode=diff

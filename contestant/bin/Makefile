@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/09/18 20:31:54 $
+#   $Date: 2000/09/30 12:09:37 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.4 $
+#   $Revision: 1.5 $
 
 all:	hpcm_sandbox modes
 
@@ -28,7 +28,8 @@ hpcm_sandbox:	../../secure/src/hpcm_sandbox.c
 	chmod 555 hpcm_sandbox
 
 modes:
-	chmod a+rx TRASH_ACCOUNT help hpcm_sandbox \
+	chmod a+rx TRASH_ACCOUNT TRASH_PROBLEMS \
+		   help hpcm_extract hpcm_sandbox \
 		   hpcm_sendmail hpcm_submit print \
 		   print2 fprint lpq scoreboard xcsh
 
