@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Jan 24 08:28:42 EST 2003
+# Date:		Sat Jan 25 03:41:59 EST 2003
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2003/01/24 14:02:50 $
+#   $Date: 2003/01/25 08:47:21 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.23 $
+#   $Revision: 1.24 $
 
 # See STATUS file for description of versions.
 #
@@ -62,6 +62,8 @@ slocs:
 HPCM_MD5_Signatures:	signatures_header \
 			distributable_files_${VERSION} \
 		    non_distributable_files_${VERSION}
+	@if test "${COPYRIGHT}" = ""; \
+	then echo COPYRIGHT not defined; exit 1; fi
 	rm -f HPCM_MD5_Signatures
 	echo "HPCM MD5 SIGNATURES" \
 	     > HPCM_MD5_Signatures
