@@ -10,12 +10,12 @@
 #
 # RCS Info (may not be true date or author):
 #
-#   $Author: acm-cont $
-#   $Date: 2000/09/04 15:18:31 $
+#   $Author: hc3 $
+#   $Date: 2000/09/26 11:33:14 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.3 $
+#   $Revision: 1.4 $
 
-all:	scorediff hpcm_sandbox_x
+all:	scorediff hpcm_sandbox_x hpcm_print_passwords
 
 # Kill all implicit rules
 #
@@ -53,6 +53,13 @@ unsecure_hpcm_sandbox_x:
 	cp -p ../../secure/src/hpcm_sandbox \
 	    hpcm_sandbox_x
 	chmod 500 hpcm_sandbox_x
+
+hpcm_print_passwords:
+	if test ! -L hpcm_print_passwords; then \
+	    ln -s \
+	        ../../secure/bin/hpcm_print_passwords \
+		.; \
+	    fi
 
 clean:
 	rm -f scorediff hpcm_sandbox_x

@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/09/23 10:55:13 $
+#   $Date: 2000/09/26 11:33:15 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.36 $
+#   $Revision: 1.37 $
 #
 
 # An optionally modified copy of this file must be
@@ -226,6 +226,35 @@ proc create_directory { dirname } {
 proc link_file { source { target . } } {
     exec ln -s $source $target
 }
+
+# Function to change the permissions of a file or direc-
+# tory.
+#
+# If the file or directory is readable to the current
+# user, and the `allow' argument contains an `r' (which
+# it does by default), the file or directory is made
+# readable by everyone.
+#
+# If the file or directory is executable to the current
+# user, and the `allow' argument contains an `x' (which
+# it does by default), the file or directory is made
+# executable by everyone.
+#
+proc grant_access { filename { allow rx } } {
+    set perm ""
+    if { [file readable $filename] \
+         && [regexp {r} $allow] } {
+	set perm "${perm}r"
+    }
+    if { [file executable $filename] \
+         && [regexp {x} $allow] } {
+	set perm "${perm}x"
+    }
+    if { $perm != "" } {
+	chmod "a+$perm" $filename
+    }
+}
+
 
 # Function to view a file.  Change to your favorite
 # editor or display program.

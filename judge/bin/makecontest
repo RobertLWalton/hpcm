@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/09/25 07:29:37 $
+#   $Date: 2000/09/26 11:33:14 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.10 $
+#   $Revision: 1.11 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -611,10 +611,11 @@ proc process_index_specification {} {
 
 		set target $problems_directory+/$target
 		file mkdir $target
+		grant_access $target
 
 		if { [lsearch -exact $options all] \
 		     >= 0 } {
-		    foreach file [glob --nocomplain \
+		    foreach file [glob -nocomplain \
 		    		       $source/*] {
 
 			# Note: in TCL, isfile tests
@@ -624,21 +625,24 @@ proc process_index_specification {} {
 			     && [file readable $file] \
 			     } {
 			    set tail [file tail $file]
-			    copy_file $file \
+			    file copy $file \
 			    	      $target/$tail
+			    grant_access $target/$tail
 			}
 		    }
 		} else {
-		    copy_file $source/Makefile \
+		    file copy $source/Makefile \
 		              $target/Makefile
+	            grant_access $target/Makefile
 		    set problem [glob $source/*.txt]
 		    if { [llength $problem] != 1 } {
 			error "Too many or too few\
 			       $source/*.txt files"
 		    }
 		    set problem [file tail $problem]
-		    copy_file $source/$problem \
+		    file copy $source/$problem \
 		              $target/$problem
+		    grant_access $target/$problem
 		}
 	    } else {
 		# Come here if no `problems' option.
@@ -720,6 +724,7 @@ if { $problems_option } {
 	exec rm -rf $problems_directory+ >@ stdout
     }
     file mkdir $problems_directory+
+    grant_access $problems_directory+
     set newhelp_ch \
         [open $problems_directory+/problems.help w]
 }
@@ -803,6 +808,7 @@ if { $info_option } {
 }
 if { $problems_option } {
     close $newhelp_ch
+    grant_access $problems_directory+/problems.help
     if { [llength [glob -nocomplain \
 			$problems_directory+/*]] == 1 } {
 	file delete -force \
