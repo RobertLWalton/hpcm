@@ -2,7 +2,7 @@
 #
 # File:		display_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Jul 23 11:27:42 EDT 2002
+# Date:		Tue Jul 23 12:54:46 EDT 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/07/23 15:39:08 $
+#   $Date: 2002/07/23 17:50:41 $
 #   $RCSfile: display_common.tcl,v $
-#   $Revision: 1.34 $
+#   $Revision: 1.35 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -700,9 +700,11 @@ proc refresh_file_list { } {
 # and return `no'.
 #
 # The file id may be a number in the file list, may be
-# a file extension, or if it begins with an upper case
-# letter, may be an initial segment of the file name.
-# It is an error if it is ambiguous.
+# a file extension beginning with `.', or, if it begins
+# with an upper case letter, may be an initial segment
+# of the file name.  The file id may also be a complete
+# file name.  It is an error if the file id is
+# ambiguous.
 #
 # This function implements file creation (see File
 # Creation below) as follows.  Whenever `last_file' is
@@ -729,6 +731,9 @@ proc get_file { id } {
 	    return yes
 	}
     }
+
+    # Find a new `last_file' or set `window_error'
+    # and return `no'.
 
     if { [regexp {^[0-9]+$} $id] } {
         if { $id < 1 || $id > [llength $file_list] } {
@@ -771,6 +776,8 @@ proc get_file { id } {
 	    return no
 	}
     }
+
+    # Come here if new `last_file' has been set.
 
     set extension [file extension $last_file]
     if { [info exists \
