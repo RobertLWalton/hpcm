@@ -11,30 +11,41 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/09/19 19:21:19 $
+#   $Date: 2000/09/20 11:56:12 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.3 $
+#   $Revision: 1.4 $
 
 all:	submakes
 
 # Kill all implicit rules
 #
 .SUFFIXES:
+.SUFFIXES:	.print
 
+# The following must be done to make sure things
+# are ready to run.
+#
 submakes:
-	(cd judge/bin; make)
-	(cd contestant/bin; make)
+	(cd ./contestant/bin/; make)
+	(cd ./contestant/help/; make)
+	(cd ./judge/bin/; make)
+	(cd ./contest/; make)
 
-print_system:
-	fprint `grep -v '^./contest/' File_List | \
-		grep -v '^./problem_library/' | \
-		grep -v '^./judge/test/' `
+# Print files keyed for `user', `remote', etc.
+#
+user.print \
+remote.print \
+pascal.print \
+system.print\
+test.print \
+problem.print \
+library.print:
+	echo `sed <File_List -n -e \
+		'/^$*		*/s///p' `
 
-print_test:
-	fprint `grep '^./judge/test/' File_List `
-
-print_library:
-	fprint `grep '^./problem_library/' File_List `
-
-print_contest:
-	fprint `grep '^./contest/' File_List `
+# Print both problem and library files:
+#
+librarian.print:
+	echo `sed <File_List -n -e \
+		'/^problem		*/s///p' \
+		'/^library		*/s///p' `
