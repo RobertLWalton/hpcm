@@ -2,7 +2,7 @@
 #
 # File:		scoring_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Sep  6 05:47:30 EDT 2001
+# Date:		Thu Sep  6 09:07:36 EDT 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/09/06 12:01:04 $
+#   $Date: 2001/09/06 13:32:11 $
 #   $RCSfile: scoring_common.tcl,v $
-#   $Revision: 1.9 $
+#   $Revision: 1.10 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -495,17 +495,23 @@ set current_type ""
 #	compute_score_and_proof_arrays
 #	compute_score
 #
+# The files referenced in the proof are $basename.out
+# and $basename.test.
+#
 # If there is no error, window_error is set to "" and
 # `yes' is returned.  Otherwise window_error is set to
 # an error description and `no' is returned.
 #
-proc display_proof {} {
+# Sets the `last_display' variable to `proof'.
+#
+proc set_proof_display { basename } {
 
     global current_type \
     	   incorrect_output_types \
            incomplete_output_types \
 	   formatting_error_types \
-	   window_error
+	   window_error window_bar \
+	   last_display
 
     if { $current_type == "" } {
         set current_type [lindex [concat \
@@ -544,4 +550,38 @@ proc display_proof {} {
 	     of type `$type'"
 	return no
     }
+
+    set oline [lindex $proof 0]
+    set tline [lindex $proof 1]
+    set oc1   [lindex $proof 2]
+    set oc2   [lindex $proof 3]
+    set tc1   [lindex $proof 4]
+    set tc2   [lindex $proof 5]
+    set oh    [list [list $oline $oc1 $oc2]]
+    set th    [list [list $tline $tc1 $tc2]]
+
+    # L is the number of lines of each file that are to
+    # be displayed before and after the principal
+    # display for that file.  The 8 includes the prompt,
+    # error line, blank line, 3 bar lines, and the 2
+    # principal display lines.
+    #
+    set L [expr { ( $window_height \
+                        - $window_info_height - 8 ) \
+		      / 4 }]
+
+    set_window_display \
+        "[compute_file_display $basename.out \
+	                       out_file_array \
+			       [expr { $oline - L }] \
+			       [expr { $oline + L }] \
+			       $oh \
+        ][compute_file_display $basename.test \
+	                       test_file_array \
+			       [expr { $tline - L }] \
+			       [expr { $tline + L }] \
+			       $th \
+	]$window_bar"
+
+    set last_display proof
 }

@@ -2,7 +2,7 @@
 #
 # File:		display_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Sep  6 08:13:47 EDT 2001
+# Date:		Thu Sep  6 09:09:27 EDT 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/09/06 12:01:03 $
+#   $Date: 2001/09/06 13:32:10 $
 #   $RCSfile: display_common.tcl,v $
-#   $Revision: 1.12 $
+#   $Revision: 1.13 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -1086,19 +1086,19 @@ proc set_file_display { filename } {
 #
 # Note that reading stops on an end of file even if
 # the given line number has not been reached.  In this
-# case, array elements of for lines off the end of the
+# case, array elements for lines off the end of the
 # file will not exist.
 #
 proc read_file_array { filename array linenumber } {
 
-    if { ! [info exists $array(ch)] } {
+    if { ! [info exists ${array}(ch)] } {
 
         set ch [open $filename r]
 	set lastline 0
 
-	set $array(filename) $filename
-	set $array(ch) $ch
-	set $array(lastline) 0
+	set ${array}(filename) $filename
+	set ${array}(ch) $ch
+	set ${array}(lastline) $lastline
 
     } else {
 
@@ -1113,15 +1113,33 @@ proc read_file_array { filename array linenumber } {
 	set line [gets $ch]
 	if { [eof $ch] } {
 	    close $ch
-	    set $array(ch) CLOSED
+	    set ${array}(ch) CLOSED
 	    break
 	}
         incr lastline
-	set $array($lastline) $line
+	set ${array}($lastline) $line
     }
 
-    set $array(lastline) $lastline
+    set ${array}(lastline) $lastline
 }
+
+# Delete an array used to store lines of a file.  This
+# function closes any open channel kept by the array.
+#
+proc close_file_array { array } {
+
+    if { [info exists ${array}(ch)] } {
+    	set ch [set ${array}(ch)]
+	if { $ch != "CLOSED"} {
+	    close $ch
+	}
+
+	foreach n [array names $array] {
+	    unset ${array}($n)
+	}
+    }
+}
+
 
 # Function to return a line with tabs expanded into
 # spaces.
@@ -1161,7 +1179,15 @@ proc tab_expand { line } {
 # function.
 #
 # The returned display consists of lines each ending
-# with \n.
+# with \n.  There is NO ending bar line: the last
+# line returned is a file line.
+#
+# If the file ends before the last line number, the
+# first returned line after the last real file line is:
+#
+#	---------- END OF FILE ----------
+#
+# and the remaining returned lines are blank.
 #
 proc compute_file_display \
 	{ filename array first_line_number \
@@ -1176,7 +1202,7 @@ proc compute_file_display \
     read_file_array $filename $array $last_line_number
 
     set output [bar_with_text "$filename: lines\
-    		$first_line_number-$last_line_number"]
+    		$first_line_number-$last_line_number:"]
 
     set i $first_line_number
     set eofyet no
@@ -1189,27 +1215,28 @@ proc compute_file_display \
 
     while { $i <= $last_line_number } {
 
-        if { ! [info exists $array($i)] } {
+        if { ! [info exists ${array}($i)] } {
 	    if { $eofyet } {
-	        set output "$output\n"
+	        set line "\n"
 	    } else {
 	        set eofyet yes
-	        set output "$output----------\
-		                   END OF FILE\
-				   ----------\n"
+	        set line "----------\
+			  END OF FILE\
+			  ----------\n"
 	    }
 	} else {
 
-	    set line [set $array($i)]
+	    set line [set ${array}($i)]
 	    if { $j == $i } {
 	        set line [tab_expand $line]
 		set k 0
 		while { "yes } {
 		    set h [lindex $highlights]
-		    set cfirst [lindex $h 1]
-		    set clast [lindex $h 2]
+		    set c1 [lindex $h 1]
+		    set c2 [lindex $h 2]
 		    incr c1 $k
 		    incr c2 $k
+		    incr k $hlength
 		    set l1 [string range $line 0 \
 				 [expr { $c1 - 1 }]]
 		    set l2 [string range $line $c1 $c2]
@@ -1223,11 +1250,11 @@ proc compute_file_display \
 		        [lrange $hightlights 1 end]
 		    set j [lindex [lindex $highlights \
 		                          0] 0]
-		    if { $j == "" || $ $j != $i } break
+		    if { $j == "" || $j != $i } break
 		}
 	    }
-	    set output "$output$line\n"
 	}
+	set output "$output$line\n"
     }
 
     return $output
