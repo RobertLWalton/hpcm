@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Jan  9 12:12:40 EST 2001
+# Date:		Tue Jan  9 20:29:11 EST 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/01/09 18:31:30 $
+#   $Date: 2001/01/10 01:29:32 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.13 $
+#   $Revision: 1.14 $
 
 # To make an email contest named `foo':
 #
@@ -79,6 +79,14 @@
 #    Note that you do NOT need to execute `startcontest'
 #    to start an email contest.  This is only needed for
 #    formal contests.
+#
+# 9. Test the contest by executing
+#
+#	setenv HPCM_ADDRESS judges-email-address
+#
+#    and then executing `make' in the hcpm/judge/test
+#    directory.  Then read your e-mail to see if it
+#    looks right.
 
 HPCM=${HOME}/hpcm
 

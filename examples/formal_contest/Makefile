@@ -1,8 +1,8 @@
-# Makefile for an `informal' Contest
+# Makefile for a `formal' Contest
 #
 # File:		Makefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Jan  9 13:17:34 EST 2001
+# Date:		Tue Jan  9 20:24:04 EST 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/01/09 18:30:55 $
+#   $Date: 2001/01/10 01:29:34 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.1 $
+#   $Revision: 1.2 $
 
 # To make a formal contest named `foo':
 #
@@ -120,7 +120,8 @@
 #
 #     Then run:
 #	  ~JJJ/contest_foo/bin/SETUP_PROTOTYPE \
-#             ~JJJ/contest_foo in the
+#             ~JJJ/contest_foo
+#
 #     in prototype account, according to the directions
 #     in the documentation of SETUP_PROTOTYPE.
 #
@@ -172,6 +173,14 @@
 #     with `:' separated fields.  Fields at the end,
 #     optionally including the password and everything
 #     after it, can be omitted.
+#
+#     However, if you want the judging staff to log in
+#     all the contestants, without giving passwords to
+#     contestants, then you may want to edit the
+#     ./contest/secure/passwords file by hand to make
+#     all the contestant account passwords the same.  In
+#     this case choose a password the judging staff can
+#     easily remember.
 #
 #     You should have one of these contestant accounts
 #     be a test account that you can use to check
@@ -241,7 +250,10 @@
 #
 # 20. If you want to freeze the scoreboard near the end
 #     of the contest, follow the directions in
-#     `makescoreboard -doc'
+#     `makescoreboard -doc'.
+#
+# 21. Test the contest using the test contestant
+#     account.
 
 HPCM=${HOME}/hpcm
 
@@ -249,8 +261,8 @@ INDICES=    help/index, \
 	    =help/ \
 	    ${HPCM}/contestant/help/index, \
 	    common/=help/, \
-	    informal/=help/, \
-	    informal:include, \
+	    formal/=help/, \
+	    formal:include, \
 	    common:include \
 	    ${HPCM}/problem_library/index, \
 	    public/=problems/, \
@@ -261,7 +273,7 @@ INDICES=    help/index, \
 	    bospre2000:include
 
 all:
-	makejudgingdir -informal ${INDICES}
+	makejudgingdir -formal ${INDICES}
 	chmod a+x . ..
 
 this_contest:
