@@ -4,7 +4,7 @@
 #
 # File:		makescoreboard
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Oct 24 12:22:20 EDT 2001
+# Date:		Thu Oct 25 08:24:38 EDT 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/10/24 16:21:04 $
+#   $Date: 2001/10/25 12:23:22 $
 #   $RCSfile: makescoreboard,v $
-#   $Revision: 1.11 $
+#   $Revision: 1.12 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -32,35 +32,26 @@ catch {
 set document "
 makescoreboard { -start | -status | -stop | -update } \\
                \[ parameter-filename | \\
-	          scoreboard-instructions \] ...
+	          scoreboard_instructions-value \] ...
 
     This program makes scoreboards by following the
     instructions stored in the `scoreboard_instructions'
-    global variable.  If desired the value of this
-    variable can be the second argument to this program:
-    it always begins with a `{' and is thus recoginized
-    as not being a parameter file name.
+    global variable.
 
-    This program reruns a intervals determined by the
-    `scoreboard_interval' global variable.  When rerun,
-    if this program finds that the judging directory
-    hpcm_judging.rc file has changed, it reloads this
-    file, and if this program finds that all the files
-    needed to produce a particular scoreboard output
-    file (including hpcm_judging) have not changed,
-    and the output file has not been deleted, this
-    program does not reproduce that output file.
+    When this program starts, it processes its second
+    and subsequent arguments as follows.  Any named
+    parameter file is `sourced'.  Any argument that
+    begins with a `{' is stored in the `scoreboard_
+    instructions' global variable.
     
     This program calls
     
 	scorefinder \\
 	    > judging_directory/$scorefinder_output_file
 
-    whenever the $score_flag_file in the flag directory
-    changes.  The $scorefinder_output_file is used as\
-    	in-
-    put by the `scoreboard' program to produce score-
-    boards.
+    The $scorefinder_output_file file is used as input\
+    						   by
+    the `scoreboard' program to produce scoreboards.
 
     This program ignores signals when recomputing the
     scoreboard, and terminates without error on a signal
@@ -73,11 +64,31 @@ makescoreboard { -start | -status | -stop | -update } \\
     If called with the -start option, this program
     writes its process ID of the $scoreboard_pid_file\
     		file
-    in the judging directory, and begins normal execu-
-    tion.  But if this $scoreboard_pid_file file already
-    exists, AND the process ID it contains is valid,
-    this program prints information about the ID'ed
-    process and does nothing else.
+    in the judging directory, and begins to rerun itself
+    at periodic intervals.  But if the\
+    		$scoreboard_pid_file
+    file already exists, AND the process ID it contains
+    is valid, this program prints information about the
+    ID'ed process and does nothing else.
+
+    With the -start option, this program first makes
+    scoreboards as per the -update option, and then this
+    program reruns at intervals determined by the 
+    scoreboard_interval' global variable.  After every
+    interval, this program checks the files input during
+    the last making of a scoreboard to see if any have
+    changed since the last run.  If not, this program
+    does nothing; otherwise the program makes a new
+    scoreboard remakes the scoreboard as per -update.
+    The $judging_parameters_file file in the judging\
+    					directory
+    and the parameter files listed in the arguments are
+    among the files checked for change, and these are
+    re-`sourced' when they change.  Before checking
+    files for change, the $scoreboard_flag flag is
+    checked, and if present, the\
+    			$scorefinder_output_file
+    file is remade by calling `scorefinder'.
 
     If called with the -stop option, this program does
     nothing but send kill signals to the process whose
@@ -89,23 +100,13 @@ makescoreboard { -start | -status | -stop | -update } \\
     outputs information about the status of any process
     started by `makescoreboard -start'.
 
-    If called with the -freeze option, this program
-
-???
-
-    In some contests the scoreboard is to be frozen
-    during the last hour of the contest, to increase
-    suspense.  To do this, use the -stop option, and
-    then edit the scoreboard.1 file by hand to indicate
-    the contest is frozen.  If using an emailed score-
-    board, edit the scoreboard.mail file by hand and
-    resend it using `/usr/bin/sendmail -io -t'.
-
-    With the -start, -status, or -stop option this
+    With the -update, -status, or -stop option this
     program does not log errors but writes them to the
     standard error.  This program does the same with
-    program argument errors.  Otherwise, this program
-    logs errors in the log directory."
+    -start errors that occur during the first making
+    of the scoreboard.  After this program starts
+    reruns for the -start option, this program logs
+    errors in the log directory."
 
 # Print documentation if -doc.* first argument.
 #
@@ -133,22 +134,37 @@ set finder_file \
 set pid_file \
     $judging_directory/$scoreboard_pid_file
 
-# Process arguments.
-#
-foreach arg $argv {
-    if { [regexp "^{" $arg] } {
-        set scoreboard_instructions $arg
-    } else {
-        source $arg
-    }
-}
-
 # Compute possible parameters and save original values.
 #
 foreach name [info globals scoreboard_*] {
     regexp {^scoreboard_(.*)$} $name forget pname
     if { $pname != "instructions" } {
 	set parameters_array($pname) [set $name]
+    }
+}
+
+set file_mtime_list ""
+
+
+# Process arguments.
+#
+proc process_arguments {} {
+
+    global judging_directory judging_parameters_file \
+           file_mtime_list
+
+    set pf $judging_directory/$judging_parameters_file
+    source $pf
+    lappend file_mtime_list [list [file mtime $pf] $pf]
+
+    foreach arg $argv {
+	if { [regexp "^{" $arg] } {
+	    set scoreboard_instructions $arg
+	} else {
+	    source $arg
+	    lappend file_mtime_list \
+	    	    [list [file mtime $arg] $arg]
+	}
     }
 }
 
@@ -159,14 +175,14 @@ proc unabbreviate { value } {
 
     if { [info exists abbreviation($value)] } {
         return $abbreviation($value)
-    { else {
+    } else {
         return $value
     }
 }
 
 proc pass1 { instructions } {
 
-    global parameters_array abbreviation
+    global parameters_array abbreviation file_mtime_list
 
     # Reinstall initial parameter values.
     #
@@ -231,6 +247,8 @@ proc pass1 { instructions } {
 		}
 	        set out_pc $pc
 	    	set update no
+		lappend file_mtime_list \
+			[list out $out_file]
 	    }
 
 	    BLANK {}
@@ -249,16 +267,29 @@ proc pass1 { instructions } {
 				> $out_mtime } {
 			    set update yes
 			}
+			lappend file_mtime_list \
+			        [list [file mtime \
+				            $in_file] \
+				      $in_file]
 			break;
+		    } else {
+			lappend file_mtime_list \
+				[list del $in_file]
 		    }
 		}
 	    }
 	    BOARD {
-	        if { $update == "no" \
-		     && [file readable $finder_file] \
-		     && [file mtime $finder_file] \
-		        > $out_mtime } {
-		    set update yes
+		if { [file readable $finder_file] } {
+		    if { $update == "no" \
+			 && [file mtime $finder_file] \
+			    > $out_mtime } {
+			set update yes
+		    }
+		    [list [file mtime $finder_file] \
+			  $finder_file]
+		} else {
+		    lappend file_mtime_list \
+			    [list del $finder_file]
 		}
 
 	    }
@@ -308,7 +339,8 @@ proc pass2 { instructions pc end_pc update } {
 		set right_begin \
 		    [expr { $scoreboard_width - \
 		            [string length $right] }]
-		set center_length [string length $center]
+		set center_length \
+		    [string length $center]
 		set center_begin  \
 		    [expr { ( $scoreboard_width \
 		              - $center_length ) / 2 }]
@@ -418,38 +450,6 @@ proc pass2 { instructions pc end_pc update } {
     }
 }
 
-proc process_arguments { argv } {
-
-    global email_address parameters_file interval \
-           document log_mode contest_directory
-
-    while { [llength $argv] > 0 } {
-        if { [lindex $argv 0] == "-email" } {
-	    set email_address [lindex $argv 1]
-	    set argv [lrange $argv 2 end]
-	} elseif { [lindex $argv 0] == "-parameters" } {
-	    set parameters_file [lindex $argv 1]
-	    if { ! [file readable $parameters_file] } {
-	        error "$parameters_file is not readable"
-	    }
-	    set argv [lrange $argv 2 end]
-	} elseif { ! [catch { expr [lindex $argv 0] }] \
-    	           && [lindex $argv 0] >= 0 } {
-	    set interval [lindex $argv 0]
-	    set argv [lrange $argv 1 end]
-	} else {
-	    puts $document
-	    exit 1
-	}
-    }
-
-    if { $email_address == "" \
-         && ! [file isdirectory $contest_directory] } {
-	set log_mode none
-    	error "no email address and no contest\
-	       directory"
-    }
-}
 
 # Process any -start option.
 #
@@ -556,17 +556,6 @@ if { $argc == 1 && [lindex $argv 0] == "-stop" } {
     exit 0
 }
 
-# Process arguments
-#
-process_arguments $argv
-
-# Abbreviate long file names.
-#
-set sbfile  $contest_directory/scoreboard.1
-set sbhead  $contest_directory/scoreboard.1head
-set sbnotes $judging_directory/scoreboard.notes
-set sbmail  $judging_directory/scoreboard.mail
-set jparam  $judging_directory/$judging_parameters_file
 
 # Ignore signals except during sleep (see below).
 #
