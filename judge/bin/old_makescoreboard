@@ -4,7 +4,7 @@
 #
 # File:		makescoreboard
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Oct 25 08:24:38 EDT 2001
+# Date:		Fri Oct 26 01:20:32 EDT 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/10/25 12:23:22 $
+#   $Date: 2001/10/26 05:19:13 $
 #   $RCSfile: old_makescoreboard,v $
-#   $Revision: 1.12 $
+#   $Revision: 1.13 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -30,7 +30,7 @@ set log_globally yes
 catch {
 
 set document "
-makescoreboard { -start | -status | -stop | -update } \\
+makescoreboard { start | status | stop | update } \\
                \[ parameter-filename | \\
 	          scoreboard_instructions-value \] ...
 
@@ -52,16 +52,16 @@ makescoreboard { -start | -status | -stop | -update } \\
     The $scorefinder_output_file file is used as input\
     						   by
     the `scoreboard' program to produce scoreboards.
-
-    This program ignores signals when recomputing the
-    scoreboard, and terminates without error on a signal
+
+    This program ignores signals when computing score-
+    boards, and terminates without error on a signal
     while the program is sleeping for the interval.
 
-    If called with an -update option, this program
+    If called with an `update' command, this program
     processes the scoreboard instructions just once
     and then exits immediately.
 
-    If called with the -start option, this program
+    If called with the `start' command, this program
     writes its process ID of the $scoreboard_pid_file\
     		file
     in the judging directory, and begins to rerun itself
@@ -70,47 +70,49 @@ makescoreboard { -start | -status | -stop | -update } \\
     file already exists, AND the process ID it contains
     is valid, this program prints information about the
     ID'ed process and does nothing else.
-
-    With the -start option, this program first makes
-    scoreboards as per the -update option, and then this
-    program reruns at intervals determined by the 
-    scoreboard_interval' global variable.  After every
+
+    With the `start' command, this program first makes
+    scoreboards as per the `update' command, and then
+    this program reruns at intervals determined by the 
+    `scoreboard_interval' global variable.  After every
     interval, this program checks the files input during
     the last making of a scoreboard to see if any have
     changed since the last run.  If not, this program
     does nothing; otherwise the program makes a new
-    scoreboard remakes the scoreboard as per -update.
+    scoreboard remakes the scoreboard as per `update'.
     The $judging_parameters_file file in the judging\
     					directory
     and the parameter files listed in the arguments are
     among the files checked for change, and these are
     re-`sourced' when they change.  Before checking
-    files for change, the $scoreboard_flag flag is
+    files for change, the $score_flag_file flag is
     checked, and if present, the\
     			$scorefinder_output_file
     file is remade by calling `scorefinder'.
 
-    If called with the -stop option, this program does
+    If called with the `stop' command, this program does
     nothing but send kill signals to the process whose
     ID is listed in the $scoreboard_pid_file file, and
     then deletes the file.  While doing this it outputs
     information about its progress.
 
-    If called with the -status option, this program just
-    outputs information about the status of any process
-    started by `makescoreboard -start'.
+    If called with the `status' command, this program
+    just outputs information about the status of any
+    process started by `makescoreboard start'.
 
-    With the -update, -status, or -stop option this
+    With the `update', `status', or `stop' commands this
     program does not log errors but writes them to the
     standard error.  This program does the same with
-    -start errors that occur during the first making
-    of the scoreboard.  After this program starts
-    reruns for the -start option, this program logs
+    `start' command errors that occur during the first
+    making of the scoreboard.  After this program starts
+    reruns for the `start' command, this program logs
     errors in the log directory."
 
-# Print documentation if -doc.* first argument.
+# Print documentation if illegal (or -doc) first
+# argument.
 #
-if { [regexp {^-doc} [lindex $argv 0]] } {
+set command [lindex $argv 0]
+if { ! [regexp {^(update|start|status|stop)$} $command] } {
     puts $document
 }
 
@@ -143,66 +145,180 @@ foreach name [info globals scoreboard_*] {
     }
 }
 
-set file_mtime_list ""
-
-
-# Process arguments.
+# Return `yes' if a file in the mtime_list has changed.
+# Otherwise returns `no'.
 #
-proc process_arguments {} {
+# The mtime_file list is a list of items each of the
+# format:
+#
+#	{ file-mtime file-name }
+#
+# The file-mtime can be a `clock seconds' value, or
+# `none' if the file did not exist.  A file changes is
+# it appears or disappears or has a larger mtime than
+# it did.
+#
+# If mtime_list has the special value `changed', this
+# function always returns `yes'.
+#	
+proc file_changed { mtime_list } {
+    if { $mtime_list == "changed" } {
+        return yes
+    }
+    foreach item $mtime_list {
+       set mtime [lindex $item 0]
+       set name  [lindex $item 1]
+       if { $mtime == "none" } {
+           if { [file readable $name] } {
+	       return yes;
+	   }
+       } else {
+           if { ! [file readable $name] } {
+	       return yes;
+	   } else if { [file mtime $name] > $mtime } {
+	       return yes;
+	   }
+       }
+    }
+    return no
+}
+
+# File-mtime list for parameter files.
+#
+set parameter_mtime_list changed
+
+# Mtime of latest parameter file.
+#
+set parameter_mtime ""
+
+# Process arguments.  If parameter files (including
+# the judging_parameters_file) have not changed,  just
+# restore values of scoreboard_ variables listed in
+# parameters_array.
+#
+proc process_arguments {} } {
 
     global judging_directory judging_parameters_file \
-           file_mtime_list
+           parameter_mtime_list parameters_array \
+	   parameter_mtime
+
+    if { ! [file_changed $parameter_mtime_list] } {
+
+        foreach name [array names parameters_array] {
+	    set scoreboard_$name \
+	    	$parameters_array($name)
+	}
+	return
+    }
+
+    set parameter_mtime_list ""
 
     set pf $judging_directory/$judging_parameters_file
-    source $pf
-    lappend file_mtime_list [list [file mtime $pf] $pf]
+    if { $parameter_mtime_list != "changed" } { source $pf }
+    set mtime [file mtime $pf]
+    lappend parameter_mtime_list [list $mtime $pf]
+    set parameter_mtime $mtime
 
     foreach arg $argv {
 	if { [regexp "^{" $arg] } {
 	    set scoreboard_instructions $arg
 	} else {
 	    source $arg
-	    lappend file_mtime_list \
-	    	    [list [file mtime $arg] $arg]
+	    set mtime [file mtime $arg]
+	    lappend parameter_mtime_list \
+	    	    [list $mtime $arg]
+	    if { $mtime > $parameter_mtime } {
+	        set parameter_mtime $mtime
+	    }
+
 	}
+    }
+
+    foreach name [array names parameters_array] {
+        set parameters_array($name) \
+	    [set scoreboard_$name]
     }
 }
 
+process_arguments
 
+
+# Given a value that may be an abbreviation defined
+# in the abbreviation_array, return the value it
+# abbreviates, or return the original value if it is not
+# an abbreviation.
+#
 proc unabbreviate { value } {
 
-    global abbreviation
+    global abbreviation_array
 
-    if { [info exists abbreviation($value)] } {
-        return $abbreviation($value)
+    if { [info exists abbreviation_array($value)] } {
+        return $abbreviation_array($value)
     } else {
         return $value
     }
 }
 
-proc pass1 { instructions } {
 
-    global parameters_array abbreviation file_mtime_list
+# File-mtime list for scoring instructions files.
+#
+set file_mtime_list changed
+
+# Earliest future time in an OUTPUT instruction.
+#
+set earliest_future_time ""
+
+# Last value of parameters_mtime.
+#
+set last_parameters_mtime $parameters_mtime
+
+# Process scoring instructions.
+#
+proc process_instructions {} {
+
+    global scoreboard_instructions abbreviation_array \
+           file_mtime_list earliest_future_time \
+	   last_parameters_mtime
+
+    set time [clock seconds]
 
     # Reinstall initial parameter values.
     #
-    foreach name [array names parameters_array] {
-        set scoreboard_$name $parameters_array($name)
+    process_arguments
+
+    if { $file_mtime_list == "changed" \
+         || [test_flag $score_flag_file] } {
+
+	 TBD parameters for scorefinder
+	catch { exec scorefinder | \
+		scoreboard $parameters_file } \
+	      scoreboard
+    }
+
+    if {    $last_parameters_mtime \
+               >= $parameters_mtime \
+	 && ! [file_changed $file_mtime_list]
+	 && $time < $earliest_future_time } {
+
+        return
     }
 
     # Save abbreviations.
     #
-    set abbreviation(START)  scoreboard_start_time
-    set abbreviation(STOP)   scoreboard_stop_time
-    set abbreviation(FREEZE) scoreboard_freeze_time
-    set abbreviation(NAME)   scoreboard_name
-    set time		     [clock seconds]
-    set abbreviation(TIME)   [clock format $time]
+    set abbreviation_array(START)  scoreboard_start_time
+    set abbreviation_array(STOP)   scoreboard_stop_time
+    set abbreviation_array(FREEZE) \
+				 scoreboard_freeze_time
+    set abbreviation_array(NAME)   scoreboard_name
+    set abbreviation_array(TIME)   [clock format $time]
+
+    # Ignore signals while processing instructions.
+    #
+    make_signals_ignored
 
     set pc 0
     set end_pc [llength $instructions]
     set out_pc -1
-
 
     while { "yes" } {
 
@@ -213,7 +329,7 @@ proc pass1 { instructions } {
 	     && $out_pc >= 0 } {
 	    if { $out_start != "" \
 	          || $time \
-		     < [clock scan $out_start] ) {
+		     < [clock scan $out_start] } {
 	        set update no
 	    }
 	    if {    $out_mtime != "" \
@@ -252,8 +368,13 @@ proc pass1 { instructions } {
 	    }
 
 	    BLANK {}
-	    BAR {}
-	    LINE {}
+	    BAR -
+	    LINE {
+	    	if { $last_parameters_mtime \
+		     < $parameters_mtime } {
+		    set update yes
+		}
+	    }
 
 	    INPUT {
 		foreach in_file \
@@ -279,6 +400,10 @@ proc pass1 { instructions } {
 		}
 	    }
 	    BOARD {
+	    	if { $last_parameters_mtime \
+		     < $parameters_mtime } {
+		    set update yes
+		}
 		if { [file readable $finder_file] } {
 		    if { $update == "no" \
 			 && [file mtime $finder_file] \
@@ -296,6 +421,7 @@ proc pass1 { instructions } {
 	    default {}
 	}
     }
+    make_signals_default
 }
 
 proc pass2 { instructions pc end_pc update } {
@@ -415,7 +541,7 @@ proc pass2 { instructions pc end_pc update } {
 		        [array names parameters_array] {
 		    lappend \
 		        [list $name \
-			      [set scoreboard_$name]
+			      [set scoreboard_$name]]
 		}
 	        set contents \
 		    "$contents[exec scoreboard \
@@ -451,141 +577,99 @@ proc pass2 { instructions pc end_pc update } {
 }
 
 
-# Process any -start option.
+# Process command.
 #
-if { $argc >= 1 && [lindex $argv 0] == "-start" } {
+set log_mode none
+switch $command {
 
-    # Check arguments for errors
-    #
-    set log_mode none
-    process_arguments [lrange $argv 1 end]
+    start {
+	if { [file exists $pid_file] } {
+	     set pid [read_file $pid_file]
+	     set display [display_process_tree $pid]
+	     if { ! [regexp -nocase \
+			    {^no process .* exists} \
+			    $display] } {
+		 puts "Previous makescoreboard still\
+		       running:"
+		 puts $display
+		 exit 0
+	     }
+	     file delete -force $pid_file
+	}
+	write_file $pid_file [current_pid]
 
-    set spid $judging_directory/$scoreboard_pid_file
-    if { [file exists $spid] } {
-         set pid [read_file $spid]
-	 set display [display_process_tree $pid]
-	 if { ! [regexp -nocase \
-	                {^no process .* exists} \
-		        $display] } {
-	     puts "Previous makescoreboard still\
-	           running:"
-	     puts $display
-	     exit 0
-	 }
-	 file delete -force $spid
+	LOOP TBD ??
     }
-    set pid [eval exec makescoreboard \
-                       [lrange $argv 1 end] \
-    	               >& /dev/null &]
-    write_file $spid $pid
-    exit 0
-}
 
-# Process any -status option.  No second argument
-# may exist.
-#
-if { $argc == 1 && [lindex $argv 0] == "-status" } {
-    set log_mode none
-    set spid $judging_directory/$scoreboard_pid_file
-    if { [file exists $spid] } {
-         set pid [read_file $spid]
-	 set display [display_process_tree $pid]
-	 if { ! [regexp -nocase \
-	                {^no process .* exists} \
-		        $display] } {
-	     puts "Makescoreboard running:"
-	     puts $display
-	 } else {
-	     puts "Makescoreboard has died:"
-	     puts $display
-	     puts ""
-	     puts "Run `tracker' to find error logs,\
-	           or look in"
-	     puts "$log_directory for unchecked\
-	           errors."
-	 }
-    } else {
-        puts "All previous makescoreboards have been\
-	      stopped."
+    status {
+	if { [file exists $pid_file] } {
+	     set pid [read_file $pid_file]
+	     set display [display_process_tree $pid]
+	     if { ! [regexp -nocase \
+			    {^no process .* exists} \
+			    $display] } {
+		 puts "Makescoreboard running:"
+		 puts $display
+	     } else {
+		 puts "Makescoreboard has died:"
+		 puts $display
+		 puts ""
+		 puts "Run `tracker' to find error logs,\
+		       or look in"
+		 puts "$log_directory for unchecked\
+		       errors."
+	     }
+	} else {
+	    puts "All previous makescoreboards have been\
+		  stopped."
+	}
     }
-    exit 0
-}
 
-# Process any -stop option.  No second argument
-# may exist.
-#
-if { $argc == 1 && [lindex $argv 0] == "-stop" } {
-    set log_mode none
-    set spid $judging_directory/$scoreboard_pid_file
-    if { [file exists $spid] } {
-         set pid [read_file $spid]
-	 set display [display_process_tree $pid]
-	 if { ! [regexp -nocase \
-	                {^no process .* exists} \
-		        $display] } {
-	     puts "Killing previous makescoreboard:"
-	     puts $display
-	     set count 0
-	     while { "true" } {
-		 incr count 1
-		 if { $count <= 5 } {
-		     catch { signal_process_tree \
-		             HUP $pid } out
-		     puts $out
-		 } elseif { $count <= 10 } {
-		     catch { signal_process_tree \
-		             KILL $pid } out
-		     puts $out
-		 } else {
-		     puts "ERROR: Giving Up!"
-		     exit 1
-		 }
-		 sleep 1
-		 set display [display_process_tree $pid]
-		 if { [regexp -nocase \
-			      {^no process .* exists} \
-			      $display] } {
-		     break
+    stop {
+	if { [file exists $pid_file] } {
+	     set pid [read_file $pid_file]
+	     set display [display_process_tree $pid]
+	     if { ! [regexp -nocase \
+			    {^no process .* exists} \
+			    $display] } {
+		 puts "Killing previous makescoreboard:"
+		 puts $display
+		 set count 0
+		 while { "true" } {
+		     incr count 1
+		     if { $count <= 5 } {
+			 catch { signal_process_tree \
+				 HUP $pid } out
+			 puts $out
+		     } elseif { $count <= 10 } {
+			 catch { signal_process_tree \
+				 KILL $pid } out
+			 puts $out
+		     } else {
+			 puts "ERROR: Giving Up!"
+			 exit 1
+		     }
+		     sleep 1
+		     set display [display_process_tree $pid]
+		     if { [regexp -nocase \
+				  {^no process .* exists} \
+				  $display] } {
+			 break
+		     }
 		 }
 	     }
-	 }
-	 file delete -force $spid
-    } else {
-        puts "No previous makescoreboard running."
+	     file delete -force $pid_file
+	} else {
+	    puts "No previous makescoreboard running."
+	}
     }
-    exit 0
+
+    update {
+        process_instructions
+    }
 }
 
 
-# Ignore signals except during sleep (see below).
-#
-make_signals_ignored
-
-# Loop forever (unless interval == 0).
-#
-while { "yes" } {
-
-    # Record the time we start computing the scoreboard.
-    #
-    set time [clock seconds]
-    set date [clock format $time]
-
-    # Clear score flag.  If its reset after we have
-    # started to compute new scoreboard, then we need
-    # to compute again.
-    #
-    clear_flag $score_flag_file
-
-    # Collect scoreboard.
-    #
-    if { $parameters_file == "" } {
-	catch { exec scorefinder | scoreboard } \
-	      scoreboard
-    } else {
-	catch { exec scorefinder | \
-		scoreboard $parameters_file } \
-	      scoreboard
-    }
 
     # If the scoreboard is empty, say so explicitly.
     #
