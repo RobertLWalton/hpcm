@@ -11,15 +11,16 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: hc3 $
-//   $Date: 2001/06/06 05:21:26 $
+//   $Date: 2001/06/06 15:14:54 $
 //   $RCSfile: scorediff.cc,v $
-//   $Revision: 1.16 $
+//   $Revision: 1.17 $
 
 // This is version 2, a major revision of the first
 // scorediff program.  This version is more explicitly
 // token oriented.
 
 #include <stdlib.h>
+#include <limits.h>
 #include <iostream.h>
 #include <fstream.h>
 #include <ctype.h>
@@ -37,7 +38,7 @@ int finite (double);	// Not always in math.h
 #define MAX_SIZE 10200
 
 char documentation [] =
-"scorediff output_file test_file\n"
+"scorediff [options] output_file test_file\n"
 "\n"
 "    Returns on a single line a list of the types of\n"
 "    differences between the two files, followed by\n"
@@ -69,7 +70,7 @@ char documentation [] =
 "		is preceded by whitespace containing\n"
 "		no new lines, and the other has no\n"
 "		preceding whitespace at all."
-"\n"
+"\f\n"
 "    endspace	For two matching non-eof tokens, the\n"
 "		preceding whitespaces have the same\n"
 "		number N >= 1 of new lines, and the\n"
@@ -105,7 +106,7 @@ char documentation [] =
 "		file has a remaining token.  In this\n"
 "		case preceding whitespaces are NOT\n"
 "		compared."
-"\n"
+"\f\n"
 "    number A R	For two matching number tokens, the\n"
 "		token character strings do not match\n"
 "		exactly, the absolute difference of\n"
@@ -140,7 +141,7 @@ char documentation [] =
 "		at all.  This may be returned as the\n"
 "		sole contents of an output line that\n"
 "		lists differences.\n"
-"\n"
+"\f\n"
 "    The files are parsed into whitespace, numbers,\n"
 "    and other characters.  A number is an optional\n"
 "    sign followed by digits containing an optional\n"
@@ -164,7 +165,8 @@ char documentation [] =
 "    If numbers are too large to compare (either they\n"
 "    or their difference is infinity) then they are\n"
 "    treated as non-numbers whose character string\n"
-"    representations must match exactly.\n"
+"    representations must match exactly, except that\n"
+"    letter case (`e' versus `E') is ignored.\n"
 "\n"
 "    For the purpose of computing the column of a\n"
 "    character, tabs are set every 8 columns.\n"
@@ -178,20 +180,23 @@ char documentation [] =
 "    To avoid whitespace comparison anomalies, a new\n"
 "    line is added in front of each file before the\n"
 "    file is parsed.\n"
-"\n"
+"\f\n"
 "    When an end-of-file (eof) token is matched with\n"
 "    a non-eof token, no check is made of the white-\n"
 "    space preceding the tokens."
 "\n"
 "    For each kind of difference found in the two\n"
 "    files, the scorediff program outputs a `proof'\n"
-"    of the difference.  A proof is a line with the \n"
-"    syntax:\n"
+"    of the difference.  Proofs are output on proof-\n"
+"    lines that have the following syntax:\n"
 "\n"
-"          proof ::= difference-description\n"
+"          proof-line ::=\n"
 "                    output-line-number\n"
 "                    test-line-number\n"
-"                    token-locator token-locator*\n"
+"                    proof proof*\n"
+"\n"
+"          proof ::= difference-description\n"
+"                    token-locator\n"
 "\n"
 "          difference-description ::=\n"
 "                    `nonblank' | `case' | `column' |\n"
@@ -206,17 +211,36 @@ char documentation [] =
 "                    floating-point-number\n"
 "\n"
 "          token-locator ::=\n"
-"                    output-token-start-column\n"
-"                    output-token-start-length\n"
-"                    test-token-start-column\n"
-"                    test-token-start-length\n"
+"                    output-token-end-column\n"
+"                    test-token-end-column\n"
 "\n"
-"    where the column numbers in a line start with 0.\n"
+"    where the column numbers in a line start with 0\n"
+"    and the line numbers in a file start with 1.\n"
 "    Here non-floating-point numbers are unsigned\n"
-"    integers.  Only one token-locator is required\n"
-"    for a proof, but proofs with the same difference\n"
-"    description and line numbers are merged to form\n"
-"    proofs with more than one token-locator.\n"
+"    integers.  All the proofs with the same output\n"
+"    test file line numbers are put on the same\n"
+"    proof-line.\n"
+"\f\n"
+"    Program options may be used to surpress proofs\n"
+"    the output of this program.  An option consist-\n"
+"    ing of a `-' followed by difference name follow-\n"
+"    ed by an unsigned integer N suppresses all but\n"
+"    the first N proofs with that difference name.\n"
+"    Thus `-case 5' suppresses all but the first 5\n"
+"    `case' proofs.  If N is omitted, it is assumed\n"
+"    to be 0 (and next program argument must NOT\n"
+"    begin with a digit).  Thus `-case' with no\n"
+"    following number suppresses all `case' proofs.\n"
+"\n"
+"    The `-number' option differs in that it has the\n"
+"    form:\n"
+"\n"
+"        -number absolute-diff relative-diff N\n"
+"\n"
+"    and the program outputs only the first N\n"
+"    `number' proofs that have an absolute or\n"
+"    relative difference larger than the values given\n"
+"    in the option.\n"
 "\n"
 "    The first `nonblank' difference found terminates\n"
 "    this program and the search for more differ-\n"
@@ -228,7 +252,8 @@ char documentation [] =
 // (eof) token, or character token.  This last means a
 // any non-whitespace character not in a number.
 //
-enum token_type { NUMBER, END_OF_FILE, CHARACTER };
+enum token_type {
+    NUMBER_TOKEN, EOF_TOKEN, CHARACTER_TOKEN };
 
 struct file
 {
@@ -294,6 +319,11 @@ struct file
 			// points.
 };
 
+// The two files.
+//
+file output;
+file test;
+
 // Open file for reading.
 //
 int open ( file & f, char * filename )
@@ -315,7 +345,7 @@ int open ( file & f, char * filename )
     f.tokens[0]		= 0;
     f.column		= -1;
     f.line		= 0;
-    f.type		= CHARACTER;
+    f.type		= CHARACTER_TOKEN;
     f.whitespace[0]	= 0;
 }
 
@@ -355,7 +385,7 @@ void token_too_long ( file & f ) {
 //
 void scan_token ( file & f )
 {
-    if ( f.type == END_OF_FILE ) return;
+    if ( f.type == EOF_TOKEN ) return;
 
     int c = get_character ( f );
     int column = f.column + 1;
@@ -390,7 +420,7 @@ void scan_token ( file & f )
     * wp = 0;
 
     if ( c == EOF ) {
-    	f.type		= END_OF_FILE;
+    	f.type		= EOF_TOKEN;
 	f.count		= 1;
 	f.column	= column;
 	f.tokens[0]	= 0;
@@ -446,7 +476,7 @@ void scan_token ( file & f )
     c = get_character ( f );
     ++ column;
 
-    f.type = NUMBER;
+    f.type = NUMBER_TOKEN;
 
     // Get rest of mantissa.
     //
@@ -552,7 +582,7 @@ non_number:
     }
     f.column	= -- column;
     f.count	= tp - f.tokens;
-    f.type	= CHARACTER;
+    f.type	= CHARACTER_TOKEN;
 
     * tp = 0;
 
@@ -566,50 +596,200 @@ non_number:
     return;
 }
 
-// Tests two numbers just scanned for two files to
-// see if there is a computable difference.  If so,
-// sets the `number' flag argument and updates the
-// `number_absdiff' and `number_reldiff' arguments
-// by writing the differences just found into them
-// iff these new differences are larger than the
-// previous value of `number_absdiff' or `number_
-// reldiff' respectively.  Also sets the decimal
-// and exponent flags if the two number `decimals'
-// or `has_exponent' members are unequal.
+// Possible difference types.
 //
-// If there is no computable difference, sets the
-// `nonblank' flag argument instead.  This happens
-// if one of the numbers is not `finite' or their
-// difference is not `finite'.
-// 
-inline void diffnumber
-	( file & file1, file & file2,
-	  bool & nonblank, bool & number,
-	  bool & decimal, bool & exponent,
-	  double & number_absdiff,
-	  double & number_reldiff )
+enum difference_type {
+    LINEBREAK,
+    SPACEBREAK,
+    WHITESPACE,
+    BEGINSPACE,
+    LINESPACE,
+    ENDSPACE,
+    EOF1,
+    EOF2,
+    NUMBER,
+    DECIMAL,
+    EXPONENT,
+    CASE,
+    COLUMN,
+    NONBLANK,
+    MAX_DIFFERENCE
+};
+
+// Difference data.
+//
+struct difference
 {
-    if ( ! finite ( file1.number )
+    char *	name;
+    bool	flag;
+        // True if difference has been found.
+    unsigned	proof_limit;
+       // Decremented whenever a proof is output.
+       // If zero, suppresses output of proofs.
+};
+
+difference differences[] = {
+    { "linebreak", false, UINT_MAX },
+    { "spacebreak", false, UINT_MAX },
+    { "whitespace", false, UINT_MAX },
+    { "beginspace", false, UINT_MAX },
+    { "linespace", false, UINT_MAX },
+    { "endspace", false, UINT_MAX },
+    { "eof1", false, UINT_MAX },
+    { "eof2", false, UINT_MAX },
+    { "number", false, UINT_MAX },
+    { "decimal", false, UINT_MAX },
+    { "exponent", false, UINT_MAX },
+    { "case", false, UINT_MAX },
+    { "column", false, UINT_MAX },
+    { "nonblank", false, UINT_MAX }
+};
+
+// Maximum numeric differences found so far.
+//
+double absdiff_maximum	= 0.0;
+double reldiff_maximum	= 0.0;
+
+// Numeric differences equal to or below these are
+// NOT output as proofs.
+//
+double absdiff_limit	= 0.0;
+double reldiff_limit	= 0.0;
+
+struct proof
+{
+    difference_type	type;
+    unsigned		output_token_end_column;
+    unsigned		test_token_end_column;
+    double		absdiff;
+    double		reldiff;
+    proof *		next;
+};
+
+struct proof_line
+{
+    unsigned		output_line_number;
+    unsigned		test_line_number;
+    proof *		proofs;
+    proof_line *	next;
+};
+
+proof_line *	first_proof_line	= NULL;
+proof_line *	last_proof_line		= NULL;
+proof *		last_proof		= NULL;
+
+// Output a new proof.
+//
+inline void output_proof
+	( difference_type type,
+	  double absdiff = 0.0,
+	  double reldiff = 0.0 )
+{
+
+    if ( last_proof_line == NULL
 	 ||
-	 ! finite ( file2.number ) )
+         last_proof_line->output_line_number
+	 != output.line
+	 ||
+	 last_proof_line->test_line_number
+	 != test.line )
     {
-	nonblank = true;
+        proof_line * pline		= new
+	                                  proof_line;
+	pline->output_line_number	= output.line;
+	pline->test_line_number		= test.line;
+	pline->proofs			= NULL;
+
+	last_proof			= NULL;
+
+	if ( last_proof_line )
+	{
+	    last_proof_line->next	= pline;
+	    last_proof_line		= pline;
+	}
+	else
+	{
+	    first_proof_line		= pline;
+	    last_proof_line		= pline;
+	}
+    }
+
+    proof * p	= new proof;
+
+    p->type			= type;
+    p->output_token_end_column	= output.column;
+    p->test_token_end_column	= test.column;
+    p->absdiff			= absdiff;
+    p->reldiff			= reldiff;
+    p->next			= NULL;
+
+    if ( last_proof == NULL )
+    {
+        last_proof		= p;
+	last_proof_line->proofs	= p;
+    }
+    else
+    {
+        last_proof->next	= p;
+    }
+
+    -- differences[type].proof_limit;
+}
+
+// Record a found difference.
+//
+inline void found_difference
+	( difference_type type,
+	  double absdiff = 0.0,
+	  double reldiff = 0.0 )
+{
+    differences[type].flag = true;
+    if ( differences[type].proof_limit > 0
+         && ( type != NUMBER
+	      || absdiff > absdiff_limit
+	      || reldiff > reldiff_limit ) )
+        output_proof ( type, absdiff, reldiff );
+}
+
+// Tests two numbers just scanned for the output and
+// test files to see if there is a computable differ-
+// ence.  If so, calls found_difference (NUMBER), and
+// updates `absdiff_maximum' and `reldiff_maximum' by
+// writing the differences just found into them iff
+// these new differences are larger than the previous
+// value of `absdiff_maximum' or `reldiff_maximum',
+// respectively.  Also calls found_difference for
+// DECIMAL or EXPONENT if the two number `decimals'
+// or `has_exponent' file members are unequal.
+//
+// If there is no computable difference, calls found_
+// difference(NONBLANK) instead.  This happens if one of
+// the numbers is not `finite' or their difference is
+// not `finite'.
+// 
+void diffnumber ()
+{
+    if ( ! finite ( output.number )
+	 ||
+	 ! finite ( test.number ) )
+    {
+	found_difference ( NONBLANK );
 	return;
     }
 
     double absdiff =
-	( file1.number - file2.number );
+	( output.number - test.number );
     if ( ! finite ( absdiff ) )
     {
-	nonblank = true;
+	found_difference ( NONBLANK );
 	return;
     }
     if ( absdiff < 0 ) absdiff = - absdiff;
 
-    double abs1 = file1.number;
+    double abs1 = output.number;
     if ( abs1 < 0 ) abs1 = - abs1;
 
-    double abs2 = file2.number;
+    double abs2 = test.number;
     if ( abs2 < 0 ) abs2 = - abs2;
 
     double max = abs1;
@@ -623,31 +803,72 @@ inline void diffnumber
     {
         // Actually, this should never happen.
 
-	nonblank = true;
+	found_difference ( NONBLANK );
 	return;
     }
 
-    number = true;
+    found_difference ( NUMBER, absdiff, reldiff );
 
-    if ( absdiff > number_absdiff )
-	number_absdiff = absdiff;
+    if ( absdiff > absdiff_maximum )
+	absdiff_maximum = absdiff;
 
-    if ( reldiff > number_reldiff )
-	number_reldiff = reldiff;
+    if ( reldiff > reldiff_maximum )
+	reldiff_maximum = reldiff;
 
-    if ( file1.decimals != file2.decimals )
-    	decimal = true;
+    if ( output.decimals != test.decimals )
+	found_difference ( DECIMAL );
 
-    if ( file1.has_exponent != file2.has_exponent )
-    	exponent = true;
+    if ( output.has_exponent != test.has_exponent )
+	found_difference ( EXPONENT );
 }
 
 // Main program.
 //
 int main ( int argc, char ** argv )
 {
-    file file1;
-    file file2;
+
+    // Process options.
+
+    while ( argc >= 3 && argv[1][0] == '-' )
+    {
+
+	char * name = argv[1] + 1;
+
+        if ( strcmp ( "number", name ) == 0 )
+	{
+	    // special case.
+
+	    if ( argc < 5 ) break;
+
+	    absdiff_limit = atof ( argv[2] );
+	    absdiff_limit = atof ( argv[3] );
+	    ++ argv, -- argc;
+	    ++ argv, -- argc;
+	}
+        else if ( strcmp ( "doc", name ) == 0 )
+	    break;
+
+	int i; for ( i = 0; i < MAX_DIFFERENCE; ++ i )
+	{
+	    if ( strcmp ( differences[i].name, name )
+	         == 0 ) break;
+	}
+
+    	if ( i < MAX_DIFFERENCE )
+	    differences[i].proof_limit
+	    	= (unsigned) atol ( argv[2] );
+	else
+	{
+	    cerr << "Unrecognized option -"
+		 << name
+		 << endl;
+	    exit (1);
+	}
+
+        ++ argv, -- argc;
+	if ( isdigit ( argv[1][0] ) )
+		++ argv, -- argc;
+    }
 
     // Print documentation and exit with error status
     // unless there are exactly two program arguments.
@@ -660,64 +881,49 @@ int main ( int argc, char ** argv )
 
     // Open files.
 
-    open ( file1, argv[1] );
-    open ( file2, argv[2] );
+    open ( output, argv[1] );
+    open ( test, argv[2] );
 
     // Loop that reads the two files and compares their
     // tokens, setting flags describing any differences
     // found.
 
-    bool linebreak	= false;	// Difference
-    bool spacebreak	= false;	// flags.
-    bool whitespace	= false;
-    bool beginspace	= false;
-    bool linespace	= false;
-    bool endspace	= false;
-    bool eof1		= false;
-    bool eof2		= false;
-    bool number		= false;
-    bool decimal	= false;
-    bool exponent	= false;
-    bool caseflag	= false;
-    bool column		= false;
-    bool nonblank	= false;
-
-    double number_absdiff	= 0.0;	// Numeric
-    double number_reldiff	= 0.0;	// differences.
-
     // Scan the first tokens.
     //
-    scan_token ( file1 );
-    scan_token ( file2 );
+    scan_token ( output );
+    scan_token ( test );
 
     bool done		= false;
 
     while ( ! done )
     {
-        // Terminate loop if just one file has an END_OF_FILE.
+        // Terminate loop if just one file has an
+	// EOF_TOKEN.
 
-	if ( file1.type == END_OF_FILE
-	     && file2.type != END_OF_FILE )
+	if ( output.type == EOF_TOKEN
+	     && test.type != EOF_TOKEN )
 	{
-	    done = eof1 = true;
+	    found_difference ( EOF1 );
+	    done = true;
 	    break;
 	}
 	else
-	if ( file2.type == END_OF_FILE
-	     && file1.type != END_OF_FILE )
+	if ( test.type == EOF_TOKEN
+	     && output.type != EOF_TOKEN )
 	{
-	    done = eof2 = true;
+	    found_difference ( EOF2 );
+	    done = true;
 	    break;
 	}
 
         // Compare whitespace preceding tokens.
 
-	if ( file1.newlines != file1.newlines )
-	    linebreak = true;
+	if ( output.newlines != test.newlines )
+	    found_difference ( LINEBREAK );
 	else
 	{
-	    char * wp1		= file1.whitespace;
-	    char * wp2		= file2.whitespace;
+	    char * wp1		= output.whitespace;
+	    char * wp2		= test.whitespace;
 	    int newlines	= 0;
 
 	    while (1) {
@@ -733,38 +939,38 @@ int main ( int argc, char ** argv )
 		while ( * wp2 && * wp2 != '\n' ) ++ wp2;
 
 		if ( newlines == 0 ) {
-		    if ( file1.newlines == 0 )
-			whitespace = true;
+		    if ( output.newlines == 0 )
+			found_difference ( WHITESPACE );
 		    else
-			beginspace = true;
+			found_difference ( BEGINSPACE );
 		}
-		else if ( newlines == file1.newlines )
-		    endspace = true;
+		else if ( newlines == output.newlines )
+		    found_difference ( ENDSPACE );
 		else
-		    linespace = true;
+		    found_difference ( LINESPACE );
 	    }
 	}
         
 	// Compare tokens.
 	//
-        switch ( file1.type ) {
-	case NUMBER:
-	case CHARACTER:
-	    switch ( file2.type ) {
-	    case END_OF_FILE:
-	    	done = eof2 = true;
+        switch ( output.type ) {
+	case NUMBER_TOKEN:
+	case CHARACTER_TOKEN:
+	    switch ( test.type ) {
+	    case EOF_TOKEN:
+		found_difference ( EOF2 );
 		break;
-	    case NUMBER:
-	    case CHARACTER:
+	    case NUMBER_TOKEN:
+	    case CHARACTER_TOKEN:
 
-	        if ( file1.type != file2.type )
+	        if ( output.type != test.type )
 		{
-		    done = nonblank = true;
+		    found_difference ( NONBLANK );
 		    break;
 		}
 
-	    	char * tp1 = file1.tokens;
-	    	char * tp2 = file2.tokens;
+	    	char * tp1 = output.tokens;
+	    	char * tp2 = test.tokens;
 		bool token_case = false;
 
 		while ( * tp1 )
@@ -782,31 +988,29 @@ int main ( int argc, char ** argv )
 
 	        if ( * tp1 == * tp2 )
 		{
-		    if ( file1.type != NUMBER
+		    if ( output.type != NUMBER_TOKEN
 		         && token_case )
-		        caseflag = true;
+		        found_difference ( CASE );
 		    break;
 		}
 
-		else if ( file1.type != NUMBER )
+		else if ( output.type != NUMBER_TOKEN )
 		{
-		    done = nonblank = true;
+		    found_difference ( NONBLANK );
+		    done = true;
 		    break;
 		}
 
-		diffnumber ( file1, file2,
-			     nonblank, number,
-			     decimal, exponent,
-			     number_absdiff,
-			     number_reldiff );
+		diffnumber ();
 
-		if ( nonblank ) done = true;
+		if ( differences[NONBLANK].flag )
+		    done = true;
 		break;
 	    }
 	    break;
 
-	case END_OF_FILE:
-            assert ( file2.type == END_OF_FILE );
+	case EOF_TOKEN:
+            assert ( test.type == EOF_TOKEN );
 	    done = true;
 	    break;
      	}
@@ -818,54 +1022,43 @@ int main ( int argc, char ** argv )
 
     bool any = false;
 
-    if ( spacebreak ) {
-    	cout << (any ? " spacebreak" : "spacebreak");
-	any = true;
-    }
-    if ( linebreak ) {
-    	cout << (any ? " linebreak" : "linebreak");
-	any = true;
-    }
-    if ( whitespace ) {
-    	cout << (any ? " whitespace" : "whitespace");
-	any = true;
-    }
-    if ( eof1 ) {
-    	cout << (any ? " eof1" : "eof1");
-	any = true;
-    }
-    if ( eof2 ) {
-    	cout << (any ? " eof2" : "eof2");
-	any = true;
-    }
-    if ( number ) {
-    	cout << (any ? " number " : "number ")
-	     << number_absdiff << " "
-	     << number_reldiff;
-	any = true;
-    }
-    if ( decimal ) {
-    	cout << (any ? " decimal" : "decimal");
-	any = true;
-    }
-    if ( exponent ) {
-    	cout << (any ? " exponent" : "exponent");
-	any = true;
-    }
-    if ( caseflag ) {
-    	cout << (any ? " case" : "case");
-	any = true;
-    }
-    if ( column ) {
-    	cout << (any ? " column" : "column");
-	any = true;
-    }
-    if ( nonblank ) {
-    	cout << (any ? " nonblank" : "nonblank");
-	any = true;
+    for ( int i = 0; i < MAX_DIFFERENCE; ++ i )
+    {
+        if ( differences[i].flag )
+	{
+	    if ( any ) cout << " ";
+	    cout << differences[i].name;
+	    if ( i == NUMBER )
+		cout << " " << absdiff_maximum
+		     << " " << reldiff_maximum;
+	    any = true;
+	}
     }
 
     cout << (any ? "" : "none") << endl;
+
+    for ( proof_line * pline = first_proof_line;
+          pline != NULL;
+	  pline = pline->next )
+    {
+        cout << pline->output_line_number << " "
+             << pline->test_line_number;
+
+	for ( proof * p = pline->proofs;
+	      p != NULL;
+	      p = p->next )
+	{
+	    cout << " " << differences[p->type].name;
+	    if ( p->type == NUMBER )
+	    {
+		cout << " " << p->absdiff;
+		cout << " " << p->reldiff;
+	    }
+	    cout << " " << p->output_token_end_column;
+	    cout << " " << p->test_token_end_column;
+	}
+	cout << endl;
+    }
 
     // Return from main function without error.
 
