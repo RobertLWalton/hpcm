@@ -2,7 +2,7 @@
 #
 # File:		File_List
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Nov  2 09:03:49 EST 2002
+# Date:		Fri Nov  8 10:44:35 EST 2002
 #
 # The authors have placed this file in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/11/02 14:18:21 $
+#   $Date: 2002/11/08 17:02:08 $
 #   $RCSfile: File_List,v $
-#   $Revision: 1.48 $
+#   $Revision: 1.49 $
 
 # This file consists of abbreviation lines, keyword
 # lines, filename lines, and comment lines.
@@ -56,7 +56,8 @@
 #		or distributed.
 #
 #   web		A file that can be put on the web.
-#		E.g., part of the web help stuff.
+#		E.g., `help & web' selects web help
+#		files.
 #
 #   help	Help files.
 #
@@ -66,30 +67,51 @@
 #       formal		Formal Help Files.
 #       advanced	Advanced Help Files.
 #
+#   proto	Prototype files that are to be edited.
+#		e.g., `help & proto' selects prototypes
+#		for the `this_contest' help file.
+#
 #   demo	Demonstration problems.
 #
-#   pascal	Files just for pascal users.
+#   pascal	Files just for PASCAL users.
 #
-#   problem	Problem descriptions for contestants.
+#   java	Files just for JAVA users.
 #
-#   library	Files for the problem librarian.
+#   lisp	Files just for COMMONLISP users.
 #
 #   legal	Legal documents (email) relating to
 #		public problems.
 #
-#   example	Files for example contests.
-#
 #   system	Files for the system maintainer.
+#
+#   contestant	Program files for the contestant.
+#
+#   judge	Program files for the judge.
+#
+#   secure	Program files that involve security.
+#
+#   bin		Executable program files.
+#
+#   src		Compiled program source files.
+#
+#   lib		Program library files.
+#
+#   example	Files for example contests.
 #
 #   test	Files for the system tester.
 #
-#   data	Data files for the system tester.
+#   data	Data files for the testing.
 #
-#   document	Documentation files for the judge and
-#		system maintainer.
+#   library	Files for the problem librarian.
+#
+#   problem	Problem descriptions for contestants.
 #
 # The filenames are relative to this, the root HPCM
 # directory.
+
+
+# Help files (that are not system files)
+# --------------------------------------
 
 *ABBREVS* CHELP=./contestant/help
 #
@@ -102,9 +124,9 @@ CHELP/index.html
 *KEYS* public help web common
 CHELP/common/advice
 CHELP/common/c++
-CHELP/common/commonlisp
+CHELP/common/commonlisp		lisp
 CHELP/common/input
-CHELP/common/java
+CHELP/common/javas		java
 CHELP/common/output
 CHELP/common/print
 CHELP/common/scoreboard
@@ -112,18 +134,18 @@ CHELP/common/scores
 CHELP/common/solving
 CHELP/common/xterminals
 #
-*KEYS* public help web formal
-CHELP/formal/formal_contest
-CHELP/formal/formal_this_contest_prototype
+*KEYS* public help formal
+CHELP/formal/formal_contest web
+CHELP/formal/formal_this_contest_prototype proto
 #
-*KEYS* public help web informal
-CHELP/informal/informal_contest
-CHELP/informal/informal_this_contest_prototype
+*KEYS* public help informal
+CHELP/informal/informal_contest web
+CHELP/informal/informal_this_contest_prototype proto
 #
-*KEYS* public help web email
-CHELP/email/email_contest
-CHELP/email/email_this_contest_prototype
-CHELP/email/email_unix_tools
+*KEYS* public help email
+CHELP/email/email_contest web
+CHELP/email/email_this_contest_prototype proto
+CHELP/email/email_unix_tools help web
 #
 *KEYS* public help web email sh
 CHELP/email/sh/hpcm_extract
@@ -144,7 +166,11 @@ CHELP/advanced/breadth_first_search
 CHELP/advanced/dynamic_programming
 CHELP/advanced/network_flows
 CHELP/advanced/optimal_matchings
-#
+
+
+# Demonstration Files
+# -------------------
+
 *ABBREVS* DEMOS=./problem_library/demos
 #
 *KEYS* public demo web
@@ -155,37 +181,54 @@ DEMOS/count/count.test
 DEMOS/count/count.txt
 DEMOS/count/count1.c
 DEMOS/count/count1.cc
-DEMOS/count/count1.java
-DEMOS/count/count1.p
-DEMOS/count/count1.lsp
+DEMOS/count/count1.java		java
+DEMOS/count/count1.p		pascal
+DEMOS/count/count1.lsp		lisp
 #
-*KEYS* public demo web
+*KEYS* public demo web		java
 DEMOS/javaio/Makefile
 DEMOS/javaio/javaio.java
 DEMOS/javaio/javaio.in
 DEMOS/javaio/javaio.test
 #
-*KEYS* public pascal web
+*KEYS* public demo web		pascal
 DEMOS/pascal/Makefile
 DEMOS/pascal/pascal.in
 DEMOS/pascal/pascal.p
 DEMOS/pascal/pascal.test
-#
-*KEYS* public document
-./judge/doc/Makefile
-#
+
+
+# Legal Files
+# -----------
+
 *KEYS* private legal
 ./problem_library/legal/rokicki-bospre-2000.mail
-#
-*KEYS* system public
+
+
+# System Maintenance Files
+# ------------------------
+
+*KEYS* public system
 ./STATUS
 ./File_List
 ./Makefile
 ./signatures_header
 ./TODO
-#
-*KEYS* system contestant bin public
+./contestant/help/Makefile
 ./contestant/bin/Makefile
+./judge/bin/Makefile
+./judge/doc/Makefile
+./judge/src/Makefile
+./judge/src/scorediff_test.out		test data
+./judge/src/scorediff_test.test		test data
+./judge/src/scorediff_test.reference	test data
+./secure/src/Makefile
+
+
+# Contestant's Executable Programs
+# --------------------------------
+
+*KEYS* public contestant bin
 ./contestant/bin/filtered_diff
 ./contestant/bin/fprint
 ./contestant/bin/help
@@ -204,12 +247,12 @@ DEMOS/pascal/pascal.test
 ./contestant/bin/SETUP_PROTOTYPE
 ./contestant/bin/TRASH_ACCOUNT
 ./contestant/bin/xcsh
-#
-*KEYS* system contestant public
-./contestant/help/Makefile
-#
-*KEYS* system judge bin public
-./judge/bin/Makefile
+
+
+# Judge's Executable Programs
+# ---------------------------
+
+*KEYS* public system judge bin
 ./judge/bin/autodispatch
 ./judge/bin/autoinfo
 ./judge/bin/autojudge
@@ -242,522 +285,705 @@ DEMOS/pascal/pascal.test
 ./judge/bin/testproblems
 ./judge/bin/tracker
 ./judge/bin/trackfinder
-#
-*KEYS* system judge lib public
+
+
+# Judge Subroutine Libraries
+# --------------------------
+
+*KEYS* public system judge lib
 ./judge/lib/display_common.tcl
 ./judge/lib/hpcm_judging.rc
 ./judge/lib/judging_common.tcl
 ./judge/lib/scoring_common.tcl
 ./judge/lib/scoreboard_common.tcl
-#
-*KEYS* system judge src public
-./judge/src/Makefile
+
+# Source Code for Judge's Programs
+# --------------------------------
+
+*KEYS* public system judge src
 ./judge/src/chkpage.c
 ./judge/src/scorediff.cc
-./judge/src/scorediff_test.out
-./judge/src/scorediff_test.test
-./judge/src/scorediff_test.reference
-#
-*KEYS* system secure src public
-./secure/src/Makefile
+
+
+# Source Code for Secure Programs
+# -------------------------------
+
+*KEYS* public system secure contestant judge src
 ./secure/src/hpcm_sandbox.c
 ./secure/src/hpcm_sendmail.c
-#
-*KEYS* system secure bin public
+
+
+# Judge's Secure Executable Programs
+# ----------------------------------
+
+*KEYS* public system secure judge bin
 ./secure/bin/hpcm_TRASH_ACCOUNTS
 ./secure/bin/hpcm_email_passwords
 ./secure/bin/hpcm_make_accounts
 ./secure/bin/hpcm_print_passwords
 ./secure/bin/hpcm_set_passwords
-#
-*KEYS* examples email public
+
+
+# Example Contests
+# ----------------
+
+*KEYS* public example email web
 ./examples/web_contest/Makefile
 ./examples/web_contest/hpcm_judging.rc
 ./examples/web_contest/scoreboard.notes
 #
-*KEYS* examples email public
+*KEYS* public example email
 ./examples/email_contest/Makefile
 ./examples/email_contest/hpcm_judging.rc
 ./examples/email_contest/scoreboard.notes
 #
-*KEYS* examples informal public
+*KEYS* public example informal
 ./examples/informal_contest/Makefile
 ./examples/informal_contest/hpcm_judging.rc
 ./examples/informal_contest/scoreboard.1head
 #
-*KEYS* examples formal public
+*KEYS* public example formal
 ./examples/formal_contest/Makefile
 ./examples/formal_contest/hpcm_judging.rc
 ./examples/formal_contest/scoreboard.1head
-#
-*KEYS* examples test private
+
+# Private Test Contests
+# ---------------------
+
+*KEYS* private test
 ./examples/test_contest/Makefile
 ./examples/test_contest/hpcm_judging.rc
 ./examples/test_contest/mail_test_tgz.mime
+
+# Test Data
+# ---------
+
+*ABBREVS* TSUB=./examples/test_submissions
 #
-*KEYS* test public
-./examples/test_submissions/Makefile
-./examples/test_submissions/Makefile.mk
-./examples/test_submissions/bad_problem_name1.mail
-./examples/test_submissions/bad_problem_name1.reply
-./examples/test_submissions/bad_problem_name2.mail
-./examples/test_submissions/bad_problem_name2.reply
-./examples/test_submissions/bad_problem_name3.mail
-./examples/test_submissions/bad_problem_name3.reply
-./examples/test_submissions/bad_problem_name4.mail
-./examples/test_submissions/bad_problem_name4.reply
-./examples/test_submissions/bad_problem_name5.mail
-./examples/test_submissions/bad_problem_name5.reply
-./examples/test_submissions/bad_problem_name6.mail
-./examples/test_submissions/bad_problem_name6.reply
-./examples/test_submissions/bad_problem_name7.mail
-./examples/test_submissions/bad_problem_name7.reply
-./examples/test_submissions/bad_problem_name8.mail
-./examples/test_submissions/bad_problem_name8.reply
-./examples/test_submissions/bad_problem_name9.mail
-./examples/test_submissions/bad_problem_name9.reply
-./examples/test_submissions/bad_subject_format.mail
-./examples/test_submissions/bad_subject_format.reply
-./examples/test_submissions/count_correct.cc.mail
-./examples/test_submissions/count_correct.cc.reply
-./examples/test_submissions/count_correct.c.mail
-./examples/test_submissions/count_correct.c.reply
-./examples/test_submissions/count_correct.java.mail
-./examples/test_submissions/count_correct.java.reply
-./examples/test_submissions/count_correct.p.mail
-./examples/test_submissions/count_correct.p.reply
-./examples/test_submissions/count_crash.cc.mail
-./examples/test_submissions/count_crash.cc.reply
-./examples/test_submissions/count_timeout.java.mail
-./examples/test_submissions/count_timeout.java.reply
-./examples/test_submissions/count_too_much_output.c.mail
-./examples/test_submissions/count_too_much_output.c.reply
-./examples/test_submissions/get_bad_body.mail
-./examples/test_submissions/get_bad_body.reply
-./examples/test_submissions/get_count.mail
-./examples/test_submissions/get_count.reply
-./examples/test_submissions/get_forbidden_files.mail
-./examples/test_submissions/get_forbidden_files.reply
-./examples/test_submissions/get_illegal_filenames.mail
-./examples/test_submissions/get_illegal_filenames.reply
-./examples/test_submissions/get_unreadable_files.mail
-./examples/test_submissions/get_unreadable_files.reply
-./examples/test_submissions/query.mail
-./examples/test_submissions/query.reply
-./examples/test_submissions/system_error.mail
-./examples/test_submissions/system_error.reply
-#
-*KEYS* library index public
+*KEYS* public test data
+TSUB/Makefile
+TSUB/Makefile.mk
+TSUB/bad_problem_name1.mail
+TSUB/bad_problem_name1.reply
+TSUB/bad_problem_name2.mail
+TSUB/bad_problem_name2.reply
+TSUB/bad_problem_name3.mail
+TSUB/bad_problem_name3.reply
+TSUB/bad_problem_name4.mail
+TSUB/bad_problem_name4.reply
+TSUB/bad_problem_name5.mail
+TSUB/bad_problem_name5.reply
+TSUB/bad_problem_name6.mail
+TSUB/bad_problem_name6.reply
+TSUB/bad_problem_name7.mail
+TSUB/bad_problem_name7.reply
+TSUB/bad_problem_name8.mail
+TSUB/bad_problem_name8.reply
+TSUB/bad_problem_name9.mail
+TSUB/bad_problem_name9.reply
+TSUB/bad_subject_format.mail
+TSUB/bad_subject_format.reply
+TSUB/count_correct.cc.mail
+TSUB/count_correct.cc.reply
+TSUB/count_correct.c.mail
+TSUB/count_correct.c.reply
+TSUB/count_correct.java.mail
+TSUB/count_correct.java.reply
+TSUB/count_correct.p.mail
+TSUB/count_correct.p.reply
+TSUB/count_crash.cc.mail
+TSUB/count_crash.cc.reply
+TSUB/count_timeout.java.mail
+TSUB/count_timeout.java.reply
+TSUB/count_too_much_output.c.mail
+TSUB/count_too_much_output.c.reply
+TSUB/get_bad_body.mail
+TSUB/get_bad_body.reply
+TSUB/get_count.mail
+TSUB/get_count.reply
+TSUB/get_forbidden_files.mail
+TSUB/get_forbidden_files.reply
+TSUB/get_illegal_filenames.mail
+TSUB/get_illegal_filenames.reply
+TSUB/get_unreadable_files.mail
+TSUB/get_unreadable_files.reply
+TSUB/query.mail
+TSUB/query.reply
+TSUB/system_error.mail
+TSUB/system_error.reply
+
+
+# Problem Library Indices
+# -----------------------
+
+*KEYS* public library index
 ./problem_library/index
+
+
+# Private Problem Library
+# -----------------------
+
+*ABBREVS* PRIVLIB=./problem_library/private
 #
-*KEYS* problem private
-./problem_library/private/abbott/abbott.txt
-./problem_library/private/abbott/abbott.ps
-./problem_library/private/bike/bike.txt
-./problem_library/private/dicemaze/dicemaze.txt
-./problem_library/private/partition/partition.txt
+*KEYS* private problem
+PRIVLIB/abbott/abbott.txt
+PRIVLIB/abbott/abbott.ps
+PRIVLIB/bike/bike.txt
+PRIVLIB/dicemaze/dicemaze.txt
+PRIVLIB/partition/partition.txt
+
+
+# Public Problem Library
+# ----------------------
+
+*ABBREVS* PUBLIB=./problem_library/public
 #
-*KEYS* problem public
-./problem_library/public/abbott/Makefile
-./problem_library/public/abbott/abbott.html
-./problem_library/public/abbott/abbott.in
-./problem_library/public/abbott/abbott.test
-./problem_library/public/absolute_word/Makefile
-./problem_library/public/absolute_word/absolute_word.in
-./problem_library/public/absolute_word/absolute_word.test
-./problem_library/public/absolute_word/absolute_word.txt
-./problem_library/public/alive/Makefile
-./problem_library/public/alive/alive.in
-./problem_library/public/alive/alive.test
-./problem_library/public/alive/alive.txt
-./problem_library/public/anagrams/Makefile
-./problem_library/public/anagrams/anagrams.in
-./problem_library/public/anagrams/anagrams.test
-./problem_library/public/anagrams/anagrams.txt
-./problem_library/public/balanced/Makefile
-./problem_library/public/balanced/balanced.in
-./problem_library/public/balanced/balanced.test
-./problem_library/public/balanced/balanced.txt
-./problem_library/public/beebumblia/Makefile
-./problem_library/public/beebumblia/beebumblia.in
-./problem_library/public/beebumblia/beebumblia.test
-./problem_library/public/beebumblia/beebumblia.txt
-./problem_library/public/bignum/Makefile
-./problem_library/public/bignum/bignum.txt
-./problem_library/public/bignum/bignum.in
-./problem_library/public/bignum/bignum.test
-./problem_library/public/bike/Makefile
-./problem_library/public/bike/bike.html
-./problem_library/public/bike/bike.in
-./problem_library/public/bike/bike.test
-./problem_library/public/binary/Makefile
-./problem_library/public/binary/binary.txt
-./problem_library/public/binary/binary.in
-./problem_library/public/binary/binary.test
-./problem_library/public/bincycle/Makefile
-./problem_library/public/bincycle/bincycle.txt
-./problem_library/public/bincycle/bincycle.in
-./problem_library/public/bincycle/bincycle.test
-./problem_library/public/carmen/Makefile
-./problem_library/public/carmen/carmen.in
-./problem_library/public/carmen/carmen.test
-./problem_library/public/carmen/carmen.txt
-./problem_library/public/casino/Makefile
-./problem_library/public/casino/Scoring_Instructions
-./problem_library/public/casino/casino.in
-./problem_library/public/casino/casino.test
-./problem_library/public/casino/casino.txt
-./problem_library/public/cheese/Makefile
-./problem_library/public/cheese/cheese.html
-./problem_library/public/cheese/cheese.in
-./problem_library/public/cheese/cheese.test
-./problem_library/public/codebreaker/Makefile
-./problem_library/public/codebreaker/codebreaker.txt
-./problem_library/public/codebreaker/codebreaker.in
-./problem_library/public/codebreaker/codebreaker.test
-./problem_library/public/coins/Makefile
-./problem_library/public/coins/Scoring_Instructions
-./problem_library/public/coins/coins.txt
-./problem_library/public/coins/coins.in
-./problem_library/public/coins/coins.test
-./problem_library/public/coins/coins1.in
-./problem_library/public/corners/Makefile
-./problem_library/public/corners/corners.html
-./problem_library/public/corners/corners.in
-./problem_library/public/corners/corners.test
-./problem_library/public/countpaths/Makefile
-./problem_library/public/countpaths/countpaths.in
-./problem_library/public/countpaths/countpaths.test
-./problem_library/public/countpaths/countpaths.txt
-./problem_library/public/crypto/Makefile
-./problem_library/public/crypto/crypto.txt
-./problem_library/public/crypto/crypto.in
-./problem_library/public/crypto/crypto.test
-./problem_library/public/dicemaze/Makefile
-./problem_library/public/dicemaze/dicemaze.html
-./problem_library/public/dicemaze/dicemaze.in
-./problem_library/public/dicemaze/dicemaze.test
-./problem_library/public/dicemaze/non_unique.in
-./problem_library/public/encrypt/Makefile
-./problem_library/public/encrypt/Scoring_Instructions
-./problem_library/public/encrypt/encrypt.txt
-./problem_library/public/encrypt/encrypt.in
-./problem_library/public/encrypt/encrypt.test
-./problem_library/public/fibonacci/Makefile
-./problem_library/public/fibonacci/fibonacci.txt
-./problem_library/public/fibonacci/fibonacci.in
-./problem_library/public/fibonacci/fibonacci.test
-./problem_library/public/fibstring/Makefile
-./problem_library/public/fibstring/fibstring.txt
-./problem_library/public/fibstring/fibstring.in
-./problem_library/public/fibstring/fibstring.test
-./problem_library/public/figure/Makefile
-./problem_library/public/figure/figure.txt
-./problem_library/public/figure/figure.in
-./problem_library/public/figure/figure.test
-./problem_library/public/forest/Makefile
-./problem_library/public/forest/forest.html
-./problem_library/public/forest/forest.in
-./problem_library/public/forest/forest.test
-./problem_library/public/fortified/Makefile
-./problem_library/public/fortified/Scoring_Instructions
-./problem_library/public/fortified/fortified.html
-./problem_library/public/fortified/fortified.in
-./problem_library/public/fortified/fortified.test
-./problem_library/public/gcomputer/Makefile
-./problem_library/public/gcomputer/gcomputer.txt
-./problem_library/public/gcomputer/gcomputer.in
-./problem_library/public/gcomputer/gcomputer.test
-./problem_library/public/gears/Makefile
-./problem_library/public/gears/Scoring_Instructions
-./problem_library/public/gears/gears.txt
-./problem_library/public/gears/gears.in
-./problem_library/public/gears/gears.test
-./problem_library/public/gifts/Makefile
-./problem_library/public/gifts/Scoring_Instructions
-./problem_library/public/gifts/gifts.html
-./problem_library/public/gifts/gifts.in
-./problem_library/public/gifts/gifts.test
-./problem_library/public/hamilton/Makefile
-./problem_library/public/hamilton/hamilton.txt
-./problem_library/public/hamilton/hamilton.in
-./problem_library/public/hamilton/hamilton.test
-./problem_library/public/handshakes/Makefile
-./problem_library/public/handshakes/handshakes.in
-./problem_library/public/handshakes/handshakes.test
-./problem_library/public/handshakes/handshakes.txt
-./problem_library/public/hops/Makefile
-./problem_library/public/hops/hops.txt
-./problem_library/public/hops/hops.in
-./problem_library/public/hops/hops.test
-./problem_library/public/hops/hops1.in
-./problem_library/public/huffman/Makefile
-./problem_library/public/huffman/huffman.in
-./problem_library/public/huffman/huffman.test
-./problem_library/public/huffman/huffman.txt
-./problem_library/public/hull/Makefile
-./problem_library/public/hull/hull.in
-./problem_library/public/hull/hull.test
-./problem_library/public/hull/hull.txt
-./problem_library/public/hypercube/Makefile
-./problem_library/public/hypercube/hypercube.txt
-./problem_library/public/hypercube/hypercube.in
-./problem_library/public/hypercube/hypercube.test
-./problem_library/public/hypercube/reverse.cc
-./problem_library/public/insiders/Makefile
-./problem_library/public/insiders/insiders.in
-./problem_library/public/insiders/insiders.test
-./problem_library/public/insiders/insiders.txt
-./problem_library/public/investment/Makefile
-./problem_library/public/investment/Scoring_Instructions
-./problem_library/public/investment/investment.txt
-./problem_library/public/investment/investment.in
-./problem_library/public/investment/investment.test
-./problem_library/public/justify/Makefile
-./problem_library/public/justify/justify.txt
-./problem_library/public/justify/justify.in
-./problem_library/public/justify/justify.test
-./problem_library/public/korn/Makefile
-./problem_library/public/korn/korn.txt
-./problem_library/public/korn/korn.in
-./problem_library/public/korn/korn.test
-./problem_library/public/kungfu/Makefile
-./problem_library/public/kungfu/kungfu.in
-./problem_library/public/kungfu/kungfu.test
-./problem_library/public/kungfu/kungfu.txt
-./problem_library/public/life/Makefile
-./problem_library/public/life/life.txt
-./problem_library/public/life/life.in
-./problem_library/public/life/life.test
-./problem_library/public/maxflow/Makefile
-./problem_library/public/maxflow/maxflow.txt
-./problem_library/public/maxflow/maxflow.in
-./problem_library/public/maxflow/maxflow.test
-./problem_library/public/maxmod/Makefile
-./problem_library/public/maxmod/maxmod.in
-./problem_library/public/maxmod/maxmod.test
-./problem_library/public/maxmod/maxmod.txt
-./problem_library/public/median/Makefile
-./problem_library/public/median/median.txt
-./problem_library/public/median/median.in
-./problem_library/public/median/median.test
-./problem_library/public/median/median1.in
-./problem_library/public/memmanage/Makefile
-./problem_library/public/memmanage/memmanage.html
-./problem_library/public/memmanage/memmanage.in
-./problem_library/public/memmanage/memmanage.test
-./problem_library/public/motion/Makefile
-./problem_library/public/motion/motion.txt
-./problem_library/public/motion/motion.in
-./problem_library/public/motion/motion.test
-./problem_library/public/network/Makefile
-./problem_library/public/network/network.txt
-./problem_library/public/network/network.in
-./problem_library/public/network/network.test
-./problem_library/public/opnum/Makefile
-./problem_library/public/opnum/opnum.txt
-./problem_library/public/opnum/opnum.in
-./problem_library/public/opnum/opnum.test
-./problem_library/public/overlay/Makefile
-./problem_library/public/overlay/Scoring_Instructions
-./problem_library/public/overlay/overlay.in
-./problem_library/public/overlay/overlay.test
-./problem_library/public/overlay/overlay.txt
-./problem_library/public/palin/Makefile
-./problem_library/public/palin/palin.txt
-./problem_library/public/palin/palin.in
-./problem_library/public/palin/palin.test
-./problem_library/public/partition/Makefile
-./problem_library/public/partition/partition.html
-./problem_library/public/partition/partition.in
-./problem_library/public/partition/partition.test
-./problem_library/public/paths/Makefile
-./problem_library/public/paths/paths.txt
-./problem_library/public/paths/paths.in
-./problem_library/public/paths/paths.test
-./problem_library/public/paths/paths1.in
-./problem_library/public/polyfill/Makefile
-./problem_library/public/polyfill/polyfill.txt
-./problem_library/public/polyfill/polyfill.in
-./problem_library/public/polyfill/polyfill.test
-./problem_library/public/pool/Makefile
-./problem_library/public/pool/Scoring_Instructions
-./problem_library/public/pool/pool.txt
-./problem_library/public/pool/pool.in
-./problem_library/public/pool/pool.test
-./problem_library/public/pp/Makefile
-./problem_library/public/pp/pp.txt
-./problem_library/public/pp/pp.in
-./problem_library/public/pp/pp.test
-./problem_library/public/rightarea/Makefile
-./problem_library/public/rightarea/Scoring_Instructions
-./problem_library/public/rightarea/rightarea.txt
-./problem_library/public/rightarea/rightarea.in
-./problem_library/public/rightarea/rightarea.test
-./problem_library/public/rle/Makefile
-./problem_library/public/rle/rle.txt
-./problem_library/public/rle/rle.in
-./problem_library/public/rle/rle.test
-./problem_library/public/robotarm/Makefile
-./problem_library/public/robotarm/robotarm.html
-./problem_library/public/robotarm/robotarm.in
-./problem_library/public/robotarm/robotarm.test
-./problem_library/public/rpncalc/Makefile
-./problem_library/public/rpncalc/Scoring_Instructions
-./problem_library/public/rpncalc/rpncalc.txt
-./problem_library/public/rpncalc/rpncalc.in
-./problem_library/public/rpncalc/rpncalc.test
-./problem_library/public/sat/Makefile
-./problem_library/public/sat/sat.txt
-./problem_library/public/sat/sat.in
-./problem_library/public/sat/sat.test
-./problem_library/public/scicalc/Makefile
-./problem_library/public/scicalc/scicalc.txt
-./problem_library/public/scicalc/scicalc.in
-./problem_library/public/scicalc/scicalc.test
-./problem_library/public/scores/Makefile
-./problem_library/public/scores/scores.txt
-./problem_library/public/scores/scores.in
-./problem_library/public/scores/scores.test
-./problem_library/public/shorthand/Makefile
-./problem_library/public/shorthand/shorthand.txt
-./problem_library/public/shorthand/shorthand.in
-./problem_library/public/shorthand/shorthand.test
-./problem_library/public/snowluck/Makefile
-./problem_library/public/snowluck/snowluck.in
-./problem_library/public/snowluck/snowluck.test
-./problem_library/public/snowluck/snowluck.txt
-./problem_library/public/soldiers/Makefile
-./problem_library/public/soldiers/soldiers.txt
-./problem_library/public/soldiers/soldiers.in
-./problem_library/public/soldiers/soldiers.test
-./problem_library/public/square/Makefile
-./problem_library/public/square/Scoring_Instructions
-./problem_library/public/square/square.txt
-./problem_library/public/square/square.in
-./problem_library/public/square/square.test
-./problem_library/public/stamps/Makefile
-./problem_library/public/stamps/stamps.txt
-./problem_library/public/stamps/stamps.in
-./problem_library/public/stamps/stamps.test
-./problem_library/public/tng/Makefile
-./problem_library/public/tng/tng.in
-./problem_library/public/tng/tng.test
-./problem_library/public/tng/tng.txt
-./problem_library/public/tour/Makefile
-./problem_library/public/tour/tour.in
-./problem_library/public/tour/tour.test
-./problem_library/public/tour/tour.txt
-./problem_library/public/treap/Makefile
-./problem_library/public/treap/treap.txt
-./problem_library/public/treap/treap.in
-./problem_library/public/treap/treap.test
-./problem_library/public/treesync/Makefile
-./problem_library/public/treesync/treesync.txt
-./problem_library/public/treesync/treesync.in
-./problem_library/public/treesync/treesync.test
-./problem_library/public/tsearch/Makefile
-./problem_library/public/tsearch/tsearch.txt
-./problem_library/public/tsearch/tsearch.in
-./problem_library/public/tsearch/tsearch.test
-./problem_library/public/unify/Makefile
-./problem_library/public/unify/unify.txt
-./problem_library/public/unify/unify.in
-./problem_library/public/unify/unify.test
-./problem_library/public/virus/Makefile
-./problem_library/public/virus/Scoring_Instructions
-./problem_library/public/virus/virus.txt
-./problem_library/public/virus/virus.in
-./problem_library/public/virus/virus.test
-./problem_library/public/voting/Makefile
-./problem_library/public/voting/voting.in
-./problem_library/public/voting/voting.test
-./problem_library/public/voting/voting.txt
-./problem_library/public/warriors/Makefile
-./problem_library/public/warriors/warriors.in
-./problem_library/public/warriors/warriors.test
-./problem_library/public/warriors/warriors.txt
-./problem_library/public/xarel/Makefile
-./problem_library/public/xarel/xarel.txt
-./problem_library/public/xarel/xarel.in
-./problem_library/public/xarel/xarel.test
+*KEYS* public problem
 #
-*KEYS* problem solution
-./problem_library/public/abbott/abbott.cc
-./problem_library/public/absolute_word/absolute_word.cc
-./problem_library/public/alive/alive.cc
-./problem_library/public/anagrams/anagrams.cc
-./problem_library/public/balanced/balanced.cc
-./problem_library/public/beebumblia/beebumblia.cc
-./problem_library/public/bignum/bignum.cc
-./problem_library/public/bike/bike.cc
-./problem_library/public/binary/binary.cc
-./problem_library/public/bincycle/bincycle.c
-./problem_library/public/carmen/carmen.cc
-./problem_library/public/casino/casino.cc
-./problem_library/public/cheese/cheese.cc
-./problem_library/public/codebreaker/codebreaker.cc
-./problem_library/public/coins/coins.cc
-./problem_library/public/corners/corners.cc
-./problem_library/public/countpaths/countpaths.cc
-./problem_library/public/crypto/crypto.cc
-./problem_library/public/dicemaze/dicemaze.cc
-./problem_library/public/encrypt/encrypt.c
-./problem_library/public/fibonacci/fibonacci.cc
-./problem_library/public/fibstring/fibstring.c
-./problem_library/public/figure/figure.cc
-./problem_library/public/forest/forest.cc
-./problem_library/public/fortified/fortified.cc
-./problem_library/public/gcomputer/gcomputer.cc
-./problem_library/public/gears/gears.c
-./problem_library/public/gifts/gifts.cc
-./problem_library/public/hamilton/hamilton.cc
-./problem_library/public/handshakes/handshakes.cc
-./problem_library/public/hops/hops.cc
-./problem_library/public/huffman/huffman.cc
-./problem_library/public/hull/hull.cc
-./problem_library/public/hypercube/hypercube.cc
-./problem_library/public/insiders/insiders.cc
-./problem_library/public/investment/investment.cc
-./problem_library/public/justify/justify.c
-./problem_library/public/korn/korn.cc
-./problem_library/public/kungfu/kungfu.cc
-./problem_library/public/life/life.cc
-./problem_library/public/maxflow/maxflow.cc
-./problem_library/public/maxmod/maxmod.cc
-./problem_library/public/median/median.cc
-./problem_library/public/memmanage/memmanage.cc
-./problem_library/public/motion/motion.cc
-./problem_library/public/network/network.c
-./problem_library/public/opnum/opnum.c
-./problem_library/public/overlay/overlay.cc
-./problem_library/public/palin/palin.cc
-./problem_library/public/palin/palin1.c
-./problem_library/public/partition/partition.cc
-./problem_library/public/paths/paths.cc
-./problem_library/public/polyfill/polyfill.cc
-./problem_library/public/pool/pool.cc
-./problem_library/public/pp/pp.cc
-./problem_library/public/rightarea/rightarea.cc
-./problem_library/public/rle/rld.c
-./problem_library/public/rle/rle.c
-./problem_library/public/robotarm/robotarm.cc
-./problem_library/public/rpncalc/rpncalc.c
-./problem_library/public/sat/sat.cc
-./problem_library/public/scicalc/scicalc.cc
-./problem_library/public/scores/scores.cc
-./problem_library/public/shorthand/shorthand.cc
-./problem_library/public/snowluck/snowluck.cc
-./problem_library/public/soldiers/soldiers.cc
-./problem_library/public/square/square.c
-./problem_library/public/stamps/stamps.cc
-./problem_library/public/tng/tng.cc
-./problem_library/public/tour/tour.cc
-./problem_library/public/treap/treap.cc
-./problem_library/public/treesync/treesync.cc
-./problem_library/public/tsearch/tsearch.cc
-./problem_library/public/unify/unify.cc
-./problem_library/public/virus/virus.cc
-./problem_library/public/voting/voting.cc
-./problem_library/public/warriors/warriors.cc
-./problem_library/public/xarel/xarel.c
+PUBLIB/abbott/abbott.html
+PUBLIB/abbott/Makefile
+PUBLIB/abbott/abbott.cc			solution
+PUBLIB/abbott/abbott.in
+PUBLIB/abbott/abbott.test
+#
+PUBLIB/absolute_word/absolute_word.txt
+PUBLIB/absolute_word/Makefile
+PUBLIB/absolute_word/absolute_word.cc	solution
+PUBLIB/absolute_word/absolute_word.in
+PUBLIB/absolute_word/absolute_word.test
+#
+PUBLIB/alive/alive.txt
+PUBLIB/alive/Makefile
+PUBLIB/alive/alive.cc			solution
+PUBLIB/alive/alive.in
+PUBLIB/alive/alive.test
+#
+PUBLIB/anagrams/anagrams.txt
+PUBLIB/anagrams/Makefile
+PUBLIB/anagrams/anagrams.cc		solution
+PUBLIB/anagrams/anagrams.in
+PUBLIB/anagrams/anagrams.test
+#
+PUBLIB/authorship/authorship.txt
+PUBLIB/authorship/Makefile
+PUBLIB/authorship/Scoring_Instructions
+PUBLIB/authorship/authorship.cc		solution
+PUBLIB/authorship/authorship.in
+PUBLIB/authorship/authorship.test
+#
+PUBLIB/balanced/balanced.txt
+PUBLIB/balanced/Makefile
+PUBLIB/balanced/balanced.cc		solution
+PUBLIB/balanced/balanced.in
+PUBLIB/balanced/balanced.test
+#
+PUBLIB/beebumblia/beebumblia.txt
+PUBLIB/beebumblia/Makefile
+PUBLIB/beebumblia/beebumblia.cc		solution
+PUBLIB/beebumblia/beebumblia.in
+PUBLIB/beebumblia/beebumblia.test
+#
+PUBLIB/betterbias/betterbias.txt
+PUBLIB/betterbias/Makefile
+PUBLIB/betterbias/betterbias.cc		solution
+PUBLIB/betterbias/betterbias.in
+PUBLIB/betterbias/betterbias.test
+PUBLIB/betterbias/Scoring_Instructions
+#
+PUBLIB/bignum/bignum.txt
+PUBLIB/bignum/Makefile
+PUBLIB/bignum/bignum.cc			solution
+PUBLIB/bignum/bignum.in
+PUBLIB/bignum/bignum.test
+#
+PUBLIB/bike/bike.html
+PUBLIB/bike/Makefile
+PUBLIB/bike/bike.cc			solution
+PUBLIB/bike/bike.in
+PUBLIB/bike/bike.test
+#
+PUBLIB/binary/binary.txt
+PUBLIB/binary/Makefile
+PUBLIB/binary/binary.cc			solution
+PUBLIB/binary/binary.in
+PUBLIB/binary/binary.test
+#
+PUBLIB/bincycle/bincycle.txt
+PUBLIB/bincycle/Makefile
+PUBLIB/bincycle/bincycle.c		solution
+PUBLIB/bincycle/bincycle.in
+PUBLIB/bincycle/bincycle.test
+#
+PUBLIB/carmen/Makefile
+PUBLIB/carmen/carmen.txt
+PUBLIB/carmen/carmen.cc			solution
+PUBLIB/carmen/carmen.in
+PUBLIB/carmen/carmen.test
+#
+PUBLIB/casino/casino.txt
+PUBLIB/casino/Makefile
+PUBLIB/casino/Scoring_Instructions
+PUBLIB/casino/casino.cc			solution
+PUBLIB/casino/casino.in
+PUBLIB/casino/casino.test
+#
+PUBLIB/cheese/cheese.html
+PUBLIB/cheese/Makefile
+PUBLIB/cheese/cheese.cc			solution
+PUBLIB/cheese/cheese.in
+PUBLIB/cheese/cheese.test
+#
+PUBLIB/codebreaker/codebreaker.txt
+PUBLIB/codebreaker/Makefile
+PUBLIB/codebreaker/codebreaker.cc	solution
+PUBLIB/codebreaker/codebreaker.in
+PUBLIB/codebreaker/codebreaker.test
+#
+PUBLIB/coins/coins.txt
+PUBLIB/coins/Makefile
+PUBLIB/coins/Scoring_Instructions
+PUBLIB/coins/coins.cc			solution
+PUBLIB/coins/coins.in
+PUBLIB/coins/coins.test
+PUBLIB/coins/coins1.in
+#
+PUBLIB/corners/corners.html
+PUBLIB/corners/Makefile
+PUBLIB/corners/corners.cc		solution
+PUBLIB/corners/corners.in
+PUBLIB/corners/corners.test
+#
+PUBLIB/counties/counties.txt
+PUBLIB/counties/Makefile
+PUBLIB/counties/counties.cc		solution
+PUBLIB/counties/counties.in
+PUBLIB/counties/counties.test
+#
+PUBLIB/countpaths/countpaths.txt
+PUBLIB/countpaths/Makefile
+PUBLIB/countpaths/countpaths.cc		solution
+PUBLIB/countpaths/countpaths.in
+PUBLIB/countpaths/countpaths.test
+#
+PUBLIB/crypto/crypto.txt
+PUBLIB/crypto/Makefile
+PUBLIB/crypto/crypto.cc			solution
+PUBLIB/crypto/crypto.in
+PUBLIB/crypto/crypto.test
+#
+PUBLIB/dicemaze/dicemaze.html
+PUBLIB/dicemaze/Makefile
+PUBLIB/dicemaze/dicemaze.cc		solution
+PUBLIB/dicemaze/dicemaze.in
+PUBLIB/dicemaze/dicemaze.test
+PUBLIB/dicemaze/non_unique.in
+#
+PUBLIB/encrypt/encrypt.txt
+PUBLIB/encrypt/Makefile
+PUBLIB/encrypt/Scoring_Instructions
+PUBLIB/encrypt/encrypt.c		solution
+PUBLIB/encrypt/encrypt.in
+PUBLIB/encrypt/encrypt.test
+#
+PUBLIB/fibonacci/fibonacci.txt
+PUBLIB/fibonacci/Makefile
+PUBLIB/fibonacci/fibonacci.cc		solution
+PUBLIB/fibonacci/fibonacci.in
+PUBLIB/fibonacci/fibonacci.test
+#
+PUBLIB/fibstring/fibstring.txt
+PUBLIB/fibstring/Makefile
+PUBLIB/fibstring/fibstring.c		solution
+PUBLIB/fibstring/fibstring.in
+PUBLIB/fibstring/fibstring.test
+#
+PUBLIB/figure/figure.txt
+PUBLIB/figure/Makefile
+PUBLIB/figure/figure.cc			solution
+PUBLIB/figure/figure.in
+PUBLIB/figure/figure.test
+#
+PUBLIB/forest/forest.html
+PUBLIB/forest/Makefile
+PUBLIB/forest/forest.cc			solution
+PUBLIB/forest/forest.in
+PUBLIB/forest/forest.test
+#
+PUBLIB/fortified/fortified.html
+PUBLIB/fortified/Makefile
+PUBLIB/fortified/Scoring_Instructions
+PUBLIB/fortified/fortified.cc		solution
+PUBLIB/fortified/fortified.in
+PUBLIB/fortified/fortified.test
+#
+PUBLIB/gcomputer/gcomputer.txt
+PUBLIB/gcomputer/Makefile
+PUBLIB/gcomputer/gcomputer.cc		solution
+PUBLIB/gcomputer/gcomputer.in
+PUBLIB/gcomputer/gcomputer.test
+#
+PUBLIB/gears/gears.txt
+PUBLIB/gears/Makefile
+PUBLIB/gears/Scoring_Instructions
+PUBLIB/gears/gears.c			solution
+PUBLIB/gears/gears.in
+PUBLIB/gears/gears.test
+#
+PUBLIB/gifts/gifts.html
+PUBLIB/gifts/Makefile
+PUBLIB/gifts/Scoring_Instructions
+PUBLIB/gifts/gifts.cc			solution
+PUBLIB/gifts/gifts.in
+PUBLIB/gifts/gifts.test
+#
+PUBLIB/gsat/gsat.txt
+PUBLIB/gsat/Makefile
+PUBLIB/gsat/gsat.cc			solution
+PUBLIB/gsat/gsat.in
+PUBLIB/gsat/gsat.test
+#
+PUBLIB/hamilton/hamilton.txt
+PUBLIB/hamilton/Makefile
+PUBLIB/hamilton/hamilton.cc		solution
+PUBLIB/hamilton/hamilton.in
+PUBLIB/hamilton/hamilton.test
+#
+PUBLIB/handshakes/handshakes.txt
+PUBLIB/handshakes/Makefile
+PUBLIB/handshakes/handshakes.cc		solution
+PUBLIB/handshakes/handshakes.in
+PUBLIB/handshakes/handshakes.test
+#
+PUBLIB/hops/hops.txt
+PUBLIB/hops/Makefile
+PUBLIB/hops/hops.cc			solution
+PUBLIB/hops/hops.in
+PUBLIB/hops/hops.test
+PUBLIB/hops/hops1.in
+#
+PUBLIB/huffman/huffman.txt
+PUBLIB/huffman/Makefile
+PUBLIB/huffman/huffman.cc		solution
+PUBLIB/huffman/huffman.in
+PUBLIB/huffman/huffman.test
+#
+PUBLIB/hull/hull.txt
+PUBLIB/hull/Makefile
+PUBLIB/hull/hull.cc			solution
+PUBLIB/hull/hull.in
+PUBLIB/hull/hull.test
+#
+PUBLIB/hypercube/hypercube.txt
+PUBLIB/hypercube/Makefile
+PUBLIB/hypercube/hypercube.cc		solution
+PUBLIB/hypercube/hypercube.in
+PUBLIB/hypercube/hypercube.test
+PUBLIB/hypercube/reverse.cc
+#
+PUBLIB/insiders/insiders.txt
+PUBLIB/insiders/Makefile
+PUBLIB/insiders/insiders.cc		solution
+PUBLIB/insiders/insiders.in
+PUBLIB/insiders/insiders.test
+#
+PUBLIB/investment/investment.txt
+PUBLIB/investment/Makefile
+PUBLIB/investment/Scoring_Instructions
+PUBLIB/investment/investment.cc		solution
+PUBLIB/investment/investment.in
+PUBLIB/investment/investment.test
+#
+PUBLIB/justify/justify.txt
+PUBLIB/justify/Makefile
+PUBLIB/justify/justify.c		solution
+PUBLIB/justify/justify.in
+PUBLIB/justify/justify.test
+#
+PUBLIB/knights/knights.txt
+PUBLIB/knights/Makefile
+PUBLIB/knights/knights.cc		solution
+PUBLIB/knights/knights.in
+PUBLIB/knights/knights.test
+PUBLIB/knights/knights.vlad
+#
+PUBLIB/korn/korn.txt
+PUBLIB/korn/Makefile
+PUBLIB/korn/korn.cc			solution
+PUBLIB/korn/korn.in
+PUBLIB/korn/korn.test
+#
+PUBLIB/kungfu/kungfu.txt
+PUBLIB/kungfu/Makefile
+PUBLIB/kungfu/kungfu.cc			solution
+PUBLIB/kungfu/kungfu.in
+PUBLIB/kungfu/kungfu.test
+#
+PUBLIB/life/life.txt
+PUBLIB/life/Makefile
+PUBLIB/life/life.cc			solution
+PUBLIB/life/life.in
+PUBLIB/life/life.test
+#
+PUBLIB/lovelog/lovelog.txt
+PUBLIB/lovelog/Makefile
+PUBLIB/lovelog/Scoring_Instructions
+PUBLIB/lovelog/lovelog.cc		solution
+PUBLIB/lovelog/lovelog.in
+PUBLIB/lovelog/lovelog.test
+#
+PUBLIB/marmay/Makefile
+PUBLIB/marmay/marmay.txt
+PUBLIB/marmay/marmay.cc			solution
+PUBLIB/marmay/marmay.in
+PUBLIB/marmay/marmay.test
+#
+PUBLIB/maxflow/maxflow.txt
+PUBLIB/maxflow/Makefile
+PUBLIB/maxflow/maxflow.cc		solution
+PUBLIB/maxflow/maxflow.in
+PUBLIB/maxflow/maxflow.test
+#
+PUBLIB/maxmod/maxmod.txt
+PUBLIB/maxmod/Makefile
+PUBLIB/maxmod/maxmod.cc			solution
+PUBLIB/maxmod/maxmod.in
+PUBLIB/maxmod/maxmod.test
+#
+PUBLIB/median/median.txt
+PUBLIB/median/Makefile
+PUBLIB/median/median.cc			solution
+PUBLIB/median/median.in
+PUBLIB/median/median.test
+PUBLIB/median/median1.in
+#
+PUBLIB/memmanage/memmanage.html
+PUBLIB/memmanage/Makefile
+PUBLIB/memmanage/memmanage.cc		solution
+PUBLIB/memmanage/memmanage.in
+PUBLIB/memmanage/memmanage.test
+#
+PUBLIB/motion/motion.txt
+PUBLIB/motion/Makefile
+PUBLIB/motion/motion.cc			solution
+PUBLIB/motion/motion.in
+PUBLIB/motion/motion.test
+#
+PUBLIB/nastygrammar/nastygrammar.txt
+PUBLIB/nastygrammar/Makefile
+PUBLIB/nastygrammar/nastygrammar.cc	solution
+PUBLIB/nastygrammar/nastygrammar.in
+PUBLIB/nastygrammar/nastygrammar.test
+#
+PUBLIB/network/network.txt
+PUBLIB/network/Makefile
+PUBLIB/network/network.c		solution
+PUBLIB/network/network.in
+PUBLIB/network/network.test
+#
+PUBLIB/opnum/opnum.txt
+PUBLIB/opnum/Makefile
+PUBLIB/opnum/opnum.c			solution
+PUBLIB/opnum/opnum.in
+PUBLIB/opnum/opnum.test
+#
+PUBLIB/overlay/overlay.txt
+PUBLIB/overlay/Makefile
+PUBLIB/overlay/Scoring_Instructions
+PUBLIB/overlay/overlay.cc		solution
+PUBLIB/overlay/overlay.in
+PUBLIB/overlay/overlay.test
+#
+PUBLIB/palin/palin.txt
+PUBLIB/palin/Makefile
+PUBLIB/palin/palin.cc			solution
+PUBLIB/palin/palin1.c			solution
+PUBLIB/palin/palin.in
+PUBLIB/palin/palin.test
+#
+PUBLIB/partition/partition.html
+PUBLIB/partition/Makefile
+PUBLIB/partition/partition.cc		solution
+PUBLIB/partition/partition.in
+PUBLIB/partition/partition.test
+#
+PUBLIB/paths/paths.txt
+PUBLIB/paths/Makefile
+PUBLIB/paths/paths.cc			solution
+PUBLIB/paths/paths.in
+PUBLIB/paths/paths.test
+PUBLIB/paths/paths1.in
+#
+PUBLIB/political/political.txt
+PUBLIB/political/Makefile
+PUBLIB/political/political.cc		solution
+PUBLIB/political/political.in
+PUBLIB/political/political.test
+#
+PUBLIB/polyfill/polyfill.txt
+PUBLIB/polyfill/Makefile
+PUBLIB/polyfill/polyfill.cc		solution
+PUBLIB/polyfill/polyfill.in
+PUBLIB/polyfill/polyfill.test
+#
+PUBLIB/pool/pool.txt
+PUBLIB/pool/Makefile
+PUBLIB/pool/Scoring_Instructions
+PUBLIB/pool/pool.cc			solution
+PUBLIB/pool/pool.in
+PUBLIB/pool/pool.test
+#
+PUBLIB/pp/pp.txt
+PUBLIB/pp/Makefile
+PUBLIB/pp/pp.cc				solution
+PUBLIB/pp/pp.in
+PUBLIB/pp/pp.test
+#
+PUBLIB/rightarea/rightarea.txt
+PUBLIB/rightarea/Makefile
+PUBLIB/rightarea/Scoring_Instructions
+PUBLIB/rightarea/rightarea.cc		solution
+PUBLIB/rightarea/rightarea.in
+PUBLIB/rightarea/rightarea.test
+#
+PUBLIB/rle/rle.txt
+PUBLIB/rle/Makefile
+PUBLIB/rle/rld.c			solution
+PUBLIB/rle/rle.c			solution
+PUBLIB/rle/rle.in
+PUBLIB/rle/rle.test
+#
+PUBLIB/robotarm/robotarm.html
+PUBLIB/robotarm/Makefile
+PUBLIB/robotarm/robotarm.cc		solution
+PUBLIB/robotarm/robotarm.in
+PUBLIB/robotarm/robotarm.test
+#
+PUBLIB/rpncalc/rpncalc.txt
+PUBLIB/rpncalc/Makefile
+PUBLIB/rpncalc/Scoring_Instructions
+PUBLIB/rpncalc/rpncalc.c		solution
+PUBLIB/rpncalc/rpncalc.in
+PUBLIB/rpncalc/rpncalc.test
+#
+PUBLIB/sat/sat.txt
+PUBLIB/sat/Makefile
+PUBLIB/sat/sat.cc			solution
+PUBLIB/sat/sat.in
+PUBLIB/sat/sat.test
+#
+PUBLIB/scicalc/scicalc.txt
+PUBLIB/scicalc/Makefile
+PUBLIB/scicalc/scicalc.cc		solution
+PUBLIB/scicalc/scicalc.in
+PUBLIB/scicalc/scicalc.test
+#
+PUBLIB/scores/scores.txt
+PUBLIB/scores/Makefile
+PUBLIB/scores/scores.cc			solution
+PUBLIB/scores/scores.in
+PUBLIB/scores/scores.test
+#
+PUBLIB/shorthand/shorthand.txt
+PUBLIB/shorthand/Makefile
+PUBLIB/shorthand/shorthand.cc		solution
+PUBLIB/shorthand/shorthand.in
+PUBLIB/shorthand/shorthand.test
+#
+PUBLIB/skishop/skishop.txt
+PUBLIB/skishop/Makefile
+PUBLIB/skishop/Scoring_Instructions
+PUBLIB/skishop/skishop.cc		solution
+PUBLIB/skishop/skishop.in
+PUBLIB/skishop/skishop.test
+#
+PUBLIB/snowluck/snowluck.txt
+PUBLIB/snowluck/Makefile
+PUBLIB/snowluck/snowluck.cc		solution
+PUBLIB/snowluck/snowluck.in
+PUBLIB/snowluck/snowluck.test
+#
+PUBLIB/soldiers/soldiers.txt
+PUBLIB/soldiers/Makefile
+PUBLIB/soldiers/soldiers.cc		solution
+PUBLIB/soldiers/soldiers.in
+PUBLIB/soldiers/soldiers.test
+#
+PUBLIB/square/square.txt
+PUBLIB/square/Makefile
+PUBLIB/square/Scoring_Instructions
+PUBLIB/square/square.c			solution
+PUBLIB/square/square.in
+PUBLIB/square/square.test
+#
+PUBLIB/stamps/stamps.txt
+PUBLIB/stamps/Makefile
+PUBLIB/stamps/stamps.cc			solution
+PUBLIB/stamps/stamps.in
+PUBLIB/stamps/stamps.test
+#
+PUBLIB/swapsort/swapsort.txt
+PUBLIB/swapsort/Makefile
+PUBLIB/swapsort/swapsort.cc		solution
+PUBLIB/swapsort/swapsort.in
+PUBLIB/swapsort/swapsort.test
+#
+PUBLIB/tng/tng.txt
+PUBLIB/tng/Makefile
+PUBLIB/tng/tng.cc			solution
+PUBLIB/tng/tng.in
+PUBLIB/tng/tng.test
+#
+PUBLIB/tour/tour.txt
+PUBLIB/tour/Makefile
+PUBLIB/tour/tour.cc			solution
+PUBLIB/tour/tour.in
+PUBLIB/tour/tour.test
+#
+PUBLIB/treap/treap.txt
+PUBLIB/treap/Makefile
+PUBLIB/treap/treap.cc			solution
+PUBLIB/treap/treap.in
+PUBLIB/treap/treap.test
+#
+PUBLIB/treesync/treesync.txt
+PUBLIB/treesync/Makefile
+PUBLIB/treesync/treesync.cc		solution
+PUBLIB/treesync/treesync.in
+PUBLIB/treesync/treesync.test
+#
+PUBLIB/tsearch/tsearch.txt
+PUBLIB/tsearch/Makefile
+PUBLIB/tsearch/tsearch.cc		solution
+PUBLIB/tsearch/tsearch.in
+PUBLIB/tsearch/tsearch.test
+#
+PUBLIB/unify/unify.txt
+PUBLIB/unify/Makefile
+PUBLIB/unify/unify.cc			solution
+PUBLIB/unify/unify.in
+PUBLIB/unify/unify.test
+#
+PUBLIB/virus/virus.txt
+PUBLIB/virus/Makefile
+PUBLIB/virus/Scoring_Instructions
+PUBLIB/virus/virus.cc			solution
+PUBLIB/virus/virus.in
+PUBLIB/virus/virus.test
+#
+PUBLIB/voting/voting.txt
+PUBLIB/voting/Makefile
+PUBLIB/voting/voting.cc			solution
+PUBLIB/voting/voting.in
+PUBLIB/voting/voting.test
+#
+PUBLIB/warriors/warriors.txt
+PUBLIB/warriors/Makefile
+PUBLIB/warriors/warriors.cc		solution
+PUBLIB/warriors/warriors.in
+PUBLIB/warriors/warriors.test
+#
+PUBLIB/xarel/xarel.txt
+PUBLIB/xarel/Makefile
+PUBLIB/xarel/xarel.c			solution
+PUBLIB/xarel/xarel.in
+PUBLIB/xarel/xarel.test
