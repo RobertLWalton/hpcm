@@ -11,9 +11,9 @@
  * RCS Info (may not be true date or author):
  *
  *   $Author: hc3 $
- *   $Date: 2000/10/02 10:22:57 $
+ *   $Date: 2000/10/02 10:29:20 $
  *   $RCSfile: hpcm_sendmail.c,v $
- *   $Revision: 1.4 $
+ *   $Revision: 1.5 $
  */
 
 #include <stdlib.h>
@@ -364,6 +364,12 @@ int main ( int argc, char ** argv )
     char key		[MAXLEN];
     char key_name	[MAXLEN];
 
+    /* Cc: field value:
+
+    		" `id -un"
+    */
+    char cc		[MAXLEN];
+
     /* Reply-To: field value:
 
     		" `id -un`@`hostname -f`"
@@ -505,9 +511,10 @@ int main ( int argc, char ** argv )
 	    errno_exit ( "closing hpcm_sendmail.rc" );
     }
 
-    /* Compute reply_to field value:
+    /* Compute cc and reply_to field values:
 
-    	"`id -un`@`hostname -f`
+    	"`id -un`"
+    	"`id -un`@`hostname -f`"
     */
     {
     	struct passwd * passwd;
@@ -539,6 +546,8 @@ int main ( int argc, char ** argv )
 	if ( p > endp - 10 )
 	    too_big_exit ( "Reply-To: field value" );
 
+	strcpy ( cc, reply_to );
+
 	* p ++ = '@';
 	if ( gethostname ( p, ( endp - p ) - 5 ) < 0 )
 	    errno_exit ( "gethostname" );
@@ -555,13 +564,6 @@ int main ( int argc, char ** argv )
                    "%a, %d %b %Y %H:%M:%S %z (%Z)",
 		   localtime ( &t ) );
     }
-
-
-    printf ( "To:%s\n", to );
-    printf ( "Key:%s\n", key );
-    printf ( "Key-Name:%s\n", key_name );
-    printf ( "Reply-To:%s\n", reply_to );
-    printf ( "Date:%s\n", date );
 
 
     /* Compute signature. */
@@ -629,8 +631,6 @@ int main ( int argc, char ** argv )
 	check_program ( files, child, md5sum_argv, 1 );
     }
     
-    printf ( "Signature:%s\n", signature );
-
     /* Send the mail. */
     {
     	FILE * files[3];
@@ -639,8 +639,10 @@ int main ( int argc, char ** argv )
 				     sendmail_env );
 	char line [MAXLEN];
 
-	/* Output To line. */
-	fprintf ( files[0], "To:%s\n", to );
+	/* Output To and CC header fields. */
+	fprintf ( files[0], "To:%s\n"
+			    "Cc:%s\n",
+			    to, cc );
 
 	/* Read and copy any header, stopping at empty
 	   line after header.
