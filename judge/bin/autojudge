@@ -5,7 +5,7 @@
 #
 # File:		autojudge
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Jan  3 22:16:25 EST 2002
+# Date:		Fri Jan  4 12:48:41 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/01/04 03:46:11 $
+#   $Date: 2002/01/04 17:48:00 $
 #   $RCSfile: autojudge,v $
-#   $Revision: 1.46 $
+#   $Revision: 1.47 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -408,7 +408,7 @@ proc execute_links { files } {
 
     if { [catch { llength $files }] } {
         error "$files_file file value is not formatted\
-	       as a list:\n$files"
+	       as a TCL list:\n$files"
     }
     set mode none
     foreach item $files {
@@ -447,6 +447,12 @@ proc execute_links { files } {
 			    set root $problem
 			}
 			if { $ext == ".EXTENSION" } {
+
+			    # Compute EXTENSION_findable
+			    # which is true if some
+			    # extension will find a
+			    # source.
+			    #
 			    set ps $problem_solution
 			    set fl \
 			        [glob -nocomplain \
@@ -454,6 +460,7 @@ proc execute_links { files } {
 			    set EXTENSION_findable \
 			        [expr { [llength $fl] \
 					    > 0 }]
+
 			    if { $extension == "" } {
 			        continue
 			    }
@@ -486,10 +493,21 @@ proc execute_links { files } {
 		         && $type != "none" } {
 		        # do nothing
 		    } elseif { $source == "" } {
+
+		    	# No source found.
+
 		        if { $mode == "link" } {
+
+			    # Its an error if -LINK-.
+			    # If a source might have
+			    # been found had the right
+			    # extension been provided,
+			    # complain to submitter.
+			    # Otherwise its a system
+			    # error.
+			    #
 			    if { $EXTENSION_findable } {
 			        argument_error
-				continue
 			    } else {
 				error "No source file\
 				       found for\
@@ -547,29 +565,64 @@ if { [file exists $files_file] } {
 	"
 }
 
-# Compute list of solution directory files to be made.
+# Function to compute list of solution directory files
+# to be made.
 #
-solution_make_files ""
-set solution_make no
-foreach item $files {
-    switch $item {
-	-SOLUTION-MAKE- {
-	    set solution_make yes
-	}
-	default {
-	    if { [regexp {^-[-A-Z]*-$} $item] } {
-		set solution_make no
-	    } elseif { $solution_make } {
-	        set target $problem_solution/$item
-		if { ! [file exists $target] } {
-		    lappend solution_make_files $item
+proc find_solution_make_files { files } {
+
+    global problem_solution
+
+    solution_make_files ""
+    set solution_make no
+    foreach item $files {
+	switch $item {
+	    -SOLUTION-MAKE- {
+		set solution_make yes
+	    }
+	    default {
+		if { [regexp {^-[-A-Z]*-$} $item] } {
+		    set solution_make no
+		} elseif { $solution_make } {
+		    set target $problem_solution/$item
+		    if { ! [file exists $target] } {
+			lappend solution_make_files $item
+		    }
 		}
 	    }
 	}
     }
+
+    return $solution_make_files
 }
 
-### MAKE
+# Make -SOLUTION-MAKE- files.  Try repeatedly to lock
+# the solution directory, but if
+#
+set count 0
+while { "yes" } {
+    set solution_make_files \
+        [find_solution_make_files $files]
+    if { [llength $solution_make_files] == 0 } break
+
+    if { [dispatch_lock $problem_solution] } {
+	puts "Executing make $solution_make_files"
+	exec sh -c "cd $problem_solution;\
+		    make $solution_make_files" \
+	     >&@ stdout
+	dispatch_unlock $problem_solution
+	break
+    }
+
+    incr count
+
+    if { $count >= 10 } {
+    	puts "CANNOT LOCK $problem_solution: giving up\
+	      on make $solution_make_files"
+	break
+    }
+
+    sleep 2
+}
 
 # Get submitted files.  If error, if SYSTEM ERROR call
 # `error' function and otherwise reply to submitter.
