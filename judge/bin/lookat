@@ -6,7 +6,7 @@
 #
 # File:		lookat
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Nov 10 06:28:41 EST 2001
+# Date:		Sat Nov 10 07:40:26 EST 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/11/10 12:37:38 $
+#   $Date: 2001/11/10 12:52:21 $
 #   $RCSfile: lookat,v $
-#   $Revision: 1.11 $
+#   $Revision: 1.12 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -202,16 +202,19 @@ proc set_expression { expression } {
 
 # List of directories matched and length of list.
 # Manualcount is the number of entries in manualdirs.
-# For each matched directory, there is an entry in
-# the manualdirs list of the form
+# Manuallast is the index+1 of the last directory in
+# manualdirs visited by manualreply, or is 0 if there
+# is no such.  For each matched directory, there is an
+# entry in the manualdirs list of the form
 #
 #   directoryname {filename line} ...
 #
-# giving the directory name and for each matched
-# atom, the first filename and line that matches for
-# that atom.
+# giving the directory name and for each matched atom,
+# the first filename and line that matches for that
+# atom.
 #
 set manualcount 0
+set manuallast 0
 set manualdirs ""
 
 # Compute list of directories, using compiled
@@ -221,7 +224,11 @@ proc compute_directory_list {} {
 
     global mail_directory atom value filename_regexp \
            line_regexp manualcount manualdirs \
-	   size_limit logical_expression
+	   manuallast size_limit logical_expression
+
+    set manualcount 0
+    set manuallast 0
+    set manualdirs ""
 
     # Loop through the subdirectory names.
     #
@@ -325,7 +332,7 @@ proc compute_directory_list {} {
 #
 proc display_directories { lines start } {
 
-    global manualdirs manualcount
+    global manualdirs manualcount manuallast
 
     incr start -1
     set done_some no
@@ -351,7 +358,11 @@ proc display_directories { lines start } {
 	set done_some yes
 
 	incr start
-	puts "$start. $dir"
+	if { $start == $manuallast } {
+	    puts "$start* $dir"
+	} else {
+	    puts "$start. $dir"
+	}
 	foreach match $matches {
 	    set line \
 	        "    [lindex $match 0]:\
@@ -379,13 +390,19 @@ proc display_directories { lines start } {
 # Execute manual reply on the i'th directory.
 #
 proc exec_manualreply { i } {
-    global manualdirs
+    global manualdirs manuallast
+
+    set manuallast $i
+
     incr i -1
     set entry [lindex $manualdirs $i]
     set dir [lindex $entry 0]
-    exec manualreply $dir >@ stdout 2>@ stderr
-}
 
+    if { [catch { exec manualreply $dir >&@ stdout }] \
+       } {
+    	continue?
+    }
+}
 
 
 # Execute manual reply on subdirectories.
@@ -427,8 +444,9 @@ if { $manualcount == 0 } {
 		} else {
 		    exec_manualreply $answer
 		    set start $answer
-		    if { $start > 1 } {
-		        incr start -1
+		    incr start -2
+		    if { $start < 1 } {
+		        set start 1
 		    }
 		}
 	    }
