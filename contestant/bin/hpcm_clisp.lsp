@@ -3,7 +3,7 @@
 ;;;; File:         student.lsp
 ;;;; Author:       CS 51 (Bob Walton)
 ;;;; Modified by:  CS 182 (Attila Bodis)
-;;;; Version:      7
+;;;; Version:      8
 ;;;;
 ;;;; This file contains environment modifiers and functions that establish
 ;;;; a proper environment for CS51 students running COMMONLISP.
@@ -61,6 +61,11 @@
 ;;;;	       READ-FROM-STRING does not work on blank line
 ;;;;	       unless BOTH eof-error-p and eof-value are
 ;;;;	       given as NIL
+;;;;
+;;;;   Version 8:
+;;;;
+;;;;	 Changed => to ---> to avoid confusion with rewrite
+;;;;	 rules in summer course.
 ;;;;
 
 #+allegro
@@ -231,7 +236,7 @@
 	      #+clisp
 	      (flush-line-feed s-expression)
 	      (fresh-line)
-	      (princ '|=>|)
+	      (princ '|--->|)
 	      (fresh-line)
 	      (finish-output) ;; In case crash follows.
 	      (catch error-tag
@@ -250,7 +255,7 @@
 		  ((null (read-char-no-hang *terminal-io*))))
 					; Print prompt.
 	      (fresh-line)
-	      (princ '|=> ? |)
+	      (princ '|---> ? |)
 	      (let ((line (read-line *terminal-io* nil "")))
 		(catch error-tag
 		  (unwind-protect
@@ -263,7 +268,7 @@
 	      #+clisp
 	      (flush-line-feed s-expression)
 	      (fresh-line)
-	      (princ '|=>|)
+	      (princ '|--->|)
 	      (fresh-line)
 	      (dolist (val (multiple-value-list (eval s-expression)))
 		      (write val :escape t :pretty t)
