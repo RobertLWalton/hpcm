@@ -11,9 +11,9 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: hc3 $
-//   $Date: 2001/11/03 12:11:22 $
+//   $Date: 2001/11/03 12:25:50 $
 //   $RCSfile: scorediff.cc,v $
-//   $Revision: 1.39 $
+//   $Revision: 1.40 $
 
 // This is version 2, a major revision of the first
 // scorediff program.  This version is more explicitly
@@ -213,25 +213,26 @@ char documentation [] =
 "    pair of non-matching tokens is a word, and there\n"
 "    is a `word' difference between them (they are\n"
 "    not identical with case ignored), then special\n"
-"    rules apply if one of the tokens is a number or\n"
-"    if one of the tokens is a remainder of a split\n"
-"    word.  Specifically, if both tokens are words,\n"
-"    but one is a remainder of a split word, then\n"
-"    only this remainder is skipped, on the theory\n"
-"    that it should have been part of the previous\n"
-"    match.  Otherwise, if one of the tokens is fol-\n"
-"    lowed by white space containing a new line or\n"
-"    ending with an end of file, and the other token\n"
-"    is not so followed, only the second token is\n"
-"    skipped, on the theory that line ends should\n"
-"    match.  And if neither of the last two rules\n"
-"    apply, but one of the tokens is a number and one\n"
-"    is a word, only the word is skipped over, on the\n"
-"    theory consecutive numbers in the files should\n"
-"    be matched.  In all cases, mismatches that have\n"
-"    occurred before these special rules are applied\n"
-"    are reported without any attention to the\n"
-"    special rules.\n"
+"    rules apply if one of the tokens is a remainder\n"
+"    of a split token, if only one of the tokens is\n"
+"    followed by whitespace containing a new line (or\n"
+"    ended by an end-of-file), or if one of the\n"
+"    tokens is a number.  Specifically, if one token\n"
+"    is a remainder of a split word, then only this\n"
+"    remainder is skipped, on the theory that it\n"
+"    should have been part of the previous match.\n"
+"    Otherwise, if one of the tokens is followed by\n"
+"    white space containing a new line or ending with\n"
+"    an end of file, and the other token is not so\n"
+"    followed, only this other token is skipped, on\n"
+"    the theory that line ends should match.  And if\n"
+"    neither of the last two rules apply, but one of\n"
+"    the tokens is a number and one is a word, only\n"
+"    the word is skipped over, on the theory consecu-\n"
+"    tive numbers in the files should be matched.  In\n"
+"    all cases, mismatches that have occurred before\n"
+"    these special rules are applied are reported\n"
+"    without any attention to the special rules.\n"
 "\n"
 "    Note that failure to separate words by space,\n"
 "    provided the words are otherwise correct except\n"
