@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Mar 14 04:29:56 EST 2003
+# Date:		Fri Mar 14 04:54:24 EST 2003
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2003/03/14 09:55:59 $
+#   $Date: 2003/03/14 10:00:51 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.95 $
+#   $Revision: 1.96 $
 #
 
 # Table of Contents
@@ -1297,11 +1297,14 @@ proc send_reply { args } {
     }
 }
 
-# Read lines from channel.  Return `yes' if eof encoun-
-# tered before a non-blank line.  Return `no' if non-
-# blank line encountered.
+# Read lines from channel.  Return `yes' if eof or a
+# message_terminator line  encountered before a non-
+# blank line.  Return `no' if other non-blank line
+# encountered.
 #
 proc blank_body { ch } {
+
+    global message_terminator
 
     while { "yes" } {
 	set line [gets $ch]
@@ -1309,6 +1312,10 @@ proc blank_body { ch } {
 	    return yes
 	} elseif { [regexp "^\[\ \t\]*\$" $line] } {
 	    # blank lines are ok
+	} elseif { $message_terminator != "" \
+	           && [regexp $message_terminator \
+			      line] }{
+	    return yes
 	} else {
 	    return no
 	}
