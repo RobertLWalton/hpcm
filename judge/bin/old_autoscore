@@ -13,34 +13,17 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: acm-cont $
-#   $Date: 2000/08/16 11:24:45 $
+#   $Date: 2000/08/18 11:25:19 $
 #   $RCSfile: old_autoscore,v $
-#   $Revision: 1.5 $
+#   $Revision: 1.6 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
 
-# Use tcl rather than tclsh so that `signal' is defined.
-
-if { [info command signal] == "signal" } {
-    signal error SIGINT
-}
-
-# Regexp expressions matched to lines in output file to
-# detect limit overruns (letter case is ignored):
+# Include common code and parameters:
 #
-set time_limit_regexp {.*cputime limit exceeded.*}
-set output_limit_regexp {.*filesize limit exceeded.*}
-
-# File names:
-#
-set instructions_file "SCORING_INSTRUCTIONS"
-set score_file	      "judge.score"
-
-# Default for instructions file:
-#
-set scoring_instructions_default \
-    "whitespace linebreak number 0"
+set lib_directory "[file dirname $argv0]/../lib"
+source "$lib_directory/judging_common.tcl"
 
 set document "
 cd submission_directory
@@ -125,15 +108,6 @@ autoscore program_name
     The score is written to the `judge.score' file
     in the submission directory and is written as a
     single line to the output."
-
-proc fatal_error { args } {
-    puts "ERROR: [lindex $args 0]"
-    set args [lreplace $args 0 0]
-    foreach m $args {
-    	puts "       $m"
-    }
-    exit 1
-}
 
 if { $argc != 1 } {
     puts $document

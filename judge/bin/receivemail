@@ -14,34 +14,19 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: acm-cont $
-#   $Date: 2000/08/16 11:24:46 $
+#   $Date: 2000/08/18 11:25:20 $
 #   $RCSfile: receivemail,v $
-#   $Revision: 1.7 $
+#   $Revision: 1.8 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
 
 # Use tcl rather than tclsh so that `signal' is defined.
 
-if { [info command signal] == "signal" } {
-    signal error SIGINT
-}
-
-# Set program parameters that could be changed.
+# Include common code and parameters:
 #
-set allowed_extensions_default \
-    ".c .cc .java"
-set allowed_extensions_filename \
-    "allowed_submission_extensions"
-set log_filename \
-    "receive_submissions.log"
-
-# Regexp to match first line of mail message.
-# If you send a line matching this in a mail message,
-# a `>' will be prefixed to prevent the line from
-# matching this regexp.
-#
-set From_line_regexp {^From\ }
+set lib_directory "[file dirname $argv0]/../lib"
+source "$lib_directory/judging_common.tcl"
 
 set document "
 receive_submissions mail_file judging_directory
@@ -67,12 +52,9 @@ receive_submissions mail_file judging_directory
     error above cause a `.score' file to be written
     with the first line equal to `Submission Error'.
 
-    The allowed extensions are read from the file:
-        D/../lib/$allowed_extensions_filename
-    where D is the directory containing the program.
-    If this file is not readable (e.g. does not exist),
-    the default allowed extensions are:
-    	$allowed_extensions_default
+    The allowed extensions are a judging parameter
+    and that is currently set to:
+    	$allowed_extensions
 
     In the event of an interrupt or an error, this
     program may leave:
@@ -113,28 +95,9 @@ puts $log_fd \
 puts $log_fd \
      "    Mail File: $mail_file"
 
-set program_directory [file dirname $argv0]
-set lib_directory "$program_directory/../lib"
 
-set allowed_extensions_file \
-    "$lib_directory/$allowed_extensions_filename"
-
-if { [file readable $allowed_extensions_file] } {
-    set allowed_extensions_fd \
-        [open $allowed_extensions_file r]
-    set allowed_extensions \
-        [gets $allowed_extensions_fd]
-    close $allowed_extensions_fd
-
-    puts $log_fd "    Allowed extensions read from\
-                      $allowed_extensions_file:"
-    puts $log_fd "        $allowed_extensions"
-} else {
-    set allowed_extensions $allowed_extensions_default
-    puts $log_fd "    No file $allowed_extensions_file"
-    puts $log_fd "    Allowed extensions default to:"
-    puts $log_fd "        $allowed_extensions"
-}
+puts $log_fd "    Allowed extensions are:"
+puts $log_fd "        $allowed_extensions"
 
 set mail_fd [open $mail_file r]
 

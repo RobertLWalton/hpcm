@@ -14,22 +14,19 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: acm-cont $
-#   $Date: 2000/08/16 11:24:46 $
+#   $Date: 2000/08/18 11:25:19 $
 #   $RCSfile: manualscore,v $
-#   $Revision: 1.1 $
+#   $Revision: 1.2 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
 
 # Use tcl rather than tclsh so that `signal' is defined.
 
-if { [info command signal] == "signal" } {
-    signal error SIGINT
-}
-
-# File names:
+# Include common code and parameters:
 #
-set score_file	      "judge.score"
+set lib_directory "[file dirname $argv0]/../lib"
+source "$lib_directory/judging_common.tcl"
 
 set document "
 cd submission_directory
@@ -46,15 +43,6 @@ manualscore program_name
     `judge.score' file.
 
     TBW"
-
-proc fatal_error { args } {
-    puts "ERROR: [lindex $args 0]"
-    set args [lreplace $args 0 0]
-    foreach m $args {
-    	puts "       $m"
-    }
-    exit 1
-}
 
 if { $argc != 1 } {
     puts $document

@@ -13,27 +13,17 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: acm-cont $
-#   $Date: 2000/08/16 11:24:46 $
+#   $Date: 2000/08/18 11:25:19 $
 #   $RCSfile: autojudge,v $
-#   $Revision: 1.7 $
+#   $Revision: 1.8 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
 
-# Use tcl rather than tclsh so that `signal' is defined.
-
-if { [info command signal] == "signal" } {
-    signal error SIGINT
-}
-
-# Set program parameters that could be changed.
+# Include common code and parameters:
 #
-set allowed_extensions_default \
-    ".c .cc .java"
-set allowed_extensions_filename \
-    "allowed_submission_extensions"
-set score_file \
-    "judge.score"
+set lib_directory "[file dirname $argv0]/../lib"
+source "$lib_directory/judging_common.tcl"
 
 set document "
 cd submission_directory; judge [-auto]
@@ -57,15 +47,6 @@ if { $argc == 0 } {
     exit 1
 }
 
-proc fatal_error { args } {
-    puts "ERROR: [lindex $args 0]"
-    set args [lreplace $args 0 0]
-    foreach m $args {
-    	puts "       $m"
-    }
-    exit 1
-}
-
 proc error_for_score_file { args } {
     global score_file
     set score_fd [open $score_file w]
@@ -84,24 +65,7 @@ proc submission_error { args } {
     eval "error_for_score_file {Submission Error} $args"
 }
 
-set program_directory [file dirname $argv0]
-set lib_directory "$program_directory/../lib"
-
-set allowed_extensions_file \
-    "$lib_directory/$allowed_extensions_filename"
-
-if { [file readable $allowed_extensions_file] } {
-    set allowed_extensions_fd \
-        [open $allowed_extensions_file r]
-    set allowed_extensions \
-        [gets $allowed_extensions_fd]
-    close $allowed_extensions_fd
-    puts "Allowed extensions from ${allowed_extensions_file}:"
-    puts "    $allowed extensions"
-} else {
-    set allowed_extensions $allowed_extensions_default
-    puts "Default allowed extensions: $allowed extensions"
-}
+puts "Allowed extensions: $allowed extensions"
 
 set score_file [glob -nocomplain "*.score"]
 
