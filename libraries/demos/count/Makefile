@@ -65,7 +65,7 @@ default:	count.view
 
 count.out:	count count.in
 	rm -f count.out count.err core
-	-chmod a+x count
+	-chmod a+x count .
 	hpcm_sandbox -cputime 60 \
 	             -datasize 1m \
 		     -stacksize 1m \
