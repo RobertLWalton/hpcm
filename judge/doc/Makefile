@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Feb 12 19:56:54 EST 2002
+# Date:		Wed Feb 13 00:25:56 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/02/13 00:55:40 $
+#   $Date: 2002/02/13 07:18:17 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.14 $
+#   $Revision: 1.15 $
 
 # make
 #	Makes documentation as fprintable .doc files in
@@ -63,7 +63,6 @@ DOCS=	overview.doc \
 	judge/lookat.doc \
 	judge/lpq.doc \
 	contestant/lpq.doc \
-	judge/makeMakefile.doc \
 	judge/makejudgingdir.doc \
 	judge/makescoreboard.doc \
 	judge/manualreply.doc \
@@ -71,6 +70,7 @@ DOCS=	overview.doc \
 	contestant/print2.doc \
 	contestant/printer_pipe.doc \
 	judge/receivemail.doc \
+	judge/remakeMakefile.doc \
 	contestant/scoreboard.doc \
 	judge/scoreboard.doc \
 	judge/scorediff.doc \
@@ -221,11 +221,11 @@ judge/lookat.doc:	hpcm_judging.rc \
 judge/lpq.doc:	../../judge/bin/lpq
 	rm -f judge/lpq.doc
 	-../../judge/bin/lpq -doc >judge/lpq.doc
-judge/makeMakefile.doc:	hpcm_judging.rc \
-			../../judge/bin/makeMakefile
-	rm -f judge/makeMakefile.doc
-	-../../judge/bin/makeMakefile -doc \
-	    >judge/makeMakefile.doc
+judge/remakeMakefile.doc:	hpcm_judging.rc \
+			../../judge/bin/remakeMakefile
+	rm -f judge/remakeMakefile.doc
+	-../../judge/bin/remakeMakefile -doc \
+	    >judge/remakeMakefile.doc
 judge/makejudgingdir.doc:	hpcm_judging.rc \
 			../../judge/bin/makejudgingdir
 	rm -f judge/makejudgingdir.doc

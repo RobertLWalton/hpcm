@@ -4,7 +4,7 @@
 #
 # File:		remakeMakefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Feb 13 00:30:49 EST 2002
+# Date:		Wed Feb 13 00:59:28 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/02/13 05:30:42 $
+#   $Date: 2002/02/13 07:13:57 $
 #   $RCSfile: remakeMakefile,v $
-#   $Revision: 1.6 $
+#   $Revision: 1.7 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -33,16 +33,34 @@ remakeMakefile checkfile sourcefile problemdir ...
     file.  If checkfile is \"\" the test that checkfile
     equals problemdir/Makefile is omitted.
 
-    The modification of a Makefile consists of replacing
-    the first line of the file by the first line of
-    problemdir/Makefile, and replacing the `problem_
-    name' of any file line of the form
+    The modification of a Makefile consists of:
+    
+        1. Replacing the first line of the file by the
+	   first line of problemdir/Makefile.
+	   
+	2. Replacing the `problem_name' of any file line
+	   of the form
 
-    	P = problem_name
+		P = problem_name
 
-    with the last component of `problemdir'.  Here the
-    `=' must be surrounded by single SPACE characters,
-    but other spacing may vary.
+	   with the last component of `problemdir'  Here
+	   the `=' must be surrounded by single SPACE
+	   characters, but other spacing may vary.
+
+	3. Replacing any file line that matches
+
+		#	\$Author: hc3 $
+
+	   by the corresponding line of problemdir/Make-
+	   file if the lines match except for the `...'.
+	   Ditto for lines matching any of:
+
+		#	\$Date: 2002/02/13 07:13:57 $
+		#	\$RCSfile: remakeMakefile,v $
+		#	\$Revision: 1.7 $
+
+    The last modification (3) is NOT made when the mod-
+    ified sourcefile is copied to problemdir/Makefile.
 
     The final disposition of each problemdir/Makefile is
     printed.
@@ -63,18 +81,24 @@ if { $argc < 3 || [regexp {^-} [lindex $argv 0]] } {
 #
 set checkfile [lindex $argv 0]
 set sourcefile [lindex $argv 1]
+
+# Constants
+#
 set WS "\[\ \t\]"
 set NWS "\[^\ \t\]"
+set RCS_keys { Author Date RCSfile Revision }
 
 # Function returns 1 if modified file equals problemdir/
 # Makefile, and 0 otherwise.
 #
 proc test_file { file problemdir } {
 
-    global WS NWS
+    global WS NWS RCS_keys
+    set RCS_match \
+        "^(#$WS*)\\\$(\[^:\]*):(\[^\$\]*)\\\$($WS*)\$"
 
     set problem [file tail $problemdir]
-    set file_ch [open $checkfile r]
+    set file_ch [open $file r]
     set out_ch [open $problemdir/Makefile r]
     set first yes
 
@@ -97,6 +121,18 @@ proc test_file { file problemdir } {
 		      bws ews] } {
 		set file_line \
 		    "${bws}P = $problem$ews"
+	    } elseif { \
+	           [regexp $RCS_match $file_line \
+		           forget \
+			   fbegin fname fstuff fend] \
+	        && [regexp $RCS_match $out_line \
+		           forget \
+			   obegin oname ostuff oend] \
+		&& [lcontain $RCS_keys $fname] \
+		&& $fbegin == $obegin \
+		&& $fname == $oname \
+		&& $fend == $oend } {
+	        set file_line $out_line
 	    }
 	    if { $file_line != $out_line } {
 		set match 0
@@ -117,7 +153,7 @@ proc copy_file { file problemdir } {
     global WS NWS
 
     set problem [file tail $problemdir]
-    set file_ch [open $checkfile r]
+    set file_ch [open $file r]
     set out_ch [open $problemdir/Makefile r]
     set first_line [gets $out_ch]
     close $out_ch
@@ -131,16 +167,13 @@ proc copy_file { file problemdir } {
 	if { $first } {
 	    set first no
 	    set file_line $first_line
-	} else {
-	    if { [regexp \
+	} elseif { [regexp \
 		      "^($WS*)P = $NWS+($WS*)\$" \
 		      $file_line forget \
 		      bws ews] } {
-		set file_line \
-		    "${bws}P = $problem$ews"
-	    }
-	    puts $out_ch $file_line
+	    set file_line "${bws}P = $problem$ews"
 	}
+	puts $out_ch $file_line
     }
     close $file_ch
     close $out_ch
