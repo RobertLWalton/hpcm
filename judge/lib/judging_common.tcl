@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Mar 14 04:54:24 EST 2003
+# Date:		Fri Mar 14 04:59:08 EST 2003
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2003/03/14 10:00:51 $
+#   $Date: 2003/03/14 10:03:51 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.96 $
+#   $Revision: 1.97 $
 #
 
 # Table of Contents
@@ -781,9 +781,10 @@ proc read_header { ch { first_line "" }
 
 	    if { [eof $ch] } {
 	        set message_header_error \
-		    "Did not find multipart message part\
-		     that had acceptable Content-Type\
-		     and Content-Transfer-Encoding"
+		    "Did not find multipart message\
+		     part that had acceptable\
+		     Content-Type and\
+		     Content-Transfer-Encoding"
 		break
 	    }
 
@@ -796,8 +797,8 @@ proc read_header { ch { first_line "" }
 		set ct "${ct}${ws}*(${nws}*)(${ws}|\$)"
 		set cte \
 		    "${ws}*content-transfer-encoding"
-		set cte "${cte}${ws}*:"
-		set cte "${cte}${ws}*(${nws}*)(${ws}|\$)"
+		set cte "${cte}${ws}*:${ws}*"
+		set cte "${cte}(${nws}*)(${ws}|\$)"
 		set type ""
 		set encoding \
 		    $message_content_transfer_encoding
