@@ -5,7 +5,7 @@
 #
 # File:		printer_pipe
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Sun Sep  9 01:20:14 EDT 2001
+# Date:		Mon Sep 10 08:43:21 EDT 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,14 +14,20 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/09/09 21:33:16 $
+#   $Date: 2001/09/10 13:13:51 $
 #   $RCSfile: printer_pipe,v $
-#   $Revision: 1.1 $
+#   $Revision: 1.2 $
+
+Pswitch=0
 
 case "$1" in
+   -P )
+       shift
+       Pswitch=1
+       ;;
    -doc* )
    	echo "
-printer_pipe where [username]
+printer_pipe [-P] where filename [username]
 
     Look up the printer in the
     
@@ -46,33 +52,56 @@ printer_pipe where [username]
 
     The `printer' file contents just name the printer.
 
+    If the printer name begins with a `!', the rest of
+    the name is take as the name of a file in which to
+    find the printer name.  It is an error if this file
+    is not readable.  If the file is readable the
+    printer name is just the contents of the file (no
+    further indirection is allowed).  Tilde and glob
+    expansions are performed on the file name.
+
     If the user name is not given, the current account
     name is used.
+
+    If the -P option is given, the printer name is
+    written to the standard output, and this program
+    exits without trying to print anything.  The where
+    and filename arguments are not used in this case
+    (unless they are needed to specify a user argument).
+    Otherwise this program continues and prints the
+    standard input.
 
     The standard input to this program should be a
     file to be piped to the printer.  It is usually a
     postscript file, but can be ASCII with form feeds.
 
+    If the printer name contains an `@' the standard
+    input is emailed to the printer name.  Otherwise
+    the standard input is piped to \`lpr -Pprinter'.
+
     If ~/.hpcm_contest/printer_jobs is writable a line
     giving the date and where field is written to that
-    file."
+    file.
+
+    The \`where' and \`filename' arguments are used
+    purely for informative purposes in the email subject
+    and in ~/.hpcm_contest/printer_jobs."
+
     	exit 1
-	;;
-    *)
-        where=$1
 	;;
 esac
 
-case "$2" in
+where="$1"
+filename="$2"
+
+case "$3" in
     "" )
 	user=`id -un`
 	;;
     *)
-        user=$2
+        user="$3"
 	;;
 esac
-
-set -o noglob
 
 if test -r "${HOME}/.hpcm_contest/printer_map"
 then
@@ -81,24 +110,36 @@ then
     #
     exec 3<"${HOME}/.hpcm_contest/printer_map"
 
+    # Set expr match regexps.
+    #
+    ws="[ 	][ 	]*"
+    nws="[^ 	][^ 	]*"
+
     # Read print map lines until match found.
     #
     while test x = x
     do
-	read -r <&3 regexp printer
+	read -r <&3
 	if test $? -ne 0
 	then
 	    echo >&2 Could not find printer in \
 	             printer_map.
 	    exit 1
 	fi
+	regexp=`expr "$REPLY" : "\\($nws\\)$ws"`
 
 	result=`expr "$user" : "$regexp\\\$"`
 	if test $result -ne 0
 	then
+	    printer=`expr "$REPLY" : \
+	                  "$nws$ws\\($nws\\)\$"`
 	    break
 	fi
     done
+
+    # Close printer_map file.
+    #
+    exec 3<&-
 
 elif test -r "${HOME}/.hpcm_contest/printer"
 then
@@ -111,10 +152,32 @@ else
     exit 1
 fi
 
+# Complain if printer name empty.
+#
+if test "$printer" = ""
+then
+    echo >&2 Printer name is empty.
+    exit 1
+fi
+
+# Process -P switch.
+#
+if test $Pswitch = 1
+then
+    echo $printer
+    exit 0
+fi
+
 # If printer_jobs exists, announce print job therein.
 #
 if test -w ${HOME}/.hpcm_contest/printer_jobs; then
-    line="`date`   ***   $where   ***    $printer"
+    shortprinter=`expr "$printer" : "\\([^<]*\\)<"`
+    if test "$shortprinter" = ""
+    then
+        shortprinter="$printer"
+    fi
+    line=`date "+%a %r"`
+    line="$line $shortprinter $filename $user($where)"
     echo "$line" >> ${HOME}/.hpcm_contest/printer_jobs
 fi
 
@@ -122,8 +185,15 @@ fi
 
 case "$printer" in
     *@*)
+        ( echo "To: $printer"; echo "Cc: $user"; \
+	  echo "Subject: $filename $user($where)"; \
+	  echo ""; cat ) | /usr/sbin/sendmail -t
+	exit 0
     	;;
     *)
 	exec lpr -P$printer
     	;;
 esac
+
+echo >&2 WE SHOULD NEVER GET HERE
+exit 1
