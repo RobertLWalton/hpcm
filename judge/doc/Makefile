@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/01/07 13:55:10 $
+#   $Date: 2001/01/07 13:51:25 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.4 $
+#   $Revision: 1.3 $
 
 # List DOCS in order of printing.
 #
@@ -87,127 +87,112 @@ secure:
 # ../bin docs
 #
 judge/autodispatch.doc:	hpcm_judging.rc \
-			../../judge/bin/autodispatch
+			../bin/autodispatch
 	rm -f judge/autodispatch.doc
-	-../../judge/bin/autodispatch -doc \
+	-../bin/autodispatch -doc \
 	    >judge/autodispatch.doc
-judge/autoinfo.doc:	hpcm_judging.rc \
-		        ../../judge/bin/autoinfo
+judge/autoinfo.doc:	hpcm_judging.rc ../bin/autoinfo
 	rm -f judge/autoinfo.doc
-	-../../judge/bin/autoinfo -doc \
+	-../bin/autoinfo -doc \
 	    >judge/autoinfo.doc
-judge/autojudge.doc:	hpcm_judging.rc \
-		        ../../judge/bin/autojudge
+judge/autojudge.doc:	hpcm_judging.rc ../bin/autojudge
 	rm -f judge/autojudge.doc
-	-../../judge/bin/autojudge -doc \
+	-../bin/autojudge -doc \
 	    >judge/autojudge.doc
-judge/autoscore.doc:	hpcm_judging.rc \
-		        ../../judge/bin/autoscore
+judge/autoscore.doc:	hpcm_judging.rc ../bin/autoscore
 	rm -f judge/autoscore.doc
-	-../../judge/bin/autoscore -doc \
+	-../bin/autoscore -doc \
 	    >judge/autoscore.doc
-judge/difffilter.doc:	hpcm_judging.rc \
-		        ../../judge/bin/difffilter
+judge/difffilter.doc:	hpcm_judging.rc ../bin/difffilter
 	rm -f judge/difffilter.doc
-	-../../judge/bin/difffilter -doc \
+	-../bin/difffilter -doc \
 	    >judge/difffilter.doc
 judge/dispatchmail.doc:	hpcm_judging.rc \
-			../../judge/bin/dispatchmail
+			../bin/dispatchmail
 	rm -f judge/dispatchmail.doc
-	-../../judge/bin/dispatchmail -doc \
+	-../bin/dispatchmail -doc \
 	    >judge/dispatchmail.doc
 judge/extractmail.doc:	hpcm_judging.rc \
-			../../judge/bin/extractmail
+			../bin/extractmail
 	rm -f judge/extractmail.doc
-	-../../judge/bin/extractmail -doc \
+	-../bin/extractmail -doc \
 	    >judge/extractmail.doc
 judge/hpcm_print_passwords.doc:	hpcm_judging.rc \
-		../../judge/bin/hpcm_print_passwords
+			../bin/hpcm_print_passwords
 	rm -f judge/hpcm_print_passwords.doc
-	-../../judge/bin/hpcm_print_passwords -doc \
+	-../bin/hpcm_print_passwords -doc \
 	    >judge/hpcm_print_passwords.doc
 judge/hpcm_sandbox.doc:	hpcm_judging.rc \
-			../../judge/bin/hpcm_sandbox
+			../bin/hpcm_sandbox
 	rm -f judge/hpcm_sandbox.doc
-	-../../judge/bin/hpcm_sandbox -doc \
+	-../bin/hpcm_sandbox -doc \
 	    >judge/hpcm_sandbox.doc
 installing_hpcm.doc:	hpcm_judging.rc \
-			../../judge/bin/installing_hpcm
+			../bin/installing_hpcm
 	rm -f installing_hpcm.doc
-	-../../judge/bin/installing_hpcm -doc \
+	-../bin/installing_hpcm -doc \
 	    >installing_hpcm.doc
-judge/lookat.doc:	hpcm_judging.rc \
-		        ../../judge/bin/lookat
+judge/lookat.doc:	hpcm_judging.rc ../bin/lookat
 	rm -f judge/lookat.doc
-	-../../judge/bin/lookat -doc >judge/lookat.doc
+	-../bin/lookat -doc >judge/lookat.doc
 judge/makeMakefile.doc:	hpcm_judging.rc \
-			../../judge/bin/makeMakefile
+			../bin/makeMakefile
 	rm -f judge/makeMakefile.doc
-	-../../judge/bin/makeMakefile -doc \
+	-../bin/makeMakefile -doc \
 	    >judge/makeMakefile.doc
 judge/makejudgingdir.doc:	hpcm_judging.rc \
-			../../judge/bin/makejudgingdir
+			../bin/makejudgingdir
 	rm -f judge/makejudgingdir.doc
-	-../../judge/bin/makejudgingdir -doc \
+	-../bin/makejudgingdir -doc \
 	    >judge/makejudgingdir.doc
 judge/makescoreboard.doc:	hpcm_judging.rc \
-			../../judge/bin/makescoreboard
+			../bin/makescoreboard
 	rm -f judge/makescoreboard.doc
-	-../../judge/bin/makescoreboard -doc \
+	-../bin/makescoreboard -doc \
 	    >judge/makescoreboard.doc
 judge/manualreply.doc:	hpcm_judging.rc \
-			../../judge/bin/manualreply
+			../bin/manualreply
 	rm -f judge/manualreply.doc
-	-../../judge/bin/manualreply -doc \
+	-../bin/manualreply -doc \
 	    >judge/manualreply.doc
 overview.doc:	hpcm_judging.rc \
-			../../judge/bin/overview
+			../bin/overview
 	rm -f overview.doc
-	-../../judge/bin/overview -doc >overview.doc
+	-../bin/overview -doc >overview.doc
 judge/receivemail.doc:	hpcm_judging.rc \
-			../../judge/bin/receivemail
+			../bin/receivemail
 	rm -f judge/receivemail.doc
-	-../../judge/bin/receivemail -doc \
-	    >judge/receivemail.doc
-judge/reply.doc:	hpcm_judging.rc \
-		        ../../judge/bin/reply
+	-../bin/receivemail -doc >judge/receivemail.doc
+judge/reply.doc:	hpcm_judging.rc ../bin/reply
 	rm -f judge/reply.doc
-	-../../judge/bin/reply -doc >judge/reply.doc
-judge/scoreboard.doc:	hpcm_judging.rc \
-		        ../../judge/bin/scoreboard
+	-../bin/reply -doc >judge/reply.doc
+judge/scoreboard.doc:	hpcm_judging.rc ../bin/scoreboard
 	rm -f judge/scoreboard.doc
-	-../../judge/bin/scoreboard -doc \
-	    >judge/scoreboard.doc
-judge/scorediff.doc:	hpcm_judging.rc \
-		        ../../judge/bin/scorediff
+	-../bin/scoreboard -doc >judge/scoreboard.doc
+judge/scorediff.doc:	hpcm_judging.rc ../bin/scorediff
 	rm -f judge/scorediff.doc
-	-../../judge/bin/scorediff -doc \
-	    >judge/scorediff.doc
+	-../bin/scorediff -doc >judge/scorediff.doc
 judge/scorefinder.doc:	hpcm_judging.rc \
-			../../judge/bin/scorefinder
+			../bin/scorefinder
 	rm -f judge/scorefinder.doc
-	-../../judge/bin/scorefinder -doc \
-	    >judge/scorefinder.doc
+	-../bin/scorefinder -doc >judge/scorefinder.doc
 judge/startcontest.doc:	hpcm_judging.rc \
-			../../judge/bin/startcontest
+			../bin/startcontest
 	rm -f judge/startcontest.doc
-	-../../judge/bin/startcontest -doc \
+	-../bin/startcontest -doc \
 	    >judge/startcontest.doc
 judge/testproblems.doc:	hpcm_judging.rc \
-			../../judge/bin/testproblems
+			../bin/testproblems
 	rm -f judge/testproblems.doc
-	-../../judge/bin/testproblems -doc \
+	-../bin/testproblems -doc \
 	    >judge/testproblems.doc
-judge/tracker.doc:	hpcm_judging.rc \
-		        ../../judge/bin/tracker
+judge/tracker.doc:	hpcm_judging.rc ../bin/tracker
 	rm -f judge/tracker.doc
-	-../../judge/bin/tracker -doc \
-	    >judge/tracker.doc
+	-../bin/tracker -doc >judge/tracker.doc
 judge/trackfinder.doc:	hpcm_judging.rc \
-			../../judge/bin/trackfinder
+			../bin/trackfinder
 	rm -f judge/trackfinder.doc
-	-../../judge/bin/trackfinder -doc \
-	    >judge/trackfinder.doc
+	-../bin/trackfinder -doc >judge/trackfinder.doc
 
 # ../../secure/bin docs
 #
