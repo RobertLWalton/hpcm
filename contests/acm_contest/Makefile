@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Mar  9 19:36:25 EST 2002
+# Date:		Wed Apr  3 12:47:25 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/03/10 00:41:48 $
+#   $Date: 2002/04/03 17:45:29 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.13 $
+#   $Revision: 1.14 $
 
 # To make a formal contest named `foo':
 #
@@ -465,5 +465,5 @@ test_all:	test_formal
 TEST_PREREQUISITES=
 include ${HPCM}/examples/test_submissions/Makefile.mk
 
-test_dangerous_clean:
-	rm -rf mail/* flag log *.reply
+dangerous_test_clean:
+	rm -rf mail/* flag log *.reply mbox
