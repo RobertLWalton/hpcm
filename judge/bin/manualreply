@@ -5,7 +5,7 @@
 #
 # File:		manualreply
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Sep 20 22:06:13 EDT 2000
+# Date:		Thu Sep 21 05:31:10 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/09/21 03:26:00 $
+#   $Date: 2000/09/21 11:48:23 $
 #   $RCSfile: manualreply,v $
-#   $Revision: 1.6 $
+#   $Revision: 1.7 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -34,11 +34,13 @@ cd submission_directory; manualreply
 
     Given a submission directory as the current dir-
     ectory, permit a person to examine the contents of
-    the directory and construct an email reply or a
-    $no_reply_file file indicating there is to be no
-    reply.  A $manual_score_file file may also be\
-    			constructed
-    and this score sent in the reply."
+    the directory and construct an email reply, or
+    alternatively, create a $no_reply_file file that\
+					indicates
+    that there is to be no reply.  A $manual_score_file\
+					    file
+    may also be constructed and this score sent in the
+    reply."
 
 # If there are any arguments, print documentation and
 # exit with error.
@@ -48,10 +50,110 @@ if { $argc != 0 } {
     exit 1
 }
 
-proc add_file { variable
-                filename 
-		{ maxlength 999999999 } } {
-    upvar 1 $variable out
+# Several of the following functions add text lines to
+# the end of a variable, rather than writing to stdout.
+# By accumulating text in a variable and writing it in
+# a single puts statement, and by designing successive
+# puts strings to have the same layout, we get the
+# effect of having a single window.
+#
+# The window has the following parts:
+#
+#	window_blank	blank lines above window
+#	window_display	file list or file
+#	window_info	information specific to window
+#	window_error	error line just above prompt
+#	window_prompt	prompt and user response line
+#
+# The last two are 1 line.  The height of window_info
+# is carefully controlled, the height of the window_
+# display is suggested (its actually a maximum), and
+# the height of the entire window is controlled unless
+# it is too large.  The window_display should end with
+# a bar.
+#
+set window_blank ""
+set window_display ""
+set window_info ""
+set window_error ""
+set window_prompt ""
+set window_height 40
+set window_display_height 12
+set window_info_height 6
+
+set window_newlines "\n\n\n\n\n\n\n\n\n\n"
+set window_newlines "$window_newlines$window_newlines"
+set window_newlines "$window_newlines$window_newlines"
+set window_newlines "$window_newlines$window_newlines"
+set window_newlines "$window_newlines$window_newlines"
+
+proc display_window {} {
+
+    global window_blank window_display window_info \
+    	   window_error window_prompt
+
+    set b $window_blank
+    set d $window_display
+    set i $window_info
+    set e $window_error
+    set p $window_prompt
+    puts "$b\n$d\n$i\n$e\n$p"
+    flush stdout
+}
+
+proc set_window_info { info } {
+
+    global window_info window_info_height \
+    	   window_newlines
+
+    set height [llength [split $info "\n"]]
+    if { $height > $window_info_height } {
+    	error "window info too high:\n$info"
+    }
+    set offset [expr { $window_info_height \
+    		       - $height - 1 }]
+    set window_info \
+        "[string range $window_newlines \
+	         0 $offset]$info"
+}
+
+proc set_window_display { display } {
+
+    global window_blank window_display \
+    	   window_height window_info_height \
+	   window_newlines
+
+    set height [llength [split $display "\n"]]
+
+    set offset \
+        [expr { $window_height \
+	        - $window_info_height - 2 \
+		- $height - 1 }]
+    set window_blank \
+        [string range $window_newlines 0 $offset]
+    set window_blank $display
+}
+
+set window_bar "===================="
+set window_bar "$window_bar$window_bar"
+set window_bar "$window_bar$window_bar"
+
+proc bar_with_text { text } {
+    global window_bar
+    set l [expr 80 - 2 - [string length $text]]
+    return "[string range $window_bar 0 $l] $text"
+}
+
+# Set the window display to display the first lines
+# of the file.
+#
+proc set_file_display { filename }
+
+    global window_display_height
+
+    set height [expr { $window_display_height - 2 }]
+    set display [bar_with_text "$filename:"]
+
     set file_ch [open $filename r]
     set n 0
     while { "yes" } {
@@ -60,12 +162,20 @@ proc add_file { variable
 
 	incr n
 
-	if { $n <= $maxlength } {
-	    set out "$out\n$line"
+	if { $n <= $height } {
+	    set display "$display\n$line"
 	}
     }
+    close $file_ch
 
-    return n
+    if { $n > $height } {
+	set more [expr { $n - $height }]
+    	set bar [bar_with_text "......................\
+		 there are $more lines in the file"]
+    } else {
+        set bar [bar_with_text " end-of-file"]
+    }
+    set_window_display "$display\n$bar"
 }
 
 
@@ -90,20 +200,33 @@ proc add_file { variable
 # the file list was computed, and the previous file list
 # was not empty.  Otherwise `new' is "".
 #
+# Below `file_list' is a simple list of file names that
+# can be lsearch'ed.  `file_list_items' has the list of
+# items described above.  The number of files is in
+# `file_list_length'.  The mtime of the $received_file
+# file is in `file_list_origin_mtime', unless there is
+# no such file, in which case the mtime of the oldest
+# file is there instead.
+#
 set file_list ""
+set file_list_items ""
 set file_list_length 0
 set file_list_origin_mtime 0
 
+# Recompute the file list.  New files are marked unless
+# the file list was previously empty.
+#
 proc refresh_file_list { } {
 
-    global file_list file_list_length \
+    global file_list file_list_items file_list_length \
     	   file_list_origin_mtime received_file
 
-    set new_file_list ""
+    set new_file_list [glob -nocomplain *]
+    set new_file_list_items ""
     set n 0
     set origin ""
     set oldest 0
-    foreach file [glob -nocomplain *] {
+    foreach file $new_file_list {
 	set mtime [file mtime $file]
 	if { $file == $received_file } {
 	    set origin $mtime
@@ -131,24 +254,21 @@ proc refresh_file_list { } {
 	    }
 	    close $file_ch
 	}
-	if { $file_list_length != 0 } {
+
+	set new ""
+	if { $file_list_length != 0 \
+	     && [lsearch -exact $file_list $file] \
+	        < 0 } {
 	    set new "*"
-	    foreach item2 $file_list {
-		if { [lindex $item2 2] == $file } {
-		    set new ""
-		    break
-		}
-	    }
-	} else {
-	    set new ""
 	}
 	lappend item $new
 
-	lappend new_file_list $item
+	lappend new_file_list_items $item
 	incr n
     }
 
-    set file_list [lsort $new_file_list]
+    set file_list $new_file_list
+    set file_list_items [lsort $new_file_list_items]
     set file_list_length $n
 
     if { $origin != "" } {
@@ -158,11 +278,14 @@ proc refresh_file_list { } {
     }
 }
 
-proc add_file_list { variable } {
+# Set the window display to the file list.
+#
+proc set_file_list_display {} {
 
-    global file_list file_list_origin_mtime
+    global file_list_items file_list_origin_mtime \
+    	   window_bar
 
-    upvar 1 $variable out
+    set display "$window_bar"
 
     set n 0
     set previous ""
@@ -170,7 +293,7 @@ proc add_file_list { variable } {
     # If `previous' is non-empty it is the previous
     # item and has no more than 39 characters.
     #
-    foreach item $file_list {
+    foreach item $file_list_items {
 	incr n
 	set time [expr { [lindex $item 1] \
 	                 - $file_list_origin_mtime }]
@@ -210,50 +333,103 @@ proc add_file_list { variable } {
 	}
 
 	if { $next != "" } {
-	    set out "$out\n$next"
+	    set display "$display\n$next"
 	}
     }
 
     if { $previous != "" } {
-	set out "$out\n$previous"
+	set display "$display\n$previous"
     }
+
+    set_window_display "$display\n$window_bar"
 }
 
-refresh_file_list
-set out "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
-add_file_list out
-puts $out
-exit 0
-
+# Given a file number, set `last_file' to the name of
+# the corresponding file, and return `OK'.  If there is
+# an error, leave `last_file' alone, and return an error
+# description (of less than 60 characters) instead.
+#
 proc get_file { number } {
 
     global file_list file_list_length last_file
 
     if { $number == "" } {
 	if { $last_file == "" } {
-	    puts "No previous file!"
-	    return no
+	    return "No previous file!"
 	} else {
-	    return yes
+	    return OK
 	}
     } elseif { $number < 1 \
                || $number > $file_list_length } {
-	puts "Bad file number: $number"
-	return no
+	return "Bad file number: $number"
     } else {
 	set last_file \
             [lindex [lindex $file_list \
                             [expr { $number - 1 }]] 1]
-	return yes
+	return OK
     }
 }
+
+proc yes? {} {
+
+    global window_error
+
+    while { "yes" } {
+    	set answer [string trim [gets stdin]]
+	if { [eof stdin] } {
+	    puts "Exiting manualreply"
+	    exit 0
+	}
+	switch $answer {
+	    y	-
+	    yes	-
+	    Y	-
+	    YES	{ return yes }
+	    n	-
+	    no	-
+	    N	-
+	    NO	{ return no }
+	}
+	if { $answer == "" } {
+	    set window_error \
+		    "ERROR: empty answer"
+	} else {
+	    set window_error \
+		    "ERROR: could not understand `$answer'"
+	}
+	display_window
+        set window_error ""
+    }
+}
+
+# Initialize the file list and the last_file variable.
+#
+refresh_file_list
+set last_file ""
+
+set_file_list_display
+set_window_info "
+POO BAH
+"
+set window_prompt "y or n? "
+
+set n 0
+while { "yes" } {
+    incr n
+    set window_error "TRY $n"
+    display_window
+    yes?
+}
+
+exit 0
+    
+
 
 # Read the received mail header.
 #
 set received_ch [open $received_file r]
 read_header $received_ch
 close $received_ch
-
 
 if { [llength $message_subject] == 2 \
      && [lindex $message_subject 0] == "submit"
@@ -263,16 +439,28 @@ if { [llength $message_subject] == 2 \
                        $auto_score_file \
                        *-unchecked-error]] == 0 } {
 
-    puts "Running autojudge"
-    exec autojudge >@ stdout 2>@ stderr
 
-    if { ! [file exists $auto_score_file] } {
-	puts "autojudge FAILED to make $auto_score_file"
-    }
+    set_file_list_display
+    set_window_info "
+It appears that `autojudge' should be run."
+    set window_prompt "Do you want to do so (y or n)? "
+
+    if { [yes?] } {
+
+    	puts "Running autojudge"
+	exec autojudge >@ stdout 2>@ stderr
+
+	if { ! [file exists $auto_score_file] } {
+	    puts "autojudge FAILED to make\
+	         $auto_score_file"
+	}
+	puts "Type any character to continue"
+	gets stdin
+	if { [eof stdin] } {
+	    puts "Exiting manualreply"
+	    exit 0
+	}
 }
-
-refresh_file_list no
-set last_file ""
 
 while { "yes" } {
 
