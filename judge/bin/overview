@@ -4,7 +4,7 @@
 #
 # File:		overview
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Oct 15 08:40:31 EDT 2001
+# Date:		Mon Oct 15 10:35:31 EDT 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/10/15 12:55:36 $
+#   $Date: 2001/10/15 15:01:39 $
 #   $RCSfile: overview,v $
-#   $Revision: 1.31 $
+#   $Revision: 1.32 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -522,7 +522,7 @@ it is necessary that the judging directory name be un-
 guessable.
 
 Fortunately the judge really does not need to use the
-full name of the judging directory except in vary rare
+full name of the judging directory except in very rare
 instances, as `~/judging_cccc_*' or the equivalent
 suffices.  The judge's account has u+r permission on
 directories, so the `*' works for the judge's account,
@@ -563,9 +563,9 @@ are:
 	by hand to define the contest.
 
     solutions
-        The solution directory for the contest.  Each
-	component of the solution directory is a symbol-
-	lic link to a problem directory.  Often these
+        The solutions directory for the contest.  Each
+	component of the solutions directory is a sym-
+	bolic link to a problem directory.  Often these
 	problem directories are in the problem library.
 
 	But for formal contests problems are often used
@@ -576,8 +576,9 @@ are:
 	This index file is in a format suitable for the
 	`makejudgingdir' program.
 
-	The solutions directory and its contents are
-	made automatically by `makejudgingdir'.
+	The solutions directory and its contents (i.e.,
+	the symbolic links) are made automatically by
+	`makejudgingdir'.
 
     info
         The info directory for the contest.  This only
@@ -688,7 +689,7 @@ components that contestants can access.
 	can execute.  The name `~/.hpcm_contest/bin' is
 	part of the program search path for each contes-
 	tant account.
-
+
 	The name `bin' in the contest directory is
 	usually symbolically linked to
 	
@@ -770,28 +771,33 @@ components that contestants can access.
 	Data: The Home Directory' below for more
 	details.
 
+    printer_map
+        This file contains a map from contestant names,
+	specified by regular expressions, to printer
+	names.  See hpcm/contestant/printer_pipe for
+	details.
+
     printer
     	This file contains nothing but the name of the
 	printer to be used by the contestants.  This
-	name should be suitable for use with the -P
-	option to various UNIX print commands.  If the
-	file is missing, these commands use the value
-	of the PRINTER environment variable at the time
-	the commands execute.
+	file is used only if printer_map is not readable
+	by contestants.  See hpcm/contestant/printer_
+	pipe for details.
 
-	This file is made by `makejudgingdir' and may
-	be edited or removed by hand.
-
+	This file is made by `makejudgingdir' if neither
+	it or printer_map exist, and may be edited or
+	removed by hand.
+
     printer_jobs
         If this file exists and is a+w, each use of the
 	printer by one of the print commands in the
 	contestant bin directory causes a line to be
 	written into this file.  The line gives the
-	time and the location of the contestant.  This
-	location is taken from the who_where file (see
-	below) `WHERE' field, if available, and is
-	otherwise the contestant account name.
-
+	time, printer, contestant account name and
+	location, and filename for the print operation.
+	The location is taken from the who_where file
+	(see below) `WHERE' field, if available.
+
 	This file can be used by the contestant `lpq'
 	program to print out printer status, and by the
 	judges to monitor printer activity.
@@ -818,7 +824,7 @@ components that contestants can access.
 	tory.  Demonstration problems are similar but
 	are in the `demos' directory instead of the
 	`problems' directory.
-
+
 	Within each problem directory there is an a+r
 	copy of the `Makefile' of the problem.  It is
 	also possible to include an a+r copy of any file
@@ -830,7 +836,7 @@ components that contestants can access.
 	be in the problem directory, as judge's input
 	and output and solutions in different program-
 	ming languages are often provided.
-
+
 	For a formal contest, the contestant's hpcm_get
 	program creates a problem directory in the con-
 	testant's account and symbolically links into
@@ -858,10 +864,10 @@ components that contestants can access.
 	contest/problems does not have problem descrip-
 	tion (e.g., .txt) files (unless the makejudging-
 	dir -description option is used).
-
+
 	The `demos' directory is similarly made and is
 	an exact copy of what would go into info/demos.
-
+
     scoreboard.1head
     scoreboard.2
     scoreboard.3

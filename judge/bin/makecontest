@@ -6,7 +6,7 @@
 #
 # File:		makejudgingdir
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Oct  4 14:51:11 EDT 2001
+# Date:		Mon Oct 15 10:46:04 EDT 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/10/04 18:53:54 $
+#   $Date: 2001/10/15 15:01:39 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.60 $
+#   $Revision: 1.61 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -50,7 +50,7 @@ makejudgingdir option ... index_specification ...
     -email	Sets up an email contest.  Equals -info,
     		-solutions, -mail, and -this_contest.
     -formal     Sets up a formal contest.  Equals all
-    		options but -info, -trashable, 
+    		options but -info, -trashable,
 		-description, and -printer_map.
     -informal   Sets up an informal contest.  Equals all
     		options but -problems, -demos,
@@ -83,8 +83,10 @@ makejudgingdir option ... index_specification ...
     -who_where  Make ./contest/who_where
     -trashable  Make ./contest/trashable
 
-    -printer    Make ./contest/printer
-    -printer_map    Make ./contest/printer_map
+    -printer    Make ./contest/printer and
+    		     ./contest/printer_jobs
+    -printer_map    Make ./contest/printer_map and
+    		         ./contest/printer_jobs
     -home	Make ./contest/home
     -pdexts \"extension:...\"
     		Change the list of problem description
@@ -547,15 +549,17 @@ makejudgingdir option ... index_specification ...
     file).
 
     The -printer program option makes the ./contest/
-    printer file if it does not exist, and writes a
-    ./TODO to edit the file when it is made.  It also
-    makes the ./contest/printer_jobs file if it does
-    not exist, and writes a ./TODO to consider deleting
+    printer file if neither it nor ./contest/printer_map
+    exist, and writes a ./TODO to edit the file when it
+    is made.  It also makes the ./contest/printer_jobs
+    file if that does not exist when ./contest/printer
+    is made, and writes a ./TODO to consider deleting
     this file.
 
     The -printer_map program option is similar to the
     -printer option but makes a ./contest/printer_map
-    file instead of a ./contest/printer file.
+    file instead of a ./contest/printer file if neither
+    of these files exists.
 
     The -home program option just checks to see if
     the directory ./contest/home exists and the files
@@ -2040,15 +2044,24 @@ if { $trashable_option } {
     }
 }
 
+# Printer_jobs pseudoswitch
+#
+set printer_jobs_option no
+
 # Make $c_d/printer
 #
 if { $printer_option \
-     && ! [file readable $c_d/printer] } {
+     && ! [file readable $c_d/printer] \
+     && ! [file readable $c_d/printer_map] } {
+
+    set printer_jobs_option yes
+
     if { [info exists env(PRINTER)] } {
 	set printer $env(PRINTER)
     } else {
 	set printer UNKNOWN
     }
+
     write_file $c_d/printer $printer
     grant_access $c_d/printer
 
@@ -2062,7 +2075,10 @@ if { $printer_option \
 # Make $c_d/printer_map
 #
 if { $printer_map_option \
+     && ! [file readable $c_d/printer] \
      && ! [file readable $c_d/printer_map] } {
+
+    set printer_jobs_option yes
 
     write_file $c_d/printer_map {.* !~/PRINTER}
     grant_access $c_d/printer_map
@@ -2077,7 +2093,7 @@ if { $printer_map_option \
 
 # Make $c_d/printer_jobs
 #
-if { ( $printer_option || $printer_map_option ) \
+if { $printer_jobs_option \
      && ! [file readable $c_d/printer_jobs] } {
     close [open $c_d/printer_jobs w]
     exec chmod a+rw $c_d/printer_jobs
