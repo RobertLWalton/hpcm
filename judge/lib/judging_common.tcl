@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Mar  9 08:37:52 EST 2002
+# Date:		Fri Mar 22 04:58:09 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/03/09 13:40:07 $
+#   $Date: 2002/03/22 10:28:59 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.87 $
+#   $Revision: 1.88 $
 #
 
 # Table of Contents
@@ -66,9 +66,9 @@
 # The catch and `caught_error' function catches all
 # program errors and causes them to be announced on the
 # standard error output and be logged according to the
-# log_mode setting.  This can cause errors to be
-# recorded in an error log file and to generate email
-# notification.
+# log_mode and log_globally settings.  This can cause
+# errors to be recorded in an error log file and to
+# generate email notification.
 
 # Default error log directory name.  For use if we
 # cannot find judging parameters.
@@ -130,17 +130,21 @@ proc dispatch_unlock { { directory . } } {
 
 # Convert a [clock seconds] value into a date in
 # the form yyyy-mm-dd-hh:mm:ss that is useable as
-# part of a filename.
+# part of a filename.  Respect the use_gmt global
+# variable.
 #
 proc clock_to_filename_date { clock } {
+    global use_gmt
     return [clock format $clock \
-                  -format {%Y-%m-%d-%H:%M:%S}]
+                  -format {%Y-%m-%d-%H:%M:%S} \
+		  -gmt $use_gmt]
 }
 
 # Do the reverse conversion to that of the above
-# function.
+# function.  Respect the use_gmt global variable.
 #
 proc filename_date_to_clock { date } {
+    global use_gmt
     set n {([0-9]+)}
     if { ! [regexp "^$n-$n-$n-$n:$n:$n\$" $date forget \
     	           year month day \
@@ -148,7 +152,8 @@ proc filename_date_to_clock { date } {
 	error "Not a legal filename date:    $date"
     }
     return [clock scan \
-	    "$month/$day/$year $hour:$minute:$second"]
+	    "$month/$day/$year $hour:$minute:$second" \
+	    -gmt $use_gmt]
 }
 
 # Checked File Functions
@@ -258,7 +263,7 @@ proc caught_error {} {
 # Recording an error in a log file always sets the
 # `needs reply' flag.
 
-# Number of calls to log_error in during this program.
+# Number of calls to log_error during this program.
 #
 set log_error_count 0
 #
@@ -279,13 +284,13 @@ proc log_error { error_output } {
     # from program.
     #
     incr log_error_count
-    if { $log_error_count > $log_error_maximum } {
-    	set log_mode none
-    } elseif { $log_error_count > 1001 } {
+    if { $log_error_count > 1001 } {
         exit 2
     } elseif { $log_error_count > 1000 } {
 	exit_cleanup
         exit 2
+    } elseif { $log_error_count > $log_error_maximum } {
+    	set log_mode none
     }
 
     # Write error to standard error output.
@@ -347,7 +352,7 @@ proc log_error { error_output } {
 
 	incr count
 
-	if { $count > 10 } {
+	if { $count > 100 } {
 
 	    # Desparation move.  Should never happen.
 	    #
@@ -531,7 +536,8 @@ proc log_error { error_output } {
 # The results are returned in global variables:
 #
 #	message_header		All the lines of the
-#				header
+#				header (but NOT the
+#				'^From\ ' line).
 #	message_From_line	The first line if it
 #				begins with `^From\ '.
 #	message_from		`From:' field value.
@@ -612,6 +618,8 @@ proc read_header { ch { first_line "" }
     #
     if { [regexp "^From\ " $line] } {
     	set message_From_line $line
+	set line [gets $ch]
+	if { [eof $ch] } return
     }
 
     # Loop until empty line looking for fields listed
@@ -781,7 +789,11 @@ proc compute_authentication {} {
     # (or the signature there is inadequate), result is
     # no.
     #
-    if { [llength $message_x_hpcm_signature] < 2 } {
+    if {     [catch { \
+                set len \
+		    [llength \
+		       $message_x_hpcm_signature] }] \
+         || $len < 2 } {
     	set result no
     } else {
         set keyname \
