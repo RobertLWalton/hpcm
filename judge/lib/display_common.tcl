@@ -2,7 +2,7 @@
 #
 # File:		display_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Mar  9 08:37:52 EST 2002
+# Date:		Sat Mar  9 21:04:41 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/03/09 13:40:07 $
+#   $Date: 2002/03/10 02:06:24 $
 #   $RCSfile: display_common.tcl,v $
-#   $Revision: 1.30 $
+#   $Revision: 1.31 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -861,7 +861,10 @@ proc read_received_file {} {
 
     # Compute submitted program.
     #
-    if { [llength $message_subject] == 2 \
+    if {    ! [catch { set len \
+    			   [llength \
+			       $message_subject] }] \
+         && $len == 2 \
 	 && [lindex $message_subject 0] == "submit" } {
 	set submitted_name \
 	    [lindex $message_subject 1]
