@@ -1,11 +1,25 @@
 # Makefile for an `email' Contest
 #
 # File:		Makefile
-# Date:		Fri Dec  8 00:07:49 EST 2000
+# Date:		Tue Jan  9 07:46:59 EST 2001
 #
+# Author:	Bob Walton (walton@deas.harvard.edu)
+#
+# The authors have placed this program in the public
+# domain; they make no warranty and accept no liability
+# for this program.
+#
+# RCS Info (may not be true date or author):
+#
+#   $Author: hc3 $
+#   $Date: 2001/01/09 12:44:21 $
+#   $RCSfile: Makefile,v $
+#   $Revision: 1.9 $
+
 # To make an email contest named `foo':
 #
-# 1. Import the HPCM system into ~/hpcm.
+# 1. Import the HPCM system into ~/hpcm.  See directions
+#    in hpcm/judge/bin/installing_hpcm.
 #
 # 2. Create a judging directory ~/judging_foo_password
 #    where the password is needed to keep outsiders from
@@ -18,27 +32,56 @@
 #
 # 3. Put copies of the files in this directory into
 #    your judging directory, and edit the names and
-#    passwords in these files appropriately.
+#    passwords in these files appropriately.  Edit the
+#    index specifications specifying the problems you
+#    want to include (at the end of the value of the
+#    INDICES variable below) to specify the problems you
+#    want (run `makejudgingdir -doc' to find the format
+#    and meaning of index specifications).
 #
-# 4. Run `make' in your judging directory.
+# 4. Run `make this_contest' and then edit the `./help/
+#    this_contest' file.
 #
-# 5. Follow the instructions in the TODO file that
+# 5. Run `make' in your judging directory.
+#
+#    You should rerun `make' whenever you may have
+#    changed something it uses to build the contest
+#    files.  The worst that can happen from running
+#    `make' unnecessarily is to get redundant instruc-
+#    tions in the ./TODO file (see below).
+#
+# 6. Follow the instructions in the TODO file that
 #    will have been created in the judging directory.
 #    After you follow an instruction, edit it out of
 #    the TODO file.
 #
-# 6. Use `make start_scoreboard' to start the scoreboard
-#    crontab job.  Use `make check_scoreboard' to check
-#    the crontab job status, and `make stop_scoreboard'
-#    to stop the crontab job.
+#    Among other things you will be asked to set edit
+#    routing information into ~/.procmailrc.
 #
-# 7. Contest judging is automatic.  If you set the
-#    `reply_manager' and `log_manager' variables to your
-#    email address, you will be notified of any errors
-#    or questions.  You many use the `tracker' program
-#    to find unchecked errors.
+# 7. Review the -email option of the `makescoreboard'
+#    program.  If you wish to use this to send the
+#    scoreboard somewhere to be posted on the web, edit
+#    the SCOREBOARD_ADDRESS parameter in this file, and
+#    use `make start_scoreboard' to start the scoreboard
+#    job.  Use `make check_scoreboard' to check job
+#    status, `make stop_scoreboard' to stop the job, and
+#    make `update_scoreboard' to provide an instant
+#    update of the scoreboard.
+#
+# 8. Contest judging is automatic.  If you set the
+#    `reply_manager' and `log_manager' variables in
+#    hpcm_judging.rc to your email address, you will be
+#    notified of any errors and of any questions submit-
+#    ted by contestants.  You many use the `tracker'
+#    program to find unchecked errors.
+#
+#    Note that you do NOT need to execute `startcontest'
+#    to start an email contest.  This is only needed for
+#    formal contests.
 
 HPCM=${HOME}/hpcm
+
+SCOREBOARD_ADDRESS="password"<account@computer>
 
 INDICES=    help/index, \
 	    =help/ \
@@ -59,31 +102,22 @@ all:
 	makejudgingdir -email ${INDICES}
 	chmod a+x . ..
 
+this_contest:
+	makejudgingdir -this_contest
+
 scoreboard:
 	scorefinder | scoreboard
 
 start_scoreboard:
-	crontab crontab
+	makescoreboard -start \
+	               -email '${SCOREBOARD_ADDRESS}'
 
 check_scoreboard:
-	-crontab -l
+	makescoreboard -status
 
 stop_scoreboard:
-	crontab -r
+	makescoreboard -stop
 
 update_scoreboard:
-	sendscoreboard \
-        '"wyg2bpitbp scoreboard"<hc3@deas.harvard.edu>'
-#
-# Author:	Bob Walton (walton@deas.harvard.edu)
-#
-# The authors have placed this program in the public
-# domain; they make no warranty and accept no liability
-# for this program.
-#
-# RCS Info (may not be true date or author):
-#
-#   $Author: hc3 $
-#   $Date: 2000/12/08 05:05:33 $
-#   $RCSfile: Makefile,v $
-#   $Revision: 1.8 $
+	makescoreboard -email '${SCOREBOARD_ADDRESS}' \
+		       0
