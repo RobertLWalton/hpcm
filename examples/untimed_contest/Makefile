@@ -1,7 +1,7 @@
 # Makefile for an `email' Contest
 #
 # File:		Makefile
-# Date:		Wed Oct 25 20:20:06 EDT 2000
+# Date:		Thu Nov 30 19:51:59 EST 2000
 #
 # To make an email contest named `foo':
 #
@@ -33,6 +33,8 @@ INDICES=    help/index, \
 	    =help/ \
 	    ${HPCM}/contestant/help/index, \
 	    common/=help/, \
+	    email/=help/, \
+	    email:include, \
 	    common:include \
 	    ${HPCM}/problem_library/index, \
 	    public/=problems/, \
@@ -67,6 +69,6 @@ clean:
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/11/07 06:15:13 $
+#   $Date: 2000/12/01 00:53:01 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.3 $
+#   $Revision: 1.4 $
