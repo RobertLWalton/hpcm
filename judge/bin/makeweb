@@ -7,7 +7,7 @@
 #
 # File:		makeweb
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Sep 25 08:24:23 EDT 2002
+# Date:		Mon Oct  7 05:53:09 EDT 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -16,9 +16,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/09/25 13:31:53 $
+#   $Date: 2002/10/07 10:46:14 $
 #   $RCSfile: makeweb,v $
-#   $Revision: 1.4 $
+#   $Revision: 1.5 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -325,11 +325,37 @@ foreach pdir \
     puts $ch "<TD WIDTH=50>&nbsp;</TD>"
     puts $ch "<TD>"
 
-    foreach pfile [lsort [glob -nocomplain $pdir/*]] {
+    set problem_description_found no
+    set files ""
+    foreach pfile [glob -nocomplain $pdir/*] {
         set fname [file tail $pfile]
+	set ext [file extension $fname]
+	if { [lcontain $problem_description_extensions \
+	               $ext] } {
+	    set problem_description_found yes
+	}
 	set wfile $problem/$fname
 	copy_file $pfile $web_directory/$wfile
 	grant_access $web_directory/$wfile
+	lappend files $fname
+    }
+    if { $problem_description_found == "no" } {
+	set soldir $solutions_directory/$problem
+	foreach pfile [glob -nocomplain $soldir/*] {
+	    set fname [file tail $pfile]
+	    set ext [file extension $fname]
+	    if { ! [lcontain \
+	              $problem_description_extensions \
+		      $ext] } \
+		continue
+	    set wfile $problem/$fname
+	    copy_file $pfile $web_directory/$wfile
+	    grant_access $web_directory/$wfile
+	    lappend files $fname
+	}
+    }
+    foreach fname [lsort $files] {
+        set wfile $problem/$fname
 	puts $ch "<A HREF=\"$wfile\">$fname</A>"
     }
     puts $ch "</TD>"
