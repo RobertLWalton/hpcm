@@ -2,7 +2,7 @@
 #
 # File:		scoring_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Mar  9 08:37:52 EST 2002
+# Date:		Sat Mar  9 08:46:11 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/03/09 13:40:07 $
+#   $Date: 2002/03/09 14:32:38 $
 #   $RCSfile: scoring_common.tcl,v $
-#   $Revision: 1.25 $
+#   $Revision: 1.26 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -122,10 +122,11 @@
 #
 set score_filename ""
 #
-# The following is a list of the fake `instruction_
-# array' difference types that cannot be in `score_
-# array' and therefore should not be passed as options
-# to the scorediff program.
+# The following is a list of the scoring instruction
+# difference types that should not be passed as options
+# to the scorediff program, and are not returned in the
+# first line of the scorediff output or stored in
+# `score_array'.
 #
 set fake_instruction_types {
     number space words-are-format
@@ -208,8 +209,8 @@ proc compute_score_and_proof_arrays { args } {
     compute_scoring_array score_array [gets $score_ch] \
 			  ".score file first line"
 
-    foreach type [array names proof_array] {
-        unset proof_array($type)
+    if { [array exists proof_array] } {
+        unset proof_array
     }
 
     while { "yes" } {
@@ -218,6 +219,10 @@ proc compute_score_and_proof_arrays { args } {
 
 	set work $line
 
+	if { [catch { llength $work }] } {
+	    error "proof line is not a TCL\
+	           list:\n  $line"
+	}
 	if { [llength $work] < 2 } {
 	    error "too short proof line: $line"
 	}
@@ -273,7 +278,7 @@ proc compute_score_and_proof_arrays { args } {
 		    set difference [lrange $work 0 2]
 		    set work [lrange $work 3 end]
 		} else {
-		    set difference $type
+		    set difference [list $type]
 		    set work [lrange $work 1 end]
 		}
 
@@ -283,7 +288,8 @@ proc compute_score_and_proof_arrays { args } {
 	}
 
 	if { [llength $work] != 0 } {
-	    error "too long proof line: $line"
+	    error "extra stuff at end of proof\
+	           line:\n  $line"
 	}
     }
     close $score_ch
@@ -301,10 +307,15 @@ proc compute_score_and_proof_arrays { args } {
 #
 proc compute_scoring_array { xxx_array line name } {
 
+    if { [catch {llength $line}] } {
+        error "scoring instructions or scorediff output\
+	       first line is not a TCL list:\n $line"
+    }
+
     upvar $xxx_array array
 
-    foreach type [array names array] {
-        unset array($type)
+    if { [array exists array] } {
+        unset array
     }
 
     set state type
@@ -381,11 +392,46 @@ proc compute_score_file { outfile testfile scorefile } {
 #	incomplete_output_types
 #	formatting_error_types
 #
-# to lists of the differences which support these
+# to lists of difference types which support these
 # scores; e.g., incorrect_output_types might include
 # `word' if that is not just a formatting error, or
 # `integer' if the limits on an integer difference
 # were exceeded.
+#
+# Returns score, which is:
+#
+#    Incorrect Output	if any incorrect output
+#			difference types are in
+#			score_array, but are not
+#			disabled by instruction_array
+#			(e.g. by allowed number
+#			differences)
+#
+#			i.e. if incorrect_output_types
+#			is not empty
+# else
+#
+#    Incomplete Output	if any incomplete output
+#			difference types are in
+#			score_array
+#
+#			i.e. if incomplete_output_types
+#			is not empty
+#
+# else
+#
+#    Formatting Error	if any formatting error
+#			difference types are in
+#			score_array, but are not
+#			disabled by being in
+#			instruction_array
+#
+#			i.e. if formatting_error_types
+#			is not empty
+#
+# else
+#
+#    Completely Correct
 #
 proc compute_score { } {
 
@@ -1113,11 +1159,11 @@ proc compute_proof_info { } {
 	}
     }
 
-    foreach group [array names current_group_array] {
-        unset current_group_array($group)
+    if { [array exists current_group_array] {
+        unset current_group_array
     }
-    foreach group [array names proof_group_array] {
-        unset proof_group_array($group)
+    if { [array exists proof_group_array] {
+        unset proof_group_array
     }
     foreach group [array names proof_array] {
         set proof_group_array($group) \
