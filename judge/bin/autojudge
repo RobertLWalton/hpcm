@@ -5,7 +5,7 @@
 #
 # File:		autojudge
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Nov 24 12:50:57 EST 2001
+# Date:		Sat Nov 24 20:34:17 EST 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/11/24 17:51:06 $
+#   $Date: 2001/11/25 03:53:28 $
 #   $RCSfile: autojudge,v $
-#   $Revision: 1.42 $
+#   $Revision: 1.43 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -337,6 +337,7 @@ link_optional_file $files_file
 
 # Get submitted files.  If error, on SYSTEM ERROR pass
 # to `error' function and otherwise reply to submitter.
+# Compute list of submitted files in `submitted_files'.
 #
 if { [catch { exec extractmail } extractout] } {
     if { [regexp {SYSTEM ERROR} $extractout] } {
@@ -365,6 +366,12 @@ if { [catch { exec extractmail } extractout] } {
     }
 } else {
     puts $extractout
+    set submitted_files ""
+    foreach line [split $extractout "\n"] {
+        if { [lindex $line 0] == "Extracted" } {
+	    lappend submitted_files [lindex $line 1]
+	}
+    }
 }
 
 # Link $make_file, etc.
@@ -381,13 +388,15 @@ if { [file exists $files_file] } {
 	    -REQUIRED-	--
 	    -OPTIONAL-	{ set link_mode no }
 	    default	{
-	        if { $link_mode \
+		if { $link_mode \
 		     && ! [file exists $name] } {
 		    set sname \
-		        $problem_solution/$name
-     		    if { ! [file exists $sname] } {
-		        error "-LINK- file $sname does\
-			       not exist"
+			$problem_solution/$name
+		    if { ! [file exists \
+				 $sname] } {
+			error "-LINK- file\
+			      $sname does not\
+			      exist"
 		    }
 		    puts "Linking $name"
 		    link_file $sname
@@ -467,12 +476,12 @@ if {    (    [file exists $solftest] \
 #
 proc auto_score_reply { auto_score } {
 
-    global scoring_mode reply_file submitted_file \
+    global scoring_mode reply_file problem \
            needs_reply_flag_file
 
     if { $auto_score == "Completely Correct" \
          || $scoring_mode == "auto" } {
-	reply "For $submitted_file the automatically\
+	reply "For $problem the automatically\
 	       determined final score is:" \
 	      "" \
 	      "    $auto_score"
@@ -480,7 +489,7 @@ proc auto_score_reply { auto_score } {
 	      \    $auto_score"
     } elseif { [regexp {auto} $scoring_mode] } {
 	compose_reply \
-              "For $submitted_file the automatically\
+              "For $problem the automatically\
 	       determined score is:" \
 	      "" \
 	      "    $auto_score" \
@@ -560,7 +569,8 @@ proc should_be_made { file_list1 file_list2 } {
 #
 if { [should_be_made \
          [list $problem $problem.cerr] \
-	 [list $make_file $submitted_file]] } {
+	 [concat [list $make_file] \
+	 	 $submitted_files]] } {
 
     puts "Making $problem"
     catch { make_file $problem $problem.cerr }
