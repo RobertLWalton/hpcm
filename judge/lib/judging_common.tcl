@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Mar 15 02:35:58 EST 2003
+# Date:		Mon Mar 17 10:33:58 EST 2003
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2003/03/16 19:12:21 $
+#   $Date: 2003/03/17 19:20:36 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.101 $
+#   $Revision: 1.102 $
 #
 
 # Table of Contents
@@ -534,10 +534,13 @@ proc log_error { error_output } {
 # discard that line.
 #
 # But if the find_part argument is set to `yes', and the
-# message is multipart, skip to the first part that has
-# an acceptable Content-Type and Content-Transfer-
-# Encoding, as determined by the content_type_values and
-# content_transfer_encoding_values global variables.
+# message is multipart, skip to the first NON-EMPTY part
+# that has an acceptable Content-Type and Content-
+# Transfer-Encoding, as determined by the content_type_
+# values and content_transfer_encoding_values global
+# variables.  It is an error if there are no parts,
+# empty or not.  However, if there is an empty part, it
+# is not an error, and the part is merely empty.
 #
 # If find_part is `yes', read_body must be used to read
 # the lines of the body, and if the Content-Transfer-
@@ -574,6 +577,17 @@ proc log_error { error_output } {
 #				`Content-Type:' field
 #				value, for the main
 #				message (not a part).
+#	message_part_content_transfer_encoding
+#				`Content-Transfer-
+#				 Encoding:' field value
+#				of message part, or of
+#				whole message for non-
+#				multipart messages.
+#	message_part_content_type
+#				`Content-Type:' field
+#				value of message part,
+#				or of whole message for
+#				non-multipart messages.
 #	message_x_hpcm_date	`X-HPCM-Date:' field
 #				value.
 #	message_x_hpcm_reply_to	`X-HPCM-Reply-To:'
@@ -635,6 +649,8 @@ proc read_header { ch { find_part no }
 	   message_content_transfer_encoding \
 	   message_content_type \
 	   message_part_boundary \
+	   message_part_content_transfer_encoding \
+	   message_part_content_type \
 	   message_x_hpcm_date \
 	   message_x_hpcm_reply_to \
 	   message_x_hpcm_signature \
@@ -653,7 +669,6 @@ proc read_header { ch { find_part no }
 
     set message_header			""
     set message_header_error		""
-    set message_terminator		""
     set message_translated_body		""
     set message_translated_index	-1
     set message_translated_length	0
@@ -667,6 +682,8 @@ proc read_header { ch { find_part no }
     set message_content_transfer_encoding 7bit
     set message_content_type		text/plain
     set message_part_boundary		""
+    set message_part_content_transfer_encoding 7bit
+    set message_part_content_type	text/plain
     set message_x_hpcm_date		""
     set message_x_hpcm_reply_to		""
     set message_x_hpcm_signature	""
@@ -780,19 +797,28 @@ proc read_header { ch { find_part no }
 	if { [eof $ch] } break
     }
 
-    # If multipart message, skip to first part satisfy-
-    # ing contraints imposed by the content-type-values
-    # and content-transfer-encoding-values global
-    # variables.
+    # Set the default part content type and transfer
+    # encoding.
     #
-    if { $find_part \
-         && [regexp -nocase "^${ws}*multipart" \
-    		    $message_content_type] } {
+    set message_part_content_transfer_encoding \
+        $message_content_transfer_encoding
+    set message_part_content_type \
+        $message_content_type
+
+    # Remember if this is a multipart message.
+    #
+    set multipart [regexp -nocase "^${ws}*multipart" \
+    		           $message_content_type]
+
+    # For any multipart message compute the boundary.
+    #
+    if { $multipart } {
 
 	set b1 "${ws}boundary${ws}*=${ws}*"
 	set b1 "${b1}\"(\[^\"\]*)\""
 	set b2 "${ws}boundary${ws}*=${ws}*"
 	set b2 "${b2}(${nws}*)(${ws}|\$)"
+	set boundary ""
 	if { [regexp -nocase $b1 \
 		     $message_content_type \
 		     forget boundary] } {
@@ -800,167 +826,232 @@ proc read_header { ch { find_part no }
 		     $message_content_type \
 		     forget boundary] } {
 	} else {
-	    set message_header_error \
-	        "No boundary parameter in Content-Type\
-		 field value of multipart message"
-	    break
+
+	    # If we are supposed to find parts
+	    # but there is no boundary, give
+	    # up with an error.
+	    #
+	    if { $find_part } {
+		set mct $message_content_type
+	        set message_header_error \
+		    "No boundary parameter\
+		    in:\nContent-Type:$mct"
+		return
+	    }
 	}
 	set message_part_boundary $boundary
+    }
 
-	regsub -all {[^0-9A-Za-z]} $boundary {\\&} \
-	       terminator
-	set terminator "--${terminator}"
+    # If we are not trying to find parts, return.
+    #
+    if { $find_part == "no" } return
 
 
-	# Loop through parts until one found with
-	# legal Content-Type and Content-Transfer-
-	# Encoding.
+    # Loop through parts until we find a NON-EMPTY one
+    # with legal Content-Type and Content-Transfer-
+    # Encoding.  If there are no parts with legal
+    # Content-Type and Content-Transfer-Encoding,
+    # return an error.  If there are such parts but
+    # all are empty, set up to return an empty body.
+    #
+    while { "yes" } {
+
+	set type text/plain
+	set encoding \
+	    [string trim \
+	            $message_content_transfer_encoding]
+
+    	# If multipart, skip to next message boundary
+	# and find part Content-Type and Content-
+	# Transfer-Encoding.
 	#
-	while { "yes" } {
+	if { $multipart } {
 
-	    set line [gets $ch]
-
-	    if { [eof $ch] } {
-	        set message_header_error \
-		    "Did not find multipart message\
-		     part that had acceptable\
-		     Content-Type and\
-		     Content-Transfer-Encoding"
-		break
+	    set bnd "--$message_part_boundary"
+	    set bndlen [string length $bnd]
+	    while { "yes" } {
+		if { [eof $ch] } break
+		if { [string equal -nocase \
+		             -length $bndlen \
+			     $line $bnd] } \
+		    break
+		set line [gets $ch]
 	    }
 
-	    if { [regexp "^${terminator}" $line] } {
+	    # If no boundary line found, break.
+	    #
+	    if { [eof $ch] } break
 
-		# Read part header.  Get type and
-		# encoding.
-		#
-		set ct "${ws}*content-type${ws}*:"
-		set ct "${ct}${ws}*(${nws}*)(${ws}|\$)"
-		set cte \
-		    "${ws}*content-transfer-encoding"
-		set cte "${cte}${ws}*:${ws}*"
-		set cte "${cte}(${nws}*)(${ws}|\$)"
-		set type text/plain
-		set encoding \
-		    $message_content_transfer_encoding
-		while { "yes" } {
+	    # Find part fields.
+	    #
+	    set ct "${ws}*content-type${ws}*:"
+	    set ct "${ct}${ws}*(${nws}*)(${ws}|\$)"
+	    set cte \
+		"${ws}*content-transfer-encoding"
+	    set cte "${cte}${ws}*:${ws}*"
+	    set cte "${cte}(${nws}*)(${ws}|\$)"
+	    while { "yes" } {
 
-		    set line [gets $ch]
-		    if { [eof $ch] } break
-		    if { $line == "" } break
-		    if { [regexp -nocase $ct $line \
-		                 forget type] } {
-		    } elseif { [regexp -nocase \
-		    		       $cte $line \
-		                       forget \
-				       encoding] } {
+		set line [gets $ch]
+		if { [eof $ch] } break
+		if { [string trim $line] == "" } break
+		if { [regexp {^--} $line] } break
+		if { [regexp -nocase $ct $line \
+			     forget type] } {
+		} elseif { [regexp -nocase \
+				   $cte $line \
+				   forget \
+				   encoding] } {
+		}
+	    }
+	}
+
+	# If type and encoding are not legal, continue
+	# to the next part.
+	#
+	set ctv $content_type_values
+	set ctev \
+	    $content_transfer_encoding_values
+	if { ! [regexp "^(${ctv})\$" $type] \
+	     || ! [regexp "^(${ctev})\$" $encoding] } {
+	    if { $multipart } {
+	    	continue
+	    } else break
+	}
+
+	# Set part encoding and type.
+	#
+	set message_part_content_transfer_encoding \
+	    $encoding
+	set message_part_content_type $type
+
+	# Accumlate the translation as a list of lines
+	# in `translated'.
+
+	set translated ""
+	if { $multipart \
+	     && [string equal -nocase -length $bndlen \
+			$line $bnd] } {
+	} elseif { [regexp -nocase {^(7bit|8bit)} \
+			   $encoding] } {
+
+	    while { "yes" } {
+		set line [gets $ch]
+		if { [eof $ch] } break
+		if { $multipart \
+		     && [string equal -nocase \
+				-length $bndlen \
+				$line $bnd] } \
+		    break
+		lappend translated $line
+	    }
+
+	} elseif { [regexp -nocase \
+			   {^quoted-printable} \
+			   $encoding] } {
+	    while { "yes" } {
+		set line [gets $ch]
+		if { [eof $ch] } break
+		if { $multipart \
+		     && [string equal -nocase \
+				-length $bndlen \
+				$line $bnd] } \
+		    break
+
+		if { [regexp {=} $line] } {
+
+		    while { [regexp {^(.*)=$} \
+				    $line forget \
+				    line] } {
+			set line "${line}[gets $ch]"
 		    }
+
+		    regsub -all {=09} $line "\t" line
+		    regsub -all {=0C} $line "\f" line
+		    regsub -all {=20} $line "\ " line
+
+		    # This must be LAST!
+
+		    regsub -all {=3D} $line "=" line
 		}
 
-		# If type and encoding are legal, break
-		# out with legal part found.
-		#
-		set ctv $content_type_values
-		set ctev \
-		    $content_transfer_encoding_values
-		set mcte \
-		    message_content_transfer_encoding
-		if { [regexp "^(${ctv})\$" $type] \
-		     && [regexp "^(${ctev})\$" \
-		     	        $encoding] } {
-		    set message_content_type $type
-		    set $mcte $encoding
+		lappend translated $line
+	    }
+	    
+
+	} elseif { [regexp -nocase {^base64} \
+			   $encoding] } {
+	    set body ""
+	    while { "yes" } {
+		set line [gets $ch]
+		if { [eof $ch] } break
+		if { $multipart \
+		     && [string equal -nocase \
+				-length $bndlen \
+				$line $bnd] } \
+		    break
+		set body "$body[string trim $line]\n"
+	    }
+	    if { [catch {
+		    set translated \
+			[translate_base64 $body] } \
+			out] } {
+		set message_header_error \
+		    "Error translating base64\
+		     message:\n$out"
+	    } else {
+		regsub -all "\r\n" $translated \
+			    "\n" translated
+		set translated \
+		    [split $translated "\n"]
+	    }
+	} else {
+	    error "Unhandled encoding type:\
+	           $encoding"
+	}
+
+	# If message_terminator is not "", look for
+	# it in translated message and delete it and
+	# lines after it.
+	#
+	if { $message_terminator != "" } {
+	    set length 0
+	    set term "^${message_terminator}\$"
+	    foreach line $translated {
+	        incr length
+	        if { [regexp $term $line] } {
+		    set last $length
+		    incr last -2
+		    set translated \
+			[lrange $translated 0 $last]
 		    break
 		}
 	    }
-	}
-
-	# Come here if legal multipart part found or
-	# message body was exhausted looking for legal
-	# part (message_header_error is set).
-
-	if { $message_header_error != "" } {
-	} elseif { $format_submissions \
-	     || $unformatted_part_end_line == "" } {
-	    set message_terminator "^${terminator}.*\$"
 	} else {
-	    set upel $unformatted_part_end_line
-	    set message_terminator \
-	        "^${terminator}.*\$|^(${upel})\$"
-	}
-    } else {
-
-        # Come here if not multi-part message.
-	#
-	if {    $message_header_error != "" \
-	     && $format_submissions == "no" \
-	     && $unformatted_end_line != "" } {
-	    set message_terminator \
-	        "^${unformatted_end_line}\$"
-	}
-    }
-
-    set encoding $message_content_transfer_encoding
-    if {    $find_part == "no" \
-         || $message_header_error != "" } {
-    } elseif { [regexp -nocase {^base64} $encoding] } {
-	set body ""
-	while { "yes" } {
-	    set line [read_body $ch eof]
-	    if { $eof } break
-	    set body "$body[string trim $line]\n"
-	}
-	if { [catch {
-		set translated \
-		    [translate_base64 $body] } \
-	    	    out] } {
-	    set message_header_error \
-	    	"Error translating base64\
-		 message:\n$out"
-	} else {
-	    regsub -all "\r\n" $translated \
-	                "\n" translated
-	    set message_translated_body \
-		[split $translated "\n"]
-	    set message_translated_index 0
-	    set message_translated_length \
-	    	[llength $message_translated_body]
-	}
-    } elseif { [regexp -nocase {^quoted-printable} \
-                       $encoding] } {
-	set translated ""
-	while { "yes" } {
-	    set line [gets $ch]
-	    if { $eof } break
-
-	    if { [regexp {=} $line] } {
-
-		while { [regexp {^(.*)=$} $line forget \
-		                line] } {
-		    set line "${line}[gets $ch]"
-	        }
-
-		regsub -all {=09} $line "\t" line
-		regsub -all {=0C} $line "\f" line
-		regsub -all {=20} $line "\ " line
-
-		# This must be LAST!
-
-		regsub -all {=3D} $line "=" line
-	    }
-
-	    if { $message_terminator != "" \
-		 && [regexp $message_terminator \
-		            $line] } break
-
-	    lappend translated $line
-
+	    set length [llength $translated]
 	}
 
 	set message_translated_body $translated
-	set message_translated_length \
-	    [llength $message_translated_body]
-        set message_translated_index 0
+	set message_translated_index 0
+	set message_translated_length $length
+
+	# If body not empty, end search for parts.
+	#
+	set body_non_empty no
+	foreach line $translated {
+	    if { [regexp "\[^\ \t\]" $line] } {
+		set body_non_empty yes
+		break
+	    }
+	}
+	if { $body_non_empty || ! $multipart } break
+    }
+
+    if { $message_translated_index < 0 } {
+        set message_header_error \
+	    "No message part found with legal\
+	     Content-Type and\
+	     legal Content-Transfer-Encoding"
     }
 }
 
@@ -970,50 +1061,35 @@ proc read_header { ch { find_part no }
 # is terminator, and to "no" otherwise.  Return line,
 # or return "" on end of file.
 #
-# If message_translated_index is >= 0, lines are
-# returned from message_translated_body.
-#
-# Otherwise, if message_terminator is not "",
-# a line matching it indicates end of file.
+# The call to read_header MUST have had a `yes'
+# find_part argument.
 #
 proc read_body { ch end_of_file } {
 
-    global message_content_transfer_encoding \
-           message_terminator \
-	   message_translated_index \
+    global message_translated_index \
 	   message_translated_length \
 	   message_translated_body
 
     upvar $end_of_file eof
     set eof no
 
-    if { $message_translated_index >= 0 } {
-
-        if { $message_translated_index \
-	     < $message_translated_length } {
-	    set line [lindex $message_translated_body \
-	    		     $message_translated_index]
-	    incr message_translated_index
-	    return $line
-	} else {
-	    set eof yes
-	    return ""
-	}
+    if { $message_translated_index < 0 } {
+        error "read_body called when read_header\
+	       was called with `no' find_part\
+	       or read_header returned\
+	       message_header_error"
     }
 
-    set line [gets $ch]
-    if { [eof $ch] } {
-        set eof yes
-	return ""
-    }
-
-    if { $message_terminator != "" \
-         && [regexp $message_terminator $line] } {
+    if { $message_translated_index \
+	 < $message_translated_length } {
+	set line [lindex $message_translated_body \
+			 $message_translated_index]
+	incr message_translated_index
+	return $line
+    } else {
 	set eof yes
 	return ""
     }
-
-    return $line
 }
 
 # Using information from the last call to read_header,
