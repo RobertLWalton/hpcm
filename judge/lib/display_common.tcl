@@ -2,7 +2,7 @@
 #
 # File:		display_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Jul 23 00:54:44 EDT 2002
+# Date:		Tue Jul 23 11:27:42 EDT 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/07/23 04:49:22 $
+#   $Date: 2002/07/23 15:39:08 $
 #   $RCSfile: display_common.tcl,v $
-#   $Revision: 1.33 $
+#   $Revision: 1.34 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -302,6 +302,10 @@ proc out_check { out } {
 # the user through the window an let the user take
 # corrective action.
 #
+# After creating $dispatch_pid_file to lock the direc-
+# tory, this function redefines the exit_cleanup func-
+# tion to delete the file and remove the lock.
+#
 proc get_lock {} {
 
     global dispatch_pid_file window_error window_bar \
@@ -398,16 +402,16 @@ m = kill -KILL process tree"
 	}
     }
 
-    # Set exit_cleanup function (called before all exits
-    # in judging common code) to unlock current
-    # directory.
+    # Set exit_cleanup function (called before all
+    # exits) to unlock current directory.
     #
     proc exit_cleanup {} {
 	dispatch_unlock
     }
 }
 
-# Unlock current directory.
+# Unlock current directory.  Redefine exit_cleanup
+# to do nothing.
 #
 proc clear_lock {} {
 
@@ -452,22 +456,26 @@ proc clear_lock {} {
 # that is to be used as the origin when displaying the
 # listed files.
 #
-# The file list is built by calling `get_listed_files'
-# and using the result of that and the value of the
-# previous `file_list' variable to compute a new
-# `file_list' variable value.  See `get_listed_files'
-# above.
+# The file list is built by the `refresh_file_list'
+# function that calls `get_listed_files' and uses the
+# result of that call and the value of the previous
+# `file_list' variable to compute a new `file_list'
+# variable value.  See `get_listed_files' below.
 #
-# This function implements file cacheing (see File
-# Cacheing below) as follows.  When building the file
-# list, the information read by the read_array functions
-# is refreshed as necessary, using corresponding mtime_
-# array information where mtime_array(filename) is the
-# mtime of the file just before read_array(filename) was
-# last called, and mtime_array(filename) does not exist
-# if the file does not exist.  If a file is not in the
-# new list but has an mtime_array entry, this entry is
-# deleted, and the file's read_array function is called.
+# The `refresh_file_list' function implements file
+# cacheing (see File Cacheing below) as follows.  When
+# building the file list, the information read by the
+# read_array functions is refreshed as necessary, using
+# corresponding mtime_array information, where
+# mtime_array(filename) is the mtime of the file just
+# before read_array(filename) was last called, and
+# mtime_array(filename) does not exist if the file did
+# not exist.  If a file is not in the new list but has
+# an mtime_array entry, this entry is deleted, and the
+# file's read_array function is called.
+#
+# Functions that use the `file_list' must call `refresh_
+# file_list' if `file_list' is "".
 #
 set file_list ""
 set file_list_origin_mtime 0
@@ -576,6 +584,9 @@ proc refresh_file_list { } {
 
     global file_list file_list_origin_mtime \
 	   read_array mtime_array
+
+    # Loop through the files listed by `get_listed_
+    # files' to compute `new_file_list' items.
 
     set file_list_origin_mtime ""
     set new_file_list ""
