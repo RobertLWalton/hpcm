@@ -1,120 +1,533 @@
-#! /bin/sh -f
-
-if test "$REMOTEHOST" != ""; then
-	H=$REMOTEHOST
-elif test "$HOSTNAME" != ""; then
-	H=$HOSTNAME
-elif "$HOST" != ""; then
-	H=$HOST
-else
-	H=`hostname`
-fi
+#! /bin/sh
 
 location=80x35+2+100
+program=""
+title="`hostname -s`"
 
-case "$H" in
-    method* )
-	font=-adobe-courier-bold-r-normal--25-180-100-100-m-150-iso8859-1
+c1="*-c-*-iso8859-1"
+m1="*-m-*-iso8859-1"
+
+bitb=-bitstream-terminal-bold-r-normal-
+bitm=-bitstream-terminal-medium-r-normal-
+decb=-dec-terminal-bold-r-normal-
+decm=-dec-terminal-medium-r-normal-
+miscb=-misc-fixed-bold-r-normal-
+miscbs=-misc-fixed-bold-r-semicondensed-
+miscm=-misc-fixed-medium-r-normal-
+miscms=-misc-fixed-medium-r-semicondensed-
+schub=-schumacher-clean-bold-r-normal-
+schum=-schumacher-clean-medium-r-normal-
+sonym=-sony-fixed-medium-r-normal-
+adobeb=-adobe-courier-bold-r-normal-
+adobem=-adobe-courier-medium-r-normal-
+lucidb="-b&h-lucidatypewriter-bold-r-normal-sans"
+lucidm="-b&h-lucidatypewriter-medium-r-normal-sans"
+hcrm="-hrnet&hcr-grtt-medium-r-normal-"
+
+font="$lucidm-18-$m1"
+
+while test $# -gt 0
+do
+    case "$1" in
+
+    -host | -h )
+        program="-e ssh $2"
+        title="$2"
+	shift
 	;;
+
+    -location | -l )
+        case "$2" in
+	1 )
+	    location=80x35+5+25
+	    ;;
+	2 )
+	    location=80x35+30+50
+	    ;;
+	3 )
+	    location=80x35+55+75
+	    ;;
+	4 )
+	    location=80x35+80+100
+	    ;;
+	[5-90] )
+	    echo "location should be 1, 2, 3, 4, or" \
+		    "WxH+X+Y"
+	    echo "  W and H are width in columns and" \
+		    "height in lines"
+	    echo "  X and Y are the upper left corner" \
+		    "offset in pixels"
+	    exit 1
+	    ;;
+	* )
+	    location="$2"
+	    ;;
+	esac
+	shift
+	;;
+
+    10bl )
+	font="$lucidb-10-$m1"
+	;;
+    10ba )
+	font="$adobeb-10-$m1"
+	;;
+    10bs )
+	font="$schub-10-$c1"
+	;;
+    10b* )
+        echo use one of 10bl 10ba 10bs
+	exit 1
+	;;
+
+    10ml )
+	font="$lucidm-10-$m1"
+	;;
+    10ma )
+	font="$adobem-10-$m1"
+	;;
+    10ms )
+	font="$schum-10-$c1"
+	;;
+    10mm )
+	font="$miscm-10-$c1"
+	;;
+    10mh )
+	font="$hcrm-10-$m1"
+	;;
+    10m* )
+        echo use one of 10ml 10ma 10ms 10mm 10mh
+	exit 1
+	;;
+
+    11bl )
+	font="$lucidb-11-$m1"
+	;;
+    11ba )
+	font="$adobeb-11-$m1"
+	;;
+    11b* )
+        echo use one of 11bl 11ba
+	exit 1
+	;;
+
+    11ml )
+	font="$lucidm-11-$m1"
+	;;
+    11ma )
+	font="$adobem-11-$m1"
+	;;
+    11m* )
+        echo use one of 11ml 11ma
+	exit 1
+	;;
+
+    12bl )
+	font="$lucidb-12-$m1"
+	;;
+    12ba )
+	font="$adobeb-12-$m1"
+	;;
+    12bs )
+	font="$schub-12-$c1"
+	;;
+    12b* )
+        echo use one of 12bl 12ba 12bs
+	exit 1
+	;;
+
+    12bml )
+	font="$lucidm-12-$m1"
+	;;
+    12ma )
+	font="$adobem-12-$m1"
+	;;
+    12ms )
+	font="$schum-12-$c1"
+	;;
+    12mh )
+	font="$hcrm-12-$m1"
+	;;
+    12mms )
+	font="$miscms-12-$c1"
+	;;
+    12m* )
+        echo use one of 12ml 12ma 12ms 12mms 12mh
+	exit 1
+	;;
+
+    13bs )
+	font="$schub-13-$c1"
+	;;
+    13bm )
+	font="$miscb-13-$c1"
+	;;
+    13bms )
+	font="$miscbs-13-$c1"
+	;;
+    13b* )
+        echo use one of 13bs 13bm 13bms
+	exit 1
+	;;
+
+    13ms )
+	font="$schum-13-$c1"
+	;;
+    13mm )
+	font="$miscm-13-$c1"
+	;;
+    13mms )
+	font="$miscms-13-$c1"
+	;;
+    13m* )
+        echo use one of 13ms 13mm 13mms
+	exit 1
+	;;
+
+    14bl )
+	font="$lucidb-14-$m1"
+	;;
+    14ba )
+	font="$adobeb-14-$m1"
+	;;
+    14bs )
+	font="$schub-14-$c1"
+	;;
+    14bm )
+	font="$miscb-14-$c1"
+	;;
+    14bd )
+	font="$decb-14-$c1"
+	;;
+    14b* )
+        echo use one of 14bl 14ba 14bs 14bm 14bd
+	exit 1
+	;;
+
+    14ml )
+	font="$lucidm-14-$m1"
+	;;
+    14ma )
+	font="$adobem-14-$m1"
+	;;
+    14ms )
+	font="$schum-14-$c1"
+	;;
+    14mm )
+	font="$miscm-14-$c1"
+	;;
+    14md )
+	font="$decm-14-$c1"
+	;;
+    14m* )
+        echo use one of 14ml 14ma 14ms 14mm 14md
+	exit 1
+	;;
+
+    15bs )
+	font="$schub-15-$c1"
+	;;
+    15bm )
+	font="$miscb-15-$c1"
+	;;
+    15b* )
+        echo use one of 15bs 15bm
+	exit 1
+	;;
+
+    15ms )
+	font="$schum-15-$c1"
+	;;
+    15mh )
+	font="$hcrm-15-$m1"
+	;;
+    15mm )
+	font="$miscm-15-$c1"
+	;;
+    15m* )
+        echo use one of 15ms 15mh 15mm
+	exit 1
+	;;
+
+    16bs )
+	font="$schub-16-$c1"
+	;;
+    16b* )
+        echo use one of 16bs
+	exit 1
+	;;
+
+    16ms )
+	font="$schum-16-$c1"
+	;;
+    16mn )
+	font="$sonym-16-$c1"
+	;;
+    16m* )
+        echo use one of 16ms 16mn
+	exit 1
+	;;
+
+    17bl )
+	font="$lucidb-17-$m1"
+	;;
+    17ba )
+	font="$adobeb-17-$m1"
+	;;
+    17b* )
+        echo use one of 17bl 17ba
+	exit 1
+	;;
+
+    17ml )
+	font="$lucidm-17-$m1"
+	;;
+    17ma )
+	font="$adobem-17-$m1"
+	;;
+    17mh )
+	font="$hcrm-17-$m1"
+	;;
+    17m* )
+        echo use one of 17ml 17ma 17mh
+	exit 1
+	;;
+
+    18bl )
+	font="$lucidb-18-$m1"
+	;;
+    18ba )
+	font="$adobeb-18-$m1"
+	;;
+    18bb )
+	font="$bitb-18-$c1"
+	;;
+    18b* )
+        echo use one of 18bl 18ba 18bb
+	exit 1
+	;;
+
+    18ml )
+	font="$lucidm-18-$m1"
+	;;
+    18ma )
+	font="$adobem-18-$m1"
+	;;
+    18mb )
+	font="$bitm-18-$c1"
+	;;
+    18m* )
+        echo use one of 18ml 18ma 18mb
+	exit 1
+	;;
+
+    19bl )
+	font="$lucidb-19-$m1"
+	;;
+    19b* )
+        echo use one of 19bl
+	exit 1
+	;;
+
+    19ml )
+	font="$lucidm-19-$m1"
+	;;
+    19mh )
+	font="$hcrm-19-$m1"
+	;;
+    19m* )
+        echo use one of 19ml 19mh
+	exit 1
+	;;
+
+    20bl )
+	font="$lucidb-20-$m1"
+	;;
+    20ba )
+	font="$adobeb-20-$m1"
+	;;
+    20b* )
+        echo use one of 20bl 20ba
+	exit 1
+	;;
+
+    20ml )
+	font="$lucidm-20-$m1"
+	;;
+    20ma )
+	font="$adobem-20-$m1"
+	;;
+    20mm )
+	font="$miscm-20-$c1"
+	;;
+    20m* )
+        echo use one of 20ml 20ma 20mm
+	exit 1
+	;;
+
+    21mh )
+	font="$hcrm-21-$m1"
+	;;
+    21m* )
+        echo use one of 21mh
+	exit 1
+	;;
+
+    24bl )
+	font="$lucidb-24-$m1"
+	;;
+    24ba )
+	font="$adobeb-24-$m1"
+	;;
+    24b* )
+        echo use one of 24bl 24ba
+	exit 1
+	;;
+
+    24ml )
+	font="$lucidm-24-$m1"
+	;;
+    24ma )
+	font="$adobem-24-$m1"
+	;;
+    24mn )
+	font="$sonym-24-$c1"
+	;;
+    24m* )
+        echo use one of 24ml 24ma 24mn
+	exit 1
+	;;
+
+    25bl )
+	font="$lucidb-25-$m1"
+	;;
+    25ba )
+	font="$adobeb-25-$m1"
+	;;
+    25b* )
+        echo use one of 25bl 25ba
+	exit 1
+	;;
+
+    25ml )
+	font="$lucidm-25-$m1"
+	;;
+    25ma )
+	font="$adobem-25-$m1"
+	;;
+    25mh )
+	font="$hcrm-25-$m1"
+	;;
+    25m* )
+        echo use one of 25ml 25ma 25mh
+	exit 1
+	;;
+
+    26bl )
+	font="$lucidb-26-$m1"
+	;;
+    26b* )
+        echo use one of 26bl
+	exit 1
+	;;
+
+    26ml )
+	font="$lucidm-26-$m1"
+	;;
+    26m* )
+        echo use one of 26ml
+	exit 1
+	;;
+
+    31mh )
+	font="$hcrm-31-$m1"
+	;;
+    31m* )
+        echo use one of 31mh
+	exit 1
+	;;
+
+    34bl )
+	font="$lucidb-34-$m1"
+	;;
+    34ba )
+	font="$adobeb-34-$m1"
+	;;
+    34b* )
+        echo use one of 34bl 34ba
+	exit 1
+	;;
+
+    34ml )
+	font="$lucidm-34-$m1"
+	;;
+    34ma )
+	font="$adobem-34-$m1"
+	;;
+    34m* )
+        echo use one of 34ml 34ma
+	exit 1
+	;;
+
+    37mh )
+	font="$hcrm-37-$m1"
+	;;
+    37m* )
+        echo use one of 37mh
+	exit 1
+	;;
+
+    50mh )
+	font="$hcrm-50-$m1"
+	;;
+    50m* )
+        echo use one of 50mh
+	exit 1
+	;;
+
+    [1-8]* )
+        echo "font argument is PPWS"
+        echo "PP = [1-9][0-9] = point size:"
+	echo "     10-21, 24-26, 31, 34, 37, 50"
+        echo "W = [bm] = weight: b = bold, m = medium"
+        echo "S = [abdhlmns] or ms = style"
+	echo "    a=adobe, b=bitstream, d=dec, h=hcr,"
+	echo "    l=lucid, m=misc, n=sony, s=schumacher,"
+	echo "    ms=misc semicondensed"
+	exit 1
+	;;
+
     * )
-	font=-adobe-courier-bold-r-normal--18-180-75-75-m-110-iso8859-1
+    	echo "xcsh [font] [-l location] [-h host]"
+	echo ""
+        echo "Font argument is PPWS:"
+        echo "  PP = [1-9][0-9] = point size:"
+	echo "       10-21, 24-26, 31, 34, 37, 50"
+        echo "  W = [bm] = weight: b = bold, m = medium"
+        echo "  S = [abdhlmns] or ms = style"
+	echo "      a=adobe, b=bitstream, d=dec, h=hcr,"
+	echo "      l=lucid, m=misc, n=sony," \
+			"s=schumacher,"
+	echo "      ms=misc semicondensed"
+	echo ""
+	echo "location argument is 1, 2, 3, 4, or" \
+		"WxH+X+Y"
+	echo "  W and H are width in columns and" \
+	    	"height in lines"
+    	echo "  X and Y are the upper left corner" \
+		"offset in pixels"
+	echo ""
+	echo "If host is given, program is" \
+		'`ssh host'"'."
+	exit 1
 	;;
-esac
 
-case "$1" in
-    1 )
-	font=-adobe-courier-bold-r-normal--18-180-75-75-m-110-iso8859-1
-	;;
-    2 )
-	font=-adobe-courier-bold-r-normal--24-240-75-75-m-150-iso8859-1
-	;;
-    3 )
-	font=-adobe-courier-bold-r-normal--25-180-100-100-m-150-iso8859-1
-	;;
-    4 )
-	font=-adobe-courier-bold-r-normal--34-240-100-100-m-200-iso8859-1
-	location=80x30+2+000
-	;;
-    "" )
-	;;
-    * )
-	echo Did not understand $1
-	;;
-esac
+    esac
+    shift
+done
 
-(xterm  -title $USER -name $USER \
-	-g $location -fn $font \
-	-sb -ls )&
+(xterm  -title "$title" -name "$title" \
+	-g "$location" -fn "$font" \
+	-sb -ls $program )&
 
 exit 0
-
-# Fonts one could use if one chose to:
-#
-#font=-adobe-courier-bold-r-normal--11-80-100-100-m-60-iso8859-1
-#font=-adobe-courier-bold-r-normal--25-180-100-100-m-150-iso8859-1
-#font=-adobe-courier-bold-r-normal--17-120-100-100-m-100-iso8859-1
-#font=-adobe-courier-bold-r-normal--34-240-100-100-m-200-iso8859-1
-#font=-adobe-courier-bold-r-normal--14-100-100-100-m-90-iso8859-1
-#font=-adobe-courier-bold-r-normal--20-140-100-100-m-110-iso8859-1
-#font=-adobe-courier-bold-r-normal--8-80-75-75-m-50-iso8859-1
-#font=-adobe-courier-bold-r-normal--18-180-75-75-m-110-iso8859-1
-#font=-adobe-courier-bold-r-normal--12-120-75-75-m-70-iso8859-1
-#font=-adobe-courier-bold-r-normal--24-240-75-75-m-150-iso8859-1
-#font=-adobe-courier-bold-r-normal--10-100-75-75-m-60-iso8859-1
-#font=-adobe-courier-bold-r-normal--14-140-75-75-m-90-iso8859-1
-#font=-adobe-courier-bold-r-normal--12-120-75-75-m-70-iso8859-1
-
-#font=-adobe-courier-medium-o-normal--11-80-100-100-m-60-iso8859-1
-#font=-adobe-courier-medium-o-normal--25-180-100-100-m-150-iso8859-1
-#font=-adobe-courier-medium-o-normal--20-140-100-100-m-110-iso8859-1
-#font=-adobe-courier-medium-o-normal--17-120-100-100-m-100-iso8859-1
-#font=-adobe-courier-medium-o-normal--34-240-100-100-m-200-iso8859-1
-#font=-adobe-courier-medium-o-normal--14-100-100-100-m-90-iso8859-1
-#font=-adobe-courier-medium-r-normal--11-80-100-100-m-60-iso8859-1
-#font=-adobe-courier-medium-r-normal--25-180-100-100-m-150-iso8859-1
-#font=-adobe-courier-medium-r-normal--17-120-100-100-m-100-iso8859-1
-#font=-adobe-courier-medium-r-normal--34-240-100-100-m-200-iso8859-1
-#font=-adobe-courier-medium-r-normal--14-100-100-100-m-90-iso8859-1
-#font=-adobe-courier-medium-r-normal--20-140-100-100-m-110-iso8859-1
-#font=-adobe-courier-medium-o-normal--8-80-75-75-m-50-iso8859-1
-#font=-adobe-courier-medium-o-normal--18-180-75-75-m-110-iso8859-1
-#font=-adobe-courier-medium-o-normal--14-140-75-75-m-90-iso8859-1
-#font=-adobe-courier-medium-o-normal--12-120-75-75-m-70-iso8859-1
-#font=-adobe-courier-medium-o-normal--24-240-75-75-m-150-iso8859-1
-#font=-adobe-courier-medium-o-normal--10-100-75-75-m-60-iso8859-1
-#font=-adobe-courier-medium-r-normal--8-80-75-75-m-50-iso8859-1
-#font=-adobe-courier-medium-r-normal--18-180-75-75-m-110-iso8859-1
-#font=-adobe-courier-medium-r-normal--12-120-75-75-m-70-iso8859-1
-#font=-adobe-courier-medium-r-normal--24-240-75-75-m-150-iso8859-1
-#font=-adobe-courier-medium-r-normal--10-100-75-75-m-60-iso8859-1
-#font=-adobe-courier-medium-r-normal--14-140-75-75-m-90-iso8859-1
-#font=-adobe-courier-medium-o-normal--12-120-75-75-m-70-iso8859-1
-
-#font=-misc-fixed-medium-r-semicondensed--12-110-75-75-c-60-iso8859-1
-#font=-misc-fixed-medium-r-semicondensed--13-120-75-75-c-60-iso8859-1
-#font=-misc-fixed-medium-r-normal--10-100-75-75-c-60-iso8859-1
-#font=-misc-fixed-medium-r-normal--13-120-75-75-c-70-iso8859-1
-#font=-misc-fixed-medium-r-normal--14-130-75-75-c-70-iso8859-1
-#font=-misc-fixed-medium-r-normal--9-90-75-75-c-60-iso8859-1
-#font=-misc-fixed-medium-r-normal--7-70-75-75-c-50-iso8859-1
-#font=-misc-fixed-medium-r-normal--8-80-75-75-c-50-iso8859-1
-#font=-misc-fixed-bold-r-semicondensed--13-120-75-75-c-60-iso8859-1
-#font=-sony-fixed-medium-r-normal--24-170-100-100-c-120-jisx0201.1976-0
-#font=-misc-fixed-bold-r-normal--13-120-75-75-c-70-iso8859-1
-#font=-misc-fixed-bold-r-normal--14-130-75-75-c-70-iso8859-1
-#font=-misc-fixed-medium-r-normal--13-120-75-75-c-80-iso8859-1
-#font=-sony-fixed-medium-r-normal--16-120-100-100-c-80-iso8859-1
-#font=-misc-fixed-medium-r-normal--15-140-75-75-c-90-iso8859-1
-#font=-misc-fixed-medium-r-semicondensed--13-120-75-75-c-60-iso8859-8
-#font=-misc-fixed-bold-r-normal--13-120-75-75-c-80-iso8859-1
-#font=-misc-fixed-medium-r-normal--14-130-75-75-c-70-jisx0201.1976-0
-#font=-misc-fixed-bold-r-normal--15-140-75-75-c-90-iso8859-1
-#font=-misc-fixed-medium-r-normal--13-120-75-75-c-80-iso8859-8
-#font=-sony-fixed-medium-r-normal--16-120-100-100-c-80-jisx0201.1976-0
-#font=-jis-fixed-medium-r-normal--24-230-75-75-c-240-jisx0208.1983-0
-#font=-jis-fixed-medium-r-normal--16-150-75-75-c-160-jisx0208.1983-0
-#font=-misc-fixed-medium-r-normal--14-130-75-75-c-140-jisx0208.1983-0
-#font=-misc-fixed-medium-r-normal--20-200-75-75-c-100-iso8859-1
-#font=-sony-fixed-medium-r-normal--24-170-100-100-c-120-iso8859-1
-
-#font=-adobe-courier-medium-r-normal--12-120-75-75-m-70-iso8859-1
