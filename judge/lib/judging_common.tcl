@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Mar 21 07:05:20 EST 2003
+# Date:		Sun Mar 23 05:06:35 EST 2003
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2003/03/21 12:10:46 $
+#   $Date: 2003/03/23 10:04:34 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.106 $
+#   $Revision: 1.107 $
 #
 
 # Table of Contents
@@ -839,7 +839,7 @@ proc read_part_header { ch } {
 	    #
 	    if { $find_part } {
 		set mct $message_content_type
-	        set message_header_error \
+	        set message__part_error \
 		    "No boundary parameter\
 		    in:\nContent-Type:$mct"
 		return
@@ -1027,7 +1027,7 @@ proc read_part_header { ch } {
 		    set translated \
 			[translate_base64 $body] } \
 			out] } {
-		set message_header_error \
+		set message_part_error \
 		    "Error translating base64\
 		     message:\n$out"
 	    } else {
@@ -1080,7 +1080,7 @@ proc read_part_header { ch } {
     }
 
     if { $message_translated_index < 0 } {
-        set message_header_error \
+        set message_part_error \
 	    "No message part found with legal\
 	     Content-Type and\
 	     legal Content-Transfer-Encoding"
