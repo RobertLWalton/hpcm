@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Oct  7 06:13:29 EDT 2000
+# Date:		Fri Dec  8 23:48:01 EST 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/10/07 10:52:56 $
+#   $Date: 2000/12/09 04:52:35 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.8 $
+#   $Revision: 1.9 $
 
 all:	scorediff hpcm_sandbox_x hpcm_print_passwords
 
@@ -21,9 +21,9 @@ all:	scorediff hpcm_sandbox_x hpcm_print_passwords
 #
 .SUFFIXES:
 
-# Location of secure hpcm_sandbox
+# Directory containing root setuid hpcm_sandbox
 #
-SECURE_HPCM_SANDBOX=/sbin/hpcm_sandbox
+SECURE_BIN=/sbin
 
 scorediff:	../src/scorediff.cc
 	rm -f scorediff
@@ -33,24 +33,24 @@ scorediff:	../src/scorediff.cc
 
 hpcm_sandbox_x:	../../secure/src/hpcm_sandbox.c
 	rm -f hpcm_sandbox_x
-	@if test -x ${SECURE_HPCM_SANDBOX}; \
+	@if test -x ${SECURE_BIN}/hpcm_sandbox; \
         then make --no-print-directory \
 	          secure_hpcm_sandbox_x; \
         else make --no-print-directory \
 	          unsecure_hpcm_sandbox_x; fi
 
 secure_hpcm_sandbox_x:
-	ln -s ${SECURE_HPCM_SANDBOX} hpcm_sandbox_x
+	ln -s ${SECURE_BIN}/hpcm_sandbox hpcm_sandbox_x
 	@if test hpcm_sandbox_x -ot \
 		 ../../secure/src/hpcm_sandbox.c; \
 	    then echo ===============================; \
-	         echo WARNING: ${SECURE_HPCM_SANDBOX} \
+	         echo WARNING: ${SECURE_BIN}/hpcm_sandbox \
 	    	      is out of date; \
 	         echo ===============================; \
 	    fi
 
 unsecure_hpcm_sandbox_x:
-	@echo ${SECURE_HPCM_SANDBOX} does not exist
+	@echo ${SECURE_BIN}/hpcm_sandbox does not exist
 	@echo ======================================
 	@echo Making UNSECURE hpcm_sandbox_x
 	@echo ======================================
