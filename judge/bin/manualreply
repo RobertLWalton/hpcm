@@ -5,7 +5,7 @@
 #
 # File:		manualreply
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Nov  4 10:39:38 EST 2000
+# Date:		Sat Nov  4 16:22:15 EST 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/11/04 19:32:26 $
+#   $Date: 2000/11/04 21:30:23 $
 #   $RCSfile: manualreply,v $
-#   $Revision: 1.18 $
+#   $Revision: 1.19 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -30,6 +30,10 @@ exec tcl "$0" "$@"
 #	Reading Files
 #	File List
 #	Response Functions
+#	Locking Functions
+#	Reply Functions
+#	Menu Initialization
+#	Menu Loop
 
 
 # Startup
@@ -810,7 +814,8 @@ set make_file_array(.bdiff) make_bdiff
 # yes, or YES, return `yes'.  If it is n, N, no, or NO,
 # return no.  If it is an end of file, exit manualreply.
 # Otherwise redisplay with an error message saying the
-# answer could not be understood.
+# answer could not be understood.  Upon return, window_
+# error is set to "".
 #
 proc yes? {} {
 
@@ -823,6 +828,7 @@ proc yes? {} {
 	    exit_cleanup
 	    exit 0
 	}
+        set window_error ""
 	switch -- $answer {
 	    y	-
 	    yes	-
@@ -841,19 +847,19 @@ proc yes? {} {
 		    	    `$answer'"
 	}
 	display_window
-        set window_error ""
     }
 }
 
 
-# Print `\nType any character to continue ', and then
+# Print `\nType ENTER or RETURN to continue ', and then
 # wait for any line to be input.  When a line is input,
 # return, but if an end of file is input, exit
 # manualreply.
 #
 proc continue? {} {
 
-    puts -nonewline "\nType any character to continue "
+    puts -nonewline \
+         "\nType ENTER or RETURN to continue "
     flush stdout
     gets stdin
     if { [eof stdin] } {
@@ -863,13 +869,19 @@ proc continue? {} {
     }
 }
  
-# Print a character string iff it is non-empty.
+# If the character string argument is not empty, print
+# it (with appended newline), and wait for ENTER or
+# RETURN to be typed by the user before continuing.
 #
 proc out_check { out } {
     if { $out == "" } return
     puts $out
     continue?
 }
+
+
+# Locking Functions
+# ------- ---------
 
 # Lock current directory with $dispatch_pid_file.  If
 # $dispatch_pid_file already exists, let our user
@@ -988,6 +1000,10 @@ proc clear_lock {} {
     proc exit_cleanup {} {}
 }
 
+
+# Reply Functions
+# ----- ---------
+
 # Compose a reply indicating the assignment of the
 # proposed score as the final score, and indicating
 # whether this overrides or confirms any previous
@@ -1006,31 +1022,42 @@ proc compose_score_reply {} {
 	    compose_reply "For $submitted_file\
 	        your final score is:" \
 		"" \
-		"    $proposed_score"
+		"    $proposed_score" \
+		"" \
+		"(see below for submission time)."
 	    return yes
 	} elseif { [regexp {manual} $scoring_mode] } {
 	    if { $proposed_score == $auto_score } {
 		compose_reply "For $submitted_file\
-		    your automatic score of:" \
+		    your previous automatic score of:" \
 		    "" \
 		    "    $auto_score" \
 		    "" \
-		    "has been accepted by the human\
-		     judge!"
+		    "has been verified and confirmed by\
+		     the human judge!" \
+		    "Thus your FINAL score is:" \
+		    "" \
+		    "    $proposed_score" \
+		    "" \
+		    "for this submission (see below\
+		     for submission time)."
 		 return yes
 	    } else {
 		compose_reply "For $submitted_file your\
-		       automatic score of:" \
-		      "" \
-		      "    $auto_score" \
-		      "" \
-		      "has been OVERRIDDEN by the human\
-		       judge!" \
-		      "" \
-		      "The human judge has assigned the\
-		       FINAL SCORE:" \
-		      "" \
-		      "    $proposed_score"
+		               automatic score of:" \
+		    "" \
+		    "    $auto_score" \
+		    "" \
+		    "has been OVERRIDDEN by the human\
+		     judge!" \
+		    "" \
+		    "The human judge has assigned the\
+		     FINAL score:" \
+		    "" \
+		    "    $proposed_score" \
+		    "" \
+		    "to this submission (see below\
+		     for submission time)."
 		 return yes
 	    }
 	} elseif { $scoring_mode == "auto" } {
@@ -1042,7 +1069,10 @@ proc compose_score_reply {} {
 		    "    $auto_score" \
 		    "" \
 		    "has been CONFIRMED by the human\
-		     judge!"
+		     judge!" \
+		    "" \
+		    "(See below for submission time)."
+
 		 return no
 	    } else {
 		compose_reply "For $submitted_file\
@@ -1057,7 +1087,9 @@ proc compose_score_reply {} {
 		    "The human judge has assigned the\
 		     NEW FINAL SCORE:" \
 		    "" \
-		    "    $proposed_score"
+		    "    $proposed_score" \
+		    "" \
+		    "(See below for submission time)."
 		 return no
 	    }
 	} else {
@@ -1072,7 +1104,9 @@ proc compose_score_reply {} {
 		"    $manual_score" \
 		"" \
 		"has been CONFIRMED by the human\
-		 judge!"
+		 judge!" \
+		"" \
+		"(See below for submission time)."
 	     return no
 	} else {
 	    compose_reply "For $submitted_file\
@@ -1087,7 +1121,9 @@ proc compose_score_reply {} {
 		"The human judge has assigned the\
 		 NEW FINAL SCORE:" \
 		"" \
-		"    $proposed_score"
+		"    $proposed_score" \
+		"" \
+		"(See below for submission time)."
 	     return no
 	}
     }
@@ -1107,8 +1143,11 @@ proc send_score_reply {} {
     write_file $manual_score_file $proposed_score
     set_flag $score_flag_file
     set manual_score $proposed_score
-    set proposed_score none
 }
+
+
+# Menu Initialization
+# ---- --------------
 
 get_lock
 refresh_file_list
@@ -1182,6 +1221,10 @@ set proposed_score none
 set last_display file_list
 set last_file ""
 set window_error ""
+
+
+# Menu Loop
+# ---- ----
 
 while { "yes" } {
 
