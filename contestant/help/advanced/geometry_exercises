@@ -1,4 +1,4 @@
-GEOMETRY EXERCISES HELP    Mon Mar 22 08:00:15 EST 2004
+GEOMETRY EXERCISES HELP    Mon Mar 22 09:12:53 EST 2004
 
 These are programming exercises you can do to help
 strengthen your geometry problem skills.
@@ -13,6 +13,38 @@ of the path.
     the centers of the circular holes, and the distance
     between two points is their total distance minus the
     radii of any holes centered at the points.
+
+When does a point on a trajectory with rational coordi-
+nates hit a corner of a rectangle?
+
+    You need a coordinate equality test of the form
+
+    	bool equal ( double x, double y,
+	             double accuracy )
+	{
+	    return x - accuracy < y
+	           &&
+		   y < x + accuracy;
+	}
+
+    and the question is, what is accuracy?  Often the
+    following artifice will suffice.  You might use
+    rational numbers to do the computation, but then
+    coordinates would have to have the form N/D, where
+    since D would have to be an integer, by the limits
+    of the computer D <= 3 * 10**9.  So two coordinates
+    that are unequal will differ by more than 10**-10,
+    and one can take accuracy <= 1e-10.
+
+    Let B be a bound on the absolute size of all coor-
+    dinates.  Then computation of coordinates will have
+    a double precision error of B*10**-15, more or less.
+    This must be noticeably less than accuracy, so you
+    should take accuracy => B*1e-14.
+
+    If B*1e-14 <= 1e-10 you can take either.  Otherwise
+    you had better use B*1e-14 and pray, though you can
+    compute B dynamically from the data.
 
 Compute the distance between a point (x,y) and an in-
 finite line through points (x1,y1) and (x2,y2).
@@ -35,7 +67,7 @@ finite line through points (x1,y1) and (x2,y2).
     Although Method2 seems like more work than Method1,
     coordinate change is a unifying conceptual basis for
     solving complex distance problems.
-
+
 Ditto for the finite line segment from (x1,y1) to
 (x2,y2).
 
@@ -43,7 +75,7 @@ Ditto for the finite line segment from (x1,y1) to
     ment is from (0,0) to (k,0) and the point coordi-
     nates are (x',y').  Then  divide into three cases:
     x' < 0, 0 <= x' <= k, k < x'.
-
+
 Compute the distance between the finite line segment
 from (xa1,ya1) to (xa2,ya2) and the finite line segment
 from (xb1,yb1) to (xb1,yb2).
