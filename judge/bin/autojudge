@@ -5,7 +5,7 @@
 #
 # File:		autojudge
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Oct  2 10:23:02 EDT 2000
+# Date:		Thu Oct 26 07:35:49 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/10/02 15:46:01 $
+#   $Date: 2000/10/26 12:28:30 $
 #   $RCSfile: autojudge,v $
-#   $Revision: 1.25 $
+#   $Revision: 1.26 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -66,7 +66,11 @@ cd submission_directory; autojudge
     the submitted file from the program.  This program
     then checks the legality of the submitted file name,
     and generates and sends `$reply_file' automatically
-    if the name is illegal.
+    if the name is illegal.  A file name is illegal if
+    it does not have an extension listed in the value of
+    the `allowed_extensions' variable, or if there is
+    no subdirectory of the solutions directory that has
+    the same name as the basename of the file.
     
     If the file name is legal, this program symbolical-
     ly links the following solution directory files into
@@ -79,10 +83,12 @@ cd submission_directory; autojudge
 
     The .test file is linked to the solution .out file
     if that exists, or the solution .test file other-
-    wise.  If the solution .out file exists and is more
-    recent than what the current directory .test file is
-    linked to, the current directory .test file is re-
-    linked to the solution .out file.
+    wise.  If the solution .out file exists and and the
+    the current directory .test file is linked to the
+    solution directory .test file, the current directory
+    .test file is relinked to the solution .out file.
+    Thus the solution .out file always has preference
+    over the solution .test file.
 
     Next this program makes the program binary by using
     the $make_file.  Any compliler error messages are
@@ -92,11 +98,11 @@ cd submission_directory; autojudge
     program where a $reply_file file containing the auto
     score may be created and sent to the user.
 
-    If the binary file was made without error, this
-    program makes a .out output file by using the
-    $make_file, and captures any error output in a .err
-    file.  Then this program runs `autoscore' to produce
-    an automatic score in the $auto_score_file file.
+    If an executable binary file was made, this program
+    makes a .out output file by using the $make_file,
+    and captures any error output in a .err file.  Then
+    this program runs `autoscore' to produce an automa-
+    tic score in the $auto_score_file file.
 
     Lastly, this program may create a `$reply_file'
     and send it as email to the submitter.  It does this
@@ -108,13 +114,19 @@ cd submission_directory; autojudge
     possibly changed.
     
     If the score is to be manually reviewed, this prog-
-    ram deletes any $reply_file containing a score taken
-    from the $auto_score_file file, to signal that the
-    final reply has not been given to the submitter,
-    and further manual action is necessary to generate
-    this reply.
+    ram does not create a $reply_file file, even when it
+    sends a reply (the reply is recorded in any case in
+    the $reply_history_file file).  The absence of a
+    $reply_file file signals that the final reply has
+    not been given to the submitter, and further manual
+    action is necessary to generate this reply.
 
     This program prints information about its progress.
+
+    Note that if the `autoscore' program writes the
+    $auto_score_file file, that program will set the\
+					    score
+    flag (the flag directory $score_flag_file file).
 
     If something goes very wrong, such as finding that
     the `$received_file' file is not readable, this
@@ -196,12 +208,14 @@ set soltest \
     $program_solution/$submitted_program.test
 if { ! [file readable $submitted_program.test] \
      || ( [file readable $solout] \
-          && [file mtime $submitted_program.test] \
-	     < [file mtime $solout] ) } {
+          && [file extension \
+	           [file readlink \
+		         $submitted_program.test]] \
+	     == ".test" ) } {
     if { ! [catch { file type \
                          $submitted_program.test \
 			 }] } {
-	puts "Deleting out-of-date\
+	puts "Deleting obsolete\
 	      $submitted_program.test"
 	file delete -force $submitted_program.test
     }
@@ -371,6 +385,8 @@ if { [should_be_made \
     	         >@ stdout \
 		 2> $submitted_program.err }
 
+    # Print any non-empty .err file.
+    #
     if { [file exists $submitted_program.err] \
 	 && [file size $submitted_program.err] \
 	      > 0 } {
