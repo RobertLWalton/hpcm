@@ -5,7 +5,7 @@
 #
 # File:		autojudge
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Jan 21 14:03:34 EST 2002
+# Date:		Mon Jan 21 20:25:27 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/01/21 19:02:37 $
+#   $Date: 2002/01/22 01:26:46 $
 #   $RCSfile: autojudge,v $
-#   $Revision: 1.60 $
+#   $Revision: 1.61 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -344,68 +344,92 @@ autojudge \[problem\[.extension\]\]
     using the `manualreply' program is necessary to gen-
     erate a final reply.
 
-    If the $reponse_instructions_file file exists, then\
-    	that
+    If the $response_instructions_file file exists,\
+    	then that
     file contains extra instructions about how to format
-    the reply for a given $auto_score_file value.  The
-    $response_instructions_file file is a TCL list value\
-    	con-
-    sisting score indicators followed by commands.  The
-    list is scanned for the first score indicator that
-    matches the current value of the $auto_score_file\
-    	file,
-    and then the commands following that score indica-
-    tor, and before the next score indicator, are execu-
-    ted.
-
+    the reply for a given $auto_score_file value and a
+    given value of the scoring_mode global variable.
+    The $response_instructions_file file is a TCL list\
+    	value
+    consisting indicators and commands.  There are two
+    kinds of indicators: score indicators and mode indi-
+    cators.  Commands are grouped into command lists,
+    which consist of all commands between two indica-
+    tors.  A command list is governed by an indicator if
+    the indicator is the last of its kind (score or
+    mode) preceding command list.
+
     A score indicator is an $auto_score_file file value\
     	with
-    spaces replaced by `-' and with a single `-' pre-
-    pended and appended.  E.g., -Completely-Correct-.
-    The special score indicator -Others- matches all
-    $auto_score_file file values.
+    spaces replaced by `-' and with a prefix and suffix
+    `-': e.g., -Completely-Correct-.  A score indicator
+    `matches' if it equals the $auto_score_file file\
+    	value,
+    except for the special -Other-Scores- score indica-
+    tor that matches all values of the $auto_score_file\
+    	file.
+    Similarly a mode indicator is a scoring_mode global
+    variable value with prefix and suffix `-': e.g.,
+    -auto+manual-.  A mode indicator `matches' if it
+    equals the value of the scoring_mode global vari-
+    able, except for the -Other-Modes- mode indicator
+    that matches all values of the scoring_mode vari-
+    able.
+
+    The first command list all of whose governing indi-
+    cators match is executed.  Note that a command list
+    may have no governing indicators, in which case the
+    list is always executed (it would have to also be
+    the first command list).
 
     The default value of the\
 		$response_instructions_file file
-    depends on the scoring mode and is the following
-    for different modes:
+    is the following:
 
-	For scoring_mode = "manual"
-
+	-manual-
 	    -Others-
 	    	NON-AUTO
-
-	For scoring_mode = "auto"
+
+	-auto-
 
 	    -Others-
 		FINAL
-		{LINES "
+		{LINES \"
 	    For -PROBLEM- the automatically determined\\
 		final score is:
 	    
-	    -SCORE-" }
+	    -SCORE-
+	    \" }
+		{ BAR \"this message replies to:\" }
+		RECEIVED-HEADER
 
-	For scoring_mode = "auto+manual"
+	-auto+manual-
 
 	    -Completely-Correct-
 		FINAL
-		{LINES "
+		{LINES \"
 	    For -PROBLEM- the automatically determined\\
 		final score is:
 	    
-	    -SCORE-" }
+	    -SCORE-
+	    \" }
+		{ BAR \"this message replies to:\" }
+		RECEIVED-HEADER
 
 	    -Others-
 		NON-FINAL
-		{LINES "
+		{LINES \"
 	    For -PROBLEM- the automatically determined\\
 		score is:
 	    
-	    -SCORE-"
+	    -SCORE-
 
 	    However, this score WILL BE REVIEWED by\\
-		the human judge (soon)." }
-
+		the human judge (soon).
+	    \" }
+		{ BAR \"this message replies to:\" }
+		RECEIVED-HEADER
+
     The possible $response_instructions_file commands\
     	are:
 
@@ -434,7 +458,7 @@ autojudge \[problem\[.extension\]\]
 	    The string, followed by a line feed, will
 	    be included at the end of the reply message.
 	    If you want a blank line separating the
-	    string for previous text, beging the string
+	    string for previous text, begin the string
 	    with a blank line.  A line feed is automat-
 	    ically appended to the string.
 
@@ -443,18 +467,27 @@ autojudge \[problem\[.extension\]\]
 	    appears, it is replaced by the\
 	    	$auto_score_file
 	    value.
-
+
 	BAR
-	    Inserts a 72 character ===== bar line.
+	    Inserts a 72 character ----- bar line.
 
 	{BAR \"string\"}
-	    Inserts ===== bar line that ends with a
+	    Inserts ----- bar line that ends with a
 	    space followed by the string.  The total
 	    number of characters in the line is 72.
 
 	{INPUT filename}
 	    Include a copy of the file in the reply
 	    message.
+
+	RECEIVED-HEADER
+	    Include a copy of the Date, To, From, and
+	    Subject header lines of the $received_file
+	    file.
+
+	RECEIVED-BODY
+	    Include a copy of the body of the
+	    $received_file file.
 
     This program prints information about its progress.
  
@@ -468,7 +501,7 @@ autojudge \[problem\[.extension\]\]
     (e.g. tracker) that they should search for submis-
     sion directories for which the manualreply program
     should be called.
-
+
     If this program (because of a `Syntax Error') or the
     `autoscore' program writes the $auto_score_file\
     	file,
@@ -476,7 +509,7 @@ autojudge \[problem\[.extension\]\]
     tory $score_flag_file file), to signal that any\
 	score-
     boards need to be recomputed.
-
+
     Problem names that contain `/' or `.' or begin with
     `-' or have no solution directory are illegal, and
     are submitter errors.  Similarly extension names
