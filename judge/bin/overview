@@ -4,7 +4,7 @@
 #
 # File:		overview
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Jan 10 06:53:17 EST 2001
+# Date:		Sat Jan 13 05:26:52 EST 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/01/10 12:25:09 $
+#   $Date: 2001/01/13 16:04:13 $
 #   $RCSfile: overview,v $
-#   $Revision: 1.21 $
+#   $Revision: 1.22 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -49,6 +49,7 @@ puts "
 	Contest Definition Data: Security
 	Contest Raw Data: Directories
 	Contest Raw Data: Submissions
+	Contest Raw Data: Solution Submissions
 	Contest Raw Data: Get Requests
 	Contest Raw Data: Queries
 	Contest Raw Data: Data Flow
@@ -258,8 +259,10 @@ within this problem directory describe the problem:
                 running the problem solution.
 
 These files are made available to the contestant, though
-in a formal contest only a printout of the pppp.txt file
-is made available.
+in a formal contest only Makefiles are made available
+electronically, and pppp.txt files are only made avail-
+able as a printout (to prevent contestants from emailing
+an electronic version to cohorts for advice).
 
 In order to be able to score a problem, three more files
 are placed in the problem directory within the program
@@ -315,16 +318,17 @@ input (the terminal by default) and put output to the
 standard output (also the terminal by default).  The
 Makefile contrives to run the program with resource
 limits and so that the standard input and output are
-mapped to a .in file and a .out file.  Running the
-solution using the Makefile reads or creates the
-following temporary files:
+mapped to the pppp.in file and the pppp.out file, re-
+spectively.  Running the solution program using the
+Makefile reads or creates the following temporary files:
 
     pppp.in	Solution input.
     pppp.out	Solution output.
     core	Dump of program if it crashes.
 
 It is important to note that the solution code should
-NOT open any files.
+NOT open any files.  Also, the standard error output is
+sent to the terminal, and NOT to a file.
 
 The `make' command in the problem directory makes the
 binary program if that does not exist or it is older
@@ -355,9 +359,9 @@ currently is to run the progams manually by
 
 	pppp <pppp.in >pppp.out
 
-The `make clean' command in the problem directory de-
-letes all temporary files, including `pppp', `pppp.out',
-`core', and `.class' files.
+Lastly, the `make clean' command in the problem direc-
+tory deletes all temporary files, including `pppp',
+`pppp.out', `core', and `.class' files.
 
 
 Library Data: Help Documentation
@@ -369,7 +373,7 @@ tree rooted at
 	hpcm/contestant/help
 
 A help file index (in a format prescribed by the
-`makejudingdir' program) is in
+`makejudgingdir' program) is in
 
 	hpcm/contestant/help/index
 
@@ -581,7 +585,7 @@ are:
 	This is normally used only for email contests.
 
     TODO
-    	When `makejudingdir' runs, it appends instruc-
+    	When `makejudgingdir' runs, it appends instruc-
 	tions to its user to the end of this file.
 	Typical instructions are `edit ./contest/secure/
 	passwords' and `put the following lines in
@@ -660,7 +664,26 @@ components that contestants can access.
 	read by the contestant `help' program.
 
 	This `help' directory and its contents are
-	made automatically by `makejudgingdir'.
+	made automatically by `makejudgingdir'.  It is
+	an exact copy of info/help (except that both
+	contest/help and info/help do not exist for
+	formal contests).
+
+	The following are some special help files
+	of note:
+
+	    this_contest
+	    	Information specific to the current
+		contest.
+
+	    index
+	    	Index of all help files.
+
+	    demos
+	    	Index of demonstration problems.
+
+	    problems
+	    	Index of contest problems.
 
 	One file, ./contest/help/problems, does not
 	have a+r permissions when it is made, so that
@@ -668,11 +691,11 @@ components that contestants can access.
 	out about the problems before the contest
 	starts.  The `startcontest' program sets the
 	permissions on this file to a+r.
-
+
     home
     	This is a symbolic link to a directory that is
 	informally called the `contest/home' directory
-	and that contains files shared amoung all con-
+	and that contains files shared among all con-
 	testant accounts.  For example, in a contestant
 	account the `.cshrc' name is symbolically linked
 	to `.hpcm_contest/home/.cshrc', and thence to
@@ -685,7 +708,7 @@ components that contestants can access.
 	SETUP_PROTOTYPE program: see `Contest Definition
 	Data: The Home Directory' below for more
 	details.
-
+
     printer
     	This file contains nothing but the name of the
 	printer to be used by the contestants.  This
@@ -707,7 +730,7 @@ components that contestants can access.
 	location is taken from the who_where file (see
 	below) `WHERE' field, if available, and is
 	otherwise the contestant account name.
-
+
 	This file can be used by the contestant `lpq'
 	program to print out printer status, and by the
 	judges to monitor printer activity.
@@ -719,8 +742,12 @@ components that contestants can access.
     	This directory contains problem directories for
 	each of the contest problems.  The strictly
 	analogous `demos' directory (see above) contains
-	demonstration problems.
-
+	demonstration problems.  These directories only
+	exist for formal contests; for email and infor-
+	mal contests, the same information (plus problem
+	.txt files, see below) is put in info/problems
+	and info/demos.
+
 	Each non-demonstration problem directory in the
 	contest directory is a subdirectory of this
 	`problems' directory and has as its name the
@@ -735,29 +762,25 @@ components that contestants can access.
 	copy of the `Makefile' of the problem.  It is
 	also possible to put a a+r copy of the `.txt'
 	file describing the problem, but this is NOT
-	usually done for formal contests.  For demon-
-	stration problems (in `demos') many a+r file
-	copies may be in the problem directory, as
-	judge's input and output and solutions in
-	different programming languages are often
-	provided.
-
-	The `problems' directory exists only for formal
-	contests.  For informal or email contests, simi-
-	lar information is placed in the `info/problems'
-	(and `info/demos' for demonstration problems)
-	subdirectories of the judging directory.  For a
-	formal contest, the contestant's hpcm_get pro-
-	gram creates a problem directory in the contes-
-	tant's account and symbolically links into that
-	directory all files in the problem directory
-	within the .hpcm/contest/problems directory,
-	i.e., the contest directory in the judge's
+	usually done for formal contests, as for these
+	only paper printouts of .txt files are normally
+	given to the contestants.  For demonstration
+	problems (in `demos') many a+r file copies may
+	be in the problem directory, as judge's input
+	and output and solutions in different program-
+	ming languages are often provided.
+
+	For a formal contest, the contestant's hpcm_get
+	program creates a problem directory in the con-
+	testant's account and symbolically links into
+	that directory all files in the problem direc-
+	tory within the .hpcm/contest/problems direc-
+	tory, i.e., the contest directory in the judge's
 	account.  For an informal contest hpcm_get ob-
 	tains the same information from the `info/
 	problems' directory by email and makes a copy of
 	the files in the contestant account.
-
+
 	This `problems' directory (unlike the `demos'
 	directory) does not have a+rx permissions when
 	it is made, so that contestants in a formal
@@ -767,8 +790,16 @@ components that contestants can access.
 	to a+rx.
 
 	This `problems' directory and its contents are
-	made automatically by `makejudgingdir'.
+	made automatically by `makejudgingdir'.  This
+	contest/problems directory is an exact copy for
+	formal contests of what goes into info/problems
+	for informal and email contests, except that
+	contest/problems does not have .txt files (un-
+	less the makejudgingdir -txt option is used).
 
+	The `demos' directory is similarly made and is
+	an exact copy of what would go into info/demos.
+
     scoreboard.1head
     scoreboard.2
     scoreboard.3
@@ -783,7 +814,8 @@ components that contestants can access.
 	board.  The scoreboard.1head, scoreboard.2,
 	scoreboard.3, and scoreboard.4 files must be
 	edited by hand.  See the documentation of
-	`makescoreboard' and `scoreboard' for details.
+	`makescoreboard' and `hpcm/contestant/bin/
+	scoreboard' for details.
 
     secure
     	This directory contains files that cannot be
@@ -797,8 +829,6 @@ components that contestants can access.
 	will be made by the `makejudgingdir' program,
 	as will some of the files in the directory.
 
-	The files in the directory are:
-
 	    hpcm_sendmail.rc
 	        This file contains parameters for hpcm_
 		sendmail.  Specifically, the email
@@ -815,10 +845,18 @@ components that contestants can access.
 		    Key: 55071403c7
 		    Key-Name: judging_informal
 
+		Note that the password in the `To:' ad-
+		dress is not secure from the contestant,
+		as it appears in the contestant's CC
+		copy of the email that the contestant
+		sends to the judge.  It does prevent
+		complete outsiders from `crashing the
+		party', however.
+
 		This file is made by the makejudgingdir
 		program, which creates random passwords
 		for the email address and key.
-
+
 	    passwords
 	    	This file lists the contestant accounts,
 		and is used to create these accounts.
@@ -835,7 +873,7 @@ components that contestants can access.
 		The password field can be generated by
 		the makejudgingdir program.  The rest
 		of the file must be made by hand.
-
+
 		Only the account and password fields are
 		needed by HPCM to run a contest.
 
@@ -855,7 +893,7 @@ components that contestants can access.
 		when account names and passwords are to
 		be handed to contestants: typically this
 		is only in an informal contest.
-
+
     who_where
         This file is a copy of the secure/passwords file
 	but with the password field value replaced by
@@ -874,7 +912,7 @@ components that contestants can access.
 	program when the secure/passwords file changes.
 	However, the `WHERE' field in the who_where
 	file must then be filled in by hand.
-
+
     trashable
         This file lists all contestant accounts that
 	can be `trashed'.  To `trash' an account is
@@ -884,7 +922,7 @@ components that contestants can access.
 	account.  See the documentation of the SETUP_
 	PROTOTYPE program and see `Contest Definition
 	Data: The Home Directory' below.
-
+
 	The `trashable' file is made from secure/
 	passwords by the `makejudgingdir -trashable'
 	command.  It is just the list of all accounts in
@@ -912,7 +950,7 @@ TRASH_ACCOUNT is run.  This first removes all files
 and directories from the account.  It then loads a
 completely new set of files and directories from the
 `setup.tar' file in the `contest/home' directory.
-
+
 However, what if something needs changing during the
 contest?  As an aid to making this easier, each con-
 testant account is set up so that most of the files and
@@ -923,7 +961,7 @@ or directory changes the file or directory for all the
 contestant accounts at once.  Of course the real file
 or directory must have a+r and maybe a+x permissions,
 and cannot be writable by its users, the contestants.
-
+
 There are a few files and directories which, for
 security reasons, cannot be shared among contestants,
 because the programs that use them insist they be
@@ -951,13 +989,13 @@ directory.
 	It is made by SETUP_PROTOTYPE by tar'ing
 	all the files and symbolic links in the
 	prototype account.
-
+
     setup.ls
         The output of `ls -aR' run just after files
 	have been restored from setup.tar.  Used to
 	check for a valid restoration.  This is made
 	by SETUP_PROTOTYPE.
-
+
     empty.ls
        The output of `ls -a' run just after all files
        have been deleted by TRASH_ACCOUNT, and before
@@ -1046,17 +1084,23 @@ files need special attention:
 	to extract files from responses to hcpm_get.
 	See hpcm/examples/informal/Makefile and
 	hpcm/examples/informal/procmailrc.  This file
-	may not be symbolically linked for security
-	reasons.
-
+	must be owned by the account in whose home dir-
+	ectory it appears, or else it will not be used
+	for security reasons.  Therefore it cannot be
+	shared among contestant accounts, and is not
+	symbolically linked in these accounts (there is
+	a separate copy in each contestant account).
+
     .ssh/authorized_keys
         Creating this file correctly can enable the
 	judge to log into each contestant account with-
-	out using the account's password.  The .ssh
-	directory and this file may not be symbolically
-	linked for security reasons.
+	out using the account's password.  Like the
+	.procmailrc file, the .ssh directory and its
+	contents cannot be shared among contestant
+	accounts, and there must be a separate copy in
+	each contestant account.
 
-
+
 Contest Definition Data: Auxilary Files
 ------- ---------- ----- -------- -----
 
@@ -1086,8 +1130,8 @@ among all the contests supported by the account:
 	where ~/judging_cccc_ppppppppppp is the judg-
 	ing directory for the contest in the judging
 	account JJJ.
-
 
+
 Contest Definition Data: Security
 ------- ---------- ----- --------
 
@@ -1108,7 +1152,7 @@ HPCM has the following security goals:
 
    Specifically, hpcm_sendmail is a UNIX set-user-id
    program that sets the ID to the judging account,
-   so it can see the contest_directory/secure/hpcm_
+   so it can see the .hpcm_contest/secure/hpcm_
    sendmail.rc file, even though the contestant
    accounts cannot.  This hpcm_sendmail.rc file
    contains a key name and key.  The hpcm_sendmail
@@ -1177,9 +1221,9 @@ HPCM has the following security goals:
    is run by the `sandbox' account.  The .class files
    themselves must have a+r permissions.
 
-   This last difficulty does not permit contestant
-   code to write any files or directories in the
-   judging area.
+   However, this last difficulty does not permit contes-
+   tant code to write any files or directories in the
+   judging account.
 
 3. Prevent code written by the contestants from
    exporting judges information, including solutions
@@ -1199,9 +1243,9 @@ HPCM has the following security goals:
    files and all directories in the judging account.
    However, because of the problem with JAVA mentioned
    above, a contestant's account can discover the names
-   of components of a directory by guessing names and
-   looking at the error codes returned.  Given another
-   contestant, and guessing submission times, one
+   of components of some directories by guessing names
+   and looking at the error codes returned.  Given an-
+   other contestant, and guessing submission times, one
    contestant's program can read another contestant's
    .class files.
 
@@ -1218,7 +1262,7 @@ HPCM has the following security goals:
    up until the judge's decide to discard information
    collected during the contest.
 
-
+
 Contest Raw Data: Directories
 ------- --- ----- -----------
 
@@ -1285,92 +1329,8 @@ Raw data is stored in the following directories:
 	second after sending each separate piece of
 	email.
 
-	The following are files that can exist in this
-	directory regardless of the kind of email that
-	created the directory.
-
-
-	    $received_file
-		This is a read-only file that holds the
-		piece of email sent to the judge which
-		caused this directory to be created.
-
-	    $reply_file
-	        This is the final reply email sent by
-		the judge concerning this directory.
-		Thus the presence of this file indicates
-		that the judge is done with this direc-
-		tory.
-
-		The judge can also send none-final email
-		replies, which are not stored in this
-		file.
-
-	    $no_reply_file
-	    	This file is created by the judge to in-
-		dicate the judge is done with this di-
-		rectory, but does not intend to create
-		a $reply_file file.  Typically this is
-		just a one line file containing a
-		reason why the judge feels no email
-		reply is needed.   The `lookat' program
-		can revisit directories containing a
-		$no_reply_file file whose contents match
-		some given regular expression; so the
-		contents of this file can serve as a
-		marker to find this directory later.
-
-		When the judge is done with this
-		directory, either the $reply_file file
-		or $no_reply_file file must exist.
-
-	    $reply_history_file
-	        This file is a log of ALL email replies
-		sent by the judge for this directory.
-
-	    dddd-rrrr-<<ppppp>>-unchecked-error
-	    	This `error log' file describes a system
-		error that occurred processing this di-
-		rectory.  Of course, system errors are
-		not supposed to happen, but if they do,
-		this file containing all the available
-		information about the error is created.
-
-		dddd is the date in seconds, rrrr is a
-		random number to make the file unique
-		even if several system errors happen in
-		the same second, ppppp is the name of
-		the program that sufferred the system
-		error.
-
-	    dddd-rrrr-<<ppppp>>-checked-error
-	        This is an `unchecked-error' file (see
-		just above) which has been read and
-		`checked' by the judge.  An error file
-		is `checked' by changing the `unchecked'
-		in its name to `checked'.
-
-		The `tracker' program searches for un-
-		checked error log files and calls the
-		judge's attention to them.  Checked
-		error log files are ignored by `track-
-		er'.
-
-	    dddd-rrrr-<<ppppp>>-unchecked-error.mail
-	    dddd-rrrr-<<ppppp>>-checked-error.mail
-	        An error log file may be emailed to a
-		`log_manager' when it is created.  If
-		this is done, a companion .mail file is
-		created containing the email message.
-		This file is `checked' when its assoc-
-		iated error log file is `checked'.
-
-	There are three kinds of email that may be sent
-	to the judge: solution submissions, get re-
-	quests, and queries (i.e., email that is not one
-	of the first two kinds).  Information specific
-	to each of these kinds of email is described
-	below.
+	More details about the files in this directory
+	are given in following sections.
 
     log_directory
         Normally the `log' subdirectory of the judging
@@ -1397,22 +1357,111 @@ Raw data is stored in the following directories:
 Contest Raw Data: Submissions
 ------- --- ----- -----------
 
-Any email sent to the judge may be called a `submis-
-sion', but more particularly a `submission' is an email
-with a subject of the form `submit ffff', where ffff is
-a file name, and with a body containing the named file.
-Such an email is interpreted as submission of a single
-file that contains the solution of a problem.
+Any email sent to the judge is called a `submission'.
+There are three kinds of submission: email containing a
+problem solution, which is called a `solution submis-
+sion'; email requesting files to be returned to a
+contestant, which is called a `get request', and email
+asking a question, which is called a `query'.
+
+Each email sent to the judge is placed in a separate
+subdirectory of the mail_directory.  This subdirectory
+has a name of the form:
+
+    mail_directory/dddd-<<ssssss>>-submission
+
+Files in the email's *-submission directory that are
+specific to each kind of email are described in separate
+sections below.  Files that can exist in all kinds of
+*-submission directories are as follows:
+
+    $received_file
+	This is a read-only file that holds the piece of
+	email sent to the judge which caused this direc-
+	tory to be created.
+
+    $reply_file
+	This is the final reply email sent by the judge
+	concerning this directory.  Thus the presence of
+	this file indicates that the judge is done with
+	this *-submission directory.
+
+	The judge can also send non-final email replies,
+	which are NOT stored in this file.
+
+    $no_reply_file
+	This file is created by the judge to indicate
+	the judge is done with this *-submission direc-
+	tory, but does not intend to send an email reply
+	to the contestant.  Typically this\
+					$no_reply_file
+	file is just a one line file containing a reason
+	why the judge feels no email reply is needed.
+	The `lookat' program can revisit directories
+	containing a $no_reply_file file whose contents
+	match some given regular expression; so the
+	contents of this file can serve as a marker to
+	find this directory later.
+
+	When the judge is done with this directory,
+	either the $reply_file file or $no_reply_file
+	file must exist.
+
+    $reply_history_file
+	This file is a log of ALL email replies sent by
+	the judge for this directory.
+
+    dddd-rrrr-<<ppppp>>-unchecked-error
+	This `error log' file describes a system error
+	that occurred processing this directory.  Of
+	course, system errors are not supposed to hap-
+	pen, but if they do, this file containing all
+	the available information about the error is
+	created.
+
+	dddd is the date in seconds, rrrr is a random
+	number to make the file unique even if several
+	system errors happen in the same second, ppppp
+	is the name of the program that sufferred the
+	system error.
+
+    dddd-rrrr-<<ppppp>>-checked-error
+	This is an `unchecked-error' file (see just
+	above) which has been read and `checked' by the
+	judge.  An error file is `checked' by changing
+	the `unchecked' in its name to `checked'.
+
+	The `tracker' program searches for unchecked
+	error log files and calls the judge's attention
+	to them.  Checked error log files are ignored by
+	`tracker'.
+
+    dddd-rrrr-<<ppppp>>-unchecked-error.mail
+    dddd-rrrr-<<ppppp>>-checked-error.mail
+	An error log file may be emailed to a `log_
+	manager' when it is created.  If this is done, a
+	companion .mail file is created containing the
+	email message.  This file is `checked' when its
+	associated error log file is `checked'.
+
+Contest Raw Data: Solution Submissions
+------- --- ----- -------- -----------
+
+A solution submission is an email with a subject of the
+form `submit pppp.eee', where pppp.eee is a file name.
+The email body contains the named file.  The email is
+interpreted as submission of a single file that is a
+solution of the problem named `pppp'.
 
 The file being submitted may appear in the body of the
 email in either of two ways.  It may be `formatted' or
 `unformatted'.  If formatted, it appears as:
 
-	HPCM_BEGIN ffff
+	HPCM_BEGIN pppp.eee
 	.. first line of file
 	.. next line of file
 	.. rest of file, each line preceded by ..
-	HPCM_END ffff
+	HPCM_END pppp.eee
 
 If unformatted the file is just the body of the email
 message, verbatim.
@@ -1423,14 +1472,119 @@ are typically allowed in email contests so that
 contestants who do not have program support (hpcm_
 submit) can submit easily.
 
-TBW
+A solution submission directory is processed by the
+`autojudge' program.  This produces the following files
+in order (see `Library Data: Problems' above for more
+details about these files):
+
+    pppp.eee		The submitted file.
+    pppp.in		Judge's input.
+    $make_file		Problem Makefile.
+    pppp.test		Judge's output.
+    $scoring_instructions_file
+			Optional scoring instructions.
+    pppp		Binary program.
+    pppp.cerr		Compiler error output.
+    pppp.out		Solution standard output.
+    pppp.err		Solution error output.
+    core		Possible core dump.
+    $auto_score_file		Autojudge score.
+    $reply_file		Possible final reply.
+    $reply_history_file	History of all replies.
+
+
+If an error happens during the process or producing
+these files, the process stops.  An error in extracting
+pppp.eee, or an error in the name of the file (pppp is
+not a problem in the solutions directory or eee is not
+a legal extension), generates a $reply_file file that is
+the final say in the error.  Other errors generate
+$auto_score_file files.  If the scoring mode is `auto',
+this is the final say and a $reply_file file is also
+generated.  If the scoring mode is `auto+manual', the
+contents of $auto_score_file are sent to the contestant
+but not as a final score.  If the scoring mode is
+`manual', no email is sent to the contestant.
+
+If there is no error, the $auto_score_file is `Complete-
+ly Correct', this score is final, it is sent to the con-
+testant, and a $reply_file file is created.
+
+The behavior of `autojudge' is similar to the behavior
+of `make' in a contestant's problem directory (see help
+files) or a problem library problem directory (see
+above).  The main differences are that the `autojudge'
+extracts the `pppp.eee' file, captures compiler errors
+in `pppp.cerr', and captures run errors in `pppp.err'.
+
+The section `Contest Raw Data: Data Flow' below gives
+some more details for solution submission directories.
+
+
+If the `autojudge' does not produces a final reply, it
+creates a $needs_reply_flag_file file in the flag dir-
+ectory to signal that this directories needs the atten-
+tions of `manualreply'.  The `manualreply' program must
+then be run to assign a manual score, which is stored in
+a `$manual_score_file' file.   Email containing this
+score is sent to the contestant as a final reply and is
+stored in the $reply_mail file.
+
 
 Contest Raw Data: Get Requests
 ------- --- ----- --- --------
 
+A get request submission is an email with a subject of
+the form `get filename ...'.  The filenames are relative
+to the judging directory's `info' subdirectory, and name
+files to be `gotten', i.e., returned in reply mail to
+the contestant.  A directory can also be named, in which
+case all the files and the subdirectories in the dir-
+ectory will be gotten, recursively.  See the documen-
+tation of the `autoinfo' program, which processes get
+requests, for details.
+
+The `autoinfo' program produces the following files in
+the email's *-submission directory:
+
+    $reply_file		Final reply.
+    $reply_history_file	History of all replies.
+    $gotten_file	List of files successfully
+    			gotten.
+
+The `autoinfo' program always produces a final replay
+the therefore a $reply_file file.  It may produce two
+email replies: one containing error messages and one
+containing files successfully gotten.  These two kinds
+of replies have different `Subject' header field formats
+so they can be distinguished by automatic mail routers
+such as `procmail', and replies containing files can be
+sent to hpcm_extract, while replies containing error
+messages can avoid hpcm_extract.
+
+Processing of get requests is completely automatic;
+there is never any need for manual reply (baring a sys-
+tem error, of course).
 
 Contest Raw Data: Queries
 ------- --- ----- -------
+
+A query submission is an email with a subject that does
+not begin with either `submit' or `get'.  Such an email
+is used to ask a question of the judge.
+
+If the `reply_mode' is `auto', the `dispatchmail' pro-
+gram produces an email reply and a $reply_file file
+automatically.  If the `reply_manager' is not \"\", this
+email is CC'ed to the `reply_manager' who can respond
+from an account other than the judge's.
+
+If the `reply_mode' is not `auto', the\
+				$needs_reply_flag_file
+file is created in the flag directory to signal that
+this directories needs the attentions of `manualreply'.
+The `manualreply' program must then be run to generate
+a $reply_file or a $no_reply_file file.
 
 
 Contest Raw Data: Data Flow
@@ -1439,85 +1593,118 @@ Contest Raw Data: Data Flow
 The flow of raw data through the HPCM system is as
 follows:
 
-		email to judge
-		     |
-		     | receivemail (called
-		     | from ~/.procmailrc)
-		     |
-		     v
-	mail_directory/dddd-<<sssss>>-submission
-	    $received_file
-		     |
-		     | dispatchmail (called
-		     | from ~/.procmailrc)
-		     | autodispatch (called
-		     | by dispatchmail)
-		     |
-		     v Test `Subject:'
+                email to judge
+                     |
+                     | receivemail (called
+                     | from ~/.procmailrc)
+                     |
+                     v
+        mail_directory/dddd-<<sssss>>-submission
+            $received_file
+                     |
+                     | dispatchmail (called
+                     | from ~/.procmailrc)
+                     | autodispatch (called
+                     | by dispatchmail)
+                     |
+                     v \[Test `Subject:']
 +-----+-----+---------
-|     |     | Subject: not `submit ...' or `get ...'
+|     |     | \[Subject: not `submit ...' or `get ...']
 |     |     |
 |     |     +---> flag_directory/$needs_reply_flag_file,
-|     |           if reply_mode is not `auto';
-|     |           or $reply_file if reply_mode is `auto'
+|     |               if reply_mode != `auto';
+|     |           or $reply_file and $reply_history_file
+|     |               if reply_mode == `auto'
 |     |
-|     | Subject: `get ...'
+|     | \[Subject: `get ...']
 |     | autoinfo (called from autodispatch)
 |     |
-|     +----> $reply_file, $gotten_file
+|     +----> $reply_file, $reply_history_file,\
+             $gotten_file
 |
-| Subject: `submit: pppp.eee'
+| \[Subject: `submit: pppp.eee']
 | autojudge (called from autodispatch)
 +--------------+
-	       | extractmail (called from autojudge)
-	       |                 |
-	       | \[no error]      | \[error]
-	       v                 v
-	    pppp.eee        $reply_file
-	       |
-	       | autojudge
-	       | (importing from ../solutions/pppp)
-	       |
-	       v
-	    $make_file
-	    pppp.test 
-	    $scoring_instructions_file (if any)
-	       |
-	       | make pppp (called from autojudge)
-	       |
-	       v
-	    pppp (if no error)
-	    pppp.cerr (compiler standard error output)
-	       |		 |
-	       | \[pppp exists]   | \[pppp does not exist]
-	       |		 |
-	       |                 | autojudge
-	       |                 v
-	       |            $auto_score_file
-	       |		= `Syntax Error'
-	       |            $reply_file unless scoring
-	       |		is `manual'
-	       |
-	       | make pppp.out (called from autojudge)
-	       |
-	       v
-	    pppp.out (standard output)
-	    pppp.err (standard error output)
-	       |                 |
-	       | \[empty .err]    | \[non-empty .err]
-	       |                 |
-	       |                 | autojudge
-	       |                 v
-	       |            $auto_score_file
-	       |            $reply_file unless scoring
-	       |		is `manual'
-	       |
-	       | autoscore (called by autojudge)
-	       |     scorediff (called by autoscore)
-	       v
+               | extractmail (called from autojudge)
+               |
+               +-----------------+
+               |                 |
+               | \[no error]      | \[error]
+               v                 v
+            pppp.eee        $reply_file
+               |            $reply_history_file
+               |
+               | autojudge
+               | (importing from solutions_directory)
+               |
+               v
+            $make_file
+            pppp.test 
+            $scoring_instructions_file (if any)
+               |
+               | make pppp (called from autojudge)
+               |
+               v
+            pppp (if no error)
+            pppp.cerr (compiler standard error output)
+               |
+               +-------------+
+               |             |
+               | \[pppp       | \[pppp does not exist]
+               |   exists]   |
+               |             | autojudge
+               |             v
+               |        $auto_score_file =\
+	                `Syntax Error'
+               |        $reply_history_file
+               |          if scoring_mode != `manual'
+               |        $reply_file
+               |          if scoring_mode == `auto'
+               |
+               | make pppp.out (called from autojudge)
+               |
+               v
+            pppp.out (standard output)
+            pppp.err (standard error output)
+            core (if program crashes)
+               |
+               +-------------+
+               |             |
+               | \[empty      | \[non-empty .err]
+               |   .err]     |
+               |             | autojudge
+               |             v
+               |        $auto_score_file
+               |        $reply_history_file
+               |          if scoring_mode != `manual'
+               |        $reply_file
+               |          if scoring_mode == `auto'
+               |
+               | autoscore (called from autojudge)
+               |     scorediff (called from autoscore)
+               |
+               +---------------+
+               |               |
+               | \[score ==     | \[score !=
+               |  `Completely  |  `Completely  
+               |   Correct']   |   Correct']
+               |               v
+               |        $auto_score_file
+               |        $reply_history_file
+               |          if scoring_mode != `manual'
+               |        $reply_file
+               |          if scoring_mode == `auto'
+               v
        $auto_score_file
-       $reply_file unless scoring
-	   is `manual'
+       $reply_file
+       $reply_history_file
+
+If a system error occurs at any point, which can only
+happen if HPCM has a bug, then processing stops and
+an unchecked error log file is created.  If processing
+is within a *-submission directory, the log file is
+created within this directory; otherwise the log file
+is created within the log_directory.
 
 Contest Derived Data: Status Files
 ------- ------- ----- ------ -----
