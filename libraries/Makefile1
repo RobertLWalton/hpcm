@@ -1,7 +1,7 @@
 # Prototype Makefile
 #
 # File:		Makefile
-# Date:		Wed Feb 13 11:05:44 EST 2002
+# Date:		Fri Feb 15 19:36:06 EST 2002
 #
 # See demonstration Makefile for documentation.
 #
@@ -37,10 +37,11 @@ default:	$P.out
 
 #
 .lsp:
-	rm -f $* core
+	rm -f $* $*.fas $*.lib core
+	hpcm_clisp -c $*.lsp
 	echo >$* '#!/bin/sh'
-	echo >>$* "exec `which hpcm_clisp` -I $*.lsp"
-	chmod a+r $*.lsp
+	echo >>$* "exec `which hpcm_clisp` -I $*.fas"
+	chmod a+r $*.fas
 	chmod a+rx $*
 
 $P.out:	$P $P.in
@@ -63,7 +64,8 @@ submit:		$P.out
 	hpcm_submit $P
 
 clean:
-	rm -f $P *.class $P.p2c core $P.out
+	rm -f $P *.class $P.p2c core $P.out \
+	      $P.fas $P.lib
 
 
 #
@@ -76,6 +78,6 @@ clean:
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/02/13 16:07:14 $
+#   $Date: 2002/02/16 00:36:46 $
 #   $RCSfile: Makefile1,v $
-#   $Revision: 1.4 $
+#   $Revision: 1.5 $

@@ -83,8 +83,7 @@ default:	count.out
 	rm -f $* $*.fas $*.lib core
 	hpcm_clisp -c $*.lsp
 	echo >$* '#!/bin/sh'
-	echo >>$* \
-	 "exec `which hpcm_clisp` -I $*.fas"
+	echo >>$* "exec `which hpcm_clisp` -I $*.fas"
 	chmod a+r $*.fas
 	chmod a+rx $*
 
@@ -126,6 +125,6 @@ clean:
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/02/15 20:54:18 $
+#   $Date: 2002/02/16 00:36:46 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.21 $
+#   $Revision: 1.22 $
