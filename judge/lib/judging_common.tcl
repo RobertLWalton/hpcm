@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Jan 24 19:41:53 EST 2002
+# Date:		Fri Jan 25 04:42:00 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/01/25 00:42:52 $
+#   $Date: 2002/01/25 10:23:37 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.69 $
+#   $Revision: 1.70 $
 #
 
 # Table of Contents
@@ -1138,20 +1138,39 @@ proc blank_body { ch } {
 # ------- ----- ---------
 
 # Function to process $response_instructions_file value
-# and produce a $reply_file+ file.
+# and produce a $reply_file+ file by calling compose_
+# reply.  Documentation of the $response_instructions_
+# file value is found in hpcm_judging.rc with the
+# default_response_instructions global variable.  The
+# value of this global variable is added to the end of
+# the response_instructions argument given to this
+# function.
+#
+# The compose_reply_options are a list of options,
+# such as -cc and -error, that are passed to compose_
+# reply.  The response instruction command CC will
+# also force a -cc option to compose_reply.
 #
 # The global variables scoring_mode, auto_score,
 # manual_score, and proposed_score must be set.  The
 # latter two can be set to `None' if unused.
 #
-# Returns a list of commands that are not executed but
-# to produce $reply_file+ but instead specify options
-# for disposition of $reply_file+.  Included are the
-# FINAL, NON-FINAL, NO-REPLY, and EDIT commands.
+# The global variable `problem' must be set to the
+# problem name.
 #
-proc execute_response_instructions \
+# Returns a list of commands whose execution merely
+# serves to specify options for disposition of
+# $reply_file+.  Specifically, any FINAL, NOT-FINAL,
+# NO-REPLY, or EDIT commands that are executed are
+# merely returned in this list, and have no direct
+# effect on the contents of $reply_file+.  This list
+# may be passed to send_response.
+#
+proc compose_response \
     { response_instructions \
       { compose_reply_options "" } } {
+
+    global default_response_instructions
 
     set commands ""
     parse_block \
@@ -1160,6 +1179,29 @@ proc execute_response_instructions \
 	commands
     return [execute_response_commands \
     	        $compose_reply_options $commands]
+}
+
+# Function to send a $reply_file+ produced by compose_
+# response.  Takes as input the list of commands
+# returned by compose_response.  Does the following
+#
+# If the list contains NO-REPLY: does nothing.
+# Else if the list contains FINAL: calls send_reply.
+# Else if the list contains NOT-FINAL: calls
+#      send_reply -notfinal.
+# Else calls error.
+#
+proc send_response { commands } {
+    if { [lcontain $commands NO-REPLY] } {
+    	return
+    } elseif { [lcontain $commands FINAL] } {
+    	send_reply
+    } elseif { [lcontain $commands NOT-FINAL] } {
+    	send_reply -notfinal
+    } else {
+        error "response instructions do not contain\
+	       NO-REPLY, FINAL, or NOT-FINAL."
+    }
 }
 
 # Function to execute the if-statements in a block and
@@ -1195,14 +1237,23 @@ proc parse_block { block commands } {
 			set mode if_expression
 		    }
 		    else {
-		        set if_expresion \
-			    [expr { ! $if_done }]
-			set mode if_block
+			set mode else_block
 		    }
 		    default {
 		        set mode none
 		    }
 		}
+	    }
+	    else_block {
+	        if { ! $if_done } {
+		    if { [parse_block $item c] } {
+		        return yes
+		    }
+		}
+		set mode after_else_block
+	    }
+	    after_else_block {
+	        set mode none
 	    }
 	}
 
@@ -1237,28 +1288,52 @@ proc eval_response_if { item } {
 # Function to execute response instruction commands
 # after if-statement processing.
 #
-proc execute_response_commands { options commands } {
+proc execute_response_commands \
+	{ compose_reply_options commands } {
+
+    global reponse_instructions_file problem \
+    	   auto_score manual_score proposed_score
 
     set processed_commands ""
     set return_commands ""
     foreach command $commands {
-        incr count
-	if { [catch { llength $command }] } {
-	    error "In $response_instructions_file file\
-	           value, badly formatted command:\
-		   $command."
+	if { [catch { set length [llength $command] }] \
+		    } {
+	    response_error $command
 	}
         switch -- [lindex $command 0] {
 	    FINAL	-
-	    NON-FINAL	-
+	    NOT-FINAL	-
 	    NO-REPLY	-
 	    EDIT	{
+	    	if { $length != 1 } {
+		    response_error $command
+		}
 	        lappend return_commands $command
 	    }
+
+	    CC		{
+	    	if { $length != 1 } {
+		    response_error $command
+		}
+		if { ! [lcontains \
+			    $compose_reply_options \
+			    -cc] } {
+		    lappend compose_reply_options -cc
+	    }
+
 	    BLANK		-
-	    INPUT		-
 	    RECEIVED-HEADER	-
 	    RECEIVED-BODY	{
+	    	if { $length != 1 } {
+		    response_error $command
+		}
+	        lappend processed_commands $command
+	    }
+	    INPUT		{
+	    	if { $length != 2 } {
+		    response_error $command
+		}
 	        lappend processed_commands $command
 	    }
 
@@ -1266,6 +1341,16 @@ proc execute_response_commands { options commands } {
 	    LINES	-
 	    BAR		{
 	        set new_command [lindex $command 0]
+		switch $new_command {
+		    LINE {
+			if { $length != 2 } {
+			    response_error $command
+		    }
+		    BAR {
+			if { $length > 2 } {
+			    response_error $command
+		    }
+		}
 		foreach string  \
 			[lrange $command 1 end] {
 		    regsub -all -- {-PROBLEM-} \
@@ -1283,6 +1368,9 @@ proc execute_response_commands { options commands } {
 
 	    FIRST	-
 	    SUMMARY	{
+	    	if { $length != 1 } {
+		    response_error $command
+		}
 	        error "Not implemented yet: $command"
 	    }
 
@@ -1294,8 +1382,14 @@ proc execute_response_commands { options commands } {
 	}
     }
 
-    eval compose_reply $options $processed_commands
+    eval compose_reply $compose_reply_options \
+    		       $processed_commands
     return $return_commands
+}
+proc response_error { command } {
+    global reponse_instructions_file
+    error "In $response_instructions_file file value,\
+           badly formatted command: $command."
 }
 
 # File Read/Write Functions
