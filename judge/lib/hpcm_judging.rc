@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Nov  4 04:35:54 EST 2000
+# Date:		Mon Nov  6 23:17:09 EST 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/11/04 21:55:55 $
+#   $Date: 2000/11/07 06:01:37 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.45 $
+#   $Revision: 1.46 $
 #
 
 # An optionally modified copy of this file must be
@@ -21,6 +21,15 @@
 # directory of an executing judging program, or one
 # of the ancestors (parent, parent of parent, etc.) of
 # that directory (4 ancestors will be searched).
+#
+# Alternatively instead of copying this file, it may
+# be included by a `source' statement in a file of the
+# same name which contains subsequent statements that
+# modify parameters.  The `source' statement must refer
+# to the file sourced by an absolute pathname, since
+# the file containing the `source' statement can itself
+# be sourced with any descendant directory as the
+# current directory.
 
 # Scoreboard Parameters.
 #
@@ -75,21 +84,36 @@ set scoreboard_penalty 0
 
 # Scoring Mode:
 #
-#	auto		automatic scoring only
-#	auto+manual	automatic scoring plus manual
-#			review of everything not
-#			`Completely Correct'
-#	manual		manual scoring only
+#	auto		Automatic scoring only; auto-
+#			judge sends the score to the
+#			contestant as final.
+#	auto+manual	Automatic scoring plus manual
+#			review of everything not `Com-
+#			pletely Correct'; autojudge
+#			sends the score to the contest-
+#			ant as final if the score is
+#			`Completely Correct', and as
+#			to-be-reviewed otherwise.
+#	manual		Manual scoring only; auto-
+#			judge does not send the score
+#			to the contestant.
 #
 set scoring_mode auto
 
 # Reply Mode:
 #
-#	auto		automatic reply only;
-#			no human will attempt reply
-#	auto+manual	automatic reply if possible
-#			and manual otherwise or in
-#			addition
+#	auto		Automatic reply only; dispatch-
+#			mail automatically sends a
+#			reply, if autoinfo or autojudge
+#			are not invoked.  The reply_
+#			manager is cc'ed if that is not
+#			""; otherwise the reply indi-
+#			cates there will never be a
+#			proper reply.
+#	auto+manual	Automatic reply if a good auto-
+#			matic reply is possible, as with
+#			certain errors, and manual reply
+#			otherwise.
 #
 set reply_mode auto
 
@@ -102,14 +126,20 @@ set reply_manager ""
 
 # Log Mode:		Action on Error:
 #
-#	manual		write error to log file
-#	auto+manual	write error to log file, reply
-#			to submitter/requester
-#	auto		write error to log file, reply
-#			to submitter/requester and
-#			HPCM log manager.
-#	none		write all error info to standard
-#			output
+#	manual		Write error to log file; do not
+#			send any email.
+#	auto+manual	Write error to log file, and
+#			send error by email (but not
+#			using normal reply mechanism)
+#			to submitter/requester.  Manual
+#			review should follow.
+#	auto		Write error to log file, reply
+#			to submitter/requester, and cc
+#			to log_manager if that is not
+#			"".  Reply email does NOT use
+#			normal reply mechanism.
+#	none		Write all error info to standard
+#			output.
 #
 set log_mode auto
 
@@ -190,10 +220,10 @@ set use_authentication no
 # there is whitespace in a keyname or keyitem enclose
 # it in {}'s, as in:
 #
-#		{feedso's key}	{I'm happy}
+#	{feedso's key}	{I'm happy to mEt U}
 #
 # There should be no beginning or ending whitespace
-# to a keyname, but a key can be anything.
+# to either a key or a keyname.
 #
 array set authentication_keys {
 }
