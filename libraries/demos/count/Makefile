@@ -72,7 +72,7 @@ default:	count.out
 	chmod a+r $*.class
 	chmod a+rx $*
 #
-# hpcm_sandbox below executes `count' as a special
+# hpcm_sandbox below may execute `count' as a special
 # unprivileged user named `sandbox', so various files
 # must be `a+x' or `a+r'.
 
@@ -107,6 +107,6 @@ clean:
 # RCS Info (may not be true date or author):
 #
 #   $Author: acm-cont $
-#   $Date: 2000/09/07 09:20:38 $
+#   $Date: 2000/09/07 09:24:06 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.13 $
+#   $Revision: 1.14 $
