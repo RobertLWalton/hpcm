@@ -4,7 +4,7 @@
 #
 # File:		autoscore
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Aug  5 07:45:52 EDT 2001
+# Date:		Wed Aug 29 14:06:54 EDT 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/08/05 11:40:52 $
+#   $Date: 2001/08/29 18:58:43 $
 #   $RCSfile: autoscore,v $
-#   $Revision: 1.28 $
+#   $Revision: 1.29 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -26,6 +26,7 @@ exec tcl "$0" "$@"
 #
 set lib_directory "[file dirname $argv0]/../lib"
 source $lib_directory/judging_common.tcl
+source $lib_directory/scoring_common.tcl
 catch {
 
 set document "
@@ -294,133 +295,7 @@ if { $score != "" } {
 
     # Read the instructions file or use default.
     #
-    set scoring_instructions [find_scoring_instructions]
-
-    # Encode the instructions in the following
-    # variables:
-    #
-    set whitespace_ok	no
-    set beginspace_ok	no
-    set endspace_ok	no
-    set linespace_ok	no
-    set spacebreak_ok	no
-    set linebreak_ok	no
-    set integer_ok	no
-    set float_ok	no
-    set decimal_ok	no
-    set exponent_ok	no
-    set sign_ok 	no
-    set case_ok		no
-    set column_ok	no
-    set integer_absdiff	0.0
-    set integer_reldiff	0.0
-    set float_absdiff	0.0
-    set float_reldiff	0.0
-
-    set last ""
-    foreach i $scoring_instructions {
-	if { $last == "integer" } {
-	    if { [catch { expr $i }] } {
-	        error \
-		    "Non-number after `integer' in\
-		     scoring instructions: $i"
-	    }
-	    set integer_absdiff $i
-	    set last integer_absdiff
-	} elseif { $last == "integer_absdiff" } {
-	    if { [catch { expr $i }] } {
-	        error \
-		    "Non-number after `integer' in\
-		     scoring instructions: $i"
-	    }
-	    set integer_reldiff $i
-	    set last ""
-	} elseif { $last == "float" } {
-	    if { [catch { expr $i }] } {
-	        error \
-		    "Non-number after `float' in\
-		     scoring instructions: $i"
-	    }
-	    set float_absdiff $i
-	    set last float_absdiff
-	} elseif { $last == "float_absdiff" } {
-	    if { [catch { expr $i }] } {
-	        error \
-		    "Non-number after `float' in\
-		     scoring instructions: $i"
-	    }
-	    set float_reldiff $i
-	    set last ""
-	} elseif { $last == "number" } {
-	    if { [catch { expr $i }] } {
-	        error \
-		    "Non-number after `number' in\
-		     scoring instructions: $i"
-	    }
-	    set integer_absdiff $i
-	    set float_absdiff $i
-	    set last number_absdiff
-	} elseif { $last == "number_absdiff" } {
-	    if { [catch { expr $i }] } {
-	        error \
-		    "Non-number after `number' in\
-		     scoring instructions: $i"
-	    }
-	    set integer_reldiff $i
-	    set float_reldiff $i
-	    set last ""
-	} elseif { $i == "float" } {
-	    set float_ok yes
-	    set last float
-	} elseif { $i == "integer" } {
-	    set integer_ok yes
-	    set last integer
-	} elseif { $i == "number" } {
-	    set integer_ok	yes
-	    set float_ok	yes
-	    set decimal_ok	yes
-	    set exponent_ok	yes
-	    set sign_ok		yes
-	    set last number
-	} elseif { $i == "decimal" } {
-	    set decimal_ok yes
-	} elseif { $i == "exponent" } {
-	    set exponent_ok yes
-	} elseif { $i == "sign" } {
-	    set sign_ok yes
-	} elseif { $i == "case" } {
-	    set case_ok yes
-	} elseif { $i == "column" } {
-	    set column_ok yes
-	} elseif { $i == "spacebreak" } {
-	    set spacebreak_ok yes
-	} elseif { $i == "linebreak" } {
-	    set linebreak_ok yes
-	} elseif { $i == "whitespace" } {
-	    set whitespace_ok yes
-	} elseif { $i == "beginspace" } {
-	    set beginspace_ok yes
-	} elseif { $i == "endspace" } {
-	    set endspace_ok yes
-	} elseif { $i == "linespace" } {
-	    set linespace_ok yes
-	} elseif { $i == "space" } {
-	    set whitespace_ok	yes
-	    set beginspace_ok	yes
-	    set endspace_ok	yes
-	    set linespace_ok	yes
-	} else {
-	    error "Unknown scoring_instruction: $i"
-	}
-    }
-    
-    if { $last != "" } {
-	error \
-	    "Number, integer, or float not followed by\
-	     two floating point numbers\n\
-	    \    in the scoring instructions:\n\
-	    \        $scoring_instructions"
-    }
+    compute_instruction_array
 
     # Compute the .score file if it does not exist or
     # is younger than the .out or .test files.
@@ -433,128 +308,17 @@ if { $score != "" } {
 
     	file delete -force $score_file
 
-	exec scorediff $output_file $test_file \
-	     > $score_file
+	compute_score_file $program_name
     }
 
-    # Read the first line of the .score file.
+    # Read the .score file.
     #
-    set scorediff [read_file $score_file]
+    compute_score_and_proof_arrays $score_file
 
-    # Compute score based on scoring instructions and
-    # results in the first line of the .score file.
-    #
-    set last ""
-    foreach d $scorediff {
-	if { $last == "integer" } {
-	    if { $d > $integer_absdiff } {
-		set score "Incorrect Output"
-		break
-	    }
-	    set last integer_absdiff
-	} elseif { $last == "integer_absdiff" } {
-	    if { $d > $integer_reldiff } {
-		set score "Incorrect Output"
-		break
-	    }
-	    set last ""
-	} elseif { $last == "float" } {
-	    if { $d > $float_absdiff } {
-		set score "Incorrect Output"
-		break
-	    }
-	    set last float_absdiff
-	} elseif { $last == "float_absdiff" } {
-	    if { $d > $float_reldiff } {
-		set score "Incorrect Output"
-		break
-	    }
-	    set last ""
-	} elseif { $d == "integer" } {
-	    if { $integer_ok == "no" } {
-		set score "Incorrect Output" 
-		break
-	    }
-	    set last integer
-	} elseif { $d == "float" } {
-	    if { $float_ok == "no" } {
-		set score "Incorrect Output" 
-		break
-	    }
-	    set last float
-	} elseif { $d == "nonblank" } {
-	    set score "Incorrect Output"
-	    break
-	} elseif { $d == "eof2" } {
-	    set score "Incorrect Output"
-	    break
-	} elseif { $d == "eof1" } {
-	    set score "Incomplete Output"
-	} elseif { $d == "decimal" } {
-	    if { $decimal_ok == "no" \
-	         && $score == "" } {
-		set score "Formatting Error" 
-	    }
-	} elseif { $d == "exponent" } {
-	    if { $exponent_ok == "no" \
-	         && $score == "" } {
-		set score "Formatting Error" 
-	    }
-	} elseif { $d == "sign" } {
-	    if { $sign_ok == "no" \
-	         && $score == "" } {
-		set score "Formatting Error" 
-	    }
-	} elseif { $d == "case" } {
-	    if { $case_ok == "no" \
-	         && $score == "" } {
-		set score "Formatting Error" 
-	    }
-	} elseif { $d == "column" } {
-	    if { $column_ok == "no" \
-	         && $score == "" } {
-		set score "Formatting Error" 
-	    }
-	} elseif { $d == "whitespace" } {
-	    if { $whitespace_ok == "no" \
-	         && $score == "" } {
-		set score "Formatting Error" 
-	    }
-	} elseif { $d == "beginspace" } {
-	    if { $beginspace_ok == "no" \
-	         && $score == "" } {
-		set score "Formatting Error" 
-	    }
-	} elseif { $d == "endspace" } {
-	    if { $endspace_ok == "no" \
-	         && $score == "" } {
-		set score "Formatting Error" 
-	    }
-	} elseif { $d == "linespace" } {
-	    if { $linespace_ok == "no" \
-	         && $score == "" } {
-		set score "Formatting Error" 
-	    }
-	} elseif { $d == "spacebreak" } {
-	    if { $spacebreak_ok == "no" \
-	         && $score == "" } {
-		set score "Formatting Error" 
-	    }
-	} elseif { $d == "linebreak" } {
-	    if { $linebreak_ok == "no" \
-	         && $score == "" } {
-		set score "Formatting Error" 
-	    }
-	} elseif { $d == "none" } {
-	    # No error
-	} else {
-	    error "Unknown scorediff result: $d" 
-	}
-    }
-}
+    # Compute score from info in instruction and
+    # score arrays.
 
-if { $score == "" } {
-    set score "Completely Correct"
+    set score [compute_score]
 }
 
 write_file $auto_score_file $score

@@ -2,7 +2,7 @@
 #
 # File:		scoring_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Aug 29 11:33:50 EDT 2001
+# Date:		Wed Aug 29 14:09:35 EDT 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/08/29 15:37:06 $
+#   $Date: 2001/08/29 18:58:43 $
 #   $RCSfile: scoring_common.tcl,v $
-#   $Revision: 1.5 $
+#   $Revision: 1.6 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -110,12 +110,20 @@
 # in each `proof_array(type)' is sorted, thereby sorting
 # the proofs in the list first by output-line number and
 # second by test-line number.
+#
+# The following is a list of the fake `instruction_
+# array' difference types that cannot be in `score_
+# array' and therefore should not be passed as options
+# to the scorediff program.
+#
+set fake_instruction_types {
+    number space words-are-format
+}
 
 # Function to compute the `instruction_array' using
 # the current value of `find_scoring_instructions'.
 #
-proc compute_instruction_array { }
-{
+proc compute_instruction_array { } {
     global instruction_array
 
     compute_scoring_array instruction_array \
@@ -124,7 +132,7 @@ proc compute_instruction_array { }
 
     if { [info exists instruction_array(number)] } {
         set differences \
-	    [lrange 1 end $instruction_array(number)]]
+	    [lrange $instruction_array(number) 1 end]]
 	if { ! [info exists \
 	             instruction_array(integer)] } {
 	     set instruction_array(integer) \
@@ -157,8 +165,7 @@ proc compute_instruction_array { }
 # most one *.score file in the list of file names ret-
 # urned by `get_listed_files'.
 #
-proc compute_score_and_proof_arrays { args }
-{
+proc compute_score_and_proof_arrays { args } {
     global proof_array
 
     switch [llength $args] {
@@ -217,7 +224,7 @@ proc compute_score_and_proof_arrays { args }
 	    set output_end_column   [lindex $work 1]
 	    set test_begin_column   [lindex $work 2]
 	    set test_end_column     [lindex $work 3]
-	    set work [lrange 4 end]
+	    set work [lrange $work 4 end]
 
 	    if { [catch { \
 	             expr { $output_begin_column + \
@@ -286,7 +293,7 @@ proc compute_scoring_array { array line name } {
     foreach item $line {
 	switch $state {
 	    type {
-		set ${array}($type) $item
+		set ${array}($item) $item
 		if { [lsearch -exact \
 	              {number integer float} $item] \
 		     >= 0 } {
@@ -327,16 +334,20 @@ proc compute_scoring_array { array line name } {
 proc compute_score_file { basename } {
 
     global difference_type_proof_limit \
-           instruction_array
+           instruction_array fake_instruction_types
 
     set limits "-all $difference_type_proof_limit"
 
     foreach type [array names instruction_array] {
+
+        if { [lsearch $fake_instruction_types \
+	              $type] >= 0 } continue
+
 	set arguments $instruction_array($type)
 	set limits \
 	    [concat $limits \
 	            [list -[lindex $arguments 0]] \
-	            [range 1 end $arguments]]
+	            [lrange $arguments 1 end]]
         if { [lsearch -exact {number integer float} \
 	                     $type] >= 0 } {
 	    lappend limits $difference_type_proof_limit
@@ -371,8 +382,8 @@ proc compute_score { } {
 
 	    if { [lsearch -exact {integer float} \
 	                         $type] >= 0 } {
-		set s score_array($type)
-		set i instruction_array($type)
+		set s $score_array($type)
+		set i $instruction_array($type)
 		if { [lindex $s 1] <= [lindex $i 1] \
 		     && \
 		     [lindex $s 2] <= [lindex $i 2] } {
