@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Author:	walton@deas.harvard.edu
-# Date:		Sun Sep  3 05:13:39 EDT 2000
+# Date:		Sun Sep  3 17:25:01 EDT 2000
 #
 # Exactly ONE of the four files count.c (C), count.cc
 # (C++), count.p (Pascal), or count.java (Java) should
@@ -41,45 +41,49 @@
 #	make clean	Removes `count' and count.out.
 #
 .SUFFIXES:
-.SUFFIXES: .c .cc .p .java
+.SUFFIXES: .p .c .cc .java
+#
+# Put .p before .c so it takes precedence.
 
-default:	count.view
+default:	count.out
 
 .c:
-	rm -f $* $*.cerr $*.out $*.err
-	-gcc -g -o $* $*.c -lm 2>$*.cerr
+	rm -f $* $*.out core
+	gcc -g -o $* $*.c -lm
 
 .cc:
-	rm -f $* $*.cerr $*.out $*.err
-	-g++ -g -o $* $*.cc -lm 2>$*.cerr
+	rm -f $* $*.out core
+	g++ -g -o $* $*.cc -lm
 
 .p:
-	rm -f $* $*.cerr $*.out $*.err
-	-pc -g -o $* $*.p -lm 2>$*.cerr
+	rm -f $* $*.out core
+	p2c -check $*.p
+	echo >>$*.c 'int main () { main_(); }'
+	gcc -g -o $* $*.c -lp2c -lm
 
 .java:
-	rm -f $* $*.class $*.cerr $*.out $*.err
-	-javac -g $*.java 2>$*.cerr
-	-echo >$* java $* 2>>$*.cerr
-	-chmod u+x $* 2>>$*.cerr
+	rm -f $* $*.class $*.out core
+	javac -g $*.java
+	echo >$* java $*
+	chmod u+x $*
 
 count.out:	count count.in
-	rm -f count.out count.err core
-	-chmod a+x count .
+	rm -f count.out core
+	chmod a+x count .
 	hpcm_sandbox -cputime 60 \
 	             -datasize 1m \
 		     -stacksize 1m \
 		     -filesize 50k \
 		     -watch \
 		     count \
-	    <count.in >count.out 2>count.err
-
-count.view:	count.out 
-	hpcm_view count
+	    <count.in >count.out
+	@echo ""
+	@echo -n "========== OUTPUT (count.out)"
+	@echo " =========="
+	@cat count.out
 
 submit:		count.out
 	hpcm_submit count
 
 clean:
-	rm -f count count.class core \
-	      count.out count.err count.cerr
+	rm -f count count.class core count.out
