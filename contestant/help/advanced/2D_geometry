@@ -1,4 +1,4 @@
-2D GEOMETRY PROBLEM HELP    Sun Sep  2 03:10:10 EDT 2001
+2D GEOMETRY PROBLEM HELP    Tue Sep  4 09:31:48 EDT 2001
 
 For some reason many young computer scientists think
 that geometry problems are hard, and avoid them.  The
@@ -185,7 +185,8 @@ Suppose we are given four points, p1, p2, q1, q2.
 Question: Does the interior of the finite line from p1
 to p2 intersect the interior of the finite line from q1
 to q2.  By the interior of a line we mean the part of
-the line that excludes its end points.
+the line that excludes its end points.  Also, we do NOT
+count as intersections parallel lines that overlap.
 
 Answer: It does iff the infinite line through p1 and p2
 splits q1 and q2, and the infinite line through q1 and
@@ -200,11 +201,12 @@ Suppose instead we wanted to know whether the finite
 lines including end points intersect.  Then we change
 the definition of split so that an infinite line splits
 two points iff one point is on or to the right of the
-line and the other point is on or to the left.  Simi-
-larly we can test if one finite line, including its end
-points, intersects the interior of another finite line.
+line and the other point is on or to the left.  Also
+we can mix our two definitions of `split' to test
+whether one finite line, including its end points,
+intersects the interior of another finite line.
 
-
+
 Convex Hull
 ------ ----
 
@@ -217,7 +219,7 @@ p(i) and p((i mod N)+1).  Then the finite lines from
 p(i) to p((i mode N)+1) for i = 1, ..., N are the sides
 of the smallest convex polygon such that all the points
 of V are inside this polygon or on its boundary.
-
+
 To find the convex hull, first find some point p1 on the
 hull, which can be done say by choosing a leftmost point
 in V and given two leftmost points choosing the highest.
@@ -232,7 +234,7 @@ that are not equal to p as follows:
 			     or q2 is on this line and
 			     closer to p that q1 is.
 
-If p is on the hull, this relation is antisymmetric and
+If p is a hull point, this relation is antisymmetric and
 transitive (proof to reader).  So given the hull up to
 p(i), choose p(i+1) to be the maximum point in V accord-
 ing to this relation.  Stop when p(i+1) = p1, in which
@@ -244,7 +246,7 @@ fastest algorithm is the Gram-Schmidt algorithm that
 begins with a sort of V and has running time dominated
 by the sort time, O(|V| log|V|).
 
-
+
 Inside Convex Polygons
 ------ ------ --------
 
@@ -252,7 +254,7 @@ Suppose we have a convex hull p1, ..., p(N) in clockwise
 order that defines a convex polygon.  So the sides of
 the polygon with a clockwise orientation are the lines
 from p(i) to p((i mod N)+1), for i = 1, ..., N.
-
+
 Then a point r is inside the convex polygon but not on
 the boundary of the polygon iff r is to the right of
 each clockwise oriented side of the polygon.  Or more
@@ -263,19 +265,18 @@ So when does the interior of a line from r1 to r2 inter-
 sect the inside of a convex polygon?  It does if the
 interior of the line from r1 to r2 intersects the inter-
 ior of any side of the polygon.  It also does if r1 and
-r2 are inside or on the boundary of the polygon, but
-both ends are not on the same side of the polygon (or
-more specifically, on the infinite line extending that
-side).  These are the only two cases where the interior
-of the line from r1 to r2 can intersect the interior of
-the polygon, UNLESS some of the convex hull points p1,
-..., p(N) are in the interior of the line from r1 to
-r2.  In this last case, divide the line up into seg-
-ments whose interiors do not contain any convex hull
-points, and apply the above two cases to see if any
-of these segments intersect the interior of the poly-
-gon.
-
+r2 are both inside or on the boundary of the polygon,
+but both are not on the same side of the polygon (or
+equivalently, on the infinite line extending that side).
+These are the only two cases where the interior of the
+line from r1 to r2 can intersect the interior of the
+polygon, UNLESS some of the convex hull points p1, ...,
+p(N) are in the interior of the line from r1 to r2.  In
+this last case, divide the line up into segments whose
+interiors do not contain any convex hull points, and
+apply the above two cases to see if any of these seg-
+ments intersect the interior of the polygon.
+
 So all one has to do is take the clockwise sides of the
 polygon and check that the interior of the finite line
 from r1 and r2 intersects some side, or that for each
@@ -289,7 +290,7 @@ segments, one from r1 to p and one from p to r2, and
 applies the algorithm recursively to see if either of
 these segments intersects the interior of the polygon.
 
-
+
 Polygon Maze
 ------- ----
 
@@ -314,7 +315,7 @@ any member of V, as the shortest path can be composed of
 line segments between members of V that do not contain
 other members of V.
 
-
+
 Circular Anti-Maze
 -------- ---------
 
@@ -323,7 +324,7 @@ that has circular holes in it.  The part of a path
 that transverses a hole does NOT count toward the
 length of the path.
 
-
+
 Robot Arms
 ----- ----
 
@@ -348,7 +349,7 @@ conventions for servo angles.  We will also assume that
 the first pivot point is at the origin, and that the
 setting of 0 degrees for the first servo points the
 first segment along the positive x-axis.
-
+
 The position of the pivot points of such an arm can be
 computed recursively by induction on the number of
 segments in the arm.  If there are 0 segments, there is
@@ -359,7 +360,7 @@ the origin and its orientation is in the direction of
 the positive x-axis, so its server setting is 0 degrees.
 Next compute the positions of the pivot points at the
 ends of the other segments by induction.
-
+
 Now translate the origin to the beginning of the first
 segment by adding the length of this segment to the
 x coordinate of every pivot point.  The beginning of the
@@ -370,5 +371,5 @@ Now rotate all the pivot points about the origin by the
 amount indicated by the setting of the first servo.
 This finishes the computation.
 
-Thus this computation is easy if you use induction to
+This computation is easy because we use induction to
 build the arm from its end, and not from its beginning.
