@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Jan 20 10:19:00 EST 2002
+# Date:		Tue Jan 22 20:26:33 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/01/20 15:21:17 $
+#   $Date: 2002/01/23 01:58:30 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.64 $
+#   $Revision: 1.65 $
 #
 
 # Table of Contents
@@ -853,25 +853,49 @@ proc header_is_authentic {} {
 
 
 # Construct a mail reply file and send it to the sender
-# of any received mail file.  The From, To, Reply-To,
-# Subject, and Date fields of the received mail Header
-# are copied at the end of the message.  The option
-# `-all' causes the body of the received mail file to be
-# included.  In any case this information is separated
-# from the rest of the message by a blank space and a
-# line of the form:
+# of any received mail file.
 #
-#     ---------------------- This message replies to:
-#
-# Non-option arguments are lines to be copied into the
-# body of the reply.  The reply header is automatically
-# produced.
-#
-# The -cc option causes the reply to be cc'ed to the
-# `reply_manager' if that is not "".
-#
+# The reply header is automatically produced using the
+# following options.  The -cc option causes the reply to
+# be cc'ed to the `reply_manager' if that is not "".
 # The -error option changes the reply subject from
 # `RE:...' to `Errors In:...'.
+#
+# Non-option arguments are commands chosen from the
+# following list:
+#
+#	{ LINE "string" }
+#	    Includes the string followed by a line feed.
+#
+#	{ LINES "string" }
+#	    Includes the string followed by a line feed.
+#
+#	BLANK
+#	    Include a blank line.
+#
+#	BAR
+#	    Includes a 72 character ----- line.
+#
+#	{ BAR "string" }
+#	    Includes a ----- line ending with a space
+#	    followed by the string.  The line will have
+#	    exactly 72 characters.
+#
+#	{ INPUT filename }
+#	    Includes the contents of the file, followed
+#	    by a line feed if the file does not end with
+#	    a line feed.
+#
+#	RECEIVED-HEADER
+#	    Includes the Date, To, From, Reply-To, and
+#	    Subject fields of the $received_file
+#	    message.
+#
+#	RECEIVED-BODY
+#	    Includes the body of the $received_file mes-
+#	    sage.  This command can appear at most once.
+#
+# Options must precede commands.
 #
 # When the message is sent it is copied to the reply
 # history file.
@@ -899,23 +923,19 @@ proc compose_reply { args } {
 	   message_x_hpcm_test_subject \
 	   reply_manager
 
-    # If -all is present, set `all_option' to `yes' and
-    # shift the arguments left.  Ditto -cc and -errors.
+    # Remove options from the arguments and remember.
     #
-    set all_option no
     set cc_option no
     set errors_option no
     while { [llength $args] >= 1 } {
-	if { [lindex $args 0] == "-all" } {
-	    set all_option yes
-	} elseif { [lindex $args 0] == "-cc" } {
+	if { [lindex $args 0] == "-cc" } {
 	    set cc_option yes
 	} elseif { [lindex $args 0] == "-errors" } {
 	    set errors_option yes
 	} else {
 	    break
 	}
-	set args [lreplace $args 0 0]
+	set args [lrange $args 1 end]
     }
 
     # Read $received_file header.
@@ -951,51 +971,81 @@ proc compose_reply { args } {
     }
     puts $reply_ch   ""
 
-    # Write part of body from arguments.
+    # Process commands.
     #
-    foreach line $args {
-        puts $reply_ch   $line
-    }
+    set bar "--------------------------------"
+    set bar $bar$bar$bar
+    foreach command $args {
+    	if { [llength $command] > 1 } {
+	    error "Bad command to compose_reply:\
+		   $command"
+	}
+        switch -- [lindex $command 0] {
 
-    # Append selected parts of $received_file header.
-    #
-    puts $reply_ch   ""
-    puts $reply_ch   "------------------------------\
-                      This message replies to:"
-    #
-    if { ! [regexp "\[^\ \t\n\]" $message_from] \
-         || ! [regexp "\[^\ \t\n\]" $message_date]  } {
-	puts $reply_ch ">$message_From_line"
-    }
-    if { [regexp "\[^\ \t\n\]" $message_to]  } {
-	puts $reply_ch "To:$message_to"
-    }
-    if { [regexp "\[^\ \t\n\]" $message_from]  } {
-	puts $reply_ch "From:$message_from"
-    }
-    if { [regexp "\[^\ \t\n\]" $message_date]  } {
-	puts $reply_ch "Date:$message_date"
-    }
-    if { [regexp "\[^\ \t\n\]" $message_reply_to]  } {
-	puts $reply_ch "Subject:$message_reply_to"
-    }
-    if { [regexp "\[^\ \t\n\]" $message_subject]  } {
-	puts $reply_ch "Subject:$message_subject"
-    }
+	    LINE -
+	    LINES {
+		puts $reply_ch [lindex $command 1]
+	    }
+	    BLANK {
+		puts $reply_ch ""
+	    }
+	    BAR {
+	        if { [llength $command] == 1 } {
+		    puts $reply_ch $bar
+		} else {
+		    set s [lindex $command 1]
+		    set l [string length $s]
+		    incr l 2
+		    puts $reply_ch \
+		    	 "[string range $bar $l end] $s"
+		}
+	    }
+	    INPUT {
+		puts $reply_ch \
+		     [read_entire_file \
+		          [lindex $command 1]]
+	    }
+	    RECEIVED-HEADER {
 
-    # If -all option, append message body from
-    # $received_file.
-    #
-    if { $all_option } {
+		set nws "\[^\ \t\n\]"
+		if { ! [regexp $nws $message_from] \
+		     || \
+		     ! [regexp "$nws $message_date] \
+			       		} {
+		    puts $reply_ch ">$message_From_line"
+		}
+		if { [regexp $nws $message_to] } {
+		    puts $reply_ch "To:$message_to"
+		}
+		if { [regexp $nws $message_from] } {
+		    puts $reply_ch "From:$message_from"
+		}
+		if { [regexp $nws $message_date] } {
+		    puts $reply_ch "Date:$message_date"
+		}
+		if { [regexp $nws $message_reply_to] } {
+		    puts $reply_ch \
+		         "Reply-To:$message_reply_to"
+		}
+		if { [regexp $nws $message_subject] } {
+		    puts $reply_ch \
+		         "Subject:$message_subject"
+		}
+	    }
+	    RECEIVED-BODY {
 
-	puts $reply_ch ""
-
-	while { "yes" } {
-	    set line [gets $received_ch]
-	    if { [eof $received_ch] } {
-		break
-	    } else {
-		puts $reply_ch "$line"
+		while { "yes" } {
+		    set line [gets $received_ch]
+		    if { [eof $received_ch] } {
+			break
+		    } else {
+			puts $reply_ch "$line"
+		    }
+		}
+	    }
+	    default {
+	        error "Bad command to compose_reply:\
+		       $command"
 	    }
 	}
     }
