@@ -1,0 +1,124 @@
+#!/bin/sh -f
+#
+# Run a program binary in a sandbox.
+#
+# File:		hpcm_sandbox
+# Author:	Bob Walton <walton@deas.harvard.edu>
+# Date:		Sat Sep  2 09:59:27 EDT 2000
+#
+# The authors have placed this program in the public
+# domain; they make no warranty and accept no liability
+# for this program.
+#
+# RCS Info (may not be true date or author):
+#
+#   $Author: acm-cont $
+#   $Date: 2000/09/02 15:09:17 $
+#   $RCSfile: hpcm_sandbox,v $
+#   $Revision: 1.1 $
+
+cputime=60
+datasize=`expr 1 \* 1024 \* 1024`
+filesize=`expr 50 \* 1024`
+stacksize=`expr 1 \* 1024 \* 1024`
+openfiles=5
+
+operation=""
+program=""
+
+for arg in "$@"; do
+
+    case "$arg" in
+	-cputime | -datasize | -filesize \
+	         | -stacksize | -openfiles )
+	    if test -z "$operation"; then
+		operation=$arg
+	    else
+	        echo "ERROR: misplaced argument: $arg"
+		exit 1
+	    fi
+	    ;;
+	[0-9]* )
+	    if test `expr $arg : .*'[^0-9]' ` -ne 0
+	    then
+		number=`expr $arg : '\([0-9]*\)[^0-9]' `
+		scale=`expr $arg : \
+		            '^[0-9]*\([^0-9].*\)$' `
+
+		case $scale in
+		    "" )	;;
+		    k )	number=`expr $number \* 1024`
+			    ;;
+		    m )	number=`expr $number \* 1024 \
+		                             \* 1024`
+			    ;;
+		    * )	echo "ERROR: bad number: $arg"
+			    exit 1
+			    ;;
+		esac
+	    fi
+
+	    case $operation in
+		-cputime )
+		    if test $cputime -lt $number; then
+			    cputime=$number
+		    fi
+		    ;;
+		-datasize )
+		    if test $datasize -lt $number; then
+			    datasize=$number
+		    fi
+		    ;;
+		-stacksize )
+		    if test $stacksize -lt $number; then
+			    stacksize=$number
+		    fi
+		    ;;
+		-filesize )
+		    if test $filesize -lt $number; then
+			    filesize=$number
+		    fi
+		    ;;
+		-openfiles )
+		    if test $openfiles -lt $number; then
+			    openfiles=$number
+		    fi
+		    ;;
+		* )	echo "ERROR: bad argument: $arg"
+			exit 1
+			;;
+	    esac
+
+	    operation=""
+	    ;;
+
+	"" | -* )
+	    echo hi
+	    exit 1
+	    ;;
+
+	* )
+	    if test -z "$program"; then
+	    	program=$arg
+	    else
+	    	echo "ERROR: bad or extra arg: $arg"
+		exit 1
+	    fi
+	    ;;
+    esac
+
+done
+
+if test -z $program; then
+    echo $ERROR: no program specified
+    exit 1
+fi
+
+ulimit -Ht $cputime
+ulimit -Hd `expr $datasize / 1024`
+ulimit -Hf `expr $filesize / 1024`
+ulimit -Hs `expr $stacksize / 1024`
+
+$program
+
+exit 0

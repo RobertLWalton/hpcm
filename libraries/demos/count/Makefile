@@ -67,13 +67,7 @@ default:	count.view
 
 count.out:	count count.in
 	rm -f count.out count.err
-	-csh -c 'limit cputime 30; \
-		 limit datasize 2m; \
-		 limit filesize 50k; \
-		 limit stacksize 1m; \
-		 limit openfiles 5; \
-		 count; \
-		 exit 0' \
+	hpcm_sandbox count \
 	    <count.in >count.out 2>count.err
 
 count.view:	count.out 
