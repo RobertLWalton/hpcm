@@ -11,9 +11,9 @@
  * RCS Info (may not be true date or author):
  *
  *   $Author: hc3 $
- *   $Date: 2000/10/07 10:02:50 $
+ *   $Date: 2000/10/22 05:40:07 $
  *   $RCSfile: hpcm_sandbox.c,v $
- *   $Revision: 1.9 $
+ *   $Revision: 1.10 $
  */
 
 #include <stdlib.h>
@@ -41,7 +41,7 @@ char documentation [] =
 "      -filesize N    Output File Size in Bytes (4m)\n"
 "      -core N        Core Dump Size in Bytes (4m)\n"
 "      -openfiles N   Number of Open Files (30)\n"
-"      -processes N   Number of Processes (30)\n"
+"      -processes N   Number of Processes (50)\n"
 "\n"
 "    Here N is a positive decimal integer that can\n"
 "    end with `k' to multiply it by 1024 or `m' to\n"
@@ -110,7 +110,7 @@ int main ( int argc, char ** argv )
     int filesize = 4 * 1024 * 1024;
     int core = 4 * 1024 * 1024;
     int openfiles = 30;
-    int processes = 30;
+    int processes = 50;
     int watch = 0;
 
 
