@@ -1,16 +1,78 @@
 #!/bin/sh
+#
+# Completely reinitialize a contestant account.
+#
+# File:		TRASH_ACCOUNT
+# Author:	Bob Walton <walton@deas.harvard.edu>
+# Date:		Sun Sep 10 15:46:13 EDT 2000
+#
+# The authors have placed this program in the public
+# domain; they make no warranty and accept no liability
+# for this program.
+#
+# RCS Info (may not be true date or author):
+#
+#   $Author: hc3 $
+#   $Date: 2000/09/18 00:38:16 $
+#   $RCSfile: TRASH_ACCOUNT,v $
+#   $Revision: 1.2 $
 
-case `who am i | awk '{print $1}' | sed 's/.*!//'` in
-	acm-cont)
-		echo no no no 
-		exit 1 ;;
-	acm[0-9]*)
-		;;
-	*)
-		echo no no no
-		exit 1 ;;
-esac
 cd
+
+case "$1" in
+
+    "" )
+    	if test -r .hpcm_setup
+	then
+	    setup=`cat .hpcm_setup`
+	else
+	    echo "
+TRASH_ACCOUNT [setup]
+
+    Removes all files from the current account and
+    reloads then from setup.tar.  Checks after removing
+    files that \`ls -a' equals setup.els.  Checks after
+    reloading that \`ls -a' equals setup.ls.  Before
+    doing anything, checks that current account name
+    is listed on a line by itself in setup.acc, and
+    also checks that setup.tar, setup.ls, etc. are
+    readable.  If the setup argument is not given, it is
+    read from the .hpcm_setup file in the home direc-
+    tory, if that exists.  If this program succeeds, it
+    writes the setup value in the .hpcm_setup file."
+    	    exit 1
+	fi
+	;;
+    * )
+    	setup=$1
+	;;
+esac
+
+if test ! -r $setup.tar
+then
+	echo cannot read $setup.tar
+	exit 1
+elif test ! -r $setup.els
+then
+	echo cannot read $setup.els
+	exit 1
+elif test ! -r $setup.ls
+then
+	echo cannot read $setup.ls
+	exit 1
+elif test ! -r $setup.ac
+then
+	echo cannot read $setup.ac
+	exit 1
+fi
+
+if grep -s "^`id -un`\$" $setup.ac
+then
+else
+	echo Bad user `id -un`
+	exit 1
+fi
+
 for i in .[a-zA-Z]* *
 do
 	case $i in
@@ -22,7 +84,7 @@ do
 done
 
 echo rm done
-ls -a
-tar xf /home/acm-cont/contestant/lib/setup.tar
+ls -a | diff $setup.els -
+tar xf $setup.tar
 echo tar done
-ls -a
+ls -a | diff $setup.ls -
