@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Mar 22 05:34:29 EST 2002
+# Date:		Fri Feb  7 11:24:53 EST 2003
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/03/22 11:02:58 $
+#   $Date: 2003/02/07 16:24:08 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.89 $
+#   $Revision: 1.90 $
 #
 
 # Table of Contents
@@ -1417,14 +1417,14 @@ if { [llength $judging_directory] == 1 } {
     set __d__ $judging_directory
     if { [file readable \
                $__d__/$judging_parameters_file] } {
-	set f $__d__/$judging_parameters_file
-	set p [file attributes $f -permissions]
-	if { $p & 4 } {
-	    error "security violation: $f is readable\
-	    	   by `others'\n      \
-		   you should execute chmod o-r $f"
+	set __f__ $__d__/$judging_parameters_file
+	set __p__ [file attributes $__f__ -permissions]
+	if { $__p__ & 4 } {
+	    error "security violation: $__f__ is\
+	    	   readable by `others'\n      \
+		   you should execute chmod o-r $__f__"
 	}
-	source $f
+	source $__f__
     } else {
 	error "$__d__/$judging_parameters_file\
 	       not readable"
@@ -1438,6 +1438,29 @@ if { [llength $judging_directory] == 1 } {
 	          \     $__d__/$judging_parameters_file"
     }
     error $__m__
+}
+
+# If the current directory is named .../ddd and a file
+# named ddd.rc exists in the current directory, source
+# that file.  Before sourcing file, run a security
+# check: insist that file not be readable by `others',
+# but only by group and owner.
+#
+set __f__ [file tail [pwd]].rc
+if { [file exists $__f__] } {
+
+    if { ! [file readable $__f__] } {
+	error "$__f__ not readable"
+    }
+
+    set __p__ [file attributes $__f__ -permissions]
+    if { $__p__ & 4 } {
+	error "security violation: $__f__ is\
+	       readable by `others'\n      \
+	       you should execute chmod o-r $__f__"
+    }
+
+    source $__f__
 }
 
 # Set signals to cause errors.
