@@ -6,7 +6,7 @@
 #
 # File:		makejudgingdir
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Oct 27 06:57:24 EDT 2000
+# Date:		Fri Oct 27 11:30:01 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/10/27 14:47:49 $
+#   $Date: 2000/10/27 17:02:46 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.27 $
+#   $Revision: 1.28 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -638,21 +638,12 @@ proc TODO { args } {
     global TODO_ch
     if { $TODO_ch == "" } {
     	set TODO_ch [open TODO a]
+	puts "========================================\
+	      [clock format [clock seconds]] TODOs:"
     }
     puts $TODO_ch "--------"
     foreach line $args {
     	puts $TODO_ch "    $line"
-    }
-}
-
-# Set up TODO_hpcm_make
-#
-set TODO_hpcm_make_done no
-proc TODO_hpcm_make {} {
-    global TODO_hpcm_make_done
-    if { $TODO_hpcm_make_done == "no" } {
-    	set TODO_hpcm_make_done yes
-	TODO "run `make' in `hpcm' directory"
     }
 }
 
@@ -683,7 +674,8 @@ if { $argi < $argc \
 set c_d $contest_directory
 
 # Check for some elementary errors, such as ./contest
-# not existing if it is needed.
+# not existing if it is needed.  If ./contest is needed,
+# grant a+x access to it and its parent.
 #
 if {    $problems_option \
      || $demos_option \
@@ -700,22 +692,22 @@ if {    $problems_option \
          || ! [file readable $c_d] } {
 	error "$c_d' is not a useable directory"
     }
-    puts "Granting a+x access to $c_d"
+    puts "Granting a+x access to $c_d and its parent"
     grant_access $c_d x
+    grant_access $c_d/.. x
 }
 if { $bin_option } {
     if {    ! [file isdirectory "$c_d/contestant"] \
-         || ! [file executable "$c_d/contestant"] \
-         || ! [file readable "$c_d/contestant"] } {
-	error "`$c_d/contestant' is not a useable\
+         || ! [file executable "$c_d/contestant"] } {
+	error "`$c_d/contestant' is not an executable\
 	       directory"
     }
 }
 if { $home_option } {
     if {    ! [file isdirectory "$c_d/home"] \
-         || ! [file executable "$c_d/home"] \
-         || ! [file readable "$c_d/home"] } {
-	error "`$c_d/home' is not a useable directory"
+         || ! [file executable "$c_d/home"] } {
+	error "`$c_d/home' is not an executable\
+	       directory"
     }
 }
 
@@ -1515,7 +1507,7 @@ if { $bin_option \
     puts "Linking $c_d/bin to $c_d/contestant/bin"
     link_file contestant/bin $c_d/bin
 
-    TODO_hpcm_make
+    TODO "run `make' in `hpcm' directory"
 }
 
 # Make secure directory.
