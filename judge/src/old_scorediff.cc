@@ -2,7 +2,7 @@
 //
 // File:	scorediff.cc
 // Authors:	Bob Walton (walton@deas.harvard.edu)
-// Date:	Sat Aug 12 09:41:03 EDT 2000
+// Date:	Tue Aug 15 21:20:44 EDT 2000
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: acm-cont $
-//   $Date: 2000/08/14 01:20:40 $
+//   $Date: 2000/08/16 02:19:57 $
 //   $RCSfile: old_scorediff.cc,v $
-//   $Revision: 1.5 $
+//   $Revision: 1.6 $
 
 #include <stdlib.h>
 #include <iostream.h>
@@ -36,13 +36,13 @@ char documentation [] =
 "    linebreak	One file had a line break where the\n"
 "		other file did not.\n"
 "    whitespace	Both files had whitespace in the same\n"
-"		place, but there these whitespaces\n"
-"		did not exactly match.\n"
+"		place, but these whitespaces did not\n"
+"		exactly match.\n"
 "    eof1	The first file ended and the second\n"
-"		file had remaining non-space\n"
+"		file had remaining non-whitespace\n"
 "		characters.\n"
 "    eof2	The second file ended and the first\n"
-"		file had remaining non-space\n"
+"		file had remaining non-whitespace\n"
 "		characters.\n"
 "    number D	Two files had a number in the same\n"
 "		place, but the numbers were not\n"
@@ -52,7 +52,7 @@ char documentation [] =
 "		number pairs was D.\n"
 "    nonblank	There were different non-whitespace\n"
 "		characters at some place in the file\n"
-"		than those in numbers.\n"
+"		other than those in matching numbers.\n"
 "\n"
 "    The files are parsed into whitespace, numbers,\n"
 "    and other characters.  A number is an optional\n"
@@ -60,7 +60,9 @@ char documentation [] =
 "    decimal point followed by an optional exponent.\n"
 "    An exponent is an `e' or `E' followed by an\n"
 "    an optional sign followed by digits.  A number\n"
-"    is scanned by the strtod(3) function.\n" ;
+"    is scanned by the strtod(3) function.  Numbers\n"
+"    longer than about 4000 characters are arbitrar-\n"
+"    ily truncated.\n" ;
 
 struct file
 {
@@ -73,7 +75,7 @@ struct file
     // Set by Scannumber:
 
     bool isnumber;	// True iff a number is found.
-    double number;	// The value any found number.
+    double number;	// Value of any found number.
     char buffer [ 4000 ];
     			// The character string of
     			// any found number.
@@ -81,7 +83,16 @@ struct file
     			// end of any string in the
 			// buffer.
 
-    // Set to backup in input string:
+    // Set to backup in input string when scannumber
+    // determines it has not been passed a number or
+    // exponent.  Possible values are:
+    //
+    //		+    -    +.   -.
+    //		e    e+   e-   E    E+   E-
+    //
+    // Must be such that the backup is empty when
+    // scannumber decides to put something in the
+    // backup.
 
     char * back;	// If pointing at `\0', there
     			// are no backed up characters
@@ -93,6 +104,8 @@ struct file
 			// points.
 };
 
+// Open file for reading.
+//
 int open ( file & f, char * filename )
 {
     f.stream.open ( filename );
@@ -107,6 +120,9 @@ int open ( file & f, char * filename )
     * f.back = 0;
 }
 
+// Get next character from file, respecting any backup.
+// Returns next character in file or EOF if end of file.
+//
 inline int getc ( file & f )
 {
     int c = * f.back;
@@ -120,7 +136,14 @@ inline int getc ( file & f )
         return f.stream.get();
 }
 
-int scanspace ( file & f, int c )
+// Skips over whitespace in file, returning first non-
+// whitespace character returned by getc of file.
+// Returns the count of '\n's seen in the files line-
+// breaks member.  Takes a character argument that is
+// the first character tested for whitespace, before
+// getc is called.
+//
+inline int scanspace ( file & f, int c )
 {
     f.linebreaks = 0;
     while ( isspace ( c ) )
@@ -131,8 +154,52 @@ int scanspace ( file & f, int c )
     return c;
 }
 
+// Put string s followed by character c in backup of
+// file f.  Then return the getc of the file.  c == EOF
+// is allowed.
+//
+inline int backup ( file & f, char * s, int c )
+{
+    assert ( * f.back == 0 );
+
+    char * end   = f.backup;
+    char * limit = f.backup + sizeof ( f.backup ) - 2;
+
+    int c2;
+    while ( c2 = * s ++ )
+    {
+        assert ( end < limit );
+	* end ++ = c2;
+    }
+    if ( c != EOF ) * end ++ = c;
+    * end = 0;
+
+    f.back = f.backup;
+
+    return getc ( f );
+}
+
+// Scans a file for a number.  Takes one or two char-
+// acters which are the first characters of the number.
+// Returns the first character not in the number.
+//
+// Sets the `isnumber' member of the file to true iff
+// a number is found.  If a number is found, sets
+// the `buffer' member of the file to the character
+// string of the number and the `number' member of
+// of the file to the value of the number.  Note that
+// this value may be an infinity if the number is too
+// large.
+//
 int scannumber ( file & f, int c1, int c2 = 0 )
 {
+    if ( c1 != '+' && c1 != '-' && c1 != '.'
+                   && ! isdigit ( c1 ) )
+    {
+    	f.isnumber = false;
+	return c1;
+    }
+
     char * limit = f.buffer + sizeof ( f.buffer ) - 1;
 
     f.end = f.buffer;
@@ -162,14 +229,10 @@ int scannumber ( file & f, int c1, int c2 = 0 )
 
     if ( ! found_digit )
     {
-    	* f.end = 0;
 	f.isnumber = false;
 
-	assert ( * f.back == 0 );
-	strcpy ( f.backup, f.buffer );
-	f.back = f.backup;
-
-	return c;
+    	* f.end = 0;
+	return backup ( f, f.buffer, c );
     }
 
     if ( ( c == 'e' || c == 'E' )
@@ -197,13 +260,9 @@ int scannumber ( file & f, int c1, int c2 = 0 )
 	}
 	else
 	{
-	    assert ( * f.back == 0 );
-
 	    * f.end = 0;
-	    strcpy ( f.backup, endsave );
+	    c = backup ( f, endsave, c );
 	    f.end = endsave;
-	    * endsave = 0;
-	    f.back = f.backup;
 	}
     }
 
@@ -213,10 +272,27 @@ int scannumber ( file & f, int c1, int c2 = 0 )
     char * e;
     f.number = strtod ( f.buffer, & e );
     assert ( e == f.end || ! finite ( f.number ) );
+    	//
+    	// If number is too large then f.number is
+	// set to an infinity and e is not set to
+	// the end of the number; which is probably
+	// a bug in strtod.
 
     return c;
 }
 
+// Tests two numbers just scanned for two files to
+// see if there is a computable difference.  If so,
+// sets the `number' flag argument and updates the
+// `number_diff' argument by writing the difference
+// just found into it if this new difference is
+// larger than the previous value of `number_diff'.
+//
+// If there is no computable difference, sets the
+// `nonblank' flag argument instead.  This happens
+// if one of the numbers is not `finite' or their
+// difference is not `finite'.
+// 
 inline void diffnumber
 	( file & file1, file & file2,
 	  bool & nonblank, bool & number,
@@ -244,6 +320,8 @@ inline void diffnumber
 	number_diff = diffn;
 }
 
+// Main program.
+//
 int main ( int argc, char ** argv )
 {
     int c1, c2;
@@ -251,24 +329,34 @@ int main ( int argc, char ** argv )
     file file1;
     file file2;
 
+    // Print documentation and exit with error status
+    // unless there are exactly two program arguments.
+
     if ( argc != 3 )
     {
         cout << documentation;
 	exit (1);
     }
 
+    // Open files.
+
     open ( file1, argv[1] );
     open ( file2, argv[2] );
 
-    bool spacebreak	= false;
-    bool linebreak	= false;
+    // Loop that reads the two files and compares
+    // their characters (in c1 and c2), setting flags
+    // describing any differences found.
+
+    bool spacebreak	= false;	// Difference
+    bool linebreak	= false;	// flags.
     bool whitespace	= false;
     bool eof1		= false;
     bool eof2		= false;
     bool number		= false;
     bool nonblank	= false;
 
-    double number_diff	= 0.0;
+    double number_diff	= 0.0;		// Numeric
+    					// difference.
 
     c1 = getc ( file1 );
     c2 = getc ( file2 );
@@ -339,7 +427,7 @@ int main ( int argc, char ** argv )
 		    linebreak = true;
 	    }
      	}
-	else if  (c1 == c2 )
+	else if ( c1 == c2 )
 	{
 	    if ( c1 == '.' )
 	    {
@@ -419,6 +507,10 @@ int main ( int argc, char ** argv )
      	}
     }
 
+    // Loop done and difference flags are now computed.
+    // Produce output line according to difference
+    // flags.
+
     bool any = false;
 
     if ( spacebreak ) {
@@ -450,7 +542,10 @@ int main ( int argc, char ** argv )
     	cout << (any ? " nonblank" : "nonblank");
 	any = true;
     }
+
     cout << (any ? "" : "none") << endl;
+
+    // Return from main function without error.
 
     return 0;
 }
