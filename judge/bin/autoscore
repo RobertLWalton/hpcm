@@ -4,7 +4,7 @@
 #
 # File:		autoscore
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Nov 24 13:02:45 EST 2001
+# Date:		Tue Jan 29 15:17:02 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/11/24 18:15:17 $
+#   $Date: 2002/01/29 20:29:45 $
 #   $RCSfile: autoscore,v $
-#   $Revision: 1.30 $
+#   $Revision: 1.31 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -30,16 +30,17 @@ source $lib_directory/scoring_common.tcl
 catch {
 
 set document "
-cd submission_directory; autoscore program_name
+cd submission_directory; autoscore problem
 
     Given the submission directory as the current dir-
-    ectory, given the program name (e.g. pppp), the test
-    file (pppp.test, the judge's solution's version of
-    the output file), and optionally the output file
-    (pppp.out) and the error file (pppp.err), computes
-    the `$auto_score_file' file in the submission\
-					    directory,
-    using purely automatic (non-manual means).
+    ectory, given the problem name WITHOUT any extension
+    (e.g. pppp), the test file (pppp.test, the judge's
+    solution's version of the output file), and option-
+    ally the output file (pppp.out) and the error file
+    (pppp.err), this program computes the\
+    	`$auto_score_file'
+    file in the submission directory, using purely auto-
+    matic (non-manual) means.
 
     If the error file (pppp.err) exists and is non-
     empty, the score is one of:
@@ -196,6 +197,16 @@ cd submission_directory; autoscore program_name
 			side numbers that are not in the
 			same line column.
 
+	words-are-format  Cause differences in words
+			(non-numbers) to indicate a
+			formatting error and not an in-
+			correct or incomplete output
+			error.  That is, if all the
+			numbers are correct and in the
+			correct sequence, the score will
+			either be completely correct or
+			formatting error.
+
     The possible scores (with empty error file and
     existing non-empty output file) are:
 
@@ -203,17 +214,45 @@ cd submission_directory; autoscore program_name
 	Formatting Error
 	Incomplete Output
 	Incorrect Output
+
+    The score is determined according to what scorediff
+    reports as follows:
 
-    If scorediff reports `nonblank' or `eof2' (output
-    has non-whitespace after test file ends), or if
-    scorediff reports an `integer' or `float' difference
-    greater than allowed by the\
-             $scoring_instructions_file,
-    the output is incorrect.  Otherwise, if scorediff
-    reports `eof1' the output is incomplete.  Otherwise
-    if scorediff reports something that is not allowed
-    by the $scoring_instructions_file, the output has a
-    formatting error.  Otherwise the output is correct.
+	Scorediff Report:	Score:
+
+	infinity		Incorrect Output
+	float-eof2
+	integer-eof2
+	word if no words-are-format
+	word-eof2 if no words-are-format
+	integer difference greater than allowed
+	float difference greater than allowed
+
+	float-eof1		Incomplete Output
+	integer-eof1
+	word-eof1 if no words-are-format
+
+	any other report that	Formatting Error
+	    is not allowed
+	word given words-are-format
+	word-eof1 given words-are-format
+	word-eof2 given words-are-format
+
+	otherwise		Completely Correct
+
+    The first report in this table that is present de-
+    termines the score.  Reports are allowed or dis-
+    allowed by the scoring instructions: e.g., the
+    scoring instruction `column' allows the scorediff
+    report `column', and if not allowed, this report
+    causes a formatting error if one of the previous
+    more serious errors has not occurred.  Here `words-
+    are-format' is a scoring instruction that may or may
+    not be given, and that if given causes misspelled
+    words, omitted or extra words between numbers, and
+    words omitted or extra at the end of a file to be
+    treated as formatting errors and not indications of
+    incorrect or incomplete output.
 
     The relative difference of two numbers x and y is
     defined to be:
@@ -252,13 +291,13 @@ if { $argc != 1 || [regexp {^-} [lindex $argv 0]] } {
 
 # Set file names and check file permissions.
 #
-set program_name [lindex $argv 0]
-set output_file  $program_name.out
-set foutput_file $program_name.fout
-set error_file   $program_name.err
-set test_file    $program_name.test
-set ftest_file   $program_name.ftest
-set score_file   $program_name.score
+set problem	 [lindex $argv 0]
+set output_file  $problem.out
+set foutput_file $problem.fout
+set error_file   $problem.err
+set test_file    $problem.test
+set ftest_file   $problem.ftest
+set score_file   $problem.score
 
 # Initialize score to blank.
 #
@@ -309,8 +348,10 @@ if { $score != "" } {
     #
     compute_instruction_array
 
-    # Compute the .score file if it does not exist or
-    # is younger than the .out or .test files.
+    # Compute the .score file if it does not exist, or
+    # is younger than the .out or .test files, or is
+    # younger than the .fout or .ftest files if they
+    # exist.
     #
     if {  ! [file exists $score_file] \
          || [file mtime $score_file] \
@@ -326,6 +367,11 @@ if { $score != "" } {
 
     	file delete -force $score_file
 
+	# Compute the .score file from the .fout and
+	# .ftest files if either exists of if the
+	# $scoring_filter_file exists.  Else compute
+	# .score from .out and .test.
+	#
         if {    [file exists $scoring_filter_file] \
              || [file exists $foutput_file] \
              || [file exists $ftest_file] } {
@@ -343,15 +389,18 @@ if { $score != "" } {
 
     # Compute score from info in instruction and
     # score arrays.
-
+    #
     set score [compute_score]
 }
 
+# Write $auto_score_file and set score flag.
+#
 write_file $auto_score_file $score
 set_flag $score_flag_file
 
+# Output score and exit.
+#
 puts $score
-
 exit 0
 
 # Include common error catching code:

@@ -6,7 +6,7 @@
 #
 # File:		trackfinder
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Jan 29 10:27:24 EST 2002
+# Date:		Tue Jan 29 13:37:00 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/01/29 15:57:27 $
+#   $Date: 2002/01/29 20:29:45 $
 #   $RCSfile: trackfinder,v $
-#   $Revision: 1.11 $
+#   $Revision: 1.12 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -145,7 +145,7 @@ if { $argc > 0 } {
 	          $mail_directory/*-<<*>>-submission]]
 }
 
-# Return mtime of file, or "{}" if file is not
+# Return mtime of file, or "" if file is not
 # readable.
 #
 proc get_mtime { file } {
@@ -153,7 +153,7 @@ proc get_mtime { file } {
     global submit_time
 
     if { ! [file readable $file] } {
-    	return "{}"
+    	return ""
     } else {
     	return [expr { [file mtime $file] \
 		       - $submit_time }]
@@ -161,15 +161,15 @@ proc get_mtime { file } {
 }
 
 
-# Return first line file, or "{}" if file is not
+# Return first line file, or "" if file is not
 # readable or empty.
 #
 proc get_file { file } {
 
     if { ! [file readable $file] } {
-    	return "{}"
+    	return ""
     } else {
-    	return "{[read_file $file]}"
+    	return [read_file $file]
     }
 }
 
@@ -211,7 +211,7 @@ foreach dir $directories {
     set submitted_problem ""
 
     set mtime [get_mtime $dir/$received_file]
-    if { $mtime != "{}" } {
+    if { $mtime != "" } {
 
 	set received_ch [open $dir/$received_file r]
 	read_header $received_ch
@@ -234,14 +234,14 @@ foreach dir $directories {
     }
 
     set mtime [get_mtime $dir/$gotten_file]
-    if { $mtime != "{}" } {
+    if { $mtime != "" } {
 	puts [list got $mtime]
     }
 
     if { $submitted_name != "" } {
 
         set mtime [get_mtime $dir/$submitted_name]
-    	if { $mtime != "{}" } {
+    	if { $mtime != "" } {
 	    puts [list ext $mtime $submitted_name]
 	}
 
@@ -249,7 +249,7 @@ foreach dir $directories {
 	    [get_mtime $dir/$submitted_problem]
 	set mtime2 \
 	    [get_mtime $dir/$submitted_problem.cerr]
-	if { $mtime1 != "{}" || $mtime2 != "{}" } {
+	if { $mtime1 != "" || $mtime2 != "" } {
 	    puts [list bin $mtime1 $mtime2]
 	}
 
@@ -257,7 +257,7 @@ foreach dir $directories {
 	    [get_mtime $dir/$submitted_problem.out]
 	set mtime2 \
 	    [get_mtime $dir/$submitted_problem.err]
-	if { $mtime1 != "{}" || $mtime2 != "{}" } {
+	if { $mtime1 != "" || $mtime2 != "" } {
 	    puts [list out $mtime1 $mtime2]
 	}
     }
@@ -266,7 +266,7 @@ foreach dir $directories {
 	[get_mtime $dir/$auto_score_file]
     set mtime2 \
 	[get_mtime $dir/$manual_score_file]
-    if { $mtime1 != "{}" || $mtime2 != "{}" } {
+    if { $mtime1 != "" || $mtime2 != "" } {
 	puts [list sco $mtime1 $mtime2 \
 	      [get_file $dir/$auto_score_file] \
 	      [get_file $dir/$manual_score_file]]
@@ -274,18 +274,18 @@ foreach dir $directories {
 
     set mtime1 [get_mtime $dir/$reply_file]
     set mtime2 [get_mtime $dir/$no_reply_file]
-    if { $mtime1 != "{}" || $mtime2 != "{}" } {
+    if { $mtime1 != "" || $mtime2 != "" } {
 	puts [list rep $mtime1 $mtime2]
     }
 
     set mtime [get_mtime $dir/$reply_history_file]
-    if { $mtime != "{}" } {
+    if { $mtime != "" } {
 	puts [list his $mtime [expr { [clock seconds] \
 				      - $submit_time }]]
     }
 
     set mtime [get_mtime $dir/$dispatch_pid_file]
-    if { $mtime != "{}" } {
+    if { $mtime != "" } {
 	puts [list pid $mtime [expr { [clock seconds] \
 				      - $submit_time }]]
     }
@@ -295,7 +295,7 @@ foreach dir $directories {
 	    		 $dir/*-checked-error]] {
 	if { [regexp "\n" $file] } continue
 	set mtime [get_mtime $file]
-	if { $mtime != "{}" } {
+	if { $mtime != "" } {
 	    puts [list chk $mtime [file tail $file]]
 	}
     }
@@ -305,7 +305,7 @@ foreach dir $directories {
 	    	         $dir/*-unchecked-error]] {
 	if { [regexp "\n" $file] } continue
 	set mtime [get_mtime $file]
-	if { $mtime != "{}" } {
+	if { $mtime != "" } {
 	    puts [list err $mtime [file tail $file]]
 	}
     }

@@ -2,7 +2,7 @@
 #
 # File:		scoring_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Nov 24 13:08:41 EST 2001
+# Date:		Tue Jan 29 15:17:23 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/11/24 18:06:39 $
+#   $Date: 2002/01/29 20:27:03 $
 #   $RCSfile: scoring_common.tcl,v $
-#   $Revision: 1.20 $
+#   $Revision: 1.21 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -87,9 +87,9 @@
 #
 # The `words-are-format' type may appear in `instruc-
 # tion_array' but not in `score_array'.  The presence of
-# this type just causes `word' and `word-eof2' differ-
-# ences to signal `Formatting Error' instead of
-# `Incorrect Output'.
+# this type just causes `word', `word-eof2', and `word-
+# eof1' differences to signal `Formatting Error' instead
+# of `Incorrect Output' or `Incomplete Output'.
 #
 # `proof_array' is computed from all the proofs in the
 # .score file.  For each difference type, `proof_
@@ -421,6 +421,9 @@ proc compute_score { } {
 	    } else continue
 	}
 
+	set waf \
+	    [info exists \
+	          instruction_array(words-are-format)]
 	switch $type {
 
 	    integer -
@@ -433,16 +436,22 @@ proc compute_score { } {
 
 	    word-eof2 -
 	    word {
-		set waf words-are-format
-		if { [info exists \
-		           instruction_array($waf)] } {
+		if { $waf } {
 		    lappend formatting_error_types $type
 		} else {
 		    lappend incorrect_output_types $type
 		}
 	    }
 
-	    word-eof1 -
+	    word-eof1 {
+		if { $waf } {
+		    lappend formatting_error_types $type
+		} else {
+		    lappend incomplete_output_types \
+		    	    $type
+		}
+	    }
+
 	    integer-eof1 -
 	    float-eof1 {
 		lappend incomplete_output_types $type
