@@ -2,7 +2,7 @@
 #
 # File:		display_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Sep 10 07:12:52 EDT 2001
+# Date:		Sat Sep 22 03:58:18 EDT 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/09/10 11:04:05 $
+#   $Date: 2001/09/22 07:54:29 $
 #   $RCSfile: display_common.tcl,v $
-#   $Revision: 1.16 $
+#   $Revision: 1.17 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -463,7 +463,8 @@ set file_list_origin_mtime 0
 # This default function returns files in the current
 # directory, adding an xxx.diff and xxx.bdiff file
 # if these do not already exist for every pair of
-# files xxx.out xxx.test that do exist.
+# files xxx.out xxx.test that do exist, provided the
+# current directory is writable.
 #
 # This function also computes file_list_mtime_origin
 # if it can.  This default function sets this to the
@@ -479,18 +480,21 @@ proc get_listed_files { } {
     # to the list because they can be made on demand.
 
     set extra_files ""
-    foreach file $listed_files {
-        if { [regexp {^(.*)\.out$} $file \
-				   forget base] } {
-	    if { [lsearch -exact $listed_files \
-	                         $base.test] >= 0 } {
+    if { [file writable "."] } {
+	foreach file $listed_files {
+	    if { [regexp {^(.*)\.out$} $file \
+				       forget base] } {
 		if { [lsearch -exact $listed_files \
-		              $base.diff] < 0 } {
-		    lappend extra_files $base.diff
-		}
-		if { [lsearch -exact $listed_files \
-			      $base.bdiff] < 0 } {
-		    lappend extra_files $base.bdiff
+				     $base.test] >= 0 \
+				     } {
+		    if { [lsearch -exact $listed_files \
+				  $base.diff] < 0 } {
+			lappend extra_files $base.diff
+		    }
+		    if { [lsearch -exact $listed_files \
+				  $base.bdiff] < 0 } {
+			lappend extra_files $base.bdiff
+		    }
 		}
 	    }
 	}
