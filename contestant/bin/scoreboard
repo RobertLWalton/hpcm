@@ -4,7 +4,7 @@
 #
 # File:		scoreboard
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Wed Jan 16 21:33:12 EST 2002
+# Date:		Sat Mar  9 18:55:30 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/01/17 02:40:01 $
+#   $Date: 2002/03/09 23:57:56 $
 #   $RCSfile: scoreboard,v $
-#   $Revision: 1.7 $
+#   $Revision: 1.8 $
 
 # Time between refreshes.
 #
@@ -61,7 +61,8 @@ scoreboard [contest] [page-number] [user]
     If the a user name is given and no contest name is
     to be given, use NONE for the contest name.
 
-    It is an error if no line matches.
+    It is an error if ~/.hpcm_contest/scoreboard_map is
+    readable and none of its lines match.
 
     The \\ backslash character can be used in the
     scoreboard_map file to continue lines.  If a back-
@@ -81,8 +82,7 @@ scoreboard [contest] [page-number] [user]
     The file for page 1 must always be readable, as must
     the file for any page specifically requested.  If
     all pages are to be displayed, any page other than 1
-    whose file is unreadable causes the display to re-
-    cycle to page 1."
+    whose file is unreadable is ignored."
 
     	exit 1
 	;;
@@ -197,9 +197,10 @@ case "$pn" in
 	done
 	;;
     "" )
-        # No argument or `all': display all pages.
+        # No page number argument: display all pages.
 	# Page 1 must be readable.  Cycle on first
-	# unreadable or not given page.
+	# empty page name.  Ignore unreadable pages
+	# (except for the first).
 	#
 
 	while test x = x
@@ -223,8 +224,6 @@ case "$pn" in
 		then
 		    echo cannot read "$page"
 		    exit 1
-		else
-		    break
 		fi
 		n=`expr $n + 1`
 	    done
