@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Nov 14 20:14:09 EST 2000
+# Date:		Tue Nov 14 23:28:48 EST 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/11/15 04:25:30 $
+#   $Date: 2000/11/15 04:36:53 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.50 $
+#   $Revision: 1.51 $
 #
 
 # Table of Contents
@@ -259,7 +259,7 @@ proc log_error { error_output } {
 	   log_directory log_globally log_mode \
 	   log_error_count log_error_maximum \
 	   log_manager received_file \
-	   message_From_line message_from \
+	   message_From_line message_to message_from \
 	   message_date message_subject \
 	   message_x_hpcm_test_subject \
 	   needs_reply_flag_file
@@ -749,6 +749,10 @@ proc compute_authentication {} {
 	   message_header \
 	   authentication_keys
 
+    # If no signature is present in the message header
+    # (or the signature there is inadequate), result is
+    # no.
+    #
     if { [llength $message_x_hpcm_signature] < 2 } {
     	set result no
     } else {
@@ -760,14 +764,23 @@ proc compute_authentication {} {
 	        { set key \
 		      $authentication_keys($keyname) \
 		      }] } {
+	    # If we have no key for the keyname,
+	    # result is no.
+	    #
 	    set result no
 	} else {
+
+	    # We can compute a signature: do so.
+	    #
 	    set d "X-HPCM-Date:$message_x_hpcm_date\n"
 	    set r $message_x_hpcm_reply_to
 	    set r "X-HPCM-Reply-To:$r\n"
 	    set v "$d$r$key\n"
 	    set computed_signature \
 	        [compute_signature $v]
+
+	    # Check signature and set result.
+	    #
 	    if { $signature == $computed_signature } {
 	    	set result yes
 	    } else {
@@ -776,6 +789,10 @@ proc compute_authentication {} {
 	}
     }
 
+    # Record result in message header if it is not
+    # already there (as X-HPCM-Signature-Ok field
+    # value).
+    #
     if { [string trim $message_x_hpcm_signature_ok] \
          != $result } {
         set message_x_hpcm_signature_ok " $result"
@@ -834,7 +851,7 @@ proc header_is_authentic {} {
 # produced.
 #
 # The -cc option causes the reply to be cc'ed to the
-# `reply_manager' if that is defined.
+# `reply_manager' if that is not "".
 #
 # The -error option changes the reply subject from
 # `RE:...' to `Errors In:...'.
@@ -859,8 +876,8 @@ proc reply { args } {
 proc compose_reply { args } {
 
     global received_file reply_file \
-           message_From_line \
-           message_from message_to message_date \
+           message_From_line message_to \
+           message_from message_date \
 	   message_reply_to message_subject \
 	   message_x_hpcm_test_subject \
 	   reply_manager
@@ -903,6 +920,7 @@ proc compose_reply { args } {
     if { $cc_option && $reply_manager != "" } {
 	puts $reply_ch "Cc: $reply_manager"
     }
+    puts $mail_ch "Reply-To:$message_to"
     if { $errors_option } {
         puts $reply_ch \
 	     "Subject: Errors In:$message_subject"
