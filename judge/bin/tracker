@@ -7,7 +7,7 @@
 #
 # File:		tracker
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Jan 29 10:26:08 EST 2002
+# Date:		Thu Feb  7 12:11:21 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -16,9 +16,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/01/29 15:57:26 $
+#   $Date: 2002/02/07 17:13:59 $
 #   $RCSfile: tracker,v $
-#   $Revision: 1.18 $
+#   $Revision: 1.19 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -532,7 +532,7 @@ Problem		  sub-rec rec-ext ext-bin bin-out\
 
 # Score summaries.
 #
-# score_array(submitter,problem) is a list of items of
+# score_array(submitter/problem) is a list of items of
 # the form { submission-time, score } where the submis-
 # sion-time is a 14 digit integer suitable for sorting
 # and the score is a two letter abbreviation for the
@@ -609,7 +609,7 @@ proc compute_score_array {} {
 	}
 
         set item [list $time $score]
-	set sp "$submitter,$problem"
+	set sp "$submitter/$problem"
 	if { [info exists score_array($sp)] } {
 	    lappend score_array($sp) $item
 	} else {
@@ -618,7 +618,7 @@ proc compute_score_array {} {
     }
 
     foreach sp [array names score_array] {
-        regexp {^([^,]*),([^,]*)$} $sp \
+        regexp {^([^/]*)/([^/]*)$} $sp \
 	       forget submitter problem
 
 	set items ""
@@ -667,7 +667,7 @@ Problem		  cc    io    fe    ic    se    te   \
 	}
 
 	foreach sp [array names score_array \
-		          "*,$problem"] {
+		          "*/$problem"] {
 	    foreach item $score_array($sp) {
 	        incr [lindex $item 1]
 	    }
@@ -709,7 +709,7 @@ Submitter	  cc    io    fe    ic    se    te   \
 	}
 
 	foreach sp [array names score_array \
-		          "$submitter,*"] {
+		          "$submitter/*"] {
 	    foreach item $score_array($sp) {
 	        incr [lindex $item 1]
 	    }
@@ -1192,7 +1192,7 @@ ti \[min\] \[med\] \[avg\] \[max\] = display by problem\
    	sub = submission time
 	rec = mtime of $received_file in which\
 		    submission email is stored
-	ext = mtime of source (.c, .cc, .java, or .p)\
+	ext = mtime of source (.c, .cc, .java, etc.)\
 		    file extracted from email
 	bin = max of mtimes of binary output and .cerr\
 		    files
