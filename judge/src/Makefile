@@ -10,19 +10,22 @@
 #
 # RCS Info (may not be true date or author):
 #
-#   $Author: acm-cont $
-#   $Date: 2000/08/28 20:52:36 $
+#   $Author: hc3 $
+#   $Date: 2001/01/07 17:26:59 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.3 $
+#   $Revision: 1.4 $
 
 # Kill all implicit rules
 #
 .SUFFIXES:
 
-all: scorediff
+all: scorediff chkpage
 
 scorediff:	scorediff.cc
 	g++ -o scorediff scorediff.cc
+
+chkpage:	chkpage.c
+	gcc -o chkpage chkpage.c
 
 clean:
 	rm -f scorediff

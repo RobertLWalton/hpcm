@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/12/10 17:11:50 $
+#   $Date: 2001/01/07 17:26:58 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.11 $
+#   $Revision: 1.12 $
 
 all:	scorediff hpcm_sandbox_x hpcm_print_passwords \
 	chkpage
@@ -64,8 +64,11 @@ unsecure_hpcm_sandbox_x:
 hpcm_print_passwords:
 	ln -s ../../secure/bin/hpcm_print_passwords .
 
-chkpage:	chkpage.c
-	gcc -o chkpage chkpage.c
+chkpage:	../src/chkpage.c
+	rm -f chkpage
+	(cd ../src; make chkpage)
+	cp -p ../src/chkpage .
+	chmod 500 chkpage
 
 clean:
 	rm -f scorediff hpcm_sandbox_x \
