@@ -5,7 +5,7 @@
 #
 # File:		autojudge
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Nov 24 08:31:22 EST 2001
+# Date:		Sat Nov 24 11:08:31 EST 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/11/24 13:39:38 $
+#   $Date: 2001/11/24 17:37:10 $
 #   $RCSfile: autojudge,v $
-#   $Revision: 1.39 $
+#   $Revision: 1.40 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -153,7 +153,9 @@ autojudge \[problem\[.extension\]\]
     solution directory .test file, the current directory
     .test file is relinked to the solution .out file.
     Thus the solution .out file always has preference
-    over the solution .test file.
+    over the solution .test file.  The .ftest file is
+    similarly linked to the solution .fout file in
+    preference to the solution .ftest file.
 
     Next this program makes the program binary by using
     the $make_file.  Any compiler error messages are
@@ -269,7 +271,8 @@ set extension [file extension $argument]
 proc argument_error {} {
     global argument
     reply \
-          "ERROR: problem name is illegal: $argument" \
+          "ERROR: problem name or extension is illegal:\
+	          $argument" \
 	  ""  \
 	  "THIS SUBMISSION (see below) IGNORED"  \
 	  "YOU MUST RESUBMIT WITH A LEGAL PROBLEM NAME"
@@ -293,12 +296,9 @@ if { $extension != "" \
 }
 
 
-# Compute names.
-#
-set problem_solution $solutions_directory/$problem
-
 # Check for existence of problem solution directory.
 #
+set problem_solution $solutions_directory/$problem
 if { ! [file isdirectory $problem_solution] } {
     argument_error
 }
@@ -309,7 +309,7 @@ proc link_optional_file { name } {
 
     global extension problem_solution
 
-    if { [file readable $name] } return
+    if { [file exists $name] } return
 
     if { [file exists $problem_solution/$name] } {
 	puts "Linking $name"
@@ -369,22 +369,58 @@ if { [catch { exec extractmail } extractout] } {
 #
 link_optional_file $make_file
 
+# Link any $files_file -LINK- files.
+#
+if { [file exists $files_file] {
+    set link_mode no
+    foreach name [read_entire_file $files_file] {
+        switch $name {
+	    -LINK-	{ set link_mode yes }
+	    -REQUIRED-	--
+	    -OPTIONAL-	{ set link_mode no }
+	    default	{
+	        if { $link_mode \
+		     && ! [file exists $name] } {
+		    set sname \
+		        $problem_solution/$name
+     		    if { ! [file exists $sname] } {
+		        error "-LINK- file $sname does\
+			       not exist"
+		    }
+		    puts "Linking $name"
+		    link_file $sname
+		}
+	    }
+	}
+    }
+}
+
+# Link $scoring_instructions_file and $scoring_filter_
+# file.
+#
 set sif $scoring_instructions_file
-if { ! [file readable $sif] \
+if { ! [file exists $sif] \
      && [file exists $problem_solution/$sif] } {
     puts "Linking $sif"
     link_file $problem_solution/$sif
 }
+set sff $scoring_filter_file
+if { ! [file exists $sff] \
+     && [file exists $problem_solution/$sff] } {
+    puts "Linking $sff"
+    link_file $problem_solution/$sff
+}
 
-if { ! [file readable $problem.in] } {
+# Link .in, .test, and .ftest files.
+#
+if { ! [file exists $problem.in] } {
     puts "Linking $problem.in"
     link_file $problem_solution/$problem.in
 }
-
 set solout  $problem_solution/$problem.out
 set soltest $problem_solution/$problem.test
-if { ! [file readable $problem.test] \
-     || ( [file readable $solout] \
+if { ! [file exists $problem.test] \
+     || ( [file exists $solout] \
           && [file extension \
 	           [file readlink $problem.test]] \
 	     == ".test" ) } {
@@ -393,13 +429,37 @@ if { ! [file readable $problem.test] \
 	      $problem.test"
 	file delete -force $problem.test
     }
-    if { [file readable $solout] } {
+    if { [file exists $solout] } {
 	puts "Linking $problem.test to solution\
 	      $problem.out"
 	link_file $solout $problem.test
     } else {
 	puts "Linking $problem.test"
 	link_file $soltest
+    }
+}
+set solfout  $problem_solution/$problem.fout
+set solftest $problem_solution/$problem.ftest
+if {    (    [file exists $solftest] \
+          && ! [file exists $problem.ftest] ) \
+     || (    [file exists $solfout] \
+          && ! [file exists $problem.ftest] ) \
+     || (    [file exists $solfout] \
+          && [file extension \
+	           [file readlink $problem.ftest]] \
+	     == ".ftest" ) } {
+    if { ! [catch { file type $problem.ftest }] } {
+	puts "Deleting obsolete\
+	      $problem.ftest"
+	file delete -force $problem.ftest
+    }
+    if { [file exists $solfout] } {
+	puts "Linking $problem.ftest to solution\
+	      $problem.fout"
+	link_file $solfout $problem.ftest
+    } else {
+	puts "Linking $problem.ftest"
+	link_file $solftest
     }
 }
 
@@ -443,7 +503,7 @@ proc auto_score_reply { auto_score } {
 # If any file_list1 file is older than any file_list2
 # file, and all file_list2 files exist, delete any
 # file_list1 files that exist and return `yes'.  If no
-# file_list1 files exists and all file_list2 files
+# file_list1 files exist and all file_list2 files
 # exist, return `yes'.  Else return `no'.
 #
 #
@@ -570,12 +630,33 @@ if { [should_be_made \
     }
 }
 
+# Make .fout file if appropriate.
+#
+if { [should_be_made \
+         [list $problem.fout] \
+	 [list $problem.out $scoring_filter_file]] \
+     && [file size $problem.out] > 0 } {
+
+    puts "Making $problem.fout"
+    exec $scoring_filter_file < $problem.out \
+    			      > $problem.fout
+}
+
 # Make $auto_score_file if necessary.
 #
-set file_list [list $problem.test]
+if { [file exists $scoring_filter_file] } {
 
-if { [file exists $problem.out] } {
-    lappend file_list $problem.out
+    set file_list [list $problem.ftest]
+
+    if { [file exists $problem.fout] } {
+	lappend file_list $problem.fout
+    }
+} else {
+    set file_list [list $problem.test]
+
+    if { [file exists $problem.out] } {
+	lappend file_list $problem.out
+    }
 }
 if { [file exists $problem.err] } {
     lappend file_list $problem.err
