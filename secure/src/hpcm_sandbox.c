@@ -2,7 +2,7 @@
  *
  * File:	hpcm_sandbox.c
  * Authors:	Bob Walton (walton@deas.harvard.edu)
- * Date:	Sat Oct  7 05:56:06 EDT 2000
+ * Date:	Tue Oct 31 04:01:36 EST 2000
  *
  * The authors have placed this program in the public
  * domain; they make no warranty and accept no liability
@@ -11,14 +11,15 @@
  * RCS Info (may not be true date or author):
  *
  *   $Author: hc3 $
- *   $Date: 2000/10/22 05:40:07 $
+ *   $Date: 2000/10/31 09:11:22 $
  *   $RCSfile: hpcm_sandbox.c,v $
- *   $Revision: 1.10 $
+ *   $Revision: 1.11 $
  */
 
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <ctype.h>
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/time.h>
@@ -74,8 +75,16 @@ char documentation [] =
 "    IDs to the effective user and group IDs, sets\n"
 "    the resource limits determined by the options\n"
 "    and defaults, sets the environment to contain\n"
-"    just \"SANDBOX\", and executes the program with\n"
-"    the given arguments.\n"
+"    the strings in HPCM_SANDBOX_ENV if that environ-\n"
+"    ment variable is defined, or just \"SANDBOX\"\n"
+"    otherwise, and executes the program with the\n"
+"    given arguments.  If HPCM_SANDBOX_ENV is de-\n"
+"    fined, it consists of whitespace separated\n"
+"    strings that become the environment, with rec-\n"
+"    nition of `\\ ', `\\t', `\\n', `\\f', `\\v', and\n"
+"    `\\\\' within the HPCM_SANDBOX_ENV value as\n"
+"    space, tab, new line, form feed, vertical tab,\n"
+"    and backslash.\n"
 "\n"
 "    Normally the `sandbox' user is not allowed to\n"
 "    log in and owns no files or directories.\n"
@@ -83,8 +92,6 @@ char documentation [] =
 "    The program will write an error message on the\n"
 "    standard error output if any system call is in\n"
 "    error.\n" ;
-
-char * env [] = { "SANDBOX", 0 };
 
 void errno_exit ( char * m )
 {
@@ -119,6 +126,10 @@ int main ( int argc, char ** argv )
 
     uid_t euid;
     gid_t egid;
+
+    /* Environment for program to be executed. */
+
+    char ** env;
 
     /* Consume the options. */
 
@@ -416,8 +427,107 @@ int main ( int argc, char ** argv )
 #	endif
     }
 
-    /* Execute program with arguments and `SANDBOX'
-       as the only environment.
+    {
+	/* Compute the environment for the program to be
+	   executed.
+	*/
+
+	char * hpcm_sandbox_env =
+	    getenv ( "HPCM_SANDBOX_ENV" );
+
+	if ( hpcm_sandbox_env == NULL )
+	{
+	    env = realloc ( NULL, 2 * sizeof (char *) );
+	    if ( env == NULL ) errno_exit ( "realloc" );
+	    env[0] = "SANDBOX";
+	    env[1] = NULL;
+	}
+	else
+	{
+	    char * buffer = malloc
+		( strlen ( hpcm_sandbox_env ) + 1 );
+	    char * ep = hpcm_sandbox_env;
+	    char * bp = buffer;
+	    int i = 0;		/* Index in env. */
+	    int size = 101;	/* Size of env. */
+
+	    if ( buffer == NULL )
+		errno_exit
+		    ( "malloc ( strlen ("
+		      " HPCM_SANDBOX_ENV ) )" );
+
+	    env = realloc
+		( NULL, size * sizeof (char *) );
+	    if ( env == NULL )
+		errno_exit ( "realloc env" );
+
+	    /* Reorganize environment strings in buffer
+	       so each ends with a 0 and they have
+	       escapes converted to characters.  As
+	       each string appears in buffer, record its
+	       address in env.
+	    */
+
+	    while (1)
+	    {
+		while ( isspace ( * ep ) ) ++ ep;
+		if ( * ep == 0 ) break;
+
+		if ( i >= size - 1 )
+		{
+		    size *= 2;
+		    env = realloc
+			( env, size * sizeof (char *) );
+		    if ( env == NULL )
+			errno_exit ( "realloc env" );
+		}
+
+		env[i++] = bp;
+
+		while (1)
+		{
+		    if ( * ep == '\\' )
+		    {
+			switch ( * ++ ep )
+			{
+			case ' ':
+			    * bp ++ = ' '; break;
+			case 't':
+			    * bp ++ = '\t'; break;
+			case 'n':
+			    * bp ++ = '\n'; break;
+			case 'f':
+			    * bp ++ = '\f'; break;
+			case 'v':
+			    * bp ++ = '\v'; break;
+			case '\\':
+			    * bp ++ = '\\'; break;
+			default:
+			    fprintf ( stderr,
+				      "bad escape in"
+				      " HPCM_SANDBOX_"
+				      "ENV: \\%c\n",
+				      * ep );
+			    exit ( 1 );
+			}
+			++ ep;
+		    }
+		    else if ( isspace ( * ep ) )
+			break;
+		    else if ( ! * ep )
+			break;
+		    else
+			* bp ++ = * ep ++;
+		}
+
+		* bp ++ = 0;
+	    }
+	    env[i] = NULL;
+	}
+    }
+
+    /* Execute program with arguments and computed
+       environment.
     */
 
     execve ( argv[index], argv + index, env );
