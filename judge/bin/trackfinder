@@ -6,7 +6,7 @@
 #
 # File:		trackfinder
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Jan 29 13:37:00 EST 2002
+# Date:		Wed May 15 08:52:44 EDT 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/01/29 20:29:45 $
+#   $Date: 2002/05/15 13:38:40 $
 #   $RCSfile: trackfinder,v $
-#   $Revision: 1.12 $
+#   $Revision: 1.13 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -59,10 +59,9 @@ trackfinder \[directory ...\]
 				field of $received_file.
 
     	ext  time {filename}	Mtime of and name of
-				file extracted from
-				$received_file, if this
-				has a `Subject:' of the
-				form `submit filename'.
+				last file extracted from
+				$received_file by
+				extractmail.
 
 	bin  time1 time2	Mtimes of the binary
 				and .cerr files, respec-
@@ -92,12 +91,12 @@ trackfinder \[directory ...\]
 				and time mtime was
 				read, respectively.
 
-	err   time {file}	Mtime of file with name
-				matching:
+	err   time {filename}	Mtime and name of file
+				with name matching:
 				    *-unchecked-error
 
-	chk   time {file}	Mtime of file with name
-				matching:
+	chk   time {filename}	Mtime and name of file
+				with name matching:
 				    *-checked-error
 
     If any file is missing, its time is `{}', and any
@@ -145,8 +144,8 @@ if { $argc > 0 } {
 	          $mail_directory/*-<<*>>-submission]]
 }
 
-# Return mtime of file, or "" if file is not
-# readable.
+# Return mtime of file (relative to submit time), or ""
+# if file is not readable.
 #
 proc get_mtime { file } {
 
@@ -240,9 +239,56 @@ foreach dir $directories {
 
     if { $submitted_name != "" } {
 
-        set mtime [get_mtime $dir/$submitted_name]
-    	if { $mtime != "" } {
-	    puts [list ext $mtime $submitted_name]
+	if { ! [file exists $dir/$files_file] } {
+	    set filename $submitted_name
+	    set mtime [get_mtime $dir/$filename]
+	} else {
+
+	    # Read $files_file to find the names of
+	    # extractable files, and output the one
+	    # with the last mtime.
+
+	    if { [catch { set filelist \
+			      [read_entire_file \
+			           $dir/$files_file] \
+			}] } {
+		extract_error \
+		    "SYSTEM ERROR: Cannot read\
+		     $dir/$file_files"
+	    }
+
+	    set mtime ""
+	    set mode required
+	    foreach item $filelist {
+		switch -- $item {
+		    -REQUIRED-	{
+			set mode required
+		    }
+		    -OPTIONAL-	{
+			set mode optional
+		    }
+		    default {
+			if { [regexp {^-[-A-Z]*-$} \
+			             $item] } {
+			    set mode ""
+			} elseif { $mode != "" } {
+			    set fmtime \
+			        [get_mtime $dir/$item]
+			    if { $fmtime != "" \
+				 && ( $mtime == "" \
+				       || $mtime \
+				          < \
+				          $fmtime ) } {
+				set mtime $fmtime
+				set filename $item
+			    }
+			}
+		    }
+		}
+	    }
+	}
+	if { $mtime != "" } {
+	    puts [list ext $mtime $filename]
 	}
 
 	set mtime1 \
@@ -280,8 +326,7 @@ foreach dir $directories {
 
     set mtime [get_mtime $dir/$reply_history_file]
     if { $mtime != "" } {
-	puts [list his $mtime [expr { [clock seconds] \
-				      - $submit_time }]]
+	puts [list his $mtime]
     }
 
     set mtime [get_mtime $dir/$dispatch_pid_file]
