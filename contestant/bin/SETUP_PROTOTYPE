@@ -1,10 +1,10 @@
 #!/bin/sh
 #
-# Setup prototype account and contest/home directory.
+# Setup prototype account home directory.
 #
 # File:		SETUP_PROTOTYPE
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Tue Jan  9 06:30:01 EST 2001
+# Date:		Wed Sep 19 05:39:24 EDT 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,112 +13,75 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/01/09 11:48:45 $
+#   $Date: 2001/09/19 10:00:00 $
 #   $RCSfile: SETUP_PROTOTYPE,v $
-#   $Revision: 1.10 $
+#   $Revision: 1.11 $
 
-# List of files to remove before making tar.
+# List of files always added implicitly to .hpcm_keep
+# and .hpcm_exclude.  Note each line feed is to be
+# followed by a tab.
 #
-remove=".Xauthority .history"
+always='home bin .hpcm_contest
+	.hpcm_keep .hpcm_exclude .snapshot'
+
+# List of files and directories to exclude from tar
+# and that are NOT to be moved to home.
+#
+exclude=".Xauthority .history"
 
 # Default list of files and directories that are NOT
-# to be moved to $contest/home.
+# to be moved to home but are to be included in tar.
 #
-keep=".ssh .snapshot .procmailrc"
-
-# Change to the accounts home directory.
-#
-cd
+keep=".ssh .procmailrc"
 
 # Process first argument.
 #
 case "$1" in
 
-    "" )
-    	if test -x ${HOME}/.hpcm_contest
-	then
-	    contest=`ls -l ${HOME}/.hpcm_contest`
-	    contest=`expr "$contest" : \
-	                  '.*-> *\([^ ]*\) *$' `
-	else
-	    echo ${HOME}/.hpcm_contest does not exist
-	    exit 1
-	fi
-	;;
-
-    -* )
+    * )
 	echo "
-contest/bin/SETUP_PROTOTYPE contest
+~JJJ/hpcm/contestant/bin/SETUP_PROTOTYPE
 or
 SETUP_PROTOTYPE
 
-    Sets up the contest/home directory and the current
-    account.  The current account must be a prototype
-    contestant account.
+    Sets up the prototype account home directory,
+    ~/home.  The current account must be a prototype
+    contestant account.  The first form of invocation
+    must be used the first time SETUP_PROTOTYPE is
+    called, but the second form can be used thereafter.
 
     The prototype account should initially be a brand
-    new account in which the first form of the call
-    to SETUP_PROTOTYPE given above is executed.  After
-    being executed once, and after the prototype ac-
-    count's .cshrc (or other shell initialization) file
-    is edited as indicated below, the second form of the
-    call to SETUP_PROTOTYPE can be used in the prototype
-    account.
+    new account, but SETUP_PROTOTYPE can be executed
+    many times in this account.  It must be reexecuted
+    after every addition of a new file in the account
+    that is not in ~/home, or every deletion of a
+    symbolic link to the account.
 
-    \`contest' is the absolute pathname of the contest
-    directory.  The name ~/.hpcm_contest will be linked
-    to this directory after SETUP_PROTOTYPE is run once,
-    so the contest directory need not be mentioned when
-    SETUP_PROTOTYPE is run a second time in the same
-    prototype account.
-
-    The contest/home directory must preexist and be
-    owned by the current (prototype) account.
-
-    Since a single contest/home directory can usually
-    be used by many different contests, it is usual
-    for it to be linked to a directory with a name like
-
-    	~JJJ/prototype_home
-
-    where JJJ is the judge's account.  To make this
-    directory, one can set the ~JJJ directory tempor-
-    arily to a+wx and use mkdir in the prototype ac-
-    count, or one can log in as root, make this direc-
-    tory, and change its owner and group to that of the
-    prototype account.
-
     First, SETUP_PROTOTYPE does a \`cd' to the home
-    directory of the current (prototype) account and
-    removes the files:
-
-    	$remove
+    directory of the current (prototype) account.
 
     Then SETUP_PROTOTYPE takes all ordinary files and
     directories that it finds in ~ (the prototype
     account home directory) and moves then to the
-    contest/home directory.  For every file or directory
+    ~/home/ directory.  For every file or directory
     foo moved, SETUP_PROTOTYPE links ~/foo to .hpcm_
     contest/home/foo.  There are some exceptions that
     are NOT moved, namely:
 
     	$keep
-
-    It is possible to replace this list of exceptions
-    by making a ~/.hpcm_keep file listing the desired
-    exceptions before SETUP_PROTOTYPE is run.  The
-    ~/.hpcm_keep file may or may not list itself.
+	$exclude
+	$always
 
     After moving files and directories, SETUP_PROTOTYPE
-    makes the following files in contest/home:
-
+    makes the following files in ~/home/:
+
     	empty.ls	Ls -a of empty account directory
 			after all files are rm -f'ed.
 	setup.tar	Tar file used to restore all
 			files into a contestant account
 			home directory after all files
 			are rm -f'ed.
-    	setup.ls	Ls -aR of contestant account
+    	setup.ls	Ls -aR of contestant an account
 			home directory right after
 			setup.tar is used to restore
 			files to that directory.
@@ -126,77 +89,123 @@ SETUP_PROTOTYPE
     These files are to be used by TRASH_ACCOUNT to
     reinitialize the home directories of contestant
     accounts.
+
+    The following files in ~ are NOT included in
+    setup.tar (and not moved to ~/home):
+
+        $exclude
+	$always
+
+
+    It is possible to change the list of files not moved
+    to ~/home and the list of files not included in
+    setup.tar.  If the file ~/.hpcm_exclude is present,
+    its contents list files neither moved to ~/home nor
+    included in setup.tar.  The files
+
+    	$always
+
+    are always implicitly added to the contents of
+    ~/.hpcm_exclude.
 
-    SETUP_PROTOTYPE also manages permissions of contest/
-    home and the things it contains.  It sets the per-
-    mission of contest/home itself to a+rx, and sets
-    the permission of any file or directory moved there
-    to a+r or a+rx (depending upon whether the file or
-    directory has u+x permissions).  It sets the per-
-    mission of empty.ls, setup.tar, and setup.ls to a+r.
+    By default, the files
+
+    	$keep
+
+    are not moved to ~/home, but if not listed in
+    ~/.hpcm_exclude, will be included in setup.tar.  But
+    if the file ~/.hpcm_keep exists, the contents of
+    this file replace this default list of files.
+
+    SETUP_PROTOTYPE also manages permissions of ~/home
+    and the things it contains.  It sets the permission
+    of ~ to a+x and ~/home to a+rx, and sets the permis-
+    sion of any file or directory moved to ~/home to
+    a+r or a+rx depending upon whether the file or
+    directory has u+x permissions.  It sets the per-
+    mission of empty.ls, setup.tar, and setup.ls in
+    ~/home to a+r.
 
     After running SETUP_PROTOTYPE for the first time,
-    you should edit .cshrc (or other shell initializa-
-    tion file) to include \${HOME}/.hpcm_contest/bin in
-    the program search PATH.
+    you should edit .cshrc by adding:
+    
+    	set path=(~/.hpcm_contest/bin \$path)
+        alias ll -lL
+	set autologout=180
+
+    and .profile (or .bash_profile) by adding
+
+        PATH=\"\$HOME/.hpcm_contest/bin:\$PATH\"
+
+    Whenever SETUP_PROTOTYPE runs, it links ~/.hpcm_
+    contest in the prototype account home directory to
+    \`.', so that ~/.cshrc will refer to ~/home/.cshrc
+    and the prototype account will still work.  It also
+    links ~/bin to the directory containing the SETUP_
+    PROTOTYPE program if this directory beings with
+    \`/', so after the above changes to .cshrc and
+    .profile the contents of this bin directory will
+    be in the PATH after login.  Note that neither
+    .hpcm_contest or bin are copied into the setup.tar
+    file and therefore they are NOT transfered to con-
+    testant accounts.
+
+    Whenever SETUP_PROTOTYPE runs, it does a
+    \`chmod a+x ~', so that ~/home is accessible to all
+    accounts.
 
     You may need to make other adjustments to PATH and
     to .cshrc (or other shell initialization file).
     Note that the version of these files you are editing
-    is actually in contest/home, and will be seen by
-    symbolic link by all the contestant accounts.  You
-    can even edit these files AFTER the contestant
-    accounts are all set up.
+    is actually in ~/home, and will be seen by symbolic
+    link by all the contestant accounts.  When making
+    a contest directory ~JJJ/contest_foo, the directory
+    ~JJJ/contest_foo/home is symbolically linked to
+    the ~/home directory of a prototype account, and
+    in each contestant home directory, ~/.hpcm_contest
+    is symbolically linked to ~JJJ/contest_foo.  So the
+    effect is to link the contestant's ~/.hpcm_contest/
+    home directory to the prototype accounts ~/home
+    directory.
 
-    After running SETUP_PROTOTYPE you should delete from
-    ~ symbolic links that should not be used, such as
-    links to xterminal server control files that will
-    not be used by contestants.
+    Prototype ~/home directories are typically shared
+    among many different contests, which may also have
+    different judging accounts JJJ.
 
-    If you want to use ssh to log into contest accounts
-    using a key known to the judge, you can make ~/.ssh
-    and ~/.ssh/authorized_keys.  The directory must have
-    chmod 700 and the file 600, else ssh will ignore
-    them.  You cannot symbolically link either directory
-    or file, or ssh will ignore them.  This means they
-    must be setup BEFORE SETUP_PROTOTYPE is run for the
-    last time, so they will be in setup.tar.  The
-    authorized_keys cannot be changed after SETUP_
-    PROTOTYPE is run for the last time before running
-    TRASH_ACCOUNT on the contestant accounts, unlike
-    .cshrc.
+    The files in the prototype account ~/home can be
+    edited AFTER the contestant accounts are all set up.
 
-    If the contest argument is not given, it is taken to
-    be the target of the symbolic link ~/.hpcm_contest,
-    if that exists.  If this program succeeds, it links
-    ~/.hpcm_contest to the value of the contest argu-
-    ment.
+    If you want to use ssh to log into contestant
+    accounts using a key known to the judge, you can
+    make ~/.ssh and ~/.ssh/authorized_keys in the proto-
+    type account, so these will be included in
+    setup.tar.  Note that these are not copied into
+    the prototype account ~/home.  The .ssh directory
+    must have chmod 700 and the authorized_keys file
+    must have chmod 600, else ssh will ignore them.  You
+    cannot symbolically link either directory or file,
+    or ssh will ignore them.  This means they must be
+    setup BEFORE SETUP_PROTOTYPE is run for the last
+    time, so they will be in setup.tar.  The authorized_
+    keys cannot be changed after SETUP_PROTOTYPE is run
+    for the last time before running TRASH_ACCOUNT on
+    the contestant accounts, unlike .cshrc.
 
-    Although ~/.hpcm_contest in the prototype account
-    ends up being symbolically linked to the contest
-    directory, and this symbolic link is stored in
-    setup.tar, TRASH_ACCOUNT does NOT use this symbolic
-    link stored in setup.tar, permitting the same
-    setup.tar, and therefore the same ~JJJ/prototype_
-    home, to be used for many different contests."
+    If you want to use a .procmailrc file in contestant
+    accounts, you must similarly create the file with
+    chmod 600 in the prototype account before SETUP_
+    PROTOTYPE is run for the last time, and before
+    TRASH_ACCOUNT is run in contestant accounts, and
+    you cannot change the file after SETUP_PROTOTYPE
+    is run for the last time."
 
 	exit 1
 	;;
-    * )
-    	contest=$1
-	;;
 esac
 
-# Be sure contest directory has an absolute path name.
+# Change to this account's home directory.
 #
-case "$contest" in
-    /* )
-    	;;
-    *)
-    	echo "\`$contest'" is NOT an absolute pathname
-	exit 1
-    	;;
-esac
+cd
 
 # Check that we are in fact in the home directory of
 # our account.
@@ -207,66 +216,75 @@ then
 	exit 1
 fi
 
-# Check that the contest home directory exists and
-# is writable.
+# Make home.
 #
-if test ! -d $contest/home -o ! -w $contest/home
+if test ! -d ~/home
 then
-	echo "$contest/home is not a writable directory"
+    # do nothing
+elif mkdir ~/home
+then
+	echo "mkdir ~/home"
+else
+	echo "ERROR in mkdir ~/home"
 	exit 1
 fi
 
-# Read ~/.hpcm_keep if that exists.
+if chmod 755 ~/home
+then
+	echo "chmod 755 ~/home"
+else
+	echo "ERROR in chmod 755 ~/home"
+	exit 1
+fi
+
+if chmod a+x .
+then
+	echo "chmod a+x ."
+else
+	echo "ERROR in chmod a+x ."
+	exit 1
+fi
+
+
+# Read ~/.hpcm_keep and ~/.hpcm_exclude if they exist.
 #
 if test -f .hpcm_keep
 then
 	keep=`cat .hpcm_keep`
 fi
-
-# Check that the user really wants to move stuff.
-#
-echo READY TO MOVE YOUR HOME DIRECTORY FILES AND \
-     "SUBDIRECTORIES!"
-echo -n Do your really want to do "this (yes or no)? "
-read -r
-if test "$REPLY" != yes
+if test -f .hpcm_exclude
 then
-    echo Guess not: exiting
-    exit 0
+	exclude=`cat .hpcm_exclude`
 fi
 
-echo -n "Are your sure (yes or no)? "
-read -r
-if test "$REPLY" != yes
-then
-    echo Guess not: exiting
-    exit 0
-fi
-
-
-# Remove designated files.
+# List of files to be tarred:
 #
-for f in $remove
-do
-        if test -e "$f"
-	then
-	    if rm -f "$f"
-	    then
-		    echo "removed $f"
-	    else
-		    echo ERROR in rm -f "$f"
-		    exit 1
-	    fi
-	fi
-done
+files=
 
-
-# Move everything in the home directory that is not
-# a symbolic link already, except things listed in
-# `keep'.
+# Move everything in the home directory that is not a
+# symbolic link already, except things listed in `keep',
+# `exclude', or `always'.  Add everything to tar list
+# that is not in `exclude' or `always'.
 #
 for i in .[^.]* *
 do
+	found=no
+	for j in $exclude $always
+	do
+		if test "$i" = "$j"
+		then
+			found=yes
+			break
+		fi
+	done
+
+	if test $found = yes
+	then
+		continue
+	fi
+
+	files="$files $i"
+
 	found=no
 	for j in $keep
 	do
@@ -314,11 +332,11 @@ do
 	    fi
 	fi
 
-	if mv "$i" $contest/home
+	if mv "$i" ~/home
 	then
-		echo "moved $i to $contest/home"
+		echo "moved $i to ~/home"
 	else
-		echo ERROR in mv "$i" $contest/home
+		echo ERROR in mv "$i" ~/home
 		exit 1
 	fi
 
@@ -333,63 +351,75 @@ do
 	fi
 done
 
-# Make $contest/home a+rx.
-#
-if chmod a+rx $contest/home
-then
-	echo "chmod a+rx $contest/home"
-else
-	echo "ERROR in chmod a+rx $contest/home"
-	exit 1
-fi
+echo "Files to be tar'ed are:"
+echo "   $files"
+echo ""
 
-# Link ~/.hpcm_contest to contest directory.
+# Link ~/.hpcm_contest to `.'.
 #
 rm -f .hpcm_contest
 
-if ln -s $contest .hpcm_contest
+if ln -s . .hpcm_contest
 then
-	echo "linked .hpcm_contest to $contest"
+	echo "linked .hpcm_contest to \`.'"
 else
-	echo ERROR in ln -s $contest .hpcm_contest
+	echo "ERROR in ln -s . .hpcm_contest"
 	exit 1
 fi
 
+# Link ~/bin to `dirname $0` if that begins with /
+#
+dir=`dirname $0`
+
+case "$dir" in
+    /*)
+	rm -rf bin
+
+	if ln -s $dir bin
+	then
+		echo "linked bin to $dir"
+	else
+		echo "ERROR in ln -s $dir bin"
+		exit 1
+	fi
+    	;;
+esac
+
 # Create empty.ls.
 #
-rm -f $contest/home/empty.ls
+rm -f ~/home/empty.ls
 
-if (echo >$contest/home/empty.ls "."; \
-    echo >>$contest/home/empty.ls ".."; \
-    chmod a+r $contest/home/empty.ls)
+if (echo >~/home/empty.ls "."; \
+    echo >>~/home/empty.ls ".."; \
+    chmod a+r ~/home/empty.ls)
 then
-	echo "created $contest/home/empty.ls"
+	echo "created ~/home/empty.ls"
 else
-	echo "ERROR in creating $contest/home/empty.ls"
+	echo "ERROR in creating ~/home/empty.ls"
 	exit 1
 fi
 
 # Create setup.tar.
 #
-rm -f $contest/home/setup.tar
-if (tar cf $contest/home/setup.tar .[^.]* *; \
-    chmod a+r $contest/home/setup.tar)
+rm -f ~/home/setup.tar
+if (tar cf ~/home/setup.tar $files; \
+    chmod a+r ~/home/setup.tar)
 then
-	echo "created $contest/home/setup.tar"
+	echo "created ~/home/setup.tar"
 else
-	echo "ERROR in creating $contest/home/setup.tar"
+	echo "ERROR in creating ~/home/setup.tar"
 	exit 1
 fi
 
 # Create setup.ls
 #
-rm -f $contest/home/setup.ls
-if (ls -aR >$contest/home/setup.ls; \
-    chmod a+r $contest/home/setup.ls)
+rm -f ~/home/setup.ls
+if (ls -aR >~/home/setup.ls $files; \
+    chmod a+r ~/home/setup.ls)
 then
-	echo "created $contest/home/setup.ls"
+	echo "created ~/home/setup.ls"
 else
-	echo "ERROR in creating $contest/home/setup.ls"
+	echo "ERROR in creating ~/home/setup.ls"
 	exit 1
 fi
 
