@@ -2,7 +2,7 @@
 #
 # File:		Makefile.mk
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Jul 31 04:57:47 EDT 2002
+# Date:		Wed Sep 25 06:18:17 EDT 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/07/31 09:28:35 $
+#   $Date: 2002/09/25 10:25:32 $
 #   $RCSfile: Makefile.mk,v $
-#   $Revision: 1.12 $
+#   $Revision: 1.13 $
 
 extract_replies:	mbox
 	rm -rf replies
@@ -34,6 +34,7 @@ diff_replies:
 
 test_email:	test_count_correct \
 		test_count_incorrect \
+		test_unformatted \
 		test_system_error \
 		test_get \
 		test_query \
@@ -62,6 +63,9 @@ test_count_incorrect:	${TEST_PREREQUISITES} \
 	$S/count_crash.cc.send \
 	$S/count_timeout.java.send \
 	$S/count_too_much_output.c.send
+
+test_unformatted:	${TEST_PREREQUISITES} \
+	$S/unformatted.send \
 
 test_system_error:	${TEST_PREREQUISITES} \
 	$S/system_error.send \
