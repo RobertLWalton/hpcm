@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Sep 26 08:19:05 EDT 2000
+# Date:		Mon Oct  2 09:34:36 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/09/26 12:41:26 $
+#   $Date: 2000/10/02 14:01:20 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.38 $
+#   $Revision: 1.39 $
 #
 
 # An optionally modified copy of this file must be
@@ -25,18 +25,29 @@
 # Scoreboard Parameters.
 #
 # List of problems, list of submitters, start_time,
-# stop_time, penalty, unit.  Times are in seconds.  If
-# lists are empty, all problems or submitters are
-# allowed; otherwise only problems or submitters in
-# the list are use to compute the scoreboard.  The
-# start_time, penalty, and unit are used to compute
-# the secondary score: penalty is the number of seconds
-# of penalty for an incorrect submission for a problem
-# later gotten correct; and unit is the units used
-# for computing the secondary score in seconds: e.g.,
-# 60 means the seconary score is in minutes, i.e., the
-# problem score in seconds is divided by 60, rounded
-# down, before being added to the secondary score.
+# stop_time, penalty.  Times are in seconds.  Each list
+# is thought of as an allow list: listed problems or
+# submitters are allowed.  If the lists are empty, all
+# problems or submitters are allowed.  There are also
+# associated deny lists: problems or submitters in the
+# deny lists are denied, even if they are allowed by the
+# allow lists.
+#
+# The start_time and penalty are used to compute the
+# time score: penalty is the number of seconds of
+# penalty for an incorrect submission for a problem
+# later gotten correct.
+#
+# If the start_time is "", the time a problem is
+# gotten is used as the start time for that problem.
+# If the start_time equals "team", the time the team
+# got its first problem listed in the scoreboard is
+# the start time for all problems for that team.
+#
+# If the start time is not "" or "team", all submis-
+# sions and problem gettings before that time are
+# ignored.  If the stop time is not "", all submissions
+# after that stop time are ignored.
 #
 # The default values are for scoreboarding a practice
 # facility that operates 24 hours a day, every day.
@@ -44,18 +55,22 @@
 set scoreboard_problems {
     }
 
+set scoreboard_problems_deny {
+    }
+
 set scoreboard_submitters {
     }
 
-set scoreboard_start_time \
-    [clock scan "Jan 1 00:00:00 EDT 2000"]
+set scoreboard_submitters_deny {
+    }
 
-set scoreboard_stop_time \
-    [clock scan "Jan 1 00:00:00 EDT 2030"]
+set scoreboard_start_time ""
+#   [clock scan "Jan 1 00:00:00 EDT 2000"]
+
+set scoreboard_stop_time ""
+#   [clock scan "Jan 1 00:00:00 EDT 2030"]
 
 set scoreboard_penalty 0
-
-set scoreboard_unit [expr { 24 * 60 * 60 }]
 
 
 # Scoring Mode:
@@ -77,6 +92,13 @@ set scoring_mode auto
 #			addition
 #
 set reply_mode auto
+
+# Reply Manager:
+#
+# Email address to cc replies to if in `auto' reply_mode
+# and no clearly correct automatic reply is possible.
+#
+set reply_manager ""
 
 # Log Mode:		Action on Error:
 #
@@ -337,6 +359,8 @@ set manual_score_file		Manual_Score
 set make_file			Makefile
 set dispatch_pid_file		Dispatch_PID
 set gotten_file			Gotten
+set score_flag_file		Score_Flag
+set needs_reply_flag_file	Needs_Reply_Flag
 
 
 # Default Scoring Instructions:
@@ -355,3 +379,5 @@ set info_directory \
     $judging_parameters_directory/info
 set log_directory \
     $judging_parameters_directory/log
+set flag_directory \
+    $judging_parameters_directory/flag

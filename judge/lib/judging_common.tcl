@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Sep 29 08:21:57 EDT 2000
+# Date:		Mon Oct  2 09:48:51 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/09/29 17:51:40 $
+#   $Date: 2000/10/02 14:01:21 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.39 $
+#   $Revision: 1.40 $
 #
 
 # Include this code in TCL program via:
@@ -987,6 +987,26 @@ proc write_file { filename line } {
     set file_ch [open $filename w]
     puts $file_ch $line
     close $file_ch
+}
+
+# Set flag.
+#
+proc set_flag { flagfilename } {
+    mkdir $flag_directory
+    set file_ch [open $flag_directory/$flagfilename w]
+    close $file_ch
+}
+
+# Test flag.
+#
+proc set_flag { flagfilename } {
+    return [file exists $flag_directory/$flagfilename]
+}
+
+# clear flag.
+#
+proc set_flag { flagfilename } {
+    file delete -force $flag_directory/$flagfilename
 }
 
 #### END OF FUNCTION DEFINITIONS ####
