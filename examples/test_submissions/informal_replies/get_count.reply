@@ -1,0 +1,570 @@
+From walton  Mon Jan 28 04:58:34 2002
+Return-Path: <walton@walton1.walton>
+Received: (from walton@localhost)
+	by walton1.walton (8.11.6/8.11.6) id g0S9wXU06930;
+	Mon, 28 Jan 2002 04:58:33 -0500
+Date: Mon, 28 Jan 2002 04:58:33 -0500
+From: "Robert L. Walton" <walton@walton1.walton>
+Message-Id: <200201280958.g0S9wXU06930@walton1.walton>
+To: "Robert L. Walton" <walton@walton1.walton>
+Reply-To: email_contest<walton@walton1.walton>
+Subject: RE: get demos/count
+X-HPCM-Test-Subject:  there should be no separate error message
+Status: R
+
+The following requested files appear below after the request message header:
+    demos/count/Makefile demos/count/README demos/count/count.in
+    demos/count/count.test demos/count/count.txt demos/count/count1.c
+    demos/count/count1.cc demos/count/count1.java demos/count/count1.p
+
+
+---------------------------------------------- this message replies to:
+To: email_contest<walton@walton1.walton>
+From: "Robert L. Walton" <walton@walton1.walton>
+Date: Mon, 28 Jan 2002 04:58:31 -0500
+Subject: get demos/count
+------------------------------------------------------------------------
+
+
+---<>--<>---<>--<>---<>----- demos/count/Makefile:
+# Makefile for the `count' Demonstration Problem
+#
+# File:		Makefile
+# Date:		Mon Jan 28 03:52:38 EST 2002
+#
+# Exactly ONE of the four files count.c (C), count.cc
+# (C++), count.p (Pascal), or count.java (Java) should
+# exist.
+#
+# UNIX commands supported by this Makefile:
+#
+#	make		Same as `make count.out'.
+#
+#	make count	Makes the binary program file
+#			`count' by running gcc on
+#			count.c, or g++ on count.cc, or
+#			p2c on count.p, or javac on
+#			count.java, depending upon which
+#			of count.c, count.cc, count.p,
+#			or count.java exist.  Does
+#			nothing if `count' is more up
+#			to date than count.c, count.cc,
+#			count.p, or count.java.
+#
+#	make count.out	Makes `count' as above and
+#			then runs it with standard
+#			input coming from the file
+#			count.in.  Puts the standard
+#			output in the file count.out,
+#			and then copies that to the
+#			screen.  Does nothing, however,
+#			if count.out is more recent
+#			than both count.in and count.
+#			
+#	make submit	Makes `count.out' just to be
+#			sure that nothing crashes, and
+#			then e-mails count.c, count.cc,
+#			count.java, or count.p to the
+#			judges.
+#
+#	make clean	Removes `count', count.out, and
+#			other intermediate files that
+#			might exist, such as `core',
+#			`count.class', or `count.p2c'.
+
+
+.SUFFIXES:
+.SUFFIXES: .c .cc .java .p
+
+default:	count.out
+
+.c:
+	rm -f $* core
+	gcc -g -o $* $*.c -lm
+
+.cc:
+	rm -f $* core
+	g++ -g -o $* $*.cc -lm
+
+.p:
+	rm -f $* $*.p2c core
+	p2c -o $*.p2c $*.p
+	gcc -g -o $* -x c $*.p2c -lp2c -lm
+
+# Do NOT try to use -check option for p2c as it fouls up
+# eof detection.
+
+.java:
+	rm -f $* $*.class core
+	javac -g $*.java
+	echo >$* '#!/bin/sh'
+	echo >>$* "exec `which java` $*"
+	chmod a+r *.class
+	chmod a+rx $*
+#
+# hpcm_sandbox below may execute `count' as a special
+# unprivileged user named `sandbox', so various files
+# must be `a+x' or `a+r'.
+
+count.out:	count count.in
+	rm -f count.out core
+	chmod a+x . count
+	hpcm_sandbox -cputime 60 \
+	             -datasize 8m \
+		     -stacksize 2m \
+		     -filesize 50k \
+		     -watch \
+		     count \
+	    <count.in >count.out
+	@echo ""
+	@echo "========== OUTPUT (count.out)" \
+	      "=========="
+	@cat count.out
+	@echo "============== END OUTPUT =============="
+
+submit:		count.out
+	hpcm_submit count
+
+clean:
+	rm -f count count.class count.p2c core count.out
+#
+# Author:	walton@deas.harvard.edu
+#
+# The authors have placed this program in the public
+# domain; they make no warranty and accept no liability
+# for this program.
+#
+# RCS Info (may not be true date or author):
+#
+#   $Author: hc3 $
+#   $Date: 2002/01/28 09:59:48 $
+#   $RCSfile: get_count.reply,v $
+#   $Revision: 1.1 $
+---<>--<>---<>--<>---<>----- demos/count/README:
+The files in this demo directory are:
+
+    public/count/Makefile	Commented Makefile.
+    public/count/README		Usage Info.
+    public/count/count.in	Judges input.
+    public/count/count.test	Judges output.
+    public/count/count.txt	Problem description.
+    public/count/count1.c	Solution in C.
+    public/count/count1.cc	Solution in C++.
+    public/count/count1.java    Solution in JAVA.
+    public/count/count1.p	Solution in PASCAL.
+
+The Makefile is commented, as opposed to most problem
+Makefiles.  For a non-demo problem you are only given
+the .txt file and the Makefile.
+
+To run the demo (under UNIX), first
+
+    cp count1.yy count.yy
+
+for exactly ONE of yy = c, cc, java, or p.  Then
+
+	make
+
+To check that the output is correct
+
+	diff count.out count.test
+
+Then to submit the demo
+
+	make submit
+
+If you want to edit the solution you chose, you may
+first need to
+
+	chmod u+w count.yy
+
+(for the right yy), to make the file writable.
+
+Read the Makefile for more information.
+
+If you have a non-UNIX system, you can submit the file
+count1.yy directly by sending email to the judge with
+subject `submit count.yy' (note there is no `1' here)
+and body equal to the file count1.yy (here there is a
+`1').  You may run count1.yy using your own system with
+count.in as the standard input in order to generate
+count.out.
+
+Although in this directory the problem description is
+in a .txt file, in other problem directories the problem
+description may be in a .html, .htm, or .ps (postscript)
+file.
+---<>--<>---<>--<>---<>----- demos/count/count.in:
+This is a good paragraph to start with.
+
+And to continue in a bit more
+complicated
+vein,
+this is a good paragraph.
+
+But
+ the
+  ultimate
+   in
+    poetically
+     possible
+      paragraphs
+       is
+        this,
+         or
+          is
+           it!
+
+
+
+
+Oh Well.
+---<>--<>---<>--<>---<>----- demos/count/count.test:
+Paragraph 1: 1 lines, 8 words, 39 characters.
+Paragraph 2: 4 lines, 14 words, 70 characters.
+Paragraph 3: 12 lines, 12 words, 124 characters.
+Paragraph 4: 1 lines, 2 words, 8 characters.
+---<>--<>---<>--<>---<>----- demos/count/count.txt:
+Paragraph Character/Word/Line Counting.
+
+The Itsy Bitsy Counting Company has a job counting the
+number of characters, words, and lines in a paragraph.
+
+A paragraph is a sequence of 1 or more non-blank lines.
+
+All the characters of a line count EXCEPT the trailing
+new line.
+
+A word is a sequence of non-space (non ' ') characters
+on a line, and is separated from other words on the
+same line by sequences of space ( ' ' ) characters.
+
+The only whitespace characters in the input are space
+and newline ( ' ' and '\n' ).  No line has more than
+100 characters in it, not counting the new line at
+the end.
+
+Paragraphs are separated by one or more blank lines.
+A blank line may have whitespace characters, but
+nothing else.
+
+The paragraphs in the input are numbered 1, 2, ... .
+The program reads its standard input, and for each
+paragraph in that input, prints the paragraph
+number and the counts, in exactly the following format:
+
+Paragraph #: # lines, # words, # characters.
+
+where each # denotes 1 or more decimal digits.
+
+Example Input:
+------- -----
+
+This is a good paragraph to start with.
+
+And to continue in a bit more
+complicated
+vein,
+this is a good paragraph.
+
+But
+ the
+  ultimate
+   in
+    poetically
+     possible
+      paragraphs
+       is
+        this,
+         or
+          is
+           it!
+
+
+
+
+Oh Well.
+
+
+Example Output:
+------- ------
+
+
+Paragraph 1: 1 lines, 8 words, 39 characters.
+Paragraph 2: 4 lines, 14 words, 70 characters.
+Paragraph 3: 12 lines, 12 words, 124 characters.
+Paragraph 4: 1 lines, 2 words, 8 characters.
+---<>--<>---<>--<>---<>----- demos/count/count1.c:
+#include <stdio.h>
+
+main()
+{
+    int paragraph = 1;
+
+    while ( 1 )
+    {
+	int characters = 0;
+	int words = 0;
+	int lines = 0;
+
+	char buffer [102];
+
+	int at_end_of_file = 1;
+
+	while ( fgets ( buffer, sizeof ( buffer),
+	                stdin ) )
+	{
+	    char * cp = buffer;
+
+	    at_end_of_file = 0;
+
+	    while ( * cp == ' ' ) ++ cp;
+
+	    if ( * cp == 0 || * cp == '\n' ) break;
+
+	    ++ lines;
+
+	    do
+	    {
+		++ words;
+		while ( * cp != ' ' &&
+		        * cp != '\n' &&
+			* cp != 0 ) ++ cp;
+		while ( * cp == ' ' ) ++ cp;
+	    } while ( * cp != 0 && * cp != '\n' );
+
+	    characters += ( cp - buffer );
+	}
+
+	if ( at_end_of_file ) break;
+
+	if ( lines > 0  )
+	{
+	    printf ( "Paragraph %d: %d lines, %d words,"
+	             " %d characters.\n", paragraph,
+		     lines, words, characters );
+
+	    ++ paragraph;
+	}
+    }
+
+    return 1;   /* This line can be omitted.
+		 * It is a test that make count.out
+		 * works even if count returns an
+		 * error code.
+		 */
+}
+---<>--<>---<>--<>---<>----- demos/count/count1.cc:
+#include <iostream.h>
+
+main()
+{
+    int paragraph = 1;
+
+    while ( ! cin.eof() )
+    {
+	int characters = 0;
+	int words = 0;
+	int lines = 0;
+
+	char buffer [101];
+
+	while ( cin.getline ( buffer, sizeof ( buffer ) ),
+		! cin.eof() )
+	{
+	    char * cp = buffer;
+	    while ( * cp == ' ' ) ++ cp;
+
+	    if ( * cp == 0 ) break;
+
+	    ++ lines;
+
+	    do
+	    {
+		++ words;
+		while ( * cp != ' ' && * cp ) ++ cp;
+		while ( * cp == ' ' ) ++ cp;
+	    } while ( * cp );
+
+	    characters += ( cp - buffer );
+	}
+
+	if ( lines > 0  )
+	{
+	    cout << "Paragraph " << paragraph << ": "
+		 << lines << " lines, "
+		 << words << " words, "
+		 << characters << " characters."
+		 << endl;
+
+	    ++ paragraph;
+	}
+    }
+
+    return 1;   // This line can be omitted.
+		// It is a test that make count.out
+		// works even if count returns an
+		// error code.
+}
+---<>--<>---<>--<>---<>----- demos/count/count1.java:
+import java.io.*;
+
+public class count {
+
+    public static void main (String[] args) throws IOException {
+
+	int paragraph = 1;
+	boolean eof_seen = false;
+
+	while ( ! eof_seen )
+	{
+	    int characters = 0;
+	    int words = 0;
+	    int lines = 0;
+
+	    while ( true )
+	    {
+		int buffer [] = new int [ 100 ];
+		int len = 0;
+
+		while ( true )
+		{
+		    int c = System.in.read ();
+		    if ( c == '\n' ) break;
+		    else if ( c == -1 )
+		    {
+			eof_seen = true;
+			break;
+		    }
+		    else
+			buffer [len ++] = c;
+		}
+
+		int cp = 0;
+		while ( cp < len && buffer [cp] == ' ' ) ++ cp;
+
+		if ( cp == len ) break;
+
+		++ lines;
+
+		do
+		{
+		    ++ words;
+		    while ( cp < len && buffer [cp] != ' ' ) ++ cp;
+		    while ( cp < len && buffer [cp] == ' ' ) ++ cp;
+		} while ( cp != len );
+
+		characters += cp;
+	    }
+
+	    if ( lines > 0  )
+	    {
+		System.out.print ( "Paragraph " );
+		System.out.print ( paragraph );
+		System.out.print ( ": " );
+		System.out.print ( lines );
+		System.out.print ( " lines, " );
+		System.out.print ( words );
+		System.out.print ( " words, " );
+		System.out.print ( characters );
+		System.out.print ( " characters." );
+		System.out.println ();
+
+		++ paragraph;
+	    }
+	}
+    }
+}
+---<>--<>---<>--<>---<>----- demos/count/count1.p:
+program count ( input, output );
+
+var
+    paragraph : integer;
+    characters : integer;
+    words : integer;
+    lines : integer;
+    c : char;
+    nonblank : boolean;
+    endline : boolean;
+    endparagraph : boolean;
+begin
+    paragraph := 1;
+
+    while not eof do
+    begin
+	characters := 0;
+	words := 0;
+	lines := 0;
+	endparagraph := false;
+
+	while not eof and not endparagraph do
+	begin
+
+	    nonblank := false;
+	    endline := false;
+
+	    while not nonblank and not endline do
+	    begin
+		if eoln then endline := true
+		else
+		    begin
+			read (c);
+			nonblank := not ( c = ' ' );
+			characters := characters + 1
+		    end
+	    end;
+	        
+
+	    if endline then
+		endparagraph := true
+	    else
+	    begin
+		lines := lines + 1;
+
+		while not endline do
+		begin
+
+		    words := words + 1;
+
+		    while not endline and nonblank do
+		    begin
+			if eoln then endline := true
+			else
+			    begin
+				read (c);
+				nonblank := not ( c = ' ' );
+				characters :=
+				    characters + 1
+			    end
+		    end;
+
+		    while not endline and not nonblank
+			do
+		    begin
+			if eoln then endline := true
+			else
+			    begin
+				read (c);
+				nonblank := not ( c = ' ' );
+				characters :=
+				    characters + 1
+			    end
+		    end
+		end
+	    end;
+	    readln
+	end;
+
+	if lines > 0 then
+	begin
+	    writeln ( 'Paragraph ', paragraph:0, ': ',
+		      lines:0, ' lines, ',
+		      words:0, ' words, ',
+		      characters:0, ' characters.' );
+	    paragraph := paragraph + 1
+	end
+    end;
+
+end;
+---<>--<>---<>--<>---<>----- end of files
+

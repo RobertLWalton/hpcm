@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Jan 27 19:54:37 EST 2002
+# Date:		Mon Jan 28 04:47:29 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/01/28 01:22:38 $
+#   $Date: 2002/01/28 10:01:21 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.27 $
+#   $Revision: 1.28 $
 
 # To make an email contest named `foo':
 #
@@ -99,6 +99,16 @@
 #
 HPCM=${HOME}/hpcm
 
+# Parameters for running tests
+#
+SENDMAIL = /usr/sbin/sendmail -oi -t
+S=${HPCM}/examples/test_submissions
+
+# Kill all implicit rules
+#
+.SUFFIXES:
+.SUFFIXES:	.mail .send
+
 # INDICES below is a description of the help, problems,
 # and demos files to be available to contestants.
 # INDICES consists of a series of entries each concern-
@@ -168,6 +178,8 @@ all:
 	makejudgingdir -email ${INDICES}
 	chmod a+x . ..
 
+test:	test_all
+
 scoreboard:
 	scorefinder | scoreboard
 
@@ -185,3 +197,40 @@ update_scoreboard:
 
 clean:
 	rm -rf mail help info* solutions* TODO
+
+
+# Tests
+
+Contest_Address:
+	@echo "ERROR: put the contest address in the" \
+	      "file Contest_Address"
+	@echo "The address should be" \
+	      '`'password'<'`id -un`@`hostname`">'"
+	@echo "where \`password' is as in ~/.procmailrc"
+	exit 1
+
+.mail.send:
+	( echo To: `cat Contest_Address`; \
+	  cat $*.mail) | ${SENDMAIL}
+	sleep 2
+
+test_all:	test_get
+
+test_count_correct:	Contest_Address \
+	$S/count_correct.c.send \
+	$S/count_correct.cc.send \
+	$S/count_correct.java.send \
+	$S/count_correct.p.send
+
+test_count_incorrect:	Contest_Address \
+	$S/count_crash.cc.send \
+	$S/count_timeout.java.send \
+	$S/count_too_much_output.c.send
+
+test_system_error:	Contest_Address \
+	$S/system_error.send \
+
+test_get:	Contest_Address \
+	$S/get_count.send \
+	$S/get_bad_body.send \
+	$S/get_illegal_filenames.send
