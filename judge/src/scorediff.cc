@@ -11,9 +11,9 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: hc3 $
-//   $Date: 2001/06/19 08:02:16 $
+//   $Date: 2001/06/19 08:45:23 $
 //   $RCSfile: scorediff.cc,v $
-//   $Revision: 1.21 $
+//   $Revision: 1.22 $
 
 // This is version 2, a major revision of the first
 // scorediff program.  This version is more explicitly
@@ -282,12 +282,14 @@ char documentation [] =
 "    and the program outputs only the first N `float'\n"
 "    or `integer' proofs that have an absolute or\n"
 "    relative difference larger than the values given\n"
-"    in the program option.\n"
+"    in the program option.  In these options the\n"
+"    differences may be omitted if they are zero and\n"
+"    the program argument following them does NOT\n"
+"    begin with a digit or decimal point.\n"
 "\n"
 "    The first `nonblank' difference found terminates\n"
 "    this program and the search for more differ-\n"
 "    ences.\n"
-"\n"
 ;
 
 // A token is either a number token, an end of file
@@ -728,7 +730,8 @@ enum difference_type {
     ENDSPACE,
     EOF1,
     EOF2,
-    NUMBER,
+    FLOAT,
+    INTEGER,
     DECIMAL,
     EXPONENT,
     CASE,
@@ -758,7 +761,8 @@ difference differences[] = {
     { "endspace", false, UINT_MAX },
     { "eof1", false, UINT_MAX },
     { "eof2", false, UINT_MAX },
-    { "number", false, UINT_MAX },
+    { "float", false, UINT_MAX },
+    { "integer", false, UINT_MAX },
     { "decimal", false, UINT_MAX },
     { "exponent", false, UINT_MAX },
     { "case", false, UINT_MAX },
@@ -768,14 +772,18 @@ difference differences[] = {
 
 // Maximum numeric differences found so far.
 //
-double absdiff_maximum	= 0.0;
-double reldiff_maximum	= 0.0;
+double float_absdiff_maximum	= 0.0;
+double float_reldiff_maximum	= 0.0;
+double integer_absdiff_maximum	= 0.0;
+double integer_reldiff_maximum	= 0.0;
 
 // Numeric differences equal to or below these are
 // NOT output as proofs.
 //
-double absdiff_limit	= 0.0;
-double reldiff_limit	= 0.0;
+double float_absdiff_limit	= 0.0;
+double float_reldiff_limit	= 0.0;
+double integer_absdiff_limit	= 0.0;
+double integer_reldiff_limit	= 0.0;
 
 struct proof
 {
@@ -860,22 +868,28 @@ inline void found_difference
 {
     differences[type].flag = true;
     if ( differences[type].proof_limit > 0
-         && ( type != NUMBER
-	      || absdiff > absdiff_limit
-	      || reldiff > reldiff_limit ) )
+         && (    type != FLOAT
+	      || absdiff > float_absdiff_limit
+	      || reldiff > float_reldiff_limit )
+         && (    type != INTEGER
+	      || absdiff > integer_absdiff_limit
+	      || reldiff > integer_reldiff_limit ) )
         output_proof ( type, absdiff, reldiff );
 }
 
 // Tests two numbers just scanned for the output and
 // test files to see if there is a computable differ-
-// ence.  If so, calls found_difference (NUMBER), and
-// updates `absdiff_maximum' and `reldiff_maximum' by
-// writing the differences just found into them iff
-// these new differences are larger than the previous
-// value of `absdiff_maximum' or `reldiff_maximum',
-// respectively.  Also calls found_difference for
-// DECIMAL or EXPONENT if the two number `decimals'
-// or `has_exponent' file members are unequal.
+// ence.  If so, calls found_difference (FLOAT) (or
+// found_difference (INTEGER)), and updates `float_
+// absdiff_maximum' and `float_reldiff_maximum' (or
+// integer_absdiff_maximum' and `integer_reldiff_
+// maximum') by writing the differences just found
+// into these variables iff the new differences are
+// larger than the previous values of these variables.
+//
+// Also calls found_difference for DECIMAL or EXPONENT
+// if the two number `decimals' or `has_exponent' file
+// members are unequal.
 //
 // If there is no computable difference, calls found_
 // difference(NONBLANK) instead.  This happens if one of
@@ -922,13 +936,29 @@ void diffnumber ()
 	return;
     }
 
-    found_difference ( NUMBER, absdiff, reldiff );
+    if (    output.decimals >= 0
+         || test.decimals >= 0
+	 || output.has_exponent
+	 || test.has_exponent )
+    {
+	found_difference ( FLOAT, absdiff, reldiff );
 
-    if ( absdiff > absdiff_maximum )
-	absdiff_maximum = absdiff;
+	if ( absdiff > float_absdiff_maximum )
+	    float_absdiff_maximum = absdiff;
 
-    if ( reldiff > reldiff_maximum )
-	reldiff_maximum = reldiff;
+	if ( reldiff > float_reldiff_maximum )
+	    float_reldiff_maximum = reldiff;
+    }
+    else
+    {
+	found_difference ( INTEGER, absdiff, reldiff );
+
+	if ( absdiff > integer_absdiff_maximum )
+	    integer_absdiff_maximum = absdiff;
+
+	if ( reldiff > integer_reldiff_maximum )
+	    integer_reldiff_maximum = reldiff;
+    }
 
     if ( output.decimals != test.decimals )
 	found_difference ( DECIMAL );
@@ -949,19 +979,39 @@ int main ( int argc, char ** argv )
 
 	char * name = argv[1] + 1;
 
-        if ( strcmp ( "number", name ) == 0 )
+        if (    strcmp ( "float", name ) == 0
+	     || strcmp ( "integer", name ) == 0 )
 	{
 	    // special case.
 
-	    absdiff_limit = atof ( argv[2] );
-	    if ( isdigit ( argv[2][0] ) )
+	    double absdiff_limit =
+		   isdigit ( argv[2][0] )
+		|| argv[2][0] == '.' ?
+	    	atof ( argv[2] ) : 0.0;
+	    if (    isdigit ( argv[2][0] )
+	         || argv[2][0] == '.' )
 		    ++ argv, -- argc;
 
 	    if ( argc < 3 ) break;
 
-	    reldiff_limit = atof ( argv[2] );
-	    if ( isdigit ( argv[2][0] ) )
+	    double reldiff_limit =
+		   isdigit ( argv[2][0] )
+		|| argv[2][0] == '.' ?
+	    	atof ( argv[2] ) : 0.0;
+	    if (    isdigit ( argv[2][0] )
+	         || argv[2][0] == '.' )
 		    ++ argv, -- argc;
+
+	    if ( name[0] == 'f' )
+	    {
+	    	float_absdiff_limit = absdiff_limit;
+	    	float_reldiff_limit = reldiff_limit;
+	    }
+	    else
+	    {
+	    	integer_absdiff_limit = absdiff_limit;
+	    	integer_reldiff_limit = reldiff_limit;
+	    }
 
 	    if ( argc < 3 ) break;
 	}
@@ -976,7 +1026,9 @@ int main ( int argc, char ** argv )
 
     	if ( i < MAX_DIFFERENCE )
 	    differences[i].proof_limit
-	    	= (unsigned) atol ( argv[2] );
+	    	= isdigit ( argv[2][0] ) ?
+		  (unsigned) atol ( argv[2] ) :
+		  0;
 	else
 	{
 	    cerr << "Unrecognized option -"
@@ -1021,7 +1073,7 @@ int main ( int argc, char ** argv )
         // Terminate loop if just one file has an
 	// EOF_TOKEN.
 
-	if ( output.type == EOF_TOKEN
+	if (    output.type == EOF_TOKEN
 	     && test.type != EOF_TOKEN )
 	{
 	    found_difference ( EOF1 );
@@ -1029,7 +1081,7 @@ int main ( int argc, char ** argv )
 	    break;
 	}
 	else
-	if ( test.type == EOF_TOKEN
+	if (    test.type == EOF_TOKEN
 	     && output.type != EOF_TOKEN )
 	{
 	    found_difference ( EOF2 );
@@ -1126,9 +1178,17 @@ int main ( int argc, char ** argv )
 
 		if ( token_case )
 		    found_difference
-		        ( output.type == NUMBER_TOKEN ?
-			  NUMBER :
-			  CASE );
+		        ( output.type != NUMBER_TOKEN ?
+			  CASE :
+			  output.decimals >= 0 ?
+			  FLOAT :
+			  test.decimals >= 0 ?
+			  FLOAT :
+			  output.has_exponent ?
+			  FLOAT :
+			  test.has_exponent ?
+			  FLOAT :
+			  INTEGER );
 	    }
 
 	    else if ( output.type == NUMBER_TOKEN )
@@ -1161,9 +1221,12 @@ int main ( int argc, char ** argv )
 	{
 	    if ( any ) cout << " ";
 	    cout << differences[i].name;
-	    if ( i == NUMBER )
-		cout << " " << absdiff_maximum
-		     << " " << reldiff_maximum;
+	    if ( i == FLOAT )
+		cout << " " << float_absdiff_maximum
+		     << " " << float_reldiff_maximum;
+	    else if ( i == INTEGER )
+		cout << " " << integer_absdiff_maximum
+		     << " " << integer_reldiff_maximum;
 	    any = true;
 	}
     }
@@ -1182,7 +1245,8 @@ int main ( int argc, char ** argv )
 	      p = p->next )
 	{
 	    cout << " " << differences[p->type].name;
-	    if ( p->type == NUMBER )
+	    if (    p->type == FLOAT
+	         || p->type == INTEGER )
 	    {
 		cout << " " << p->absdiff;
 		cout << " " << p->reldiff;
