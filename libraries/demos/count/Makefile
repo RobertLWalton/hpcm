@@ -77,4 +77,5 @@ submit:		count.out
 	hpcm_submit count
 
 clean:
-	rm -f count count.out count.class core
+	rm -f count count.class core \
+	      count.out count.err count.cerr
