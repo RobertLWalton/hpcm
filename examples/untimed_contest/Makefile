@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Oct 30 10:50:08 EST 2001
+# Date:		Sun Jan 27 19:48:20 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/10/30 15:51:59 $
+#   $Date: 2002/01/28 00:50:26 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.25 $
+#   $Revision: 1.26 $
 
 # To make an email contest named `foo':
 #
@@ -109,7 +109,7 @@ HPCM=${HOME}/hpcm
 #		email/=help/, \
 #		advanced/=help/, \
 #		    email:include, \
-#		    common:include \
+#		    common:include, \
 #		    advanced:include \
 #
 # concerns the index file whose name (relative to this
@@ -156,7 +156,7 @@ INDICES=    help/index, \
 		email/=help/, \
 		advanced/=help/, \
 		    email:include, \
-		    common:include \
+		    common:include, \
 		    advanced:include \
 	    ${HPCM}/problem_library/index, \
 		public/=problems/, \
