@@ -26,6 +26,11 @@
 #    will have been created in the judging directory.
 #    After you follow an instruction, edit it out of
 #    the TODO file.
+#
+# 6. Use `make start_scoreboard' to start the scoreboard
+#    crontab job.  Use `make check_scoreboard' to check
+#    the crontab job status, and `make stop_scoreboard'
+#    to stop the crontab job.
 
 HPCM=${HOME}/hpcm
 
@@ -54,8 +59,15 @@ scoreboard:
 start_scoreboard:
 	crontab crontab
 
+check_scoreboard:
+	-crontab -l
+
+stop_scoreboard:
+	crontab -r
+
 update_scoreboard:
-	sendscoreboard '"wyg2bpitbp scoreboard"<hc3@deas.harvard.edu>'
+	sendscoreboard \
+        '"wyg2bpitbp scoreboard"<hc3@deas.harvard.edu>'
 
 clean:
 	rm -rf info solutions mail help
@@ -69,6 +81,6 @@ clean:
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/12/01 00:53:01 $
+#   $Date: 2000/12/01 01:09:38 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.4 $
+#   $Revision: 1.5 $
