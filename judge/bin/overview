@@ -4,7 +4,7 @@
 #
 # File:		overview
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Feb  2 21:37:03 EST 2002
+# Date:		Sun Feb  3 08:01:01 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/02/03 02:44:12 $
+#   $Date: 2002/02/03 13:02:25 $
 #   $RCSfile: overview,v $
-#   $Revision: 1.59 $
+#   $Revision: 1.60 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -2422,7 +2422,7 @@ in the PATH of the contestant account.
 A brief summary of these programs follows:
 
     help		Display help files.
-    scoreboard		Display scoreboard.
+    scoreboard		Display a scoreboard.
     xcsh		Create new xterm windows.
     hpcm_sendmail	Send email from a contestant to
     			the judge.
@@ -2436,15 +2436,17 @@ A brief summary of these programs follows:
     			`sandbox'.  For a contestant,
 			this just applies resource
 			limits.
-    hpcm_submit		Submit a problem solution file
+    hpcm_submit		Submit problem solution files
     			using hpcm_sendmail.
+    hpcm_clisp		Run COMMONLISP programs.  Uses
+    			hpcm_clisp.lsp as helper code.
 
     fprint		Print 56 column files.
     print		Print 80 column files.
     print2		Print 80 column files 2 file
     			pages per print page.
     lpq			Display printer status.
-
+
 In addition, the following programs are designed to be
 run in a contestant account, but are either to be run
 by the judge while setting up accounts, are to be run
@@ -2463,7 +2465,7 @@ indirectly by the above programs:
     			reinitialize all the files and
 			symbolic links in that account.
 			See below.
-
+
 Programs: Judging
 --------- -------
 
@@ -2471,6 +2473,9 @@ The judge's programs are in hpcm/judge/bin, which is
 placed in the PATH of the judge's account.  A brief
 summary of the programs used during a contest to run
 the contest follows:
+
+    hpcm_sendmail	Send mail to the judge (from
+    			himself or an auxilary judge).
 
     receivemail		Process received email and store
     			it in a submission directory
@@ -2480,14 +2485,15 @@ the contest follows:
     autodispatch	Call autoinfo or autojudge, or
     			process query, for a submis-
 			sion directory.
-
+
     autoinfo		Process a get request submis-
     			sion directory.
     autojudge		Process a solution submit
     			submission directory.
 
-    extractmail		Extract a solution program file
-    			from received email.
+    extractmail		Extract solution files from
+    			received email.
+
     hpcm_sandbox	Run hpcm_sandbox_x with the
     			`-core 0' option.
     hpcm_sandbox_x	Run a program in a sandbox.
@@ -2495,17 +2501,23 @@ the contest follows:
 			sandbox but with root set user
 			ID, so the contestant's program
 			is run with user ID `sandbox'.
+    hpcm_clisp		Run a COMMONLISP program.  Uses
+    			hpcm_clisp.lsp for helper func-
+			tions.
+
     autoscore		Compute the score from the .out
-    			and .test files.
-    scorediff		Compare the .out and .test files
-    			and report differences in a
-			.score file.
-
+    			and .test (or .fout and .ftest)
+			files.
+    scorediff		Compare the .out and .test (or
+    			.fout and .ftest) files and re-
+			port differences in a .score
+			file.
+
     startcontest	Change the mode of ./contest/
     			problems and ./contest/help/pro-
 			blems to make them readable by
 			contestants.
-
+
     makescoreboard	Recompute the scoreboard files
     			at intervals.
     scoreboard		Compute a scoreboard given the
@@ -2525,6 +2537,7 @@ the contest follows:
 			for which `manualreply' should
 			be run and permit a user to
 			dispatch `manualreply' to these.
+			Can also produce summary tables.
     trackfinder		Look through all the submis-
     			sion directories for information
 			needed by `tracker' and output
@@ -2535,6 +2548,9 @@ the contest follows:
 			names and contents, and dispatch
 			`manualreply' to these director-
 			ies.
+    jprint		Print 80 column files to all
+    			printers using `printer_broad-
+			cast'.
     printer_broadcast	Sends the standard input to all
     			printers, and updates the
 			printer_jobs file.
@@ -2576,7 +2592,7 @@ The following programs are used to make contests:
     hpcm/contestant/bin/TRASH_ACCOUNT
         Initialize (or reinitialize) the files and dir-
 	ectories of a contestant account.
-
+
     hpcm/secure/bin/hpcm_make_accounts
 	Create all the contestant accounts.
 
@@ -2596,8 +2612,8 @@ maintenance.
     overview		Print this document.
     installing_hpcm	Print the `Installing HPCM'
     			document.
-    judging		Setting up judging accounts and
-    			judging contests.
+    judging		Print the `HPCM Judging' docu-
+    			ment on how to judge contests.
 
     makeMakefile	Make problem Makefiles from an-
     			other problem Makefile that acts
@@ -2615,14 +2631,6 @@ maintenance.
     file_list		Make lists of HPCM files from
     			logical expressions involving
 			keywords.
-
-The following programs in hpcm/judge/test are used for
-testing the system.
-
-    test_mail		Send a file as email to the
-    			judge for test purposes.
-    test_submit		Send a solution as email to the
-    			judge for test purposes.
 
 
 Programs: Common Functions
@@ -2654,7 +2662,7 @@ actions such as editing that users may wish to custom-
 ize.  Changes of operating system, TCL extensions, or
 user preferences can be made just by changing these
 functions.  A brief summary of these functions is:
-
+
     proc send_mail { message_file }
     proc send_message { message }
     	Send a file or variable value as email.
@@ -2692,7 +2700,7 @@ functions.  A brief summary of these functions is:
     proc make_file { name err_file }
         Make the `name' by using the `make' program on
 	the Makefile in the current directory.
-
+
     proc diff_directories { directory1 directory2 }
         Diff two directories, as per UNIX `diff -r'.
 
@@ -2729,7 +2737,7 @@ functions.  A brief summary of these functions is:
 
     proc disable_outputs {}
         Route stderr and stdout to /dev/null.
-
+
     proc account_name {}
     proc host_name {}
     	Return the account name or host network name.
@@ -2766,7 +2774,7 @@ mary of these is:
 
     proc caught_error {}
         Catch an error occurring in an HCPM TCL program.
-
+
     proc log_error { error_output }
         Log an error to an error log file, to the stand-
 	ard error output, or to an email.
@@ -2804,7 +2812,7 @@ mary of these is:
 		   { line_count 1000000000 } }
 	Write an entire file of the first so many lines
 	of a file to a channel.
-
+
     proc read_file { filename }
         Read and return the first line of a file.
 
@@ -2842,7 +2850,7 @@ displays.  A brief summary of these is:
 
     proc bar_with_text { text }
         Return a `===' bar ending with the text.
-
+
     proc yes? {}
         Read input and check it for `yes' or `no'.
 
@@ -2881,7 +2889,7 @@ displays.  A brief summary of these is:
 
     proc read_score { score_file }
     	Read a one line score file.
-
+
     proc make_diff { file }
         Make a .diff or .bdiff file if necessary.
 
