@@ -55,44 +55,33 @@ public class javaio {
 	tokenizer.ordinaryChar ( '(' );
 	tokenizer.ordinaryChar ( ')' );
 
-	// Set up number formatter.  Not that it is
+	// Set up number formatter.  Note that it is
 	// important in ACM programming contests to
 	// insist on an ENGLISH formatter.
+	//
+	// Also, do NOT put commas in the output.
 	//
 	DecimalFormat formatter = (DecimalFormat)
 	    NumberFormat.getInstance ( Locale.ENGLISH );
 	formatter.applyPattern ( "#0.00" );
 
 
-	// In ACM programming contests, you do NOT
-	// (usually) want commas in the thousands
-	// place.
-	//
-	// formatter.setGroupingUsed ( false);
-
-	// Set digit limits.  Some of these are not
-	// used in this program.
-	//
-	// formatter.setMinimumFractionDigits ( 2 );
-	// formatter.setMinimumIntegerDigits ( ... );
-	// formatter.setMaximumIntegerDigits ( ... );
-
 	// Process a paragraph.  Paragraphs are
 	// separated by blank lines.
 	//
 	int paragraph = 1;
-	boolean eof_found = false;
-	while ( ! eof_found )
+	boolean eof_seen = false;
+	while ( ! eof_seen )
 	{
 	    int numbers = 0;
 	    int words = 0;
 	    int separators = 0;
 	    int lines = 0;
 
-	    boolean eop_found = false;
+	    boolean eop_seen = false;
 	    boolean line_is_blank = true;
 
-	    while ( ! eop_found && ! eof_found )
+	    while ( ! eop_seen && ! eof_seen )
 	    {
 	        tokenizer.nextToken();
 	        switch ( tokenizer.ttype )
@@ -102,7 +91,7 @@ public class javaio {
 
 		    if ( line_is_blank )
 		    {
-			eof_found = true;
+			eof_seen = true;
 			break;
 		    } else
 		        throw new RuntimeException
@@ -113,7 +102,7 @@ public class javaio {
 		    if ( ! line_is_blank )
 		        ++ lines;
 		    else if ( lines != 0 )
-		        eop_found = true;
+		        eop_seen = true;
 		    line_is_blank = true;
 		    break;
 
@@ -121,6 +110,10 @@ public class javaio {
 
 		    System.out.print ( "NUMBER ");
 		    System.out.print ( tokenizer.nval );
+		    System.out.print ( " = ");
+		    System.out.print
+		        ( formatter.format
+			      ( tokenizer.nval ) );
 		    System.out.println();
 		    line_is_blank = false;
 		    ++ numbers;
