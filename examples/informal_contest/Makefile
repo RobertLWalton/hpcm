@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Sep 24 06:53:04 EDT 2002
+# Date:		Wed Sep 25 14:11:13 EDT 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/09/24 10:52:05 $
+#   $Date: 2002/09/25 18:14:31 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.31 $
+#   $Revision: 1.32 $
 
 # To make an informal contest named `foo':
 #
@@ -313,6 +313,18 @@
 #     and demos files can be made according to instruc-
 #     tions in hpcm/contestant/help/Makefile.
 
+# 21. A web page containing problem descriptions, and
+#     optionally solutions, can be made by defining the
+#     web page parameters in hpcm_judging.rc and execut-
+#     ing `make web'.
+#
+#     A directory named ./web containing this web page
+#     and associated files is created, and a tar file
+#     ./web.tar of this directory is also created.
+#     The contents of the web directory must be copied
+#     to a location where it may be put on the WWW,
+#     and the tar file makes this easy.
+
 # The location of the hpcm directory.
 #
 HPCM=${HOME}/hpcm
@@ -396,6 +408,18 @@ all:
 	makejudgingdir -informal ${INDICES}
 	chmod a+x . ..
 	startcontest
+
+
+# Web_do merely causes `make web' to remake the
+# web directory even if it exists.
+#
+web_do:
+
+web:	web_do
+	rm -rf web web.tar
+	makeweb
+	cd web; tar cf ../web.tar *
+
 
 test:	test_all
 
