@@ -4,7 +4,7 @@
 #
 # File:		judging
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Oct 17 00:50:28 EDT 2001
+# Date:		Fri Nov  9 03:53:38 EST 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/10/30 17:43:10 $
+#   $Date: 2001/11/09 08:51:23 $
 #   $RCSfile: judging,v $
-#   $Revision: 1.3 $
+#   $Revision: 1.4 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -43,22 +43,90 @@ puts "
 Making Judging Accounts
 ------ ------- --------
 
-umask
+A judging account is a normal user account with the
+following special considerations.
 
-autologout
+If the judging account has its own group, the umask
+should be set by
 
-:0 c:
-hpcm_get
+	umask 27
+
+which disables access except by the judging account and
+its group, and disables write access by the judging
+group.  This permits auxilary judging accounts (see
+below).
+
+If the judging account has a shared group, the umask
+should be set by
+
+	umask 77
+
+Autologout should be disabled if csh or tcsh is being
+used by
+
+	unset autologout
+
+It is a good idea to capture ALL email arriving at the
+judging account, just in case there are questions of
+lost mail.  This can be done by putting
+
+    :0 c:
+    hpcm_mbox
+
+at the beginning of the ~/.procmailrc file, on UNIX
+systems that use procmail.  On UNIX systems that use
+forwarding, the ~/.forward file can be set to
+
+    \JJJ, /home/JJJ/hpcm_mbox
+
+to store all mail in ~/hpcm_mbox, where JJJ is the
+judging account name and /home/JJJ is the home directory
+of that account.
 
 link .hpcm_contest for sq and ??
+If the judge may want to use facilities that are
+normally used by contestants or by auxilary judges,
+then it will be necessary to symbolically link
+~/.hpcm_contest to the contest directory.  E.g., use
 
+    ln -s ~/contest... ~/.hpcm_contest
+
+
+Hpcm must be installed in the judging directory: see
+the separate document `Installing HPCM'.  This typically
+installs HPCM in the ~/hpcm directory and puts the
+~/hpcm/judge/bin directory in the PATH of the judging
+account.
 
 Making a Contest
 ------ - -------
 
+One judging account can have many different contests.
+
+To make a new contest, select the contest type TTT you
+want, and follow the instructions in
+
+    hpcm/examples/TTT_contest/Makefile
+
 
 Judging a Formal Contest
 ------- - ------ -------
+
+You should review Formal Contest Emergencies before
+judging a formal contest.
+
+After setting up the contest, one should do the
+following:
+
+1.  Run `startcontest' when the contest starts to make
+    the problems gettable by the contestants using
+    `hpcm_get'.
+
+2.  Check submissions and queries by running the
+    `tracker' program.  This program finds submissions
+    (including queries) that you have not yet responded
+    to.  One can also use the `lookat' program to check
+    up on things you have already responded to.
 
 
 Auxilary Judging
