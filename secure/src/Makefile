@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/12/09 04:39:01 $
+#   $Date: 2000/12/09 05:12:58 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.6 $
+#   $Revision: 1.7 $
 
 # Kill all implicit rules
 #
@@ -30,7 +30,7 @@ ${SECURE_BIN}/hpcm_sandbox:	hpcm_sandbox.c
 	test -d ${SECURE_BIN}
 	test -w ${SECURE_BIN}
 	rm -f hpcm_sandbox
-	make hpcm_sandbox
+	make --no-print-directory hpcm_sandbox
 	chmod a+rx hpcm_sandbox
 	chmod u+s hpcm_sandbox
 	-mv -f ${SECURE_BIN}/hpcm_sandbox \
@@ -38,6 +38,16 @@ ${SECURE_BIN}/hpcm_sandbox:	hpcm_sandbox.c
 	mv -f hpcm_sandbox \
 	      ${SECURE_BIN}/hpcm_sandbox
 	ls -l ${SECURE_BIN}/hpcm_sandbox*
+	@if test ! -L ../../judge/bin/hpcm_sandbox_x; \
+	    then make --no-print-directory \
+	              hpcm_sandbox_x; \
+	    fi
+
+hpcm_sandbox_x:	
+	rm -f ../../judge/bin/hpcm_sandbox_x
+	cd ../../judge/bin; \
+	    make SECURE_BIN="${SECURE_BIN}" \
+			hpcm_sandbox_x
 
 hpcm_sandbox:	hpcm_sandbox.c
 	gcc -o hpcm_sandbox hpcm_sandbox.c
