@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Aug 27 07:32:24 EDT 2000
+# Date:		Mon Aug 28 00:06:26 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: acm-cont $
-#   $Date: 2000/08/27 11:51:01 $
+#   $Date: 2000/08/28 03:59:42 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.20 $
+#   $Revision: 1.21 $
 #
 
 # Include this code in TCL program via:
@@ -51,6 +51,12 @@ set default_log_directory "~/HPCM_Error_Log"
 # Judging parameters file name:
 #
 set judging_parameters_file "hpcm_judging.rc"
+
+# Exit cleanup.  Called to do special cleanup before
+# exit.  Default does nothing.  This proc may be
+# redefined by program.
+#
+proc exit_cleanup {} {}
 
 # Replace all line feeds in a string by spaces, then
 # replace any all whitespace string by the empty string,
@@ -136,12 +142,15 @@ proc make_unchecked {} {
 }
 
 # Function called at end of program when a fatal error
-# in the program is caught.
+# in the program is caught.  Since the error is logged,
+# we return exit code 0 so the program that called
+# this program does not also report an error.
 #
 proc caught_error {} {
     global caught_output
     log_error $caught_output
-    exit 1
+    exit_cleanup
+    exit 0
 }
 
 # Function called to log an error when the program

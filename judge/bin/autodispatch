@@ -3,9 +3,9 @@
 # Given a submission directory, dispatch any automatic
 # programs, such as `autojudge' and `autoinfo'.
 #
-# File:		dispatchmail
+# File:		autodispatch
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Aug 20 21:06:50 EDT 2000
+# Date:		Sun Aug 27 20:28:20 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: acm-cont $
-#   $Date: 2000/08/24 00:06:04 $
+#   $Date: 2000/08/28 03:59:42 $
 #   $RCSfile: autodispatch,v $
-#   $Revision: 1.3 $
+#   $Revision: 1.4 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -24,9 +24,9 @@ exec tcl "$0" "$@"
 # Use tcl rather than tclsh so that `signal' is defined.
 
 # If an argument is given, use it as a name of a
-# directory to make current, and the argument is
-# consumed.  This must be done before looking for the
-# parameters file.
+# directory to make current, and consume the argument.
+# This must be done before looking for the parameters
+# file.
 #
 # Don't change argc or argv so error output will work.
 #
@@ -45,66 +45,121 @@ source "$lib_directory/judging_common.tcl"
 catch {
 
 set document "
-dispatchmail \[directory\]
-
-    Inspects the `Subject' line in the current
-    directory's $received_file and based on this calls
-    either autojudge or autoinfo to process the current
-    directory.
+autodispatch \[directory\]
 
     If the directory argument is given, this program
     makes that directory current before searching for
-    the `$judging_parameters_file' file.
+    the `$judging_parameters_file' file or doing
+    anything else.
 
-    Before calling either autoscore or autoinfo, this
-    program stores its PID (process ID) in the file
-    $dispatch_pid_file.  After the called program,
-    autoscore or autoinfo, finishes, this program
-    deletes the $dispatch_pid_file.  Also, during its
-    execution, this program makes itself into a process
-    group leader, so the UNIX command
+    This program next creates the $dispatch_pid_file
+    file containing the process ID of this program's
+    process.  If this file aleady exists, this program
+    exits without error or output.
 
-    	kill -1 -`cat $dispatch_pid_file`
+    Otherwise this program makes its process into a
+    process group leader, so the UNIX command
 
-    will kill this process and all its subprocesses."
+    	kill -INT -`cat $dispatch_pid_file`
+
+    will kill this process and all its subprocesses.
+    When this program exits, it deletes the
+    $dispatch_pid_file file.
+
+    This program then exits without error or output if
+    any of the files:
+
+    	$reply_file
+	$auto_score_file
+	${reply_file}+
+	*-<<E[UC]>>-*
+
+    exist.
+
+    Otherise, if the use_authentication global variable
+    equals `yes', this program next authenticates the
+    mail in $received_mail.  If the mail is NOT
+    authentic, this program produces an error log file
+    and exits without error code or output.
+
+    Otherwise this program inspects the `Subject' line
+    in the current directory's $received_file and based
+    on this may call one of the following:
+    
+	autojudge
+	autoinfo
+
+    If the `Subject' is not suitable for one of these
+    programs, this program does not call any other
+    program.
+
+    At this point this program exits without error
+    or output (except for output produced by autojudge
+    or other called program)."
+
 
 if { $my_argc != 0 } {
     puts $document
     exit 1
 }
 
-# Execute a program.  During execution the PID of
-# the current process is stored in $dispatch_pid_file.
-# Also the current process is made into a process
-# group leader.
+# Create $dispatch_pid_file.  Exit if it already
+# exits.
 #
-proc dispatch { program } {
-    global dispatch_pid_file
+if { [catch { create_file $dispatch_pid_file }] } {
+    exit 0
+}
 
-    write_file $dispatch_pid_file [id process]
-
-    id process group set
-
-    catch { exec $program } out
-    if { $out != "" } { puts $out }
-
+# Set exit_cleanup function (called before all exits
+# in judging common code) to delete $dispatch_pid_
+# file.
+#
+proc exit_cleanup {} {
     file delete -force $dispatch_pid_file
 }
 
+write_file $dispatch_pid_file [current_pid]
 
-# Find the subject and dispatch on it.
+set_current_pgid
+
+# If one of several files exists, exit without error.
 #
-set subject [find_subject]
-if { [regexp {^submit } $subject] } {
-    dispatch autojudge
-} elseif { [regexp {^get } $subject] } {
-    dispatch autoinfo
+if { [llength [glob -nocomplain -- \
+		    $reply_file \
+		    ${reply_file}+ \
+                    $auto_score_file \
+		    *-<<E[UC]>>-*] ] != 0 } {
+    exit_cleanup
+    exit 0
+}
+
+# Read header.
+#
+set received_ch [open $received_file r]
+read_header
+
+# Check authentication if $use_authentication is `yes'.
+# If not authorized, write log error and exit.
+#
+if { $use_authentication == "yes" \
+     && ! [header_is_authentic] } {
+    log_error "Received message header is not authentic"
+}
+
+# Execute any program appropriate to the subject.
+#
+if { [length $message_subject] >= 1 } {
+    switch -exact [lindex $message_subject 0] {
+        get	{ exec autoinfo }
+	submit	{ exec autojudge }
+    }
 }
 
 # If we did nothing, another program will see there
 # is no $dispatch_pid_file or $reply_file and schedule
 # manual action.
 
+exit_cleanup
 exit 0
 
 # Include common error catching code:
