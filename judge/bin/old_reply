@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/11/05 10:04:03 $
+#   $Date: 2000/11/05 10:33:29 $
 #   $RCSfile: old_reply,v $
-#   $Revision: 1.3 $
+#   $Revision: 1.4 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -166,14 +166,14 @@ while { "yes" } {
     if { $autocount != 0 } {
 	puts "Directories executing `autodispatch':"
 	foreach d $autodirs {
-	    puts "    $d"
+	    puts "    [file tail $d]"
 	}
     }
     if { $waitcount != 0 } {
 	puts "Directories waiting to execute\
 	      `autodispatch':"
 	foreach d $waitdirs {
-	    puts "    $d"
+	    puts "    [file tail $d]"
 	}
     }
     if { $manualcount == 0 } {
@@ -187,7 +187,7 @@ while { "yes" } {
 		  control-D to exit."
 	    flush stdout
 	    gets stdin
-	    if { [eof stdin] } break
+	    if { [eof stdin] } { puts ""; exit 0 }
 	    else continue
 	}
     }
@@ -197,14 +197,14 @@ while { "yes" } {
 	puts "Directories waiting to execute\
 	      `manualreply':"
 	foreach d $manualdirs {
-	    puts "    $d"
+	    puts "    [file tail $d]"
 	}
 	puts -nonewline \
 	     "\nType ENTER or RETURN to continue;\
 	      control-D to exit."
 	flush stdout
 	gets stdin
-	if { [eof stdin] } break
+	if { [eof stdin] } { puts ""; exit 0 }
 
 	set dir [lindex $manualdirs 0]
 	exec manualreply $dir >@ stdout 2>@ stderr
