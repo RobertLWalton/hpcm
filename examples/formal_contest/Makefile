@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Oct 19 05:40:39 EDT 2001
+# Date:		Mon Oct 29 08:50:46 EST 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/10/19 09:41:24 $
+#   $Date: 2001/10/29 13:50:08 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.9 $
+#   $Revision: 1.10 $
 
 # To make a formal contest named `foo':
 #
@@ -379,16 +379,16 @@ scoreboard:
 	scorefinder | scoreboard
 
 start_scoreboard:
-	makescoreboard -start
+	makescoreboard start
 
 check_scoreboard:
-	makescoreboard -status
+	makescoreboard status
 
 stop_scoreboard:
-	makescoreboard -stop
+	makescoreboard stop
 
 update_scoreboard:
-	makescoreboard 0
+	makescoreboard update
 
 print_help:
 	fprint contest/help/*

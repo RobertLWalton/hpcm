@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Oct 19 05:38:14 EDT 2001
+# Date:		Mon Oct 29 08:43:21 EST 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/10/19 09:41:23 $
+#   $Date: 2001/10/29 13:46:17 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.23 $
+#   $Revision: 1.24 $
 
 # To make an email contest named `foo':
 #
@@ -55,16 +55,12 @@
 #    Among other things you will be asked to set edit
 #    routing information into ~/.procmailrc.
 
-# 6. Review the -email option of the `makescoreboard'
-#    program (see `makescoreboard -doc').  If you wish
-#    to use this to send the scoreboard somewhere to be
-#    posted on the web, edit the SCOREBOARD_ADDRESS
-#    parameter in this Makefile, and use `make start_
-#    scoreboard' to start the scoreboard job.  Use
-#    `make check_scoreboard' to check job status,
-#    `make stop_scoreboard' to stop the job, and
-#    make `update_scoreboard' to provide an instant
-#    update of the scoreboard.
+# 6. Review the `makescoreboard' program (see `make-
+#    scoreboard -doc').  Use `make start_scoreboard' to
+#    start the scoreboard job, `make check_scoreboard'
+#    to check job status, `make stop_scoreboard' to stop
+#    the job, and make `update_scoreboard' to provide an
+#    instant update of the scoreboard.
 #
 #    The scoreboard.notes file is appended to the score-
 #    board.  Edit this file as you wish.
@@ -91,7 +87,7 @@
 #    other output in the message.  Note that one of the
 #    submissions times out, and for that the judge will
 #    take over a minute to reply.
-
+#
 #    Note also that some or all of the submissions gen-
 #    erated by the `test_submit' part of `make' may be
 #    for problems you did not include in your contest,
@@ -182,15 +178,13 @@ scoreboard:
 	scorefinder | scoreboard
 
 start_scoreboard:
-	makescoreboard -start \
-	               -email '${SCOREBOARD_ADDRESS}'
+	makescoreboard start
 
 check_scoreboard:
-	makescoreboard -status
+	makescoreboard status
 
 stop_scoreboard:
-	makescoreboard -stop
+	makescoreboard stop
 
 update_scoreboard:
-	makescoreboard -email '${SCOREBOARD_ADDRESS}' \
-		       0
+	makescoreboard update
