@@ -5,7 +5,7 @@
 #
 # File:		autojudge
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Sep  4 10:38:30 EDT 2000
+# Date:		Thu Sep  7 05:00:12 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: acm-cont $
-#   $Date: 2000/09/04 14:31:12 $
+#   $Date: 2000/09/07 10:15:53 $
 #   $RCSfile: autojudge,v $
-#   $Revision: 1.20 $
+#   $Revision: 1.21 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -75,15 +75,22 @@ cd submission_directory; judge
 		$scoring_instructions_file if it exists
 		.in solution input file
 		.test solution output file
-    
+
+    The .test file is linked to the solution .out file
+    if that exists, or the solution .test file
+    otherwise.  If the solution .out file exists and
+    is more recent than what the current directory .test
+    file is linked to, the current directory .test file
+    is relinked to the solution .out file.
+
     Next this program makes the program binary by using
     the $make_file.  If there is a compliler error, the
     error messages are captured in a .cerr file.  If
-    there is a non-empty .cerr file or no binary is
-    made, this program writes `Syntax Error' into the
-    $auto_score_file file, and skips to the end of this
-    program where a $reply_file containing the auto
-    score may be created and sent to the user.
+    no executable binary is made, this program writes
+    `Syntax Error' into the $auto_score_file file, and
+    skips to the end of this program where a $reply_file
+    file containing the auto score may be created and
+    sent to the user.
 
     If the binary file was made without error, this
     program makes a .out output file and a .err error
@@ -171,12 +178,27 @@ if { ! [file readable ${submitted_program}.in] } {
          "$program_solution/${submitted_program}.in"
 }
 
-if { ! [file readable ${submitted_program}.test] } {
-    puts "Linking ${submitted_program}.test to\
-          solution ${submitted_program}.out"
-    link_file \
-         "$program_solution/${submitted_program}.out" \
-         "${submitted_program}.test"
+set solout ${program_solution}/${submitted_program}.out
+set soltest ${program_solution}/${submitted_program}.test
+if { ! [file readable ${submitted_program}.test] \
+     || ( [file readable $solout] \
+          && [file mtime ${submitted_program}.test] \
+	     < [file mtime $solout] ) } {
+    if { ! [catch { file type \
+                         ${submitted_program}.test \
+			 }] } {
+	puts "Deleting out-of-date\
+	      ${submitted_program}.test"
+	file delete -force ${submitted_program}.test
+    }
+    if { [file readable $solout] } {
+	puts "Linking ${submitted_program}.test to\
+	      solution ${submitted_program}.out"
+	link_file $solout ${submitted_program}.test
+    } else {
+	puts "Linking ${submitted_program}.test"
+	link_file $soltest
+    }
 }
 
 proc auto_score_reply { auto_score } {
@@ -275,25 +297,28 @@ if { [should_be_made \
     		 2> "${submitted_program}.cerr" } out
     puts $out
 
-    if { ( [file exists "${submitted_program}.cerr"] \
-	   && [file size "${submitted_program}.cerr"] \
-	      > 0 ) \
-         || ! [file exists $submitted_program] } {
-
-	if { [file exists \
-		   "${submitted_program}.cerr"] \
-	     && [file size \
-		      "${submitted_program}.cerr"] \
-		  > 0 } {
-	    puts "========== COMPILER ERRORS\
-		  (${submitted_program}.cerr)\
+    if { [file exists "${submitted_program}.cerr"] \
+	 && [file size "${submitted_program}.cerr"] \
+	    > 0 } {
+	puts ""
+	if { [file executable $submitted_program] } {
+	    puts "========== COMPILER WARNINGS\
+	          (${submitted_program}.cerr)\
 		  =========="
-	    put_file "${submitted_program}.cerr" \
-		     stdout 10
-	    puts "============================="
 	} else {
-	    puts "No `$submitted_program' file produced"
+	    puts "========== COMPILER ERRORS\
+	          (${submitted_program}.cerr)\
+		  =========="
 	}
+	put_file "${submitted_program}.cerr" stdout 10
+	puts "============================="
+	puts ""
+    }
+
+    if { ! [file executable $submitted_program] } {
+
+	puts "No executable `$submitted_program' file\
+	      produced"
 
 	if { [file exists $auto_score_file] } {
 	    file delete -force $auto_score_file
@@ -302,8 +327,6 @@ if { [should_be_made \
 	auto_score_reply "Syntax Error"
 	exit 0
     }
-
-    exec chmod a+x $submitted_program
 }
 
 if { [should_be_made \
@@ -311,25 +334,25 @@ if { [should_be_made \
 	       "${submitted_program}.err"] \
 	 [list $submitted_program \
 	       $make_file \
-	       "${submitted_program}.in"]] } {
+	       "${submitted_program}.in"]] \
+     && [file executable $submitted_program] } {
 
     puts "Making ${submitted_program}.out"
     catch { exec make "${submitted_program}.out" \
 		 2> "${submitted_program}.err" } out
     puts $out
-    puts "=============================="
 
     if { [file exists \
 	       "${submitted_program}.err"] \
 	 && [file size \
 		  "${submitted_program}.err"] \
 	      > 0 } {
+	puts ""
 	puts "========== ERRORS\
-	      (${submitted_program}.err)\
-	      =========="
-	put_file "${submitted_program}.err" \
-		 stdout 10
+	      (${submitted_program}.err) =========="
+	put_file "${submitted_program}.err" stdout 10
 	puts "============================="
+	puts ""
     } elseif { ! [file exists \
                        "${submitted_program}.out"] } {
 	puts "No `${submitted_program}.out' file\
