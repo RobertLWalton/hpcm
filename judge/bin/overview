@@ -4,7 +4,7 @@
 #
 # File:		overview
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Oct 17 07:29:21 EDT 2001
+# Date:		Wed Oct 17 21:23:06 EDT 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/10/17 11:40:45 $
+#   $Date: 2001/10/18 05:05:50 $
 #   $RCSfile: overview,v $
-#   $Revision: 1.38 $
+#   $Revision: 1.39 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -59,7 +59,11 @@ puts "
 	Programs: Judging
 	Programs: Contest Making
 	Programs: Maintenance
-	Programs: Common Subroutines
+	Programs: Common Functions
+	Programs: System/User Interface Common Functions
+	Programs: General Common Functions
+	Programs: Display Common Functions
+	Programs: Scoring Common Functions
 
 Features
 --------
@@ -224,8 +228,8 @@ Maintenance Programs
     Programs run to maintain the library, produce doc-
     umentation, or test the HPCM system.
 
-Common Subroutines
-    Subroutines usable by HPCM TCL programs.  These come
+Common Functions
+    Functions usable by HPCM TCL programs.  These come
     in several different packages, including one general
     package for all programs, and another package for
     programs that interact with a user through a dis-
@@ -2207,11 +2211,102 @@ testing the system.
     			judge for test purposes.
 
 
-Programs: Common Subroutines
---------- ------ -----------
+Programs: Common Functions
+--------- ------ ---------
 
-The file hpcm/judge/lib/judging_common.tcl contains sub-
-routines usable by any HPCM TCL program.  A brief sum-
+There are four packages of functions that can be import-
+ed by HPCM TCL programs:
+
+    hpcm/judge/lib/hpcm_judging.rc
+    	Parameters and system/user interface functions.
+
+    hpcm/judge/lib/judging_common.tcl
+    	Common functions.
+
+    hpcm/judge/lib/display_common.tcl
+    	Display functions.
+
+    hpcm/judge/lib/scoring_common.tcl
+    	Scoring functions.
+
+Programs: System/User Interface Common Functions
+--------  ----------- --------- ------ ---------
+
+The file hpcm/judge/lib/hpcm_judging.rc contains func-
+tions usable by any HPCM TCL program that are simple
+interfaces to underlying operating systems programs or
+extended TCL functions, or that are customizable in-
+terfaces to basic functions such as editing.  Changes
+of operating system, TCL extensions, or to user pre-
+ferences like editors can be compensated for just by
+changing these functions.  A brief summary of these
+functions is:
+
+    proc send_mail { message_file }
+    proc send_message { message }
+    	Send a file or variable value as email.
+
+    proc compute_signature { value }
+        Compute the MD5 signature of a value.
+
+    proc create_file { filename }
+    proc create_directory { dirname }
+        Create a file or directory, unless the file or
+	directory already exists, and return an indica-
+	tion of whether a new file or directory was
+	created.  Used for locking.
+
+    proc link_file { source { target . } }
+        Symbolically link source to target.
+
+    proc grant_access { filename { allow rx } }
+    	Add a+x, a+r, or a+w permissions to file or
+	directory.
+
+    proc get_access { filename }
+        Discover `a' permissions of file.
+
+    proc deny_access { filename }
+        Deny all permissions for a file or directory
+	except to owner.
+
+    proc view_file { filename }
+        Look at a file (e.g., with an editor).
+
+    proc edit_file { filename }
+        Edit a file with your favorite editor.
+
+    proc call_shell {}
+        Invoke your favorite shell for interactive use.
+
+    proc current_pid {}
+        Return the current process' ID.
+
+    proc display_process_tree { root_pid }
+        Display the processes in the process tree rooted
+	at a given process ID.
+
+    proc signal_process_tree { signal root_pid }
+        Send a KILL or INT signal to all the processes
+	in a process tree rooted at a given process ID.
+
+    proc make_signals_errors {}
+    proc make_signals_ignored {}
+    proc make_signals_default {}
+        Set all `likely' UNIX signals to cause a TCL
+	error, be ignored, or cause their default
+	action.
+
+    proc account_name {}
+    proc host_name {}
+    	Return the account name or host network name.
+
+
+Programs: General Common Functions
+--------  ------- ------ ---------
+
+The file hpcm/judge/lib/judging_common.tcl contains
+functions usable by any HPCM TCL program.  A brief sum-
 mary of these is:
 
     proc exit_cleanup {}
@@ -2226,7 +2321,7 @@ mary of these is:
 
     proc clock_to_filename_date { clock }
     proc filename_date_to_clock { date }
-        Convert standard data formats to/from the date
+        Convert standard time data to/from the date
 	format used in submission directory names and
 	error log file names.
 
@@ -2240,7 +2335,8 @@ mary of these is:
         Catch an error occurring in an HCPM TCL program.
 
     proc log_error { error_output }
-        Log an error to an error log file.
+        Log an error to an error log file, to the stand-
+	ard error output, or to an email.
 
     proc read_header { ch { first_line \"\" }
 			  { omit_fields \"\" } }
@@ -2282,69 +2378,19 @@ mary of these is:
     proc write_file { filename line }
         Write an entire file, usually a one line file.
 
+    proc read_entire_file { filename }
+        Read the entire file and return it as a string.
+
     proc set_flag { flagfilename }
     proc test_flag { flagfilename }
     proc clear_flag { flagfilename }
     	Manage flags in the flag directory.
 
-The file hpcm/judge/lib/hpcm_judging.rc contains sub-
-routines usable by any HPCM TCL program that are simple
-interfaces to underlying operating systems capabilities,
-or that are customizable interfaces to basic functions
-such as editing.  A brief summary of these is:
+Programs: Display Common Functions
+--------  ------- ------ ---------
 
-    proc send_mail { message_file }
-    proc send_message { message }
-    	Send a file or variable value as email.
-
-    proc compute_signature { value }
-        Compute the MD5 signature of a value.
-
-    proc create_file { filename }
-    proc create_directory { dirname }
-        Create a file or directory, unless the file or
-	directory already exists, and return an indica-
-	tion of whether a new file or directory was
-	created.  Used for locking.
-
-    proc link_file { source { target . } }
-        Symbolically link source to target.
-
-    proc grant_access { filename { allow rx } }
-    	Add a+x or a+r permissions to file.
-
-    proc get_access { filename }
-        Discover `a' permissions of file.
-
-    proc deny_access { filename }
-        Deny all permissions for a file except to owner.
-
-    proc view_file { filename }
-        Look at a file (e.g., with an editor).
-
-    proc edit_file { filename }
-        Edit a file with your favorite editor.
-
-    proc call_shell {}
-        Invoke your favorite shell for interactive use.
-
-    proc current_pid {}
-        Return the current process' ID.
-
-    proc display_process_tree { root_pid }
-        Display the processes in the process tree rooted
-	at a given process ID.
-
-    proc signal_process_tree { signal root_pid }
-        Send a KILL or INT signal to all the processes
-	in a process tree rooted at a given process ID.
-
-    proc make_signals_errors {}
-    proc make_signals_ignored {}
-    proc make_signals_default {}
-        Set all `likely' UNIX signals to cause a TCL
-	error, be ignored, or cause their default
-	action.
+Programs: Scoring Common Functions
+--------  ------- ------ ---------
 "
 
 exit 0
