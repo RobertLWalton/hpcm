@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/09/19 19:20:51 $
+#   $Date: 2000/09/19 19:21:19 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.2 $
+#   $Revision: 1.3 $
 
 all:	submakes
 
@@ -26,15 +26,15 @@ submakes:
 	(cd contestant/bin; make)
 
 print_system:
-	echo `grep -v '^./contest/' File_List | \
+	fprint `grep -v '^./contest/' File_List | \
 		grep -v '^./problem_library/' | \
 		grep -v '^./judge/test/' `
 
 print_test:
-	echo `grep '^./judge/test/' File_List `
+	fprint `grep '^./judge/test/' File_List `
 
 print_library:
-	echo `grep '^./problem_library/' File_List `
+	fprint `grep '^./problem_library/' File_List `
 
 print_contest:
-	echo `grep '^./contest/' File_List `
+	fprint `grep '^./contest/' File_List `
