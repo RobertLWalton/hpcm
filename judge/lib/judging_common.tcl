@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Mar 14 03:49:25 EST 2003
+# Date:		Fri Mar 14 04:29:56 EST 2003
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2003/03/14 08:52:06 $
+#   $Date: 2003/03/14 09:55:59 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.94 $
+#   $Revision: 1.95 $
 #
 
 # Table of Contents
@@ -641,6 +641,9 @@ proc read_header { ch { first_line "" }
 		x-hpcm-signature x-hpcm-signature-ok \
 		x-hpcm-test-subject"
 
+    set ws "\[\t\ \n\r\]"
+    set nws "\[^\t\ \n\r\]"
+
     # Get first line of message.
     #
     set line $first_line
@@ -651,7 +654,7 @@ proc read_header { ch { first_line "" }
 
     # Set `From ' if found line.
     #
-    if { [regexp "^From\ " $line] } {
+    if { [regexp "^From${ws}" $line] } {
     	set message_From_line $line
 	set line [gets $ch]
 	if { [eof $ch] } return
@@ -670,9 +673,9 @@ proc read_header { ch { first_line "" }
 	foreach fieldname $fields {
 	    if { [regexp \
 	    	    -nocase \
-		    "^(${fieldname})(\ \t)*:(.*)\$" \
-		    $line forget realname forget \
-		    fieldvalue] } {
+		    "^(${fieldname})${ws}*:(.*)\$" \
+		    $line \
+		    forget realname fieldvalue] } {
 
 		# Come here when line is for the
 		# field we are looking for.
@@ -742,14 +745,15 @@ proc read_header { ch { first_line "" }
     # If multipart message, skip to first part satisfy-
     # ing contraints imposed by the content-type-values
     # and content-transfer-encoding-values global
+    # variables.
     #
-    set ws "\[\t\ \n\r\]"
-    set nws "\[^\t\ \n\r\]"
     if { [regexp -nocase "^${ws}*multipart" \
     		 $message_content_type] } {
 
-	set b1 "${ws}*boundary=\"(\[^\"\])\""
-	set b2 "${ws}*boundary=(${nws}*)(${ws}|\$)"
+	set b1 "${ws}boundary${ws}*=${ws}*"
+	set b1 "${b1}\"(\[^\"\])\""
+	set b2 "${ws}boundary${ws}*=${ws}*"
+	set b2 "${b2}(${nws}*)(${ws}|\$)"
 	if { [regexp -nocase $b1 \
 		     $message_content_type \
 		     forget boundary] } {
@@ -771,9 +775,6 @@ proc read_header { ch { first_line "" }
 	# legal Content-Type and Content-Transfer-
 	# Encoding.
 	#
-	set type ""
-	set encoding $message_content_transfer_encoding
-	set len [string length $boundary]
 	while { "yes" } {
 
 	    set line [gets $ch]
@@ -781,7 +782,7 @@ proc read_header { ch { first_line "" }
 	    if { [eof $ch] } {
 	        set message_header_error \
 		    "Did not find multipart message part\
-		     that had acceptable Content-Type
+		     that had acceptable Content-Type\
 		     and Content-Transfer-Encoding"
 		break
 	    }
@@ -795,16 +796,20 @@ proc read_header { ch { first_line "" }
 		set ct "${ct}${ws}*(${nws}*)(${ws}|\$)"
 		set cte \
 		    "${ws}*content-transfer-encoding"
-		set cte "${cte}${ws}:"
+		set cte "${cte}${ws}*:"
 		set cte "${cte}${ws}*(${nws}*)(${ws}|\$)"
+		set type ""
+		set encoding \
+		    $message_content_transfer_encoding
 		while { "yes" } {
 
 		    set line [gets $ch]
 		    if { [eof $ch] } break
 		    if { $line == "" } break
-		    if { [regexp $ct $line \
+		    if { [regexp -nocase $ct $line \
 		                 forget type] } {
-		    } elseif { [regexp $cte $line \
+		    } elseif { [regexp -nocase \
+		    		       $cte $line \
 		                       forget \
 				       encoding] } {
 		    }
@@ -816,9 +821,15 @@ proc read_header { ch { first_line "" }
 		set ctv $content-type-values
 		set ctev \
 		    $content-transfer-encoding-values
+		set mcte \
+		    message_content_transfer_encoding
 		if { [regexp "^(${ctv})\$" $type] \
 		     && [regexp "^(${ctev})\$" \
-		     	        $encoding] } break
+		     	        $encoding] } {
+		    set message_content_type $type
+		    set $mcte $encoding
+		}
+
 	    }
 	}
 
@@ -833,7 +844,7 @@ proc read_header { ch { first_line "" }
 	} else {
 	    set upel $unformatted_part_end_line
 	    set message_terminator \
-	        "^${terminator}.*|($upel)\$"
+	        "^${terminator}.*\$|^(${upel})\$"
 	}
     } else {
 
@@ -843,7 +854,7 @@ proc read_header { ch { first_line "" }
 	     && $format_submissions == "no" \
 	     && $unformatted_end_line != "" } {
 	    set message_terminator \
-	        "^${unformatted_end_line}.*\$"
+	        "^${unformatted_end_line}\$"
 	}
     }
 }
