@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Mar  9 19:30:41 EST 2002
+# Date:		Sat Mar  9 19:36:25 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/03/10 00:33:43 $
+#   $Date: 2002/03/10 00:41:48 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.12 $
+#   $Revision: 1.13 $
 
 # To make a formal contest named `foo':
 #
@@ -402,6 +402,8 @@ all:
 	makejudgingdir -formal ${INDICES}
 	chmod a+x . ..
 
+test:	test_all
+
 trashable:
 	makejudgingdir -trashable
 
@@ -438,3 +440,30 @@ print_problems:
 	           echo YOU MUST use a browser \
 			to print $$x by hand;; \
 	    esac; done
+
+dangerous_clean:
+	rm -rf mail help flag log \
+	       solutions* TODO *.reply \
+	       contest/help* \
+	       contest/problems* \
+	       contest/demos* \
+	       contest/scoreboard.1 \
+	       contest/printer_map \
+	       contest/printer \
+	       contest/printer_jobs \
+	       contest/who_where \
+	       contest/secure
+
+# Tests
+
+.mail.send:
+	hpcm_sendmail <$*.mail
+	sleep 2
+
+test_all:	test_formal
+
+TEST_PREREQUISITES=
+include ${HPCM}/examples/test_submissions/Makefile.mk
+
+test_dangerous_clean:
+	rm -rf mail/* flag log *.reply
