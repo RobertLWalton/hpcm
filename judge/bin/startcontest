@@ -4,7 +4,7 @@
 #
 # File:		startcontest
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Mar 25 15:21:08 EST 2002
+# Date:		Thu Oct 24 21:49:34 EDT 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/03/25 20:23:28 $
+#   $Date: 2002/10/25 03:26:57 $
 #   $RCSfile: startcontest,v $
-#   $Revision: 1.3 $
+#   $Revision: 1.4 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -26,11 +26,17 @@ exec tcl "$0" "$@"
 #
 set lib_directory "[file dirname $argv0]/../lib"
 source $lib_directory/judging_common.tcl
+
+# Set log mode, saving old mode.
+#
+set log_globally yes
+set saved_log_mode $log_mode
 set log_mode none
+
 catch {
 
 set document "
-startcontest
+startcontest \[delay\]
 
     This program merely sets a+rx permissions on the
     directory 
@@ -42,26 +48,120 @@ startcontest
     	<judging_directory>/contest/help/problems
 	
     if these exist.
+
+    However, if the current time is before any absolute
+    time value of the scoreboard_start_time global var-
+    iable, it is an error if the program is run without
+    the `delay' option.  But if the `delay' option is
+    given, this program spawns a child that waits until
+    the scoreboard_start_time and then sets permissions
+    as above and emails the judge that the contest has
+    started.
     
     Unlike most HPCM judging programs, errors made by
     this program are not written to log files, but are
-    announced on standard error."
+    written to the standard error output instead."
 
 
-# If there are any arguments print documentation and
-# exit with error.
+# If there are any illegal arguments print documentation
+# and exit with error.
 #
-if { $argc > 0 } {
+set arg [lindex $argv 0]
+if { $argc > 1 || \
+     ! [lcontain {{} delay -WAIT-} $arg] } {
     puts $document
     exit 1
 }
 
+# If we have nothing to do, announce this and exit.
+#
+set cproblems $contest_directory/problems
+set hproblems $contest_directory/help/problems
+if { (    ! [file isdirectory $cproblems] \
+       || [regexp {r.x} [get_access $cproblems]] ) \
+     && \
+     (    ! [file isfile $hproblems] \
+       || [regexp {r..} [get_access $hproblems]] ) } {
+
+    puts "startcontest has been done previously"
+    exit 0
+}
+
+# Do something if scoreboard_start_time is a date and
+# time.
+#
+set stime $scoreboard_start_time
+if { ! [regexp {^(|problem|team)$} $stime] } {
+
+    if { [catch { set stime [clock scan $stime] }] } {
+	error "badly formatted scoreboard_start_time:\
+	       $scoreboard_start_time"
+    }
+    switch -- $arg {
+    "" {
+
+        # If no argument, just announce error if it is
+	# too early, and fall through to grant permis-
+	# sions.
+	#
+    	if { [clock seconds] < $stime } {
+	    puts "Not yet at scoreboard_start_time:\
+	          $scoreboard_start_time"
+	    puts "so startcontest did nothing."
+	    exit 1
+	}
+    }
+    delay {
+
+        # If delay argument, start subprocess and exit
+	# if it is too early, or fall through to grant
+	# permissions otherwise.
+	#
+    	if { [clock seconds] < $stime } {
+	    exec startcontest -WAIT- &
+	    puts "startcontest will run in background\
+	          until $scoreboard_start_time"
+	    puts "and then execute and email judge"
+	    exit 0
+	}
+    }
+    -WAIT- {
+
+        # Come here if subprocess (indicated by special
+	# -WAIT- argument).
+
+	# Restore log mode and disable standard output
+	# and error.
+	#
+	set log_mode $saved_log_mode
+	disable_outputs
+
+	# Wait for start time and then fall through to
+	# grant permissions.
+	#
+    	while { [clock seconds] < $stime } {
+	    sleep 60
+	}
+    }
+    }
+}
+
+# Grant permissions.
+#
 if { [file isdirectory $contest_directory/problems] } {
     grant_access $contest_directory/problems
 }
-
 if { [file isfile $contest_directory/help/problems] } {
     grant_access $contest_directory/help/problems
+}
+
+# Notify user that startcontest is finished.  If we are
+# subprocess, this is done via hpcm_sendmail.
+#
+if { $arg == "-WAIT-" } {
+    exec hpcm_sendmail << "startcontest done"
+} else {
+    puts "startcontest done"
 }
 
 exit 0
