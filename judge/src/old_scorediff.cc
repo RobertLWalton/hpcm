@@ -11,15 +11,16 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: acm-cont $
-//   $Date: 2000/08/12 15:20:59 $
+//   $Date: 2000/08/14 01:20:40 $
 //   $RCSfile: old_scorediff.cc,v $
-//   $Revision: 1.4 $
+//   $Revision: 1.5 $
 
 #include <stdlib.h>
 #include <iostream.h>
 #include <fstream.h>
 #include <ctype.h>
 #include <string.h>
+#include <math.h>
 #include <assert.h>
 
 char documentation [] =
@@ -60,11 +61,6 @@ char documentation [] =
 "    An exponent is an `e' or `E' followed by an\n"
 "    an optional sign followed by digits.  A number\n"
 "    is scanned by the strtod(3) function.\n" ;
-
-inline double abs ( double v )
-{
-    return v < 0 ? -v : v;
-}
 
 struct file
 {
@@ -211,13 +207,41 @@ int scannumber ( file & f, int c1, int c2 = 0 )
 	}
     }
 
+    * f.end = 0;
     f.isnumber = true;
 
     char * e;
     f.number = strtod ( f.buffer, & e );
-    assert ( e == f.end );
+    assert ( e == f.end || ! finite ( f.number ) );
 
     return c;
+}
+
+inline void diffnumber
+	( file & file1, file & file2,
+	  bool & nonblank, bool & number,
+	  double & number_diff )
+{
+    if ( ! finite ( file1.number )
+	 ||
+	 ! finite ( file2.number ) )
+    {
+	nonblank = true;
+	return;
+    }
+
+    double diffn
+	( file1.number - file2.number );
+    if ( ! finite ( diffn ) )
+    {
+	nonblank = true;
+	return;
+    }
+    if ( diffn < 0 ) diffn = - diffn;
+
+    number = true;
+    if ( diffn > number_diff )
+	number_diff = diffn;
 }
 
 int main ( int argc, char ** argv )
@@ -330,12 +354,13 @@ int main ( int argc, char ** argv )
 		                  file2.buffer )
 			 != 0 )
 		    {
-			number = true;
-			double diffn = abs
-			    ( file1.number
-			      - file2.number );
-			if ( diffn > number_diff )
-			    number_diff = diffn;
+		        assert ( file1.isnumber );
+		        assert ( file2.isnumber );
+
+			diffnumber ( file1, file2,
+			             nonblank, number,
+				     number_diff );
+		        if ( nonblank ) break;
 		    }
 		}
 	    }
@@ -347,11 +372,13 @@ int main ( int argc, char ** argv )
 			      file2.buffer )
 		     != 0 )
 		{
-		    number = true;
-		    double diffn = abs
-			( file1.number - file2.number );
-		    if ( diffn > number_diff )
-			number_diff = diffn;
+		    assert ( file1.isnumber );
+		    assert ( file2.isnumber );
+
+		    diffnumber ( file1, file2,
+				 nonblank, number,
+				 number_diff );
+		    if ( nonblank ) break;
 		}
 	    }
 	    else
@@ -380,11 +407,10 @@ int main ( int argc, char ** argv )
 		    c2 = scannumber ( file2, c2 ),
 		    file1.isnumber && file2.isnumber ) )
 	{
-	    number = true;
-	    double diffn = abs
-		( file1.number - file2.number );
-	    if ( diffn > number_diff )
-		number_diff = diffn;
+	    diffnumber ( file1, file2,
+			 nonblank, number,
+			 number_diff );
+	    if ( nonblank ) break;
 	}
         else
 	{

@@ -1,6 +1,22 @@
 #! /bin/sh -f
-# file:		judge
-# author:	Bob Walton (walton@deas.harvard.edu)
+#
+# Compute the judge.score file in a submission directory
+#
+# File:		autoscore
+# Author:	Bob Walton (walton@deas.harvard.edu)
+# Date:		Sun Aug 13 18:46:35 EDT 2000
+#
+# The authors have placed this program in the public
+# domain; they make no warranty and accept no liability
+# for this program.
+#
+# RCS Info (may not be true date or author):
+#
+#   $Author: acm-cont $
+#   $Date: 2000/08/14 01:20:39 $
+#   $RCSfile: autoscore,v $
+#   $Revision: 1.3 $
+#
 # The next line starts tcl \
 exec tcl "$0" "$@"
 
@@ -16,18 +32,93 @@ if { [info command signal] == "signal" } {
 set time_limit_regexp {Cputime limit exceeded}
 set output_limit_regexp {Filesize limit exceeded}
 
+# File names:
+set instructions_file "SCORING_INSTRUCTIONS"
+set score_file	      "judge.score"
+
+# Default for instructions file:
+set scoring_instructions_default \
+    "whitespace linebreak number 0"
+
 set document "
-judge
+cd submission_directory
+autoscore program_name
 
-    TBW"
+    Given the submission directory as the current dir-
+    ectory, given the program name (e.g. pppp), and
+    given the output file (pppp.out), optional error
+    file (pppp.err), and test file (pppp.test, the
+    judge's solution's version of the output file),
+    computes the `judge.score' file in the submission
+    directory, using purely automatic (non-manual
+    means).
 
-if { $argc != 2 } {
+    If the error file (pppp.err) exists and is non-
+    empty, the score is one of:
+
+    	Cpu Time Limit Exceeded
+	Output File Size Limit Exceeded
+	Program Crashed
+
+    depending upon whether a line of the error file
+    matches a regular expression indicating there
+    was a cpu time or file size problem.  Currently
+    it is not possible to discriminate memory limit
+    exceedments from other memory errors.
+
+    If the error file does not exist or is empty,
+    the program is graded by comparing the output
+    of
+    	scorediff output_file test_file
+
+    to the contents of the first line of any
+    
+	$instructions_file
+
+    file in the submission directory.  If this last
+    file is missing, it defaults to:
+
+    	$scoring_instructions_default
+
+    The possible scores are:
+
+    	Completely Correct
+	Formatting Error
+	Incomplete Output
+	Incorrect Output
+
+    If scorediff reports `nonblank' or `eof2' (output
+    has non-whitespace after test file ends), or if
+    scorediff reports a `number' difference greater than
+    allowed by the ${instructions_file}, the
+    output is incorrect.  Otherwise, if scorediff
+    reports something other than `eof1' that is not
+    allowed by ${instructions_file}, the output
+    has a formatting error.  Otherwise if scorediff
+    reports `eof1' the output is incomplete.  Otherwise
+    the output is correct.
+
+    The score is written to the `judge.score' file
+    in the submission directory."
+
+proc fatal_error { args } {
+    puts "ERROR: [lindex $args 0]"
+    set args [lreplace $args 0 0]
+    foreach m $args {
+    	puts "       $m"
+    }
+    exit 1
+}
+
+if { $argc != 1 } {
     puts $document
     exit 0
 }
 
-set output_file [lindex $argv 0]
-set test_file [lindex $argv 1]
+set program_name [lindex $argv 0]
+set output_file "${program_name}.out"
+set error_file  "${program_name}.err"
+set test_file   "${program_name}.test"
 
 if { ! [file readable $output_file] } {
     fatal_error "not readable: $output_file"
@@ -37,14 +128,24 @@ if { ! [file readable $test_file] } {
     fatal_error "not readable: $test_file"
 }
 
-set error_file "[file rootname $output_file].err"
-if { [file exists $error_file] ) } {
+if { [file exists $score_file] \
+     && ! [file writable $score_file] } {
+    fatal_error "not writable: $score_file"
+}
+
+if { [file exists $instructions_file] \
+     && ! [file readable $instructions_file] } {
+    fatal_error "not readable: $instructions_file"
+}
+
+set score ""
+
+if { [file exists $error_file] } {
 
     if { ! [file readable $error_file] } {
 	fatal_error "not readable: $error_file"
     }
 
-    set score ""
     set line_count 0
     set error_fd [open $error_file r]
     while { yes } {
@@ -56,7 +157,7 @@ if { [file exists $error_file] ) } {
 	    set score "Time Limit Exceeded"
 	    break;
 	}
-	else if { [regexp -nocase -- \
+	elseif { [regexp -nocase -- \
 	             $output_limit_regexp $line] } {
 	    set score "Output Limit Exceeded"
 	    break;
@@ -71,15 +172,15 @@ if { [file exists $error_file] ) } {
 
 if { $score == "" } {
 
-    if { ! [file readable judging_instructions] } {
-	set judging_instructions \
-	    $default_judging_instructions
+    if { ! [file readable $instructions_file] } {
+	set scoring_instructions \
+	    $scoring_instructions_default
     } else {
-	set judging_instructions_fd \
-	    [open judging_instructions r]
-	set judging_instructions \
-	    [gets $judging_instructions_fd]
-	close $judging_instructions_fd
+	set scoring_instructions_fd \
+	    [open $instructions_file r]
+	set scoring_instructions \
+	    [gets $scoring_instructions_fd]
+	close $scoring_instructions_fd
     }
 
     set spacebreak_ok	no
@@ -89,63 +190,74 @@ if { $score == "" } {
     set number_diff		0.0
 
     set number_last no
-    foreach i $judging_instructions {
+    foreach i $scoring_instructions {
 	if { $number_last } {
 	    set number_diff $i
 	    set number_last no
-	} else if { $i == number } {
+	} elseif { $i == "number" } {
 	    set number_ok yes
 	    set number_last yes
-	} else if { $i == "spacebreak" } {
+	} elseif { $i == "spacebreak" } {
 	    set spacebreak_ok yes
-	} else if { $i == "linebreak" } {
+	} elseif { $i == "linebreak" } {
 	    set linebreak_ok yes
-	} else if { $i == "whitespace" } {
+	} elseif { $i == "whitespace" } {
 	    set whitespace_ok yes
 	} else {
-	    fatal_error "Unknown judging_instruction: $i"
+	    fatal_error \
+		"Unknown scoring_instruction: $i"
 	}
     }
 
     set score ""
 
-    set scorediff [exec scorediff $output_file $test_file]
+    set scorediff \
+        [exec scorediff $output_file $test_file]
 
     set number_last no
     foreach d $scorediff {
-	if { $last_number } {
-	    set last_number no
+	if { $number_last } {
+	    set number_last no
 	    if { $d > $number_diff } {
 		set score "Incorrect Output"
 		break
 	    }
-	} else if { $d == "nonblank" } {
-	    set score "Incorrect Output"
-	    break
-	} else if { $d == "whitespace" } {
-	    if { ! $whitespace_ok } {
-		set score "Incorrect Format" 
-	    }
-	} else if { $d == "spacebreak" } {
-	    if { ! $spacebreak_ok } {
-		set score "Incorrect Format" 
-	    }
-	} else if { $d == "linebreak" } {
-	    if { ! $linebreak_ok } {
-		set score "Incorrect Format" 
-	    }
-	} else if { $d == "number" } {
-	    if { ! $number_ok } {
+	} elseif { $d == "number" } {
+	    if { $number_ok == "no" } {
 		set score "Incorrect Output" 
 		break
 	    }
-	    set last_number yes
-	} else if { $d == "eof1" } {
-	    set score "Incomplete Output"
-	    break
-	} else if { $d == "eof2" } {
+	    set number_last yes
+	} elseif { $d == "nonblank" } {
 	    set score "Incorrect Output"
 	    break
+	} elseif { $d == "eof2" } {
+	    set score "Incorrect Output"
+	    break
+	} elseif { $d == "whitespace" } {
+	    if { $whitespace_ok == "no" } {
+		set score "Formatting Error" 
+	    }
+	} elseif { $d == "spacebreak" } {
+	    if { $spacebreak_ok == "no" } {
+		set score "Formatting Error" 
+	    }
+	} elseif { $d == "linebreak" } {
+	    if { $linebreak_ok == "no" } {
+		set score "Formatting Error" 
+	    }
+	} elseif { $d == "eof1" && $score == "" } {
+	    set score "Incomplete Output"
 	}
     }
 }
+
+if { $score == "" } {
+    set score "Completely Correct"
+}
+
+set score_fd [open $score_file w]
+puts $score_fd $score
+close $score_fd
+
+exit 0
