@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: acm-cont $
-#   $Date: 2000/09/12 04:54:30 $
+#   $Date: 2000/09/13 03:41:13 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.31 $
+#   $Revision: 1.32 $
 #
 
 # Include this code in TCL program via:
@@ -319,6 +319,9 @@ proc log_error { error_output } {
 #	message_x_hpcm_signature_ok
 #				`X-HPCM-Signature-OK:'
 #				field value.
+#	message_x_hpcm_test_subject
+#				`X-HPCM-Test-Subject:'
+#				field value.
 #
 # All the values have the final \n stripped off.  All
 # the field values have the `field-name:' stripped off.
@@ -346,7 +349,8 @@ proc read_header { ch { first_line "" }
 	   message_x_hpcm_date \
 	   message_x_hpcm_reply_to \
 	   message_x_hpcm_signature \
-	   message_x_hpcm_signature_ok
+	   message_x_hpcm_signature_ok \
+	   message_x_hpcm_test_subject
 
     set message_header			""
     set message_From_line		""
@@ -359,10 +363,12 @@ proc read_header { ch { first_line "" }
     set message_x_hpcm_reply_to		""
     set message_x_hpcm_signature	""
     set message_x_hpcm_signature_ok	""
+    set message_x_hpcm_test_subject	""
 
     set fields "from to date reply-to subject\
                 x-hpcm-reply-to x-hpcm-date\
-		x-hpcm-signature x-hpcm-signature-ok"
+		x-hpcm-signature x-hpcm-signature-ok \
+		x-hpcm-test-subject"
 
     set line $first_line
     if { $line == "" } {
@@ -597,7 +603,8 @@ proc compose_reply { args } {
     global received_file reply_file \
            message_From_line \
            message_from message_to message_date \
-	   message_reply_to message_subject
+	   message_reply_to message_subject \
+	   message_x_hpcm_test_subject
 
     # If -all is present, set `all_option' to `yes' and
     # shift the arguments left.
@@ -621,6 +628,10 @@ proc compose_reply { args } {
 
     puts $reply_ch   "To:[compute_message_reply_to]"
     puts $reply_ch   "Subject: RE:$message_subject"
+    if { $message_x_hpcm_test_subject != "" } {
+	puts $reply_ch   "X-HPCM-Test-Subject:\
+	                  $message_x_hpcm_test_subject"
+    }
     puts $reply_ch   ""
     foreach line $args {
         puts $reply_ch   $line
