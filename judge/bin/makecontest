@@ -6,7 +6,7 @@
 #
 # File:		makejudgingdir
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Oct 27 11:30:01 EDT 2000
+# Date:		Fri Oct 27 22:20:28 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/10/27 17:19:15 $
+#   $Date: 2000/10/28 04:09:03 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.29 $
+#   $Revision: 1.30 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -857,7 +857,7 @@ proc recursive_file_copy { source destination } {
 
     global omitted_directories
 
-    foreach src [glob -nocomplain $source/*] {
+    foreach src [glob -nocomplain -- $source/*] {
 	if { ! [file readable $src] } continue
     	set tail [file tail $src]
     	set des "$destination/$tail"
@@ -934,6 +934,18 @@ proc process_index_specification {} {
 	    set options \
 	        [expand_options [lreplace $line 0 1]]
 	    set source $index_directory/$name
+
+	    # Check name for legality.
+	    #
+	    if { [regexp {(^|/)(\.|-)} $name] } {
+	    	error "Illegal item name `$name' in\
+		       `$index_file'."
+	    }
+
+	    # Compute `indent', the part of the first
+	    # item entry line before the item name,
+	    # with `***' replaced by three spaces.
+	    #
 	    set ws "\[\ \t\]*"
 	    regexp "^($ws\\*\\*\\*$ws)(\[^\ \t\]|\$)" \
 		   $line forget indent forget2
@@ -954,18 +966,36 @@ proc process_index_specification {} {
 
 		set target [make_substitutions $name]
 
+		# Check target for legality.
+		#
+		if { [regexp {(^|/)(\.|-)} $target] } {
+		    error "Illegal item name `$name'\
+		           after substitutions,\n\
+			   \    in `$index_file'."
+		}
+
+		# Compute and check targetdir and
+		# targettail such that $target ==
+		# $targetdir/+$targettail and $targetdir
+		# is the first component of the name
+		# $target, and has no /'s.
+		#
+		# Targetdir must == `help', `demos', or
+		# `problems'.
+		#
 		if { ! [regexp {^([^/]*)/+([^/].*)$} \
 		               $target forget \
 			       targetdir targettail] \
 		     || [lsearch -exact \
 				 {help demos problems} \
-				 $targetdir] < 0 \
-		     || [lsearch -exact {. ..} \
-		                 $targettail] >= 0 } {
+				 $targetdir] < 0 } {
 		    error "Bad item name directory\
 		    	   after substitution: $target"
 		}
 
+	        # Compute output index channels associ-
+		# ated with targetdir.
+		#
 	        set index_chs \
 		    [set ${targetdir}_index_chs]
 
@@ -974,6 +1004,9 @@ proc process_index_specification {} {
 		    	[get_index_chs $targetdir]
 		}
 
+		# Write headers to output indices if
+		# appropriate.
+		#
 		if { [set ${targetdir}_header_used] \
 		     == "no" } {
 		    set ${targetdir}_header_used yes
@@ -983,6 +1016,11 @@ proc process_index_specification {} {
 			}
 		    }
 		}
+
+		# Write first line of item entry, after
+		# editing, to output indices, if appro-
+		# priate.
+		#
 		foreach ch $index_chs {
 		    puts $ch "$indent$target"
 		}
@@ -1006,12 +1044,13 @@ proc process_index_specification {} {
 			file mkdir $destination
 			link_file $source/Makefile \
 				  $destination/Makefile
-			set problem [glob $source/*.txt]
+			set problem [glob -nocomplain \
+					  -- \
+			                  $source/*.txt]
 			if { [llength $problem] != 1 } {
 			    error "Too many or too few\
 				   $source/*.txt files"
 			}
-			set problem [lindex $problem 0]
 			set problem [file tail $problem]
 			link_file $source/$problem \
 				  $destination/$problem
@@ -1044,7 +1083,9 @@ proc process_index_specification {} {
 
 			    if { $txt_option } {
 				set problem \
-				    [glob $source/*.txt]
+				    [glob -nocomplain \
+				          -- \
+					  $source/*.txt]
 				if { [llength \
 				          $problem] \
 				     != 1 } {
@@ -1063,6 +1104,10 @@ proc process_index_specification {} {
 				    $dest/$problem
 			    }
 			}
+		    } else {
+		        error "Source `$source' is\
+			       neither a file or a\
+			       directory."
 		    }
 		    set d $targettail
 		    while { "yes" } {
@@ -1150,13 +1195,14 @@ if { $info_option } {
 foreach dir {problems demos help} {
     if { [set ${dir}_option] } {
 	if { [file exists $c_d/$dir+] } {
-	    puts "Deleting $c_d/$dir+"
+	    puts "Deleting out-of-date $c_d/$dir+"
 	    exec rm -rf $c_d/$dir+ >@ stdout
 	}
 	file mkdir $c_d/$dir+
+	if { $dir != "problems" } {
+	    grant_access $c_d/$dir+
+	}
     }
-    grant_access $c_d/demos+
-    grant_access $c_d/help+
 }
 if { $solutions_option } {
     if { [file exists $solutions_directory+] } {
@@ -1205,18 +1251,11 @@ Introductory Information:
 -------------------------
 
 
+*** this_contest include
+        Information about this contest.
 "
 
-    # The following must be last so its inclusion
-    # causes the preceding to be included.
-
-    puts $index_ch "*** this_contest include"
-    puts $index_ch "        Information about this\
-    			    contest."
-    puts $index_ch ""
-
     close $index_ch
-    grant_access $help_directory/index
 }
 
 # Make help/this_contest file.
@@ -1230,36 +1269,139 @@ if { $this_contest_option \
     			"About This Contest" \
 		        [clock format \
 			       [clock seconds]]]
-    puts $tc_ch "
+
+    # Take a guess at the type of contest and output
+    # the appropriate draft of a this_contest file.
+    #
+    if { ! [file isdirectory $c_d] } {
+
+    	# Email contest.
+	#
+	puts $tc_ch "
 
 THIS FILE IS UNEDITED AND INACCURATE!
 
-When you log in start with the command:
+To get TBW
 
-	hpcm_get
+TBW
 
-which will get a demonstration problem in demos/count.
-Read demos/count/README and demos/count/Makefile and
-practice submitting the demonstration problem.
+
+The command `hpcm_help' will display this file.
+
+This is a `informal' contest.  The command `help login'
+displays more details about informal contests.
+
+You have been given a password and an account name.  If
+you have an xterminal, the xcsh command will make more
+windows: see `help login'.
+
+The command `hpcm_get' will get a demonstration problem
+in demos/count.  Read demos/count/README and demos/
+count/Makefile and practice submitting the demonstra-
+tion problem.
+
+To find out what problems are available use the command
+`help problems'.  The command `hpcm_get problems/foo'
+will get the problem named `foo' into your directory
+`problems/foo' where you can work on it.  See `help
+solving'.
+
+To display a list of the help files available use the
+command `help index'.  Note that if something in the
+index has the name `help/topic' you use the command
+`help topic' to view it.
+
+To send a question to the contest manager edit the
+question into a file qqq and use the command:
+
+	hpcm_sendmail < qqq
+
+The print commands are not supported for an informal
+contest.  The problem descriptions are .txt files in
+the problem directories, and these can be emailed to
+your home computer to be printed there.
+
+Good hunting!"
+
+    } elseif { ! [file isdirectory $c_d/problems] \
+               && $problems_option == "no" } {
+
+    	# Informal contest.
+	#
+	puts $tc_ch "
+
+THIS FILE IS UNEDITED AND INACCURATE!
+
+The command `help' will display this file.
+
+This is a `informal' contest.  The command `help login'
+displays more details about informal contests.
+
+You have been given a password and an account name.  If
+you have an xterminal, the xcsh command will make more
+windows: see `help login'.
+
+The command `hpcm_get' will get a demonstration problem
+in demos/count.  Read demos/count/README and demos/
+count/Makefile and practice submitting the demonstra-
+tion problem.
+
+To find out what problems are available use the command
+`help problems'.  The command `hpcm_get problems/foo'
+will get the problem named `foo' into your directory
+`problems/foo' where you can work on it.  See `help
+solving'.
+
+To display a list of the help files available use the
+command `help index'.  Note that if something in the
+index has the name `help/topic' you use the command
+`help topic' to view it.
+
+To send a question to the contest manager edit the
+question into a file qqq and use the command:
+
+	hpcm_sendmail < qqq
+
+The print commands are not supported for an informal
+contest.  The problem descriptions are .txt files in
+the problem directories, and these can be emailed to
+your home computer to be printed there.
+
+Good hunting!"
+
+    } else {	# ./contest/problems will exist.
+
+    	# Formal contest.
+	#
+	puts $tc_ch "
+
+THIS FILE IS UNEDITED AND INACCURATE!
+
+The command `help' will display this file.
+
+This is a `formal' contest.  The command `help login'
+displays more details about formal contests.
+
+The contest managers will log in for you.  You will NOT
+be given a password.  If you have an xterminal, the xcsh
+command will make more windows: see `help login'.
+
+The command `hpcm_get' will get a demonstration problem
+in demos/count.  Read demos/count/README and demos/
+count/Makefile and practice submitting the demonstra-
+tion problem.
 
 Hpcm_get will also get the problems into your `problems'
-directory after the contest officially starts.
+directory AFTER the contest officially starts.  At the
+contest start time, you will be given a printout of all
+the problem descriptions.  The command `help problems'
+will display a list of all the problems AFTER the con-
+test starts.
 
-To find out the available problems use the command:
-
-	help problems
-
-However, this last command will not work until the
-contest has officially started.
-
-To get a list of help files available use the
-command:
-
-	help index
-
-Note that if something in the index has the name
-`help/topic' you use the command `help topic' to view
-it.
+To display a list of the help files available use the
+command `help index'.  Note that if something in the
+index has the name `help/topic' you use the command
+`help topic' to view it.
 
 To send a question to the contest manager edit the
 question into a file qqq and use the command:
@@ -1271,6 +1413,8 @@ be brought to you.  Please do NOT try to find the
 printer.
 
 Good hunting!"
+
+    }
 
     close $tc_ch
     grant_access $help_directory/this_contest
