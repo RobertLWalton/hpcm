@@ -2,7 +2,7 @@
 #
 # File:		Makefile.mk
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Oct 24 01:08:14 EDT 2002
+# Date:		Sat Nov  9 01:07:53 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/10/24 05:39:16 $
+#   $Date: 2002/11/09 06:10:21 $
 #   $RCSfile: Makefile.mk,v $
-#   $Revision: 1.14 $
+#   $Revision: 1.15 $
 
 extract_replies:	mbox
 	rm -rf replies
@@ -34,6 +34,7 @@ diff_replies:
 	done
 
 test_email:	test_count_correct \
+		test_javaio_correct \
 		test_count_incorrect \
 		test_unformatted \
 		test_system_error \
@@ -42,6 +43,7 @@ test_email:	test_count_correct \
 		test_problem_name
 
 test_informal:	test_count_correct \
+		test_javaio_correct \
 		test_count_incorrect \
 		test_system_error \
 		test_get \
@@ -49,6 +51,7 @@ test_informal:	test_count_correct \
 		test_problem_name
 
 test_formal:	test_count_correct \
+		test_javaio_correct \
 		test_count_incorrect \
 		test_system_error \
 		test_query \
@@ -58,7 +61,11 @@ test_count_correct:	${TEST_PREREQUISITES} \
 	$S/count_correct.c.send \
 	$S/count_correct.cc.send \
 	$S/count_correct.java.send \
-	$S/count_correct.p.send
+	$S/count_correct.p.send \
+	$S/count_correct.lsp.send
+
+test_javaio_correct:	${TEST_PREREQUISITES} \
+	$S/javaio_correct.send
 
 test_count_incorrect:	${TEST_PREREQUISITES} \
 	$S/count_crash.cc.send \
