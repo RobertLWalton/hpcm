@@ -2,7 +2,7 @@
 #
 # File:		scoring_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Feb  7 10:00:05 EST 2003
+# Date:		Fri Feb  7 15:17:29 EST 2003
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2003/02/07 18:27:08 $
+#   $Date: 2003/02/07 20:29:08 $
 #   $RCSfile: scoring_common.tcl,v $
-#   $Revision: 1.38 $
+#   $Revision: 1.39 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -537,15 +537,11 @@ proc compute_score { } {
 # Scoring Reply Functions
 # ------- ----- ---------
 
-# Function to process $response_instructions_file value
-# and produce a $reply_file+ file by calling compose_
-# reply.  Documentation of the $response_instructions_
-# file value is found in hpcm_judging.rc with the
-# default_response_instructions global variable.  The
-# value of this global variable is used if the
-# $response_instructions_file does not exist, or is
-# added to the end of the value of that file if the file
-# does exist.
+# Function to process response instructions and produce
+# a $reply_file+ file by calling compose_reply.  Docu-
+# mentation of response instructions is found in
+# hpcm_judging.rc along with the default value of the
+# `response_instructions' global variable.
 #
 # The compose_reply_options are a list of options,
 # such as -cc and -error, that are passed to compose_
@@ -572,33 +568,11 @@ proc compute_score { } {
 #
 proc compose_response { { compose_reply_options "" } } {
 
-    global default_response_instructions \
-           response_instructions_file
+    global response_instructions
 
-    if { [catch { llength \
-		      $default_response_instructions \
-		      		}] } {
-	error "default_response_instructions value is\
+    if { [catch { llength $response_instructions }] } {
+	error "response_instructions value is\
 	       not a TCL list"
-    }
-
-    # Compute response instructions.
-    #
-    if { [file exists $response_instructions_file] } {
-        set response_instructions \
-            [read_entire_file \
-	         $response_instructions_file]
-	if { [catch { llength \
-			  $response_instructions }] } {
-	    error "$response_instructions_file file\
-		   value is not a TCL list"
-	}
-        set response_instructions \
-            [concat $response_instructions \
-	    	    $default_response_instructions]
-    } else {
-	set response_instructions \
-	    $default_response_instructions
     }
 
     # Execute first pass over response instructions
@@ -633,12 +607,10 @@ proc compose_response { { compose_reply_options "" } } {
 #
 proc send_response { commands } {
 
-    global response_instructions_file
-
     if { [llength [intersect \
     		      {FINAL NOT-FINAL NO-REPLY} \
 		      $commands]] != 1 } {
-	error "In $response_instructions_file file\
+	error "In `response_instructions'\
 	       value, not exactly one of\nNO-REPLY,\
 	       FINAL, and NOT-FINAL were executed:\n \
 	       $commands"
@@ -659,9 +631,8 @@ proc send_response { commands } {
 proc parse_block { block commands } {
 
     if { [catch { llength $block }] } {
-	error "$response_instructions_file file\
-	       value part is not a TCL list:\n   \
-	       $block"
+	error "`response_instructions' value part is\
+	       not a TCL list:\n    $block"
     }
 
     upvar $commands c
@@ -959,8 +930,7 @@ proc process_first_or_summary_command \
 proc execute_response_commands \
 	{ compose_reply_options commands } {
 
-    global response_instructions_file \
-    	   auto_score manual_score proposed_score \
+    global auto_score manual_score proposed_score \
 	   submitted_problem submitted_extension \
 	   solutions_directory
 
@@ -1070,8 +1040,8 @@ proc execute_response_commands \
 	    }
 
 	    default	{
-		error "In $response_instructions_file\
-		       file value, unrecognized\
+		error "In `response_instructions'\
+		       value, unrecognized\
 		       command: $command"
 	    }
 	}
@@ -1080,7 +1050,7 @@ proc execute_response_commands \
     if { [llength [intersect \
     		      {FINAL NOT-FINAL NO-REPLY} \
 		      $return_commands]] != 1 } {
-	error "In $response_instructions_file file\
+	error "In `response_instructions'\
 	       value, not exactly one of NO-REPLY,\
 	       FINAL, and NOT-FINAL were executed:\
 	       $return_commands"
@@ -1094,8 +1064,7 @@ proc execute_response_commands \
     return $return_commands
 }
 proc response_error { command } {
-    global response_instructions_file
-    error "In $response_instructions_file file value,\
+    error "In `response_instructions' value,\
            badly formatted command: $command."
 }
 

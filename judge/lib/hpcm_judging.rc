@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Feb  7 11:44:13 EST 2003
+# Date:		Fri Feb  7 14:53:41 EST 2003
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2003/02/07 18:27:06 $
+#   $Date: 2003/02/07 20:29:08 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.127 $
+#   $Revision: 1.128 $
 
 # Table of Contents:
 #
@@ -769,6 +769,24 @@ set output_limit_regexp {file size limit exceeded}
 # Response Instructions
 # -------- ------------
 
+# Response mode.  One of:
+#
+#   solution	Return SOLUTION if score is `Completely
+#		Correct'.
+#   first	Return location of FIRST error if score
+#		is not `Completely Correct'.
+#   summary	Return SUMMARY of errors if score is not
+#		`Completely Correct'.
+#
+#   ""		None of above.
+#
+#   solution+first	Combinations of above.
+#   first+solution	Combinations of above.
+#   solution+summary	Combinations of above.
+#   summary+solution	Combinations of above.
+#
+set response_mode ""
+
 # List of global variables that can be referenced in
 # the if-expressions of the response instructions.
 #
@@ -779,6 +797,7 @@ set output_limit_regexp {file size limit exceeded}
 # the following list.
 #
 set response_instructions_globals {
+    response_mode
     scoring_mode
     auto_score
     manual_score
@@ -790,17 +809,13 @@ set response_instructions_globals {
 #
 set response_instructions_summary_limit 5
 
-# Default instructions on how to respond to the submit-
-# ter when a new score is determined are provided in the
-# following variable.   Overriding instructions may be
-# provided for each problem in the problem directory
-# $response_instructions_file.
-#
-# Actually the default instructions are postpended to
-# any $response_instructions_file value, and pick up any
-# cases omitted by that value.  The EXIT command (see
-# below ) should be used in any $response_instructions_
-# file value to be sure this default does not execute.
+# Instructions on how to respond to the submitter when a
+# new score is determined are provided in the following
+# variable.   Additional instructions can be prepended
+# to this global variable value by a problem .rc file.
+# The EXIT command (see below ) should be used in any
+# pre-pended instructions whenever the following is not
+# supposed to execute.
 #
 # The response instructions and the scoreboard_mode_
 # array together define the possible scoring_mode values
@@ -809,7 +824,7 @@ set response_instructions_summary_limit 5
 # See below for a detailed description of response in-
 # structions.
 #
-set default_response_instructions {
+set response_instructions {
 
     if { ! $manual && ! $proposed } {
 	if { $scoring_mode == "manual" } {
@@ -919,8 +934,8 @@ set default_response_instructions {
     RECEIVED-HEADER
 }
 
-# A $response_instructions_file value is a TCL list
-# value consisting of commands and if-statements.  The
+# The `response_instructions' variable value is a TCL
+# list consisting of commands and if-statements.  The
 # if-statements have the format of TCL if statements:
 #
 #    	if <expression> <block>
@@ -939,7 +954,7 @@ set default_response_instructions {
 # first pass.
 #
 # If-statement expressions can be any TCL expr expres-
-# sion.  The only variables that can be used are:
+# sion.  Some of the variables that can be used are:
 #
 #   $scoring_mode
 #	The value of the scoring_mode global variable.
@@ -966,14 +981,16 @@ set default_response_instructions {
 #   $proposed
 #	Equals \$proposed_score != \"None\".
 #
-# Note these variables cannot be set by response in-
-# struction commands, nor should any expression change
-# the state of the TCL program when it is evaluated
-# (e.g., do NOT use `[catch { set foo 9 }]').
+# If-statement expressions can only use the variables
+# whose names are listed in the `response_instructions_
+# globals' variable, except for $manual and $proposed.
+# Note that none of these variables can be set by
+# response instruction commands, nor should any expres-
+# sion change the state of the TCL program when it is
+# evaluated (e.g., do NOT use `[catch { set foo 9 }]').
 #
-# The $response_instructions_file file commands are exe-
-# cuted to construct the reply.  The possible commands
-# are:
+# The response instructions commands are executed to
+# construct the reply.  The possible commands are:
 #
 #     FINAL
 #     NOT-FINAL 
@@ -1064,7 +1081,8 @@ set default_response_instructions {
 #
 #     SUMMARY
 #	  Include lines summarizing of all score deter-
-#	  mining errors in the reply.
+#	  mining errors in the reply.  See the variable
+#	  response_instructions_summary_limit above.
 #
 # Response instructions are used by the autojudge and
 # manualreply program, which compose score based replies
@@ -1687,7 +1705,6 @@ set no_reply_file		No_Reply
 set scoring_filter_file 	Scoring_Filter
 set auto_score_file		Auto_Score
 set manual_score_file		Manual_Score
-set response_instructions_file	Response_Instructions
 set make_file			Makefile
 set dispatch_pid_file		Dispatch_PID
 set gotten_file			Gotten

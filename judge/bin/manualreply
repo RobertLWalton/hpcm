@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2003/02/07 18:27:33 $
+#   $Date: 2003/02/07 20:29:07 $
 #   $RCSfile: manualreply,v $
-#   $Revision: 1.58 $
+#   $Revision: 1.59 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -741,17 +741,7 @@ $files_file	A list of files that are to be\
 	to the solution directory.  Used by autojudge,\
 		    extractmail, and
 	trackfinder.
-
-$response_instructions_file	Instructions for\
-			    composing a response to a
-			submission after scoring.  Used\
-			    by the autojudge and
-			manualreply programs. \
-			    Optional.  A symbolic link\
-			    to
-			the solution directory.
 "
-set help($response_instructions_file) $help($files_file)
 
 
 set help($scoring_filter_file) "
@@ -881,12 +871,10 @@ set help(topics) "$help(topics)\n"
 #
 proc compose_score_reply {} {
 
-    global response_instructions_file
-
     set return_commands [compose_response]
 
     if { ! [lcontain $return_commands FINAL] } {
-        error "$response_instructions_file value\
+        error "`response_instructions' value\
 	       did not execute FINAL command"
     }
     if { [lcontain $return_commands EDIT] } {
