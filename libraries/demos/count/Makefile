@@ -82,6 +82,7 @@ count.out:	count count.in
 	@echo -n "========== OUTPUT (count.out)"
 	@echo " =========="
 	@cat count.out
+	@echo "========== END OUTPUT =========="
 
 submit:		count.out
 	hpcm_submit count
@@ -98,6 +99,6 @@ clean:
 # RCS Info (may not be true date or author):
 #
 #   $Author: acm-cont $
-#   $Date: 2000/09/04 09:18:00 $
+#   $Date: 2000/09/04 15:18:35 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.11 $
+#   $Revision: 1.12 $

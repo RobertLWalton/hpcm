@@ -2,7 +2,7 @@
  *
  * File:	hpcm_sandbox.c
  * Authors:	Bob Walton (walton@deas.harvard.edu)
- * Date:	Mon Sep  4 04:08:39 EDT 2000
+ * Date:	Mon Sep  4 11:19:38 EDT 2000
  *
  * The authors have placed this program in the public
  * domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
  * RCS Info (may not be true date or author):
  *
  *   $Author: acm-cont $
- *   $Date: 2000/09/04 09:18:03 $
+ *   $Date: 2000/09/04 15:18:35 $
  *   $RCSfile: hpcm_sandbox.c,v $
- *   $Revision: 1.4 $
+ *   $Revision: 1.5 $
  */
 
 #include <stdlib.h>
@@ -171,10 +171,13 @@ int main ( int argc, char ** argv )
 	    char * s = argv[index];
 	    int n = 0;
 	    int c;
+	    int digit_found = 0;
 
 	    while ( c = * s ++ )
 	    {
 	        if ( c < '0' || c > '9' ) break;
+		digit_found = 1;
+
 		if ( n > ( 1 << 27 ) )
 		{
 		    fprintf ( stderr,
@@ -212,7 +215,7 @@ int main ( int argc, char ** argv )
 		n <<= 10;
 	    }
 
-	    if ( c != 0 || n == 0 )
+	    if ( c != 0 || ! digit_found )
 	    {
 		fprintf ( stderr,
 			  "hpcm_sandbox: Bad number:"
