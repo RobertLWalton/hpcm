@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/10/03 03:16:09 $
+#   $Date: 2000/10/10 05:23:09 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.45 $
+#   $Revision: 1.46 $
 #
 
 # Include this code in TCL program via:
@@ -741,6 +741,9 @@ proc header_is_authentic {} {
 # The -cc option causes the reply to be cc'ed to the
 # `reply_manager' if that is defined.
 #
+# The -error option changes the reply subject from
+# `RE:...' to `Errors In:...'.
+#
 # When the message is sent it is copied to the reply
 # history file.
 #
@@ -768,15 +771,18 @@ proc compose_reply { args } {
 	   reply_manager
 
     # If -all is present, set `all_option' to `yes' and
-    # shift the arguments left.  Ditto -cc.
+    # shift the arguments left.  Ditto -cc and -errors.
     #
     set all_option no
     set cc_option no
+    set errors_option no
     while { [llength $args] >= 1 } {
 	if { [lindex $args 0] == "-all" } {
 	    set all_option yes
 	} elseif { [lindex $args 0] == "-cc" } {
 	    set cc_option yes
+	} elseif { [lindex $args 0] == "-errors" } {
+	    set errors_option yes
 	} else {
 	    break
 	}
@@ -802,7 +808,13 @@ proc compose_reply { args } {
     if { $cc_option && $reply_manager != "" } {
 	puts $reply_ch "Cc: $reply_manager"
     }
-    puts $reply_ch   "Subject: RE:$message_subject"
+    if { $errors_option } {
+        puts $reply_ch \
+	     "Subject: Errors In:$message_subject"
+    } else {
+        puts $reply_ch \
+	     "Subject: RE:$message_subject"
+    }
     if { $message_x_hpcm_test_subject != "" } {
 	puts $reply_ch   "X-HPCM-Test-Subject:\
 	                  $message_x_hpcm_test_subject"

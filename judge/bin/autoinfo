@@ -4,7 +4,7 @@
 #
 # File:		autoinfo
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Oct  9 09:42:34 EDT 2000
+# Date:		Tue Oct 10 00:55:06 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/10/09 16:06:13 $
+#   $Date: 2000/10/10 05:23:08 $
 #   $RCSfile: autoinfo,v $
-#   $Revision: 1.18 $
+#   $Revision: 1.19 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -270,7 +270,29 @@ if { $unreadables != "" } {
     }
     lappend lines ""
 } 
+
+if { $lines != "" } {
+    if { $ok_names == "" } {
+	lappend lines \
+		"There were no OK file names provided\
+		 in the requesting message."
+	lappend lines \
+		"The subject of the requesting message\
+		 should have the form:"
+	lappend lines \
+		"    Subject: get filename ..."
+    } else {
+	lappend lines \
+		"Requested files will be returned in\
+		 a subsequent message."
+    }
+    eval compose_reply -errors $lines
+    send_reply -notfinal
+}
+
 if { $ok_names != "" } {
+
+    set lines ""
     lappend lines \
 	    "The following requested files appear\
 	     below after the request message header:"
@@ -280,20 +302,8 @@ if { $ok_names != "" } {
 	set fs [lrange $fs 3 end]
     }
     lappend lines ""
-} else { 
-    lappend lines \
-            "There were no OK file names provided\
-	     in the requesting message."
-    lappend lines \
-            "The subject of the requesting message\
-	     should have the form:"
-    lappend lines \
-            "    Subject: get filename ..."
-}
 
-eval compose_reply $lines
-
-if { $ok_names != "" } {
+    eval compose_reply $lines
 
     set reply_ch [open $reply_file+ a]
 
@@ -315,9 +325,9 @@ if { $ok_names != "" } {
     puts $reply_ch "$dashes end of files"
 
     close $reply_ch
-}
 
-send_reply
+    send_reply
+}
 
 if { [file exists $gotten_file] } {
     file delete -force $gotten_file
