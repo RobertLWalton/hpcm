@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Sep 25 12:05:38 EDT 2002
+# Date:		Wed Oct 23 07:47:25 EDT 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/09/25 16:07:56 $
+#   $Date: 2002/10/23 12:20:49 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.115 $
+#   $Revision: 1.116 $
 
 # Table of Contents:
 #
@@ -49,7 +49,7 @@
 # current directory.
 #
 # This file is sourced by code in judging_common.tcl.
-# See the `Inline Code' in that file.
+# See `Inline Code' in that file.
 
 # Scoreboard Parameters
 # ---------- ----------
@@ -124,7 +124,7 @@ set scoreboard_display_incorrect yes
 # or they can be given as integers which are numbers
 # of seconds added to the problem start time.
 # 
-# A non "" stop time excludes submissions made after the
+# A non-"" stop time excludes submissions made after the
 # stop time (this is done AFTER the cut time rules have
 # been applied).  A stop time can be a date and time, or
 # it can be an integer that is added to the start time
@@ -166,11 +166,11 @@ set scoreboard_final_cut_time ""
 # and 5 hour contests.  A team has enterred the 4 hour
 # contest if it makes a correct submission after 3 hours
 # but at or before 5 hours and 10 minutes, or if it
-# makes an incorrect submission after 3 hours but at
-# or before 5 hours and 10 minutes.  The final cut time
-# permits teams to come back and work on problems the
-# next day for practice without affecting the score-
-# board.
+# makes an incorrect submission after 3 hours and 10
+# minutes but at or before 5 hours and 10 minutes.  The
+# final cut time, here 5 hours and 10 minutes, permits
+# teams to come back and work on problems the next day
+# for practice without affecting the scoreboard.
 #
 # set scoreboard_start_time team
 # set scoreboard_freeze_time ""
@@ -265,21 +265,19 @@ set scoreboard_markers "|$!#^%@<>"
 
 # List of addresses for `makescoreboard' to email
 # scoreboard to.  If scoreboard_instructions includes
-# a `{ SEND xxx }' instruction for an OUTPUT file,
-# and scoreboard_addresses is a list containing YYY,
+# a `SEND' instruction for an OUTPUT file, and
+# scoreboard_addresses is a list containing zzz<YYY>,
 # then every time the output file is made it will be
-# emailed to `xxx<YYY>', so in the account YYY
+# emailed to `zzz<YYY>', so in the account YYY
 # .procmailrc file you should put something like:
 #
 #	:0 b:
-#	* ^To:.*xxx
+#	* ^To:.*zzz
 #	| cat >public_html/xxx;\
 #	  chmod a+r public_html/xxx
 #
-# If instead of YYY you put zzz<YYY> in the list, the
-# output will be emailed to `xxx-zzz<YYY>'.  See docu-
-# mentation for `scoreboard_instructions' for more
-# details and additional SEND features.
+# See documentation for `scoreboard_instructions' for
+# more details and additional SEND features.
 #
 set scoreboard_addresses { }
 
@@ -392,16 +390,16 @@ set scoreboard_interval 60
 # just once after the given time.
 #
 # The start and stop times of an OUTPUT command, the
-# values of a parameter, and the texts of a LINE com-
-# mand can be the special abbreviations TIME, START,
+# values of a parameter, and the texts of a LINE or BAR
+# command can be the special abbreviations TIME, START,
 # STOP, FREEZE, and NAME.  TIME is the time when the
 # `makescoreboard' program starts executing the score-
 # board instructions.  The other abbreviates are the
 # values of the `scoreboard_start_time', `scoreboard_
 # stop_time', `scoreboard_freeze_time', and `scoreboard_
-# name' global variables just before the scoreboard
-# instructions are executed, and after any arguments to
-# `makescoreboard' have been processed.
+# name' global variables just before the first score-
+# board instruction is executed, but after any arguments
+# to `makescoreboard' have been processed.
 #
 # Note that parameter setting instructions are always
 # executed even if the last OUTPUT instruction is not
@@ -428,7 +426,7 @@ set scoreboard_interval 60
 #
 set email_scoreboard_instructions {
     { OUTPUT scoreboard.mail }
-    { SEND scoreboard }
+    SEND
     { LINE "See notes below." NAME TIME }
     BLANK
     BOARD
@@ -457,7 +455,7 @@ set email_scoreboard_instructions {
 set informal_scoreboard_instructions {
     { OUTPUT contest/scoreboard.1 }
     GRANT_ACCESS
-    { SEND scoreboard }
+    SEND
     { LINE NAME "" TIME }
     BLANK
     { INPUT contest/scoreboard.1head }
@@ -540,7 +538,7 @@ set formal_scoreboard_instructions {
 
     { OUTPUT contest/scoreboard.1 }
     GRANT_ACCESS
-    { SEND scoreboard }
+    SEND
 
     { LINE NAME "Public Scoreboard" TIME }
     { INPUT contest/scoreboard.freeze }
@@ -555,6 +553,7 @@ set formal_scoreboard_instructions {
     BLANK
     { stop_time STOP }
     BOARD
+    BLANK
     { INPUT contest/who_where }
 
     { OUTPUT contest/scoreboard.final STOP STOP }
@@ -563,6 +562,7 @@ set formal_scoreboard_instructions {
     BLANK
     { stop_time STOP }
     BOARD
+    BLANK
     { INPUT contest/who_where }
 }
 
@@ -573,14 +573,17 @@ set scoreboard_instructions \
     $email_scoreboard_instructions
 
 # Scoreboard_mode_array is a map from the scoring_mode
-# to a regular expression that must match all score-
-# finder codes used to construct the scoreboard.  It
-# is only changed if the set of possible scoring modes
-# is being changed.  Scoreboard_mode_array($scoring_
-# mode) is a TCL regular expression that must match the
-# entire code output by scorefinder in order for the
-# line containing the code to be used in computing a
-# scoreboard.
+# (see `Scoring Parameters') to a regular expression
+# that must match all scorefinder codes used to con-
+# struct a scoreboard.  Scorefinder output lines with
+# non-matching codes are simply ignored.  Scoreboard_
+# mode_array is only changed if the set of possible
+# scoring modes is being changed.
+#
+# Scoreboard_mode_array($scoring_mode) is a TCL regular
+# expression that must match the entire code output by
+# scorefinder in order for the line containing the code
+# to be used in computing a scoreboard.
 #
 set scoreboard_mode_array(manual) \
     {m(i|c)f|g}
