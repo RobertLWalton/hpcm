@@ -2,7 +2,7 @@
 #
 # File:		scoring_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Mar 21 07:06:06 EST 2003
+# Date:		Tue Apr 20 11:15:57 EDT 2004
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2003/03/21 12:10:46 $
+#   $Date: 2004/04/20 15:16:21 $
 #   $RCSfile: scoring_common.tcl,v $
-#   $Revision: 1.42 $
+#   $Revision: 1.43 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -983,7 +983,7 @@ proc execute_response_commands \
 	    	if { $length != 1 } {
 		    response_error $command
 		}
-		if { ! [lcontains \
+		if { ! [lcontain \
 			    $compose_reply_options \
 			    -cc] } {
 		    lappend compose_reply_options -cc
