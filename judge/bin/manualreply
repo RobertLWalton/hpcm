@@ -5,7 +5,7 @@
 #
 # File:		manualreply
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Jan 27 10:06:16 EST 2002
+# Date:		Wed Jan 30 01:07:22 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/01/27 15:55:57 $
+#   $Date: 2002/01/30 06:15:12 $
 #   $RCSfile: manualreply,v $
-#   $Revision: 1.49 $
+#   $Revision: 1.50 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -745,172 +745,24 @@ set help(topics) "$help(topics)\n"
 #
 proc compose_score_reply {} {
 
-    global submitted_problem submitted_extension \
-    	   proposed_score \
-    	   manual_score auto_score scoring_mode
+    global response_instructions_file
 
-    set submitted_file \
-    	$submitted_problem$submitted_extension
+    set return_commands [compose_response]
 
-    if { $manual_score == "none" } {
-	if { $scoring_mode == "manual" } {
-	    compose_reply \
-	        "LINE {For $submitted_file your final\
-		       score is:}" \
-		 BLANK \
-		 "LINE {    $proposed_score}" \
-		 BLANK \
-		 {LINE "(see below for submission\
-		        time)."} \
-		 BLANK \
-		 {BAR "This message replies to:"} \
-		 RECEIVED-HEADER
-	    return yes
-	} elseif { [regexp {manual} $scoring_mode] } {
-	    if { $proposed_score == $auto_score } {
-		compose_reply \
-		    "LINE {For $submitted_file\
-		            your previous automatic\
-			    score of:}" \
-		    BLANK \
-		    "LINE {    $auto_score}" \
-		    BLANK \
-		    {LINE "has been verified and\
-		           confirmed by the human\
-			   judge!"} \
-		    {LINE "Thus your FINAL score\
-		    	   is:"} \
-		    BLANK \
-		    "LINE {    $proposed_score}" \
-		    BLANK \
-		    {LINE "for this submission (see\
-		           below for submission\
-			   time)."} \
-		    BLANK \
-		    {BAR "This message replies to:"} \
-		    RECEIVED-HEADER
-		 return yes
-	    } else {
-		compose_reply \
-		    "LINE {For $submitted_file\
-		           your previous automatic\
-			   score of:}" \
-		    BLANK \
-		    "LINE {    $auto_score}" \
-		    BLANK \
-		    {LINE "has been OVERRIDDEN by the\
-		           human judge!"} \
-		    BLANK \
-		    {LINE "The human judge has assigned\
-		           the NEW FINAL score:"} \
-		    BLANK \
-		    "LINE {    $proposed_score}" \
-		    BLANK \
-		    {LINE "to this submission (see\
-		           below for submission\
-			   time)."} \
-		    BLANK \
-		    {BAR "This message replies to:"} \
-		    RECEIVED-HEADER
-		 return yes
-	    }
-	} elseif { $scoring_mode == "auto" } {
-	    if { $proposed_score == $auto_score } {
-		compose_reply \
-		    "LINE {For $submitted_file\
-		           your PREVIOUS FINAL\
-			   automatic score of:}" \
-		    BLANK \
-		    "LINE {    $auto_score}" \
-		    BLANK \
-		    {LINE "has been verified and\
-		           confirmed by the human\
-			   judge!"} \
-		    BLANK \
-		    {LINE "(See below for submission\
-		            time)."} \
-		    BLANK \
-		    {BAR "This message replies to:"} \
-		    RECEIVED-HEADER
-		 return no
-	    } else {
-		compose_reply \
-		    "LINE {For $submitted_file\
-		           your PREVIOUS FINAL\
-			   automatic score of:}" \
-		    BLANK \
-		    "LINE {    $auto_score}" \
-		    BLANK \
-		    {LINE "has been UNEXPECTEDLY\
-		           OVERRIDDEN by the human\
-			   judge!"} \
-		    BLANK \
-		    {LINE "The human judge has assigned\
-		           the NEW FINAL score:"} \
-		    BLANK \
-		    "LINE {    $proposed_score}" \
-		    BLANK \
-		    {LINE "to this submission (see\
-		           below for submission\
-			   time)."} \
-		    BLANK \
-		    {BAR "This message replies to:"} \
-		    RECEIVED-HEADER
-		 return no
-	    }
-	} else {
-	    error "Bad scoring mode: `$scoring mode'"
-	}
-    } else { # $manual_score != "none"
-	if { $proposed_score == $manual_score } {
-	    compose_reply \
-		"LINE {For $submitted_file\
-		       your PREVIOUS FINAL\
-		       manual score of:}" \
-		BLANK \
-		"LINE {    $manual_score}" \
-		BLANK \
-		{LINE "has been verified and\
-		       confirmed by the human\
-		       judge!"} \
-		BLANK \
-		{LINE "(See below for submission\
-			time)."} \
-		BLANK \
-		{BAR "This message replies to:"} \
-		RECEIVED-HEADER
-	     return no
-	} else {
-	    compose_reply \
-		"LINE {For $submitted_file\
-		       your PREVIOUS FINAL\
-		       manual score of:}" \
-		BLANK \
-		"LINE {    $manual_score}" \
-		BLANK \
-		{LINE "has been UNEXPECTEDLY\
-		       OVERRIDDEN by the human\
-		       judge!"} \
-		BLANK \
-		{LINE "The human judge has assigned\
-		       the NEW FINAL score:"} \
-		BLANK \
-		"LINE {    $proposed_score}" \
-		BLANK \
-		{LINE "to this submission (see\
-		       below for submission\
-		       time)."} \
-		BLANK \
-		{BAR "This message replies to:"} \
-		RECEIVED-HEADER
-	     return no
-	}
+    if { ! [lcontain $return_commands FINAL] } {
+        error "$response_instructions_file value\
+	       did not execute FINAL command"
+    }
+    if { [lcontain $return_commands EDIT] } {
+    	return no
+    } else {
+    	return yes
     }
 }
 
 # Send any previously composed reply and set the
 # manual score equal to the proposed score and the
-# proposed score to `none'.
+# proposed score to `None'.
 #
 proc send_score_reply {} {
 
@@ -977,7 +829,7 @@ It appears that `autojudge' should be run."
 set menu $main_menu
 
 set directory [file tail [pwd]]
-set proposed_score none
+set proposed_score None
 set last_file ""
 set last_display ""
 
@@ -1006,8 +858,8 @@ proc refresh_info {} {
 
     set old_info_height $window_info_height
 
-    if { $proposed_score == "none" } {
-	if { $manual_score != "none" } {
+    if { $proposed_score == "None" } {
+	if { $manual_score != "None" } {
 	    set proposed_score $manual_score
 	} else {
 	    set proposed_score $auto_score
@@ -1020,11 +872,11 @@ proc refresh_info {} {
 	set scoring_info "
 Scoring Instructions: $scoring_instructions"
 
-	if { $manual_score == "none" } {
+	if { $manual_score == "None" } {
 	    set scoring_info "$scoring_info
 Scores:  Auto: $auto_score   Proposed: $proposed_score"
 	    set window_info_height 8
-	} elseif { $proposed_score == "none" } {
+	} elseif { $proposed_score == "None" } {
 	    set scoring_info "$scoring_info
 Scores:  Auto: $auto_score   Manual: $manual_score"
 	    set window_info_height 8
@@ -1077,7 +929,7 @@ proc send_score { } {
 
     if { [not_readonly] == "no" } {
 	# do nothing
-    } elseif { $proposed_score == "none" } {
+    } elseif { $proposed_score == "None" } {
 	set window_error "ERROR: set the\
 	    proposed score before sending it"
     } elseif { [compose_score_reply] } {
