@@ -2,7 +2,7 @@
 #
 # File:		scoring_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Mar  9 11:24:13 EST 2002
+# Date:		Sat Mar  9 19:21:29 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/03/09 17:59:42 $
+#   $Date: 2002/03/10 00:20:42 $
 #   $RCSfile: scoring_common.tcl,v $
-#   $Revision: 1.31 $
+#   $Revision: 1.32 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -611,10 +611,10 @@ proc compose_response { { compose_reply_options "" } } {
     set commands ""
     parse_block $response_instructions commands
 
-    # Execute second pass on action response instructions
-    # and return those whose action is to be performed by
-    # our caller (i.e., are instructions for disposal of
-    # $reply_file+).
+    # Execute second pass on action response instruc-
+    # tions and return those whose action is to be per-
+    # formed by our caller (i.e., are instructions for
+    # disposal of $reply_file+).
     #
     return [execute_response_commands \
     	        $compose_reply_options $commands]
