@@ -5,7 +5,7 @@
 #
 # File:		manualreply
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Sep 22 14:27:49 EDT 2000
+# Date:		Sat Sep 23 06:59:28 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/09/22 18:25:39 $
+#   $Date: 2000/09/23 10:55:13 $
 #   $RCSfile: manualreply,v $
-#   $Revision: 1.10 $
+#   $Revision: 1.11 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -97,8 +97,15 @@ set window_display ""
 set window_info ""
 set window_error ""
 set window_prompt ""
-set window_height 40
-set window_display_height 12
+#
+# The following are imported from hpcm_judging.rc:
+#
+# set window_blank_height 16
+# set window_height 24
+#
+# The following is reset frequently as window_info
+# changes.
+#
 set window_info_height 8
 
 set window_newlines "\n\n\n\n\n\n\n\n\n\n"
@@ -142,13 +149,14 @@ proc set_window_display { display } {
 
     global window_blank window_display \
     	   window_height window_info_height \
-	   window_newlines
+	   window_blank_height window_newlines
 
     set height [llength [split $display "\n"]]
 
     set offset \
         [expr { $window_height \
-	        - $window_info_height - 2 \
+	        + $window_blank_height \
+	        - $window_info_height - 3 \
 		- $height - 1 }]
     set window_blank \
         [string range $window_newlines 0 $offset]
@@ -170,7 +178,8 @@ proc bar_with_text { text } {
 #
 proc set_file_display { filename } {
 
-    global window_display_height last_display
+    global window_height window_info_height \
+           last_display
 
     if { ! [file readable $filename] } {
 	refresh_file_list
@@ -178,7 +187,8 @@ proc set_file_display { filename } {
 	return
     }
 
-    set height [expr { $window_display_height - 2 }]
+    set height [expr { $window_height \
+                       - $window_info_height - 5 }]
     set display [bar_with_text "$filename:"]
 
     set file_ch [open $filename r]
@@ -624,13 +634,135 @@ proc read_score { score_file } {
     }
 }
 
+# Compose a reply indicating the assignment of the
+# proposed score as the final score, and indicating
+# whether this overrides or confirms any previous
+# automatically or manually assigned score.  Return
+# `yes' if this is a normal transaction and the
+# reply does not need human editing.  Return `no' if
+# the reply needs to be edited.
+#
+proc compose_score_reply {} {
+
+    global submitted_file proposed_score \
+    	   manual_score auto_score scoring_mode
+
+    if { $manual_score == "none" } {
+	if { $scoring_mode == "manual" } {
+	    compose_reply "For $submitted_file\
+	        your final score is:" \
+		"" \
+		"    $proposed_score"
+	    return yes
+	} elseif { [regexp {manual} $scoring_mode] } {
+	    if { $proposed_score == $auto_score } {
+		compose_reply "For $submitted_file\
+		    your automatic score of:" \
+		    "" \
+		    "    $auto_score" \
+		    "" \
+		    "has been accepted by the human\
+		     judge!"
+		 return yes
+	    } else {
+		reply "For $submitted_file your\
+		       automatic score of:" \
+		      "" \
+		      "    $auto_score" \
+		      "" \
+		      "has been OVERRIDDEN by the human\
+		       judge!" \
+		      "" \
+		      "The human judge hasassigned the\
+		       FINAL SCORE:" \
+		      "" \
+		      "    $proposed_score"
+		 return yes
+	    }
+	} elseif { $scoring_mode == "auto" } {
+	    if { $proposed_score == $auto_score } {
+		compose_reply "For $submitted_file\
+		    your PREVIOUS FINAL automatic score\
+		    of:" \
+		    "" \
+		    "    $auto_score" \
+		    "" \
+		    "has been CONFIRMED by the human\
+		     judge!"
+		 return no
+	    } else {
+		compose_reply "For $submitted_file\
+		    your PREVIOUS FINAL automatic score\
+		    of:" \
+		    "" \
+		    "    $auto_score" \
+		    "" \
+		    "has been UNEXPECTEDLY OVERRIDDEN\
+		     by the human judge!" \
+		    "" \
+		    "The human judge has assigned the\
+		     NEW FINAL SCORE:" \
+		    "" \
+		    "    $proposed_score"
+		 return no
+	    }
+	} else {
+	    error "Bad scoring mode: `$scoring mode'"
+	}
+    } else { # $manual_score != "none"
+	if { $proposed_score == $manual_score } {
+	    compose_reply "For $submitted_file\
+		your PREVIOUS FINAL manual score\
+		of:" \
+		"" \
+		"    $manual_score" \
+		"" \
+		"has been CONFIRMED by the human\
+		 judge!"
+	     return no
+	} else {
+	    compose_reply "For $submitted_file\
+		your PREVIOUS FINAL manual score\
+		of:" \
+		"" \
+		"    $manual_score" \
+		"" \
+		"has been UNEXPECTEDLY OVERRIDDEN\
+		 by the human judge!" \
+		"" \
+		"The human judge has assigned the\
+		 NEW FINAL SCORE:" \
+		"" \
+		"    $proposed_score"
+	     return no
+	}
+    }
+}
+
+# Send any previously composed replay and set the
+# manual score equal to the proposed score and the
+# proposed score to `none'.
+#
+proc send_score_reply {} {
+
+    global manual_score_file proposed_score \
+           manual_score
+
+    send_reply
+
+    write_file $manual_score_file $proposed_score
+    set manual_score $proposed_score
+    set proposed_score none
+}
+
+
 # Initialize the file list and the last_file variable.
 # Initialize last_display variable (equal to `file_list'
 # or `file'.)
 #
 refresh_file_list
 set last_file ""
-set last_display "file_list"
+set last_display file_list
 
 get_lock
 read_received_mail
@@ -648,6 +780,7 @@ if { $submitted_program != "" \
 
 
     set_file_list_display
+    set window_info_height 5
     set_window_info "
 It appears that `autojudge' should be run."
     set window_prompt "Do you want to do so (y or n)? "
@@ -662,71 +795,21 @@ It appears that `autojudge' should be run."
 
 	if { ! [file exists $auto_score_file] } {
 	    puts "autojudge FAILED to make\
-	         $auto_score_file"
+	          $auto_score_file"
 	}
 	continue?
     }
 }
 
-# Procedure to get a new manual_score by manual entry by
-# the program user.
-#
-proc get_new_score { current_score } {
-
-    switch $current_score {
-        "Incorrect Output"		{ set code io }
-        "Formatting Error"		{ set code fe }
-        "Syntax Error"			{ set code se }
-        "Program Crashed		{ set code pc }
-        "Completely Correct"		{ set code cc }
-        "Incomplete Output"		{ set code io }
-        "Cpu Time Limit Exceeded"	{ set code te }
-        "Output Size Exceeded"		{ set code oe }
-    }
-
-    while { "yes" } {
-
-	puts -nonewline "
-======================================================
-Please select a new current score:
-  io = Incorrect Output     cc = Completely Correct
-  fe = Formatting Error     ic = Incomplete Output
-  se = Syntax Error         te = Cpu Time Limit Exceeded
-  pc = Program Crashed      oe = Output Size Exceeded
-
-($code) > "
-
-	flush stdout
-
-	set answer [string string[gets stdin]
-	switch [string trim [gets stdin]] {
-	    "" { if { [eof stdin] } {
-		     exit 0
-		 } else {
-		     return $current_score
-		 }
-	       }
-	    io { return "Incorrect Output" }
-	    fe { return "Formatting Error" }
-	    se { return "Syntax Error" }
-	    pc { return "Program Crashed" }
-	    cc { return "Completely Correct" }
-	    ic { return "Incomplete Output" }
-	    te { return "Cpu Time Limit Exceeded" }
-	    oe { return "Output Size Limit Exceeded" }
-	}
-    }
-}
-
 set directory [file tail [pwd]]
-set proposed_score "none"
+set proposed_score none
 
 set auto_score   [read_score $auto_score_file]
 set manual_score [read_score $manual_score_file]
     
 set scoring_instructions [find_scoring_instructions]
 
-set last_display "file_list"
+set last_display file_list
 set window_error ""
 
 set main_menu "
@@ -741,10 +824,11 @@ sh = shell
 ir = initiate reply \
 er = edit reply     \
 sr = send reply     \
-ss = send score
+nr = no reply
 sm = scoring menu   \
 aj = autojudge      \
-ai = autoinfo"
+ai = autoinfo       \
+ss = send score"
 
 set scoring_menu "
 io = Incorrect Output    cc = Completely Correct      \
@@ -758,13 +842,6 @@ pc = Program Crashed     oe = Output Size Exceeded"
 set menu $main_menu
 
 while { "yes" } {
-
-    if { $last_display == "file_list" } {
-	refresh_file_list
-	set_file_list_display
-    } else {
-	set_file_display $last_file
-    }
 
     if { $submitted_program == "" } {
     	set scoring_info ""
@@ -791,6 +868,17 @@ Scores:    Auto:     $auto_score    Manual: $manual_score
 
     set_window_info "Directory: $directory$scoring_info
 $menu"
+
+    # Set the display after the window_info_height is
+    # determined.
+    #
+    if { $last_display == "file_list" } {
+	refresh_file_list
+	set_file_list_display
+    } else {
+	set_file_display $last_file
+    }
+
     set window_prompt "> "
     display_window
     set window_error ""
@@ -819,10 +907,17 @@ $menu"
 	{^c[0-9]*$} {
 	    regexp {^c([0-9]*)$} $answer forget n
 	    if { [get_file $n] } {
+	        set mail_file $last_file.mail
 		if { [catch { set last_file \
 			          [make_checked \
 			              $last_file] } \
 			    out] } {
+		    out_check $out
+		} elseif { [file exists $mail_file ] \
+			   && [catch {
+			          make_checked \
+				      $mail_file
+			       } out] } {
 		    out_check $out
 		} else {
 		    set window_error \
@@ -833,10 +928,17 @@ $menu"
 	{^u[0-9]*$} {
 	    regexp {^u([0-9]*)$} $answer forget n
 	    if { [get_file $n] } {
+	        set mail_file $last_file.mail
 		if { [catch { set last_file \
 			          [make_unchecked \
 			              $last_file] } \
 			    out] } {
+		    out_check $out
+		} elseif { [file exists $mail_file ] \
+			   && [catch {
+			          make_unchecked \
+				      $mail_file
+			       } out] } {
 		    out_check $out
 		} else {
 		    set window_error \
@@ -879,6 +981,49 @@ $menu"
 		    set window_error "Send ABORTED!"
 		}
 	    }
+	}
+	{^ss$} {
+	    if { $proposed_score == "none" } {
+	        set window_error "ERROR: set the\
+		    proposed score before sending it"
+	    } elseif { [compose_score_reply] } {
+		send_score_reply
+		set last_file $reply_file
+		set_file_display $last_file
+	        set window_error "Score sent!"
+	    } else {
+	        set window_error "NOTICE: Old manual\
+		    score exists or scoring mode is\
+		    `auto'."
+	        set window_prompt "To continue you\
+		    must edit reply.  Do you want to\
+		    continue (y or n)? "
+		set last_file $reply_file+
+		set_file_display $reply_file+
+		display_window
+		if { [yes?] } {
+		    edit_file $last_file
+		    set window_error "Reply is ready\
+			to send."
+		    set window_prompt "Do you want to\
+			send it (y or n)? "
+		    display_window
+		    if { [yes?] } {
+		    	send_score_reply
+			set last_file $reply_file
+			set window_error "Score sent!"
+		    } else {
+			set window_error "Score sending\
+			    ABORTED!"
+			set last_display file_list
+		    }
+		} else {
+		    set window_error "Score sending\
+			ABORTED!"
+		    set last_display file_list
+		}
+	    }
+	    set menu $main_menu
 	}
 	{^aj$} {
 	    puts "Running autojudge"
