@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Feb 25 06:38:02 EST 2003
+# Date:		Sun Mar 30 11:20:01 EST 2003
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2003/02/25 11:36:17 $
+#   $Date: 2003/03/30 16:23:08 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.24 $
+#   $Revision: 1.25 $
 
 # To make a formal contest named `foo':
 #
@@ -362,7 +362,7 @@ HPCM=${HOME}/hpcm
 # Parameters for running tests
 #
 S=${HPCM}/examples/test_submissions
-R=${HPCM}/examples/test_submissions/auto+manual_replies
+R=${HPCM}/examples/test_submissions/formal_replies
 
 # Kill all implicit rules
 #
