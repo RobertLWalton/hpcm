@@ -5,7 +5,7 @@
 #
 # File:		printer_pipe
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Sat Nov 24 05:39:56 EST 2001
+# Date:		Wed Jan 16 07:20:58 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,21 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/11/24 10:39:24 $
+#   $Date: 2002/01/16 12:30:28 $
 #   $RCSfile: printer_pipe,v $
-#   $Revision: 1.8 $
-
-# If this is not bash and bash is available, switch
-# to using bash.  Note that `which bash` may output
-# a grubby error message and no error code if bash
-# does not exist.  Non-bash sh'es cannot handle the
-# -r option to read.
-#
-bash=`which bash 2>/dev/null`
-if test "$BASH" = "" -a "$bash" != "" -a -x "$bash"
-then
-    exec bash "$0" "$@"
-fi
+#   $Revision: 1.9 $
 
 Pswitch=0
 
@@ -62,10 +50,16 @@ printer_pipe [-P] where filename [username]
     (the \`printer' file and PRINTER variable are NOT
     used).
 
+    The \\ backslash character can be used in the
+    printer_map file to continue lines.  If a back-
+    slash is to be included in the regular expression,
+    it must be doubled.  The regular expression is as
+    per the \`expr(1)' UNIX command.
+
     The \`printer' file contents just name the printer.
     Note that if \`printer_map' is readable, \`printer'
     is NEVER used.
-
+
     If the printer name begins with a \`!', the rest of
     the name is taken to be the name of a file that con-
     tains the printer name.  It is an error if this file
@@ -76,7 +70,7 @@ printer_pipe [-P] where filename [username]
 
     If the user name is not given, the current account
     name is used.
-
+
     If the -P option is given, the printer name is writ-
     ten to the standard output, and this program exits
     without trying to print anything.  The \`where'
@@ -100,7 +94,7 @@ printer_pipe [-P] where filename [username]
     The \`where' and \`filename' arguments are used
     purely for informative purposes in the email subject
     and in ~/.hpcm_contest/printer_jobs.
-
+
     When the standard input is emailed to a printer with
     a name like \`fee<fi@fo>', one typically puts the
     following entry in the \`.procmailrc' file of the
@@ -113,7 +107,7 @@ printer_pipe [-P] where filename [username]
     This pipes the body of any email received with a
     \`To' address of \`fee<fi...' to \`lpr -Plp'.  Here
     the []'s contain a space followed by a tab.
-
+
     One may want to hide the actual printer email
     address from contestants, so that a contestant
     cannot give this email address to an outsider who
@@ -157,29 +151,21 @@ then
     #
     exec 3<"${HOME}/.hpcm_contest/printer_map"
 
-    # Set expr match regexps.
-    #
-    ws="[ 	][ 	]*"
-    nws="[^ 	][^ 	]*"
-
     # Read print map lines until match found.
     #
     while test x = x
     do
-	read -r <&3
+	read <&3 regexp printer
 	if test $? -ne 0
 	then
 	    echo >&2 Could not find printer in \
 	             printer_map.
 	    exit 1
 	fi
-	regexp=`expr "$REPLY" : "\\($nws\\)$ws"`
 
 	result=`expr "$user" : "$regexp\$"`
 	if test $result -ne 0
 	then
-	    printer=`expr "$REPLY" : \
-	                  "$nws$ws\\($nws\\)\$"`
 	    break
 	fi
     done
