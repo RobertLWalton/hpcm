@@ -6,7 +6,7 @@
 #
 # File:		makejudgingdir
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Sep 14 06:25:40 EDT 2001
+# Date:		Mon Sep 17 10:10:04 EDT 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/09/14 10:14:14 $
+#   $Date: 2001/09/17 14:20:56 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.55 $
+#   $Revision: 1.56 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -51,11 +51,11 @@ makejudgingdir option ... index_specification ...
     -email	Sets up an email contest.  Equals -info,
     		-solutions, -mail, and -this_contest.
     -formal     Sets up a formal contest.  Equals all
-    		options but -info, -trashable, and
-		-description.
+    		options but -info, -trashable, 
+		-description, and -printer_map.
     -informal   Sets up an informal contest.  Equals all
     		options but -problems, -demos,
-		-trashable, and -description.
+		-trashable, -description, and -printer.
     -info	Make ./info, ./info/help/index,
     		./info/help/problems, ./info/help/demos.
     -solutions  Make ./solutions
@@ -85,6 +85,7 @@ makejudgingdir option ... index_specification ...
     -trashable  Make ./contest/trashable
 
     -printer    Make ./contest/printer
+    -printer_map    Make ./contest/printer_map
     -home	Make ./contest/home
     -pdexts \"extension:...\"
     		Change the list of problem description
@@ -553,6 +554,10 @@ makejudgingdir option ... index_specification ...
     not exist, and writes a ./TODO to consider deleting
     this file.
 
+    The -printer_map program option is similar to the
+    -printer option but makes a ./contest/printer_map
+    file instead of a ./contest/printer file.
+
     The -home program option just checks to see if
     the directory ./contest/home exists and the files
     empty.ls, setup.ls, and setup.tar exist in that
@@ -561,7 +566,7 @@ makejudgingdir option ... index_specification ...
 
     If anything is made in ./contest, a+x is set for
     that directory and its parent.
-
+
     Although we have used the names `./info', `./mail',
     `./contest', and `./help' in this description, the
     actual directory names used are the values of the
@@ -570,7 +575,7 @@ makejudgingdir option ... index_specification ...
     hpcm_judging.rc.  The file names within these
     directories are literally as given in this docu-
     ment.
-
+
     Like other HPCM programs, `makejudgingdir' can be
     run from anywhere in the judge's directory subtree
     which is rooted by the directory containing the
@@ -601,6 +606,7 @@ set secure_option		no
 set who_where_option		no
 set trashable_option		no
 set printer_option		no
+set printer_map_option		no
 set home_option			no
 set pdexts	$problem_description_extensions
 #
@@ -635,7 +641,8 @@ while { "yes" } {
 			  set bin_option	yes
 			  set secure_option	yes
 			  set who_where_option	yes
-			  set printer_option	yes
+			  set printer_map_option \
+			  			yes
 			  set home_option	yes }
         -info		{ set info_option 	yes }
         -solutions	{ set solutions_option 	yes }
@@ -653,6 +660,8 @@ while { "yes" } {
         -who_where	{ set who_where_option 	yes }
         -trashable	{ set trashable_option 	yes }
         -printer	{ set printer_option 	yes }
+        -printer_map	{ set printer_map_option \
+						yes }
         -home		{ set home_option 	yes }
 	-pdexts		{ incr argi
                           set pdexts \
@@ -741,6 +750,7 @@ if {    $problems_option \
      || $who_where_option \
      || $trashable_option \
      || $printer_option \
+     || $printer_map_option \
      || $home_option } {
     if {    ! [file isdirectory $c_d] \
          || ! [file executable $c_d] \
@@ -1409,11 +1419,15 @@ question into a file qqq and use the command:
 
 	hpcm_sendmail < qqq
 
-The print commands are not supported for an informal
-contest.  The problem descriptions are files in the
+Printing may or may not be supported for an informal
+contest.  If `lpq' lists a printer, the commands are
+supported.  You may be able to set your own printer
+by creating a file named `~/PRINTER' containing the
+name of the printer, or of an email address to which
+the print commands should email postscript files.
+Otherwise, the problem descriptions are files in the
 problem directories (.txt, .html, etc. files), and
-these can be emailed to your home computer to be
-printed there.
+these can be emailed to your home computer.
 
 In order to get good scores on problems, you must AVOID
 getting a problem description (with hpcm_get) UNTIL you
@@ -2032,11 +2046,30 @@ if { $printer_option \
 
     TODO "Wrote $c_d/printer to be `$printer';" \
          "edit $c_d/printer to change." \
+	 "You may want to use $c_d/printer_map\
+	    instead of $c_d/printer:" \
+	 "see `hpcm/contestant/bin/printer_pipe -doc'."
+}
+
+# Make $c_d/printer_map
+#
+if { $printer_map_option \
+     && ! [file readable $c_d/printer_map] } {
+
+    write_file $c_d/printer_map {.* !~/PRINTER}
+    grant_access $c_d/printer_map
+
+    TODO "Wrote $c_d/printer_map to be\
+    		`.* !~/PRINTER';" \
+         "edit $c_d/printer_map to change." \
+	 "You may want to use $c_d/printer\
+	    instead of $c_d/printer_map:" \
+	 "see `hpcm/contestant/bin/printer_pipe -doc'."
 }
 
 # Make $c_d/printer_jobs
 #
-if { $printer_option \
+if { ( $printer_option || $printer_map_option ) \
      && ! [file readable $c_d/printer_jobs] } {
     close [open $c_d/printer_jobs w]
     exec chmod a+rw $c_d/printer_jobs
