@@ -2,7 +2,7 @@
 #
 # File:		scoring_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Aug 27 07:42:54 EDT 2001
+# Date:		Wed Aug 29 10:55:28 EDT 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/08/27 11:57:40 $
+#   $Date: 2001/08/29 15:09:17 $
 #   $RCSfile: scoring_common.tcl,v $
-#   $Revision: 1.3 $
+#   $Revision: 1.4 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -74,6 +74,16 @@
 # that array.  So if the array has a `number' entry it
 # will always have an `integer' and `float' entry.
 #
+# Also if `number' is in the scoring instructions then
+# `decimal', `exponent', and `sign' are automatically
+# added to the instruction array.
+#
+# The `space' type may appear in `instruction_array' but
+# not in the `score_array'.  When `space' is in the
+# scoring instructions, `whitespace', `beginspace',
+# `linespace', and `endspace' are automatically added to
+# the instruction array.
+#
 # `proof_array' is computed from all the proofs in the
 # .score file.  For each difference type, `proof_
 # array(type)' is a list of all the proofs in the .score
@@ -119,6 +129,16 @@ proc compute_instruction_array { }
 	     set instruction_array(float) \
 	         [concat float $differences]
 	}
+	set instruction_array(decimal) decimal
+	set instruction_array(exponent) exponent
+	set instruction_array(sign) sign
+    }
+
+    if { [info exists instruction_array(space)] } {
+	set instruction_array(whitespace) whitespace
+	set instruction_array(beginspace) beginspace
+	set instruction_array(linespace) linespace
+	set instruction_array(endspace) endspace
     }
 }
 
@@ -139,7 +159,9 @@ proc compute_score_and_proof_arrays { args }
         0 {
 	    set items [get_file_items {.*\.score}]
 
-	    if { [llength $items] != 1 } {
+	    if { [llength $items] == 0 } {
+		error "No *.score files"
+	    } elseif { [llength $items] > 1 } {
 		error "Too many *.score files"
 	    }
 
@@ -174,6 +196,12 @@ proc compute_score_and_proof_arrays { args }
 	}
 	set output_line [lindex $work 0]
 	set test_line [lindex $work 1]
+
+	if { [catch { expr { $output_line + \
+	                     $test_line } }] } {
+	    error "bad line numbers: $line"
+	}
+
 	set sort_id \
 	    [format {%06d%06d} $output_line $test_line]
 	set work [lrange $work 2 end]
@@ -185,6 +213,14 @@ proc compute_score_and_proof_arrays { args }
 	    set test_end_column     [lindex $work 3]
 	    set work [lrange 4 end]
 
+	    if { [catch { \
+	             expr { $output_begin_column + \
+		            $output_end_column + \
+		            $test_begin_column + \
+			    $test_end_column } }] } {
+		error "bad column numbers: $line"
+	    }
+
 	    set proof [list $sort_id \
 			    $output_line \
 			    $test_line \
@@ -194,7 +230,7 @@ proc compute_score_and_proof_arrays { args }
 			    $test_end_column]
 
 	    while { [regexp {^[a-zA-Z]} \
-	                    [lindex $work 0] } {
+	                    [lindex $work 0]] } {
 		set type [lindex $work 0]
 		if { [lsearch -exact \
 	              {number integer float} $type] \
@@ -216,7 +252,7 @@ proc compute_score_and_proof_arrays { args }
 	}
 
 	if { [llength $work] != 0 } {
-	    error "too short proof line: $line"
+	    error "too long proof line: $line"
 	}
     }
     close $score_ch
@@ -237,7 +273,7 @@ proc compute_scoring_array { array line name } {
     global instruction_array score_array
 
     foreach type [array names $array] {
-        unset ${array}($name)
+        unset ${array}($type)
     }
 
     set state type
@@ -256,7 +292,7 @@ proc compute_scoring_array { array line name } {
 	    	lappend ${array}($previous) $item
 		set state second
 	    }
-	    { second
+	    second {
 	    	lappend ${array}($previous) $item
 		set state type
 	    }
@@ -302,13 +338,14 @@ proc compute_score_file { basename } {
     }
 
     eval [list exec scorediff] $limits \
-         [list $output_file $test_file > $score_file]
+         [list $basename.out $basename.test \
+	       > $basename.score]
 }
 
-# Compute score based on the scoring databases computed
+# Computes score based on the scoring databases computed
 # by `compute_instruction_array' and `compute_score_and_
 # proof_arrays'.  These functions must be called first.
-# Return the score.
+# Returns the score.
 #
 proc compute_score { } {
 
@@ -328,13 +365,11 @@ proc compute_score { } {
 
 	    if { [lsearch -exact {integer float} \
 	                         $type] >= 0 } {
-		set score score_array($type)
-		set instruction instruction_array($type)
-		if {    [lindex $score 1] \
-		     <= [lindex $instruction 1] \
+		set s score_array($type)
+		set i instruction_array($type)
+		if { [lindex $s 1] <= [lindex $i 1] \
 		     && \
-		        [lindex $score 2] \
-		     <= [lindex $instruction 2] } {
+		     [lindex $s 2] <= [lindex $i 2] } {
 		    continue
 		}
 	    } else continue
@@ -344,13 +379,18 @@ proc compute_score { } {
 
 	    integer -
 	    float -
-	    eof2 -
-	    nonblank {
+	    infinity -
+	    word-eof2 -
+	    integer-eof2 -
+	    float-eof2 -
+	    word {
 		set score "Incorrect Output"
 		break
 	    }
 
-	    eof1 {
+	    word-eof1 -
+	    integer-eof1 -
+	    float-eof1 {
 		set score "Incomplete Output"
 	    }
 
