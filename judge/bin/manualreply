@@ -5,7 +5,7 @@
 #
 # File:		manualreply
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Jan 24 10:56:04 EST 2002
+# Date:		Sun Jan 27 10:06:16 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/01/24 16:02:57 $
+#   $Date: 2002/01/27 15:55:57 $
 #   $RCSfile: manualreply,v $
-#   $Revision: 1.48 $
+#   $Revision: 1.49 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -745,8 +745,12 @@ set help(topics) "$help(topics)\n"
 #
 proc compose_score_reply {} {
 
-    global submitted_file proposed_score \
+    global submitted_problem submitted_extension \
+    	   proposed_score \
     	   manual_score auto_score scoring_mode
+
+    set submitted_file \
+    	$submitted_problem$submitted_extension
 
     if { $manual_score == "none" } {
 	if { $scoring_mode == "manual" } {
@@ -940,7 +944,7 @@ refresh_file_list
 # autojudge, if not in readonly mode.
 #
 if { $readonly_mode == "no" \
-     && $submitted_program != "" \
+     && $submitted_problem != "" \
      && [llength [glob -nocomplain \
                        $reply_file \
                        $no_reply_file \
@@ -998,7 +1002,7 @@ proc refresh_info {} {
 
     global proposed_score manual_score auto_score \
     	   window_info_height directory menu \
-	   scoring_instructions submitted_program
+	   scoring_instructions submitted_problem
 
     set old_info_height $window_info_height
 
@@ -1009,7 +1013,7 @@ proc refresh_info {} {
 	    set proposed_score $auto_score
 	}
     }
-    if { $submitted_program == "" } {
+    if { $submitted_problem == "" } {
     	set scoring_info ""
 	set window_info_height 6
     } else {
