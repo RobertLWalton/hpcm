@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: acm-cont $
-#   $Date: 2000/08/22 16:43:09 $
+#   $Date: 2000/08/24 00:06:05 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.12 $
+#   $Revision: 1.13 $
 #
 
 # Include this code in TCL program via:
@@ -119,6 +119,47 @@ proc dirname_to_sender { dirname } {
     }
 
     return $sender
+}
+
+# Returns 1 iff the current directory is checkeed, 0 if
+# it is unchecked, and calls error if the directory has
+# no check mark.
+#
+proc is_checked {} {
+    set old_dir [file tail [pwd]]
+    if { ! [regexp {^(.*{<[^>]*)([UC])(>}.*)$} $old_dir a b c] } {
+	error "$old_dir does not include a checkmark"
+    }
+    return [expr { $b == "C" }]
+    }
+}
+
+# Function to change the name of the current directory
+# from ...{<...U>}... to ...{<...C>}...; that is, the U
+# meaning `unchecked' is changed to C meaning `checked'.
+#
+proc make_checked {} {
+    set old_dir [file tail [pwd]]
+    if { ! [regexp {^(.*{<[^>]*)([UC])(>}.*)$} $old_dir a b c] } {
+	error "$old_dir does not include a checkmark"
+    }
+    if { $b != "C" } {
+	file rename "../$old_dir" "../${a}C${c}"
+    }
+}
+
+# Function to change the name of the current directory
+# from ...{<...C>}... to ...{<...U>}...; that is, the C
+# meaning `checked' is changed to U meaning `unchecked'.
+#
+proc make_unchecked {} {
+    set old_dir [file tail [pwd]]
+    if { ! [regexp {^(.*{<[^>]*)([UC])(>}.*)$} $old_dir a b c] } {
+	error "$old_dir does not include a checkmark"
+    }
+    if { $b != "U" } {
+	file rename "../$old_dir" "../${a}U${c}"
+    }
 }
 
 # Function called at end of program when a fatal error

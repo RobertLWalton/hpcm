@@ -1,6 +1,6 @@
-#! /bin/sh -f
+#!/bin/sh -f
 #
-# Compute the judge.score file in a submission directory
+# Compute the auto score file in a submission directory.
 #
 # File:		autoscore
 # Author:	Bob Walton (walton@deas.harvard.edu)
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: acm-cont $
-#   $Date: 2000/08/21 21:56:06 $
+#   $Date: 2000/08/24 00:06:03 $
 #   $RCSfile: autoscore,v $
-#   $Revision: 1.12 $
+#   $Revision: 1.13 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -54,8 +54,14 @@ cd submission_directory; autoscore program_name
     exceedments from other memory errors, and they
     are all classed as `Program Crashed'.
 
-    If the error file does not exist or is empty, the
-    program is scored by comparing the output of
+    If the error file does not exist or is empty, but
+    the output file does not exist, the score is:
+
+	Program Crashed
+
+    If the error file does not exist or is empty, and
+    the output file exists, the program is scored by
+    comparing the output of
 
     	scorediff output_file test_file
 
@@ -65,7 +71,7 @@ cd submission_directory; autoscore program_name
 	$instructions_file
 
     file in the submission directory.  If this last
-    file is missing, it defaults to:
+    file is missing, the items default to:
 
     	$scoring_instructions_default
 
@@ -96,8 +102,8 @@ cd submission_directory; autoscore program_name
 			where D is a floating point
 			value.
 
-    The possible scores (with empty error file) are
-    then:
+    The possible scores (with empty error file and
+    extant output file) are:
 
     	Completely Correct
 	Formatting Error
@@ -122,7 +128,7 @@ cd submission_directory; autoscore program_name
 # If wrong number of arguments print documentation and
 # exit with error.
 #
-if { $argc != 1 || [regexp {^-} [lindex $argv 1]] } {
+if { $argc != 1 || [regexp {^-} [lindex $argv 0]] } {
     puts $document
     exit 1
 }

@@ -1,4 +1,4 @@
-#! /bin/sh -f
+#!/bin/sh -f
 #
 # Compute all the files needed in a program submission
 # directory in order to score a submission.
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: acm-cont $
-#   $Date: 2000/08/21 21:56:05 $
+#   $Date: 2000/08/24 00:06:03 $
 #   $RCSfile: autojudge,v $
-#   $Revision: 1.15 $
+#   $Revision: 1.16 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -37,8 +37,10 @@ cd submission_directory; judge
     contains the file `$received_file', this program
     makes everything needed to compute the score file,
     `$auto_score_file', and automatically computes that
-    file.  Then this program reports the score to the
-    submitter by creating and sending `$reply_file'.
+    file.  Then this program may report the score to the
+    submitter by creating and sending `$reply_file' as
+    specified by the scoring mode.
+
 
     Specifically, this program calls `extractmail' to
     extract the submitted file from the program.  This
@@ -47,20 +49,28 @@ cd submission_directory; judge
     automatically if the name is illegal.
     
     If the file name is legal, this program symbolical-
-    ly links the following solution files into the
-    current directory:
+    ly links the following solution directory files into
+    the current directory:
 
     		$make_file
-		$instructions_file
+		$instructions_file if it exists
 		.in solution input file
 		.test solution output file
     
-    Then this program makes the program binary and runs
-    it to make its .out solution file, and possibly a
-    .err error file.
+    Next this program makes the program binary by using
+    the $make_file.  If there is a compliler error, the
+    error messages are captured in a .cerr file.  If
+    there is a non-empty .cerr file or no binary is
+    made, this program writes `Syntax Error' into the
+    $auto_score_file file, and skips to the end of this
+    program where a $replay_file containing the auto
+    score may be created and sent to the user.
 
-    Next this program runs `autoscore' to produce a
-    `$auto_score_file'.
+    If the binary file was made without error, this
+    program makes a .out output file and a .err error
+    file by using the $make_file.  Then this program
+    runs `autoscore' to produce an automatic score in
+    the $auto_score_file file.
 
     Lastly, this program may create a `$reply_file'
     and send it as email to the submitter.  It does this
@@ -71,18 +81,26 @@ cd submission_directory; judge
     is preliminary and will be manually reviewed and
     possibly changed.
     
-    If the score is mailed to the submitter and is NOT
-    to be manually reviewed, this program also creates
-    a `done_file' in current directory to indicate that
-    directory processing is done."
+    If the score is to be manually reviewed, this prog-
+    ram deletes any $reply_file it may create, to signal
+    that the final reply has not been given to the sub-
+    mitter, and manual action is necessary to generate
+    this reply.
+
+    This program prints information about its progress.
+
+    This program exits with non-zero error code only if
+    something is very wrong, e.g. the `$received_file'
+    file is not readable or the `$reply_file' file is
+    not writable."
 
 if { $argc != 0 } {
     puts $document
     exit 1
 }
 
-proc submission_file_error { filename } {
-    reply -all \
+proc illegal_filename_error { filename } {
+    reply \
           "ERROR: submitted file has illegal name:\
 	  $filename" \
 	  ""  \
@@ -90,6 +108,7 @@ proc submission_file_error { filename } {
 	  "YOU MUST RESUBMIT WITH A LEGAL FILENAME"
     puts "SUBMISSION ERROR: submitted file has illegal\
           name: $filename"
+    make_checked
     exit 0
 }
 
@@ -98,10 +117,9 @@ set submitted_file [exec extractmail]
 if { $submitted_file == "" } {
     if { [file readable $reply_file] } {
         exit 0
-    } elseif { [file exits $reply_file] } {
-	error "Unreadable $reply_file exits"
     } else {
-	error "Extract failed but no $reply_file exits"
+	error "Extract failed but $reply_file\
+	       is unreadable"
     }
 }
 
@@ -112,12 +130,12 @@ set program_solution \
     "$solutions_directory/$submitted_program"
 
 if { ! [file isdirectory $program_solution] } {
-    submission_file_error $submitted_file
+    illegal_filename_error $submitted_file
 }
 
 if { [lsearch -exact $allowed_extensions \
                      $submitted_extension] < 0 } {
-    submission_file_error $submitted_file
+    illegal_filename_error $submitted_file
 }
 
 if { ! [file readable $make_file] } {
@@ -140,10 +158,31 @@ if { ! [file readable ${submitted_program}.in] } {
 
 if { ! [file readable ${submitted_program}.test] } {
     puts "Linking ${submitted_program}.test to\
-          ${submitted_program}.out"
+          solution ${submitted_program}.out"
     exec ln -s \
          "$program_solution/${submitted_program}.out" \
-         "$program_solution/${submitted_program}.test"
+         "${submitted_program}.test"
+}
+
+proc auto_score_replay { auto_score } {
+
+    global scoring_mode reply_file
+
+    if { $auto_score == "Completely Correct" \
+         || $scoring_mode == "auto" } {
+	reply "For ${submitted_file} the automatically\
+	       determined final score is:\
+	       \    $auto_score"
+	make_checked
+    } elseif { [regexp {auto} $scoring_mode] } {
+	reply "For ${submitted_file} the automatically\
+	       determined score is:     $auto_score" \
+	      "" \
+	      "However, this score WILL BE REVIEWED by\
+	       the human judge (soon)."
+	file delete -force $reply_file
+    }
+    puts "Automatic Score:    $auto_score"
 }
 
 if { ! [file readable $submitted_program] \
@@ -156,13 +195,31 @@ if { ! [file readable $submitted_program] \
 	puts "Deleting out-of-date $submitted_program"
     	file delete -force $submitted_program
     }
+
+    if { [file exists "${submitted_program}.cerr"] } {
+	puts "Deleting out-of-date \
+	     ${submitted_program}.cerr"
+    	file delete -force "${submitted_program}.cerr"
+    }
+
     puts "Making ${submitted_program}"
     catch { exec make $submitted_program } out
     puts $out
 
-    if { [file exists "${submitted_program}.cerr" ] } {
+    if { ( [file exists "${submitted_program}.cerr"] \
+	   && [file size "${submitted_program}.cerr"] \
+	      > 0 ) \
+         || ! [file exists $submitted_program"] } {
 
-	put_file "${submitted_program}.cerr"
+	if { [file exists \
+		   "${submitted_program}.cerr"] \
+	     && [file size \
+		      "${submitted_program}.cerr"] \
+		  > 0 ) } {
+	    put_file "${submitted_program}.cerr"
+	} else {
+	    puts "No $submitted_program file produced"
+	}
 
 	if { [file exists $auto_score_file] } {
 	    file delete -force $auto_score_file
@@ -172,19 +229,13 @@ if { ! [file readable $submitted_program] \
 	exit 0
     }
 
-    if { ! [file exists $submitted_program" ] } {
-        error \
-	    "Make of $submitted_program failed\
-	     without error indication."
-    }
-
     exec chmod a+x $submitted_program
 }
 
 if { ! [file readable "${submitted_program}.out"] \
      || [file mtime "${submitted_program}.out"] \
            < [file mtime $submitted_program] \
-     || [file mtime "${submitted_program}.in"] \
+     || [file mtime "${submitted_program}.out"] \
            < [file mtime "${submitted_program}.in"] } {
 
     if { [file exists "${submitted_program}.out"] } {
@@ -203,40 +254,16 @@ if { ! [file readable "${submitted_program}.out"] \
     catch { exec make "${submitted_program}.out" } out
     puts $out
 
-    if { ! [file exists "${submitted_program}.out" ] } {
-        error "Make of ${submitted_program}.out failed"
-    }
-}
-
-if { ! [file readable $auto_score_file] \
-     || [file mtime $auto_score_file] \
-           < [file mtime ${submitted_program}.out] } {
-
-    if { [file exists $auto_score_file] } {
-	puts "Deleting out-of-date $auto_score_file"
-    	file delete -force $auto_score_file
-    }
-
     set auto_score [exec autoscore $submitted_program]
 
-    if { ! [file exists $auto_score_file] } {
-        error "Autoscore did not make $score_file"
-    }
+} elseif { ! [file exists $auto_score_file] } {
+    set auto_score [exec autoscore $submitted_program]
 
-    if { $score == "Completely Correct" \
-         || $scoring_mode == "auto" } {
-	reply "${submitted_file} automatically\
-	       determined score is:     $score"
-    } elseif { [regexp {auto} $scoring_mode] } {
-	reply "${submitted_file} automatically\
-	       determined score is:     $score" \
-	      "" \
-	      "Score will be REVIEWED BY THE JUDGE\
-	       soon"
-	file delete -force $reply_file
-    }
-    puts "Automatic Score:    $score"
+} else {
+    set auto_score  [file_read "$auto_score_file]
 }
+
+auto_score_reply $auto_score
 
 exit 0
 

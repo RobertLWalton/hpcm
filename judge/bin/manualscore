@@ -1,4 +1,4 @@
-#! /bin/sh -f
+#!/bin/sh -f
 #
 # Manually examine and possibly modify the auto score
 # in a submission directory
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: acm-cont $
-#   $Date: 2000/08/22 16:43:07 $
+#   $Date: 2000/08/24 00:06:04 $
 #   $RCSfile: manualscore,v $
-#   $Revision: 1.8 $
+#   $Revision: 1.9 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -75,10 +75,6 @@ if { [file exists $reply_file] } }
 
 set auto_score [read_file $auto_score_file]
 
-if { $auto_score == "Completely Correct" } {
-    puts "$auto_score; Terminating manual scoring"
-    exit 0
-}
 
 set From_line \
     [dirname_to_From_line [file tail [pwd]]]
@@ -99,7 +95,7 @@ set manual_score $auto_score
 while { "yes" } {
 
     puts "Scoring $From_line"
-    puts "Scoring Instrutions: $scoring_instructions"
+    puts "Scoring Instructions: $scoring_instructions"
     puts "Auto Score: $auto_score    Current score:\
                                      $manual_score"
 
@@ -120,14 +116,16 @@ x = exit without doing anthing
     	exit 0
     }
 
-    regexp "^\[\ \t\]*(\[^\ \t\]*)\[\ \t\]*\$" \
-	   $answer all answer
+    regexp "^\[\ \t\]*(\[^\ \t\].*)\$" $answer all \
+					       answer
+    regexp "^(.*\[^\ \t\])\[\ \t\]*\$" $answer all \
+					       answer
 
     set action "view"
 
     switch $answer \
-    	d	{ set last_file $diff_file } \
-    	b	{ set last_file $bdiff_file } \
+    	d	{ set last_file [make_diff] } \
+    	b	{ set last_file [make_bdiff] } \
     	o	{ set last_file $output_file } \
     	t	{ set last_file $test_file } \
     	e	{ set last_file $error_file } \
@@ -147,25 +145,28 @@ x = exit without doing anthing
 		               $manual_score
 		    if { $manual_score \
 		         == $auto_score } {
-			reply "Your automatic score of:\
+			reply "For $submitted_file your\
+			       automatic score of:\
 			       \    $auto_score" \
 			      "has been accepted by the\
 			       human judge!"
-		    } elseif { $juding_mode \
+		    } elseif { $scoring_mode \
 			       == "manual" } {
-			reply "Your submission score\
-				    is:\
-				    \    $manual_score"
+			reply "For $submitted_file your\
+			       final score is:\
+			       \    $manual_score"
 		    } else {
-			reply "Your automatic score of:\
+			reply "For $submitted_file your\
+			       automatic score of:\
 			       \    $auto_score" \
-			      "has been REJECTED by the\
-			       human judge!" \
+			      "has been OVERRIDDEN by\
+			       the human judge!" \
 			      "" \
 			      "The human judge has\
 			       assigned the FINAL\
 			       SCORE:     $manual_score"
 		    }
+		    make_checked
 
 		    exit 0
 		}
@@ -190,8 +191,12 @@ Please select a new current score:
 		    if { ! [eof stdin] } {
 
 			regexp \
-	    "^\[\ \t\]*(\[^\ \t\]*)\[\ \t\]*\$" \
-			       $answer all answer
+			   "^\[\ \t\]*(\[^\ \t\].*)\$" \
+			   $answer all answer
+			regexp \
+			   "^(.*\[^\ \t\])\[\ \t\]*\$" \
+			   $answer all answer
+
 			switch $answer \
 			    i	{ set manual_score
 			    	      "Incorrect\

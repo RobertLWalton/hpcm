@@ -1,6 +1,6 @@
 #!/bin/sh -f
 #
-# Extract submitted program from received.mail file.
+# Extract submitted program from received mail file.
 #
 # File:		extractmail
 # Author:	Bob Walton (walton@deas.harvard.edu)
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: acm-cont $
-#   $Date: 2000/08/20 20:49:49 $
+#   $Date: 2000/08/24 00:06:04 $
 #   $RCSfile: extractmail,v $
-#   $Revision: 1.6 $
+#   $Revision: 1.7 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -52,11 +52,12 @@ cd submission_directory; extract
     except blank lines preceding and following the file.
 
     If the submission email has a `Subject' line as
-    above and the filename given is for a readable file,
-    this program terminates without error and without
-    doing anything other than find and read the
-    `Subject' line and print the name of the submitted
-    file to the standard output.
+    above and the filename given is for an already
+    existing readable file, this program terminates
+    without error and without doing anything other than
+    finding and reading the `Subject' line and printing
+    the name of the submitted file to the standard
+    output.
 
     If this program succeeds in extracting the submitted
     file without error, this program prints the name
@@ -64,26 +65,25 @@ cd submission_directory; extract
     single line, and prints nothing else.
 
     Otherwise, if the submitted email has even the
-    slightest formatting error, this program constructs a
-    `$reply_file' file giving reasons why the sub-
+							/
+    slightest formatting error, this program constructs
+    a `$reply_file' file giving reasons why the sub-
     mission email is invalid.  This `$reply_file' is
-    sent to the email address that is part of the current
-    directory name.  In this case this program exits with
-    error code 0, indicating no error, but does not write
-    anything to the standard output, indicating no file
-    was extracted.
+    sent to the email address that is part of the
+    current directory name.  In this case this program
+    exits with error code 0, indicating no error, but
+    does not write anything to the standard output,
+    indicating no file was extracted.
     
     This program exits with non-zero error code only if
-    something is very wrong, e.g. the  `$received_file'
-    is not readable or the `$reply_file' is not
-    writable."
+    something is very wrong, e.g. the `$received_file'
+    file is not readable or the `$reply_file' file is
+    not writable."
 
 if { $argc != 0 } {
     puts $document
     exit 1
 }
-
-set received_ch [open $received_file r]
 
 # Create a reply file complaining of a submission
 # error, and email this reply to the submitter.  Include
@@ -97,8 +97,13 @@ proc extract_error_reply { args } {
 	 {"THIS SUBMISSION (see below) IGNORED"} \
 	 {"YOU MUST RESUBMIT"}
 
+    make_checked
     exit 0
 }
+
+# Start reading $received_file.
+#
+set received_ch [open $received_file r]
 
 # Look for subject line.
 #
@@ -107,16 +112,15 @@ while { "yes" } {
     if { [eof $received_ch] } {
         extract_error_reply \
 	    "Could not find `Subject' line."
-    } elseif { [regexp {^Subject: submit ([^ 	]*)$} \
-               $line all filename] } {
+    } elseif { [regexp \
+		    "^Subject: submit (\[^\ \t\]*)\$" \
+                    $line all filename] } {
 	break
     } elseif { [regexp {^Subject:} $line] } {
     	extract_error_reply \
 	    "Badly formatted subject line"
-    } elseif { [regexp $From_line_regexp $line] } {
-    	# From line is ok
-    } elseif { [regexp ":" $line] } {
-    	# other header lines are ok
+    } elseif { [regexp $Header_line_regexp $line] } {
+    	# header lines are ok
     } else {
     	extract_error_reply \
 	    "Bad line in header before `Subject'\
@@ -147,7 +151,7 @@ while { "yes" } {
     if { [eof $received_ch] } {
         extract_error_reply \
 	    "Could not find message body."
-    } elseif { ! [regexp ":" $line] } {
+    } elseif { ! [regexp $Header_line_regexp $line] } {
     	break
     }
 }
