@@ -5,7 +5,7 @@
 #
 # File:		manualreply
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Sep 23 06:59:28 EDT 2000
+# Date:		Sat Sep 23 08:41:11 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/09/23 10:55:13 $
+#   $Date: 2000/09/23 14:07:49 $
 #   $RCSfile: manualreply,v $
-#   $Revision: 1.11 $
+#   $Revision: 1.12 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -114,6 +114,8 @@ set window_newlines "$window_newlines$window_newlines"
 set window_newlines "$window_newlines$window_newlines"
 set window_newlines "$window_newlines$window_newlines"
 
+# Display the current window.
+#
 proc display_window {} {
 
     global window_blank window_display window_info \
@@ -128,6 +130,12 @@ proc display_window {} {
     flush stdout
 }
 
+# Set the window_info variable the info part of the next
+# window to be displayed.  Add blank lines to the top of
+# the given `info' to make it have window_info_height
+# lines, or call error if the `info' has more than
+# window_info_height lines.
+#
 proc set_window_info { info } {
 
     global window_info window_info_height \
@@ -145,6 +153,14 @@ proc set_window_info { info } {
 	         0 $offset]$info"
 }
 
+
+# Set the window_display and window_blank variable to
+# specify the blank and display parts of the next window
+# to be displayed.  The number of blank lines in window_
+# blank is set to be sure the entire displayed window
+# with blank lines will have window_height + window_
+# blank_height lines.
+#
 proc set_window_display { display } {
 
     global window_blank window_display \
@@ -163,10 +179,16 @@ proc set_window_display { display } {
     set window_display $display
 }
 
+# The window bar is 80 `='s on a line, possibly with
+# text replacing some of the `='s a the end of the
+# line.
+#
 set window_bar "===================="
 set window_bar "$window_bar$window_bar"
 set window_bar "$window_bar$window_bar"
 
+# Return a window bar with the given text at its end.
+#
 proc bar_with_text { text } {
     global window_bar
     set l [expr 80 - 2 - [string length $text]]
@@ -174,7 +196,8 @@ proc bar_with_text { text } {
 }
 
 # Set the window display to display the first lines
-# of the file.
+# of the file.  Set the last_display variable to
+# `file'.
 #
 proc set_file_display { filename } {
 
@@ -217,6 +240,124 @@ proc set_file_display { filename } {
     set last_display file
 }
 
+# Read a 1-line file and return its line.  Check for
+# the file being non-existing, unreadable, and empty,
+# and in these cases return `none', `UNREADABLE', and
+# `EMPTY'.
+#
+proc read_score { score_file } {
+
+    if { [file exists $score_file] } {
+	if { ! [file readable $score_file] } {
+	    return UNREADABLE
+	} else {
+	    set score [read_file $score_file]
+	    if { $score == "" } {
+		return EMPTY
+	    } else {
+	    	return $score
+	    }
+	}
+    } else {
+	return none
+    }
+}
+
+
+# Functions to read information from files.  There is
+# one of these per file that can be read.  These
+# functions must take no arguments; they are called
+# when it is discovered their file has been modified.
+#
+# For each of the below files, read_array(filename) is
+# set to the name of the function that reads the file
+#
+# These files are actually read by refresh_file_list
+# below.  This sets mtime_array(filename) to the mtime
+# of the file just before it is read, if the file
+# exists.  If the file does not exist, mtime_array(
+# filename) must not exist.
+#
+# The variables must be initialized to their settings
+# when the files do not exist.
+
+# Read $auto_score_file
+#
+proc read_auto_score {} {
+
+    global auto_score_file auto_score
+
+    set auto_score [read_score $auto_score_file]
+}
+set read_array($auto_score_file) read_auto_score
+set auto_score none
+
+# Read $manual_score_file
+#
+proc read_manual_score {} {
+
+    global manual_score_file manual_score
+
+    set manual_score [read_score $manual_score_file]
+}
+set read_array($manual_score_file) read_manual_score
+set manual_score none
+
+# Read $scoring_instructions_file
+#
+proc read_scoring_instructions {} {
+
+    global scoring_instructions
+
+    set scoring_instructions [find_scoring_instructions]
+}
+set read_array($scoring_instructions_file) \
+    read_scoring_instructions
+set scoring_instructions $scoring_instructions_default
+
+# Read the received mail header.  Set the submitted_
+# file, program, and extension variables.  If the
+# subject is inappropriate to a submission, set these
+# variables to "".
+#
+proc read_received_file {} {
+
+    global received_file message_subject \
+	   submitted_file submitted_program \
+	   submitted_extension
+
+    if { ! [file readable $received_file] } {
+	set submitted_file      ""
+	set submitted_program   ""
+	set submitted_extension ""
+	return
+    }
+
+    set received_ch [open $received_file r]
+    read_header $received_ch
+    close $received_ch
+
+    # Compute submitted program.
+    #
+    if { [llength $message_subject] == 2 \
+	 && [lindex $message_subject 0] == "submit" } {
+	set submitted_file \
+	    [lindex $message_subject 1]
+	set submitted_program \
+	    [file rootname $submitted_file]
+	set submitted_extension \
+	    [file extension $submitted_file]
+    } else {
+	set submitted_file      ""
+	set submitted_program   ""
+	set submitted_extension ""
+    }
+}
+set read_array($received_file) read_received_file
+set submitted_file      ""
+set submitted_program   ""
+set submitted_extension ""
+
 
 # List of files in the current directory.  The N'th
 # item on the list is itself a list of subitems
@@ -247,6 +388,14 @@ proc set_file_display { filename } {
 # no such file, in which case the mtime of the oldest
 # file is there instead.
 #
+# When building the file list, the information read
+# from the read_array functions is refreshed as
+# necessary, using corresponding mtime_array information
+# where mtime_array(filename) is the mtime of the file
+# just before read_array(filename) was last called, and
+# mtime_array(filename) does not exist if the file does
+# not exist.
+#
 set file_list ""
 set file_list_items ""
 set file_list_length 0
@@ -258,7 +407,8 @@ set file_list_origin_mtime 0
 proc refresh_file_list { } {
 
     global file_list file_list_items file_list_length \
-    	   file_list_origin_mtime received_file
+    	   file_list_origin_mtime received_file \
+	   read_array mtime_array
 
     set new_file_list [glob -nocomplain *]
     set new_file_list_items ""
@@ -276,6 +426,7 @@ proc refresh_file_list { } {
     	set item [format {%040d} $mtime]
 	lappend item $mtime
 	lappend item $file
+
 	set size [file size $file]
 	if { [file isdirectory $file] } {
 	    lappend item "(directory)"
@@ -306,6 +457,31 @@ proc refresh_file_list { } {
 
 	lappend new_file_list_items $item
 	incr n
+
+	# Process file if it is one from which we
+	# read information and it has changed since
+	# last call to refresh_file_list.
+	#
+	if { [info exists read_array($file)] } {
+	    if { ! [info exists mtime_array($file)] \
+	         || $mtime_array($file) < $mtime } {
+	    	set mtime_array($file) $mtime
+		eval $read_array($file)
+	    }
+	}
+    }
+
+    # Process any files from which we read information
+    # which have been deleted.
+    #
+    foreach file [array names read_array] {
+        if { [lsearch -exact $new_file_list $file] < 0 \
+	     && [lsearch -exact $file_list $file] >= 0 \
+	     } {
+	    # File has been deleted.
+	    unset mtime_array($file)
+	    eval $read_array($file)
+	}
     }
 
     set file_list $new_file_list
@@ -319,7 +495,8 @@ proc refresh_file_list { } {
     }
 }
 
-# Set the window display to the file list.
+# Set the window display to the file list.  Set the
+# last_display variable to `file_list'.
 #
 proc set_file_list_display {} {
 
@@ -417,6 +594,12 @@ proc get_file { number } {
     }
 }
 
+# Wait for an answer line to be input.  If it is y, Y,
+# yes, or YES, return `yes'.  If it is n, N, no, or NO,
+# return no.  If it is an end of file, exit manualreply.
+# Otherwise redisplay with an error message saying the
+# answer could not be understood.
+#
 proc yes? {} {
 
     global window_error
@@ -439,17 +622,23 @@ proc yes? {} {
 	    NO	{ return no }
 	}
 	if { $answer == "" } {
-	    set window_error \
-		    "ERROR: empty input"
+	    set window_error "ERROR: empty input"
 	} else {
 	    set window_error \
-		    "ERROR: could not understand `$answer'"
+		    "ERROR: could not understand\
+		    	    `$answer'"
 	}
 	display_window
         set window_error ""
     }
 }
 
+
+# Print `\nType any character to continue ', and then
+# wait for any line to be input.  When a line is input,
+# return, but if an end of file is input, exit
+# manualreply.
+#
 proc continue? {} {
 
     puts -nonewline "\nType any character to continue "
@@ -462,6 +651,8 @@ proc continue? {} {
     }
 }
  
+# Print a character string iff it is non-empty.
+#
 proc out_check { out } {
     if { $out == "" } return
     puts $out
@@ -504,9 +695,11 @@ proc get_lock {} {
 		"ERROR: cannot read $dispatch_pid_file"
 	}
 
+	set window_info_height 8
 	set_window_info "
 $dispatch_pid_file file exists and is $time seconds old.
-Maybe `autodispatch' or another `manualreply' is running.
+Maybe `autodispatch' or another `manualreply' is\
+					      running.
 
 u = update above info		d = delete\
 				    $dispatch_pid_file
@@ -567,7 +760,8 @@ m = kill -KILL process tree"
     }
 
     # Set exit_cleanup function (called before all exits
-    # in judging common code) to unlock current directory.
+    # in judging common code) to unlock current
+    # directory.
     #
     proc exit_cleanup {} {
 	dispatch_unlock
@@ -580,58 +774,6 @@ proc clear_lock {} {
 
     dispatch_unlock
     proc exit_cleanup {} {}
-}
-
-# Read the received mail header.
-#
-proc read_received_mail {} {
-
-    global received_file message_subject \
-	   submitted_file submitted_program \
-	   submitted_extension
-
-    set received_ch [open $received_file r]
-    read_header $received_ch
-    close $received_ch
-
-    # Compute submitted program.
-    #
-    if { [llength $message_subject] == 2 \
-	 && [lindex $message_subject 0] == "submit" } {
-	 set submitted_file \
-	     [lindex $message_subject 1]
-	 set submitted_program \
-	     [file rootname $submitted_file]
-	 set submitted_extension \
-	     [file extension $submitted_file]
-    } else {
-	 set submitted_file      ""
-	 set submitted_program   ""
-	 set submitted_extension ""
-    }
-}
-
-# Read a 1-line file and return its line.  Check for
-# the file being non-existing, unreadable, and empty,
-# and in these cases return `none', `UNREADABLE', and
-# `EMPTY'.
-#
-proc read_score { score_file } {
-
-    if { [file exists $score_file] } {
-	if { ! [file readable $score_file] } {
-	    return UNREADABLE
-	} else {
-	    set score [read_file $score_file]
-	    if { $score == "" } {
-		return EMPTY
-	    } else {
-	    	return $score
-	    }
-	}
-    } else {
-	return none
-    }
 }
 
 # Compose a reply indicating the assignment of the
@@ -755,17 +897,8 @@ proc send_score_reply {} {
     set proposed_score none
 }
 
-
-# Initialize the file list and the last_file variable.
-# Initialize last_display variable (equal to `file_list'
-# or `file'.)
-#
-refresh_file_list
-set last_file ""
-set last_display file_list
-
 get_lock
-read_received_mail
+refresh_file_list
 
 # If auto score file, reply file, no replay file,
 # and unchecked errors do not exists, consider running
@@ -801,17 +934,6 @@ It appears that `autojudge' should be run."
     }
 }
 
-set directory [file tail [pwd]]
-set proposed_score none
-
-set auto_score   [read_score $auto_score_file]
-set manual_score [read_score $manual_score_file]
-    
-set scoring_instructions [find_scoring_instructions]
-
-set last_display file_list
-set window_error ""
-
 set main_menu "
 #  = look at #      \
 v# = view #         \
@@ -841,7 +963,20 @@ pc = Program Crashed     oe = Output Size Exceeded"
 
 set menu $main_menu
 
+set directory [file tail [pwd]]
+set proposed_score none
+
+set last_display file_list
+set last_file ""
+set window_error ""
+
+# DEBUG
+set window_blank_height 0
+set window_height 20
+
 while { "yes" } {
+
+    refresh_file_list
 
     if { $submitted_program == "" } {
     	set scoring_info ""
@@ -852,7 +987,8 @@ Scoring Instructions: $scoring_instructions"
 
 	if { $manual_score == "none" } {
 	    set scoring_info "$scoring_info
-Scores:    Auto: $auto_score    Proposed: $proposed_score"
+Scores:    Auto: $auto_score    Proposed:\
+			        $proposed_score"
 	    set window_info_height 8
 	} elseif { $proposed_score == "none" } {
 	    set scoring_info "$scoring_info
@@ -860,7 +996,8 @@ Scores:    Auto: $auto_score    Manual: $manual_score"
 	    set window_info_height 8
 	} else {
 	    set scoring_info "$scoring_info
-Scores:    Auto:     $auto_score    Manual: $manual_score
+Scores:    Auto:     $auto_score    Manual:\
+				    $manual_score
            Proposed: $proposed_score"
 	    set window_info_height 9
 	}
@@ -873,7 +1010,6 @@ $menu"
     # determined.
     #
     if { $last_display == "file_list" } {
-	refresh_file_list
 	set_file_list_display
     } else {
 	set_file_display $last_file
