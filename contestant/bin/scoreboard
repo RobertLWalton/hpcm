@@ -4,7 +4,7 @@
 #
 # File:		scoreboard
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Wed Jan 16 06:28:34 EST 2002
+# Date:		Wed Jan 16 11:56:34 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,29 +13,116 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/01/16 12:19:00 $
+#   $Date: 2002/01/16 17:33:40 $
 #   $RCSfile: scoreboard,v $
-#   $Revision: 1.4 $
+#   $Revision: 1.5 $
 
 # Time between refreshes.
 #
 time=30
 
+# Save contest argument if any and shift it away.
+# Also print documentation on -doc* argument.
+#
+case "$1" in
+    -doc*)
+    	echo "
+scoreboard [contest] [page-number] [user]
+
+    Displays each page of the scoreboard for $time sec-
+    conds and then repeats, if no page-number is given.
+    Otherwise just displays the given page, and re-
+    freshes the display every $time seconds.  Pages are
+    numbered 1, 2, 3, ..., 8, 9.
+
+    An optional contest can be given for a user that is
+    entered in multiple contests.  The user defaults
+    to the current account name, and is normally not
+    given as a program argument.
+    
+    Each page is just a file.  If ~/.hpcm_contest/
+    scoreboard_map is readable, it consists of lines of
+    the form
+
+    	user-regular-expression \\
+	    contest-regular-expression \\
+	        filename ...
+
+    where the list of filenames gives the files contain-
+    ing page 1, page 2, etc. of the scoreboard.  The
+    first line whose regular expressions match the
+    user and contest names is selected and its list of
+    filenames is used.  The user and contest names can
+    be given as optional arguments, with the user name
+    defaulting to the current account name.  If the
+    contest name is not given, it effectively matches
+    all contest regular expressions.  A contest name
+    cannot be a single digit or have the form -doc*.
+    A user name cannot be a single digit.  If the
+    a user name is given and no contest name is to be
+    given, use \"\" for the contest name.
+
+    It is an error if no line matches.
+
+    The \\ backslash character can be used in the
+    scoreboard_map file to continue lines.  If a back-
+    slash is to be included in the regular expression,
+    it must be doubled.  The regular expression is as
+    per the \`expr(1)' UNIX command.
+
+    If ~/.hpcm_contest/scoreboard_map is not readable,
+    the filename list defaults to:
+
+        scoreboard.1 scoreboard.2 scoreboard.3 \\
+		     scoreboard.4
+
+    File names that do not begin with / are interpreted
+    relative to ~/.hpcm_contest.
+
+    The file for page 1 must always be readable, as must
+    the file for any page specifically requested.  If
+    all pages are to be displayed, any page other than 1
+    whose file is unreadable causes the display to re-
+    cycle to page 1."
+
+    	exit 1
+	;;
+
+    [1-9] )
+    	contest=""
+    	;;
+    "" )
+    	contest=""
+	if test $# -gt 1
+	then
+		shift
+	fi
+	;;
+    *) 	contest="$1"
+    	shift
+	;;
+esac
+
+# Save and shift away any page number argument.
+#
+case "$1" in
+    [1-9])	pn=$1
+    		shift ;;
+    *)		pn="" ;;
+esac
+
+# Compute user name.
+#
+case "$1" in
+    "" )	user=`id -un` ;;
+    *)		user="$1" ;;
+esac
+
+
 # Compute pages as list of pages.
 #
 if test -r "${HOME}/.hpcm_contest/scoreboard_map"
 then
-
-    # Compute current account name.
-    #
-    case "$2" in
-	"" )
-	    user=`id -un`
-	    ;;
-	*)
-	    user="$2"
-	    ;;
-    esac
 
     # Open scoreboard map.
     #
@@ -45,18 +132,21 @@ then
     #
     while test x = x
     do
-	read <&3 regexp page1 page2 page3 page4 \
-	          page5 page6 page7 page8 page9
+	read <&3 uregexp cregexp page1 page2 page3 \
+		 page4 page5 page6 page7 page8 page9
 
 	if test $? -ne 0
 	then
-	    echo >&2 Could not find account \`$user\' \
-	             in scoreboard_map.
+	    echo Could not find account \`$user\' \
+	         in scoreboard_map.
 	    exit 1
 	fi
 
-	result=`expr "$user" : "$regexp\$"`
-	if test $result -ne 0
+	uresult=`expr "$user" : "$regexp\$"`
+	cresult=`expr "$contest" : "$regexp\$"`
+	if test $uresult -ne 0 -a \
+		\( "$contest" = "" -o \
+		   $cresult -ne 0 \)
 	then
 	    break
 	fi
@@ -78,16 +168,16 @@ else
     page9=""
 fi
 
-# Process agument.
+# Display pages.
 #
-case "$1" in
+case "$pn" in
     [1-9] )
     	# Argument is page number.
 	#
-	eval "page=\"\$page$1\""
+	eval "page=\"\$page$pn\""
 	case "$page" in
 	    "")
-		echo page $1 does not exist
+		echo page $pn does not exist
 		exit 1
 		;;
 	    /*)	;;
@@ -107,8 +197,9 @@ case "$1" in
 	done
 	;;
     "" )
-        # No argument: display all readable pages.
-	# Page 1 must be readable.
+        # No argument or `all': display all pages.
+	# Page 1 must be readable.  Cycle on first
+	# unreadable or not given page.
 	#
 
 	while test x = x
@@ -140,56 +231,8 @@ case "$1" in
 	done
 	;;
     * )
-        # Other argument.  Display documentation and
-	# exit with an error.
+        # Other argument.
 	#
-    	echo "
-scoreboard [page-number [user]]
-
-    Displays each page of the scoreboard for $time sec-
-    conds and then repeats, if no page-number is given.
-    Otherwise just displays the given page, and refresh-
-    es the display every $time seconds.  Pages are num-
-    bered 1, 2, 3, ....
-    
-    Each page is just a file.  If ~/.hpcm_contest/
-    scoreboard_map is readable, it consists of lines of
-    the form
-
-    	regular-expression filename ...
-
-    where the list of filenames gives the files contain-
-    ing page 1, page 2, etc. of the scoreboard.  The
-    first line whose regular expression matches the
-    entire account name is selected and its list of
-    filenames is used.  The account name can optionally
-    be specified as the \`user' program argument.  It is
-    an error if no line has a regular expression that
-    matches.
-
-    The \\ backslash character can be used in the
-    scoreboard_map file to continue lines.  If a back-
-    slash is to be included in the regular expression,
-    it must be doubled.  The regular expression is as
-    per the \`expr(1)' UNIX command.
-
-    If ~/.hpcm_contest/scoreboard_map is not readable,
-    the filename list defaults to:
-
-        scoreboard.1 scoreboard.2 scoreboard.3 \\
-		     scoreboard.4
-
-    File names that do not begin with / are interpreted
-    relative to ~/.hpcm_contest.
-
-    The file for page 1 must always be readable, as must
-    the file for any page specifically requested.  If
-    all pages are to be displayed, any page other than 1
-    whose file is unreadable causes the display to re-
-    cycle to page 1."
-
-    	exit 1
-	;;
 esac
 
 exit 0
