@@ -4,7 +4,7 @@
 #
 # File:		hpcm_get
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Mon Sep 25 15:26:08 EDT 2000
+# Date:		Sat Oct  7 23:25:39 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,12 +13,14 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/10/07 17:48:28 $
+#   $Date: 2000/10/08 06:39:27 $
 #   $RCSfile: hpcm_get
-#   $Revision: 1.1 $
+#   $Revision: 1.2 $
 
 cd
 
+# Check for an consume -* options.
+#
 force=no
 case "$1" in
 
@@ -44,14 +46,14 @@ hpcm_get [-force] [name ...]
     So for example,
     			hpcm_get demos
 
-    gets files named `demos/...' and puts them in the
+    gets files named \`demos/...' and puts them in the
     directory ~/demos if HPCM_HOME is undefined.
 
     Without the -force option, hpcm_get refuses to
     get things that seem to be already gotten.  With
     -force, it will get them anyway, which is useful
-    if the version gotten is more recent or complete
-    than what was previously gotten.
+    if the version gotten is more recent or more
+    complete than what was previously gotten.
 
     If the current account is a contest account, then
     the directory link ~/.hpcm_contest exists, and if
@@ -59,9 +61,11 @@ hpcm_get [-force] [name ...]
     to readonly files in a judge's contest directory.
     Otherwise, files are gotten by sending email and
     using the hpcm_extract program to extract the files
-    from reply email.  In any case directories are
-    `gotten' by making new directories: directories
-    are never symbolically linked.
+    from reply email (a contestant's account can be set
+    up to do this automatically for received email).  In
+    either case directories are \`gotten' by making new
+    directories: directories are never symbolically
+    linked.
 
     One reason for getting problems by email is that
     the autojudge can record the time the problems
@@ -70,10 +74,11 @@ hpcm_get [-force] [name ...]
     competes is not predetermined."
 
     	    exit 1
-	fi
-	;;
+	    ;;
 esac
 
+# Find directory into which to get stuff.
+#
 home=${HPCM_HOME:-~}
 
 if test ! -d "$home"
@@ -82,10 +87,19 @@ then
     exit 1
 fi
 
+# Find absolute name to which ~/.hpcm_contest is
+# linked, if ~/.hpcm_contest is linked.
+#
 if test -x ~/.hpcm_contest
 then
     contest=`ls -l ~/.hpcm_contest`
     contest=`expr "$contest" : '.*-> *\([^ ]*\) *$' `
+    if test "$contest" = ""
+    then
+    	echo "ERROR: \`~/.hpcm_contest' is not a" \
+	     "symbolic link."
+	exit 1
+    fi
 else
     contest=""
 fi
@@ -97,32 +111,59 @@ case "$contest" in
     /* )
     	;;
     *)
-    	echo $contest is NOT an absolute pathname
+    	echo "ERROR: \`~/.hpcm_contest' is linked to" \
+	     "\`$contest'"
+	echo "which is NOT an absolute pathname."
 	exit 1
     	;;
 esac
 
-for name in "${@:-help demos problems}
+# Loop through the name arguments, or use `help demos
+# problems' as names if there are no name arguments.
+#
+if test "${*:+yes}" = ""
+then
+    names="help demos problems"
+else
+    names="$*"
+fi
+for name in $names
 do
 
     case "$name" in
         help/* | help )
 
+		# Ignore requests of `help' if the
+		# files are available to the
+		# contestants `help' command.
+		#
 		if test "$contest" != "" \
 		        -a -d "$contest/help" \
 		        -a -r "$contest/help" \
 		        -a -x "$contest/help"
-		then continue
+		then
+		    if test "${*:+yes}" != ""
+		    then
+		    	echo "IGNORING \`$name';"
+			echo "you can access the help" \
+			     "files with the \`help'" \
+			     "command."
+		    fi
+		    continue
 		fi
 
 		dir=help ;;
+
         demos/* | demos )
 		dir=demos ;;
+
         problems/* | problems )
 		dir=problems ;;
-	*)	echo "Bad name: does not begin with" \
-		     "help, demos, or problems:"
-		echo "    $name    IGNORED"
+
+	*)	echo "IGNORING \`$name';"
+		echo "first component of name is not" \
+		     "\`help', \`demos', or" \
+		     "\`problems'."
 		continue
 		;;
     esac
@@ -130,80 +171,119 @@ do
     if test "$contest" != "" \
             -a -d "$contest/$dir"
     then
+        # Base directory ($dir) exists in $contest
+	# directory.
+	#
     	if test -r "$contest/$dir" \
-	        -a -x "$contest/dir" \
-	        -a -r "$contest/dir"
+	        -a -x "$contest/$dir"
 	then
+	    # Base directory ($dir) in contest directory
+	    # has a+rx permissions.
+
+	    # Compute list of directories that must
+	    # exist in the $home directory tree because
+	    # the are initial segments of $name.
+	    #
 	    ds1=""
-	    n=$name
-	    while test yes = yes
+	    n=`dirname "$name"`
+	    while test "$n" != "."
 	    do
-	    	n=`dirname "$n"`
-		if test "$n" = "."
-		then break
-		fi
 		ds1="$n $ds1"
+	    	n=`dirname "$n"`
 	    done
 
+	    # Compute list of directories and files
+	    # that exist within the $contest/$name
+	    # directory subtree.  Directory and file
+	    # names are relative to $contest.
+	    #
 	    if test -d "$contest/$name"
 	    then
-	        ds2=`cd "$contest/$name"; \
-		    find . -type d -print`
-	        fs=`cd "$contest/$name"; \
-		    find . -type f -print`
+	        ds2=`cd "$contest"; \
+		    find $name -type d -print`
+	        fs=`cd "$contest"; \
+		    find $name -type f -print`
 	    else
 	        ds2=""
 	        fs=$name
 	    fi
 
+	    # Make any of directories that do not
+	    # should exist but do not.
+	    #
 	    for d in $ds1 $ds2
 	    do
-	    	if test ! -d "$home/$d"
-		then
-		    if mkdir "$home/$d"
-		    then
-		    else
-		    	echo "Cannot mkdir $home/$d"
-			exit 1
-		    fi
+	    	if test -d "$home/$d"
+		then do_nothing=
+		elif mkdir "$home/$d"
+		then do_nothing=
+		else
+		    echo "ERROR: cannot" \
+		         "\`mkdir $home/$d'."
+		    exit 1
 		fi
 	    done
 
+	    # Symbolically link files that are not
+	    # linked.
+	    #
 	    for f in $fs
 	    do
 	        if test -f "$home/$f"
-		then
+		then do_nothing=
 	    	elif ln -s "$contest/$f" "$home/$f"
-		then
+		then do_nothing=
 		else
-		    echo "Cannot ln -s $contest/$f" \
-		         "$home/$f"
-		    exit 1
+		    echo "IGNORING \`$f'; cannot" \
+		         "\`ln -s $contest/$f" \
+		         "$home/$f'."
 		fi
 	    done
 		
 	elif test "$dir" = problems
 	then
-	    echo "$dir is not available; it should"
-	    echo "become available when the" \
+	    echo "IGNORING \`$name'; \`$dir' is not" \
+	         "available;"
+	    echo "it should become available when the" \
 		 "contest starts"
 	else
-	    echo "$dir is not available; for some"
-	    echo "reason the judge has protected it."
+	    echo "IGNORING \`$name'; \`$dir' is not" \
+	         "available;"
+	    echo "for some reason the judge has" \
+	         "protected it."
 	fi
 
+	# Loop to avoid getting $name by email.
+	#
 	continue
     fi
 
-    if test -e "$home/$name" -a "$force" = "no"
+    # If no name argument was given, do not get
+    # `problems' by email.
+    #
+    if test "${*:+yes}" = "" \
+            -a "$name" = "problems"
     then
-    	echo "$name IGNORED: it has been gotten"
-    	echo "$(use -force to get it again)"
-    else
-	echo "Sending email to get $name"
-        echo "Subject: get $name" | hpcm_sendmail
+    	echo "IGNORING implicit \`$name'; to get all"
+	echo "the problems you must use" \
+	     "\`hpcm_get problems'."
+	echo "But some contests may disallow" \
+	     "getting all problems at once."
+    	continue
     fi
 
+    # Get $name by email if it has not already been
+    # gotten of if -force option given.
+    #
+    if test -e "$home/$name" -a "$force" = "no"
+    then
+    	echo "IGNORING \`$name'; it has been gotten" \
+	     "already;"
+    	echo "use -force to get it again."
+    else
+	echo "Sending email to get \`$name'."
+        echo "Subject: get $name" | hpcm_sendmail
+    fi
 done
 
 exit 0

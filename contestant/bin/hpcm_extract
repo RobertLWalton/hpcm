@@ -4,7 +4,7 @@
 #
 # File:		hpcm_extract
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Sat Sep 30 06:18:17 EDT 2000
+# Date:		Sun Oct  8 01:46:31 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,21 +13,21 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/09/30 12:09:38 $
+#   $Date: 2000/10/08 06:39:27 $
 #   $RCSfile: hpcm_extract,v $
-#   $Revision: 1.2 $
+#   $Revision: 1.3 $
 
-# Print documentation if no argument or -... argument.
+# Print documentation if -... argument.
 #
 case "$1" in
-    "" | -*)
+    -*)
 	echo "
-hpcm_extract directory
+hpcm_extract [directory]
 
     Reads mail from the standard input and extracts
-    files in the mail that were sent by HPCM in response
-    to \`get' requests.  More specifically, any files
-    surrounded by lines beginning with:
+    files in mail sent by HPCM in response to \`get'
+    requests.  More specifically, any files surrounded
+    by lines beginning with:
 
 	---<>--<>---<>--<>---<>-----
 
@@ -40,8 +40,11 @@ hpcm_extract directory
     	Subject: RE: get ...
 
     The extracted files are placed in the directory
-    specified by the single argument.  If a file
-    already exists in that directory, it is not
+    specified by the single argument, or if no argument
+    is given, by the directory specified by the
+    \`HPCM_HOME' environment variable, or if that is
+    also unset, in the account home directory \`~'.  If
+    a file already exists in that directory, it is not
     extracted, but is compared against the existing
     file.
 
@@ -52,11 +55,27 @@ hpcm_extract directory
 	;;
 esac
 
+# Compute directory into which to place files.
+#
+if test "$1" != ""
+then
+    home="$1"
+else
+    home="${HPCM_HOME:-~}"
+fi
+
+if test ! -d "$home"
+then
+    echo "ERROR: \`$home' is not a directory."
+    exit 0
+fi
+
 # Mode is one of:
 #
 #	header		Look for Subject: lines
 #	extract		Extract lines
 #	diff		Diff lines
+#	skip		Skip lines (due to error)
 #	look		Look at the current line
 #			to choose between header,
 #			extract, or diff.
@@ -83,7 +102,7 @@ do
 	then
 	    # Create fake missing end of file.
 	    #
-	    echo "Missing end of file line."
+	    echo "ERROR: missing end of file line."
 	    has_errors=yes
 REPLY="---<>--<>---<>--<>---<>----- end of file"
 	else
@@ -99,15 +118,19 @@ REPLY="---<>--<>---<>--<>---<>----- end of file"
         # For headers, save parts of header.
 	#
     	case "$REPLY" in
+
 	From\ *)
 	    From="$REPLY"
 	    from=
 	    date=
 	    subject=
+	    subject_ok=no
 	    ;;
+
 	From:*)
 	    from="$REPLY"
 	    ;;
+
 	Date:*)
 	    date="$REPLY"
 	    ;;
@@ -117,7 +140,12 @@ REPLY="---<>--<>---<>--<>---<>----- end of file"
 	    # Set subject_ok according to whether
 	    # subject is `get ...'
 	    #
-	    ok=`expr "$REPLY" : "Subject:[ 	]*get" `
+	    SUBJECT="[Ss][Uu][Bb][Jj][Ee][Cc][Tt]"
+	    WS="[ 	]*"
+	    RE="[Rr][Ee]"
+	    GET="[Gg][Ee][Tt]"
+	    ok=`expr "$REPLY" : \
+		"${SUBJECT}:${WS}${GET}" `
 	    if test $ok -ne 0
 	    then
 	    	subject_ok=yes
@@ -142,7 +170,6 @@ REPLY="---<>--<>---<>--<>---<>----- end of file"
 	    echo "X-HPCM-Subject:" \
 		 "output of hpcm_extract"
 	    echo ""
-
 	    mode=look
 	    has_errors=no
 	    ;;
@@ -155,6 +182,7 @@ REPLY="---<>--<>---<>--<>---<>----- end of file"
 	    # End of file being extracted.  Close fd 3.
 	    #
 	    exec 3>&-
+	    echo "\`$file' extracted successfully."
 	    mode=look
 	    ;;
 	*)
@@ -173,11 +201,16 @@ REPLY="---<>--<>---<>--<>---<>----- end of file"
 	    exec 3<&-
 	    if test $diff = yes
 	    then
-	    	echo "Received new $file"
+		echo ""
+	    	echo "WARNING: received new \`$file'"
 		echo "that is different" \
 		     "from previous version."
 		echo "Left previous version intact."
+		echo ""
 		has_errors=yes
+	    else
+		echo "\`$file' matched existing" \
+	             "\`$home/$file'."
 	    fi
 	    mode=look
 	    ;;
@@ -207,6 +240,10 @@ REPLY="---<>--<>---<>--<>---<>----- end of file"
 
     case $mode in
     look)
+        # Line in $REPLY begins with `---<>...'.
+
+        # Extract file name from line.
+	#
         file=`expr "$REPLY" : \
 	     '---<>--<>---<>--<>---<>-----\(.*\)$' `
 	file=`expr "$file" : \
@@ -216,30 +253,9 @@ REPLY="---<>--<>---<>--<>---<>----- end of file"
 	case "$file" in
 	*:)
 	    file=`expr "$file" : \
-		       '\(.*[^ 	]\):$' `
+		       '\(.*\):$' `
 	    ;;
 	esac
-
-	dirs=""
-	dir=`dirname "$file"`
-	while test "$dir" != "."
-	do
-	    dirs="$dir $dirs"
-	    dir=`dirname "$dir"`
-	done
-
-	for dir in $dirs
-	do
-	    if test ! -d "$1/$dir"
-	    then
-		mkdir "$1/$dir"
-		if test $? -ne 0
-		then
-		    echo "Could not make $1/$dir."
-		    has_errors=yes
-		fi
-	    fi
-	done
 
 	if test "$file" = "end of files"
 	then
@@ -249,24 +265,68 @@ REPLY="---<>--<>---<>--<>---<>----- end of file"
 	    fi
 	    echo ""
 	    mode=header
-	elif test ! -d "$1";
+	elif test $subject_ok = no
 	then
 	    mode=skip
-	    echo "$1 is not a directory."
-	    has_errors=yes
-	elif test -r "$1/$file"
-	then
-	    mode=diff
-	    diff=no
-	    exec 3<"$1/$file"
-	elif test ! -e "$1/$file"
-	then
-	    mode=extract
-	    exec 3>"$1/$file"
 	else
-	    mode=skip
-	    echo "Unreadable $1/$file already exists."
-	    has_errors=yes
+
+	    # Make directories required by file name.
+	    # Note $file = "end of files" requires no
+	    # directories.
+	    #
+	    dirs=""
+	    dir=`dirname "$file"`
+	    while test "$dir" != "."
+	    do
+		dirs="$dir $dirs"
+		dir=`dirname "$dir"`
+	    done
+
+	    for dir in $dirs
+	    do
+		if test -d "$home/$dir"
+		then do_nothing=
+		elif mkdir "$home/$dir"
+		then
+		    echo "\`$home/$dir' made" \
+		         "successfully."
+		else
+		    echo "ERROR: could not make" \
+		         "\`$home/$dir'."
+		    has_errors=yes
+		    break
+		fi
+	    done
+
+	    if test -r "$home/$file"
+	    then
+		if exec 3<"$home/$file"
+		then
+		    mode=diff
+		    diff=no
+		else
+		    echo "ERROR: could not read"
+		         "\`$home/$file'."
+		    has_errors=yes
+		    mode=skip
+		fi
+	    elif test ! -e "$home/$file"
+	    then
+		if exec 3>"$home/$file"
+		then
+		    mode=extract
+		else
+		    echo "ERROR: could not write"
+		         "\`$home/$file'."
+		    has_errors=yes
+		    mode=skip
+		fi
+	    else
+		echo "ERROR: unreadable" \
+		     "\`$home/$file' already exists."
+		mode=skip
+		has_errors=yes
+	    fi
 	fi
     	;;
     esac
