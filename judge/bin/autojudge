@@ -5,7 +5,7 @@
 #
 # File:		autojudge
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Nov 19 04:45:13 EST 2001
+# Date:		Mon Nov 19 04:49:29 EST 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/11/19 09:45:47 $
+#   $Date: 2001/11/19 09:49:53 $
 #   $RCSfile: autojudge,v $
-#   $Revision: 1.36 $
+#   $Revision: 1.37 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -100,7 +100,7 @@ autojudge \[problem\[.extension\]\]
 	.in solution input file
 	.test solution output file
 
-    In the solution directory, the `$files_file' file\
+    In the solution directory, the `$files_file' file
     may be present in several forms under names of the
     form `$files_file.extension'.  If one of these forms
     has an extension matching that given with the pro-
@@ -218,7 +218,7 @@ set extension [file extension $argument]
 proc argument_error {} {
     global argument
     reply \
-          "ERROR: problem name is illegal: $problem" \
+          "ERROR: problem name is illegal: $argument" \
 	  ""  \
 	  "THIS SUBMISSION (see below) IGNORED"  \
 	  "YOU MUST RESUBMIT WITH A LEGAL PROBLEM NAME"
@@ -229,7 +229,7 @@ proc argument_error {} {
 
 # Check legality of problem name and optional extension.
 #
-if {    $problem = "" \
+if {    $problem == "" \
      || [regexp {\.} $problem] \
      || [regexp {/} $problem] \
      || [regexp {^-} $problem]  } {
@@ -254,7 +254,7 @@ if { ! [file isdirectory $program_solution] } {
     argument_error
 }
 
-# Line $files_file or $make_file if possible.
+# Link $files_file or $make_file if possible.
 #
 proc link_optional_file { name } {
 
@@ -272,6 +272,7 @@ proc link_optional_file { name } {
 	puts "Linking $name.$extension to $name"
 	link_file $program_solution/$name.$extension \
 		  $name
+	return
     }
 
     if { [llength [glob -nocomplain $name.*]] > 0 } {
