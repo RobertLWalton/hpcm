@@ -1,3 +1,35 @@
+# HPCM Email Contest Contestant .procmailrc Additions
+#
+# File:		procmailrc
+# Author:	Bob Walton <walton@deas.harvard.edu>
+# Date:		Thu Sep 13 05:10:47 EDT 2001
+
+# You should edit this file by first setting the
+# following parameters properly, and then editing
+# the `:0 B' entries below the place where it says
+# `CONTINUE EDITING:'.
+
+# Additions to your path that you need to run:
+#
+#    The files in ONE of your contest home directory's	
+#    `help/sh' subdirectories.
+#
+#    The `bash' program, if necessary.
+#
+# Include a `:' after EACH added path directory.
+#
+# Note: If you get this PATH wrong, hpcm_extract will
+# fail without any any error messages.
+#
+# Note: Don't assume the example values given below
+# will work for you.
+
+HPCM_PATH="$HOME/hpcm/practice/help/sh:"
+HPCM_PATH="/deas/arch/gnu/bin/:$HPCM_PATH"
+
+# End of editable parameters.  Proceed to `CONTINUE
+# EDITING' below.
+
 # Be sure we are using a valid shell.
 #
 SHELL=/bin/sh
@@ -9,21 +41,75 @@ SHELL=/bin/sh
 * ^Subject:[ 	]+RE:[ 	]+get
 * ! ^X-HPCM-Subject:
 {
-  # Pipe the reply through hpcm_extract and send
-  # the output of that as mail to ourselves.
-  #
-  :0 c: hpcm/get_mbox$LOCKEXT
-  | hpcm/help/sh/hpcm_extract hpcm | \
-	procmail -m .procmailrc
+  # Set the default value of HPCM_HOME to a non-
+  # existent directory.  This causes email that
+  # arrives here to vanish if HPCM_HOME does not
+  # get reset in what immediately follows.
 
-  # Save the same reply in hpcm/get_mbox.  Its rare
-  # to want to see the reply itself, but this saves
+  HPCM_HOME=$HOME/hpcm/this_does_not_exist
+
+  # Constants used just below.
+  #
+  BEFORE='This message replies to:^To:[ 	]+'
+  AFTER='[ 	]*<'
+
+  # CONTINUE EDITING:
+  #
+  # For each contest for which you have a home direc-
+  # tory, provide a `:0 B' entry to set HPCM_HOME to the
+  # contest home directory.  The word between ${BEFORE}
+  # and ${AFTER} is the password for the contest; that
+  # is, it is the `fee' in the contest email address
+  # `fee<fi@fo.fum>'.  The HPCM_HOME value is the home
+  # directory of the contest.
+  #
+  # Note: if HPCM_HOME is set to a non-existant direc-
+  # tory, email replies from hpcm_get will vanish with-
+  # out a trace.
+  #
+  # Note: don't assume the example values given below
+  # will work for you.
+
+  :0 B
+  * ${BEFORE}practice${AFTER}
+  {
+      HPCM_HOME=$HOME/hpcm/practice
+  }
+
+  :0 B
+  * ${BEFORE}maze${AFTER}
+  {
+      HPCM_HOME=$HOME/hpcm/maze
+  }
+
+  :0 B
+  * ${BEFORE}dynamic${AFTER}
+  {
+      HPCM_HOME=$HOME/hpcm/dynamic
+  }
+
+  :0 B
+  * ${BEFORE}geometry${AFTER}
+  {
+      HPCM_HOME=$HOME/hpcm/geometry
+  }
+
+  # End of CONTINUE EDITING.  Your are now done editing
+  # this file.
+
+  # Pipe the reply through hpcm_extract and send the
+  # output of that as mail to ourselves.
+  #
+  :0 c: $HPCM_HOME/get_mbox$LOCKEXT
+  | PATH="$HPCM_PATH:$PATH" hpcm_extract $HPCM_HOME \
+        | procmail -m .procmailrc
+
+  # Save the same reply in $HPCM_HOME/get_mbox.  Its
+  # rare to want to see the reply itself, but this saves
   # it in case hpcm_extract fails oddly.
   #
   :0:
-  hpcm/get_mbox
+  $HPCM_HOME/get_mbox
 }
 
-# Note: if you get a name such as hpcm/help/sh/
-# hpcm_extract wrong, mail typically vanishes without
-# any error messages.
+# End of HPCM .procmailrc Additions.
