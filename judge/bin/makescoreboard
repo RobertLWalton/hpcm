@@ -4,7 +4,7 @@
 #
 # File:		makescoreboard
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Oct 27 10:04:00 EDT 2001
+# Date:		Sat Oct 27 11:33:16 EDT 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/10/27 14:02:33 $
+#   $Date: 2001/10/27 15:42:01 $
 #   $RCSfile: makescoreboard,v $
-#   $Revision: 1.16 $
+#   $Revision: 1.17 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -402,35 +402,62 @@ proc process_instructions {} {
         set instruction [lindex $instructions $pc]
 	set opcode [lindex $instruction 0]
 
+	# If we are at the end of a sequence of
+	# instructions that begins with an OUTPUT
+	# instruction and ends just before the next
+	# OUTPUT instruction or end of all instructions,
+	# process OUTPUT instruction time parameters
+	# and call pass2.
+	#
         if { ( $pc >= $end_pc || $opcode == "OUTPUT" ) \
 	     && $output_found } {
+
+	    # If we are before OUTPUT start time, do
+	    # NOT update.
+	    #
 	    if { $out_start != "" \
 	         && $time < $out_start } {
 	        set update no
 	    }
+
+	    # If output file exists and has an mtime >=
+	    # the OUTPUT stop time, do NOT update.
+	    #
 	    if {    $out_mtime != "" \
 	         && $out_stop != "" \
 	         && $out_mtime >= $out_stop } {
 	        set update no
 	    }
 
+	    # Perform second pass.
+	    #
 	    pass2 $instructions $out_pc $pc $update
 	}
 
+	# Update pc.
+	#
 	if { $pc >= $end_pc } break
 	incr pc
 
+	# Perform first pass on instruction.
+	#
 	switch $output_found-$opcode {
+
 	    no-OUTPUT -
 	    yes-OUTPUT {
+
+	        # Compute output file.
+		#
 		set out_file  [lindex $instruction 1]
-		set out_start [lindex $instruction 2]
-		set out_stop  [lindex $instruction 3]
 		set out_file \
 		   [file join $judging_directory \
 		              $out_file]
+
+		# Compute start and stop times and
+		# update earliest_future_time.
+		#
+		set out_start [lindex $instruction 2]
 		set out_start [unabbreviate $out_start]
-		set out_stop [unabbreviate $out_stop]
 		if { $out_start != "" } {
 		    set out_start \
 		        [clock scan $out_start]
@@ -443,6 +470,8 @@ proc process_instructions {} {
 			    $out_start
 		    }
 		}
+		set out_stop  [lindex $instruction 3]
+		set out_stop [unabbreviate $out_stop]
 		if { $out_stop != "" } {
 		    set out_stop \
 		        [clock scan $out_stop]
@@ -455,6 +484,12 @@ proc process_instructions {} {
 			    $out_stop
 		    }
 		}
+
+		# Set out_mtime to the output file mtime
+		# or "" if no output file exist, and
+		# set `update' to no if the output file
+		# exists and yes otherwise.
+		#
 		if { [file exists $out_file] } {
 		    set update no
 		    set out_mtime [file mtime $out_file]
@@ -462,8 +497,15 @@ proc process_instructions {} {
 		    set update yes
 		    set out_mtime ""
 		}
+
+		# Set output variables.
+		#
 	        set out_pc $pc
 		set output_found yes
+
+		# Remember output file in file_mtime_
+		# list.
+		#
 		lappend file_mtime_list \
 			[list out $out_file]
 	    }
@@ -475,6 +517,10 @@ proc process_instructions {} {
 
 	    yes-BAR -
 	    yes-LINE {
+
+	        # If scoreboard_width might have changed
+		# force update.
+		#
 	    	if { $last_parameters_mtime \
 		     < $parameters_mtime } {
 		    set update yes
@@ -482,17 +528,31 @@ proc process_instructions {} {
 	    }
 
 	    yes-INPUT {
+
+	        # Loop through input files until a read-
+		# able one is found.
+		#
 		foreach in_file \
 		        [lrange $instruction 1 end] {
+
 		    set in_file \
 		        [file join $judging_directory \
 			           $in_file]
+
+		    # Add input file to file_mtime_list.
+		    #
 		    if { [file readable $in_file] } {
 			set mtime [file mtime $in_file]
+
+			# If readable input file is
+			# later than output file, force
+			# update.
+			#
 			if {    $out_mtime != "" \
 			     && $mtime > $out_mtime } {
 			    set update yes
 			}
+
 			lappend file_mtime_list \
 			        [list $mtime $in_file]
 			break;
@@ -502,11 +562,20 @@ proc process_instructions {} {
 		    }
 		}
 	    }
+
 	    yes-BOARD {
+
+	        # If scoreboard_ parameters might have
+		# changed, force update.
+		#
 	    	if { $last_parameters_mtime \
 		     < $parameters_mtime } {
 		    set update yes
 		}
+
+		# Process $finder_file as per INPUT
+		# files above.
+		#
 		if { [file readable $finder_file] } {
 		    set mtime [file mtime $finder_file]
 		    if {    $out_mtime != "" \
@@ -521,6 +590,7 @@ proc process_instructions {} {
 		}
 
 	    }
+
 	    no-SEND -
 	    no-GRANT_ACCESS -
 	    no-BLANK -
@@ -533,12 +603,22 @@ proc process_instructions {} {
 	    }
 
 	    default {
+
+	        # Parameter setting instructions are
+		# executed in the first pass only if
+		# they are before all OUTPUT instruc-
+		# tions.
+		#
 	        if { $output_found == "no" } {
 		    set_parameter $instruction
 		}
 	    }
 	}
     }
+
+    # End of instruction processing loop.  Reenable
+    # interrupts.
+    #
     make_signals_default
 }
 
