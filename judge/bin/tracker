@@ -7,7 +7,7 @@
 #
 # File:		tracker
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Nov  3 03:23:44 EST 2001
+# Date:		Sat Nov  3 10:49:12 EST 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -16,9 +16,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/11/03 08:26:59 $
+#   $Date: 2001/11/03 17:03:12 $
 #   $RCSfile: tracker,v $
-#   $Revision: 1.14 $
+#   $Revision: 1.15 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -329,7 +329,7 @@ proc time_summary { args } {
     set r "
 			            Times in Seconds
 Problem		  sub-rec rec-ext ext-bin bin-out\
-                  out-sco bin-sco   sub-sco
+                  out-aut   aut-man   sub-man
 "
 
     foreach dir [array names rec_array] {
@@ -405,34 +405,47 @@ Problem		  sub-rec rec-ext ext-bin bin-out\
 	if { ! [info exists sco_array($dir)] } \
 	    continue
         set sco_line $sco_array($dir)
-	set sco_time [lindex $sco_line 1]
+	set aut_time [lindex $sco_line 1]
+	set man_time [lindex $sco_line 2]
 
-	set out_sco_time \
-	    [expr { $sco_time - $out_time }]
-	if { ! [info exists out_sco_array($problem)] } {
-	    set out_sco_array($problem) \
-	        [list $out_sco_time]
-	} else {
-	    lappend out_sco_array($problem) \
-	            $out_sco_time
+	if { $aut_time != "" } {
+
+	    set out_aut_time \
+		[expr { $aut_time - $out_time }]
+	    if { ! [info exists \
+	    		 out_aut_array($problem)] } {
+		set out_aut_array($problem) \
+		    [list $out_aut_time]
+	    } else {
+		lappend out_aut_array($problem) \
+			$out_aut_time
+	    }
 	}
 
-	set bin_sco_time \
-	    [expr { $sco_time - $bin_time }]
-	if { ! [info exists bin_sco_array($problem)] } {
-	    set bin_sco_array($problem) \
-	        [list $bin_sco_time]
-	} else {
-	    lappend bin_sco_array($problem) \
-	            $bin_sco_time
+	if { $aut_time != "" && $man_time != "" } {
+
+	    set aut_man_time \
+		[expr { $man_time - $aut_time }]
+	    if { ! [info exists \
+	    		 aut_man_array($problem)] } {
+		set aut_man_array($problem) \
+		    [list $aut_man_time]
+	    } else {
+		lappend aut_man_array($problem) \
+			$aut_man_time
+	    }
 	}
 
-	if { ! [info exists sub_sco_array($problem)] } {
-	    set sub_sco_array($problem) \
-	        [list $sco_time]
-	} else {
-	    lappend sub_sco_array($problem) \
-	            $sco_time
+	if { $man_time != "" } {
+
+	    if { ! [info exists \
+	    		 sub_man_array($problem)] } {
+		set sub_man_array($problem) \
+		    [list $man_time]
+	    } else {
+		lappend sub_man_array($problem) \
+			$man_time
+	    }
 	}
     }
 
@@ -445,12 +458,31 @@ Problem		  sub-rec rec-ext ext-bin bin-out\
         set max_time ""
 
 	foreach xxx_yyy { sub_rec rec_ext ext_bin \
-	                  bin_out out_sco bin_sco \
-			  sub_sco } {
-	    if { ! [info exists \
-	                 ${xxx_yyy}_array($problem)] } \
-		 break
-	    if { [regexp {^sub_} $xxx_yyy] } {
+	                  bin_out out_aut aut_man \
+			  sub_man } {
+	    if { ! [info \
+	              exists \
+	              ${xxx_yyy}_array($problem)] } {
+		if { ! [info \
+			  exists
+			  sub_man_array($problem)] } \
+		     break
+		elseif { [regexp {(^sub_|_man$)} \
+				 $xxx_yyy] } {
+		    set spaces "          "
+		} else {
+		    set spaces "        "
+		}
+
+		set min_time "$min_time$spaces"
+		set med_time "$med_time$spaces"
+		set avg_time "$avg_time$spaces"
+		set max_time "$max_time$spaces"
+
+		continue
+	    }
+
+	    if { [regexp {(^sub_|_man$)} $xxx_yyy] } {
 	        set format { %9d}
 	    } else {
 	        set format { %7d}
@@ -529,7 +561,18 @@ set "score_id_array(Output Size Limit Exceeded)" oe
 proc compute_score_array {} {
 
     global ext_array sco_array score_id_array \
-           score_array problem_array submitter_array
+           score_array problem_array submitter_array \
+	   info_array
+
+    foreach name [array names score_array] {
+        unset score_array($name)
+    }
+    foreach name [array names problem_array] {
+        unset problem_array($name)
+    }
+    foreach name [array names submitter_array] {
+        unset submitter_array($name)
+    }
 
     foreach dir [array names sco_array] {
 
@@ -558,7 +601,8 @@ proc compute_score_array {} {
 	set time [format {%014d} $time]
 
 	if { ! [info exists ext_array($dir)] } {
-	   set problem UNKNOWN_EXT
+	   error "NO EXTRACTION:\
+	          $dir\n$info_array($dir)"
 	} else {
 	   set ext_line $ext_array($dir)
 	   set problem [lindex $ext_line 2]
@@ -1103,7 +1147,8 @@ proc call_manualreply { index } {
 
 proc display_help { arg } {
 
-    global received_file auto_score_file
+    global received_file \
+    	   auto_score_file manual_score_file
 
     puts "HELP `$arg'"
 
@@ -1149,7 +1194,8 @@ ti \[min\] \[med\] \[avg\] \[max\] = display by problem\
 	bin = max of mtimes of binary output and .cerr\
 		    files
 	out = max of mtimes of .out and .err files
-	sco = mtime of $auto_score_file
+	aut = mtime of $auto_score_file
+	man = mtime of $manual_score_file
 
     sub-rec is the time in seconds from sub to rec,
     rec-ext is the time in seconds from rec to ext,
@@ -1252,9 +1298,16 @@ while { "yes" } {
 	    display_directory_list
 	}
     } } out] } {
-        puts "\n\n\n\n\n\n\n\n"
+        puts "\n\n\n\n"
 	puts "============== ERROR =============="
         puts $out
+	puts "==================================="
+	puts [join \
+		[concat \
+		   [lrange [split $errorInfo "\n"] \
+		   	   0 9] \
+		   [list ". . . . ."]] \
+	        "\n"]
 	puts "==================================="
 	set output "ERROR executing `$answer'.  \
 	                Type ? for help."
