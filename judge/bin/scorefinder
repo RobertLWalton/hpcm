@@ -5,7 +5,7 @@
 #
 # File:		scorefinder
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Feb  8 10:08:13 EST 2002
+# Date:		Sat Feb 16 20:24:58 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/02/08 15:31:10 $
+#   $Date: 2002/02/17 01:47:24 $
 #   $RCSfile: scorefinder,v $
-#   $Revision: 1.17 $
+#   $Revision: 1.18 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -160,7 +160,44 @@ foreach dir [glob -nocomplain \
     if { [file exists $dir/$gotten_file] } {
 
     	if { $gotten_option } {
-	    puts [list $date $submitter $name1 g]
+	    set gotten_ch [open $dir/$gotten_file r]
+
+	    # Check that first line is `Date:' line.
+	    # Date should be same as from directory
+	    # name.
+	    #
+	    set line [gets $gotten_ch]
+	    if { ! [eof $gotten_ch] \
+	         && ! [regexp {^Date: } $line] } {
+	        error "Bad first line in\
+		       $dir/gotten_file:\n    $line"
+	    }
+
+	    # Get problem names from `File:' lines
+	    # with file names of form demos/problem...
+	    # or problems/problem... .  Output a line
+	    # for each new problem.
+	    #
+	    set problems ""
+	    while { "yes" } {
+	        set line [gets $gotten_ch]
+		if { [eof $gotten_ch] } break
+		if { ! [regexp {^File: ([^\ \t]*)$} \
+			       $line forget name] } {
+		    error "Bad line in\
+			   $dir/gotten_file:\n    $line"
+		}
+		if { \
+		  [regexp \
+		   {^(demos|problems)/([^/]*)(/.*|)$} \
+		   $name forget forget problem forget] \
+		  && ! [lcontain $problems $problem] } {
+		    puts [list $date $submitter \
+		    	        $problem g]
+		    lappend problems $problem
+		}
+	    }
+	    close $gotten_ch
 	}
 
     } elseif {    [file exists $dir/$received_file] \
