@@ -4,7 +4,7 @@
 #
 # File:		makescoreboard
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Oct 29 06:46:55 EST 2001
+# Date:		Mon Oct 29 07:24:07 EST 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/10/29 12:19:04 $
+#   $Date: 2001/10/29 12:27:07 $
 #   $RCSfile: old_makescoreboard,v $
-#   $Revision: 1.23 $
+#   $Revision: 1.24 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -529,6 +529,15 @@ proc process_instructions {} {
 		    set out_mtime ""
 		}
 
+	        # If scoreboard_instructions might have
+		# changed force update.
+		#
+	    	if { $last_parameters_mtime == ""
+	    	     || $last_parameters_mtime \
+		        < $parameters_mtime } {
+		    set update yes
+		}
+
 		# Set output variables.
 		#
 	        set out_pc $pc
@@ -544,18 +553,8 @@ proc process_instructions {} {
 
 	    yes_BLANK {}
 
-	    yes_BAR -
-	    yes_LINE {
-
-	        # If scoreboard_width might have changed
-		# force update.
-		#
-	    	if { $last_parameters_mtime == ""
-	    	     || $last_parameters_mtime \
-		        < $parameters_mtime } {
-		    set update yes
-		}
-	    }
+	    yes_BAR {}
+	    yes_LINE {}
 
 	    yes_INPUT {
 
@@ -594,15 +593,6 @@ proc process_instructions {} {
 	    }
 
 	    yes_BOARD {
-
-	        # If scoreboard_ parameters might have
-		# changed, force update.
-		#
-	    	if { $last_parameters_mtime == ""
-	    	     || $last_parameters_mtime \
-		        < $parameters_mtime } {
-		    set update yes
-		}
 
 		# Process finder_file mtime stored in
 		# finder_mtime above.
