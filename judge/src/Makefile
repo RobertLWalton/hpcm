@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/01/07 17:26:59 $
+#   $Date: 2001/01/10 10:54:53 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.4 $
+#   $Revision: 1.5 $
 
 # Kill all implicit rules
 #
@@ -28,4 +28,4 @@ chkpage:	chkpage.c
 	gcc -o chkpage chkpage.c
 
 clean:
-	rm -f scorediff
+	rm -f scorediff chkpage

@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/01/07 17:26:58 $
+#   $Date: 2001/01/10 10:54:51 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.12 $
+#   $Revision: 1.13 $
 
 all:	scorediff hpcm_sandbox_x hpcm_print_passwords \
 	chkpage
@@ -72,4 +72,5 @@ chkpage:	../src/chkpage.c
 
 clean:
 	rm -f scorediff hpcm_sandbox_x \
-		hpcm_print_passwords
+		hpcm_print_passwords chkpage \
+		hpcm_judging.rc
