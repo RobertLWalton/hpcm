@@ -3,7 +3,7 @@
 #
 # File:		scoreboard_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Sep 22 08:34:15 EDT 2002
+# Date:		Tue Sep 24 08:11:47 EDT 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -12,9 +12,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/09/22 14:11:45 $
+#   $Date: 2002/09/24 12:11:04 $
 #   $RCSfile: scoreboard_common.tcl,v $
-#   $Revision: 1.40 $
+#   $Revision: 1.41 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -622,9 +622,10 @@ proc compute_scoreboard_list {} {
     # Compute lists of submitters and problems.
     #
     # If we are displaying count of incorrect problems,
-    # mark problem present if it has any submission,
-    # else mark problem present only it has a correct
-    # submission.
+    # mark a submitter or problem present if there is
+    # any submission for the submitter or problem, else
+    # mark a submitter or problem present only there is
+    # a correct submission for the submitter or problem.
     #
     if { $scoreboard_display_incorrect } {
         set present_regexp {.[ic].}
@@ -636,13 +637,12 @@ proc compute_scoreboard_list {} {
 	regexp {^([^/]*)/([^/]*)$} $sap forget \
 	       submitter problem
 
-	set submitter_present($submitter) yes
-
 	set code \
 	    [lindex [lindex $scoreboard_array($sap) \
 	                    end] \
 		    1]
 	if { [regexp $present_regexp $code] } {
+	    set submitter_present($submitter) yes
 	    set problem_present($problem) yes
 	}
     }
