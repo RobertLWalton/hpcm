@@ -5,7 +5,7 @@
 #
 # File:		manualreply
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Oct 31 22:57:13 EST 2001
+# Date:		Thu Nov  1 06:45:00 EST 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/11/01 04:13:45 $
+#   $Date: 2001/11/01 11:52:30 $
 #   $RCSfile: manualreply,v $
-#   $Revision: 1.42 $
+#   $Revision: 1.43 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -528,6 +528,22 @@ pc = Program Crashed     oe = Output Size Exceeded
 
 Set the proposed score to the indicated value.
 "
+
+set help(ps) "
+
+ps XX		where XX is one of:
+
+io = Incorrect Output    cc = Completely Correct
+fe = Formatting Error    ic = Incomplete Output
+se = Syntax Error        te = Cpu Time Limit Exceeded
+pc = Program Crashed     oe = Output Size Exceeded
+
+Set the proposed score to the indicated value.  This\
+	command is only valid
+when displaying proofs with the `pr' command.  When\
+	the main or scoring menus
+are displayed, XX can be typed by itself as a command.
+"
 
 set help(cc) $help(io)
 set help(fe) $help(io)
@@ -841,13 +857,107 @@ Scores:    Auto:     $auto_score    Manual:\
     }
 }
 
-# Function to display proofs.
+# Function to recompute info for proofs menu loop.
+#
+proc refresh_proofs_info { } {
+
+    global window_info_height scoring_instructions \
+	   auto_score proposed_score
+
+    set info "[compute_proof_info]   \
+        Scores:    Auto: $auto_score    Proposed:\
+			        $proposed_score\n   \
+	Scoring Instructions:\
+	    $scoring_instructions\n   \
+        n|p = goto next|previous proof  \
+        ? = help   x = exit   ss = send score + mm\n   \
+        mm|sm = return to main|scoring menu  \
+        ps XX = set propose score to XX"
+
+    set window_info_height [llength [split $info "\n"]]
+    set_window_info $info
+}
+
+# Execute ss command for main or proof loop.
+#
+proc send_score { } {
+
+    global proposed_score window_error last_file \
+           reply_file window_prompt last_display
+
+    if { [not_readonly] == "no" } {
+	# do nothing
+    } elseif { $proposed_score == "none" } {
+	set window_error "ERROR: set the\
+	    proposed score before sending it"
+    } elseif { [compose_score_reply] } {
+	send_score_reply
+	set last_file $reply_file
+	set last_display file
+	set window_error "Score sent!"
+    } else {
+	set window_error "NOTICE: Old manual\
+	    score exists or scoring mode is\
+	    `auto'."
+	set window_prompt "To continue you\
+	    must edit reply.  Do you want to\
+	    continue (y or n)? "
+	set last_file $reply_file+
+	set_file_display $reply_file+
+	display_window
+	if { [yes?] } {
+	    edit_file $last_file
+	    set window_error "Reply is ready\
+		to send."
+	    set window_prompt "Do you want to\
+		send it (y or n)? "
+	    display_window
+	    if { [yes?] } {
+		send_score_reply
+		set last_file $reply_file
+		set window_error "Score sent!"
+	    } else {
+		set window_error "Score sending\
+		    ABORTED!"
+		set last_display file_list
+	    }
+	} else {
+	    set window_error "Score sending\
+		ABORTED!"
+	    set last_display file_list
+	}
+    }
+}
+
+# Execute ? command for main or proof loop.
+#
+proc display_help { } {
+
+    global help window_error last_help window_bar \
+           last_display answer
+
+    regexp {^\? *([^ ]*)$} $answer forget what
+    if { $what == "" } {
+	set what "?"
+    } elseif { ! [info exists help($what)] } {
+	set window_error \
+	    "ERROR: no help available for\
+			  `$what'!"
+	set what "?"
+    }
+    set last_help $help($what)
+    set last_help \
+	"$window_bar$last_help$window_bar"
+    set_window_display $last_help
+    set last_display help
+}
+
+# Function to run proof display loop.
 #
 proc display_proofs {} {
 
     global last_file window_error window_prompt \
-           window_info_height scoring_instructions \
-	   auto_score proposed_score
+	   proposed_score answer
 
     if { [catch {
 
@@ -860,18 +970,7 @@ proc display_proofs {} {
 	return ""
     }
 
-    set info "[compute_proof_info]   \
-        Scores:    Auto: $auto_score    Proposed:\
-			        $proposed_score\n   \
-	Scoring Instructions:\
-	    $scoring_instructions\n   \
-        n = goto next proof        \
-        p = goto previous proof\n   \
-        mm = return to main menu   \
-        sm = return to scoring menu"
-
-    set window_info_height [llength [split $info "\n"]]
-    set_window_info $info
+    refresh_proofs_info
 
     if { [get_proof] == "no" } return ""
     if { [set_proof_display] == "no" } return ""
@@ -886,6 +985,71 @@ proc display_proofs {} {
 	switch -regexp -- $answer {
 	    {^mm$} { return mm }
 	    {^sm$} { return sm }
+	    {^x$} {
+		exit_cleanup
+		exit 0
+	    }
+	    {^ss$} {
+		send_score
+		return mm
+	    }
+	    "^ps[ \t]" {
+		set l [llength $answer]
+		switch ${l}_[lindex $answer 1] {
+		    2_io {
+			set proposed_score \
+			    "Incorrect Output"
+			refresh_proofs_info
+		    }
+		    2_cc {
+			set proposed_score \
+			    "Completely Correct"
+			refresh_proofs_info
+		    }
+		    2_fe {
+			set proposed_score \
+			    "Formatting Error"
+			refresh_proofs_info
+		    }
+		    2_ic {
+			set proposed_score \
+			    "Incomplete Output"
+			refresh_proofs_info
+		    }
+		    2_se {
+			set proposed_score \
+			    "Syntax Error"
+			refresh_proofs_info
+		    }
+		    2_te {
+			set proposed_score \
+			    "Cpu Time Limit Exceeded"
+			refresh_proofs_info
+		    }
+		    2_pc {
+			set proposed_score \
+			    "Program Crashed"
+			refresh_proofs_info
+		    }
+		    2_oe {
+			set proposed_score \
+			    "Output Size Exceeded"
+			refresh_proofs_info
+		    }
+		    default {
+			set window_error \
+			    "ERROR: cannot understand\
+					  `$answer'!"
+		    }
+		}
+	    }
+	    {^\?} {
+		display_help
+	    }
+	    {^pr$} {
+		refresh_proofs_info
+		set_proof_display
+	    }
 	    {^$} {
 		if { [eof stdin] } {
 		    exit_cleanup
@@ -1120,48 +1284,7 @@ while { "yes" } {
 	    }
 	}
 	{^ss$} {
-	    if { [not_readonly] == "no" } {
-	    	# do nothing
-	    } elseif { $proposed_score == "none" } {
-	        set window_error "ERROR: set the\
-		    proposed score before sending it"
-	    } elseif { [compose_score_reply] } {
-		send_score_reply
-		set last_file $reply_file
-		set last_display file
-	        set window_error "Score sent!"
-	    } else {
-	        set window_error "NOTICE: Old manual\
-		    score exists or scoring mode is\
-		    `auto'."
-	        set window_prompt "To continue you\
-		    must edit reply.  Do you want to\
-		    continue (y or n)? "
-		set last_file $reply_file+
-		set_file_display $reply_file+
-		display_window
-		if { [yes?] } {
-		    edit_file $last_file
-		    set window_error "Reply is ready\
-			to send."
-		    set window_prompt "Do you want to\
-			send it (y or n)? "
-		    display_window
-		    if { [yes?] } {
-		    	send_score_reply
-			set last_file $reply_file
-			set window_error "Score sent!"
-		    } else {
-			set window_error "Score sending\
-			    ABORTED!"
-			set last_display file_list
-		    }
-		} else {
-		    set window_error "Score sending\
-			ABORTED!"
-		    set last_display file_list
-		}
-	    }
+	    send_score
 	    if { [not_readonly] } {
 		set menu $main_menu
 		refresh_file_list
@@ -1284,20 +1407,7 @@ while { "yes" } {
 	    refresh_info
 	}
 	{^\?} {
-	    regexp {^\? *([^ ]*)$} $answer forget what
-	    if { $what == "" } {
-	        set what "?"
-	    } elseif { ! [info exists help($what)] } {
-		set window_error \
-		    "ERROR: no help available for\
-				  `$what'!"
-		set what "?"
-	    }
-	    set last_help $help($what)
-	    set last_help \
-	        "$window_bar$last_help$window_bar"
-	    set_window_display $last_help
-	    set last_display help
+	    display_help
 	}
 	{^$} {
 	    if { [eof stdin] } {
