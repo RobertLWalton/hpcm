@@ -1,4 +1,4 @@
-GEOMETRY EXERCISES HELP    Sat Mar 20 20:41:17 EST 2004
+GEOMETRY EXERCISES HELP    Sun Mar 21 06:24:58 EST 2004
 
 These are programming exercises you can do to help
 strengthen your geometry problem skills.
@@ -14,8 +14,8 @@ of the path.
     between two points is their total distance minus the
     radii of any holes centered at the points.
 
-Compute the distance between a point (x,y) and an
-infinite line through points (x1,y1) and (x2,y2).
+Compute the distance between a point (x,y) and an in-
+finite line through points (x1,y1) and (x2,y2).
 
     Method1: Compute (dx,dy) to be the displacement
     vector from (x1,y1) to (x2,y2), rotate (dx,dy) 90
@@ -31,6 +31,10 @@ infinite line through points (x1,y1) and (x2,y2).
     distance of the point in the new coordinates to the
     x-axis (its just the absolute value of the point's
     new y coordinate).
+    
+    Although Method2 seems like more work than Method1,
+    coordinate change is a unifying conceptual basis for
+    solving complex distance problems.
 
 Ditto for the finite line segment from (x1,y1) to
 (x2,y2).
@@ -52,15 +56,18 @@ from (xb1,yb1) to (xb1,yb2).
     of the y coordinates at the end points.  For the
     other segments it is the distance between the other
     segment and either (0,0) or (k,0).  Take the  min-
-    imum of the three distances (some of which may be
+    imum of the three distances (some of which will be
     missing if their segment is missing).
 
 Compute the distance between a point (x,y,z) and an
 infinite line through points (x1,y1,z1) and (x2,y2,z2).
 
-    Method: Let U1 be the unit vector from (x1,y1,z1)
-    to (x2,y2,z2).  Recall that the cross product of
-    vectors is defined by
+    Method1: We want to change coordinates so the infin-
+    ite line becomes the x-axis.  We will need the
+    cross product.
+    
+    Recall that the cross product of vectors is defined
+    by
 
     	V1 = (X1,Y1,Z1)		V2 = (X2,Y2,Z2)
 
@@ -68,28 +75,59 @@ infinite line through points (x1,y1,z1) and (x2,y2,z2).
 			       Z1*X2 - X1*Z2,
 			       X1*Y2 - Y1*X2)
 
-    Then V is perpendicular to V1 and V2.  If
+    V is always perpendicular to V1 and V2 and the
+    length of V is the area of the trapazoid with sides
+    V1 and V2.  If
 
-    	UX = (1,0,0)    UY = (0,1,0)   (UZ) = (0,0,1)
+    	UX = (1,0,0)    UY = (0,1,0)   UZ = (0,0,1)
 
-    then
+    are unit vectors in the directions of the x, y, and
+    z axis respectively, then
 
     	UX x UY = UZ	UY x UZ = UX	UZ x UX = UY
 
     and note that the vectors in these equations are all
     rotations of the order UX,UY,UZ.
 
-    Examine U1 x UX, U1 x UY, U1 x UZ and take the first
-    of these that has length > 0.5 (at least one will
-    qualify).  Normalize this to a unit vector, call it
-    U2, and take U3 = U1 x U2.  Then U1, U2, U3 are an
-    orthogonal basis and U1 is in the direction of the
-    line.  By computing coordinates of the line and
-    point in the directions U2 and U3, one can project
-    both on a plane perpendicular to the line, in which
-    case the line is projected to a point, and the dis-
-    tance required is the 2D distance of the two projec-
-    tion points.
+    The definition of cross product can be rewritten as
+
+    	(X1,Y1,Z1) x (X2,Y2,Z2) =
+	      Y1*Z2*UX + Z1*X2*UY + X1*Y2*UZ
+	    - Z1*Y2*UX - X1*Z2*UY - Y1*X2*UZ
+
+    where the terms in Y1*Z2*UX + Z1*X2*UY + X1*Y2*UZ
+    all involve rotations of the letter ordering `XYZ',
+    while the terms in - Z1*Y2*UX - X1*Z2*UY - Y1*X2*UZ
+    involve a rotations followed by a pair switch of
+    the same letter ordering.
+
+    So we want to change coordinates so the infinite
+    line becomes the x-axis.  Let U1 be the unit vector
+    from (x1,y1,z1) to (x2,y2,z2).  Examine U1 x UX,
+    U1 x UY, U1 x UZ and take the first of these that
+    has length > 0.3 (at least one will qualify).  Nor-
+    malize this to a unit vector, call it U2, and take
+    U3 = U1 x U2.  Then U1, U2, U3 are an orthogonal
+    basis and U1 is in the direction of the line.  By
+    computing coordinates of the line and point in the
+    directions U2 and U3, one can project both on a
+    plane perpendicular to the line, in which case the
+    line is projected to a point, and the distance
+    required is the 2D distance of the two projection
+    points.
+
+    Method2: The cross product V x W has the following
+    geometrical definition: project V on the plane
+    perpendicular to W, rotate the projection 90 degrees
+    around the W axis, and multiply the projection by
+    the length of W.  Therefore with U1 as in Method1,
+    the answer is just the 3D distance between
+
+    	(x1,y1,z1) x U1   and   (x,y,z) x U1
+
+    Note that - (V x U) x U is just the projection of
+    V on the plane perpendicular to U, for any unit
+    vector U.
 
 Compute the distance between a point (x,y,z) and an
 finite line from (x1,y1,z1) to (x2,y2,z2).
@@ -120,9 +158,9 @@ ments.
     and (k,0,0) respectively and take the minimum of the
     three distances.
 
-Intersection of a line segment B from (x1,y1) to (x2,y2)
-with another line segment C from (x3,y3) to (x4,y4),
-with `corner cases'.
+Find the intersection of a line segment B from (x1,y1)
+to (x2,y2) with another line segment C from (x3,y3) to
+(x4,y4), with `corner cases'.
 
     Compute (dx,dy) = (x2-x1,y2-x1) so that (dy,-dx) is
     perpendicular and pointing to the right of the
@@ -132,14 +170,16 @@ with `corner cases'.
     line extending B by comparing the dot product of
     the point with (dy,-dx) with the dot product of
     (x1,y1) (or equivalently (x2,y2)) with (dy,-dx).
-    The computation of being `on' the line requires that
-    the coordinates all be multiples of some quantum Q.
-    Then dot products are taken as equal if they are
-    within Q**2/4 of each other, assuming the accuracy
-    of computation is much better than Q**2.  If the
-    coordinates are integers, you can dispense with
-    Q and use integer arithmetic for the dot products
-    and comparisons.
+
+    The computation of being `on' the line requires an
+    equality test.  This requires that the coordinates
+    must all be multiples of some quantum Q.  Then dot
+    products of points and point differences are taken
+    as equal if they are within Q**2/4 of each other,
+    assuming the accuracy of computation is much better
+    than Q**2.  If the coordinates are integers, you can
+    dispense with Q and use integer arithmetic for the
+    dot products and comparisons.
 
     In order for the line segments to intersect at a
     mid-point of both segments, the end points of each
@@ -155,20 +195,22 @@ with `corner cases'.
     just that in which both endpoints of one segment are
     on the infinite line extending the other segment,
     in which case the same statement is true with the
-    segments switched.  In the parallel case it is
+    segments switched.  In this parallel case it is
     possible for the segments to overlap or be separate.
     You need to take dot products with (dx,dy) and
-    compare these to see if there is an overlap.
+    compare these to see if there is a segment overlap.
 
-A non-degenerate polygon is a sequence of vertices in
-clockwise (or counterclockwise) order defining the
-line segments of the boundary of the polygon, such that
-the only intersections of two segments are those at the
-endpoints of successive segments in the circular list
-of segments.
+A simple (a.k.a non-degenerate) polygon is a sequence of
+vertices in clockwise (or counterclockwise) order defin-
+ing the line segments of the boundary of the polygon,
+such that the only intersections of two segments are
+those at the endpoints of successive segments in the
+circular list of segments.  Its is possible that two
+successive segments will be parallel, hence the middle
+vertex will be unnecessary.
 
 Find all the intersections of a 2D line segment and a
-boundary of a non-degenerate polygon.
+boundary of a simple polygon.
 
     Method: You can find all the intersections of the
     line segment and the polygon side segments.  The
@@ -176,31 +218,32 @@ boundary of a non-degenerate polygon.
     a parallel side segment.
 
 Determine if a 2D line segment intersects the interior
-of a non-degenerate polygon.
+of a simple polygon.
 
-    Method: Find the intersections of the line segment
-    and the boundary of the polygon.
+    Method: Find the intersections of the 2D line seg-
+    ment and the boundary of the polygon, and investi-
+    gate these intersections.
     
     One hard case is when an intersection is a vertex of
-    the polygon: the line segment might pass into the
+    the polygon: the 2D line segment might pass into the
     interior or be tangential to the polygon.
 
     You therefore have a vertex with up to 4 line seg-
     ments leaving it: two polygon sides and 1 or 2 parts
-    of the 2D line segment.  So is any part of the
-    2D line segment going into the interior of the
-    polygon.
+    of the 2D line segment.  So is any part of the 2D
+    line segment going into the interior of the polygon?
 
     Treating polygon sides as clockwise directed, let
-    OUT be the outgoing side and IN the incoming side
-    and LINE a line part directed out from the vertex.
-    Let -IN bet the incoming side with direction revers-
-    ed.  Measure the counterclockwise angles from OUT to
-    the segments -IN and LINE, and normalize these
-    angles to the range [0,2pi).  Then letting OUT, -IN,
-    and LINE denote the angles, so OUT = 0 and -IN > 0,
-    we have that LINE goes into the interior of the
-    polygon iff LINE > -IN.
+    OUT be the outgoing polygon side and IN the incoming
+    polygon side.  Let LINE a 2D line segment part di-
+    rected out from the vertex.  Let -IN be the incom-
+    ing side with direction reversed.  Measure the
+    counterclockwise angles from OUT to the segments -IN
+    and LINE, and normalize these angles to the range
+    [0,2pi).  Then letting OUT, -IN, and LINE denote the
+    angles, so OUT = 0 and -IN > 0, we have that LINE
+    goes into the interior of the polygon iff
+    LINE > -IN.
 
     You need to decide when angles are exactly equal.
     Let point coordinates all have absolute value less
@@ -209,27 +252,30 @@ of a non-degenerate polygon.
     several times A**2/10, and two that are equal will
     differ by many times less than A**2/10, if the
     precision of computation is many times less than
-    A**/10.
+    A**2/10.
 
     With this in mind, the code to normalize an angle
     X to the range [0,2pi) is
 
-	ACC = A**2/10
+	ACC = A*A/10
     	while ( X < - ACC ) X += 2pi
     	while ( X > 2pi - ACC ) X -= 2pi
 
-    The other hard case is when the line segment and
-    a boundary segment are parallel on the same infinite
-    line.  Then one of there vertices may be in both
-    segments, and this vertex can be treated as the
-    intersection vertex and the above methods applied
-    after identifying OUT, IN, and LINE.  If the vertex
-    is not a vertex of the polygon, then we will have
-    OUT = IN direction-wise.
+    A second hard case is when an endpoint of the 2D
+    line segment lies in the interior of a polygon side.
+    This can be treated by pretending the endpoint is
+    a polygon vertex and applying the previous method
+    with OUT = IN directionwise.
+
+    If the 2D line segment and a side are parallel and
+    overlap, one of the polynomial vertices or one of
+    the line end points can be treated as an intersec-
+    tion point and the above methods can be applied.
 
 A polygon is convex if and only if every line segment
-between two points inside the polygon is completely
-inside the polygon.
+between two points inside or on the boundary of the
+polygon is completely inside or on the boundary of the
+polygon.
 
 The convex hull of a set of points V in a plane is a
 sequence of points of V, p(1), ..., p(N), such that for
@@ -246,7 +292,7 @@ Find the convex hull of a set of 2D points.
     To find the convex hull, first find some point p(1)
     on the hull, which can be done say by choosing a
     leftmost point in V and given two leftmost points
-    choosing the highest.  Then extend the hull recur-
+    choosing the lowest.  Then extend the hull recur-
     sively from p(i) to p(i+1) by using the following.
 
     Given a point p, define a relation among points q1,
@@ -345,10 +391,9 @@ polygon if these are not inside some other polygon.
     line segments between members of V that do not
     contain other members of V.
 
-Intersect a horizontal infinite line with a non-degener-
-ate polygon to produce a set of line segments.  Include
-any part of the line that runs along a side of the poly-
-gon.
+Intersect a horizontal infinite line with a simple poly-
+gon to produce a set of line segments.  Include any part
+of the line that runs along a side of the polygon.
 
     Consider a scan starting at negative infinity on the
     line and moving along the line to positive infinity.
@@ -399,7 +444,7 @@ gon.
     Set the scan state to INSIDE if and only if
     -IN > OUT, and to OUTSIDE if -IN < OUT.
 
-Compute the intersection of two non-degenerate polygons.
+Compute the intersection of two simple polygons.
 
     First compute the intersections of polygon sides,
     one side from each polygon, and put these in a list.
