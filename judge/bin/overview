@@ -4,7 +4,7 @@
 #
 # File:		overview
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Jan 19 10:11:28 EST 2002
+# Date:		Sat Jan 19 21:55:12 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/01/19 20:21:20 $
+#   $Date: 2002/01/20 03:30:04 $
 #   $RCSfile: overview,v $
-#   $Revision: 1.52 $
+#   $Revision: 1.53 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -217,12 +217,12 @@ Contest Definition Data
     Files that define a contest, including documentation
     for contestants, problem definition, solution defi-
     nition, and contest parameter definition.
-
+
 Contest Raw Data
     Files that capture submissions and information gen-
     erated during judging, such as binary program files,
     output files, scores, and email replies.
-
+
 Contest Derived Data
     Scoreboards and contest tracking summaries.
 
@@ -460,9 +460,9 @@ tory deletes all temporary files, including `pppp',
 Library Data: Complex Problems
 ------- ----- ------- --------
 
-The standard problem formt described in the last section
-has many limitations.  Only one file, Makefile, is pro-
-vided to support the contestant.  Only one file, e.g.
+The standard problem format described in the last sec-
+tion has many limitations.  Only one file, Makefile, is
+provided to support the contestant.  Only one file, e.g.
 pppp.c, can be submitted.  At most one file, e.g.
 pppp.txt, can be used to describe the problem.  There is
 no way to supply a contestant with an initial version of
@@ -474,7 +474,7 @@ the problem directory.  The default value of this file
 is-
 
 	-DESCRIPTION-
-	    PROBLEM.<description-extension>
+	    PROBLEM.TTT
 	-SOURCE-
 	    $make_file
 	-REQUIRED-
@@ -488,33 +488,36 @@ is-
 	    $scoring_instructions_file
 	    $scoring_filter_file
 	    { PROBLEM.ftest PROBLEM.fout PROBLEM.ftest }
-
-Here `PROBLEM' denotes the name of the problem, and
-`EXTENSION' the programming language extension taken
-the subject field of he submission.  The above says that
-the file describing the problem has the name PROBLEM.ttt
-where .ttt is some extension such as .txt or .ps; the
-file given to the contestant (as SOURCE) is $make_file;
-and when a submission is scored by the judge a bunch of
-files are linked from the solution directory to the
-directory in which the submission is being scored.  For
-example, the PROBLEM.test file must be linked and it is
-linked to the solution PROBLEM.out file if that exists
-or to the solution PROBLEM.text file otherwise.  The
+
+This value specifies the standard format of a problem as
+was described above.  Here `PROBLEM' denotes the name of
+the problem, TTT denotes the extension (e.g., .ps or
+.txt) needed to name the description file of the pro-
+blem, and `EXTENSION' is the programming language exten-
+sion (e.g., .c or .java) taken from the subject field of
+the submission.  The above says that the file describing
+the problem has the name PROBLEM.TTT; the file given to
+the contestant (as -SOURCE-) is $make_file; and when a
+submission is scored by the judge a bunch of files are
+linked from the problem directory to the directory in
+which the submission is being scored.  For example, the
+PROBLEM.test file must be linked and it is linked to the
+problem directory PROBLEM.out file if that exists or to
+the problem directory PROBLEM.test file otherwise.  The
 PROBLEM.ftest file is similar, but linking it is option-
-al.
+al, in case neither PROBLEM.fout or PROBLEM.ftest exist.
 
 In general the `$files_file' file consists of special
 symbols, like -DESCRIPTION- and -SOURCE-, each followed
-by items that are either file names of lists of file
+by items that are either file names or lists of file
 names.  Different special symbols are processed by dif-
 ferent HPCM programs: e.g., -DESCRIPTION- is processed
 by makejudgingdir and -LINK- by autojudge.  The follow-
 ing is a list of the recognized special symbols, the
 programs that recognize them, and a description in brief
-of their function.  See program documantation for more
+of their function.  See program documentation for more
 details.
-
+
     Recognized by makejudgingdir:
 
         -DESCRIPTION-	Items name files that are given
@@ -538,17 +541,27 @@ details.
     Recognized by autojudge:
 
 	-LINK-		Items name files that must be
-			linked from the solution di-
+			linked from the problem di-
 			rectory to the submission
 			directory.  The file name in
-			the solution directory can be
+			the problem directory can be
 			different from the file name
 			in the submission directory.
 
 	-OPTIONAL-LINK-	Ditto but the files need not be
 			linked if the correct files do
-			not exist in the solution direc-
+			not exist in the problem direc-
 			tory.
+
+Sometimes the same file may be named as an item for dif-
+ferent special symbols to good effect.  A file named as
+both -OPTIONAL- and -LINK- will be supplied by linking
+if it is not supplied by the submitter, as -LINK- files
+are not linked if they are supplied by other means.  A
+file can have different versions for contestants and
+the judge, by being specified as -SOURCE- and -LINK- and
+using a different name for the judge's version in the
+problem directory. 
 
 In addition to the control over problem files given by
 the `$files_file' file, two other HPCM features support
