@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2003/03/15 07:39:09 $
+#   $Date: 2003/03/16 19:12:21 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.100 $
+#   $Revision: 1.101 $
 #
 
 # Table of Contents
@@ -533,11 +533,16 @@ proc log_error { error_output } {
 # empty).  Stop reading at the first empty line and
 # discard that line.
 #
-# But if the find_part argument is set to "yes", and the
+# But if the find_part argument is set to `yes', and the
 # message is multipart, skip to the first part that has
 # an acceptable Content-Type and Content-Transfer-
 # Encoding, as determined by the content_type_values and
 # content_transfer_encoding_values global variables.
+#
+# If find_part is `yes', read_body must be used to read
+# the lines of the body, and if the Content-Transfer-
+# Encoding is `quoted-printable' or `base64', the lines
+# of the message will be translated.
 #
 # The results are returned in global variables.  Unless
 # otherwise indicated, header fields are for the main
@@ -598,12 +603,22 @@ proc log_error { error_output } {
 #	{ x-hpcm-signature-ok }
 #
 # The global message_header_error is set non-"" if
-# there is some error.  Only multipart messages can
-# have an error, and only if find_part is "yes".
+# there is some error.  Messages can only have an error
+# if find_part is "yes".
 #
 # The global message_terminator is set to a regexp that
 # matches a line that terminates the message (part)
 # body, or is set to "" if there is no such regexp.
+#
+# If find_part is `yes' and the Content-Transfer-
+# Encoding is `quoted-printable' or `base64', the body
+# of the message is read and translated and stored in
+# the message_translated_body variable as a list of
+# lines.  In this case message_translated_index is set
+# to 0, the index of the first line in the body, and
+# message_translated_length is set to the number of
+# lines in message_translated_body.  Otherwise
+# message_translated_index is set to -1.  
 #
 proc read_header { ch { find_part no }
 		      { first_line "" }
@@ -632,9 +647,17 @@ proc read_header { ch { find_part no }
 	   unformatted_part_end_line \
 	   unformatted_end_line
 
+    global message_translated_body \
+    	   message_translated_index \
+    	   message_translated_length
+
     set message_header			""
     set message_header_error		""
     set message_terminator		""
+    set message_translated_body		""
+    set message_translated_index	-1
+    set message_translated_length	0
+
     set message_From_line		""
     set message_from			""
     set message_to			""
@@ -837,10 +860,6 @@ proc read_header { ch { find_part no }
 		# If type and encoding are legal, break
 		# out with legal part found.
 		#
-		if { [regexp {^quoted-printable} \
-			     $encoding] } {
-		    set encoding quoted-printable
-		}
 		set ctv $content_type_values
 		set ctev \
 		    $content_transfer_encoding_values
@@ -880,6 +899,69 @@ proc read_header { ch { find_part no }
 	        "^${unformatted_end_line}\$"
 	}
     }
+
+    set encoding $message_content_transfer_encoding
+    if {    $find_part == "no" \
+         || $message_header_error != "" } {
+    } elseif { [regexp -nocase {^base64} $encoding] } {
+	set body ""
+	while { "yes" } {
+	    set line [read_body $ch eof]
+	    if { $eof } break
+	    set body "$body[string trim $line]\n"
+	}
+	if { [catch {
+		set translated \
+		    [translate_base64 $body] } \
+	    	    out] } {
+	    set message_header_error \
+	    	"Error translating base64\
+		 message:\n$out"
+	} else {
+	    regsub -all "\r\n" $translated \
+	                "\n" translated
+	    set message_translated_body \
+		[split $translated "\n"]
+	    set message_translated_index 0
+	    set message_translated_length \
+	    	[llength $message_translated_body]
+	}
+    } elseif { [regexp -nocase {^quoted-printable} \
+                       $encoding] } {
+	set translated ""
+	while { "yes" } {
+	    set line [gets $ch]
+	    if { $eof } break
+
+	    if { [regexp {=} $line] } {
+
+		while { [regexp {^(.*)=$} $line forget \
+		                line] } {
+		    set line "${line}[gets $ch]"
+	        }
+
+		regsub -all {=09} $line "\t" line
+		regsub -all {=0C} $line "\f" line
+		regsub -all {=20} $line "\ " line
+
+		# This must be LAST!
+
+		regsub -all {=3D} $line "=" line
+	    }
+
+	    if { $message_terminator != "" \
+		 && [regexp $message_terminator \
+		            $line] } break
+
+	    lappend translated $line
+
+	}
+
+	set message_translated_body $translated
+	set message_translated_length \
+	    [llength $message_translated_body]
+        set message_translated_index 0
+    }
 }
 
 # Using information from the last call to read_header,
@@ -888,37 +970,41 @@ proc read_header { ch { find_part no }
 # is terminator, and to "no" otherwise.  Return line,
 # or return "" on end of file.
 #
-# If message_terminator is not "", a line matching it
-# indicates end of file.
+# If message_translated_index is >= 0, lines are
+# returned from message_translated_body.
 #
-# If message_content_transfer_encoding is "quoted-
-# printable", common =XX sequences are translated.
+# Otherwise, if message_terminator is not "",
+# a line matching it indicates end of file.
 #
 proc read_body { ch end_of_file } {
 
     global message_content_transfer_encoding \
-           message_terminator
+           message_terminator \
+	   message_translated_index \
+	   message_translated_length \
+	   message_translated_body
 
     upvar $end_of_file eof
+    set eof no
+
+    if { $message_translated_index >= 0 } {
+
+        if { $message_translated_index \
+	     < $message_translated_length } {
+	    set line [lindex $message_translated_body \
+	    		     $message_translated_index]
+	    incr message_translated_index
+	    return $line
+	} else {
+	    set eof yes
+	    return ""
+	}
+    }
+
     set line [gets $ch]
     if { [eof $ch] } {
         set eof yes
 	return ""
-    }
-
-    if { $message_content_transfer_encoding \
-         == "quoted-printable" \
-	 && [regexp {=} $line] } {
-
-	 while { [regexp {^(.*)=$} $line forget line] \
-	 		} {
-	     set line "${line}[gets $ch]"
-	 }
-
-	 regsub -all {=09} $line "\t" line
-	 regsub -all {=0C} $line "\f" line
-	 regsub -all {=20} $line "\ " line
-	 regsub -all {=3D} $line "=" line
     }
 
     if { $message_terminator != "" \
@@ -927,7 +1013,6 @@ proc read_body { ch end_of_file } {
 	return ""
     }
 
-    set eof no
     return $line
 }
 
