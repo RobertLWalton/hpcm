@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Mar 22 04:58:09 EST 2002
+# Date:		Fri Mar 22 05:34:29 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/03/22 10:28:59 $
+#   $Date: 2002/03/22 11:02:58 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.88 $
+#   $Revision: 1.89 $
 #
 
 # Table of Contents
@@ -1019,7 +1019,7 @@ proc compose_reply { args } {
 		} else {
 		    set s [lindex $command 1]
 		    set l [string length $s]
-		    incr l 2
+		    incr l 1
 		    puts $reply_ch \
 		    	 "[string range $bar $l end] $s"
 		}
@@ -1096,9 +1096,13 @@ proc send_reply { args } {
 
     global reply_file reply_history_file
 
-    if { [llength $args] != 0 \
-	 && $args != "-notfinal" } {
-	error "Bad args to send_reply: $args"
+    set not_final no
+    foreach arg $args {
+        if { $arg == "-notfinal" } {
+	    set not_final yes
+	} else {
+	    error "Bad arg to send_reply: $arg"
+	}
     }
 
     # Delete any $reply_file.
@@ -1131,7 +1135,7 @@ proc send_reply { args } {
 
     # Delete or rename $reply_file+
     #
-    if { $args == "-notfinal" } {
+    if { $not_final } {
         file delete -force $reply_file+
     } else {
 	file rename -force $reply_file+ $reply_file
@@ -1197,7 +1201,7 @@ proc find_scoring_instructions {} {
 # more lines than specified by the third argument, but
 # in place of the omitted lines write the line:
 #
-#	... THERE WERE # MORE LINES ...
+#	... THERE ARE # MORE LINES ...
 #
 proc put_file { filename
                { ch stdout }
@@ -1247,17 +1251,17 @@ proc write_file { filename line } {
 }
 
 # Return entire file as a string.  Each line in the
-# string terminates with a line feed, except the
-# line feed is omitted from the last line (so an
-# empty file is indistiguishable from a file with
-# a single empty line).
+# string terminates with a line feed, except the line
+# feed is omitted from the last line (so a file that
+# does not end with a line feed effectively has an
+# added ending line feed).
 #
 proc read_entire_file { filename } {
     set file_ch [open $filename r]
     set result [gets $file_ch]
     while { "yes" } {
 	set line [gets $file_ch]
-	if { [eof $file_ch] } break
+	if { [eof $file_ch] && $line == "" } break
 	set result "$result\n$line"
     }
     close $file_ch
@@ -1318,15 +1322,20 @@ proc clear_flag { flagfilename } {
 #
 # Note that the compiled expression must be evaluated
 # in an environment in which the `values' array is
-# visible, and the `abbreviations' and `atoms' arrays
-# are accessed in the environment of the caller of this
-# function.
+# visible, and the `abbreviations', `atoms', and
+# `values' arrays must all be accessed in the
+# environment of the caller of this function.  The
+# `values' array will be initialized to 0's and a test
+# evaluation of the logical expression in the caller's
+# environment is conducted to find logical expression
+# syntax errors.
 #
 proc compile_logical_expression \
     { expression abbreviations atoms values } {
 
     upvar $abbreviations abbreviation
     upvar $atoms atom
+    upvar $values value
 
     set n 0
     set depth 0
@@ -1356,6 +1365,7 @@ proc compile_logical_expression \
 
 	    default {
 		set atom($n) $token
+		set value($n) 0
 		set token "\$${values}($n)"
 		incr n
 	    }
@@ -1369,6 +1379,13 @@ proc compile_logical_expression \
 
     if { $depth != 0 } {
 	error "Parentheses mismatch in `$expression'."
+    }
+
+    if { [catch { uplevel 1 \
+                    [list expr $logical_expression] \
+		    	}] } {
+        error "Bad syntax in logical expression:\n   \
+	       $expression"
     }
 
     return $logical_expression
