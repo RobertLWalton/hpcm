@@ -2,7 +2,7 @@
 //
 // File:	scorediff.cc
 // Authors:	Bob Walton (walton@deas.harvard.edu)
-// Date:	Tue Aug 15 21:20:44 EDT 2000
+// Date:	Wed Aug 30 03:46:09 EDT 2000
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: acm-cont $
-//   $Date: 2000/08/16 02:19:57 $
+//   $Date: 2000/08/30 07:39:24 $
 //   $RCSfile: old_scorediff.cc,v $
-//   $Revision: 1.6 $
+//   $Revision: 1.7 $
 
 #include <stdlib.h>
 #include <iostream.h>
@@ -44,15 +44,20 @@ char documentation [] =
 "    eof2	The second file ended and the first\n"
 "		file had remaining non-whitespace\n"
 "		characters.\n"
-"    number D	Two files had a number in the same\n"
+"    number A R	Two files had a number in the same\n"
 "		place, but the numbers were not\n"
 "		represented by the same character\n"
 "		string, and the maximum absolute\n"
 "		value of the difference of all such\n"
-"		number pairs was D.\n"
+"		number pairs was A and the maximum\n"
+"		relative value of the difference of\n"
+"		of all such number pairs was R.\n"
 "    nonblank	There were different non-whitespace\n"
 "		characters at some place in the file\n"
 "		other than those in matching numbers.\n"
+"		When this is discovered, the search\n"
+"		for other kinds of differences ter-\n"
+"		minates.\n"
 "\n"
 "    The files are parsed into whitespace, numbers,\n"
 "    and other characters.  A number is an optional\n"
@@ -62,7 +67,21 @@ char documentation [] =
 "    an optional sign followed by digits.  A number\n"
 "    is scanned by the strtod(3) function.  Numbers\n"
 "    longer than about 4000 characters are arbitrar-\n"
-"    ily truncated.\n" ;
+"    ily truncated.\n"
+"\n"
+"    The relative value of the difference between two\n"
+"    numbers x and y is:\n"
+"\n"
+"                        | x - y |\n"
+"                     ----------------\n"
+"                     max ( |x|, |y| )\n"
+"\n"
+"    and is never larger than 2.\n"
+"\n"
+"    If numbers are too large to compare (either they\n"
+"    or their difference is infinity) then they are\n"
+"    treated as non-numbers whose character string\n"
+"    representations must match exactly.\n" ;
 
 struct file
 {
@@ -191,11 +210,16 @@ inline int backup ( file & f, char * s, int c )
 // this value may be an infinity if the number is too
 // large.
 //
+// If the second input character is supplied, the first
+// character MUST be a legal first character of a
+// number.
+//
 int scannumber ( file & f, int c1, int c2 = 0 )
 {
     if ( c1 != '+' && c1 != '-' && c1 != '.'
                    && ! isdigit ( c1 ) )
     {
+        assert ( c2 == 0 );
     	f.isnumber = false;
 	return c1;
     }
@@ -211,7 +235,10 @@ int scannumber ( file & f, int c1, int c2 = 0 )
     char c = ( c2 == 0 ? getc ( f ) : c2 );
 
     while (1) {
-	if ( c == '.' )
+
+	if ( f.end >= limit )
+	    break;
+	else if ( c == '.' )
 	{
 	    if ( found_point ) 
 		break;
@@ -220,8 +247,6 @@ int scannumber ( file & f, int c1, int c2 = 0 )
 	else if ( isdigit ( c ) )
 	    found_digit = true;
 	else break;
-
-	if ( f.end >= limit ) break;
 
 	* f.end ++ = c;
         c = getc ( f );
@@ -284,9 +309,11 @@ int scannumber ( file & f, int c1, int c2 = 0 )
 // Tests two numbers just scanned for two files to
 // see if there is a computable difference.  If so,
 // sets the `number' flag argument and updates the
-// `number_diff' argument by writing the difference
-// just found into it if this new difference is
-// larger than the previous value of `number_diff'.
+// `number_absdiff' and `number_reldiff' arguments
+// by writing the differences just found into them
+// iff these new differences are larger than the
+// previous value of `number_absdiff' or `number_
+// reldiff' respectively.
 //
 // If there is no computable difference, sets the
 // `nonblank' flag argument instead.  This happens
@@ -296,7 +323,8 @@ int scannumber ( file & f, int c1, int c2 = 0 )
 inline void diffnumber
 	( file & file1, file & file2,
 	  bool & nonblank, bool & number,
-	  double & number_diff )
+	  double & number_absdiff,
+	  double & number_reldiff )
 {
     if ( ! finite ( file1.number )
 	 ||
@@ -306,18 +334,43 @@ inline void diffnumber
 	return;
     }
 
-    double diffn
+    double absdiff =
 	( file1.number - file2.number );
-    if ( ! finite ( diffn ) )
+    if ( ! finite ( absdiff ) )
     {
 	nonblank = true;
 	return;
     }
-    if ( diffn < 0 ) diffn = - diffn;
+    if ( absdiff < 0 ) absdiff = - absdiff;
+
+    double abs1 = file1.number;
+    if ( abs1 < 0 ) abs1 = - abs1;
+
+    double abs2 = file2.number;
+    if ( abs2 < 0 ) abs2 = - abs2;
+
+    double max = abs1;
+    if ( max < abs2 ) max = abs2;
+
+    double reldiff = absdiff == 0.0 ?
+                     0.0 :
+		     absdiff / max;
+
+    if ( ! finite ( reldiff ) )
+    {
+        // Actually this should never happen.
+
+	nonblank = true;
+	return;
+    }
 
     number = true;
-    if ( diffn > number_diff )
-	number_diff = diffn;
+
+    if ( absdiff > number_absdiff )
+	number_absdiff = absdiff;
+
+    if ( reldiff > number_reldiff )
+	number_reldiff = reldiff;
 }
 
 // Main program.
@@ -355,14 +408,39 @@ int main ( int argc, char ** argv )
     bool number		= false;
     bool nonblank	= false;
 
-    double number_diff	= 0.0;		// Numeric
-    					// difference.
+    double number_absdiff	= 0.0;	// Numeric
+    double number_reldiff	= 0.0;	// differences.
 
     c1 = getc ( file1 );
     c2 = getc ( file2 );
 
     while (1)
     {
+        // At this point the last thing in each file
+	// before c1 or c2 is one of:
+	//
+	//	the beginning of file
+	//	a scanned number
+	//	a scanned stretch of whitespace
+	//	a character not in a number or
+	//		whitespace
+	//
+	// Scanned numbers and whitespace are as long as
+	// possible, so a character c1 or c2 could not
+	// be part of a preceeding number or whitespace.
+	// Exceptions to this rule are made if:
+	//
+	//	(1) c1 and c2 are both preceeded by
+	//	    an equal sign character, + or -,
+	//	    that may start a number
+	//      (2) c1 and c2 are both whitespace
+	//          characters and are preceeded by
+	//          identical whitespace
+	//
+	// Furthermore, one of these things preceeds c1
+	// in file1 iff the same kind of thing preceeds
+	// c2 in file2.
+
         if ( c1 == EOF )
 	{
 	    if ( c2 == EOF ) break;
@@ -399,6 +477,10 @@ int main ( int argc, char ** argv )
 			if ( file1.linebreaks > 0 )
 			    linebreak = true;
 		    }
+
+		    // If c1 and c2 are both != white-
+		    // space characters, we leave them
+		    // for later processig.
 		}
 		else if ( isspace ( c2 ) )
 		{
@@ -447,7 +529,8 @@ int main ( int argc, char ** argv )
 
 			diffnumber ( file1, file2,
 			             nonblank, number,
-				     number_diff );
+				     number_absdiff,
+				     number_reldiff );
 		        if ( nonblank ) break;
 		    }
 		}
@@ -465,15 +548,17 @@ int main ( int argc, char ** argv )
 
 		    diffnumber ( file1, file2,
 				 nonblank, number,
-				 number_diff );
+				 number_absdiff,
+				 number_reldiff );
 		    if ( nonblank ) break;
 		}
 	    }
 	    else
 	    {
-	        // Matching signs beginning numbers
-		// are ignored, as only absolute
-		// values of numbers are diffed.
+	        // If c1 and c2 are matching signs we
+		// do not include them in numbers, as
+		// in this case only absolute values of
+		// the numbers need to be diffed.
 
 	    	c1 = getc ( file1 );
 		c2 = getc ( file2 );
@@ -497,7 +582,8 @@ int main ( int argc, char ** argv )
 	{
 	    diffnumber ( file1, file2,
 			 nonblank, number,
-			 number_diff );
+			 number_absdiff,
+			 number_reldiff );
 	    if ( nonblank ) break;
 	}
         else
@@ -535,7 +621,8 @@ int main ( int argc, char ** argv )
     }
     if ( number ) {
     	cout << (any ? " number " : "number ")
-	     << number_diff;
+	     << number_absdiff << " "
+	     << number_reldiff;
 	any = true;
     }
     if ( nonblank ) {
