@@ -2,7 +2,7 @@
  *
  * File:	hpcm_sendmail.c
  * Authors:	Bob Walton (walton@deas.harvard.edu)
- * Date:	Wed Nov 15 10:50:05 EST 2000
+ * Date:	Mon Jan 14 07:27:32 EST 2002
  *
  * The authors have placed this program in the public
  * domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
  * RCS Info (may not be true date or author):
  *
  *   $Author: hc3 $
- *   $Date: 2000/11/15 16:01:00 $
+ *   $Date: 2002/01/14 12:38:05 $
  *   $RCSfile: hpcm_sendmail.c,v $
- *   $Revision: 1.8 $
+ *   $Revision: 1.9 $
  */
 
 #include <stdlib.h>
@@ -49,7 +49,8 @@
 #endif
 
 char documentation [] =
-"cat your_mail_file | hpcm_sendmail\n"
+"cat your_mail_file | hpcm_sendmail"
+	" [contest-directory]\n"
 "\n"
 "    This program performs the same functions as:\n"
 "\n"
@@ -61,9 +62,15 @@ char documentation [] =
 "    will ensure that replies are sent to the sender.\n"
 "\n"
 "    This program is normally setuid to a judging\n"
-"    account so it can read certain authetication\n"
+"    account so it can read certain authentication\n"
 "    information files that are not available to the\n"
 "    sender.\n"
+"\n"
+"    This program uses `~/.hpcm_contest by default as\n"
+"    the name of the contest directory that contains\n"
+"    the secure/hpcm_sendmail.rc file this program\n"
+"    needs to find the `To:' field and compute au-\n"
+"    thentication.\n"
 "\n"
 "    The program will write an error message on the\n"
 "    standard error output if any system call is in\n"
@@ -76,9 +83,10 @@ char * sendmail_env[]  = { SENDMAIL_ENV, NULL };
 
 void errno_exit ( char * m )
 {
-    fprintf ( stderr, "hpcm_sendmail: system call error:"
-                      " %s:\n    %s\n",
-		      m, strerror ( errno ) );
+    fprintf ( stderr,
+              "hpcm_sendmail: system call error:"
+	      " %s:\n    %s\n",
+	      m, strerror ( errno ) );
     exit ( errno );
 }
 
@@ -324,8 +332,10 @@ int main ( int argc, char ** argv )
 
     /* Full hpcm_sendmail.rc file name:
 
-    	~/.hpcm_contest/secure/hpcm_sendmail.rc
+    	<contest-directory>/secure/hpcm_sendmail.rc
 
+    where <contest-directory> is the program first
+    argument, which defaults to "~/.hpcm_contest".
     */
     char rcfilename	[MAXLEN];
 
@@ -368,69 +378,99 @@ int main ( int argc, char ** argv )
     char signature	[MAXLEN];
 
 
-    /* If there are any arguments, print doc. */
+    /* If there are too many arguments or the first
+       matches -doc*, print documentation.
+    */
 
-    if ( argc > 1 )
+    if ( argc > 2
+         ||
+	 ( argc == 2
+	   &&
+	   strncmp ( "-doc", argv[1], 4 ) == 0 ) )
     {
         printf ( "%s", documentation );
 	exit ( 1 );
     }
 
     /* Compute rcfilename =
-          "~/.hpcm_contest/secure/hpcm_sendmail.rc"
-       after resolving symbolic link
-		~/.hpcm_contest
-       The name of the file after resolution must be 
-       usable by the effective user who will not be able
-       to access ~/.hpcm_contest directly.  Only the
-       real user can access ~/.hpcm_contest directly.
+          "<contest-directory>/secure/hpcm_sendmail.rc"
+       where <contest-directory> defaults to 
+       ~/.hpcm_contest.  Using the real user ID, the
+       contest directory is resolved if it is a symbol-
+       lic link, as unresolved name many not be access-
+       ible by the effective user.  E.g., only the real
+       user can access ~/.hpcm_contest directly.
     */
     if ( setreuid (-1, ruid) < 0 )
 	errno_exit ( "set ruid" );
     {
 	char * p;
-	char * home = getenv ( "HOME" );
 	int length;
-	char contestname [MAXLEN];
+	char * contest_directory;
+	char default_directory [MAXLEN];
 
-	if ( home == NULL ) {
-	    fprintf ( stderr,
-		      "hpcm_sendmail:"
-		      " cannot find `HOME'"
-		      " environment variable\n" );
-	    exit ( 1 );
+	/* Compute contest directory name.
+	*/
+	if ( argc == 2 ) {
+	    contest_directory = argv[1];
+	} else {
+
+	    /* Compute the ~ expansion of
+	       ~/.hpcm_contest in default_directory.
+	    */
+	    char * home = getenv ( "HOME" );
+	    if ( home == NULL ) {
+		fprintf ( stderr,
+			  "hpcm_sendmail:"
+			  " cannot find `HOME'"
+			  " environment variable\n" );
+		exit ( 1 );
+	    }
+
+	    if ( strlen ( home )
+		 > sizeof ( default_directory ) - 100 )
+		too_big_exit
+		    ( "HOME environment variable" );
+	    strcpy ( default_directory, home );
+
+	    p = default_directory
+	      + strlen ( default_directory );
+	    strcpy ( p, "/.hpcm_contest" );
+	    contest_directory = default_directory;
 	}
 
-	if ( strlen ( home )
-	     > sizeof ( contestname ) - 100 )
-	    too_big_exit
-		( "HOME environment variable" );
-	strcpy ( contestname, home );
-
-	p = contestname + strlen ( contestname );
-	strcpy ( p, "/.hpcm_contest" );
-	length = readlink ( contestname,
+	/* Resolve symbolic link if any.
+	*/
+	length = readlink ( contest_directory,
 			    rcfilename,
 		            sizeof ( rcfilename ) );
-	if ( length < 0 )
-	    errno_exit ( ".hpcm_contest link name" );
-	if ( length == 0 ) {
-	    fprintf ( stderr,
-		      "empty .hpcm_contest link"
-		      "name\n" );
-	    exit ( 1 );
+	
+	if ( errno == EINVAL ) {
+	    length = strlen ( contest_directory );
+	    if ( length > sizeof ( rcfilename ) - 50 )
+		too_big_exit
+		    ( "contest directory name" );
+	    strcpy ( rcfilename, contest_directory );
+	} else {
+	    if ( length < 0 )
+		errno_exit
+		    ( "contest directory link name" );
+	    if ( length == 0 ) {
+		fprintf ( stderr,
+			  "empty contest directory link"
+			  " name\n" );
+		exit ( 1 );
+	    }
+	    if ( length > sizeof ( rcfilename ) - 50 )
+		too_big_exit
+		    ( "contest directory link target"
+		      " name" );
 	}
-	if ( length > sizeof ( rcfilename ) - 50 )
-	    too_big_exit
-		( ".hpcm_contest target name" );
+
+	/* Flush out rcfilename.
+	*/
 	strcpy ( rcfilename + length,
 		 "/secure/hpcm_sendmail.rc" );
-	if ( rcfilename[0] != '/' ) {
-	    fprintf ( stderr,
-		      "non-absolute .hpcm_contest link"
-		      "name\n" );
-	    exit ( 1 );
-	}
     }
     if ( setreuid (-1, euid) < 0 )
 	errno_exit ( "set euid" );
@@ -444,8 +484,15 @@ int main ( int argc, char ** argv )
 	if ( rcfile == NULL ) {
 	    fprintf ( stderr,
 		      "hpcm_sendmail:"
-		      " cannot open %s\n",
+		      " cannot open %s for reading\n",
 		      rcfilename );
+	    if ( rcfilename[0] != '/' )
+		fprintf ( stderr,
+			  "problem may be that the"
+			  " contest directory or its"
+			  " link resolution is not an"
+			  " absolute pathname\n" );
+
 	    errno_exit
 		( "opening hpcm_sendmail.rc" );
 	}
