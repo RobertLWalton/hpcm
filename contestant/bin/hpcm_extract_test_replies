@@ -1,0 +1,161 @@
+#!/bin/sh
+#
+# Extract test replies from mail.
+#
+# File:		hpcm_extract_test_replies
+# Author:	Bob Walton <walton@deas.harvard.edu>
+# Date:		Tue Feb 12 06:08:54 EST 2002
+#
+# The authors have placed this program in the public
+# domain; they make no warranty and accept no liability
+# for this program.
+#
+# RCS Info (may not be true date or author):
+#
+#   $Author: hc3 $
+#   $Date: 2002/02/12 11:08:53 $
+#   $RCSfile: hpcm_extract_test_replies,v $
+#   $Revision: 1.1 $
+
+# If this is not bash and bash is available, switch
+# to using bash.  Note that `which bash` may output
+# a grubby error message and no error code if bash
+# does not exist.  Non-bash sh'es cannot handle the
+# -r option to read and perform unwanted backslash
+# interpretation in echo.
+#
+bash=`which bash 2>/dev/null`
+if test "$BASH" = "" -a "$bash" != "" -a -x "$bash"
+then
+    exec bash "$0" "$@"
+fi
+
+# Print documentation if argument.
+#
+case "$1" in
+    ?*)
+	echo "
+extract_test_replies <mbox-file
+
+    Reads mail from the standard input and divides it
+    into messages.  For each message, if the message has
+    an X-HPCM-Test-Subject that begins with \`NAME:'
+    surrounded by whitespace, this program copies the
+    message into a file named \`NAME.reply' if no such
+    file exists, or \`NAME.reply+' otherwise."
+
+	exit 1
+	;;
+esac
+
+# Mode is one of:
+#
+#	header		Reading and saving header
+#	copy		Reading and copying lines
+#			until next header or eof
+#	look		Looking for header, while
+#			skipping lines
+#
+mode=look
+header=
+
+# Loop through lines of stdin.
+#
+while test x = x
+do
+    # Read puts line in '$REPLY' and sets '$?' non-zero
+    # iff there is an eof.
+    #
+    read -r
+
+    if test $? -ne 0
+    then
+	if test $mode = copy
+	then
+	    # End of file being extracted.  Close fd 3.
+	    #
+	    exec 3>&-
+	    echo "\`$file' extracted successfully."
+	fi
+	break
+    fi
+
+    case $mode in
+
+    look)
+        # When `From ' line found, switch to header.
+	#
+    	case "$REPLY" in
+
+	From\ *)
+	    header=
+	    mode=header
+	    ;;
+	esac
+	;;
+
+    header)
+        # Save lines of header.  If satisfactory X-HPCM-
+	# Test-Subject line found, switch to copy mode.
+	#
+	header="$header\n$REPLY"
+
+    	case "$REPLY" in
+
+	X-HPCM-Test-Subject:*)
+	    # If field begins with `name:' then switch
+	    # mode.
+	    #
+	    WS="[ 	]"
+	    NC="[^ 	:]"
+	    MATCH="[Xx]-[Hh][Pp][Cc][Mm]"
+	    MATCH="${MATCH}-[Tt][Ee][Ss][Ts]"
+	    MATCH="${MATCH}-[Ss][Uu][Bb][Jj]"
+	    MATCH="${MATCH}[Ee][Cc][Tt]"
+	    MATCH="${MATCH}:${WS}${WS}*"
+	    MATCH="${MATCH}:"'\('"${NC}*"'\):'
+	    name=`expr "$REPLY" : "${MATCH}"'$' `
+	    if test $name = ""
+	    then
+		name=`expr "$REPLY" : "${MATCH}${WS}" `
+	    fi
+	    if test $name != ""
+	    then
+		file=${name}.reply
+		if test -e $file
+		then
+		    file="${file}+"
+		    rm -f $file
+		fi
+		if exec 3>"$file"
+		then
+		    echo "$header" >&3
+		    mode=copy
+		else
+		    echo "ERROR: could not open" \
+		         "\`$file' for writing."
+		    mode=look
+		fi
+	    fi
+	    ;;
+	esac
+	;;
+
+    copy)
+        # When `From ' line found, close output and
+	# switch to header.
+	#
+    	case "$REPLY" in
+
+	From\ *)
+	    exec 3>&-
+	    echo "\`$file' extracted successfully."
+	    header=
+	    mode=header
+	    ;;
+	esac
+	;;
+    esac
+done
+
+exit 0
