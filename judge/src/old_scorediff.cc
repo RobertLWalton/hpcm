@@ -1,4 +1,26 @@
+// Programming Contest File Difference Tester
+//
+// File:	scorediff.cc
+// Authors:	Bob Walton (walton@deas.harvard.edu)
+// Date:	Sat Aug 12 09:41:03 EDT 2000
+//
+// The authors have placed this program in the public
+// domain; they make no warranty and accept no liability
+// for this program.
+//
+// RCS Info (may not be true date or author):
+//
+//   $Author: acm-cont $
+//   $Date: 2000/08/12 15:20:59 $
+//   $RCSfile: old_scorediff.cc,v $
+//   $Revision: 1.4 $
+
+#include <stdlib.h>
 #include <iostream.h>
+#include <fstream.h>
+#include <ctype.h>
+#include <string.h>
+#include <assert.h>
 
 char documentation [] =
 "scorediff output_file test_file\n"
@@ -13,8 +35,8 @@ char documentation [] =
 "    linebreak	One file had a line break where the\n"
 "		other file did not.\n"
 "    whitespace	Both files had whitespace in the same\n"
-"		place, but there was differing amounts\n"
-"		of whitespace.\n"
+"		place, but there these whitespaces\n"
+"		did not exactly match.\n"
 "    eof1	The first file ended and the second\n"
 "		file had remaining non-space\n"
 "		characters.\n"
@@ -22,61 +44,84 @@ char documentation [] =
 "		file had remaining non-space\n"
 "		characters.\n"
 "    number D	Two files had a number in the same\n"
-"		place, but the numbers were not repre-\n"
-"		sented by the same character string,\n"
-"		and the maximum absolute value of the\n"
-"		difference of all such number pairs\n"
-"		was D.\n"
-"    nonblank	There were different characters at\n"
-"		some place in the file other than\n"
-"		those in whitespace or numbers.\n"
+"		place, but the numbers were not\n"
+"		represented by the same character\n"
+"		string, and the maximum absolute\n"
+"		value of the difference of all such\n"
+"		number pairs was D.\n"
+"    nonblank	There were different non-whitespace\n"
+"		characters at some place in the file\n"
+"		than those in numbers.\n"
 "\n"
 "    The files are parsed into whitespace, numbers,\n"
-"    and other characters.  A number begins with an\n"
-"    optional sign followed by an optional decimal\n"
-"    point followed by a digit.  A number is scanned\n"
-"    by the strtod(3) function.\n" ;
+"    and other characters.  A number is an optional\n"
+"    sign followed by digits containing an optional\n"
+"    decimal point followed by an optional exponent.\n"
+"    An exponent is an `e' or `E' followed by an\n"
+"    an optional sign followed by digits.  A number\n"
+"    is scanned by the strtod(3) function.\n" ;
+
+inline double abs ( double v )
+{
+    return v < 0 ? -v : v;
+}
 
 struct file
 {
-    FILE stream;
-    int linebreaks;
+    ifstream stream;	// Input stream.
 
+    // Set by scanspace:
+
+    int linebreaks;	// Number of `\n's scanned.
+
+    // Set by Scannumber:
+
+    bool isnumber;	// True iff a number is found.
+    double number;	// The value any found number.
     char buffer [ 4000 ];
-    char * end;
+    			// The character string of
+    			// any found number.
+    char * end;		// Points to the `\0' at the
+    			// end of any string in the
+			// buffer.
 
-    char backup [ 5 ];
-    char * back;
+    // Set to backup in input string:
 
-    double number;
-    bool isnumber;
+    char * back;	// If pointing at `\0', there
+    			// are no backed up characters
+			// to deliver.  Otherwise
+			// use `* back ++' to input
+			// next character.
+    char backup [ 5 ];  // Buffer of backed up char-
+    			// acters into which `back'
+			// points.
 };
 
-int open ( & file f, char * filename )
+int open ( file & f, char * filename )
 {
-    f.stream = fopen ( filename, "r" );
+    f.stream.open ( filename );
 
-    if ( f.steam == 0 ) {
-        cout << "ERROR: " << strerror ( errno ) << eol;
-	cout << "       on opening " << filename;
+    if ( ! f.stream ) {
+        cout << "ERROR: not readable: "
+	     << filename << endl;
     	exit ( 1 );
     }
 
-    back = backup;
-    * back = 0;
+    f.back = f.backup;
+    * f.back = 0;
 }
 
 inline int getc ( file & f )
 {
-    int c = * back;
+    int c = * f.back;
 
     if ( c != 0 )
     {
-        ++ back;
+        ++ f.back;
         return c;
     }
     else
-        return fgetc ( f.stream );
+        return f.stream.get();
 }
 
 int scanspace ( file & f, int c )
@@ -90,16 +135,19 @@ int scanspace ( file & f, int c )
     return c;
 }
 
-int scannumber ( file & f, int c )
+int scannumber ( file & f, int c1, int c2 = 0 )
 {
-    f.end = f.buffer;
-    * f.end ++ = c;
+    char * limit = f.buffer + sizeof ( f.buffer ) - 1;
 
-    bool found_point = ( c == '.' );
-    bool found_digit = isdigit ( c );
+    f.end = f.buffer;
+    * f.end ++ = c1;
+
+    bool found_point = ( c1 == '.' );
+    bool found_digit = isdigit ( c1 );
+
+    char c = ( c2 == 0 ? getc ( f ) : c2 );
 
     while (1) {
-        c = getc ( f );
 	if ( c == '.' )
 	{
 	    if ( found_point ) 
@@ -110,7 +158,10 @@ int scannumber ( file & f, int c )
 	    found_digit = true;
 	else break;
 
+	if ( f.end >= limit ) break;
+
 	* f.end ++ = c;
+        c = getc ( f );
     }
 
     if ( ! found_digit )
@@ -118,27 +169,31 @@ int scannumber ( file & f, int c )
     	* f.end = 0;
 	f.isnumber = false;
 
-	assert ( * back == 0 );
-	strcpy ( backup, buffer );
-	back = backup;
+	assert ( * f.back == 0 );
+	strcpy ( f.backup, f.buffer );
+	f.back = f.backup;
 
 	return c;
     }
 
-    if ( c == 'e' || c == 'E' )
+    if ( ( c == 'e' || c == 'E' )
+         &&
+	 f.end < limit - 20 )
     {
-    	char * endsave = end;
+    	char * endsave = f.end;
 
 	* f.end ++ = c;
 	c = getc ( f );
+
 	if ( c == '+' || c == '-' )
 	{
 	    * f.end ++ = c;
 	    c = getc ( f );
 	}
+
 	if ( isdigit ( c ) )
 	{
-	    while ( isdigit ( c ) )
+	    while ( isdigit ( c ) && f.end < limit )
 	    {
 		* f.end ++ = c;
 		c = getc ( f );
@@ -146,21 +201,20 @@ int scannumber ( file & f, int c )
 	}
 	else
 	{
-	    assert ( * back == 0 );
+	    assert ( * f.back == 0 );
 
 	    * f.end = 0;
-	    strcpy ( backup, endsave );
+	    strcpy ( f.backup, endsave );
 	    f.end = endsave;
 	    * endsave = 0;
-	    back = backup;
+	    f.back = f.backup;
 	}
     }
 
     f.isnumber = true;
 
     char * e;
-    f.number = strtod ( f.buffer, & e )
-
+    f.number = strtod ( f.buffer, & e );
     assert ( e == f.end );
 
     return c;
@@ -175,12 +229,12 @@ int main ( int argc, char ** argv )
 
     if ( argc != 3 )
     {
-        cout << document;
+        cout << documentation;
 	exit (1);
     }
 
-    file1.open ( argv[1] );
-    file2.open ( argv[2] );
+    open ( file1, argv[1] );
+    open ( file2, argv[2] );
 
     bool spacebreak	= false;
     bool linebreak	= false;
@@ -189,7 +243,11 @@ int main ( int argc, char ** argv )
     bool eof2		= false;
     bool number		= false;
     bool nonblank	= false;
+
     double number_diff	= 0.0;
+
+    c1 = getc ( file1 );
+    c2 = getc ( file2 );
 
     while (1)
     {
@@ -201,7 +259,8 @@ int main ( int argc, char ** argv )
 	    {
 		spacebreak = true;
 		c2 = scanspace ( file2, c2 );
-		if ( break2 > 0 ) linebreak = true;
+		if ( file2.linebreaks > 0 )
+		    linebreak = true;
 
 		if ( c2 == EOF ) break;
 	    }
@@ -221,17 +280,20 @@ int main ( int argc, char ** argv )
 
 		if ( isspace ( c1 ) )
 		{
-		    if ( isspace ( c2 ) ) continue;
-
-		    whitespace = true;
-		    c1 = scanspace ( file1, c1 );
-		    if ( break1 > 0 ) linebreak = true;
-
-		} else if ( isspace ( c2 ) )
+		    if ( ! isspace ( c2 ) )
+		    {
+			whitespace = true;
+			c1 = scanspace ( file1, c1 );
+			if ( file1.linebreaks > 0 )
+			    linebreak = true;
+		    }
+		}
+		else if ( isspace ( c2 ) )
 		{
 		    whitespace = true;
 		    c2 = scanspace ( file2, c2 );
-		    if ( break2 > 0 ) linebreak = true;
+		    if ( file2.linebreaks > 0 )
+			linebreak = true;
 		}
 	    }
 	    else if ( isspace ( c2 ) )
@@ -241,27 +303,29 @@ int main ( int argc, char ** argv )
 	        c1 = scanspace ( file1, c1 );
 	        c2 = scanspace ( file2, c2 );
 
-		if ( break1 != break2 )
+		if ( file1.linebreaks
+			!= file2.linebreaks )
 		    linebreak = true;
 	    }
 	    else
 	    {
 	        spacebreak = true;
 		c1 = scanspace ( file1, c1 );
-		if ( break1 > 0 ) linebreak = true;
+		if ( file1.linebreaks > 0 )
+		    linebreak = true;
 	    }
      	}
 	else if  (c1 == c2 )
 	{
 	    if ( c1 == '.' )
 	    {
-	    	c1 = gets ( file1.stream );
-		c2 = gets ( file2.stream );
+	    	c1 = getc ( file1 );
+		c2 = getc ( file2 );
 
 		if ( isdigit ( c1 )  && isdigit ( c2 ) )
 		{
-		    c1 = scannumber ( file1, c1 );
-		    c2 = scannumber ( file2, c2 );
+		    c1 = scannumber ( file1, '.', c1 );
+		    c2 = scannumber ( file2, '.', c2 );
 		    if ( strcmp ( file1.buffer,
 		                  file2.buffer )
 			 != 0 )
@@ -278,7 +342,7 @@ int main ( int argc, char ** argv )
 	    else if ( isdigit ( c1 ) )
 	    {
 		c1 = scannumber ( file1, c1 );
-		c2 = scannumber ( file2, c1 );
+		c2 = scannumber ( file2, c2 );
 		if ( strcmp ( file1.buffer,
 			      file2.buffer )
 		     != 0 )
@@ -292,6 +356,10 @@ int main ( int argc, char ** argv )
 	    }
 	    else
 	    {
+	        // Matching signs beginning numbers
+		// are ignored, as only absolute
+		// values of numbers are diffed.
+
 	    	c1 = getc ( file1 );
 		c2 = getc ( file2 );
 	    }
@@ -300,8 +368,14 @@ int main ( int argc, char ** argv )
 	{
 	    spacebreak = true;
 	    c2 = scanspace ( file2, c2 );
-	    if ( break2 > 0 ) linebreak = true;
+	    if ( file2.linebreaks > 0 )
+		linebreak = true;
      	}
+	else if ( c2 == EOF )
+	{
+	    eof2 = true;
+	    break;
+	}
 	else if ( ( c1 = scannumber ( file1, c1 ),
 		    c2 = scannumber ( file2, c2 ),
 		    file1.isnumber && file2.isnumber ) )
@@ -350,5 +424,7 @@ int main ( int argc, char ** argv )
     	cout << (any ? " nonblank" : "nonblank");
 	any = true;
     }
-    cout << (any ? "" : "none") << eol;
+    cout << (any ? "" : "none") << endl;
+
+    return 0;
 }
