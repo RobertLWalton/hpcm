@@ -7,7 +7,7 @@
 #
 # File:		tracker
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat May 18 03:54:22 EDT 2002
+# Date:		Sat May 18 04:53:22 EDT 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -16,9 +16,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/05/18 08:48:52 $
+#   $Date: 2002/05/18 08:59:12 $
 #   $RCSfile: tracker,v $
-#   $Revision: 1.26 $
+#   $Revision: 1.27 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -721,13 +721,16 @@ proc clear_list {} {
     set directory_list_length	0
 }
 
-# All the add_xxx functions return a printable
-# summary string that contains two lines per directory.
+# All the add_xxx functions return a printable summary
+# string that contains EXACTLY two lines per directory.
 # There is a blank line (initial \n) at the beginning
 # of the returned string and NO \n after the last line.
 
 # Add directories with unchecked errors to directory
-# list, and return printable summary string.
+# list, and return printable summary string.  Director-
+# ies are listed so ones with the oldest unchecked error
+# files are first.  The oldest error file is named for
+# each directory.
 #
 proc add_err {} {
 
@@ -738,20 +741,17 @@ proc add_err {} {
     foreach dir [lsort [array names err_array]] {
         set files [lsort $err_array($dir)]
 	if { [llength $files] == 0 } continue
-	lappend items [list [lindex $files 0] \
-			    $dir $files]
+	lappend items [list [lindex $files 0] $dir]
     }
     set result ""
     foreach item [lsort $items] {
-        set dir   [lindex $item 1]
-        set files [lindex $item 2]
+        set file [lindex $item 0]
+        set dir  [lindex $item 1]
 	lappend directory_list $dir
 	incr directory_list_length
 	set result "$result\n[format {%3d. %s} \
 	     $directory_list_length $dir]"
-	foreach file $files {
-	    set result "$result\n         $file"
-	}
+	set result "$result\n         $file"
     }
 
     return $result
