@@ -1,0 +1,221 @@
+3D GEOMETRY PROBLEM HELP    Sat Sep  1 08:24:15 EDT 2001
+
+Read Plain Geometry Help first.
+
+
+Basics
+------
+
+The basics of 3D geometry are identical to the basics
+of plane geometry.  We review.
+
+If
+	p = (px,py,pz) and q = (qx,qy,qz)
+	
+be points in space, the difference
+
+	v = (vx,vy,vz) = p - q = (px-qx,py-qy,pz-qz)
+	
+is the vector from p to q.  Its length is
+
+	|v| = sqrt( vx**2 + vy**2 + vz**2 )
+
+The scalar product of two vectors
+
+	u = (ux,uy,uz) and v = (vx,vy,vz)
+
+is
+
+	u.v = ux*vx + uy*vy + uz*vz
+
+	    = |u| |v| cos(theta)
+
+where theta is the angle between u and v, measured in
+the plane through the common origin of u and v and the
+end points of u and v.  The sign of theta does not
+matter because cos(theta) = cos(-theta).  Note that
+
+	|v| = sqrt (v.v)
+
+Note that u.v = 0 iff u and v are orthogonal (at right
+angles) to each other, i.e., if theta = + or - 90
+degrees and cos(theta) = 0.
+
+A `unit' vector v is a vector of length 1 ( |v| = 1 ).
+If u, v, and w are unit vectors at right angles to each
+other, which is the same as saying that
+
+	|u| = 1,  |v| = 1,  |w| = 1
+	u.v = 0,  v.w = 0,  v.u = 0
+
+then one can ask what the coordinates of a point p would
+be in the coordinate system in which u points in the
+positive direction of the x axis, v points in the pos-
+itive direction of the y axis, and w points in the pos-
+itive direction of the z axis.  The answer is
+
+	(u.p, v.p, w.p)
+
+Note that
+
+	| u.p |   | ux  uy  uz | | px |
+	|     |   |            | |    |
+	| v.p | = | vx  vy  uz | | py |
+	|     |   |            | |    |
+	| w.p |   | wx  wy  wz | | pz |
+
+so u and v are the rows of the 2x2 matrix which by left
+multiplication translates from old xy coordinates to new
+uv axis coordinates.
+
+If u is a unit vector, we call (u.v)u the projection of
+v onto u.  Taking vectors as denoting points (the ends
+of the vectors if all have the same origin), then the
+projection of v onto u is the point on the line along u
+that is closest to the point v.  That is, u.v is the
+number K which minimizes | v - Ku |.  You can check this
+with a little algebra.
+
+In 3D rotations occur around an axis.  The following
+is a rotation Rz(theta) around the z-axis of a vector
+v=(vx,vy,vz) by an angle theta:
+
+               |   cos(theta)   sin(theta)  0 | | vx |
+               |                              | |    |
+ Rz(theta).v = | - sin(theta)   cos(theta)  0 | | vy |
+               |                              | |    |
+	       |   0            0           1 | | vz |
+
+	      |   vx cos(theta) + vy sin(theta) |
+	      |                                 |
+	   =  | - vx sin(theta) + vy cos(theta) |
+	      |                                 |
+	      |               vz                |
+
+
+Most particularly, if theta = 90 degrees, then
+
+		
+	                 |  0   1  0 |
+	                 |           |
+	Rz(90 degrees) = | -1   0  0 |
+	                 |           |
+	                 |  0   0  1 |
+	
+
+        Rz(90 degrees).v =  (vy,-vx,vz)
+
+We can see from this last that the signs in the
+sin(theta) elements of the rotation matrix been
+choosen so that if the x-axis goes toward your right,
+the z-axis goes up, and the y-axis goes away from you,
+then a rotation with theta > 0 is clockwise looking
+down on the xy-plane.
+
+One can also write matrices easily for rotations about
+the x-axis or y-axis.
+
+Next we ask: suppose we are given a unit vector w.  Can
+we find a coordinate system u, v, w.  That is, can be
+find unit vectors u and v such that u, v, and w are all
+orthogonal to each other.
+
+First we find any unit vector v orthogonal to w.  To do
+this we pick a candidate v' and compute
+
+	v'' = v' - (v'.w)w
+
+Then v''.w = 0 and therefore
+
+	     v''
+	v = -----
+            |v''|
+
+is a unit vector orthogonal to w.  HOWEVER, what if
+|v''| is nearly zero.  We must avoid this situation as
+it will lead to inaccuracies or computational failure.
+
+We do this by trying the following three values of for
+v':
+
+	ix = (1,0,0)
+	iy = (0,1,0)
+	iz = (0,0,1)
+
+If |v''| is near zero, then v' must be nearly parallel
+to w.  But not all three of these ix, iy, and iz can be
+nearly parallel to w, so we can choose one of them to be
+v' and have |v''| not be very small.
+
+Thus we have found a suitable v.  To find u one plays
+the same game.  Choose u' and compute
+
+	u'' = u - (u.v)v - (u.w)w
+
+and
+
+	     u''
+	u = -----
+	    |u''|
+
+To avoid too small a value of u'', try using all ix, iy,
+and iz as u'.  One will give a non-small value of |u''|.
+
+These are all the basics you need to know for 3D.
+
+
+Closest Point of Two Lines
+------- ----- -- --- -----
+
+Suppose we want to find the closest point of approach
+of two infinite lines L1 and L2.
+
+If one of the lines L1 is parallel to the z-axis, then
+for each point p2 on the other line L2, the point p1 on
+L1 that is closest to p2 has the same z coordinate as
+p2.  From this it follows that the distance between L1
+and L2 is the same as the distance between the projec-
+tion of L1 and L2 on the xy-plane.  The projection of
+L1 on the xy-plane is just a single point; while the
+projection of L2 is in general an infinite line.  The
+problem of finding the distance between a point and
+an infinite line is assumed here to be a solved problem
+for both 2D and 3D.
+
+So we can solve the problem if we can find a coordinate
+system in which L1 is parallel to the z-axis.  This can
+be done by taking the unit vector w in the direction of
+L1 and finding u and v such that u,v,w are orthoginal
+unit vectors: see above.
+
+Now consider the problem of finding how close two finite
+lines L1 and L2 are.  Let L1 be parallel to the z-axis,
+and let its end points p1 and p2 have coordinates z1 and
+z2, with z1 < z2.  Then break L2 into three parts:
+
+    L2a = the part of L2 in the z-halfspace z <= z1
+    L2b = the part of L2 in z-partspace z1 <= z <= z2
+    L2c = the part of L2 in the z-halfspace z2 <= z
+
+Then the nearest point on L1 to any point on L2a is p1,
+so the distance from L2a to L1 is the distance from p1
+to L2a.  The nearest point on L1 to any point on L2b
+has the same z coordinate as the point on L2b, so the
+distance from L2b to L1 is the distance of the project-
+tions of L2b and L1 on the xy-plane.  The projection of
+L1 is a single point, so this is the 2D distance between
+a finite line and a point.  Lastly the distance from L2c
+to L1 is the distance from L2c to p2.  Taking the mimi-
+mum of the three distances from L2a, L2b, and L2c to L1
+gives the distance from L2 to L1.
+
+This gives an idea of how things can get complex in 3D.
+
+Robot Arms
+----- ----
+
+Robot arms in 3D can have the positions of their pivot
+points computed just like planar robot arms.  The only
+difference is that each servo is generally oriented
+along some axis, e.g. the z-axis, and the rotation
+defined by the servo is around the servo's axis.
