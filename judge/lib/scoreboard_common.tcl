@@ -5,7 +5,7 @@
 #
 # File:		scoreboard_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Feb  7 19:52:53 EST 2002
+# Date:		Fri Feb  8 03:35:05 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/02/08 01:59:48 $
+#   $Date: 2002/02/08 08:48:48 $
 #   $RCSfile: scoreboard_common.tcl,v $
-#   $Revision: 1.29 $
+#   $Revision: 1.30 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -383,10 +383,6 @@ proc prune_scoreboard_array { } {
     }
 }
 
-# Sort the problems alphabetically.
-#
-set sorted_problems [lsort $problems]
-
 # Return a time in 6 characters or less, the last
 # character indicating unit.  The format is either
 #
@@ -395,7 +391,7 @@ set sorted_problems [lsort $problems]
 #	DD:HHh		h = denotes hours
 #	DDDDDd		d = denotes days
 #
-proc format_time { time } {
+proc format_scoreboard_time { time } {
     set MM [expr { $time / 60 }]
     set SS [expr { $time - 60 * $MM } ] 
     set HH [expr { $MM / 60 }]
@@ -442,17 +438,6 @@ proc format_time { time } {
 #
 set score_list ""
 set max_time_score 999999999
-
-# Which codes are correct and incorrect (others
-# are ignored.
-# 
-if { $scoring_mode == "manual" } {
-	set ccodes {mc ac}
-	set icodes {mi}
-} else {
-	set ccodes {mc ac}
-	set icodes {mi ai}
-}
 
 foreach submitter $submitters {
 
