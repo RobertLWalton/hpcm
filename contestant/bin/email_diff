@@ -1,0 +1,133 @@
+#!/bin/sh
+#
+# Check email files for differences after filtering out
+# header lines.
+#
+# File:		email_diff
+# Author:	Bob Walton (walton@deas.harvard.edu)
+# Date:		Thu Feb 12 20:47:20 EST 2004
+#
+# The authors have placed this program in the public
+# domain; they make no warranty and accept no liability
+# for this program.
+#
+# RCS Info (may not be true date or author):
+#
+#   $Author: hc3 $
+#   $Date: 2004/02/13 02:43:41 $
+#   $RCSfile: email_diff,v $
+#   $Revision: 1.1 $
+#
+# The next line starts tcl \
+exec tcl "$0" "$@"
+
+# Use tcl rather than tclsh so that `signal' is defined.
+
+# This is a utility program that does NOT have to run
+# in a judging directory tree.
+
+set document "
+email_diff file1 file2 \[-b\] header1 header2 ...
+
+    Check whether file1 and file2 differ after all
+    header lines beginning with `header1', `header2',
+    etc. have been removed.  Exits with 0 status code if
+    there are no differences; otherwise exits with
+    status code 1 and notates the first difference in
+    the standard error output, giving the lines that are
+    different.
+
+    If the -b option is provided, the entire file is
+    treated as a header, even if it contains empty
+    lines.
+
+    Unlike most HPCM judging programs, this program does
+    not read any hpcm_judging.rc file and errors made by
+    this program are not written to log files."
+
+# If less than 2 arguments given, print documentation
+# and exit.
+#
+if { $argc < 2 } {
+    puts $document
+    exit 1
+}
+
+set file1 [lindex $argv 0]
+set file2 [lindex $argv 1]
+set ch1 [open $file1 r]
+set ch2 [open $file2 r]
+
+set b_option [expr { [lindex $argv 2] == "-b" }]
+if { $b_option } {
+    set headers [lrange $argv 3 end]
+} else {
+    set headers [lrange $argv 2 end]
+}
+
+# Get next line from channel.  state is the name of
+# a variable that is initialized to "header".  count
+# is the name of a line count variable initialized
+# to 0.
+#
+proc next_line { ch state count } {
+    global headers b_option
+
+    upvar $state s
+    upvar $count c
+
+    while { "yes" } {
+	set line [gets $ch]
+	if { [eof $ch] } { return "" }
+	incr c
+	if { $s == "body" } { return $line }
+	if { $line == "" && ! $b_option } {
+	    set s body
+	    return $line
+	}
+	if { [regexp "^\[ \t\]" $line] } {
+	    if { $s == "skip" } {
+	    	continue
+	    } else { return $line }
+	}
+	set s header
+	foreach h $headers {
+	    if { [regexp -nocase "^$h" $line] } {
+		set s skip
+		break
+	    }
+	}
+	if { $s == "skip" } continue
+	return $line
+    }
+}
+
+set state1 header
+set state2 header
+set count1 0
+set count2 0
+while { "yes" } {
+
+    set line1 [next_line $ch1 state1 count1]
+    set line2 [next_line $ch2 state2 count2]
+    if { [eof $ch1] } {
+         if { [eof $ch2] } break
+
+	 puts stderr "$file1 is shorter than $file2"
+	 exit 1
+    } elseif { [eof $ch2] } {
+
+	 puts stderr "$file2 is shorter than $file1"
+	 exit 1
+    }
+
+    if { $line1 != $line2 } {
+	puts stderr \
+	     "$file1 and $file2 differ:"
+	puts stderr "$count1: $line1"
+	puts stderr "$count2: $line2"
+	exit 1
+    }
+}
+
+exit 0

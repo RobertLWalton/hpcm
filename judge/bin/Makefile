@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Feb  8 09:42:57 EST 2003
+# Date:		Thu Feb 12 21:41:11 EST 2004
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,14 +11,14 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2003/02/08 14:49:57 $
+#   $Date: 2004/02/13 02:42:37 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.23 $
+#   $Revision: 1.24 $
 
 all:	scorediff hpcm_sandbox_x hpcm_print_passwords \
 	hpcm_email_passwords chkpage \
 	hpcm_clisp.lsp hpcm_extract_test_replies \
-	filtered_diff hpcm_helper javahelp \
+	filtered_diff email_diff hpcm_helper javahelp \
 	check_security
 
 # Kill all implicit rules
@@ -91,6 +91,9 @@ hpcm_extract_test_replies:
 
 filtered_diff:
 	ln -s ../../contestant/bin/filtered_diff .
+
+email_diff:
+	ln -s ../../contestant/bin/email_diff .
 
 hpcm_helper:
 	ln -s ../../contestant/bin/hpcm_helper .

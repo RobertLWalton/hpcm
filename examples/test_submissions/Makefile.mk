@@ -2,7 +2,7 @@
 #
 # File:		Makefile.mk
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Mar 30 10:54:38 EST 2003
+# Date:		Thu Feb 12 21:13:15 EST 2004
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2003/03/30 16:11:27 $
+#   $Date: 2004/02/13 02:48:03 $
 #   $RCSfile: Makefile.mk,v $
-#   $Revision: 1.22 $
+#   $Revision: 1.23 $
 
 extract_replies:	mbox
 	rm -rf replies
@@ -25,14 +25,20 @@ extract_replies:	mbox
 #
 diff_replies:
 	r=`cd replies; ls *.reply`; for x in $$r; do \
-	  echo $$x; filtered_diff replies/$$x $R/$$x \
-	    DATE RECEIVED_BY RECEIVED MESSAGE_ID \
-	    TO CC REPLY_TO RETURN_PATH FROM ERROR \
-	    SUBMISSION STATUS \
-	    'RCSfile: .*,v' \
-	    'Revision: [0-9]+.[0-9]+ \$$' \
-	    'X-HPCM-Signature: .*' \
-	    'X-HPCM-Reply-To: .*'; \
+	  echo $$x; email_diff replies/$$x $R/$$x -b \
+	    "From " "Received:" "Return-Path:" \
+	    "Date:" "From:" "To:" "Reply-To:" \
+	    "Message-ID" \
+	    "Subject:.*unchecked-error" \
+	    ">From " \
+	    '#.*\$$Author: hc3 $$' \
+	    '#.*\$$Date: 2004/02/13 02:48:03 $$' \
+	    '#.*\$$RCSfile: Makefile.mk,v $$' \
+	    '#.*\$$Revision: 1.23 $$' \
+	    '//.*\$$Author: hc3 $$' \
+	    '//.*\$$Date: 2004/02/13 02:48:03 $$' \
+	    '//.*\$$RCSfile: Makefile.mk,v $$' \
+	    '//.*\$$Revision: 1.23 $$'; \
 	done
 
 test_email:	test_count_correct \
