@@ -1,5 +1,5 @@
 PLANAR GEOMETRY PROBLEM HELP
-			    Sat Aug 18 02:08:15 EDT 2001
+			    Fri Aug 31 17:34:44 EDT 2001
 
 For some reason many young computer scientists think
 that geometry problems are hard, and avoid them.  The
@@ -30,17 +30,19 @@ is
 
 	u.v = ux*vx + uy*vy
 
-	    = |u| |v| cos theta
+	    = |u| |v| cos(theta)
 
-where theta is the angle between u and v (the sign of
-theta does not matter because cos theta = cos -theta).
+where theta is the angle between u and v.  The sign of
+theta does not matter because cos(theta) = cos(-theta).
 Note that
 
 	|v| = sqrt (v.v)
 
 Note that u.v = 0 iff u and v are orthogonal (at right
-angles) to each other.
+angles) to each other, i.e., if theta = + or - 90
+degrees and cos(theta) = 0.
 
+A `unit' vector v is a vector of length 1 ( |v| = 1 ).
 If u and v are unit vectors at right angles to each
 other, which is the same as saying that
 
@@ -63,16 +65,24 @@ so u and v are the rows of the 2x2 matrix which by left
 multiplication translates from old xy coordinates to new
 uv axis coordinates.
 
+If u is a unit vector, we call (u.v)u the projection of
+v onto u.  Taking vectors as denoting points (the ends
+of the vectors if all have the same origin), then the
+projection of v onto u is the point on the line along u
+that is closest to the point v.  That is, u.v is the
+number K which minimizes | v - Ku |.  You can check this
+with a little algebra.
+
 A clockwise rotation R(theta) of a vector v=(vx,vy) by
 an angle theta is
 
-	             |   cos theta    sin theta | | vx |
-	R(theta).v = |                          | |    |
-	             | - sin theta    cos theta | | vy |
+	         |   cos(theta)   sin(theta) | | vx |
+    R(theta).v = |                           | |    |
+	         | - sin(theta)   cos(theta) | | vy |
 
-	      |   vx cos theta + vy sin theta |
-	    = |                               |
-	      | - vx sin theta + vy cos theta |
+	      |   vx cos(theta) + vy sin(theta) |
+	    = |                                 |
+	      | - vx sin(theta) + vy cos(theta) |
 
 Most particularly, if theta = 90 degrees, then
 
@@ -155,6 +165,26 @@ to the left of the line.  Note that necessarily p1 != p2
 and q1 != q2, as otherwise at least one line would not
 be defined.
 
+Inside Polygons
+------ --------
+
+Suppose we have a polygon whose vertices are p1, p2,
+..., pn in clockwise order.  Then a point r is inside
+the polygon but not on the boundary of the polygon
+iff r is to the right of each line from pj to pk where
+k = (j mod n) + 1.
+
+So when does a line from r1 to r2 intersect the inside
+of the polygon.  It does if the interior of the line
+from r1 to r2 intersects the interior of any line on the
+boundary of the polygon.  But there are other cases,
+where vertices of the polygon are on the line from r1
+to r2.  If we list the vertices of the polygon that
+are on the line from r1 to r2, in clockwise order, then
+unless these vertices are consecutive in the p1, p2,
+..., pn circular list, the line from r1 to r2 intersects
+the interior of the polygon.
+
 Polygon Maze
 ------- ----
 
@@ -170,9 +200,7 @@ is a shortest path in an undirected graph whose vertices
 are V such that given points r1 and r2 in V, there is
 an edge in this undirected graph between r1 and r2 iff
 the interior of the line from r1 to r2 does not inter-
-sect the interior of any line that is an edge of any
-polygon, and in this case the length of the edge is the
-distance between r1 and r2.
+sect the interior of the polygon.
 
 
 Circular Anti-Maze
