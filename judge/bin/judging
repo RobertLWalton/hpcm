@@ -4,7 +4,7 @@
 #
 # File:		judging
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Nov  9 08:33:13 EST 2001
+# Date:		Mon Nov 12 10:17:50 EST 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/11/09 14:05:24 $
+#   $Date: 2001/11/12 17:18:16 $
 #   $RCSfile: judging,v $
-#   $Revision: 1.5 $
+#   $Revision: 1.6 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -83,20 +83,36 @@ to store all mail in ~/hpcm_mbox, where JJJ is the
 judging account name and /home/JJJ is the home directory
 of that account.
 
-[TBD: turn on mail.]
+If you are using csh or tcsh, you may want to turn on
+mail notification by using
 
-If the judge may want to use facilities that are
-normally used by contestants or by auxilary judges,
-then it will be necessary to symbolically link
-~/.hpcm_contest to the contest directory.  E.g., use
+	set mail=(5 /var/spool/mail/$USER)
 
-    ln -s ~/contest... ~/.hpcm_contest
+This checks every 5 seconds for new mail and prints a
+message before the shell prompt if there is such mail.
+Note that because of the use of .procmailrc by the
+HPCM submission system, email sent to the judges by
+hpcm_sendmail will not be put in the judge's normal
+mailbox, and will not trigger this `new mail' message.
+However, contestants occassionally fail to follow the
+instruction to use hpcm_sendmail, and instead send mail
+directly to the judge.
 
+If judges may want to use facilities that are normally
+used by contestants or by auxilary judges, then it will
+be necessary to symbolically link ~/.hpcm_contest to
+the contest directory.  E.g., use
+
+    ln -s ~/contest_XXX ~/.hpcm_contest
+
+where XXX is the name of the contest.  Note that if the
+judging directory is being used for several contests,
+this will only work for one of these contests as a time.
 
 Hpcm must be installed in the judging directory: see
-the separate document `Installing HPCM'.  This typically
-installs HPCM in the ~/hpcm directory and puts the
-~/hpcm/judge/bin directory in the PATH of the judging
+the separate document `Installing HPCM'.  One typically
+installs HPCM in the `~/hpcm' directory and puts the
+`~/hpcm/judge/bin' directory in the PATH of the judging
 account.
 
 Making a Contest
@@ -113,8 +129,24 @@ want, and follow the instructions in
 Judging a Formal Contest
 ------- - ------ -------
 
-You should review Formal Contest Emergencies before
-judging a formal contest.
+You need sufficient manpower and communication to handle
+emergencies.  In our limited experience, a minor emer-
+gency happens about every other contest.  You need a
+person in reserve to troubleshoot emergencies, and you
+need a clear line of communication to the contestants.
+
+If you are running a distributed contest with a central
+judge, you the site managers should check in by calling
+the judge before the contest, to be sure they know the
+phone number and communications are working.  Since site
+managers tend to move around, it is helpful if they
+have cell phones, cordless phones, or beepers, or if
+some other emergency mechanism of communication is
+arranged, such as having the judge send a message to the
+site printer.
+
+You should review Formal Contest Emergencies below
+before judging a formal contest.
 
 After setting up the contest, one should do the
 following:
@@ -144,7 +176,7 @@ systems (RedHat Linux), this is done by root executing
 
 	gpasswd -a auxilary-account judging-group
 
-Next, one change the statement `source ~/...' near the
+Next, change the statement `source ~/...' near the
 beginning of the hpcm_judging.rc file in the judging
 directory to `source /home/JJJ/...', where JJJ is the
 name of the main judging account.  This is because the
@@ -161,15 +193,18 @@ might be done by putting
 in the .cshrc file of the auxilary account, for example,
 where JJJ is the name of the main judging account.
 
-Like the judging account, one should turn off autologout
-and set an appropriate umask (77 will do) in an auxilary
-account.
+Like the judging account, one should turn off auto-
+logout, set an appropriate umask (77 will do), and set
+the shell for new mail notification.
 
 In the auxilary account you need to link ~/.hpcm_contest
 to the contest directory in the main judging account,
 JJJ.  This can be done by
 
 	ln -s /home/JJJ/contest* ~/.hpcm_contest
+
+This is needed to enable the `sq' command in manual-
+reply: see below.
 
 So that the auxilarly judges can quickly find the
 judging directory, you may want to link it symbolically
@@ -179,9 +214,31 @@ do this by
 	ln -s /home/JJJ/judging* ~/judge
 
 
+During the contest an auxilary judge can examine sub-
+missions using the `lookat' command to invoke `manual-
+reply'.  In `manualreply', the auxilary judge can use
+the `sq' command to send a query or comment to the
+main contest judge about a particular submission.  The
+main judge can use the `xq' command to examine this
+submission.
+
+The auxilary judge can also send a query or comment to
+the main judge by editing the file foo and executing
+
+	~/.hpcm_contest/bin/hpcm_sendmail <foo
+
+In these cases the main judge will see the query or
+comment via the same process as the main judge sees
+queries from contestants, and will respond by the same
+process, with the response being email to the auxilary
+judge.
+
 
 Formal Contest Emergencies
 ------ ------- -----------
+
+Minor emergencies happen about every other contest, in
+our limited experience.  So you need to prepare.
 
 In order to prepare for formal emergencies, be sure
 you have manpower and means to contact the teams.  If
@@ -190,10 +247,13 @@ hand.  If you are working with distributed sites, be
 sure you have phone numbers for the site managers, and
 vice versa, and the phones are tested before the contest
 begins.  You may want site managers, who tend to roam,
-have cell phones (which could be borrowed).
+have cell phones, cordless phones, or beepers (which
+could be borrowed).  It may suffice to have a mechanism
+whereby the main judge can print a message for site
+managers on the site printers.
 
 To prepare to judge an formal contest that you really
-want to work, yout should read the documentation and
+want to work, you should read the documentation and
 in some cases the code of the very few programs that are
 involved in actual judging.  These are:
 
