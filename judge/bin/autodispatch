@@ -5,7 +5,7 @@
 #
 # File:		autodispatch
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Oct  4 23:38:44 EDT 2000
+# Date:		Tue Oct 24 21:57:03 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/10/05 04:06:55 $
+#   $Date: 2000/10/25 04:18:36 $
 #   $RCSfile: autodispatch,v $
-#   $Revision: 1.13 $
+#   $Revision: 1.14 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -52,19 +52,17 @@ autodispatch \[directory\] \[-force\]
     the `$judging_parameters_file' file or doing\
     anything else.
 
-    This program next creates the $dispatch_pid_file
-    file containing the process ID of this program's
-    process.  If this file already exists, this program
-    exits without error or output.
+    After this program reads the\
+			$judging_parameters_file file,
+    this program next creates the $dispatch_pid_file\
+				    file
+    containing the process ID of this program's process.
+    If this file already exists, this program exits
+    without error or output.
 
-    Otherwise this program makes its process into a
-    process group leader, so the UNIX command
-
-    	kill -INT -`cat $dispatch_pid_file`
-
-    will kill this process and all its subprocesses.
-    When this program exits, it deletes the
-    $dispatch_pid_file file.
+    When this program exits, it deletes the\
+		    $dispatch_pid_file
+    file.
 
     This program then exits without error or output if
     any of the files:
@@ -82,19 +80,34 @@ autodispatch \[directory\] \[-force\]
     mail in $received_file file.  If the mail is NOT
     authentic, this program produces an error log file
     and exits without error code or output.
-
-    Otherwise this program inspects the `Subject' line
-    in the current directory's $received_file file and
-    based on this may call one of the following:
+
+    Next this program inspects the `Subject' line in the
+    current directory's $received_file file and based on
+    this may call one of the following:
     
 	autojudge
 	autoinfo
 
-    If the `Subject' is not suitable for one of these
-    programs, this program does not call any other
-    program.  But if the reply mode is `auto', this
-    program will compose a reply indicating that
-    no-one will look at the message.
+    In general, it calls the program indicated by the
+    `autodispatch_map' array element for the first word
+    (list element) of the subject field, if the subject
+    field is not empty, and the array element is de-
+    fined.  If the array element is not defined, no pro-
+    gram is called.
+
+    If no program is called and if the reply mode is
+    `auto', this program will compose a reply.  If the
+    `reply_manager' variable is NOT \"\", the reply is
+    CC'ed to the value of this variable, and the reply
+    says the person at this email address may respond.
+    Otherwise, if the `reply_manager' variable is \"\",
+    the reply says that no-one will look at the mes-
+    sage.
+
+    If no program is called and if the reply mode is
+    NOT `auto', this program will set the `needs reply'
+    flag (the flag directory $needs_reply_flag_file\
+			    file).
 
     Finally this program exits without error or output,
     except for output produced by autojudge or other
@@ -161,19 +174,19 @@ if { [header_is_authentic] == "no" } {
 
 # Execute any program appropriate to the subject.
 #
-set program ""
-if { [llength $message_subject] >= 1 } {
-    switch -exact [lindex $message_subject 0] {
-        get	{ set program autoinfo }
-	submit	{ set program autojudge }
-    }
-}
+set s [lindex $message_subject 0]
+if { [llength $message_subject] >= 1 \
+     && [info exists autodispatch_map($s)] } {
+    exec $autodispatch_map($s) >@ stdout 2>@ stderr
 
-if { $program != "" } {
-    exec $program >@ stdout 2>@ stderr
+# Else if special error test request call error.
+#
 } elseif { [regexp {error test 908374693717092149} \
 		   $message_subject] } {
     error "Test of the error response system."
+
+# Else if `auto' reply_mode, reply.
+#
 } elseif { $reply_mode == "auto" } {
     if { $reply_manager != "" } {
 	reply -all -cc \
@@ -195,13 +208,16 @@ if { $program != "" } {
 	      "Please fix the subject field or\
 	       send the message elsewhere."
     }
+
+# Else if `auto+manual' reply mode: this is manual case,
+# and anther program will see there is no $reply_file,
+# no $no_reply_file, no $dispatch_pid_file, etc., and
+# that the subject is unsuitable for autodispatch, and
+# then this other program will schedule manual action.
+#
 } else {
     set_flag $needs_reply_flag_file
 }
-
-# If we did nothing, another program will see there
-# is no $dispatch_pid_file, $reply_file, etc., and
-# schedule manual action.
 
 exit_cleanup
 exit 0
