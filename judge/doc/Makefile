@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Sep 10 11:58:53 EDT 2001
+# Date:		Thu Oct 18 04:10:48 EDT 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/09/10 15:47:32 $
+#   $Date: 2001/10/18 08:13:39 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.9 $
+#   $Revision: 1.10 $
 
 # make
 #	Makes documentation as fprintable .doc files in
@@ -32,6 +32,7 @@
 #
 DOCS=	overview.doc \
 	installing_hpcm.doc \
+	judging.doc \
         judge/autodispatch.doc \
 	judge/autoinfo.doc \
 	judge/autojudge.doc \
@@ -42,6 +43,7 @@ DOCS=	overview.doc \
 	judge/extractmail.doc \
 	judge/fcheck.doc \
 	judge/fcheckc.doc \
+	judge/file_list.doc \
 	judge/fprint.doc \
 	contestant/fprint.doc \
 	contestant/help.doc \
@@ -65,7 +67,6 @@ DOCS=	overview.doc \
 	contestant/print2.doc \
 	contestant/printer_pipe.doc \
 	judge/receivemail.doc \
-	judge/reply.doc \
 	contestant/scoreboard.doc \
 	judge/scoreboard.doc \
 	judge/scorediff.doc \
@@ -113,6 +114,7 @@ test:
 
 clean:
 	rm -rf overview.doc installing_hpcm.doc \
+	       judging.doc \
 	       judge contestant secure test \
 	       hpcm_judging.rc
 
@@ -168,6 +170,11 @@ judge/fcheckc.doc:	hpcm_judging.rc \
 	rm -f judge/fcheckc.doc
 	-../../judge/bin/fcheckc -doc \
 	    >judge/fcheckc.doc
+judge/file_list.doc:	hpcm_judging.rc \
+			../../judge/bin/file_list
+	rm -f judge/file_list.doc
+	-../../judge/bin/file_list -doc \
+	    >judge/file_list.doc
 judge/fprint.doc:	hpcm_judging.rc \
 			../../judge/bin/fprint
 	rm -f judge/fprint.doc
@@ -188,6 +195,10 @@ installing_hpcm.doc:	hpcm_judging.rc \
 	rm -f installing_hpcm.doc
 	-../../judge/bin/installing_hpcm -doc \
 	    >installing_hpcm.doc
+judging.doc:	hpcm_judging.rc \
+			../../judge/bin/judging
+	rm -f judging.doc
+	-../../judge/bin/judging -doc >judging.doc
 judge/lookat.doc:	hpcm_judging.rc \
 		        ../../judge/bin/lookat
 	rm -f judge/lookat.doc
@@ -221,10 +232,6 @@ judge/receivemail.doc:	hpcm_judging.rc \
 	rm -f judge/receivemail.doc
 	-../../judge/bin/receivemail -doc \
 	    >judge/receivemail.doc
-judge/reply.doc:	hpcm_judging.rc \
-		        ../../judge/bin/reply
-	rm -f judge/reply.doc
-	-../../judge/bin/reply -doc >judge/reply.doc
 judge/scoreboard.doc:	hpcm_judging.rc \
 		        ../../judge/bin/scoreboard
 	rm -f judge/scoreboard.doc
