@@ -4,7 +4,7 @@
 #
 # File:		makeoverview
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Dec  4 22:44:05 EST 2000
+# Date:		Tue Dec  5 06:58:40 EST 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/12/05 05:53:09 $
+#   $Date: 2000/12/05 12:43:08 $
 #   $RCSfile: overview,v $
-#   $Revision: 1.3 $
+#   $Revision: 1.4 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -30,8 +30,16 @@ set log_mode none
 catch {
 
 puts "
-HPCM Judge's Overview
----- ------- --------
+		     HPCM Overview
+		     ---- --------
+
+	Features
+	Creating a Contest
+	Data and Programs
+	Library Data
+
+Features
+--------
 
 The Harvard Programming Contest Manager, HPCM, has the
 following features:
@@ -135,6 +143,70 @@ Contest Making Programs
 Maintenance Programs
     Programs run to maintain the library or test the
     HPCM system.
+
+Library Data
+------- ----
+
+Each problem (and each demonstration problem) has its
+own directory within the problem library.  The last
+component of the name of this directory is the name of
+the problem, and is also the basename of files describ-
+int the problem and solving the problem.
+
+If a problem has name `pppp', then the following files
+in the `pppp' directory describe the problem:
+
+    pppp.txt	Problem description.
+
+    Makefile	Gives instructions for compiling and
+                running the problem solution.
+
+These files are made available to the contestant, though
+in a formal contest only a printout of the pppp.txt file
+is made available.
+
+The solution to the problem is written in a file whose
+extension indicates the programming language of the
+solution.  Typical possibilities are:
+
+    pppp.c	C language solution.
+    pppp.cc	C++ language solution.
+    pppp.java	JAVA language solution.
+    pppp.p	PASCAL language solution.
+
+Different contests may support different languages, so
+you need to know what extensions are supported by a
+contest.  The Makefile should tell you this.
+
+Compilation creates a binary file named `pppp' and may
+create other files for some languages:
+
+    pppp	    The executable program binary.
+    pppp*.class	    JAVA class files.
+    pppp.p2c	    C translation of PASCAL program.
+
+The solution is written to take input from the standard
+input (the terminal by default) and put output to the
+standard output (also the terminal by default).  The
+Makefile contrives to run the program with resource
+limits so the standard input and output are mapped to
+a .in file and a .out file.  Running the solution using
+the Makefile reads or creates the following files:
+
+    pppp.in	Test input.
+    pppp.out	Test output.
+    core	Dump of program if it crashes.
+
+Its important to note that the solutions do NOT open any
+files.
+
+When a solution is judged it is given a directory by
+itself, but there are additional files in this directory
+(e.g., a Scoring_Instructions and Auto_Score file), and
+the last component of this judging directory's name is
+NOT `pppp'.
+
+
 
 "
 
