@@ -1,11 +1,9 @@
-#!/bin/sh
-#
 # Functions to read scorefinder output into an
 # internal database and help build a scoreboard.
 #
 # File:		scoreboard_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Feb  8 19:45:40 EST 2002
+# Date:		Sat Feb  9 20:39:48 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +12,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/02/09 02:45:04 $
+#   $Date: 2002/02/10 02:21:07 $
 #   $RCSfile: scoreboard_common.tcl,v $
-#   $Revision: 1.32 $
+#   $Revision: 1.33 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -89,14 +87,14 @@
 # After pruning, the items in each array element are
 # sorted and data meets the following requirements:
 #
-#    1. Items latter than a correct (.c.) item in
+#    1. Items later than a correct (.c.) item in
 #	the same array element have been deleted.
 #
 #    2. Items later than the problem stop time have been
 #       deleted.
 #
 #    3. Array elements pertaining to a submitter not
-#       meeting the cut time have been deleted.
+#       meeting the cut times have been deleted.
 #
 #    4. If the scoreboard_start_time is "" or "team",
 #       any array element whose earliest item (before
@@ -104,14 +102,12 @@
 #	code "g" is deleted.
 
 # Function to read scorefinder output and compute
-# scoreboard_arary.  Scorefinder output is read from
+# scoreboard_array.  Scorefinder output is read from
 # input_ch (which is NOT closed by this function).
 #
 proc compute_scoreboard_array { input_ch } {
 
     global scoreboard_problems scoreboard_submitters \
-	   problem_atoms problem_values \
-	   submitter_atoms submitter_values \
            scoreboard_array
 
     # Compile scoreboard_problems and scoreboard_
@@ -153,7 +149,7 @@ proc compute_scoreboard_array { input_ch } {
 	set date	[lindex $line 0]
 	set submitter	[lindex $line 1]
 	set problem	[lindex $line 2]
-	set score	[lindex $line 3]
+	set code	[lindex $line 3]
 
 	if { $problem_expression != "" } {
 	     foreach i [array names problem_atoms] {
@@ -178,13 +174,11 @@ proc compute_scoreboard_array { input_ch } {
 	set time [filename_date_to_clock $date]
 
 	set sap $submitter/$problem
-	if { [info exists \ scoreboard_array($sap)] } {
-	    lappend scoreboard_array(sap) \
-		    [list [format {%015d} $time] $score]
+	set item [list [format {%015d} $time] $code]
+	if { [info exists scoreboard_array($sap)] } {
+	    lappend scoreboard_array(sap) $item
 	} else {
-	    set scoreboard_array(sap) \
-		[list [list [format {%015d} $time] \
-		            $score]]
+	    set scoreboard_array(sap) [list $item]
 	}
     }
 }
@@ -200,6 +194,7 @@ proc prune_scoreboard_array { } {
            scoreboard_stop_time \
            scoreboard_correct_cut_time \
            scoreboard_incorrect_cut_time \
+           scoreboard_final_cut_time \
 	   scoreboard_array
 
     # Compile times.
@@ -222,7 +217,7 @@ proc prune_scoreboard_array { } {
     set start_time $scoreboard_start_time
     if { [regexp {^(|team)$} $start_time] } {
         set start_mode $start_time
-    } elseif { [regexp {(|-|+)[0-9]+} $start_time] } {
+    } elseif { [regexp {^(|\+)[0-9]+$} $start_time] } {
         error "scoreboard_start_time is relative"
     } else {
         set start_mode absolute
@@ -231,7 +226,7 @@ proc prune_scoreboard_array { } {
     set stop_time $scoreboard_stop_time
     if { $stop_time == "" } {
         set stop_mode $stop_time
-    } elseif { [regexp {(|-|+)[0-9]+} $stop_time] } {
+    } elseif { [regexp {^(|\+)[0-9]+$} $stop_time] } {
         set stop_mode relative
     } else {
         set stop_mode absolute
@@ -240,7 +235,7 @@ proc prune_scoreboard_array { } {
     set correct_cut_time $scoreboard_correct_cut_time
     if { $correct_cut_time == "" } {
         set correct_cut_mode $correct_cut_time
-    } elseif { [regexp {(|-|+)[0-9]+} \
+    } elseif { [regexp {^(|\+)[0-9]+$} \
                        $correct_cut_time] } {
         set correct_cut_mode relative
     } else {
@@ -252,7 +247,7 @@ proc prune_scoreboard_array { } {
         $scoreboard_incorrect_cut_time
     if { $incorrect_cut_time == "" } {
         set incorrect_cut_mode $incorrect_cut_time
-    } elseif { [regexp {(|-|+)[0-9]+} \
+    } elseif { [regexp {^(|\+)[0-9]+$} \
                        $incorrect_cut_time] } {
         set incorrect_cut_mode relative
     } else {
@@ -260,14 +255,33 @@ proc prune_scoreboard_array { } {
 	set incorrect_cut_time \
 	    [clock scan $incorrect_cut_time]
     }
+    set final_cut_time \
+        $scoreboard_final_cut_time
+    if { $final_cut_time == "" } {
+        set final_cut_mode $final_cut_time
+    } elseif { [regexp {^(|\+)[0-9]+$} \
+                       $final_cut_time] } {
+        set final_cut_mode relative
+    } else {
+        set final_cut_mode absolute
+	set final_cut_time \
+	    [clock scan $final_cut_time]
+    }
 
     # Sort scoreboard_array elements and compute team
-    # start times.
+    # start times.  Delete elements whose first item
+    # is before an absolute start time.
     #
     foreach sap [array names scoreboard_array] {
         set items [lsort $scoreboard_array($sap)]
 	set scoreboard_array($sap) $items
-	if { $start_mode == "team" } {
+	if { $start_mode == "absolute" } {
+	    set item [lindex $items 0]
+	    set t [lindex $item 0]
+	    if { $t < $start_time } {
+	        unset scoreboard_array($sap)
+	    }
+	} elseif { $start_mode == "team" } {
 	    regexp {^([^/]*)/([^/]*)$} $sap forget \
 	           submitter problem
 	    set item [lindex $items 0]
@@ -285,15 +299,16 @@ proc prune_scoreboard_array { } {
     }
 
     # For each scoreboard_array element, add start time,
-    # prune items after stop time, and compute submitter
-    # last correct and last incorrect times.
+    # set cut_array(submitter) if some submission satis-
+    # fies the cut times, and then prune items after
+    # stop time.
     #
     foreach sap [array names scoreboard_array] {
         set items $scoreboard_array($sap)
 	regexp {^([^/]*)/([^/]*)$} $sap forget \
 	       submitter problem
 
-	# Compute start time.
+	# Compute times.
 	#
 	switch $start_mode {
 	    "" {
@@ -313,9 +328,6 @@ proc prune_scoreboard_array { } {
 		set start $start_time
 	    }
 	}
-
-	# Compute times.
-	#
 	switch $stop_mode {
 	    "" {
 		set stop ""
@@ -354,6 +366,19 @@ proc prune_scoreboard_array { } {
 		set incorrect_cut $incorrect_cut_time
 	    }
 	}
+	switch $final_cut_mode {
+	    "" {
+		set final_cut ""
+	    }
+	    relative {
+		set final_cut \
+		    [expr { $start \
+		            + $final_cut_time }]
+	    }
+	    absolute {
+		set final_cut $final_cut_time
+	    }
+	}
 
 	# Edit list of items and set cut_array(submit-
 	# ter) to yes iff there is a correct (or incor-
@@ -371,15 +396,19 @@ proc prune_scoreboard_array { } {
 		lappend new_items $item
 	    }
 
-	    if { [lcontains {mc ac} $code] } {
-	        if { $correct_cut != "" \
-		     && $correct_cut <= $time } {
+	    if { [regexp {.c.} $code] } {
+	        if {    $correct_cut != "" \
+		     && $correct_cut <= $time \
+		     && (    $final_cut == "" \
+		          || $time <= $final_cut ) } {
 		    set cut_array($submitter) yes
 		}
 		break
-	    } else {
-	        if { $incorrect_cut != "" \
-		     && $incorrect_cut <= $time } {
+	    } elseif { [regexp {.i.} $code] } {
+	        if {    $incorrect_cut != "" \
+		     && $incorrect_cut <= $time \
+		     && (    $final_cut == "" \
+		          || $time <= $final_cut ) } {
 		    set \
 		      cut_array($submitter) yes
 		}
@@ -407,8 +436,8 @@ proc prune_scoreboard_array { } {
 # Scoreboard Data Base
 # ---------- ---- ----
 
-# The scoreboard_list global variable is a list of
-# items, each of the form:
+# The scoreboard_list global variable is a sorted list
+# of items, each of the form:
 #
 #	{ ccc.ttttttttt.sss problems_correct
 #	  time_score modifier
@@ -435,12 +464,14 @@ proc prune_scoreboard_array { } {
 # with no correct submissions).  The sort code is
 # 000.999999999.000 iff the submitter has made no sub-
 # missions and all the problem_scores are `......'.
+# These submitters should probably be omitted from any
+# printed scoreboard.
 #
 set scoreboard_list ""
 set scoreboard_problem_list ""
 
 # Function to compute scoreboard_list and scoreboard_
-# problem_list from scoreboard_array.
+# problem_list from pruned scoreboard_array.
 #
 proc compute_scoreboard_list {} {
 
@@ -504,9 +535,9 @@ proc compute_scoreboard_list {} {
 	    set problem_incorrect	0
 	    set problem_modifier	f
 
-	    foreach item [lsort $problem_list] {
+	    foreach item $problem_items {
 
-		set score [lindex $item 1]
+		set code [lindex $item 1]
 		set item_time [lindex $item 0]
 		if { ! [regexp {^0*([1-9][0-9]*)$} \
 			       $item_time forget \
@@ -514,13 +545,13 @@ proc compute_scoreboard_list {} {
 		    set item_time 0
 		}
 
-		if { $score == "s" } {
+		if { $code == "s" } {
 
 		    # Time is when problem was gotten.
 
 		    set problem_start_time $item_time
 
-		} elseif { [regexp {.c.} $score] } {
+		} elseif { [regexp {.c.} $code] } {
 
 		    # Score is correct.
 
@@ -529,9 +560,25 @@ proc compute_scoreboard_list {} {
 			  { $item_time \
 			    - \
 			    $problem_start_time }]
+
+		    set problem_increment \
+			[expr { \
+			   $problem_time \
+			   + $scoreboard_penalty \
+			     * $problem_incorrect }]
+		    if { [expr { \
+		            $max_time_score \
+			    - $problem_increment }] \
+			 < $time_score } {
+			set time_score $max_time_score
+		    } else {
+			incr time_score \
+			     $problem_increment
+		    }
+		    incr problems_correct
 		    incr submissions
 
-		} elseif { [regexp {.i.} $score] } {
+		} elseif { [regexp {.i.} $code] } {
 
 		    # Score is incorrect.
 
@@ -539,38 +586,10 @@ proc compute_scoreboard_list {} {
 		    incr submissions
 		}
 
-		if { [regexp {..n} $score] } {
+		if { [regexp {..n} $code] } {
 		    set problem_modifier n
+		    set modifier n
 		}
-	    }
-
-	    # Add to time_score and count of problems
-	    # correct, and compute problem_score.
-	    #
-	    if { $problem_time != "" } {
-
-		set problem_increment \
-		    [expr { ( $problem_time \
-			      + $scoreboard_penalty \
-				* $problem_incorrect ) \
-					}]
-		if { [expr { $max_time_score \
-				- $problem_increment \
-					}] \
-		     < $time_score } {
-		    set time_score $max_time_score
-		} else {
-		    incr time_score $problem_increment
-		}
-		incr problems_correct
-
-	    }
-
-	    # If problem has non-final submission, set
-	    # submitter modifier to "N".
-	    #
-	    if { $problem_modifier == "n" } {
-		set modifier n
 	    }
 
 	    # Append problem score to problem_scores
@@ -588,7 +607,8 @@ proc compute_scoreboard_list {} {
 	set ccc [format {%03d} $problems_correct]
 	set ttttttttt \
 	    [format {%09d} \
-	            [expr 999999999 - $time_score]]
+	            [expr { $max_time_score \
+		            - $time_score }]]
 	set sss [format {%03d} $submissions]
 
 	lappend score_list \
@@ -647,7 +667,7 @@ proc format_problem_score { time incorrect modifier } {
 	}
 
 	incr incorrect 1
-	set score [format_time $problem_time]$incorrect
+	set score $score$incorrect
 
     } elseif { $incorrect != 0 } {
 	set score ..../$incorrect
