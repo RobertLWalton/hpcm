@@ -5,7 +5,7 @@
 #
 # File:		autojudge
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Sep  7 05:00:12 EDT 2000
+# Date:		Tue Sep 12 13:48:15 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: acm-cont $
-#   $Date: 2000/09/07 10:15:53 $
+#   $Date: 2000/09/12 19:09:34 $
 #   $RCSfile: autojudge,v $
-#   $Revision: 1.21 $
+#   $Revision: 1.22 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -26,11 +26,11 @@ exec tcl "$0" "$@"
 # Include common code and parameters:
 #
 set lib_directory "[file dirname $argv0]/../lib"
-source "$lib_directory/judging_common.tcl"
+source $lib_directory/judging_common.tcl
 catch {
 
 set document "
-cd submission_directory; judge
+cd submission_directory; autojudge
 
     Given the submission directory as the current dir-
     ectory, and given that the submission directory
@@ -47,19 +47,20 @@ cd submission_directory; judge
 	the submitted file by calling extractmail
 	$make_file file
 	$scoring_instructions_file file, if it exists
-	.in solutin input file
-	.test solutin output file
+	.in solution input file
+	.test solution output file
 	the program binary (and .cerr file)
 	the .out file (and .err file)
 	the $auto_score_file file
 	the $reply_file file, sometimes
 
-    If any of these files exists, it checks to be sure
-    they are not older than the previous files (starting
-    with the submitted file not being older than the
-    $received_file file), and remakes any of the above
-    files that are out of date.  Errors in this process
-    can cause $reply_file to be generated early.
+    If any of these files exists, this program checks to
+    be sure it is not older than the previous files
+    (starting with the submitted file not being older
+    than the $received_file file), and remakes any of
+    the above files that are out-of-date.  Errors in
+    making the program binary can cause $auto_score_file
+    and maybe $reply_file to be generated early.
 
     First, this program calls `extractmail' to extract
     the submitted file from the program.  This program
@@ -77,26 +78,25 @@ cd submission_directory; judge
 		.test solution output file
 
     The .test file is linked to the solution .out file
-    if that exists, or the solution .test file
-    otherwise.  If the solution .out file exists and
-    is more recent than what the current directory .test
-    file is linked to, the current directory .test file
-    is relinked to the solution .out file.
+    if that exists, or the solution .test file other-
+    wise.  If the solution .out file exists and is more
+    recent than what the current directory .test file is
+    linked to, the current directory .test file is re-
+    linked to the solution .out file.
 
     Next this program makes the program binary by using
-    the $make_file.  If there is a compliler error, the
-    error messages are captured in a .cerr file.  If
-    no executable binary is made, this program writes
-    `Syntax Error' into the $auto_score_file file, and
-    skips to the end of this program where a $reply_file
-    file containing the auto score may be created and
-    sent to the user.
+    the $make_file.  Any compliler error messages are
+    captured in a .cerr file.  If no executable binary
+    is made, this program writes `Syntax Error' into the
+    $auto_score_file file, and skips to the end of this
+    program where a $reply_file file containing the auto
+    score may be created and sent to the user.
 
     If the binary file was made without error, this
-    program makes a .out output file and a .err error
-    file by using the $make_file.  Then this program
-    runs `autoscore' to produce an automatic score in
-    the $auto_score_file file.
+    program makes a .out output file by using the
+    $make_file, and captures any error output in a .err
+    file.  Then this program runs `autoscore' to produce
+    an automatic score in the $auto_score_file file.
 
     Lastly, this program may create a `$reply_file'
     and send it as email to the submitter.  It does this
@@ -122,23 +122,31 @@ cd submission_directory; judge
     directory, prints information about the error to the
     standard error output, and exits with exit code 0."
 
+# If any arguments, print documentation and exit.
+#
 if { $argc != 0 } {
     puts $document
     exit 1
 }
 
+# Get submitted file.  If none available, exit.
+#
 set submitted_file [exec extractmail]
-
 if { $submitted_file == "" } {
     exit 0
 }
 
+# Compute names.
+#
 set submitted_program [file rootname $submitted_file]
 set submitted_extension [file extension $submitted_file]
-
 set program_solution \
-    "$solutions_directory/$submitted_program"
+    $solutions_directory/$submitted_program
 
+# On illegal filename error, send error reply to sub-
+# mitter, print error message on standard output, and
+# exit.
+#
 proc illegal_filename_error { filename } {
     reply \
           "ERROR: submitted file has illegal name:\
@@ -151,70 +159,78 @@ proc illegal_filename_error { filename } {
     exit 0
 }
 
+# Detect illegal file names and found reply to user
+# and exit.
+#
 if { ! [file isdirectory $program_solution] } {
     illegal_filename_error $submitted_file
 }
-
 if { [lsearch -exact $allowed_extensions \
                      $submitted_extension] < 0 } {
     illegal_filename_error $submitted_file
 }
 
+# Link $make_file, etc.
+#
 if { ! [file readable $make_file] } {
     puts "Linking $make_file"
-    link_file "$program_solution/$make_file"
+    link_file $program_solution/$make_file
 }
 
 set sif $scoring_instructions_file
 if { ! [file readable $sif] \
-     && [file exists "$program_solution/$sif"] } {
+     && [file exists $program_solution/$sif] } {
     puts "Linking $sif"
-    link_file "$program_solution/$sif"
+    link_file $program_solution/$sif
 }
 
-if { ! [file readable ${submitted_program}.in] } {
-    puts "Linking ${submitted_program}.in"
+if { ! [file readable $submitted_program.in] } {
+    puts "Linking $submitted_program.in"
     link_file \
-         "$program_solution/${submitted_program}.in"
+         $program_solution/$submitted_program.in
 }
 
-set solout ${program_solution}/${submitted_program}.out
-set soltest ${program_solution}/${submitted_program}.test
-if { ! [file readable ${submitted_program}.test] \
+set solout \
+    $program_solution/$submitted_program.out
+set soltest \
+    $program_solution/$submitted_program.test
+if { ! [file readable $submitted_program.test] \
      || ( [file readable $solout] \
-          && [file mtime ${submitted_program}.test] \
+          && [file mtime $submitted_program.test] \
 	     < [file mtime $solout] ) } {
     if { ! [catch { file type \
-                         ${submitted_program}.test \
+                         $submitted_program.test \
 			 }] } {
 	puts "Deleting out-of-date\
-	      ${submitted_program}.test"
-	file delete -force ${submitted_program}.test
+	      $submitted_program.test"
+	file delete -force $submitted_program.test
     }
     if { [file readable $solout] } {
-	puts "Linking ${submitted_program}.test to\
-	      solution ${submitted_program}.out"
-	link_file $solout ${submitted_program}.test
+	puts "Linking $submitted_program.test to\
+	      solution $submitted_program.out"
+	link_file $solout $submitted_program.test
     } else {
-	puts "Linking ${submitted_program}.test"
+	puts "Linking $submitted_program.test"
 	link_file $soltest
     }
 }
 
+# Send reply to user containing new auto score.
+#
 proc auto_score_reply { auto_score } {
 
     global scoring_mode reply_file submitted_file
 
     if { $auto_score == "Completely Correct" \
          || $scoring_mode == "auto" } {
-	reply "For ${submitted_file} the automatically\
+	reply "For $submitted_file the automatically\
 	       determined final score is:" \
 	      "" \
 	      "    $auto_score"
 	puts "Emailed final auto-score:\
 	      \    $auto_score"
     } elseif { [regexp {auto} $scoring_mode] } {
-	reply "For ${submitted_file} the automatically\
+	reply "For $submitted_file the automatically\
 	       determined score is:" \
 	      "" \
 	      "    $auto_score" \
@@ -286,35 +302,44 @@ proc should_be_made { file_list1 file_list2 } {
     }
 }
 
+# If necessary compile submitted file to produce
+# binary.  If this fails, announce `Syntax Error'
+# as the score.
+#
 if { [should_be_made \
          [list $submitted_program \
-	       "$submitted_program.cerr"] \
+	       $submitted_program.cerr] \
 	 [list $make_file \
 	       $submitted_file]] } {
 
-    puts "Making ${submitted_program}"
+    puts "Making $submitted_program"
     catch { exec make $submitted_program \
-    		 2> "${submitted_program}.cerr" } out
+    		 2> $submitted_program.cerr } out
     puts $out
 
-    if { [file exists "${submitted_program}.cerr"] \
-	 && [file size "${submitted_program}.cerr"] \
+    # Print any non-empty .cerr file.
+    #
+    if { [file exists $submitted_program.cerr] \
+	 && [file size $submitted_program.cerr] \
 	    > 0 } {
 	puts ""
 	if { [file executable $submitted_program] } {
 	    puts "========== COMPILER WARNINGS\
-	          (${submitted_program}.cerr)\
+	          ($submitted_program.cerr)\
 		  =========="
 	} else {
 	    puts "========== COMPILER ERRORS\
-	          (${submitted_program}.cerr)\
+	          ($submitted_program.cerr)\
 		  =========="
 	}
-	put_file "${submitted_program}.cerr" stdout 10
+	put_file $submitted_program.cerr stdout 10
 	puts "============================="
 	puts ""
     }
 
+    # If no executable binary produced, record and
+    # send `Syntax Error' reply.
+    #
     if { ! [file executable $submitted_program] } {
 
 	puts "No executable `$submitted_program' file\
@@ -329,52 +354,58 @@ if { [should_be_made \
     }
 }
 
+# Make .out file if necessary.
+#
 if { [should_be_made \
-         [list "${submitted_program}.out" \
-	       "${submitted_program}.err"] \
+         [list $submitted_program.out \
+	       $submitted_program.err] \
 	 [list $submitted_program \
 	       $make_file \
-	       "${submitted_program}.in"]] \
+	       $submitted_program.in]] \
      && [file executable $submitted_program] } {
 
-    puts "Making ${submitted_program}.out"
-    catch { exec make "${submitted_program}.out" \
-		 2> "${submitted_program}.err" } out
+    puts "Making $submitted_program.out"
+    catch { exec make $submitted_program.out \
+		 2> $submitted_program.err } out
     puts $out
 
-    if { [file exists \
-	       "${submitted_program}.err"] \
-	 && [file size \
-		  "${submitted_program}.err"] \
+    if { [file exists $submitted_program.err] \
+	 && [file size $submitted_program.err] \
 	      > 0 } {
 	puts ""
 	puts "========== ERRORS\
-	      (${submitted_program}.err) =========="
-	put_file "${submitted_program}.err" stdout 10
+	      ($submitted_program.err) =========="
+	put_file $submitted_program.err stdout 10
 	puts "============================="
 	puts ""
     } elseif { ! [file exists \
-                       "${submitted_program}.out"] } {
-	puts "No `${submitted_program}.out' file\
+                       $submitted_program.out] } {
+	puts "No `$submitted_program.out' file\
 	      produced"
     }
 }
 
-set file_list [list "${submitted_program}.test"]
+# Make $auto_score_file if necessary.
+#
+set file_list [list $submitted_program.test]
 
-if { [file exists "${submitted_program}.out"] } {
-    lappend file_list "${submitted_program}.out"
-} else {
-    lappend file_list "${submitted_program}.err"
+if { [file exists $submitted_program.out] } {
+    lappend file_list $submitted_program.out
+}
+if { [file exists $submitted_program.err] } {
+    lappend file_list $submitted_program.err
 }
 
-if { [should_be_made \
-         [list $auto_score_file] \
-	 $file_list] } {
+if { [llength $file_list] >= 2 \
+     && [should_be_made \
+            [list $auto_score_file] \
+	    $file_list] } {
 
     exec autoscore $submitted_program
 }
 
+# Make $reply_file if necessary.
+#
 if { [should_be_made \
          [list $reply_file] \
 	 [list $auto_score_file]] } {

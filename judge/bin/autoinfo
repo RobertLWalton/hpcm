@@ -4,7 +4,7 @@
 #
 # File:		autoinfo
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Sep 12 13:17:58 EDT 2000
+# Date:		Tue Sep 12 15:04:47 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: acm-cont $
-#   $Date: 2000/09/12 17:19:35 $
+#   $Date: 2000/09/12 19:09:34 $
 #   $RCSfile: autoinfo,v $
-#   $Revision: 1.13 $
+#   $Revision: 1.14 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -147,7 +147,8 @@ proc info_expand { name } {
     if { [regexp {^\.|^\-|\/\.} $name] } {
     	lappend illegals $name
     } elseif { [file isdirectory $file] } {
-        if { [lsearch "RCS CVS" [file tail $file]] \
+        if { [lsearch -exact "RCS CVS" \
+	                     [file tail $file]] \
              < 0 } {
 	    foreach f [lsort [glob -nocomplain \
 				   $file/*]] {
@@ -190,7 +191,7 @@ if { $error_lines != "" } {
 compose_reply "The requested files appear below\
                following the request message header."
 
-set reply_ch [open ${reply_file}+ a]
+set reply_ch [open $reply_file+ a]
 
 puts $reply_ch ""
 
