@@ -2,7 +2,7 @@
 //
 // File:	scorediff.cc
 // Authors:	Bob Walton (walton@deas.harvard.edu)
-// Date:	Sat Nov  3 06:57:20 EST 2001
+// Date:	Sat Jan 12 00:45:08 EST 2002
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: hc3 $
-//   $Date: 2001/11/03 12:25:50 $
+//   $Date: 2002/01/14 15:35:56 $
 //   $RCSfile: scorediff.cc,v $
-//   $Revision: 1.40 $
+//   $Revision: 1.41 $
 
 // This is version 2, a major revision of the first
 // scorediff program.  This version is more explicitly
@@ -498,7 +498,7 @@ file test;
 
 // Open file for reading.
 //
-int open ( file & f, char * filename )
+void open ( file & f, char * filename )
 {
     f.filename = new char [strlen ( filename ) + 1 ];
     strcpy ( f.filename, filename );
