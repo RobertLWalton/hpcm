@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/11/15 04:36:53 $
+#   $Date: 2000/11/18 18:46:06 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.51 $
+#   $Revision: 1.52 $
 #
 
 # Table of Contents
@@ -920,7 +920,7 @@ proc compose_reply { args } {
     if { $cc_option && $reply_manager != "" } {
 	puts $reply_ch "Cc: $reply_manager"
     }
-    puts $mail_ch "Reply-To:$message_to"
+    puts $reply_ch "Reply-To:$message_to"
     if { $errors_option } {
         puts $reply_ch \
 	     "Subject: Errors In:$message_subject"
