@@ -1,18 +1,18 @@
 3D GEOMETRY PROBLEM HELP    Sat Sep  1 08:24:15 EDT 2001
 
-Read Plain Geometry Help first.
+Read 2D Geometry Problem Help first.
 
 
 Basics
 ------
 
 The basics of 3D geometry are identical to the basics
-of plane geometry.  We review.
+of 2D geometry.  We review.
 
 If
 	p = (px,py,pz) and q = (qx,qy,qz)
 	
-be points in space, the difference
+are points in space, the difference
 
 	v = (vx,vy,vz) = p - q = (px-qx,py-qy,pz-qz)
 	
@@ -36,7 +36,7 @@ end points of u and v.  The sign of theta does not
 matter because cos(theta) = cos(-theta).  Note that
 
 	|v| = sqrt (v.v)
-
+
 Note that u.v = 0 iff u and v are orthogonal (at right
 angles) to each other, i.e., if theta = + or - 90
 degrees and cos(theta) = 0.
@@ -64,9 +64,9 @@ Note that
 	|     |   |            | |    |
 	| w.p |   | wx  wy  wz | | pz |
 
-so u and v are the rows of the 2x2 matrix which by left
-multiplication translates from old xy coordinates to new
-uv axis coordinates.
+so u, v, and w are the rows of the 3x3 matrix which by
+left multiplication translates from old xy coordinates
+to new uv coordinates.
 
 If u is a unit vector, we call (u.v)u the projection of
 v onto u.  Taking vectors as denoting points (the ends
@@ -75,7 +75,7 @@ projection of v onto u is the point on the line along u
 that is closest to the point v.  That is, u.v is the
 number K which minimizes | v - Ku |.  You can check this
 with a little algebra.
-
+
 In 3D rotations occur around an axis.  The following
 is a rotation Rz(theta) around the z-axis of a vector
 v=(vx,vy,vz) by an angle theta:
@@ -105,16 +105,16 @@ Most particularly, if theta = 90 degrees, then
 
         Rz(90 degrees).v =  (vy,-vx,vz)
 
-We can see from this last that the signs in the
-sin(theta) elements of the rotation matrix been
-choosen so that if the x-axis goes toward your right,
+We can see from this last that the signs of the
+sin(theta) elements of the rotation matrix have been
+chosen so that if the x-axis goes toward your right,
 the z-axis goes up, and the y-axis goes away from you,
 then a rotation with theta > 0 is clockwise looking
 down on the xy-plane.
 
 One can also write matrices easily for rotations about
 the x-axis or y-axis.
-
+
 Next we ask: suppose we are given a unit vector w.  Can
 we find a coordinate system u, v, w.  That is, can be
 find unit vectors u and v such that u, v, and w are all
@@ -146,7 +146,7 @@ If |v''| is near zero, then v' must be nearly parallel
 to w.  But not all three of these ix, iy, and iz can be
 nearly parallel to w, so we can choose one of them to be
 v' and have |v''| not be very small.
-
+
 Thus we have found a suitable v.  To find u one plays
 the same game.  Choose u' and compute
 
@@ -164,6 +164,43 @@ and iz as u'.  One will give a non-small value of |u''|.
 These are all the basics you need to know for 3D.
 
 
+The Distance of a Point to a Line
+--- -------- -- - ----- -- - ----
+
+In order to find the distance of a point r to the
+infinite line through points p and q, we need to find
+the x coordinate of all points in a coordinate system
+in which the line is parallel to the x-axis.  So we
+need a unit vector u parallel to the line, and this
+can be readily found from the vector from p to q.
+Then the new x coordinates are u.p, u.q, and u.r.
+
+The points on the line are:	 p + K(q-p)
+
+for all the real numbers K.  The new x coordinates of
+these points are:
+				u.p + K(u.q-u.p)
+
+Solving:			(1-K)u.p + K u.q = u.r
+
+we get:				    u.r-u.p
+				K = -------
+				    u.q-u.p
+
+which allows us to determine the point on the line with
+the same new x coordinate as r.  This is the point clos-
+est to r, so we first calculate this point, and then its
+distance to r.
+
+If instead we want to know the distance between r and
+the finite line from p to q, we can calculate K as
+above, then replace any K < 0 by 0, replace any K > 1 by
+1, and find the point on the line closest to r with the
+newly modified K.  This merely means that if u.r < u.p
+< u.q, for example, K < 0 is replaced by K = 0, so the
+closest point to r on the line is p.
+
+
 Closest Point of Two Lines
 ------- ----- -- --- -----
 
@@ -175,19 +212,18 @@ for each point p2 on the other line L2, the point p1 on
 L1 that is closest to p2 has the same z coordinate as
 p2.  From this it follows that the distance between L1
 and L2 is the same as the distance between the projec-
-tion of L1 and L2 on the xy-plane.  The projection of
+tions of L1 and L2 on the xy-plane.  The projection of
 L1 on the xy-plane is just a single point; while the
 projection of L2 is in general an infinite line.  The
 problem of finding the distance between a point and
-an infinite line is assumed here to be a solved problem
-for both 2D and 3D.
+an infinite line in 2D has been solved elsewhere.
 
 So we can solve the problem if we can find a coordinate
 system in which L1 is parallel to the z-axis.  This can
 be done by taking the unit vector w in the direction of
-L1 and finding u and v such that u,v,w are orthoginal
+L1 and finding u and v such that u,v,w are orthogonal
 unit vectors: see above.
-
+
 Now consider the problem of finding how close two finite
 lines L1 and L2 are.  Let L1 be parallel to the z-axis,
 and let its end points p1 and p2 have coordinates z1 and
@@ -205,12 +241,11 @@ distance from L2b to L1 is the distance of the project-
 tions of L2b and L1 on the xy-plane.  The projection of
 L1 is a single point, so this is the 2D distance between
 a finite line and a point.  Lastly the distance from L2c
-to L1 is the distance from L2c to p2.  Taking the mimi-
+to L1 is the distance from L2c to p2.  Taking the mini-
 mum of the three distances from L2a, L2b, and L2c to L1
 gives the distance from L2 to L1.
 
-This gives an idea of how things can get complex in 3D.
-
+
 Robot Arms
 ----- ----
 
