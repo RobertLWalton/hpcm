@@ -1,0 +1,77 @@
+#!/bin/sh
+#
+# Send email to the judge.
+#
+# File:		hpcm_sendmail
+# Author:	Bob Walton <walton@deas.harvard.edu>
+# Date:		Tue Oct 31 20:51:40 EST 2000
+#
+# The authors have placed this program in the public
+# domain; they make no warranty and accept no liability
+# for this program.
+#
+# RCS Info (may not be true date or author):
+#
+#   $Author: hc3 $
+#   $Date: 2000/11/01 01:51:02 $
+#   $RCSfile: hpcm_sendmail,v $
+#   $Revision: 1.1 $
+
+case "$1" in
+     "")
+    		;;
+     *)
+    		echo "
+cat email_file | hpcm_sendmail
+
+	Sends the email in the email_file to the judge.
+	Similar to sendmail -oi -t but adds its own
+	To: field, which should not be included in the
+	email_file.
+	
+	The mail is sent to the address in the HPCM_
+	SUBMIT_ADDRESS environment variable, and the
+	mail is cc'ed to the sending user account."
+
+		exit 1
+		;;
+esac
+
+if test -x /usr/sbin/sendmail
+then
+    sendmail=/usr/sbin/sendmail
+elif test -x /sbin/sendmail
+then
+    sendmail=/sbin/sendmail
+elif test -x /usr/bin/sendmail
+then
+    sendmail=/usr/bin/sendmail
+elif test -x /bin/sendmail
+then
+    sendmail=/bin/sendmail
+elif test -x /usr/lib/sendmail
+then
+    sendmail=/usr/lib/sendmail
+elif test -x /lib/sendmail
+then
+    sendmail=/lib/sendmail
+else
+    echo Cannot find sendmail program
+    exit 1
+fi
+
+case "$HPCM_SUBMIT_ADDRESS" in
+
+    "" )	echo "ERROR: HPCM_SUBMIT_ADDRESS" \
+                     "is not set"
+		exit 1
+		;;
+esac
+
+# Submit program file by email.
+#
+( echo To: $HPCM_SUBMIT_ADDRESS; \
+  echo Cc: `id -un`; \
+  cat - )                | $sendmail -oi -t
+
+exit 0

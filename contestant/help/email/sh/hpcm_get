@@ -1,0 +1,127 @@
+#!/bin/sh
+#
+# Get demos, problems, etc for the contestant.
+#
+# File:		hpcm_get
+# Author:	Bob Walton <walton@deas.harvard.edu>
+# Date:		Tue Oct 31 20:37:05 EST 2000
+#
+# The authors have placed this program in the public
+# domain; they make no warranty and accept no liability
+# for this program.
+#
+# RCS Info (may not be true date or author):
+#
+#   $Author: hc3 $
+#   $Date: 2000/11/01 01:51:02 $
+#   $RCSfile: hpcm_get
+#   $Revision: 1.1 $
+
+cd
+
+# Check for an consume -* options.
+#
+force=no
+case "$1" in
+
+    -force )
+	    force=yes
+	    shift
+	    ;;
+    -* )
+	    echo "
+hpcm_get [-force] [name ...]
+
+    When used without a name, gets all help and demos
+    files.
+
+    When used with a name, gets the named files or
+    directories.  Getting a directory recursively gets
+    the contents of the directory.
+
+    Everything gotten is installed in the directory
+    defined by the HPCM_HOME environment variable, or
+    in ~ if HPCM_HOME is not defined.
+
+    So for example,
+    			hpcm_get demos
+
+    gets files named \`demos/...' and puts them in the
+    directory ~/demos if HPCM_HOME is undefined.
+
+    Without the -force option, hpcm_get refuses to
+    get things that seem to be already gotten.  With
+    -force, it will get them anyway, which is useful
+    if the version gotten is more recent or more
+    complete than what was previously gotten.
+
+    Files are gotten by sending email requests and get-
+    ting email replies.  If the hpcm_extract program is
+    called automatically for the replies (say because
+    it is invoked by .procmailrc), the gotten files are
+    automatically installed within the HPCM_HOME or ~
+    directory.  Otherwise the files in the reply mail
+    must be manually extracted."
+
+    	    exit 1
+	    ;;
+esac
+
+# Find directory into which to get stuff.
+#
+home=${HPCM_HOME:-~}
+
+if test ! -d "$home"
+then
+    echo "$home is not a directory"
+    exit 1
+fi
+
+# Loop through the name arguments, or use `help demos'
+# as names if there are no name arguments.
+#
+if test "${*:+yes}" = ""
+then
+    names="help demos"
+else
+    names="$*"
+fi
+for name in $names
+do
+
+    case "$name" in
+        help/* | help )
+
+		dir=help ;;
+
+        demos/* | demos )
+		dir=demos ;;
+
+        problems/* | problems )
+		dir=problems ;;
+
+	*)	echo "IGNORING \`$name';"
+		echo "    first component of name is" \
+                     "not \`help', \`demos', or" \
+		     "\`problems'."
+		continue
+		;;
+    esac
+
+
+    # Get $name by email if it has not already been
+    # gotten of if -force option given.
+    #
+    if test -e "$home/$name" -a "$force" = "no"
+    then
+    	echo "IGNORING \`$name';"
+	echo "    it has been gotten already;"
+    	echo "    use -force to get it again."
+    else
+	echo "Sending email to get \`$name'."
+        echo "Subject: get $name" | hpcm_sendmail
+	sleep 2
+    fi
+done
+
+exit 0
