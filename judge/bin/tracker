@@ -16,9 +16,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/11/05 17:52:14 $
+#   $Date: 2000/11/06 02:28:52 $
 #   $RCSfile: tracker,v $
-#   $Revision: 1.4 $
+#   $Revision: 1.5 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -273,7 +273,7 @@ proc add_err {} {
     	   err_array
 
     set items ""
-    foreach dir [array names err_array] {
+    foreach dir [lsort [array names err_array]] {
         set files [lsort $err_array($dir)]
 	if { [llength $files] == 0 } continue
 	lappend items [list [lindex $files 0] \
@@ -302,18 +302,19 @@ proc add_err {} {
 proc add_nonauto {} {
 
     global directory_list directory_list_length \
-    	   rec_array rep_array
+    	   rec_array rep_array autodispatch_map
 
     set result ""
-    foreach dir [array names rec_array] {
+    foreach dir [lsort [array names rec_array]] {
         set rec_line $rec_array($dir)
 	if { [info exists rep_array($dir)] } {
 	    continue
 	}
 	set subject [lindex $rec_line 2]
+	set dword [lindex $subject 0]
 	if { [llength $subject] >= 1 \
-	     && [lsearch -exact {submit get} \
-	     		 [lindex $subject 0]] >= 0 } {
+	     && [info exists \
+	              autodispatch_map($dword)] } {
 	    continue
 	}
 
@@ -322,7 +323,7 @@ proc add_nonauto {} {
 	set result "$result\n[format {%3d. %s} \
 	                      $directory_list_length \
 			      $dir]"
-	set result "$result\n         $subject"
+	set result "$result\n         Subject: $subject"
     }
 
     return $result
@@ -340,7 +341,7 @@ proc add_pid { { too_old "" } } {
     if { $too_old == "" } {
 	set too_old $dispatch_too_old
     }
-    foreach dir [array names pid_array] {
+    foreach dir [lsort [array names pid_array]] {
         set pid_line $pid_array($dir)
 	set mtime [lindex $pid_line 1]
 	set rtime [lindex $pid_line 2]
@@ -369,15 +370,16 @@ proc add_auto {} {
     	   rec_array rep_array pid_array
 
     set result ""
-    foreach dir [array names rec_array] {
+    foreach dir [lsort [array names rec_array]] {
         set rec_line $rec_array($dir)
 	if { [info exists rep_array($dir)] } {
 	    continue
 	}
 	set subject [lindex $rec_line 2]
-	if { [llength $subject] >= 1 \
-	     && [lsearch -exact {submit get} \
-	     		 [lindex $subject 0]] < 0 } {
+	set dword [lindex $subject 0]
+	if { [llength $subject] < 1 \
+	     || ! [info exists \
+	                autodispatch_map($dword)] } {
 	    continue
 	}
 
@@ -392,11 +394,12 @@ proc add_auto {} {
 	    set rtime [lindex $pid_line 2]
 	    set elapsed [expr { $rtime - $mtime }]
 
-	    set result "$result\n         $subject\
-                        \        running for $elapsed\
-			seconds"
+	    set result "$result\n         Subject:\
+	                $subject       running for\
+			$elapsed seconds"
 	} else {
-	    set result "$result\n         $subject"
+	    set result "$result\n         Subject:\
+	                $subject"
 	}
     }
 
@@ -421,7 +424,7 @@ proc call_manualreply { index } {
     set dir \
 	[lindex $directory_list [expr { $index - 1 }]]
 
-    if { [regexp {^.*-<<.*>>-submission$} $dir] } {
+    if { [regexp {^[^<>]*-<<.*>>-submission$} $dir] } {
 	set dir $mail_directory/$dir
     }
 
@@ -434,28 +437,64 @@ proc call_manualreply { index } {
     return "Done with $dir"
 }
 
-
-set ch [open "|trackfinder" r]
-read_input $ch
-close $ch
-
-set output ""
+# Loop until eof.
+#
 while { "yes" } {
-    set directory_list ""
-    set directory_list_length 0
-    puts [add_err]
-    puts [add_nonauto]
-    puts [add_pid]
-    puts [add_auto]
-    puts ""
-    puts "$output"
-    puts -nonewline "> "
-    flush stdout
-    set answer [string trim [gets stdin]]
-    if { [eof stdin] } break
-    if { ! [catch { expr { $answer } }] } {
-	set output [call_manualreply $answer]
+
+    # Read or re-read all input sources.
+    #
+    set ch [open "|trackfinder" r]
+    read_input $ch
+    close $ch
+    if { [file isdirectory $log_directory] } {
+	set ch [open "|trackfinder $log_directory" r]
+	read_input $ch
+	close $ch
     }
+    if { [file isdirectory $default_log_directory] } {
+	set jp $judging_parameters_file
+	set dldjp $default_log_directory/$jp
+        if { ! [file readable $dldjp] } {
+            set jdjp $judging_directory/$jp
+	    if { ! [regexp {^/} $jdjp] } {
+	        set jdjp "[pwd]/$jdjp"
+	    }
+	    while { [regsub \
+	             {/([^/.]|\.[^/.])[^/]*/\.\./} \
+		     $jdjp {/} jdjp] > 0 } {}
+	    file delete -force $dldjp
+	    link_file $jdjp $dldjp
+	}
+	set ch [open "|trackfinder\
+	              $default_log_directory" r]
+	read_input $ch
+	close $ch
+    }
+
+    set output ""
+    while { "yes" } {
+	set directory_list ""
+	set directory_list_length 0
+	puts [add_err]
+	set err_last $directory_list_length
+	puts [add_nonauto]
+	set nonauto_last $directory_list_length
+	puts [add_pid]
+	set pid_last $directory_list_length
+	puts [add_auto]
+	set auto_last $directory_list_length
+	puts ""
+	puts "$output"
+	puts -nonewline "> "
+	flush stdout
+	set answer [string trim [gets stdin]]
+	if { [eof stdin] } break
+	if { ! [catch { expr { $answer } }] } {
+	    set output [call_manualreply $answer]
+	}
+    }
+
+    if { [eof stdin] } break
 }
 
 exit 0
@@ -464,4 +503,3 @@ exit 0
 #
 } caught_output
 caught_error
-
