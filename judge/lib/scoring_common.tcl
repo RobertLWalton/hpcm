@@ -2,7 +2,7 @@
 #
 # File:		scoring_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Sep  5 22:12:07 EDT 2001
+# Date:		Thu Sep  6 05:47:30 EDT 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/09/06 02:00:33 $
+#   $Date: 2001/09/06 12:01:04 $
 #   $RCSfile: scoring_common.tcl,v $
-#   $Revision: 1.8 $
+#   $Revision: 1.9 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -24,6 +24,7 @@
 #	Including this Code
 #	Scoring Data Base
 #	Scoring Functions
+#	Proof Display
 
 # Including this Code
 # --------- ---- ----
@@ -464,5 +465,83 @@ proc compute_score { } {
     	return "Formatting Error"
     } else {
         return "Completely Correct"
+    }
+}
+
+# Proof Display
+# ----- -------
+
+# The proof display code displays one proof at a time.
+# There is a current difference type, and for each
+# difference type, there is a current proof.  The
+# current proof of the current difference type is
+# displayed.
+#
+set current_type ""
+#
+# If the current_type is "", it should be taken to be
+# the first element of [concat $incorrect_output_types
+# $incomplete_output_types $formatting_error_tpes].
+#
+# current_proof_array(type) is the index of the current
+# proof in proof_array(type).  If current_proof_array(
+# type) is unset, it should be taken as if it were set
+# to 0.
+
+# Display the current proof.  The following functions
+# must have been called first:
+#
+#	compute_instruction_array
+#	compute_score_and_proof_arrays
+#	compute_score
+#
+# If there is no error, window_error is set to "" and
+# `yes' is returned.  Otherwise window_error is set to
+# an error description and `no' is returned.
+#
+proc display_proof {} {
+
+    global current_type \
+    	   incorrect_output_types \
+           incomplete_output_types \
+	   formatting_error_types \
+	   window_error
+
+    if { $current_type == "" } {
+        set current_type [lindex [concat \
+	    $incorrect_output_types \
+	    $incomplete_output_types \
+	    $formatting_error_types] 0]
+    }
+
+    if { $current_type == "" } {
+        set window_error \
+	    "There are no displayable proofs."
+	return no
+    }
+
+    if { ! [info exists proof_array($current_type)] } {
+        set window_error \
+	    "There are no displayable proofs of type\
+	     `$type'"
+	return no
+    }
+
+    set proofs $proof_array($current_type)
+
+    if { ! [info exists current_proof_array(\
+                                $current_type)] } {
+	set current_proof_array($current_type) 0
+    }
+
+    set i $current_proof_array($current_type)
+
+    set proof [lindex $proofs $i]
+
+    if { $proof == "" } {
+        set window_error \
+	    "You have run out of displayable proofs\
+	     of type `$type'"
+	return no
     }
 }

@@ -2,7 +2,7 @@
 #
 # File:		display_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Sep  5 18:01:07 EDT 2001
+# Date:		Thu Sep  6 08:13:47 EDT 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/09/06 00:36:02 $
+#   $Date: 2001/09/06 12:01:03 $
 #   $RCSfile: display_common.tcl,v $
-#   $Revision: 1.11 $
+#   $Revision: 1.12 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -1072,6 +1072,165 @@ proc set_file_display { filename } {
     #
     set_window_display "$display\n$bar"
     set last_display file
+}
+
+# Function that reads a file into an array.  When first
+# called for the file, this function opens the file and
+# reads lines of the file into the array until a given
+# line number is reached.  On subsequent calls, if a
+# larger line number is given, this function reads more
+# of the file into the array, until the given line
+# number is reached.  Lines are numbered 1, 2, ..., and
+# if the array is named x_array, then x_array(1) is the
+# 1'st line, x_array(2) the 2'nd line, etc.
+#
+# Note that reading stops on an end of file even if
+# the given line number has not been reached.  In this
+# case, array elements of for lines off the end of the
+# file will not exist.
+#
+proc read_file_array { filename array linenumber } {
+
+    if { ! [info exists $array(ch)] } {
+
+        set ch [open $filename r]
+	set lastline 0
+
+	set $array(filename) $filename
+	set $array(ch) $ch
+	set $array(lastline) 0
+
+    } else {
+
+        set ch [set ${array}(ch)]
+        set lastline [set ${array}(lastline)]
+
+    }
+
+    if { $ch = "CLOSED" } return
+
+    while { $lastline < $linenumber } {
+	set line [gets $ch]
+	if { [eof $ch] } {
+	    close $ch
+	    set $array(ch) CLOSED
+	    break
+	}
+        incr lastline
+	set $array($lastline) $line
+    }
+
+    set $array(lastline) $lastline
+}
+
+# Function to return a line with tabs expanded into
+# spaces.
+#
+proc tab_expand { line } {
+    set segments [split $line "\t"]
+    set output ""
+    set column -8
+    set blanks "        "
+    foreach segment $segments {
+        if { $column == -8 } {
+	    set column 0
+	} else {
+	    set b [expr { 8 - $column % 8 }]
+	    incr column $b
+	    incr b -1
+	    set output \
+	        "$output[string range $blanks 0 $b]"
+	}
+	set $output "$output$segment"
+        incr column [string length $segment]
+    }
+
+    return $output
+}
+
+# Function to compute a display of N lines of a file
+# with some text highlighted.  The display is returned.
+# The first line consts of a bar (===) with the file
+# name and line numbers being displayed.  The highlight
+# argument is a list of items of the form
+#
+#	line-number first-column last-column
+#
+# which must be in sorted order.  The file will be
+# read into the array with the read_file_array
+# function.
+#
+# The returned display consists of lines each ending
+# with \n.
+#
+proc compute_file_display \
+	{ filename array first_line_number \
+	                 last_line_number \
+			 highlights } {
+
+    global highlight_on highlight_off
+
+    set hlength \
+        [string length "$highlight_on$highlight_off"]
+
+    read_file_array $filename $array $last_line_number
+
+    set output [bar_with_text "$filename: lines\
+    		$first_line_number-$last_line_number"]
+
+    set i $first_line_number
+    set eofyet no
+
+    while { "yes" } {
+	set j [lindex [lindex $highlights 0] 0]
+        if { $j == "" || $j >= $i } break
+	set highlights [lrange $highlights 1 end]
+    }
+
+    while { $i <= $last_line_number } {
+
+        if { ! [info exists $array($i)] } {
+	    if { $eofyet } {
+	        set output "$output\n"
+	    } else {
+	        set eofyet yes
+	        set output "$output----------\
+		                   END OF FILE\
+				   ----------\n"
+	    }
+	} else {
+
+	    set line [set $array($i)]
+	    if { $j == $i } {
+	        set line [tab_expand $line]
+		set k 0
+		while { "yes } {
+		    set h [lindex $highlights]
+		    set cfirst [lindex $h 1]
+		    set clast [lindex $h 2]
+		    incr c1 $k
+		    incr c2 $k
+		    set l1 [string range $line 0 \
+				 [expr { $c1 - 1 }]]
+		    set l2 [string range $line $c1 $c2]
+		    set l3 [string range $line \
+				 [expr { $c2 + 1 }] end]
+		    set hon $highlight_on
+		    set hoff $highlight_off
+		    set line "$l1$hon$l2$hoff$l3"
+
+		    set highlights \
+		        [lrange $hightlights 1 end]
+		    set j [lindex [lindex $highlights \
+		                          0] 0]
+		    if { $j == "" || $ $j != $i } break
+		}
+	    }
+	    set output "$output$line\n"
+	}
+    }
+
+    return $output
 }
 
 
