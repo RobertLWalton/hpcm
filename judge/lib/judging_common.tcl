@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Jan 25 11:15:25 EST 2002
+# Date:		Fri Jan 25 22:18:26 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/01/25 16:15:37 $
+#   $Date: 2002/01/26 05:32:40 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.71 $
+#   $Revision: 1.72 $
 #
 
 # Table of Contents
@@ -1185,19 +1185,19 @@ proc compose_response \
 # response.  Takes as input the list of commands
 # returned by compose_response.  Does the following
 #
-# If the list contains NO-REPLY: does nothing.
-# Else if the list contains FINAL: calls send_reply.
+# If the list contains FINAL: calls send_reply.
 # Else if the list contains NOT-FINAL: calls
 #      send_reply -notfinal.
+# Else if the list contains NO-REPLY: does nothing.
 # Else calls error.
 #
 proc send_response { commands } {
-    if { [lcontain $commands NO-REPLY] } {
-    	return
-    } elseif { [lcontain $commands FINAL] } {
+    if { [lcontain $commands FINAL] } {
     	send_reply
     } elseif { [lcontain $commands NOT-FINAL] } {
     	send_reply -notfinal
+    } elseif { [lcontain $commands NO-REPLY] } {
+    	return
     } else {
         error "response instructions do not contain\
 	       NO-REPLY, FINAL, or NOT-FINAL."

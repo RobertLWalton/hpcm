@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Jan 25 11:03:40 EST 2002
+# Date:		Fri Jan 25 22:16:22 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/01/25 16:11:01 $
+#   $Date: 2002/01/26 05:32:40 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.88 $
+#   $Revision: 1.89 $
 
 # Table of Contents:
 #
@@ -460,7 +460,7 @@ set default_response_instructions {
 	    { LINE "However, this score WILL BE\
 		    REVIEWED by the human judge\
 		    (soon)." }
-	    NON-FINAL
+	    NOT-FINAL
 	}
     } elseif { ! $manual && $proposed } {
 	FINAL
@@ -592,79 +592,77 @@ set default_response_instructions {
 # Note these variables cannot be set by reponse instruc-
 # tion commands.
 #
-#   The $response_instructions_file file commands are\
-#   	execu-
-#   ted to construct the reply.  The possible commands
-#   are:
+# The $response_instructions_file file commands are exe-
+# cuted to construct the reply.  The possible commands
+# are:
 #
-#	FINAL
-#	    The final reply is sent.  A $reply_file file
-#	    is created in the current directory.  If
-#	    this command is executed, it must be the
-#	    first command executed.
+#     FINAL
+#     NOT-FINAL 
+#     NO-REPLY
+#	  Just one of these commands should be given,
+#	  to indicate whether a reply is to be sent,
+#	  and if it is to be the final reply for the
+#	  submission.  If FINAL is given, a final reply
+#	  is sent and $reply_file is created; else if
+#	  NOT-FINAL is given a reply is sent that is not
+#	  final, and no $reply_file is created; else if
+#	  NO-REPLY is given no reply is sent; else an
+#	  error is signaled.
 #
-#	NON-FINAL 
-#	    A non-final reply is sent.  No $reply_file
-#	    file is created in the current directory
-#	    (though the reply is recorded in the
-#	    $reply_history_file file).  If this command
-#	    is executed, it must be the first command
-#	    executed.
+#     EDIT
+#	  This command indicates that the reply composed
+#	  by the response instructions should be edited
+#	  by a person before being sent.
 #
-#	NO-REPLY
-#	    No reply is sent.  All other commands are
-#	    ignored.  If this command is executed, it
-#	    must be the first command executed.
+#     EXIT
+#	  This terminates command execution, and any
+#	  commands following this command are ignored.
 #
-#	EXIT
-#	    This is the last command executed, and any
-#	    commands following it are ignored.
+#     { LINES "string" ... }
+#     { LINE  "string" }
+#	  The strings, each followed by a line feed, are
+#	  included in the reply.  Note that the strings
+#	  may themselves include line feeds.
 #
-#	{ LINES \"string\" ... }
-#	{ LINE \"string\" }
-#	    The strings, each followed by a line feed, are
-#	    included in the reply.  Note that the strings
-#	    may themselves include line feeds.
-#
-#	    Several special strings are substituted for
-#	    within each string as follows:
+#	  Several special strings are substituted for
+#	  within each string as follows:
 #
 #	        -PROBLEM-	 The problem name.
-#		-AUTO-SCORE-	 \$auto_score value.
-#		-MANUAL-SCORE-	 \$manual_score value.
-#		-PROPOSED-SCORE- \$proposed_score value.
+#		-AUTO-SCORE-	 $auto_score value.
+#		-MANUAL-SCORE-	 $manual_score value.
+#		-PROPOSED-SCORE- $proposed_score value.
 #
-#	BLANK
-#	    Include a blank line in the reply.
+#     BLANK
+#	  Include a blank line in the reply.
 #
-#	BAR
-#	    Inserts a 72 character ----- bar line.
+#     BAR
+#	  Inserts a 72 character ----- bar line.
 #
-#	{BAR \"string\"}
-#	    Inserts ----- bar line that ends with a
-#	    space followed by the string.  The total
-#	    number of characters in the line is 72.
+#     { BAR "string" }
+#	  Inserts ----- bar line that ends with a space
+#	  followed by the string.  The total number of
+#	  characters in the line is 72.
 #
-#	{INPUT filename}
-#	    Include a copy of the file in the reply.
+#     { INPUT filename }
+#	  Include a copy of the file in the reply.
 #
-#	RECEIVED-HEADER
-#	    Include a copy of the Date, To, From, Reply-
-#	    To, and Subject header lines of the
-#	    $received_file file in the reply.
+#     RECEIVED-HEADER
+#	  Include a copy of the Date, To, From, Reply-
+#	  To, and Subject header lines of the
+#	  $received_file file in the reply.
 #
-#	RECEIVED-BODY
-#	    Include the body of the $received_file file
-#	    in the reply.
+#     RECEIVED-BODY
+#	  Include the body of the $received_file file in
+#	  the reply.
 #
-#	FIRST
-#	    Include lines describing the type and posi-
-#	    tion of the first score determining error in
-#	    the reply.
+#     FIRST
+#	  Include lines describing the type and position
+#	  of the first score determining error in the
+#	  reply.
 #
-#	SUMMARY
-#	    Include lines summarizing of all score de-
-#	    termining errors in the reply.
+#     SUMMARY
+#	  Include lines summarizing of all score deter-
+#	  mining errors in the reply.
 
 # Submission Parameters
 # ---------- ----------
