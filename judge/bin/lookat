@@ -6,7 +6,7 @@
 #
 # File:		lookat
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Apr 29 10:33:14 EDT 2002
+# Date:		Mon Apr 29 10:34:26 EDT 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/04/29 14:31:10 $
+#   $Date: 2002/04/29 14:38:54 $
 #   $RCSfile: lookat,v $
-#   $Revision: 1.18 $
+#   $Revision: 1.19 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -489,110 +489,105 @@ set start 1
 
 # Run the interactive loop.
 #
-    while { "yes" } {
+while { "yes" } {
 
-        puts "\n\n\n\n\n"
-	set next \
-	    [display_directories $directory_height \
-	    			 $start]
-	puts "#=display directory number # in directory list"
-	puts "e new-logical-expression  a=print abbrevs  \
-	      u=up  d=down  ?=more help  x=exit"
-	puts ""
-	if { $error_line == "" \
-	     && $manualcount == 0 } {
-	    set error_line \
-	        "There are NO matching directories.  Use\
-		 the `e' command."
-	}
-	puts $error_line
-	puts -nonewline "> "
+    puts "\n\n\n\n\n"
+    set next \
+	[display_directories $directory_height $start]
+    puts "#=display directory number # in directory list"
+    puts "e new-logical-expression  a=print abbrevs  \
+	  u=up  d=down  ?=more help  x=exit"
+    puts ""
+    if { $error_line == "" \
+	 && $manualcount == 0 } {
+	set error_line \
+	    "There are NO matching directories.  Use\
+	     the `e' command."
+    }
+    puts $error_line
+    puts -nonewline "> "
 
-	flush stdout
-	set answer [gets stdin]
-	if { [eof stdin] } { puts ""; break }
-	set answer [string trim $answer]
+    flush stdout
+    set answer [gets stdin]
+    if { [eof stdin] } { puts ""; break }
+    set answer [string trim $answer]
 
-	set error_line ""
-	switch -regexp -- $answer {
-	    {^[0-9]+$} {
-		if { $answer < 1 || \
-		     $answer > $manualcount } {
-		    set error_line \
-		        "ERROR: $answer out of\
-				range."
-		} else {
-		    exec_manualreply $answer
+    set error_line ""
+    switch -regexp -- $answer {
+	{^[0-9]+$} {
+	    if { $answer < 1 || \
+		 $answer > $manualcount } {
+		set error_line \
+		    "ERROR: $answer out of range."
+	    } else {
+		exec_manualreply $answer
 
-		    set step [expr { $next - $start }]
-		    set start $answer
-		    if { $step <= 2 } {
-		    } elseif { $step <= 4 } {
-			incr start -1
-		    } elseif { $step <= 8 } {
-			incr start -2
-		    } else {
-			incr start -3
-		    }
-
-		    if { $start < 1 } {
-		        set start 1
-		    }
-		}
-	    }
-	    {^p$} -
-	    {^u$} {
 		set step [expr { $next - $start }]
-		set start [expr { $start - $step }]
-	    	if { $start < 1 } {
+		set start $answer
+		if { $step <= 2 } {
+		} elseif { $step <= 4 } {
+		    incr start -1
+		} elseif { $step <= 8 } {
+		    incr start -2
+		} else {
+		    incr start -3
+		}
+
+		if { $start < 1 } {
 		    set start 1
 		}
 	    }
-	    {^n$} -
-	    {^d$} {
-	    	if { $next <= $manualcount } {
-		    set start $next
-		}
-	    }
-	    "^e[ \t]" {
-	        set old_logical_expression \
-	            $logical_expression
-	        if { [catch {
-		         set_expression \
-			     [lrange $answer 1 end]
-			 compute_directory_list
-			    } \
-		        out] } {
-		    puts $out
-		    continue?
-	            set_expression \
-		        $old_logical_expression
-		    compute_directory_list
-	        }
+	}
+	{^p$} -
+	{^u$} {
+	    set step [expr { $next - $start }]
+	    set start [expr { $start - $step }]
+	    if { $start < 1 } {
 		set start 1
 	    }
-	    {^a$} {
-		puts ""
-	        puts [abbreviations_doc]
-		puts ""
+	}
+	{^n$} -
+	{^d$} {
+	    if { $next <= $manualcount } {
+		set start $next
+	    }
+	}
+	"^e[ \t]" {
+	    set old_logical_expression \
+		$logical_expression
+	    if { [catch {
+		     set_expression \
+			 [lrange $answer 1 end]
+		     compute_directory_list
+			} \
+		    out] } {
+		puts $out
 		continue?
+		set_expression $old_logical_expression
+		compute_directory_list
 	    }
-	    {^\?} {
-	        puts $help
-		puts ""
-		puts "Currently $manualcount\
-		      subdirectories are listed and\
-		      the logical expression is:"
-		puts ""
-		puts "     $logical_expression"
-		continue?
-	    }
-	    {^x$} break
-	    default {
-	        set error_line \
-		    "ERROR: cannot understand\
-		            `$answer'."
-	    }
+	    set start 1
+	}
+	{^a$} {
+	    puts ""
+	    puts [abbreviations_doc]
+	    puts ""
+	    continue?
+	}
+	{^\?} {
+	    puts $help
+	    puts ""
+	    puts "Currently $manualcount\
+		  subdirectories are listed and\
+		  the logical expression is:"
+	    puts ""
+	    puts "     $logical_expression"
+	    continue?
+	}
+	{^x$} break
+	default {
+	    set error_line \
+		"ERROR: cannot understand `$answer'."
 	}
     }
 }
