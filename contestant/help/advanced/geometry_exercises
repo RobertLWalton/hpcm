@@ -1,4 +1,4 @@
-GEOMETRY EXERCISES HELP    Sat Mar 20 10:47:05 EST 2004
+GEOMETRY EXERCISES HELP    Sat Mar 20 20:41:17 EST 2004
 
 These are programming exercises you can do to help
 strengthen your geometry problem skills.
@@ -84,12 +84,12 @@ infinite line through points (x1,y1,z1) and (x2,y2,z2).
     qualify).  Normalize this to a unit vector, call it
     U2, and take U3 = U1 x U2.  Then U1, U2, U3 are an
     orthogonal basis and U1 is in the direction of the
-    line.  By computing coordinates of the line and point
-    in the directions U2 and U3, one can project both
-    on a plane perpendicular to the line, in which case
-    the line is projected to a point, and the distance
-    required is the 2D distance of the two projection
-    points.
+    line.  By computing coordinates of the line and
+    point in the directions U2 and U3, one can project
+    both on a plane perpendicular to the line, in which
+    case the line is projected to a point, and the dis-
+    tance required is the 2D distance of the two projec-
+    tion points.
 
 Compute the distance between a point (x,y,z) and an
 finite line from (x1,y1,z1) to (x2,y2,z2).
@@ -290,7 +290,7 @@ points pa and pb intersects the interior of a convex
 polygon.
 
     The line segment intersects the interior of the
-    polygon if the interior of the line segement inter-
+    polygon if the interior of the line segment inter-
     sects the interior of any side of the polygon.  It
     also does if pa and pb are both inside or on the
     boundary of the polygon, but are not both on the
@@ -366,7 +366,7 @@ gon.
     sides will be encountered by the scan.
 
     If the scan encounters a side intersected in its
-    interior by the infinite line, this is alwas a
+    interior by the infinite line, this is always a
     transition point, and the scan state flips, from
     OUTSIDE to INSIDE or vice versa.
 
@@ -391,7 +391,7 @@ gon.
     counterclockwise angle of the outgoing side with
     respect to the positive x-axis, and -IN be the
     counterclockwise angle of the direction reversed in-
-    comiong side with respect to the positive x-axis.
+    coming side with respect to the positive x-axis.
     Then -IN != OUT (else the polygon would be
     degenerate), OUT != 0 (else the case where the
     scan is at the low x vertex of a side running along
@@ -415,30 +415,39 @@ Compute the intersection of two non-degenerate polygons.
     the origin of its incoming side and the distance
     DO from the origin of its outgoing side.
 
-    Then run the following alogorithm recursively.
-    Pick a point from the list of intersections, and
-    call it the anchor of a new intersection polygon.
-    Make the anchor current.  Then iteratively compute
-    a next intersection as follows.  The next intersec-
-    tion must have as its incoming side the outgoing
-    side of the current intersection.  The distance
-    DI of the next intersection must be greater than
-    the distance DO of the current intersection.  And
-    if there are several qualifying next intersections,
-    the one with minimum DI must be choosen.   After
-    computing the next intersection, make it current,
-    and remove it from the list of intersections.
-    Stop if the new current intersection is the anchor.
-    The list of current intersections found is another
-    intersection polygon.
+    Then run the following algorithm to find one inter-
+    section polygon and remove from the list of inter-
+    sections those used as vertices in that polygon.
+    Repeat this algorithm until the list of intersec-
+    tions is empty.
 
-    Several intersection polygons can be found this way,
-    and the process stops when the list of intersections
-    is empty.
+    Pick a point from the list of intersections, and
+    call it the anchor vertex of a new intersection
+    polygon.  Make the outgoing side of this intersect-
+    tion the current side, and the DO value of the
+    intersection the current DO value.  Then iteratively
+    compute a next intersection polygon vertex as
+    follows.  Find all intersections whose incoming
+    sides are the current side, and whose corresponding
+    DI values are greater than the current DO value.
+    If there is more than one, choose the one with the
+    smallest DI value; it becomes the next vertex of the
+    intersection polygon, its outgoing side the new
+    current side, and its DO value the new current DO
+    value; also this intersection point is removed from
+    the list of intersection points.  If there are no
+    intersection points found meeting our criteria, take
+    the target of the current side as the next vertex
+    of the intersection polygon, take the side after the
+    current side in the same polygon as that side as the
+    new current side, and 0 as the new current DO value.
+    Keep finding intersection polygon vertices in this
+    way until the anchor is found as a vertex and re-
+    moved from the list of intersection points.
 
     The situation is more difficult when a vertex from
     one polygon can be on the boundary of the other
-    polygon.  In this case, we conpute intersections by
+    polygon.  In this case, we compute intersections by
     considering all pairs of sides, IN and OUT, one from
     each polygon, and ask whether there is an intersec-
     tion with IN as the incoming side and OUT as the
@@ -460,12 +469,12 @@ Compute the intersection of two non-degenerate polygons.
     continuation IN' of IN is the side after IN in the
     clockwise list of sides of IN's polygon.  If the
     possible intersection is not the target of IN, then
-    IN' = IN.  Simlarly the continuation of OUT, OUT',
+    IN' = IN.  Similarly the continuation of OUT, OUT',
     is the side before OUT in the clockwise list of the
     sides of OUT's polygon, if the possible intersection
     is the origin of OUT.  Otherwise OUT' = OUT.
 
-    Now let IN, IN', OUT, OUT' denote the counterclock-
+    Now let IN, IN', OUT, OUT' denote the counter clock-
     wise angles of the directed sides of the same names
     measured from OUT, so OUT = 0.  Let -IN and -OUT'
     be the angles of the sides IN and OUT' with opposite
@@ -473,8 +482,34 @@ Compute the intersection of two non-degenerate polygons.
     the polygons would be degenerate.  Also by defini-
     tion OUT = 0.
 
+    A possible intersection point will be an actual
+    intersection point with incoming side IN and out-
+    going side OUT if and only if -IN >= -OUT' and
+    -IN > IN'.
 
+    There is a difficulty in determining when -IN =
+    OUT'.  If the coordinates are all bounded by B and
+    are all exact multiples of Q, let A = Q / (2*B).
+    Then if atan2 is used to measure angles, two
+    unequal angles will differ by more than A**2/10,
+    and hopefully the accuracy of computation is such
+    that two equal angles will differ by much less
+    than that value.
 
+    There is another difficulty in removing intersection
+    points properly from the intersection list.  If
+    IN = OUT' then its unknown whether the intersection
+    intersection polygon using this point as a vertex
+    will use part of IN or OUT' as a side.  If it uses
+    IN the intersection point will be consumed and re-
+    moved from the list of intersection points.  If it
+    uses OUT', the intersection point will not be used,
+    but it must somehow be removed anyway.  So if IN =
+    OUT', then the vertices of the polygons that equal
+    the intersection point should reference the inter-
+    section point and cause that to be removed from the
+    intersection list when such a vertex is output to
+    an intersection polygon.
 
 Rotate 2D coordinates.
 
@@ -575,10 +610,10 @@ of the hand of a robot.
 
     If we add a servo that has a rotation matrix to the
     origin of the robot, all end points in the robot are
-    rotated by the servo matrix, and the hand orientation
-    is rotated by multiplying by that matrix.
+    rotated by the servo matrix, and the hand orienta-
+    tion is rotated by multiplying by that matrix.
 
     If we add a line segment to beginning of the robot,
-    all end points in the robot are translated vertically
-    by the length of the line segment, and the hand
+    all end points in the robot are translated vertical-
+    ly by the length of the line segment, and the hand
     orientation does not change.
