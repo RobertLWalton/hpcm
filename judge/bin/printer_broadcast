@@ -4,7 +4,7 @@
 #
 # File:		printer_broadcast
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Sun Oct 20 07:50:26 EDT 2002
+# Date:		Wed Oct 23 00:10:10 EDT 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/10/20 11:48:49 $
+#   $Date: 2002/10/23 04:30:22 $
 #   $RCSfile: printer_broadcast,v $
-#   $Revision: 1.7 $
+#   $Revision: 1.8 $
 
 Pswitch=0
 
@@ -25,7 +25,8 @@ case "$1" in
        ;;
    -doc* )
    	echo "
-printer_broadcast [-P]
+printer_broadcast filename
+printer_broadcast -P
 
     Print the standard input to all the printers in the
     
@@ -164,6 +165,19 @@ do
     # Send the print job to the printer.
 
     case "$printer" in
+	@*)
+	    a=` expr "$printer" : '@\(.*\)$' `
+	    if ( head -1 $tmpfile | grep -s '^%!PS' )
+	    then
+		m=application/postscript
+		D="$filename postscript"
+	    else
+		m=text/plain
+		D="$filename"
+	    fi
+	    metasend -b -s "$filename JUDGE" -t "$a" \
+		     -e base64 -m $m -D "$D" -f $tmpfile
+	    ;;
 	*@*)
 	    ( echo "To: $printer"; \
 	      echo "Subject: $filename JUDGE"; \
