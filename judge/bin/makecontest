@@ -6,7 +6,7 @@
 #
 # File:		makejudgingdir
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Feb 16 02:06:51 EST 2002
+# Date:		Sat Feb 16 07:58:11 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/02/16 07:43:55 $
+#   $Date: 2002/02/16 13:55:16 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.83 $
+#   $Revision: 1.84 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -823,7 +823,7 @@ if { ! [regexp {^/} $j_d] } {
 }
 set j_d [scrub_filename $j_d]
 if { [info exists env(HOME)] } {
-    set hd [scub_filename $env(HOME)]
+    set hd [scrub_filename $env(HOME)]
     regexp "^$hd/(.*)\$" $j_d forget j_d
 }
 
@@ -931,11 +931,15 @@ proc make_substitutions { name } {
 #   index_file		the input index file name
 #   index_directory	index directory name
 #   help_index_chs	output help/index file channel
-#			list; "" if none
-#   demos_index_chs	output help/demos file channel
-#			list; "" if none
-#   problems_index_chs	output help/problems file
-#			channel list; "" if none
+#			list; "" if none;  If there is
+#			a help/index file, there may
+#			in fact be two (one in ./info
+#			and one in ./contest), so all
+#			its lines must be written into
+#			up to two channels, that are
+#			listed here.
+#   demos_index_chs	Ditto for help/demos file.
+#   problems_index_chs	Ditto for help/problems file.
 #   option_array	option substitutions
 #			(see above)
 #   substitutions	filename substitutions
@@ -992,7 +996,9 @@ proc get_index_chs { targetdir } {
 }
 
 # Helper function to copy readable files and subdirec-
-# tories recursively.
+# tories recursively, omitting subdirectories listed
+# in the `directories_not_copied' global variable.
+# Copies subdirectories and readable files.
 #
 proc recursive_file_copy { source destination } {
 
@@ -1037,35 +1043,38 @@ proc process_index_specification {} {
     if { ! [regexp {^/} $index_directory] } {
 	set index_directory [pwd]/$index_directory
     }
-    # Replace /*/../ by / recursively.
-    while { [regsub \
-	     {/([^/.]|\.[^/.])[^/]*/\.\./} \
-	     $index_directory {/} index_directory] \
-	    > 0 } {}
-    while { [regsub {/\./} $index_directory {/} \
-                    index_directory] > 0 } {}
-    regsub {/\.$} $index_directory {} index_directory
-    while { [regsub {//} $index_directory {/} \
-                    index_directory] > 0 } {}
+    set index_directory \
+        [scrub_filename $index_directory]
 
     # Read the input index file and process its entries.
     #
     set index_ch [open $index_file r]
+
+    # Are we in header, in item, or neither (in a
+    # skipped item or at beginning of file).
+    #
     set in_header		no
     set in_item			no
 
+    # The xxxx_index_chs value for a current index
+    # item.
+    #
     set index_chs		""
 
+    # Last header entry encountered, and switches to
+    # tell if it has been used in various indices.
+    #
     set header_entry		""
     set help_header_used	no
     set demos_header_used	no
     set problems_header_used	no
 
+    # Switches to tell if any items have been written
+    # into the various indices.
+    #
     set help_index_written	no
     set demos_index_written	no
     set problems_index_written	no
-
-    set item_header ""
 
     while { "yes" } {
 
@@ -1078,16 +1087,17 @@ proc process_index_specification {} {
 	#
 	if { [regexp {^#} $line] } continue;
 
-	if { [llength $line] >= 1 \
+	if {    ! [catch { set len [llength $line] }] \
+	     && $len >= 1 \
 	     && [lindex $line 0] == "***" } {
 
-	    # Beginning item entry.
+	    # Beginning of item entry.
 
 	    set in_header	no
 
 	    set name [lindex $line 1]
 	    set options \
-	        [expand_options [lreplace $line 0 1]]
+	        [expand_options [lrange $line 2 end]]
 	    set source $index_directory/$name
 
 	    # Check name for legality.
@@ -1164,9 +1174,9 @@ proc process_index_specification {} {
 		if { [set ${targetdir}_header_used] \
 		     == "no" } {
 		    set ${targetdir}_header_used yes
-		    if { $item_header != "" } {
+		    if { $header_entry != "" } {
 		        foreach ch $index_chs {
-			    puts $ch $item_header
+			    puts $ch $header_entry
 			}
 		    }
 		}
@@ -1247,13 +1257,6 @@ proc process_index_specification {} {
 		    # Process concatenated value of
 		    # selected files.
 		    #
-		    if { [info exists source_array] } {
-		        unset source_array
-		    }
-		    if { [info exists \
-		               description_array] } {
-		        unset description_array
-		    }
 		    set mode none
 		    foreach item $value {
 		        switch -- $item {
@@ -1314,7 +1317,7 @@ proc process_index_specification {} {
 			}
 		    } else {
 		        error "Source `$source' is\
-			       neither a file or a\
+			       neither a file nor a\
 			       directory."
 		    }
 		}
@@ -1354,7 +1357,7 @@ proc process_index_specification {} {
 			}
 		    } else {
 		        error "Source `$source' is\
-			       neither a file or a\
+			       neither a file nor a\
 			       directory."
 		    }
 		    set d $targettail
@@ -1384,9 +1387,7 @@ proc process_index_specification {} {
 			       contains a `/'"
 		    }
 		    set s_d $solutions_directory+
-		    link_file $source \
-			      "$s_d/[file tail \
-			      		  $targettail]"
+		    link_file $source $s_d/$targettail
 		}
 	    }
 
@@ -1394,13 +1395,13 @@ proc process_index_specification {} {
 
 	    # Line inside header.
 
-	    set item_header "$item_header\n$line"
+	    set header_entry "$header_entry\n$line"
 
 	} elseif { [regexp "^\[^\ \t\]" $line] } {
 
 	    # Beginning of header entry.
 
-	    set item_header		$line
+	    set header_entry		$line
 	    set in_header		yes
 	    set in_item			no
 	    set help_header_used	no
@@ -1735,7 +1736,7 @@ set mode file
 # Mode indicates what next argument should be: file,
 # directory, or substitution.
 #
-foreach arg [lreplace $argv 0 [expr { $argi - 1 }]] {
+foreach arg [lrange $argv $argi end] {
 
     # Process next argument.  Whether argument ends in
     # `,' or `:' tells mode of next argument.
@@ -1751,8 +1752,8 @@ foreach arg [lreplace $argv 0 [expr { $argi - 1 }]] {
 	}
 	set index_file $arg
 	set substitutions ""
-	foreach opt [array names option_array] {
-	    unset option_array($opt)
+	if { [array exists option_array] } {
+	    unset option_array
 	}
     } elseif { $mode == "directory" } {
     	if { [regexp {^(.*),$} $arg forget arg] } {
@@ -1903,8 +1904,8 @@ if { ( $problems_option \
        && ! [regexp {r..} [get_access \
        			      $c_d/help/problems]] ) } {
     TODO "Run `startcontest' when contest starts" \
-         "to chmod a+rx $c_d/problems" \
-	 "and/or $c_d/help/problems."
+         "to chmod a+rx ./contest/problems" \
+	 "and/or ./contest/help/problems."
 }
 
 # Make mail directory.
@@ -1967,7 +1968,7 @@ if { $secure_option } {
 	deny_access $c_d/secure/passwords
 	set apw account:password:who
     	set ctc coaches-email:team-email:comment
-	TODO "Edit $c_d/secure/passwords;" \
+	TODO "Edit ./contest/secure/passwords;" \
 	     "each of its lines has the format:" \
 	     "`$apw:$ctc'."
     } else {
@@ -1996,7 +1997,7 @@ if { $secure_option } {
 	        puts $passwords_ch $line
 	    }
 	    close $passwords_ch
-	    TODO "Inspect $c_d/secure/passwords" \
+	    TODO "Inspect ./contest/secure/passwords" \
 		 "to which passwords have been added."
 	}
     }
@@ -2020,7 +2021,7 @@ if { $secure_option \
     close $rc_ch
     deny_access $c_d/secure/hpcm_sendmail.rc
 
-    TODO "Edit $c_d/secure/hpcm_sendmail.rc;" \
+    TODO "Edit ./contest/secure/hpcm_sendmail.rc;" \
 	 "either remove the Key and Key-Name" \
 	 "and edit hpcm_judging.rc\
 	  authentication variables to contain:" \
@@ -2057,7 +2058,7 @@ if { $secure_option \
                       $c_d/bin/hpcm_sendmail \
 		      -permissions] \
 	        & 04000 }] == 0 } {
-    TODO "chmod u+s $c_d/bin/hpcm_sendmail"
+    TODO "chmod u+s ./contest/bin/hpcm_sendmail"
 }
 
 # Make $c_d/who_where
@@ -2085,7 +2086,8 @@ if { $who_where_option } {
 	close $who_where_ch
 	grant_access $c_d/who_where
 
-	TODO "Edit $c_d/who_where to specify location" \
+	TODO "Edit ./contest/who_where to specify\
+				location" \
 	     "of teams, by replacing `WHERE' for each" \
 	     "account with a SHORT description of the" \
 	     "team's location."
@@ -2187,7 +2189,7 @@ if { $who_where_option } {
 	    close $who_where_ch
 	    grant_access $c_d/who_where
 
-	    TODO "Edit $c_d/who_where to specify\
+	    TODO "Edit ./contest/who_where to specify\
 					location" \
 		 "of teams, by replacing `WHERE' for\
 		 			each" \
@@ -2226,7 +2228,7 @@ if { $trashable_option } {
 	close $trashable_ch
 	grant_access $c_d/trashable
 
-	TODO "Remember to delete $c_d/trashable" \
+	TODO "Remember to delete ./contest/trashable" \
 	     "when your are done trashing accounts."
     }
 }
@@ -2251,9 +2253,9 @@ if { $printer_option \
     write_file $c_d/printer $printer
     grant_access $c_d/printer
 
-    TODO "Wrote $c_d/printer to be `$printer';" \
-         "edit $c_d/printer to change." \
-	 "You may want to use $c_d/printer_map\
+    TODO "Wrote ./contest/printer to be `$printer';" \
+         "edit ./contest/printer to change." \
+	 "You may want to use ./contest/printer_map\
 	    instead of $c_d/printer:" \
 	 "see `hpcm/contestant/bin/printer_pipe -doc'."
 }
@@ -2268,10 +2270,10 @@ if { $printer_map_option \
     write_file $c_d/printer_map {.* !~/PRINTER}
     grant_access $c_d/printer_map
 
-    TODO "Wrote $c_d/printer_map to be\
+    TODO "Wrote ./contest/printer_map to be\
     		`.* !~/PRINTER';" \
-         "edit $c_d/printer_map to change." \
-	 "You may want to use $c_d/printer\
+         "edit ./contest/printer_map to change." \
+	 "You may want to use ./contest/printer\
 	    instead of $c_d/printer_map:" \
 	 "see `hpcm/contestant/bin/printer_pipe -doc'."
 }
@@ -2283,7 +2285,7 @@ if { $printer_jobs_option \
     close [open $c_d/printer_jobs w]
     grant_access $c_d/printer_jobs rw
 
-    TODO "Delete $c_d/printer_jobs if you do not" \
+    TODO "Delete ./contest/printer_jobs if you do not" \
          "want it to list all printer jobs."
 }
 
@@ -2305,7 +2307,7 @@ if { $home_option } {
     }
     if { [file exists $c_d/home] \
          && ! [regexp {r.x} [get_access $c_d/home]] } {
-    	TODO "chmod a+rx $c_d/home"
+    	TODO "chmod a+rx ./contest/home"
     }
 }
 

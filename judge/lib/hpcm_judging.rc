@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Feb 16 02:09:32 EST 2002
+# Date:		Sat Feb 16 09:00:33 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/02/16 07:08:52 $
+#   $Date: 2002/02/16 14:00:01 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.106 $
+#   $Revision: 1.107 $
 
 # Table of Contents:
 #
@@ -1211,8 +1211,9 @@ proc grant_access { filename { allow rx } } {
 # Return global (everyone) permissions of a file as a
 # three character string, RWX, where R = r if the file
 # is a+r and `-' otherwise, W = w if the file is a+w and
-# `-' otherwise, and X = x if the file is a+x and `-'
-# otherwise.
+# `-' otherwise, and X = x or X = s if the file is a+x
+# and `-' otherwise.  If file is a+x, X = s if the file
+# is u+s, and X = x otherwise.
 #
 proc get_access { filename } {
     if { ! [file exists $filename] } {
@@ -1231,7 +1232,11 @@ proc get_access { filename } {
         set W -
     }
     if { ( $mode & 0111 ) == 0111 } {
-    	set X x
+	if { ( $mode & 04000 ) == 04000 } {
+	    set X s
+	} else {
+	    set X x
+	}
     } else {
         set X -
     }
