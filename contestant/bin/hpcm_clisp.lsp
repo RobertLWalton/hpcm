@@ -3,7 +3,7 @@
 ;;;; File:	hpcm_clisp.lsp
 ;;;; Author:	Bob Walton <walton@deas.harvard.edu>
 ;;;; Modifier:  CS 182 (Attila Bodis)
-;;;; Date:	Wed Feb 20 07:18:32 EST 2002
+;;;; Date:	Sat Mar  9 16:02:59 EST 2002
 ;;;;
 ;;;; The authors have placed this program in the public
 ;;;; domain; they make no warranty and accept no
@@ -12,9 +12,9 @@
 ;;;; RCS Info (may not be true date or author):
 ;;;;
 ;;;;   $Author: hc3 $
-;;;;   $Date: 2002/02/20 12:18:02 $
+;;;;   $Date: 2002/03/09 21:33:29 $
 ;;;;   $RCSfile: hpcm_clisp.lsp,v $
-;;;;   $Revision: 1.19 $
+;;;;   $Revision: 1.20 $
 ;;;;
 ;;;;
 ;;;; This file was originally written by the Bob Walton
@@ -24,20 +24,42 @@
 ;;;; functions that establish a proper environment for
 ;;;; contestants and students running COMMONLISP.
 ;;;;
+;;;; TABLE OF CONTENTS:
+;;;;
+;;;;	Miscellaneous
+;;;;	RUN
+;;;;	VI VIL VIR
+;;;;	PICO PICOL PICOR
 
 #+allegro
 (defun BYE () (EXIT))	; Allegro doesn't have this
+
+;; (put object property value)  
+;;
+;; Associates value with the given property for the
+;; symbol object.  Returns value.
+;;
+(defun put (object property value)  
+  (setf (get object property) value))
+
+;; Attempts to fix backspace/delete problems
+(defun fix-backspace ()
+  (run-shell-command "stty erase '^H'"))
+(defun fix-delete ()
+  (run-shell-command "stty erase '^?'"))
 
 ; Override defaults for better output
 (setf *break-on-errors* t)
 (setf *print-pretty* t)
 (setf *print-circle* nil)
 (setf *read-default-float-format* 'double-float)
-(setf LS '|Wrong window, try again...|)
 #+allegro
 (setf *print-right-margin* 56)
 #+clisp
 (setf system::*prin-linelength* 56)
+
+# The purpose of the following is now unclear.
+# (setf LS '|Wrong window, try again...|)
 
 #+allegro
 (proclaim '(optimize (speed 2) (safety 1) (space 1)
@@ -64,6 +86,10 @@
 ;; Note: in CLISP (system::unwind-to-driver) resets to
 ;; top level, if this is ever needed.
 
+# The following code needs to be cleaned up, but we
+# have no allegro to test it on so we have left it
+# alone for now.
+#
 #+allegro
 (defun TRANSCRIBE-ERROR (c)
   (typecase
@@ -91,7 +117,7 @@
     (list c))))
 
 #+clisp
-(defun flush-line-feed (s-expression)
+(defun flush-line-feed ()
   (do ()
       ((or (= 0 (system::line-position))
            (not (read-char nil nil nil))))))
@@ -103,6 +129,19 @@
   ;;
   ;; (if (/= 0 (system::line-position))
       ;; (peek-char nil nil nil nil)))
+
+(defun print-prompt ()
+  (fresh-line)
+  (princ '|--->|)
+  (fresh-line))
+
+(defun eval-and-print (s-expression)
+  (finish-output) ;; In case crash follows.
+  (dolist (val (multiple-value-list
+		  (eval s-expression)))
+	  (fresh-line)
+	  (write val :escape t :pretty t)
+	  (fresh-line)))
 
 (defun RUN (&key (IN *run-in*) (OUT *run-out*)
 		 (PAUSE *run-pause*))
@@ -165,9 +204,19 @@
                 ":IN ~S is not the type of value that"
 		" can name a file.")
 	     in)))
+  
+  (cond
+   ((and (not (eq in t))
+         (null (pathname-type in))
+   	 (not (open in :direction :probe)))
+    (setf in (make-pathname :type "in" :defaults in))))
  
   (cond
    ((eq out t)
+    (if (not (pathnamep in))
+        (error (concatenate 'string
+	          ":IN ~S is not a pathname while :OUT"
+		  " is T" in)))
     (setf out (make-pathname :type "out" :defaults in)))
    ((pathnamep out)) ;do nothing
    ((null out)) ;do nothing
@@ -179,17 +228,6 @@
 		"can name a file.")
 	     out)))
   
-  
-  (cond
-   ((and (not (eq in t))
-         (null (pathname-type in))
-   	 (not (open in :direction :probe)))
-    (setf in (make-pathname :type "in" :defaults in))
-    (cond
-     ((and out (null (pathname-type out)))
-      (setf out
-            (make-pathname :type "out" :defaults out))))
-  ))
   
   (unwind-protect
    (let ((eof-value (cons nil nil))
@@ -205,7 +243,7 @@
 	 (*print-level* 100)
 	 (*print-length* 1000))
 	
-	;; Must use *terminal-io* to for stanard input.
+	;; Must use *terminal-io* to for standard input.
 
 	(setf *run-input*
 	      (if (eq in t) *terminal-io*
@@ -240,35 +278,40 @@
 	    ((eq s-expression eof-value))
 	    (cond
 	     (out
+	      ;; Output to a file.
+
 	      #+clisp
-	      (flush-line-feed s-expression)
-	      (fresh-line)
-	      (princ '|--->|)
-	      (fresh-line)
+	      (flush-line-feed)
+	      (print-prompt)
 	      (finish-output) ;; In case crash follows.
 	      (catch error-tag
 		(unwind-protect
-		    (let ((val (handler-case
-				(eval s-expression)
-				(error (c)
-				  (transcribe-error c))
-			 )))
+		    (dolist (val (handler-case
+				  (multiple-value-list
+				   (eval s-expression))
+				  (error (c)
+				   (transcribe-error c))
+			 ))
 			 (fresh-line)
 			 (write val :escape t)
 			 (fresh-line))
 		  (throw error-tag nil)))
 	      (finish-output))
 	     (pause
-		    ; Flush out any left over returns.
+
+	      ;; Output to the terminal with pauses.
+
+	      ; Loop to read expressions at a pause.
+	      ;
 	      (do ((done nil))
 	          (done)
+
+		  ; Flush out any left over returns.
+		  ;
 	          (do ()
 		      ((null (read-char-no-hang
 		                *terminal-io*))))
-		        ; Print prompt.
-	          (fresh-line)
-	          (princ '|---> ? |)
-		  (fresh-line)
+		  (print-prompt)
 		  (finish-output) ;; In case crash
 		  		  ;; follows.
 	          (let ((line (read-line *terminal-io*
@@ -294,11 +337,12 @@
 		      (write val :escape t :pretty t)
 		      (fresh-line)))
 	     ((not pause)
+
+	      ;; Output to the terminal without pauses.
+
 	      #+clisp
-	      (flush-line-feed s-expression)
-	      (fresh-line)
-	      (princ '|--->|)
-	      (fresh-line)
+	      (flush-line-feed)
+	      (print-prompt)
 	      (finish-output) ;; In case crash follows.
 	      (dolist (val (multiple-value-list
 	                      (eval s-expression)))
@@ -367,7 +411,7 @@
 
   (load *vil-file*))
 
-(defun VIR (&optional (FILE *VIR-FILE* FILEP)
+(defun VIR (&optional (FILE *VIR-FILE* filep)
 		      (OUT (if filep nil *VIR-OUT*)))
   "
   Invokes the vi(1) editor on the given file and when
@@ -425,7 +469,7 @@
 
   (load *picol-file*))
 
-(defun PICOR (&optional (FILE *PICOR-FILE* FILEP)
+(defun PICOR (&optional (FILE *PICOR-FILE* filep)
 		        (OUT (if filep nil *PICOR-OUT*)
 			))
   
@@ -445,15 +489,3 @@
   (internal-pico *picor-file*)
 
   (run :in *picor-file* :out out))
-
-;; (put object property value)  
-;;
-;; Associates value with the given property for the
-;; symbol object.  Returns value.
-;;
-(defun put (object property value)  
-  (setf (get object property) value))
-
-;; Attempts to fix backspace problems
-(defun bksp () (run-shell-command "stty erase '^H'"))
-(defun del () (run-shell-command "stty erase '^?'"))
