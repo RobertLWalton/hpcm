@@ -6,7 +6,7 @@
 #
 # File:		scoreboard
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Sep 22 04:48:35 EDT 2002
+# Date:		Sun Sep 22 06:54:49 EDT 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/09/22 08:47:48 $
+#   $Date: 2002/09/22 11:05:19 $
 #   $RCSfile: scoretable,v $
-#   $Revision: 1.34 $
+#   $Revision: 1.35 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -199,27 +199,29 @@ label_problems
 # Loop though sorted scoreboard_list and output each
 # submitter.
 #
-set current_problems_correct ""
-set number_of_problems \
-    [llength $scoreboard_problem_list]
 foreach item $scoreboard_list {
 
-    # If team has no submissions, stop the presses.
+    set submissions [lindex $item 1]
+    set problems_correct [lindex $item 2]
+    set time_score [lindex $item 3]
+    set modifier [lindex $item 4]
+    set submitter [lindex $item 5]
+    set problem_scores [lreplace $item 0 6]
+
+    # Skip teams with 0 submissions.
     #
-    if { [lindex $item 0] == "000.999999999.000" } {
-	break
-    }
+    if { $submissions == 0 } continue
 
-    set problems_correct [lindex $item 1]
-    set time_score [lindex $item 2]
-    set modifier [lindex $item 3]
-    set submitter [lindex $item 4]
-    set problem_scores [lreplace $item 0 4]
-
-    set total_score "$problems_correct/$time_score"
-
-    if { $modifier == "n" } {
-    	set total_score "*${total_score}"
+    if { $problems_correct != "" } {
+	set total_score $problems_correct
+	if { $time_score != "" } {
+	    set total_score $total_score/$time_score
+	}
+	if { $modifier == "n" } {
+	    set total_score *$total_score
+	}
+    } else {
+        set total_score ""
     }
 
     # Print the line(s) for the team.
@@ -247,7 +249,7 @@ foreach item $scoreboard_list {
 
 	set line "$line$m[format {%9.9s} $score]"
     }
-    if { $count <= $ppl } {
+    if { $count <= $ppl && $total_score != "" } {
 	puts $line
         set line $total_score
     }
