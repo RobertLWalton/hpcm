@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Jan 27 08:34:38 EST 2002
+# Date:		Sun Jan 27 08:58:59 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,15 +11,14 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/01/27 13:56:16 $
+#   $Date: 2002/01/27 13:58:27 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.76 $
+#   $Revision: 1.77 $
 #
 
 # Table of Contents
 #
 #	Including this Code
-#	Computational Functions
 #	Dispatch Locking Functions
 #	Date Functions
 #	Checked File Functions
@@ -85,16 +84,6 @@ set judging_parameters_file hpcm_judging.rc
 # redefined by program.
 #
 proc exit_cleanup {} {}
-
-# Computational Functions
-# ------------- ---------
-
-# Return the intersection of list1 and list2, in some
-# arbitrary order.
-#
-proc intersect { list1 list2 } {
-    return [lindex [intersect3 $list1 $list2] 1]
-}
 
 # Dispatch Locking Functions
 # -------- ------- ---------
