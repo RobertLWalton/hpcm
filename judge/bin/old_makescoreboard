@@ -4,7 +4,7 @@
 #
 # File:		makescoreboard
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Oct 28 09:45:44 EST 2001
+# Date:		Sun Oct 28 09:53:17 EST 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/10/28 14:49:19 $
+#   $Date: 2001/10/28 15:00:51 $
 #   $RCSfile: old_makescoreboard,v $
-#   $Revision: 1.20 $
+#   $Revision: 1.21 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -163,8 +163,7 @@ foreach name [info globals scoreboard_*] {
 # Return `yes' if a file in the mtime_list has changed.
 # Otherwise return `no'.
 #
-# The mtime_file list is a list of items each of the
-# format:
+# The mtime_list is a list of items each of the format:
 #
 #	{ file-mtime file-name }
 #
@@ -198,7 +197,7 @@ proc file_changed { mtime_list } {
        } else {
            if { ! [file readable $name] } {
 	       return yes;
-	   } else if { [file mtime $name] > $mtime } {
+	   } elseif { [file mtime $name] > $mtime } {
 	       return yes;
 	   }
        }
@@ -222,7 +221,7 @@ set parameter_mtime ""
 set LB "{"
 # } to balance left bracket in last line
 #
-proc process_arguments {} {
+proc process_arguments { { first_time no } } {
 
     global judging_directory judging_parameters_file \
            parameter_mtime_list parameters_array \
@@ -240,14 +239,25 @@ proc process_arguments {} {
 	return
     }
 
-    set parameter_mtime_list ""
+    # Set parameter_mtime_list so that if there is an
+    # error reading parameters, and we are recalled to
+    # try again, the parameters will be reread.  Errors
+    # may occur due to files changing dynamically while
+    # makescoreboard runs asynchronously.
+    #
+    set parameter_mtime_list changed
+
+    # Accumulate new parameter_mtime_list value in this
+    # local variable until we have succeeded.
+    #
+    set mtime_list ""
 
     set pf $judging_directory/$judging_parameters_file
-    if { $parameter_mtime_list != "changed" } {
+    if { $first_time != "no" } {
         source $pf
     }
     set mtime [file mtime $pf]
-    lappend parameter_mtime_list [list $mtime $pf]
+    lappend mtime_list [list $mtime $pf]
     set parameter_mtime $mtime
 
     foreach arg [lrange $argv 1 end] {
@@ -256,8 +266,7 @@ proc process_arguments {} {
 	} else {
 	    source $arg
 	    set mtime [file mtime $arg]
-	    lappend parameter_mtime_list \
-	    	    [list $mtime $arg]
+	    lappend mtime_list [list $mtime $arg]
 	    if { $mtime > $parameter_mtime } {
 	        set parameter_mtime $mtime
 	    }
@@ -269,9 +278,13 @@ proc process_arguments {} {
         set parameters_array($name) \
 	    [set scoreboard_$name]
     }
+
+    set parameter_mtime_list $mtime_list
 }
 
-process_arguments
+# Process arguments for the first time.
+#
+process_arguments yes
 
 
 # Given a value that may be an abbreviation defined
@@ -751,12 +764,12 @@ proc pass2 { instructions pc end_pc update } {
 		if { $left_end >= $scoreboard_width } {
 		    error "LINE left text too wide:\
 		           $left"
-		} else if { $right_end < 0 } {
+		} elseif { $right_end < 0 } {
 		    error "LINE right text too wide:\
 		           $right"
-		} else if {    $center_begin < 0 \
-		            || $center_end \
-			       >= $scoreboard_width } {
+		} elseif {    $center_begin < 0 \
+		           || $center_end \
+			      >= $scoreboard_width } {
 		    error "LINE center text too wide:\
 		           $center"
 		}
