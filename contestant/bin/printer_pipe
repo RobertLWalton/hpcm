@@ -5,7 +5,7 @@
 #
 # File:		printer_pipe
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Mon Sep 10 08:43:21 EDT 2001
+# Date:		Mon Sep 10 11:57:06 EDT 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/09/10 13:13:51 $
+#   $Date: 2001/09/10 16:10:36 $
 #   $RCSfile: printer_pipe,v $
-#   $Revision: 1.2 $
+#   $Revision: 1.3 $
 
 Pswitch=0
 
@@ -47,14 +47,14 @@ printer_pipe [-P] where filename [username]
     For the first line whose regular expression matches
     the user name, the printer is used.  If there are
     no matches and the file exists, it is an error
-    (the `printer' file and PRINTER variable are NOT
+    (the \`printer' file and PRINTER variable are NOT
     used).
 
-    The `printer' file contents just name the printer.
+    The \`printer' file contents just name the printer.
 
-    If the printer name begins with a `!', the rest of
-    the name is take as the name of a file in which to
-    find the printer name.  It is an error if this file
+    If the printer name begins with a \`!', the rest of
+    the name is taken to be the name of a file that con-
+    tains the printer name.  It is an error if this file
     is not readable.  If the file is readable the
     printer name is just the contents of the file (no
     further indirection is allowed).  Tilde and glob
@@ -62,30 +62,63 @@ printer_pipe [-P] where filename [username]
 
     If the user name is not given, the current account
     name is used.
-
-    If the -P option is given, the printer name is
-    written to the standard output, and this program
-    exits without trying to print anything.  The where
-    and filename arguments are not used in this case
-    (unless they are needed to specify a user argument).
-    Otherwise this program continues and prints the
-    standard input.
+
+    If the -P option is given, the printer name is writ-
+    ten to the standard output, and this program exits
+    without trying to print anything.  The \`where'
+    and \`filename' arguments are not used in this case.
+    Without the -P option, this program continues and
+    prints the standard input.
 
     The standard input to this program should be a
     file to be piped to the printer.  It is usually a
     postscript file, but can be ASCII with form feeds.
 
-    If the printer name contains an `@' the standard
+    If the printer name contains an \`@' the standard
     input is emailed to the printer name.  Otherwise
     the standard input is piped to \`lpr -Pprinter'.
 
-    If ~/.hpcm_contest/printer_jobs is writable a line
-    giving the date and where field is written to that
-    file.
+    If ~/.hpcm_contest/printer_jobs is writable, a line
+    is written to that file giving the date, the prin-
+    ter, the user account name, the \`where' argument,
+    and the \`filename' argument.
 
     The \`where' and \`filename' arguments are used
     purely for informative purposes in the email subject
-    and in ~/.hpcm_contest/printer_jobs."
+    and in ~/.hpcm_contest/printer_jobs.
+
+    When the standard input is emailed to a printer with
+    a name like \`fee<fi@fo>', one typically puts the
+    following entry in the \`.procmailrc' file of the
+    \`fi@fo' account:
+
+	:0 b
+	* ^To:[ 	]+fee<fi
+	| lpr -Plp
+
+    This pipes the body of any email received with a
+    \`To' address of \`fee<fi...' to \`lpr -Plp'.  Here
+    the []'s contain a space followed by a tab.
+
+    One may want to hide the actual printer email
+    address from contestants, so that a contestant
+    cannot give this email address to an outsider who
+    can then send information to the contestant via
+    printouts.  Presumably one has arranged things
+    so that outsiders cannot send email to contestant
+    accounts.  Then one can make the account \`fi@fo'
+    so that outsiders cannot send email to it, and one
+    can put into the \`.procmailrc' file of that
+    account the entry:
+
+	:0
+	* ^To:[ 	]+fee<fi
+	| formail -i \"To: ppp<b@c>\" \\
+	    | \$SENDMAIL \"ppp<b@c>\"
+
+    This forwards the email on to \`ppp<b@c>' where the
+    real printer is.  Here \`ppp' is a password to be 
+    kept secret from contestants."
 
     	exit 1
 	;;
@@ -152,6 +185,22 @@ else
     exit 1
 fi
 
+# Process printer names that begin with !
+
+case "$printer" in
+    !* )
+    	file=`expr "$printer" : "\!\\(.*\\)\$"`
+	file=`eval echo $file`
+	if test "$file" = "" -o ! -r "$file"
+	then
+	    echo >&2 "\`$printer'" references \
+	             unreadable file.
+	    exit 1
+	fi
+	printer=`cat "$file"`
+       ;;
+esac
+
 # Complain if printer name empty.
 #
 if test "$printer" = ""
@@ -185,7 +234,7 @@ fi
 
 case "$printer" in
     *@*)
-        ( echo "To: $printer"; echo "Cc: $user"; \
+        ( echo "To: $printer"; \
 	  echo "Subject: $filename $user($where)"; \
 	  echo ""; cat ) | /usr/sbin/sendmail -t
 	exit 0
