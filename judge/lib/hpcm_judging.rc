@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Oct 17 09:24:48 EDT 2001
+# Date:		Thu Oct 18 02:13:19 EDT 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/10/17 13:25:43 $
+#   $Date: 2001/10/18 06:13:10 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.65 $
+#   $Revision: 1.66 $
 #
 
 # An optionally modified copy of this file must be
@@ -409,6 +409,11 @@ proc link_file { source { target . } } {
 # it does by default), the file or directory is made
 # readable by everyone.
 #
+# If the file or directory is writable to the current
+# user, and the `allow' argument contains an `w' (which
+# it does NOT by default), the file or directory is made
+# writable by everyone.
+#
 # If the file or directory is executable to the current
 # user, and the `allow' argument contains an `x' (which
 # it does by default), the file or directory is made
@@ -419,6 +424,10 @@ proc grant_access { filename { allow rx } } {
     if { [file readable $filename] \
          && [regexp {r} $allow] } {
 	set perm "${perm}r"
+    }
+    if { [file writable $filename] \
+         && [regexp {w} $allow] } {
+	set perm "${perm}w"
     }
     if { [file executable $filename] \
          && [regexp {x} $allow] } {
