@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Aug  2 12:01:48 EDT 2002
+# Date:		Fri Aug  2 12:11:43 EDT 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/08/02 16:07:19 $
+#   $Date: 2002/08/02 16:11:48 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.48 $
+#   $Revision: 1.49 $
 
 # To make an email contest named `foo':
 #
@@ -128,7 +128,7 @@
 #    order given in the `problems' help page, preced-
 #    ed by that `problems' help page.  Discard any
 #    demonstration .txt files printed.
-#
+
 # 10. A web page containing non-contest-specific help
 #     and demos files can be made according to instruc-
 #     tions in hpcm/contestant/help/Makefile.
@@ -233,7 +233,7 @@ stop_scoreboard:
 
 update_scoreboard:
 	makescoreboard update
-
+
 print_help:
 	fprint info/help/*
 
@@ -249,7 +249,8 @@ print_problems:
 	           echo YOU MUST use a browser \
 			to print $$x by hand;; \
 	    esac; done
-
+
+
 # Tests
 
 Contest_Address:
@@ -269,7 +270,7 @@ test_all:	test_email
 
 TEST_PREREQUISITES=Contest_Address ./mail
 include ${HPCM}/examples/test_submissions/Makefile.mk
-
+
 dangerous_test_clean:
 	rm -rf mail/* flag log replies mbox
 

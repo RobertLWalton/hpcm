@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Aug  2 11:50:22 EDT 2002
+# Date:		Fri Aug  2 12:04:30 EDT 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/08/02 15:56:11 $
+#   $Date: 2002/08/02 16:07:19 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.28 $
+#   $Revision: 1.29 $
 
 # To make an informal contest named `foo':
 #
@@ -291,10 +291,10 @@
 #     help file pages are in order they are listed in
 #     the index.  This produces a `help handout'.
 #
-#     Lastly `make print_demos', and make a `demos
+#     Then `make print_demos', and make a `demos
 #     handout' that consists of these pages, in the
-#     order given in the `demos' help page, preced-
-#     ed by that `demos' help page.
+#     order given in the `demos' help page, preceded by
+#     that `demos' help page.
 #
 #     The help and demos handout can be given out when
 #     the contest is set up.  Usually no printout of the
@@ -308,6 +308,10 @@
 #     order given in the `problems' help page, preced-
 #     ed by that `problems' help page.  Discard any
 #     demonstration .txt files printed.
+#
+# 20. A web page containing non-contest-specific help
+#     and demos files can be made according to instruc-
+#     tions in hpcm/contestant/help/Makefile.
 
 # The location of the hpcm directory.
 #
