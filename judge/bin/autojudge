@@ -5,7 +5,7 @@
 #
 # File:		autojudge
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Mar 21 07:19:37 EST 2003
+# Date:		Sat Nov 13 05:23:01 EST 2004
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2003/03/21 12:19:27 $
+#   $Date: 2004/11/13 10:31:21 $
 #   $RCSfile: autojudge,v $
-#   $Revision: 1.87 $
+#   $Revision: 1.88 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -933,16 +933,22 @@ proc auto_score_reply { score } {
     }
 }
 
-# should_be_made file_list1 file_list2 
+# should_be_made [-nodelete] file_list1 file_list2 
 #
 # If any file_list1 file is older than any file_list2
 # file, and all file_list2 files exist, delete any
 # file_list1 files that exist and return `yes'.  If no
 # file_list1 files exist and all file_list2 files
-# exist, return `yes'.  Else return `no'.
+# exist, return `yes'.  Else return `no'.  If -nodelete
+# option given, suppress deleting of files.
 #
 #
-proc should_be_made { file_list1 file_list2 } {
+proc should_be_made { args } {
+
+    set nodelete \
+        [expr { [lindex $args 0] == "-nodelete" }]
+    set file_list1 [lindex $args end-1]
+    set file_list2 [lindex $args end]
 
     # Set mtime1 to the oldest of the file_list1
     # mtimes, or 0 if no file_list1 file exists.
@@ -979,10 +985,12 @@ proc should_be_made { file_list1 file_list2 } {
     # from file_list2
     #
     if { $mtime1 < $mtime2 } {
-    	foreach file1 $file_list1 {
-	    if { [file exists $file1] } {
-	        puts "Deleting out-of-date $file1"
-		file delete -force $file1
+        if { ! $nodelete } {
+	    foreach file1 $file_list1 {
+		if { [file exists $file1] } {
+		    puts "Deleting out-of-date $file1"
+		    file delete -force $file1
+		}
 	    }
 	}
 	return yes
@@ -1118,7 +1126,7 @@ if { [llength $file_list] >= 2 \
 
 # Make $reply_file if necessary.
 #
-if { [should_be_made \
+if { [should_be_made -nodelete \
          [list $reply_file] \
 	 [concat [list $auto_score_file] \
 	 	 $linked_files]] } {
