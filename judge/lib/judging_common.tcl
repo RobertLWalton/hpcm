@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Jan 22 20:26:33 EST 2002
+# Date:		Tue Jan 22 21:37:00 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/01/23 01:58:30 $
+#   $Date: 2002/01/23 02:36:44 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.65 $
+#   $Revision: 1.66 $
 #
 
 # Table of Contents
@@ -867,8 +867,9 @@ proc header_is_authentic {} {
 #	{ LINE "string" }
 #	    Includes the string followed by a line feed.
 #
-#	{ LINES "string" }
-#	    Includes the string followed by a line feed.
+#	{ LINES "string" ... }
+#	    Includes the strings each followed by a line
+#	    feed.
 #
 #	BLANK
 #	    Include a blank line.
@@ -982,9 +983,13 @@ proc compose_reply { args } {
 	}
         switch -- [lindex $command 0] {
 
-	    LINE -
-	    LINES {
+	    LINE {
 		puts $reply_ch [lindex $command 1]
+	    }
+	    LINES {
+	        foreach s [lrange $command 1 end] {
+		    puts $reply_ch $s
+		}
 	    }
 	    BLANK {
 		puts $reply_ch ""
