@@ -2,7 +2,7 @@
 #
 # File:		display_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Oct 18 11:51:03 EDT 2001
+# Date:		Wed Jan 16 21:53:11 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/10/18 15:53:28 $
+#   $Date: 2002/01/17 02:55:34 $
 #   $RCSfile: display_common.tcl,v $
-#   $Revision: 1.21 $
+#   $Revision: 1.22 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -1442,6 +1442,7 @@ proc send_query { header } {
 
     while { "yes" } {
 	edit_file $filename
+	set_file_display $filename
 
 	set window_error ""
 
@@ -1452,9 +1453,8 @@ proc send_query { header } {
 
 	if { [yes?] } {
 	    if { [catch {
-	          exec \
-		  $contest_directory/bin/hpcm_sendmail \
-		  < $filename } out] } {
+	              exec hpcm_sendmail < $filename } \
+		  out] } {
 		puts "ERROR sending to judge:"
 		puts $out
 		continue?
