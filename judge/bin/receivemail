@@ -5,7 +5,7 @@
 #
 # File:		receivemail
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Feb  7 12:18:04 EST 2002
+# Date:		Fri Mar 22 06:31:26 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/02/07 17:17:49 $
+#   $Date: 2002/03/22 11:31:11 $
 #   $RCSfile: receivemail,v $
-#   $Revision: 1.27 $
+#   $Revision: 1.28 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -163,10 +163,8 @@ while { "yes" } {
 		     [clock format [clock seconds]]"
 	close $null_ch
 	set message_subject \
-	    "Subject: lines received in front of\
-	              From line"
-	set message_header \
-	   "$message_header\n$message_subject"
+	    " lines received in front of From line"
+	set message_header "Subject:$message_subject"
 
 	# Since there is no `From:', `Reply-to:' or
 	# `Date:' in this fake header, the computed
@@ -233,6 +231,7 @@ while { "yes" } {
 	set d $mail_directory/$dirname
 	set message_ch [open $d/$received_file w]
 
+	puts $message_ch $message_From_line
 	puts $message_ch $message_header
 	puts $message_ch ""
 
