@@ -6,7 +6,7 @@
 #
 # File:		makejudgingdir
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Sep 24 23:11:51 EDT 2000
+# Date:		Mon Sep 25 02:02:41 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/09/25 03:45:55 $
+#   $Date: 2000/09/25 07:29:37 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.9 $
+#   $Revision: 1.10 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -417,19 +417,6 @@ if { $help_option \
     }
 }
 
-# Set up info+ and solutions+ directories and new
-# index file.
-#
-if { [file exists $info_directory+] } {
-    exec rm -rf $info_directory+ >@ stdout
-}
-if { [file exists $solutions_directory+] } {
-    exec rm -rf $solutions_directory+ >@ stdout
-}
-file mkdir $info_directory+
-file mkdir $solutions_directory+
-set newindex_ch [open $info_directory+/index w]
-
 # Array specifying option substitutions.  For each
 # op1 to be substituted for, the value of
 #
@@ -511,15 +498,28 @@ proc make_substitutions { name } {
 #   index_file		the input index file name
 #   index_directory	index directory name
 #   newindex_ch		output index file channel
+#   newhelp_ch		output problems.help file
+#			channel
 #   option_array	option substitutions
 #			(see above)
 #   substitutions	filename substitutions
 #			(see above)
+#   info_option		options
+#   solutions_option
+#   problems_option
+#   info_directory	directory names
+#   solutions_directory	directory names
+#   problems_directory	directory names
 #
 proc process_index_specification {} {
 
-    global index_file index_directory newindex_ch \
-           info_directory solutions_directory
+    global index_file index_directory \
+           newindex_ch newhelp_ch \
+           info_option solutions_option \
+	   problems_option \
+           info_directory solutions_directory \
+	   problems_directory
+
 
     # Be sure index directory is absolute name, else
     # symbolic links will fail.
@@ -531,8 +531,10 @@ proc process_index_specification {} {
     # Read the input index file and process its entries.
     #
     set index_ch [open $index_file r]
-    set mode copy
-    set did_copy no
+    set index_copy	no
+    set index_did_copy	no
+    set help_copy	no 
+    set help_did_copy	no
 
     while { "yes" } {
 
@@ -549,22 +551,22 @@ proc process_index_specification {} {
 	    set name [lindex $line 1]
 	    set options \
 	        [expand_options [lreplace $line 0 1]]
+	    set source $index_directory/$name
+	    set ws "\[\ \t\]*"
+	    regexp "^($ws\\*\\*\\*$ws)(\[^\ \t\]|$)" \
+		   $line forget indent forget2
+	    regsub {\*\*\*} $indent {   } indent
 
 	    # Process info option.
 	    #
-	    if { [lsearch -exact $options info] >= 0 } {
+	    if { [lsearch -exact $options info] >= 0 \
+	         && $info_option } {
 
-	        set source $index_directory/$name
 		set target [make_substitutions $name]
 
-		set mode copy
-		set ws "\[\ \t\]*"
-		regexp \
-		    "^($ws\\*\\*\\*$ws)(\[^\ \t\]|$)" \
-		    $line forget indent forget2
-		regsub {\*\*\*} $indent {   } indent
+		set index_copy yes
 		puts $newindex_ch "$indent$target"
-		set did_copy yes
+		set index_did_copy yes
 
 		set target $info_directory+/$target
 
@@ -588,46 +590,144 @@ proc process_index_specification {} {
 		}
 	    } else {
 		# Come here if no `info' option.
-	    	set mode nocopy
+	    	set index_copy no
+	    }
+
+	    # Process problems option.
+	    #
+	    if { [lsearch -exact $options problems] \
+	         >= 0 \
+		 && $problems_option } {
+
+		if { ! [file isdirectory $source] } {
+		    error "$source problem is not a\
+		           directory"
+		}
+		set target [file tail $name]
+
+		set help_copy yes
+		puts $newhelp_ch "$indent$target"
+		set help_did_copy yes
+
+		set target $problems_directory+/$target
+		file mkdir $target
+
+		if { [lsearch -exact $options all] \
+		     >= 0 } {
+		    foreach file [glob --nocomplain \
+		    		       $source/*] {
+
+			# Note: in TCL, isfile tests
+			# the target of links.
+
+			if { [file isfile $file] \
+			     && [file readable $file] \
+			     } {
+			    set tail [file tail $file]
+			    copy_file $file \
+			    	      $target/$tail
+			}
+		    }
+		} else {
+		    copy_file $source/Makefile \
+		              $target/Makefile
+		    set problem [glob $source/*.txt]
+		    if { [llength $problem] != 1 } {
+			error "Too many or too few\
+			       $source/*.txt files"
+		    }
+		    set problem [file tail $problem]
+		    copy_file $source/$problem \
+		              $target/$problem
+		}
+	    } else {
+		# Come here if no `problems' option.
+	    	set help_copy no
 	    }
 
 	    # Process solution option.
 	    #
-	    if { [lsearch -exact $options solution] \
-	         >= 0 } {
-	        set source $index_directory/$name
+	    if { [lsearch -exact $options solutions] \
+	         >= 0 \
+		 && $solutions_option } {
 		if { ! [file isdirectory $source] } {
-		    error "$source is not a directory"
+		    error "$source solution is not a\
+		           directory"
 		}
 	        set sdp $solutions_directory+
 	        link_file $source \
 			  "$sdp/[file tail $name]"
 	    }
-	} elseif { $mode == "copy" } {
 
-	    # Line inside entry being copied.
-	    
-	    puts $newindex_ch $line
 	} elseif { [regexp "^\[^\ \t\]" $line] } {
 
-	    # Beginning of header entry.
+	    # Beginning of header entry or line
+	    # inside current header entry.
 
-	    puts $newindex_ch $line
-	    set mode copy
-	    set did_copy yes
+	    if { $info_option } {
+		puts $newindex_ch $line
+
+		set index_copy		yes
+		set index_did_copy	yes
+	    }
+	    
+	    set help_copy	no
+
+	} else {
+
+	    # Line inside header or item entry.
+
+	    if { $index_copy } {
+		puts $newindex_ch $line
+	    }
+	    if { $help_copy } {
+		puts $newhelp_ch $line
+	    }
 	}
     }
 
-    # If we copied any entries, put out 2 blank lines to
-    # separate this input index file's entries from
-    # those of the next input index file.
+    # If we copied any index entries, put out 2 blank
+    # lines to separate this input index file's entries
+    # from those of the next input index file.  Ditto
+    # for help file with 1 blank line.
     #
-    if { $did_copy } {
+    if { $index_did_copy } {
     	puts $newindex_ch ""
     	puts $newindex_ch ""
     }
+    if { $help_did_copy } {
+    	puts $newhelp_ch ""
+    	puts $newhelp_ch ""
+    }
 
     close $index_ch
+}
+
+# Set up info+, solutions+, and problems+
+# directories, and info+/index and problems+
+# /problems.help files.
+#
+if { $info_option } {
+    if { [file exists $info_directory+] } {
+	exec rm -rf $info_directory+ >@ stdout
+    }
+    file mkdir $info_directory+
+    set newindex_ch [open $info_directory+/index w]
+}
+set problems_directory ./contest/problems
+if { $problems_option } {
+    if { [file exists $problems_directory+] } {
+	exec rm -rf $problems_directory+ >@ stdout
+    }
+    file mkdir $problems_directory+
+    set newhelp_ch \
+        [open $problems_directory+/problems.help w]
+}
+if { $solutions_option } {
+    if { [file exists $solutions_directory+] } {
+	exec rm -rf $solutions_directory+ >@ stdout
+    }
+    file mkdir $solutions_directory+
 }
 
 # Process arguments, forming index specifications
@@ -688,40 +788,75 @@ foreach arg [lreplace $argv 0 [expr { $argi - 1 }]] {
     	process_index_specification
     }
 }
-
-# Finish up output index file.
-#
 if { $mode != "file" } {
     error "Last argument ends with `,' or `:'"
 }
-close $newindex_ch
-if { [llength [glob -nocomplain \
-                    $info_directory+/*]] == 1 } {
-    file delete -force $info_directory+/index
+
+# Finish up index and problems.help files.
+#
+if { $info_option } {
+    close $newindex_ch
+    if { [llength [glob -nocomplain \
+			$info_directory+/*]] == 1 } {
+	file delete -force $info_directory+/index
+    }
+}
+if { $problems_option } {
+    close $newhelp_ch
+    if { [llength [glob -nocomplain \
+			$problems_directory+/*]] == 1 } {
+	file delete -force \
+	     $problems_directory+/problems.help
+    }
+}
+
+# Rename directories if $directory+ differs from
+# $directory as determined by `diff -r'.
+#
+proc rename_directory { directory } {
+    
+    if { ! [catch { exec diff -r $directory \
+                         $directory+ > /dev/null } ] \
+         } {
+    	puts "New $directory does not differ from\
+	      previous version."
+	exec rm -rf $directory+ >@stdout
+    } else {
+
+	if { [file exists $directory--] } {
+	    exec rm -rf $directory-- >@ stdout
+	}
+	if { [file exists $directory-] } {
+	    puts "Renaming $directory- to $directory--"
+	    file rename $directory- $directory--
+	}
+	if { [file exists $directory] } {
+	    puts "Renaming $directory to $directory-"
+	    file rename $directory $directory-
+	}
+	if { [file exists $directory+] } {
+	    puts "Renaming $directory+ to $directory"
+	    file rename $directory+ $directory
+	}
+    }
+}
+
+if { $info_option } {
+    rename_directory $info_directory
+}
+if { $problems_option } {
+    rename_directory $problems_directory
+}
+if { $solutions_option } {
+    rename_directory $solutions_directory
 }
 
 # Make mail directory.
 #
-file mkdir $mail_directory
-exec chmod a+x $mail_directory >@ stdout
-
-# Move directories.
-#
-if { [file exists $solutions_directory-] } {
-    exec rm -rf $solutions_directory- >@ stdout
+if { $mail_option } {
+    file mkdir $mail_directory
+    exec chmod a+x $mail_directory >@ stdout
 }
-if { [file exists $info_directory-] } {
-    exec rm -rf $info_directory- >@ stdout
-}
-if { [file exists $solutions_directory] } {
-    file rename $solutions_directory \
-                $solutions_directory-
-}
-if { [file exists $info_directory] } {
-    file rename $info_directory $info_directory-
-}
-file rename $solutions_directory+ $solutions_directory
-file rename $info_directory+ $info_directory
 
 exit 0
 
