@@ -1,0 +1,389 @@
+#!/bin/sh
+#
+# Make a `web' directory containing the problem
+# statements and optionally solutions of a contest,
+# and optionally for email contests a description
+# of how to submit a problem.
+#
+# File:		makeweb
+# Author:	Bob Walton (walton@deas.harvard.edu)
+# Date:		Mon Sep 23 11:51:44 EDT 2002
+#
+# The authors have placed this program in the public
+# domain; they make no warranty and accept no liability
+# for this program.
+#
+# RCS Info (may not be true date or author):
+#
+#   $Author: hc3 $
+#   $Date: 2002/09/23 20:21:38 $
+#   $RCSfile: makeweb,v $
+#   $Revision: 1.1 $
+#
+# The next line starts tcl \
+exec tcl "$0" "$@"
+
+# Use tcl rather than tclsh so that `signal' is defined.
+
+# Include common code and parameters:
+#
+set lib_directory "[file dirname $argv0]/../lib"
+set help_directory \
+    "[file dirname $argv0]/../../contestant/help"
+source $lib_directory/judging_common.tcl
+set log_mode none
+catch {
+
+set document "
+makeweb contest_name options
+
+  Make the web directory of a contest.  Other director-
+  ies, info, contest/help, contest/problems, must
+  already exist.  The web directory contains an
+  index.html file, problem statements, and optionally
+  problem solutions.  The web directory can be copied to
+  another location and made accessible to the WWW.
+
+  The contest_name is used in a header for the web
+  directory index.html file.
+
+  Options:
+
+    -email autojudge_address
+
+	Include a description of how to submit a problem
+	via email in the index.  The autojudge_address
+	is the address to which submissions are to be
+	sent.
+
+    -solutions password
+
+        Include solutions in a private/password subdir-
+	ectory.  Without knowing the password, the
+	solutions subdirectory cannot be accessed.
+
+    -help help_directory
+
+	Include a reference to help and demo files.  The
+	help_directory is the location of the help and
+	demos index.html file relative to this web dir-
+	ectory.
+
+  Note that if problem descriptions are not included in
+  the problem directories, then they will not be includ-
+  ed in the web directory."
+
+# Option parameters.  Parameter is "" if option is
+# missing.
+#
+set autojudge_address ""
+set solutions_password ""
+set help_directory ""
+
+# Argi is the index of the current argument, for use in
+# lindex.
+#
+set contest_name [lindex $argv 0]
+set argi 1
+
+while { $argi < $argc } {
+    set argj $argi
+    incr argj
+    if { $argj >= $argc } break
+    set parameter [lindex $argv $argj]
+
+    switch -- [lindex $argv $argi] {
+        -email	    { set autojudge_address $parameter}
+        -solutions  { set solutions_password $parameter}
+        -help	    { set help_directory $parameter}
+	default	    { break }
+    }
+    incr argi 2
+}
+
+# If no arguments left or first remaining argument
+# begins with `-', print documentation and exit with
+# error.
+#
+if { $contest_name == "" \
+     || [regexp {^-doc} $contest_name] \
+     || $argi < $argc } {
+    puts $document
+    exit 1
+}
+
+# Complain of web directory already exists.
+#
+if { [file exists $web_directory] } {
+    error "$web_directory already exists"
+}
+
+# Universal abbreviations to shorten lines.
+#
+set c_d $contest_directory
+
+# Find problems and help directories and check
+# their usability.
+#
+foreach d {problems help} {
+    if { [file exists $info_directory/$d] } {
+	if { [file exists $c_d/$d] } {
+	    error "both $info_directory/$d and \
+		   $c_d/$d exist"
+	}
+	set dir $info_directory/$d
+    } elseif { [file exists $c_d/$d] } {
+	set dir $c_d/$d
+    } else {
+        error "cannot find `$d' directory"
+    }
+    if {    ! [file isdirectory $dir] \
+         || ! [file executable $dir] \
+         || ! [file readable $dir] } {
+	error "`$dir' is not a useable directory"
+    }
+    set ${d}_dir $dir
+}
+
+# Be sure solutions directory exists if needed.
+#
+if { $solutions_password != "" } {
+    set dir $solutions_directory
+    if {    ! [file isdirectory $dir] \
+         || ! [file executable $dir] \
+         || ! [file readable $dir] } {
+	error "`$dir' is not a useable directory"
+    }
+}
+
+# Make web directory.
+#
+file mkdir $web_directory
+grant_access $web_directory
+
+# Copy problems index.
+#
+copy_file $help_dir/problems $web_directory/problems
+grant_access $web_directory/problems
+
+# Make solutions subdirectory if necessary.
+#
+if { $solutions_password != "" } {
+
+    # Set abbreviations for use in rest of this program.
+    #
+    set pdir $web_directory/private
+    set sdir $pdir/$solutions_password
+
+    file mkdir $sdir
+    grant_access $sdir
+    deny_access $pdir
+    grant_access $pdir x
+}
+
+# Output header for $web_directory/index.html
+#
+set ch [open $web_directory/index.html w]
+puts $ch "
+<HTML>
+<TITLE>$contest_name</TITLE>
+<BODY VLINK=\"blue\" LINK=\"red\">
+<H1 ALIGN=\"CENTER\">
+<FONT COLOR=\"red\">$contest_name</FONT></H1>"
+
+# Output -email information.
+#
+if { $autojudge_address != "" } {
+    set address $autojudge_address
+    regsub -all {>} $address {\&gt;} address
+    regsub -all {<} $address {\&lt;} address
+    puts $ch "
+<P>
+You can submit solutions to the problems below to an
+autojudge by sending email 
+<P ALIGN=\"CENTER\">
+<TT>To: $address</TT>
+<P>
+with
+<P ALIGN=\"CENTER\">
+<TT>Subject: submit </TT> <I>problem.ext</I>
+<P>
+where
+<I>problem</I> is the name of the
+problem below and <I>.ext</I> is an extension that
+denotes the programming language you used as follows:
+<P ALIGN=\"CENTER\">
+<TT>         </TT><TABLE>
+<TR>
+<TD WIDTH=200>&nbsp;</TD>
+<TD><TT>.c</TT></TD>
+<TD>C</TD>
+</TR>
+<TR>
+<TD WIDTH=200>&nbsp;</TD>
+<TD><TT>.cc</TT></TD>
+<TD>C++</TD>
+</TR>
+<TR>
+<TD WIDTH=100>&nbsp;</TD>
+<TD><TT>.java</TT></TD>
+<TD>JAVA</TD>
+</TR>
+<TR>
+<TD WIDTH=200>&nbsp;</TD>
+<TD><TT>.lsp</TT></TD>
+<TD>COMMONLISP</TD>
+</TR>
+</TABLE>
+<P>
+The body of the email message should be just a single
+file containing source code for the solution program.
+This program should read from the standard input and
+write to the standard output; it should <EM>not</EM>
+open any files.
+<P>
+The autojudge will score your solutions by running
+input through them, comparing your output with
+known correct output, and emailing back a score.
+It is usually not able to tell you how your
+output is incorrect if your output does not
+match the correct output.
+"
+}
+
+# Output -help information.
+#
+if { $help_directory != "" } {
+    puts $ch "
+<P>
+Help files and demos are available
+<A HREF=\"$help_directory\">here</A>.
+"
+}
+
+# Output -solutions information.
+#
+if { $solutions_password != "" } {
+    puts $ch "
+<P>
+Solutions are available at the URL made by adding
+<P ALIGN=\"CENTER\">
+private/<EM>pppp</EM>
+<P>
+to the directory portion of the URL used to access this
+page.  Here <EM>pppp</EM> is a password that you must
+get from the managers of this web page.
+"
+}
+
+# Output problem info.
+#
+    puts $ch "
+<P>
+An annotated index to the problems is
+<A HREF=\"problems\">here</A>.
+<P>
+The problems and their files are as follows.  Note that
+files with extensions
+<TT>.txt</TT>,
+<TT>.html</TT>,
+<TT>.htm</TT>, or
+<TT>.ps</TT> contain problem descriptions, while
+<TT>Makefile</TT> files describe how the autojudge
+runs solutions.
+<UL>"
+
+# Process problems.
+#
+foreach pdir [glob -nocomplain $problems_dir/*] {
+
+    set problem [file tail $pdir]
+    file mkdir $web_directory/$problem
+    grant_access $web_directory/$problem
+    puts $ch "<LI> $problem:"
+
+    foreach pfile [glob -nocomplain $pdir/*] {
+        set fname [file tail $pfile]
+	set wfile $problem/$fname
+	copy_file $pfile $web_directory/$wfile
+	grant_access $web_directory/$wfile
+	puts $ch "<A HREF=\"$wfile\">$fname</A>"
+    }
+}
+
+# Output trailer for problems.
+#
+puts $ch "
+</UL>"
+
+
+# Output trailer for $web_directory/index.html
+#
+puts $ch "
+</BODY>
+<HTML>"
+close $ch
+grant_access $web_directory/index.html
+
+# If -solutions, output $sdir/index.html
+#
+if { $solutions_password != "" } {
+
+    # Output header for $sdir/index.html
+    #
+    set ch [open $sdir/index.html w]
+    puts $ch "
+    <HTML>
+    <TITLE>$contest_name</TITLE>
+    <BODY VLINK=\"blue\" LINK=\"red\">
+    <H1 ALIGN=\"CENTER\">
+    <FONT COLOR=\"red\">$contest_name</FONT></H1>
+    <H2 ALIGN=\"CENTER\">
+    <FONT COLOR=\"red\">Problem Solutions</FONT></H2>
+    <UL>"
+
+    # Process problems.
+    #
+    foreach pdir [glob -nocomplain $problems_dir/*] {
+
+	set problem [file tail $pdir]
+	set soldir $solutions_directory/$problem
+	set files ""
+        foreach sfile [glob -nocomplain $soldir/*] {
+	    set ext [file extension $sfile]
+	    if { [lcontain $allowed_extensions $ext] } {
+	        lappend files [file tail $sfile]
+	    }
+	}
+	if { $files == "" } {
+	    puts "NOTE: No solution for $problem"
+	    continue
+	}
+
+	puts $ch "<LI> $problem:"
+
+	foreach file $files {
+	    copy_file $soldir/$file $sdir/$file
+	    grant_access $sdir/$file
+	    puts $ch "<A HREF=\"$file\">$file</A>"
+	}
+    }
+
+    # Output trailer for $sdir/index.html
+    #
+    puts $ch "
+    </UL>
+    </BODY>
+    <HTML>"
+    close $ch
+    grant_access $sdir/index.html
+}
+
+
+
+exit 0
+
+# Include common error catching code:
+#
+} caught_output
+caught_error
