@@ -5,7 +5,7 @@
 #
 # File:		autojudge
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Jan 31 09:36:19 EST 2002
+# Date:		Mon Feb  4 04:45:09 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/01/31 14:36:06 $
+#   $Date: 2002/02/04 09:44:47 $
 #   $RCSfile: autojudge,v $
-#   $Revision: 1.78 $
+#   $Revision: 1.79 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -880,6 +880,11 @@ proc auto_score_reply { score } {
     set submitted_problem $problem
     set submitted_extension $extension
     set return_commands [compose_response]
+
+    if { [lcontain $return_commands EDIT] } {
+	error "EDIT response instruction executed"
+    }
+
     send_response $return_commands
 
     if { [lcontain $return_commands FINAL] } {
