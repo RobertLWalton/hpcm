@@ -2,7 +2,7 @@
 #
 # File:		Makefile.mk
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Mar 15 05:17:44 EST 2003
+# Date:		Sun Mar 23 06:23:44 EST 2003
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2003/03/15 10:20:27 $
+#   $Date: 2003/03/23 11:36:49 $
 #   $RCSfile: Makefile.mk,v $
-#   $Revision: 1.19 $
+#   $Revision: 1.20 $
 
 extract_replies:	mbox
 	rm -rf replies
@@ -30,7 +30,8 @@ diff_replies:
 	    TO CC REPLY_TO RETURN_PATH FROM ERROR \
 	    SUBMISSION STATUS \
 	    'RCSfile: .*,v' \
-	    'Revision: [0-9]+.[0-9]+ \$$'; \
+	    'Revision: [0-9]+.[0-9]+ \$$' \
+	    'X-HPCM-Signature: .*'; \
 	done
 
 test_email:	test_count_correct \
@@ -45,6 +46,7 @@ test_email:	test_count_correct \
 test_informal:	test_count_correct \
 		test_javaio_correct \
 		test_count_incorrect \
+		test_formatted \
 		test_system_error \
 		test_get \
 		test_query \
@@ -53,6 +55,7 @@ test_informal:	test_count_correct \
 test_formal:	test_count_correct \
 		test_javaio_correct \
 		test_count_incorrect \
+		test_formatted \
 		test_system_error \
 		test_query \
 		test_problem_name
@@ -75,11 +78,24 @@ test_count_incorrect:	${TEST_PREREQUISITES} \
 	$S/count_timeout.java.send \
 	$S/count_too_much_output.c.send
 
+test_formatted:	${TEST_PREREQUISITES} \
+	$S/multipart_formatted.send
+
 test_unformatted:	${TEST_PREREQUISITES} \
 	$S/unformatted.send \
+	$S/yahoo.send \
+	$S/quoted_printable.send \
+	$S/base64.send \
+	$S/text_plain.send \
+	$S/bad_multipart_encoding.send \
+	$S/bad_multipart_type.send \
+	$S/multipart_7bit.send \
+	$S/multipart_base64.send \
+	$S/multipart_pine.send \
+	$S/multipart_quoted_printable.send
 
 test_system_error:	${TEST_PREREQUISITES} \
-	$S/system_error.send \
+	$S/system_error.send
 
 test_get:	${TEST_PREREQUISITES} \
 	$S/get_count.send \
