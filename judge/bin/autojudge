@@ -5,7 +5,7 @@
 #
 # File:		autojudge
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Nov 19 04:49:29 EST 2001
+# Date:		Sat Nov 24 08:26:17 EST 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/11/19 09:49:53 $
+#   $Date: 2001/11/24 13:27:42 $
 #   $RCSfile: autojudge,v $
-#   $Revision: 1.37 $
+#   $Revision: 1.38 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -57,30 +57,37 @@ autojudge \[problem\[.extension\]\]
     which by default is:
     
     	$allowed_extensions
-
+ 
     Specifically, this program makes the following in
     order:
 
-	$files_file file, if it exists
-	the submitted files by calling extractmail
-	$make_file file
-	$scoring_instructions_file file, if it exists
-	.in solution input file
-	.test solution output file
-	the program binary (and .cerr file)
-	the .out file (and .err file)
-	the .score file
-	the $auto_score_file file
-	the $reply_file file, sometimes
+	* $files_file file, if it exists
+	. the submitted files by calling extractmail
+	* $make_file file
+	* any -LINK- files in any $files_file file
+	* $scoring_instructions_file file, if it exists
+	* $scoring_filter_file file, if it exists
+	* .in solution input file
+	* .test solution output file
+	* .ftest solution output file, if it exists
+	. the program binary (and .cerr file)
+	. the .out file (and .err file)
+	. the .fout file, sometimes
+	. the .score file
+	. the $auto_score_file file
+	. the $reply_file file, sometimes
 
-    If any of these files exists, this program checks to
-    be sure it is not older than the previous files
-    (starting with the submitted file not being older
-    than the $received_file file), and remakes any of
-    the above files that are out-of-date.  Errors in
-    making the program binary can cause $auto_score_file
-    and maybe $reply_file to be generated early.
-
+    Here the files marked with * are linked into the
+    current submission directory from the problem's so-
+    lution directory.  For any other file, if it already
+    exists, this program checks to be sure it is not
+    older than the previous files (starting with sub-
+    mitted files not being older than the $received_file
+    file), and remakes any of the above files that are
+    out-of-date.  Errors in making the program binary
+    can cause $auto_score_file and maybe $reply_file to
+    be generated early.
+
     First, this program verifies the existence of a so-
     lution directory for the problem and symbolically
     links the $files_file file from this directory into
@@ -90,15 +97,18 @@ autojudge \[problem\[.extension\]\]
     non-system error in this extraction, this program
     generates and sends `$reply_file' automatically to
     the submitter.
-
+ 
     If the extraction had no errors, this program sym-
     bolically links the following solution directory
     files into the current directory:
 
-    	$make_file
-	$scoring_instructions_file if it exists
+	$make_file file
+	any -LINK- files in any $files_file file
+	$scoring_instructions_file file, if it exists
+	$scoring_filter_file file, if it exists
 	.in solution input file
 	.test solution output file
+	.ftest solution output file, if it exists
 
     In the solution directory, the `$files_file' file
     may be present in several forms under names of the
@@ -107,6 +117,34 @@ autojudge \[problem\[.extension\]\]
     blem name, it is linked into the current directory
     under the name `$files_file'.  Otherwise there is an
     error.  The `$make_file' file is treated similarly.
+
+    If a `$files_file' file is linked into the current\
+    			direc-
+    tory, it is read to find other files to link into
+    the current directory.  This file is interpreted as
+    a TCL list (with list elements separated by spaces,
+    tabs, or new lines) whose elements are file names
+    and the special symbols:
+ 
+    	-REQUIRED-	Indicates that the following
+			file names name files that MUST
+			be submitted.
+    
+    	-OPTIONAL-	Indicates that the following
+			file names name files that may
+			optionally be submitted.
+    
+    	-LINK-		Indicates that the following
+			file names name files that MUST
+			be linked from the problem
+			solution directory.
+
+    File names before any special symbol are treated as
+    `-REQUIRED-'.  Special symbols can appear any number
+    of times in the list and apply to all file names
+    following them but before the next special symbol in
+    the list.  The `autojudge' program ignores non-
+    `-LINK-' file names.
 
     The .test file is linked to the solution .out file
     if that exists, or the solution .test file other-
@@ -124,12 +162,24 @@ autojudge \[problem\[.extension\]\]
     $auto_score_file file, and skips to the end of this
     program where a $reply_file file containing the auto
     score may be created and sent to the user.
-
+ 
     If an executable binary file was made, this program
     makes a .out output file by using the $make_file,
-    and captures any error output in a .err file.  Then
-    this program runs `autoscore' to produce a .score
-    file and an automatic score in the $auto_score_file
+    and captures any error output in a .err file.  If
+    the .out file exists and is non-empty, and it the
+    $scoring_filter_file file exists, this program then
+    runs
+
+    	$scoring_filter_file <PPP.out >PPP.fout
+
+    to make the .fout file.  It is a system error if
+    the $scoring_filter_file program exits with a non-0
+    UNIX exit code or writes the standard error output,
+    of it no .ftest file exists in this situation.
+
+    Then this program runs `autoscore' to produce a
+    .score file and an automatic score in the\
+        $auto_score_file
     file.  Any .score file will be not produced (and
     even deleted if it exists) if the score can be
     determined without it, i.e., if the score is deter-
@@ -144,17 +194,18 @@ autojudge \[problem\[.extension\]\]
     rect', the email informs its receiver that the score
     is preliminary and will be manually reviewed and
     possibly changed.
-    
+ 
     If the score is to be manually reviewed, this prog-
     ram does not create a $reply_file file, even when it
     sends a reply (the reply is recorded in any case in
     the $reply_history_file file).  The absence of a
     $reply_file file signals that the final reply has
-    not been given to the submitter, and further manual
-    action is necessary to generate this reply.
+    not been given to the submitter, and further action
+    using the `manualreply' program is necessary to gen-
+    erate a final reply.
 
     This program prints information about its progress.
-
+ 
     Unless this program creates a $reply_file file that
     is intended to be the final reply to the submitter
     (because the score is `Completely Correct' or the
