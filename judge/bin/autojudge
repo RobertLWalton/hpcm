@@ -5,7 +5,7 @@
 #
 # File:		autojudge
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Jan 30 19:31:55 EST 2002
+# Date:		Thu Jan 31 05:42:25 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/01/31 01:13:54 $
+#   $Date: 2002/01/31 11:00:37 $
 #   $RCSfile: autojudge,v $
-#   $Revision: 1.76 $
+#   $Revision: 1.77 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -281,10 +281,10 @@ autojudge \[problem\[.extension\]\]
     for different extensions.
 
     Next this program calls `extractmail' to extract the
-    submitted files from the program.  If there is a
-    non-system error in this extraction, this program
-    generates and sends `$reply_file' automatically to
-    the submitter, and then this program terminates.
+    submitted files from the program.  Errors in this
+    extraction are classified as system errors if ex-
+    tractmail outputs the phrase `SYSTEM ERROR' and
+    submitter errors otherwise.
  
     If the extraction has no errors, this program sym-
     bolically links solution directory files into the
@@ -316,14 +316,18 @@ autojudge \[problem\[.extension\]\]
     $scoring_filter_file file exists, this program then
     runs
 
-    	$scoring_filter_file <PPP.out >PPP.fout
+    	$scoring_filter_file <PROBLEM.out >PROBLEM.fout
 
-    to make the .fout file, where PPP is the problem
-    name.  It is a system error if the\
-        $scoring_filter_file
-    program exits with a non-zero UNIX exit code or
-    writes the standard error output, or it no .ftest
-    file exists in this situation.
+    to make the .fout file.  It is a system error if the
+    $scoring_filter_file program exits with a non-zero\
+    	UNIX
+    exit code or writes the standard error output, or if
+    no .ftest file exists in this situation.
+
+    For purposes of computing file dependencies, the
+    files PROBLEM, PROBLEM.out, and PROBLEM.fout are all
+    assumed to depend upon all the extracted and linked
+    files.
 
     Then this program runs `autoscore' to produce a
     .score file and an automatic score in the\
@@ -336,15 +340,30 @@ autojudge \[problem\[.extension\]\]
 
     Lastly, this program may create a `$reply_file' file
     and send it as email to the submitter.  It does this
-    if the score is `Completely Correct' or the scoring_
-    mode is `auto' or `auto+manual'.  If the mode is
-    `auto+manual' and the score is not `Completely Cor-
-    rect', the email informs its receiver that the score
-    is preliminary and will be manually reviewed and
-    possibly changed.
- 
-    If the score is to be manually reviewed, this prog-
-    ram does not create a $reply_file file, even when it
+    using instructions in the\
+    	$response_instructions_file file
+    if that exists (has been linked into the current
+    directory), or uses a default value for this file
+    otherwise.  This file (or its default value) con-
+    tains instructions that format the reply for a given
+    $auto_score_file value and a given value of the\
+    	scoring_
+    mode global variable.  The format of the response
+    instructions is described in hpcm_judging.rc, where
+    the default value for the $response_instructions_file\
+    	file
+    is given.
+    
+    With default response instructions, this program
+    sends a reply if the score is `Completely Correct'
+    or the scoring_mode is `auto' or `auto+manual'.  If
+    the mode is `auto' or the score is `Completely Cor-
+    rect', the reply is final, and is stored in the
+    $reply_file file.  Otherwise the reply is not final,
+    and informs its receiver that the score is prelim-
+    inary and will be manually reviewed and possibly
+    changed.  When the reply is not final, this program
+    does not create a $reply_file file, even when it
     sends a reply (the reply is recorded in any case in
     the $reply_history_file file).  The absence of a
     $reply_file file signals that the final reply has
@@ -352,28 +371,19 @@ autojudge \[problem\[.extension\]\]
     using the `manualreply' program is necessary to gen-
     erate a final reply.
 
-    If the $response_instructions_file file exists,\
-    	then that
-    file contains instructions that format the reply for
-    a given $auto_score_file value and a given value of
-    the scoring_mode global variable.  The format of
-    the $response_instructions_file file is described
-    in hpcm_judging.rc, where the default value for
-    that file is given.
-
     This program prints information about its progress.
- 
+ 
     Unless this program creates a $reply_file file that
     is intended to be the final reply to the submitter
-    (because the score is `Completely Correct' or the
-    scoring mode is `auto'), this program sets the
+    (e.g., because the score is `Completely Correct' or
+    the scoring mode is `auto'), this program sets the
     `needs reply' flag (the $needs_reply_flag_file\
     			file in
     the flag directory).  This signals other programs
     (e.g. tracker) that they should search for submis-
     sion directories for which the manualreply program
     should be called.
-
+
     If this program (because of a `Syntax Error') or the
     `autoscore' program writes the $auto_score_file\
     	file,
@@ -385,17 +395,16 @@ autojudge \[problem\[.extension\]\]
     Problem names that contain `/' or `.' or begin with
     `-' or have no solution directory are illegal, and
     are submitter errors.  Similarly extension names
-    that contain `/' or are listed in the `allowed_
-    extensions' global variable are illegal and are sub-
-    mitter errors.  It is a system error if the
-    `$received_file' file is not readable, if a\
-	`$files_file'
-    file is misformatted, or if `extractmail' returns a
-    system error.  It is also a system error if the
-    $received_file file `Subject:' field is misformat-
-    ted, as it is assumed submissions will be prescreen-
-    ed for correct `Subject:' format before being passed
-    to this program."
+    not listed in the `allowed_extensions' global vari-
+    able are unallowed and are submitter errors, as are
+    misformatted $received_file file `Subject:' fields.
+    It is a system error if the `$received_file' file is
+    not readable, if a `$files_file' file is\
+    	misformatted, or
+    if `extractmail' returns a system error.  It is a
+    system error if an existing\
+    	$response_instructions_file
+    file is misformatted."
 
 # If too many arguments or -doc argument, print docu-
 # mentation and exit.
@@ -403,6 +412,25 @@ autojudge \[problem\[.extension\]\]
 if { $argc > 1 || [regexp {^-doc} [lindex $argv 0]] } {
     puts $document
     exit 1
+}
+
+# Handle submitter error in subject.
+#
+proc subject_error { what } {
+    global message_subject
+    reply "LINE {ERROR: $what\
+	  	 `Subject: $message_subject'}" \
+	  BLANK \
+	  { LINE "THIS SUBMISSION (see below)\
+	          IGNORED" } \
+	  { LINE "You must resubmit with a legal\
+	         message subject." } \
+	  BLANK \
+	  { BAR "this message replies to:" } \
+	  RECEIVED-HEADER
+    puts "SUBMISSION ERROR: $what in\
+          `Subject: $message_subject'"
+    exit 0
 }
 
 # Compute problem name and extension.
@@ -422,32 +450,12 @@ if { $argc == 1 } {
     if {    [catch { llength $message_subject }] \
          || [llength $message_subject] != 2 \
 	 || [lindex $message_subject 0] != "submit" } {
-	error "Illegal message subject:\
-	      $message_subject"
+	subject_error "badly formatted"
     }
     set argument [lindex $message_subject 1]
 }
 set problem [file rootname $argument]
 set extension [file extension $argument]
-
-# Signal error if bad problem name or extension.
-#
-proc subject_error { what { comment "" } } {
-    global message_subject
-    reply "LINE {ERROR: $what is illegal$comment in\
-	  	 `Subject: $message_subject'}" \
-	  BLANK \
-	  { LINE "THIS SUBMISSION (see below)\
-	          IGNORED" } \
-	  "LINE {You must resubmit with a legal\
-	         $what}" \
-	  BLANK \
-	  { BAR "this message replies to:" } \
-	  RECEIVED-HEADER
-    puts "SUBMISSION ERROR: $what is illegal$comment in\
-          `Subject: $message_subject'"
-    exit 0
-}
 
 # Check legality of problem name and optional extension.
 #
@@ -455,13 +463,22 @@ if {    $problem == "" \
      || [regexp {\.} $problem] \
      || [regexp {/}  $problem] \
      || [regexp {^-} $problem]  } {
-    subject_error "problem name"
+    subject_error "illegal problem name `$problem' in"
 }
 if { $extension != "" \
      && ! [lcontain $allowed_extensions $extension] } {
-    subject_error extension
+    subject_error "unallowed extension `$extension'\
+      (should be one of $allowed_extensions) in"
 } elseif { [regexp {/} $extension] } {
-    subject_error extension
+    # should never happen
+    error "/ in extension `$extension'"
+}
+
+# Check for existence of problem solution directory.
+#
+set solution_directory $solutions_directory/$problem
+if { ! [file isdirectory $solution_directory] } {
+    subject_error "unallowed problem name `$problem' in"
 }
 
 # Function to return a list of extensions that make
@@ -470,7 +487,7 @@ if { $extension != "" \
 proc find_exts { name } {
     set exts ""
     foreach f [glob -nocomplain $name.*] {
-	if { [regexp "^$name\(\\.\[^/.\]\$" $f \
+	if { [regexp "^$name\(\\.\[^/.\])\$" $f \
 	             forget ext] \
 	     && [file exists $name$ext] } {
 	    lappend exts $ext
@@ -479,13 +496,10 @@ proc find_exts { name } {
     return $exts
 }
 
-
-# Check for existence of problem solution directory.
+# Global variable that is list of all -LINK- or
+# -OPTIONAL-LINK- files that actually exist.
 #
-set solution_directory $solutions_directory/$problem
-if { ! [file isdirectory $solution_directory] } {
-    subject_error "problem name"
-}
+set linked_files ""
 
 # Function that links files according to the instruc-
 # tions in the `files' argument, which is a list format-
@@ -493,11 +507,12 @@ if { ! [file isdirectory $solution_directory] } {
 #
 proc execute_links { files } {
 
-    global problem extension solution_directory
+    global problem extension solution_directory \
+           linked_files
 
     if { [catch { llength $files }] } {
         error "$files_file file value is not formatted\
-	       as a TCL list:\n$files"
+	       as a TCL list:\n    $files"
     }
 
     # Failure occurs if there is no source for a -LINK-
@@ -626,7 +641,7 @@ proc execute_links { files } {
 
 		    if {    $type != "link" \
 		         && $type != "none" } {
-		        # do nothing
+		        lappend linked_files $target
 		    } elseif { $source == "" } {
 
 		    	# No source found.
@@ -639,14 +654,16 @@ proc execute_links { files } {
 		        if { $mode == "link" } {
 
 			    if { [llength $exts] > 0 } {
-			        if { $ext_is_illegal \
-				     == "no" } {
+			        if { $legal_exts \
+				     == "not-set-yet" \
+				     	} {
 				    set legal_exts $exts
+				} else {
+				    set legal_exts \
+					[intersect \
+					   $legal_exts \
+					   $exts]
 				}
-				set legal_exts \
-				    [intersect \
-				         $legal_exts \
-					 $exts]
 				lappend \
 				    soft_link_failures \
 				    $target
@@ -671,6 +688,7 @@ proc execute_links { files } {
 				  $target"
 			}
 			link_file $source $target
+		        lappend linked_files $target
 		    }
 		}
 	    }
@@ -686,13 +704,12 @@ proc execute_links { files } {
 	    	   -LINK- targets: $soft_link_failures"
 	} else {
 	    subject_error \
-		extension \
-		" (which should be one of $legal_exts)"
+		"unallowed extension (which should be
+		one of $legal_exts) in"
 	}
     } elseif { $needs_extension } {
 	subject_error \
-	    extension \
-	    " (it is missing but is required)"
+	    "missing extension where one is required in"
     }
 }
 
@@ -714,8 +731,8 @@ if { [file exists $files_file] } {
     
     if { [llength $possibilities] > 0 } {
 	subject_error \
-	    extension \
-	    " (which should be one of $possibilities)"
+	    "unallowed extension (should be one of\
+	     $possibilities) in"
     }
 
     set files "
@@ -728,6 +745,9 @@ if { [file exists $files_file] } {
 	    $scoring_instructions_file
 	    $scoring_filter_file
 	    { PROBLEM.ftest PROBLEM.fout PROBLEM.ftest }
+	    { $response_instructions_file
+	        $response_instructions_file.EXTENSION
+	    	$response_instructions_file }
 	"
 }
 
@@ -792,9 +812,13 @@ while { "yes" } {
     sleep 2
 }
 
+# List of all files extracted by extractmail.
+#
+set extracted_files ""
+
 # Get submitted files.  If error, if SYSTEM ERROR call
 # `error' function and otherwise reply to submitter.
-# Compute list of submitted files in `submitted_files'.
+# Compute list of extracted files in `extracted_files'.
 #
 if { [catch { exec extractmail } extractout] } {
     if { [regexp {SYSTEM ERROR} $extractout] } {
@@ -822,21 +846,20 @@ if { [catch { exec extractmail } extractout] } {
 
 	puts $extractout
 	puts "Reply indicating error emailed to\
-	     submitter."
+	      submitter."
 
 	exit 0
     }
 } else {
     puts $extractout
-    set submitted_files ""
     foreach line [split $extractout "\n"] {
         if { [regexp {^Extracted } $line] } {
-	    lappend submitted_files [lindex $line 1]
+	    lappend extracted_files [lindex $line 1]
 	}
     }
 }
 
-# Process -LINK- and -OPTOINAL-LINK- instructions in
+# Process -LINK- and -OPTIONAL-LINK- instructions in
 # $files_file (or its default value).
 #
 execute_links $files
@@ -893,6 +916,7 @@ proc should_be_made { file_list1 file_list2 } {
     foreach file1 $file_list1 {
 	if { [file exists $file1] } {
 	    set mt [file mtime $file1]
+	    if { $mt < 0 } { error "negative mtime" }
 	    if { $mtime1 == 0 || $mtime1 > $mt } {
 	    	set mtime1 $mt
 	    }
@@ -906,6 +930,7 @@ proc should_be_made { file_list1 file_list2 } {
     foreach file2 $file_list2 {
 	if { [file exists $file2] } {
 	    set mt [file mtime $file2]
+	    if { $mt < 0 } { error "negative mtime" }
 	    if { $mtime2 < $mt } {
 	    	set mtime2 $mt
 	    }
@@ -937,8 +962,8 @@ proc should_be_made { file_list1 file_list2 } {
 #
 if { [should_be_made \
          [list $problem $problem.cerr] \
-	 [concat [list $make_file] \
-	 	 $submitted_files]] } {
+	 [concat $linked_files \
+	 	 $extracted_files]] } {
 
     puts "Making $problem"
     catch { make_file $problem $problem.cerr }
@@ -981,7 +1006,9 @@ if { [should_be_made \
 #
 if { [should_be_made \
          [list $problem.out $problem.err] \
-	 [list $problem $make_file $problem.in]] \
+	 [concat [list $problem] \
+	 	 $linked_files \
+	 	 $extracted_files]] \
      && [file executable $problem] } {
 
     puts "Making $problem.out"
@@ -1012,7 +1039,10 @@ if { [should_be_made \
 #
 if { [should_be_made \
          [list $problem.fout] \
-	 [list $problem.out $scoring_filter_file]] \
+	 [concat [list $problem.out \
+	               $scoring_filter_file] \
+	 	 $linked_files \
+	 	 $extracted_files]] \
      && [file size $problem.out] > 0 } {
 
     puts "Making $problem.fout"
@@ -1040,6 +1070,9 @@ if { [file exists $problem.err] } {
     lappend file_list $problem.err
 }
 
+# If an attempt was made to make .out, then .err must
+# exist for file_list must have at least 2 elements.
+#
 if { [llength $file_list] >= 2 \
      && [should_be_made \
             [list $auto_score_file] \
@@ -1052,7 +1085,8 @@ if { [llength $file_list] >= 2 \
 #
 if { [should_be_made \
          [list $reply_file] \
-	 [list $auto_score_file]] } {
+	 [concat [list $auto_score_file] \
+	 	 $linked_files]] } {
 
     auto_score_reply [read_file $auto_score_file]
 }
