@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Jul 31 05:32:48 EDT 2002
+# Date:		Thu Aug  1 01:05:52 EDT 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/07/31 09:28:35 $
+#   $Date: 2002/08/01 05:14:30 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.4 $
+#   $Revision: 1.5 $
 
 # This Makefile is to be used to test HPCM from a
 # contestant account.  Instructions are:
@@ -47,6 +47,13 @@
 #    
 #    Check that any listed differences are inconsequen-
 #    tial.
+#
+#    However, this will not work for email contests in
+#    which the contestant does not have access to the
+#    programs called by `make {extract,diff}_replies'.
+#    In this case each reply must be examined by eye to
+#    compare its X-HPCM-Test-Subject field with the
+#    results in the body of the reply. 
 	
 
 all:
