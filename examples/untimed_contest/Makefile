@@ -1,7 +1,7 @@
 # Makefile for an `email' Contest
 #
 # File:		Makefile
-# Date:		Thu Nov 30 19:51:59 EST 2000
+# Date:		Fri Dec  8 00:07:49 EST 2000
 #
 # To make an email contest named `foo':
 #
@@ -33,10 +33,10 @@
 #    to stop the crontab job.
 #
 # 7. Contest judging is automatic.  If you set the
-#    `reply_manager' variable to your email address, you
-#    will be notified of any errors or questions.  You
-#    many use the `tracker' program to find unchecked
-#    errors.
+#    `reply_manager' and `log_manager' variables to your
+#    email address, you will be notified of any errors
+#    or questions.  You many use the `tracker' program
+#    to find unchecked errors.
 
 HPCM=${HOME}/hpcm
 
@@ -84,6 +84,6 @@ update_scoreboard:
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/12/01 10:25:46 $
+#   $Date: 2000/12/08 05:05:33 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.7 $
+#   $Revision: 1.8 $
