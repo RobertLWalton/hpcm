@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Feb 23 09:14:15 EST 2003
+# Date:		Sun Mar  9 06:57:14 EST 2003
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2003/02/23 14:41:17 $
+#   $Date: 2003/03/09 12:06:51 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.32 $
+#   $Revision: 1.33 $
 
 # See STATUS file for description of versions.
 #
@@ -133,7 +133,7 @@ slocs:
 # Make MD5 Signatures File:
 #
 HPCM_${VERSION}_MD5_Signatures:	signatures_header \
-			hpcm_${VERSION}.files \
+		    hpcm_${VERSION}.files \
 		    hpcm_${VERSION}_solutions.files \
 		    hpcm_${VERSION}_${NONDIS}.files
 	@if test "${COPYRIGHT}" = ""; \
@@ -190,7 +190,6 @@ cvstmp:	hpcm_${VERSION}_cvs${TAREXT}
 	cd cvstmp; \
 	    tar xf ../hpcm_${VERSION}_cvs${TAREXT} \
 	        ${TARUNZIP}
-	cp hpcm_${VERSION}_cvs${TAREXT} cvstmp
 
 # Make MD5 CVS Signatures File:
 #
@@ -223,6 +222,8 @@ HPCM_${VERSION}_CVS_MD5_Signatures:	\
 	     " ====== " " ====== " \
 	     " ====== " " ====== " \
 	     >> HPCM_${VERSION}_CVS_MD5_Signatures
+	md5sum hpcm_${VERSION}_cvs${TAREXT} \
+	  >>  HPCM_${VERSION}_CVS_MD5_Signatures
 	cd cvstmp; \
 	   md5sum `find . -type f -print` \
 	      >>  ../HPCM_${VERSION}_CVS_MD5_Signatures
@@ -306,21 +307,19 @@ web:	cleanweb hpcm_${VERSION}${TAREXT} \
 	@if test "${HPCM_WEB_CONTACT}" = ""; \
 	then echo HPCM_WEB_CONTACT not set; \
 	     exit 1; fi
-	cd judge/doc; make overview.doc \
-			   installing_hpcm.doc \
-			   judging.doc
+	cd judge/doc; make overview.txt \
+			   installing_hpcm.txt \
+			   judging.txt
 	mkdir web
 	cp -p hpcm_${VERSION}${TAREXT} \
 	      HPCM_${VERSION}_MD5_Signatures \
 	      HPCM_${VERSION}_CVS_MD5_Signatures \
 	      STATUS \
 	      web
-	cp -p judge/doc/overview.doc \
-	      web/overview
-	cp -p judge/doc/installing_hpcm.doc \
-	      web/installing_hpcm
-	cp -p judge/doc/judging.doc \
-	      web/judging
+	cp -p judge/doc/overview.txt \
+	      judge/doc/installing_hpcm.txt \
+	      judge/doc/judging.txt \
+	      web
 	MD5SUM=`md5sum web/hpcm_${VERSION}${TAREXT}`; \
 	   MD5SUM=`expr "$${MD5SUM}" : \
 	                 '[ 	]*\([^ 	]*\)[ 	]' `; \
