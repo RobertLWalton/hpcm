@@ -7,7 +7,7 @@
 #
 # File:		makeweb
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Oct  7 05:53:09 EDT 2002
+# Date:		Sun Oct 27 01:36:39 EDT 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -16,9 +16,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/10/07 10:46:14 $
+#   $Date: 2002/10/27 06:01:49 $
 #   $RCSfile: makeweb,v $
-#   $Revision: 1.5 $
+#   $Revision: 1.6 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -422,13 +422,16 @@ if { $web_solutions_password != "" } {
 	set files ""
         foreach sfile \
 	        [lsort [glob -nocomplain $soldir/*]] {
-	    set ext [file extension $sfile]
-	    if { [lcontain $allowed_extensions $ext] } {
-	        lappend files [file tail $sfile]
+	    set file [file tail $sfile]
+	    foreach pattern $web_solutions_files {
+	        if { [regexp "^($pattern)\$" $file] } {
+		    lappend files $file
+		    break;
+		}
 	    }
 	}
 	if { $files == "" } {
-	    puts "NOTE: No solution for $problem"
+	    puts "NOTE: No solution files for $problem"
 	    continue
 	}
 

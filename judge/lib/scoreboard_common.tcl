@@ -3,7 +3,7 @@
 #
 # File:		scoreboard_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Oct 18 21:32:17 EDT 2002
+# Date:		Sun Oct 27 01:50:37 EDT 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -12,9 +12,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/10/19 02:06:47 $
+#   $Date: 2002/10/27 05:59:10 $
 #   $RCSfile: scoreboard_common.tcl,v $
-#   $Revision: 1.44 $
+#   $Revision: 1.45 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -174,7 +174,7 @@ proc compute_scoreboard_array { input_ch } {
 	if { $problem_expression != "" } {
 	     foreach i [array names problem_atoms] {
 		 set problem_values($i) \
-		     [regexp "^$problem_atoms($i)\$" \
+		     [regexp "^($problem_atoms($i))\$" \
 			     $problem]
 	     }
 	     if { [catch { \
@@ -190,8 +190,9 @@ proc compute_scoreboard_array { input_ch } {
 	if { $submitter_expression != "" } {
 	     foreach i [array names submitter_atoms] {
 		 set submitter_values($i) \
-		     [regexp "^$submitter_atoms($i)\$" \
-			     $submitter]
+		     [regexp \
+		         "^($submitter_atoms($i))\$" \
+			 $submitter]
 	     }
 	     if { [catch { \
 	             set v \
