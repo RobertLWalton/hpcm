@@ -5,7 +5,7 @@
 #
 # File:		scoreboard_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Feb  7 13:04:49 EST 2002
+# Date:		Thu Feb  7 19:52:53 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/02/07 18:53:46 $
+#   $Date: 2002/02/08 01:59:48 $
 #   $RCSfile: scoreboard_common.tcl,v $
-#   $Revision: 1.28 $
+#   $Revision: 1.29 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -215,7 +215,7 @@ proc prune_scoreboard_array { } {
         set start_mode $start_time
     } elseif { [regexp {(|-|+)[0-9]+} $start_time] } {
         error "scoreboard_start_time is relative"
-    if { ! [regexp {^(|team)$} $start_time] } {
+    } else {
         set start_mode absolute
 	set start_time [clock scan $start_time]
     }
@@ -224,7 +224,7 @@ proc prune_scoreboard_array { } {
         set stop_mode $stop_time
     } elseif { [regexp {(|-|+)[0-9]+} $stop_time] } {
         set stop_mode relative
-    if { ! [regexp {^(|team)$} $stop_time] } {
+    } else {
         set stop_mode absolute
 	set stop_time [clock scan $stop_time]
     }
@@ -234,7 +234,7 @@ proc prune_scoreboard_array { } {
     } elseif { [regexp {(|-|+)[0-9]+} \
                        $correct_cut_time] } {
         set correct_cut_mode relative
-    if { ! [regexp {^(|team)$} $correct_cut_time] } {
+    } else {
         set correct_cut_mode absolute
 	set correct_cut_time \
 	    [clock scan $correct_cut_time]
@@ -246,7 +246,7 @@ proc prune_scoreboard_array { } {
     } elseif { [regexp {(|-|+)[0-9]+} \
                        $incorrect_cut_time] } {
         set incorrect_cut_mode relative
-    if { ! [regexp {^(|team)$} $incorrect_cut_time] } {
+    } else {
         set incorrect_cut_mode absolute
 	set incorrect_cut_time \
 	    [clock scan $incorrect_cut_time]
@@ -276,36 +276,112 @@ proc prune_scoreboard_array { } {
     #
     foreach sap [array names scoreboard_array] {
         set items $scoreboard_array($sap)
+	regexp {^([^/]*)/([^/]*)$} $sap forget \
+	       submitter problem
 
+	# Compute start time.
+	#
+	switch $start_mode {
+	    "" {
+		set start [lindex [lindex $items 0] 0]
+	    }
+	    team {
+		set start $start_array($submitter)
+	    }
+	    absolute {
+		set start $start_time
+	    }
+	}
+
+	# Compute times.
+	#
+	switch $stop_mode {
+	    "" {
+		set stop ""
+	    }
+	    relative {
+		set stop \
+		    [expr { $start + $stop_time }]
+	    }
+	    absolute {
+		set stop $stop_time
+	    }
+	}
+	switch $correct_cut_mode {
+	    "" {
+		set correct_cut ""
+	    }
+	    relative {
+		set correct_cut \
+		    [expr { $start \
+		            + $correct_cut_time }]
+	    }
+	    absolute {
+		set correct_cut $correct_cut_time
+	    }
+	}
+	switch $incorrect_cut_mode {
+	    "" {
+		set incorrect_cut ""
+	    }
+	    relative {
+		set incorrect_cut \
+		    [expr { $start \
+		            + $incorrect_cut_time }]
+	    }
+	    absolute {
+		set incorrect_cut $incorrect_cut_time
+	    }
+	}
+
+	# Edit list of items and set cut_array(submit-
+	# ter) to yes iff there is a correct (or incor-
+	# rect not following a correct) score for a pro-
+	# blem and submitter after the problem (in)cor-
+	# rect cut time.
+	#
+        set new_items \
+	    [list [list [format {%015d} $start] st]]
+	foreach $item $items {
+	    set time [lindex $item 0]
+	    set code [lindex $item 1]
+
+	    if { $stop == "" || $time <= $stop } {
+		lappend new_items $item
+	    }
+
+	    if { [lcontains {mc ac} $code] } {
+	        if { $correct_cut != "" \
+		     && $correct_cut <= $time } {
+		    set cut_array($submitter) yes
+		}
+		break
+	    } else {
+	        if { $incorrect_cut != "" \
+		     && $incorrect_cut <= $time } {
+		    set \
+		      cut_array($submitter) yes
+		}
+	    }
+	}
+        set scoreboard_array($sap) $new_items
     }
 
-
-
-	if { $start_time != "" && $start_time != "team" \
-	     && $time < $start_time } {
-	    continue;
-	}
-
-	if { $stop_time != "" && $time > $stop_time } {
-	    continue;
-	}
-
-	if { ! [lcontain $problems $problem] } {
-	    lappend problems $problem
-	}
-
-	if { ! [lcontain $submitters $submitter] } {
-	    lappend submitters $submitter
-	}
-
-	if { $start_time == "team" \
-	     && $score == "dg" \
-	     && ( ! [info exists \
-			  start_time_array($submitter)] \
-		  || $start_time_array($submitter) \
-		     > $time ) } {
-	     set start_time_array($submitter) $time
-	}
+    # If there are cut times, delete submitters that
+    # make neither cut.
+    #
+    if {    $correct_cut_mode != "" \
+	 || $incorrect_cut_mode != "" } {
+	foreach sap [array names scoreboard_array] {
+	    regexp {^([^/]*)/([^/]*)$} $sap forget \
+		   submitter problem
+	    if { ! [info exists \
+	                 $correct_cut($submitter] } {
+		unset scoreboard_array($sap)
+	    }
+        }
+    }
+}
 
 # Sort the problems alphabetically.
 #
