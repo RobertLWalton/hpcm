@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Nov  7 04:58:03 EST 2002
+# Date:		Thu Jan 23 08:03:14 EST 2003
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/11/07 09:58:34 $
+#   $Date: 2003/01/23 13:02:32 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.22 $
+#   $Revision: 1.23 $
 
 # make
 #	Makes documentation as fprintable .doc files in
@@ -81,6 +81,7 @@ DOCS=	overview.doc \
 	judge/scorediff.doc \
 	judge/scorefinder.doc \
 	contestant/SETUP_PROTOTYPE.doc \
+	judge/sloc_counts.doc \
 	judge/startcontest.doc \
 	judge/testproblems.doc \
 	judge/tracker.doc \
@@ -282,6 +283,11 @@ judge/scorefinder.doc:	hpcm_judging.rc \
 	rm -f judge/scorefinder.doc
 	-../../judge/bin/scorefinder -doc \
 	    >judge/scorefinder.doc
+judge/sloc_counts.doc:	hpcm_judging.rc \
+			../../judge/bin/sloc_counts
+	rm -f judge/sloc_counts.doc
+	-../../judge/bin/sloc_counts -doc \
+	    >judge/sloc_counts.doc
 judge/startcontest.doc:	hpcm_judging.rc \
 			../../judge/bin/startcontest
 	rm -f judge/startcontest.doc
