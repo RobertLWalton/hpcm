@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/01/08 04:26:36 $
+#   $Date: 2001/01/08 11:54:41 $
 #   $RCSfile: overview,v $
-#   $Revision: 1.15 $
+#   $Revision: 1.16 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -1033,8 +1033,8 @@ files need special attention:
 Contest Definition Data: Auxilary Files
 ------- ---------- ----- -------- -----
 
-There are a few files in the judging account that are
-shared among all the contests supported by the account:
+There is one file in the judging account that is shared
+among all the contests supported by the account:
 
     ~/.procmailrc
     	When the makejudgingdir program creates the
@@ -1044,7 +1044,78 @@ shared among all the contests supported by the account:
 	These lines write email submissions sent to the
 	contest to the correct judging directory.
 
-    crontab
+	For example, if the hpcm_sendmail.rc file
+	contains the line:
+
+	    To: 13cc299bd7<JJJ@judge's-computer>
+
+	then the .procmailrc file should contain
+
+	    :0
+	    * ^To:.*13cc299bd7
+	    | receivemail judging_cccc_ppppppppppp | \
+	      dispatchmail judging_cccc_ppppppppppp
+
+	where ~/judging_cccc_ppppppppppp is the judg-
+	ing directory for the contest in the judging
+	account JJJ.
+
+
+Contest Definition Data: Security
+------- ---------- ----- --------
+
+HPCM has the following security goals:
+
+1. Prevent a foreign account from pretending to be
+   a contestant account.
+
+   This is done in a formal and informal contest by
+   having the hpcm_sendmail program which is used by
+   the contestants to send mail to the judge be a
+   privileged program with access to information not
+   available to contestants, and by having that
+   program add information and a signature for that
+   information to the email sent.
+
+   Specifically, hpcm_sendmail is a UNIX set-user-id
+   program that sets the ID of the judging account,
+   so it can see the contest_directory/secure/hpcm_
+   sendmail.rc file, even though the contestant
+   accounts cannot.  This hpcm_sendmail.rc file
+   contains a key name and key.  The hpcm_sendmail
+   program adds three fields to the mail it sends:
+
+   	HPCM-Reply-To
+	    The email address HPCM uses as the
+	    identity of the account sending the
+	    email, and therefore as the identity
+	    of the contestant.
+	HPCM-Date
+	    The time the email is sent, which HPCM
+	    uses as the time of submission.
+	HPCM-Signature
+	    A signature of the two fields just given,
+	    made using the key name and value.
+
+    Upon receipt the signature is verified by the
+    judging software, and unverifyable email is
+    rejected.
+
+2. Prevent code written by contestants from corrupting
+   the files of the judge.
+
+   This is done by running the programs submitted by
+   the contestant in a `sandbox'.
+
+   The sandbox consists of changing the user and group
+   (both real and effective) of the process executing
+   the contestant program to `sandbox'.  This user
+   should not be able to access any files or directories
+   except those publically available.
+
+3. Prevent code written by the contestants from
+   exporting solution code to the outside world.
+
 
 
 Contest Raw Data: The Judging Directory
