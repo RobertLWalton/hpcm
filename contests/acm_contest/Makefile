@@ -1,8 +1,8 @@
-# Makefile for a `formal' Contest
+# Makefile for a Formal Contest
 #
 # File:		Makefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Jun 30 10:13:42 EDT 2001
+# Date:		Wed Oct  3 14:25:40 EDT 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,196 +11,191 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/06/30 14:50:21 $
+#   $Date: 2001/10/03 18:51:06 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.7 $
+#   $Revision: 1.8 $
 
 # To make a formal contest named `foo':
 #
-#  1. Import the HPCM system into ~/hpcm.  See direc-
-#     tions in `Installing HPCM' (hpcm/judge/bin/
-#     installing_hpcm).
+# 1. Import the HPCM system into ~/hpcm.  See directions
+#    in `Installing HPCM' (hpcm/judge/bin/installing_
+#    hpcm).
 #
-#  2. Create a judging directory ~/judging_foo_password
-#     where the password is needed to keep outsiders
-#     from guessing the path to the received submis-
-#     sions, because JAVA requires this path be a+x to
-#     access .class files inside the sandbox.
+# 2. Make a contestant prototype account, which we will
+#    refer to here as PPP.  Follow the instructions in:
 #
-#     This password is never really used, and so can be
-#     something awfully unguessable.
+#	~/hpcm/contestant/bin/SETUP_PROTOTYPE -doc
 #
-# 3.  Put copies of the files in this directory into
-#     your judging directory, and edit the names and
-#     passwords in these files appropriately.  Edit the
-#     index specifications specifying the problems you
-#     want to include (at the end of the value of the
-#     INDICES variable below) to specify the problems
-#     you want (run `makejudgingdir -doc' to find the
-#     format and meaning of index specifications).
+#    Below we will make a symbolic link to ~PPP/home.
 #
-#     Be sure you edit the scoreboard_stop_time to
-#     be some time in the future.
+#    One prototype directory can be used for many con-
+#    tests, so you may not need to make a new prototype
+#    directory for this contest.
 #
-#  4. Make a contest directory named ~/contest_foo.
-#     Symbolically link this to the name
-#	~/judging_foo_password/contest
-#     by executing inside the judging directory:
+# 3. Create a judging directory ~/judging_foo_password
+#    where this password is needed to keep outsiders
+#    from guessing the path to the received submissions,
+#    because JAVA requires this path be a+x to access
+#    .class files inside the sandbox.
+#
+#    This password is never really used, and so can be
+#    something awfully unguessable.
+#
+# 4. Put copies of the files in this directory into
+#    your judging directory, and edit the names in
+#    hpcm_judging.rc appropriately.  In this Makefile
+#    edit just the INDICES variable below at this time.
+#
+#    Be sure you edit the scoreboard_stop_time to be
+#    some time in the future.
+
+# 5. Make directory ~/contest_foo.  Then make the
+#    symbolic links:
+#
+#      ~/judging_foo_password/contest -> ~/contest_foo
+#      ~/contest_foo/contestant -> ~/hpcm/contestant
+#      ~/contest_foo/home -> ~PPP/home
+#
+#    by executing:
+#
+#	cd ~/judging_foo_password
 #	ln -s ~/contest_foo contest
 #
-#  5. Symbolically link ~/hpcm/contestant to the
-#     name ~/contest_foo/contestant by executing
-#     inside the contest directory:
+#	cd ~/contest_foo
 #	ln -s ~/hpcm/contestant contestant
+#	ln -s ~PPP/home home
+#
+# 6. Move the file scoreboard.1head into the ./contest
+#    directory (which is now linked to ~/contest_foo)
+#    by executing:
+#
+#	cd ~/judging_foo_password
+#	move scoreboard.1head contest
+#
+# 7. Create a file named ~/contest_foo/secure/passwords
+#    by executing:
+#
+#	cd ~/contest_foo
+#	mkdir secure
+#	chmod 700 secure
+#	cd secure
+#	vi passwords  (or use another editor)
+#	# edit passwords and quit editor
+#	chmod 600 passwords
 
-#  6. Move the file scoreboard.1head into the ./contest
-#     directory (which is now linked to ~/contest_foo).
+#    The `~/contest_foo/secure' directory contains stuff
+#    that the judge MUST keep secret.  The `passwords'
+#    file in this directory should be just a list of
+#    all the contestant accounts that will be created,
+#    one account name per line, with each account name
+#    followed by a colon and the password for the
+#    account.  An example file would be:
 #
+#	conttest:tiamfp
+#	cont1:tiamfp
+#	cont2:tiamfp
+#	.....
+#	cont20:tiamfp
 #
-#  7. Create a file named ./contest/secure/passwords
-#     that is just a list of all the contestant accounts
-#     that will be created.  You must create the
-#     ./contest/secure directory.  Be sure this direc-
-#     tory and all the files in it are accessible only
-#     by the judge's account JJJ.
+#    Be sure to include a contestant account which
+#    you will use to test the system, and to which no
+#    actual contestant will be assigned.  Here we
+#    included `conttest' for this purpose.
 #
-#     Be sure to include a contestant account which
-#     you will use to test the system, and to which no
-#     actual contestant will be assigned.
+#    Here we assume all accounts share the same
+#    password that is not going to be given to any
+#    contestant.  The judges log in for contestants
+#    in a formal contest.  In the above example we
+#    have chosen `tiamfp' as the common password.
 #
-#  8. Run `make' in your judging directory.
+# 8. Run `make' in your judging directory.
 #
-#     You should rerun `make' whenever you may have
-#     changed something it uses to build the contest
-#     files.  The worst that can happen from running
-#     `make' unnecessarily is to get redundant instruc-
-#     tions in the ./TODO file (see below).
-#
-#  9. Follow the instructions in the TODO file that
-#     will have been created in the judging directory.
-#     After you follow an instruction, edit it out of
-#     the TODO file.
-#
-#     Among other things you will be asked to set edit
-#     authentication keys into hpcm_judging.rc in the
-#     judging directory and routing information into
-#     ~/.procmailrc.
-#
-#     Another thing you will be asked to do is edit
-#     the WHERE fields in the who_where file.  If
-#     you do not, printouts will contain the account
-#     name.  If you do, be sure the WHERE fields are
-#     short enough not to overrun other printout
-#     header fields.
+#    You should rerun `make' whenever you may have
+#    changed something it uses to build the contest
+#    files.  The worst that can happen from running
+#    `make' unnecessarily is to get redundant instruc-
+#    tions in the ./TODO file (see below).
 
+# 9. Follow the instructions in the TODO file that
+#    will have been created in the judging directory.
+#    After you follow an instruction, edit it out of
+#    the TODO file.
+#
+#    If an instruction says `rerun makejudgingdir',
+#    do this by rerunning `make'.
+#
+#    Among other things you will be asked to set edit
+#    authentication keys into hpcm_judging.rc in the
+#    judging directory and routing information into
+#    ~/.procmailrc.
+#
+#    Another thing you will be asked to do is edit
+#    the WHERE fields in the who_where file.  If
+#    you do not, printouts will contain the account
+#    name.  If you do, be sure the WHERE fields are
+#    short enough not to overrun other printout
+#    header fields.
+#
 # 10. Rerun `make' in the judging directory.  This is
 #     because you edited `help/this_contest' in the last
 #     step and need to install the new version.
 #
-# 11. One of the instructions will be to make a con-
-#     testant prototype account: see
+# 11. Be sure the file ~/contest_foo/secure/passwords
+#     has the correct contents.  Each line of this file
+#     has the format:
 #
-#	~/hpcm/contestant/bin/SETUP_PROTOTYPE -doc
-#
-#     Following these directions, you first make a brand
-#     new account, the prototype account.  Then you make
-#     a prototype directory inside the judge's account,
-#     with a name like
-#
-#	~/prototype_home
-#
-#     This directory is owned by the prototype account,
-#     and is a+rx.  This directory is then symbolically
-#     linked to the name ~/contest_foo/home by executing
-#     inside the contest directory:
-#
-#	ln -s ~/prototype_home home
-#
-#     Note that you do NOT need a .procmailrc file for
-#     a formal contest.  But you might want to include
-#     one (see ../informal_contest/Makefile) if you are
-#     going to share the prototype home directory
-#     between formal and informal contests.
-#
-#     Then run:
-#	  ~JJJ/contest_foo/bin/SETUP_PROTOTYPE \
-#             ~JJJ/contest_foo
-#
-#     in prototype account, according to the directions
-#     in the documentation of SETUP_PROTOTYPE.
-
-#     One prototype directory can be used for many con-
-#     tests, so you may not need to make a new prototype
-#     directory for this contest, but you will need to
-#     symbolically link ~/contest_foo/home.
-#
-# 12. Be sure you follow the instructions in the SETUP_
-#     PROTOTYPE documentation about editing prototype
-#     home directory files such as .cshrc to setup the
-#     right contestant environment.  Adding ~/.hpcm_
-#     contest/bin to the PATH is one necessary thing,
-#     but there may be other things the environment
-#     needs.  However, you can also do this editing
-#     after SETUP_PROTOTYPE is run, as files like .cshrc
-#     are NOT in setup.tar: the tar file used to ini-
-#     tialize contestant account contents.  What is in
-#     setup.tar is only a symbolic link to ~/.hpcm_
-#     contest/home/.cshrc.
-#
-#     Any such editing must be done by logging into
-#     the prototype account and cd'ing to .hpcm_
-#     contest/home in that account.
-#
-#     Two good things to add to .cshrc for a formal
-#     contest are `alias ll -lL' and `unset autologout'.
-#     The first is useful because in formal contests
-#     files gotten by hpcm_get are symbolically linked,
-#     and contestants may be confused by all the symbol-
-#     ic links.  The second is useful if the judges are
-#     logging in contestants, as without it the computer
-#     may log contestants out at awkward times.
-#
-
-# 13. Be sure there are appropriate account names and
-#     passwords in the file ./contest/secure/passwords,
-#     as you are about to make these accounts and set
-#     these passwords.  The command
-#
-#		makejudgingdir -secure
-#
-#     will add random passwords to this file for any
-#     account that lacks a password.  The format of the
-#     file lines is:
-#
-#		account-name:password:...
+#      account-name:password:who:c-email:t-email:comment
 #
 #     with `:' separated fields.  Fields at the end,
 #     optionally including the password and everything
-#     after it, can be omitted.
+#     after it, can be omitted.  Fields in the middle,
+#     including the password, can be omitted by writing
+#     consecutive `:'s.  Here `who' is a short team
+#     name, c-email is the coach's email address, and
+#     t-email is the team's email address if different
+#     from c-email.
+
+#     Executing `make', or more specifically:
 #
-#     However, if you want the judging staff to log in
-#     all the contestants, without giving passwords to
-#     contestants, then you may want to edit the
-#     ./contest/secure/passwords file by hand to make
-#     all the contestant account passwords the same.  In
-#     this case choose a password the judging staff can
-#     easily remember.
+#		cd ~/judging_foo_password
+#		makejudgingdir -secure
 #
-#     You should have one of these contestant accounts
-#     be a test account that you can use to check
-#     whether the system is running.
+#     will add random passwords to this file for any
+#     account that lacks a password.  Giving an account
+#     a password of `none' in this file will cause all
+#     HPCM programs to avoid dealing with the account
+#     password: i.e., HPCM programs that assign or use a
+#     password will skip any account with password
+#     `none'.
 #
-# 14. Run `make trashable' in your judging directory.
+#     You should have one of the contestant accounts be
+#     a test account that you can use to check whether
+#     submission, etc., works.
+#
+#     You can change ~/contest_foo/secure/passwords at
+#     any time.  Whenever you make a change that
+#     involves something OTHER than a password, reexe-
+#     cute `make', or execute more specifically:
+#
+#		cd ~/judging_foo_password
+#		makejudgingdir -who_where
+#
+#     to move the updated info into the ~/contest_foo/
+#     who_where file.  Whenever you change passwords,
+#     you may need to rerun hpcm_set_passwords in the
+#     manner described below.
+#
+# 12. Run `make trashable' in your judging directory.
 #     This makes the file ./contest/trashable which
 #     lists the contestant accounts that can be reini-
 #     tialized by `TRASH_ACCOUNT'.  These accounts have
 #     presumably not been made yet (but its OK if they
 #     already exist).
-#
 
-# 15. Then as root (you must log into the root account,
+# 13. Then as root (you must log into the root account,
 #     you cannot use `su', as the paths will not be
-#     right), run the following commands:
+#     right), run the following commands, where JJJ is
+#     the judge's account:
 #
 #	cd ~JJJ/hpcm/secure/bin
 #	./hpcm_make_accounts ~JJJ/contest_foo
@@ -208,58 +203,73 @@
 #	./hpcm_TRASH_ACCOUNTS ~JJJ/contest_foo
 #
 #     These will successively make the accounts listed
-#     in ./contest/secure/passwords, set the passwords
-#     of these accounts to the passwords listed in that
-#     file, and reinitialize these accounts to have
-#     exactly the same files (and symbolic links) as the
-#     prototype account did the last time SETUP_PROTO-
-#     TYPE was run in the prototype account (except for
-#     the fact that in each contestant account ~/.hpcm_
-#     contest is symbolically linked to ~JJJ/contest_foo
-#     after the contestant account has been trashed,
-#     regardless of which contest ~/.hpcm_contest was
-#     linked to in the prototype account).
+#     in ~JJJ/contest_foo/secure/passwords, set the
+#     passwords of these accounts to the passwords list-
+#     ed in that file, and reinitialize these accounts
+#     to have exactly the same files (and symbolic
+#     links) as the prototype account did the last time
+#     SETUP_PROTOTYPE was run in the prototype account
+#     (except for the fact that in each contestant
+#     account ~/.hpcm_contest is symbolically linked to
+#     ~JJJ/contest_foo after the contestant account has
+#     been trashed, and certain files and directories
+#     in the prototype account are omitted, e.g.,
+#     .Xauthority, .history, `home', and `bin').
 #
-# 16. Run `make nontrashable' in your judging directory.
+#     This finishes everything you have to do in the
+#     root account.
+#
+# 14. Run `make nontrashable' in your judging directory.
 #     This removes the file ./contest/trashable and pre-
 #     vents any contestants from accidentally trashing
 #     their own account by running TRASH_ACCOUNT (which
 #     requires the contestant's account name appear in
 #     ~JJJ/contest_foo/trashable).
-#
-# 17. Run `makescoreboard -start' to start the score-
+
+# 15. Run `make start_scoreboard' to start the score-
 #     board background process.  This process makes
+#
 #		./contest/scoreboard.1
+#
 #     at intervals if something has changed.  This
 #     background process can be stopped by the
-#     `makescoreboard -stop' command, its status
-#     can be checked by `makescoreboard -status',
+#     `make stop_scoreboard' command, its status
+#     can be checked by `make check_scoreboard',
 #     and the scoreboard can be instantly updated
-#     by `makescoreboard 0'.
+#     by `make update_scoreboard'.
 #
-
-# 18. Be sure to remember to RUN `startcontest' at
-#     the time the contest starts.  Also, edit
-#     hpcm_judging.rc in the judging directory at
-#     that time to set the correct start time for
-#     the contest, exclude the demo problems, and
-#     exclude any test account.
+#     The file ./contest/scoreboard.1head, which is
+#     prefixed to the file ./contest/scoreboard.1 when
+#     the latter is made automatically, can be
+#     edited to include contest announcements.  The
+#     ./contest/scoreboard.[234] files are the 2'nd,
+#     3'rd, and 4'th pages of the scoreboard, and can be
+#     created and edited to include more contest an-
+#     nouncements.  Only as many of these files as are
+#     needed should exist.
 #
-# 19. Contest judging is partly automatic.  You must
+# 16. Be sure to remember to RUN `startcontest' at the
+#     time the contest starts.  Also, edit hpcm_
+#     judging.rc in the judging directory at that time
+#     to set the correct start time for the contest,
+#     exclude the demo problems, and exclude any test
+#     account.
+#
+# 17. Contest judging is partly automatic.  You must
 #     run the `tracker' program to find submission
 #     directories in which `manualreply' is to be run
 #     (by `tracker') to compute manual scores, reply to
 #     queries, and examine system errors.  You need to
 #     practice with `manualreply' before the contest.
 #
-# 20. If you want to freeze the scoreboard near the end
+# 18. If you want to freeze the scoreboard near the end
 #     of the contest, follow the directions in
 #     `makescoreboard -doc'.
-#
-# 21. Test the contest using the test contestant
+
+# 19. Test the contest using the test contestant
 #     account.
 #
-# 22. You may want to print out handouts.  The following
+# 20. You may want to print out handouts.  The following
 #     is a suggestion.  Execute `make print_help', re-
 #     move the `demos' and `problems' pages, and reorder
 #     the other pages so `index' is first and the other
@@ -276,7 +286,7 @@
 #     handout' that consists of these pages, in the
 #     order given in the `demos' help page, preced-
 #     ed by that `demos' help page.
-
+#
 #     The help and demos handout can be given out before
 #     the contest starts, along with any extra sheets
 #     on such topics as where teams are located and
@@ -285,22 +295,74 @@
 #     is given out at the very start of the contest
 #     proper.
 
+# The location of the hpcm directory.
+#
 HPCM=${HOME}/hpcm
 
+# INDICES below is a description of the help, problems,
+# and demos files to be available to contestants.
+# INDICES consists of a series of entries each concern-
+# ing an index file.  For example, the entry:
+#
+#	    ${HPCM}/contestant/help/index, \
+#		common/=help/, \
+#		informal/=help/, \
+#		advanced/=help/, \
+#		    informal:include, \
+#		    common:include, \
+#		    advanced:include
+#
+# concerns the index file whose name (relative to this
+# directory) is ${HPCM}/contestant/help/index.  You
+# you should look at this file.  Each item in this file
+# begins with a line of the format:
+#
+#	*** name option ...
+
+# The instruction `common/=help/' says replace the
+# initial substring `common/' with `help/' in the item
+# name to make the final file name in the `info' direc-
+# tory for email contests or `contest' directory for
+# formal or informal contests.  The instruction
+# `common:include' says replace the option `common' in
+# the index file item by the option `include'.  After
+# all replacements are made in the first line of the
+# item, the item is used if and only if it has the
+# `include' option.  And if used, the item represents a
+# file or subdirectory in one of the three contest di-
+# rectories `help/', `demos/', or `problems/'.
+#
+# Note that in `help/index' the items already have the
+# `include' option.  `help/index' is used to start the
+# contestants `help/index' file and provide a `this_
+# contest' item for the file `help/this_contest'.
+#
+# Note that in `${HPCM}/problem_library/index' demo
+# items already have file names beginning with `demos/'.
+#
+# Note each index file entry consists of a series of
+# arguments to makejudgingdir, all but the last of
+# which end in `,'.  The first argument is the index
+# file name and the other arguments are replacement
+# instructions, with `=' for name replacements, and `:'
+# for option replacements.  For more details, see the
+# documentation of makejudgingdir (run `makejudgingdir
+# -doc').
+
 INDICES=    help/index, \
-	    =help/ \
+		=help/ \
 	    ${HPCM}/contestant/help/index, \
-	    common/=help/, \
-	    formal/=help/, \
-	    formal:include, \
-	    common:include \
+		common/=help/, \
+		formal/=help/, \
+		advanced/=help/, \
+		    formal:include, \
+		    common:include, \
+		    advanced:include \
 	    ${HPCM}/problem_library/index, \
-	    public/=problems/, \
-	    private/=problems/, \
-	    demo:include, \
-	    preliminary96:include, \
-	    preliminary97:include, \
-	    bospre2000:include
+		public/=problems/, \
+		private/=problems/, \
+		    demo:include, \
+		    practice01:include
 
 all:
 	makejudgingdir -formal ${INDICES}
@@ -311,7 +373,7 @@ trashable:
 
 nontrashable:
 	rm -f ./contest/trashable
-
+
 scoreboard:
 	scorefinder | scoreboard
 
@@ -326,7 +388,7 @@ stop_scoreboard:
 
 update_scoreboard:
 	makescoreboard 0
-
+
 print_help:
 	fprint contest/help/*
 
