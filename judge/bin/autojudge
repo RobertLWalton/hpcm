@@ -5,7 +5,7 @@
 #
 # File:		autojudge
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Oct 18 03:02:16 EDT 2001
+# Date:		Sun Nov 18 07:18:38 EST 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/10/18 07:02:01 $
+#   $Date: 2001/11/18 12:21:51 $
 #   $RCSfile: autojudge,v $
-#   $Revision: 1.32 $
+#   $Revision: 1.33 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -161,17 +161,25 @@ if { $argc != 0 } {
     exit 1
 }
 
-# Get submitted file.  If none available, exit.
+# Read header.
 #
-set submitted_file [exec extractmail 2>@ stderr]
-if { $submitted_file == "" } {
-    exit 0
+set received_ch [open $received_file r]
+read_header $received_ch
+close $received_ch
+
+# Get problem.
+#
+set problem [lindex $message_subject 1]
+regexp {^([^.]*)\.} $problem forget problem
+if { [llength $message_subject] != 2 \
+     || [lindex $message_subject 0] != "submit" \
+     || $problem == "" } {
+    error "Illegal message subject: $message_subject"
 }
 
 # Compute names.
 #
-set submitted_program [file rootname $submitted_file]
-set submitted_extension [file extension $submitted_file]
+set submitted_program $problem
 set program_solution \
     $solutions_directory/$submitted_program
 
@@ -179,27 +187,55 @@ set program_solution \
 # mitter, print error message on standard output, and
 # exit.
 #
-proc illegal_filename_error { filename } {
+if { ! [file isdirectory $program_solution] } {
     reply \
-          "ERROR: submitted file has illegal name:\
-	  $filename" \
+          "ERROR: problem name is illegal: $problem" \
 	  ""  \
 	  "THIS SUBMISSION (see below) IGNORED"  \
-	  "YOU MUST RESUBMIT WITH A LEGAL FILENAME"
-    puts "SUBMISSION ERROR: submitted file has illegal\
-          name: $filename"
+	  "YOU MUST RESUBMIT WITH A LEGAL PROBLEM NAME"
+    puts "SUBMISSION ERROR: problem name is illegal:\
+          $problem"
     exit 0
 }
 
-# Detect illegal file names and found reply to user
-# and exit.
+# Link in any $files_file.
 #
-if { ! [file isdirectory $program_solution] } {
-    illegal_filename_error $submitted_file
+if { ! [file readable $files_file] \
+     && [file exists $program_solution/$files_file] } {
+    puts "Linking $files_file"
+    link_file $program_solution/$files_file
 }
-if { [lsearch -exact $allowed_extensions \
-                     $submitted_extension] < 0 } {
-    illegal_filename_error $submitted_file
+
+# Get submitted files.  If error, on SYSTEM ERROR pass
+# to `error' function and otherwise reply to submitter.
+#
+if { [catch { exec extractmail }] extractout } {
+    if { [regexp {SYSTEM ERROR} $extractout } {
+        error "System error during\
+	       extractmail\n\n$extractout"
+    } else {
+
+	# Create a reply file complaining of an extrac-
+	# tion error, and email this reply to the
+	# submitter.  Include the submission email in
+	# the reply.
+	#
+	reply -all \
+            "ERROR during submission file extraction:" \
+	    "" \
+	    $extractout \
+	    "" \
+	    "THIS SUBMISSION (see below) IGNORED" \
+	    "YOU MUST RESUBMIT"
+
+	puts $extractout
+	puts "Reply indicating error emailed to\
+	     submitter."
+
+	exit 0
+    }
+} else {
+    puts $extractout
 }
 
 # Link $make_file, etc.
