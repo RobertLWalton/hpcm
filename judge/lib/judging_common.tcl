@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Sep  5 14:43:47 EDT 2000
+# Date:		Sat Sep  9 11:25:48 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: acm-cont $
-#   $Date: 2000/09/09 15:17:29 $
+#   $Date: 2000/09/09 15:18:42 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.29 $
+#   $Revision: 1.30 $
 #
 
 # Include this code in TCL program via:

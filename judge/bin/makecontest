@@ -1,0 +1,402 @@
+#!/bin/sh -f
+#
+# Make the subdirectories, symbolic links, and info
+# index of a judging directory.
+#
+# File:		makejudgingdir
+# Author:	Bob Walton (walton@deas.harvard.edu)
+# Date:		Sat Sep  9 09:38:11 EDT 2000
+#
+# The authors have placed this program in the public
+# domain; they make no warranty and accept no liability
+# for this program.
+#
+# RCS Info (may not be true date or author):
+#
+#   $Author: acm-cont $
+#   $Date: 2000/09/09 15:18:42 $
+#   $RCSfile: makecontest,v $
+#   $Revision: 1.1 $
+#
+# The next line starts tcl \
+exec tcl "$0" "$@"
+
+# Use tcl rather than tclsh so that `signal' is defined.
+
+# Include common code and parameters:
+#
+set lib_directory "[file dirname $argv0]/../lib"
+source "$lib_directory/judging_common.tcl"
+set log_errors no
+catch {
+
+set document "
+cd judging_directory; makejudgingdir index_spec ...
+
+    Given a judging directory as the current directory,
+    complete with hpcm_judging.rc file, this program
+    makes subdirectories and links and an info index
+    file according to instructions in the index spec-
+    ifications.  Each index specification has the
+    form:
+
+    	index_file\[: index_directory\], name1s=name1t,
+		name2s=name2t, ...
+
+    The index files are read and concatenated to form
+    the `index' file in the info directory, with unused
+    entries omitted.  In the course of doing this,
+    symbolic links are made in the info and solutions
+    directories.
+
+    More specifically, this program builds the info+ and
+    solutions+ directories, and if all goes well,
+    renames info to info-, info+ to info, solutions to
+    solutions-, solutions+ to info, and then makes the
+    mail directory if it does not exist and ensures that
+    it has the a+x chmod mode.
+
+    The input index files are normally editted versions
+    of files appearing in index directories that have
+    problems and other information in their subdirec-
+    tories.  The index directory is the normal home of
+    the index file before it is edited.  If not given
+    in an index specification, it defaults to the dir-
+    ectory that contains the index file given in the
+    index specification.
+
+    The index file consists of entries.  Each entry
+    begins with line that does not begin with white-
+    space, and extends to the next line beginning with
+    `***'.  Entries whose beginning line does not start
+    with `***' are called header entries; and entries
+    whose beginning line starts with `***' are called
+    item entries.
+
+    The first line of an item entry has the form:
+
+    	*** name options
+
+    The name is the name of a file or directory relative
+    to the index directory (the directory normally
+    containing the unedited index file).  The possible
+    options are:
+
+    	info		Include item in info directory.
+	solution	Include item in solutions
+			directory.
+	all		If info option present, include
+			complete item in info directory.
+			Otherwise if the item is a
+			directory, only the Makefile and
+			*.txt file in the item directory
+			will be included in the info
+			directory.
+
+    If an item is included in the info directory, the
+    item entry is included in the index of that
+    directory.  Otherwise the item entry is omitted.
+    All header entries are included, no matter what.
+    However, if no items are included in the info
+    directory, the new index file for that directory
+    is deleted, so that new info directory is empty.
+
+    When an item is included in the solutions directory,
+    the item must itself be a directory, and the name of
+    the item in the solutions directory is the last
+    component of the item name.  This means that all
+    problems in the system should have unique single
+    component names.
+
+    When an item is included in the info directory its
+    name in the info directory is a modified version of
+    the item name.  Specifically, a substitution of the
+    form nameXs=nameXt may be applied to the name.  If
+    the item name begins with the nameXs string, that
+    string will be replaced by nameXt.  If there are
+    several possible substitutions, the longest nameXs
+    will be selected, and if there are several longest,
+    the first will be selected.
+    
+    Thus, for example, given an index specification of
+    the form
+
+    	my_index: foo/bar, public/=, \\
+	          public/shelf/=old/
+
+    then
+
+    	public/frap		is changed to	frap
+	public/shelf/frap	is changed to	old/frap
+
+    with the changed names being used as the names of
+    the items within the info directory.
+    
+    Unlike most HPCM judging programs, errors made by
+    this program are not written to log files."
+
+# If no arguments or first argument begins with `-',
+# print documentation and exit with error.
+#
+if { $argc == 0 || [regexp {^-} [lindex $argv 0]] } {
+    puts $document
+    exit 1
+}
+
+# Set up info+ and solutions+ directories and new
+# index file.
+#
+if { [file exists ${info_directory}+] } {
+    exec rm -rf ${info_directory}+
+}
+if { [file exists ${solutions_directory}+] } {
+    exec rm -rf ${solutions_directory}+
+}
+file mkdir ${info_directory}+
+file mkdir ${solutions_directory}+
+set newindex_ch [open ${info_directory}+/index w]
+
+# List of substitutions to be made in the names
+# of the current input index file.  Each item of
+# the list has the form `{source target}' which
+# specifies that if a name begins with the
+# string `source' that string should be replaced
+# by the string `target'.
+#
+set substitutions ""
+
+# Make the longest substitution possible in the
+# name argument and return the result (or if
+# there are no substitutions return the name
+# argument).  If there is a length tie, apply
+# the first substitution.
+#
+proc make_substitutions { name } {
+
+    global substitutions
+
+    set result $name
+    set best_end -1
+
+    foreach substitution $substitutions {
+        set source [lindex $substitution 0]
+	set end [string length $source]
+	incr end -1
+
+	if { [string range $name 0 $end] == $source \
+	     && $best_end < $end } {
+	    set target [lindex $substitution 1]
+	    set best_end $end
+	    incr end
+	    set result [string range $name $end end]
+	    set result $target$result
+	}
+    }
+
+    return $result
+}
+
+
+# Process index specification using global variables
+# as parameters:
+#
+#   index_file		the input index file name
+#   index_directory	absolute index directory name
+#   newindex_ch		output index file channel
+#   substitutions	specification substitutions
+#			(see above)
+#
+proc process_index_specification {} {
+
+    global index_file index_directory newindex_ch \
+           info_directory solutions_directory
+
+    # Be sure index directory is absolute name, else
+    # symbolic links will fail.
+    #
+    if { ! [regexp {^/} $index_directory] } {
+	set index_directory [pwd]/$index_directory
+    }
+
+    # Read the input index file and process its entries.
+    #
+    set index_ch [open $index_file r]
+    set mode copy
+    set did_copy no
+
+    while { "yes" } {
+
+        # Read next input index line.
+	#
+	set line [gets $index_ch]
+        if { [eof $index_ch] } break;
+
+	if { [llength $line] >= 1 \
+	     && [lindex $line 0] == "***" } {
+
+	    # Beginnning item entry.
+
+	    set name [lindex $line 1]
+	    set options [lreplace $line 0 1]
+
+	    # Process info option.
+	    #
+	    if { [lsearch $options info] >= 0 } {
+
+	        set source $index_directory/$name
+		set target [make_substitutions $name]
+
+		set mode copy
+		puts $newindex_ch "    $target"
+		set did_copy yes
+
+		set target ${info_directory}+/$target
+
+		if { [lsearch $options all] >= 0 \
+		     || [file isfile $source] } {
+		    file mkdir [file dirname $target]
+		    link_file $source $target
+		} else {
+		    file mkdir $target
+		    link_file $source/Makefile \
+		              $target/Makefile
+		    set problem [glob $source/*.txt]
+		    if { [llength $problem] != 1 } {
+			error "Too many or too few\
+			       $source/*.txt files"
+		    }
+		    set problem [file tail $problem]
+		    link_file $source/$problem \
+		              $target/$problem
+		}
+	    } else {
+	    	set mode nocopy
+	    }
+
+	    # Process solution option.
+	    #
+	    if { [lsearch $options solution] >= 0 } {
+	        set source $index_directory/$name
+		if { ! [file isdirectory $source] } {
+		    error $source is not a directory
+		}
+	        set sdp ${solutions_directory}+
+	        link_file $source \
+			  ${sdp}/[file tail $name]
+	    }
+	} elseif { $mode == "copy" } {
+
+	    # Line inside entry being copied.
+	    
+	    puts $newindex_ch $line
+	} elseif { [regexp "^\[^\ \t\]" $line] } {
+
+	    # Beginning of header entry.
+
+	    puts $newindex_ch $line
+	    set mode copy
+	    set did_copy yes
+	}
+    }
+
+    # If we copied any entries, put out 2 blank lines to
+    # separate this input index file's entries from
+    # those of the next input index file.
+    #
+    if { $did_copy } {
+    	puts $newindex_ch ""
+    	puts $newindex_ch ""
+    }
+
+    close $index_ch
+}
+
+# Process arguments, forming index specifications
+# encoded in global variables, and call process_index_
+# specification (see above) for each specification.
+#
+set mode file
+#
+# Mode indicates what next argument should be: file,
+# directory, or substitution.
+#
+foreach arg $argv {
+
+    # Process next argument.  Whether argument ends in
+    # `,' or `:' tells mode of next argument.
+    #
+    if { $mode == "file" } {
+    	if { [regexp {^(.*):$} $arg forget arg] } {
+	    set mode directory
+    	} else {
+	    if { [regexp {^(.*),$} $arg forget arg] } {
+		set mode substitution
+	    }
+	    set index_directory [file dirname $arg]
+	}
+	set index_file $arg
+	set substitutions ""
+    } elseif { $mode == "directory" } {
+    	if { [regexp {^(.*),$} $arg forget arg] } {
+	    set mode substitution
+	} else {
+	    set mode file
+	}
+	set index_directory $arg
+    } elseif { $mode == "substitution" } {
+    	if { ! [regexp {^(.*),$} $arg forget arg] } {
+	    set mode file
+	}
+	if { ! [regexp {^([^=]*)=([^=]*)$} $arg forget \
+	               source destination] } {
+	    error "Too few or too many `=' signs in\
+	           `$arg'"
+	}
+	lappend substitutions \
+	        [list $source $destination]
+    }
+
+    if { $mode == "file" } {
+    	process_index_specification
+    }
+}
+
+# Finish up output index file.
+#
+if { $mode != "file" } {
+    error "Last argument ends with `,' or `:'"
+}
+close $newindex_ch
+if { [llength [glob -nocomplain \
+                    ${info_directory}+/*]] == 1 } {
+    file delete -force ${info_directory}+/index
+}
+
+# Make mail directory.
+#
+file mkdir $mail_directory
+exec chmod a+x $mail_directory
+
+# Move directories.
+#
+if { [file exists ${solutions_directory}-] } {
+    exec rm -rf ${solutions_directory}-
+}
+if { [file exists ${info_directory}-] } {
+    exec rm -rf ${info_directory}-
+}
+if { [file exists $solutions_directory] } {
+    file rename $solutions_directory ${solutions_directory}-
+}
+if { [file exists $info_directory] } {
+    file rename $info_directory ${info_directory}-
+}
+file rename ${solutions_directory}+ $solutions_directory
+file rename ${info_directory}+ $info_directory
+
+exit 0
+
+# Include common error catching code:
+#
+} caught_output
+caught_error
