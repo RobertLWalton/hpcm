@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: acm-cont $
-#   $Date: 2000/08/24 00:06:05 $
+#   $Date: 2000/08/24 11:09:06 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.12 $
+#   $Revision: 1.13 $
 #
 
 # An optionally modified copy of this file must be
@@ -32,30 +32,67 @@
 #
 set scoring_mode auto
 
-# Regexp expressions matched to lines in output file to
+# Regexp expressions matched to lines in .err file to
 # detect limit overruns (letter case is ignored):
 #
-set time_limit_regexp {.*cputime limit exceeded.*}
-set output_limit_regexp {.*filesize limit exceeded.*}
+set time_limit_regexp {cputime limit exceeded}
+set output_limit_regexp {filesize limit exceeded}
 
-# Allowed extensions for submitted programs:
+# List of allowed extensions for submitted programs:
 #
 set allowed_extensions ".c .cc .java"
 
-# Program to call to send mail.  Should take raw mail
-# message and mail addresses as arguments.  Raw mail
-# message will have `To:' lines matching address
-# arguments.
-#
-set sendmail_program "/usr/sbin/sendmail"
 
-# Program and options to view a file:
-#
-set view_program "exec view"
+###### Functions to call operating system programs #####
 
-# Program and options to edit a file:
+# Program to send mail, as does UNIX `sendmail'.  Takes
+# mail message file and list of target addresses as
+# arguments.  Message file will have `To:' lines match-
+# ing address arguments.
 #
-set edit_program "exec vi"
+proc send_mail { message_file args } {
+    eval exec /usr/sbin/sendmail -oi \
+              < $message_file $args
+}
+
+# Program to create a file and suffer an error if the
+# file already exists.  If created, the file will be
+# zero length, readable, and writable.
+#
+proc create_file { filename } {
+    exec lockfile -0 -r 0 $filename
+    chmod u+w $filename
+    ftruncate $filename 0
+}
+
+# Program to create a directory and suffer an error if
+# the directory already exists.  If created, the
+# directory will be empty, readable, and writable.
+#
+proc create_directory { dirname } {
+    exec mkdir $dirname
+}
+
+# Symbolically link a file.  This is like copying,
+# but the modification date on the target tracks
+# the date on the source.  If no target is given,
+# link the file into the current directory.
+#
+proc link_file { source { target . } } {
+    exec ln -s $source $target
+}
+
+# Program to view a file.
+#
+proc view_file { filename } {
+    exec view $filename
+}
+
+# Program to edit a file.
+#
+proc edut_file { filename } {
+    exec vi $filename
+}
 
 ######### Things usually not changed ############
 

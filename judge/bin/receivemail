@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: acm-cont $
-#   $Date: 2000/08/24 00:06:05 $
+#   $Date: 2000/08/24 11:09:05 $
 #   $RCSfile: receivemail,v $
-#   $Revision: 1.12 $
+#   $Revision: 1.13 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -58,9 +58,9 @@ receivemail \[directory\]
     as the current directory to dispatch a program to
     reply to the message.
 
-    The name of the subdirectory for a message is the
-    entire `From' line that begins the message,
-    verbatim.
+    The name of the subdirectory for a message is a
+    reformatted version of the `From' line that begins
+    the message.
 
     If a message is read that already has a directory,
     the message is ignored.
@@ -75,11 +75,8 @@ receivemail \[directory\]
     The subject of this message is something ignored
     by `dispatchmail'.
 
-    It is a fatal error if an mail `From' line contains
-    a `/'.
-    
-    This program outputs the `From' lines that become
-    the names of the directories actually created."
+    This program outputs the names of the directories
+    actually created."
 
 if { $my_argc != 0 } {
     puts $document
@@ -97,7 +94,7 @@ while { "yes" } {
     }
 }
 
-# Make sure mkdir of a subdirectory of the mail
+# Make sure making subdirectory of the mail
 # directory will not fail because the mail directory
 # does not exist or is not writable.
 #
@@ -128,13 +125,8 @@ if { ! [regexp $From_line_regexp $line] } {
 	}
 	set dirname [From_line_to_dirname $From_line]
 
-	# The mkdir system command is used as a kind
-	# of lock: it is assumed to fail only if the
-	# directory to be made already exists.  (DON'T
-	# try to use `file mkdir' instead).
-	#
 	if { ! [catch {
-	          exec mkdir \
+	          make_directory \
 		      "$mail_directory/$dirname"
 		} ] } {
 	    break;
@@ -208,12 +200,8 @@ while { "yes" } {
     # message to the directory.  On failure, skip the
     # message.
 
-    # The mkdir system command is used as a kind
-    # of lock: it is assumed to fail only if the
-    # directory already exists.
-    #
     if { [catch \
-	  { exec mkdir \
+	  { make_directory \
 	    "$mail_directory/$dirname" } ] } {
 
 	# Directory must already exist.  Skip message.

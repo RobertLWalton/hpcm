@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: acm-cont $
-#   $Date: 2000/08/24 00:06:05 $
+#   $Date: 2000/08/24 11:09:06 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.13 $
+#   $Revision: 1.14 $
 #
 
 # Include this code in TCL program via:
@@ -196,9 +196,15 @@ proc log_error { error_output } {
 	   default_log_directory \
 	   log_directory
 
+    # Write error to standard output.
+    #
     puts "ERROR caught for $argv0 $argv"
     puts $error_output
 
+    # Compute $log_dir, the logging directory
+    # to be used.  Make it if necessary.  Be
+    # sure its writable.
+    #
     if { [info exists log_directory] \
 	 && $log_directory != "" } {
         set log_dir "$log_directory"
@@ -211,6 +217,8 @@ proc log_error { error_output } {
 	file mkdir $log_dir
     }
 
+    # Create $log_file filename for output.
+    #
     set count 0
     while { "yes" } {
         set t [clock_to_filename_date [clock seconds]]
@@ -220,10 +228,7 @@ proc log_error { error_output } {
         set log_file \
 	    "$log_dir/${t}-\[<EU>\]-{<${p}>}-${u}"
 
-	if { ! [catch { exec lockfile -0 -r 0 \
-	                              $log_file } ] } {
-	    chmod u+w $log_file
-	    ftruncate $log_file 0
+	if { ! [catch { create_file $log_file } ] } {
 	    break
 	}
 
@@ -239,6 +244,8 @@ proc log_error { error_output } {
 	}
     }
 
+    # Write error to $log_file file.
+    #
     puts "Logging to $log_file"
     set log_ch [open $log_file a]
     puts $log_ch "----------------------------------"
@@ -355,7 +362,7 @@ proc compose_reply { args } {
 #
 proc send_reply {} {
 
-    global reply_file history_file sendmail_program
+    global reply_file history_file
 
     set to [dirname_to_sender [file tail [pwd]]
 
@@ -415,7 +422,7 @@ proc send_reply {} {
 
     file rename -force "${reply_file}+" $reply_file
 
-    exec $sendmail_program < $reply_file $to
+    send_mail $reply_file $to
 }
 
 # The following function returns the subject of the
@@ -550,20 +557,6 @@ proc write_file { filename line } {
     set file_ch [open $filename w]
     puts $file_ch $line
     close $file_ch
-}
-
-# Edit a file.
-#
-proc edit_file { filename } {
-    global edit_program
-    catch { eval $edit_program $filename }
-}
-
-# View a file.
-#
-proc view_file { filename } {
-    global view_program
-    catch { eval $view_program $filename }
 }
 
 # Set interrupt signal to cause an error.
