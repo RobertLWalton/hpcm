@@ -1,0 +1,150 @@
+#!/bin/sh
+#
+# Display java api information.
+#
+# File:		javahelp
+# Author:	Bob Walton <walton@deas.harvard.edu>
+# Date:		Thu Oct 31 03:14:28 EST 2002
+#
+# The authors have placed this program in the public
+# domain; they make no warranty and accept no liability
+# for this program.
+#
+# RCS Info (may not be true date or author):
+#
+#   $Author: hc3 $
+#   $Date: 2002/10/31 11:11:27 $
+#   $RCSfile: javahelp,v $
+#   $Revision: 1.1 $
+
+# If this is not bash and bash is available, switch to
+# using bash.  Note that `which bash` may output a
+# grubby error message and no error code if bash does
+# not exist.  Some non-bash sh'es do not have the -r
+# option for `read'.
+#
+bash=`which bash 2>/dev/null`
+if test "$BASH" = "" -a "$bash" != "" -a -x "$bash"
+then
+    exec bash "$0" "$@"
+fi
+
+case "$1" in
+     ?* )
+     		echo "
+javahelp
+
+    Invokes an approved JAVA API web document displayer.
+    The list of such displayer's is read from the
+    contest/javahelp file, which consists of lines of
+    the format:
+
+    	dislayer-name "display-command ..."
+
+    Note that the display-command must be quoted, and
+    will be processed as an sh shell argument.
+
+    If there is only one line, that is selected.  If
+    there are more than one, the user is given the option
+    of which one to choose.  If there is no readable
+    contest/javahelp file, the user is notified.
+
+    Lines beginning with \`#' in the contest/javahelp
+    file are ignored, as are blank lines.
+
+    Contests differ in the javahelp commands they allow.
+    A contest some of whose terminals do not have X-
+    windows will usually allow only lynx based JAVA
+    documentation display, for example."
+
+    		exit 1
+		;;
+esac
+
+if test -r "${HOME}/.hpcm_contest/javahelp"
+then
+
+    # Open javahelp file.
+    #
+    exec 3<"${HOME}/.hpcm_contest/javahelp"
+
+    # Read javahelp lines and accumulate commands.
+    # N is command number, name_N is displayer name,
+    # command_N is displayer command.
+    #
+    N=0
+    menu=""
+    while test x = x
+    do
+	read <&3 name command
+	#
+	# Note any quotes in the input file are
+	# retained!
+
+	if test $? -ne 0
+	then
+	    break
+	fi
+
+	# Skip comments and blank lines.
+	#
+	case "$name" in
+	    "" | "#" )
+	        continue;
+		;;
+	esac
+
+	N=`expr $N + 1`
+	eval name_$N=$name
+	eval command_$N=$command
+    done
+
+    # Close javahelp file.
+    #
+    exec 3<&-
+
+else
+    echo >&2 "Javahelp is NOT available."
+    exit 1
+fi
+
+echo OK
+
+
+case $N in
+    0 )
+	echo >&2 "Javahelp is NOT available."
+    	;;
+    1 )
+        exec sh -c "$command_1"
+	echo >&2 "Could not execute $command_1"
+    	;;
+    * )
+        echo "Select which javahelp displayer you want:"
+	echo ""
+	C=0
+	while test $C -lt $N
+	do
+	    C=`expr $C + 1`
+	    name=`eval echo \\\$name_$C`
+	    echo "$C. $name"
+	done
+	echo ""
+	echo -n "(select from 1 through $N) > "
+	read C
+	if test $C -lt 1
+	then
+	    echo >&2 $C is out of range
+	    exit 1
+	elif test $N -lt $C
+	then
+	    echo >&2 $C is out of range
+	    exit 1
+	fi
+	command=`eval echo \\\$command_$C`
+        exec sh -c "$command"
+	echo >&2 "Could not execute $command"
+    	;;
+esac
+
+exit 1
