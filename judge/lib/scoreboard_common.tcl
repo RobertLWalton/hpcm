@@ -6,7 +6,7 @@
 #
 # File:		scoreboard
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Jan  9 09:47:00 EST 2002
+# Date:		Thu Feb  7 08:52:52 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/01/09 14:49:07 $
+#   $Date: 2002/02/07 13:54:11 $
 #   $RCSfile: scoreboard_common.tcl,v $
-#   $Revision: 1.26 $
+#   $Revision: 1.27 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -386,7 +386,7 @@ set max_time_score 999999999
 # are ignored.
 # 
 if { $scoring_mode == "manual" } {
-	set ccodes {mc}
+	set ccodes {mc ac}
 	set icodes {mi}
 } else {
 	set ccodes {mc ac}
