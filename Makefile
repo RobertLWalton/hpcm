@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Mar 19 12:27:59 EST 2003
+# Date:		Sat Mar 29 23:03:57 EST 2003
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2003/03/19 17:30:03 $
+#   $Date: 2003/03/30 04:01:05 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.36 $
+#   $Revision: 1.37 $
 
 # See STATUS file for description of versions.
 #
@@ -170,6 +170,7 @@ HPCM_${VERSION}_MD5_Signatures:	signatures_header \
 	      hpcm/hpcm_${VERSION}_${NONDIS}.files \
 	            ` \
 	      >>  hpcm/HPCM_${VERSION}_MD5_Signatures
+	chmod a-wx HPCM_${VERSION}_MD5_Signatures
 
 # Check MD5 Signatures
 #
@@ -227,6 +228,7 @@ HPCM_${VERSION}_CVS_MD5_Signatures:	\
 	cd cvsroot; md5sum `find . -type f -print | \
 	                    sed -e '/^\.\//s///' ` \
 	  >> ../HPCM_${VERSION}_CVS_MD5_Signatures
+	chmod a-wx HPCM_${VERSION}_CVS_MD5_Signatures
 
 # Check CVS MD5 Signatures
 #
