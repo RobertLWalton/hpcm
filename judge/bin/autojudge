@@ -1,6 +1,7 @@
 #! /bin/sh -f
 #
-# Compute the judge.score file in a submission directory
+# Compute all the files needed in a program submission
+# directory in order to score a submission.
 #
 # File:		judge
 # Author:	Bob Walton (walton@deas.harvard.edu)
@@ -13,12 +14,14 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: acm-cont $
-#   $Date: 2000/08/18 11:25:19 $
+#   $Date: 2000/08/19 02:33:36 $
 #   $RCSfile: autojudge,v $
-#   $Revision: 1.8 $
+#   $Revision: 1.9 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
+
+# Use tcl rather than tclsh so that `signal' is defined.
 
 # Include common code and parameters:
 #
@@ -26,23 +29,53 @@ set lib_directory "[file dirname $argv0]/../lib"
 source "$lib_directory/judging_common.tcl"
 
 set document "
-cd submission_directory; judge [-auto]
+cd submission_directory; judge
 
     Given the submission directory as the current dir-
     ectory, and given that the submission directory
-    contains the submission file pppp.ee, where .ee is
-    a legal extension such as .c, .cc, .java, etc.,
-    this `judge' program computes the `judge.scores'
-    file, first computing all intermediate files
-    required, such as `pppp' and `pppp.out'.
+    contains the file `$received_file', this program
+    makes everything needed to compute the score file,
+    `$score_file', and automatically computes that
+    file.  Then this program reports the score to the
+    submitter by creating and sending `$replied_file'.
 
-    TBW"
+    Specifically, this program calls `extract' to
+    extract the submitted file from the program.  This
+    program then checks the legality of the submitted
+    file name, and generates and sends `$replied_file'
+    automatically if the name is illegal.
+    
+    If the file name is legal, this program symbolical-
+    ly links the following solution files into the
+    current directory:
 
-if { $argc == 0 } {
-    set autoscore no
-} elseif { $argc == 1 && [lindex $argv 0] == "-auto" } {
-    set autoscore yes
-} else {
+    		$make_file
+		$instructions_file
+		.in solution input file
+		.test solution output file
+    
+    Then this program makes the program binary and runs
+    it to make its .out solution file, and possibly a
+    .err error file.
+
+    Next this program runs `autoscore' to produce a
+    `$score_file'.
+
+    Lastly, this program may create a `$replied_file'
+    and send it as email to the submitter.  It does this
+    if the score is `Completely Correct' or the scoring_
+    mode is `auto' or `auto+manual'.  If the mode is
+    `auto+manual' and the score is not `Completely Cor-
+    rect', the email informs its receiver that the score
+    is preliminary and will be manually reviewed and
+    possibly changed.
+    
+    If the score is mailed to the submitter and is NOT
+    to be manually reviewed, this program also creates
+    a `$done_file' in current directory to indicate that
+    directory processing is done."
+
+if { $argc != 0 } {
     puts $document
     exit 1
 }
@@ -65,58 +98,58 @@ proc submission_error { args } {
     eval "error_for_score_file {Submission Error} $args"
 }
 
-puts "Allowed extensions: $allowed extensions"
+set submitted_file [exec extract]
 
-set score_file [glob -nocomplain "*.score"]
-
-if { [llength $score_file] == 1 } {
-    if ( ! [file readable $score_file] } {
-        fatal_error "cannot read $score_file"
-    }
-    set score_fd [open $score_file r]
-    set score [gets $score_fd]
-    close $score_fd
-    if { $score != "Defer Scoring" } {
-        puts "Score file exists"
-	exit 0
-    }
-    file delete -force $score_file
-}
-else if { [llength $score_file] > 1 } {
-    fatal_error "too many score files: $score_file"
-}
-
-set submitted_file ""
-
-foreach e $allowed_extensions {
-    foreach f [glob -nocomplain "*.$e"] {
-    	lappend submitted_file $f
+if { $submitted_file == "" } {
+    if { [file readable $replied_file] } {
+        exit 0
+    } elseif { [file exits $replied_file] } {
+	fatal_error "Unreadable $replied_file exits"
+    } else {
+	fatal_error \
+	    "Extract failed but no $replied_file exits"
     }
 }
 
 set submitted_program [file rootname $submitted_file]
 set submitted_extension [file extension $submitted_file]
 
-set solution_dir = "../$submitted_program"
+set program_solution = \
+    "$solutions_directory/$submitted_program"
 
-if { ! [file isdirectory $solution_dir] } {
-    [submission_error "unknown program name: $submitted_program]
+if { ! [file isdirectory $program_solution] } {
+    [submission_error \
+	"unknown program name: $submitted_program]
 }
 
-if { ! [file readable Makefile] } {
-    puts "Linking Makefile"
-    exec ln -s $solution_dir/Makefile .
+if { [lsearch -exact $allowed_extensions \
+                     $submitted_extension] < 0 } {
+    [submission_error \
+	"unknown program extension:\
+	         $submitted_extension]
+}
+
+if { ! [file readable $make_file] } {
+    puts "Linking $make_file"
+    exec ln -s "$program_solution/$make_file" .
+}
+
+if { ! [file readable $instructions_file] \
+     && [file exists \
+	  "$program_solution/$instructions_file"] } {
+    puts "Linking $instructions_file"
+    exec ln -s "$program_solution/$instructions_file" .
 }
 
 if { ! [file readable ${submitted_program}.in] } {
     puts "Linking ${submitted_program}.in"
-    exec ln -s $solution_dir/${submitted_program}.in .
+    exec ln -s "$program_solution/${submitted_program}.in" .
 }
 
 if { ! [file readable ${submitted_program}.test] } {
     puts "Linking ${submitted_program}.test to ${submitted_program}.out"
-    exec ln -s $solution_dir/${submitted_program}.out \
-               $solution_dir/${submitted_program}.test
+    exec ln -s "$program_solution/${submitted_program}.out" \
+               "$program_solution/${submitted_program}.test"
 }
 
 if { ! [file readable $submitted_program] \
@@ -136,12 +169,16 @@ if { ! [file readable $submitted_program] \
         error_for_score_file "Syntax Error"
     }
     puts $out
+
+    if { ! [file exists $submitted_program" ] } {
+        fatal_error \
+	    "Make of $submitted_program failed"
+    }
+
     exec chmod a+x $submitted_program
 }
 
-if { ! [file readable "${submitted_program}.out" \
-     || [file mtime "${submitted_program}.out"] \
-           < [file mtime Makefile] \
+if { ! [file readable "${submitted_program}.out"] \
      || [file mtime "${submitted_program}.out"] \
            < [file mtime $submitted_program] \
      || [file mtime "${submitted_program}.in"] \
@@ -158,13 +195,52 @@ if { ! [file readable "${submitted_program}.out" \
     }
 
     puts "Making ${submitted_program}.out"
-    exec make "$submitted_program.out"
+    exec make "${submitted_program}.out"
+
+    if { ! [file exists "${submitted_program}.out" ] } {
+        fatal_error \
+	    "Make of ${submitted_program}.out failed"
+    }
 }
 
-set score [exec autoscore $submitted_program]
+if { ! [file readable $score_file] \
+     || [file mtime $score_file] \
+           < [file mtime ${submitted_program}.out] } {
 
-if { $auto == "no" && $score != "Completely Correct" } {
-    exec manualscore $submitted_program
+    if { [file exists $score_file] } {
+	puts "Deleting out-of-date $score_file"
+    	file delete -force $score_file
+    }
+
+    set score [exec autoscore $submitted_program]
+
+    if { ! [file exists $score_file] } {
+        fatal_error \
+	    "Autoscore did not make $score_file"
+    }
+} else {
+    set score_ch [open $score_file r]
+    set score [gets $score_ch]
+    close $score_ch
 }
+
+if { ! [file readable $replied_file] \
+     || [file mtime $replied_file] \
+           < [file mtime $score_file] } {
+
+    set From_line [file tail [pwd]]
+
+    if { $score == "Completely Correct" \
+         || $scoring_mode == "auto" } {
+	reply "${submitted_file} score is: $score" \
+	      "for submission $From_line"
+    } elseif { [regexp {auto} $scoring_mode] } {
+	reply "${submitted_file} automatically determined score is:"
+	       "" "    $score" "" \
+	      "for submission $From_line" \
+	      "Score will be REVIEWED BY THE JUDGE soon"
+    }
+}
+
 
 exit 0
