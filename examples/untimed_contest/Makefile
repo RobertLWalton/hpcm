@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/01/12 07:37:54 $
+#   $Date: 2001/01/12 08:01:45 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.15 $
+#   $Revision: 1.16 $
 
 # To make an email contest named `foo':
 #
@@ -54,12 +54,8 @@
 #
 #    Among other things you will be asked to set edit
 #    routing information into ~/.procmailrc.
-
-# 6. Rerun `make' in your judging directory.  This is
-#    necessary because you edited `help/this_contest'
-#    in step 5.
 #
-# 7. Review the -email option of the `makescoreboard'
+# 6. Review the -email option of the `makescoreboard'
 #    program (see `makescoreboard -doc').  If you wish
 #    to use this to send the scoreboard somewhere to be
 #    posted on the web, edit the SCOREBOARD_ADDRESS
@@ -70,7 +66,7 @@
 #    make `update_scoreboard' to provide an instant
 #    update of the scoreboard.
 #
-# 8. Contest judging is automatic.  If you set the
+# 7. Contest judging is automatic.  If you set the
 #    `reply_manager' and `log_manager' variables in
 #    hpcm_judging.rc to your email address, you will be
 #    notified of any errors and of any questions submit-
@@ -80,14 +76,17 @@
 #    Note that you do NOT need to execute `startcontest'
 #    to start an email contest.  This is only needed for
 #    formal contests.
-#
-# 9. Test the contest by executing
+
+# 8. Test the contest by executing
 #
 #	setenv HPCM_ADDRESS judges-email-address
 #
 #    and then executing `make' in the hcpm/judge/test
 #    directory.  Then read your e-mail to see if it
-#    looks right.
+#    looks right.  The X-HPCM-Test_Subject field in
+#    the reply mail from the judge is a comment that
+#    is inserted by the test system to indicate what
+#    the correct outcome should be.
 
 HPCM=${HOME}/hpcm
 

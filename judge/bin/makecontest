@@ -6,7 +6,7 @@
 #
 # File:		makejudgingdir
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Dec  9 12:03:13 EST 2000
+# Date:		Fri Jan 12 02:15:50 EST 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/12/09 18:08:09 $
+#   $Date: 2001/01/12 08:01:45 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.44 $
+#   $Revision: 1.45 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -677,6 +677,24 @@ if { $argi < $argc \
 #
 set c_d $contest_directory
 
+# The judging directory name relative to the home
+# directory, for use in .procmailrc.
+#
+set j_d $judging_directory
+if { ! [regexp {^/} $j_d] } {
+set j_d "[pwd]/$j_d"
+}
+while { [regsub {/([^/.]|\.[^/.])[^/]*/\.\./} \
+	    $j_d {/} j_d] > 0 } {}
+while { [regsub {/\./} $j_d {/} j_d] > 0 } {}
+regsub {/\.$} $j_d {} j_d
+while { [regsub {//} $j_d {/} j_d] > 0 } {}
+if { [info exists env(HOME)] } {
+    set hd $env(HOME)
+    regexp "^$hd/(.*)\$" $j_d forget j_d
+}
+
+
 # Check for some elementary errors, such as ./contest
 # not existing if it is needed.  If ./contest is needed,
 # grant a+x access to it and its parent.
@@ -1287,11 +1305,13 @@ board, is posted at
 Do NOT put this URL in a public web page, as pppp is
 a password.
 
-You have been given an email address (usually containing
-within it a password).  Sending a message to this ad-
-dress with the subject field value `get help' and an
-empty message body will get all the `help' files that
-document this contest.
+The email address of this contest is:
+
+	ppppp<[id user]@[info hostname]>
+
+Sending a message to this address with the subject field
+value `get help' and an empty message body will get all
+the `help' files that document this contest.
 
 This is an `email' contest.  Look at the file `help/
 email_contest' for more details about email contests.
@@ -1299,7 +1319,7 @@ The file you are reading now is the `help/this_contest'
 file.
 
 If you look at the `help/email/sh/hpcm_extract' file,
-you will find it is a Borne shell script that can ex-
+you will find it is a Bourne shell script that can ex-
 tract all the files from the mail message reply that
 contains them.  On a UNIX system the extraction can be
 performed by putting the email in a file named `foo'
@@ -1314,6 +1334,11 @@ want the extracted files placed.  For the reply from the
 contain all the files.  At this point, read the file
 `ddd/help/email_contest' to find out everything about
 email contests.
+
+Note that if your Bourne shell does not support the
+`-r' option, hpcm_extract will not work.  See the
+`email_contest' and `email_unix_tools' files in the
+`get help' reply for assistance.
 
 Good hunting!"
 
@@ -1429,9 +1454,23 @@ Good hunting!"
     }
 
     close $tc_ch
+
     TODO "Edit $help_directory/this_contest." \
          "Then rerun makejudgingdir to recompute\
 	       help files."
+
+    # For Email contest say something about .procmailrc.
+    #
+    if { ! [file isdirectory $c_d] } {
+	TODO "Using the contest password you edited\
+              into $help_directory/this_contest," \
+	     "edit ~/.procmailrc to contain:" \
+	     "" \
+	     ":0" \
+	     "* ^To:.*password" \
+	     "| receivemail $j_d | \\" \
+	     "  dispatchmail $j_d"
+    }
 }
 
 # Set up channel lists.
@@ -1764,20 +1803,6 @@ if { $secure_option \
 	 "    array set authentication_keys {" \
 	 "        $key_name $key" \
 	 "    }"
-
-    set j_d $judging_directory
-    if { ! [regexp {^/} $j_d] } {
-    	set j_d "[pwd]/$j_d"
-    }
-    while { [regsub {/([^/.]|\.[^/.])[^/]*/\.\./} \
-	            $j_d {/} j_d] > 0 } {}
-    while { [regsub {/\./} $j_d {/} j_d] > 0 } {}
-    regsub {/\.$} $j_d {} j_d
-    while { [regsub {//} $j_d {/} j_d] > 0 } {}
-    if { [info exists env(HOME)] } {
-        set hd $env(HOME)
-	regexp "^$hd/(.*)\$" $j_d forget j_d
-    }
 
     TODO "Edit ~/.procmailrc to contain:" \
          "" \
