@@ -4,7 +4,7 @@
 #
 # File:		autoscore
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Oct 26 14:08:13 EDT 2000
+# Date:		Sat Nov 11 08:46:18 EST 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/10/26 18:13:37 $
+#   $Date: 2000/11/11 13:57:43 $
 #   $RCSfile: old_autoscore,v $
-#   $Revision: 1.20 $
+#   $Revision: 1.21 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -55,13 +55,14 @@ cd submission_directory; autoscore program_name
     are all classed as `Program Crashed'.
 
     If the error file does not exist or is empty, and
-    the output file does not exist, the score is:
+    the output file does not exist or is empty, the
+    score is:
 
 	Program Crashed
 
     If the error file does not exist or is empty, and
-    the output file exists, the program is scored by
-    comparing the output of
+    the output file exists and is non-empty, the program
+    is scored by comparing the output of
 
     	scorediff output_file test_file
 
@@ -144,13 +145,12 @@ cd submission_directory; autoscore program_name
     If scorediff reports `nonblank' or `eof2' (output
     has non-whitespace after test file ends), or if
     scorediff reports a `number' difference greater than
-    allowed by the $scoring_instructions_file, the
-    output is incorrect.  Otherwise, if scorediff
-    reports something other than `eof1' that is not
-    allowed by $scoring_instructions_file, the output
-    has a formatting error.  Otherwise if scorediff
-    reports `eof1' the output is incomplete.  Otherwise
-    the output is correct.
+    allowed by the $scoring_instructions_file, the out-
+    put is incorrect.  Otherwise, if scorediff reports
+    `eof1' the output is incomplete.  Otherwise if
+    scorediff reports something that is not allowed by
+    the $scoring_instructions_file, the output has a
+    formatting error.  Otherwise the output is correct.
 
     The relative difference of two numbers x and y is
     defined to be:
@@ -218,10 +218,11 @@ if { [file exists $error_file] \
     if { $score == "" } {
     	set score "Program Crashed"
     }
-} elseif { ! [file exists $output_file] } {
+} elseif { ! [file exists $output_file] \
+           || [file size $output_file] == 0 } {
 
     # Error file does not exist or is empty, and
-    # output file does not exist.
+    # output file does not exist or is empty.
     #
     set score "Program Crashed"
 }
@@ -333,37 +334,42 @@ if { $score == "" } {
 	} elseif { $d == "eof2" } {
 	    set score "Incorrect Output"
 	    break
+	} elseif { $d == "eof1" } {
+	    set score "Incomplete Output"
 	} elseif { $d == "decimal" } {
-	    if { $decimal_ok == "no" } {
+	    if { $decimal_ok == "no" \
+	         && $score == "" } {
 		set score "Formatting Error" 
 	    }
 	} elseif { $d == "exponent" } {
-	    if { $exponent_ok == "no" } {
+	    if { $exponent_ok == "no" \
+	         && $score == "" } {
 		set score "Formatting Error" 
 	    }
 	} elseif { $d == "case" } {
-	    if { $case_ok == "no" } {
+	    if { $case_ok == "no" \
+	         && $score == "" } {
 		set score "Formatting Error" 
 	    }
 	} elseif { $d == "column" } {
-	    if { $column_ok == "no" } {
+	    if { $column_ok == "no" \
+	         && $score == "" } {
 		set score "Formatting Error" 
 	    }
 	} elseif { $d == "whitespace" } {
-	    if { $whitespace_ok == "no" } {
+	    if { $whitespace_ok == "no" \
+	         && $score == "" } {
 		set score "Formatting Error" 
 	    }
 	} elseif { $d == "spacebreak" } {
-	    if { $spacebreak_ok == "no" } {
+	    if { $spacebreak_ok == "no" \
+	         && $score == "" } {
 		set score "Formatting Error" 
 	    }
 	} elseif { $d == "linebreak" } {
-	    if { $linebreak_ok == "no" } {
+	    if { $linebreak_ok == "no" \
+	         && $score == "" } {
 		set score "Formatting Error" 
-	    }
-	} elseif { $d == "eof1" } {
-	    if { $score == "" } {
-		set score "Incomplete Output"
 	    }
 	} elseif { $d == "none" } {
 	    # No error
