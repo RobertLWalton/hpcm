@@ -2,7 +2,7 @@
 //
 // File:	scorediff.cc
 // Authors:	Bob Walton (walton@deas.harvard.edu)
-// Date:	Sun Aug  5 07:25:50 EDT 2001
+// Date:	Sun Aug  5 09:01:36 EDT 2001
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: hc3 $
-//   $Date: 2001/08/05 11:28:10 $
+//   $Date: 2001/08/05 12:53:33 $
 //   $RCSfile: scorediff.cc,v $
-//   $Revision: 1.31 $
+//   $Revision: 1.32 $
 
 // This is version 2, a major revision of the first
 // scorediff program.  This version is more explicitly
@@ -268,7 +268,9 @@ char documentation [] =
 "                    token-proof token-proof*\n"
 "\f\n"
 "          token-proof ::=\n"
+"                    output-token-begin-column\n"
 "                    output-token-end-column\n"
+"                    test-token-begin-column\n"
 "                    test-token-end-column\n"
 "                    proof proof*\n"
 "\n"
@@ -291,21 +293,21 @@ char documentation [] =
 "    of proofs are unsigned integers.  All the proofs\n"
 "    concerning the same pair of matching tokens are\n"
 "    grouped together into a token-proof that begins\n"
-"    with the ending column numbers of the matching\n"
-"    tokens.  All the token-proofs whose tokens are\n"
-"    in the same lines within their respective files\n"
-"    are grouped together into one line-proof that\n"
-"    begins with the line numbers of the respective\n"
-"    lines.  Each line-proof is output on a line by\n"
-"    itself.\n"
-"\n"
+"    with the beginning and ending column numbers of\n"
+"    the matching tokens.  All the token-proofs whose\n"
+"    tokens are in the same lines within their re-\n"
+"    spective files are grouped together into one\n"
+"    line-proof that begins with the line numbers of\n"
+"    the respective lines.  Each line-proof is output\n"
+"    on a line by itself.\n"
+"\f\n"
 "    There is a limit for each difference type to the\n"
 "    number of proofs of that type that will be out-\n"
 "    put.  Specifically, if the limit is N for diff-\n"
 "    erence type T, then after N line-proofs each\n"
 "    containing at least one proof of type T have\n"
 "    output, no more proofs of type T will be output.\n"
-"\f\n"
+"\n"
 "    These limits default to 10 for each difference\n"
 "    type, but the limits can be changed by program\n"
 "    options.  An option consisting of a `-' followed\n"
@@ -332,7 +334,7 @@ char documentation [] =
 "    erences may be omitted if they are zero and the\n"
 "    program argument following them does NOT begin\n"
 "    with a digit or decimal point.\n"
-"\n"
+"\f\n"
 "    If N is the limit on the number of line-proofs\n"
 "    containing a `nonblank' proof, then after the\n"
 "    last of these N line-proofs is finished, this\n"
