@@ -6,7 +6,7 @@
 #
 # File:		scoreboard
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Oct 20 18:39:21 EDT 2001
+# Date:		Sun Oct 21 02:49:13 EDT 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/10/21 02:09:32 $
+#   $Date: 2001/10/21 07:16:01 $
 #   $RCSfile: scoretable,v $
-#   $Revision: 1.22 $
+#   $Revision: 1.23 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -46,16 +46,50 @@ scoreboard \[parameters_file\]
 	the value of `scoreboard_stop_time', unless
 	that value is \"\";
 
-	its problem is in the list which is the value of
-	`scoreboard_problems', unless that list is
-	empty; and the problem is NOT in the list which
-	is the value of `scoreboard_problems_deny';
+	its problem satisifies the logical expression in
+	`scoreboard_problems', or that expression is an
+	empty list;
 
-	its submitter is in the list which is the value
-	of `scoreboard_submitters', unless that list is
-	empty; and the submitter is NOT in the list
-	which is the value of `scoreboard_submitters_
-	deny';
+	its submitter satisifies the logical expression in
+	`scoreboard_submitters', or that expression is an
+	empty list;
+
+    The logical expressions are TCL lists whose elements
+    are operators, parentheses `(' and `)', and atoms.
+    The allowed operators are `!', `&', `^', and `|' in
+    highest precedence first order, denoting `not',
+    `and', `exclusive-or', and `inclusive-or'.  Opera-
+    tors and parentheses MUST be surrounded by white-
+    space.
+
+    The atoms `0' and `1' represent `false' and `true'.
+    All other atoms are regular expressions that are
+    matched to the ENTIRE problem name or submitter
+    name, and are true iff they match.
+
+    Some simple examples of logical expressions are:
+
+      ! count		Match all names but `count'.
+
+      count | pascal	Match only `count' and `pascal'.
+
+      count|pascal	Ditto, but with only one regular
+      			expression atom that contains a
+			`|', instead of two atoms and a
+			`|' logical operator.
+
+      bpi[0-9]+		Match all names of the form
+      			`bpi' followed by one or more
+			digits.
+
+      bpi.* & ! bpit	Match all names beginning with
+			`bpi' except the one name
+			`bpit'.
+
+    The regular expressions are TCL regular expressions.
+    Note that a regular expression must not as a charac-
+    ter string be the same as an operator or parenthesis
+    or special atom `0' or `1'.
 
     The scoreboard has a line for each submitter of the
     form
