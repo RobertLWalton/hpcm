@@ -4,7 +4,7 @@
 #
 # File:		SETUP_PROTOTYPE
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Sun Dec  3 08:40:11 EST 2000
+# Date:		Thu Dec  7 05:28:35 EST 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,14 +13,14 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/12/03 14:16:17 $
+#   $Date: 2000/12/07 10:57:17 $
 #   $RCSfile: SETUP_PROTOTYPE,v $
-#   $Revision: 1.3 $
+#   $Revision: 1.4 $
 
 # Default list of files and directories that are NOT
 # to be moved to $contest/home.
 #
-keep=".ssh .snapshot .Xauthority"
+keep=".ssh .snapshot .Xauthority .history"
 
 # Change to the accounts home directory.
 #
@@ -231,8 +231,6 @@ then
     exit 0
 fi
 
-# remove the following
-exit 0
 
 # Move everything in the home directory that is not
 # a symbolic link already, except things listed in
@@ -251,6 +249,11 @@ do
 	done
 
 	if test $found = yes
+	then
+		continue
+	fi
+
+	if test -L "$i"
 	then
 		continue
 	fi
@@ -299,32 +302,56 @@ do
 		     ".hpcm_contest/home/$i" "$i"
 		exit 1
 	fi
-
-	esac
 done
 
 # Link ~/.hpcm_contest to contest directory.
 #
 rm -f .hpcm_contest
-ln -s $contest .hpcm_contest
+
+if ln -s $contest .hpcm_contest
+then
+	echo "linked .hpcm_contest to $contest"
+else
+	echo ERROR in ln -s $contest .hpcm_contest
+	exit 1
+fi
 
 # Create empty.ls.
 #
 rm -f $contest/home/empty.ls
-echo >$contest/home/empty.ls "."
-echo >>$contest/home/empty.ls ".."
-chmod a+r $contest/home/empty.ls
+
+if (echo >$contest/home/empty.ls "."; \
+    echo >>$contest/home/empty.ls ".."; \
+    chmod a+r $contest/home/empty.ls)
+then
+	echo "created $contest/home/empty.ls"
+else
+	echo "ERROR in creating $contest/home/empty.ls"
+	exit 1
+fi
 
 # Create setup.tar.
 #
 rm -f $contest/home/setup.tar
-tar cf $contest/home/setup.tar .[a-zA-Z0-9]* *
-chmod a+r $contest/home/setup.tar
+if (tar cf $contest/home/setup.tar .[a-zA-Z0-9]* *; \
+    chmod a+r $contest/home/setup.tar)
+then
+	echo "created $contest/home/setup.tar"
+else
+	echo "ERROR in creating $contest/home/setup.tar"
+	exit 1
+fi
 
 # Create setup.ls
 #
 rm -f $contest/home/setup.ls
-ls -aR >$contest/home/setup.ls
-chmod a+r $contest/home/setup.ls
+if (ls -aR >$contest/home/setup.ls; \
+    chmod a+r $contest/home/setup.ls)
+then
+	echo "created $contest/home/setup.ls"
+else
+	echo "ERROR in creating $contest/home/setup.ls"
+	exit 1
+fi
 
 exit 0
