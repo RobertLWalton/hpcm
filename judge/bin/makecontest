@@ -6,7 +6,7 @@
 #
 # File:		makejudgingdir
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Jan 12 11:53:32 EST 2001
+# Date:		Tue Feb 13 12:15:40 EST 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,12 +15,19 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/01/12 16:48:19 $
+#   $Date: 2001/02/13 17:19:50 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.46 $
+#   $Revision: 1.47 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
+
+# CHANGES:
+#
+# Tue Feb 13 12:15:40 EST 2001:
+#	Moved code so that tclsh could be used for tcl
+#	if only -doc needed.  The call to `random seed'
+#	had to be avoided with -doc option.
 
 # Use tcl rather than tclsh so that `signal' is defined.
 
@@ -632,6 +639,16 @@ while { "yes" } {
     incr argi
 }
 
+# If no arguments left or first remaining argument
+# begins with `-', print documentation and exit with
+# error.
+#
+if { $argi < $argc \
+     && [regexp {^-} [lindex $argv $argi]] } {
+    puts $document
+    exit 1
+}
+
 # Set up TODO
 #
 set TODO_ch ""
@@ -661,16 +678,6 @@ proc make_password {} {
 		   [random 256] \
 		   [random 256] \
 		   [random 256]]
-}
-
-# If no arguments left or first remaining argument
-# begins with `-', print documentation and exit with
-# error.
-#
-if { $argi < $argc \
-     && [regexp {^-} [lindex $argv $argi]] } {
-    puts $document
-    exit 1
 }
 
 # Universal abbreviations to shorten lines.
