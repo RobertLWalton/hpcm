@@ -4,7 +4,7 @@
 #
 # File:		hpcm_extract
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Sun Sep 16 09:31:44 EDT 2001
+# Date:		Thu Jan 10 08:26:13 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/09/16 13:53:20 $
+#   $Date: 2002/01/10 13:43:21 $
 #   $RCSfile: hpcm_extract,v $
-#   $Revision: 1.4 $
+#   $Revision: 1.5 $
 #
 # The next line starts tclsh \
 exec tclsh "$0" "$@"
@@ -53,6 +53,14 @@ hpcm_extract \[directory\]
     that directory, the file is not extracted, but is
     compared against the existing file.
 
+    When this program extracts a file, it makes the file
+    read only.  If the extracted file has a name of the
+    form `xxx.ISF' (ISF stands for `initial submittable
+    file'), and the file `xxx' does not exist, then this
+    program copies the `xxx.ISF' file to a file named
+    `xxx' and makes the latter writable.  The `xxx' file
+    will in general be (optionally) submittable.
+
     The standard output records what was done.  It
     does not include the file contents.  The standard
     output is formatted as one or more email messages
@@ -192,7 +200,34 @@ while { "yes" } {
 		# End of file being extracted.
 		#
 		close $ch
+		file attributes $home/$file \
+		     -permissions a-w
 		puts "`$file' extracted successfully."
+
+		# Make copy of .ISF files if
+		# appropriate.
+		#
+		if { [regexp {^(.+)\.ISF$} $file \
+		             forget base] } {
+		    if { ! [file exists $home/$base] } {
+			file copy \
+			     $home/$file $home/$base
+			file attributes $home/$base \
+			     -permissions u+w
+			puts "`$file' copied to\
+			      `$base'."
+		    } else {
+			puts "WARNING:\
+			      `$file' NOT copied to\
+			      `$base',"
+			puts "as `$base' already\
+			      exists."
+			set has_errors yes
+		    }
+		}
+
+		# Set mode to continue.
+		#
 		set mode look
 
 	    } else {
