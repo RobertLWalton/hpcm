@@ -2,7 +2,7 @@
  *
  * File:	hpcm_sandbox.c
  * Authors:	Bob Walton (walton@deas.harvard.edu)
- * Date:	Wed Nov 15 10:48:37 EST 2000
+ * Date:	Wed Apr  3 08:45:48 EST 2002
  *
  * The authors have placed this program in the public
  * domain; they make no warranty and accept no liability
@@ -11,13 +11,14 @@
  * RCS Info (may not be true date or author):
  *
  *   $Author: hc3 $
- *   $Date: 2000/12/04 07:11:01 $
+ *   $Date: 2002/04/03 14:09:21 $
  *   $RCSfile: hpcm_sandbox.c,v $
- *   $Revision: 1.13 $
+ *   $Revision: 1.14 $
  */
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <limits.h>
 #include <string.h>
 #include <ctype.h>
 #include <unistd.h>
@@ -44,10 +45,10 @@ char documentation [] =
 "      -openfiles N   Number of Open Files (30)\n"
 "      -processes N   Number of Processes (50)\n"
 "\n"
-"    Here N is a positive decimal integer that can\n"
-"    end with `k' to multiply it by 1024 or `m' to\n"
-"    multiply it by 1024 * 1024.  The values above in\n"
-"    parentheses are the default values.\n"
+"    Here N is a non-negative decimal integer that\n"
+"    can end with `k' to multiply it by 1024 or `m'\n"
+"    to multiply it by 1024 * 1024.  The values above\n"
+"    in parentheses are the default values.\n"
 "\n"
 "    There is also another possible option:\n"
 "\n"
@@ -58,12 +59,13 @@ char documentation [] =
 "    the rest of this program's action.  If the\n"
 "    child terminates with a signal, the parent\n"
 "    prints an error message identifying the signal.\n"
-"    It does this using (strsignal(3)) and changes\n"
+"    It does this using strsignal(3) after changing\n"
 "    SIGKILL with measured CPU time over the limit to\n"
 "    SIGXCPU.  The parent returns a 0 exit code if\n"
 "    the child does not terminate with a signal, and\n"
-"    returns 128 + the signal number as an exit code\n"
-"    if the child does terminate with a signal.\n"
+"    returns 128 + the possibly changed signal number\n"
+"    as an exit code if the child does terminate with\n"
+"    a signal.\n"
 "\n"
 "    Next, if this program's effective user ID is\n"
 "    `root', this program eliminates any supplemen-\n"
@@ -84,10 +86,11 @@ char documentation [] =
 "    placement of `\\ ', `\\t', `\\n', `\\f', `\\v',\n"
 "    and `\\\\' within each environment string by\n"
 "    space, tab, new line, form feed, vertical tab,\n"
-"    and backslash, respectively.\n"
+"    and backslash, respectively.  `\\ ', which de-\n"
+"    notes a single space, does not separate strings.\n"
 "\n"
 "    Normally the `sandbox' user is not allowed to\n"
-"    log in and owns no files or directories.\n"
+"    log in and owns no useful files or directories.\n"
 "\n"
 "    The program will write an error message on the\n"
 "    standard error output if any system call is in\n"
@@ -190,7 +193,7 @@ int main ( int argc, char ** argv )
 	        if ( c < '0' || c > '9' ) break;
 		digit_found = 1;
 
-		if ( n > ( 1 << 27 ) )
+		if ( n > ( INT_MAX / 10 ) )
 		{
 		    fprintf ( stderr,
 			      "hpcm_sandbox: Number"
@@ -204,7 +207,7 @@ int main ( int argc, char ** argv )
 	    if ( c == 'm' )
 	    {
 	        c = * s ++;
-		if ( n >= ( 1 << 11 ) )
+		if ( n > ( INT_MAX >> 20 ) )
 		{
 		    fprintf ( stderr,
 			      "hpcm_sandbox: Number"
@@ -216,7 +219,7 @@ int main ( int argc, char ** argv )
 	    } else if ( c == 'k' )
 	    {
 	        c = * s ++;
-		if ( n >= ( 1 << 21 ) )
+		if ( n > ( INT_MAX >> 10 ) )
 		{
 		    fprintf ( stderr,
 			      "hpcm_sandbox: Number"
@@ -242,9 +245,12 @@ int main ( int argc, char ** argv )
 	++ index;
     }
 
-    /* If the program name is not left, print doc. */
+    /* If the program name is not left, or if it 
+       matches -doc*, print doc. */
 
-    if ( index >= argc  || argv[index][0] == '-' ) {
+    if (    index >= argc
+	 || strncmp ( "-doc", argv[index], 4 ) == 0 )
+    {
         printf ( "%s", documentation );
 	exit ( 1 );
     }
