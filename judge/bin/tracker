@@ -7,7 +7,7 @@
 #
 # File:		tracker
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri May 17 06:58:49 EDT 2002
+# Date:		Sat May 18 03:54:22 EDT 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -16,9 +16,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/05/17 10:58:09 $
+#   $Date: 2002/05/18 08:07:03 $
 #   $RCSfile: tracker,v $
-#   $Revision: 1.24 $
+#   $Revision: 1.25 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -538,26 +538,31 @@ set "score_id_array(Output Size Limit Exceeded)" oe
 #
 proc compute_score_array {} {
 
-    global ext_array sco_array score_id_array \
+    global rec_array sco_array score_id_array \
            score_array problem_array submitter_array \
 	   info_array
 
-    foreach name [array names score_array] {
-        unset score_array($name)
+    if { [info exists score_array] } {
+    	unset score_array
     }
-    foreach name [array names problem_array] {
-        unset problem_array($name)
+    if { [info exists problem_array] } {
+    	unset problem_array
     }
-    foreach name [array names submitter_array] {
-        unset submitter_array($name)
+    if { [info exists submitter_array] } {
+    	unset submitter_array
     }
 
     foreach dir [array names sco_array] {
 
         set sco_line $sco_array($dir)
-	set score [lindex $sco_line 3]
+	if { [lindex $sco_line 2] != "" } {
+	    set score [lindex $sco_line 4]
+	} else {
+	    set score [lindex $sco_line 3]
+	}
 	if { ! [info exists score_id_array($score)] } {
-	    error "STRANGE SCORE `$score'"
+	    error "STRANGE SCORE `$score':\
+	          $dir\n$info_array($dir)"
 	} else {
 	    set score $score_id_array($score)
 	}
@@ -578,13 +583,21 @@ proc compute_score_array {} {
 	}
 	set time [format {%014d} $time]
 
-	if { ! [info exists ext_array($dir)] } {
-	   error "NO EXTRACTION:\
-	          $dir\n$info_array($dir)"
+	if { ! [info exists rec_array($dir)] } {
+	    error "NO RECEIVED MAIL:\
+	           $dir\n$info_array($dir)"
 	} else {
-	   set ext_line $ext_array($dir)
-	   set problem [lindex $ext_line 2]
-	   regexp {^([^.]*)\.} $problem forget problem
+	    set rec_line $rec_array($dir)
+	    set subject [lindex $rec_line 2]
+	    if {    [catch { set len \
+	    			 [llength $subject] }] \
+		 || $len != 2 \
+		 || [lindex $subject 0] != "submit" } {
+		error "STRANGE SUBJECT `$subject':\
+		      $dir\n$info_array($dir)"
+	    }
+	    set problem \
+	    	[file rootname [lindex $subject 1]]
 	}
 
         set item [list $time $score]
