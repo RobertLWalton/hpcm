@@ -5,7 +5,7 @@
 #
 # File:		receivemail
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Aug 29 08:16:56 EDT 2000
+# Date:		Mon Sep 11 21:40:33 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: acm-cont $
-#   $Date: 2000/08/29 12:39:50 $
+#   $Date: 2000/09/12 04:54:29 $
 #   $RCSfile: receivemail,v $
-#   $Revision: 1.18 $
+#   $Revision: 1.19 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -32,16 +32,17 @@ exec tcl "$0" "$@"
 #
 set my_argc $argc
 set my_argv $argv
-if { $argc >= 1 && ! [regexp {^-} [lindex $argv 0]] } {
-    cd [lindex $argv 0]
-    set my_argv [lreplace $argv 0 0]
-    set my_argc [expr { $argc - 1 }]
+if { $my_argc >= 1 \
+     && ! [regexp {^-} [lindex $my_argv 0]] } {
+    cd [lindex $my_argv 0]
+    set my_argv [lreplace $my_argv 0 0]
+    set my_argc [expr { $my_argc - 1 }]
 }
 
 # Include common code and parameters:
 #
 set lib_directory "[file dirname $argv0]/../lib"
-source "$lib_directory/judging_common.tcl"
+source $lib_directory/judging_common.tcl
 set log_globally yes
 catch {
 
@@ -88,6 +89,8 @@ receivemail \[directory\]
     The output of this program can be piped into the
     `dispatchmail' program."
 
+# If any arguments left, print documentation and exit.
+#
 if { $my_argc != 0 } {
     puts $document
     exit 1
@@ -97,9 +100,9 @@ if { $my_argc != 0 } {
 # directory will not fail: i.e., be sure the mail
 # directory exists and is writable.
 #
-if { ! [file isdirectory "$mail_directory"] } {
+if { ! [file isdirectory $mail_directory] } {
     error "$mail_directory is not a directory."
-} elseif { ! [file writable "$mail_directory"] } {
+} elseif { ! [file writable $mail_directory] } {
     error "$mail_directory is not writable."
 }
 
@@ -124,8 +127,16 @@ while { "yes" } {
     # Read header
     #
     if { [regexp {^From\ } $line] } {
+
 	set fake_message no
+
+        # Read message header, deleting any X-HPCM-
+	# Signature-OK field sent by the sender, as
+	# we only believe the value for this field
+	# that we compute.
+	#
     	read_header stdin $line {x_hpcm_signature_ok}
+
     } else {
 
 	set fake_message yes
@@ -151,7 +162,10 @@ while { "yes" } {
     }
 
     # If authentication is to be used, authenticate
-    # header.
+    # header.  We do not use authentication in this
+    # program, but computing it here saves time
+    # when it is used later, as the result is cached
+    # in the X-HPCM-Signature-OK field of the header.
     #
     if { $use_authentication } {
     	compute_authentication
@@ -163,7 +177,8 @@ while { "yes" } {
     #
     set reply_to [compute_message_reply_to]
     regsub -all "\[\ \t\n\]" $reply_to "" reply_to
-    regexp {<([^<>]*)>$} $reply_to forget reply_to
+    regexp "<(\[^<>\]*)>\[\ \t\]*\$" $reply_to \
+           forget reply_to
 
     if { $reply_to == "" } {
     	set reply_to UNKNOWN
@@ -174,7 +189,7 @@ while { "yes" } {
     set date [compute_message_date]
 
     set dddd [clock_to_filename_date [clock scan $date]]
-    set dirname "$dddd-<<$reply_to>>-submission"
+    set dirname ${dddd}-<<${reply_to}>>-submission
 
 
     # Make directory for message.  On sucess copy
@@ -183,7 +198,7 @@ while { "yes" } {
 
     if { [catch \
 	  { create_directory \
-	    "$mail_directory/$dirname" }] } {
+	    $mail_directory/$dirname }] } {
 
 	# Directory must already exist.  Skip message.
 	#
@@ -200,8 +215,8 @@ while { "yes" } {
     	# Directory did NOT exist, and was just made.
 	# Copy message.
 	#
-	set d "$mail_directory/$dirname"
-	set message_ch [open "$d/$received_file" w]
+	set d $mail_directory/$dirname
+	set message_ch [open $d/$received_file w]
 
 	puts $message_ch $message_header
 	puts $message_ch ""

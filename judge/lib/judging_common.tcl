@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Sep  9 11:25:48 EDT 2000
+# Date:		Mon Sep 11 21:47:33 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: acm-cont $
-#   $Date: 2000/09/09 15:18:42 $
+#   $Date: 2000/09/12 04:54:30 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.30 $
+#   $Revision: 1.31 $
 #
 
 # Include this code in TCL program via:
@@ -310,14 +310,14 @@ proc log_error { error_output } {
 #	message_reply_to	`Reply-To:' field value.
 #	message_subject		`Subject:' field value.
 #	message_date		`Date:' field value.
-#	message_x_hpcm_date	`X-HPCM-date:' field
+#	message_x_hpcm_date	`X-HPCM-Date:' field
 #				value.
-#	message_x_hpcm_reply_to	`X-HPCM-reply-to:'
+#	message_x_hpcm_reply_to	`X-HPCM-Reply-To:'
 #				field value.
-#	message_x_hpcm_signature `X-HPCM-signature:'
+#	message_x_hpcm_signature `X-HPCM-Signature:'
 #				field value.
 #	message_x_hpcm_signature_ok
-#				`X-HPCM-signature-ok:'
+#				`X-HPCM-Signature-OK:'
 #				field value.
 #
 # All the values have the final \n stripped off.  All
@@ -488,7 +488,7 @@ proc compute_message_date {} {
 # Compute whether the header just read by read_header
 # is authentic.  Return `yes' if it is, `no' if it is
 # not.  If the header does not already have the same
-# answer recorded in its last `X-HPCM-signature-ok'
+# answer recorded in its last `X-HPCM-Signature-OK'
 # field, add that field with the newly computed value
 # to the end of the header stored in the message_...
 # global variables.
@@ -513,9 +513,9 @@ proc compute_authentication {} {
 		      }] } {
 	    set result no
 	} else {
-	    set d "X-HPCM-date:$message_x_hpcm_date\n"
+	    set d "X-HPCM-Date:$message_x_hpcm_date\n"
 	    set r "$message_x_hpcm_reply_to\n"
-	    set r "X-HPCM-reply-to:$r\n"
+	    set r "X-HPCM-Reply-To:$r\n"
 	    set v "$d$f$key\n"
 	    set computed_signature \
 	        [compute_signature $v]
@@ -531,7 +531,7 @@ proc compute_authentication {} {
          != $result } {
         set message_x_hpcm_signature_ok " $result"
 	set message_header \
-	    "$message_header\nX-HPCM-signature_ok:\
+	    "$message_header\nX-HPCM-Signature_OK:\
 	     $result"
     }
 
