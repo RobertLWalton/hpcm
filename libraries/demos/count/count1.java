@@ -1,3 +1,20 @@
+// Count Demo Program: JAVA Version
+//
+// File:     count1.java
+// Author:   Bob Walton <walton@deas.harvard.edu>
+// Date:     Fri Nov  1 06:37:28 EST 2002
+//
+// The authors have placed this program in the public
+// domain; they make no warranty and accept no liability
+// for this program.
+//
+// RCS Info (may not be true date or author):
+//
+//   $Author: hc3 $
+//   $Date: 2002/11/01 11:38:21 $
+//   $RCSfile: count1.java,v $
+//   $Revision: 1.4 $
+
 import java.io.*;
 import java.util.StringTokenizer;
 

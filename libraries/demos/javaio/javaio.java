@@ -1,3 +1,20 @@
+// JAVA IO Demo
+//
+// File:     javaio.java
+// Author:   Bob Walton <walton@deas.harvard.edu>
+// Date:     Fri Nov  1 06:35:28 EST 2002
+//
+// The authors have placed this program in the public
+// domain; they make no warranty and accept no liability
+// for this program.
+//
+// RCS Info (may not be true date or author):
+//
+//   $Author: hc3 $
+//   $Date: 2002/11/01 11:36:22 $
+//   $RCSfile: javaio.java,v $
+//   $Revision: 1.3 $
+
 import java.io.*;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
