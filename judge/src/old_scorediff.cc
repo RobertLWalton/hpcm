@@ -2,7 +2,7 @@
 //
 // File:	scorediff.cc
 // Authors:	Bob Walton (walton@deas.harvard.edu)
-// Date:	Mon Sep 11 13:38:43 EDT 2000
+// Date:	Sat Oct  7 06:39:04 EDT 2000
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -10,10 +10,10 @@
 //
 // RCS Info (may not be true date or author):
 //
-//   $Author: acm-cont $
-//   $Date: 2000/09/11 18:13:56 $
+//   $Author: hc3 $
+//   $Date: 2000/10/07 10:53:23 $
 //   $RCSfile: old_scorediff.cc,v $
-//   $Revision: 1.9 $
+//   $Revision: 1.10 $
 
 #include <stdlib.h>
 #include <iostream.h>
@@ -21,7 +21,15 @@
 #include <ctype.h>
 #include <string.h>
 #include <math.h>
+#ifdef sun
+#   include <ieeefp.h>
+#endif
+int finite (double);	// Not always in math.h
 #include <assert.h>
+
+#ifdef getc
+#   undef getc
+#endif
 
 char documentation [] =
 "scorediff output_file test_file\n"

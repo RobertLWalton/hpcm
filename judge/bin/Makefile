@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/10/07 10:12:49 $
+#   $Date: 2000/10/07 10:52:56 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.7 $
+#   $Revision: 1.8 $
 
 all:	scorediff hpcm_sandbox_x hpcm_print_passwords
 
@@ -60,11 +60,8 @@ unsecure_hpcm_sandbox_x:
 	chmod 500 hpcm_sandbox_x
 
 hpcm_print_passwords:
-	if test ! -L hpcm_print_passwords; then \
-	    ln -s \
-	        ../../secure/bin/hpcm_print_passwords \
-		.; \
-	    fi
+	ln -s ../../secure/bin/hpcm_print_passwords .
 
 clean:
-	rm -f scorediff hpcm_sandbox_x
+	rm -f scorediff hpcm_sandbox_x \
+		hpcm_print_passwords
