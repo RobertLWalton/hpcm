@@ -5,7 +5,7 @@
 #
 # File:		autojudge
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Jan  7 06:13:34 EST 2002
+# Date:		Mon Jan  7 06:58:48 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/01/07 11:57:18 $
+#   $Date: 2002/01/07 12:09:59 $
 #   $RCSfile: autojudge,v $
-#   $Revision: 1.57 $
+#   $Revision: 1.58 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -85,7 +85,7 @@ autojudge \[problem\[.extension\]\]
 	compiler error file PROBLEM.cerr
       . the program standard output file PROBLEM.out
 	and the program standard error file PROBLEM.err
-      . the filtered outfile file PROBLEM.fout, if the
+      . the filtered output file PROBLEM.fout, if the
 	$scoring_filter_file file exists
       . the PROBLEM.score file made by calling autoscore
       . the $auto_score_file file made by ditto
@@ -212,7 +212,8 @@ autojudge \[problem\[.extension\]\]
     In the above, a dangling link does not count as an
     existing file.  Thus if the solution directory con-
     tains a dangling link F2, i.e., a link to an non-
-    existant file, then F2 does not exist.
+    existent file, then F2 does not exist.  Also note
+    that by `link' we mean `symbolic link'.
 
     If no extension is given to this program with the
     problem name, any file name whose extension is
@@ -262,7 +263,7 @@ autojudge \[problem\[.extension\]\]
     by -SOLUTION-MAKE- in the `$files_file' file.  If
     there is such a file F listed, and it does not al-
     ready exist in the solution directory, this program
-    excutes `make F' in the solution directory.  During
+    executes `make F' in the solution directory.  During
     this process this program locks the solution direc-
     tory with a $dispatch_pid_file file.  Note that
     `PROBLEM' or `EXTENSION' are not substituted for in
@@ -281,15 +282,16 @@ autojudge \[problem\[.extension\]\]
     bolically links solution directory files into the
     current directory, according to instructions encoded
     by the -LINK- and -OPTIONAL-LINK- special symbols in
-    the `$files_file' file.  Note that a file may be\
-    	listed
-    as both -OPTIONAL- and -LINK-: if submitted the sub-
-    mitted version will be used, and if not submitted,
-    the solution directory version will be used.  Also
-    note that a file listed as -LINK- or -OPTIONAL-LINK-
-    may be made as a consequence of a -SOLUTION-MAKE-
-    item (which may or may not name the file to be link-
-    ed directly).
+    the `$files_file' file or the default value given\
+    	above
+    for this file.  Note that a file may be listed as
+    both -OPTIONAL- (for extractmail) and -LINK-: if
+    submitted the submitted version will be used, and if
+    not submitted, the solution directory version will
+    be used.  Also note that a file listed as -LINK- or
+    -OPTIONAL-LINK- may be made as a consequence of a
+    -SOLUTION-MAKE- item (which may or may not directly
+    name the file to be linked).
 
     Next this program makes the program binary by using
     the $make_file.  Any compiler error messages are
@@ -324,7 +326,7 @@ autojudge \[problem\[.extension\]\]
     mined by the .err file or if the .out file does not
     exist or is empty.
 
-    Lastly, this program may create a `$reply_file'
+    Lastly, this program may create a `$reply_file' file
     and send it as email to the submitter.  It does this
     if the score is `Completely Correct' or the scoring_
     mode is `auto' or `auto+manual'.  If the mode is
@@ -372,7 +374,11 @@ autojudge \[problem\[.extension\]\]
     `$received_file' file is not readable, if a\
 	`$files_file'
     file is misformatted, or if `extractmail' returns a
-    system error."
+    system error.  It is also a system error if the
+    $received_file file `Subject:' field is misformat-
+    ted, as it is assumed submissions will be prescreen-
+    ed for correct `Subject:' format before being passed
+    to this program."
 
 # If too many arguments or -doc argument, print docu-
 # mentation and exit.
