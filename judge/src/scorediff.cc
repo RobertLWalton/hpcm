@@ -2,7 +2,7 @@
 //
 // File:	scorediff.cc
 // Authors:	Bob Walton (walton@deas.harvard.edu)
-// Date:	Wed Aug 29 06:10:19 EDT 2001
+// Date:	Sat Nov  3 05:43:37 EST 2001
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: hc3 $
-//   $Date: 2001/08/29 12:19:02 $
+//   $Date: 2001/11/03 11:44:44 $
 //   $RCSfile: scorediff.cc,v $
-//   $Revision: 1.37 $
+//   $Revision: 1.38 $
 
 // This is version 2, a major revision of the first
 // scorediff program.  This version is more explicitly
@@ -408,6 +408,17 @@ struct file
     bool remainder;	// True iff token is a remainder
     			// from a split token.
 
+    // One of the following two switches is set by scan-
+    // ning whitespace into `back' if by the before_nl
+    // function.
+    //
+    bool before_nl;	// True if whitespace following
+    			// token has a new line or end
+			// of file.
+    bool not_before_nl;	// True if whitespace following
+    			// token does not contain a new
+			// line or end of file.
+
     double number;	// For a number token, the
     			// value of the number.
     int decimals;	// For a number token, the
@@ -459,14 +470,17 @@ struct file
     //		e    e+   e-   E    E+   E-
     //
     // where # denotes any digit.  Can also be set to a
-    // single character following a token.
+    // single character following a token.  Can also
+    // set set to part of the whitespace following a
+    // token (by before_nl).
 
     char * back;	// If pointing at `\0', there
     			// are no backed up characters
 			// to deliver.  Otherwise
 			// use `* back ++' to input
 			// next character.
-    char backup [ 5 ];  // Buffer of backed up char-
+    char backup [ 5 + MAX_SIZE + 1 ]; 
+    			// Buffer of backed up char-
     			// acters into which `back'
 			// points.  Terminated by `\0'.
 };
@@ -537,6 +551,9 @@ void token_too_long ( file & f ) {
 //
 void scan_token ( file & f )
 {
+    f.before_nl		= false;
+    f.not_before_nl	= false;
+
     if ( f.type == EOF_TOKEN ) return;
 
     if ( f.remainder_length != 0 )
@@ -888,6 +905,9 @@ void split_word ( file & f, int n )
     * p = 0;
     f.length = n;
     f.column -= f.remainder_length;
+
+    f.before_nl		= false;
+    f.not_before_nl	= true;
 }
 
 // Undo a token split.  Does nothing if file
@@ -901,7 +921,69 @@ void undo_split ( file & f )
 	f.length += f.remainder_length;
 	f.column += f.remainder_length;
 	f.remainder_length = 0;
+	f.before_nl	= false;
+	f.not_before_nl	= false;
     }
+}
+
+// Return true iff the current token is followed
+// by whitespace containing a new line or eof.
+// Also return true if token is an EOF_TOKEN.
+//
+bool before_nl ( file & f )
+{
+    if ( f.type == EOF_TOKEN ) return true;
+
+    if ( f.before_nl ) return true;
+
+    if ( f.not_before_nl ) return false;
+
+    // Scan backup to answer question.
+    //
+    char * p = f.back;
+    char c;
+    while ( c = * p ++ )
+    {
+    	if ( ! isspace ( c ) )
+	{
+	    f.not_before_nl = true;
+	    return false;
+	}
+	else if ( c == '\n' )
+	{
+	    f.before_nl = true;
+	    return true;
+        }
+    }
+    -- p;
+
+    // Add to backup to answer question.
+    //
+    while ( p < f.backup + sizeof ( f.backup ) - 1 )
+    {
+	c = f.stream.get();
+	if ( c == EOF )
+	{
+	    f.before_nl = true;
+	    * p = 0;
+	    return true;
+	}
+
+	* p ++ = c;
+	if ( ! isspace ( c ) )
+	{
+	    f.not_before_nl = true;
+	    * p = 0;
+	    return false;
+	}
+	else if ( c == '\n' )
+	{
+	    f.before_nl = true;
+	    * p = 0;
+	    return true;
+	}
+    }
+    whitespace_too_long ( f );
 }
 
 // Possible difference types.
@@ -1357,29 +1439,37 @@ int main ( int argc, char ** argv )
 	// Scan next tokens.
 	//
 	if ( last_match_was_word_diff
-	     && ( output.remainder ||
-	          test.remainder ||
-	          output.type == NUMBER_TOKEN ||
-		  test.type == NUMBER_TOKEN ) )
+	     && ( output.remainder != test.remainder ||
+	          output.type != test.type ||
+		  before_nl ( output )
+		      != before_nl ( test ) ) )
 	{
 	    assert (    ! output.remainder
 	    	     || ! test.remainder );
-	    assert (    ( output.type != NUMBER_TOKEN )
-		     || ( test.type != NUMBER_TOKEN ) );
+	    assert (    ( output.type == WORD_TOKEN )
+		     || ( test.type == WORD_TOKEN ) );
 
 	    // If the last two tokens had a word diff-
-	    // erence and one was a remainder or a
-	    // number, discard the remainder or
-	    // the non-number, leaving the other
-	    // token for the next match.
+	    // erence and one is a remainder or a
+	    // number, or one is followed by a new line
+	    // and the other is not, discard the
+	    // remainder, the one not followed by a new
+	    // line, or the word (non-number), leaving
+	    // the other token for the next match.
 
-	    if ( output.type == NUMBER_TOKEN )
-		scan_token ( test );
-	    else if ( test.type == NUMBER_TOKEN )
-		scan_token ( output );
-	    else if ( output.remainder )
+	    if ( output.remainder )
 		scan_token ( output );
 	    else if ( test.remainder )
+		scan_token ( test );
+	    else if (      before_nl ( test )
+	              && ! before_nl ( output ) )
+		scan_token ( output );
+	    else if (    ! before_nl ( test )
+	              &&   before_nl ( output ) )
+		scan_token ( test );
+	    else if ( output.type == WORD_TOKEN )
+		scan_token ( output );
+	    else if ( test.type == WORD_TOKEN )
 		scan_token ( test );
 	}
 	else
