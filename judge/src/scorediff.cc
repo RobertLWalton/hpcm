@@ -2,7 +2,7 @@
 //
 // File:	scorediff.cc
 // Authors:	Bob Walton (walton@deas.harvard.edu)
-// Date:	Sat Jan 12 00:45:08 EST 2002
+// Date:	Tue Jan 29 06:05:46 EST 2002
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: hc3 $
-//   $Date: 2002/01/14 15:35:56 $
+//   $Date: 2002/01/29 11:09:18 $
 //   $RCSfile: scorediff.cc,v $
-//   $Revision: 1.41 $
+//   $Revision: 1.42 $
 
 // This is version 2, a major revision of the first
 // scorediff program.  This version is more explicitly
@@ -117,17 +117,19 @@ char documentation [] =
 "    word-eof1		When one file ends, the other\n"
 "    integer-eof1	file has a remaining word,\n"
 "    float-eof1		integer number, or floating\n"
-"    word-eof2		point number.  This token can\n"
-"    integer-eof2	be any token left in the\n"
-"    float-eof2		longer file after the shorter\n"
-"		file ends.  Whitespace after the last\n"
-"		matching non-eof tokens in the files\n"
-"		is NOT compared.  Eof1 means the\n"
-"		first file is shorter, while eof2\n"
-"		means the second file is shorter.\n"
-"		Thus up to three of these differ-\n"
-"		ences can occur in the same file\n"
-"		comparison.\n"
+"    word-eof2		point number.  After the\n"
+"    integer-eof2	shorter file ends, ALL tokens\n"
+"    float-eof2		in the longer file are read\n"
+"		to compute these values, so, for ex-\n"
+"		ample, word-eof1 and float-eof1 can\n"
+"		both be reported.  Whitespace after\n"
+"		the last matching non-eof tokens in\n"
+"		the files is NOT compared.  Eof1\n"
+"		means the first file is shorter,\n"
+"		while eof2 means the second file is\n"
+"		shorter. Thus up to three of these\n"
+"		differences can occur in the same\n"
+"		file comparison.\n"
 "\n"
 "    float A R	For two matching number tokens, at\n"
 "		least ONE of which is floating point,\n"
