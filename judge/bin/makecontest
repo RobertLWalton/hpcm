@@ -6,7 +6,7 @@
 #
 # File:		makejudgingdir
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Feb 16 07:58:11 EST 2002
+# Date:		Sat Feb 16 09:24:06 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/02/16 13:55:16 $
+#   $Date: 2002/02/16 14:41:26 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.84 $
+#   $Revision: 1.85 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -2048,17 +2048,39 @@ if { $secure_option \
 	 "" \
 	 ":0 c:" \
 	 "hpcm_mbox"
+
+    # Check contest/bin/hpcm_sendmail mode.
+    #
+    if {    [file exists $c_d/bin/hpcm_sendmail] \
+	 && ! [regexp {..s} \
+	              [get_access \
+		           $c_d/bin/hpcm_sendmail]] } {
+	TODO "chmod u+s,a+x ./contest/bin/hpcm_sendmail"
+    }
 }
 
-# Check contest/bin/hpcm_sendmail mode.
+# Check secure directory and file modes minimally.
 #
-if { $secure_option \
-     && [file exists $c_d/bin/hpcm_sendmail]
-     && [expr { [file attributes \
-                      $c_d/bin/hpcm_sendmail \
-		      -permissions] \
-	        & 04000 }] == 0 } {
-    TODO "chmod u+s ./contest/bin/hpcm_sendmail"
+if { $secure_option } {
+    if {    [file exists $c_d/secure] \
+         && ! [regexp {\.\.\.} \
+	              [get_access $c_d/secure]] } {
+        TODO "chmod o-rwx ./contest/secure"
+    }
+    if {    [file exists $c_d/secure/hpcm_sendmail.rc] \
+         && ! [regexp {\.\.\.} \
+	              [get_access \
+		        $c_d/secure/hpcm_sendmail.rc]] \
+					} {
+        TODO "chmod o-rwx\
+	      ./contest/secure/hpcm_sendmail.rc"
+    }
+    if {    [file exists $c_d/secure/passwords] \
+         && ! [regexp {\.\.\.} \
+	              [get_access \
+		           $c_d/secure/passwords]] } {
+        TODO "chmod o-rwx ./contest/secure/passwords"
+    }
 }
 
 # Make $c_d/who_where
@@ -2300,10 +2322,12 @@ if { $home_option } {
          || ! [file readable $c_d/home/setup.tar] \
 		} {
 	TODO "Run SETUP_PROTOTYPE in prototype\
-	      account" \
+	      account," \
+	     "link ./contest/home to\
+	      `~prototype_account/home' directory," \
 	     "and rerun `makejudgingdir -home'." \
-	     "See `SETUP_PROTOTYPE -doc' for\
-	      instructions."
+	     "See `SETUP_PROTOTYPE -doc' and\
+	      contest Makefile for instructions."
     }
     if { [file exists $c_d/home] \
          && ! [regexp {r.x} [get_access $c_d/home]] } {
