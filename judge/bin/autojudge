@@ -5,7 +5,7 @@
 #
 # File:		autojudge
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Jan  3 11:44:10 EST 2002
+# Date:		Thu Jan  3 22:16:25 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/01/03 18:57:27 $
+#   $Date: 2002/01/04 03:46:11 $
 #   $RCSfile: autojudge,v $
-#   $Revision: 1.45 $
+#   $Revision: 1.46 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -337,7 +337,7 @@ if { $argc > 1 || [regexp {^-doc} [lindex $argv 0]] } {
     exit 1
 }
 
-# Compute problem name.
+# Compute problem name and extension.
 #
 if { $argc == 1 } {
     set argument [lindex $argv 0]
@@ -367,8 +367,7 @@ set extension [file extension $argument]
 proc argument_error {} {
     global argument
     reply \
-          "ERROR: problem name or extension is illegal:\
-	          $argument" \
+          "ERROR: problem name is illegal: $argument" \
 	  ""  \
 	  "THIS SUBMISSION (see below) IGNORED"  \
 	  "YOU MUST RESUBMIT WITH A LEGAL PROBLEM NAME"
@@ -399,38 +398,181 @@ if { ! [file isdirectory $problem_solution] } {
     argument_error
 }
 
-# Link $files_file or $make_file if possible.
+# Function that links files according to the instruc-
+# tions in the `files' argument, which is a list format-
+# ted like a `$files_file' file value.
 #
-proc link_optional_file { name } {
+proc execute_links { files } {
 
-    global extension problem_solution
+    global problem extension problem_solution
 
-    if { [file exists $name] } return
-
-    if { [file exists $problem_solution/$name] } {
-	puts "Linking $name"
-	link_file $problem_solution/$name
-	return
-    } 
-    if { [file exists \
-               $problem_solution/$name.$extension] } {
-	puts "Linking $name.$extension to $name"
-	link_file $problem_solution/$name.$extension \
-		  $name
-	return
+    if { [catch { llength $files }] } {
+        error "$files_file file value is not formatted\
+	       as a list:\n$files"
     }
+    set mode none
+    foreach item $files {
+        switch $item {
+	    -LINK-		{
+	        set mode link
+	    }
+	    -OPTIONAL-LINK-	{
+	        set mode optional-link
+	    }
+	    default		{
+		if { [regexp {^-[-A-Z]*-$} $item] } {
+		    set mode none
+		} elseif { $mode != "none" } {
+		    if { [catch { llength $item }] } {
+		        error "Bad $files_file -LINK-\
+			       or -OPTIONAL-LINK- item:\
+			       $item"
+		    }
+		    if { [llength $item] == 1 } {
+		        set source_list $item
+			set target $item
+		    } else {
+		        set source_list \
+			    [lrange $item 1 end]
+			set target [lindex $item 0]
+		    }
+		    set source ""
+		    set EXTENSION_findable no
+		    foreach name $source_list {
+		    	set root \
+			    [file rootname $name]
+			set ext \
+			    [file extension $name]
+			if { $root == "PROBLEM" } {
+			    set root $problem
+			}
+			if { $ext == ".EXTENSION" } {
+			    set ps $problem_solution
+			    set fl \
+			        [glob -nocomplain \
+				      $ps/$root.*]
+			    set EXTENSION_findable \
+			        [expr { [llength $fl] \
+					    > 0 }]
+			    if { $extension == "" } {
+			        continue
+			    }
+			    set ext $extension
+			}
+			set name $root$ext
+			set name \
+			    $problem_solution/$name
+			if { [file exists $name] } {
+			    set source $name
+			    break
+			}
+		    }
 
-    if { [llength [glob -nocomplain $name.*]] > 0 } {
-        argument_error
+		    if { [catch { \
+			   set type \
+			       [file type $target] \
+				}] } {
+			set type none
+		    } elseif { $type == link \
+			       && \
+			       $source != "" \
+			       && \
+			       [file readlink $target] \
+				     == $source } {
+			set type done
+		    }
+
+		    if {    $type != "link" \
+		         && $type != "none" } {
+		        # do nothing
+		    } elseif { $source == "" } {
+		        if { $mode == "link" } {
+			    if { $EXTENSION_findable } {
+			        argument_error
+				continue
+			    } else {
+				error "No source file\
+				       found for\
+				       non-optional\
+				       link: $item"
+			    }
+			}
+			if { $type == "link" } {
+			    puts "Deleting $target"
+			    file delete -force $target
+			}
+		    } else {
+			if { $type == "link" } {
+			    puts "Deleting $target"
+			    file delete -force $target
+			}
+			set tail [file tail $source]
+			if { $tail == $target } {
+			    puts "Linking $target"
+			} else {
+			    puts "Linking $tail to\
+				  $target"
+			}
+			link_file $source $target
+		    }
+		}
+	    }
+	}
     }
 }
 
 # Link in any $files_file.
 #
-link_optional_file $files_file
+execute_links "
+    -OPTIONAL-LINK-
+	{ $files_file $files_file.EXTENSION
+		      $files_file }
+    "
 
-# Get submitted files.  If error, on SYSTEM ERROR pass
-# to `error' function and otherwise reply to submitter.
+# Read $files_file.
+#
+if { [file exists $files_file] } {
+    set files [read_entire_file $files_file]
+} else {
+    set files "
+        -LINK-
+	    { $make_file $make_file.EXTENSION\
+	    	$make_file }
+	    PROBLEM.in
+	    { PROBLEM.test PROBLEM.out PROBLEM.test }
+	-OPTIONAL-LINK-
+	    $scoring_instructions_file
+	    $scoring_filter_file
+	    { PROBLEM.ftest PROBLEM.fout PROBLEM.ftest }
+	"
+}
+
+# Compute list of solution directory files to be made.
+#
+solution_make_files ""
+set solution_make no
+foreach item $files {
+    switch $item {
+	-SOLUTION-MAKE- {
+	    set solution_make yes
+	}
+	default {
+	    if { [regexp {^-[-A-Z]*-$} $item] } {
+		set solution_make no
+	    } elseif { $solution_make } {
+	        set target $problem_solution/$item
+		if { ! [file exists $target] } {
+		    lappend solution_make_files $item
+		}
+	    }
+	}
+    }
+}
+
+### MAKE
+
+# Get submitted files.  If error, if SYSTEM ERROR call
+# `error' function and otherwise reply to submitter.
 # Compute list of submitted files in `submitted_files'.
 #
 if { [catch { exec extractmail } extractout] } {
@@ -468,105 +610,13 @@ if { [catch { exec extractmail } extractout] } {
     }
 }
 
-# Link $make_file, etc.
+# Process -LINK- and -OPTOINAL-LINK- instructions in
+# $files_file (or its default value).
 #
-link_optional_file $make_file
+execute_links $files
 
-# Link any $files_file -LINK- files.
-#
-if { [file exists $files_file] } {
-    set link_mode no
-    foreach name [read_entire_file $files_file] {
-        switch $name {
-	    -LINK-	{ set link_mode yes }
-	    -REQUIRED-	--
-	    -OPTIONAL-	{ set link_mode no }
-	    default	{
-		if { $link_mode \
-		     && ! [file exists $name] } {
-		    set sname \
-			$problem_solution/$name
-		    if { ! [file exists \
-				 $sname] } {
-			error "-LINK- file\
-			      $sname does not\
-			      exist"
-		    }
-		    puts "Linking $name"
-		    link_file $sname
-		}
-	    }
-	}
-    }
-}
-
-# Link $scoring_instructions_file and $scoring_filter_
-# file.
-#
-set sif $scoring_instructions_file
-if { ! [file exists $sif] \
-     && [file exists $problem_solution/$sif] } {
-    puts "Linking $sif"
-    link_file $problem_solution/$sif
-}
-set sff $scoring_filter_file
-if { ! [file exists $sff] \
-     && [file exists $problem_solution/$sff] } {
-    puts "Linking $sff"
-    link_file $problem_solution/$sff
-}
-
-# Link .in, .test, and .ftest files.
-#
-if { ! [file exists $problem.in] } {
-    puts "Linking $problem.in"
-    link_file $problem_solution/$problem.in
-}
-set solout  $problem_solution/$problem.out
-set soltest $problem_solution/$problem.test
-if { ! [file exists $problem.test] \
-     || ( [file exists $solout] \
-          && [file extension \
-	           [file readlink $problem.test]] \
-	     == ".test" ) } {
-    if { ! [catch { file type $problem.test }] } {
-	puts "Deleting obsolete $problem.test"
-	file delete -force $problem.test
-    }
-    if { [file exists $solout] } {
-	puts "Linking $problem.test to solution\
-	      $problem.out"
-	link_file $solout $problem.test
-    } else {
-	puts "Linking $problem.test"
-	link_file $soltest
-    }
-}
-set solfout  $problem_solution/$problem.fout
-set solftest $problem_solution/$problem.ftest
-if {    (    [file exists $solftest] \
-          && ! [file exists $problem.ftest] ) \
-     || (    [file exists $solfout] \
-          && ! [file exists $problem.ftest] ) \
-     || (    [file exists $solfout] \
-          && [file extension \
-	           [file readlink $problem.ftest]] \
-	     == ".ftest" ) } {
-    if { ! [catch { file type $problem.ftest }] } {
-	puts "Deleting obsolete $problem.ftest"
-	file delete -force $problem.ftest
-    }
-    if { [file exists $solfout] } {
-	puts "Linking $problem.ftest to solution\
-	      $problem.fout"
-	link_file $solfout $problem.ftest
-    } else {
-	puts "Linking $problem.ftest"
-	link_file $solftest
-    }
-}
-
-# Send reply to user containing new auto score.
+# Function to send reply to user containing new auto
+# score.
 #
 proc auto_score_reply { auto_score } {
 
