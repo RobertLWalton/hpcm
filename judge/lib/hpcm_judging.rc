@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Sep 13 17:11:19 EDT 2000
+# Date:		Thu Sep 14 07:16:04 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,21 +11,16 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: acm-cont $
-#   $Date: 2000/09/13 22:37:05 $
+#   $Date: 2000/09/14 13:33:06 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.29 $
+#   $Revision: 1.30 $
 #
 
 # An optionally modified copy of this file must be
 # placed in (or symbolically linked into) the current
 # directory of an executing judging program, or one
 # of the ancestors (parent, parent of parent, etc.) of
-# that directory (3 ancestors will be searched).
-
-# HPCM System Manager: Email address for emergencies;
-#		       "" if none.
-#
-set manager ""
+# that directory (4 ancestors will be searched).
 
 # Scoring Mode:
 #
@@ -50,19 +45,35 @@ set reply_mode auto
 # Log Mode:		Action on Error:
 #
 #	manual		write error to log file
+#	auto+manual	write error to log file, reply
+#			to submitter/requester
 #	auto		write error to log file, reply
 #			to submitter/requester and
-#			HPCM system manager.
+#			HPCM log manager.
 #	none		write all error info to standard
 #			output
 #
 set log_mode auto
 
+# Log Manager:
+#
+# Email address to send log files to if in `auto'
+# log_mode.
+#
+set log_manager ""
+
+# Maximum Logged Errors:
+#
+# If more errors than this are logged, the log mode is
+# automatically changed to `none'.
+#
+set log_error_maximum 10
+
+
 
 # Authentication Switch: yes or no
 #
 set use_authentication no
-
 
 # Authentication Keys:
 #
@@ -86,6 +97,8 @@ array set authentication_keys {
 }
 
 
+# .err File Regexps:
+#
 # Regexp expressions matched to lines in .err file to
 # detect limit overruns.  Letter case is ignored.
 # The regular expressions match successfully if they
@@ -95,6 +108,8 @@ set time_limit_regexp {cpu time limit exceeded}
 set output_limit_regexp {file size limit exceeded}
 
 
+# Allowed Extensions:
+#
 # Whitespace separated list of allowed extensions for
 # submitted programs:
 #

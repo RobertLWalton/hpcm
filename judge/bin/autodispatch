@@ -5,7 +5,7 @@
 #
 # File:		autodispatch
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Sep 12 13:16:07 EDT 2000
+# Date:		Thu Sep 14 09:02:45 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: acm-cont $
-#   $Date: 2000/09/12 17:19:34 $
+#   $Date: 2000/09/14 13:33:05 $
 #   $RCSfile: autodispatch,v $
-#   $Revision: 1.9 $
+#   $Revision: 1.10 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -162,7 +162,7 @@ if { [header_is_authentic] == "no" } {
 # Execute any program appropriate to the subject.
 #
 set program ""
-if { [llength $message_subject] >= 1 } {
+if { [llength $message_subject] >= 2 } {
     switch -exact [lindex $message_subject 0] {
         get	{ set program autoinfo }
 	submit	{ set program autojudge }
@@ -171,6 +171,9 @@ if { [llength $message_subject] >= 1 } {
 
 if { $program != "" } {
     puts [exec $program]
+} elseif { [regexp {error test 908374693717092149} \
+		   $message_subject] } {
+    error "Test of the error response system."
 } elseif { $reply_mode == "auto" } {
     reply -all \
           "This message cannot be properly answered\

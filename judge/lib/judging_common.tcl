@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Sep 13 18:29:59 EDT 2000
+# Date:		Thu Sep 14 07:16:29 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: acm-cont $
-#   $Date: 2000/09/13 22:37:06 $
+#   $Date: 2000/09/14 13:33:07 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.33 $
+#   $Revision: 1.34 $
 #
 
 # Include this code in TCL program via:
@@ -45,9 +45,10 @@
 
 # The catch and `caught_error' function catches all
 # program errors and causes them to be announced on the
-# standard output and be logged according to the log_
-# mode setting.  This can cause errors to be recorded
-# in an error file and to generate email notification.
+# standard error output and be logged according to the
+# log_mode setting.  This can cause errors to be
+# recorded in an error file and to generate email
+# notification.
 
 # Default error log directory name.  For use if we
 # cannot find judging parameters.
@@ -181,11 +182,11 @@ proc caught_error {} {
 
 # Function called to log an error when the program
 # may want to continue.  The error is printed on the
-# standard output.  Unless `log_mode' is `none', the
-# error is also written to a file.  If `log_mode' is
-# `auto', the error is also emailed to any submitter/
-# requester identified in $received_mail and to any
-# HPCM system manager.
+# standard error output.  Unless `log_mode' is `none',
+# the error is also written to a file.  If `log_mode'
+# is `auto', the error is also emailed to any
+# submitter/requester identified in $received_mail and
+# to any log manager.
 #
 # When the error information is written to a file, a
 # separate file is created for each error.  If the
@@ -208,26 +209,47 @@ proc caught_error {} {
 # The word `unchecked' in the name will be changed to
 # `checked' when a person checks off on the error.
 #
+# Number of calls to log_error in during this program.
+#
+set log_error_count 0
+#
 proc log_error { error_output } {
 
     global argv0 argv errorCode errorInfo \
 	   default_log_directory \
-	   log_directory log_globally log_mode
+	   log_directory log_globally log_mode \
+	   log_error_count log_error_maximum \
+	   log_manager received_file \
+	   message_From_line message_from \
+	   message_date message_subject \
+	   message_x_hpcm_test_subject
 
-    # Write error to standard output.
+    # Increment count of calls to log error and if
+    # appropriate change log_mode to `none' or exit
+    # from program.
     #
-    puts "ERROR during $argv0 $argv"
-    puts ""
-    puts $error_output
+    incr log_error_count
+    if { $log_error_count > $log_error_maximum } {
+    	set log_mode none
+    } elseif { $log_error_count > 1000 } {
+        exit 2
+    }
+
+    # Write error to standard error output.
+    #
+    puts stderr "ERROR during $argv0 $argv"
+    puts stderr ""
+    puts stderr $error_output
 
     # If `log_mode' is `none', do not write to file, but
-    # print errorCode an errorInfo to standard output.
+    # print errorCode an errorInfo to standard error
+    # output and return.
     #
     if { $log_mode == "none" } {
-	puts ""
-	puts "errorCode: $errorCode"
-	puts "errorInfo:"
-	puts $errorInfo
+	puts stderr ""
+	puts stderr "errorCode: $errorCode"
+	puts stderr "errorInfo:"
+	puts stderr $errorInfo
 	return
     }
 
@@ -272,7 +294,8 @@ proc log_error { error_output } {
 
 	    # Desparation move.  Should never happen.
 	    #
-	    set e LOGGING-FILENAME-GENERATION-ERROR
+	    set e LOGGING-FILENAME-GENERATION
+	    set e ${e}-unchecked_error
 	    set log_file $log_dir/$e
 	    break
 	}
@@ -280,13 +303,14 @@ proc log_error { error_output } {
 
     # Write error to $log_file file.
     #
-    puts ""
-    puts "Logging to $log_file"
+    puts stderr ""
+    puts stderr "Logging to $log_file"
 
     set log_ch [open $log_file a]
     puts $log_ch "----------------------------------"
     puts $log_ch "$argv0 $argv"
-    puts $log_ch [clock format [clock seconds]]
+    puts $log_ch ""
+    puts $log_ch "date: [clock format [clock seconds]]"
     puts $log_ch "pwd: [pwd]"
     puts $log_ch ""
     puts $log_ch $error_output
@@ -296,48 +320,88 @@ proc log_error { error_output } {
     puts $log_ch $errorInfo
     close $log_ch
 
-    # If log_mode is `auto' try to send mail.
+    # If log_mode is `auto' or `auto+manual' and log_
+    # error_count is 1 try to send mail.
     #
-    if { $log_mode == "auto" } {
+    if { [regexp {auto} $log_mode] \
+         && $log_error_count == 1 } {
 
-	# `to' is not "" if target address was comput-
-	# able.  `received_ch' is not "" if $received_
-	# file header was read.
+	# Compute the submitter/requester email address
+	# in `to' and the log manager email address in
+	# `cc'.  These equal "" if the address is not
+	# to be used.
 	#
-	set to [string trim $manager]
+	# When done, `received_ch' is not "" iff
+	# the $received_file header was read.
+	#
+	set to		""
+	set cc		""
 	set received_ch ""
+
+	if { $log_mode == "auto" } {
+	    set to [string trim $log_manager]
+	}
 
         if { $log_dir == "." \
 	     && [file exists $received_file] } {
 
-	    set received_ch $received_file
-	    read_header $received_file
+	    set received_ch [open $received_file r]
+	    read_header $received_ch
 	    close $received_ch
 
-	    set to2 [compute_message_reply_to]
-
-	    if { $to2 != "" } {
-		if { $to != "" } {
-		    set to "$to, $to2"
-		} else {
-		    set to $to2
-		}
+	    set to [compute_message_reply_to]
+	    if { $to == "UNKNOWN" } {
+	    	set to ""
 	    }
 	}
 
-	# If `to' is not "" and we have not done this
-	# before, compute and send mail.
+	# If `to' or `cc' are not "" compute and send
+	# mail.
 	#
-	if { $to != "" \
-	     && ! [file exists $log_file.mail] } {
+	if { $to != "" || $cc != "" } {
 
-	    set mail_ch [open $log_file.email w]
-	    puts $mail_ch "To: $to"
-	    puts $mail_ch "Subject: $log_file"
+	    # It is important not to send the full
+	    # pathname of the log file to a submitter/
+	    # requester for security reasons.
+
+	    set dir_tail [file tail $log_dir]
+	    set log_tail [file tail $log_file]
+	    set log_tail $dir_tail/$log_tail
+
+	    # Open mail file and write `To:' and `Cc:'
+	    # fields.
+	    #
+	    set mail_ch [open $log_file.mail w]
+	    if { $to != "" } {
+		puts $mail_ch "To: $to"
+		if { $cc != "" } {
+		    puts $mail_ch "Cc: $cc"
+		}
+	    } else {
+		puts $mail_ch "To: $cc"
+	    }
+
+	    # Write `Subject:' field and announce error.
+	    #
+	    puts $mail_ch "Subject: $log_tail"
+	    if { $received_ch != "" \
+	         && $message_x_hpcm_test_subject \
+		    != "" } {
+		puts $mail_ch \
+		     "X-HPCM-Test-Subject:\
+		     $message_x_hpcm_test_subject"
+	    }
 	    puts $mail_ch ""
+	    puts $mail_ch "System error:"
+	    puts $mail_ch ""
+	    puts $mail_ch $error_output
+	    puts $mail_ch ""
+
+	    # If message header available, include info
+	    # from it.
+	    #
 	    if { $received_ch != "" } {
-		puts $mail_ch "System error while\
-			       processing:"
+		puts $mail_ch "While processing:"
 		puts $mail_ch ""
 		puts $mail_ch $message_From_line
 		puts $mail_ch "From: $message_from"
@@ -345,26 +409,34 @@ proc log_error { error_output } {
 		puts $mail_ch \
 		     "Subject: $message_subject"
 		puts $mail_ch ""
+	    }
+
+	    # If mail is to going to requester/sub-
+	    # mitter, tell them what to do.
+	    #
+	    if { $to != "" } {
 		puts $mail_ch \
 		     "System is automatic without\
                       normal human monitoring."
-		if { $manager != "" } {
+		if { $cc != "" } {
 		    puts $mail_ch \
 			 "Please correct and resubmit,\
 		          or wait for response from\
-			  $manager"
+			  $cc."
 		} else {
 		    puts $mail_ch \
 			 "Please correct and resubmit,\
 		          or contact the person\
 			  responsible for this site."
 		}
-		puts $mail_ch ""
 	    }
-	    puts $mail_ch "========= $log_file"
-	    put_file $log_file $mail_ch
-	    close $mail_ch
 
+	    # Close mail file and send mail.
+	    #
+	    close $mail_ch
+	    puts stderr ""
+	    puts stderr "Mailing $log_tail"
+	    puts stderr "To $to $cc"
 	    send_mail $log_file.mail
 	}
     }
@@ -516,8 +588,8 @@ proc read_header { ch { first_line "" }
 
 # Using information from the last call to read_header,
 # return the `To:' field value for a reply to that
-# message.  This is the message `X-HPCM-reply-to' field
-# if that is not empty, or the`Reply-to' field if that
+# message.  This is the message `X-HPCM-Reply-To' field
+# if that is not empty, or the `Reply-To' field if that
 # is not empty, or the message `From' field if that is
 # not empty, or the address in a `From' line if that
 # is not empty, or `UNKNOWN' as a last resort.
@@ -527,13 +599,13 @@ proc compute_message_reply_to {} {
     global message_x_hpcm_reply_to message_reply_to \
            message_from message_From_line
 
-    if { [regexp "\[\ \t\n\]" \
+    if { [regexp "\[^\ \t\n\]" \
 	         $message_x_hpcm_reply_to] } {
 	return $message_x_hpcm_reply_to
-    } elseif { [regexp "\[\ \t\n\]" \
+    } elseif { [regexp "\[^\ \t\n\]" \
                        $message_reply_to] } {
 	return $message_reply_to
-    } elseif { [regexp "\[\ \t\n\]" \
+    } elseif { [regexp "\[^\ \t\n\]" \
                        $message_from] } {
 	return $message_from
     } elseif { [llength $message_From_line] >= 2 } {
@@ -555,10 +627,10 @@ proc compute_message_date {} {
     global message_x_hpcm_date message_date \
            message_From_line
 
-    if { [regexp "\[\ \t\n\]" \
+    if { [regexp "\[^\ \t\n\]" \
 	         $message_x_hpcm_date] } {
 	return $message_x_hpcm_date
-    } elseif { [regexp "\[\ \t\n\]" \
+    } elseif { [regexp "\[^\ \t\n\]" \
                        $message_date] } {
 	return $message_date
     } elseif { [llength $message_From_line] >= 3 } {
@@ -649,13 +721,15 @@ proc header_is_authentic {} {
 }
 
 # Construct a mail reply file and send it to the sender
-# of any received mail file.  The From, To, Subject, and
-# Date fields of the received mail Header are copied at
-# the end of the message.  The option `-all' causes the
-# body of the received mail file to be included.  In
-# any case this information is separated from the rest
-# of the message by a blank space and a line containing
-# `-----'
+# of any received mail file.  The From, To, Reply-To,
+# Subject, and Date fields of the received mail Header
+# are copied at the end of the message.  The option
+# `-all' causes the body of the received mail file to be
+# included.  In any case this information is separated
+# from the rest of the message by a blank space and a
+# line of the form:
+#
+#     ---------------------- This message replies to:
 #
 # Non-option arguments are lines to be copied into the
 # body of the reply.  The reply header is automatically
@@ -693,16 +767,21 @@ proc compose_reply { args } {
 	set args [lreplace $args 0 0]
     }
 
+    # Read $received_file header.
+    #
     set received_ch [open $received_file r]
-
     read_header $received_ch
 
+    # Delete any existing $reply_file+ and open that
+    # file for writing.
+    #
     if { [file exists $reply_file+] } {
     	file delete -force $reply_file+
     }
-
     set reply_ch    [open $reply_file+ w]
 
+    # Write header.
+    #
     puts $reply_ch   "To:[compute_message_reply_to]"
     puts $reply_ch   "Subject: RE:$message_subject"
     if { $message_x_hpcm_test_subject != "" } {
@@ -710,38 +789,42 @@ proc compose_reply { args } {
 	                  $message_x_hpcm_test_subject"
     }
     puts $reply_ch   ""
+
+    # Write part of body from arguments.
+    #
     foreach line $args {
         puts $reply_ch   $line
     }
+
+    # Append selected parts of $received_file header.
+    #
     puts $reply_ch   ""
     puts $reply_ch   "------------------------------\
                       This message replies to:"
-
+    #
     if { ! [regexp "\[^\ \t\n\]" $message_from] \
          || ! [regexp "\[^\ \t\n\]" $message_date]  } {
 	puts $reply_ch ">$message_From_line"
     }
-
     if { [regexp "\[^\ \t\n\]" $message_to]  } {
 	puts $reply_ch "To:$message_to"
     }
-
     if { [regexp "\[^\ \t\n\]" $message_from]  } {
 	puts $reply_ch "From:$message_from"
     }
-
     if { [regexp "\[^\ \t\n\]" $message_date]  } {
 	puts $reply_ch "Date:$message_date"
     }
-
     if { [regexp "\[^\ \t\n\]" $message_reply_to]  } {
 	puts $reply_ch "Subject:$message_reply_to"
     }
-
     if { [regexp "\[^\ \t\n\]" $message_subject]  } {
 	puts $reply_ch "Subject:$message_subject"
     }
 
+    # If -all option, append message body from
+    # $received_file.
+    #
     if { $all_option } {
 
 	puts $reply_ch ""
@@ -756,6 +839,8 @@ proc compose_reply { args } {
 	}
     }
 
+    # Close files and return.
+    #
     close $reply_ch
     close $received_ch
 }
@@ -838,7 +923,12 @@ proc find_scoring_instructions {} {
     }
 }
 
-# Write entire file to channel.
+# Write entire file to channel.  If number of lines in
+# file is greater than third argument, do not write
+# more lines than specified by the third argument, but
+# in place of the omitted lines write the line:
+#
+#	... THERE WERE # MORE LINES ...
 #
 proc put_file { filename
                { ch stdout }
@@ -885,43 +975,48 @@ proc write_file { filename line } {
     close $file_ch
 }
 
+#### END OF FUNCTION DEFINITIONS ####
+
+#### BEGINNING OF INLINE CODE ####
+
 # Set interrupt signal to cause an error.
 #
 if { [info command signal] == "signal" } {
     signal error SIGINT
 }
 
-# Locate the directory containing the judging
-# parameters file.  This should be unique.
+# Locate the directory containing the judging para-
+# meters file.  This should be unique.  If unique, the
+# name is stored in $judging_parameters_directory.
 #
-set judging_parameters_file_list ""
+set judging_parameters_directory ""
 foreach __d__ ". .. ../.. ../../.. ../../../.." {
     if { [file exists \
 	       $__d__/$judging_parameters_file] } {
-	lappend judging_parameters_file_list \
-		$__d__/$judging_parameters_file
-	set judging_parameters_directory $__d__
+	lappend judging_parameters_directory $__d__
     }
 }
 
 # If directory containing judging parameters file
-# is unique, source the file, and set juding_parameters_
-# directory to the directory name.  Otherwise call
-# error.
+# is unique, source the file.  Otherwise call error.
 #
-if { [llength $judging_parameters_file_list] == 1 } {
+if { [llength $judging_parameters_directory] == 1 } {
+    set __d__ $judging_parameters_directory
     if { [file readable \
-               $judging_parameters_file_list] } {
-	source $judging_parameters_file_list
+               $__d__/$judging_parameters_file] } {
+	source $__d__/$judging_parameters_file
     } else {
-	error "$judging_parameters_file_list\
+	error "$__d__/$judging_parameters_file\
 	       not readable"
     }
-} elseif { [llength $judging_parameters_file_list] \
+} elseif { [llength $judging_parameters_directory] \
            == 0 } {
     error "$judging_parameters_file not found"
 } else {
-    error \
-	"Too many $judging_parameters_file files:\n\
-	\    $judging_parameters_file_list"
+    set __m__ "Too many $judging_parameters_file files:"
+    foreach __d__ $judging_parameters_directory {
+        set __m__ "$__m__\n\
+	          \     $__d__/$judging_parameters_file"
+    }
+    error $__m__
 }
