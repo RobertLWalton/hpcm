@@ -2,7 +2,7 @@
 #
 # File:		scoring_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Aug 29 10:55:28 EDT 2001
+# Date:		Wed Aug 29 11:33:50 EDT 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/08/29 15:09:17 $
+#   $Date: 2001/08/29 15:37:06 $
 #   $RCSfile: scoring_common.tcl,v $
-#   $Revision: 1.4 $
+#   $Revision: 1.5 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -83,6 +83,12 @@
 # scoring instructions, `whitespace', `beginspace',
 # `linespace', and `endspace' are automatically added to
 # the instruction array.
+#
+# The `words-are-format' type may appear in `instruc-
+# tion_array' but not in `score_array'.  The presence of
+# this type just causes `word' and `word-eof2' differ-
+# ences to signal `Formatting Error' instead of
+# `Incorrect Output'.
 #
 # `proof_array' is computed from all the proofs in the
 # .score file.  For each difference type, `proof_
@@ -380,12 +386,24 @@ proc compute_score { } {
 	    integer -
 	    float -
 	    infinity -
-	    word-eof2 -
 	    integer-eof2 -
-	    float-eof2 -
-	    word {
+	    float-eof2 {
 		set score "Incorrect Output"
 		break
+	    }
+
+	    word-eof2 -
+	    word {
+		set waf words-are-format
+		if { [info exists \
+		           instruction_array($waf)] } {
+		    if { $score == "" } {
+			set score "Formatting Error" 
+		    }
+		} else {
+		    set score "Incorrect Output"
+		    break
+		}
 	    }
 
 	    word-eof1 -
