@@ -1,70 +1,101 @@
 # Makefile for an `informal' Contest
 #
 # File:		Makefile
-# Date:		Thu Nov 30 21:52:05 EST 2000
+# Date:		Thu Dec  7 23:57:23 EST 2000
 #
 # To make an informal contest named `foo':
 #
-# 1. Import the HPCM system into ~/hpcm.
+#  1. Import the HPCM system into ~/hpcm.
 #
-# 2. Create a judging directory ~/judging_foo_password
-#    where the password is needed to keep outsiders from
-#    guessing the path to the received submissions,
-#    because JAVA requires this path be a+x to access
-#    .class files inside the sandbox.
+#  2. Run		cd ~/hpcm/secure/bin
+#			make hpcm_sandbox
+#			su
+#			chown root.root hpcm_sandbox
+#			chmod a+rx hpcm_sandbox
+#			chmod u+s hpcm_sandbox
+#			mv hpcm_sandbox /sbin
+#			exit
 #
-#    This password is never really used, and so can be
-#    something awfully unguessable.
+#     This installs the hpcm_sandbox program as a setuid
+#     root program in the system /sbin directory, which
+#     is the appropriate thing for Linux.  If you put
+#     this setuid binary in another place, you may have
+#     to adjust ~/hpcm/judge/bin/Makefile.
 #
-# 3. Put copies of the files in this directory into
-#    your judging directory, and edit the names and
-#    passwords in these files appropriately.  Edit the
-#    index specifications (value of the INDICES variable
-#    below) to specify the problems you want (run
-#    `makejudgingdir -doc' to find the format and mean-
-#    ing of index specifications).
+#  3. Run		cd ~/hpcm
+#			make
 #
-# 4. Make a contest directroy named ~/contest_foo.
-#    Symbolically link this to the name
+#     This sets various modes and makes a few binary
+#     files.  It also installs a symbolic link to
+#     /sbin/hpcm_sandbox in ~/hpcm/judge/bin.
+#
+#  4. Put ~/hcpm/judge/bin in the PATH of the current
+#     (judge's) account.  Do NOT put ~/hpcm/contestant/
+#     bin in that PATH.
+#
+#  5. Create a judging directory ~/judging_foo_password
+#     where the password is needed to keep outsiders from
+#     guessing the path to the received submissions,
+#     because JAVA requires this path be a+x to access
+#     .class files inside the sandbox.
+#
+#     This password is never really used, and so can be
+#     something awfully unguessable.
+#
+#  6. Put copies of the files in this directory into
+#     your judging directory, and edit the names and
+#     passwords in these files appropriately.  Edit the
+#     index specifications (value of the INDICES variable
+#     below) to specify the problems you want (run
+#     `makejudgingdir -doc' to find the format and mean-
+#     ing of index specifications).
+#
+#  7. Make a contest directory named ~/contest_foo.
+#     Symbolically link this to the name
 #	~/judging_foo_password/contest
-#    by executing inside the judging directory:
+#     by executing inside the judging directory:
 #	ln -s ~/contest_foo contest
 #
-# 5. Symbolically link ~/hpcm/contestant to the
-#    name ~/contest_foo/contestant by executing
-#    inside the contest directory:
+#  8. Symbolically link ~/hpcm/contestant to the
+#     name ~/contest_foo/contestant by executing
+#     inside the contest directory:
 #	ln -s ~/hpcm/contestant contestant
 #
-# 6. Move the file scoreboard.1head into the
-#    ~/contest_foo (now also the ./contest) directory.
+#  9. Move the file scoreboard.1head into the
+#     ~/contest_foo (now also the ./contest) directory.
 #
-# 7. Create a file named contest_foo/secure/passwords
-#    that is just a list of all the contestant accounts
-#    that will be created.  You must create the
-#    contest_foo/secure directory.  Be sure this
-#    directory and all the files in it are accessible
-#    only to the judge's account JJJ.
+# 10. Create a file named contest_foo/secure/passwords
+#     that is just a list of all the contestant accounts
+#     that will be created.  You must create the
+#     contest_foo/secure directory.  Be sure this
+#     directory and all the files in it are accessible
+#     only to the judge's account JJJ.
 #
-# 8. Run `makejudgingdir -this_contest' and then edit
-#    the `./help/this_contest' file.
+# 11. Run `makejudgingdir -this_contest' and then edit
+#     the `./help/this_contest' file.
 #
-# 9. Run `make' in your judging directory.  Note this
-#    runs `startcontest', which merely gives a+r
-#    permission to the ./contest/help/problems file
-#    that lists the problems.
+# 12. Run `make' in your judging directory.  Note this
+#     runs `startcontest', which merely gives a+r
+#     permission to the ./contest/help/problems file
+#     that lists the problems.
 #
-#    You should rerun `make' whenever you may have
-#    changed something it uses to build the contest
-#    files.  The worst that can happen from running
-#    `make' unnecessarily is to get redundant instruc-
-#    tions in the ./TODO file (see below).
+#     You should rerun `make' whenever you may have
+#     changed something it uses to build the contest
+#     files.  The worst that can happen from running
+#     `make' unnecessarily is to get redundant instruc-
+#     tions in the ./TODO file (see below).
 #
-# 10. Follow the instructions in the TODO file that
+# 13. Follow the instructions in the TODO file that
 #     will have been created in the judging directory.
 #     After you follow an instruction, edit it out of
 #     the TODO file.
 #
-# 11. One of the instructions will be to make a con-
+#     Among other things you will be asked to set edit
+#     authentication keys into hpcm_judging.rc in the
+#     judging directory and routing information into
+#     ~/.procmailrc.
+#
+# 14. One of the instructions will be to make a con-
 #     testant prototype account: see
 #
 #	~/hpcm/contestant/bin/SETUP_PROTOTYPE -doc
@@ -92,10 +123,11 @@
 #     but there may be other things the environment
 #     needs.  However, you can also do this editing
 #     after SETUP_PROTOTYPE is run, as these files are
-#     NOT in setup.tar: what is in setup.tar is only
-#     symbolic links to these files.
+#     NOT in setup.tar: the tar file used to initialize
+#     contestant account contents.  What is in setup.tar
+#     is only symbolic links to these files.
 #
-# 12. Be sure there are appropriate account names and
+# 15. Be sure there are appropriate account names and
 #     passwords in the file ./contest/secure/passwords,
 #     as you are about to make these accounts and set
 #     these passwords.  The command
@@ -116,13 +148,13 @@
 #     be a test account that you can use to check
 #     whether the system is running.
 #
-# 13. Run `make trashable' in your judging directory.
+# 16. Run `make trashable' in your judging directory.
 #     This makes the file ~/contest_foo/trashable which
 #     lists the contestant accounts that can be
 #     reinitialized by `TRASH_ACCOUNT'.  These accounts
 #     have presumably not been made yet.
 #
-# 14. As root, run the following commands:
+# 17. As root, run the following commands:
 #
 #	cd ~JJJ/hpcm/secure/bin
 #	./hpcm_make_accounts ~JJJ/contest_foo
@@ -142,33 +174,25 @@
 #     regardless of which contest ~/.hpcm_contest was
 #     linked to in the prototype account).
 #
-# 15. Run `make nontrashable' in your judging directory.
+# 18. Run `make nontrashable' in your judging directory.
 #     This removes the file ~/contest_foo/trashable
 #     and prevents any contestants from accidentally
 #     trashing their own account by running TRASH_
 #     ACCOUNT (which requires the contestant's account
 #     name appear in ~/contest_foo/trashable).
 #
-# 16. Run `makescoreboard -start' to start the score-
+# 19. Run `makescoreboard -start' to start the score-
 #     board background process.  This process makes
 #		./contest/scoreboard.1
 #     at intervals if something has changed.  This
 #     background process can be stopped by the
 #     `makescoreboard -stop' command.
-
-
-# --------------- TBD
 #
-# 9. Use `make start_scoreboard' to start the scoreboard
-#    crontab job.  Use `make check_scoreboard' to check
-#    the crontab job status, and `make stop_scoreboard'
-#    to stop the crontab job.
-#
-# 10. Contest judging is automatic.  If you set the
-#     `reply_manager' variable to your email address, you
-#     will be notified of any errors or questions.  You
-#     many use the `tracker' program to find unchecked
-#     errors.
+# 20. Contest judging is automatic.  If you set the
+#     `reply_manager' and `log_manager' variables to
+#     your email address, you will be notified of any
+#     errors or questions.  You many use the `tracker'
+#     program to find unchecked errors.
 
 HPCM=${HOME}/hpcm
 
@@ -219,6 +243,6 @@ update_scoreboard:
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/12/07 19:04:54 $
+#   $Date: 2000/12/08 07:54:18 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.2 $
+#   $Revision: 1.3 $
