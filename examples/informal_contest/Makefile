@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Aug  1 00:47:23 EDT 2002
+# Date:		Fri Aug  2 02:20:44 EDT 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/08/01 06:09:44 $
+#   $Date: 2002/08/02 07:13:11 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.26 $
+#   $Revision: 1.27 $
 
 # To make an informal contest named `foo':
 #
@@ -27,7 +27,8 @@
 #
 #	~/hpcm/contestant/bin/SETUP_PROTOTYPE -doc
 #
-#    Below we will make a symbolic link to ~PPP/home.
+#    Below we will make a symbolic link to ~PPP/home,
+#    which is called the prototype directory.
 #
 #    One prototype directory can be used for many con-
 #    tests, so you may not need to make a new prototype
@@ -68,7 +69,7 @@
 #    by executing:
 #
 #	cd ~/judging_foo_password
-#	move scoreboard.1head contest
+#	mv scoreboard.1head contest
 #
 # 7. Create a file named ~/contest_foo/secure/passwords
 #    by executing:
@@ -123,10 +124,10 @@
 #    If an instruction says `rerun makejudgingdir',
 #    do this by rerunning `make'.
 #
-#    Among other things you will be asked to edit email
+#    Among other things you will be asked to edit
 #    authentication keys into hpcm_judging.rc in the
-#    judging directory and routing information into
-#    ~/.procmailrc.
+#    judging directory and email routing information
+#    into ~/.procmailrc.
 #
 #    For an informal contest, you may not need to edit
 #    the WHERE fields in the who_where file.  If you do
@@ -245,7 +246,7 @@
 #     3'rd, and 4'th pages of the scoreboard, and can be
 #     created and edited to include more contest an-
 #     nouncements.  Only as many of these files as are
-#     needed should exist.
+#     needed should exist and be world readable.
 #
 # 16. Contest judging is automatic.  If you set the
 #     `reply_manager' and `log_manager' variables to
@@ -282,6 +283,31 @@
 #     You can run subsets of the tests by using `make
 #     test_xxx' for various `xxx;: see hpcm/examples/
 #     test_submissions/Makefile.mk.
+#
+# 19. You may want to print out handouts.  The following
+#     is a suggestion.  Execute `make print_help', re-
+#     move the `demos' and `problems' pages, and reorder
+#     the other pages so `index' is first and the other
+#     help file pages are in order they are listed in
+#     the index.  This produces a `help handout'.
+#
+#     Lastly `make print_demos', and make a `demos
+#     handout' that consists of these pages, in the
+#     order given in the `demos' help page, preced-
+#     ed by that `demos' help page.
+#
+#     The help and demos handout can be given out before
+#     when the contest is set up.  Usually no printout
+#     of the problems is given out for an informal
+#     contest, as contestants get problem statements one
+#     problem at a time.
+#
+#     If you do want to make a printout of the problems,
+#     then `make print_problems', and make a `problems
+#     handout' that consists of these pages, in the
+#     order given in the `problems' help page, preced-
+#     ed by that `problems' help page.  Discard any
+#     demonstration .txt files printed.
 
 # The location of the hpcm directory.
 #
@@ -389,6 +415,22 @@ stop_scoreboard:
 
 update_scoreboard:
 	makescoreboard update
+
+print_help:
+	fprint info/help/*
+
+print_demos:
+	fprint info/demos/*/*
+
+print_problems:
+	@for x in info/problems/*/*; \
+	    do case "$$x" in \
+	    *.txt) echo fprint $$x; fprint $$x;; \
+	    *.ps)  echo lpr $$x; lpr $$x;; \
+	    *.html | *.htm) \
+	           echo YOU MUST use a browser \
+			to print $$x by hand;; \
+	    esac; done
 
 # Tests
 
@@ -398,7 +440,7 @@ update_scoreboard:
 
 test_all:	test_informal
 
-TEST_PREREQUISITES=
+TEST_PREREQUISITES= ./mail
 include ${HPCM}/examples/test_submissions/Makefile.mk
 
 dangerous_test_clean:

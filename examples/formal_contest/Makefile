@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Aug  1 01:55:47 EDT 2002
+# Date:		Fri Aug  2 02:20:03 EDT 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/08/01 05:51:11 $
+#   $Date: 2002/08/02 07:13:11 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.16 $
+#   $Revision: 1.17 $
 
 # To make a formal contest named `foo':
 #
@@ -27,7 +27,8 @@
 #
 #	~/hpcm/contestant/bin/SETUP_PROTOTYPE -doc
 #
-#    Below we will make a symbolic link to ~PPP/home.
+#    Below we will make a symbolic link to ~PPP/home,
+#    which is called the prototype directory.
 #
 #    One prototype directory can be used for many con-
 #    tests, so you may not need to make a new prototype
@@ -71,7 +72,7 @@
 #    by executing:
 #
 #	cd ~/judging_foo_password
-#	move scoreboard.1head contest
+#	mv scoreboard.1head contest
 #
 # 7. Create a file named ~/contest_foo/secure/passwords
 #    by executing:
@@ -125,10 +126,10 @@
 #    If an instruction says `rerun makejudgingdir',
 #    do this by rerunning `make'.
 #
-#    Among other things you will be asked to edit email
+#    Among other things you will be asked to edit
 #    authentication keys into hpcm_judging.rc in the
-#    judging directory and routing information into
-#    ~/.procmailrc.
+#    judging directory and email routing information
+#    into ~/.procmailrc.
 #
 #    Another thing you will be asked to do is edit
 #    the WHERE fields in the who_where file.  If
@@ -247,14 +248,14 @@
 #     3'rd, and 4'th pages of the scoreboard, and can be
 #     created and edited to include more contest an-
 #     nouncements.  Only as many of these files as are
-#     needed should exist.
+#     needed should exist and be world readable.
 #
 # 16. Be sure to remember to RUN `startcontest' at the
 #     time the contest starts.  Also, edit hpcm_
 #     judging.rc in the judging directory at that time
-#     to set the correct start time for the contest,
-#     exclude the demo problems, and exclude any test
-#     account.
+#     to set the correct start time for the contest and
+#     exclude the demo problems and any test account
+#     from the scoreboard.
 #
 # 17. Contest judging is partly automatic.  You must
 #     run the `tracker' program to find submission
@@ -263,10 +264,11 @@
 #     queries, and examine system errors.  You need to
 #     practice with `manualreply' before the contest.
 #
-# 18. If you want to freeze the scoreboard near the end
-#     of the contest, follow the directions in
-#     `makescoreboard -doc'.
 
+# 18. If you want to freeze the scoreboard near the end
+#     of the contest, edit the freeze time in hpcm_
+#     judging.rc accordingly.  Othewise make this time
+#     equal to or later than the stop time.
 #
 # 19. Test the contest by using the test contestant
 #     account.  Try submitting the demos/count solution.
@@ -298,13 +300,13 @@
 #     test_xxx' for various `xxx;: see hpcm/examples/
 #     test_submissions/Makefile.mk.
 #
+
 # 21. You may want to print out handouts.  The following
 #     is a suggestion.  Execute `make print_help', re-
 #     move the `demos' and `problems' pages, and reorder
 #     the other pages so `index' is first and the other
 #     help file pages are in order they are listed in
 #     the index.  This produces a `help handout'.
-
 #     Then `make print_problems', and make a `problems
 #     handout' that consists of these pages, in the
 #     order given in the `problems' help page, preced-
@@ -344,9 +346,9 @@ S=${HPCM}/examples/test_submissions
 #
 #	    ${HPCM}/contestant/help/index, \
 #		common/=help/, \
-#		informal/=help/, \
+#		formal/=help/, \
 #		advanced/=help/, \
-#		    informal:include, \
+#		    formal:include, \
 #		    common:include, \
 #		    advanced:include
 #
@@ -454,7 +456,7 @@ print_problems:
 
 test_all:	test_formal
 
-TEST_PREREQUISITES=
+TEST_PREREQUISITES= ./mail
 include ${HPCM}/examples/test_submissions/Makefile.mk
 
 dangerous_test_clean:

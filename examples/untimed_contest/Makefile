@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Aug  1 01:58:03 EDT 2002
+# Date:		Fri Aug  2 02:53:37 EDT 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/08/01 05:52:26 $
+#   $Date: 2002/08/02 07:13:10 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.45 $
+#   $Revision: 1.46 $
 
 # To make an email contest named `foo':
 #
@@ -129,7 +129,7 @@ S=${HPCM}/examples/test_submissions
 #		advanced/=help/, \
 #		    email:include, \
 #		    common:include, \
-#		    advanced:include \
+#		    advanced:include
 #
 # concerns the index file whose name (relative to this
 # directory) is ${HPCM}/contestant/help/index.  You
