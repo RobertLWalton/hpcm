@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Oct 15 10:46:44 EDT 2003
+# Date:		Thu Oct  7 08:12:07 EDT 2004
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2003/10/15 14:58:26 $
+#   $Date: 2004/10/07 12:17:55 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.16 $
+#   $Revision: 1.17 $
 
 # To make web help pages, execute `make web' and copy
 # the `web' directory to you web server, where it will
@@ -71,11 +71,7 @@ DEMOS_FILES = \
 	../../problem_library/demos/javaio/javaio.java \
 	../../problem_library/demos/javaio/Makefile \
 	../../problem_library/demos/javaio/javaio.in \
-	../../problem_library/demos/javaio/javaio.test \
-	../../problem_library/demos/pascal/pascal.p \
-	../../problem_library/demos/pascal/Makefile \
-	../../problem_library/demos/pascal/pascal.in \
-	../../problem_library/demos/pascal/pascal.test
+	../../problem_library/demos/javaio/javaio.test
 
 help_index:	index
 	rm -f help_index
