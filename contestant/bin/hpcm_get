@@ -4,7 +4,7 @@
 #
 # File:		hpcm_get
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Mon Oct 15 07:01:10 EDT 2001
+# Date:		Thu Jan 10 07:55:28 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/10/15 11:31:40 $
+#   $Date: 2002/01/10 13:24:19 $
 #   $RCSfile: hpcm_get
-#   $Revision: 1.9 $
+#   $Revision: 1.10 $
 
 # If this is not bash and bash is available, switch to
 # using bash.  Note that `which bash` may output a
@@ -263,6 +263,26 @@ do
 	    	elif ln -s "$contest/$f" "$home/$f"
 		then
 		    echo "linked file \`$home/$f'"
+
+		    # Make copy of .ISF file if
+		    # appropriate.
+		    #
+		    b=` expr "$f" : '\(.*\)\.ISF$' `
+		    if test "$b" != ""
+		    then
+			if test ! -e "$home/$b"
+			    cp -p "$home/$f" "$home/$b"
+			    chmod u+w "$home/$b"
+			    echo "\`$f' copied to" \
+			         "\`$b'."
+			else
+			    echo WARNING: \
+				 "\`$f' NOT copied to" \
+				 "\`$b',"
+			    echo "as \`$b' already" \
+			         "exists."
+			fi
+		    fi
 		else
 		    echo "IGNORING \`$f';"
 		    echo "    cannot" \
