@@ -1,4 +1,5 @@
-function main : integer;
+program count ( input, output );
+
 var
     paragraph : integer;
     characters : integer;
@@ -86,8 +87,4 @@ begin
 	end
     end;
 
-    main := 1   { This line can be omitted.
-		  It is a test that make count.out
-		  works even if count returns an
-		  error code. }
 end;

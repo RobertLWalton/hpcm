@@ -2,7 +2,7 @@
  *
  * File:	hpcm_sandbox.c
  * Authors:	Bob Walton (walton@deas.harvard.edu)
- * Date:	Sun Sep  3 14:56:38 EDT 2000
+ * Date:	Mon Sep  4 04:08:39 EDT 2000
  *
  * The authors have placed this program in the public
  * domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
  * RCS Info (may not be true date or author):
  *
  *   $Author: acm-cont $
- *   $Date: 2000/09/04 02:04:31 $
+ *   $Date: 2000/09/04 09:18:03 $
  *   $RCSfile: hpcm_sandbox.c,v $
- *   $Revision: 1.3 $
+ *   $Revision: 1.4 $
  */
 
 #include <stdlib.h>
@@ -36,13 +36,13 @@ char documentation [] =
 "    This program first checks its arguments for\n"
 "    options that set resource limits:\n"
 "\n"
-"      -cputime N     Cpu Time in Seconds (60)\n"
-"      -datasize N    Data Area Size in Bytes (50k)\n"
-"      -stacksize N   Stack Size in Bytes (50k)\n"
-"      -filesize N    Output File Size in Bytes (50k)\n"
-"      -core N        Core Dump Size in Bytes (0)\n"
-"      -openfiles N   Number of Open Files (20)\n"
-"      -processes N   Number of Processes (1)\n"
+"      -cputime N     Cpu Time in Seconds (600)\n"
+"      -datasize N    Data Area Size in Bytes (4m)\n"
+"      -stacksize N   Stack Size in Bytes (4m)\n"
+"      -filesize N    Output File Size in Bytes (4m)\n"
+"      -core N        Core Dump Size in Bytes (4m)\n"
+"      -openfiles N   Number of Open Files (30)\n"
+"      -processes N   Number of Processes (30)\n"
 "\n"
 "    Here N is a positive decimal integer that can\n"
 "    end with `k' to multiply it by 1024 or `m' to\n"
@@ -58,7 +58,10 @@ char documentation [] =
 "    the rest of this program's action.  If the\n"
 "    child terminates with a signal, the parent\n"
 "    prints an error message identifying the signal.\n"
-"    In any case the parent returns a 0 exit code.\n"
+"    It does this using `sys_siglist' (psignal(3))\n"
+"    and changes SIGKILL with measured CPU time over\n"
+"    the limit to SIGXCPU.  In any case the parent\n"
+"    returns a 0 exit code.\n"
 "\n"
 "    Next, if this program's effective user ID is\n"
 "    `root', this program eliminates any supplemen-\n"
@@ -84,7 +87,7 @@ char * env [] = { "SANDBOX", 0 };
 
 void errno_exit ( char * m )
 {
-    fprintf ( stderr, "hpcm_sandbox system call error:"
+    fprintf ( stderr, "hpcm_sandbox: system call error:"
                       " %s: %s\n",
 		      m, strerror ( errno ) );
     exit ( 1 );
@@ -100,13 +103,13 @@ int main ( int argc, char ** argv )
 
     /* Options with default values. */
 
-    int cputime = 60;
-    int datasize = 50 * 1024;
-    int stacksize = 50 * 1024;
-    int filesize = 50 * 1024;
-    int core = 0;
-    int openfiles = 20;
-    int processes = 1;
+    int cputime = 600;
+    int datasize = 4 * 1024 * 1024;
+    int stacksize = 4 * 1024 * 1024;
+    int filesize = 4 * 1024 * 1024;
+    int core = 4 * 1024 * 1024;
+    int openfiles = 30;
+    int processes = 30;
     int watch = 0;
 
 
@@ -157,7 +160,8 @@ int main ( int argc, char ** argv )
 	if ( index >= argc )
 	{
 	    fprintf ( stderr,
-	              "Not enough arguments\n" );
+	              "hpcm_sandbox: Too few"
+		      " arguments\n" );
 	    exit (1);
 	}
 
@@ -174,7 +178,8 @@ int main ( int argc, char ** argv )
 		if ( n > ( 1 << 27 ) )
 		{
 		    fprintf ( stderr,
-			      "Number too large: %s\n",
+			      "hpcm_sandbox: Number"
+			      " too large: %s\n",
 			      argv[index] );
 		    exit (1);
 		}
@@ -187,7 +192,8 @@ int main ( int argc, char ** argv )
 		if ( n >= ( 1 << 11 ) )
 		{
 		    fprintf ( stderr,
-			      "Number too large: %s\n",
+			      "hpcm_sandbox: Number"
+			      " too large: %s\n",
 			      argv[index] );
 		    exit (1);
 		}
@@ -198,7 +204,8 @@ int main ( int argc, char ** argv )
 		if ( n >= ( 1 << 21 ) )
 		{
 		    fprintf ( stderr,
-			      "Number too large: %s\n",
+			      "hpcm_sandbox: Number"
+			      " too large: %s\n",
 			      argv[index] );
 		    exit (1);
 		}
@@ -208,7 +215,8 @@ int main ( int argc, char ** argv )
 	    if ( c != 0 || n == 0 )
 	    {
 		fprintf ( stderr,
-			  "Bad number: %s\n",
+			  "hpcm_sandbox: Bad number:"
+			  " %s\n",
 			  argv[index] );
 		exit (1);
 	    }
@@ -272,7 +280,9 @@ int main ( int argc, char ** argv )
 		}
 
 		fprintf ( stderr,
-			  "Terminated with signal: %s\n",
+			  "hpcm_sandbox: Child"
+			  " terminated with signal:"
+			  " %s\n",
 			  sys_siglist [ sig ] );
 	    }
 
@@ -302,7 +312,8 @@ int main ( int argc, char ** argv )
 
 	    if ( p == NULL )
 	    {
-	        fprintf ( stderr, "Could not find `sandbox'"
+	        fprintf ( stderr, "hpcm_sandbox: Could"
+				  " not find `sandbox'"
 		                  " in /etc/passwd\n" );
 		exit ( 1 );
 	    }
@@ -389,7 +400,8 @@ int main ( int argc, char ** argv )
 
     /* If execve fails, print error messages. */
 
-    fprintf ( stderr, "ERROR: could not execute %s\n",
+    fprintf ( stderr, "hpcm_sandbox: could not:"
+    		      " execute %s\n",
 		      argv[index] );
     errno_exit ( "execve" );
 }
