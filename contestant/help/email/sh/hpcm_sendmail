@@ -4,7 +4,7 @@
 #
 # File:		hpcm_sendmail
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Wed Sep 12 05:14:04 EDT 2001
+# Date:		Wed Sep 12 13:25:01 EDT 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/09/12 17:04:57 $
+#   $Date: 2001/09/12 17:23:47 $
 #   $RCSfile: hpcm_sendmail,v $
-#   $Revision: 1.4 $
+#   $Revision: 1.5 $
 
 case "$1" in
      "")
@@ -24,14 +24,15 @@ case "$1" in
     		echo "
 cat email_file | hpcm_sendmail
 
-	Sends the email in the email_file to the judge.
-	Similar to sendmail -oi -t but adds its own
-	To: field, which should not be included in the
-	email_file.
+    Sends the email in the email_file to the judge.
+    Similar to sendmail -oi -t but adds its own \`To:'
+    field, which should not be included in the email_
+    file.
 	
-	The mail is sent to the address in the HPCM_
-	ADDRESS environment variable, and the mail is
-	cc'ed to the sending user account."
+    The mail is sent to the address in the first read-
+    able .HPCM_ADDRESS file found by searching the
+    current directory and its ancestors, and the mail is
+    cc'ed to the sending user account."
 
 		exit 1
 		;;
@@ -64,27 +65,24 @@ fi
 #
 if test -r .HPCM_ADDRESS
 then
-    HPCM_ADDRESS=`cat .HPCM_ADDRESS`
+    address=`cat .HPCM_ADDRESS`
 elif test -r ../.HPCM_ADDRESS
 then
-    HPCM_ADDRESS=`cat ../.HPCM_ADDRESS`
+    address=`cat ../.HPCM_ADDRESS`
 elif test -r ../../.HPCM_ADDRESS
 then
-    HPCM_ADDRESS=`cat ../../.HPCM_ADDRESS`
-fi
-
-if test "$HPCM_ADDRESS" = ""
+    address=`cat ../../.HPCM_ADDRESS`
+elif test -r ../../../.HPCM_ADDRESS
 then
-
-    echo ERROR: Could not find .HPCM_ADDRESS file
-    echo "      " and HPCM_ADDRESS environment \
-		  variable is not set
+    address=`cat ../../../.HPCM_ADDRESS`
+else
+    echo "ERROR: Cannot find .HPCM_ADDRESS file"
     exit 1
 fi
 
 # Submit program file by email.
 #
-( echo To: "$HPCM_ADDRESS"; \
+( echo To: "$address"; \
   echo Cc: `id -un`; \
   cat - )                | $sendmail -oi -t
 
