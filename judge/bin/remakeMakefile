@@ -4,7 +4,7 @@
 #
 # File:		remakeMakefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Mar 25 14:53:42 EST 2002
+# Date:		Sun Jan 18 07:46:54 EST 2004
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/03/25 20:12:55 $
+#   $Date: 2004/01/18 13:21:18 $
 #   $RCSfile: remakeMakefile,v $
-#   $Revision: 1.8 $
+#   $Revision: 1.9 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -30,8 +30,16 @@ remakeMakefile checkfile sourcefile problemdir ...
     problemdir/Makefile if the modified checkfile exact-
     ly equals problemdir/Makefile and the modified
     sourcefile does NOT exactly equal problemdir/Make-
-    file.  If checkfile is \"\" the test that checkfile
-    equals problemdir/Makefile is omitted.
+    file.
+    
+    If checkfile is \"\" the test that checkfile equals
+    problemdir/Makefile is omitted.
+    
+    If sourcefile is \"\" the copy of sourcefile to
+    problemdir/Makefile is omitted.
+
+    If problemdir is not actually a directory, this is
+    merely noted in the output.
 
     The modification of a Makefile consists of:
     
@@ -46,7 +54,7 @@ remakeMakefile checkfile sourcefile problemdir ...
 	   with the last component of `problemdir'  Here
 	   the `=' must be surrounded by single SPACE
 	   characters, but other spacing may vary.
-
+
 	3. Replacing any file line that matches
 
 		#	\$Xxxx: ... $
@@ -55,7 +63,7 @@ remakeMakefile checkfile sourcefile problemdir ...
 	   file if the lines match except for the `...'
 	   and Xxxx is any of `Author', `Date',
 	   `RCSfile', or `Revision'.
-
+
     The last modification (3) is NOT made when the mod-
     ified sourcefile is copied to problemdir/Makefile.
 
@@ -178,6 +186,16 @@ proc copy_file { file problemdir } {
 
 foreach problemdir [lrange $argv 2 end] {
 
+    if { ! [file isdirectory $problemdir] } {
+        puts "$problemdir is not a directory"
+	continue
+    }
+
+    if { ! [file isfile $problemdir/Makefile] } {
+        puts "$problemdir/Makefile does not exist"
+	continue
+    }
+
     if {      $checkfile != "" \
          && ! [test_file $checkfile $problemdir] } { \
 	puts "$problemdir/Makefile does NOT equal\
@@ -185,14 +203,23 @@ foreach problemdir [lrange $argv 2 end] {
 	continue
     }
 
-    if { [test_file $sourcefile $problemdir] } { \
+    if {    $sourcefile != "" \
+         && [test_file $sourcefile $problemdir] } { \
 	puts "$problemdir/Makefile equals\
 	      modified $sourcefile"
         continue
     }
 
-    copy_file $sourcefile $problemdir
-    puts "$problemdir/Makefile remade"
+    if { $sourcefile != "" } {
+	copy_file $sourcefile $problemdir
+	puts "modified $sourcefile copied to\
+	      $problemdir/Makefile"
+    } elseif { $checkfile != "" } {
+	puts "$problemdir/Makefile equals\
+	      modified $checkfile"
+    } else {
+	puts "$problemdir/Makefile not changed"
+    }
 }
 
 exit 0
