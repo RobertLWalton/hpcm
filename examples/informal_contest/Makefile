@@ -70,6 +70,7 @@
 #  9. Move the file scoreboard.1head into the
 #     ~/contest_foo (now also the ./contest) directory.
 #
+
 # 10. Create a file named contest_foo/secure/passwords
 #     that is just a list of all the contestant accounts
 #     that will be created.  You must create the
@@ -81,7 +82,6 @@
 #     you will use to test the system, and to which no
 #     actual contestant will be assigned.
 #
-
 # 11. Run `make this_contest' and then edit the `./help/
 #     this_contest' file.
 #
@@ -106,6 +106,15 @@
 #     judging directory and routing information into
 #     ~/.procmailrc.
 #
+
+#     For an informal contest, you may not need to
+#     edit the WHERE fields in the who_where file.  If
+#     you do not, printouts will contain the account
+#     name.
+#
+#     Also, `make;' executes `startcontest' so it is
+#     not necessary to execute it separately.
+#
 # 14. One of the instructions will be to make a con-
 #     testant prototype account: see
 #
@@ -121,23 +130,24 @@
 #
 #	ln -s ~/prototype_home home
 #
-
 #     One prototype directory can be used for many con-
 #     tests, so you may not need to make a new prototype
 #     directory for this contest, but you will need to
 #     symbolically link ~/contest_foo/home.
 #
-#     Be sure you follow the instructions the SETUP_
+
+#     Be sure you follow the instructions in the SETUP_
 #     PROTOTYPE documentation about editing prototype
 #     home directory files such as .cshrc to setup the
 #     right contestant environment.  Adding ~/.hpcm_
 #     contest/bin to the PATH is one necessary thing,
 #     but there may be other things the environment
 #     needs.  However, you can also do this editing
-#     after SETUP_PROTOTYPE is run, as these files are
-#     NOT in setup.tar: the tar file used to initialize
-#     contestant account contents.  What is in setup.tar
-#     is only symbolic links to these files.
+#     after SETUP_PROTOTYPE is run, as files like .cshrc
+#     are NOT in setup.tar: the tar file used to ini-
+#     tialize contestant account contents.  What is in
+#     setup.tar is only a symbolic link to ~/.hpcm_
+#     contest/home/.cshrc.
 #
 # 15. Be sure there are appropriate account names and
 #     passwords in the file ./contest/secure/passwords,
@@ -238,7 +248,7 @@ trashable:
 
 nontrashable:
 	rm -f ./contest/trashable
-
+
 scoreboard:
 	scorefinder | scoreboard
 
@@ -250,7 +260,9 @@ stop_scoreboard:
 
 update_scoreboard:
 	makescoreboard 0
-#
+
+
+
 # Author:	Bob Walton (walton@deas.harvard.edu)
 #
 # The authors have placed this program in the public
@@ -260,6 +272,6 @@ update_scoreboard:
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/12/09 07:43:16 $
+#   $Date: 2000/12/09 18:36:01 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.5 $
+#   $Revision: 1.6 $
