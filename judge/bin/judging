@@ -4,7 +4,7 @@
 #
 # File:		judging
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Feb  4 18:08:59 EST 2002
+# Date:		Mon Feb  4 20:51:02 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/02/04 23:16:41 $
+#   $Date: 2002/02/05 02:53:43 $
 #   $RCSfile: judging,v $
-#   $Revision: 1.11 $
+#   $Revision: 1.12 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -116,16 +116,18 @@ However, contestants occasionally fail to follow the
 instruction to use hpcm_sendmail, and instead send mail
 directly to the judge.
 
-If judges may want to use facilities that are normally
-used by contestants or by auxiliary judges, then it will
-be necessary to symbolically link ~/.hpcm_contest to
-the contest directory.  E.g., use
+If judges want to execute programs in hpcm/contestant/
+bin that are available to contestants, then is neces-
+sary to symbolically link ~/.hpcm_contest to the contest
+directory.  E.g., use
 
     ln -s ~/contest_XXX ~/.hpcm_contest
 
-where XXX is the name of the contest.  Note that if the
-judging account is being used for several contests,
-this will only work for one of these contests as a time.
+where XXX is the name of the contest.  However, usually
+judge's do not need to execute these programs, so this
+should not be necessary.  Note that if the judging
+account is being used for several contests, this will
+only work for one of contest as a time.
 
 Hpcm must be installed in the judging account: see the
 separate document `Installing HPCM'.  One typically
@@ -143,6 +145,8 @@ want, and follow the instructions in
 
     hpcm/examples/TTT_contest/Makefile
 
+Note that these instructions include ways of testing
+the new contest.
 
 
 Judging a Formal Contest
@@ -169,16 +173,17 @@ Plans below before judging a formal contest.
 
 Before judging a contest you should practice a bit with
 the `manualreply' program.  One way to do this is to
-go to the hpcm/examples/test_contest directory, run
-`make' (this may take a while), and then run
+go to the judging directory and `make test' to run the
+tests in the
 
+    hpcm/examples/TTT_contest/Makefile
+
+file, and then before cleaning up (by `make test_clean')
+run
 	lookat 'SUBJECT & AUTO'
 
-to see the results and dispatch manualreply.  Note that
-in `test_contest' the functions that send mail to sub-
-mitters have been turned into `no-operations', so you
-can send stuff to submitters for practice without any-
-thing actually happening.
+to see the results and dispatch manualreply.  If the
+scoring mode is not `auto' you can also run `tracker'.
 
 After setting up the contest, one should do the
 following:
@@ -193,7 +198,7 @@ following:
     to.  One can also use the `lookat' program to check
     up on things you have already responded to.
 
-
+
 Auxiliary Judging
 --------- -------
 
@@ -205,7 +210,7 @@ To set up auxiliary judging accounts, be sure the main
 judging account has its own private UNIX group.  Then
 add the auxiliary account to this group.  In some UNIX
 systems (RedHat Linux), this is done by root executing
-
+
 	gpasswd -a auxiliary-account judging-group
 
 Next, change the statement `source ~/...' near the
@@ -229,7 +234,7 @@ account.
 Like the main judging account, auxiliary accounts should
 turn off autologout, set the umask to 27, and set the
 shell for new mail notification.
-
+
 So that the auxiliary judges can quickly find the
 judging directory, you may want to link it symbolically
 to ~/judge (HPCM software does not use this).  You can
@@ -245,7 +250,7 @@ the `sq' command to send a query or comment to the
 main contest judge about a particular submission.  The
 main judge can use the `xq' command to examine this
 submission.
-
+
 The auxiliary judge can also send a query or comment to
 the main judge by editing the file ~/foo and executing
 
@@ -300,6 +305,8 @@ involved in actual judging.  These are:
     autojudge		Read documentation and code.
     			Code is in hpcm/judge/bin.
 
+    extractmail		Read documentation.
+
     autoscore		Read documentation and code.
     			Code is in hpcm/judge/bin.
 
@@ -323,6 +330,10 @@ email works on the day of the contest.  Two solutions
 are: have everyone on one machine, so email is internal
 to that machine; or have an email guru available to fix
 problems with email.
+
+
+An Example Contest Emergency
+-- ------- ------- ---------
 
 The following is an example emergency from BOSPRE 2001.
 It illustrates what can happen and how to fix the
@@ -453,7 +464,7 @@ competing against teams at a site with no difficulties.
 It is not a bad idea to have a backup computer for the
 judge (and for the contestants if all are on a single
 computer), and to use some program to periodically
-copies all relevant files from the primary to the backup
+copy all relevant files from the primary to the backup
 computer.  The `rsync' program (available under Linux)
 looks promising for this application.  In the case of
 a distributed contest, the ideal might be to have the
@@ -471,7 +482,7 @@ contests, and if you want to examine submissions, you
 must use the `lookat' program.  Queries are forwarded
 to the email address in the hpcm_judging.rc `reply_
 manager' variable, if that is set, so the judge can have
-queries forwarded to the judge's usual email address.
+queries forwarded to the judge's personal email address.
 "
 
 exit 0
