@@ -3,7 +3,7 @@
 **
 ** Author:	Bob Walton (walton@deas.harvard.edu)
 ** File:	chkpage.c
-** Date:	Tue Apr 23 05:18:41 EDT 2002
+** Date:	Tue Apr 23 05:22:46 EDT 2002
 **
 ** The authors have placed this program in the public
 ** domain; they make no warranty and accept no liability
@@ -12,9 +12,9 @@
 ** RCS Info (may not be true date or author):
 **
 **   $Author: hc3 $
-**   $Date: 2002/04/23 09:17:35 $
+**   $Date: 2002/04/23 09:20:45 $
 **   $RCSfile: chkpage.c,v $
-**   $Revision: 1.3 $
+**   $Revision: 1.4 $
 */
 
 #include <stdio.h>
@@ -30,7 +30,7 @@ char documentation [] =
 		" is\n"
 "    checked.\n"
 "\n"
-"    CC defaults to 80 colums and LL to 58 lines.\n"
+"    CC defaults to 80 columns and LL to 58 lines.\n"
 "\n"
 "    This program interprets newline as a line sepa-,\n"
 "    rator, horizontal tab as going to the next tab\n"
@@ -39,7 +39,7 @@ char documentation [] =
 "    the first column without starting a new line.\n"
 "    All other control characters are illegal.  Tab\n"
 "    stops are set every 8 columns.  All this is con-\n"
-"    sistant with common UNIX print programs.\n"
+"    sistent with common UNIX print programs.\n"
 "\n"
 "    Too long lines, lines overflowing a page, lines\n"
 "    containing illegal characters, and a last line\n"
