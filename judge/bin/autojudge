@@ -5,7 +5,7 @@
 #
 # File:		autojudge
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Aug  5 08:22:26 EDT 2001
+# Date:		Thu Oct 18 03:02:16 EDT 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/08/05 12:45:08 $
+#   $Date: 2001/10/18 07:02:01 $
 #   $RCSfile: autojudge,v $
-#   $Revision: 1.31 $
+#   $Revision: 1.32 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -351,9 +351,8 @@ if { [should_be_made \
 	       $submitted_file]] } {
 
     puts "Making $submitted_program"
-    catch { exec make $submitted_program \
-    		 >@ stdout \
-    		 2> $submitted_program.cerr }
+    catch { make_file $submitted_program \
+    		      $submitted_program.cerr }
 
     # Print any non-empty .cerr file.
     #
@@ -404,9 +403,8 @@ if { [should_be_made \
      && [file executable $submitted_program] } {
 
     puts "Making $submitted_program.out"
-    catch { exec make $submitted_program.out \
-    	         >@ stdout \
-		 2> $submitted_program.err }
+    catch { make_file $submitted_program.out \
+		      $submitted_program.err }
 
     # Remove any a+x on the current directory as a
     # `best effort' security measure in the face of
