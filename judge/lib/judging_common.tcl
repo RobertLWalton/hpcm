@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Jan 27 08:58:59 EST 2002
+# Date:		Tue Jan 29 06:34:16 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/01/27 13:58:27 $
+#   $Date: 2002/01/29 11:34:58 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.77 $
+#   $Revision: 1.78 $
 #
 
 # Table of Contents
@@ -968,8 +968,8 @@ proc compose_reply { args } {
 	     "Subject: RE:$message_subject"
     }
     if { $message_x_hpcm_test_subject != "" } {
-	puts $reply_ch   "X-HPCM-Test-Subject:\
-	                  $message_x_hpcm_test_subject"
+        set mts $message_x_hpcm_test_subject
+	puts $reply_ch   "X-HPCM-Test-Subject:$mts"
     }
     puts $reply_ch   ""
 
