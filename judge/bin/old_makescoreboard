@@ -4,7 +4,7 @@
 #
 # File:		makescoreboard
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Oct 29 09:55:07 EST 2001
+# Date:		Tue Oct 30 01:10:59 EST 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/10/29 14:54:03 $
+#   $Date: 2001/10/30 07:34:56 $
 #   $RCSfile: old_makescoreboard,v $
-#   $Revision: 1.25 $
+#   $Revision: 1.26 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -26,7 +26,13 @@ exec tcl "$0" "$@"
 #
 set lib_directory "[file dirname $argv0]/../lib"
 source $lib_directory/judging_common.tcl
+
+# Set log mode, saving old mode.
+#
 set log_globally yes
+set saved_log_mode $log_mode
+set log_mode none
+
 catch {
 
 set document "
@@ -225,7 +231,7 @@ proc process_arguments { { first_time no } } {
 
     global judging_directory judging_parameters_file \
            parameter_mtime_list parameters_array \
-	   parameter_mtime scoreboard_instructions
+	   parameter_mtime scoreboard_instructions argv
     foreach name [array names parameters_array] {
 	global scoreboard_$name
     }
@@ -313,9 +319,9 @@ set file_mtime_list changed
 #
 set earliest_future_time ""
 
-# Last value of parameters_mtime.
+# Last value of parameter_mtime.
 #
-set last_parameters_mtime ""
+set last_parameter_mtime ""
 
 # Process parameter setting instruction.
 #
@@ -341,7 +347,7 @@ proc process_instructions {} {
 
     global scoreboard_instructions abbreviation_array \
            file_mtime_list earliest_future_time \
-	   last_parameters_mtime parameters_mtime \
+	   last_parameter_mtime parameter_mtime \
 	   finder_file judging_directory \
 	   score_flag_file parameters_array
     foreach name [array names parameters_array] {
@@ -376,8 +382,8 @@ proc process_instructions {} {
     # tions, return.
     #
     if {    [file_changed $file_mtime_list] == "no"
-         && $last_parameters_mtime \
-               >= $parameters_mtime \
+         && $last_parameter_mtime \
+               >= $parameter_mtime \
 	 && ( $earliest_future_time == "" \
 	      || $time < $earliest_future_time ) } {
 
@@ -534,15 +540,16 @@ proc process_instructions {} {
 	        # If scoreboard_instructions might have
 		# changed force update.
 		#
-	    	if { $last_parameters_mtime == ""
-	    	     || $last_parameters_mtime \
-		        < $parameters_mtime } {
+	    	if { $last_parameter_mtime == ""
+	    	     || $last_parameter_mtime \
+		        < $parameter_mtime } {
 		    set update yes
 		}
 
 		# Set output variables.
 		#
 	        set out_pc $pc
+		incr out_pc -1
 		set output_found yes
 
 		# Remember output file in mtime_list.
@@ -637,7 +644,7 @@ proc process_instructions {} {
     # of just finished actions and reenable interrupts.
     #
     set earliest_future_time $eft
-    set last_parameters_mtime $parameters_mtime
+    set last_parameter_mtime $parameter_mtime
     set file_mtime_list $mtime_list
     make_signals_default
 }
@@ -658,7 +665,11 @@ proc pass2 { instructions pc end_pc update } {
     # Compute output file and step past OUTPUT instruc-
     # tion.
     #
-    set out_file [lindex [lindex $instructions $pc] 1]
+    set instruction [lindex $instructions $pc]
+    set out_file [lindex $instruction 1]
+    if { $out_file == "" } {
+        error "Bad OUTPUT instruction: $instruction"
+    }
     set out_file \
         [file join $judging_directory $out_file]
     incr pc
@@ -699,7 +710,7 @@ proc pass2 { instructions pc end_pc update } {
 		    [lindex $instruction 1]
 		set name [lindex $instruction 2]
 		if { $name == "" } {
-		    set name = addresses
+		    set name addresses
 		}
 		if { ! [info exists scoreboard_$name] \
 						} {
@@ -770,7 +781,7 @@ proc pass2 { instructions pc end_pc update } {
 		if { $left_end >= $scoreboard_width } {
 		    error "LINE left text too wide:\
 		           $left"
-		} elseif { $right_end < 0 } {
+		} elseif { $right_begin < 0 } {
 		    error "LINE right text too wide:\
 		           $right"
 		} elseif {    $center_begin < 0 \
@@ -840,7 +851,7 @@ proc pass2 { instructions pc end_pc update } {
 		    set line \
 			"$line\n[string \
 				    range $space \
-				    0 $center_begin]
+				    0 $center_begin]"
 		    set line "$line$center"
 		}
 
@@ -854,7 +865,7 @@ proc pass2 { instructions pc end_pc update } {
 		    set line \
 			"$line\n[string \
 				    range $space \
-				    0 $right_begin]
+				    0 $right_begin]"
 		    set line "$line$right"
 		}
 
@@ -981,7 +992,14 @@ proc pass2 { instructions pc end_pc update } {
 	    # the error.  When we are rerun, the output
 	    # file will be recomputed and remailed.
 	    #
-	    file delete -force -- $out_file
+	    if { [file isfile $out_file] } {
+
+		# Its possible if instructions are
+		# miswritten to have out_file name a
+		# directory.
+
+		file delete -force -- $out_file
+	    }
 	    error $error_message $errorInfo $errorCode
 	}
     }
@@ -990,9 +1008,6 @@ proc pass2 { instructions pc end_pc update } {
 
 # Process command.
 #
-set saved_log_mode $log_mode
-set log_mode none
-
 switch $command {
 
     start {
