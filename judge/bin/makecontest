@@ -15,14 +15,19 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/10/27 17:02:46 $
+#   $Date: 2000/10/27 17:19:15 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.28 $
+#   $Revision: 1.29 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
 
 # Use tcl rather than tclsh so that `signal' is defined.
+
+# List of last component names of subdirectories that
+# are NOT to be recursively copied.
+#
+set omitted_directories {CVS RCS}
 
 # Include common code and parameters:
 #
@@ -638,7 +643,8 @@ proc TODO { args } {
     global TODO_ch
     if { $TODO_ch == "" } {
     	set TODO_ch [open TODO a]
-	puts "========================================\
+	puts $TODO_ch \
+	     "====================\
 	      [clock format [clock seconds]] TODOs:"
     }
     puts $TODO_ch "--------"
@@ -802,10 +808,9 @@ proc make_substitutions { name } {
 #   contest_directory (c_d)
 #   solutions_directory
 
-# Helper function.
-
-# If ${targetdir}index_ch is "", see if it should be
-# something else, and return its correct value.
+# Helper function called when ${targetdir}index_ch is ""
+# to compute and return the correct value of this
+# variable.
 #
 proc get_index_chs { targetdir } {
 
@@ -845,16 +850,22 @@ proc get_index_chs { targetdir } {
     return $chs
 }
 
-# Copy readable files and subdirectories recursively.
+# Helper function to copy readable files and subdirec-
+# tories recursively.
 #
 proc recursive_file_copy { source destination } {
+
+    global omitted_directories
+
     foreach src [glob -nocomplain $source/*] {
 	if { ! [file readable $src] } continue
     	set tail [file tail $src]
     	set des "$destination/$tail"
 	if { [file isfile $src] } {
 	    file copy $src $des
-	} elseif { $tail == "CVS" || $tail == "RCS" } {
+	} elseif { [lsearch -exact \
+	                    $omitted_directories \
+			    $tail] >= 0 } {
 	    # do not copy
 	} elseif { [file isdirectory $src] } {
 	    file mkdir $des
@@ -864,6 +875,8 @@ proc recursive_file_copy { source destination } {
     }
 }
 
+# Main function to process an index specification.
+#
 proc process_index_specification {} {
 
     global index_file index_directory \
@@ -873,7 +886,7 @@ proc process_index_specification {} {
 	   problems_option demos_option \
 	   help_option txt_option \
            info_directory solutions_directory \
-	   problems_directory demos_directory c_d
+	   c_d
 
 
     # Be sure index directory is absolute name, else
