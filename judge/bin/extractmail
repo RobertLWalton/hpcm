@@ -4,7 +4,7 @@
 #
 # File:		extractmail
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Nov 27 09:02:42 EST 2001
+# Date:		Thu Dec 20 04:32:42 EST 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/11/27 14:02:34 $
+#   $Date: 2001/12/20 11:56:41 $
 #   $RCSfile: extractmail,v $
-#   $Revision: 1.27 $
+#   $Revision: 1.28 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -46,11 +46,16 @@ cd submission_directory; extractmail
     be given in the message `Subject:' field.
 
     For each file successfully extracted, this program
-    prints the line `Extracted FFFF' to the standard
-    output, where FFFF is the file name.  For each
-    error, this program prints an error message to the
-    standard error output.  This program always exits
-    with exit code 0.  The TCL command:
+    writes the line `Extracted FFFF' to the standard
+    output, where FFFF is the file name.  Note that this
+    program may write other information lines to the
+    standard output.
+    
+    For each error, this program writes an error message
+    to the standard error output.  However, this program
+    always exits with exit code 0, so the presence of
+    errors is indicated solely by a non-empty standard
+    error output.  The TCL command:
 
     	catch { exec extractmail } out
 
@@ -58,37 +63,40 @@ cd submission_directory; extractmail
     the variable `out' and return a 0/1 value indicating
     whether there were any errors.  If there were errors
     that concern the judge, and not just the submitter,
-    the text `SYSTEM ERROR' appears in the error output.
-    Otherwise the value of `out' will be suitable for
-    inclusion in a reply to the submitter.
+    the text `SYSTEM ERROR' will appear in the output
+    and thence the `out' variable.  Otherwise the value
+    of `out' will be suitable for inclusion in a reply
+    to the submitter as a description of errors.
 
     If there is a `$files_file' file in the current\
     			directory,
     all submitted files must have names listed in this
     `$files_file' file.  This file is interpreted as
     a TCL list (with list elements separated by spaces,
-    tabs, or new lines) whose elements are file names
-    and the special symbols:
+    tabs, or new lines) whose elements are
+    special symbols, file names, and { } bracketed
+    sublists.  The special symbols consist of upper case
+    letters and the `-' character, and begin and end
+    with `-'.  All list items following a special
+    symbol S but before the next special symbol are
+    governed by S.  This program understands the follow-
+    ing two special symbols:
     
-    	-REQUIRED-	Indicates that the following
-			file names name files that MUST
-			be submitted.
+    	-REQUIRED-	The list items governed by
+			-REQUIRED- are the names of
+			files that MUST be submitted.
     
-    	-OPTIONAL-	Indicates that the following
-			file names name files that may
-			optionally be submitted.
+    	-OPTIONAL-	The list items governed by
+			-OPTIONAL- are the names of
+			files that may optionally be
+			submitted.
     
-    	-LINK-		Indicates that the following
-			file names name files that MUST
-			be linked from the problem
-			solution directory.
-
-    File names before any special symbol are treated as
-    `-REQUIRED-'.  Special symbols can appear any number
-    of times in the list and apply to all file names
-    following them but before the next special symbol in
-    the list.  The `extractmail' program ignores
-    `-LINK-' file names.
+    List items governed by other special symbols are
+    ignored by this program.  There is an implied
+    `-REQUIRED-' before the beginning of the list, that
+    governs list items appearing before any special
+    symbol in the list.  The same special symbol can
+    appear multiple times in the list.
 
     If there is no `$files_file' file, there is exactly\
     	one
@@ -149,9 +157,12 @@ cd submission_directory; extractmail
 
     It is an error if the problem name contains `/' or
     `.' or begins with `-'.  It is a system error if the
-    `Subject:' field does not begin with `submit', or
-    if the $received_file or `$files_file' files are
-    unreadable."
+    `Subject:' field does not begin with `submit' or has
+    too many list items, if the $received_file file is
+    unreadable, if the `$files_file' file exits but is
+    unreadable, or if the current directory does not
+    permit new files to be deleted or created as
+    necessary."
 
 # If there are arguments, print documentation and exit.
 #
@@ -202,10 +213,10 @@ if { [regexp {\.} $problem] } {
     extract_error \
          "ERROR: Bad problem name (contains `.'):\
 	  $problem"
-} elseif { [regexp {/} $problem] } {
+} elseif { [regexp {/} $filename] } {
     extract_error \
-         "ERROR: Bad problem name (contains `/'):\
-	  $problem"
+         "ERROR: Bad file or problem name\
+	  (contains `/'): $filename"
 } elseif { [regexp {^-} $problem] } {
     extract_error \
          "ERROR: Bad problem name (begins with `-'):\
@@ -244,19 +255,18 @@ if { [file exists $files_file] } {
 #	required	optional	found
 #
 set mode required
-foreach name $filelist {
-    switch $name {
+foreach item $filelist {
+    switch $item {
 	-REQUIRED-	{
 	    set mode required
 	}
-	-REQUIRED-	{
+	-OPTIONAL-	{
 	    set mode optional
 	}
-	-LINK-	{
-	    set mode ""
-	}
 	default {
-	    if { $mode != "" } {
+	    if { [regexp {\-[-A-Z]+\-} $item] } {
+	        set mode ""
+	    } elseif { $mode != "" } {
 		set filename_array($name) $mode
 	    }
 	}
@@ -264,7 +274,8 @@ foreach name $filelist {
 }
 
 if { [llength [array names filename_array]] < 1 } {
-    error "No allowed submittable files"
+    extract_error \
+    	"SYSTEM ERROR: No allowed submittable files"
 }
 
 # WS matching whitespace character and NWS matching
@@ -288,12 +299,17 @@ proc exit_cleanup {} {
 # Open file for reading or writing.  Return the
 # open channel in the global variable `file_ch' and
 # return `read' or `write' if the file is opened for
-# reading or writing.  A file is opened for reading
-# if it exists and has an mtime >= received_mtime;
-# and is opened for writing otherwise.  If opened for
-# writing, any existing file is deleted.  Also sets
-# cleanup_filename if file is being written, and
-# checks filename for legality.
+# reading or writing, and `skip' if the file name is
+# illegal and the file is to be skipped.  A file is
+# opened for reading if it exists and has an mtime >=
+# received_mtime; and is opened for writing otherwise.
+# If opened for writing, any existing file is deleted,
+# and cleanup_filename is set.
+#
+# A filename is illegal if it is not in filename_array
+# or if a file of the same name has already been
+# processed; in this case `file_ch' is set to "" so
+# close_file will do nothing.
 #
 proc open_file { filename } {
 
@@ -301,9 +317,15 @@ proc open_file { filename } {
     	   file_ch cleanup_filename
 
     if { ! [info exists filename_array($filename)] } {
-        extract_error "ERROR: Bad file name: $filename"
+	puts stderr \
+	    "ERROR: Bad file name: $filename"
+	set file_ch ""
+	return skip
     } elseif { $filename_array($filename) == "found" } {
-        extract_error "ERROR: Redundant file: $filename"
+	puts stderr \
+	    "ERROR: Redundant file: $filename"
+	set file_ch ""
+	return skip
     }
     set filename_array($filename) found
 
@@ -320,7 +342,12 @@ proc open_file { filename } {
 	    return read
 	} else {
 	    puts "Deleting out-of-date $filename"
-	    file delete -force $filename
+	    if { [catch { file delete -force \
+	    		       $filename }] } {
+	        extract_error \
+		    "SYSTEM ERROR: Cannot delete\
+		     $filename"
+	    }
 	}
     }
 
@@ -353,10 +380,16 @@ proc read_non_blank_line {} {
     }
 }
 
-# Close file.
+# Close file.  Does nothing if `file_ch' is "".
+# Otherwise closes `file_ch', sets `cleanup_filename'
+# to "", and writes `Extracted $filename' to standard
+# output.
 #
 proc close_file { filename } {
     global file_ch cleanup_filename
+
+    if { $file_ch == "" } return
+
     close $file_ch
     set cleanup_filename ""
     puts "Extracted $filename"
@@ -398,18 +431,23 @@ if { [regexp {^HPCM_BEGIN} $line] } {
 		     `HPCM_END $filename' line"
 	    } elseif { [regexp {^\.\.(.*)$} $line \
 			       forget real_line] } {
-		if { $mode == "write" } {
-		    puts $file_ch $real_line
-		} else {
-		    set file_line [gets $file_ch]
-		    if { $file_line != $real_line } {
-		        extract_error \
-			    "SYSTEM ERROR: file\
-			     mismatch for\
-			     `$filename':\nold:\
-			     $file_line\nnew:\
-			     $real_line"
+		switch $mode {
+		    write {
+			puts $file_ch $real_line
 		    }
+		    read {
+			set file_line [gets $file_ch]
+			if { $file_line \
+				!= $real_line } {
+			    extract_error \
+				"SYSTEM ERROR: file\
+				 mismatch for\
+				 `$filename':\nold:\
+				 $file_line\nnew:\
+				 $real_line"
+			}
+		    }
+		    skip { }
 		}
 	    } elseif { \
 		  [regexp \
@@ -462,7 +500,9 @@ if { [regexp {^HPCM_BEGIN} $line] } {
 	#
 	set lines ""
 	set filename ""
+	set filename_duplicated no
 	set FILE "File:$WS*($NWS+)"
+	set TWOFILES "$FILE($WS+|$WS.*$WS)$FILE"
     	while { [regexp $NWS $line] } {
 
 	    if { [regexp \
@@ -472,16 +512,18 @@ if { [regexp {^HPCM_BEGIN} $line] } {
 		if { $filename == "" } {
 		    set filename $fname
 		} else {
-		     extract_error \
-		         "ERROR: extra file name in\
-			  file: `File: $fname'"
+		    puts stderr \
+		        "ERROR: extra file name in\
+			 file: `File: $fname'"
+		    set filename_duplicated yes
 		}
 		if { [regexp \
-		     "(^|$WS)$FILE($WS+)$FILE(\$|$WS)" \
-		     $line] } {
-		     extract_error \
-		         "ERROR: extra file names in\
-			  file:\n$line"
+			 "(^|$WS)$TWOFILES(\$|$WS)" \
+			 $line] } {
+		    puts stderr \
+		        "ERROR: extra file names in\
+			 file:\n$line"
+		    set filename_duplicated yes
 		}
 	    }
 	    lappend lines $line
@@ -494,17 +536,26 @@ if { [regexp {^HPCM_BEGIN} $line] } {
 	    if { [llength $filenames] == 1 } {
 	        set filename [lindex $filenames 0]
 	    } else {
-		 extract_error \
+		 puts stderr \
 		     "ERROR: no `File: ...' in first\
-		      file in message body"
+		      set of non-blank lines in\
+		      message body"
+		 set mode skip
+		 set file_ch ""
 	    }
 	}
 
 	if { $filename != "" } {
 	    if { $mode != "none" } {
-	        close_file $filename
+	        close_file $opened_filename
 	    }
-	    set mode [open_file $filename]
+	    if { $filename_duplicated } {
+	    	set mode skip
+		set file_ch ""
+	    } else {
+		set mode [open_file $filename]
+		set opened_filename $filename
+	    }
 	} else {
 	    set lines [concat $blank_lines $lines]
 	}
@@ -513,7 +564,13 @@ if { [regexp {^HPCM_BEGIN} $line] } {
 	    read {
 	        foreach line $lines {
 		    set file_line [gets $file_ch]
-		    if { $file_line != $real_line } {
+		    if { [eof $file_ch] } {
+			extract_error \
+			    "SYSTEM ERROR: premature\
+			     eof reading existing\
+			     `$filename'"
+		    } elseif { $file_line \
+		    		   != $real_line } {
 			extract_error \
 			    "SYSTEM ERROR: file\
 			     mismatch for\
@@ -528,6 +585,7 @@ if { [regexp {^HPCM_BEGIN} $line] } {
 		    puts $file_ch $line
 		}
 	    }
+	    skip { }
 	}
 
 	# Accumulate blank lines.
@@ -541,7 +599,7 @@ if { [regexp {^HPCM_BEGIN} $line] } {
 
 	if { [eof $received_ch] } {
 	    if { $mode != "none" } {
-	        close_file $filename
+	        close_file $opened_filename
 	    }
 	    break
 	}
@@ -552,7 +610,7 @@ if { [regexp {^HPCM_BEGIN} $line] } {
 #
 foreach filename [array names filename_array] {
     if { $filename_array($filename) == "required" } {
-        extract_error "ERROR: missing file: $filename"
+    	puts stderr "ERROR: missing file: $filename"
     }
 }
 
