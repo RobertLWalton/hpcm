@@ -6,7 +6,7 @@
 #
 # File:		makejudgingdir
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Jan  9 07:08:53 EST 2002
+# Date:		Wed Jan  9 07:46:15 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/01/09 12:38:03 $
+#   $Date: 2002/01/09 12:47:28 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.76 $
+#   $Revision: 1.77 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -1012,9 +1012,8 @@ proc recursive_file_copy { source destination } {
     	set des "$destination/$tail"
 	if { [file isfile $src] } {
 	    file copy $src $des
-	} elseif { [lsearch -exact \
-	                    $omitted_directories \
-			    $tail] >= 0 } {
+	} elseif { [lcontain $omitted_directories \
+			     $tail] } {
 	    # do not copy
 	} elseif { [file isdirectory $src] } {
 	    file mkdir $des
@@ -1115,8 +1114,7 @@ proc process_index_specification {} {
 		   $line forget indent forget2
 	    regsub {\*\*\*} $indent {   } indent
 
-	    if { [lsearch -exact $options include] \
-	         < 0 } {
+	    if { ! [lcontain $options include] } {
 
 		# Item is not included.
 
@@ -1150,9 +1148,9 @@ proc process_index_specification {} {
 		if { ! [regexp {^([^/]*)/+([^/].*)$} \
 		               $target forget \
 			       targetdir targettail] \
-		     || [lsearch -exact \
-				 {help demos problems} \
-				 $targetdir] < 0 } {
+		     || ! [lcontain \
+			     {help demos problems} \
+			     $targetdir] } {
 		    error "Bad item name directory\
 		    	   after substitution: $target"
 		}
@@ -1376,12 +1374,10 @@ proc process_index_specification {} {
 		# Process solutions option.
 		#
 		if { $solutions_option \
-		     && [lsearch -exact \
-		     		 {problems demos} \
-				 $targetdir] >= 0 \
-		     && [lsearch -exact \
-		     	         $options \
-				 nosolution] < 0 } {
+		     && [lcontain {problems demos} \
+				  $targetdir] \
+		     && ! [lcontain $options \
+				    nosolution] } {
 		    if { ! [file isdirectory $source] \
 		    		} {
 			error "$source solution is not\
@@ -1828,10 +1824,8 @@ proc diff_dirs { dir1 dir2 } {
 	if { [regexp $diffexp [lindex $out 0] \
 	             forget index1 index2] \
 	     && $index1 == $index2 \
-	     && [lsearch -exact \
-	     	         {demos problems index} \
-			 $index1] \
-		>= 0 } {
+	     && [lcontain {demos problems index} \
+			  $index1] } {
 	    if { [lindex $out 1] != "1c1" } {
 	    	return yes
 	    } elseif { ! [regexp {^< [^ ]* Index} \
