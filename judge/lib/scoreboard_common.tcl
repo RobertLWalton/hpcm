@@ -3,7 +3,7 @@
 #
 # File:		scoreboard_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Feb  9 20:39:48 EST 2002
+# Date:		Sun Feb 10 04:46:30 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -12,9 +12,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/02/10 02:21:07 $
+#   $Date: 2002/02/10 10:36:02 $
 #   $RCSfile: scoreboard_common.tcl,v $
-#   $Revision: 1.33 $
+#   $Revision: 1.34 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -176,9 +176,9 @@ proc compute_scoreboard_array { input_ch } {
 	set sap $submitter/$problem
 	set item [list [format {%015d} $time] $code]
 	if { [info exists scoreboard_array($sap)] } {
-	    lappend scoreboard_array(sap) $item
+	    lappend scoreboard_array($sap) $item
 	} else {
-	    set scoreboard_array(sap) [list $item]
+	    set scoreboard_array($sap) [list $item]
 	}
     }
 }
@@ -268,6 +268,7 @@ proc prune_scoreboard_array { } {
 	    [clock scan $final_cut_time]
     }
 
+
     # Sort scoreboard_array elements and compute team
     # start times.  Delete elements whose first item
     # is before an absolute start time.
@@ -278,6 +279,7 @@ proc prune_scoreboard_array { } {
 	if { $start_mode == "absolute" } {
 	    set item [lindex $items 0]
 	    set t [lindex $item 0]
+	    regexp {^0+(0|[1-9].*)$} $t forget t
 	    if { $t < $start_time } {
 	        unset scoreboard_array($sap)
 	    }
@@ -286,6 +288,7 @@ proc prune_scoreboard_array { } {
 	           submitter problem
 	    set item [lindex $items 0]
 	    set t [lindex $item 0]
+	    regexp {^0+(0|[1-9].*)$} $t forget t
 	    set c [lindex $item 1]
 	    if { $c != "g" } {
 	        unset scoreboard_array($sap)
@@ -314,6 +317,7 @@ proc prune_scoreboard_array { } {
 	    "" {
 		set item [lindex $items 0]
 		set t [lindex $item 0]
+		regexp {^0+(0|[1-9].*)$} $t forget t
 		set c [lindex $item 1]
 		if { $c != "d" } {
 		    unset scoreboard_array($sap)
@@ -388,8 +392,9 @@ proc prune_scoreboard_array { } {
 	#
         set new_items \
 	    [list [list [format {%015d} $start] s]]
-	foreach $item $items {
+	foreach item $items {
 	    set time [lindex $item 0]
+	    regexp {^0+(0|[1-9].*)$} $time forget time
 	    set code [lindex $item 1]
 
 	    if { $stop == "" || $time <= $stop } {
@@ -426,7 +431,7 @@ proc prune_scoreboard_array { } {
 	    regexp {^([^/]*)/([^/]*)$} $sap forget \
 		   submitter problem
 	    if { ! [info exists \
-	                 $correct_cut($submitter] } {
+	                 $cut_array($submitter)] } {
 		unset scoreboard_array($sap)
 	    }
         }
@@ -436,8 +441,8 @@ proc prune_scoreboard_array { } {
 # Scoreboard Data Base
 # ---------- ---- ----
 
-# The scoreboard_list global variable is a sorted list
-# of items, each of the form:
+# The scoreboard_list global variable is a decreasing
+# order sorted list of items, each of the form:
 #
 #	{ ccc.ttttttttt.sss problems_correct
 #	  time_score modifier
@@ -467,6 +472,9 @@ proc prune_scoreboard_array { } {
 # These submitters should probably be omitted from any
 # printed scoreboard.
 #
+# Note that scoreboard_list is sorted in DESCREASING
+# order.
+#
 set scoreboard_list ""
 set scoreboard_problem_list ""
 
@@ -476,13 +484,14 @@ set scoreboard_problem_list ""
 proc compute_scoreboard_list {} {
 
     global scoreboard_array scoreboard_list \
-           scoreboard_problem_list
+           scoreboard_problem_list scoreboard_penalty
+
 
     # Compute lists of submitters and problems.
     #
     set problems ""
     set submitters ""
-    foreach sap [array names $scoreboard_array] {
+    foreach sap [array names scoreboard_array] {
 	regexp {^([^/]*)/([^/]*)$} $sap forget \
 	       submitter problem
 	if { ! [lcontain $submitters $submitter] } {
@@ -492,7 +501,7 @@ proc compute_scoreboard_list {} {
 	    lappend problems $problem
 	}
     }
-    set problems [lsort problems]
+    set problems [lsort $problems]
     set scoreboard_problem_list $problems
 
 
@@ -515,7 +524,7 @@ proc compute_scoreboard_list {} {
 	# item in $problem_scores.
 	#
 	set problem_scores ""
-	foreach problem $sorted_problems {
+	foreach problem $problems {
 
 	    set sap $submitter/$problem
 	    if { [info exists \
@@ -539,11 +548,8 @@ proc compute_scoreboard_list {} {
 
 		set code [lindex $item 1]
 		set item_time [lindex $item 0]
-		if { ! [regexp {^0*([1-9][0-9]*)$} \
-			       $item_time forget \
-			       item_time] } {
-		    set item_time 0
-		}
+		regexp {^0+(0|[1-9].*)$} $item_time \
+		       forget item_time
 
 		if { $code == "s" } {
 
@@ -611,7 +617,7 @@ proc compute_scoreboard_list {} {
 		            - $time_score }]]
 	set sss [format {%03d} $submissions]
 
-	lappend score_list \
+	lappend scoreboard_list \
 		[concat [list $ccc.$ttttttttt.$sss \
 		              $problems_correct \
 			      $time_score \
@@ -619,7 +625,8 @@ proc compute_scoreboard_list {} {
 		        $problem_scores]
     }
 
-    set scoreboard_list [lsort $scoreboard_list]
+    set scoreboard_list \
+        [lsort -decreasing $scoreboard_list]
 }
 
 
