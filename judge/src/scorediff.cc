@@ -2,7 +2,7 @@
 //
 // File:	scorediff.cc
 // Authors:	Bob Walton (walton@deas.harvard.edu)
-// Date:	Mon Jul 16 15:06:39 EDT 2001
+// Date:	Wed Jul 18 06:00:40 EDT 2001
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: hc3 $
-//   $Date: 2001/07/16 18:57:11 $
+//   $Date: 2001/07/18 10:13:23 $
 //   $RCSfile: scorediff.cc,v $
-//   $Revision: 1.29 $
+//   $Revision: 1.30 $
 
 // This is version 2, a major revision of the first
 // scorediff program.  This version is more explicitly
@@ -359,8 +359,10 @@ struct file
     token_type type;	// Type of token.
     char token [ MAX_SIZE + 1 ]; // The current token,
     			// if not an end-of-file (eof).
+			// Terminated by `\0'.
     int length;		// Length of token in charac-
-    			// ters.  0 for eof.
+    			// ters (not including `\0').
+			// 0 for eof.
     int line;		// Line number of current
     			// token.  The first line is 1.
     int column;		// Column within the line of
@@ -383,6 +385,7 @@ struct file
     //
     char whitespace [ MAX_SIZE + 1 ]; // Whitespace pre-
     			// ceding the current token.
+			// Terminated by `\0'.
     int newlines;	// Number of new line characters
     			// in this whitespace.
 
@@ -426,7 +429,7 @@ struct file
 			// next character.
     char backup [ 5 ];  // Buffer of backed up char-
     			// acters into which `back'
-			// points.
+			// points.  Terminated by `\0'.
 };
 
 // The two files.
@@ -452,12 +455,9 @@ int open ( file & f, char * filename )
     f.backup[1]		= '\0';
     f.back		= f.backup;
 
-    f.token[0]		= 0;
     f.column		= -1;
     f.line		= 0;
     f.type		= WORD_TOKEN;
-    f.whitespace[0]	= 0;
-    f.remainder		= false;
 
     f.remainder_length	= 0;
 }
@@ -582,6 +582,8 @@ void scan_token ( file & f )
 	c = get_character ( f );
 	++ column;
 
+	// f.token now holds a sign.
+
 	switch ( c ) {
 	case '.':
 	    ++ decimals;
@@ -591,10 +593,15 @@ void scan_token ( file & f )
 	    c = get_character ( f );
 	    ++ column;
 
+	    // f.token now holds a sign followed by a
+	    // decimal point.
+
 	    if ( ! isdigit ( c ) ) goto word;
 	    break;
 
 	default:
+	    // Here f.token holds just a sign.
+
 	    if ( ! isdigit ( c ) ) goto word;
 	}
 	break;
@@ -604,10 +611,15 @@ void scan_token ( file & f )
 	c = get_character ( f );
 	++ column;
 	++ decimals;
+
+	// f.token now holds just a decimal point.
+
 	if ( ! isdigit ( c ) ) goto word;
 	break;
 
     default:
+	// Here f.token is empty.
+
         if ( ! isdigit ( c ) ) goto word;
 	break;
     }
@@ -617,8 +629,6 @@ void scan_token ( file & f )
     * tp ++ = c;
     c = get_character ( f );
     ++ column;
-
-    f.type = NUMBER_TOKEN;
 
     // Get rest of mantissa.
     //
@@ -642,6 +652,9 @@ void scan_token ( file & f )
 
     if ( c == 'e' || c == 'E' ) {
 
+	// Save tp and column in case we want to back
+	// up to this point.
+
         char * ep = tp;
 	int ecolumn = column;
 
@@ -651,6 +664,9 @@ void scan_token ( file & f )
 	c = get_character ( f );
 	++ column;
 
+	// f.token now holds a number followed by an
+	// `e' or `E'.
+
 	if ( c == '+' || c == '-' ) {
 	    if ( tp < endtp ) * tp ++ = c;
 	    else token_too_long ( f );
@@ -659,7 +675,13 @@ void scan_token ( file & f )
 	    ++ column;
 	}
 
+	// f.token now holds a number followed by an
+	// `e' or `E' and possibly then followed by
+	// a sign.
+
 	if ( ! isdigit ( c ) ) {
+	    // No digit next: backup.
+
 	    assert ( * f.back == 0 );
 	    * tp = 0;
 	    strcpy ( f.backup, ep );
@@ -667,6 +689,9 @@ void scan_token ( file & f )
 	    tp = ep;
 	    column = ecolumn;
 	} else {
+	    // Exponent first digit next: scan rest of
+	    // exponent.
+
 	    do {
 		if ( tp < endtp ) * tp ++ = c;
 		else token_too_long ( f );
@@ -677,10 +702,17 @@ void scan_token ( file & f )
 	}
     }
 
+    // End of number token.  c is first character beyond
+    // number token.
+
     * tp = 0;
 
+    f.type	= NUMBER_TOKEN;
+    f.length	= tp - f.token;
     f.column	= -- column;
     f.decimals	= decimals;
+
+    // Put c into backup.
 
     if ( c != EOF ) {
 	char * p = f.back;
@@ -689,6 +721,9 @@ void scan_token ( file & f )
 	* p ++ = c;
 	* p = 0;
     }
+
+    // Convert number token to floating point using
+    // strtod.
 
     char * e;
     f.number = strtod ( f.token, & e );
@@ -704,7 +739,10 @@ void scan_token ( file & f )
 // Come here if we have concluded that the characters
 // scanned into f.token so far are part of a word,
 // and c is the next character of the word or is a
-// whitespace character.
+// whitespace character or is the beginning of a number
+// token.  In the cases where c is not the next char-
+// acter of the word, f.token is not empty at this
+// point.
 //
 word:
 
@@ -719,6 +757,11 @@ word:
 	case '-':
 	case '.':
 
+	    // Possible first character of number.
+
+	    // Save tp and column in case we want to
+	    // backup to this point.
+
 	    char * np = tp;
 	    int ncolumn = column;
 	    int oldc = c;
@@ -729,6 +772,9 @@ word:
 	    c = get_character ( f );
 	    ++ column;
 
+	    // f.token now holds a word followed by a
+	    // sign or decimal point.
+
 	    if ( c == '.' && oldc != '.' ) {
 		if ( tp < endtp ) * tp ++ = c;
 		else token_too_long ( f );
@@ -737,7 +783,13 @@ word:
 		++ column;
 	    }
 
+	    // f.token now holds a word followed by a
+	    // sign and then possibly a decimal point,
+	    // or followed by just a decimal point.
+
 	    if ( isdigit ( c ) ) {
+	        // Found digit and hence number: backup.
+
 		assert ( * f.back == 0 );
 		* tp = 0;
 		strcpy ( f.backup, np );
@@ -746,6 +798,9 @@ word:
 		column = ncolumn;
 		goto end_word;
 	    } else continue;
+	        // No digit; we are still in word.  Go
+		// check c for possible number beginning
+		// character (it might be `.' or sign).
 	}
 
 	if ( tp < endtp ) * tp ++ = c;
@@ -757,11 +812,17 @@ word:
 
 end_word:
 
-    f.column	= -- column;
-    f.length	= tp - f.token;
+    // End of word.  c is first character beyond word.
+
     f.type	= WORD_TOKEN;
+    f.length	= tp - f.token;
+    f.column	= -- column;
+
+    assert ( f.length  > 0 );
 
     * tp = 0;
+
+    // Put c into backup.
 
     if ( c != EOF ) {
 	char * p = f.back;
