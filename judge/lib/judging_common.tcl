@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Jan 25 04:42:00 EST 2002
+# Date:		Fri Jan 25 11:15:25 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/01/25 10:23:37 $
+#   $Date: 2002/01/25 16:15:37 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.70 $
+#   $Revision: 1.71 $
 #
 
 # Table of Contents
@@ -1320,6 +1320,7 @@ proc execute_response_commands \
 			    $compose_reply_options \
 			    -cc] } {
 		    lappend compose_reply_options -cc
+		}
 	    }
 
 	    BLANK		-
@@ -1345,10 +1346,12 @@ proc execute_response_commands \
 		    LINE {
 			if { $length != 2 } {
 			    response_error $command
+			}
 		    }
 		    BAR {
 			if { $length > 2 } {
 			    response_error $command
+			}
 		    }
 		}
 		foreach string  \

@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Jan 25 09:55:42 EST 2002
+# Date:		Fri Jan 25 11:03:40 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,15 +11,16 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/01/25 15:18:18 $
+#   $Date: 2002/01/25 16:11:01 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.87 $
+#   $Revision: 1.88 $
 
 # Table of Contents:
 #
 #	About This File
 #	Scoreboard Parameters
 #	Scoring Parameters
+#	Response Instructions
 #	Submission Parameters
 #	Logging Parameters
 #	Info Parameters
@@ -419,6 +420,251 @@ set difference_type_proof_limit 100
 set time_limit_regexp {cpu time limit exceeded}
 set output_limit_regexp {file size limit exceeded}
 
+
+# Response Instructions
+# -------- ------------
+
+# Instructions on how to respond to the submitter when
+# a new score is determined are provided by default in
+# the following variable, and may be provided for each
+# problem in the problem directory $response_instruc-
+# tions_file.
+#
+# Actually this default value is postpended to any
+# $response_instructions_file value, and picks up any
+# cases omitted by that value.  The EXIT command (see
+# below ) should be used in any $response_instructions_
+# file value to be sure this default does not execute.
+#
+set default_response_instructions {
+
+    if { ! $manual && ! $proposed } {
+	if { $scoring_mode == "manual" } {
+	    NO-REPLY
+	    EXIT
+	} elseif { $scoring_mode == "auto" \
+	     || $auto_score == "Completely Correct" } {
+	    { LINE "For -PROBLEM- the automatically\
+	    	    determined final score is:" }
+	    BLANK
+	    { LINE "    -AUTO-SCORE-" }
+	    FINAL
+	} elseif { [lcontain {auto+manual manual+auto} \
+			     $scoring_mode] } {
+
+	    { LINE "For -PROBLEM- the automatically \
+	    	    determined score is:" }
+	    BLANK
+	    { LINE "    -AUTO-SCORE-" }
+	    BLANK
+	    { LINE "However, this score WILL BE\
+		    REVIEWED by the human judge\
+		    (soon)." }
+	    NON-FINAL
+	}
+    } elseif { ! $manual && $proposed } {
+	FINAL
+	if { $scoring_mode == "manual" } {
+	    { LINE "For -PROBLEM- your final score\
+	    	    is:" }
+	    BLANK
+	    { LINE "    -PROPOSED-SCORE-" }
+	} elseif { [regexp {auto} $scoring_mode] } {
+
+	    { LINE "For -PROBLEM- your previous\
+	            automatic score of:" }
+	    BLANK
+	    { LINE "    -AUTO-SCORE-" }
+	    BLANK
+
+	    if { $proposed_score == $auto_score } {
+
+		{ LINE "has been verified and confirmed\
+		        by the human judge!" }
+		{ LINE "Thus your FINAL score is:" }
+		BLANK
+		{ LINE "    -PROPOSED-SCORE" }
+		BLANK
+		{ LINE "for this submission" }
+
+	    } else {
+
+		if { $scoring_mode != "auto" } {
+
+		    { LINE "has been OVERRIDDEN by the\
+		    	    human judge!" }
+		} else {
+		    {LINE "has been UNEXPECTEDLY\
+			   OVERRIDDEN by the human\
+			   judge!" }
+		    EDIT
+		}
+
+		BLANK
+		{ LINE "The human judge has assigned\
+			the NEW FINAL score:" }
+		BLANK
+		{ LINE "    -PROPOSED-SCORE" }
+		BLANK
+		{ LINE "to this submission" }
+	    }
+	}
+    } elseif { $manual && $proposed } {
+
+	FINAL
+	EDIT
+	{ LINE "For -PROBLEM- your PREVIOUS FINAL\
+		manual score of:" }
+	BLANK
+	{ LINE "    -MANUAL-SCORE-" }
+	BLANK
+
+	if { $proposed_score == $manual_score } {
+	    { LINE "has been verified and confirmed by\
+	    	    the human judge!" }
+	} else {
+	    { LINE "has been UNEXPECTEDLY OVERRIDDEN by\
+	    	    the human judge!" }
+	    BLANK
+	    { LINE "The human judge has assigned the\
+	    	    NEW FINAL score:" }
+	    BLANK
+	    { LINE "    -PROPOSED-SCORE" }
+	    BLANK
+	    {LINE "to this submission" }
+	    EDIT
+	}
+    }
+
+    BLANK
+    { LINE "(see below for submission time)." }
+    BLANK
+    { BAR "this message replies to:" }
+    RECEIVED-HEADER
+}
+
+# A $response_instructions_file value is a TCL list
+# value consisting of commands and if-statements.  The
+# if-statements have the format of TCL if statements:
+#
+#    	if <expression> <block>
+#	elseif <expression> <block>
+#	else <block>
+#
+# where any number of elseif parts may be given and the
+# else part is optional.  Note that the words `if',
+# `elseif', and `else' are TCL list elements as are the
+# expressions and blocks.  Each block is recursively
+# interpreted as a TCL list consisting of commands and
+# if-statements.  The if-statement expressions can be
+# evaluated without evaluating any commands, so the
+# sequence of commands that is to be executed can be
+# determined and the if-statements can be removed in a
+# first pass.
+#
+# If-statement expressions can be any TCL expr expres-
+# sion.  The only variables that can be used are:
+#
+#   $scoring_mode
+#	The value of the scoring_mode global variable.
+#
+#   $auto_score
+#	The value of the $auto_score_file file.
+#
+#   $manual_score
+#	The value of the $manual_score_file file, or
+#	`None' if this file does not exist.  Always set
+#	to `None' in the autojudge program.
+#
+#   $proposed_score
+#	The score which the person running the manual-
+#	reply program has chosen as the final score.
+#	Set to `None' if the manualreply program is not
+#	being used to set the score.  Alays set to
+#	`None' in the autojudge program.
+#
+#   $manual
+#	Equals \$manual_score != \"None\".
+#
+#   $proposed
+#	Equals \$proposed_score != \"None\".
+#
+# Note these variables cannot be set by reponse instruc-
+# tion commands.
+#
+#   The $response_instructions_file file commands are\
+#   	execu-
+#   ted to construct the reply.  The possible commands
+#   are:
+#
+#	FINAL
+#	    The final reply is sent.  A $reply_file file
+#	    is created in the current directory.  If
+#	    this command is executed, it must be the
+#	    first command executed.
+#
+#	NON-FINAL 
+#	    A non-final reply is sent.  No $reply_file
+#	    file is created in the current directory
+#	    (though the reply is recorded in the
+#	    $reply_history_file file).  If this command
+#	    is executed, it must be the first command
+#	    executed.
+#
+#	NO-REPLY
+#	    No reply is sent.  All other commands are
+#	    ignored.  If this command is executed, it
+#	    must be the first command executed.
+#
+#	EXIT
+#	    This is the last command executed, and any
+#	    commands following it are ignored.
+#
+#	{ LINES \"string\" ... }
+#	{ LINE \"string\" }
+#	    The strings, each followed by a line feed, are
+#	    included in the reply.  Note that the strings
+#	    may themselves include line feeds.
+#
+#	    Several special strings are substituted for
+#	    within each string as follows:
+#
+#	        -PROBLEM-	 The problem name.
+#		-AUTO-SCORE-	 \$auto_score value.
+#		-MANUAL-SCORE-	 \$manual_score value.
+#		-PROPOSED-SCORE- \$proposed_score value.
+#
+#	BLANK
+#	    Include a blank line in the reply.
+#
+#	BAR
+#	    Inserts a 72 character ----- bar line.
+#
+#	{BAR \"string\"}
+#	    Inserts ----- bar line that ends with a
+#	    space followed by the string.  The total
+#	    number of characters in the line is 72.
+#
+#	{INPUT filename}
+#	    Include a copy of the file in the reply.
+#
+#	RECEIVED-HEADER
+#	    Include a copy of the Date, To, From, Reply-
+#	    To, and Subject header lines of the
+#	    $received_file file in the reply.
+#
+#	RECEIVED-BODY
+#	    Include the body of the $received_file file
+#	    in the reply.
+#
+#	FIRST
+#	    Include lines describing the type and posi-
+#	    tion of the first score determining error in
+#	    the reply.
+#
+#	SUMMARY
+#	    Include lines summarizing of all score de-
+#	    termining errors in the reply.
 
 # Submission Parameters
 # ---------- ----------
