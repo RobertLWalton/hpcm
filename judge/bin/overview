@@ -4,7 +4,7 @@
 #
 # File:		overview
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Feb  1 02:51:51 EST 2002
+# Date:		Fri Feb  1 08:41:48 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/02/01 08:52:23 $
+#   $Date: 2002/02/01 15:01:40 $
 #   $RCSfile: overview,v $
-#   $Revision: 1.56 $
+#   $Revision: 1.57 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -1529,12 +1529,22 @@ HPCM has the following security goals:
     may be suppressed by setting the `use-authentica-
     tion' global variable to false.
 
+    The reason that only the X-HPCM-Data and X-HPCM-
+    Reply-To fields need to be signed is that if there
+    are two submissions with the same values of these
+    fields, they will have the same submission directory
+    name, and the second submission will therefore be
+    ignored as the directory will already exist.  Thus
+    a contestant cannot take a submission, change just
+    the subject and body but not the X-HPCM fields, and
+    resubmit.
+
 2. Prevent code written by contestants from corrupting
    the files of the judge.
 
    This is done by running the programs submitted by
    the contestant in a `sandbox'.
-
+
    The sandbox consists of changing the user and group
    (both real and effective) of the process executing
    the contestant program to `sandbox'.  This must be
@@ -1549,7 +1559,7 @@ HPCM has the following security goals:
    gram is the same binary, but in the hpcm/contestant/
    bin directory, and without any set-user-id capabili-
    ty.
-
+
    However, current JAVA implementations seem to have
    the following security flaw: they convert relative
    .class file names to absolute names before using
@@ -1565,10 +1575,10 @@ HPCM has the following security goals:
    judging account.
 
 3. Prevent code written by the contestants from
-   exporting judges information, including solutions
+   exporting judg's information, including solutions
    of the judge and other contestants, into the
    outside world.  This goal is met with some defects.
-
+
    It is not practical to make it impossible for
    contestant programs to write information to the
    outside world.  A contestant can merely open a
@@ -1587,7 +1597,7 @@ HPCM has the following security goals:
    other contestant, and guessing submission times, one
    contestant's program can read another contestant's
    .class files.
-
+
    To reduce the chances of this working, the `auto-
    judge' program removes a+x permissions from a
    submission directory immediately after running a
@@ -1607,7 +1617,7 @@ HPCM has the following security goals:
    gram would be risking discovery for a very long time,
    up until the judge's decide to discard information
    collected during the contest.
-
+
 4. Prevent one contestant from executing another contes-
    tants solution.  This goal is achieved with a defect.
 
@@ -1624,7 +1634,7 @@ HPCM has the following security goals:
    also a+x, there would be no way for outsiders to get
    into the submission directory.  But because of the
    JAVA bug, the mail directory is also a+x.
-
+
    Thus one contestant's submission can guess the time
    of another contestant's submission and execute that
    other contestant's submission.  A relatively simple C
@@ -1632,7 +1642,7 @@ HPCM has the following security goals:
    the submission of another contestant.
 
    To reduce the probability of success, the `autojudge'
-   program removes a+x directories from any submission
+   program removes a+x permissions from any submission
    directory right after running a solution in that dir-
    ectory.  This means that the time window in which
    another contestant might be able to run this solution
@@ -1747,7 +1757,7 @@ Raw data is stored in the following directories:
 	This directory is created automatically when it
 	is first needed.
 
-
+
 Contest Raw Data: Submissions
 ------- --- ----- -----------
 
@@ -1757,7 +1767,7 @@ problem solution, which is called a `solution submis-
 sion'; email requesting files to be returned to a
 contestant, which is called a `get request', and email
 asking a question, which is called a `query'.
-
+
 Each email sent to the judge is placed in a separate
 subdirectory of the mail_directory.  This subdirectory
 has a name of the form:
@@ -1786,7 +1796,7 @@ submission directories are as follows:
 
 	The judge can also send non-final email replies,
 	which are NOT stored in this file.
-
+
     $reply_file+
         Every reply is first composed in this file, and
 	then emailed.  When emailed, this file is either
@@ -1794,7 +1804,7 @@ submission directories are as follows:
 	final reply).  Thus strictly speaking this file
 	is not a `raw data' file, as it is not part of
 	the audit trail.
-
+
     $no_reply_file
 	This file is created by the judge to indicate
 	the judge is done with this submission direc-
@@ -1824,13 +1834,13 @@ submission directories are as follows:
 	pen, but if they do, this file containing all
 	the available information about the error is
 	created.
-
+
 	dddd is the date in seconds, rrrr is a random
 	number to make the file unique even if several
 	system errors happen in the same second, ppppp
 	is the name of the program that suffered the
 	system error.
-
+
 	If an error occurs in an HPCM program that is
 	NOT processing a submission directory, this
 	error log file is put in the log_directory (see
@@ -1860,29 +1870,36 @@ submission directories are as follows:
 The section `Contest Raw Data: Data Flow' below outlines
 the creation of raw data files in a submission direc-
 tory.
-
+
 Contest Raw Data: Solution Submissions
 ------- --- ----- -------- -----------
 
 A solution submission is an email with a subject of the
-form `submit pppp.eee', where pppp.eee is a file name.
-The email body contains the named file.  The email is
-interpreted as submission of a single file that is a
-solution of the problem named `pppp' written in a pro-
-gramming language determined by `eee'.
-
-The file being submitted may appear in the body of the
+form `submit pppp.eee', where pppp is the problem name
+and .eee is the extension that identifies the program-
+ming language used in the submission.  Standardly
+pppp.eee is also the name of the single submitted file
+that is contained in the body of the submission email.
+But is it possible (given a $files_file file in the\
+	solu-
+tion directory), for .eee to be omitted, and/or for
+multiple files of various names to be submitted in the
+body of the submission email.
+
+A file being submitted may appear in the body of the
 email in either of two ways.  It may be `formatted' or
 `unformatted'.  If formatted, it appears as:
 
-	HPCM_BEGIN pppp.eee
+	HPCM_BEGIN filename
 	.. first line of file
 	.. next line of file
 	.. rest of file, each line preceded by ..
-	HPCM_END pppp.eee
+	HPCM_END filename
 
 If unformatted the file is just the body of the email
-message, verbatim.
+message, verbatim.  If there are multiple unformatted
+files in a message, each file must contain `File:
+filename' in its first block of non-blank lines.
 
 Only formatted submissions are usually allowed in in-
 formal and formal contests.  Such submissions are gener-
@@ -1890,49 +1907,68 @@ ated by the hpcm_submit program, which performs the
 required formatting.  Unformatted submissions are
 typically allowed in email contests so that contestants
 who do not have hpcm_submit can submit easily.
-
+
 A solution submission directory is processed by the
-`autojudge' program.  This produces the following files
-in order (see `Library Data: Problems' above for more
-details about many of these files):
+`autojudge' program.  If a single file named pppp.eee
+is being submitted, this program produces the following
+files in order (see `Library Data: Problems' above for
+more details about many of these files):
 
    pppp.eee		The submitted file.
-   pppp.in		Judge's input.
-   $make_file		Problem Makefile.
-   pppp.test		Judge's output.
-   $scoring_instructions_file\
+ * pppp.in		Judge's input.
+ * $make_file		Problem Makefile.
+ * pppp.test		Judge's output.
+ * $scoring_filter_file\
+   			Optional output filter program.
+ * pppp.ftest		Optional filtered .test file.
+ * $scoring_instructions_file\
 			Optional scoring instructions.
+ * $response_instructions_file\
+			Optional response instructions.
    pppp			Binary program.
    pppp.cerr		Compiler error output.
    pppp.out		Solution standard output.
+   pppp.fout		Optional filtered .out file.
    pppp.err		Solution error output.
    core			Possible core dump.
    pppp.score		Output of scorediff.
    $auto_score_file		Autojudge score.
    $reply_file		Possible final reply.
    $reply_history_file	History of all replies.
-
 
+The files marked with a * are linked into the submission
+directory from the problem solution directory (the pro-
+blem's subdirectory in the solutions subdirectory of the
+judging directory).  The above is the standard behavior
+when no `$files_file' file is linked from the problem
+solution directory.  But if a `$files_file' file is
+linked, files different from pppp.eee can be submitted,
+and additional files can be linked from the problem
+solution directory, as indicated in the section `Library
+Data: Complex Problems' above.
+
 If an error happens during the process of producing
 these files, the process stops.  An error in extracting
 pppp.eee, or an error in the name of the file (pppp is
 not a problem in the solutions directory or eee is not
 a legal extension), generates a $reply_file file that is
-the final say in the error.  Other errors generate
-$auto_score_file files.  If the scoring mode is `auto',
-this is the final say and a $reply_file file is also
-generated.  If the scoring mode is `auto+manual', the
-contents of $auto_score_file are sent to the contestant
-but not as a final score, and NO $reply_file file is
-generated.  If the scoring mode is `manual', no email
-is sent to the contestant, and no $reply_file file is
-generated.
+the final say in the error.  Other errors generate an
+$auto_score_file file.
 
-If there is NO error, the $auto_score_file is `Complete-
-ly Correct', this score is final, it is sent to the con-
-testant, and a $reply_file file is created.  All this
-is done if there is NO error regardless of the scoring
-mode.
+The nature of any automatically generated reply to the
+submitter given that an $auto_score_file file has been
+generated is controlled by the\
+	$response_instructions_file
+file if that is present, or by a default value for that
+file otherwise.  For the default, if the scoring mode is
+`auto', a final reply containing the score is sent.  The
+same is done if the score is `Completely Correct', re-
+gardless of the scoring mode.  Otherwise if the scoring
+mode is `auto+manual', a reply containing the score is
+sent to the contestant, but not as a final score, and NO
+$reply_file file is generated; and if the scoring mode
+is `manual', no reply is sent to the contestant, and no
+$reply_file file is generated.
 
 The behavior of `autojudge' is similar to the behavior
 of `make' in a contestant's problem directory (see help
@@ -1940,9 +1976,9 @@ files) or a problem library problem directory (see
 above).  The main differences are that the `autojudge'
 extracts the `pppp.eee' file, captures compiler errors
 in `pppp.cerr', captures run errors in `pppp.err', and
-scores `pppp.out' generating $auto_score_file and\
-	possibly
-reply email.
+scores `pppp.out' (or `pppp.fout') generating\
+	$auto_score_file
+and possibly reply email.
 
 The section `Contest Raw Data: Data Flow' below gives
 some more details for solution submission directories.
@@ -1990,7 +2026,7 @@ sent to hpcm_extract, while replies containing error
 messages can avoid hpcm_extract.
 
 Processing of get requests is completely automatic;
-there is never any need for manual reply (baring a sys-
+there is never any need for manual reply (barring a sys-
 tem error, of course).
 
 
