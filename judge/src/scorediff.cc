@@ -11,9 +11,9 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: hc3 $
-//   $Date: 2000/10/29 17:18:40 $
+//   $Date: 2000/10/30 04:37:08 $
 //   $RCSfile: scorediff.cc,v $
-//   $Revision: 1.13 $
+//   $Revision: 1.14 $
 
 // This is version 2, a major revision of the first
 // scorediff program.  This version is more explicitly
@@ -233,11 +233,13 @@ char documentation [] =
 struct file
 {
     ifstream stream;	// Input stream.
+    char * filename;	// File name.
 
     // Token description.
     //
-    char token [ 10001 ]; // The current token.
+    char token [ MAX_SIZE + 1 ]; // The current token.
     int line;		// Line number of current token.
+    			// First line is 1.
     int column;		// Column within the line of
     			// the last character of the
 			// current token.  The first
@@ -252,13 +254,13 @@ struct file
     			// number of digits after the
     			// decimal point, or -1 if there
 			// is no decimal point.
-    bool hasexponent;	// For a number token, true iff
+    bool has_exponent;	// For a number token, true iff
     			// the token has an exponent.
 
     // Whitespace description.
     //
-    char token [ 10001 ]; // Whitespace preceding the
-    			// current token.
+    char token [ MAX_SIZE + 1 ]; // Whitespace preced-
+    			// ing the current token.
     int newlines;	// Number of new line characters
     			// in this whitespace.
 
@@ -269,8 +271,8 @@ struct file
     //		+    -    +.   -.
     //		e    e+   e-   E    E+   E-
     //
-    // Also set to the character following a number,
-    // whatever that may be.
+    // Also set to the single character following a
+    // number, whatever that may be.
     //
     // Must be such that the backup is empty when
     // scantoken decides to put something in the
@@ -291,6 +293,8 @@ struct file
 int open ( file & f, char * filename )
 {
     f.stream.open ( filename );
+    f.filename = new char [strlen ( filename ) + 1 ];
+    strcpy ( f.filename, filename );
 
     if ( ! f.stream ) {
         cout << "ERROR: not readable: "
@@ -298,15 +302,16 @@ int open ( file & f, char * filename )
     	exit ( 1 );
     }
 
-    f.backup[0]= '\n';
-    f.backup[1] = '\0';
-    f.back = f.backup;
+    f.backup[0]		= '\n';
+    f.backup[1]		= '\0';
+    f.back		= f.backup;
 
-    f.token[0] = 0;
-    f.column = -1;
-    f.is_number = false;
-    f.is_eof = false;
-    f.whitespace[0] = 0;
+    f.token[0]		= 0;
+    f.column		= -1;
+    f.line		= 0;
+    f.is_number		= false;
+    f.is_eof		= false;
+    f.whitespace[0]	= 0;
 }
 
 // Get next character from file, respecting any backup.
@@ -321,6 +326,25 @@ inline int get_character ( file & f )
 
     return c;
 }
+
+void whitespace_too_long ( file & f ) {
+    cerr << "Whitespace too long at line "
+         << f.line
+	 << " of "
+         << f.filename
+	 << endl;
+    exit 1
+}
+
+void token_too_long ( file & f ) {
+    cerr << "Token too long at line "
+         << f.line
+	 << " of "
+         << f.filename
+	 << endl;
+    exit 1
+}
+
 
 // Scan next token.
 //
@@ -342,9 +366,10 @@ void scantoken ( file & f )
         if ( c == '\n' ) {
 	    column = -1;
 	    ++ f.linebreaks;
+	    ++ f.line;
 	}
 	else if ( c == '\t' )
-	    colunm += 7 - ( column % 8 );
+	    column += 7 - ( column % 8 );
 	else if ( c == '\f' ) -- column;
 	else if ( c == '\v' ) -- column;
 
@@ -361,6 +386,7 @@ void scantoken ( file & f )
     	f.is_eof = true;
 	f.column = column;
 	f.is_number = false;
+	f.token[0] = 0;
 	return;
     }
 
@@ -372,8 +398,7 @@ void scantoken ( file & f )
 
     case '+':
     case '-':
-	if ( tp < endtp ) * tp ++ = c;
-	else token_too_long ();
+	* tp ++ = c;
 
 	c = get_character ( f );
 	++ column;
@@ -382,8 +407,7 @@ void scantoken ( file & f )
 	case '.':
 	    ++ decimals;
 
-	    if ( tp < endtp ) * tp ++ = c;
-	    else token_too_long ();
+	    * tp ++ = c;
 
 	    c = get_character ( f );
 	    ++ column;
@@ -397,8 +421,7 @@ void scantoken ( file & f )
 	break;
 
     case '.':
-	if ( tp < endtp ) * tp ++ = c;
-	else token_too_long ();
+	* tp ++ = c;
 	c = get_character ( f );
 	++ column;
 	++ decimals;
@@ -407,8 +430,7 @@ void scantoken ( file & f )
 
     default:
         if ( ! isdigit ( c ) ) {
-	    if ( tp < endtp ) * tp ++ = c;
-	    else token_too_long ();
+	    * tp ++ = c;
 	    * tp ++ = '\0';
 	    f.is_number = false;
 	    f.column = column;
@@ -419,8 +441,7 @@ void scantoken ( file & f )
 
     // Come here when c is the first digit of a number.
 
-    if ( tp < endtp ) * tp ++ = c;
-    else token_too_long ();
+    * tp ++ = c;
     c = get_character ( f );
     ++ column;
 
@@ -447,16 +468,20 @@ void scantoken ( file & f )
     f.has_exponent = false;
 
     if ( c == 'e' || c == 'E' ) {
+
         char * expp = tp;
 	int expcolumn = column;
+
 	if ( tp < endtp ) * tp ++ = c;
 	else token_too_long ();
+
 	c = get_character ( f );
 	++ column;
 
 	if ( c == '+' || c == '-' ) {
 	    if ( tp < endtp ) * tp ++ = c;
 	    else token_too_long ();
+
 	    c = get_character ( f );
 	    ++ column;
 	}
@@ -527,7 +552,7 @@ backout:
 // previous value of `number_absdiff' or `number_
 // reldiff' respectively.  Also sets the decimal
 // and exponent flags if the two number `decimals'
-// or `hasexponent' members are unequal.
+// or `has_exponent' members are unequal.
 //
 // If there is no computable difference, sets the
 // `nonblank' flag argument instead.  This happens
@@ -590,7 +615,7 @@ inline void diffnumber
     if ( file1.decimals != file2.decimals )
     	decimal = true;
 
-    if ( file1.hasexponent != file2.hasexponent )
+    if ( file1.has_exponent != file2.has_exponent )
     	exponent = true;
 }
 
@@ -770,8 +795,8 @@ int main ( int argc, char ** argv )
 		    c1 = scannumber ( file1, '.', c1 );
 		    c2 = scannumber ( file2, '.', c2 );
 
-		    assert ( file1.isnumber );
-		    assert ( file2.isnumber );
+		    assert ( file1.is_number );
+		    assert ( file2.is_number );
 
 		    if ( file1.column != file2.column )
 		    	column = true;
@@ -804,8 +829,8 @@ int main ( int argc, char ** argv )
 		c1 = scannumber ( file1, c1 );
 		c2 = scannumber ( file2, c2 );
 
-		assert ( file1.isnumber );
-		assert ( file2.isnumber );
+		assert ( file1.is_number );
+		assert ( file2.is_number );
 
 		if ( file1.column != file2.column )
 		    column = true;
@@ -854,14 +879,14 @@ int main ( int argc, char ** argv )
 	}
 	else if ( ( c1 = scannumber ( file1, c1 ),
 		    c2 = scannumber ( file2, c2 ),
-		    file1.isnumber || file2.isnumber ) )
+		    file1.is_number || file2.is_number ) )
 	{
 	    follows_whitespace1 = false;
 	    follows_whitespace2 = false;
 
-	    if ( ( ! file1.isnumber )
+	    if ( ( ! file1.is_number )
 	         ||
-		 ( ! file2.isnumber ) )
+		 ( ! file2.is_number ) )
 	    {
 		nonblank = true;
 		break;
