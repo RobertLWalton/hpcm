@@ -4,7 +4,7 @@
 #
 # File:		makeoverview
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Dec 10 10:21:19 EST 2000
+# Date:		Mon Dec 11 06:45:09 EST 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/12/10 19:39:24 $
+#   $Date: 2000/12/11 12:37:57 $
 #   $RCSfile: overview,v $
-#   $Revision: 1.8 $
+#   $Revision: 1.9 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -407,19 +407,170 @@ but there is NO read permission on the directories for
 outside users.
 
 The judging directory contains the hpcm_judging.rc file
-that define parameters for the contest.  Whenever an
-HPCM program in hpcm/judge/bin is executed, it searches
-the current directory and its ancestors for a file named
-hpcm_judging.rc.  If it finds one such file, it uses
-that do define the contest parameters, and uses the di-
-rectory that file is in as the contest judging direc-
-tory.  It is an error if the program finds two such
-files, which means that one judging directory cannot be
+that defines parameters for the contest.  Whenever most
+HPCM programs in hpcm/judge/bin are executed, they
+search the current directory and its ancestors for a
+file named hpcm_judging.rc.  If a program finds one such
+file, it uses that to define the contest parameters, and
+uses the directory that file is in as the contest jud-
+ging directory.  It is an error if the program finds two
+such files.  Therefore, one judging directory cannot be
 the ancestor of another judging directory.  However,
 one judging account can have many judging directories,
-and therefore many contests.
+each the root of a disjoint subtree of directories.
+Therefore one judging account can judge many contests.
+
+The judging directory contains several components that
+define the contest, in addition to many components that
+belong to the raw data of the contest, and are listed
+elsewhere below.  THe components that define the con-
+test are:
+
+    hpcm_judging.rc
+        The contest parameters file.
+
+    solutions
+        The solution directory for the contest.  Each
+	component of the solution directory is a symbol-
+	lic link to a problem directory.  Usually these
+	problem directories are in the problem library.
+
+	The solutions directory and its contents are
+	made automatically by `makejudgingdir'.
+
+    info
+        The info directory for the contest.  This only
+	exists for email and informal contests, and it
+	is the root of a subdirectory tree that holds
+	the files that can be obtained by contestants
+	using hpcm_get.  Thus the contents of the info
+	directory proper are just three subdirectories:
+	help, demos, and problems.  These in turn con-
+	tain files and subdirectories.  The files
+	proper are typically represented by symbolic
+	links: see `makejudgingdir' documentation.
+
+	The info directory and its contents are made
+	automatically by `makejudgingdir'.
+
+    contest
+        The contest directory of the contest.  Actually,
+	this is not a subdirectory proper of the judging
+	directory, but in the judging directory
+	`contest' is symbolically linked to the contest
+	directory.  This is because the contest direct-
+	ory must be accessible by the contestants, who
+	must not be able to access other components of
+	the judging directory.
+
+	Only informal and formal contests have a contest
+	directory.  Email contests do not.
+
+	The contents of the contest directory are made
+	automatically by `makejudgingdir', with the
+	exception of a few symbolic links to other
+	directories.
+
+    help
+        The help directory of the contest.  This is not
+	used during the contest proper, but is merely a
+	staging error for the `this_contest' help file.
+	It contains the following files that are created
+	by `makejudgingdir':
+
+	    this_contest
+	        The help file particular to the contest.
+
+	    index
+	        An index file to be input to `make-
+		judgingdir' that lists all the index
+		files output by that program and also
+		lists the `this_contest' help file.
+
+	The help directory and its contents are made
+	automatically by `makejudgingdir', but then
+	the person defining the contest must edit the
+	`this_contest' file and rerun `makejudgingdir'.
+
+    scoreboard.notes
+        A file appended to the scoreboard by the `send-
+	scoreboard' program that emails the scoreboard
+	to other locations for display on the web.
+	This is used only for email contests normally.
+
+In addition to these files which are used by HPCM
+programs, there are typically a few other files that
+are not used by HPCM directory.  These are:
+
+    Makefile
+        The instructions to the UNIX make program so
+	that running `make' in the judging directory
+	will run `makejudgingdir' to build all the
+	contest definition files.  The parameters to
+	`makejudgingdir' are complex, and need to be
+	kept in a file.
+
+    crontab
+        The UNIX crontab file for the judging account,
+	or the part thereof that concerns this contest.
+	This is used by contests that use `sendscore-
+	board' to periodically email the scoreboard to
+	another place (where it is typically displayed
+	on the web).  Usually only email contests do
+	this.
+	
 
 
+Contest Raw Data: The Judging Directory
+------- --- ----- --- ------- ---------
+
+The contents of the judging directory are:
+
+    mail
+        The mail directory for the contest.  This con-
+	tains submissions and requests, each in its own
+	subdirectory, with the names of these subdirec-
+	tories including the time of the submission or
+	request and email address of the submitter or
+	requester.
+
+    log
+        The log directory of the contest.  Errors that
+	are not particular to one submission or request
+	are placed here, each in their own file.
+
+    flag
+        The flag directory of the contest.  Flag files
+	in this directory are created when certain
+	events happen that may demand attention from
+	background activities, such as scoreboard com-
+	putation, and manual review of submissions.
+
+	Specifically, the following are files in the
+	flag directory:
+
+	    $score_flag_file
+	        Created when any $auto_score_file or
+		$manual_score_file file is written;  the
+		`makescoreboard' program sees this flag
+		and recomputes the scoreboard.
+
+	    $needs_reply_flag_file
+	        Created when any action that will re-
+		quire a person to use the `manualreply'
+		program happens.  The `tracker' program
+		sees this flag and then looks throughout
+		the contest directories and files to see
+		where `manualreply' should be run.
+
+    Scoreboard_PID
+        A file containing the process ID of any `make-
+	scoreboard' program that is running in back-
+	ground.  This file is maintained by the `make-
+	scoreboard' program with its `-start' and
+	`-stop' options.
+
+	    
 
 
 
