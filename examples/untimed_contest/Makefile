@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Feb 17 05:27:15 EST 2003
+# Date:		Mon Feb 24 07:23:49 EST 2003
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2003/02/17 10:25:57 $
+#   $Date: 2003/02/24 12:21:46 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.53 $
+#   $Revision: 1.54 $
 
 # To make an email contest named `foo':
 #
@@ -153,6 +153,7 @@ HPCM=${HOME}/hpcm
 #
 SENDMAIL = /usr/sbin/sendmail -oi -t
 S=${HPCM}/examples/test_submissions
+R=${HPCM}/examples/test_submissions/auto_replies
 
 # Kill all implicit rules
 #
