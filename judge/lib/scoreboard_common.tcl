@@ -5,7 +5,7 @@
 #
 # File:		scoreboard_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Feb  8 03:35:05 EST 2002
+# Date:		Fri Feb  8 11:46:12 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/02/08 08:48:48 $
+#   $Date: 2002/02/08 16:44:42 $
 #   $RCSfile: scoreboard_common.tcl,v $
-#   $Revision: 1.30 $
+#   $Revision: 1.31 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -27,6 +27,7 @@
 #	Including this Code
 #	Scorefinder Data Base
 #	Scoreboard Data Base
+#	Scoreboard Functions
 
 # Including this Code
 # --------- ---- ----
@@ -50,17 +51,20 @@
 # details.
 
 # Scorefinder Data Base
-# ---------- ---- ----
+# ----------- ---- ----
 
 # The value scoreboard_array(submitter/problem) is a
 # list of items that represent the times and score codes
 # read from the input.  Here the codes are
 #
-#	dg	problem description gotten
-#	ac	automatically scored correct
-#	ai	automatically scored incorrect
-#	mc	manually scored correct
-#	mi	manually scored incorrect
+#	g	problem description gotten
+#	ACF	where
+#	  A = a    if automatic score
+#	    = m    if manual score
+#	  C = c    if correct score
+#	    = i    if incorrect score
+#	  F = f    if final score
+#	    = n    if non-final score
 #
 # Each item has the form
 #
@@ -71,7 +75,7 @@
 #
 # After the scoreboard_array is `pruned' (see below),
 # an item is added at the beginning of each array ele-
-# ment with code `st' that contains the start time of
+# ment with code `s' that contains the start time of
 # the problem.
 #
 # An array element may not exist, in which case it
@@ -85,7 +89,7 @@
 # After pruning, the items in each array element are
 # sorted and data meets the following requirements:
 #
-#    1. Items latter than a correct (ac or mc) item in
+#    1. Items latter than a correct (.c.) item in
 #	the same array element have been deleted.
 #
 #    2. Items later than the problem stop time have been
@@ -93,6 +97,11 @@
 #
 #    3. Array elements pertaining to a submitter not
 #       meeting the cut time have been deleted.
+#
+#    4. If the scoreboard_start_time is "" or "team",
+#       any array element whose earliest item (before
+#	adding the start time "s" item) does not have
+#	code "g" is deleted.
 
 # Function to read scorefinder output and compute
 # scoreboard_arary.  Scorefinder output is read from
@@ -261,10 +270,15 @@ proc prune_scoreboard_array { } {
 	if { $start_mode == "team" } {
 	    regexp {^([^/]*)/([^/]*)$} $sap forget \
 	           submitter problem
-	    set t [lindex [lindex $items 0] 0]
-	    if {    ! [info exists \
-	                    start_array($submitter)] \
-	         || $t < $start_array($submitter) } {
+	    set item [lindex $items 0]
+	    set t [lindex $item 0]
+	    set c [lindex $item 1]
+	    if { $c != "g" } {
+	        unset scoreboard_array($sap)
+	    } elseif { \
+	           ! [info exists \
+	                   start_array($submitter)] \
+	        || $t < $start_array($submitter) } {
 	        set start_array($submitter) $t
 	    }
 	}
@@ -283,7 +297,14 @@ proc prune_scoreboard_array { } {
 	#
 	switch $start_mode {
 	    "" {
-		set start [lindex [lindex $items 0] 0]
+		set item [lindex $items 0]
+		set t [lindex $item 0]
+		set c [lindex $item 1]
+		if { $c != "d" } {
+		    unset scoreboard_array($sap)
+		    continue
+		}
+		set start $t
 	    }
 	    team {
 		set start $start_array($submitter)
@@ -341,7 +362,7 @@ proc prune_scoreboard_array { } {
 	# rect cut time.
 	#
         set new_items \
-	    [list [list [format {%015d} $start] st]]
+	    [list [list [format {%015d} $start] s]]
 	foreach $item $items {
 	    set time [lindex $item 0]
 	    set code [lindex $item 1]
@@ -382,6 +403,210 @@ proc prune_scoreboard_array { } {
         }
     }
 }
+
+# Scoreboard Data Base
+# ---------- ---- ----
+
+# The scoreboard_list global variable is a list of
+# items, each of the form:
+#
+#	{ ccc.ttttttttt.sss problems_correct
+#	  time_score modifier
+#	  submitter problem_score ... }
+#
+# Each item begins with a code to sort on, followed by
+# the number of correct problems, followed by the score
+# in seconds.  The modifier is `f' if all inputs used to
+# compute the previous numbers were final, and `n' if
+# some were not final.  The submitter is the submitter:
+# each submitter has one item in this list.  The pro-
+# blem_scores are the scores as they will be printed in
+# the output.  The problem names corresponding in order
+# to these scores are in the scoreboard_problem_list
+# global variable.  This list is sorted.
+#
+# In the sort code ccc is the number of correct problems
+# in three digits with leading zeros, ttttttttt is
+# 10**9 - 1 - the time_score, in 9 digits with leading
+# zeros, and sss is the total number of submissions,
+# in 3 digits with leading zeros (those with more sub-
+# missions are deemed more interesting, other things
+# being equal, which may be true among submitters
+# with no correct submissions).  The sort code is
+# 000.999999999.000 iff the submitter has made no sub-
+# missions and all the problem_scores are `......'.
+#
+set scoreboard_list ""
+set scoreboard_problem_list ""
+
+# Function to compute scoreboard_list and scoreboard_
+# problem_list from scoreboard_array.
+#
+proc compute_scoreboard_list {} {
+
+    global scoreboard_array scoreboard_list \
+           scoreboard_problem_list
+
+    # Compute lists of submitters and problems.
+    #
+    set problems ""
+    set submitters ""
+    foreach sap [array names $scoreboard_array] {
+	regexp {^([^/]*)/([^/]*)$} $sap forget \
+	       submitter problem
+	if { ! [lcontain $submitters $submitter] } {
+	    lappend submitters $submitter
+	}
+	if { ! [lcontain $problems $problem] } {
+	    lappend problems $problem
+	}
+    }
+    set problems [lsort problems]
+    set scoreboard_problem_list $problems
+
+
+    # Compute scoreboard_list.
+    #
+    set scoreboard_list ""
+    set max_time_score 999999999
+    foreach submitter $submitters {
+
+	# Compute total time score, number of problems cor-
+	# rect, modifier (f or n), total number of submis-
+	# sions.
+	#
+	set time_score 0
+	set problems_correct 0
+	set modifier f
+	set submissions 0
+
+	# Compute the problem scores for the score list
+	# item in $problem_scores.
+	#
+	set problem_scores ""
+	foreach problem $sorted_problems {
+
+	    set sap $submitter/$problem
+	    if { [info exists \
+		       scoreboard_array($sap)] } {
+		set problem_items \
+		       $scoreboard_array($sap)
+	    } else {
+		set problem_items ""
+	    }
+
+	    # Compute problem time, number of incorrect
+	    # submissions, and problem modifier.  Pro-
+	    # blem_time is "" if no correct submission.
+	    #
+	    set problem_start_time	""
+	    set problem_time		""
+	    set problem_incorrect	0
+	    set problem_modifier	f
+
+	    foreach item [lsort $problem_list] {
+
+		set score [lindex $item 1]
+		set item_time [lindex $item 0]
+		if { ! [regexp {^0*([1-9][0-9]*)$} \
+			       $item_time forget \
+			       item_time] } {
+		    set item_time 0
+		}
+
+		if { $score == "s" } {
+
+		    # Time is when problem was gotten.
+
+		    set problem_start_time $item_time
+
+		} elseif { [regexp {.c.} $score] } {
+
+		    # Score is correct.
+
+		    set problem_time \
+			[expr \
+			  { $item_time \
+			    - \
+			    $problem_start_time }]
+		    incr submissions
+
+		} elseif { [regexp {.i.} $score] } {
+
+		    # Score is incorrect.
+
+		    incr problem_incorrect
+		    incr submissions
+		}
+
+		if { [regexp {..i} $score] } {
+		    set problem_modifier n
+		}
+	    }
+
+	    # Add to time_score and count of problems
+	    # correct, and compute problem_score.
+	    #
+	    if { $problem_time != "" } {
+
+		set c [expr { $problem_incorrect + 1 }]
+		set problem_score \
+		    "[format_time $problem_time]$c"
+		set problem_increment \
+		    [expr { ( $problem_time \
+			      + $scoreboard_penalty \
+				* $problem_incorrect ) \
+					}]
+		if { [expr { $max_time_score \
+				- $problem_increment \
+					}] \
+		     < $time_score } {
+		    set time_score $max_time_score
+		} else {
+		    incr time_score $problem_increment
+		}
+		incr problems_correct
+
+	    } elseif { $problem_incorrect != 0 } {
+		set problem_score \
+		    "..../$problem_incorrect"
+	    } else {
+		set problem_score "......"
+	    }
+
+	    if { $problem_modifier == "n" } {
+		set problem_score "*$problem_score"
+		set modifier n
+	    }
+
+	    # Append problem score to problem_scores
+	    # list.
+	    #
+	    lappend problem_scores $problem_score
+	}
+
+	# Add score list item to score list.
+	#
+	set ccc [format {%03d} $problems_correct]
+	set ttttttttt \
+	    [format {%09d} \
+	            [expr 999999999 - $time_score]]
+	set sss [format {%03d} $submissions]
+
+	lappend score_list \
+		[concat [list $ccc.$ttttttttt.$sss \
+		              $problems_correct \
+			      $time_score \
+		              $modifier $submitter ] \
+		        $problem_scores]
+    }
+
+    set scoreboard_list [lsort $scoreboard_list]
+}
+
+
+# Scoreboard Functions
+# ---------- ---------
 
 # Return a time in 6 characters or less, the last
 # character indicating unit.  The format is either
@@ -408,334 +633,3 @@ proc format_scoreboard_time { time } {
     	return "[format {%d:%02d} $MM $SS]s"
     }
 }
-
-# Create the score list.  Each item in this list
-# has the form:
-#
-#	{ ccc.ttttttttt.sss problems_correct
-#	  time_score modifier
-#	  submitter problem_score ... }
-#
-# This begins with a code to sort on, followed by the
-# number of correct problems, followed by the score in
-# seconds.  The modifier is `f' if all inputs used to
-# compute the previous numbers were final, and `n' if
-# some were not final.  The submitter is the submitter:
-# each submitter has one item in this list.  The
-# problem_scores are the scores as they will be printed
-# in the output.
-#
-# In the sort code ccc is the number of correct problems
-# in three digits with leading zeros, ttttttttt is
-# 10**9 - 1 - the time_score, in 9 digits with leading
-# zeros, and sss is the total number of submissions,
-# in 3 digits with leading zeros (those with more sub-
-# missions are deemed more interesting, other things
-# being equal, which may be true among submitters
-# with no correct submissions).  The sort code is
-# 000.999999999.000 iff the submitter has made no sub-
-# missions and all the problem_scores are `......'.
-#
-set score_list ""
-set max_time_score 999999999
-
-foreach submitter $submitters {
-
-    # Compute total time score, number of problems cor-
-    # rect, modifier (f or n), total number of submis-
-    # sions.
-    #
-    set time_score 0
-    set problems_correct 0
-    set modifier f
-    set submissions 0
-
-    # Compute the problem scores for the score list
-    # item in $problem_scores.
-    #
-    set problem_scores ""
-    foreach problem $sorted_problems {
-
-	# Compute problem start time, which may equal
-	# "" or "team".
-	#
-	set problem_start_time $start_time
-	if { $problem_start_time == "team"
-	     && [info exists \
-	              start_time_array($submitter)] } {
-	    set problem_start_time \
-		$start_time_array($submitter)
-	}
-
-	# Compute problem time, number of incorrect
-	# submissions, and problem modifier.
-	#
-	set problem_time	""
-	set problem_incorrect	0
-	set problem_modifier	f
-
-	if { [info exists \
-		   ${submitter}_array($problem)] } {
-	    set problem_list \
-	        [set ${submitter}_array($problem)]
-	} else {
-	    set problem_list ""
-	}
-
-	foreach item [lsort $problem_list] {
-	    set score [lindex $item 1]
-	    set item_time [lindex $item 0]
-	    if { ! [regexp {^0*([1-9][0-9]*)$} \
-			   $item_time forget \
-			   item_time] } {
-		set item_time 0
-	    }
-
-	    if { [lcontain $ccodes $score] } {
-
-		# Score is correct.
-
-		if { $problem_start_time != "" \
-		     && $problem_start_time != "team" \
-		     		} {
-		    set problem_time \
-			[expr \
-			  { $item_time \
-			    - \
-			    $problem_start_time }]
-		} else {
-		    set problem_time undef
-		}
-		incr submissions
-		break
-
-	    } elseif { [lcontain $icodes $score] } {
-
-		# Score is incorrect.
-
-		if { $score == "ai" \
-		     && $scoring_mode != "auto" } {
-		    set problem_modifier n
-		}
-		incr problem_incorrect
-		incr submissions
-
-	    } elseif { $score == "dg" } {
-
-		# Time is when problem was gotten.
-
-	    	if { $problem_start_time == "" } {
-		    set problem_start_time \
-		    	$item_time
-		}
-	    }
-	}
-
-	# Add to time_score and count of problems cor-
-	# rect, and compute problem_score.
-	#
-	if { $problem_time == "undef" } {
-
-	    set c [expr { $problem_incorrect + 1 }]
-	    set problem_score "undef/$c"
-	    set time_score $max_time_score
-	    incr problems_correct
-
-	} elseif { $problem_time != "" } {
-
-	    set c [expr { $problem_incorrect + 1 }]
-	    set problem_score \
-	        "[format_time $problem_time]$c"
-	    set problem_increment \
-		[expr { ( $problem_time \
-		          + $scoreboard_penalty \
-			    * $problem_incorrect ) }]
-	    if { [expr { $max_time_score \
-		            - $problem_increment }] \
-		 < $time_score } {
-		set time_score $max_time_score
-	    } else {
-		incr time_score $problem_increment
-	    }
-	    incr problems_correct
-
-	} elseif { $problem_incorrect != 0 } {
-	    set problem_score "..../$problem_incorrect"
-	} else {
-	    set problem_score "......"
-	}
-
-	if { $problem_modifier == "n" } {
-	    set problem_score "*$problem_score"
-	    set modifier n
-	}
-
-	# Append problem score to problem_scores list.
-	#
-	lappend problem_scores $problem_score
-    }
-
-    # Add score list item to score list.
-    #
-    set ccc [format {%03d} $problems_correct]
-    set ttttttttt \
-        [format {%09d} [expr 999999999 - $time_score]]
-    set sss [format {%03d} $submissions]
-
-    lappend score_list \
-	    "$ccc.$ttttttttt.$sss\
-	     $problems_correct $time_score\
-	     $modifier $submitter $problem_scores"
-}
-
-# Start output of scoreboard.
-#
-set spaces32 "                                "
-set spaces64 $spaces32$spaces32
-set spaces128 $spaces64$spaces64
-set spaces256 $spaces128$spaces128
-
-# Compute number of problems per line (ppl).
-# Also max_column of output (first column is 0).
-# But if there are no problems, exit program without
-# producing any output.
-#
-# scoreboard_width is the number of columns in the
-# scoreboard.
-
-set ppl [expr { ( $scoreboard_width - 20 ) / 10 } ]
-set np [llength $sorted_problems]
-if { $np == 0 } { exit 0 }
-if { $np < $ppl } { set ppl $np }
-set max_column [expr { 20 + 10 * $ppl - 1 }]
-
-# Compute line marker characters.  First and last
-# line markers are SPACE, and in last line all
-# spaces will be replaced by underbars (_).
-#
-# [string index $markers N] marks line N.  The first
-# character of `markers' is unused.
-#
-# scoreboard_markers are the marker characters used,
-# in order.
-#
-set nl [expr { ( $np + $ppl - 1 ) / $ppl }]
-if { $nl <= 2 } {
-    set markers "X  "
-} else {
-    set markers $scoreboard_markers
-    set markers "X [string range $markers 0 \
-                           [expr { $nl - 3 }]] "
-}
-
-# Output labeling lines.
-#
-proc label_problems {} {
-
-    global sorted_problems spaces256 ppl markers \
-           max_column
-
-    set count  0
-    set marker $markers
-    foreach problem $sorted_problems {
-	    if { $count % $ppl == 0 } {
-	        if { $count > 0 } {
-		    puts $line
-		}
-		set marker [string range $marker 1 end]
-		set m [string index $marker 0]
-
-		if { $count == 0 } {
-		    set line "Contestant Name"
-		} elseif { $count == $ppl } {
-		    set line "Correct/Tot_Time"
-		} else {
-		    set line ""
-		}
-		set line [format {%-20.20s} $line]
-	    }
-	    incr count
-	    set line "$line$m[format {%9.9s} $problem]"
-    }
-    if { $count <= $ppl } {
-	puts $line
-        set line "Correct/Tot_Time"
-    }
-    puts [translit " " "_" \
-		   [string range $line$spaces256 \
-			   0 $max_column]]
-}
-
-label_problems
-
-# Loop though sorted score_list and output each
-# submitter.
-#
-set current_problems_correct ""
-set number_of_problems [llength $sorted_problems]
-foreach item [lsort -decreasing $score_list] {
-
-    # If team has no submissions, stop the presses.
-    #
-    if { [lindex $item 0] == "000.999999999.000" } {
-	break
-    }
-
-    set problems_correct [lindex $item 1]
-    set time_score [lindex $item 2]
-    set modifier [lindex $item 3]
-    set submitter [lindex $item 4]
-    set problem_scores [lreplace $item 0 4]
-
-    set total_score $time_score
-
-    if { $total_score == $max_time_score } {
-	set total_score undef
-    }
-
-    set total_score "$problems_correct/$total_score"
-
-    if { $modifier == "n" } {
-    	set total_score "*${total_score}"
-    }
-
-    # Print the line(s) for the team.
-    #
-    set count 0
-    set marker $markers
-    foreach score $problem_scores {
-	if { $count % $ppl == 0 } {
-	    if { $count > 0 } {
-		puts $line
-	    }
-	    set marker [string range $marker 1 end]
-	    set m [string index $marker 0]
-
-	    if { $count == 0 } {
-		set line $submitter
-	    } elseif { $count == $ppl } {
-		set line "$total_score"
-	    } else {
-		set line ""
-	    }
-	    set line [format {%-20.20s} $line]
-	}
-	incr count
-
-	set line "$line$m[format {%9.9s} $score]"
-    }
-    if { $count <= $ppl } {
-	puts $line
-        set line $total_score
-    }
-    puts [translit " " "_" \
-		   [string range $line$spaces256 \
-			   0 $max_column]]
-}
-
-exit 0
-
-# Include common error catching code:
-#
-} caught_output
-caught_error
