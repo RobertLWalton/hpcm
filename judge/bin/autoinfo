@@ -1,0 +1,182 @@
+#!/bin/sh -f
+#
+# Extract submitted program from received.mail file.
+#
+# File:		autoinfo
+# Author:	Bob Walton (walton@deas.harvard.edu)
+# Date:		Wed Aug 16 06:41:25 EDT 2000
+#
+# The authors have placed this program in the public
+# domain; they make no warranty and accept no liability
+# for this program.
+#
+# RCS Info (may not be true date or author):
+#
+#   $Author: acm-cont $
+#   $Date: 2000/08/20 20:50:54 $
+#   $RCSfile: autoinfo,v $
+#   $Revision: 1.1 $
+#
+# The next line starts tcl \
+exec tcl "$0" "$@"
+
+# Use tcl rather than tclsh so that `signal' is defined.
+
+# Include common code and parameters:
+#
+set lib_directory "[file dirname $argv0]/../lib"
+source "$lib_directory/judging_common.tcl"
+catch {
+
+set document "
+cd submission_directory; autoinfo
+
+    Reads the `$received_file' file in the current
+    directory.  Thus file must have a subject line of
+    the form:
+
+    	Subject: get filename
+
+    The body of the mail file must be empty.
+
+    The named file is looked up in the $info_directory.
+    If readable, it is mailed back to the submitter
+    of the `get file' request.
+
+    If this program succeeds in sending the requested
+    file without error, this program prints the name
+    of the requested file to the standard output as a
+    single line, and prints nothing else.
+
+    Otherwise, if the requesting email has even the
+    slightest formatting error, this program constructs a
+    `$reply_file' file giving reasons why the requesting
+    email is invalid.  This `$reply_file' is sent to the
+    email address that is part of the current directory
+    name.  In this case this program exits with error
+    code 0, indicating no error, but does not write
+    anything to the standard output, indicating no file
+    was sent.
+    
+    This program exits with non-zero error code only if
+    something is very wrong, e.g. the  `$received_file'
+    is not readable or the `$reply_file' is not
+    writable."
+
+if { $argc != 0 } {
+    puts $document
+    exit 1
+}
+
+set received_ch [open $received_file r]
+
+# Create a reply file complaining of a request error,
+# and email this reply to the requestor.  Include the
+# request email in the reply.
+#
+proc info_error_reply { args } {
+    eval reply -all \
+         {"ERROR while reading requesting email:"} \
+	 $args \
+	 {""} \
+	 {"THIS REQUEST (see below) IGNORED"} \
+	 {"YOU MUST RESUBMIT"}
+
+    exit 0
+}
+
+# Look for subject line.
+#
+while { "yes" } {
+    set line [gets $received_ch]
+    if { [eof $received_ch] } {
+        info_error_reply \
+	    "Could not find `Subject' line."
+    } elseif { [regexp "^Subject: get (\[^\ \t\]*)\$" \
+               $line all filename] } {
+	break
+    } elseif { [regexp {^Subject:} $line] } {
+    	info_error_reply \
+	    "Badly formatted subject line"
+    } elseif { [regexp $From_line_regexp $line] } {
+    	# From line is ok
+    } elseif { [regexp ":" $line] } {
+    	# other header lines are ok
+    } else {
+    	info_error_reply \
+	    "Bad line in header before `Subject'\
+	         line:" \
+	    $line
+    }
+}
+
+# Check that `filename' is legal.
+#
+if { [regexp {^\.|\/\.} $filename] } {
+    info_error_reply \
+        "Illegal filename (has `/.' or beginning `.'):\
+	 $filename"
+}
+
+# Check that named file is readable.
+#
+if { ! [file readable "$info_directory/$filename"] } {
+    info_error_reply \
+        "Named file is not readable in info database:\
+	 $filename"
+}
+
+# Look for first non-header line.
+#
+while { "yes" } {
+    set line [gets $received_ch]
+    if { [eof $received_ch] } {
+        break
+    } elseif { ! [regexp ":" $line] } {
+    	break
+    }
+}
+
+# Check that body is blank.
+#
+while { "yes" } {
+    if { [eof $received_ch] } {
+    	break
+    } elseif { [regexp "^\[\ \t\]*\$" $line] } {
+    	# blank lines are ok
+    } else {
+    	info_error_reply \
+	    "Non-blank body line:" \
+	    $line
+    }
+    set line [gets $received_ch]
+}
+close $receive_ch
+
+set file_ch [open "$info_directory/$filename" r]
+
+compose_reply "The file $filename appears below the\
+               following request message header."
+
+set reply_ch [open "${reply_file}+" a]
+
+puts $reply_ch ""
+puts $reply_ch "---------------------- $filename:"
+
+while { "yes" } {
+    set line [gets $file_ch]
+    if { [eof $file_ch] } break
+    puts $reply_ch $line
+}
+close $reply_ch
+close $file_ch
+
+send_reply
+
+puts Sent Info: $filename
+exit 0
+
+# Include common error catching code:
+#
+} caught_output
+caught_error
