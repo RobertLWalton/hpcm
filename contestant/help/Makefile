@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Oct  2 04:31:51 EDT 2003
+# Date:		Wed Oct 15 10:46:44 EDT 2003
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,15 +11,20 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2003/10/02 08:32:45 $
+#   $Date: 2003/10/15 14:58:26 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.15 $
+#   $Revision: 1.16 $
 
 # To make web help pages, execute `make web' and copy
 # the `web' directory to you web server, where it will
 # become a directory containing an `index.html' file.
 # The web.tar file contains the contents of the `web'
 # directory, to make copying easy.
+#
+# Execute `make EXTRAS="filename ..." help+.ps' to
+# make a .ps file with 'filename ...' followed by the
+# help index and the help files.  Typically filename
+# is a version of this_contest.
 
 all:	emailsh
 
@@ -111,6 +116,11 @@ help.ps:	help_index ${HELP_FILES}
 	rm -rf help.ps
 	../../judge/bin/fprint > help.ps -o \
 	    help_index ${HELP_FILES}
+
+help+.ps:	help_index ${HELP_FILES}
+	rm -rf help+.ps
+	../../judge/bin/fprint > help+.ps -o \
+	    ${EXTRAS} help_index ${HELP_FILES}
 
 demos.ps:	demos_index ${DEMOS_FILES}
 	rm -rf demos.ps
