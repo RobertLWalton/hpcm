@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Sep  3 16:36:15 EDT 2000
+# Date:		Tue Sep  5 14:43:33 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: acm-cont $
-#   $Date: 2000/09/04 20:39:28 $
+#   $Date: 2000/09/05 19:31:04 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.22 $
+#   $Revision: 1.23 $
 #
 
 # An optionally modified copy of this file must be
@@ -104,14 +104,25 @@ proc compute_signature { value } {
     return [lindex [exec md5sum << $value] 0]
 }
 
-# Function to create a file and suffer an error if the
-# file already exists.  If created, the file will be
-# zero length, readable, and writable.
+# Function to create a file.  Returns `yes' if the file
+# was created, and `no' if it already exists.  Suffers
+# an error if there is some other problem with creating
+# the file.  If created, the file will be zero length
+# and both readable and writable by the current user.
 #
 proc create_file { filename } {
-    exec lockfile -0 -r 0 $filename
-    chmod u+w $filename
-    ftruncate $filename 0
+    if { [catch { exec lockfile -0 -r 0 $filename } \
+                out] } {
+	if { [regexp {Sorry, giving up on} out] } {
+	    return no
+	} else {
+	    error $out $errorCode $errorInfo
+	}
+    } else {
+	chmod u+w $filename
+	ftruncate $filename 0
+	return yes
+    }
 }
 
 # Function to create a directory and suffer an error if

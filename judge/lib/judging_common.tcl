@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Aug 30 16:11:05 EDT 2000
+# Date:		Tue Sep  5 14:43:47 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: acm-cont $
-#   $Date: 2000/08/30 20:19:36 $
+#   $Date: 2000/09/05 19:31:05 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.26 $
+#   $Revision: 1.27 $
 #
 
 # Include this code in TCL program via:
@@ -57,6 +57,35 @@ set judging_parameters_file "hpcm_judging.rc"
 # redefined by program.
 #
 proc exit_cleanup {} {}
+
+# Lock current directory by creating $dispatch_pid_file.
+# Return `yes' is success, and `no' if failure.  Also,
+# on success makes the current process a process group
+# leader.
+#
+proc dispatch_lock {} {
+    global dispatch_pid_file
+
+    if { [create_file $dispatch_pid_file] } {
+	set_current_pgid
+	write_file $dispatch_pid_file [current_pid]
+	return yes
+    } else {
+    	return no
+    }
+}
+
+# Unlock the current directory by deleting any
+# existing $dispatch_pid_file.
+#
+proc dispatch_unlock {} {
+    global dispatch_pid_file
+    file delete -force $dispatch_pid_file
+}
+
+# Store current process ID in $dispatch_pid_file and
+# make the current process a process group leader.
+#
 
 # Convert a [clock seconds] value into a date in
 # the form yyyy-mm-dd-hh:mm:ss that is useable as
@@ -206,7 +235,7 @@ proc log_error { error_output } {
         set log_file \
 	  "$log_dir/${d}-${u}-<<${p}>>-unchecked-error"
 
-	if { ! [catch { create_file $log_file } ] } {
+	if { [create_file $log_file] } {
 	    break
 	}
 

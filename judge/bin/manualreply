@@ -1,0 +1,192 @@
+#!/bin/sh -f
+#
+# Manually examine the contents of a directory and
+# possibly reply.
+#
+# File:		manualreply
+# Author:	Bob Walton (walton@deas.harvard.edu)
+# Date:		Mon Sep  4 14:38:15 EDT 2000
+#
+# The authors have placed this program in the public
+# domain; they make no warranty and accept no liability
+# for this program.
+#
+# RCS Info (may not be true date or author):
+#
+#   $Author: acm-cont $
+#   $Date: 2000/09/05 19:31:01 $
+#   $RCSfile: manualreply,v $
+#   $Revision: 1.1 $
+#
+# The next line starts tcl \
+exec tcl "$0" "$@"
+
+# Use tcl rather than tclsh so that `signal' is defined.
+
+# Include common code and parameters:
+#
+set lib_directory "[file dirname $argv0]/../lib"
+source "$lib_directory/judging_common.tcl"
+catch {
+
+set document "
+cd submission_directory; manualreply
+
+    Given a submission directory as the current dir-
+    ectory, permit a person to examine the contents of
+    the directory and construct an email reply or a
+    $no_reply_file file indicating there is to be no
+    reply."
+
+if { $argc != 0 } {
+    puts $document
+    exit 1
+}
+
+set received_ch [open $received_file r]
+read_header $received_ch
+close $received_ch
+
+if { [llength $message_subject] != 2 \
+     || [lindex $message_subject 0] != "submit" } {
+    puts "Bad subject for manual scoring:"
+    puts "    $message_subject"
+    puts "Exiting manualscore"
+    exit 0
+}
+
+set submitted_file [lindex $message_subject 1]
+set submitted_program \
+    [file rootname $submitted_file]
+set submitted_extension \
+    [file extension $submitted_file]
+set output_file 	"${submitted_program}.out"
+set error_file  	"${submitted_program}.err"
+set compiler_error_file	"${submitted_program}.cerr"
+set test_file   	"${submitted_program}.test"
+set diff_file   	"${submitted_program}.diff"
+set bdiff_file   	"${submitted_program}.bdiff"
+
+if { ! [file readable $auto_score_file] } {
+    puts "No $auto_score_file; Executing autojudge"
+    exec autojudge
+    if { ! [file readable $auto_score_file] } {
+        puts "autojudge failed to make\
+	      $auto_score_file file"
+	puts "Exiting manualscore"
+	exit 0
+    }
+}
+
+if { [file exists $reply_file] } {
+    puts "$reply_file exists"
+    puts "Exiting manualscore"
+    exit 0
+}
+
+
+set scoring_instructions \
+    [find_scoring_instructions]
+
+# List of files in the current directory.  The N'th
+# item on the list is itself a list of subitems
+# with the format:
+#
+#	mtime filename post_comment pre_coment
+#
+# The total list is sorted by mtime.  The mtime has
+# 0 digits prepended so all mtimes are the same length
+# and ascii comparison will be the same as numeric
+# comparison.
+#
+# The pre_comment is to be printed before the file
+# name, and the post_command after the filename.
+# However, error files usually do that have the post
+# comment printed because their names are too long.
+#
+set file_list ""
+
+proc refresh_file_list { { indicate_new_files yes } } {
+
+    global file_list
+
+    set new_file_list ""
+    foreach file [glob -nocomplain *] {
+    	set item [format {%040} [file mtime $file]]
+	lappend item $file
+	set size [file size $file]
+	if { $size == 0 } {
+	    lappend item "0 bytes (empty)"
+	} else {
+	    lappend item "$size bytes"
+	}
+	set pre_comment "      "
+	if { $indicate_new_files } {
+	    foreach item2 $file_list {
+		if { [lindex $item2 1] == $file } {
+		    set pre_comment "New!  "
+		    break
+		}
+	    }
+	}
+	lappend item $pre_comment
+
+	lappend new_file_list $item
+    }
+
+    set file_list $new_file_list
+}
+
+proc put_file_list {} {
+    global file_list
+    set n 0
+    foreach item $file_list {
+	incr n
+        set name [format {%-40s} [lindex $item 1]]
+	set pre_comment [lindex $item 3]
+	set post_comment [lindex $item 2]
+	if { [string length [lindex $item 1]] > 39 } {
+	    set post_comment ""
+	}
+	puts [format {%3d. %s%s%s} $n $pre_comment \
+	             $name $post_comment]
+    }
+}
+
+refresh_file_list no
+
+while { "yes" } {
+
+    puts "Directory [file tail [pwd]]"
+    puts ""
+    put_file_list
+    puts -nonewline "
+							/
+v# = view #           e# = edit #        c# = checkoff #
+ir = initiate reply   er = edit reply    sr = send reply
+sh = call shell       u# = uncheckoff #
+
+> "
+    set answer [gets stdin]
+    if { [eof stdin] } {
+    	exit 0
+    }
+
+    if { [llength $answer] == 0 } {
+    	continue;
+    } elseif { [llength $answer] > 1 } {
+        puts "Unknown: $answer"
+	continue;
+    }
+
+    switch [lindex $answer 0] \
+	x	{ set action "exit" } \
+	default	{ set action "unknown" }
+}
+
+
+# Include common error catching code:
+#
+} caught_output
+caught_error
+
