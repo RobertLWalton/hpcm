@@ -5,7 +5,7 @@
 #
 # File:		makejudgingdir
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Sep  9 16:26:49 EDT 2000
+# Date:		Sun Sep 10 09:56:57 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: acm-cont $
-#   $Date: 2000/09/09 20:19:25 $
+#   $Date: 2000/09/10 14:45:47 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.2 $
+#   $Revision: 1.3 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -26,7 +26,7 @@ exec tcl "$0" "$@"
 # Include common code and parameters:
 #
 set lib_directory "[file dirname $argv0]/../lib"
-source "$lib_directory/judging_common.tcl"
+source $lib_directory/judging_common.tcl
 set log_errors no
 catch {
 
@@ -35,52 +35,59 @@ cd judging_directory; makejudgingdir index_spec ...
 
     Given a judging directory as the current directory,
     complete with hpcm_judging.rc file, this program
-    makes subdirectories and links and an info index
-    file according to instructions in the index spec-
-    ifications.  Each index specification has the
-    form:
+    makes subdirectories, links, and an info index file
+    according to instructions in the index specifica-
+    tions.  Each index specification has the form:
 
     	index_file\[: index_directory\], name1s=name1t,
 		name2s=name2t, ...
 
     The index files are read and concatenated to form
-    the `index' file in the info directory, with unused
-    entries omitted.  In the course of doing this,
-    symbolic links are made in the info and solutions
-    directories.
+    the `index' file in the new info directory, with
+    unused entries omitted.  In the course of doing
+    this, symbolic links are made in the info and
+    solutions directories.
 
     More specifically, this program builds the info+ and
     solutions+ directories, and if all goes well,
     renames info to info-, info+ to info, solutions to
     solutions-, solutions+ to info, and then makes the
-    mail directory if it does not exist and ensures that
-    it has the a+x chmod mode.
+    mail directory if it does not exist, and ensures
+    that it has the a+x chmod mode (so the java inter0
+    preter will work right: see below).
 
-    The input index files are normally editted versions
-    of files appearing in index directories that have
-    problems and other information in their subdirec-
-    tories.  The index directory is the normal home of
-    the index file before it is edited.  If not given
-    in an index specification, it defaults to the dir-
-    ectory that contains the index file given in the
-    index specification.
+    Each input index file is associated with an index
+    directory.  An unedited version of the index file is
+    normally found in its index directory.  Often an
+    edited copy of this index file is placed in the
+    current judging directory, with the editing consist-
+    ing of changes to the item entry options described
+    below which control what is included in the new info
+    and solutions directories.
 
-    The index file consists of entries.  Each entry
-    begins with line that does not begin with white-
-    space, and extends to the next line beginning with
-    `***'.  Entries whose beginning line does not start
-    with `***' are called header entries; and entries
-    whose beginning line starts with `***' are called
-    item entries.
+    If no index directory is given in an index specifi-
+    cation, it defaults to the directory that contains
+    the index file given in the index specification.
+
+    The index file consists of two types of entries:
+    header entries and item entries.  Item entries begin
+    with a line that starts with `***', followed by
+    whitespace, and optionally preceded by whitespace.
+    Header entries begin with a line that starts with
+    neither whitespace nor `***'.  A header entry stops
+    at the next line that begins an item entry, or at
+    the end of file.  An item entry stops at the next
+    line that begins a header or item entry, or at the
+    end of file.
 
     The first line of an item entry has the form:
 
     	*** name options
 
-    The name is the name of a file or directory relative
-    to the index directory (the directory normally
-    containing the unedited index file).  The possible
-    options are:
+    The item name is the name of a file or directory
+    relative to the index directory (the directory
+    normally containing the unedited index file).  The
+    possible options are:
 
     	info		Include item in info directory.
 	solution	Include item in solutions
@@ -93,13 +100,14 @@ cd judging_directory; makejudgingdir index_spec ...
 			will be included in the info
 			directory.
 
-    If an item is included in the info directory, the
-    item entry is included in the index of that
+    If an item is included in the new info directory,
+    the item entry is included in the index of that
     directory.  Otherwise the item entry is omitted.
     All header entries are included, no matter what.
-    However, if no items are included in the info
-    directory, the new index file for that directory
-    is deleted, so that new info directory is empty.
+    However, if no items at all from any of the input
+    index files are included in the new info directory,
+    the new index file for that directory is deleted,
+    so that new info directory is completely empty.
 
     When an item is included in the solutions directory,
     the item must itself be a directory, and the name of
@@ -111,8 +119,8 @@ cd judging_directory; makejudgingdir index_spec ...
     When an item is included in the info directory its
     name in the info directory is a modified version of
     the item name.  Specifically, a substitution of the
-    form nameXs=nameXt may be applied to the name.  If
-    the item name begins with the nameXs string, that
+    form nameXs=nameXt may be applied to the item name.
+    If the item name begins with the nameXs string, that
     string will be replaced by nameXt.  If there are
     several possible substitutions, the longest nameXs
     will be selected, and if there are several longest,
@@ -126,11 +134,27 @@ cd judging_directory; makejudgingdir index_spec ...
 
     then
 
-    	public/frap		is changed to	frap
-	public/shelf/frap	is changed to	old/frap
+    	public/frap	     becomes	frap
+	public/shelf/frap    becomes	old/frap
 
     with the changed names being used as the names of
     the items within the info directory.
+
+    When an item entry is copied to the index file of
+    the new info directory, the `***' in the first line
+    of the entry is replace by 3 space characters, and
+    the item name is replaced by the modified version
+    of the item name, and the options are removed.
+
+    In order to execute the java interpreter, the mail
+    directory and all its ancestor directories must have
+    the a+x permissions.  Otherwise you will get a
+    class undefined error message from the java inter-
+    preter for the main program class.  This program
+    sets the a+x permissions for the mail directory,
+    but is it the responsibility of the user of this
+    program to separately set these permissions for
+    the ancestors of the mail directory.
     
     Unlike most HPCM judging programs, errors made by
     this program are not written to log files."
@@ -201,7 +225,7 @@ proc make_substitutions { name } {
 # as parameters:
 #
 #   index_file		the input index file name
-#   index_directory	absolute index directory name
+#   index_directory	index directory name
 #   newindex_ch		output index file channel
 #   substitutions	specification substitutions
 #			(see above)
@@ -247,7 +271,12 @@ proc process_index_specification {} {
 		set target [make_substitutions $name]
 
 		set mode copy
-		puts $newindex_ch "    $target"
+		set ws "\[\ \t\]*"
+		regexp \
+		    "^($ws\\*\\*\\*$ws)(\[^\ \t\]|$)" \
+		    $line forget indent forget2
+		regsub {\*\*\*} $indent {   } indent
+		puts $newindex_ch "$indent$target"
 		set did_copy yes
 
 		set target ${info_directory}+/$target
@@ -270,6 +299,7 @@ proc process_index_specification {} {
 		              $target/$problem
 		}
 	    } else {
+		# Come here if no `info' option.
 	    	set mode nocopy
 	    }
 
@@ -278,7 +308,7 @@ proc process_index_specification {} {
 	    if { [lsearch $options solution] >= 0 } {
 	        set source $index_directory/$name
 		if { ! [file isdirectory $source] } {
-		    error $source is not a directory
+		    error "$source is not a directory"
 		}
 	        set sdp ${solutions_directory}+
 	        link_file $source \
