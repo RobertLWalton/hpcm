@@ -16,9 +16,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/05/18 08:07:03 $
+#   $Date: 2002/05/18 08:48:52 $
 #   $RCSfile: tracker,v $
-#   $Revision: 1.25 $
+#   $Revision: 1.26 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -634,34 +634,46 @@ proc compute_score_array {} {
     }
 }
 
-# Function to return score summary by problem.
+# Function to return score summary by problem or
+# submitter.  The `kind' argument equals `problem' or
+# `submitter'.
 #
-proc problem_score_summary { } {
+proc score_summary { kind } {
 
     compute_score_array
 
-    global score_array problem_array
+    global score_array ${kind}_array
 
     set r "
-			    	Number of Submissions
-Problem		  cc    io    fe    ic    se    te   \
-                  pc    oe"
+			    	  Number of Submissions
+[format {%-14.14s} [string toupper $kind 0 0]]"
+    set r "$r    cc    io    fe    ic    se    te   \
+                 pc    oe   total\n"
 
-    foreach problem \
-            [lsort [array names problem_array]] {
+    foreach xx {cc io fe ic se te pc oe} {
+	set ${xx}_total 0
+    }
+
+    foreach item \
+            [lsort [array names ${kind}_array]] {
 
 	foreach xx {cc io fe ic se te pc oe} {
 	    set $xx 0
 	}
 
-	foreach sp [array names score_array \
-		          "*/$problem"] {
-	    foreach item $score_array($sp) {
-	        incr [lindex $item 1]
+	switch $kind {
+	    problem { set sp_match "*/$item" }
+	    submitter { set sp_match "$item/*" }
+	}
+
+	foreach sp [array names score_array $sp_match] {
+	    foreach score_item $score_array($sp) {
+	        incr [lindex $score_item 1]
 	    }
 	}
 
-	set line [format {%-14.14s} $problem]
+	set item_total 0
+	set line [format {%-14.14s} $item]
 	foreach xx {cc io fe ic se te pc oe} {
 	    if { [set $xx] == 0 } {
 	        set line "$line    --"
@@ -669,51 +681,28 @@ Problem		  cc    io    fe    ic    se    te   \
 	        set line \
 		    "$line[format {%6d} [set $xx]]"
 	    }
+	    incr ${xx}_total [set $xx]
+	    incr item_total [set $xx]
 	}
+	set line "$line  [format {%6d} $item_total]"
 	set r "$r\n$line"
     }
-    
-    return $r
-}
 
-# Function to return score summary by submitter.
-#
-proc submitter_score_summary { } {
-
-    compute_score_array
-
-    global score_array submitter_array
-
-    set r "
-			    	Number of Submissions
-Submitter	  cc    io    fe    ic    se    te   \
-                  pc    oe"
-
-    foreach submitter \
-            [lsort [array names submitter_array]] {
-
-	foreach xx {cc io fe ic se te pc oe} {
-	    set $xx 0
-	}
-
-	foreach sp [array names score_array \
-		          "$submitter/*"] {
-	    foreach item $score_array($sp) {
-	        incr [lindex $item 1]
-	    }
-	}
-
-	set line [format {%-14.14s} $submitter]
-	foreach xx {cc io fe ic se te pc oe} {
-	    if { [set $xx] == 0 } {
-	        set line "$line    --"
-	    } else {
-	        set line \
-		    "$line[format {%6d} [set $xx]]"
-	    }
-	}
-	set r "$r\n$line"
+    set line [format {%-14.14s} ""]
+    foreach xx {cc io fe ic se te pc oe} {
+	set line "$line -----"
     }
+    set line "$line   -----"
+    set r "$r\n$line"
+
+    set total 0
+    set line [format {%-14.14s} "Total"]
+    foreach xx {cc io fe ic se te pc oe} {
+	set line "$line[format {%6d} [set ${xx}_total]]"
+	incr total [set ${xx}_total]
+    }
+    set line "$line  [format {%6d} $total]"
+    set r "$r\n$line"
     
     return $r
 }
@@ -1254,10 +1243,10 @@ while { "yes" } {
 			average, max times"
 	}
 	{^pr} {
-	    puts [problem_score_summary]
+	    puts [score_summary problem]
 	}
 	{^su} {
-	    puts [submitter_score_summary]
+	    puts [score_summary submitter]
 	}
 	{^ls$} -
 	{^di} -
