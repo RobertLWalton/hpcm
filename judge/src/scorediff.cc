@@ -2,7 +2,7 @@
 //
 // File:	scorediff.cc
 // Authors:	Bob Walton (walton@deas.harvard.edu)
-// Date:	Wed Jul  4 07:47:18 EDT 2001
+// Date:	Mon Jul 16 15:06:39 EDT 2001
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: hc3 $
-//   $Date: 2001/07/16 10:18:45 $
+//   $Date: 2001/07/16 18:57:11 $
 //   $RCSfile: scorediff.cc,v $
-//   $Revision: 1.28 $
+//   $Revision: 1.29 $
 
 // This is version 2, a major revision of the first
 // scorediff program.  This version is more explicitly
@@ -298,20 +298,13 @@ char documentation [] =
 "    lines.  Each line-proof is output on a line by\n"
 "    itself.\n"
 "\n"
-"    Note that the token column numbers reported for\n"
-"    differences in the whitespace preceeding tokens\n"
-"    are for tokens before any word splitting (see\n"
-"    above), except for the spacebreak and linebreak\n"
-"    differences whose column numbers may be for\n"
-"    tokens after word splitting.\n"
-"\f\n"
 "    There is a limit for each difference type to the\n"
 "    number of proofs of that type that will be out-\n"
 "    put.  Specifically, if the limit is N for diff-\n"
 "    erence type T, then after N line-proofs each\n"
 "    containing at least one proof of type T have\n"
 "    output, no more proofs of type T will be output.\n"
-"\n"
+"\f\n"
 "    These limits default to 10 for each difference\n"
 "    type, but the limits can be changed by program\n"
 "    options.  An option consisting of a `-' followed\n"
@@ -338,7 +331,7 @@ char documentation [] =
 "    erences may be omitted if they are zero and the\n"
 "    program argument following them does NOT begin\n"
 "    with a digit or decimal point.\n"
-"\f\n"
+"\n"
 "    If N is the limit on the number of line-proofs\n"
 "    containing a `nonblank' proof, then after the\n"
 "    last of these N line-proofs is finished, this\n"
@@ -1311,8 +1304,101 @@ int main ( int argc, char ** argv )
 	    done = true;
 	    break;
 	}
+        
+	// Compare tokens.
+	//
+	last_match_was_nonblank_diff = false;
+        switch ( output.type ) {
 
-        // Compare whitespace preceding tokens.
+	case EOF_TOKEN:
+            assert ( test.type == EOF_TOKEN );
+	    done = true;
+	    break;
+
+	case NUMBER_TOKEN:
+	case WORD_TOKEN:
+
+	    assert ( test.type != EOF_TOKEN );
+
+	    if ( output.type != test.type )
+	    {
+		found_difference ( NONBLANK );
+		last_match_was_nonblank_diff = true;
+		break;
+	    }
+
+	    // If both tokens are words and one is
+	    // longer than the other, split the longer
+	    // word.  If we get a non-blank diff, we
+	    // will undo the split.
+
+	    if ( output.type == WORD_TOKEN )
+	    {
+		if ( output.length < test.length )
+		    split_word ( test, output.length );
+		else if ( test.length < output.length )
+		    split_word ( output, test.length );
+	    }
+
+	    char * tp1 = output.token;
+	    char * tp2 = test.token;
+	    bool token_case = false;
+
+	    while ( * tp1 )
+	    {
+		if ( * tp1 != * tp2 )
+		{
+		    if ( toupper ( * tp1 )
+			 == toupper ( * tp2 ) )
+			token_case = true;
+		    else
+			break;
+		}
+		++ tp1, ++ tp2;
+	    }
+
+	    if ( * tp1 == * tp2 )
+	    {
+	        assert ( * tp1 == 0 );
+
+		if ( token_case )
+		    found_difference
+		        ( output.type != NUMBER_TOKEN ?
+			  CASE : FLOAT );
+	    }
+
+	    else if ( output.type == NUMBER_TOKEN )
+	    {
+	        assert ( test.type == NUMBER_TOKEN );
+		last_match_was_nonblank_diff
+		    = diffnumber ();
+	    }
+
+	    else
+	    {
+	    	undo_split ( test );
+	    	undo_split ( output );
+
+		found_difference ( NONBLANK );
+		last_match_was_nonblank_diff = true;
+	    }
+
+	    break;
+     	}
+
+	// Compare column numbers.  This is done after
+	// token comparison so that the results of word
+	// splitting can be taken into account in token
+	// ending column numbers.
+
+	if (    output.type != EOF_TOKEN
+	     && output.column != test.column )
+	    found_difference ( COLUMN );
+
+        // Compare whitespace preceding tokens.  This is
+	// done after token comparison so that the
+	// results of word splitting can be taken into
+	// account in token ending column numbers.
 
 	if ( output.newlines != test.newlines )
 	    found_difference ( LINEBREAK );
@@ -1374,96 +1460,6 @@ int main ( int argc, char ** argv )
 		    found_difference ( LINESPACE );
 	    }
 	}
-        
-	// Compare tokens.
-	//
-	last_match_was_nonblank_diff = false;
-        switch ( output.type ) {
-
-	case EOF_TOKEN:
-            assert ( test.type == EOF_TOKEN );
-	    done = true;
-	    break;
-
-	case NUMBER_TOKEN:
-	case WORD_TOKEN:
-
-	    assert ( test.type != EOF_TOKEN );
-
-	    if ( output.type != test.type )
-	    {
-		found_difference ( NONBLANK );
-		last_match_was_nonblank_diff = true;
-		break;
-	    }
-
-	    // If both tokens are words and one is
-	    // longer than the other, split the longer
-	    // word.  If we get a non-blank diff, we
-	    // will undo the split.
-
-	    if ( output.type == WORD_TOKEN )
-	    {
-		if ( output.length < test.length )
-		    split_word ( test, output.length );
-		else if ( test.length < output.length )
-		    split_word ( output, test.length );
-	    }
-
-	    char * tp1 = output.token;
-	    char * tp2 = test.token;
-	    bool token_case = false;
-
-	    while ( * tp1 )
-	    {
-		if ( * tp1 != * tp2 )
-		{
-		    if ( toupper ( * tp1 )
-			 == toupper ( * tp2 ) )
-			token_case = true;
-		    else
-			break;
-		}
-		++ tp1, ++ tp2;
-	    }
-
-	    if ( * tp1 == * tp2 )
-	    {
-	        assert ( * tp1 == 0 );
-
-		if ( output.column != test.column )
-		    found_difference ( COLUMN );
-
-		if ( token_case )
-		    found_difference
-		        ( output.type != NUMBER_TOKEN ?
-			  CASE : FLOAT );
-	    }
-
-	    else if ( output.type == NUMBER_TOKEN )
-	    {
-		if ( output.column != test.column )
-		    found_difference ( COLUMN );
-
-	        assert ( test.type == NUMBER_TOKEN );
-		last_match_was_nonblank_diff
-		    = diffnumber ();
-	    }
-
-	    else
-	    {
-	    	undo_split ( test );
-	    	undo_split ( output );
-
-		if ( output.column != test.column )
-		    found_difference ( COLUMN );
-
-		found_difference ( NONBLANK );
-		last_match_was_nonblank_diff = true;
-	    }
-
-	    break;
-     	}
     }
 
     // The file reading loop is done, and differences
