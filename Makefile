@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Feb 22 06:52:08 EST 2003
+# Date:		Sun Feb 23 09:14:15 EST 2003
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2003/02/22 13:02:06 $
+#   $Date: 2003/02/23 14:41:17 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.31 $
+#   $Revision: 1.32 $
 
 # See STATUS file for description of versions.
 #
@@ -313,6 +313,7 @@ web:	cleanweb hpcm_${VERSION}${TAREXT} \
 	cp -p hpcm_${VERSION}${TAREXT} \
 	      HPCM_${VERSION}_MD5_Signatures \
 	      HPCM_${VERSION}_CVS_MD5_Signatures \
+	      STATUS \
 	      web
 	cp -p judge/doc/overview.doc \
 	      web/overview
