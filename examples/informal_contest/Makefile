@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Aug  2 02:20:44 EDT 2002
+# Date:		Fri Aug  2 11:50:22 EDT 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/08/02 07:13:11 $
+#   $Date: 2002/08/02 15:56:11 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.27 $
+#   $Revision: 1.28 $
 
 # To make an informal contest named `foo':
 #
@@ -296,11 +296,11 @@
 #     order given in the `demos' help page, preced-
 #     ed by that `demos' help page.
 #
-#     The help and demos handout can be given out before
-#     when the contest is set up.  Usually no printout
-#     of the problems is given out for an informal
-#     contest, as contestants get problem statements one
-#     problem at a time.
+#     The help and demos handout can be given out when
+#     the contest is set up.  Usually no printout of the
+#     problems is given out for an informal contest, as
+#     contestants get problem statements one problem at
+#     a time.
 #
 #     If you do want to make a printout of the problems,
 #     then `make print_problems', and make a `problems

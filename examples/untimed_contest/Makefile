@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Aug  2 02:53:37 EDT 2002
+# Date:		Fri Aug  2 11:52:35 EDT 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/08/02 07:13:10 $
+#   $Date: 2002/08/02 15:56:11 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.46 $
+#   $Revision: 1.47 $
 
 # To make an email contest named `foo':
 #
@@ -103,6 +103,31 @@
 #    You can run subsets of the tests by using `make
 #    test_xxx' for various `xxx;: see hpcm/examples/
 #    test_submissions/Makefile.mk.
+#
+# 9. You may want to print out handouts.  The following
+#    is a suggestion.  Execute `make print_help', re-
+#    move the `demos' and `problems' pages, and reorder
+#    the other pages so `index' is first and the other
+#    help file pages are in order they are listed in
+#    the index.  This produces a `help handout'.
+#
+#    Lastly `make print_demos', and make a `demos
+#    handout' that consists of these pages, in the
+#    order given in the `demos' help page, preced-
+#    ed by that `demos' help page.
+#
+#    The help and demos handout can be given out when
+#    the contest is set up.  Usually no printout of the
+#    problems is given out for an email contest, as
+#    contestants get problem statements one problem at
+#    a time.
+#
+#    If you do want to make a printout of the problems,
+#    then `make print_problems', and make a `problems
+#    handout' that consists of these pages, in the
+#    order given in the `problems' help page, preced-
+#    ed by that `problems' help page.  Discard any
+#    demonstration .txt files printed.
 
 # The location of the hpcm directory.
 #
@@ -204,6 +229,22 @@ stop_scoreboard:
 
 update_scoreboard:
 	makescoreboard update
+
+print_help:
+	fprint info/help/*
+
+print_demos:
+	fprint info/demos/*/*
+
+print_problems:
+	@for x in info/problems/*/*; \
+	    do case "$$x" in \
+	    *.txt) echo fprint $$x; fprint $$x;; \
+	    *.ps)  echo lpr $$x; lpr $$x;; \
+	    *.html | *.htm) \
+	           echo YOU MUST use a browser \
+			to print $$x by hand;; \
+	    esac; done
 
 # Tests
 
