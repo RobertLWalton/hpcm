@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Feb  7 12:35:12 EST 2003
+# Date:		Tue Feb 11 20:20:19 EST 2003
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2003/02/07 18:27:07 $
+#   $Date: 2003/02/12 01:22:08 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.91 $
+#   $Revision: 1.92 $
 #
 
 # Table of Contents
@@ -1424,21 +1424,8 @@ foreach __d__ ". .. ../.. ../../.. ../../../.." {
 # group and owner.
 #
 if { [llength $judging_directory] == 1 } {
-    set __d__ $judging_directory
-    if { [file readable \
-               $__d__/$judging_parameters_file] } {
-	set __f__ $__d__/$judging_parameters_file
-	set __p__ [file attributes $__f__ -permissions]
-	if { $__p__ & 4 } {
-	    error "security violation: $__f__ is\
-	    	   readable by `others'\n      \
-		   you should execute chmod o-r $__f__"
-	}
-	source $__f__
-    } else {
-	error "$__d__/$judging_parameters_file\
-	       not readable"
-    }
+    source_file \
+        $judging_directory/$judging_parameters_file
 } elseif { [llength $judging_directory] == 0 } {
     error "$judging_parameters_file not found"
 } else {
