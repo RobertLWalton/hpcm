@@ -4,7 +4,7 @@
 #
 # File:		makescoreboard
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Oct 28 10:31:56 EST 2001
+# Date:		Mon Oct 29 06:46:55 EST 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/10/28 16:47:38 $
+#   $Date: 2001/10/29 12:19:04 $
 #   $RCSfile: makescoreboard,v $
-#   $Revision: 1.22 $
+#   $Revision: 1.23 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -205,7 +205,7 @@ proc file_changed { mtime_list } {
     return no
 }
 
-# File-mtime list for parameter files.
+# Mtime-list for parameter files.
 #
 set parameter_mtime_list changed
 
@@ -305,7 +305,7 @@ proc unabbreviate { value } {
 }
 
 
-# File-mtime list for scoring instructions files.
+# Mtime-list for scoreboard instructions files.
 #
 set file_mtime_list changed
 
@@ -315,7 +315,7 @@ set earliest_future_time ""
 
 # Last value of parameters_mtime.
 #
-set last_parameters_mtime $parameters_mtime
+set last_parameters_mtime ""
 
 # Process parameter setting instruction.
 #
@@ -335,7 +335,7 @@ proc set_parameter { instruction } {
     set scoreboard_$name $value
 }
 
-# Process scoring instructions.
+# Process scoreboard instructions.
 #
 proc process_instructions {} {
 
@@ -368,13 +368,18 @@ proc process_instructions {} {
 	make_signals_default
     }
 
+    # Save $finder_file mtime for use below.
+    #
+    set finder_mtime [file mtime $finder_file]
+
     # If we have no reason to rerun scoreboard instruc-
     # tions, return.
     #
     if {    [file_changed $file_mtime_list] == "no"
          && $last_parameters_mtime \
                >= $parameters_mtime \
-	 && $time < $earliest_future_time } {
+	 && ( $earliest_future_time == "" \
+	      || $time < $earliest_future_time ) } {
 
         return
     }
@@ -405,8 +410,8 @@ proc process_instructions {} {
     #
     set file_mtime_list changed
 
-    # Accumulate new parameter_mtime_list value in this
-    # local variable until we have succeeded.
+    # Accumulate new file_mtime_list value in this local
+    # variable until we have succeeded.
     #
     set mtime_list ""
 
@@ -416,12 +421,13 @@ proc process_instructions {} {
 
     # Loop to process instructions for first pass.
     #
-    # Instructions are stored as list to make computa-
-    # tion faster.
+    # Instructions are converted to a list to make com-
+    # putation faster.
     #
     # Pass2 is called for every sequence of instructions
     # beginning with an OUTPUT instruction and ending
-    # with an instruction other than OUTPUT.
+    # with the instruction before the next OUTPUT in-
+    # struction or end of all instructions.
 
     set instructions [concat $scoreboard_instructions]
     set pc 0
@@ -544,8 +550,9 @@ proc process_instructions {} {
 	        # If scoreboard_width might have changed
 		# force update.
 		#
-	    	if { $last_parameters_mtime \
-		     < $parameters_mtime } {
+	    	if { $last_parameters_mtime == ""
+	    	     || $last_parameters_mtime \
+		        < $parameters_mtime } {
 		    set update yes
 		}
 	    }
@@ -591,27 +598,22 @@ proc process_instructions {} {
 	        # If scoreboard_ parameters might have
 		# changed, force update.
 		#
-	    	if { $last_parameters_mtime \
-		     < $parameters_mtime } {
+	    	if { $last_parameters_mtime == ""
+	    	     || $last_parameters_mtime \
+		        < $parameters_mtime } {
 		    set update yes
 		}
 
-		# Process $finder_file as per INPUT
-		# files above.
+		# Process finder_file mtime stored in
+		# finder_mtime above.
 		#
-		if { [file readable $finder_file] } {
-		    set mtime [file mtime $finder_file]
-		    if {    $out_mtime != "" \
-			 && $mtime > $out_mtime } {
-			set update yes
-		    }
-		    lappend mtime_list \
-		            [list $mtime $finder_file]
-		} else {
-		    lappend mtime_list \
-			    [list none $finder_file]
+		if {    $out_mtime != "" \
+		     && $finder_mtime > $out_mtime } {
+		    set update yes
 		}
-
+		lappend mtime_list \
+			[list $finder_mtime \
+			      $finder_file]
 	    }
 
 	    no_SEND -
@@ -639,13 +641,12 @@ proc process_instructions {} {
 	}
     }
 
+    # End of instruction processing loop.  Store record
+    # of just finished actions and reenable interrupts.
+    #
     set earliest_future_time $eft
     set last_parameters_mtime $parameters_mtime
     set file_mtime_list $mtime_list
-
-    # End of instruction processing loop.  Reenable
-    # interrupts.
-    #
     make_signals_default
 }
 
@@ -765,7 +766,8 @@ proc pass2 { instructions pc end_pc update } {
 		    [string length $center]
 		set center_begin  \
 		    [expr { ( $scoreboard_width \
-			      - $center_length ) / 2 }]
+			      - $center_length + 1 ) \
+			    / 2 }]
 		set center_end \
 		    [expr { $center_begin \
 			    + $center_length - 1 }]
@@ -788,7 +790,7 @@ proc pass2 { instructions pc end_pc update } {
 
 		# Compute line.  Start with left text.
 		#
-		set line "$left"
+		set line $left
 
 		set center_done no
 		set right_done  no
@@ -798,7 +800,7 @@ proc pass2 { instructions pc end_pc update } {
 		# non-empty text, add the center to the
 		# line.
 		#
-		if {    $center != ""
+		if {    $center != "" \
 		     && ( $left == "" \
 		          || $left_end + 2 \
 			     < $center_begin ) \
@@ -1009,9 +1011,7 @@ switch $command {
 	if { [file exists $pid_file] } {
 	     set pid [read_file $pid_file]
 	     set display [display_process_tree $pid]
-	     if { ! [regexp -nocase \
-			    {^no process .* exists} \
-			    $display] } {
+	     if { [process_found $display] } {
 		 puts "Previous makescoreboard still\
 		       running:"
 		 puts $display
@@ -1024,6 +1024,9 @@ switch $command {
 	#
 	set interval $scoreboard_interval
 
+	# Process scoreboard instructions for the first
+	# time.
+	#
         process_instructions
 
 	# Set pid file and restore log mode.
@@ -1051,7 +1054,6 @@ switch $command {
 		              process_instructions }] \
 			          } break
 		    sleep 10
-		    set file_mtime_list changed
 		} else {
 		    process_instructions
 		}
@@ -1064,9 +1066,7 @@ switch $command {
 	if { [file exists $pid_file] } {
 	     set pid [read_file $pid_file]
 	     set display [display_process_tree $pid]
-	     if { ! [regexp -nocase \
-			    {^no process .* exists} \
-			    $display] } {
+	     if { [process_found $display] } {
 		 puts "Makescoreboard running:"
 		 puts $display
 	     } else {
@@ -1088,16 +1088,14 @@ switch $command {
 	if { [file exists $pid_file] } {
 	     set pid [read_file $pid_file]
 	     set display [display_process_tree $pid]
-	     if { ! [regexp -nocase \
-			    {^no process .* exists} \
-			    $display] } {
+	     if { [process_found $display] } {
 		 puts "Killing previous makescoreboard:"
 		 puts $display
 
 		 # Try to kill up to 30 times, checking
 		 # after each attempt for death.  The
 		 # first 20 times are with HUP, the next
-		 # 10 5imes are with KILL.
+		 # 10 times are with KILL.
 		 #
 		 set count 0
 		 while { "true" } {
@@ -1117,10 +1115,7 @@ switch $command {
 		     sleep 1
 		     set display \
 		         [display_process_tree $pid]
-		     if { [regexp \
-		               -nocase \
-			       {^no process .* exists} \
-			       $display] } {
+	             if { ! [process_found $display] } {
 			 break
 		     }
 		 }
