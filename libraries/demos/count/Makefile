@@ -1,7 +1,7 @@
 # Makefile for the `count' Demonstration Problem
 #
 # File:		Makefile
-# Date:		Mon Sep  4 04:40:06 EDT 2000
+# Date:		Thu Sep  7 04:16:57 EDT 2000
 #
 # Exactly ONE of the four files count.c (C), count.cc
 # (C++), count.p (Pascal), or count.java (Java) should
@@ -36,41 +36,49 @@
 #			sure that nothing crashes, and
 #			then e-mails count.c, count.cc,
 #			or count.p to the judges.
-#
-#	make clean	Removes `count' and count.out.
 #
+#	make clean	Removes `count', count.out, and
+#			other intermediate files that
+#			might exist, such as `core',
+#			`count.class', or `count.p2c'.
+
+
 .SUFFIXES:
-.SUFFIXES: .p .c .cc .java
-#
-# Put .p before .c so .p takes precedence.
+.SUFFIXES: .c .cc .java .p
 
 default:	count.out
 
 .c:
-	rm -f $* $*.out core
+	rm -f $* core
 	gcc -g -o $* $*.c -lm
 
 .cc:
-	rm -f $* $*.out core
+	rm -f $* core
 	g++ -g -o $* $*.cc -lm
 
 .p:
-	rm -f $* $*.c $*.out core
-	p2c $*.p
-	gcc -g -o $* $*.c -lp2c -lm
-	rm -f $*.c
+	rm -f $* $*.p2c core
+	p2c -o $*.p2c $*.p
+	gcc -g -o $* -x c $*.p2c -lp2c -lm
+
+# Do NOT try to use -check option for p2c as it fouls up
+# eof detection.
 
 .java:
-	rm -f $* $*.class $*.out core
+	rm -f $* $*.class core
 	javac -g $*.java
 	echo >$* '#!/bin/sh'
 	echo >>$* "exec `which java` $*"
 	chmod a+r $*.class
 	chmod a+rx $*
 #
+# hpcm_sandbox below executes `count' as a special
+# unprivileged user named `sandbox', so various files
+# must be `a+x' or `a+r'.
+
 count.out:	count count.in
 	rm -f count.out core
-	chmod a+x count .
+	chmod a+x . count
 	hpcm_sandbox -cputime 60 \
 	             -datasize 2m \
 		     -stacksize 1m \
@@ -82,13 +90,13 @@ count.out:	count count.in
 	@echo -n "========== OUTPUT (count.out)"
 	@echo " =========="
 	@cat count.out
-	@echo "========== END OUTPUT =========="
+	@echo "============== END OUTPUT =============="
 
 submit:		count.out
 	hpcm_submit count
 
 clean:
-	rm -f count count.class core count.out
+	rm -f count count.class count.p2c core count.out
 #
 # Author:	walton@deas.harvard.edu
 #
@@ -99,6 +107,6 @@ clean:
 # RCS Info (may not be true date or author):
 #
 #   $Author: acm-cont $
-#   $Date: 2000/09/04 15:18:35 $
+#   $Date: 2000/09/07 09:20:38 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.12 $
+#   $Revision: 1.13 $
