@@ -6,7 +6,7 @@
 #
 # File:		lookat
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Sep 23 00:34:30 EDT 2001
+# Date:		Sun Sep 23 07:50:37 EDT 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/09/23 05:37:08 $
+#   $Date: 2001/09/23 11:36:44 $
 #   $RCSfile: lookat,v $
-#   $Revision: 1.5 $
+#   $Revision: 1.6 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -45,7 +45,7 @@ lookat 'logical-expression'
 
     	filename-regexp::line-regexp
 
-    and is `true' iff the directory contains a file
+    and is `true' iff the subdirectory contains a file
     whose filename matches the filename-regexp and whose
     contents contain a line that matches the line-
     regexp.  As special cases, if filename-regexp is
@@ -53,7 +53,11 @@ lookat 'logical-expression'
     omitted), the line-regexp is matched against the
     submitter's name; and if filename-regexp is `DATE',
     the line-regexp is matched against the submission
-    date (in filename format).
+    date (formatted as it appears in the subdirectory
+    name).
+
+    The atoms `0' and `1' are also specially treated:
+    they represent `false' and `true'.
 
     The allowed operators of the logical-expression are
     `!', `&', `^', and `|' in highest precedence first
@@ -72,16 +76,36 @@ lookat 'logical-expression'
     the first $size_limit bytes of the file are read.
 
     After the list of subdirectories is computed, the
-    list is displayed, and the user of this program
-    is asked whether to execute `manualreply' on the
-    first subdirectory, or to exit this program.  After
-    executing `manualreply' on a subdirectory, the
-    subdirectory is removed from the list and this
-    program loops to display the remaining list.
+    list is displayed.  For each subdirectory and each
+    logical expression atom that matches within the
+    subdirectory, the first filename and line matched
+    for the atom is displayed.  The user of this program
+    can execute `manualreply' on a subdirectory by typ-
+    ing the number within the list of the subdirectory.
+    Upon return from manualreply, the list is redis-
+    played, but it is NOT recomputed.
 
     Unlike most HPCM judging programs, errors made by
     this program are not written to log files, but are
-    announced on standard error."
+    announced on standard error.
+
+    Some examples:
+
+    	lookat '^foo@fee'
+	    Lists submissions of `foo@fee...'.
+
+	lookat 'Auto::. & Received::^Subject:'
+	    Lists autoscored submissions and for each
+	    its Auto_Score file and Received_Mail
+	    `Subject:' line.
+
+	lookat '! Auto::. & Received::^Subject:'
+	    Lists non-autoscored submissions and for
+	    each its Received_Mail `Subject:' line.
+
+	lookat '! Auto::. & ( 1 | Gotten::*.txt$ )'
+	    Lists non-autoscored submissions and for
+	    each any Gotten file line for a .txt file."
 
 
 # If wrong number of arguments or first argument
@@ -113,6 +137,8 @@ foreach token [lindex $argv 0] {
 		}
 		incr depth -1
 	}
+	0   -
+	1   -
 	!   -
 	&   -
 	^   -
