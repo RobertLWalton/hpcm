@@ -3,7 +3,7 @@
 ;;;; File:         student.lsp
 ;;;; Author:       CS 51 (Bob Walton)
 ;;;; Modified by:  CS 182 (Attila Bodis)
-;;;; Version:      8
+;;;; Version:      9
 ;;;;
 ;;;; This file contains environment modifiers and functions that establish
 ;;;; a proper environment for CS51 students running COMMONLISP.
@@ -67,6 +67,11 @@
 ;;;;	 Changed => to ---> to avoid confusion with rewrite
 ;;;;	 rules in summer course.
 ;;;;
+;;;;   Version 9:
+;;;;
+;;;;	 Fixed flush-line-feed to work on newer versions
+;;;;	 of clisp.
+;;;;
 
 #+allegro
 (defun BYE () (EXIT))	; Allegro doesn't have this
@@ -124,11 +129,15 @@
 
 #+clisp
 (defun flush-line-feed (s-expression)
+  (do ()
+      ((= 0 (system::line-position)))
+      (read-char nil nil nil)))
+
+  ;; Old code that used to work:
+  ;;
   ;; In CLISP, a peek-char is needed after reading a (...)
   ;; to get past the following line feed.
-
-
-  (do () ((= 0 (system::line-position))) (read-char nil nil nil)))
+  ;;
   ;; (if (/= 0 (system::line-position))
       ;; (peek-char nil nil nil nil)))
 
