@@ -5,7 +5,7 @@
 #
 # File:		autojudge
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Jan  6 05:31:33 EST 2002
+# Date:		Sun Jan  6 08:04:11 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/01/06 10:34:53 $
+#   $Date: 2002/01/06 13:40:36 $
 #   $RCSfile: autojudge,v $
-#   $Revision: 1.52 $
+#   $Revision: 1.53 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -393,6 +393,21 @@ if { $extension != "" \
     subject_error extension
 }
 
+# Function to return a list of extensions that make
+# a file name exist.
+#
+proc find_exts { name } {
+    set exts ""
+    foreach f [glob -nocomplain $name.*] {
+	if { [regexp "^$name(\\.\[^/.\]\$" $f \
+	             forget ext] \
+	     && [file exists $name$ext] } {
+	    lappend exts $ext
+	}
+    }
+    return $exts
+}
+
 
 # Check for existence of problem solution directory.
 #
@@ -415,9 +430,16 @@ proc execute_links { files } {
     }
 
     # Failure occurs if there is no source for a -LINK-
-    # target.  In this case, there may or may not be a
-    # list of .EXTENSION # values that would cause there
-    # to be sources for all -LINK- targets.
+    # target, or if a target has a .EXTENSION but no
+    # extension is given by the submitter.  If there is
+    # no source for a -LINK- target, there may or may
+    # not be a list of .EXTENSION values that would
+    # cause there to be sources for all -LINK- targets.
+
+    # True if a target has a .EXTENSION but no extension
+    # is given by the submitter.
+    #
+    set needs_extension no
     
     # List of -LINK- targets that will fail regardless of
     # .EXTENSION value.
@@ -458,27 +480,6 @@ proc execute_links { files } {
 			set target [lindex $item 0]
 		    }
 
-		    set root \
-			[file rootname $target]
-		    set ext \
-			[file extension $target]
-		    if { $root == "PROBLEM" } {
-			set root $problem
-		    }
-		    if { $ext == ".EXTENSION" } {
-		        error "Bad $files_file -LINK-\
-			       or -OPTIONAL-LINK-\
-			       item:\n  .EXTENSION used\
-			       in link target: $item"
-		    }
-		    set target $root$ext
-		    if { $target == "" \
-		         || [regexp {/} $target ] } {
-		        error "Bad $files_file -LINK-\
-			       or -OPTIONAL-LINK-\
-			       target in: $item"
-		    }
-
 		    set source ""
 		    set exts ""
 		    set sd $solution_directory
@@ -492,21 +493,17 @@ proc execute_links { files } {
 			}
 			if { $ext == ".EXTENSION" } {
 
-			    set n $sd/$root$extension
-			    set m \
-			        {^$sd/$root(\.[^/.]+)$}
+			    set r $sd/$root
+			    set n $r$extension
+			    set m "^$r(\\.\[^/.\]+)\$"
 			    if { $extension == "" \
 			         || ! [file exists $n] \
 				 	} {
-				foreach f \
-				    [glob -nocomplain \
-				          $sd/$root.*] {
-				    if { [regexp $m $f \
-				                 forget \
-						 e] } {
-					lappend exts $e
-				    }
-				}
+				set exts \
+				    [concat \
+				       $exts \
+				       [find_exts \
+					  $sd/$root]]
 			    }
 
 			    if { $extension == "" } {
@@ -519,6 +516,28 @@ proc execute_links { files } {
 			    set source $sd/$root$ext
 			    break
 			}
+		    }
+
+		    set root \
+			[file rootname $target]
+		    set ext \
+			[file extension $target]
+		    if { $root == "PROBLEM" } {
+			set root $problem
+		    }
+		    if { $ext == ".EXTENSION" } {
+		        if { $extension == "" } {
+			    set needs_extension yes
+			    continue
+			}
+			set ext $extension
+		    }
+		    set target $root$ext
+		    if { $target == "" \
+		         || [regexp {/} $target ] } {
+		        error "Bad $files_file -LINK-\
+			       or -OPTIONAL-LINK-\
+			       target in: $item"
 		    }
 
 		    if { [catch { \
@@ -601,6 +620,10 @@ proc execute_links { files } {
 		extension \
 		" (which should be one of $legal_exts)"
 	}
+    } elseif { $needs_extension } {
+	subject_error \
+	    extension \
+	    " (it is missing but is required)"
     }
 }
 
@@ -617,6 +640,15 @@ execute_links "
 if { [file exists $files_file] } {
     set files [read_entire_file $files_file]
 } else {
+    set possibilities \
+        [find_exts $solution_directory/$files_file]
+    
+    if { [llength $possibilities] > 0 } {
+	subject_error \
+	    extension \
+	    " (which should be one of $possibilities)"
+    }
+
     set files "
         -LINK-
 	    { $make_file $make_file.EXTENSION\
@@ -662,7 +694,8 @@ proc find_solution_make_files { files } {
 }
 
 # Make -SOLUTION-MAKE- files.  Try repeatedly to lock
-# the solution directory, but if
+# the solution directory, but if this fails after a
+# short while, just give up and print a comment.
 #
 set count 0
 while { "yes" } {
@@ -672,9 +705,9 @@ while { "yes" } {
 
     if { [dispatch_lock $solution_directory] } {
 	puts "Executing make $solution_make_files"
-	exec sh -c "cd $solution_directory;\
-		    make $solution_make_files" \
-	     >&@ stdout
+	exec_in_directory $solution_directory \
+		          "make $solution_make_files" \
+	     		  >&@ stdout
 	dispatch_unlock $solution_directory
 	break
     }
