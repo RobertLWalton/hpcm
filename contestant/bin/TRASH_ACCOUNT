@@ -13,62 +13,73 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/09/18 00:38:16 $
+#   $Date: 2000/09/18 01:38:06 $
 #   $RCSfile: TRASH_ACCOUNT,v $
-#   $Revision: 1.2 $
+#   $Revision: 1.3 $
 
 cd
 
 case "$1" in
 
     "" )
-    	if test -r .hpcm_setup
+    	if test -x ~/.hpcm_contest
 	then
-	    setup=`cat .hpcm_setup`
+	    contest=`ls -l ~/.hpcm_contest`
+	    contest=`expr "$contest" : '.*-> *\([^ ]*\) *$' `
 	else
 	    echo "
-TRASH_ACCOUNT [setup]
+TRASH_ACCOUNT [contest]
 
-    Removes all files from the current account and
-    reloads then from setup.tar.  Checks after removing
-    files that \`ls -a' equals setup.els.  Checks after
-    reloading that \`ls -a' equals setup.ls.  Before
-    doing anything, checks that current account name
-    is listed on a line by itself in setup.acc, and
-    also checks that setup.tar, setup.ls, etc. are
-    readable.  If the setup argument is not given, it is
-    read from the .hpcm_setup file in the home direc-
-    tory, if that exists.  If this program succeeds, it
-    writes the setup value in the .hpcm_setup file."
+    Removes all files from the current account and re-
+    loads them from contest/setup.tar.  Checks after re-
+    moving files that \`ls -a' equals contest/empty.ls.
+    Checks after reloading that \`ls -a' equals contest/
+    setup.ls.  Before doing anything, checks that the
+    current account name is listed on a line by itself
+    in contest/setup.acc, and also checks that files
+    such as contest/setup.tar are readable.  If the
+    contest argument is not given, it is taken to be the
+    target of the symbolic link ~/.hpcm_contest, if that
+    exists.  If this program succeeds, it links ~/
+    .hpcm_contest to the value of the contest argument."
     	    exit 1
 	fi
 	;;
     * )
-    	setup=$1
+    	contest=$1
 	;;
 esac
 
-if test ! -r $setup.tar
-then
-	echo cannot read $setup.tar
+case "$contest" in
+    /* )
+    	;;
+    *)
+    	echo $contest is NOT an absolute pathname
 	exit 1
-elif test ! -r $setup.els
+    	;;
+esac
+
+if test ! -r $contest/setup.tar
 then
-	echo cannot read $setup.els
+	echo cannot read $contest/setup.tar
 	exit 1
-elif test ! -r $setup.ls
+elif test ! -r $contest/empty.ls
 then
-	echo cannot read $setup.ls
+	echo cannot read $contest/empty.ls
 	exit 1
-elif test ! -r $setup.ac
+elif test ! -r $contest/setup.ls
 then
-	echo cannot read $setup.ac
+	echo cannot read $contest/setup.ls
+	exit 1
+elif test ! -r $contest/accounts
+then
+	echo cannot read $contest/accounts
 	exit 1
 fi
 
-if grep -s "^`id -un`\$" $setup.ac
+grep "^`id -un`\$" $contest/accounts >/dev/null
+if test $? -ne 0
 then
-else
 	echo Bad user `id -un`
 	exit 1
 fi
@@ -84,7 +95,9 @@ do
 done
 
 echo rm done
-ls -a | diff $setup.els -
-tar xf $setup.tar
+ls -a | diff $contest/empty.ls -
+tar xf $contest/setup.tar
 echo tar done
-ls -a | diff $setup.ls -
+ls -a | diff $contest/setup.ls -
+rm -f .hpcm_contest
+ln -s $contest .hpcm_contest

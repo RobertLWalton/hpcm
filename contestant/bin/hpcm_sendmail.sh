@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/09/18 00:38:16 $
+#   $Date: 2000/09/18 01:38:07 $
 #   $RCSfile: hpcm_sendmail.sh,v $
-#   $Revision: 1.1 $
+#   $Revision: 1.2 $
 
 case "$1" in
      "")
@@ -34,14 +34,16 @@ cat email_file | hpcm_sendmail
 esac
 
 # Locate the To address.
-if test ! -r ~/.hpcm_sendmail.rc
+if test ! -r ~/.hpcm_contest/sendmail.rc
 then
-	echo cannot read ~/.hpcm_sendmail.rc
+	echo cannot read ~/.hpcm_contest/sendmail.rc
 	exit 1
 fi
-to=`grep '^To:' ~/.hpcm_sendmail.rc`
+to=`grep '^To:' ~/.hpcm_contest/sendmail.rc`
 
 # Submit program file by email.
 #
 ( echo $to; echo Cc: `id -un`; cat - ) \
     | /usr/sbin/sendmail -oi -t
+
+exit 0
