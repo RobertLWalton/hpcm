@@ -5,7 +5,7 @@
 #
 # File:		autojudge
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Jan 23 07:55:19 EST 2002
+# Date:		Thu Jan 24 03:07:44 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/01/23 14:02:57 $
+#   $Date: 2002/01/24 08:07:55 $
 #   $RCSfile: autojudge,v $
-#   $Revision: 1.66 $
+#   $Revision: 1.67 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -351,108 +351,207 @@ autojudge \[problem\[.extension\]\]
     the scoring_mode global variable.  The contents of
     the $response_instructions_file file is a TCL list\
     	value
-    consisting of indicators and commands.  There are
-    two kinds of indicators: score indicators and mode
-    indicators.  Commands are grouped into command
-    lists, which consist of all commands between two
-    indicators.  A command list is governed by an indi-
-    cator if the indicator is the last of its kind
-    (score or mode) preceding the command list.  The
-    first command list whose governing indicators ALL
-    match scoring_mode or $auto_score_file values is\
-    	execu-
-    ted.
-
-    A score indicator is an $auto_score_file file value\
-    	with
-    spaces replaced by `-' and with a prefix and suffix
-    `-': e.g., -Completely-Correct-.  A score indicator
-    `matches' if it equals the $auto_score_file file\
-    	value,
-    except for the special -Other-Scores- score indica-
-    tor that matches all values of the $auto_score_file\
-    	file.
-    Similarly a mode indicator is a scoring_mode global
-    variable value with prefix and suffix `-': e.g.,
-    -auto+manual-.  A mode indicator `matches' if it
-    equals the value of the scoring_mode global vari-
-    able, except for the -Other-Modes- mode indicator
-    that matches all values of the scoring_mode vari-
-    able.
+    consisting of commands and if-statements.  The if-
+    statements have the format of TCL if statements:
 
-    The first command list all of whose governing indi-
-    cators match is executed.  Note that a command list
-    may have no governing indicators, in which case the
-    list is always executed (it would have to also have
-    to precede any indicators to have no governing indi-
-    cators).
+    	if <expression> <block>
+	elseif <expression> <block>
+	else <block>
+
+    where any number of elseif parts may be given and
+    the else part is optional.  Note that the words
+    `if', `elseif', and `else' are TCL list elements as
+    are the expressions and blocks.  Each block is re-
+    cursively interpreted as a TCL list consisting of
+    commands and if-statements.  The if-statement ex-
+    pressions can be evaluated without evaluating any
+    commands, so the sequence of commands that is to be
+    executed can be determined and the if-statements can
+    be removed in a first pass.
 
     The default value of the\
 		$response_instructions_file file
     is the following:
 
-	-manual-
-	    -Other-Scores-
-	    	NON-AUTO
+	if { ! \$manual && ! \$proposed } {
+	    if { \$scoring_mode == \"manual\" } {
+		NO-REPLY
+	    	EXIT
+	    } elseif { \$scoring_mode == \"auto\" \\
+	         || \\
+		 \$auto_score \\
+		     == \"Completely Correct\" } {
+		{ LINE \"For -PROBLEM- the\\
+		        automatically determined final\\
+			score is:\" }
+		BLANK
+		{ LINE \"    -AUTO-SCORE-\" }
+		FINAL
+	    } elseif { \[lcontain \\
+	                    {auto+manual manual+auto} \\
+	                    \$scoring_mode\] } {
 
-	-auto-
-
-	    -Other-Scores-
-		FINAL
-		{LINES \"
-	    For -PROBLEM- the automatically determined\\
-		final score is:
-	    
-	    -SCORE-
-	    \" }
-		{ BAR \"this message replies to:\" }
-		RECEIVED-HEADER
-
-	-auto+manual-
-
-	    -Completely-Correct-
-		FINAL
-		{LINES \"
-	    For -PROBLEM- the automatically determined\\
-		final score is:
-	    
-	    -SCORE-
-	    \" }
-		{ BAR \"this message replies to:\" }
-		RECEIVED-HEADER
-
-	    -Other-Scores-
+		{ LINE \"For -PROBLEM- the\\
+		        automatically determined\\
+			score is:\" }
+		BLANK
+		{ LINE \"    -AUTO-SCORE-\" }
+		BLANK
+	    	{ LINE \"However, this score WILL BE\\
+		        REVIEWED by the human judge\\
+			(soon).\" }
 		NON-FINAL
-		{LINES \"
-	    For -PROBLEM- the automatically determined\\
-		score is:
-	    
-	    -SCORE-
+	    }
+	} elseif { ! \$manual && \$proposed } {
+	    FINAL
+	    if { \$scoring_mode == \"manual\" } {
+		{ LINE \"For -PROBLEM- your final\\
+		        score is:\" }
+		BLANK
+		{ LINE \"    -PROPOSED-SCORE-\" }
+	    } elseif { \[regexp {auto} \\
+	                       \$scoring_mode\] } {
 
-	    However, this score WILL BE REVIEWED by\\
-		the human judge (soon).
-	    \" }
-		{ BAR \"this message replies to:\" }
-		RECEIVED-HEADER
+		{ LINE \"For -PROBLEM- your\\
+			previous automatic score\\
+			of:\" }
+		BLANK
+		{ LINE \"    -AUTO-SCORE-\" }
+		BLANK
 
+	        if { \$proposed_score \\
+		     == \$auto_score } {
+
+		    { LINE \"has been verified and\\
+		            confirmed by the human\\
+			    judge!\" }
+		    { LINE \"Thus your FINAL score\\
+		            is:\" }
+		    BLANK
+		    { LINE \"    -PROPOSED-SCORE\" }
+		    BLANK
+		    { LINE \"for this submission\" }
+
+		} else {
+
+		    if { \$scoring_mode != \"auto\" } {
+
+			{ LINE \"has been OVERRIDDEN\\
+			        by the human judge!\" }
+		    } else {
+			{LINE \"has been UNEXPECTEDLY\\
+			       OVERRIDDEN by the human\\
+			       judge!\" }
+			EDIT
+		    }
+
+		    BLANK
+		    { LINE \"The human judge has\\
+		            assigned the NEW FINAL\\
+			    score:\" }
+		    BLANK
+		    { LINE \"    -PROPOSED-SCORE\" }
+		    BLANK
+		    { LINE \"to this submission\" }
+		}
+	    }
+	} elseif { \$manual && \$proposed } {
+
+	    FINAL
+	    EDIT
+	    { LINE \"For -PROBLEM- your PREVIOUS FINAL\\
+	            manual score of:\" }
+	    BLANK
+	    { LINE \"    -MANUAL-SCORE-\" }
+	    BLANK
+
+	    if { \$proposed_score == \$manual_score } {
+		{ LINE \"has been verified and\\
+			confirmed by the human\\
+			judge!\" }
+	    } else {
+		{ LINE \"has been UNEXPECTEDLY\\
+		        OVERRIDDEN by the human\\
+			judge!\" }
+		BLANK
+		{ LINE \"The human judge has assigned\\
+		        the NEW FINAL score:\" }
+		BLANK
+		{ LINE \"    -PROPOSED-SCORE\" }
+		BLANK
+		{LINE \"to this submission\" }
+		EDIT
+	    }
+	}
+
+	BLANK
+	{ LINE \"(see below for submission time).\" }
+	BLANK
+	{ BAR \"this message replies to:\" }
+	RECEIVED-HEADER
+
+    Actually this default value is postpended to any
+    $response_instructions_file file value, and picks
+    up any cases omitted by that value.  The EXIT
+    command should be used in any\
+	$response_instructions_file
+    file value to be sure this default does not execute
+
+    If-statement expressions can be any TCL expr expres-
+    sion.  The only variables that can be used are:
+
+    	\$scoring_mode
+	    The value of the scoring_mode global
+	    variable.
+
+	\$auto_score
+	    The value of the $auto_score_file file.
+
+	\$manual_score
+	    The value of the $manual_score_file file, or
+	    `None' if this file does not exist.
+
+	\$proposed_score
+	    The score which the person running the
+	    manualreply program has chosen as the final
+	    score.  Set to `None' if the manualreply
+	    program is not being used to set the score.
+
+	\$manual
+	    Equals \$manual_score != \"None\".
+
+	\$proposed
+	    Equals \$proposed_score != \"None\".
+
+    Note that variables cannot be set by commands.
+
     The $response_instructions_file file commands are\
     	execu-
     ted to construct the reply.  The possible commands
     are:
-
+
 	FINAL
 	    The final reply is sent.  A $reply_file file
-	    is creaed in the current directory.
+	    is created in the current directory.  If
+	    this command is executed, it must be the
+	    first command executed.
 
 	NON-FINAL 
 	    A non-final reply is sent.  No $reply_file
 	    file is created in the current directory
 	    (though the reply is recorded in the
-	    $reply_history_file file).
+	    $reply_history_file file).  If this command
+	    is executed, it must be the first command
+	    executed.
 
 	NO-REPLY
 	    No reply is sent.  All other commands are
-	    ignored.
+	    ignored.  If this command is executed, it
+	    must be the first command executed.
+
+	EXIT
+	    This is the last command executed, and any
+	    commands following it are ignored.
 
 	{ LINES \"string\" ... }
 	{ LINE \"string\" }
@@ -460,15 +559,17 @@ autojudge \[problem\[.extension\]\]
 	    included in the reply.  Note that the strings
 	    may themselves include line feeds.
 
-	    If -PROBLEM- appears in a string it is re-
-	    placed by the problem name, and if -SCORE-
-	    appears, it is replaced by the\
-	    	$auto_score_file
-	    value.
+	    Several special strings are substituted for
+	    within each string as follows:
+
+	        -PROBLEM-	 The problem name.
+		-AUTO-SCORE-	 \$auto_score value.
+		-MANUAL-SCORE-	 \$manual_score value.
+		-PROPOSED-SCORE- \$proposed_score value.
 
 	BLANK
 	    Include a blank line in the reply.
-
+
 	BAR
 	    Inserts a 72 character ----- bar line.
 
@@ -499,7 +600,7 @@ autojudge \[problem\[.extension\]\]
 	    termining errors in the reply.
 
     This program prints information about its progress.
- 
+ 
     Unless this program creates a $reply_file file that
     is intended to be the final reply to the submitter
     (because the score is `Completely Correct' or the
@@ -510,7 +611,7 @@ autojudge \[problem\[.extension\]\]
     (e.g. tracker) that they should search for submis-
     sion directories for which the manualreply program
     should be called.
-
+
     If this program (because of a `Syntax Error') or the
     `autoscore' program writes the $auto_score_file\
     	file,
@@ -979,77 +1080,100 @@ if { [catch { exec extractmail } extractout] } {
 #
 execute_links $files
 
-# Function to execute a response instruction command
-# list.
+# Function to execute response instruction commands
+# after it-statement processing.
 #
-proc execute_response_commands { reply_mode commands } {
+proc execute_response_commands { commands } {
+}
+
+# Function to evaluate if-statement expression.
+#
+proc eval_if_expression { item } {
+    global scoring_mode auto_score manual_score \
+           proposed_score manual proposed
+    return [expr $item]
+}
+
+# Function to execute the if-statements in a block and
+# add to the list of commands.  Stop at end of block or
+# at EXIT.  Return `yes' if EXIT found, `no' otherwise.
+#
+proc parse_block { block commands } {
+
+    upvar $commands c
+
+    set mode none
+    foreach item $block {
+        switch $mode {
+	    if_expression {
+	        set if_value \
+		    [expr { ! $if_done \
+		            && \
+		            [eval_if_expression \
+			        $item] }]
+		set mode if_block
+	    }
+	    if_block {
+	        if { $if_value } {
+		    if { [parse_block $item c] } {
+		        return yes
+		    }
+		    set if_done 1
+		}
+		set mode after_if_block
+	    }
+	    after_if_block {
+	        switch -- $item {
+		    elseif {
+			set mode if_expression
+		    }
+		    else {
+		        set if_expresion \
+			    [expr { ! $if_done }]
+			set mode if_block
+		    }
+		    default {
+		        set mode none
+		    }
+		}
+	    }
+	}
+
+	if { $mode == "none" } {
+	    switch -- $item {
+		EXIT {
+		    return yes
+		}
+		if {
+		    set mode if_expression
+		    set if_done 0
+		}
+		default {
+		    lappend c $item
+		}
+	    }
+	}
+    }
+    return no
 }
 
 # Function to process $response_instructions_file value.
 #
 proc execute_response_instructions \
-    { response_instructions auto_score } {
+    { response_instructions } {
 
-    global scoring_mode
+    global scoring_mode auto_score manual_score \
+    	   proposed_score manual proposed
 
-    set score -${auto_score}-
-    regsub { } $score - score
-    set mode -${scoring_mode}-
-    set score_match 1
-    set mode_match 1
-    set reply_mode ""
+    set manual [expr { $manual_score != "None" }]
+    set proposed [expr { $proposed_score != "None" }]
+
     set commands ""
-    set commands_executed 0
-    foreach item $response_instructions {
-        if { [catch { set length [llength $item] }] } {
-	    error "Bad $response_instructions_file file\
-	           value list item: $item"
-	}
-        if { [regexp {^-.*-$} $item] && $length == 1 } {
-	    if { $commands_executed } {
-	        execute_response_commands $reply_mode \
-					  $commands
-		break
-	    }
-	    switch -- $item {
-	        -manual- -
-		-auto- {
-		    set mode_match \
-		        [expr { $mode == $item } ]
-		}
-		-auto+manual- -
-		-manual+auto- {
-		    set mode_match \
-		        [lcontains {-auto+manual- \
-			            -manual+auto-} \
-				   $mode]
-		}
-		-Other-Modes- {
-		    set mode_match t
-		}
-		-Other-Scores- {
-		    set score_match t
-		}
-		default {
-		    set score_match \
-		        [expr { $score == $item }]
-		}
-	    }
-
-	} elseif { $score_match && $mode_match } {
-	    set commands_executed 1
-	    switch -- $item {
-	        FINAL		-
-		NON-FINAL	-
-		NON-AUTO	{
-		    set reply_mode $item
-		}
-		default {
-		    lappend commands $item
-		}
-	    }
-	}
-    }
+    parse_block \
+        [concat $response_instructions \
+		$default_response_instructions] \
+	commands
+    execute_response_commands $commands
 }
 
 # Function to send reply to user containing new auto
