@@ -4,7 +4,7 @@
 #
 # File:		makescoreboard
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Oct 26 01:20:32 EDT 2001
+# Date:		Fri Oct 26 06:34:58 EDT 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/10/26 05:19:13 $
+#   $Date: 2001/10/26 10:33:38 $
 #   $RCSfile: old_makescoreboard,v $
-#   $Revision: 1.13 $
+#   $Revision: 1.14 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -200,7 +200,10 @@ proc process_arguments {} } {
 
     global judging_directory judging_parameters_file \
            parameter_mtime_list parameters_array \
-	   parameter_mtime
+	   parameter_mtime scoreboard_instructions
+    foreach name [array names parameters_array] {
+	global scoreboard_$name
+    }
 
     if { ! [file_changed $parameter_mtime_list] } {
 
@@ -278,7 +281,12 @@ proc process_instructions {} {
 
     global scoreboard_instructions abbreviation_array \
            file_mtime_list earliest_future_time \
-	   last_parameters_mtime
+	   last_parameters_mtime parameters_mtime \
+	   finder_file judging_directory \
+	   score_flag_file
+    foreach name [array names parameters_array] {
+	global scoreboard_$name
+    }
 
     set time [clock seconds]
 
@@ -289,10 +297,29 @@ proc process_instructions {} {
     if { $file_mtime_list == "changed" \
          || [test_flag $score_flag_file] } {
 
-	 TBD parameters for scorefinder
-	catch { exec scorefinder | \
-		scoreboard $parameters_file } \
-	      scoreboard
+	set gotten ""
+	if { [regexp {^(|team)$} \
+	             $scoreboard_start_time] } {
+	    set gotten -gotten
+	}
+
+	# The following code ensures that two copies of
+	# scorefinder do not try to write the same file
+	# at once.  It is possible that while one copy
+	# is being written its filename will be deleted
+	# and another will be started.
+
+	make_signals_ignored
+	while { "yes" } {
+	    file delete -force -- $finder_file
+	    if { [create_file $finder_file] } break
+	    make_signals_default
+	    sleep 2
+	    make_signals_ignored
+	}
+	eval exec scorefinder $gotten \
+	     > $finder_file
+	make_signals_default
     }
 
     if {    $last_parameters_mtime \
@@ -316,9 +343,12 @@ proc process_instructions {} {
     #
     make_signals_ignored
 
+    set instructions $scoreboard_instructions
     set pc 0
     set end_pc [llength $instructions]
     set out_pc -1
+
+    set earliest_future_time ""
 
     while { "yes" } {
 
@@ -328,14 +358,12 @@ proc process_instructions {} {
 	       || $instruction == "OUTPUT" ) \
 	     && $out_pc >= 0 } {
 	    if { $out_start != "" \
-	          || $time \
-		     < [clock scan $out_start] } {
+	          || $time $out_start } {
 	        set update no
 	    }
 	    if {    $out_mtime != "" \
 	         && $out_stop != "" \
-	         && $out_mtime \
-		    >= [clock scan $out_stop] } {
+	         && $out_mtime >= $out_stop } {
 	        set update no
 	    }
 
@@ -349,12 +377,36 @@ proc process_instructions {} {
 	    OUTPUT {
 		set out_file  [lindex $instruction 1]
 		set out_start [lindex $instruction 2]
-		set out_stop  [lindex $instruction 2]
+		set out_stop  [lindex $instruction 3]
 		set out_file \
 		   [file join $judging_directory \
 		              $out_file]
 		set out_start [unabbreviate $out_start]
 		set out_stop [unabbreviate $out_stop]
+		if { $out_start != "" } {
+		    set out_start \
+		        [clock scan $out_start]
+		    if { $out_start > $time \
+		         && (    $earliest_future_time \
+			 	     == "" \
+			      || $earliest_future_time \
+			             > $out_start ) } {
+		        set earliest_future_time \
+			    $out_start
+		    }
+		}
+		if { $out_stop != "" } {
+		    set out_stop \
+		        [clock scan $out_stop]
+		    if { $out_stop > $time \
+		         && (    $earliest_future_time \
+			 	     == "" \
+			      || $earliest_future_time \
+			             > $out_stop ) } {
+		        set earliest_future_time \
+			    $out_stop
+		    }
+		}
 		if { [file readable $out_file] } {
 		    set out_mtime [file mtime $out_file]
 		} else {
@@ -368,6 +420,7 @@ proc process_instructions {} {
 	    }
 
 	    BLANK {}
+
 	    BAR -
 	    LINE {
 	    	if { $last_parameters_mtime \
@@ -418,6 +471,7 @@ proc process_instructions {} {
 		}
 
 	    }
+	    SEND {}
 	    default {}
 	}
     }
@@ -426,13 +480,20 @@ proc process_instructions {} {
 
 proc pass2 { instructions pc end_pc update } {
 
-    global parameters_array scoreboard_width
+    global parameters_array scoreboard_instructions \
+           judging_directory finder_file
+    foreach name [array names parameters_array] {
+	global scoreboard_$name
+    }
 
+    set instructions $scoreboard_instructions
     set out_file [lindex [lindex $instructions $pc] 1]
     set out_file $judging_directory/$out_file"
 
     incr pc
     set contents ""
+    set send no
+    set send_qualifier ""
 
     while { $pc < $end_pc } {
         set instruction [lindex $instructions $pc]
@@ -543,16 +604,32 @@ proc pass2 { instructions pc end_pc update } {
 		        [list $name \
 			      [set scoreboard_$name]]
 		}
-	        set contents \
-		    "$contents[exec scoreboard \
-		    		    "{ $parameters }" \
-				    < $finder_file]"
+		set scoreboard \
+		    [exec scoreboard "{ $parameters }" \
+				     < $finder_file]
+
+		# If the scoreboard is empty, say so
+		# explicitly.
+		#
+		if { $scoreboard == "" } {
+		    set scoreboard \
+		        "The scoreboard is currently\
+			 EMPTY!  Nothing must have\
+			 happened yet."
+		}
+	        set contents "$contents$scoreboard\n"
+	    }
+	    SEND_yes {
+	    	set send_qualifier \
+		    [lindex $instruction 1]
+		set send yes
 	    }
 	    BLANK_no {}
 	    BAR_no {}
 	    LINE_no {}
 	    INPUT_no {}
 	    BOARD_no {}
+	    SEND_no {}
 	    default {
 		set name $opcode
 		set value [lindex $instruction 1]
@@ -573,6 +650,17 @@ proc pass2 { instructions pc end_pc update } {
 	set ch [open $out_file w]
         puts -nonewline $ch $contents
 	close $ch
+
+	if { $send } {
+	    foreach to $scoreboard_addresses {
+	        if { $send_qualifier != "" \
+	             && ! [regexp {<} $to] } {
+		    set to "<$to>"
+	        }
+	        send_message \
+	           "To: $send_qualifier$to\n\n$contents"
+	    }
+    	}
     }
 }
 
@@ -598,7 +686,14 @@ switch $command {
 	}
 	write_file $pid_file [current_pid]
 
-	LOOP TBD ??
+	set interval $scoreboard_interval
+
+        process_instructions
+
+	while { "yes" } {
+	    sleep $interval
+	    process_instructions
+	}
     }
 
     status {
@@ -614,14 +709,14 @@ switch $command {
 		 puts "Makescoreboard has died:"
 		 puts $display
 		 puts ""
-		 puts "Run `tracker' to find error logs,\
-		       or look in"
+		 puts "Run `tracker' to find error\
+		       logs, or look in"
 		 puts "$log_directory for unchecked\
 		       errors."
 	     }
 	} else {
-	    puts "All previous makescoreboards have been\
-		  stopped."
+	    puts "All previous makescoreboards have\
+	          been stopped."
 	}
     }
 
@@ -650,10 +745,12 @@ switch $command {
 			 exit 1
 		     }
 		     sleep 1
-		     set display [display_process_tree $pid]
-		     if { [regexp -nocase \
-				  {^no process .* exists} \
-				  $display] } {
+		     set display \
+		         [display_process_tree $pid]
+		     if { [regexp \
+		               -nocase \
+			       {^no process .* exists} \
+			       $display] } {
 			 break
 		     }
 		 }
@@ -666,129 +763,6 @@ switch $command {
 
     update {
         process_instructions
-    }
-}
-
-
-
-    # If the scoreboard is empty, say so explicitly.
-    #
-    if { $scoreboard == "" } {
-	set scoreboard "The scoreboard is currently\
-	                EMPTY!  Nothing must have\
-			happened yet."
-    }
-
-    # Handle case with email_address.
-    #
-    if { $email_address != "" } {
-
-	# Compute email_scoreboard.
-	#
-	if { [file readable $sbnotes] } {
-	    set tail [read_entire_file $sbnotes]
-	    set email_scoreboard \
-	        "To: $email_address
-
-See notes below.           $date
-
-=================== ===================\
-=================== ===================
-$scoreboard
-=================== ===================\
-=================== ===================
-
-$tail"
-
-	} else {
-	    set email_scoreboard "To: $email_address
-
-$date
-
-$scoreboard"
-	   
-	}
-
-	# Send the scoreboard to the email-address.
-	#
-	send_message $email_scoreboard
-
-	# Delete and rewrite scoreboard.mail
-	#
-	if { [file exists $sbmail] } {
-	    file delete -force $sbmail
-	}
-	write_file $sbmail $email_scoreboard
-    }
-
-    # Handle case with contest directory.
-    #
-    if { [file isdirectory $contest_directory] } {
-
-	# Check for unwritable contest directory.
-	#
-	if { ! [file writable $contest_directory] } {
-	    error "$contest_directory is not writable"
-	}
-
-	# Compute scoreboard_page.
-	#
-	if { [file readable $sbhead] } {
-	    set head [read_entire_file $sbhead]
-	    set scoreboard_page \
-	        "$date
-
-$head
-
-=================== ===================\
-=================== ===================
-$scoreboard
-=================== ===================\
-=================== ==================="
-
-	} else {
-	    set scoreboard_page "$date
-
-$scoreboard"
-	   
-	}
-
-	# Delete and rewrite scoreboard.1
-	#
-	if { [file exists $sbfile] } {
-	    file delete -force $sbfile
-	}
-	write_file $sbfile $scoreboard_page
-
-	# Make scoreboard.1 readable by everyone.
-	#
-	grant_access $sbfile
-
-    }
-
-    # If interval == 0 do NOT loop indefinitely.
-    #
-    if { $interval == 0 } break
-
-    # Sleep waiting for something to happen that
-    # indicates scoreboard needs recomputing.
-    #
-    while { "yes" } {
-
-        make_signals_default
-	sleep $interval
-	make_signals_ignored
-
-    	if { [test_flag $score_flag_file] } break
-	if { [file isdirectory $contest_directory]
-	     && ! [file exists $sbfile] } break
-	if { $email_address != ""
-	     && ! [file exists $sbmail] } break
-	if { [file exists $sbhead] \
-	     && $time < [file mtime $sbhead] } break
-	if { [file exists $sbnotes] \
-	     && $time < [file mtime $sbnotes] } break
-	if { $time < [file mtime $jparam] } break
     }
 }
 
