@@ -2,7 +2,7 @@
 //
 // File:	scorediff.cc
 // Authors:	Bob Walton (walton@deas.harvard.edu)
-// Date:	Wed Apr 24 09:51:20 EDT 2002
+// Date:	Wed Apr 24 09:54:47 EDT 2002
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: hc3 $
-//   $Date: 2002/04/24 13:51:37 $
+//   $Date: 2002/04/24 13:53:56 $
 //   $RCSfile: scorediff.cc,v $
-//   $Revision: 1.45 $
+//   $Revision: 1.46 $
 
 // This is version 2, a major revision of the first
 // scorediff program.  This version is more explicitly
@@ -214,7 +214,7 @@ char documentation [] =
 "\f\n"
 "    Note that failure to separate correctly spelled\n"
 "    words by space will be reported as a spacebreak,\n"
-"    due to word spliting, and in other cases where\n"
+"    due to word splitting, and in other cases where\n"
 "    word splitting applies, a word difference will\n"
 "    be reported, as one would expect.  However, when\n"
 "    word splitting applies and a word difference is\n"
