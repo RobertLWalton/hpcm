@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: acm-cont $
-#   $Date: 2000/09/04 20:39:27 $
+#   $Date: 2000/09/05 04:27:07 $
 #   $RCSfile: manualscore,v $
-#   $Revision: 1.12 $
+#   $Revision: 1.13 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -112,9 +112,8 @@ proc make_diff {} {
 	}
     }
 
-    set l "==================================="
     write_file $diff_file \
-	       "diff $output_file $test_file\n$l"
+	       "diff $output_file $test_file"
     catch { exec diff $output_file $test_file \
                       >>& $diff_file }
     return $diff_file
@@ -138,9 +137,8 @@ proc make_bdiff {} {
 	}
     }
 
-    set l "==================================="
     write_file $bdiff_file \
-	     "diff -b $output_file $test_file\n$l"
+	     "diff -b $output_file $test_file"
     catch { exec diff -b $output_file $test_file \
                       >>& $bdiff_file }
     return $bdiff_file
@@ -195,9 +193,11 @@ Please select a new current score:
     }
 }
 
-if { [file exists $compiler_error_file] } {
+if { [file exists $compiler_error_file] \
+     && [file size $compiler_error_file] > 0 } {
     set last_file $compiler_error_file
-} elseif { [file exists $error_file] } {
+} elseif { [file exists $error_file] \
+     && [file size $error_file] > 0 } {
     set last_file $error_file
 } else {
     set last_file [make_bdiff]
@@ -212,11 +212,12 @@ while { "yes" } {
     puts "Auto Score: $auto_score    Current score:\
                                      $manual_score"
 
-    puts "=========================== $last_file:"
+    puts "==========================================\
+          $last_file:"
     put_file $last_file stdout 10
 
-    puts -nonewline "
-======================================================
+    puts -nonewline \
+"======================================================
 d = view .diff      b = view .bdiff     o = view .out
 t = view .test      e = view .err       p = view\
 				$submitted_extension
@@ -257,42 +258,57 @@ x = exit without doing anthing
 		    catch { view_file $last_file }
 		} \
         accept	{
-		    write_file $manual_score_file \
-		               $manual_score
-		    if { $manual_score \
-		         == $auto_score } {
-			reply "For $submitted_file your\
-			       automatic score of:" \
-			      "" \
-			      "    $auto_score" \
-			      "" \
-			      "has been accepted by the\
-			       human judge!"
-		    } elseif { $scoring_mode \
-			       == "manual" } {
-			reply "For $submitted_file your\
-			       final score is:" \
-			      "" \
-			      "    $manual_score"
-		    } else {
-			reply "For $submitted_file your\
-			       automatic score of:" \
-			      "" \
-			      "    $auto_score" \
-			      "" \
-			      "has been OVERRIDDEN by\
-			       the human judge!" \
-			      "" \
-			      "The human judge has\
-			       assigned the FINAL\
-			       SCORE:" \
-			      "" \
-			      "    $manual_score"
-		    }
+		    puts -nonewline "
+Confirm final score `$manual_score' (y or n): "
+		    set answer [gets stdin]
 
-		    puts "Accepted Manual Score:\
-		          \    $manual_score"
-		    exit 0
+		    if { [llength $answer] == 1 \
+		         && [regexp {y|Y} \
+			        [lindex $answer 0]] } {
+
+			write_file $manual_score_file \
+				   $manual_score
+			if { $manual_score \
+			     == $auto_score } {
+			    reply "For $submitted_file\
+			           your automatic score\
+				   of:" \
+				  "" \
+				  "    $auto_score" \
+				  "" \
+				  "has been accepted by\
+				   the human judge!"
+			} elseif { $scoring_mode \
+				   == "manual" } {
+			    reply "For $submitted_file\
+			           your final score\
+				   is:" \
+				  "" \
+				  "    $manual_score"
+			} else {
+			    reply "For $submitted_file\
+			           your automatic score\
+				   of:" \
+				  "" \
+				  "    $auto_score" \
+				  "" \
+				  "has been OVERRIDDEN\
+				   by the human\
+				   judge!" \
+				  "" \
+				  "The human judge has\
+				   assigned the FINAL\
+				   SCORE:" \
+				  "" \
+				  "    $manual_score"
+			}
+
+			puts "Accepted Manual Score:\
+			      \    $manual_score"
+			exit 0
+		    } else {
+		        puts "NOT confirmed!"
+		    }
 		} \
 	reject	{ get_new_score } \
 	exit	{ exit 0 } \

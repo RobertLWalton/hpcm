@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: acm-cont $
-#   $Date: 2000/08/31 06:31:26 $
+#   $Date: 2000/09/05 04:27:06 $
 #   $RCSfile: extractmail,v $
-#   $Revision: 1.11 $
+#   $Revision: 1.12 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -166,7 +166,9 @@ while { "yes" } {
     if { [eof $received_ch] } {
         extract_error_reply \
 	    "Could not find `BEGIN' line."
-    } elseif { [regexp "^BEGIN $filename\$" $line] } {
+    } elseif { [regexp {^BEGIN (.*)$} $line \
+                       forget beginname] \
+	       && $beginname == $filename } {
     	break
     } elseif { [regexp {^BEGIN} $line] } {
     	extract_error_reply \
@@ -200,7 +202,9 @@ while { "yes" } {
     } elseif { [regexp {^\.\.(.*)$} $line \
                        forget real_line] } {
 	puts $file_ch $real_line
-    } elseif { [regexp "^END $filename\$" $line] } {
+    } elseif { [regexp {^END (.*)$} $line \
+                       forget endname] \
+	       && $endname == $filename } {
     	break
     } elseif { [regexp "^END" $line] } {
         extract_error_reply \
