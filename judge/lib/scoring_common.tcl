@@ -2,7 +2,7 @@
 #
 # File:		scoring_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Aug 29 14:09:35 EDT 2001
+# Date:		Wed Aug 29 17:45:41 EDT 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/08/29 18:58:43 $
+#   $Date: 2001/08/29 21:33:06 $
 #   $RCSfile: scoring_common.tcl,v $
-#   $Revision: 1.6 $
+#   $Revision: 1.7 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -132,7 +132,7 @@ proc compute_instruction_array { } {
 
     if { [info exists instruction_array(number)] } {
         set differences \
-	    [lrange $instruction_array(number) 1 end]]
+	    [lrange $instruction_array(number) 1 end]
 	if { ! [info exists \
 	             instruction_array(integer)] } {
 	     set instruction_array(integer) \
