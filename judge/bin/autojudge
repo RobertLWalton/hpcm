@@ -5,7 +5,7 @@
 #
 # File:		autojudge
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Jan 24 03:07:44 EST 2002
+# Date:		Thu Jan 24 06:11:20 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/01/24 08:07:55 $
+#   $Date: 2002/01/24 11:35:41 $
 #   $RCSfile: autojudge,v $
-#   $Revision: 1.67 $
+#   $Revision: 1.68 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -509,7 +509,8 @@ autojudge \[problem\[.extension\]\]
 
 	\$manual_score
 	    The value of the $manual_score_file file, or
-	    `None' if this file does not exist.
+	    `None' if this file does not exist.  Always
+	    set to `None' in the autojudge program.
 
 	\$proposed_score
 	    The score which the person running the
@@ -1081,16 +1082,87 @@ if { [catch { exec extractmail } extractout] } {
 execute_links $files
 
 # Function to execute response instruction commands
-# after it-statement processing.
+# after if-statement processing.
 #
 proc execute_response_commands { commands } {
+
+    set count 0
+    set mode ""
+    set processed_commands ""
+    foreach command $commands {
+        incr count
+	if { [catch { llength $command }] } {
+	    error "In $response_instructions_file file\
+	           value, badly formatted command:\
+		   $command."
+	}
+        switch -- [lindex $command 0] {
+	    FINAL	-
+	    NON-FINAL	-
+	    NO-REPLY	{
+	        if { $count != 1 } {
+		    error "In\
+		           $response_instructions_file\
+			   file value, $command is not\
+			   the first executable\
+			   command."
+		}
+	    }
+	    BLANK		-
+	    INPUT		-
+	    RECEIVED-HEADER	-
+	    RECEIVED-BODY	{
+	        lappend processed_commands $command
+	    }
+
+	    LINE	-
+	    LINES	-
+	    BAR		{
+	        set new_command [lindex $command 0]
+		foreach string  \
+			[lrange $command 1 end] {
+		    regsub -all -- {-PROBLEM-} \
+		           $string $problem string
+		    regsub -all -- {-AUTO-SCORE-} \
+		           $string $auto_score string
+		    regsub -all -- {-MANUAL-SCORE-} \
+		           $string $manual_score string
+		    regsub -all -- {-PROPOSED-SCORE-} \
+		           $string $proposed_score string
+		    lappend new_command $string
+		}
+		lappend processed_commands $command
+	    }
+
+	    FIRST	-
+	    SUMMARY	{
+	        error "Not implemented yet: $command"
+	    }
+
+	    default	{
+		error "In $response_instructions_file\
+		       file, unrecognized command:\
+		       $command"
+	    }
+	}
+    }
+
+    if { $mode == "" } {
+	error "In $response_instructions_file file\
+	       first executable command is not\
+	       FINAL, NON-FINAL, or NO-REPLY"
+    }
+
+    ??? compose_reply ???
 }
 
 # Function to evaluate if-statement expression.
 #
 proc eval_if_expression { item } {
     global scoring_mode auto_score manual_score \
-           proposed_score manual proposed
+           proposed_score
+    set manual [expr { $manual_score != "None" }]
+    set proposed [expr { $proposed_score != "None" }]
     return [expr $item]
 }
 
@@ -1158,15 +1230,15 @@ proc parse_block { block commands } {
 }
 
 # Function to process $response_instructions_file value.
+# The global variables scoring_mode, auto_score,
+# manual_score, and proposed_score must be set.  The
+# latter two can be set to `None' if unused.
 #
 proc execute_response_instructions \
     { response_instructions } {
 
     global scoring_mode auto_score manual_score \
-    	   proposed_score manual proposed
-
-    set manual [expr { $manual_score != "None" }]
-    set proposed [expr { $proposed_score != "None" }]
+    	   proposed_score
 
     set commands ""
     parse_block \
