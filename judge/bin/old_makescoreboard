@@ -4,7 +4,7 @@
 #
 # File:		makescoreboard
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Oct  2 13:19:25 EDT 2000
+# Date:		Sat Nov  4 05:09:21 EST 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/10/02 17:18:09 $
+#   $Date: 2000/11/04 10:53:08 $
 #   $RCSfile: old_makescoreboard,v $
-#   $Revision: 1.1 $
+#   $Revision: 1.2 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -40,15 +40,25 @@ makescoreboard \[interval\]
     to make the scoreboard, and prepends any contest
     directory scoreboard.1head file to the output of the
     scoreboard program.  This program uses the directory
-    score flag file and mtimes of files to avoid actual-
-    ly recomputing the scoreboard.1 file unnecessarily.
+    score flag file and mtimes of files, including
+    $judging_parameters_file, to avoid actually\
+    				recomputing the
+    scoreboard.1 file unnecessarily.
 
     Deleting the existing scoreboard.1 file will cause
     this program to recompute that file when its next
-    interval expires."
+    interval expires.
+    
+    Calling this program with an interval of 0 will
+    cause this program to recompute scoreboard.1 and
+    exit immediately.
 
-# If any non interval arguments, print
-# documentation and exit.
+    This program ignores signals when writing the score-
+    board, and terminates without error on a signal
+    while the program is sleeping for the interval."
+
+# If any non interval arguments, print documentation and
+# exit.
 #
 if { $argc > 1 \
      || ( $argc == 1 \
@@ -57,48 +67,86 @@ if { $argc > 1 \
     exit 1
 }
 
+# Set interval.
+#
 if { $argc == 1 } {
     set interval [lindex $argv 0]
     if { [catch { expr $interval }] \
-    	 || $interval <= 0 } {
-    	error "$interval is not an integer > 0"
+    	 || $interval < 0 } {
+    	error "$interval is not an integer >= 0"
     }
 } else {
     set interval 60
 }
 
+# Abbreviate long file names.
+#
 set sbfile $contest_directory/scoreboard.1
 set sbhead $contest_directory/scoreboard.1head
+set jparam $judging_directory/$judging_parameters_file
 
+# Ignore signals except during sleep (see below).
+#
+make_signals_ignored
+
+# Loop forever (unless interval == 0).
+#
 while { "yes" } {
 
+    # Clear score flag.  If its reset after we have
+    # started to compute new scoreboard.1, then we need
+    # to compute again.
+    #
     clear_flag $score_flag_file
 
+    # Check for unwritable contest directory.
+    #
     if { ! [file isdirectory $contest_directory] \
 	 || ! [file writable $contest_directory] } {
 	error "$contest_directory is not a writable\
 	       directory"
     }
 
+    # Delete old scoreboard.1
+    #
     if { [file exists $sbfile] } {
 	file delete -force $sbfile
     }
 
+    # Copy scoreboard.1head to scoreboard.1.
+    #
     if { [file exists $sbhead] } {
 	file copy $sbhead $sbfile
     }
 
+    # Fill in rest of scoreboard.1.
+    #
     exec scorefinder | scoreboard >> $sbfile
 
+    # Make scoreboard.1 readable by everyone.
+    #
     grant_access $sbfile
 
+    # If interval == 0 do NOT loop indefinitely.
+    #
+    if { $interval == 0 } break
+
+    # Sleep waiting for something to happen that
+    # indicates scoreboard.1 needs recomputing.
+    #
     while { "yes" } {
+
+        make_signals_default
 	sleep $interval
+	make_signals_ignored
+
     	if { [test_flag $score_flag_file] } break
 	if { ! [file exists $sbfile] } break
 	if { [file exists $sbhead] \
 	     && [file mtime $sbfile] \
 	        < [file mtime $sbhead] } break
+	if { [file mtime $sbfile] \
+	        < [file mtime $jparam] } break
     }
 }
 
