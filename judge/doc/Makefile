@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Sep 25 09:40:05 EDT 2002
+# Date:		Thu Nov  7 04:58:03 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/09/25 13:44:22 $
+#   $Date: 2002/11/07 09:58:34 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.21 $
+#   $Revision: 1.22 $
 
 # make
 #	Makes documentation as fprintable .doc files in
@@ -51,6 +51,7 @@ DOCS=	overview.doc \
 	contestant/hpcm_extract.doc \
 	contestant/hpcm_extract_test_replies.doc \
 	contestant/hpcm_get.doc \
+	contestant/hpcm_helper.doc \
 	secure/hpcm_make_accounts.doc \
 	judge/hpcm_print_passwords.doc \
 	contestant/hpcm_sandbox.doc \
@@ -60,6 +61,7 @@ DOCS=	overview.doc \
 	secure/hpcm_set_passwords.doc \
 	contestant/hpcm_submit.doc \
 	secure/hpcm_TRASH_ACCOUNTS.doc \
+	contestant/javahelp.doc \
 	judge/jprint.doc \
 	judge/lookat.doc \
 	judge/lpq.doc \
@@ -355,6 +357,11 @@ contestant/hpcm_get.doc:	\
 	rm -f contestant/hpcm_get.doc
 	-../../contestant/bin/hpcm_get -doc \
 	    >contestant/hpcm_get.doc
+contestant/hpcm_helper.doc:	\
+		        ../../contestant/bin/hpcm_helper
+	rm -f contestant/hpcm_helper.doc
+	-../../contestant/bin/hpcm_helper -doc \
+	    >contestant/hpcm_helper.doc
 contestant/hpcm_sandbox.doc:	\
 		../../contestant/bin/hpcm_sandbox
 	rm -f contestant/hpcm_sandbox.doc
@@ -370,6 +377,11 @@ contestant/hpcm_submit.doc:	\
 	rm -f contestant/hpcm_submit.doc
 	-../../contestant/bin/hpcm_submit -doc \
 	    >contestant/hpcm_submit.doc
+contestant/javahelp.doc:	\
+		../../contestant/bin/javahelp
+	rm -f contestant/javahelp.doc
+	-../../contestant/bin/javahelp -doc \
+	    >contestant/javahelp.doc
 contestant/lpq.doc:	../../contestant/bin/lpq
 	rm -f contestant/lpq.doc
 	-../../contestant/bin/lpq -doc \
