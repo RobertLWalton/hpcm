@@ -4,7 +4,7 @@
 #
 # File:		extractmail
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Aug 31 02:27:20 EDT 2000
+# Date:		Tue Sep 12 15:40:44 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: acm-cont $
-#   $Date: 2000/09/05 04:27:06 $
+#   $Date: 2000/09/12 19:40:04 $
 #   $RCSfile: extractmail,v $
-#   $Revision: 1.12 $
+#   $Revision: 1.13 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -25,7 +25,7 @@ exec tcl "$0" "$@"
 # Include common code and parameters:
 #
 set lib_directory "[file dirname $argv0]/../lib"
-source "$lib_directory/judging_common.tcl"
+source $lib_directory/judging_common.tcl
 catch {
 
 set document "
@@ -66,7 +66,7 @@ cd submission_directory; extract
     single line, and prints nothing else.
 
     Otherwise, if the submitted email has even the
-    slightest formatting error, of if the filename is
+    slightest formatting error, or if the filename is
     illegal (contains a `/', or begins with either `.'
     or `-') this program constructs a `$reply_file' file
     giving reasons why the submission email is invalid.
@@ -86,7 +86,7 @@ cd submission_directory; extract
     dispatch' will not invoke the `autojudge' program
     (the value has less than two items when viewed as
     a list, or does not have a first item equal to
-    `submit'."
+    `submit')."
 
 if { $argc != 0 } {
     puts $document
@@ -155,8 +155,12 @@ if { [file readable $filename] \
 # If $filename exists, delete it.
 #
 if { [file exists $filename] } {
+    puts "Deleting out-of-date $filename"
     file delete -force $filename
 }
+
+set WS "\[\ \t\]"
+set NWS "\[^\ \t]"
 
 # Look for BEGIN line.
 #
@@ -166,14 +170,14 @@ while { "yes" } {
     if { [eof $received_ch] } {
         extract_error_reply \
 	    "Could not find `BEGIN' line."
-    } elseif { [regexp {^BEGIN (.*)$} $line \
+    } elseif { [regexp "^BEGIN$WS+($NWS+)$WS*\$" $line \
                        forget beginname] \
 	       && $beginname == $filename } {
     	break
     } elseif { [regexp {^BEGIN} $line] } {
     	extract_error_reply \
 	    "Badly formatted BEGIN line:" $line
-    } elseif { [regexp "^\[\ \t\]*\$" $line] } {
+    } elseif { [regexp "^$WS*\$" $line] } {
     	# blank lines are ok
     } else {
     	extract_error_reply \
@@ -202,7 +206,7 @@ while { "yes" } {
     } elseif { [regexp {^\.\.(.*)$} $line \
                        forget real_line] } {
 	puts $file_ch $real_line
-    } elseif { [regexp {^END (.*)$} $line \
+    } elseif { [regexp "^END$WS+($NWS+)$WS*\$" $line \
                        forget endname] \
 	       && $endname == $filename } {
     	break
@@ -221,7 +225,7 @@ while { "yes" } {
     set line [gets $received_ch]
     if { [eof $received_ch] } {
 	break
-    } elseif { [regexp "^\[\ \t\]*\$" $line] } {
+    } elseif { [regexp "^$WS*\$" $line] } {
     	# blank lines are ok
     } else {
         extract_error_reply \

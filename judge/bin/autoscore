@@ -4,7 +4,7 @@
 #
 # File:		autoscore
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Sep 11 10:07:53 EDT 2000
+# Date:		Tue Sep 12 15:29:48 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: acm-cont $
-#   $Date: 2000/09/11 14:28:51 $
+#   $Date: 2000/09/12 19:40:03 $
 #   $RCSfile: autoscore,v $
-#   $Revision: 1.16 $
+#   $Revision: 1.17 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -25,21 +25,21 @@ exec tcl "$0" "$@"
 # Include common code and parameters:
 #
 set lib_directory "[file dirname $argv0]/../lib"
-source "$lib_directory/judging_common.tcl"
+source $lib_directory/judging_common.tcl
 catch {
 
 set document "
 cd submission_directory; autoscore program_name
 
     Given the submission directory as the current dir-
-    ectory, given the program name (e.g. pppp), and
-    given the output file (pppp.out), optional error
-    file (pppp.err), and test file (pppp.test, the
-    judge's solution's version of the output file),
-    computes the `$auto_score_file' file in the\
-                                         submission
-    directory, using purely automatic (non-manual
-    means).
+    							/
+    ectory, given the program name (e.g. pppp), the test
+    file (pppp.test, the judge's solution's version of
+    the output file), and optionally the output file
+    (pppp.out) and the error file (pppp.err), computes
+    the `$auto_score_file' file in the submission\
+					    directory,
+    using purely automatic (non-manual means).
 
     If the error file (pppp.err) exists and is non-
     empty, the score is one of:
@@ -55,7 +55,7 @@ cd submission_directory; autoscore program_name
     exceedments from other memory errors, and they
     are all classed as `Program Crashed'.
 
-    If the error file does not exist or is empty, but
+    If the error file does not exist or is empty, and
     the output file does not exist, the score is:
 
 	Program Crashed
@@ -105,6 +105,13 @@ cd submission_directory; autoscore program_name
 			much as R, where A and R are
 			floating point values.
 
+			The `number' item implies the
+			`whitespace' item, as a small
+			difference in a number can make
+			a difference in the whitespace
+			that immediately precedes the
+			number.
+
 	decimal		Allow two files to have matching
 			numbers that have different
 			numbers of decimal digits, or
@@ -138,10 +145,10 @@ cd submission_directory; autoscore program_name
     If scorediff reports `nonblank' or `eof2' (output
     has non-whitespace after test file ends), or if
     scorediff reports a `number' difference greater than
-    allowed by the ${scoring_instructions_file}, the
+    allowed by the $scoring_instructions_file, the
     output is incorrect.  Otherwise, if scorediff
     reports something other than `eof1' that is not
-    allowed by ${scoring_instructions_file}, the output
+    allowed by $scoring_instructions_file, the output
     has a formatting error.  Otherwise if scorediff
     reports `eof1' the output is incomplete.  Otherwise
     the output is correct.
@@ -153,7 +160,8 @@ cd submission_directory; autoscore program_name
                     ----------------
                     max ( |x|, |y| )
 
-    which has a maximum value of 2.
+    which has a maximum value of 2.  If x = y = 0, the
+    relative difference of x and y is defined to be 0.
 
     The score is written to the `$auto_score_file' file
     in the submission directory and is also written as a
@@ -162,8 +170,8 @@ cd submission_directory; autoscore program_name
     For the purpose of computing character line column
     positions, tabs are set every 8 columns."
 
-# If wrong number of arguments print documentation and
-# exit with error.
+# If wrong number of arguments or first argument begins
+# with `-', print documentation and exit with error.
 #
 if { $argc != 1 || [regexp {^-} [lindex $argv 0]] } {
     puts $document
@@ -173,9 +181,9 @@ if { $argc != 1 || [regexp {^-} [lindex $argv 0]] } {
 # Set file names and check file permissions.
 #
 set program_name [lindex $argv 0]
-set output_file "${program_name}.out"
-set error_file  "${program_name}.err"
-set test_file   "${program_name}.test"
+set output_file $program_name.out
+set error_file  $program_name.err
+set test_file   $program_name.test
 
 # Initialize score to blank.
 #
@@ -239,7 +247,7 @@ if { $score == "" } {
     set last ""
     foreach i $scoring_instructions {
 	if { $last == "number" } {
-	    if { [catch "expr $i"] } {
+	    if { [catch { expr $i }] } {
 	        error \
 		    "Non-number after `number' in\
 		     scoring instructions: $i"
@@ -247,7 +255,7 @@ if { $score == "" } {
 	    set number_absdiff $i
 	    set last absdiff
 	} elseif { $last == "absdiff" } {
-	    if { [catch "expr $i"] } {
+	    if { [catch { expr $i }] } {
 	        error \
 		    "Non-number after `number' in\
 		     scoring instructions: $i"
@@ -256,6 +264,7 @@ if { $score == "" } {
 	    set last ""
 	} elseif { $i == "number" } {
 	    set number_ok yes
+	    set whitespace_ok yes
 	    set last number
 	} elseif { $i == "decimal" } {
 	    set decimal_ok yes
