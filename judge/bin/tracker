@@ -7,7 +7,7 @@
 #
 # File:		tracker
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Oct  4 14:44:43 EDT 2000
+# Date:		Sun Oct  8 16:02:38 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -16,9 +16,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/10/05 04:06:55 $
+#   $Date: 2000/10/08 22:12:17 $
 #   $RCSfile: tracker,v $
-#   $Revision: 1.2 $
+#   $Revision: 1.3 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -315,7 +315,7 @@ proc clear_list {} {
 }
 
 # Add directories with unchecked errors to directory
-# list and print summary.
+# list, and return printable summary string.
 #
 proc add_err {} {
 
@@ -345,8 +345,9 @@ proc add_err {} {
     return $result
 }
 
-# Add directories with `Subject:'s not handled by
-# autodispatch and no reply or no_reply.
+# Add directories with `Subject:'s not handled by auto-
+# dispatch and no reply or no_reply to directory list,
+# and return printable summary string.
 #
 proc add_nonauto {} {
 
@@ -377,35 +378,135 @@ proc add_nonauto {} {
     return $result
 }
 
-# Return a time in 6 characters or less, the last
-# character indicating unit.  The format is either
+# Add directories with too old dispatch pid files to
+# directory list, and return printable summary string.
 #
-#	MM:SSs		s = denotes seconds
-#	HH:MMm		m = denotes minutes
-#	DD:HHh		h = denotes hours
-#	DDDDDd		d = denotes days
-#
-proc format_time { time } {
-    set MM [expr { $time / 60 }]
-    set SS [expr { $time - 60 * $MM } ] 
-    set HH [expr { $MM / 60 }]
-    set MM [expr { $MM - 60 * $HH }]
-    set DD [expr { $HH / 24 }]
-    set HH [expr { $HH - 24 * $DD }]
-    if { $DD > 99 } {
-    	return "${DD}d"
-    } elseif { $DD > 0 } {
-    	return "[format {%d:%02d} $DD $HH]h"
-    } elseif { $HH > 0 } {
-    	return "[format {%d:%02d} $HH $MM]m"
-    } else {
-    	return "[format {%d:%02d} $MM $SS]s"
+proc add_pid { { too_old "" } } {
+
+    global directory_list directory_list_length \
+    	   pid_array dispatch_too_old
+
+    set result ""
+    if { $too_old == "" } {
+	set too_old $dispatch_too_old
     }
+    foreach dir [array names pid_array] {
+        set pid_line $pid_array($dir)
+	set mtime [lindex $pid_line 1]
+	set rtime [lindex $pid_line 2]
+	set elapsed [expr { $rtime - $mtime }]
+	if { $elapsed < $too_old } continue
+
+	lappend directory_list $dir
+	incr directory_list_length
+	set result "$result\n[format {%3d. %s} \
+	                      $directory_list_length \
+			      $dir]"
+	set result "$result\n         running for\
+		    $elapsed seconds"
+    }
+
+    return $result
 }
 
-read_input stdin
-puts [add_err]
-puts [add_nonauto]
+# Add directories with `Subject:'s handled by autodis-
+# patch and no reply or no_reply to directory list,
+# and return printable summary string.
+#
+proc add_auto {} {
+
+    global directory_list directory_list_length \
+    	   rec_array rep_array pid_array
+
+    set result ""
+    foreach dir [array names rec_array] {
+        set rec_line $rec_array($dir)
+	if { [info exists rep_array($dir)] } {
+	    continue
+	}
+	set subject [lindex $rec_line 2]
+	if { [llength $subject] >= 1 \
+	     && [lsearch -exact {submit get} \
+	     		 [lindex $subject 0]] < 0 } {
+	    continue
+	}
+
+	lappend directory_list $dir
+	incr directory_list_length
+	set result "$result\n[format {%3d. %s} \
+	                      $directory_list_length \
+			      $dir]"
+	if { [info exists pid_array($dir)] } {
+	    set pid_line $pid_array($dir)
+	    set mtime [lindex $pid_line 1]
+	    set rtime [lindex $pid_line 2]
+	    set elapsed [expr { $rtime - $mtime }]
+
+	    set result "$result\n         $subject\
+                        \        running for $elapsed\
+			seconds"
+	} else {
+	    set result "$result\n         $subject"
+	}
+    }
+
+    return $result
+}
+
+# Given the number of an entry in the directory list,
+# call manualreply for that directory, and on return
+# reread that directory.  Return a string that can be
+# printed to indicate success or failure.
+#
+proc call_manualreply { index } {
+
+    global directory_list directory_list_length \
+	   mail_directory
+
+    if { $index < 1 \
+	 || $index > $directory_list_length } {
+	return "$index out of range"
+    }
+
+    set dir \
+	[lindex $directory_list [expr { $index - 1 }]]
+
+    if { [regexp {^.*-<<.*>>-submission$} $dir] } {
+	set dir $mail_directory/$dir
+    }
+
+    exec manualreply $dir >@ stdout 2>@ stderr
+
+    set ch [open "| trackfinder $dir" r]
+    read_input $ch
+    close $ch
+
+    return "Done with $dir"
+}
+
+
+set ch [open "|trackfinder" r]
+read_input $ch
+close $ch
+
+set output ""
+while { "yes" } {
+    set directory_list ""
+    set directory_list_length 0
+    puts [add_err]
+    puts [add_nonauto]
+    puts [add_pid]
+    puts [add_auto]
+    puts ""
+    puts "$output"
+    puts -nonewline "> "
+    flush stdout
+    set answer [string trim [gets stdin]]
+    if { [eof stdin] } break
+    if { ! [catch { expr { $answer } }] } {
+	set output [call_manualreply $answer]
+    }
+}
 
 exit 0
 
