@@ -3,7 +3,7 @@
 ;;;; File:	hpcm_clisp.lsp
 ;;;; Author:	Bob Walton <walton@deas.harvard.edu>
 ;;;; Modifier:  CS 182 (Attila Bodis)
-;;;; Date:	Fri Jan 11 03:48:15 EST 2002
+;;;; Date:	Sat Jan 12 01:32:25 EST 2002
 ;;;;
 ;;;; The authors have placed this program in the public
 ;;;; domain; they make no warranty and accept no
@@ -12,9 +12,9 @@
 ;;;; RCS Info (may not be true date or author):
 ;;;;
 ;;;;   $Author: hc3 $
-;;;;   $Date: 2002/01/11 08:48:22 $
+;;;;   $Date: 2002/01/12 06:37:40 $
 ;;;;   $RCSfile: hpcm_clisp.lsp,v $
-;;;;   $Revision: 1.16 $
+;;;;   $Revision: 1.17 $
 ;;;;
 ;;;;
 ;;;; This file was originally written by the Bob Walton
@@ -124,7 +124,9 @@
   if the :OUT file has no extension, this program
   adds the \".out\" extension to it.  An :OUT value of
   T is equivalent to the name of the :IN file with the
-  extension changed to \".out\".
+  extension changed to \".out\".  An :IN value of T
+  is equivalent to the standard input; this just adds
+  echoing to the standard input.
 
   If a :PAUSE argument is given a true value, and if
   output is to the screen, then RUN will pause just
@@ -153,6 +155,7 @@
   ; Process arguments checking type and range.
 
   (cond
+   ((eq in t)) ;do nothing
    ((pathnamep in)) ;do nothing
    ((and (symbolp in) (not (null in)))
     (setf in (pathname in)))
@@ -178,7 +181,8 @@
   
   
   (cond
-   ((and (null (pathname-type in))
+   ((and (not (eq in t))
+         (null (pathname-type in))
    	 (not (open in :direction :probe)))
     (setf in (make-pathname :type "in" :defaults in))
     (cond
@@ -201,7 +205,11 @@
 	 (*print-level* 100)
 	 (*print-length* 1000))
 	
-	(setf *run-input* (open in :direction :input))
+	;; Must use *terminal-io* to for stanard input.
+
+	(setf *run-input*
+	      (if (eq in t) *terminal-io*
+	          (open in :direction :input)))
 	(if out (setf *run-output*
 		      (open out :direction :output
 		            :if-exists :supersede)))
@@ -211,8 +219,7 @@
 	  (setf *standard-input*
 		(make-echo-stream *run-input*
 		                  *terminal-io*))
-	  (fresh-line)
-	  (terpri))
+	  (fresh-line))
 	 (out
 
 	  (setf *terminal-io*
@@ -294,8 +301,10 @@
 	    (fresh-line)))
    
    (cond
-    (*run-input* (close *run-input*)
-    		 (setf *run-input* nil)))
+    (*run-input*
+     (if (not (eq *run-input* *terminal-io*))
+         (close *run-input*))
+     (setf *run-input* nil)))
    (cond
     (*run-output* (close *run-output*)
                   (setf *run-output* nil))))

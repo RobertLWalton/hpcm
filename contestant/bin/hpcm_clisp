@@ -4,7 +4,7 @@
 #
 # File:		hpcm_clisp
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Fri Jan 11 23:41:37 EST 2002
+# Date:		Sat Jan 12 01:31:17 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/01/12 04:43:46 $
+#   $Date: 2002/01/12 06:37:40 $
 #   $RCSfile: hpcm_clisp,v $
-#   $Revision: 1.2 $
+#   $Revision: 1.3 $
 
 d=`dirname $0`
 
@@ -28,11 +28,14 @@ case "$1" in
 	#
     	echo "
 hpcm_clisp [input-file [output-file]]
+hpcm_clisp t
 hpcm_clisp -i load-file -x s-expression
 
     Execute COMMONLISP interpreter.  If input-file is
     given, it replaces terminal input, and if output-
-    file is given, it replaces standard output.
+    file is given, it replaces standard output.  If
+    t is given as the input file, the standard input
+    is used but is echoed.
 
     For this case see documentation obtainable from
     
@@ -58,15 +61,28 @@ hpcm_clisp -i load-file -x s-expression
         exec clisp -q "$@"
 	;;
     ?*)
+        case "$1" in
+	    t | T) in=$1 ;;
+	    *)     in="\"$1\"" ;;
+	esac
     	case "$2" in
 	    "")
-		exec clisp -q -i $d/hpcm_clisp.lsp \
-		           -x "(run :in \"$1\")"
+		exec clisp -q -x \
+		     "(progn (load \"$d/hpcm_clisp.lsp\"
+		                   :verbose nil)
+		      (run :in $in))"
+	    	;;
+	    t | T)
+		exec clisp -q -x \
+		     "(progn (load \"$d/hpcm_clisp.lsp\"
+		                   :verbose nil)
+		      (run :in $in :out t))"
 	    	;;
 	    *)
-		run="(run :in \"$1\" :out \"$2\")"
-		exec clisp -q -i $d/hpcm_clisp.lsp \
-			   -x "$run"
+		exec clisp -q -x \
+		     "(progn (load \"$d/hpcm_clisp.lsp\"
+		                   :verbose nil)
+		      (run :in $in :out \"$2\"))"
 	    	;;
 	esac
 	;;
