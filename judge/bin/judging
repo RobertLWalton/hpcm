@@ -4,7 +4,7 @@
 #
 # File:		judging
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Oct 31 06:13:19 EST 2002
+# Date:		Thu Oct 31 07:18:55 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/10/31 11:14:52 $
+#   $Date: 2002/10/31 13:41:08 $
 #   $RCSfile: judging,v $
-#   $Revision: 1.15 $
+#   $Revision: 1.16 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -72,12 +72,6 @@ should execute
 	chmod g+s ~
 
 to force all file groups to be the main judging group.
-You also need to set the permissions on ~/hpcm files
-to include group permissions.  The following commands
-can do this:
-
-    find ~/hpcm -perm -u+r -exec chmod g+r {} \\;
-    find ~/hpcm -perm -u+x -exec chmod g+x {} \\;
 
 Autologout should be disabled if csh or tcsh is being
 used by
@@ -197,13 +191,41 @@ following:
 
 1.  Run `startcontest' when the contest starts to make
     the problems gettable by the contestants using
-    `hpcm_get'.
+    `hpcm_get'.  Running `startcontest delay' before
+    a formal contest starts will start a background
+    program that will run `startcontest' when the
+    contest start time arrives.
 
 2.  Check submissions and queries by running the
     `tracker' program.  This program finds submissions
     (including queries) that you have not yet responded
     to.  One can also use the `lookat' program to check
     up on things you have already responded to.
+
+At the end of a formal contest one must produce a final
+scoreboard.  This is mostly done for you in the file
+
+	~/judging*/contest/scoreboard.final
+
+However this file may need some fixup.
+
+First, the file is created only once, and may have as-
+terisks in it because it is created before the judge can
+manually review submissions made just before the stop
+time.  The fix is to manually review the submissions
+first, then delete the scoreboard.final file and
+either wait for the file to reappear or execute
+
+	cd ~/judging*
+	make update_scoreboard
+
+to make the file reappear.  After this is done, it is
+common practice to edit the scoreboard.final file so the
+names of teams that did not get many problems do not
+appear.  Then the file can be printed (e.g. by jprint)
+and distributed to all the contestants at a post contest
+meeting.
+
 
 
 Auxiliary Judging
@@ -217,8 +239,23 @@ To set up auxiliary judging accounts, be sure the main
 judging account has its own private UNIX group.  Then
 add the auxiliary account to this group.  In some UNIX
 systems (RedHat Linux), this is done by root executing
-
+
 	gpasswd -a auxiliary-account judging-group
+
+You need to set the permissions on /home/JJJ/hpcm files
+to include group permissions.  The following commands
+executed in the JJJ account can do this:
+
+    find ~/hpcm -perm -u+r -exec chmod g+r {} \\;
+    find ~/hpcm -perm -u+x -exec chmod g+x {} \\;
+
+These commands will be executed automatically if you
+do the following in the JJJ account:
+
+    cd ~/hpcm
+    make auxiliary
+
+This also updates any hpcm installation.
 
 Next, change the statement `source ~/...' near the
 beginning of the hpcm_judging.rc file in the judging
@@ -241,11 +278,11 @@ account.
 Like the main judging account, auxiliary accounts should
 turn off autologout, set the umask to 27, and set the
 shell for new mail notification.
-
+
 So that the auxiliary judges can quickly find the
 judge's directory, you may want to link it symbolically
 to ~/judge (HPCM software does not use this).  You can
-do this by
+do this by executing in the auxiliary account:
 
 	ln -s /home/JJJ ~/judge
 
@@ -253,7 +290,7 @@ Then the auxiliary judge can get to the contest judging
 directory by
 
 	cd ~/judge/judging*
-
+
 Another application is for the auxiliary judge to get to
 the HPCM documentation directory by
 
@@ -278,7 +315,7 @@ invoked from within the contest judging directory sub-
 tree, as this command when run by a judge differs from
 the command of the same name invoked by a contestant in
 how it finds the contest directory.
-
+
 When hpcm_sendmail is used by any judge, the main judge
 will see the query or comment via the same process as
 the main judge sees queries from contestants, and will
@@ -289,7 +326,8 @@ The `sq' command in manualreply (see below) also uses
 the judge's hpcm_sendmail command to send a query to the
 main judge.
 
-
+
+
 Fixing Autojudging Difficulties
 ------ ----------- ------------
 
@@ -313,7 +351,7 @@ command; e.g., if the problem is named foo, run
 the program outside the sandbox without resource limits
 (though you are in trouble if the program is a virus, so
 you might want to peek at the program first).
-
+
 The fix in this case is to increase the datasize and
 stacksize limits in the problem Makefile.  In fact, you
 may want to increase these in all the problem Makefiles.
@@ -322,7 +360,7 @@ subdirectories of the `solutions' directory.  The con-
 testant's versions are found in the subdirectories of
 either the `contest/problems' or `info/problems' direc-
 tories.
-
+
 Another possible problem with JAVA is that JAVA programs
 only access .class files by using absolute file names.
 This means that when the program is run by the judge in
@@ -348,7 +386,7 @@ Formal Contest Emergencies
 
 Minor emergencies happen about every other contest, in
 our limited experience.  So you need to prepare.
-
+
 In order to prepare for formal emergencies, be sure
 you have manpower and means to contact the teams.  If
 you are working at one site, have an extra person on
@@ -360,7 +398,7 @@ to have cell phones, cordless phones, or beepers (any of
 which may be borrowed).  The jprint command, that allows
 any judge to print a message for site managers on the
 site printers, may suffice.
-
+
 To prepare to judge a formal contest that you really
 want to work, you should read the documentation and
 in some cases the code of the very few programs that are
@@ -381,7 +419,7 @@ involved in actual judging.  These are:
 
     scorediff		Read documentation.
 
-
+
 Some of these programs call procedures in
 
 	hpcm/judge/lib/judging_common.tcl
@@ -400,7 +438,8 @@ are: have everyone on one machine, so email is internal
 to that machine; or have an email guru available to fix
 problems with email.
 
-
+
+
 An Example Contest Emergency
 -- ------- ------- ---------
 
@@ -415,7 +454,7 @@ files, and processes started dying spontaneously.  The
 judge was very concerned since he though this kind of
 problem had been solved by UNIX kernels and would not
 appear.
-
+
 The contest was a distributed contest, with a judge at
 one school and two sites with contestants at other
 schools.  The judge and one of the site managers talked
@@ -428,7 +467,7 @@ about how many processes they ran.  With the help of
 these actions, the problem went away within about 10
 minutes, though there was aftermath that we will
 describe below.
-
+
 One piece of good news is that the judge had backup
 available in the form of an assistant who had some rough
 knowledge of Linux OS issues.  The assistant found,
@@ -454,7 +493,7 @@ watch their processes.  The site manager for that team
 was contacted and asked to work with the team to reduce
 their number of open files.  There were no subsequent
 operating system problems with the contest.
-
+
 However, because processes died spontaneously, some sub-
 missions were not handled correctly during the time when
 processes were failing, and fixup was required.  Al-
@@ -462,7 +501,7 @@ though contestants can be told to resubmit, manual re-
 view of submissions also permits fixups of difficulties
 caused by process failure.  To do this, a rough know-
 ledge of how the `autojudge' program works is necessary.
-
+
 One common problem that occurred in this case is erron-
 eous scores of `Syntax Error'.  This error occurs when
 the `autojudge' program cannot make an executable binary
@@ -492,7 +531,7 @@ firmation of the auto score, the `er' and `sr' commands
 in manual reply may be used to send an explanation to
 the contestant, stating why the auto score was recom-
 puted.
-
+
 Note that the `lookat' program can also be used to
 display some information about submissions in a rough
 time range (by using `DATE::<regular-expression>'),
@@ -500,7 +539,7 @@ and double check that everything has been fixed up.
 
 
 
-
+
 Backup Plans
 ------ -----
 
@@ -529,7 +568,7 @@ necessary to split the contest, with the site that had
 difficulties becoming a separate contest, as it would
 be unfair to have teams at a site with difficulties
 competing against teams at a site with no difficulties.
-
+
 It is not a bad idea to have a backup computer for the
 judge (and for the contestants if all are on a single
 computer), and to use some program to periodically
@@ -540,7 +579,7 @@ a distributed contest, the ideal might be to have the
 backup computer located at a different site, in case
 the network at the judge's site went down.
 
-
+
 
 Judging Email and Informal Contests
 ------- ----- --- -------- --------
