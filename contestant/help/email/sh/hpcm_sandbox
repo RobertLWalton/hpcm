@@ -4,7 +4,7 @@
 #
 # File:		hpcm_sandbox
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Wed Nov  8 00:32:45 EST 2000
+# Date:		Mon Dec  4 07:58:49 EST 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/11/08 05:38:20 $
+#   $Date: 2000/12/04 13:06:11 $
 #   $RCSfile: hpcm_sandbox,v $
-#   $Revision: 1.10 $
+#   $Revision: 1.11 $
 
 # This works as-is for LINUX systems.  See comments
 # below for SUN UNIX operating systems.  For other UNIX
@@ -46,7 +46,7 @@ program=""
 for arg in "$@"; do
 
     if test ! -z "$program"; then
-    	program="$program $arg"
+    	program="$program '$arg'"
 
     else case "$arg" in
 	-cputime | -datasize | -filesize \
@@ -67,7 +67,6 @@ for arg in "$@"; do
 		            '[0-9]*\([^0-9].*\)$' `
 
 		case $scale in
-		    "" )	;;
 		    k )	number=`expr $number \* 1024`
 			    ;;
 		    m )	number=`expr $number \* 1024 \
@@ -113,17 +112,27 @@ for arg in "$@"; do
 	    ;;
 
 	-watch )
-	    watch=yes
+	    if test -z "$operation"; then
+		watch=yes
+	    else
+	        echo "ERROR: misplaced argument: $arg"
+		exit 1
+	    fi
 	    ;;
 
 	* )
-	    program=$arg
+	    if test -z "$operation"; then
+		program="'$arg'"
+	    else
+	        echo "ERROR: misplaced argument: $arg"
+		exit 1
+	    fi
 	    ;;
     esac; fi
 
 done
 
-case $program in
+case "$program" in
 
     "" | -* )
 	echo "
@@ -186,14 +195,14 @@ ulimit -u $processes
 ulimit -n $openfiles
 
 # Execute the program.  If -watch given, look to see if
-# the program returned with a signal, if and yes, print
+# the program returned with a signal, and if yes, print
 # a message identifying the signal and exit with a code
 # equal to 128+signal number (just as /bin/sh does).
 # Otherwise exit with code 0 (so contestants do not have
 # to control their exit code).
 #
 if test ! -z "$watch"; then
-    $program
+    eval $program
     status=$?
     if test $status -ge 128; then
         signal=`expr $status - 128`
@@ -235,7 +244,7 @@ if test ! -z "$watch"; then
 	exit $status
     fi
 else
-    $program
+    eval $program
 fi
 
 exit 0
