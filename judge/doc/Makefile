@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Feb 13 00:25:56 EST 2002
+# Date:		Mon Mar 18 18:14:49 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/02/13 07:18:17 $
+#   $Date: 2002/03/18 23:13:43 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.15 $
+#   $Revision: 1.16 $
 
 # make
 #	Makes documentation as fprintable .doc files in
@@ -38,12 +38,12 @@ DOCS=	overview.doc \
 	judge/autojudge.doc \
 	judge/autoscore.doc \
 	judge/chkpage.doc \
-	judge/difffilter.doc \
 	judge/dispatchmail.doc \
 	judge/extractmail.doc \
 	judge/fcheck.doc \
 	judge/fcheckc.doc \
 	judge/file_list.doc \
+	judge/filtered_diff.doc \
 	judge/fprint.doc \
 	contestant/fprint.doc \
 	contestant/help.doc \
@@ -155,11 +155,6 @@ judge/chkpage.doc:	hpcm_judging.rc \
 	rm -f judge/chkpage.doc
 	-../../judge/bin/chkpage -doc \
 	    >judge/chkpage.doc
-judge/difffilter.doc:	hpcm_judging.rc \
-		        ../../judge/bin/difffilter
-	rm -f judge/difffilter.doc
-	-../../judge/bin/difffilter -doc \
-	    >judge/difffilter.doc
 judge/dispatchmail.doc:	hpcm_judging.rc \
 			../../judge/bin/dispatchmail
 	rm -f judge/dispatchmail.doc
@@ -185,6 +180,11 @@ judge/file_list.doc:	hpcm_judging.rc \
 	rm -f judge/file_list.doc
 	-../../judge/bin/file_list -doc \
 	    >judge/file_list.doc
+judge/filtered_diff.doc:	hpcm_judging.rc \
+		        ../../judge/bin/filtered_diff
+	rm -f judge/filtered_diff.doc
+	-../../judge/bin/filtered_diff -doc \
+	    >judge/filtered_diff.doc
 judge/fprint.doc:	hpcm_judging.rc \
 			../../judge/bin/fprint
 	rm -f judge/fprint.doc
