@@ -1,11 +1,12 @@
 #!/bin/sh -f
 #
 # Make the subdirectories, symbolic links, and info
-# index of a judging directory.
+# index of a judging directory, and make the associated
+# contest directory.
 #
 # File:		makejudgingdir
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Sep 24 15:02:41 EDT 2000
+# Date:		Sun Sep 24 20:18:30 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/09/24 20:08:57 $
+#   $Date: 2000/09/25 02:38:50 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.7 $
+#   $Revision: 1.8 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -31,31 +32,96 @@ set log_mode none
 catch {
 
 set document "
-cd judging_directory; makejudgingdir index_spec ...
+cd judging_directory
+makejudgingdir options index_spec ...
 
-    Given a judging directory as the current directory,
-    complete with hpcm_judging.rc file, this program
-    makes subdirectories, links, and an info index file
-    according to instructions in the index specifica-
-    tions.  Each index specification has the form:
+    Options:
+      -judging	    Equals -info, -solution, -mail
+      -contest      Equals -problems, -solutions,
+		    -help1, -help2, -bin, -secure,
+		    -who_where, -printer, -setup
+      -info	    Make ./info
+      -solutions    Make ./solutions
+      -problems	    Make ./contest/problems
+      -mail	    Make ./mail
+      -help1	    Make ./contest/help1/problems.help,
+		     ./contest/help1/this_contest.help
+      -help2	    Make ./contest/help2 link
+      -bin	    Make ./contest/bin link
+      -secure	    Make ./contest/secure/passwords,
+		     ./contest/secure/hpcm_sendmail.rc
+      -who_where    Make ./contest/who_where
+      -printer	    Make ./contest/printer
+      -setup	    Import stuff from /tmp/hpcm_setup
+		    to ./contest.  This should include
+		    ./contest/empty.ls,
+		    ./contest/setup.ls, 
+		    ./contest/setup.tar
+      -trashable    Make ./trashable
+      -prototype    Make ./prototype
+
+    Index Specification:
 
       index_file\[: index_directory\], name1s=name1t, \\
 	    option1s:'option11t option12t ...', \\
 	    name2s=name2t, ...
 
-    The index files are read and concatenated to form
-    the `index' file in the new info directory, with
-    unused entries omitted.  In the course of doing
-    this, symbolic links are made in the info and
-    solutions directories.
+    Pre-Existing Files and Links:
 
-    More specifically, this program builds the info+ and
-    solutions+ directories, and if all goes well,
-    renames info to info-, info+ to info, solutions to
-    solutions-, solutions+ to info, and then makes the
-    mail directory if it does not exist, and ensures
-    that it has the a+x chmod mode (so the java inter0
-    preter will work right: see below).
+      ./hpcm_judging.rc	 Parameters file.
+      ./contest		 Link to contest directory.
+      ./contestant	 Link to hpcm/contestant.
+
+    Given a judging directory as the current directory,
+    complete with hpcm_judging.rc file, this program
+    makes subdirectories, links, and problem index files
+    in the judging directory and optional associated
+    contest directory, according to instructions in the
+    index specifications and options.  The form of the
+    index specifications and options is given above.
+    The `./contest' directory, if any, should be symbol-
+    ically linked to the actual contest directory before
+    this program is run.  In some cases `./contestant'
+    should be symbolically linked to the ..../hpcm/
+    contestant directory before this program is run.
+
+    This program appends instructions for its user to
+    edit certain files to the ./TODO file, and prints
+    this file at the end of this program.
+
+    The index files are read and concatenated to form
+    the `index' file in any new info directory and a
+    `problems.help' file in any new help1 directory,
+    with unused entries omitted.
+    
+    If an info directory is being made, symbolic links
+    are made from it to problem directories referenced
+    in the index file.  Ditto for the solutions
+    directory.  The problems directory is similar but
+    instead of making links, selected files are copied
+    into subdirectories of the problems directory.
+
+    If the program is building a ./info directory, it
+    actually builds a ./info+ directory instead.  Then
+    it does a `diff -r ./info ./info+', discarding the
+    printed output, to determine if the new directory
+    is any different from the previous directory.  If
+    it is not different, the ./info+ directory is re-
+    moved and nothing else is done.  If the two direc-
+    tories are different, the following renaming
+    occurs:
+
+    		./info-	    becomes    ./info--
+    		./info	    becomes    ./info-
+    		./info+	    becomes    ./info
+
+    A similar strategem is followed for ./solutions
+    and ./contest/problems directories.
+
+    Other files and directories are made if they do
+    not exist or are out of date.  This program is
+    interactive whenever it may not have enough
+    information to make the files completely.
 
     Each input index file is associated with an index
     directory.  An unedited version of the index file is
@@ -80,7 +146,7 @@ cd judging_directory; makejudgingdir index_spec ...
     the end of file.  An item entry stops at the next
     line that begins a header or item entry, or at the
     end of file.
-
+
     The first line of an item entry has the form:
 
     	*** name options
@@ -90,19 +156,26 @@ cd judging_directory; makejudgingdir index_spec ...
     normally containing the unedited index file).  The
     possible options are:
 
-    	info		Include item in info directory.
-	solution	Include item in solutions
-			directory.
-	all		If info option present, include
-			complete item in info directory.
-			Otherwise if the item is a
-			directory, only the Makefile and
-			*.txt file in the item directory
-			will be included in the info
-			directory.
+      info	  Include item in ./info directory.
+      solutions	  Include item in ./solutions directory.
+      problems	  Include item in ./contest/problems
+      		  directory.
+      all	  If info or problems option present,
+                  include all readable files from this
+		  item in the info or problems sub-
+		  directory for this item.  Otherwise
+		  if the item is a directory, only the
+		  Makefile and *.txt file in the item
+		  directory will be included in the
+		  info or problems directory.
 
-    Option substitution occurs before the options are
-    otherwise processed.  A substitution of the form
+    These options are rarely encoded directly in the
+    index files.  Instead options categorizing the
+    entries are made up by the author of the index file
+    and mapped by the index specification onto the above
+    options.  Mapping is done by option substitution
+    that occurs before the options are finally pro-
+    cessed.  A substitution of the form:
 
     	option1s:'option11t option12t ...'
 
@@ -110,7 +183,7 @@ cd judging_directory; makejudgingdir index_spec ...
     options in the list `option11t option12t ...'.
     Substitution is recursive.  After option substitu-
     tion, unknown options are ignored.
-
+
     If an item is included in the new info directory,
     the item entry is included in the index of that
     directory.  Otherwise the item entry is omitted.
@@ -120,12 +193,23 @@ cd judging_directory; makejudgingdir index_spec ...
     the new index file for that directory is deleted,
     so that new info directory is completely empty.
 
+    If an item is included in a new problems directory,
+    the index item entry is included in a problems.help
+    file that is included in the problems directory.
+    No header items are included in the problems.help
+    file.  However, if no items at all from any of the
+    input index files are included in the new info
+    directory, no problems.help file is created, and
+    the new problems directory is completely empty.
+
     When an item is included in the solutions directory,
     the item must itself be a directory, and the name of
     the item in the solutions directory is the last
     component of the item name.  This means that all
     problems in the system should have unique single
     component names.
+
+    Ditto for the problems directory.
 
     When an item is included in the info directory its
     name in the info directory is a modified version of
@@ -136,7 +220,7 @@ cd judging_directory; makejudgingdir index_spec ...
     several possible substitutions, the longest nameXs
     will be selected, and if there are several longest,
     the first will be selected.
-    
+    
     Thus, for example, given an index specification of
     the form
 
@@ -152,20 +236,77 @@ cd judging_directory; makejudgingdir index_spec ...
     the items within the info directory.
 
     When an item entry is copied to the index file of
-    the new info directory, the `***' in the first line
-    of the entry is replace by 3 space characters, and
-    the item name is replaced by the modified version
-    of the item name, and the options are removed.
+    the new info directory,  or to a problems.help file,
+    the `***' in the first line of the entry is replace
+    by 3 space characters, the item name is replaced by
+    the modified version of the item name, and the
+    options are removed.
 
-    In order to execute the java interpreter, the mail
-    directory and all its ancestor directories must have
-    the a+x permissions.  Otherwise you will get a
-    class undefined error message from the java inter-
-    preter for the main program class.  This program
-    sets the a+x permissions for the mail directory,
-    but is it the responsibility of the user of this
-    program to separately set these permissions for
-    the ancestors of the mail directory.
+    When ./mail is made (by -mail) its mode is set to
+    a+x.
+
+    When ./contest/help1 is made (by -help1) its mode is
+    set to a+rx.  Then ./contest/help1 /problems.help is
+    symbolically linked to ./contest /problems/problems
+    .help, and a default ./contest/help1/this_contest
+    .help file is made.  None of these things is done if
+    the directories and files to be made already exist.
+    If the this_contest.help file is made, an instruc-
+    tion to edit it is appended to the ./TODO file.
+
+    The ./help2 directory is made by symbolically link-
+    ing it to ./contestant/help.  Note that the help
+    command searches ./help1, ./help2, ./help3, and
+    ./help4 in order for help files.
+
+    The ./bin directory is made by symbolically link-
+    ing it to ./contestant/bin.
+
+    When the ./secure directory is made (by -secure) its
+    mode is set to go-rwx, as is the mode of every file
+    made in this directory.  When the ./secure/password
+    file is made, instructions for editing it are
+    written to ./TODO, but the file made automatically
+    is empty.  If the ./secure/hpcm_sendmail.rc file is
+    made, instructions for editing it and the
+    ~/.procmailrc file are written into ./TODO.
+
+    When ./who_where is made, additions to any existing
+    file are appended listing accounts in ./secure
+    /passwords that were not in the previous ./who_
+    where, and instructions for editing are written into
+    TODO.  Instructions are also written if any fields
+    of any previous who_where file have not been filled
+    in.
+
+    When ./printer is to be made, it is set by guess and
+    instructions to edit it are written to ./TODO.
+
+    If -setup is given, any files or directories in
+    /tmp/hpcm_setup that do not match existing files or
+    directories in . are copied to .  /tmp/hpcm_setup
+    is maintained by running SETUP_PROTOTYPE in the
+    prototype contestant account.  A check is made to be
+    sure any copied file or directory is a+r and any
+    executable file or directory is a+x.
+
+    The ./trashable file is a list of contestant
+    accounts made from ./secure/passwords.  The
+    ./prototype file is the list of prototype contes-
+    tant accounts (usually only one).  It run TRASH_
+    ACCOUNT an account must be listed in ./trashable.
+    To run TRASH_PROBLEMS it must be listed in
+    ./prototye or ./trashable.  To run SETUP_PROTOTYE
+    it must be listed in ./prototype.  Generally
+    ./trashable is made when needed and then deleted
+    to ensure that contestants cannot damage themselves
+    by perversly running TRASH_ACCOUNT or TRASH_
+    PROBLEMS.
+
+    If anything is made in ./contest, a+x is set for
+    that directory and all its ancestors.  If anything
+    is linked to ./contestant, ditto.  If ./mail is
+    made, ditto.
     
     Unlike most HPCM judging programs, errors made by
     this program are not written to log files."
