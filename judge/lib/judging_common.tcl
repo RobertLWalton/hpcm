@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: acm-cont $
-#   $Date: 2000/08/21 05:09:29 $
+#   $Date: 2000/08/21 05:24:30 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.8 $
+#   $Revision: 1.9 $
 #
 
 # Include this code in TCL program via:
@@ -327,7 +327,7 @@ proc find_From_line {} {
 
 # Write entire file to channel.
 #
-proc putfile { filename
+proc put_file { filename
                { ch stdout }
 	       { line_count 1000000000 } } {
 
@@ -354,7 +354,7 @@ proc putfile { filename
 # Get first line of file.  If file has no first line,
 # return "".
 #
-proc readfile { filename } {
+proc read_file { filename } {
     set file_ch [open $filename r]
     set line [gets $file_ch]
     if { [eof $file_ch] } {
@@ -366,10 +366,24 @@ proc readfile { filename } {
 
 # Write one-line file.
 #
-proc writefile { filename line } {
+proc write_file { filename line } {
     set file_ch [open $filename w]
     puts $file_ch $line
     close $file_ch
+}
+
+# Edit a file.
+#
+proc edit_file { filename } {
+    global edit_program
+    catch { eval $edit_program $filename }
+}
+
+# View a file.
+#
+proc view_file { filename } {
+    global view_program
+    catch { eval $view_program $filename }
 }
 
 # Set interrupt signal to cause an error.

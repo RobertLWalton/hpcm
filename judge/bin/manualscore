@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: acm-cont $
-#   $Date: 2000/08/21 05:09:29 $
+#   $Date: 2000/08/21 05:24:30 $
 #   $RCSfile: manualscore,v $
-#   $Revision: 1.5 $
+#   $Revision: 1.6 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -72,7 +72,7 @@ if { [file exists $reply_file] } }
     exit 0
 }
 
-set auto_score [readfile $auto_score_file]
+set auto_score [read_file $auto_score_file]
 
 if { $auto_score == "Completely Correct" } {
     puts "$auto_score; Terminating manual scoring"
@@ -98,7 +98,7 @@ while { "yes" } {
     puts "Auto Score: $auto_score    Current score:\
                                      $manual_score"
 
-    putfile $last_file stdout 10
+    put_file $last_file stdout 10
 
     puts -nonewline "
 ------------------------------------------------------
@@ -129,9 +129,12 @@ x = exit without doing anthing
 	default	{ set action "unknown" }
 
     switch $action \
+    	view	{
+		    view_file $last_file
+		}
         accept	{
-		    writefile $manual_score_file \
-		              $manual_score
+		    write_file $manual_score_file \
+		               $manual_score
 
 		    if { $manual_score \
 		         == $auto_score } {
