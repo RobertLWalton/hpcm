@@ -4,7 +4,7 @@
 #
 # File:		judging
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Nov 14 22:10:34 EST 2001
+# Date:		Sat Nov 24 00:37:25 EST 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/11/15 03:08:07 $
+#   $Date: 2001/11/24 07:10:20 $
 #   $RCSfile: judging,v $
-#   $Revision: 1.8 $
+#   $Revision: 1.9 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -36,7 +36,7 @@ puts "
 	Making Judging Accounts
 	Making a Contest
 	Judging a Formal Contest
-	Auxilary Judging
+	Auxiliary Judging
 	Formal Contest Emergencies
 	Judging non-Formal Contests
 
@@ -53,13 +53,20 @@ should be set by
 
 which disables access except by the judging account and
 its group, and disables write access by the judging
-group.  This permits auxilary judging accounts (see
+group.  This permits auxiliary judging accounts (see
 below).
 
 If the judging account has a shared group, the umask
 should be set by
 
 	umask 77
+
+If you plan to use auxiliary judging accounts, you
+should execute
+
+	chmod g+s ~
+
+to force all file groups to be the main judging group.
 
 Autologout should be disabled if csh or tcsh is being
 used by
@@ -81,7 +88,14 @@ forwarding, the ~/.forward file can be set to
 
 to store all mail in ~/hpcm_mbox, where JJJ is the
 judging account name and /home/JJJ is the home directory
-of that account.
+of that account.  A better alternative is to add
+
+    "| exec /usr/bin/procmail"
+
+as this will apply the procmail program to incoming mail
+(use `which procmail' to adjust the name of the direc-
+tory containing the procmail program), and permit the
+.procmailrc file to be used.
 
 If you are using csh or tcsh, you may want to turn on
 mail notification by using
@@ -94,23 +108,23 @@ Note that because of the use of .procmailrc by the
 HPCM submission system, email sent to the judges by
 hpcm_sendmail will not be put in the judge's normal
 mailbox, and will not trigger this `new mail' message.
-However, contestants occassionally fail to follow the
+However, contestants occasionally fail to follow the
 instruction to use hpcm_sendmail, and instead send mail
 directly to the judge.
 
 If judges may want to use facilities that are normally
-used by contestants or by auxilary judges, then it will
+used by contestants or by auxiliary judges, then it will
 be necessary to symbolically link ~/.hpcm_contest to
 the contest directory.  E.g., use
 
     ln -s ~/contest_XXX ~/.hpcm_contest
 
 where XXX is the name of the contest.  Note that if the
-judging directory is being used for several contests,
+judging account is being used for several contests,
 this will only work for one of these contests as a time.
 
-Hpcm must be installed in the judging directory: see
-the separate document `Installing HPCM'.  One typically
+Hpcm must be installed in the judging account: see the
+separate document `Installing HPCM'.  One typically
 installs HPCM in the `~/hpcm' directory and puts the
 `~/hpcm/judge/bin' directory in the PATH of the judging
 account.
@@ -136,17 +150,30 @@ person in reserve to troubleshoot emergencies, and you
 need a clear line of communication to the contestants.
 
 If you are running a distributed contest with a central
-judge, you the site managers should check in by calling
-the judge before the contest, to be sure they know the
-phone number and communications are working.  Since site
-managers tend to move around, it is helpful if they
-have cell phones, cordless phones, or beepers, or if
-some other emergency mechanism of communication is
-arranged, such as having the judge send a message to the
-site printer.
+judge, the site managers should check in by calling you
+judge before the contest, to be sure they know the phone
+numbers and communications are working.  Since site man-
+agers tend to move around, it is helpful if they have
+cell phones, cordless phones, or beepers, or if some
+other emergency mechanism of communication is arranged,
+such as having the judge send a message to the site
+printer using the jprint command.
 
-You should review Formal Contest Emergencies below
-before judging a formal contest.
+You should review Formal Contest Emergencies and Backup
+Plans below before judging a formal contest.
+
+Before judging a contest you should practice a bit with
+the `manualreply' program.  One way to do this is to
+go to the hpcm/examples/test_contest directory, run
+`make' (this may take a while), and then run
+
+	lookat 'SUBJECT & AUTO'
+
+to see the results and dispatch manualreply.  Note that
+in `test_contest' the functions that send mail to sub-
+mitters have been turned into `no-operations', so you
+can send stuff to submitters for practice without any-
+thing actually happening.
 
 After setting up the contest, one should do the
 following:
@@ -162,49 +189,40 @@ following:
     up on things you have already responded to.
 
 
-Auxilary Judging
--------- -------
+Auxiliary Judging
+--------- -------
 
-An auxilary judging account is an account that can read
+An auxiliary judging account is an account that can read
 files in the main judging account but cannot write
 files.
  
-To set up auxilary judging accounts, be sure the main
+To set up auxiliary judging accounts, be sure the main
 judging account has its own private UNIX group.  Then
-add the auxilary account to this group.  In some UNIX
+add the auxiliary account to this group.  In some UNIX
 systems (RedHat Linux), this is done by root executing
 
-	gpasswd -a auxilary-account judging-group
+	gpasswd -a auxiliary-account judging-group
 
 Next, change the statement `source ~/...' near the
 beginning of the hpcm_judging.rc file in the judging
 directory to `source /home/JJJ/...', where JJJ is the
 name of the main judging account.  This is because the
-hpcm_judging.rc file is going to be sourced by auxilary
+hpcm_judging.rc file is going to be sourced by auxiliary
 judging accounts for which `~' will mean the wrong
 thing.
 
 One must add the main judging account's hpcm/judge/bin
-directory to the PATH of the auxilary account.  This
+directory to the PATH of the auxiliary account.  This
 might be done by putting
 
 	setenv PATH \"/home/JJJ/hpcm/judge/bin:\$PATH\"
 
-in the .cshrc file of the auxilary account, for example,
+in the .cshrc file of the auxiliary account, for example,
 where JJJ is the name of the main judging account.
 
-Like the judging account, one should turn off auto-
-logout, set an appropriate umask (77 will do), and set
-the shell for new mail notification.
-
-In the auxilary account you need to link ~/.hpcm_contest
-to the contest directory in the main judging account,
-JJJ.  This can be done by
-
-	ln -s /home/JJJ/contest* ~/.hpcm_contest
-
-This is needed to enable the `sq' command in manual-
-reply: see below.
+Like the main judging account, auxiliary accounts should
+turn off autologout, set the umask to 27, and set the
+shell for new mail notification.
 
 So that the auxilarly judges can quickly find the
 judging directory, you may want to link it symbolically
@@ -214,24 +232,35 @@ do this by
 	ln -s /home/JJJ/judging* ~/judge
 
 
-During the contest an auxilary judge can examine sub-
+During the contest an auxiliary judge can examine sub-
 missions using the `lookat' command to invoke `manual-
-reply'.  In `manualreply', the auxilary judge can use
+reply'.  In `manualreply', the auxiliary judge can use
 the `sq' command to send a query or comment to the
 main contest judge about a particular submission.  The
 main judge can use the `xq' command to examine this
 submission.
 
-The auxilary judge can also send a query or comment to
-the main judge by editing the file foo and executing
+The auxiliary judge can also send a query or comment to
+the main judge by editing the file ~/foo and executing
 
-	~/.hpcm_contest/bin/hpcm_sendmail <foo
+	hpcm_sendmail <~/foo
 
-In these cases the main judge will see the query or
-comment via the same process as the main judge sees
-queries from contestants, and will respond by the same
-process, with the response being email to the auxilary
-judge.
+from within the contest judging directory subtree.  It
+is VERY IMPORTANT here that the hpcm_sendmail program be
+invoked from within the contest judging directory sub-
+tree, as this command when run by a judge differs from
+the command of the same name invoked by a contestant in
+how it finds the contest directory.
+
+When hpcm_sendmail is used by any judge, the main judge
+will see the query or comment via the same process as
+the main judge sees queries from contestants, and will
+respond by the same process, with the response being
+email to the query sending judge.
+
+The `sq' command in manualreply (see below) also uses
+the judge's hpcm_sendmail command to send a query to the
+main judge.
 
 
 Formal Contest Emergencies
@@ -247,12 +276,12 @@ hand.  If you are working with distributed sites, be
 sure you have phone numbers for the site managers, and
 vice versa, and the phones are tested before the contest
 begins.  You may want site managers, who tend to roam,
-have cell phones, cordless phones, or beepers (which
-could be borrowed).  It may suffice to have a mechanism
-whereby the main judge can print a message for site
-managers on the site printers.
+to have cell phones, cordless phones, or beepers (any of
+which may be borrowed).  The jprint command, that allows
+any judge to print a message for site managers on the
+site printers, may suffice.
 
-To prepare to judge an formal contest that you really
+To prepare to judge a formal contest that you really
 want to work, you should read the documentation and
 in some cases the code of the very few programs that are
 involved in actual judging.  These are:
@@ -297,8 +326,9 @@ The first two hours of the contest ran normally, but
 then the operating system (Linux RedHat 6.1) started to
 send out error messages saying there were too many open
 files, and processes started dying spontaneously.  The
-judge as concerned since he though this kind of problem
-had been solved by UNIX kernels and would not appear.
+judge was very concerned since he though this kind of
+problem had been solved by UNIX kernels and would not
+appear.
 
 The contest was a distributed contest, with a judge at
 one school and two sites with contestants at other
@@ -310,39 +340,42 @@ of the scoreboard (which contestants can put in one of
 their winodws), which asked contestants to be careful
 about how many processes they ran.  With the help of
 these actions, the problem went away within about 10
-minutes, though there was aftermath which we will
+minutes, though there was aftermath that we will
 describe below.
 
-One piece of good news is that the judge had a backup
-person available who had some rough knowledge of Linux
-OS issues.  He found, after a few tens of minutes of
-research, that Linux has a bound on the total number
-of open files in /proc/sys/fs/file-max that can be set
-by root using `echo >/proc/sys/fs/file-max XXX'.  The
-normal setting was 4096, which seemed to be rather
-large enough.  There are also three numbers in the
-read-only file /proc/sys/fs/file-nr, the middle of which
-is supposed to be the current number of open files.
+One piece of good news is that the judge had backup
+available in the form of an assistant who had some rough
+knowledge of Linux OS issues.  The assistant found,
+after a few tens of minutes of research, that Linux has
+a bound on the total number of open files in /proc/sys/
+fs/file-max that can be set by root using `echo >/proc/
+sys/fs/file-max XXX'.  The normal setting was 4096,
+which seemed to be large enough.  There are also three
+numbers in the read-only file /proc/sys/fs/file-nr, the
+middle of which is supposed to be the current number of
+open files, though this number did not seen to agree
+with results from other sources (the lsof command).
 
-The backup person also know about the lsof command, that
+The assistant also knew about the lsof command, that
 lists all the open files in the system, when run by
-root.  By using this command in conjuction with grep,
-the judge and backup were able to figure out how many
-open files each contestant account had.  By successive
-monitoring, one team was identified that seemed to
-increasing their number of open files by 200 per 10
+root.  By using this command in conjunction with grep,
+the judge and assistant were able to figure out how
+many open files each contestant account had.  By con-
+tinual monitoring, one team was identified that seemed
+to increasing their number of open files by 200 per 10
 minutes.  This was done after teams had been asked to
 watch their processes.  The site manager for that team
 was contacted and asked to work with the team to reduce
 their number of open files.  There were no subsequent
 operating system problems with the contest.
 
-However, because processes died spontaneously, some
-submissions were not handled correctly, and fixup was
-required.  The contestants were told to resubmit,
-but the existing problematic submissions were also fixed
-using a rough knowledge of how the `autojudge' program
-works.
+However, because processes died spontaneously, some sub-
+missions were not handled correctly during the time when
+processes were failing, and fixup was required.  Al-
+though contestants can be told to resubmit, manual re-
+view of submissions also permits fixups of difficulties
+caused by process failure.  To do this, a rough know-
+ledge of how the `autojudge' program works is necessary.
 
 One common problem that occurred in this case is erron-
 eous scores of `Syntax Error'.  This error occurs when
@@ -380,16 +413,56 @@ time range (by using `DATE::<regular-expression>'),
 and double check that everything has been fixed up.
 
 
-Judging non-Formal Contests
-------- ---------- --------
+Backup Plans
+------ -----
 
-Non-formal contests are usually judged automatically.
-The `tracker' program does not work for such contests,
-and if you want to examine submissions, you must use the
-`lookat' program.  Queries are forwarded to the email
-address in the hpcm_judging.rc `reply_manager' variable,
-if that is set, so the judge can have queries forwarded
-to the judge's usual email address.
+When judging a formal contest, it is important to have
+a backup plan in case the contest computers or computer
+communications fail in some significant way.
+
+If the power in the building fails, but there is suffi-
+cient light, the ultimate backup plan may be applied:
+have contestants use paper and pencil, and grade the
+results over the next week as one would grade exam
+problems.
+
+One can cautiously modify this plan by using computer
+facilities that are still working for ALL contestants.
+For example, if the judge's computer fails but all
+contestants have access to a computer with editors, the
+contestants can edit their solutions into the computers.
+If ALL these computers have sufficient compilers, the
+contestants can test run their solutions.  Etc.
+
+If a contest is distributed among several sites, one
+site may have difficulties (e.g. with network communi-
+cations) while other sites may not.  It will then be
+necessary to split the contest, with the site that had
+difficulties becoming a separate contest, as it would
+be unfair to have teams at a site with difficulties
+competing against teams at a site with no difficulties.
+
+It is not a bad idea to have a backup computer for the
+judge (and for the contestants if all are on a single
+computer), and to use some program to periodically
+copies all relevant files from the primary to the backup
+computer.  The `rsync' program (available under Linux)
+looks promising for this application.  In the case of
+a distributed contest, the ideal might be to have the
+backup computer located at a different site, in case
+the network at the judge's site went down.
+
+
+Judging Email and Informal Contests
+------- ----- --- -------- --------
+
+Email and informal contests are usually judged automa-
+tically.  The `tracker' program does not work for such
+contests, and if you want to examine submissions, you
+must use the `lookat' program.  Queries are forwarded
+to the email address in the hpcm_judging.rc `reply_
+manager' variable, if that is set, so the judge can have
+queries forwarded to the judge's usual email address.
 "
 
 exit 0
