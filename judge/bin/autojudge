@@ -5,7 +5,7 @@
 #
 # File:		autojudge
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Jan  9 09:15:36 EST 2002
+# Date:		Mon Jan 21 14:03:34 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/01/09 14:22:33 $
+#   $Date: 2002/01/21 19:02:37 $
 #   $RCSfile: autojudge,v $
-#   $Revision: 1.59 $
+#   $Revision: 1.60 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -343,6 +343,118 @@ autojudge \[problem\[.extension\]\]
     not been given to the submitter, and further action
     using the `manualreply' program is necessary to gen-
     erate a final reply.
+
+    If the $reponse_instructions_file file exists, then\
+    	that
+    file contains extra instructions about how to format
+    the reply for a given $auto_score_file value.  The
+    $response_instructions_file file is a TCL list value\
+    	con-
+    sisting score indicators followed by commands.  The
+    list is scanned for the first score indicator that
+    matches the current value of the $auto_score_file\
+    	file,
+    and then the commands following that score indica-
+    tor, and before the next score indicator, are execu-
+    ted.
+
+    A score indicator is an $auto_score_file file value\
+    	with
+    spaces replaced by `-' and with a single `-' pre-
+    pended and appended.  E.g., -Completely-Correct-.
+    The special score indicator -Others- matches all
+    $auto_score_file file values.
+
+    The default value of the\
+		$response_instructions_file file
+    depends on the scoring mode and is the following
+    for different modes:
+
+	For scoring_mode = "manual"
+
+	    -Others-
+	    	NON-AUTO
+
+	For scoring_mode = "auto"
+
+	    -Others-
+		FINAL
+		{LINES "
+	    For -PROBLEM- the automatically determined\\
+		final score is:
+	    
+	    -SCORE-" }
+
+	For scoring_mode = "auto+manual"
+
+	    -Completely-Correct-
+		FINAL
+		{LINES "
+	    For -PROBLEM- the automatically determined\\
+		final score is:
+	    
+	    -SCORE-" }
+
+	    -Others-
+		NON-FINAL
+		{LINES "
+	    For -PROBLEM- the automatically determined\\
+		score is:
+	    
+	    -SCORE-"
+
+	    However, this score WILL BE REVIEWED by\\
+		the human judge (soon)." }
+
+    The possible $response_instructions_file commands\
+    	are:
+
+	FINAL
+	    The score is final even if automatically de-
+	    rived.
+
+	NON-FINAL 
+	    The score is not final, and will be manually
+	    reviewed.
+
+	NON-AUTO
+	    No automatic score reply will be sent to the
+	    submitter.
+
+	FIRST
+	    Type and position of the first score deter-
+	    mining error will be reported to the sub-
+	    mitter.
+
+	SUMMARY
+	    A summary of all score determining errors
+	    will be reported to the submitter.
+
+	{LINES \"string\"}
+	    The string, followed by a line feed, will
+	    be included at the end of the reply message.
+	    If you want a blank line separating the
+	    string for previous text, beging the string
+	    with a blank line.  A line feed is automat-
+	    ically appended to the string.
+
+	    If -PROBLEM- appears in the string it is re-
+	    placed by the problem name, and if -SCORE-
+	    appears, it is replaced by the\
+	    	$auto_score_file
+	    value.
+
+	BAR
+	    Inserts a 72 character ===== bar line.
+
+	{BAR \"string\"}
+	    Inserts ===== bar line that ends with a
+	    space followed by the string.  The total
+	    number of characters in the line is 72.
+
+	{INPUT filename}
+	    Include a copy of the file in the reply
+	    message.
 
     This program prints information about its progress.
  
