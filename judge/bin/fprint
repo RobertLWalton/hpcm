@@ -1,4 +1,43 @@
 #! /bin/sh
+#
+# Print files in 40 line x 56 column format.
+#
+# File:		fprint
+# Author:	Bob Walton <walton@deas.harvard.edu>
+# Date:		Sun Jan  7 09:14:29 EST 2001
+#
+# The authors have placed this program in the public
+# domain; they make no warranty and accept no liability
+# for this program.
+#
+# RCS Info (may not be true date or author):
+#
+#   $Author: hc3 $
+#   $Date: 2001/01/07 14:10:48 $
+#   $RCSfile: fprint,v $
+#   $Revision: 1.5 $
 
-exec enscript -j -2r -b "\$n|\$W  \$C  %n|\$% of \$=" \
+case "$1" in
+   -doc* )
+   	echo "
+fprint [filename ...]
+
+    Print the files named (or the standard input if
+    the filenames are missing) in a format well suited
+    to files with lines of 56 columns.   This format
+    puts 2 file pages per paper page, and permits at
+    least 40 lines on a file page.
+
+    The printer used is the value of the PRINTER
+    environment variable."
+
+    	exit 1
+	;;
+esac
+
+# Print files.
+#
+enscript -j -2r -b "\$n|\$W  \$C  %n|\$% of \$=" \
 	-F Courier-Bold14 -f Courier10 -P $PRINTER "$@"
+
+exit 0
