@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2003/10/23 05:02:48 $
+#   $Date: 2003/10/23 05:14:17 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.37 $
+#   $Revision: 1.38 $
 
 # To make an informal contest named `foo':
 #
@@ -361,7 +361,14 @@
 #	  help page, preceded by that `demos' help page
 #	  (which was printed by `make print_help').
 #
-#     To make the problem set handout, execute
+#
+#     These handouts can be given out when the contest
+#     is set up.  Usually no printout of the problems is
+#     given out for an informal contest, as contestants
+#     get problem statements one problem at a time.
+#
+#     If you do want to make a printout of the problems,
+#     execute
 #
 #	       cd ~/judging_foo_password
 #	       make print_problems
@@ -370,14 +377,6 @@
 #     these pages, in the order given in the `problems'
 #     help page, preceded by that `problems' help page.
 #     Discard any demonstration .txt files printed.
-#
-#     The help and demos handout can be given out before
-#     the contest starts, along with any extra sheets
-#     on such topics as where teams are located and
-#     when and where the food will be (or this info can
-#     be put into this_contest).  The problems handout
-#     is given out at the very start of the contest
-#     proper.
 #
 # 21. A web page containing non-contest-specific help
 #     and demos files can be made according to instruc-

@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Oct 23 01:04:07 EDT 2003
+# Date:		Thu Oct 23 01:19:46 EDT 2003
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2003/10/23 05:10:12 $
+#   $Date: 2003/10/23 05:15:32 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.57 $
+#   $Revision: 1.58 $
 
 # To make an email contest named `foo':
 #
@@ -163,8 +163,8 @@
 #	  help page, preceded by that `demos' help page
 #	  (which was printed by `make print_help').
 
-#     These handouts can be given out when the contest is
-#     set up.  Usually no printout of the problems is
+#     These handouts can be given out when the contest
+#     is set up.  Usually no printout of the problems is
 #     given out for an email contest, as contestants get
 #     problem statements one problem at a time.
 #
