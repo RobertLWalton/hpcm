@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Oct  1 13:27:48 EDT 2003
+# Date:		Thu Oct  2 04:31:51 EDT 2003
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2003/10/01 17:40:45 $
+#   $Date: 2003/10/02 08:32:45 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.14 $
+#   $Revision: 1.15 $
 
 # To make web help pages, execute `make web' and copy
 # the `web' directory to you web server, where it will
@@ -144,7 +144,7 @@ email/sh/hpcm_clisp.lsp:
 #
 web_do:
 
-web:	all web_do
+web:	all help.ps demos.ps web_do
 	rm -rf web.tar web
 	mkdir web
 	cp -rpL `ls|grep -v '^web$$'` web
