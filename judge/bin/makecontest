@@ -6,7 +6,7 @@
 #
 # File:		makejudgingdir
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Dec  9 02:40:15 EST 2000
+# Date:		Sat Dec  9 12:03:13 EST 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/12/09 07:43:17 $
+#   $Date: 2000/12/09 18:08:09 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.43 $
+#   $Revision: 1.44 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -1429,7 +1429,9 @@ Good hunting!"
     }
 
     close $tc_ch
-    TODO "edit $help_directory/this_contest"
+    TODO "Edit $help_directory/this_contest." \
+         "Then rerun makejudgingdir to recompute\
+	       help files."
 }
 
 # Set up channel lists.
@@ -1616,9 +1618,9 @@ if { ( $problems_option \
      ( $help_option \
        && ! [regexp {r..} [get_access \
        			      $c_d/help/problems]] ) } {
-    TODO "run `startcontest' when contest starts" \
+    TODO "Run `startcontest' when contest starts" \
          "to chmod a+rx $c_d/problems" \
-	 "and/or $c_d/help/problems"
+	 "and/or $c_d/help/problems."
 }
 
 # Make mail directory.
@@ -1679,7 +1681,7 @@ if { $bin_option \
     puts "Linking $c_d/bin to $c_d/contestant/bin"
     link_file contestant/bin $c_d/bin
 
-    TODO "run `make' in `hpcm' directory"
+    TODO "Run `make' in `hpcm' directory."
 }
 
 # Make secure directory.
@@ -1698,9 +1700,9 @@ if { $secure_option } {
 	deny_access $c_d/secure/passwords
 	set apw account:password:who
     	set ctc coaches-email:team-email:comment
-	TODO "edit $c_d/secure/passwords" \
+	TODO "Edit $c_d/secure/passwords;" \
 	     "each of its lines has the format:" \
-	     "$apw:$ctc"
+	     "`$apw:$ctc'."
     } else {
         set passwords_ch [open $c_d/secure/passwords r]
 	set lines ""
@@ -1727,8 +1729,8 @@ if { $secure_option } {
 	        puts $passwords_ch $line
 	    }
 	    close $passwords_ch
-	    TODO "inspect $c_d/secure/passwords" \
-		 "to which passwords have been added"
+	    TODO "Inspect $c_d/secure/passwords" \
+		 "to which passwords have been added."
 	}
     }
 }
@@ -1750,13 +1752,18 @@ if { $secure_option \
     close $rc_ch
     deny_access $c_d/secure/hpcm_sendmail.rc
 
-    TODO "edit $c_d/secure/hpcm_sendmail.rc" \
+    TODO "Edit $c_d/secure/hpcm_sendmail.rc;" \
 	 "either remove the Key and Key-Name" \
-	 "or edit the hpcm_judging.rc\
-	  authorization variables" \
-	 "to contain the line:" \
+	 "and edit hpcm_judging.rc\
+	  authentication variables to contain:" \
+	 "    set use_authentication no" \
+	 "or edit hpcm_judging.rc\
+	  authentication variables to contain:" \
 	 "" \
-	 "    $key_name $key"    
+	 "    set use_authentication yes" \
+	 "    array set authentication_keys {" \
+	 "        $key_name $key" \
+	 "    }"
 
     set j_d $judging_directory
     if { ! [regexp {^/} $j_d] } {
@@ -1772,7 +1779,7 @@ if { $secure_option \
 	regexp "^$hd/(.*)\$" $j_d forget j_d
     }
 
-    TODO "edit ~/.procmailrc to contain:" \
+    TODO "Edit ~/.procmailrc to contain:" \
          "" \
 	 ":0" \
 	 "* ^To:.*$to_password" \
@@ -1816,7 +1823,10 @@ if { $who_where_option } {
 	close $who_where_ch
 	grant_access $c_d/who_where
 
-	TODO "edit $c_d/who_where"
+	TODO "Edit $c_d/who_where to specify location" \
+	     "of teams, by replacing `WHERE' for each" \
+	     "account with a SHORT description of the" \
+	     "team's location."
     } elseif { [file mtime $c_d/who_where] \
 	       < [file mtime $c_d/secure/passwords] } {
 
@@ -1915,7 +1925,13 @@ if { $who_where_option } {
 	    close $who_where_ch
 	    grant_access $c_d/who_where
 
-	    TODO "edit $c_d/who_where"
+	    TODO "Edit $c_d/who_where to specify\
+					location" \
+		 "of teams, by replacing `WHERE' for\
+		 			each" \
+		 "account with a SHORT description of\
+		 			the" \
+		 "team's location."
 	}
     }
 }
@@ -1948,8 +1964,8 @@ if { $trashable_option } {
 	close $trashable_ch
 	grant_access $c_d/trashable
 
-	TODO "remember to delete $c_d/trashable" \
-	     "when your are done trashing accounts"
+	TODO "Remember to delete $c_d/trashable" \
+	     "when your are done trashing accounts."
     }
 }
 
@@ -1957,16 +1973,16 @@ if { $trashable_option } {
 #
 if { $printer_option \
      && ! [file readable $c_d/printer] } {
-    set printer_ch [open $c_d/printer w]
     if { [info exists env(PRINTER)] } {
-	puts $printer_ch $env(PRINTER)
+	set printer $env(PRINTER)
     } else {
-	puts $printer_ch UNKNOWN
+	set printer UNKNOWN
     }
-    close $printer_ch
+    write_file $c_d/printer $printer
     grant_access $c_d/printer
 
-    TODO "edit $c_d/printer"
+    TODO "Wrote $c_d/printer to be `$printer';" \
+         "edit $c_d/printer to change." \
 }
 
 # Make $c_d/printer_jobs
@@ -1976,8 +1992,8 @@ if { $printer_option \
     close [open $c_d/printer_jobs w]
     exec chmod a+rw $c_d/printer_jobs
 
-    TODO "delete $c_d/printer_jobs if you do not" \
-         "want it to list all printer jobs"
+    TODO "Delete $c_d/printer_jobs if you do not" \
+         "want it to list all printer jobs."
 }
 
 # Check for $c_d/home directory.
@@ -1990,10 +2006,10 @@ if { $home_option } {
          || ! [file readable $c_d/home/setup.ls] \
          || ! [file readable $c_d/home/setup.tar] \
 		} {
-	TODO "run SETUP_PROTYPE in prototype account" \
-	     "and rerun `makejudgingdir -home'" \
+	TODO "Run SETUP_PROTYPE in prototype account" \
+	     "and rerun `makejudgingdir -home'." \
 	     "See `SETUP_PROTYTPE -doc' for\
-	      instructions"
+	      instructions."
     }
     if { [file exists $c_d/home] \
          && ! [regexp {r.x} [get_access $c_d/home]] } {
