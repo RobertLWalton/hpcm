@@ -1,45 +1,56 @@
-(defun main ()
-    (do ( (paragraph 1 (1+ paragraph)) )
-        ( (not (read-paragraph paragraph)) )
-        ()))
+(defun main () (read-a-paragraph 1))
 
-(defun read-paragraph (paragraph)
-    (do ( (counts '(0 0 0)
-    		  (if (not (equal line-counts 
-		                  '(1 0 0)))
-		      (mapcar #'+ counts line-counts)
-		      counts))
-	  (line-counts (read-one-line) (read-one-line)))
-	( (or (equal line-counts '(0 0 0))
-	      (and (equal line-counts '(1 0 0))
-	    	   (not (equal counts '(0 0 0)))))
-	  (cond
-	      ((not (equal counts '(0 0 0)))
-	       (format t "Paragraph ~S" paragraph)
-	       (format t ": ~S lines" (first counts))
-	       (format t ", ~S words" (second counts))
-	       (format t ", ~S characters.~%"
-	               (third counts))))
-	  (not (equal counts '(0 0 0))))))
+;; Counts are expressed as a triple:
+;;
+;;	(line-count word-count character-count)
 
-(defun read-one-line ()
-    (let ( (line (read-line t nil 'eof)) )
-         (if (eq line 'eof) '(0 0 0)
-	     `(1 ,(read-words line 0 (length line) 0)
-	         ,(length line)))))
+(defvar blank-line '(1 0 0))
+(defvar end-of-file '(0 0 0))
 
-(defun read-words (line i length words)
-    (do ( (j i (1+ j))
-          (c (if (< i length) (aref line i))
-             (if (< j length) (aref line j))) )
-	( (or (not c) (not (char= #\Space c)))
-	  (if (not c) words
-	      (do ( (j j (1+ j))
-		    (c (if (< j length)
-		           (aref line j))
-		       (if (< j length)
-		           (aref line j))) )
-	          ( (or (not c) (char= #\Space c))
-	            (if (not c) (1+ words)
-		        (read-words line j length
-			            (1+ words)))))))))
+(defun read-a-paragraph (paragraph)
+  (let ( (counts (read-a-line)) )
+    (cond
+      ((equal counts blank-line)
+       (read-a-paragraph paragraph))
+      ((not (equal counts end-of-file))
+       (read-rest-of-paragraph counts paragraph)))))
+
+(defun read-rest-of-paragraph (counts paragraph)
+  (let ( (line-counts (read-a-line)))
+    (cond ((or (equal line-counts blank-line)
+	       (equal line-counts end-of-file))
+	   (format t "Paragraph ~S" paragraph)
+	   (format t ": ~S lines" (first counts))
+	   (format t ", ~S words" (second counts))
+	   (format t ", ~S characters.~%"
+	           (third counts))
+	   (if (equal line-counts blank-line)
+	       (read-a-paragraph (1+ paragraph))))
+	  (t
+	   (read-rest-of-paragraph
+	     (mapcar #'+ line-counts counts)
+	     paragraph)))))
+
+	       
+(defun read-a-line ()
+  (let ( (line (read-line t nil 'eof)) )
+    (cond
+      ((eq line 'eof) '(0 0 0))
+      (t `(1 ,(read-a-word line 0 (length line) 0)
+	     ,(length line))))))
+
+(defun read-a-word (line index length count)
+  (cond
+    ((>= index length) count)
+    ((char= #\Space (aref line index))
+     (read-a-word line (1+ index) length count))
+    (t
+     (read-rest-of-word line (1+ index) length count))))
+
+(defun read-rest-of-word (line index length count)
+  (cond
+    ((>= index length) (1+ count))
+    ((char= #\Space (aref line index))
+     (read-a-word line (1+ index) length (1+ count)))
+    (t
+     (read-rest-of-word line (1+ index) length count))))
