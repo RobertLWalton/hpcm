@@ -11,9 +11,9 @@
  * RCS Info (may not be true date or author):
  *
  *   $Author: hc3 $
- *   $Date: 2000/09/18 02:25:38 $
+ *   $Date: 2000/09/24 04:56:00 $
  *   $RCSfile: hpcm_sendmail.c,v $
- *   $Revision: 1.1 $
+ *   $Revision: 1.2 $
  */
 
 #include <stdlib.h>
@@ -504,9 +504,11 @@ int main ( int argc, char ** argv )
 
     /* Compute date. */
     {
-    	time_t t = time ( NULL );
-	sprintf ( date, " %s %s %s %d", ctime ( & t ),
-			tzname[0], tzname[1], timezone );
+	time_t t = time ( NULL );
+	date[0] = ' ';
+	strftime ( date + 1, sizeof ( date ) - 1,
+                   "%a, %d %b %Y %H:%M:%S %z (%Z)",
+		   localtime ( &t ) );
     }
 
 
@@ -516,15 +518,5 @@ int main ( int argc, char ** argv )
     printf ( "Reply-To:%s\n", reply_to );
     printf ( "Date:%s\n", date );
 
-    {
-    	struct utsname utsname;
-
-	if ( uname ( &utsname ) < 0 )
-	    errno_exit ( "utsname" );
-
-
-	printf ( "Node Name: %s\n", utsname.nodename );
-	printf ( "Domain Name: %s\n", utsname.__domainname );
-    }
     return 0;
 }
