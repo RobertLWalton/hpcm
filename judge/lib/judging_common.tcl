@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Oct  2 09:48:51 EDT 2000
+# Date:		Mon Oct  2 10:59:11 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/10/02 14:30:02 $
+#   $Date: 2000/10/02 15:21:57 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.41 $
+#   $Revision: 1.42 $
 #
 
 # Include this code in TCL program via:
@@ -438,6 +438,8 @@ proc log_error { error_output } {
 	    send_mail $log_file.mail
 	}
     }
+
+    set_flag $needs_reply_flag_file
 }
 
 # Read an email message header from the channel. If
@@ -733,6 +735,9 @@ proc header_is_authentic {} {
 # body of the reply.  The reply header is automatically
 # produced.
 #
+# The -cc option causes the reply to be cc'ed to the
+# `reply_manager' if that is defined.
+#
 # When the message is sent it is copied to the reply
 # history file.
 #
@@ -759,12 +764,18 @@ proc compose_reply { args } {
 	   message_x_hpcm_test_subject
 
     # If -all is present, set `all_option' to `yes' and
-    # shift the arguments left.
+    # shift the arguments left.  Ditto -cc.
     #
     set all_option no
-    if { [llength $args] >= 1 \
-         && [lindex $args 0] == "-all" } {
-        set all_option yes
+    set cc_option no
+    while { [llength $args] >= 1 } {
+	if { [lindex $args 0] == "-all" } {
+	    set all_option yes
+	} elseif { [lindex $args 0] == "-cc" } {
+	    set cc_option yes
+	} else {
+	    break
+	}
 	set args [lreplace $args 0 0]
     }
 
@@ -784,6 +795,9 @@ proc compose_reply { args } {
     # Write header.
     #
     puts $reply_ch   "To:[compute_message_reply_to]"
+    if { $cc_option && $reply_manager != "" } {
+	puts $reply_ch "Cc: $reply_manager"
+    }
     puts $reply_ch   "Subject: RE:$message_subject"
     if { $message_x_hpcm_test_subject != "" } {
 	puts $reply_ch   "X-HPCM-Test-Subject:\
@@ -993,7 +1007,7 @@ proc write_file { filename line } {
 #
 proc set_flag { flagfilename } {
     global flag_directory
-    mkdir $flag_directory
+    file mkdir $flag_directory
     set file_ch [open $flag_directory/$flagfilename w]
     close $file_ch
 }
