@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Nov 11 10:43:26 EST 2000
+# Date:		Thu Dec  7 06:05:43 EST 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/12/07 10:57:17 $
+#   $Date: 2000/12/07 11:01:49 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.10 $
+#   $Revision: 1.11 $
 
 all:	hpcm_sandbox hpcm_sendmail modes
 
