@@ -1,13 +1,13 @@
-From walton  Tue Feb 12 07:14:52 2002
+From walton  Tue Feb 19 03:33:27 2002
 Return-Path: <walton@walton1.walton>
 Received: (from walton@localhost)
-	by walton1.walton (8.11.6/8.11.6) id g1CCEnX05732;
-	Tue, 12 Feb 2002 07:14:49 -0500
-Date: Tue, 12 Feb 2002 07:14:49 -0500
+	by walton1.walton (8.11.6/8.11.6) id g1J8XQU04477;
+	Tue, 19 Feb 2002 03:33:26 -0500
+Date: Tue, 19 Feb 2002 03:33:26 -0500
 From: "Robert L. Walton" <walton@walton1.walton>
-Message-Id: <200202121214.g1CCEnX05732@walton1.walton>
-To: "Robert L. Walton" <walton@walton1.walton>
-Reply-To: email_contest<walton@walton1.walton>
+Message-Id: <200202190833.g1J8XQU04477@walton1.walton>
+To: walton@walton1.walton
+Reply-To: c416bd594a<walton@walton1.walton>
 Subject: RE: get demos/count
 X-HPCM-Test-Subject: get_count:
 	there should be no separate error message
@@ -16,13 +16,14 @@ Status: R
 The following requested files appear below after the request message header:
     demos/count/Makefile demos/count/README demos/count/count.in
     demos/count/count.test demos/count/count.txt demos/count/count1.c
-    demos/count/count1.cc demos/count/count1.java demos/count/count1.p
+    demos/count/count1.cc demos/count/count1.java demos/count/count1.lsp
+    demos/count/count1.p
 
 
 ---------------------------------------------- this message replies to:
-To: email_contest<walton@walton1.walton>
+To: c416bd594a<walton@walton1.walton>
 From: "Robert L. Walton" <walton@walton1.walton>
-Date: Tue, 12 Feb 2002 07:14:38 -0500
+Date: Tue, 19 Feb 2002 03:33:17 -0500
 Subject: get demos/count
 ------------------------------------------------------------------------
 
@@ -31,11 +32,11 @@ Subject: get demos/count
 # Makefile for the `count' Demonstration Problem
 #
 # File:		Makefile
-# Date:		Mon Jan 28 03:52:38 EST 2002
+# Date:		Mon Feb 18 10:39:30 EST 2002
 #
-# Exactly ONE of the four files count.c (C), count.cc
-# (C++), count.p (Pascal), or count.java (Java) should
-# exist.
+# Exactly ONE of the five files count.c (C), count.cc
+# (C++), count.p (Pascal), count.java (Java), or
+# count.lsp (Commonlisp) should exist.
 #
 # UNIX commands supported by this Makefile:
 #
@@ -45,12 +46,16 @@ Subject: get demos/count
 #			`count' by running gcc on
 #			count.c, or g++ on count.cc, or
 #			p2c on count.p, or javac on
-#			count.java, depending upon which
+#			count.java, or hpcm_clisp on
+#			count.lsp depending upon which
 #			of count.c, count.cc, count.p,
-#			or count.java exist.  Does
-#			nothing if `count' is more up
-#			to date than count.c, count.cc,
-#			count.p, or count.java.
+#			count.java, or count.lsp exist.
+#			Also makes a shell script named
+#			`count' for count.java and
+#			count.lsp files.  Does nothing
+#			if `count' is more up to date
+#			than count.c, count.cc, count.p,
+#			count.java, or count.lsp.
 #
 #	make count.out	Makes `count' as above and
 #			then runs it with standard
@@ -61,21 +66,22 @@ Subject: get demos/count
 #			screen.  Does nothing, however,
 #			if count.out is more recent
 #			than both count.in and count.
-#			
+#			
 #	make submit	Makes `count.out' just to be
 #			sure that nothing crashes, and
 #			then e-mails count.c, count.cc,
-#			count.java, or count.p to the
-#			judges.
-#
+#			count.java, count.p, or
+#			count.lsp to the judges.
+#
 #	make clean	Removes `count', count.out, and
 #			other intermediate files that
 #			might exist, such as `core',
-#			`count.class', or `count.p2c'.
+#			`count.class', `count.p2c', or
+#			count.fas.
 
 
 .SUFFIXES:
-.SUFFIXES: .c .cc .java .p
+.SUFFIXES: .c .cc .java .p .lsp
 
 default:	count.out
 
@@ -94,25 +100,36 @@ default:	count.out
 
 # Do NOT try to use -check option for p2c as it fouls up
 # eof detection.
+#
 
 .java:
-	rm -f $* $*.class core
+	rm -f $* *.class core
 	javac -g $*.java
 	echo >$* '#!/bin/sh'
 	echo >>$* "exec `which java` $*"
 	chmod a+r *.class
 	chmod a+rx $*
-#
+
+.lsp:
+	rm -f $* $*.fas $*.lib core
+	hpcm_clisp -c $*.lsp
+	echo >$* '#!/bin/sh'
+	echo >>$* "exec `hpcm_clisp -which` -I $*.fas"
+	chmod a+r $*.fas
+	chmod a+rx $*
+
 # hpcm_sandbox below may execute `count' as a special
 # unprivileged user named `sandbox', so various files
-# must be `a+x' or `a+r'.
+# must be `a+x' or `a+r'.  `hpcm_clisp -which' returns
+# in the judging account the name of a version of the
+# hpcm_clisp program that can be run in the sandbox.
 
 count.out:	count count.in
 	rm -f count.out core
 	chmod a+x . count
 	hpcm_sandbox -cputime 60 \
-	             -datasize 8m \
-		     -stacksize 2m \
+	             -datasize 4m \
+		     -stacksize 4m \
 		     -filesize 50k \
 		     -watch \
 		     count \
@@ -123,24 +140,27 @@ count.out:	count count.in
 	@cat count.out
 	@echo "============== END OUTPUT =============="
 
+#
 submit:		count.out
 	hpcm_submit count
 
 clean:
-	rm -f count count.class count.p2c core count.out
-#
+	rm -f count *.class count.p2c core count.out \
+	      count.fas count.lib
+
+
 # Author:	walton@deas.harvard.edu
 #
-# The authors have placed this program in the public
+# The authors have placed this file in the public
 # domain; they make no warranty and accept no liability
-# for this program.
+# for this file.
 #
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/02/12 22:15:08 $
+#   $Date: 2002/02/19 08:40:58 $
 #   $RCSfile: get_count.reply,v $
-#   $Revision: 1.3 $
+#   $Revision: 1.4 $
 ---<>--<>---<>--<>---<>----- demos/count/README:
 The files in this demo directory are:
 
@@ -153,6 +173,7 @@ The files in this demo directory are:
     public/count/count1.cc	Solution in C++.
     public/count/count1.java    Solution in JAVA.
     public/count/count1.p	Solution in PASCAL.
+    public/count/count1.lsp	Solution in COMMONLISP.
 
 The Makefile is commented, as opposed to most problem
 Makefiles.  For a non-demo problem you are only given
@@ -162,7 +183,7 @@ To run the demo (under UNIX), first
 
     cp count1.yy count.yy
 
-for exactly ONE of yy = c, cc, java, or p.  Then
+for exactly ONE of yy = c, cc, java, p, or lsp.  Then
 
 	make
 
@@ -370,8 +391,9 @@ main()
 
 	char buffer [101];
 
-	while ( cin.getline ( buffer, sizeof ( buffer ) ),
-		! cin.eof() )
+	while
+	  ( cin.getline ( buffer, sizeof ( buffer ) ),
+	    ! cin.eof() )
 	{
 	    char * cp = buffer;
 	    while ( * cp == ' ' ) ++ cp;
@@ -412,7 +434,8 @@ import java.io.*;
 
 public class count {
 
-    public static void main (String[] args) throws IOException {
+    public static void main (String[] args)
+	    throws IOException {
 
 	int paragraph = 1;
 	boolean eof_seen = false;
@@ -442,7 +465,8 @@ public class count {
 		}
 
 		int cp = 0;
-		while ( cp < len && buffer [cp] == ' ' ) ++ cp;
+		while (    cp < len
+		        && buffer [cp] == ' ' ) ++ cp;
 
 		if ( cp == len ) break;
 
@@ -451,8 +475,12 @@ public class count {
 		do
 		{
 		    ++ words;
-		    while ( cp < len && buffer [cp] != ' ' ) ++ cp;
-		    while ( cp < len && buffer [cp] == ' ' ) ++ cp;
+		    while (    cp < len 
+		            && buffer [cp] != ' ' )
+			++ cp;
+		    while (    cp < len
+		            && buffer [cp] == ' ' )
+			++ cp;
 		} while ( cp != len );
 
 		characters += cp;
@@ -476,6 +504,63 @@ public class count {
 	}
     }
 }
+---<>--<>---<>--<>---<>----- demos/count/count1.lsp:
+(defun main () (read-a-paragraph 1))
+
+;; Counts are expressed as a triple:
+;;
+;;	(line-count word-count character-count)
+
+(defvar blank-line '(1 0 0))
+(defvar end-of-file '(0 0 0))
+
+(defun read-a-paragraph (paragraph)
+  (let ( (counts (read-a-line)) )
+    (cond
+      ((equal counts blank-line)
+       (read-a-paragraph paragraph))
+      ((not (equal counts end-of-file))
+       (read-rest-of-paragraph counts paragraph)))))
+
+(defun read-rest-of-paragraph (counts paragraph)
+  (let ( (line-counts (read-a-line)))
+    (cond ((or (equal line-counts blank-line)
+	       (equal line-counts end-of-file))
+	   (format t "Paragraph ~S" paragraph)
+	   (format t ": ~S lines" (first counts))
+	   (format t ", ~S words" (second counts))
+	   (format t ", ~S characters.~%"
+	           (third counts))
+	   (if (equal line-counts blank-line)
+	       (read-a-paragraph (1+ paragraph))))
+	  (t
+	   (read-rest-of-paragraph
+	     (mapcar #'+ line-counts counts)
+	     paragraph)))))
+
+	       
+(defun read-a-line ()
+  (let ( (line (read-line t nil 'eof)) )
+    (cond
+      ((eq line 'eof) '(0 0 0))
+      (t `(1 ,(read-a-word line 0 (length line) 0)
+	     ,(length line))))))
+
+(defun read-a-word (line index length count)
+  (cond
+    ((>= index length) count)
+    ((char= #\Space (aref line index))
+     (read-a-word line (1+ index) length count))
+    (t
+     (read-rest-of-word line (1+ index) length count))))
+
+(defun read-rest-of-word (line index length count)
+  (cond
+    ((>= index length) (1+ count))
+    ((char= #\Space (aref line index))
+     (read-a-word line (1+ index) length (1+ count)))
+    (t
+     (read-rest-of-word line (1+ index) length count))))
 ---<>--<>---<>--<>---<>----- demos/count/count1.p:
 program count ( input, output );
 
@@ -533,7 +618,8 @@ begin
 			else
 			    begin
 				read (c);
-				nonblank := not ( c = ' ' );
+				nonblank :=
+				    not ( c = ' ' );
 				characters :=
 				    characters + 1
 			    end
@@ -546,7 +632,8 @@ begin
 			else
 			    begin
 				read (c);
-				nonblank := not ( c = ' ' );
+				nonblank :=
+				    not ( c = ' ' );
 				characters :=
 				    characters + 1
 			    end
@@ -568,5 +655,4 @@ begin
 
 end;
 ---<>--<>---<>--<>---<>----- end of files
-
 

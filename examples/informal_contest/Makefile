@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Feb 16 02:41:18 EST 2002
+# Date:		Tue Feb 19 03:12:44 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/02/16 07:44:33 $
+#   $Date: 2002/02/19 08:43:45 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.22 $
+#   $Revision: 1.23 $
 
 # To make an informal contest named `foo':
 #
@@ -260,6 +260,15 @@
 #
 HPCM=${HOME}/hpcm
 
+# Parameters for running tests
+#
+S=${HPCM}/examples/test_submissions
+
+# Kill all implicit rules
+#
+.SUFFIXES:
+.SUFFIXES:	.mail .send
+
 # INDICES below is a description of the help, problems,
 # and demos files to be available to contestants.
 # INDICES consists of a series of entries each concern-
@@ -330,6 +339,8 @@ all:
 	chmod a+x . ..
 	startcontest
 
+test:	test_all
+
 trashable:
 	makejudgingdir -trashable
 
@@ -350,3 +361,24 @@ stop_scoreboard:
 
 update_scoreboard:
 	makescoreboard update
+
+dangerous_clean:
+	rm -rf mail help flag log \
+	       solutions* TODO \
+	       contest/problems* contest/demos* \
+	       contest/help* contest/scoreboard.1
+
+
+# Tests
+
+.mail.send:
+	hpcm_sendmail <$*.mail
+	sleep 2
+
+test_all:	test_informal
+
+TEST_PREREQUISITES=
+include ${HPCM}/examples/test_submissions/Makefile.mk
+
+test_dangerous_clean:
+	rm -rf mail/* flag log
