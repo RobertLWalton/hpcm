@@ -1,11 +1,11 @@
 #!/bin/sh -f
 #
 # Receive incoming mail, write it into separate
-# directories, and call dispatcher. 
+# directories, and call dispatchmail. 
 #
 # File:		receivemail
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Aug 20 04:06:42 EDT 2000
+# Date:		Sun Aug 27 07:45:04 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: acm-cont $
-#   $Date: 2000/08/26 04:01:45 $
+#   $Date: 2000/08/27 11:51:00 $
 #   $RCSfile: receivemail,v $
-#   $Revision: 1.15 $
+#   $Revision: 1.16 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -24,9 +24,9 @@ exec tcl "$0" "$@"
 # Use tcl rather than tclsh so that `signal' is defined.
 
 # If an argument is given, use it as a name of a
-# directory to make current, and the argument is
-# consumed.  This must be done before looking for the
-# parameters file.
+# directory to make current, and consume the argument.
+# This must be done before looking for the parameters
+# file.
 #
 # Don't change argc or argv so error output will work.
 #
@@ -63,15 +63,15 @@ receivemail \[directory\]
     form:
 		dddd-[<SU>]-{<tttt>}
 
-    where dddd is the date in filename format and tttt
-    is the email address to reply to, or is derived
-    therefrom.  If tttt cannot be computed, it has the
-    form `UNKNOWN-uuuu' where uuuu is a random number
-    that induces uniqueness.
+    where dddd is the message date in filename format
+    and tttt is the email address to reply to, or is
+    derived therefrom.  If tttt cannot be computed, it
+    is given the value `UNKNOWN'.
 
     If a message is read that already has a directory,
     the message is ignored.  Note that this means that
-    no one can send more than one message per second.
+    no one (including `UNKNOWN') can send more than one
+    message per second.
 
     If the directory argument is given, this program
     makes that directory current before searching for
@@ -79,10 +79,9 @@ receivemail \[directory\]
 
     If there are non-blank lines before the first `From'
     line in the input, these are organized into a spec-
-    ial message from the user `UNKNOWN-uuuu', where uuuu
-    is a random number that induces uniqueness.  The
-    subject of this message is something ignored by
-    `dispatchmail'.
+    ial message from the user `UNKNOWN' and date equal
+    to the current time.  The subject of this message is
+    something ignored by `dispatchmail'.
 
     This program outputs the names of the directories
     actually created."
@@ -125,8 +124,8 @@ while { "yes" } {
     # Read header
     #
     if { [regexp {^From\ } $line } {
-    	read_header stdin $line
 	set fake_message no
+    	read_header stdin $line {x_hpcm_signature_ok}
     } else {
 
 	set fake_message yes
@@ -145,46 +144,34 @@ while { "yes" } {
 	set message_header \
 	   "$message_header\n$message_subject"
 
-	# Since there is no `From:' or `Reply-to' in
-	# this fake header, the computed reply-to will
-	# be `UNKNOWN'.
+	# Since there is no `From:', `Reply-to:' or
+	# `Date:' in this fake header, the computed
+	# reply-to and date will come from the fake
+	# `From' line.
     }
 
-    # Compute Reply-to.
+    # If authentication is to be used, authenticate
+    # header.
+    #
+    if { $use_authentication } {
+    	compute_authentication
+    }
+
+    # Compute and reformat Reply-to.  Delete all
+    # whitespace, and if Reply-to ends with <...>,
+    # replace Reply-to by the ...
     #
     set reply_to [compute_message_reply_to]
-    if { $reply_to == "UNKNOWN" \
-         && [llength $message_From_line] >= 2 } {
-    	set reply_to [lindex $message_From_line 1]
-    }
-
-    # Reformat Reply-to.  Delete all whitespace,
-    # and if Reply-to ends with <...>, replace
-    # Reply-to by the ...
-    #
-    regsub -all "\ |\t\n" $reply_to "" reply_to
-    regexp {(<[^<>]*>)$} $reply_to forget reply_to
+    regsub -all "\[\ \t\n\]" $reply_to "" reply_to
+    regexp {<([^<>]*)>$} $reply_to forget reply_to
 
     if { $reply_to == "" } {
     	set reply_to UNKNOWN
     }
 
-    if { $reply_to == "UNKNOWN" } {
-        set uuuuuu [format %06d \
-		  [expr { [clock clicks] % 1000000 } ]]
-    	set reply_to "UNKNOWN-$uuuuuu"
-    }
-
     # Compute the message date.
     #
-    set date $message_date
-    if { $date == "" } {
-    	set date [lreplace $message_From_line 0 1]
-	set date [string trim $date]
-    }
-    if { $date == "" } {
-        set date [clock format [clock seconds]]
-    }
+    set date [compute_message_date]
 
     set dddd [clock_to_filename_date [clock scan $date]]
     set dirname "$dddd-\[<SU>\]-{<$reply_to>}"

@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Aug 26 23:01:40 EDT 2000
+# Date:		Sun Aug 27 07:32:24 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: acm-cont $
-#   $Date: 2000/08/27 04:06:01 $
+#   $Date: 2000/08/27 11:51:01 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.19 $
+#   $Revision: 1.20 $
 #
 
 # Include this code in TCL program via:
@@ -278,10 +278,26 @@ proc log_error { error_output } {
 # message, the message_... global variable for that
 # field is set to "".
 #
-proc read_header { ch { first_line "" } } {
-    global message_header message_From_line \
-           message_from message_to message_date \
-	   message_reply_to message_subject
+# If a third argument is given, it is a list of field
+# names (written with all lower case letters) that
+# are to be deleted from the header as it is read, and
+# thereby completely ignored.  The typical value is:
+#
+#	{ x-hpcm-signature-ok }
+#
+proc read_header { ch { first_line "" }
+                      { omit_fields "" } } {
+    global message_header \
+	   message_From_line \
+           message_from \
+	   message_to \
+	   message_date \
+	   message_reply_to \
+	   message_subject \
+	   message_x_hpcm_date \
+	   message_x_hpcm_reply_to \
+	   message_x_hpcm_signature \
+	   message_x_hpcm_signature_ok
 
     set message_header			""
     set message_From_line		""
@@ -313,13 +329,11 @@ proc read_header { ch { first_line "" } } {
     	if { $line == "" } break
 
 	set found_field no
+
 	foreach fieldname $fields {
 	    if { [regexp -nocase \
 	                 "^${fieldname}:(.*)\$"
 			 forget fieldvalue] } {
-		set varname "message_$fieldname"
-		subexp -all -- "-" $varname "_" varname
-		set $varname $fieldvalue
 
 		while { "yes" } {
 		    set line [gets $ch]
@@ -328,11 +342,21 @@ proc read_header { ch { first_line "" } } {
 			           "^\[\ \t\]" \
 				   $line] } \
 			break;
-		    set $varname \
-			"[set $varname]\n$line"
-		    set message_header \
-			"$message_header\n$line"
+		    set fieldvalue \
+			"$fieldvalue\n$line"
 		}
+
+		if { [lsearch -exact \
+		              $omitfields \
+			      $fieldname]  < 0 } {
+		    set varname "message_$fieldname"
+		    subexp -all -- "-" $varname "_" \
+		           varname
+		    set $varname $fieldvalue
+		    set message_header \
+			"$message_header\n$fieldvalue"
+		}
+
 		set found_field yes
 		break
 	    }
@@ -397,7 +421,7 @@ proc compute_message_date {} {
     } elseif { [llength $message_From_line] >= 3 } {
 	return [lreplace $message_From_line 0 1]
     } else {
-    	return "UNKNOWN"
+    	return [clock format [clock seconds]]
     }
 }
 
@@ -406,10 +430,10 @@ proc compute_message_date {} {
 # not.  If the header does not already have the same
 # answer recorded in its last `X-HPCM-signature-ok'
 # field, add that field with the newly computed value
-# to the end of the header as it is stored in the
-# message_... global variables.
+# to the end of the header stored in the message_...
+# global variables.
 #
-proc authenticate_header {} {
+proc compute_authentication {} {
 
     global message_x_hpcm_reply_to \
            message_x_hpcm_from \
@@ -425,13 +449,14 @@ proc authenticate_header {} {
 	    [lindex $message_x_hpcm_signature 1]
 	if { [catch
 	        { set key \
-		      $authentication_key($keyname) \
+		      $authentication_keys($keyname) \
 		      }] } {
 	    set result no
 	} else {
 	    set d "X-HPCM-date:$message_x_hpcm_date\n"
-	    set f "X-HPCM-from:$message_x_hpcm_from\n"
-	    set v "$d$f$key"
+	    set r "$message_x_hpcm_reply_to\n"
+	    set r "X-HPCM-reply-to:$r\n"
+	    set v "$d$f$key\n"
 	    set computed_signature \
 	        [compute_signature $v]
 	    if { $signature == $computed_signature } {
@@ -453,6 +478,33 @@ proc authenticate_header {} {
     return $result
 }
 
+# Check whether a header just read by `read_header'
+# is authentic.  If the `use_authentication' global
+# variable is `no', the answer is always `yes'.
+# Otherwise the answer is read from the `X-HPCM-
+# signature-ok' field, if that is present.  Otherwise
+# the answer is computed, saved in the `X-HPCM-
+# signature-ok' field of the header stored in the
+# message_... global variables, and returned.
+#
+proc header_is_authentic {} {
+
+    global message_x_hpcm_signature_ok \
+           use_authentication
+
+    if { $use_authentication == "no" } {
+    	return yes
+    }
+
+    set ok [string trim $message_x_hpcm_signature_ok]
+
+    if { $ok == "yes" || $ok == "no" } {
+    	return $ok
+    }
+
+    return [compute_authentication]
+}
+
 # Construct a mail reply file and send it to the sender
 # of any received mail file.  The From, To, Subject, and
 # Date fields of the received mail Header are copied at
@@ -466,8 +518,8 @@ proc authenticate_header {} {
 # body of the reply.  The reply header is automatically
 # produced.
 #
-# When the message is sent it is copied to the history
-# file.
+# When the message is sent it is copied to the reply
+# history file.
 #
 # Any previous reply file is deleted.
 #
@@ -517,7 +569,10 @@ proc compose_reply { args } {
     puts $reply_ch   "------------------------------\
                       This message replies to:"
 
-    set From_line_sent no
+    if { ! [regexp "\[^\ \t\n\]" $message_from] \
+         || ! [regexp "\[^\ \t\n\]" $message_date]  } {
+	puts $reply_ch ">$message_From_line
+    }
 
     if { [regexp "\[^\ \t\n\]" $message_to]  } {
 	puts $reply_ch "To:$message_to"
@@ -525,17 +580,10 @@ proc compose_reply { args } {
 
     if { [regexp "\[^\ \t\n\]" $message_from]  } {
 	puts $reply_ch "From:$message_from"
-    } else if { $message_From_line != "" } {
-	puts $reply_ch ">$message_From_line
-	set From_line_sent yes
     }
 
     if { [regexp "\[^\ \t\n\]" $message_date]  } {
 	puts $reply_ch "Date:$message_date"
-    } else if { $From_line_sent == "no" \
-                && $message_From_line != "" } {
-	puts $reply_ch ">$message_From_line
-	set From_line_sent yes
     }
 
     if { [regexp "\[^\ \t\n\]" $message_reply_to]  } {
@@ -546,14 +594,17 @@ proc compose_reply { args } {
 	puts $reply_ch "Subject:$message_subject"
     }
 
-    puts $reply_ch ""
+    if { $all_option } {
 
-    while { "yes" } {
-	set line [gets $received_ch]
-	if { [eof $received_ch] } {
-	    break
-	} else {
-	    puts $reply_ch "$line"
+	puts $reply_ch ""
+
+	while { "yes" } {
+	    set line [gets $received_ch]
+	    if { [eof $received_ch] } {
+		break
+	    } else {
+		puts $reply_ch "$line"
+	    }
 	}
     }
 
@@ -561,21 +612,22 @@ proc compose_reply { args } {
     close $received_ch
 }
 
-# This function renames `${reply_file}+' to
-# `$reply_file' and emails this file.
+# This function renames `${reply_file}+' to `$reply_
+# file' and emails this file.  It also copies the
+# emailed reply to the end of `$reply_history_file'.
 #
 proc send_reply {} {
 
-    global reply_file history_file
+    global reply_file reply_history_file
 
-    set history_ch  [open $history_file a]
+    set history_ch  [open $reply_history_file a]
 
     puts $history_ch "From [id user]@[info hostname]\
 		      [clock format [clock seconds]]"
 
     put_file "${reply_file}+" $history_ch
 
-    # A blank line is needed before the next `From'
+    # An empty line is needed before the next `From'
     # line so the `From' line will be recognized.
     #
     puts $history_ch ""
@@ -585,8 +637,11 @@ proc send_reply {} {
     file rename -force "${reply_file}+" $reply_file
 
     # Send the reply_file.  If there is a bad `To:'
-    # address, there will be an error, which will
-    # usually be logged locally.
+    # address, there may be an error, which will
+    # usually be logged by an error file in the
+    # current directory.  Otherwise a bad address
+    # will cause return mail from the mailer
+    # daemon.
     #
     send_mail $reply_file
 }
@@ -595,7 +650,7 @@ proc send_reply {} {
 # $received_file in the current directory.  Both the
 # `Subject:' and any preceding or following whitespace
 # are stripped from the result, and any line feeds
-# are placed by spaces.
+# are replaced by spaces.
 #
 # If no `Subject:' line is found in the header, or if
 # the -nobody argument is given and the body contains a
@@ -610,9 +665,9 @@ proc find_subject { { option -body } } {
     global received_file message_subject
 
     if { $option == "-body" } {
-	set body yes
+	set body_option yes
     } elseif { $option == "-nobody" } {
-	set body no
+	set body_option no
     } else {
         error "Bad argument to find_subject: $option"
     }
@@ -627,11 +682,12 @@ proc find_subject { { option -body } } {
     	error "Empty subject"
     }
 
-    if { $body == "no" } {
+    if { $body_option == "no" } {
 
 	# Check that body is blank.
 	#
 	while { "yes" } {
+	    set line [gets $received_ch]
 	    if { [eof $received_ch] } {
 		break
 	    } elseif { [regexp "^\[\ \t\]*\$" $line] } {
@@ -640,7 +696,6 @@ proc find_subject { { option -body } } {
 		error "Non-blank body line:\n\
 		      \    $line"
 	    }
-	    set line [gets $received_ch]
 	}
     }
 
@@ -685,7 +740,7 @@ proc put_file { filename
     close $file_ch
     if { $count > $line_count } {
     	puts $ch "... THERE ARE\
-	          [expr { $count - $line_count } ]\
+	          [expr { $count - $line_count }]\
 		  MORE LINES ..."
     }
 }

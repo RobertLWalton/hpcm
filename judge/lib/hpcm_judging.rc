@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Aug 18 05:21:41 EDT 2000
+# Date:		Sun Aug 27 06:10:07 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: acm-cont $
-#   $Date: 2000/08/27 04:06:01 $
+#   $Date: 2000/08/27 11:51:00 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.15 $
+#   $Revision: 1.16 $
 #
 
 # An optionally modified copy of this file must be
@@ -32,37 +32,69 @@
 #
 set scoring_mode auto
 
+
+# Authentication Switch: yes or no
+#
+set use_authentication no
+
+
+# Authentication Keys:
+#
+#     array set authentication_keys {
+#		keyname1	key1
+#		keyname2	key2
+#		keyname3	key3
+#		.  .  .  .  .  .  .
+#	}
+#
+# where each keyname and key is any list item.  If
+# there is whitespace in a keyname or keyitem enclose
+# it in {}'s, as in:
+#
+#		{feedso's key}	{I'm happy}
+#
+# There should be no beginning or ending whitespace
+# to a keyname, but a key can be anything.
+#
+array set authentication_keys {
+}
+
+
 # Regexp expressions matched to lines in .err file to
-# detect limit overruns (letter case is ignored):
+# detect limit overruns.  Letter case is ignored.
+# The regular expressions match successfully if they
+# match any part of a line.
 #
 set time_limit_regexp {cputime limit exceeded}
 set output_limit_regexp {filesize limit exceeded}
 
-# List of allowed extensions for submitted programs:
+
+# Whitespace separated list of allowed extensions for
+# submitted programs:
 #
 set allowed_extensions ".c .cc .java"
 
 
 ###### Functions to call operating system programs #####
 
-# Program to send mail, as does UNIX `sendmail'.  Takes
+# Function to send mail, as does UNIX `sendmail'.  Takes
 # mail message file with correctly set `To:' field and
 # sends the message to the addresses listed there.  If
 # some of these addresses are in error, this command
-# suffers a catchable error (and the mail may be put
+# may suffer a catchable error (and the mail may be put
 # into ~/dead.letter).
 #
 proc send_mail { message_file } {
     exec /usr/sbin/sendmail -oi -t < $message_file
 }
 
-# Compute the md3sum of a value.
+# Functioh to compute the md3sum of a value.
 #
 proc compute_signature { value } {
     return [lindex [exec md5sum << $value] 0]
 }
 
-# Program to create a file and suffer an error if the
+# Function to create a file and suffer an error if the
 # file already exists.  If created, the file will be
 # zero length, readable, and writable.
 #
@@ -72,7 +104,7 @@ proc create_file { filename } {
     ftruncate $filename 0
 }
 
-# Program to create a directory and suffer an error if
+# Function to create a directory and suffer an error if
 # the directory already exists.  If created, the
 # directory will be empty, readable, and writable.
 #
@@ -80,61 +112,50 @@ proc create_directory { dirname } {
     exec mkdir $dirname
 }
 
-# Symbolically link a file.  This is like copying,
-# but the modification date on the target tracks
-# the date on the source.  If no target is given,
+# Function to symbolically link a file.  This is like
+# copying, but the modification date on the target
+# tracks the date on the source.  If no target is given,
 # link the file into the current directory.
 #
 proc link_file { source { target . } } {
     exec ln -s $source $target
 }
 
-# Program to view a file.
+# Function to view a file.  Change to your favorite
+# editor or display program.
 #
 proc view_file { filename } {
     exec view $filename
 }
 
-# Program to edit a file.
+# Function to edit a file.  Change to your favorite
+# editor.
 #
-proc edut_file { filename } {
+proc edit_file { filename } {
     exec vi $filename
 }
 
+
 ######### Things usually not changed ############
+
 
 # File names:
 #
 set received_file		"Received_Mail"
 set reply_file			"Reply_Mail"
-set history_file		"Reply_Mail_History"
+set reply_history_file		"Reply_Mail_History"
 set scoring_instructions_file	"Scoring_Instructions"
 set auto_score_file		"Auto_Score"
 set manual_score_file		"Manual_Score"
 set make_file			"Makefile"
-set error_log_file		"HPCM_Error_Log"
 set dispatch_pid_file		"Dispatch_PID"
+
 
 # Default Scoring Instructions:
 #
 set scoring_instructions_default \
     "whitespace linebreak number 0"
 
-# Regexp to match `From' line of mail message.  This
-# must be encode so the first () part matches the sender
-# and the second () part matches the date.
-#
-# If you send a line matching this in a mail message,
-# a `>' will be prefixed to prevent the line from
-# matching this regexp.
-#
-set From_line_regexp \
-    "^From\[\ \t\]+(\[^\ \t\]+)\[\ \t\]+(.*)\$"
-
-# Regexp to match any line that might appear in the
-# header of a mail message.
-#
-set Header_line_regexp "^From\ |:|^\[\ \t\]+\[^\ \t\]"
 
 # Directory names:
 #
