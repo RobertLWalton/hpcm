@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/07/29 20:18:43 $
+#   $Date: 2001/07/30 03:40:05 $
 #   $RCSfile: autoscore,v $
-#   $Revision: 1.23 $
+#   $Revision: 1.24 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -83,36 +83,71 @@ cd submission_directory; autoscore program_name
 
     	whitespace	Allow matching whitespace in
 			the two files to be not exactly
-			the same.  However, by itself
-			this item does not permit
-			different numbers of `\\n's.
+			the same, if each whitespace is
+			within a line and not at the
+			beginning or end of the line.
+			Such mismatches are automatical-
+			ly allowed if either whitespace
+			is followed by a floating point
+			number.
+
+    	beginspace	Allow matching whitespace in
+			the two files to be not exactly
+			the same, if each whitespace is
+			at the beginning of a line.
+			Such mismatches are automatical-
+			ly allowed if either whitespace
+			is followed by a floating point
+			number.
+
+    	endspace	Allow matching whitespace in
+			the two files to be not exactly
+			the same, if each whitespace is
+			at the end of a line.
+
+    	linespace	Allow whitespace within blank
+			lines not to match.
 
 	linebreak	Allow one file to have line
-			breaks where the other file
-			does not.  Only effective if
-			whitespace or spacebreak is
-			allowed.
+			breaks where the other file does
+			not.  If this happens, the
+			whitespace at the beginnings and
+			ends of the lines involved, and
+			within blank lines, need not
+			match.
 
 	spacebreak	Allow one file to have white-
-			space where the other file has
-			none.  However, by itself this
-			item does not permit one file
-			to have `\\n's where there
-			other file has no whitespace.
+			space completely within some
+			line when the other file has no
+			whitespace at all.
 
-	number A R	Allow the two files to have
-			matching numbers whose absolute
+	integer A R	Allow the two files to have
+			matching integers whose absolute
 			difference is as much as A, and
 			whose relative difference is as
 			much as R, where A and R are
-			floating point values.
+			floating point values.  Numbers
+			whose character strings match
+			exactly are not considered dif-
+			ferent in this sense.
 
-			The `number' item implies the
-			`whitespace' item, as a small
-			difference in a number can make
-			a difference in the whitespace
-			that immediately precedes the
-			number.
+			An integer is a number with no
+			decimal point or exponent.
+
+	float A R	Allow the two files to have mat-
+			ching numbers at least one of
+			which is floating point whose
+			absolute difference is as much
+			as A, and whose relative differ-
+			ence is as much as R, where A
+			and R are floating point values.
+			Numbers whose character strings
+			match exactly are not considered
+			different in this sense.
+
+			An floating point number is a
+			number with no decimal point or
+			exponent.
 
 	decimal		Allow two files to have matching
 			numbers that have different
@@ -125,17 +160,26 @@ cd submission_directory; autoscore program_name
 			numbers just one of which has an
 			exponent.
 
+	sign		Allow two files to have matching
+			numbers just one of which has an
+			sign, or both of which have dif-
+			ferent signs.
+
+	number A R	The union of `integer A R',
+			`float A R', `decimal',
+			`exponent', and `sign'.
+
 	case		Allow two files to have letters
 			outside of numbers that match
 			but for case.
-
+
 	column		Allow to files to have matching
 			numbers that do not end in the
 			same line column, or matching
 			non-whitespace characters out-
 			side numbers that are not in the
 			same line column.
-
+
     The possible scores (with empty error file and
     existing non-empty output file) are:
 
@@ -146,12 +190,13 @@ cd submission_directory; autoscore program_name
 
     If scorediff reports `nonblank' or `eof2' (output
     has non-whitespace after test file ends), or if
-    scorediff reports a `number' difference greater than
-    allowed by the $scoring_instructions_file, the out-
-    put is incorrect.  Otherwise, if scorediff reports
-    `eof1' the output is incomplete.  Otherwise if
-    scorediff reports something that is not allowed by
-    the $scoring_instructions_file, the output has a
+    scorediff reports an `integer' or `float' difference
+    greater than allowed by the\
+             $scoring_instructions_file,
+    the output is incorrect.  Otherwise, if scorediff
+    reports `eof1' the output is incomplete.  Otherwise
+    if scorediff reports something that is not allowed
+    by the $scoring_instructions_file, the output has a
     formatting error.  Otherwise the output is correct.
 
     The relative difference of two numbers x and y is
@@ -163,7 +208,7 @@ cd submission_directory; autoscore program_name
 
     which has a maximum value of 2.  If x = y = 0, the
     relative difference of x and y is defined to be 0.
-
+
     The score is written to the `$auto_score_file' file
     in the submission directory and is also written as a
     single line to the standard output.  The score
@@ -174,7 +219,7 @@ cd submission_directory; autoscore program_name
 
     For the purpose of computing character line column
     positions, tabs are set every 8 columns.
-
+
     If something goes very wrong, such as finding that
     the `$auto_score_file' file is not writable, this
     program creates an error log file in the current
@@ -249,43 +294,92 @@ if { $score != "" } {
     # Encode the instructions in the following
     # variables:
     #
+    set whitespace_ok	no
+    set beginspace_ok	no
+    set endspace_ok	no
+    set linespace_ok	no
     set spacebreak_ok	no
     set linebreak_ok	no
-    set whitespace_ok	no
-    set number_ok	no
+    set integer_ok	no
+    set float_ok	no
     set decimal_ok	no
     set exponent_ok	no
+    set sign_ok 	no
     set case_ok		no
     set column_ok	no
-    set number_absdiff	0.0
-    set number_reldiff	0.0
+    set integer_absdiff	0.0
+    set integer_reldiff	0.0
+    set float_absdiff	0.0
+    set float_reldiff	0.0
 
     set last ""
     foreach i $scoring_instructions {
-	if { $last == "number" } {
+	if { $last == "integer" } {
 	    if { [catch { expr $i }] } {
 	        error \
-		    "Non-number after `number' in\
+		    "Non-number after `integer' in\
 		     scoring instructions: $i"
 	    }
-	    set number_absdiff $i
-	    set last absdiff
-	} elseif { $last == "absdiff" } {
+	    set integer_absdiff $i
+	    set last integer_absdiff
+	} elseif { $last == "integer_absdiff" } {
 	    if { [catch { expr $i }] } {
 	        error \
-		    "Non-number after `number' in\
+		    "Non-number after `integer' in\
 		     scoring instructions: $i"
 	    }
-	    set number_reldiff $i
+	    set integer_reldiff $i
 	    set last ""
+	} elseif { $last == "float" } {
+	    if { [catch { expr $i }] } {
+	        error \
+		    "Non-number after `float' in\
+		     scoring instructions: $i"
+	    }
+	    set float_absdiff $i
+	    set last float_absdiff
+	} elseif { $last == "float_absdiff" } {
+	    if { [catch { expr $i }] } {
+	        error \
+		    "Non-number after `float' in\
+		     scoring instructions: $i"
+	    }
+	    set float_reldiff $i
+	    set last ""
+	} elseif { $last == "number" } {
+	    if { [catch { expr $i }] } {
+	        error \
+		    "Non-number after `number' in\
+		     scoring instructions: $i"
+	    }
+	    set integer_absdiff $i
+	    set float_absdiff $i
+	    set last number_absdiff
+	} elseif { $last == "number_absdiff" } {
+	    if { [catch { expr $i }] } {
+	        error \
+		    "Non-number after `number' in\
+		     scoring instructions: $i"
+	    }
+	    set integer_reldiff $i
+	    set float_reldiff $i
+	    set last ""
+	} elseif { $i == "float" } {
+	    set float_ok yes
+	    set last float
+	} elseif { $i == "integer" } {
+	    set integer_ok yes
+	    set last integer
 	} elseif { $i == "number" } {
-	    set number_ok yes
-	    set whitespace_ok yes
+	    set integer_ok yes
+	    set float_ok yes
 	    set last number
 	} elseif { $i == "decimal" } {
 	    set decimal_ok yes
 	} elseif { $i == "exponent" } {
 	    set exponent_ok yes
+	} elseif { $i == "sign" } {
+	    set sign_ok yes
 	} elseif { $i == "case" } {
 	    set case_ok yes
 	} elseif { $i == "column" } {
@@ -296,6 +390,12 @@ if { $score != "" } {
 	    set linebreak_ok yes
 	} elseif { $i == "whitespace" } {
 	    set whitespace_ok yes
+	} elseif { $i == "beginspace" } {
+	    set beginspace_ok yes
+	} elseif { $i == "endspace" } {
+	    set endspace_ok yes
+	} elseif { $i == "linespace" } {
+	    set linespace_ok yes
 	} else {
 	    error "Unknown scoring_instruction: $i"
 	}
@@ -303,8 +403,8 @@ if { $score != "" } {
     
     if { $last != "" } {
 	error \
-	    "Number not followed by two floating point\
-	     numbers\n\
+	    "Number, integer, or float not followed by\
+	     two floating point numbers\n\
 	    \    in the scoring instructions:\n\
 	    \        $scoring_instructions"
     }
@@ -333,24 +433,42 @@ if { $score != "" } {
     #
     set last ""
     foreach d $scorediff {
-	if { $last == "number" } {
-	    if { $d > $number_absdiff } {
+	if { $last == "integer" } {
+	    if { $d > $integer_absdiff } {
 		set score "Incorrect Output"
 		break
 	    }
-	    set last absdiff
-	} elseif { $last == "absdiff" } {
-	    if { $d > $number_reldiff } {
+	    set last integer_absdiff
+	} elseif { $last == "integer_absdiff" } {
+	    if { $d > $integer_reldiff } {
 		set score "Incorrect Output"
 		break
 	    }
 	    set last ""
-	} elseif { $d == "number" } {
-	    if { $number_ok == "no" } {
+	} elseif { $last == "float" } {
+	    if { $d > $float_absdiff } {
+		set score "Incorrect Output"
+		break
+	    }
+	    set last float_absdiff
+	} elseif { $last == "float_absdiff" } {
+	    if { $d > $float_reldiff } {
+		set score "Incorrect Output"
+		break
+	    }
+	    set last ""
+	} elseif { $d == "integer" } {
+	    if { $integer_ok == "no" } {
 		set score "Incorrect Output" 
 		break
 	    }
-	    set last number
+	    set last integer
+	} elseif { $d == "float" } {
+	    if { $float_ok == "no" } {
+		set score "Incorrect Output" 
+		break
+	    }
+	    set last float
 	} elseif { $d == "nonblank" } {
 	    set score "Incorrect Output"
 	    break
@@ -369,6 +487,11 @@ if { $score != "" } {
 	         && $score == "" } {
 		set score "Formatting Error" 
 	    }
+	} elseif { $d == "sign" } {
+	    if { $sign_ok == "no" \
+	         && $score == "" } {
+		set score "Formatting Error" 
+	    }
 	} elseif { $d == "case" } {
 	    if { $case_ok == "no" \
 	         && $score == "" } {
@@ -381,6 +504,21 @@ if { $score != "" } {
 	    }
 	} elseif { $d == "whitespace" } {
 	    if { $whitespace_ok == "no" \
+	         && $score == "" } {
+		set score "Formatting Error" 
+	    }
+	} elseif { $d == "beginspace" } {
+	    if { $beginspace_ok == "no" \
+	         && $score == "" } {
+		set score "Formatting Error" 
+	    }
+	} elseif { $d == "endspace" } {
+	    if { $endspace_ok == "no" \
+	         && $score == "" } {
+		set score "Formatting Error" 
+	    }
+	} elseif { $d == "linespace" } {
+	    if { $linespace_ok == "no" \
 	         && $score == "" } {
 		set score "Formatting Error" 
 	    }
