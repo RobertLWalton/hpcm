@@ -1,0 +1,71 @@
+DYNAMIC PROGRAMMING PROBLEM HELP
+                            Fri Mar 16 05:42:48 EST 2001
+
+Dynamic programming algorithm is an algorithm with two
+characteristics:
+
+A.  A problem P is parameterized in such a way that
+    the parametric set of subproblems can be solved
+    recursively.  For example, the original problem
+    P might be parameterized as P(i,j,M) for some
+    integers 0 <= i < N, 0 <= j < N, 2**M >= N with
+    N > 0.  And each problem P(i,j,m) for 0 <= i < N,
+    0 <= j < N, 0 < m <= M might be solvable fairly
+    quickly (say in N**2 time) from the solutions to
+    all the problems P(i,j,m-1) for 0 <= i < N,
+    0 <= j < N, while the problems P(i,j,0) are
+    readily solvable.
+
+B.  The solution to one of the parameterized problems
+    (e.g. P(i,j,m)) is typically used very many times in
+    computing the solution to the final problem recur-
+    sively, so its important to remember this solution
+    as a table entry and not recompute it every time it
+    is needed.
+
+
+The word `programming' in `dynamic programming' refers
+to describing the table of subproblem solutions and
+the order in which the table will be computed.
+
+For example, suppose we have an undirected graph with
+nodes connected by edges which have lengths.  Suppose
+there a N nodes, numbered from 0 through N-1.  Then
+the problem is to find the length of a shortest path
+between two given nodes, i and j.
+
+Let P(i,j,m) denote the problem of finding the length
+of the shortest path between nodes i and j such that
+the path does not have more than 2**m edges.  Then
+P(i,j,0) is easily computed: it is just the length of
+the edge from node i to node j, or infinity if there
+is no such edge.  Also P(i,j,m) can be computed from
+the solutions to P(i,k,m-1) and P(k,j,m-1) for all
+0 <= k < N: its just
+
+    min { P(i,k,m-1) + P(k,j,m-1) : 0 <= k < N }
+
+Going a little deeper into this, the answers to
+P(i,j,m) for all i and j with m fixed form an NxN
+matrix, which we might call M(m).  Then M(0) is just
+the original graph with edges expressed as lengths.
+And for m > 0, M(m) is just the matrix product of
+M(m-1) with itself where instead of using * and +
+as in the normal matrix product, we use + and `min'.
+Thus M(m) can be computed from M(m-1) in roughly
+N**3 operations, and the original problem can be solved
+in N**3 * (log base 2 of N) time.
+
+Notice that one does not need to store M(m) for every
+value of m at one time.  One only needs space form
+M(m-1) and M(m) to compute M(m).
+
+The first step in solving any dynamic programming
+problem is to parameterize the problem.  But notice
+that in our example, the parameter m is not even hinted
+at by the original problem statement, which is just to
+find the distance between i and j.  We say that m is a
+`hidden parameter'.  The essence of solving a dynamic
+programming problem is to find the hidden parameter
+(or parameters) that are needed to make a fast recursive
+algorithm.
