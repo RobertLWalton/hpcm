@@ -2,7 +2,7 @@
 #
 # File:		Makefile.mk
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Mar 23 06:23:44 EST 2003
+# Date:		Sat Mar 29 11:26:43 EST 2003
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2003/03/23 11:36:49 $
+#   $Date: 2003/03/29 16:25:05 $
 #   $RCSfile: Makefile.mk,v $
-#   $Revision: 1.20 $
+#   $Revision: 1.21 $
 
 extract_replies:	mbox
 	rm -rf replies
@@ -92,7 +92,8 @@ test_unformatted:	${TEST_PREREQUISITES} \
 	$S/multipart_7bit.send \
 	$S/multipart_base64.send \
 	$S/multipart_pine.send \
-	$S/multipart_quoted_printable.send
+	$S/multipart_quoted_printable.send \
+	$S/multipart_simple_boundary.send
 
 test_system_error:	${TEST_PREREQUISITES} \
 	$S/system_error.send
