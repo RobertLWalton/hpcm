@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Jan  9 20:29:11 EST 2001
+# Date:		Fri Jan 12 02:33:57 EST 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/01/10 01:29:32 $
+#   $Date: 2001/01/12 07:37:54 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.14 $
+#   $Revision: 1.15 $
 
 # To make an email contest named `foo':
 #
@@ -24,7 +24,7 @@
 # 2. Create a judging directory ~/judging_foo_password
 #    where the password is needed to keep outsiders from
 #    guessing the path to the received submissions,
-#    because java requires this path be a+x to access
+#    because JAVA requires this path be a+x to access
 #    .class files inside the sandbox.
 #
 #    This password is never really used, and so can be
@@ -39,10 +39,7 @@
 #    want (run `makejudgingdir -doc' to find the format
 #    and meaning of index specifications).
 #
-# 4. Run `make this_contest' and then edit the `./help/
-#    this_contest' file.
-#
-# 5. Run `make' in your judging directory.
+# 4. Run `make' in your judging directory.
 #
 #    You should rerun `make' whenever you may have
 #    changed something it uses to build the contest
@@ -50,13 +47,17 @@
 #    `make' unnecessarily is to get redundant instruc-
 #    tions in the ./TODO file (see below).
 
-# 6. Follow the instructions in the TODO file that
+# 5. Follow the instructions in the TODO file that
 #    will have been created in the judging directory.
 #    After you follow an instruction, edit it out of
 #    the TODO file.
 #
 #    Among other things you will be asked to set edit
 #    routing information into ~/.procmailrc.
+
+# 6. Rerun `make' in your judging directory.  This is
+#    necessary because you edited `help/this_contest'
+#    in step 5.
 #
 # 7. Review the -email option of the `makescoreboard'
 #    program (see `makescoreboard -doc').  If you wish
