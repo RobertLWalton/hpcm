@@ -1,0 +1,47 @@
+#! /bin/sh
+#
+# Print files in 60 line x 80 column format to all
+# contest printers.
+#
+# File:		jprint
+# Author:	Bob Walton <walton@deas.harvard.edu>
+# Date:		Wed Nov 14 22:11:43 EST 2001
+#
+# The authors have placed this program in the public
+# domain; they make no warranty and accept no liability
+# for this program.
+#
+# RCS Info (may not be true date or author):
+#
+#   $Author: hc3 $
+#   $Date: 2001/11/15 03:33:53 $
+#   $RCSfile: jprint,v $
+#   $Revision: 1.1 $
+
+case "$1" in
+   -doc* )
+   	echo "
+print [filename ...]
+
+    Print the files named (or the standard input if the
+    filenames are missing) to all contest printers in a
+    format well suited to files with lines of 80 col-
+    umns.   This format puts 1 file page per paper page,
+    and permits at least 60 lines on a file page.
+
+    The \`printer_broadcast' program is used to locate
+    printers and update printer_jobs."
+
+    	exit 1
+	;;
+esac
+
+
+# Print files.
+#
+enscript -j -b "\$n|%W  %C  GIVE TO JUDGE|\$% of \$=" \
+	--margins=48:48:: \
+	-F Courier-Bold12 -f Courier10 \
+	-o - "$@" | printer_broadcast "$1"
+
+exit 0
