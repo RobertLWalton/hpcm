@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Jan  7 12:56:22 EST 2001
+# Date:		Fri Jan 12 22:01:02 EST 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,22 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/01/07 17:51:11 $
+#   $Date: 2001/01/13 02:58:53 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.5 $
+#   $Revision: 1.6 $
+
+# make
+#	Makes documentation as fprintable .doc files in
+#	this subdirectory tree.
+#
+# make fprint
+#	Makes and fprints documentation.  Overview and
+#	installing_hpcm are first, and the rest is
+#	program documentation files in alphabetical
+#	order.
+#
+# make fcheck
+#	Makes and runs fcheck on documentation.
 
 # List DOCS in order of printing.
 #
