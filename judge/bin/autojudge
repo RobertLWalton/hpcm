@@ -92,9 +92,8 @@ else if { [llength $score_file] > 1 } {
 set submitted_file ""
 
 foreach e $allowed_extensions {
-    set glob_result [glob -nocomplain "*.$e"]
-    if { $glob_result != "" } {
-    	lappend submitted_file $glob_result
+    foreach f [glob -nocomplain "*.$e] {
+    	lappend submitted_file $f
     }
 }
 
@@ -117,37 +116,14 @@ if { ! [file isdirectory $solution_dir] } {
     [submission_error "unknown program name: $submitted_program]
 }
 
-# We use hard links, not symbolic links, for files read
-# when the submitted program evaluates, in order to keep
-# from having to make the parent directory accessible to
-# the sandbox.
-
-if { [file readable Makefile] \
-     && \
-     [file mtime Makefile] \
-         < [file mtime "$solution_dir/Makfile"] } {
-    puts "Deleting out-of-date Makefile"
-    file delete Makefile
-}
-
 if { ! [file readable Makefile] } {
     puts "Linking Makefile"
-    exec ln $solution_dir/Makefile .
-}
-
-if { [file readable ${submitted_program}.in] \
-     && \
-     [file mtime "${submitted_program}.in"] \
-         < [file mtime \
-	     "$solution_dir/${submitted_program}.in"] \
-	     } {
-    puts "Deleting out-of-date ${submitted_program}.in"
-    file delete "${submitted_program}.in"
+    exec ln -s $solution_dir/Makefile .
 }
 
 if { ! [file readable ${submitted_program}.in] } {
     puts "Linking ${submitted_program}.in"
-    exec ln $solution_dir/${submitted_program}.in .
+    exec ln -s $solution_dir/${submitted_program}.in .
 }
 
 if { ! [file readable ${submitted_program}.test] } {
@@ -162,7 +138,7 @@ if { ! [file readable $submitted_program] \
      || [file mtime $submitted_program \
            < [file mtime $submitted_file] } {
 
-    if { [file readable $submitted_program] } {
+    if { [file exists $submitted_program] } {
 	puts "Deleting out-of-date $submitted_program"
     	file delete $submitted_program
     }
@@ -180,8 +156,9 @@ if { ! [file readable "${submitted_program}.out" \
            < [file mtime "${submitted_program}.in"] } {
 
     puts "Making ${submitted_program}.out"
-    eval "exec $make >& ${submitted_program}.out"
-
+    eval "exec nobody $submitted_program \
+	       <  "${submitted_program}.in" \
+    	       >& "${submitted_program}.out"
 }
 
 TBW
