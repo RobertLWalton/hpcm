@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Jul 19 08:10:46 EDT 2001
+# Date:		Thu Jul 19 09:49:26 EDT 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/07/19 12:06:47 $
+#   $Date: 2001/07/19 13:38:40 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.54 $
+#   $Revision: 1.55 $
 #
 
 # An optionally modified copy of this file must be
@@ -90,6 +90,42 @@ set scoreboard_width 80
 #
 set scoreboard_markers "|+@#$%&<>"
 
+# Submitter compress function.  Used to compress the
+# full submitter email name when displaying the sub-
+# mitters name, e.g., on the scoreboard.
+#
+# For this version the mode is `long' to include a con-
+# testant's primary domain name (e.g. `harvard') or
+# `short' to not include the @ or anything after that.
+#
+set submitter_compress_mode long
+#set submitter_compress_mode short
+proc submitter_compress { submitter } {
+
+    global submitter_compress_mode
+
+    # Long_submitter is submitter with stuff after @
+    # compressed so xxxxx.yyy.eee becomes yyy.
+    # Short_submitter is submitter with @ and stuff
+    # after it removed.
+
+    if { [regexp {^([^@]*)@.*\.([^.]*)\.[^.]*$} \
+                 $submitter forget \
+		 short_submitter organization] } {
+	set long_submitter \
+	    "$short_submitter@$organization"
+    } else {
+	regexp {^([^@]*)@} $submitter forget \
+	       short_submitter
+	set long_submitter $short_submitter
+    }
+
+    if { $submitter_compress_mode == "long" } {
+	return $long_submitter
+    } else {
+	return $short_submitter
+    }
+}
 
 # Set the following to `yes' if submissions must have
 # files in the format:
