@@ -5,7 +5,7 @@
 #
 # File:		autojudge
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Jan 24 10:44:27 EST 2002
+# Date:		Fri Jan 25 09:53:53 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/01/24 16:02:56 $
+#   $Date: 2002/01/25 14:53:48 $
 #   $RCSfile: autojudge,v $
-#   $Revision: 1.69 $
+#   $Revision: 1.70 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -348,260 +348,13 @@ autojudge \[problem\[.extension\]\]
     	then that
     file contains instructions that format the reply for
     a given $auto_score_file value and a given value of
-    the scoring_mode global variable.  The contents of
-    the $response_instructions_file file is a TCL list\
-    	value
-    consisting of commands and if-statements.  The if-
-    statements have the format of TCL if statements:
-
-    	if <expression> <block>
-	elseif <expression> <block>
-	else <block>
-
-    where any number of elseif parts may be given and
-    the else part is optional.  Note that the words
-    `if', `elseif', and `else' are TCL list elements as
-    are the expressions and blocks.  Each block is re-
-    cursively interpreted as a TCL list consisting of
-    commands and if-statements.  The if-statement ex-
-    pressions can be evaluated without evaluating any
-    commands, so the sequence of commands that is to be
-    executed can be determined and the if-statements can
-    be removed in a first pass.
-
-    The default value of the\
-		$response_instructions_file file
-    is the following:
-
-	if { ! \$manual && ! \$proposed } {
-	    if { \$scoring_mode == \"manual\" } {
-		NO-REPLY
-	    	EXIT
-	    } elseif { \$scoring_mode == \"auto\" \\
-	         || \\
-		 \$auto_score \\
-		     == \"Completely Correct\" } {
-		{ LINE \"For -PROBLEM- the\\
-		        automatically determined final\\
-			score is:\" }
-		BLANK
-		{ LINE \"    -AUTO-SCORE-\" }
-		FINAL
-	    } elseif { \[lcontain \\
-	                    {auto+manual manual+auto} \\
-	                    \$scoring_mode\] } {
-
-		{ LINE \"For -PROBLEM- the\\
-		        automatically determined\\
-			score is:\" }
-		BLANK
-		{ LINE \"    -AUTO-SCORE-\" }
-		BLANK
-	    	{ LINE \"However, this score WILL BE\\
-		        REVIEWED by the human judge\\
-			(soon).\" }
-		NON-FINAL
-	    }
-	} elseif { ! \$manual && \$proposed } {
-	    FINAL
-	    if { \$scoring_mode == \"manual\" } {
-		{ LINE \"For -PROBLEM- your final\\
-		        score is:\" }
-		BLANK
-		{ LINE \"    -PROPOSED-SCORE-\" }
-	    } elseif { \[regexp {auto} \\
-	                       \$scoring_mode\] } {
-
-		{ LINE \"For -PROBLEM- your\\
-			previous automatic score\\
-			of:\" }
-		BLANK
-		{ LINE \"    -AUTO-SCORE-\" }
-		BLANK
-
-	        if { \$proposed_score \\
-		     == \$auto_score } {
-
-		    { LINE \"has been verified and\\
-		            confirmed by the human\\
-			    judge!\" }
-		    { LINE \"Thus your FINAL score\\
-		            is:\" }
-		    BLANK
-		    { LINE \"    -PROPOSED-SCORE\" }
-		    BLANK
-		    { LINE \"for this submission\" }
-
-		} else {
-
-		    if { \$scoring_mode != \"auto\" } {
-
-			{ LINE \"has been OVERRIDDEN\\
-			        by the human judge!\" }
-		    } else {
-			{LINE \"has been UNEXPECTEDLY\\
-			       OVERRIDDEN by the human\\
-			       judge!\" }
-			EDIT
-		    }
-
-		    BLANK
-		    { LINE \"The human judge has\\
-		            assigned the NEW FINAL\\
-			    score:\" }
-		    BLANK
-		    { LINE \"    -PROPOSED-SCORE\" }
-		    BLANK
-		    { LINE \"to this submission\" }
-		}
-	    }
-	} elseif { \$manual && \$proposed } {
-
-	    FINAL
-	    EDIT
-	    { LINE \"For -PROBLEM- your PREVIOUS FINAL\\
-	            manual score of:\" }
-	    BLANK
-	    { LINE \"    -MANUAL-SCORE-\" }
-	    BLANK
-
-	    if { \$proposed_score == \$manual_score } {
-		{ LINE \"has been verified and\\
-			confirmed by the human\\
-			judge!\" }
-	    } else {
-		{ LINE \"has been UNEXPECTEDLY\\
-		        OVERRIDDEN by the human\\
-			judge!\" }
-		BLANK
-		{ LINE \"The human judge has assigned\\
-		        the NEW FINAL score:\" }
-		BLANK
-		{ LINE \"    -PROPOSED-SCORE\" }
-		BLANK
-		{LINE \"to this submission\" }
-		EDIT
-	    }
-	}
-
-	BLANK
-	{ LINE \"(see below for submission time).\" }
-	BLANK
-	{ BAR \"this message replies to:\" }
-	RECEIVED-HEADER
-
-    Actually this default value is postpended to any
-    $response_instructions_file file value, and picks
-    up any cases omitted by that value.  The EXIT
-    command should be used in any\
-	$response_instructions_file
-    file value to be sure this default does not execute
-
-    If-statement expressions can be any TCL expr expres-
-    sion.  The only variables that can be used are:
-
-    	\$scoring_mode
-	    The value of the scoring_mode global
-	    variable.
-
-	\$auto_score
-	    The value of the $auto_score_file file.
-
-	\$manual_score
-	    The value of the $manual_score_file file, or
-	    `None' if this file does not exist.  Always
-	    set to `None' in the autojudge program.
-
-	\$proposed_score
-	    The score which the person running the
-	    manualreply program has chosen as the final
-	    score.  Set to `None' if the manualreply
-	    program is not being used to set the score.
-
-	\$manual
-	    Equals \$manual_score != \"None\".
-
-	\$proposed
-	    Equals \$proposed_score != \"None\".
-
-    Note that variables cannot be set by commands.
-
-    The $response_instructions_file file commands are\
-    	execu-
-    ted to construct the reply.  The possible commands
-    are:
-
-	FINAL
-	    The final reply is sent.  A $reply_file file
-	    is created in the current directory.  If
-	    this command is executed, it must be the
-	    first command executed.
-
-	NON-FINAL 
-	    A non-final reply is sent.  No $reply_file
-	    file is created in the current directory
-	    (though the reply is recorded in the
-	    $reply_history_file file).  If this command
-	    is executed, it must be the first command
-	    executed.
-
-	NO-REPLY
-	    No reply is sent.  All other commands are
-	    ignored.  If this command is executed, it
-	    must be the first command executed.
-
-	EXIT
-	    This is the last command executed, and any
-	    commands following it are ignored.
-
-	{ LINES \"string\" ... }
-	{ LINE \"string\" }
-	    The strings, each followed by a line feed, are
-	    included in the reply.  Note that the strings
-	    may themselves include line feeds.
-
-	    Several special strings are substituted for
-	    within each string as follows:
-
-	        -PROBLEM-	 The problem name.
-		-AUTO-SCORE-	 \$auto_score value.
-		-MANUAL-SCORE-	 \$manual_score value.
-		-PROPOSED-SCORE- \$proposed_score value.
-
-	BLANK
-	    Include a blank line in the reply.
-
-	BAR
-	    Inserts a 72 character ----- bar line.
-
-	{BAR \"string\"}
-	    Inserts ----- bar line that ends with a
-	    space followed by the string.  The total
-	    number of characters in the line is 72.
-
-	{INPUT filename}
-	    Include a copy of the file in the reply.
-
-	RECEIVED-HEADER
-	    Include a copy of the Date, To, From, Reply-
-	    To, and Subject header lines of the
-	    $received_file file in the reply.
-
-	RECEIVED-BODY
-	    Include the body of the $received_file file
-	    in the reply.
-
-	FIRST
-	    Include lines describing the type and posi-
-	    tion of the first score determining error in
-	    the reply.
-
-	SUMMARY
-	    Include lines summarizing of all score de-
-	    termining errors in the reply.
+    the scoring_mode global variable.  The format of
+    the $response_instructions_file file is described
+    in hpcm_judging.rc, where the default value for
+    that file is given.
 
     This program prints information about its progress.
- 
+ 
     Unless this program creates a $reply_file file that
     is intended to be the final reply to the submitter
     (because the score is `Completely Correct' or the
@@ -612,7 +365,7 @@ autojudge \[problem\[.extension\]\]
     (e.g. tracker) that they should search for submis-
     sion directories for which the manualreply program
     should be called.
-
+
     If this program (because of a `Syntax Error') or the
     `autoscore' program writes the $auto_score_file\
     	file,
