@@ -2,7 +2,7 @@
 #
 # File:		scoring_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Sep 10 01:12:07 EDT 2001
+# Date:		Mon Sep 10 06:13:38 EDT 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/09/10 05:36:41 $
+#   $Date: 2001/09/10 11:04:05 $
 #   $RCSfile: scoring_common.tcl,v $
-#   $Revision: 1.17 $
+#   $Revision: 1.18 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -537,12 +537,11 @@ set current_group ""
 #   that group is selected.  Otherwise the argument may
 #   match one or more group names, and if it matches
 #   exactly one, the named group is selected.  To match
-#   a group name, the argument must either be the
-#   beginning part of the group name, or both the
-#   argument and the group name must contain a `-' that
-#   separates each into two parts, and each part of the
-#   argument must be a beginning of the corresponding
-#   part of the group name.
+#   a group name, the argument and the group name are
+#   split into parts separated by `-', and each argument
+#   part must equal the beginning of the corresponding
+#   group name part.  The number `-'s in the argument
+#   and group name must also be equal.
 #
 #   A numeric argument # switches to the #'th proof of
 #   the current_group.
@@ -589,23 +588,15 @@ proc get_proof { args } {
     foreach arg $args {
 
         if { [regexp {^[a-z].} $arg] } {
+	    regsub -all -- {-} $arg {[^-]*-} regexp
+	    set regexp "^$regexp\[^-\]*\$"
+
 	    set found ""
 	    foreach t [array names proof_group_array] {
 	        if { $arg == $t } {
 		    set found $t
 		    break
-	        } elseif { [regexp "^$arg" $t] } {
-		    lappend found $t
-	        } elseif {    [regexp \
-		                 {^([^-]*)-([^-]*)$} \
-		                 $arg forget \
-				 arg1 arg2] \
-			   && [regexp \
-		                 {^([^-]*)-([^-]*)$} \
-		                 $t forget \
-				 t1 t2] \
-			   && [regexp "^$arg1" $t1] \
-			   && [regexp "^$arg2" $t2] } {
+		} elseif { [regexp $regexp $t] } {
 		    lappend found $t
 		}
 	    }
@@ -633,7 +624,7 @@ proc get_proof { args } {
 	} elseif { [regexp {^[0-9]+$} $arg] } {
 	    set n $arg
 	} else {
-	    switch -exact $arg {
+	    switch -exact -- $arg {
 	        n { incr n }
 		p { incr n -1 }
 		default {
@@ -715,7 +706,12 @@ proc set_proof_display { } {
     set oh    [list [list $oline $oc1 $oc2]]
     set th    [list [list $tline $tc1 $tc2]]
     set desc  [lrange $proof 7 end]
-    set desc  "\[$i\]  $desc"
+    if { [lsearch -exact {io ic fe ne} $current_group] \
+         >= 0 } {
+	set desc  "\[$current_group $i\]  $desc"
+    } else {
+	set desc  "\[$i\]  $desc"
+    }
 
     # L is the number of lines of each file that are to
     # be displayed before and after the principal
@@ -821,11 +817,20 @@ proc compute_proof_info { } {
 	if { $types == "" } continue
 
 	set name $proof_group_name_array($group)
-	set info "$info$name ($group):"
+	set more "$name ($group):"
+	set column [string length $more]
+	set info "$info$more"
 	set proofs ""
 	foreach t $types {
 	    set n [llength $proof_array($t)]
-	    set info "$info \[$n\] $score_array($t)"
+	    set more "  \[$n\] $score_array($t)"
+	    incr column [string length $more]
+	    if { $column > 80 } {
+		set column [string length $more]
+		incr column 2
+	        set more "\n  $more"
+	    }
+	    set info "$info$more"
 	    set proofs \
 	        [concat $proofs $proof_array($t)]
 	}

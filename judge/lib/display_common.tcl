@@ -2,7 +2,7 @@
 #
 # File:		display_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Sep  8 07:40:18 EDT 2001
+# Date:		Mon Sep 10 07:12:52 EDT 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/09/08 13:03:11 $
+#   $Date: 2001/09/10 11:04:05 $
 #   $RCSfile: display_common.tcl,v $
-#   $Revision: 1.15 $
+#   $Revision: 1.16 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -1202,8 +1202,9 @@ proc compute_file_display \
 
     global highlight_on highlight_off
 
-    set hlength \
-        [string length "$highlight_on$highlight_off"]
+    set hon $highlight_on
+    set hoff $highlight_off
+    set hlength [string length "$hon$hoff"]
 
     read_file_array $filename array $last_line_number
 
@@ -1230,6 +1231,9 @@ proc compute_file_display \
 	        set line "----------\
 			  END OF FILE\
 			  ----------"
+		if { [llength $highlights] > 0 } {
+		    set line "$hon$line$hoff"
+		}
 	    }
 	} else {
 
@@ -1249,8 +1253,6 @@ proc compute_file_display \
 		    set l2 [string range $line $c1 $c2]
 		    set l3 [string range $line \
 				 [expr { $c2 + 1 }] end]
-		    set hon $highlight_on
-		    set hoff $highlight_off
 		    set line "$l1$hon$l2$hoff$l3"
 
 		    set highlights \
