@@ -6,7 +6,7 @@
 #
 # File:		makejudgingdir
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Oct  7 07:56:32 EDT 2000
+# Date:		Sat Oct  7 09:38:39 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/10/07 12:19:48 $
+#   $Date: 2000/10/07 14:49:55 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.19 $
+#   $Revision: 1.20 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -613,10 +613,12 @@ proc TODO_hpcm_make {} {
 #
 random seed
 proc make_password {} {
-    return [format {%03d%03d%04d} \
-		   [random 1000] \
-		   [random 1000] \
-		   [random 10000]]
+    return [format {%02x%02x%02x%02x%02x} \
+		   [random 256] \
+		   [random 256] \
+		   [random 256] \
+		   [random 256] \
+		   [random 256]]
 }
 
 # If no arguments left or first remaining argument
@@ -812,7 +814,8 @@ proc recursive_file_copy { source destination } {
     	set des "$destination/[file tail $src]"
 	if { [file isfile $src] } {
 	    file copy $src $des
-	} else {
+	} elseif { [file isdirectory $src] } {
+	    file mkdir $des
 	    recursive_file_copy $src $des
 	}
 	grant_access $des
@@ -826,7 +829,7 @@ proc process_index_specification {} {
 	   demos_index_chs \
            info_option solutions_option \
 	   problems_option demos_option \
-	   help_option \
+	   help_option txt_option \
            info_directory solutions_directory \
 	   problems_directory demos_directory c_d
 
@@ -964,31 +967,25 @@ proc process_index_specification {} {
 		#
 		if { [set ${targetdir}_option] } {
 
-		    set destination \
-		        "$targetdir+/$targettail"
-		    set destination \
-		        "$c_d/$destination"
+		    set dest "$targetdir+/$targettail"
+		    set dest "$c_d/$dest"
 		    if { [file isfile $source] } {
 			file mkdir \
-			     [file dirname \
-			           $destination]
-			file copy $source \
-				  $destination
+			     [file dirname $dest]
+			file copy $source $dest
 		    } elseif { [file isdirectory \
 		    		     $source] } {
-			file mkdir $destination
+			file mkdir $dest
 			
 			if { [lsearch -exact $options \
 				             all] \
 			     >= 0 } {
 			    recursive_file_copy \
-				$source \
-				$destination
+				$source $dest
 			} else {
 			    file copy $source/Makefile \
-				      $target/Makefile
-			    grant_access \
-			    	$target/Makefile
+				      $dest/Makefile
+			    grant_access $dest/Makefile
 
 			    if { $txt_option } {
 				set problem \
@@ -1006,9 +1003,9 @@ proc process_index_specification {} {
 				    [file tail $problem]
 				file copy \
 				    $source/$problem \
-				    $target/$problem
+				    $dest/$problem
 				grant_access \
-				    $target/$problem
+				    $dest/$problem
 			    }
 			}
 		    }
@@ -1103,6 +1100,8 @@ foreach dir {problems demos help} {
 	}
 	file mkdir $c_d/$dir+
     }
+    grant_access $c_d/demos+
+    grant_access $c_d/help+
 }
 if { $solutions_option } {
     if { [file exists $solutions_directory+] } {
@@ -1122,8 +1121,12 @@ if { $this_contest_option \
 # Make help/index file.
 #
 if { $this_contest_option \
-      && ! [file isreadable $help_directory/index] } {
+      && ! [file readable $help_directory/index] } {
     set index_ch [open $help_directory/index w]
+
+    puts $index_ch "Indices:"
+    puts $index_ch "--------"
+    puts $index_ch ""
 
     puts $index_ch "    help/index"
     puts $index_ch "        This file."
@@ -1136,10 +1139,16 @@ if { $this_contest_option \
     puts $index_ch "        Index of contest problems."
     puts $index_ch ""
 
+    puts $index_ch ""
+    puts $index_ch "Introductory Information:"
+    puts $index_ch "-------------------------"
+    puts $index_ch ""
+
+
     # The following must be last so its inclusion
     # causes the preceding to be included.
 
-    puts $index_ch "*** help/this_contest"
+    puts $index_ch "*** this_contest include"
     puts $index_ch "        Information about this\
     			    contest."
     puts $index_ch ""
@@ -1151,7 +1160,7 @@ if { $this_contest_option \
 # Make help/this_contest file.
 #
 if { $this_contest_option \
-      && ! [file isreadable \
+      && ! [file readable \
       		 $help_directory/this_contest] } {
     set tc_ch [open $help_directory/this_contest w]
 
@@ -1161,7 +1170,7 @@ if { $this_contest_option \
 			       [clock seconds]]]
     puts $tc_ch ""
 
-    close $tc_ch ""
+    close $tc_ch
     grant_access $help_directory/this_contest
     TODO "edit $help_directory/this_contest"
 }
@@ -1242,10 +1251,10 @@ foreach dir {problems help demos} {
     }
 }
 if { [file exists $c_d/help+/index] } {
-    grant_access $c_d/help+/index]
+    grant_access $c_d/help+/index
 }
 if { [file exists $c_d/help+/demos] } {
-    grant_access $c_d/help+/demos]
+    grant_access $c_d/help+/demos
 }
 
 # Rename directories iff $directory+ differs from
@@ -1270,10 +1279,12 @@ proc rename_directory { directory } {
 	if { [file exists $directory-] } {
 	    puts "Renaming $directory- to $directory--"
 	    file rename $directory- $directory--
+	    deny_access $directory--
 	}
 	if { [file exists $directory] } {
 	    puts "Renaming $directory to $directory-"
 	    file rename $directory $directory-
+	    deny_access $directory-
 	}
 	if { [file exists $directory+] } {
 	    puts "Renaming $directory+ to $directory"
@@ -1317,6 +1328,8 @@ if { $mail_option \
       && ! [file isdirectory $mail_directory] } {
     file mkdir $mail_directory
     grant_access $mail_directory x
+    grant_access $mail_directory/.. x
+    grant_access $mail_directory/../.. x
 }
 
 # Make $c_d/help2 directory.
@@ -1449,7 +1462,7 @@ if { $who_where_option } {
 	    if { [eof $passwords_ch] } break
 	    regexp {^([^:]*):} $line forget account
 	    if { $account != "none" } {
-		puts $who_where_ch "$account:wwcepe"
+		puts $who_where_ch "$account:$wwcepe"
 	    }
 	}
 	close $passwords_ch
@@ -1486,9 +1499,9 @@ if { $who_where_option } {
 	close $passwords_ch
 
 	if { $new_account_list != "" } {
-	    set who_where_ch [open $c_d/who_where w]
+	    set who_where_ch [open $c_d/who_where a]
 	    foreach account $new_account_list {
-		puts $who_where_ch "$account:wwcepe"
+		puts $who_where_ch "$account:$wwcepe"
 	    }
 	    close $who_where_ch
 
@@ -1529,7 +1542,7 @@ if { $trashable_option } {
 # Make $c_d/printer
 #
 if { $printer_option \
-     && ! [file isreadable $c_d/printer] } {
+     && ! [file readable $c_d/printer] } {
     set printer_ch [open $c_d/printer w]
     if { [info exists env(PRINTER)] } {
 	puts $printer_ch $env(PRINTER)
