@@ -6,7 +6,7 @@
 #
 # File:		scoreboard
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Jul 19 00:27:00 EDT 2001
+# Date:		Thu Jul 19 07:05:41 EDT 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/07/19 04:16:19 $
+#   $Date: 2001/07/19 12:25:04 $
 #   $RCSfile: scoretable,v $
-#   $Revision: 1.15 $
+#   $Revision: 1.16 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -472,68 +472,72 @@ foreach submitter $submitters {
 # Start output of scoreboard.
 #
 set spaces32 "                                "
+set spaces64 $spaces32$spaces32
+set spaces128 $spaces64$spaces64
+set spaces256 $spaces128$spaces128
 
-set separators " _.+~=$@|"
+# Compute number of problems per line (ppl).
+# Also max_column of output (first column is 0).
 
-set problems_per_line 8
+set ppl [expr { ( $scoreboard_width - 16 ) / 8 } ]
+set np [llength $sorted_problems]
+if { $np < $ppl } { set ppl $np }
+set max_column [expr { 16 + 8 * $ppl - 1 }]
+
+# Compute line marker characters.  First and last
+# line markers are SPACE, and in last line all
+# spaces will be replaced by underbars (_).
+#
+# [string index $markers N] marks line N
+#
+set nl [expr { ( $np + $ppl - 1 ) / $ppl }]
+if { $nl <= 2 } {
+    set markers "X  "
+} else {
+    set markers $scoreboard_markers
+    set markers "X [string range $markers 0 \
+                           [expr { $nl - 3 }]] "
+}
 
 # Output labeling lines.
 #
 proc label_problems {} {
 
-    global sorted_problems spaces32 separators \
-           problems_per_line
-
-    set ppl $problems_per_line
+    global sorted_problems spaces256 ppl markers \
+           max_column
 
     set count  0
+    set marker $markers
     foreach problem $sorted_problems {
 	    if { $count % $ppl == 0 } {
 	        if { $count > 0 } {
-		    puts [translit " " \
-			   [string index $separators \
-			           [expr { $count / $ppl
-				           - 1 }]] \
-			   $line]
+		    puts $line
 		}
+		set marker [string range $marker 1 end]
+		set m [string index $marker 0]
 
 		if { $count == 0 } {
-		    set line \
-		         [format {%16.16s} \
-			         "contestant-name"]
+		    set line "contestant-name"
 		} elseif { $count == $ppl } {
-		    set line \
-		         [format {%16.16s} \
-			         "correct/tot-time"]
-		} elseif { $count > 0 } {
-		    set line \
-		         [string range $spaces32 0 15]
+		    set line "correct/tot-time"
+		} else {
+		    set line ""
 		}
+		set line [format {%-16.16s} $line]
 	    }
 	    incr count
-	    set line "$line[format { %7.7s} $problem]"
+	    set line "$line$m[format {%7.7s} $problem]"
     }
-    puts [translit " " \
-	     [string index $separators \
-		     [expr { ( $count + $ppl - 1 )
-		             / $ppl - 1 } ]] \
-	     [string range $line$spaces32$spaces32 \
-	             0 79]]
     if { $count <= $ppl } {
-        puts [translit \
-	        " " [string index $separators 1] \
-	        [string range \
-		        "[format {%16.16s} \
-			         "correct/tot-time"]\
-			$spaces32$spaces32" \
-			0 79]]
+	puts $line
+        set line "correct/tot-time"
     }
+    puts [translit " " "_" \
+		   [string range $line$spaces256 \
+			   0 $max_column]]
 }
 
 label_problems
-puts ""
-
-set ppl $problems_per_line
 
 # Loop though sorted score_list and output each
 # submitter.
@@ -555,55 +559,57 @@ foreach item [lsort -decreasing $score_list] {
     set problem_scores [lreplace $item 0 4]
 
     set total_score $time_score
+
     if { $total_score == $max_time_score } {
 	set total_score undef
-    }
-    if { $modifier == "n" } {
-    	set total_score "${total_score}*"
     }
 
     set total_score "$problems_correct/$total_score"
 
+    if { $modifier == "n" } {
+    	set total_score "*${total_score}"
+    }
+
     # Print the line(s) for the team.
     #
     set count 0
+    set marker $markers
     foreach score $problem_scores {
 	if { $count % $ppl == 0 } {
 	    if { $count > 0 } {
-		puts [translit " " \
-		       [string index $separators \
-			       [expr { $count / $ppl
-				       - 1 }]] \
-		       $line]
+		puts $line
 	    }
+	    set marker [string range $marker 1 end]
+	    set m [string index $marker 0]
 
 	    if { $count == 0 } {
-	        set line [format {%16.16s} $submitter]
+		set line $submitter
 	    } elseif { $count == $ppl } {
-	        set line [format {%16.16s} \
-		                 $total_score]
+		set line "$total_score"
 	    } else {
-	        set line [string range $spaces32 0 15]
+		set line ""
 	    }
+	    set line [format {%-16.16s} $line]
 	}
 	incr count
-	set line "$line[format {%8.8s} $score]"
+
+	# In the event there are more than 9 submissions
+	# and an incomplete submission, chop off the $m
+	# and not the * or a digit.
+	#
+	if { [string length $score] >= 8 } {
+	    set line "$line[format {%8.8s} $score]"
+	} else {
+	    set line "$line$m[format {%7.7s} $score]"
+	}
     }
-    puts [translit " " \
-	     [string index $separators \
-		     [expr { ( $count + $ppl - 1 )
-		             / $ppl - 1 } ]] \
-	     [string range $line$spaces32$spaces32 \
-	             0 79]]
     if { $count <= $ppl } {
-        puts [translit \
-	        " " [string index $separators 1] \
-	        [string range \
-		        "[format {%16.16s} \
-			         $total_score]\
-			$spaces32$spaces32" \
-			0 79]]
+	puts $line
+        set line $total_score
     }
+    puts [translit " " "_" \
+		   [string range $line$spaces256 \
+			   0 $max_column]]
 }
 
 exit 0
