@@ -5,7 +5,7 @@
 #
 # File:		filtered_diff
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Feb 23 12:55:44 EST 2003
+# Date:		Fri Feb 28 04:31:09 EST 2003
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2003/02/23 18:14:59 $
+#   $Date: 2003/02/28 09:35:25 $
 #   $RCSfile: filtered_diff,v $
-#   $Revision: 1.10 $
+#   $Revision: 1.11 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -80,23 +80,32 @@ set abbreviations(SUBMISSION) \
     "$N-$N-$N-$N:$N:$N-<<\[^>\]*>>-submission"
 
 # Make a list of abbreviations for documentation.
+# Lines is number of lines already on current page.
 #
-proc abbreviations_doc { } {
+proc abbreviations_doc { lines } {
 
     global abbreviations
 
     set result ""
     foreach abbrev [lsort [array names abbreviations]] {
-        set result "$result   $abbrev\n"
+	set new_result "   $abbrev\n"
 	set value $abbreviations($abbrev)
 	regsub -all "\t" $value "\\t" value
 	regsub -all "\ " $value "\\ " value
 	while { [string length $value] > 50 } {
 	    set v [string range $value 0 49]
 	    set value [string range $value 50 end]
-	    set result "$result      $v\n"
+	    set new_result "$new_result      $v\n"
 	}
-	set result "$result      $value\n"
+	set new_result "$new_result      $value\n"
+	set new_lines [llength [split $new_result "\n"]]
+	incr new_lines -1
+	incr lines $new_lines
+	if { $lines > 39 } {
+	    set result "$result\f\n"
+	    set lines $new_lines
+	}
+	set result "$result$new_result"
     }
     return $result
 }
@@ -127,8 +136,8 @@ filtered_diff file1 file2 regular-expression ...
     expressions have been split across lines, and tab
     and space are represented by `\\t' and `\\ ' in the
     regular expressions.
-
-[abbreviations_doc]
+
+[abbreviations_doc 30]
 
     Unlike most HPCM judging programs, this program does
     not read any hpcm_judging.rc file and errors made by
