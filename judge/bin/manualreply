@@ -5,7 +5,7 @@
 #
 # File:		manualreply
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Nov  2 01:21:11 EST 2001
+# Date:		Thu Nov  8 06:14:17 EST 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/11/02 07:00:16 $
+#   $Date: 2001/11/08 11:35:30 $
 #   $RCSfile: manualreply,v $
-#   $Revision: 1.44 $
+#   $Revision: 1.45 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -772,7 +772,7 @@ It appears that `autojudge' should be run."
     if { [yes?] } {
 
     	puts "Running autojudge"
-	exec autojudge >@ stdout 2>@ stderr
+	catch { exec autojudge >&@ stdout }
 
 	if { ! [file exists $auto_score_file] } {
 	    puts "autojudge FAILED to make\
@@ -1293,8 +1293,9 @@ while { "yes" } {
 	}
 	{^aj$} {
 	    if { [not_readonly] } {
+
 		puts "Running autojudge"
-		exec autojudge >@ stdout 2>@ stderr
+		catch { exec autojudge >&@ stdout }
 
 		if { ! [file exists $auto_score_file] \
 			} {
@@ -1315,7 +1316,9 @@ while { "yes" } {
 	}
 	{^ai$} {
 	    if { [not_readonly] } {
-		exec autoinfo >@ stdout 2>@ stderr
+
+		puts "Running autoinfo"
+		catch { exec autoinfo >&@ stdout }
 		continue?
 		refresh_file_list
 		refresh_info
@@ -1344,11 +1347,12 @@ while { "yes" } {
 		} elseif { ! [file isdirectory $d] } {
 		    set window_error \
 			"ERROR: $d is not a directory."
-		} elseif { [catch { exec manualreply \
-					 $d \
-				         >& /dev/tty } \
-				   out] } {
-		    puts $out
+		} else {
+		    catch { exec manualreply \
+				 $d >&@ stdout } 
+		    puts ""
+		    puts "Finished manualreply of"
+		    puts "  $about"
 		    continue?
 		}
 	    }
