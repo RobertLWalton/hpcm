@@ -5,7 +5,7 @@
 #
 # File:		autojudge
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Jan 30 06:47:22 EST 2002
+# Date:		Wed Jan 30 19:31:55 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/01/30 11:53:09 $
+#   $Date: 2002/01/31 01:13:54 $
 #   $RCSfile: autojudge,v $
-#   $Revision: 1.75 $
+#   $Revision: 1.76 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -52,10 +52,10 @@ autojudge \[problem\[.extension\]\]
     field of the message in the $received_file file.
     Here `problem' names the problem and the solution
     binary, and is the basename of the .in, .out, .test,
-    .cerr, .err, and .score files.  If `extension' is
-    given, it tells the language being used, and must be
-    a member of the `allowed_extensions' global variable
-    value, which by default is:
+    .fout, .ftest, .cerr, .err, and .score files.  If
+    `extension' is given, it tells the language being
+    used, and must be a member of the `allowed_exten-
+    sions' global variable value, which by default is:
     
     	$allowed_extensions
 
@@ -63,7 +63,11 @@ autojudge \[problem\[.extension\]\]
     	mentioned
     below, the words `PROBLEM' and `EXTENSION' are used
     to denote the problem name and extension as given in
-    an argument or `Subject:' field.
+    an argument or `Subject:' field.  Also, the solution
+    directory below is the problem directory within the
+    solutions directory, i.e., the directory with name:
+
+    	\$solutions_directory/PROBLEM
  
     More specifically, this program makes the following
     in order:
@@ -81,7 +85,7 @@ autojudge \[problem\[.extension\]\]
 	and the -OPTIONAL-LINK- files are by default:
 	     $scoring_instructions_file,\
 	     	$scoring_filter_file,
-	     PROBLEM.ftest
+	     PROBLEM.ftest, $response_instructions_file
       . the program binary file `PROBLEM' and the
 	compiler error file PROBLEM.cerr
       . the program standard output file PROBLEM.out
@@ -137,6 +141,9 @@ autojudge \[problem\[.extension\]\]
 	    $scoring_instructions_file
 	    $scoring_filter_file
 	    { PROBLEM.ftest PROBLEM.fout PROBLEM.ftest }
+	    { $response_instructions_file
+	        $response_instructions_file.EXTENSION
+	    	$response_instructions_file }
 
     The `$files_file' file is interpreted as a TCL list
     (with list elements separated by spaces, tabs, or
@@ -180,8 +187,8 @@ autojudge \[problem\[.extension\]\]
     symbols listed above is either a file name or a list
     of file names.  In any file name, the basename
     `PROBLEM' is replaced by the problem name and the
-    extension name `EXTENSION' is replaced by the sub-
-    mission extension name.
+    extension `.EXTENSION' is replaced by the submission
+    extension.
 
     -LINK- and -OPTIONAL-LINK- items may be a { } brac-
     ketted list of file names.  In this case, the first
@@ -218,7 +225,7 @@ autojudge \[problem\[.extension\]\]
 
     If no extension is given to this program with the
     problem name, any file name whose extension is
-    `EXTENSION' is treated as naming a file that does
+    .`EXTENSION' is treated as naming a file that does
     not exist and cannot be created.  It is an error to
     try to create such a file, but it is not an error to
     try to use such a file if it is not an error for the
