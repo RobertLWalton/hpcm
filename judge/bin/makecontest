@@ -6,7 +6,7 @@
 #
 # File:		makejudgingdir
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Oct 26 22:23:42 EDT 2000
+# Date:		Fri Oct 27 06:15:47 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/10/27 05:31:11 $
+#   $Date: 2000/10/27 10:46:42 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.24 $
+#   $Revision: 1.25 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -226,8 +226,9 @@ makejudgingdir option ... index_specification ...
     arguments, all but the last of which end in either a
     `:' or a `,'.  The `:' indicates the next argument
     is an index directory name (see below) and the `,'
-    indicates the next argument is a substitution (also
-    see below).
+    indicates the next argument is either a name sub-
+    stitution or an option substitution (also see
+    below).
 
     Each input index file is associated with an index
     directory.  An unedited version of the index file is
@@ -241,27 +242,29 @@ makejudgingdir option ... index_specification ...
     be made, because item entry option mapping, describ-
     ed below, is sufficient.
 
-    An index directory may be given in a specification
-    by ending the first argument of the specification,
-    which names the index input file, with a `:', and
-    giving the name of the index directory as the second
-    argument in the specification (with an optional end-
-    ing `,').  If no index directory is given in an
-    index specification, the directory that contains
-    the index file is used as the index directory.
+    An index directory may optionally be given in a
+    specification by ending the first argument of the
+    specification, which names the index input file,
+    with a `:', and giving the name of the index direc-
+    tory as the second argument in the specification
+    (with an optional ending `,').  If no index direc-
+    tory is given in an index specification, the direc-
+    tory that contains the index file is used as the
+    index directory.
 
     The index file consists of two types of entries:
     header entries and item entries.  Item entries begin
     with a line that starts with `***', followed by
     whitespace, and optionally preceded by whitespace.
     Header entries begin with a line that starts with
-    neither whitespace nor `***'.  A header entry stops
-    at the next line that begins an item entry, or at
-    the end of file.  An item entry stops at the next
-    line that begins a header or item entry, or at the
-    end of file.
+    neither whitespace nor `***' followed by whitespace.
+    A header entry stops at the next line that begins an
+    item entry, or at the end of file.  An item entry
+    stops at the next line that begins a header or item
+    entry, or at the end of file.
 
-    The first line of an item entry has the form:
+    As noted above, the first line of an item entry has
+    the form:
 
     	*** item_name item_option ...
 
@@ -284,12 +287,22 @@ makejudgingdir option ... index_specification ...
       		  sent and this item names a directory,
                   include all readable files from this
 		  item directory in ./info or ./contest.
-		  Otherwise only the Makefile and *.txt
-		  file in the item directory will be
-		  included, with the *.txt file being
-		  included only if the `-txt' program
-		  option is given to the `makejudging-
-		  dir' program.
+		  Files are included from subdirectories
+		  recursively, except that subdirector-
+		  ies whose last component is `CVS' or
+		  `RCS' are ignored when copying to
+		  ./contest subdirectories.
+
+		  Otherwise, if the item does not have
+		  an `all' option, only the Makefile and
+		  *.txt file in the item directory will
+		  be included, with the *.txt file being
+		  included always for ./info subdirec-
+		  tories, but only if the `-txt' pro-
+		  gram option is given to the `make-
+		  judgingdir' program for ./contest
+		  subdirectories.  There must be at most
+		  one *.txt file if it is included.
 
     The `include' option is rarely encoded directly in
     the index files.  Instead options categorizing the
@@ -309,9 +322,10 @@ makejudgingdir option ... index_specification ...
     substitution.  After substitutions are done, unknown
     options are ignored.
 
-    If an item is included in the new ./info directory,
-    the item entry is included in an output index within
-    the ./info directory.   The indeces are
+    If an item has the `include' option after option
+    substitutions, the item entry is included in an out-
+    put index within the ./info directory.   The indeces
+    are
 
     	   index		for items named
 
@@ -319,31 +333,26 @@ makejudgingdir option ... index_specification ...
       ./info/help/demos	    ./info/demos/...
       ./info/help/problems  ./info/problems/...
 
-    There is a similar inclusion for the ./contest
-    directory.
+    There is a similar inclusion for the ./contest dir-
+    ectory.
 
-    When an item entry is included in an index file, the
-    header entry preceding it is included if it is
+    When an item entry is included in an output index,
+    the header entry preceding it is included if it is
     separated from the item entry only by item entries
-    that were not included in that index file.  Thus a
-    header entry is associated with the consecutive item
-    entries which follow it, and the header entry is
-    included in an index file if and only if any of
+    that were not included in that output index.  Thus
+    a header entry is associated with the consecutive
+    item entries that follow it, and the header entry is
+    included in an output index if and only if any of
     these item entries is included.  The header entry
-    may end up being included in several index files if
-    the item entries following it are included in
-    several different index files.
+    may end up being included in several output indices
+    if the item entries following it are included in
+    several different output indices.
 
-    The program options -problems and -demos can be used
-    by omission to prevent the ./contest/problems and
-    ./contest/demos directories from being created, but
-    if the -help option is present, the -problems and
-    -demos options do not affect the content of the
-    ./contest/help/problems and ./contest/help/demos
-    index files.  The -info and -help program options
-    are be used together without -problems or -demos
-    to build a ./contest/help directory identical in
-    content to the ./info/help directory.
+    The program options -demos, -problems, and -help can
+    be used by omission to prevent the ./contest/demos,
+    ./contest/problems, or ./contest/help directories
+    from being created, but program options never affect
+    the content of any output indices that are created.
 
     The name of an item is a modification of the name
     of the item as it appears in the input index file
@@ -365,8 +374,8 @@ makejudgingdir option ... index_specification ...
 
     then
 
-      public/frap	   becomes    problems/frap
-      public/shelf/frap    becomes    problems/old/frap
+      public/foo2	   becomes    problems/foo2
+      public/shelf/foo1    becomes    problems/old/foo1
 
     with the changed names being used as the names of
     the items within the ./info and ./contest
