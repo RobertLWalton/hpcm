@@ -6,7 +6,7 @@
 #
 # File:		scoreboard
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Sep 19 03:48:29 EDT 2000
+# Date:		Tue Sep 19 05:52:16 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/09/19 08:19:39 $
+#   $Date: 2000/09/19 10:01:42 $
 #   $RCSfile: old_scoreboard,v $
-#   $Revision: 1.4 $
+#   $Revision: 1.5 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -39,16 +39,18 @@ scoreboard \[score_file \[parameters_file\] \]
     is ignored unless
 
     	its submission time is equal to or greater than
-	the value of `scoreboard_start_time'
+	the value of `scoreboard_start_time';
 
     	its submission time is equal to or less than
-	the value of `scoreboard_stop_time'
+	the value of `scoreboard_stop_time';
 
 	its problem is in the list which is the value of
-	`scoreboard_problems'
+	`scoreboard_problems', unless that list is
+	empty;
 
 	its submitter is in the list which is the value
-	of `scoreboard_submitters'
+	of `scoreboard_submitters', unless that list is
+	empty.
 
     The scoreboard has a line for each submitter of the
     form
@@ -68,8 +70,12 @@ scoreboard \[score_file \[parameters_file\] \]
     The time_score is the sum of all the correct
     submission times, plus a penalty time the number
     of incorrect submissions that are for a problem
-    for which there is a later correct submission.  The
-    penalty is the value of `scoreboard_penalty'.
+    for which there is a later correct submission,
+    divided by the scoreboard unit, where all times are
+    in seconds.  The scoreboard unit is the value of
+    `scoreboard_unit', and is measured in seconds.  The
+    penalty is the value of `scoreboard_penalty', and
+    is in seconds, regardless of the scoreboard unit.
 
     The total score is given in seconds, and is preceded
     with an `*' if there is a non-final score involved
@@ -90,8 +96,8 @@ scoreboard \[score_file \[parameters_file\] \]
     score_file is used as the source of scores in place
     of the output of the `scorefinder' program.  The
     parameters_file is read and may contain parameter
-    settings, `scoreboard_ problems' etc., in the same
-    manner as the normal parameters file."
+    settings, e.g. `scoreboard_problems' etc., in the
+    same manner as the normal parameters file."
 
 
 # If any arguments, print documentation and exit.
@@ -111,19 +117,6 @@ if { $argc >= 1 } {
     }
 }
 
-# Create an array for each submitter.  Initially
-# each array has the empty list as the value for
-# each problem.
-#
-set init_list ""
-foreach problem $scoreboard_problems {
-    lappend init_list $problem
-    lappend init_list ""
-}
-foreach submitter $scoreboard_submitters {
-    array set $submitter-array $init_list
-}
-
 # The value $submitter-array($problem) is a list of
 # items that represent the times and scores read from
 # the input.  Here the `scores' are the codes `mc',
@@ -133,6 +126,15 @@ foreach submitter $scoreboard_submitters {
 #
 # where all the times have 15 digits exactly, so they
 # can be sorted.
+#
+# An array element may not exists, in which case it
+# should be treated as equal to the empty list.
+
+# The following are the lists of all submitters and
+# problems being processed.
+#
+set submitters ""
+set problems ""
 
 # Open a pipe from `scorefinder'.
 #
@@ -153,14 +155,24 @@ while { "yes" } {
     set problem		[lindex $line 2]
     set score		[lindex $line 3]
 
-    if { [lsearch -exact $scoreboard_problems \
+    if { [llength $scoreboard_problems] > 0 \
+         && [lsearch -exact $scoreboard_problems \
                          $problem] < 0 } {
     	continue;
     }
 
-    if { [lsearch -exact $scoreboard_submitters \
+    if { [llength $scoreboard_submitters] > 0 \
+         && [lsearch -exact $scoreboard_submitters \
                          $submitter] < 0 } {
     	continue;
+    }
+
+    if { [lsearch -exact $problems $problem] < 0 } {
+	lappend problems $problem
+    }
+
+    if { [lsearch -exact $submitters $submitter] < 0 } {
+	lappend submitters $submitter
     }
 
     set time [filename_date_to_clock $date]
@@ -173,14 +185,19 @@ while { "yes" } {
     	continue;
     }
 
-    lappend $submitter-array($problem) \
-    	    [list [format {%015d} $time] $score]
+    if { [info exists $submitter-array($problem)] } {
+	lappend $submitter-array($problem) \
+		[list [format {%015d} $time] $score]
+    } else {
+	set $submitter-array($problem) \
+	    [list [list [format {%015d} $time] $score]]
+    }
 }
 close $scores_ch
 
 # Sort the problems alphabetically.
 #
-set sorted_problems [lsort $scoreboard_problems]
+set sorted_problems [lsort $problems]
 
 # Create the score list.  Each item in this list
 # has the form:
@@ -221,7 +238,7 @@ set sorted_problems [lsort $scoreboard_problems]
 # header `# Problems Correct:'.
 #
 set score_list ""
-foreach submitter $scoreboard_submitters {
+foreach submitter $submitters {
 
     set time_score 0
     set problems_correct 0
@@ -233,9 +250,14 @@ foreach submitter $scoreboard_submitters {
 	set problem_incorrect 0
 	set problem_time ""
 	set problem_modifier f
-	foreach item \
-		[lsort \
-		   [set $submitter-array($problem)]] {
+	if { [info exists \
+		   $submitter-array($problem)] } {
+	    set problem_list \
+	        [set $submitter-array($problem)]
+	} else {
+	    set problem_list ""
+	}
+	foreach item [lsort $problem_list] {
 	    set score [lindex $item 1]
 	    if { [lsearch -exact {mc ac} $score] \
                  >= 0 } {
@@ -267,15 +289,25 @@ foreach submitter $scoreboard_submitters {
 	    set h [expr { $mm / 60 }]
 	    set mm [expr { $mm - 60 * $h }]
 	    set c [expr { $problem_incorrect + 1 }]
-	    set problem_score "[format {%02d} $mm]/$c"
-	    if { $h != 0 } {
-		set problem_score "$h:$problem_score"
+	    if { $h <= 99 && $scoreboard_unit < 86400 } {
+		# 86400 = 24 * 60 * 60 = 1 day in seconds
+		set problem_score "[format {%02d} $mm]/$c"
+		if { $h != 0 } {
+		    set problem_score "$h:$problem_score"
+		}
+	    } else {
+		set t [expr { $problem_time \
+			      + \
+			      $scoreboard_start_time }]
+		set d [clock format $t -format "%b%d"]
+		set problem_score "$d/$c"
 	    }
 	    incr problems_correct
-	    incr time_score $problem_time
 	    incr time_score \
-		 [expr { $scoreboard_penalty \
-			 * $problem_incorrect }]
+		 [expr { ( $problem_time \
+		           + $scoreboard_penalty \
+			     * $problem_incorrect ) \
+			 / $scoreboard_unit }]
 
 	} elseif { $problem_incorrect != 0 } {
 	    set problem_score "..../$problem_incorrect"
@@ -345,6 +377,10 @@ foreach item [lsort -decreasing $score_list] {
     set modifier [lindex $item 3]
     set submitter [lindex $item 4]
     set problem_scores [lreplace $item 0 4]
+
+    if { $time_score >= 1000000 } {
+	set time_score "[expr { $time_score / 1000 }]k"
+    }
     if { $modifier == "n" } {
     	set time_score "*$time_score"
     }
