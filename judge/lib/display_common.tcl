@@ -2,7 +2,7 @@
 #
 # File:		display_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Jul 23 00:30:07 EDT 2002
+# Date:		Tue Jul 23 00:54:44 EDT 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/07/23 04:48:20 $
+#   $Date: 2002/07/23 04:49:22 $
 #   $RCSfile: display_common.tcl,v $
-#   $Revision: 1.32 $
+#   $Revision: 1.33 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -112,7 +112,7 @@ set window_info_height 1
 set window_display_height 1
 
 
-# Constants for use in functions.
+# Constant for use in functions.
 #
 set window_newlines "\n\n\n\n\n\n\n\n\n\n"
 set window_newlines "$window_newlines$window_newlines"
@@ -169,7 +169,7 @@ proc display_window {} {
 # top of the given `info' to make it have window_info_
 # height lines, or call error if the `info' has more
 # than window_info_height lines.  You may need to set
-# window_info_heigth directly before calling this
+# window_info_height directly before calling this
 # function.
 #
 proc set_window_info { info } {
