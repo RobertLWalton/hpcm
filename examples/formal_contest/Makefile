@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Mar 30 11:20:01 EST 2003
+# Date:		Sun Mar 30 12:15:04 EST 2003
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2003/03/30 16:23:08 $
+#   $Date: 2003/03/30 17:14:47 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.25 $
+#   $Revision: 1.26 $
 
 # To make a formal contest named `foo':
 #
@@ -298,6 +298,7 @@
 #     then `make diff_replies' above will also check
 #     the system response to queries and system errors.
 #
+
 #     It is also possible to transmit the contents of
 #     the hpcm/examples/test_submissions directory to
 #     a directory in the test contestant account and
@@ -313,7 +314,6 @@
 #     test_xxx' for various `xxx;: see hpcm/examples/
 #     test_submissions/Makefile.mk.
 #
-
 # 21. You may want to print out handouts.  The following
 #     is a suggestion.  Execute `make print_help', re-
 #     move the `demos' and `problems' pages, and reorder
@@ -331,6 +331,7 @@
 #     order given in the `demos' help page, preceded by
 #     that `demos' help page.
 #
+
 #     The help and demos handout can be given out before
 #     the contest starts, along with any extra sheets
 #     on such topics as where teams are located and
@@ -342,7 +343,6 @@
 # 22. A web page containing non-contest-specific help
 #     and demos files can be made according to instruc-
 #     tions in hpcm/contestant/help/Makefile.
-
 # 23. A web page containing problem descriptions, and
 #     optionally solutions, can be made by defining the
 #     web page parameters in hpcm_judging.rc and execut-
@@ -458,7 +458,7 @@ trashable:
 
 nontrashable:
 	rm -f ./contest/trashable
-
+
 scoreboard:
 	scorefinder | scoreboard
 
@@ -470,7 +470,7 @@ check_scoreboard:
 
 stop_scoreboard:
 	makescoreboard stop
-
+
 update_scoreboard:
 	makescoreboard update
 
