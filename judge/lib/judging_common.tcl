@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Mar 15 01:26:07 EST 2003
+# Date:		Sat Mar 15 02:35:58 EST 2003
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2003/03/15 06:34:18 $
+#   $Date: 2003/03/15 07:39:09 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.99 $
+#   $Revision: 1.100 $
 #
 
 # Table of Contents
@@ -626,6 +626,12 @@ proc read_header { ch { find_part no }
 	   message_x_hpcm_signature_ok \
 	   message_x_hpcm_test_subject
 
+    global content_type_values \
+	   content_transfer_encoding_values \
+	   format_submissions \
+	   unformatted_part_end_line \
+	   unformatted_end_line
+
     set message_header			""
     set message_header_error		""
     set message_terminator		""
@@ -761,7 +767,7 @@ proc read_header { ch { find_part no }
     		    $message_content_type] } {
 
 	set b1 "${ws}boundary${ws}*=${ws}*"
-	set b1 "${b1}\"(\[^\"\])\""
+	set b1 "${b1}\"(\[^\"\]*)\""
 	set b2 "${ws}boundary${ws}*=${ws}*"
 	set b2 "${b2}(${nws}*)(${ws}|\$)"
 	if { [regexp -nocase $b1 \
@@ -778,8 +784,10 @@ proc read_header { ch { find_part no }
 	}
 	set message_part_boundary $boundary
 
-	regsub {.} $boundary {\\&} terminator
+	regsub -all {[^0-9A-Za-z]} $boundary {\\&} \
+	       terminator
 	set terminator "--${terminator}"
+
 
 	# Loop through parts until one found with
 	# legal Content-Type and Content-Transfer-
@@ -833,9 +841,9 @@ proc read_header { ch { find_part no }
 			     $encoding] } {
 		    set encoding quoted-printable
 		}
-		set ctv $content-type-values
+		set ctv $content_type_values
 		set ctev \
-		    $content-transfer-encoding-values
+		    $content_transfer_encoding_values
 		set mcte \
 		    message_content_transfer_encoding
 		if { [regexp "^(${ctv})\$" $type] \
@@ -843,8 +851,8 @@ proc read_header { ch { find_part no }
 		     	        $encoding] } {
 		    set message_content_type $type
 		    set $mcte $encoding
+		    break
 		}
-
 	    }
 	}
 
