@@ -53,14 +53,18 @@
 ;;;;
 ;;;;
 
-;;;; (defun BYE () (EXIT))	; Allegro doesn't have this
+#+allegro
+(defun BYE () (EXIT))	; Allegro doesn't have this
 
 ; Override defaults for better output
 (setf *break-on-errors* t)
 (setf *print-pretty* t)
 (setf *print-circle* nil)
 (setf *read-default-float-format* 'double-float)
+#+allegro
 (setf *print-right-margin* 56)
+#+clisp
+(setf system::*prin-linelength* 56)
 
 #+allegro
 (proclaim '(optimize (speed 2) (safety 1) (space 1) (debug 1)))
