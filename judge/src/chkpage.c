@@ -3,7 +3,7 @@
 **
 ** Author:	Bob Walton (walton@deas.harvard.edu)
 ** File:	chkpage.c
-** Date:	Tue Apr 23 05:22:46 EDT 2002
+** Date:	Tue Apr 23 05:26:14 EDT 2002
 **
 ** The authors have placed this program in the public
 ** domain; they make no warranty and accept no liability
@@ -12,9 +12,9 @@
 ** RCS Info (may not be true date or author):
 **
 **   $Author: hc3 $
-**   $Date: 2002/04/23 09:20:45 $
+**   $Date: 2002/04/23 09:24:13 $
 **   $RCSfile: chkpage.c,v $
-**   $Revision: 1.4 $
+**   $Revision: 1.5 $
 */
 
 #include <stdio.h>
@@ -42,10 +42,10 @@ char documentation [] =
 "    sistent with common UNIX print programs.\n"
 "\n"
 "    Too long lines, lines overflowing a page, lines\n"
-"    containing illegal characters, and a last line\n"
-"    that does not end with a line feed, form feed,\n"
-"    or carriage return are output.  Nothing is out-\n"
-"    put if the files are all OK.\n"
+"    containing illegal characters, and a non-empty\n"
+"    last line that does not end with a line feed or\n"
+"    form feed are output.  Nothing is output if the\n"
+"    files are all OK.\n"
 ;
 
 void checkfile
