@@ -1,13 +1,21 @@
 import java.io.*;
+import java.util.StringTokenizer;
 
 public class count {
 
     public static void main (String[] args)
-	    throws IOException {
+	    throws IOException
+    {
 
+	BufferedReader reader
+	   = new BufferedReader
+	         ( new InputStreamReader
+		       ( System.in ) );
+
+	// Loop through paragraphs.
+	//
 	int paragraph = 1;
 	boolean eof_seen = false;
-
 	while ( ! eof_seen )
 	{
 	    int characters = 0;
@@ -16,56 +24,50 @@ public class count {
 
 	    while ( true )
 	    {
-		int buffer [] = new int [ 100 ];
-		int len = 0;
-
-		while ( true )
+		String line = reader.readLine();
+		if ( line == null )
 		{
-		    int c = System.in.read ();
-		    if ( c == '\n' ) break;
-		    else if ( c == -1 )
-		    {
-			eof_seen = true;
-			break;
-		    }
-		    else
-			buffer [len ++] = c;
+		    // readLine returns null on EOF.
+		    //
+		    eof_seen = true;
+		    break;
 		}
 
-		int cp = 0;
-		while (    cp < len
-		        && buffer [cp] == ' ' ) ++ cp;
+		StringTokenizer tokenizer
+		    = new StringTokenizer ( line );
 
-		if ( cp == len ) break;
+		// Break on blank line.
+		//
+		if ( ! tokenizer.hasMoreTokens() )
+		    break;
 
 		++ lines;
 
-		do
+		// Count words in line.
+		//
+		while ( tokenizer.hasMoreTokens() )
 		{
 		    ++ words;
-		    while (    cp < len 
-		            && buffer [cp] != ' ' )
-			++ cp;
-		    while (    cp < len
-		            && buffer [cp] == ' ' )
-			++ cp;
-		} while ( cp != len );
+		    tokenizer.nextToken();
+		}
 
-		characters += cp;
+		// Count characters in line.
+		//
+		characters += line.length();
 	    }
 
+	    // Ignore blank `paragraphs'.
+	    //
 	    if ( lines > 0  )
 	    {
-		System.out.print ( "Paragraph " );
-		System.out.print ( paragraph );
-		System.out.print ( ": " );
-		System.out.print ( lines );
-		System.out.print ( " lines, " );
-		System.out.print ( words );
-		System.out.print ( " words, " );
-		System.out.print ( characters );
-		System.out.print ( " characters." );
-		System.out.println ();
+		// Print paragraph output.
+		//
+		System.out.println
+		    (   "Paragraph " + paragraph + ": "
+		      + lines + " lines, "
+		      + words + " words, "
+		      + characters + " characters."
+		    );
 
 		++ paragraph;
 	    }
