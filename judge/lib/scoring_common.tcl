@@ -2,7 +2,7 @@
 #
 # File:		scoring_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Feb  7 00:35:30 EST 2003
+# Date:		Fri Feb  7 01:05:58 EST 2003
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2003/02/07 05:56:07 $
+#   $Date: 2003/02/07 06:16:18 $
 #   $RCSfile: scoring_common.tcl,v $
-#   $Revision: 1.35 $
+#   $Revision: 1.36 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -733,9 +733,10 @@ proc parse_block { block commands } {
 #
 proc eval_response_if { item } {
     global scoring_mode auto_score manual_score \
-           proposed_score
+           proposed_score response_instructions_globals
     set manual [expr { $manual_score != "None" }]
     set proposed [expr { $proposed_score != "None" }]
+    eval global $response_instructions_globals
     return [expr $item]
 }
 
@@ -832,6 +833,7 @@ proc process_proof { proof processed_commands } {
 
     set number [lindex $proof 1]
     set column [lindex $proof 3]
+    incr column
 
     while { $proof_proof_number < $number } {
         set process_proof_line [gets $process_proof_out]
@@ -841,7 +843,8 @@ proc process_proof { proof processed_commands } {
 	}
 	incr process_proof_number
     }
-    lappend pc [list LINE "LINE NUMBER $number,\
+    lappend pc [list LINE "FILE $process_proof_file,\
+                           LINE NUMBER $number,\
                            COLUMN $column:"]
     lappend pc [list LINE $process_proof_line]
 }
@@ -858,7 +861,10 @@ proc process_first_or_summary_command \
 
     global submitted_problem proof_array \
            process_proof_file process_proof_out \
-	   process_proof_number
+	   process_proof_number \
+	   response_instructions_summary_limit
+
+    set limit $response_instructions_summary_limit
 
     set sfile ${submitted_problem}.score
     if { ! [file exists $sfile] } {
@@ -919,12 +925,31 @@ proc process_first_or_summary_command \
 		process_proof [lindex $proofs 0] pc
 		break
 	    } elseif { $command == "SUMMARY" } {
+	        set len [llength $proofs]
+	        lappend pc [list LINE "There are at\
+				       least $len\
+				       errors\
+				       supporting the\
+				       score `$xscore'"]
+		if { $len > $limit } {
+		    set len $limit
+		    lappend pc [list LINE "The first\
+					   $len are:"]
+		} else {
+		    lappend pc [list LINE "These are:"]
+		}
+		set i 0
+		while { $i < $len } {
+		    process_proof [lindex $proofs $i]
+		    incr i
+		}
+	    } else {
+	        error "Command `$command' unrecognized"
 	    }
 
 	    close $process_proof_out
 	}
     }
-    error "Not implemented yet: $command"
 }
 
 # Function to execute response instruction commands
