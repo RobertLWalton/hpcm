@@ -5,7 +5,7 @@
 #
 # File:		manualreply
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Sep 22 07:57:59 EDT 2000
+# Date:		Fri Sep 22 14:27:49 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,14 +14,29 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/09/22 12:11:41 $
+#   $Date: 2000/09/22 18:25:39 $
 #   $RCSfile: manualreply,v $
-#   $Revision: 1.9 $
+#   $Revision: 1.10 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
 
 # Use tcl rather than tclsh so that `signal' is defined.
+
+# If an subdirectory name is given, make it current, and
+# consume the subdirectory name argument.  This must be
+# done before looking for the parameters file.
+#
+# Don't change argc or argv so error output will work.
+#
+set my_argc $argc
+set my_argv $argv
+if { $my_argc >= 1 \
+     && ! [regexp {^-} [lindex $my_argv 0]] } {
+    cd [lindex $my_argv 0]
+    set my_argv [lreplace $my_argv 0 0]
+    set my_argc [expr { $my_argc - 1 }]
+}
 
 # Include common code and parameters:
 #
@@ -30,7 +45,12 @@ source $lib_directory/judging_common.tcl
 catch {
 
 set document "
-cd submission_directory; manualreply
+manualreply \[directory\]
+
+    If the directory argument is given, this program
+    makes that directory current before searching for
+    the `$judging_parameters_file' file or doing\
+    anything else.
 
     Given a submission directory as the current dir-
     ectory, permit a person to examine the contents of
@@ -45,7 +65,7 @@ cd submission_directory; manualreply
 # If there are any arguments, print documentation and
 # exit with error.
 #
-if { $argc != 0 } {
+if { $my_argc != 0 } {
     puts $document
     exit 1
 }
@@ -457,16 +477,16 @@ proc get_lock {} {
 			       $dispatch_pid_file] }]
 
 	if { ! [catch {
-		   set pgid \
+		   set pid \
 		       [read_file \
 			   $dispatch_pid_file] }] } {
-	    set group_display \
-		[display_process_group $pgid]
-	    set group_display \
-		"Process Group Tree:\n\n$group_display"
+	    set tree_display \
+		[display_process_tree $pid]
+	    set tree_display \
+		"Process Tree:\n\n$tree_display"
 	    set window_error ""
 	    set b $window_bar
-	    set_window_display "$b\n$group_display\n$b"
+	    set_window_display "$b\n$tree_display\n$b"
 	} else {
 	    refresh_file_list
 	    set_file_list_display
@@ -480,8 +500,8 @@ Maybe `autodispatch' or another `manualreply' is running.
 
 u = update above info		d = delete\
 				    $dispatch_pid_file
-k = kill -INT process group	x = exit this program
-m = kill -KILL process group"
+k = kill -INT process tree	x = exit this program
+m = kill -KILL process tree"
 
 	set window_prompt "> "
 
@@ -495,7 +515,7 @@ m = kill -KILL process group"
 		u   {   break
 		    }
 		k   {   catch {
-			    signal_process_group INT \
+			    signal_process_tree INT \
 				[read_file \
 				    $dispatch_pid_file]
 			} out
@@ -503,7 +523,7 @@ m = kill -KILL process group"
 			break
 		    }
 		m   {   catch {
-			    signal_process_group KILL \
+			    signal_process_tree KILL \
 				[read_file \
 				    $dispatch_pid_file]
 			} out
@@ -748,7 +768,7 @@ while { "yes" } {
 
     if { $submitted_program == "" } {
     	set scoring_info ""
-	set window_info_height 5
+	set window_info_height 6
     } else {
 	set scoring_info "
 Scoring Instructions: $scoring_instructions"
@@ -799,19 +819,29 @@ $menu"
 	{^c[0-9]*$} {
 	    regexp {^c([0-9]*)$} $answer forget n
 	    if { [get_file $n] } {
-		catch { set last_file \
-			    [make_checked \
-			     $last_file] } out
-		out_check $out
+		if { [catch { set last_file \
+			          [make_checked \
+			              $last_file] } \
+			    out] } {
+		    out_check $out
+		} else {
+		    set window_error \
+		        "Checked $last_file"
+		}
 	    }
 	}
 	{^u[0-9]*$} {
 	    regexp {^u([0-9]*)$} $answer forget n
 	    if { [get_file $n] } {
-		catch { set last_file \
-		            [make_unchecked \
-			     $last_file] } out
-		out_check $out
+		if { [catch { set last_file \
+			          [make_unchecked \
+			              $last_file] } \
+			    out] } {
+		    out_check $out
+		} else {
+		    set window_error \
+		        "Unchecked $last_file"
+		}
 	    }
 	}
 	{^ls$} { set last_display "file_list" }

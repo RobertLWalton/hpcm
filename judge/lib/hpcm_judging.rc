@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Sep 19 05:47:48 EDT 2000
+# Date:		Fri Sep 22 14:27:32 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/09/21 20:34:37 $
+#   $Date: 2000/09/22 18:25:40 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.34 $
+#   $Revision: 1.35 $
 #
 
 # An optionally modified copy of this file must be
@@ -104,6 +104,14 @@ set log_manager ""
 # automatically changed to `none'.
 #
 set log_error_maximum 10
+
+
+# Reply control parameters:
+#
+# How long should autodispatch run before we worry that
+# it has hung up.  In seconds.
+#
+set dispatch_too_old 120
 
 
 
@@ -238,32 +246,44 @@ proc current_pid {} {
     return [id process]
 }
 
-# Function to make the current process ID into a
-# process group ID, which will be inherited by
-# all subprocesses.
+# Function to display the state of processes within
+# a process tree rooted at a given process.  Return
+# value is the display.
 #
-proc set_current_pgid {} {
-    id process group set
-}
-
-# Function to display the state of processes with
-# a given process group leader.  Return value is
-# display.
-#
-proc display_process_group { pgid } {
-    catch { exec pstree -pa $pgid } out
+proc display_process_tree { root_pid } {
+    catch { exec pstree -pa $root_pid } out
     if { $out == "" } {
-    	set out "No processes in process group $pgid"
+    	set out "No process with PID $root_pid exists"
     }
     return $out
 }
 
-# Function to send signal to process group.  Signal
+# Function to send signal to process subtree.  Signal
 # must be KILL or INT.
 #
-proc signal_process_group { signal pgid } {
-    kill -pgroup $signal $pgid
+# Note: we tried to use process groups, but making a
+# process into a group leader disconnects the process
+# from its stdin when that is a terminal, and that
+# made life impossible.
+#
+proc signal_process_tree { signal root_pid } {
+    catch { exec pstree -p $root_pid } out
+    regsub -- {-pstree\([0-9]*\)} $out "-pstree" out
+    regsub {^[^(]*\(} $out "\{" out
+    regsub {\)[^)]*$} $out "\}" out
+    regsub {\)[^(]*\(} $out "\} \{" out
+    set list ""
+    foreach pid $out {
+        if { [regexp {^[0-9]+$} $pid] } {
+	    lappend list $pid
+	}
+    }
+    if { $list != "" } {
+	eval echo kill $signal $list
+	eval kill $signal $list
+    }
 }
+
 
 ######### Things usually not changed ############
 

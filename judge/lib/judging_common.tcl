@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Sep 15 08:58:36 EDT 2000
+# Date:		Fri Sep 22 14:26:27 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/09/15 16:28:43 $
+#   $Date: 2000/09/22 18:25:40 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.37 $
+#   $Revision: 1.38 $
 #
 
 # Include this code in TCL program via:
@@ -66,20 +66,16 @@ set judging_parameters_file hpcm_judging.rc
 proc exit_cleanup {} {}
 
 # Lock current directory by creating $dispatch_pid_file.
-# Return `yes' is success, and `no' if failure.  Also,
-# on success makes the current process a process group
-# leader.
+# Return `yes' is success, and `no' if failure.
 #
 proc dispatch_lock {} {
     global dispatch_pid_file
 
     if { [create_file $dispatch_pid_file] } {
 
-	# Make the current process a process group
-	# leader, and store the current process ID in
-	# $dispatch_pid_file.
+	# Store the current process ID in $dispatch_
+	# pid_file.
 	#
-	set_current_pgid
 	write_file $dispatch_pid_file [current_pid]
 	return yes
     } else {
