@@ -6,7 +6,7 @@
 #
 # File:		makejudgingdir
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Oct 27 06:15:47 EDT 2000
+# Date:		Fri Oct 27 06:57:24 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/10/27 10:46:42 $
+#   $Date: 2000/10/27 14:40:52 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.25 $
+#   $Revision: 1.26 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -395,20 +395,22 @@ makejudgingdir option ... index_specification ...
 
     Note these are in the judging directory proper, and
     not in the ./info or ./contest subdirectories.  The
-    ./help/index file is an input index file that contains
+    ./help/index file is an INPUT index file that contains
     an entry for ./help/this_contest.  The latter file
-    is information about the current contest.  If created,
-    a ./TODO is written to edit this file.  The -this_
-    contest option is processed before any input index
-    files are read, so ./help/index may be used as an
-    input index file in the same call to this program
-    that creates the ./help/index file.
+    is information about the current contest.  If the file
+    is created, a ./TODO is written to edit ./help/this_
+    contest.  The -this_contest option is processed before
+    any input index files are read, so ./help/index may be
+    used as an input index file in the same call to `make-
+    judgingdir' that creates the ./help/index file.
 
-    If used the ./help/index file should be the refer-
+    If used, the ./help/index file should be the refer-
     enced by the first index specification given to this
-    program.  It contains header entries that start the
-    output `help/index' and mention the `help/problems'
-    and `help/demos' output indices.
+    program.  It contains a header entry designed to
+    start the output index `help/index', and with this
+    header entry, all the help index files, `help/demos',
+    `help/problems', and `help/index', are mentioned at
+    the beginning of `help/index'.
 
     The -mail program option causes the ./mail directory
     to be made if it does not exist.  If it is made, its
@@ -422,9 +424,9 @@ makejudgingdir option ... index_specification ...
     help2 directory if it does not exist.  It is simply
     linked to the ./contest/help directory.
     
-    Note that the `help' command searches ./contest/
-    help1, ./contest/help2, ./contest/help3, and
-    ./contest/help4 in order for help files.
+    Note that the contestant's `help' command searches
+    ./contest/help1, ./contest/help2, ./contest/help3,
+    and ./contest/help4 in order for help files.
 
     The -bin program option creates the ./contest/bin
     directory if it does not exist.  It is simply linked
@@ -450,46 +452,58 @@ makejudgingdir option ... index_specification ...
 	./contest/secure/passwords	    file
 
     If any of these are made their modes are set to
-    go-rw.  If the ./secure/passwords file is made,
-    instructions for editing it are written to ./TODO,
-    but the file made automatically is empty.  If the
-    ./secure/hpcm_sendmail.rc file is made, instructions
-    for editing it and the ~/.procmailrc file are writ-
-    ten into ./TODO.
+    go-rw.  If the ./contest/secure/passwords file is
+    made, instructions for editing it are written to
+    ./TODO, but the file automatically made is empty.
+    If the ./contest/secure/hpcm_sendmail.rc file is
+    made, instructions for editing it and the
+    ~/.procmailrc file are written into ./TODO.
 
-    The ./secure/passwords file consists of lines of
-    the form
+    The ./contest/secure/passwords file consists of
+    lines of the form
 
-    	account_name\[:password\[:comment\]\]
+    	account:password:who:c-email:p-email:comment
 
-    The account_name `none' or the password `none' may
-    be used to denote a missing account or password.
+    Here `account' is a the login name of the contes-
+    tant, `who' is a description of who the contestant
+    is, and the `c-email' and `p-email' fields are the
+    email addresses used to contact the coach and to
+    contact the contestants using the account them-
+    selves, respectively.  The account name `none' may
+    be used to indicate a line is not associated with an
+    account, and the password `none' may be used to
+    indicate the password is to be assigned by other
+    means.
 
     The -secure program option also causes any existing
-    ./secure/passwords file to be inspected for lines
-    with empty passwords.  If any are found, random
-    passwords are generated and in place of the missing
-    passwords.  The password `none' may be used in a
-    line to prevent a password from being generated and
-    prevent the hpcm_set_passwords program from setting
-    the password of the line's account.
+    ./contest/secure/passwords file to be inspected for
+    lines with empty passwords.  If any are found,
+    random passwords are generated and inserted in place
+    of the missing passwords.  The password `none' may
+    be used in a line to prevent a random password from
+    being generated and to prevent the hpcm_set_
+    passwords program from setting the password of the
+    line's account.
 
     The -who_where program option makes the ./contest/
-    who_where file if it does not exists, using the
-    ./secure/passwords file as a source of information
-    about what accounts should exist.   If the `pass-
-    words' file is newer than an existing `who_where'
-    file, the extra accounts in the `passwords' file are
-    added to the `who_where' file.  Whenever the `who_
-    where' file is created or modified, a ./TODO to edit
-    the file is written.  There may be accounts in the
-    `who_where' file that are not in the `passwords'
-    file.
+    who_where file if it does not exist, or updates it
+    if it does exist and the ./contest/secure/passwords
+    file is newer.  The ./contest/who_where file is a
+    copy of the ./contest/secure/passwords file with the
+    passwords replaced by where values.  If any new
+    places to insert a `where' value are made in the
+    ./contest/who_where file, a ./TODO to edit the file
+    is written.  There may be accounts in the `who_
+    where' file that are not in the `passwords' file.
+    Lines with account name `none' in the `passwords'
+    file are not copied to the `who_where' file.
 
     The -trashable program option creates the ./contest/
-    trashable file from the ./secure/passwords file.
-    The `trashable' file is just a list of accounts in
-    the `passwords' file.  It is updated whenever the
+    trashable file from the ./contest/secure/passwords
+    file.  The `trashable' file is just a list of the
+    accounts in the `passwords' file, not including the
+    account name `none'.  The `trashable' file is up-
+    dated by the -trashable option whenever the
     `passwords' file is newer than the `trashable' file.
     Whenever a `trashable' file is created, a ./TODO
     is written to delete the file as soon as all the
@@ -501,7 +515,10 @@ makejudgingdir option ... index_specification ...
 
     The -printer program option makes the ./contest/
     printer file if it does not exist, and writes a
-    ./TODO to edit the file when it is made.
+    ./TODO to edit the file when it is made.  It also
+    makes the ./contest/printer_jobs file if it does
+    not exist, and writes a ./TODO to consider deleting
+    this file.
 
     The -home program option just checks to see if
     the directory ./contest/home exists and the files
@@ -520,6 +537,11 @@ makejudgingdir option ... index_specification ...
     hpcm_judging.rc.  The file names within these
     directories are literally as given in this docu-
     ment.
+
+    Like other HPCM programs, `makejudgingdir' can be
+    run from anywhere in the judge's directory subtree
+    which is rooted by the directory containing the
+    `$judging_parameters_file' file.
 
     Unlike most HPCM judging programs, errors made by
     this program are not written to log files, but are

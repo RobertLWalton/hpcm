@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Oct 25 06:42:42 EDT 2000
+# Date:		Fri Oct 27 07:04:38 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/10/25 10:41:41 $
+#   $Date: 2000/10/27 14:41:46 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.47 $
+#   $Revision: 1.48 $
 #
 
 # Include this code in TCL program via:
@@ -1062,21 +1062,21 @@ if { [info command signal] == "signal" } {
 
 # Locate the directory containing the judging para-
 # meters file.  This should be unique.  If unique, the
-# name is stored in $judging_parameters_directory.
+# name is stored in the `judging_directory' variable.
 #
-set judging_parameters_directory ""
+set judging_directory ""
 foreach __d__ ". .. ../.. ../../.. ../../../.." {
     if { [file exists \
 	       $__d__/$judging_parameters_file] } {
-	lappend judging_parameters_directory $__d__
+	lappend judging_directory $__d__
     }
 }
 
 # If directory containing judging parameters file
 # is unique, source the file.  Otherwise call error.
 #
-if { [llength $judging_parameters_directory] == 1 } {
-    set __d__ $judging_parameters_directory
+if { [llength $judging_directory] == 1 } {
+    set __d__ $judging_directory
     if { [file readable \
                $__d__/$judging_parameters_file] } {
 	source $__d__/$judging_parameters_file
@@ -1084,12 +1084,11 @@ if { [llength $judging_parameters_directory] == 1 } {
 	error "$__d__/$judging_parameters_file\
 	       not readable"
     }
-} elseif { [llength $judging_parameters_directory] \
-           == 0 } {
+} elseif { [llength $judging_directory] == 0 } {
     error "$judging_parameters_file not found"
 } else {
     set __m__ "Too many $judging_parameters_file files:"
-    foreach __d__ $judging_parameters_directory {
+    foreach __d__ $judging_directory {
         set __m__ "$__m__\n\
 	          \     $__d__/$judging_parameters_file"
     }
