@@ -11,9 +11,9 @@
  * RCS Info (may not be true date or author):
  *
  *   $Author: acm-cont $
- *   $Date: 2000/09/04 15:18:35 $
+ *   $Date: 2000/09/06 21:23:41 $
  *   $RCSfile: hpcm_sandbox.c,v $
- *   $Revision: 1.5 $
+ *   $Revision: 1.6 $
  */
 
 #include <stdlib.h>
@@ -60,8 +60,11 @@ char documentation [] =
 "    prints an error message identifying the signal.\n"
 "    It does this using `sys_siglist' (psignal(3))\n"
 "    and changes SIGKILL with measured CPU time over\n"
-"    the limit to SIGXCPU.  In any case the parent\n"
-"    returns a 0 exit code.\n"
+"    the limit to SIGXCPU.  The parent returns a 0\n"
+"    exit code if the child does not terminate with a\n"
+"    signal, and returns 128 + the signal number as\n"
+"    an exit code if the child does terminate with\n"
+"    a signal.\n"
 "\n"
 "    Next, if this program's effective user ID is\n"
 "    `root', this program eliminates any supplemen-\n"
@@ -287,6 +290,8 @@ int main ( int argc, char ** argv )
 			  " terminated with signal:"
 			  " %s\n",
 			  sys_siglist [ sig ] );
+
+		exit ( 128 + sig );
 	    }
 
 	    exit ( 0 );

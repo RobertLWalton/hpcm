@@ -5,7 +5,7 @@
 #
 # File:		manualreply
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Sep  4 14:38:15 EDT 2000
+# Date:		Wed Sep  6 15:57:15 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: acm-cont $
-#   $Date: 2000/09/05 19:31:01 $
+#   $Date: 2000/09/06 21:23:38 $
 #   $RCSfile: manualreply,v $
-#   $Revision: 1.1 $
+#   $Revision: 1.2 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -47,46 +47,21 @@ set received_ch [open $received_file r]
 read_header $received_ch
 close $received_ch
 
-if { [llength $message_subject] != 2 \
-     || [lindex $message_subject 0] != "submit" } {
-    puts "Bad subject for manual scoring:"
-    puts "    $message_subject"
-    puts "Exiting manualscore"
-    exit 0
-}
+if { [llength $message_subject] == 2 \
+     && [lindex $message_subject 0] == "submit"
+     && [llength [glob -nocomplain \
+                       $reply_file \
+                       $no_reply_file \
+                       $auto_score_file \
+                       *-unchecked-error]] == 0 } {
 
-set submitted_file [lindex $message_subject 1]
-set submitted_program \
-    [file rootname $submitted_file]
-set submitted_extension \
-    [file extension $submitted_file]
-set output_file 	"${submitted_program}.out"
-set error_file  	"${submitted_program}.err"
-set compiler_error_file	"${submitted_program}.cerr"
-set test_file   	"${submitted_program}.test"
-set diff_file   	"${submitted_program}.diff"
-set bdiff_file   	"${submitted_program}.bdiff"
-
-if { ! [file readable $auto_score_file] } {
-    puts "No $auto_score_file; Executing autojudge"
+    puts "Running autojudge"
     exec autojudge
-    if { ! [file readable $auto_score_file] } {
-        puts "autojudge failed to make\
-	      $auto_score_file file"
-	puts "Exiting manualscore"
-	exit 0
+
+    if { ! [file exists $auto_score_file] } {
+	puts "autojudge FAILED to make $auto_score_file"
     }
 }
-
-if { [file exists $reply_file] } {
-    puts "$reply_file exists"
-    puts "Exiting manualscore"
-    exit 0
-}
-
-
-set scoring_instructions \
-    [find_scoring_instructions]
 
 # List of files in the current directory.  The N'th
 # item on the list is itself a list of subitems
@@ -95,7 +70,7 @@ set scoring_instructions \
 #	mtime filename post_comment pre_coment
 #
 # The total list is sorted by mtime.  The mtime has
-# 0 digits prepended so all mtimes are the same length
+# 0's prepended so all mtimes are the same length
 # and ascii comparison will be the same as numeric
 # comparison.
 #
@@ -105,14 +80,16 @@ set scoring_instructions \
 # comment printed because their names are too long.
 #
 set file_list ""
+set file_list_length 0
 
 proc refresh_file_list { { indicate_new_files yes } } {
 
-    global file_list
+    global file_list file_list_length
 
     set new_file_list ""
+    set n 0
     foreach file [glob -nocomplain *] {
-    	set item [format {%040} [file mtime $file]]
+    	set item [format {%040d} [file mtime $file]]
 	lappend item $file
 	set size [file size $file]
 	if { $size == 0 } {
@@ -122,9 +99,10 @@ proc refresh_file_list { { indicate_new_files yes } } {
 	}
 	set pre_comment "      "
 	if { $indicate_new_files } {
+	    set pre_comment "New!  "
 	    foreach item2 $file_list {
 		if { [lindex $item2 1] == $file } {
-		    set pre_comment "New!  "
+		    set pre_comment "      "
 		    break
 		}
 	    }
@@ -132,13 +110,17 @@ proc refresh_file_list { { indicate_new_files yes } } {
 	lappend item $pre_comment
 
 	lappend new_file_list $item
+	incr n
     }
 
-    set file_list $new_file_list
+    set file_list [lsort $new_file_list]
+    set file_list_length $n
 }
 
 proc put_file_list {} {
+
     global file_list
+
     set n 0
     foreach item $file_list {
 	incr n
@@ -148,12 +130,39 @@ proc put_file_list {} {
 	if { [string length [lindex $item 1]] > 39 } {
 	    set post_comment ""
 	}
+	if { $n != 1 && $n % 2 == 1 } {
+	    puts ""
+	}
 	puts [format {%3d. %s%s%s} $n $pre_comment \
 	             $name $post_comment]
     }
 }
 
+proc get_file { number } {
+
+    global file_list file_list_length last_file
+
+    if { $number == "" } {
+	if { $last_file == "" } {
+	    puts "No previous file!"
+	    return no
+	} else {
+	    return yes
+	}
+    } elseif { $number < 1 \
+               || $number > $file_list_length } {
+	puts "Bad file number: $number"
+	return no
+    } else {
+	set last_file \
+            [lindex [lindex $file_list \
+                            [expr { $number - 1 }]] 1]
+	return yes
+    }
+}
+
 refresh_file_list no
+set last_file ""
 
 while { "yes" } {
 
@@ -161,10 +170,9 @@ while { "yes" } {
     puts ""
     put_file_list
     puts -nonewline "
-							/
 v# = view #           e# = edit #        c# = checkoff #
 ir = initiate reply   er = edit reply    sr = send reply
-sh = call shell       u# = uncheckoff #
+sh = call shell       u# = uncheckoff #	 x  = exit
 
 > "
     set answer [gets stdin]
@@ -179,9 +187,72 @@ sh = call shell       u# = uncheckoff #
 	continue;
     }
 
-    switch [lindex $answer 0] \
-	x	{ set action "exit" } \
-	default	{ set action "unknown" }
+    set answer [lindex $answer 0]
+
+    switch -regexp $answer \
+        {^v[0-9]*$} {
+	    regexp {^v([0-9]*)$} $answer forget n
+	    if { [get_file $n] } {
+		view_file $last_file
+	    }
+	} \
+	{^e[0-9]*$} {
+	    regexp {^e([0-9]*)$} $answer forget n
+	    if { [get_file $n] } {
+		edit_file $last_file
+	    }
+	} \
+	{^c[0-9]*$} {
+	    regexp {^c([0-9]*)$} $answer forget n
+	    if { [get_file $n] } {
+		set last_file [make_checked $last_file]
+	    }
+	} \
+	{^u[0-9]*$} {
+	    regexp {^u([0-9]*)$} $answer forget n
+	    if { [get_file $n] } {
+		set last_file \
+		    [make_unchecked $last_file]
+	    }
+	} \
+	{ir} {
+	    compose_reply -all
+	    set last_file "${reply_file}+"
+	    edit_file $last_file
+	} \
+	{er} {
+	    set last_file "${reply_file}+"
+	    edit_file $last_file
+	} \
+	{sr} {
+	    if { ! [file exists "${reply_file}+"] } {
+		puts "No reply composed!"
+	    } else {
+	        puts "Do you want to send:"
+	        puts ""
+	        put_file "${reply_file}+" stdout 12
+		puts -nonewline "
+(y or n)? "
+	        set answer [gets stdin]
+	        if { [eof stdin] } {
+		    exit 0
+		} elseif { [regexp {^[yY]} $answer] } {
+		    puts "Sending..."
+		    send_reply
+		    set last_file $reply_file
+		} else {
+		    puts "Send ABORTED!"
+		}
+	    }
+	} \
+	{sh} {
+	    call_shell
+	} \
+	{x} {
+	    exit 0
+	}
+
+    refresh_file_list
 }
 
 
@@ -189,4 +260,3 @@ sh = call shell       u# = uncheckoff #
 #
 } caught_output
 caught_error
-

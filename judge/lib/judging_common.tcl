@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: acm-cont $
-#   $Date: 2000/09/05 19:31:05 $
+#   $Date: 2000/09/06 21:23:40 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.27 $
+#   $Revision: 1.28 $
 #
 
 # Include this code in TCL program via:
@@ -130,6 +130,7 @@ proc is_checked { filename } {
 
 # Function to change the name of a file from
 # ...<<...>>-unchecked-... to ...<<...>>-checked-...;
+# Return new filename.
 #
 proc make_checked { filename } {
     set e \
@@ -138,12 +139,14 @@ proc make_checked { filename } {
 	error "$filename does not include a checkmark"
     }
     if { $b != "checked" } {
-	file rename "../$filename" "../${a}checked${c}"
+	file rename $filename "${a}checked${c}"
     }
+    return "${a}checked${c}"
 }
 
 # Function to change the name of a file from
 # ...<<...>>-checked-... to ...<<...>>-unchecked-...;
+# Return new filename.
 #
 proc make_unchecked { filename } {
     set e \
@@ -152,9 +155,9 @@ proc make_unchecked { filename } {
 	error "$filename does not include a checkmark"
     }
     if { $b != "unchecked" } {
-	file rename "../$filename" \
-	            "../${a}unchecked${c}"
+	file rename $filename "${a}unchecked${c}"
     }
+    return "${a}unchecked${c}"
 }
 
 # Function called at end of program when a fatal error
