@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Jan 29 06:34:16 EST 2002
+# Date:		Tue Jan 29 06:58:54 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/01/29 11:34:58 $
+#   $Date: 2002/01/29 11:58:52 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.78 $
+#   $Revision: 1.79 $
 #
 
 # Table of Contents
@@ -407,7 +407,8 @@ proc log_error { error_output } {
 	    read_header $received_ch
 	    close $received_ch
 
-	    set to [compute_message_reply_to]
+	    set to [string trim \
+	    		   [compute_message_reply_to]]
 	    if { $to == "UNKNOWN" } {
 	    	set to ""
 	    }
@@ -458,9 +459,9 @@ proc log_error { error_output } {
 	    if { $received_ch != "" \
 	         && $message_x_hpcm_test_subject \
 		    != "" } {
+	        set mts $message_x_hpcm_test_subject
 		puts $mail_ch \
-		     "X-HPCM-Test-Subject:\
-		     $message_x_hpcm_test_subject"
+		     "X-HPCM-Test-Subject:$mts"
 	    }
 	    puts $mail_ch ""
 	    puts $mail_ch "System error:"
@@ -475,10 +476,10 @@ proc log_error { error_output } {
 		puts $mail_ch "While processing:"
 		puts $mail_ch ""
 		puts $mail_ch $message_From_line
-		puts $mail_ch "From: $message_from"
-		puts $mail_ch "Date: $message_date"
+		puts $mail_ch "From:$message_from"
+		puts $mail_ch "Date:$message_date"
 		puts $mail_ch \
-		     "Subject: $message_subject"
+		     "Subject:$message_subject"
 		puts $mail_ch ""
 	    }
 
