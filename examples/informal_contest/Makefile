@@ -1,7 +1,7 @@
 # Makefile for an `informal' Contest
 #
 # File:		Makefile
-# Date:		Thu Dec  7 23:57:23 EST 2000
+# Date:		Fri Dec  8 08:09:44 EST 2000
 #
 # To make an informal contest named `foo':
 #
@@ -33,11 +33,12 @@
 #     (judge's) account.  Do NOT put ~/hpcm/contestant/
 #     bin in that PATH.
 #
+
 #  5. Create a judging directory ~/judging_foo_password
-#     where the password is needed to keep outsiders from
-#     guessing the path to the received submissions,
-#     because JAVA requires this path be a+x to access
-#     .class files inside the sandbox.
+#     where the password is needed to keep outsiders
+#     from guessing the path to the received submis-
+#     sions, because JAVA requires this path be a+x to
+#     access .class files inside the sandbox.
 #
 #     This password is never really used, and so can be
 #     something awfully unguessable.
@@ -45,8 +46,8 @@
 #  6. Put copies of the files in this directory into
 #     your judging directory, and edit the names and
 #     passwords in these files appropriately.  Edit the
-#     index specifications (value of the INDICES variable
-#     below) to specify the problems you want (run
+#     index specifications (value of the INDICES vari-
+#     able below) to specify the problems you want (run
 #     `makejudgingdir -doc' to find the format and mean-
 #     ing of index specifications).
 #
@@ -71,6 +72,7 @@
 #     directory and all the files in it are accessible
 #     only to the judge's account JJJ.
 #
+
 # 11. Run `makejudgingdir -this_contest' and then edit
 #     the `./help/this_contest' file.
 #
@@ -110,6 +112,7 @@
 #
 #	ln -s ~/prototype_home home
 #
+
 #     One prototype directory can be used for many con-
 #     tests, so you may not need to make a new prototype
 #     directory for this contest, but you will need to
@@ -148,6 +151,7 @@
 #     be a test account that you can use to check
 #     whether the system is running.
 #
+
 # 16. Run `make trashable' in your judging directory.
 #     This makes the file ~/contest_foo/trashable which
 #     lists the contestant accounts that can be
@@ -181,6 +185,7 @@
 #     ACCOUNT (which requires the contestant's account
 #     name appear in ~/contest_foo/trashable).
 #
+
 # 19. Run `makescoreboard -start' to start the score-
 #     board background process.  This process makes
 #		./contest/scoreboard.1
@@ -243,6 +248,6 @@ update_scoreboard:
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/12/08 07:54:18 $
+#   $Date: 2000/12/08 14:12:11 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.3 $
+#   $Revision: 1.4 $
