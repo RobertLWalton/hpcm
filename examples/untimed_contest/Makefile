@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Mar 30 12:11:05 EST 2003
+# Date:		Thu Oct 23 01:04:07 EDT 2003
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2003/03/30 17:08:21 $
+#   $Date: 2003/10/23 05:10:12 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.56 $
+#   $Revision: 1.57 $
 
 # To make an email contest named `foo':
 #
@@ -104,35 +104,85 @@
 #    test_xxx' for various `xxx;: see hpcm/examples/
 #    test_submissions/Makefile.mk.
 #
-# 9. You may want to print out handouts.  The following
-#    is a suggestion.  Execute `make print_help', re-
-#    move the `demos' and `problems' pages, and reorder
-#    the other pages so `index' is first and the other
-#    help file pages are in order they are listed in
-#    the index.  This produces a `help handout'.
+# 9.  Usually email contests do not have printouts, but
+#     just have web pages (see below).   If you do want
+#     to print out handouts.  Here are some ways to
+#     print everything but the problems, where
+#     THIS_CONTEST denotes either
 #
-#    Then `make print_demos', and make a `demos handout'
-#    that consists of these pages, in the order given in
-#    the `demos' help page, preceded by that `demos'
-#    help page.
+#	 ~/judging_foo_password/help/this_contest
+#     or
+#	 ~/judging_foo_password/info/help/this_contest
 #
-#    The help and demos handout can be given out when
-#    the contest is set up.  Usually no printout of the
-#    problems is given out for an email contest, as
-#    contestants get problem statements one problem at
-#    a time.
+#     which are the same file.
 #
-#    If you do want to make a printout of the problems,
-#    then `make print_problems', and make a `problems
-#    handout' that consists of these pages, in the
-#    order given in the `problems' help page, preced-
-#    ed by that `problems' help page.  Discard any
-#    demonstration .txt files printed.
+#     A. Execute:
+#
+#	     cd ~/hpcm/contestant/
+#	     make ps
+#	     lpr help.ps demos.ps
+#	     fprint THIS_CONTEST
+#
+#	 This makes a generic help printout good for all
+#        contests, a generic demos printout, and a small
+#        contest specific this_contest printout.
 
+#     B.  Execute:
+#
+#	      cd ~/hpcm/contestant/
+#	      make EXTRAS=THIS_CONTEST help+.ps demos.ps
+#	      lpr help+.ps demos.ps
+#
+#	 This makes a contest specific help printout
+#	 consisting of the this_contest file followed by
+#	 the same generic help files as in help.ps
+#	 above, and also makes a generic demos printout.
+#
+#      C. Execute
+#
+#	       cd ~/judging_foo_password
+#	       make print_help
+#
+#         remove the `demos' and `problems' pages, and
+#	  reorder the other pages so `index' is first
+#	  and the other help file pages are in order
+#	  they are listed in the index.  This produces
+#	  a `help handout' specific to the contest.
+#	  Unlike the help handouts above, this handout
+#	  does not contain help for contest types that
+#	  differ from the current contest (e.g., no
+#	  formal contest help for an email contest),
+#
+#         Then execute
+#
+#	       cd ~/judging_foo_password
+#	       make print_demos
+#
+#         and make a `demos handout' that consists of
+#	  these pages, in the order given in the `demos'
+#	  help page, preceded by that `demos' help page
+#	  (which was printed by `make print_help').
+
+#     These handouts can be given out when the contest is
+#     set up.  Usually no printout of the problems is
+#     given out for an email contest, as contestants get
+#     problem statements one problem at a time.
+#
+#     If you do want to make a printout of the problems,
+#     execute
+#
+#	       cd ~/judging_foo_password
+#	       make print_problems
+#
+#     and make a `problems handout' that consists of
+#     these pages, in the order given in the `problems'
+#     help page, preceded by that `problems' help page.
+#     Discard any demonstration .txt files printed.
+#
 # 10. A web page containing non-contest-specific help
 #     and demos files can be made according to instruc-
 #     tions in hpcm/contestant/help/Makefile.
-
+#
 # 11. A web page containing problem descriptions, and
 #     optionally solutions, can be made by defining the
 #     web page parameters in hpcm_judging.rc and execut-
@@ -266,6 +316,7 @@ print_demos:
 	fprint info/demos/*/*
 
 print_problems:
+	fprint info/help/problems
 	@for x in info/problems/*/*; \
 	    do case "$$x" in \
 	    *.txt) echo fprint $$x; fprint $$x;; \
