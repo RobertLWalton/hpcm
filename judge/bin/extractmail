@@ -4,7 +4,7 @@
 #
 # File:		extractmail
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Jan  2 19:46:27 EST 2002
+# Date:		Thu Jan  3 10:54:42 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/01/03 02:10:33 $
+#   $Date: 2002/01/03 16:34:09 $
 #   $RCSfile: extractmail,v $
-#   $Revision: 1.30 $
+#   $Revision: 1.31 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -148,18 +148,18 @@ cd submission_directory; extractmail
     specify its name in this manner and there is more
     than one possible submission file.
 
-    If a submitted file already exists and has a modifi-
-    cation time equal to or later than that of the
-    $received_file file, the submitted file is NOT writ-
-    ten, but is instead compared to the existing file.
-    Whether or not the comparison matches, the `Extract-
-    ed FFFF' output line is generated, but if there is a
-    mismatch, the line `Mistmatch FFFF' is output along
-    with a description of the mismatch, all in the
-    standard output and NOT the error output.  Thus mis-
-    matches are NOT considered to be errors, and a judge
-    can change an extracted file and rerun the autojudge
-    program successfully.
+    If a submitted file already exists, is not a sym-
+    bolic link, and has a modification time equal to or
+    later than that of the $received_file file, the sub-
+    mitted file is NOT written, but is instead compared
+    to the existing file.  Whether or not the comparison
+    matches, the `Extracted FFFF' output line is gener-
+    ated, but if there is a mismatch, the line `Mismatch
+    FFFF' is output along with a description of the mis-
+    match, all in the standard output and NOT the error
+    output.  Thus mismatches are NOT considered to be
+    errors, and a judge can change an extracted file and
+    rerun the autojudge program successfully.
 
     It is an error if the problem name contains `/' or
     `.' or begins with `-'.  It is a system error if the
@@ -307,10 +307,11 @@ proc exit_cleanup {} {
 # return `read' or `write' if the file is opened for
 # reading or writing, and `skip' if the file name is
 # illegal and the file is to be skipped.  A file is
-# opened for reading if it exists and has an mtime >=
-# received_mtime; and is opened for writing otherwise.
-# If opened for writing, any existing file is deleted,
-# and cleanup_filename is set.
+# opened for reading if it exists, is not a symbolic
+# link, and has an mtime >= received_mtime; and is
+# opened for writing otherwise.  If opened for writing,
+# any existing file or link is deleted, and cleanup_
+# filename is set.
 #
 # A filename is illegal if it is not in filename_array
 # or if a file of the same name has already been
@@ -337,16 +338,16 @@ proc open_file { filename } {
 
     if { [file exists $filename] } {
 
-        if { [file mtime $filename] \
-	         >= $received_mtime } {
-	    if { [catch { set file_ch \
-	                      [open $filename r] }] } {
-		extract_error \
-		    "SYSTEM ERROR: Cannot read\
-		     $filename"
+        if { [file type $filename] == "link" } {
+	    puts "Deleting $filename link"
+	    if { [catch { file delete -force \
+	    		       $filename }] } {
+	        extract_error \
+		    "SYSTEM ERROR: Cannot delete\
+		     $filename link"
 	    }
-	    return read
-	} else {
+        } elseif { [file mtime $filename] \
+	               < $received_mtime } {
 	    puts "Deleting out-of-date $filename"
 	    if { [catch { file delete -force \
 	    		       $filename }] } {
@@ -354,6 +355,14 @@ proc open_file { filename } {
 		    "SYSTEM ERROR: Cannot delete\
 		     $filename"
 	    }
+	} else {
+	    if { [catch { set file_ch \
+	                      [open $filename r] }] } {
+		extract_error \
+		    "SYSTEM ERROR: Cannot read\
+		     $filename"
+	    }
+	    return read
 	}
     }
 
