@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Jan  9 20:25:06 EST 2001
+# Date:		Fri Jan 12 03:17:59 EST 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/01/10 01:29:36 $
+#   $Date: 2001/01/12 08:18:59 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.12 $
+#   $Revision: 1.13 $
 
 # To make an informal contest named `foo':
 #
@@ -65,10 +65,7 @@
 #     you will use to test the system, and to which no
 #     actual contestant will be assigned.
 #
-#  8. Run `make this_contest' and then edit the `./help/
-#     this_contest' file.
-#
-#  9. Run `make' in your judging directory.  Note this
+#  8. Run `make' in your judging directory.  Note this
 #     runs `startcontest', which merely gives a+r
 #     permission to the ./contest/help/problems file
 #     that lists the problems.
@@ -79,7 +76,7 @@
 #     `make' unnecessarily is to get redundant instruc-
 #     tions in the ./TODO file (see below).
 #
-# 10. Follow the instructions in the TODO file that
+#  9. Follow the instructions in the TODO file that
 #     will have been created in the judging directory.
 #     After you follow an instruction, edit it out of
 #     the TODO file.
@@ -97,6 +94,10 @@
 #
 #     Also, `make' executes `startcontest' so it is
 #     not necessary to execute that separately.
+#
+# 10. Rerun `make' in the judging directory.  This is
+#     because you edited `help/this_contest' in the last
+#     step and need to install the new version.
 #
 # 11. One of the instructions will be to make a con-
 #     testant prototype account: see
@@ -116,7 +117,7 @@
 #     inside the contest directory:
 #
 #	ln -s ~/prototype_home home
-#
+
 #     Next, before you run SETUP_PROTOTYPE in the proto-
 #     type account, move the `procmailrc' file from the
 #     judging account to the prototype account's actual
@@ -129,7 +130,7 @@
 #     account in whose home directory it is placed:
 #     this is why it cannot be put in ~/prototype_home
 #     like other files (e.g., .cshrc).
-
+#
 #     Then run:
 #	  ~JJJ/contest_foo/bin/SETUP_PROTOTYPE \
 #             ~JJJ/contest_foo
@@ -154,7 +155,7 @@
 #     tialize contestant account contents.  What is in
 #     setup.tar is only a symbolic link to ~/.hpcm_
 #     contest/home/.cshrc.
-#
+
 #     Any such editing must be done by logging into
 #     the prototype account and cd'ing to .hpcm_
 #     contest/home in that account.
@@ -168,7 +169,7 @@
 #     mal contests, so it is useful to have this envir-
 #     onment setting.
 #
-
+#
 # 13. Be sure there are appropriate account names and
 #     passwords in the file ./contest/secure/passwords,
 #     as you are about to make these accounts and set
@@ -189,7 +190,7 @@
 #     You should have one of these contestant accounts
 #     be a test account that you can use to check
 #     whether the system is running.
-#
+
 # 14. Run `make trashable' in your judging directory.
 #     This makes the file ./contest/trashable which
 #     lists the contestant accounts that can be reini-
@@ -197,7 +198,7 @@
 #     presumably not been made yet (but its OK if they
 #     already exist).
 #
-
+#
 # 15. Then as root (you must log into the root account,
 #     you cannot use `su', as the paths will not be
 #     right), run the following commands:
@@ -226,7 +227,7 @@
 #     their own account by running TRASH_ACCOUNT (which
 #     requires the contestant's account name appear in
 #     ~JJJ/contest_foo/trashable).
-#
+
 # 17. Run `makescoreboard -start' to start the score-
 #     board background process.  This process makes
 #		./contest/scoreboard.1
@@ -237,7 +238,7 @@
 #     and the scoreboard can be instantly updated
 #     by `makescoreboard 0'.
 #
-
+#
 # 18. Contest judging is automatic.  If you set the
 #     `reply_manager' and `log_manager' variables to
 #     your email address, you will be notified of any
@@ -269,9 +270,6 @@ all:
 	chmod a+x . ..
 	startcontest
 
-this_contest:
-	makejudgingdir -this_contest
-
 trashable:
 	makejudgingdir -trashable
 
@@ -284,7 +282,7 @@ scoreboard:
 start_scoreboard:
 	makescoreboard -start
 
-stat_scoreboard:
+check_scoreboard:
 	makescoreboard -status
 
 stop_scoreboard:

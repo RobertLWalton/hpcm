@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/01/12 08:01:45 $
+#   $Date: 2001/01/12 08:18:57 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.16 $
+#   $Revision: 1.17 $
 
 # To make an email contest named `foo':
 #
@@ -110,9 +110,6 @@ INDICES=    help/index, \
 all:
 	makejudgingdir -email ${INDICES}
 	chmod a+x . ..
-
-this_contest:
-	makejudgingdir -this_contest
 
 scoreboard:
 	scorefinder | scoreboard

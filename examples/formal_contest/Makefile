@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Jan  9 20:24:04 EST 2001
+# Date:		Fri Jan 12 03:23:01 EST 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/01/10 01:29:34 $
+#   $Date: 2001/01/12 08:18:58 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.2 $
+#   $Revision: 1.3 $
 
 # To make a formal contest named `foo':
 #
@@ -65,10 +65,7 @@
 #     you will use to test the system, and to which no
 #     actual contestant will be assigned.
 #
-#  8. Run `make this_contest' and then edit the `./help/
-#     this_contest' file.
-#
-#  9. Run `make' in your judging directory.
+#  8. Run `make' in your judging directory.
 #
 #     You should rerun `make' whenever you may have
 #     changed something it uses to build the contest
@@ -76,7 +73,7 @@
 #     `make' unnecessarily is to get redundant instruc-
 #     tions in the ./TODO file (see below).
 #
-# 10. Follow the instructions in the TODO file that
+#  9. Follow the instructions in the TODO file that
 #     will have been created in the judging directory.
 #     After you follow an instruction, edit it out of
 #     the TODO file.
@@ -92,6 +89,10 @@
 #     name.  If you do, be sure the WHERE fields are
 #     short enough not to overrun other printout
 #     header fields.
+#
+# 10. Rerun `make' in the judging directory.  This is
+#     because you edited `help/this_contest' in the last
+#     step and need to install the new version.
 
 # 11. One of the instructions will be to make a con-
 #     testant prototype account: see
@@ -276,9 +277,6 @@ all:
 	makejudgingdir -formal ${INDICES}
 	chmod a+x . ..
 
-this_contest:
-	makejudgingdir -this_contest
-
 trashable:
 	makejudgingdir -trashable
 
@@ -291,7 +289,7 @@ scoreboard:
 start_scoreboard:
 	makescoreboard -start
 
-stat_scoreboard:
+check_scoreboard:
 	makescoreboard -status
 
 stop_scoreboard:
