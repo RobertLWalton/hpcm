@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Feb 26 11:49:50 EST 2002
+# Date:		Sat Mar  9 08:37:52 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/02/26 17:26:01 $
+#   $Date: 2002/03/09 13:40:07 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.86 $
+#   $Revision: 1.87 $
 #
 
 # Table of Contents
@@ -44,7 +44,8 @@
 #
 #	... your program ...
 #	... (do not change argc, argv0, argv)
-#	... terminates with `exit 0' or `error ...'
+#	... terminates with `exit 0', `exit 1', or
+#	... `error ...'
 #
 #	} caught_output
 #	caught_error
