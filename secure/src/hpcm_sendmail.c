@@ -2,7 +2,7 @@
  *
  * File:	hpcm_sendmail.c
  * Authors:	Bob Walton (walton@deas.harvard.edu)
- * Date:	Mon Jan 14 07:39:40 EST 2002
+ * Date:	Wed Apr  3 09:22:43 EST 2002
  *
  * The authors have placed this program in the public
  * domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
  * RCS Info (may not be true date or author):
  *
  *   $Author: hc3 $
- *   $Date: 2002/01/14 12:40:36 $
+ *   $Date: 2002/04/03 15:10:12 $
  *   $RCSfile: hpcm_sendmail.c,v $
- *   $Revision: 1.10 $
+ *   $Revision: 1.11 $
  */
 
 #include <stdlib.h>
@@ -28,25 +28,69 @@
 #include <sys/utsname.h>
 #include <time.h>
 
-#ifndef MD5SUM_LENGTH
-#   define MD5SUM_LENGTH 32
+#ifndef HPCM_MD5SUM_LENGTH
+#   define HPCM_MD5SUM_LENGTH 32
 #endif
 
-#ifndef MD5SUM
-#   define MD5SUM "/usr/bin/md5sum"
+/* md5sums is list of possible argv values for execve
+*/
+#ifdef HPCM_MD5SUM
+    char * const md5sum_argv_1[]
+        = { HPCM_MD5SUM, NULL };
+    char * const * md5sums[]
+        = { md5sum_argv_1, NULL };
+#else
+    char * const md5sum_argv_1[]
+         = { "/usr/bin/md5sum", NULL };
+    char * const md5sum_argv_2[]
+         = { "/bin/md5sum", NULL };
+    char * const * md5sums[]
+         = { md5sum_argv_1, md5sum_argv_2, NULL };
 #endif
 
-#ifndef MD5SUM_ENV
-#   define MD5SUM_ENV "HPCM_MD5SUM"
+/* md5sum_env is env value for execve
+*/
+#ifndef HPCM_MD5SUM_ENV
+#   define HPCM_MD5SUM_ENV "HPCM_MD5SUM"
+#endif
+char * const md5sum_env[]  = { HPCM_MD5SUM_ENV, NULL };
+
+/* sendmails is list of possible argv values for execve
+*/
+#ifdef HPCM_SENDMAIL
+    char * const sendmail_argv_1[]
+        = { HPCM_SENDMAIL, NULL };
+    char * const * sendmails[]
+        = { sendmail_argv_1, NULL };
+#else
+    char * const sendmail_argv_1[]
+        = { "/usr/sbin/sendmail", "-oi", "-t", NULL };
+    char * const sendmail_argv_2[]
+        = { "/sbin/sendmail", "-oi", "-t", NULL };
+    char * const sendmail_argv_3[]
+        = { "/usr/bin/sendmail", "-oi", "-t", NULL };
+    char * const sendmail_argv_4[]
+        = { "/bin/sendmail", "-oi", "-t", NULL };
+    char * const sendmail_argv_5[]
+        = { "/usr/lib/sendmail", "-oi", "-t", NULL };
+    char * const sendmail_argv_6[]
+        = { "/lib/sendmail", "-oi", "-t", NULL };
+    char * const * sendmails[]
+        = { sendmail_argv_1,
+            sendmail_argv_2,
+            sendmail_argv_3,
+            sendmail_argv_4,
+            sendmail_argv_5,
+            sendmail_argv_6,
+	    NULL };
 #endif
 
-#ifndef SENDMAIL
-#   define SENDMAIL "/usr/sbin/sendmail", "-oi", "-t"
+/* sendmail_env is env value for execve
+*/
+#ifndef HPCM_SENDMAIL_ENV
+#   define HPCM_SENDMAIL_ENV "HPCM_SENDMAIL"
 #endif
-
-#ifndef SENDMAIL_ENV
-#   define SENDMAIL_ENV "HPCM_SENDMAIL"
-#endif
+char * sendmail_env[]  = { HPCM_SENDMAIL_ENV, NULL };
 
 char documentation [] =
 "cat your_mail_file | hpcm_sendmail"
@@ -76,11 +120,6 @@ char documentation [] =
 "    standard error output if any system call is in\n"
 "    error.\n" ;
 
-char * md5sum_argv[] = { MD5SUM, NULL };
-char * md5sum_env[]  = { MD5SUM_ENV, NULL };
-char * sendmail_argv[] = { SENDMAIL, NULL };
-char * sendmail_env[]  = { SENDMAIL_ENV, NULL };
-
 void errno_exit ( char * m )
 {
     fprintf ( stderr,
@@ -107,16 +146,20 @@ void too_big_exit ( char * m )
    	files[0]	write stdin input to child
    	files[1]	read stdout output from child
    	files[2]	read stderr output from child
+
+   Argvs is a list of possible argv values for execev.
+   Each is tried in turn until one works.
 */
 pid_t exec_program
     ( FILE * files[3],
-      char * const argv[],
+      char * const * argvs[],
       char * const env[] )
 {
     int in_pipe[2];
     int out_pipe[2];
     int err_pipe[2];
     pid_t child;
+    char * const ** argvp;
 
     if ( pipe ( in_pipe ) < 0
          ||
@@ -200,12 +243,20 @@ pid_t exec_program
 	    	close ( fd );
 	}
 
-	if ( execve ( argv[0], argv, env ) < 0 )
+	argvp = argvs;
+	while ( * argvp )
 	{
+	    char * const * argv = * argvp ++;
+	    execve ( argv[0], argv, env );
+	}
+	argvp = argvs;
+	while ( * argvp )
+	{
+	    char * const * argv = * argvp ++;
 	    fprintf ( stderr, "Could not execute %s\n",
 	    		      argv[0] );
-	    errno_exit ( "execev" );
 	}
+	errno_exit ( "execev" );
     }
 }
 
@@ -248,7 +299,7 @@ int flush_output ( FILE * file )
 void check_program
     ( FILE * files[3],
       pid_t child,
-      char * const argv[],
+      char * program,
       int nocloseinput )
 {
     int child_exit_status;
@@ -271,7 +322,7 @@ void check_program
 		  "hpcm_sendmail: %s"
 		  " terminated with signal:"
 		  " %s\n",
-		  argv[0],
+		  program,
 		  strsignal ( sig ) );
 
 	/* Parent exit when child died by
@@ -289,7 +340,7 @@ void check_program
 		      "hpcm_sendmail: %s"
 		      " terminated with error code:"
 		      " %s\n",
-		      argv[0],
+		      program,
 		      strerror ( code ) );
 
 	    /* Parent exit when child returned non-zero
@@ -300,7 +351,7 @@ void check_program
 	    fprintf ( stderr,
 		      "hpcm_sendmail: %s"
 		      " terminated with error output\n",
-		      argv[0] );
+		      program );
 	    exit ( ECANCELED );
 	}
     }
@@ -309,7 +360,7 @@ void check_program
 	fprintf ( stderr,
 		  "hpcm_sendmail: %s"
 		  " terminated for unknown reason\n",
-		  argv[0] );
+		  program );
 
 	/* Parent exit when child terminated for
 	   unknown reason.
@@ -628,7 +679,7 @@ int main ( int argc, char ** argv )
     {
     	FILE * files[3];
 	pid_t child = exec_program ( files,
-				     md5sum_argv,
+				     md5sums,
 				     md5sum_env );
 	char * p = signature;
 	char * endp = signature + sizeof ( signature );
@@ -677,7 +728,7 @@ int main ( int argc, char ** argv )
 	}
 	while ( p > signature && isspace ( p[-1]) )
 	    -- p;
-	if ( p - md5sump != MD5SUM_LENGTH ) {
+	if ( p - md5sump != HPCM_MD5SUM_LENGTH ) {
 	    fprintf ( stderr, "hpcm_sendmail:"
 			      " badly formatted md5sum"
 			      " output\n    %s\n",
@@ -686,14 +737,14 @@ int main ( int argc, char ** argv )
 	}
 	* p = '\0';
 
-	check_program ( files, child, md5sum_argv, 1 );
+	check_program ( files, child, "md5sum", 1 );
     }
     
     /* Send the mail. */
     {
     	FILE * files[3];
 	pid_t child = exec_program ( files,
-				     sendmail_argv,
+				     sendmails,
 				     sendmail_env );
 	char line [MAXLEN];
 
@@ -806,7 +857,7 @@ int main ( int argc, char ** argv )
 	}
 
 	check_program
-	    ( files, child, sendmail_argv, 0 );
+	    ( files, child, "sendmail", 0 );
     }
 
     return 0;
