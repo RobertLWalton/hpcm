@@ -1,5 +1,3 @@
-;;;; If you edit this be careful to test it in a student account.
-;;;;
 ;;;; Functions for invoking editor and running tests.
 ;;;;
 ;;;; File:         student.lsp
@@ -40,16 +38,32 @@
 ;;;; This file contains environment modifiers and functions that establish
 ;;;; a proper environment for CS51 students running Kyoto COMMONLISP.
 ;;;;
+;;;;   Version 6:
+;;;;
+;;;;	Added BYE.
+;;;;	Added and fixed VI, VIL, VIR, PICO, PICOL, and PICOR.
+;;;;	Note that Franz Allegro requires the system call
+;;;;  (run-shell-command
+;;;;   (concatenate 'string
+;;;;		"cd " (EXCL::CURRENT-DIRECTORY-STRING) "; "
+;;;;		"vi '+set lisp sm ai' "	file))
+;;;;
+;;;;	while CLISP requires only
+;;;;  (shell (concatenate 'string "vi '+set lisp sm ai'" file))
+;;;;
+;;;;
+
+(defun BYE () (EXIT))	; Allegro doesn't have this
 
-; Make Allegro keep definitions when DEFUN compiles.
-;
-(setf *save-definitions* t)
+; Override defaults for better output
+(setf *break-on-errors* t)
+(setf *print-pretty* t)
+(setf *print-circle* nil)
+(setf *read-default-float-format* 'double-float)
+(setf *print-right-margin* 56)
 
-; Make Allegro not generate warning messages when functions are
-; redefined.
-;
-(setf *warn-if-redefine* nil)
-(setf *warn-if-redefine-kernel* nil)
+#+allegro
+(proclaim '(optimize (speed 2) (safety 1) (space 1) (debug 1)))
 
 (defvar *RUN-IN*	nil	"Default :IN argument for RUN function" )
 (defvar *RUN-OUT*	nil	"Default :OUT argument for RUN function" )
@@ -57,8 +71,6 @@
 
 (defvar *RUN-INPUT*	nil	"Current input stream of RUN function" )
 (defvar *RUN-OUTPUT*	nil	"Current output stream of RUN function" )
-
-(defun BYE () (EXIT))	; Allegro doesn't have this
 
 (defun TRANSCRIBE-ERROR (c)
   (typecase
@@ -79,7 +91,7 @@
 	    `(EXPECTED-TYPE ,(type-error-expected-type c))))
    (t
     (list c))))
-
+
 (defun RUN (&key (IN *run-in*) (OUT *run-out*) (PAUSE *run-pause*))
   
   "
@@ -107,9 +119,6 @@
 	(run)
 
   to rerun with the same arguments.
-
-  If the :OUT argument equals T, then the output file is set to the
-  same as the input file with its extension changed to \".out\".
   "
 
   ; Save the arguments.
@@ -130,7 +139,7 @@
   (cond
    ((null (pathname-type in))
     (setf in (make-pathname :type "in" :defaults in))))
-  
+  
   (cond
    ((eq out t)
     (setf out (make-pathname :type "out" :defaults in)))
@@ -149,15 +158,13 @@
    (let ((eof-value (cons nil nil))
 	 (error-tag (cons nil nil))
 	 (*terminal-io* *terminal-io*)
+	 (*query-io* *query-io*)
 	 (*standard-output* *standard-output*)
 	 (*standard-input* *standard-input*)
 	 (*error-output* *error-output*)
 	 (*trace-output* *trace-output*)
 	 (*debug-io* *debug-io*)
-	 (*query-io* *query-io*)
-	 ; Allegro has trouble with nonstandard *error-output*
-	 ; if its allowed to break.
-	 (*break-on-errors* *break-on-errors*)
+	 (*break-enable* T)
 	 (*print-level* 100)
 	 (*print-length* 1000))
 	
@@ -171,48 +178,57 @@
 		(make-echo-stream *run-input* *terminal-io*)))
 	 (out
 
-	  ; Some LISPs do not make these synonym streams for
-	  ; *terminal-io*.
-	  ;
-	  (let ((io (make-echo-stream *run-input* *run-output*)))
-	       (setf *standard-output* io)
-	       (setf *standard-input* io)
-	       (setf *error-output* io)
-	       (setf *trace-output* io)
-	       (setf *debug-io* io))
-	       (setf *break-on-errors* nil)
+	  (setf *terminal-io*
+	        (make-echo-stream *run-input* *run-output*))
+	  (setf *query-io* *terminal-io*)
+	  (setf *standard-input* *terminal-io*)
+	  (setf *standard-output* *terminal-io*)
+	  (setf *debug-output* *terminal-io*)
+	  (setf *trace-output* *terminal-io*)
+	  (setf *error-output* *terminal-io*)
+	  (setf *break-enable* nil)
+	  
 	  ))
-	
+	
 	(do ((s-expression (read nil nil eof-value)
 			   (read nil nil eof-value)))
 	    ((eq s-expression eof-value))
-	    (terpri)
+	    (fresh-line)
 	    (cond
 	     (out
+	      (fresh-line)
 	      (princ '|=>|)
-	      (terpri)
+	      (fresh-line)
+	      (finish-output) ;; In case crash follows.
 	      (catch error-tag
-		     (unwind-protect
-		      (write (eval s-expression) :escape t :pretty t)
-		      (throw error-tag nil))))
+		(unwind-protect
+		    ;(dolist (val (multiple-value-list ; )))
+		    (let ((val (handler-case
+				(eval s-expression)
+				(error (c) (transcribe-error c)))))
+			 (fresh-line)
+			 (write val :escape t))
+		  (throw error-tag nil)))
+	      (finish-output))
 	     (pause
-	      ; Flush out any left over returns.
+					; Flush out any left over returns.
 	      (do ()
 		  ((null (read-char-no-hang *terminal-io*))))
-	      ; Print prompt.
+					; Print prompt.
 	      (princ '|=> ? |)
-	      (force-output)
 	      (let ((line (read-line *terminal-io*)))
-		   (catch error-tag
-			  (unwind-protect
-			   (eval (read-from-string line nil))
-			   (throw error-tag nil))))
-	      (write (eval s-expression) :escape t :pretty t))
+		(catch error-tag
+		  (unwind-protect
+		      (eval (read-from-string line nil))
+		    (throw error-tag nil))))
+	      (dolist (val (multiple-value-list (eval s-expression)))
+		      (write val :escape t :pretty t)))
 	     ((not pause)
 	      (princ '|=>|)
-	      (terpri)
-	      (write (eval s-expression) :escape t :pretty t)))
-	    (terpri)))
+	      (fresh-line)
+	      (dolist (val (multiple-value-list (eval s-expression)))
+		      (write val :escape t :pretty t))))
+	    (fresh-line)))
    
    (cond
     (*run-input* (close *run-input*) (setf *run-input* nil)))
@@ -220,15 +236,14 @@
     (*run-output* (close *run-output*) (setf *run-output* nil))))
   
   '|RUN DONE|)
+
 
 (defvar *VI-FILE*	nil	"Default argument for VI function" )
 (defvar *VIL-FILE*	nil	"Default argument for VIL function" )
 (defvar *VIR-FILE*	nil	"Default first argument for VIR function" )
 (defvar *VIR-OUT*	nil	"Default second argument for VIR function" )
 
-
 (defun INTERNAL-VI (file)
-  
   ; If vi is called on a non-existent file, the command argument
   ; +set lisp showmatch autoindent below has not effect.  So we
   ; create the file if it does not exist first.
@@ -242,8 +257,7 @@
   (run-shell-command
    (concatenate 'string
 		"cd " (EXCL::CURRENT-DIRECTORY-STRING) "; "
-		"vi '+set lisp showmatch autoindent' "
-		file)))
+		"vi '+set lisp sm ai' " file)))
 
 (defun VI (&optional (FILE *VI-FILE*))
   
@@ -270,7 +284,6 @@
 
 (defun VIR (&optional (FILE *VIR-FILE* FILEP)
 		      (OUT (if filep nil *VIR-OUT*)))
-  
   "
   Invokes the vi(1) editor on the given file and when the editor
   terminates, RUNs the file.  If no file is given, the last file
@@ -285,3 +298,57 @@
   (internal-vi *vir-file*)
 
   (run :in *vir-file* :out out))
+
+(defvar *PICO-FILE*	nil	"Default argument for PICO function" )
+(defvar *PICOL-FILE*	nil	"Default argument for PICOL function" )
+(defvar *PICOR-FILE*	nil	"Default first argument for PICOR function" )
+(defvar *PICOR-OUT*	nil	"Default second argument for PICOR function" )
+
+
+(defun INTERNAL-PICO (file)
+  
+  (run-shell-command
+   (concatenate 'string
+		"cd " (EXCL::CURRENT-DIRECTORY-STRING) "; "
+		"pico " file)))
+
+(defun PICO (&optional (FILE *PICO-FILE*))
+  
+  "
+  Invokes the pico(1) editor on the given file.  If no file is given,
+  the last file given as a PICO argument is used.
+  "
+  (setf *pico-file* (string file))
+
+  (internal-pico *pico-file*))
+
+(defun PICOL (&optional (FILE *PICOL-FILE*))
+  
+  "
+  Invokes the pico(1) editor on the given file and when the editor
+  terminates, LOADs the file.  If no file is given, the last file
+  given as a PICOL argument is used.
+  "
+  (setf *picol-file* (string file))
+
+  (internal-pico *picol-file*)
+
+  (load *picol-file*))
+
+(defun PICOR (&optional (FILE *PICOR-FILE* FILEP)
+		      (OUT (if filep nil *PICOR-OUT*)))
+  
+  "
+  Invokes the pico(1) editor on the given file and when the editor
+  terminates, RUNs the file.  If no file is given, the last file
+  given as a PICOR argument is used.  A second argument may be given
+  as the RUN :OUT argument, and it too, if not given, reverts to
+  the last second argument given to PICOR, unless a first argument
+  was given, in which case the second argument defaults to NIL.
+  "
+  (setf *picor-file* (string file))
+  (setf *picor-out* out)
+
+  (internal-pico *picor-file*)
+
+  (run :in *picor-file* :out out))
