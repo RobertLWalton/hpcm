@@ -4,7 +4,7 @@
 #
 # File:		makeoverview
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Dec  6 20:59:36 EST 2000
+# Date:		Sun Dec 10 10:21:19 EST 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/12/07 04:11:21 $
+#   $Date: 2000/12/10 17:11:51 $
 #   $RCSfile: overview,v $
-#   $Revision: 1.6 $
+#   $Revision: 1.7 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -36,8 +36,10 @@ puts "
 	Features
 	Creating a Contest
 	Data and Programs
-	Library Data: Problem Directories
-	Library Data: Help Documentation Files
+	Library Data: Problems
+	Library Data: Help Documentation
+	Library Data: Example Contests
+	Contest Definition Data: The Judging Directory
 
 Features
 --------
@@ -67,7 +69,7 @@ following features:
 
     o Has a library of problems and supports easy semi-
       automated creation of new contests.
-
+
     o Keeps a complete log of everything that happens
       during contests in the form of files that can be
       easily analyzed for different purposes.
@@ -105,7 +107,7 @@ should read the following overview and then read the
 individual program documentation for some of the pro-
 grams used to set up or judge contests.
 
-
+
 Data and Programs
 ---- --- --------
 
@@ -144,9 +146,9 @@ Contest Making Programs
 Maintenance Programs
     Programs run to maintain the library or test the
     HPCM system.
-
-Library Data: Problem Directories
-------- ----- ------- -----------
+
+Library Data: Problems
+------- ----- --------
 
 The problem library consists of the subdirectory tree
 rooted at
@@ -182,7 +184,7 @@ library:
 			    the automatic scoring is
 			    done (e.g., what numeric
 			    tolerances are permitted).
-
+
 A contest has a solutions directory that contains sym-
 bolic links to the library problem directories for every
 problem that can be judged during the contest.  The
@@ -217,7 +219,7 @@ create other files for some languages:
     pppp	    The executable program binary.
     pppp*.class	    JAVA class files.
     pppp.p2c	    C translation of PASCAL program.
-
+
 The solution is written to take input from the standard
 input (the terminal by default) and put output to the
 standard output (also the terminal by default).  The
@@ -230,14 +232,14 @@ the Makefile reads or creates the following files:
     pppp.out	Test output.
     core	Dump of program if it crashes.
 
-Its important to note that the solutions do NOT open any
-files.
+Its important to note that the solution code should NOT
+open any files.
 
 The `make' command in the problem directory makes the
 binary program if that does not exist or it is older
 than the solution source file, and then makes the
 pppp.out file if that does not exist or it is older than
-the binary file.
+the binary file or the .in file.
 
 If a problem directory symbolically linked into a con-
 test solutions directory has pppp.out file, this file
@@ -248,10 +250,23 @@ the solution file and run the `make' command in the
 problem directory to fix the judge's output.  After the
 contest the judge can replace the pppp.test file by
 a copy of the correct pppp.out file.
+
+However, there is a difficulty with running JAVA
+solutions in a library problem directory using `make'.
+The judge's hpcm_sandbox program runs the binary as
+a user named `sandbox' that cannot access the problem
+directory using an absolute pathname.  Unfortunately,
+existing JAVA systems have a bug that causes them to
+convert relative pathnames of .class files into absolute
+pathnames before they are used, so the .class files
+cannot be found by the `sandbox' user.  The fix for this
+currently is to run the progams manually by
+
+	pppp <pppp.in >pppp.out
 
 The `make clean' command in the problem directory de-
 letes all temporary files, including `pppp', `pppp.out',
-and `core'.
+`core', and `.class' files.
 
 The library problem directories are placed within one of
 three subdirectories of the hpcm/problem_library direc-
@@ -272,7 +287,7 @@ tory:
 		borators or other members of your uni-
 		versity, but cannot be placed on the web
 		or be made available to strangers.
-
+
 The problem directories are listed in the
 
 	hpcm/problem_library/index
@@ -282,14 +297,14 @@ to define which problems are to be used in a particular
 contest, and to create an index of these problems.
 
 Emails giving permission to make various problems public
-is in the directory
+are in the directory
 
 	hpcm/problem_library/legal
 
 
 
-Library Data: Help Documentation Files
-------- ----- ---- ------------- -----
+Library Data: Help Documentation
+------- ----- ---- -------------
 
 The help documentation files reside in the subdirectory
 tree rooted at
@@ -301,6 +316,13 @@ topic contestants may need to know about.  For example,
 there is a `help' file on the mechanics of solving a
 problem (what files to write, how to compile, etc.).
 
+The help files have a 56 column times 40 line format
+that permits them to be printed two file pages per
+paper page using a reasonable size font.  The fprint
+program prints these files: the fcheck program checks
+that they have no line longer than 56 columns and no
+page longer than 40 lines.
+
 The subdirectories of `hpcm/contestant/help' are
 as follows:
 
@@ -326,8 +348,8 @@ other subdirectories, e.g. `email/tcl', would be
 created.
 
 
-Library Data: Example Contest Parameter Files
-------- ----- ------- ------- --------- -----
+Library Data: Example Contests
+------- ----- ------- --------
 
 Subdirectories of
 
@@ -335,7 +357,7 @@ Subdirectories of
 
 contain parameter files necessary to set up a specific
 type of contest.  Some of these subdirectories are:
-
+
     email_contest	Example email contest.
 
     informal_contest	Example informal contest.
@@ -353,8 +375,8 @@ ing the files in the `hpcm/examples' subdirectory into
 the judging directory, editing these copies, etc.
 
 
-Contest Definition Data
-------- ---------- ----
+Contest Definition Data: The Judging Directory
+------- ---------- ----- --- ------- ---------
 
 A contest is defined by a collection of directories and
 files, and by a few lines in parameter files that are
@@ -375,7 +397,7 @@ is a security bug in JAVA, surely), so to prohibit out-
 siders from getting into the judge's subdirectory tree
 it is necessary that the judging directory name be un-
 guessable.
-
+
 Fortunately the judge really does not need to use the
 full name of the judging directory except in vary rare
 instances, as `~/judging_cccc_*' or the equivalent

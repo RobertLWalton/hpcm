@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Dec  8 23:48:01 EST 2000
+# Date:		Sun Dec 10 11:49:29 EST 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,11 +11,12 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/12/09 04:58:05 $
+#   $Date: 2000/12/10 17:11:50 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.10 $
+#   $Revision: 1.11 $
 
-all:	scorediff hpcm_sandbox_x hpcm_print_passwords
+all:	scorediff hpcm_sandbox_x hpcm_print_passwords \
+	chkpage
 
 # Kill all implicit rules
 #
@@ -62,6 +63,9 @@ unsecure_hpcm_sandbox_x:
 
 hpcm_print_passwords:
 	ln -s ../../secure/bin/hpcm_print_passwords .
+
+chkpage:	chkpage.c
+	gcc -o chkpage chkpage.c
 
 clean:
 	rm -f scorediff hpcm_sandbox_x \
