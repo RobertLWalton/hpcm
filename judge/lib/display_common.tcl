@@ -2,7 +2,7 @@
 #
 # File:		display_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Aug 25 21:36:24 EDT 2001
+# Date:		Sun Aug 26 09:18:10 EDT 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/08/26 02:39:25 $
+#   $Date: 2001/08/26 13:30:27 $
 #   $RCSfile: display_common.tcl,v $
-#   $Revision: 1.8 $
+#   $Revision: 1.9 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -684,11 +684,15 @@ proc get_file { id } {
         set found ""
 	foreach item $file_list {
 	    set filename [lindex $item 2]
-	    if { [regexp "\\.$id\$" $filename] \
+	    if { ( [regexp {^\.} $id] \
+	    	   && \
+	           [regexp "\\$id\$" $filename] ) \
 	         || \
-		 ( [regexp {^[A-Z]} $id forget] \
+		 ( [regexp {^[A-Z]} $id] \
 		   && \
-		   [regexp "^$id" $filename] ) } { \
+		   [regexp "^$id" $filename] ) \
+		 || \
+		 $id == $filename } { \
 	        lappend found $filename
 	    }
 	}
