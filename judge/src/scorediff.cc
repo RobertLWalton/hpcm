@@ -11,9 +11,9 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: hc3 $
-//   $Date: 2001/07/04 14:18:28 $
+//   $Date: 2001/07/16 10:18:45 $
 //   $RCSfile: scorediff.cc,v $
-//   $Revision: 1.27 $
+//   $Revision: 1.28 $
 
 // This is version 2, a major revision of the first
 // scorediff program.  This version is more explicitly
@@ -195,9 +195,21 @@ char documentation [] =
 "    and L are being matched, and S is shorter than\n"
 "    L, then L is split into a first word of the same\n"
 "    length as S and a second word to be matched to\n"
-"    the token that follows S.  Thus any two words\n"
-"    being matched are forced to have the same\n"
-"    length.\n"
+"    the token that follows S, provided that the\n"
+"    first part of L and the whole of S are equal\n"
+"    except perhaps for case.  If L is so split, and\n"
+"    the remainder of L does not equal the token\n"
+"    following S except perhaps for case, this dif-\n"
+"    ference is reported and then the token after S\n"
+"    is matched to the token after L.  Thus failure\n"
+"    to separate words by space, provided the words\n"
+"    are otherwise correct except perhaps for case,\n"
+"    will be reported as a formatting error, while\n"
+"    failure to have words that are equal except\n"
+"    perhaps for case will be reported as a non-\n"
+"    blank difference with the effects of word split-\n"
+"    ting undone so that subsequent tokens will be\n"
+"    more likely to match correctly.\n"
 "\n"
 "    It is an error if a token longer than 10,100\n"
 "    characters is found, or if a sequence of con-\n"
@@ -213,7 +225,7 @@ char documentation [] =
 "\n"
 "    and is never larger than 2.  If x == y == 0 this\n"
 "    relative difference is taken to be zero.\n"
-"\n"
+"\f\n"
 "    Numbers that match exactly, character by charac-\n"
 "    ter, do not produce any difference indication.\n"
 "    Numbers that match exactly except for the case\n"
@@ -227,7 +239,7 @@ char documentation [] =
 "\n"
 "    For the purpose of computing the column of a\n"
 "    character, tabs are set every 8 columns.\n"
-"\f\n"
+"\n"
 "    Note that if the two matching numbers have expo-\n"
 "    nents and the letter case of the `e' or `E' in\n"
 "    the two exponents does not match, then the diff-\n"
@@ -253,7 +265,7 @@ char documentation [] =
 "                    output-line-number\n"
 "                    test-line-number\n"
 "                    token-proof token-proof*\n"
-"\n"
+"\f\n"
 "          token-proof ::=\n"
 "                    output-token-end-column\n"
 "                    test-token-end-column\n"
@@ -265,7 +277,7 @@ char documentation [] =
 "                              relative-difference |\n"
 "                    `float'   absolute-difference\n"
 "                              relative-difference\n"
-"\f\n"
+"\n"
 "          absolute-difference ::=\n"
 "                    floating-point-number\n"
 "\n"
@@ -286,6 +298,13 @@ char documentation [] =
 "    lines.  Each line-proof is output on a line by\n"
 "    itself.\n"
 "\n"
+"    Note that the token column numbers reported for\n"
+"    differences in the whitespace preceeding tokens\n"
+"    are for tokens before any word splitting (see\n"
+"    above), except for the spacebreak and linebreak\n"
+"    differences whose column numbers may be for\n"
+"    tokens after word splitting.\n"
+"\f\n"
 "    There is a limit for each difference type to the\n"
 "    number of proofs of that type that will be out-\n"
 "    put.  Specifically, if the limit is N for diff-\n"
@@ -305,7 +324,7 @@ char documentation [] =
 "    argument must NOT begin with a digit).  Thus\n"
 "    `-case' with no following number suppresses all\n"
 "    `case' proofs.\n"
-"\f\n"
+"\n"
 "    The `-float' and `-integer' program options\n"
 "    differ in that they have the forms:\n"
 "\n"
@@ -319,7 +338,7 @@ char documentation [] =
 "    erences may be omitted if they are zero and the\n"
 "    program argument following them does NOT begin\n"
 "    with a digit or decimal point.\n"
-"\n"
+"\f\n"
 "    If N is the limit on the number of line-proofs\n"
 "    containing a `nonblank' proof, then after the\n"
 "    last of these N line-proofs is finished, this\n"
@@ -355,6 +374,8 @@ struct file
     			// the last character of the
 			// the current token.  The first
 			// column is 0.
+    bool remainder;	// True iff token is a remainder
+    			// from a split token.
 
     double number;	// For a number token, the
     			// value of the number.
@@ -443,6 +464,7 @@ int open ( file & f, char * filename )
     f.line		= 0;
     f.type		= WORD_TOKEN;
     f.whitespace[0]	= 0;
+    f.remainder		= false;
 
     f.remainder_length	= 0;
 }
@@ -501,9 +523,12 @@ void scan_token ( file & f )
 
 	f.whitespace[0]		= 0;
 	f.newlines		= 0;
+	f.remainder		= true;
 
 	return;
     }
+
+    f.remainder = false;
 
     int c = get_character ( f );
     int column = f.column + 1;
@@ -771,6 +796,20 @@ void split_word ( file & f, int n )
     f.column -= f.remainder_length;
 }
 
+// Undo a token split.  Does nothing if file
+// token is not split.
+//
+void undo_split ( file & f )
+{
+    if ( f.remainder_length != 0 )
+    {
+    	f.token[f.length] = f.remainder_c;
+	f.length += f.remainder_length;
+	f.column += f.remainder_length;
+	f.remainder_length = 0;
+    }
+}
+
 // Possible difference types.
 //
 enum difference_type {
@@ -1015,15 +1054,18 @@ inline void found_difference
 // difference(NONBLANK) instead.  This happens if one of
 // the numbers is not `finite' or their difference is
 // not `finite'.
+//
+// Returns true if found_difference(NONBLANK) was called
+// and false otherwise.
 // 
-void diffnumber ()
+bool diffnumber ()
 {
     if ( ! finite ( output.number )
 	 ||
 	 ! finite ( test.number ) )
     {
 	found_difference ( NONBLANK );
-	return;
+	return true;
     }
 
     double absdiff =
@@ -1031,7 +1073,7 @@ void diffnumber ()
     if ( ! finite ( absdiff ) )
     {
 	found_difference ( NONBLANK );
-	return;
+	return true;
     }
     if ( absdiff < 0 ) absdiff = - absdiff;
 
@@ -1053,7 +1095,7 @@ void diffnumber ()
         // Actually, this should never happen.
 
 	found_difference ( NONBLANK );
-	return;
+	return true;
     }
 
     if (    output.decimals >= 0
@@ -1094,6 +1136,8 @@ void diffnumber ()
 
     if ( oc != tc )
     	found_difference ( SIGN );
+
+    return false;
 }
 
 // Main program.
@@ -1193,13 +1237,38 @@ int main ( int argc, char ** argv )
     bool done		= false;
     difference & nb	= differences[NONBLANK];
 
+    bool last_match_was_nonblank_diff	= false;
+
     while ( ! done )
     {
 
 	// Scan next tokens.
 	//
-	scan_token ( output );
-	scan_token ( test );
+	if ( last_match_was_nonblank_diff
+	     && ( output.remainder || test.remainder ) )
+	{
+	    // If the last two tokens had a nonblank
+	    // diff and one was a remainder, undo any
+	    // splits and discard only the remainder,
+	    // leaving the other token for the next
+	    // match.
+
+	    undo_split ( output );
+	    undo_split ( test );
+
+	    assert (    ! output.remainder
+	    	     || ! test.remainder );
+
+	    if ( output.remainder )
+		scan_token ( output );
+	    else
+		scan_token ( test );
+	}
+	else
+	{
+	    scan_token ( output );
+	    scan_token ( test );
+	}
 
 	// Terminate loop if we have output the last
 	// nonblank containing proof line.
@@ -1223,21 +1292,6 @@ int main ( int argc, char ** argv )
 	       ||
 	       nb.last_test_line != test.line ) )
 	    break;
-
-	// If both tokens are words and one is longer
-	// than the other, split the longer word.  This
-	// must be done before whitespace checks to get
-	// consistent column numbers in difference
-	// proofs.
-
-	if (    output.type == WORD_TOKEN
-	     && test.type   == WORD_TOKEN )
-	{
-	    if ( output.length < test.length )
-		split_word ( test, output.length );
-	    else if ( test.length < output.length )
-		split_word ( output, test.length );
-	}
 
         // Terminate loop if just one file has an
 	// EOF_TOKEN.
@@ -1323,6 +1377,7 @@ int main ( int argc, char ** argv )
         
 	// Compare tokens.
 	//
+	last_match_was_nonblank_diff = false;
         switch ( output.type ) {
 
 	case EOF_TOKEN:
@@ -1338,11 +1393,22 @@ int main ( int argc, char ** argv )
 	    if ( output.type != test.type )
 	    {
 		found_difference ( NONBLANK );
+		last_match_was_nonblank_diff = true;
 		break;
 	    }
 
-	    if ( output.column != test.column )
-	        found_difference ( COLUMN );
+	    // If both tokens are words and one is
+	    // longer than the other, split the longer
+	    // word.  If we get a non-blank diff, we
+	    // will undo the split.
+
+	    if ( output.type == WORD_TOKEN )
+	    {
+		if ( output.length < test.length )
+		    split_word ( test, output.length );
+		else if ( test.length < output.length )
+		    split_word ( output, test.length );
+	    }
 
 	    char * tp1 = output.token;
 	    char * tp2 = test.token;
@@ -1365,6 +1431,9 @@ int main ( int argc, char ** argv )
 	    {
 	        assert ( * tp1 == 0 );
 
+		if ( output.column != test.column )
+		    found_difference ( COLUMN );
+
 		if ( token_case )
 		    found_difference
 		        ( output.type != NUMBER_TOKEN ?
@@ -1373,13 +1442,24 @@ int main ( int argc, char ** argv )
 
 	    else if ( output.type == NUMBER_TOKEN )
 	    {
+		if ( output.column != test.column )
+		    found_difference ( COLUMN );
+
 	        assert ( test.type == NUMBER_TOKEN );
-		diffnumber ();
+		last_match_was_nonblank_diff
+		    = diffnumber ();
 	    }
 
 	    else
 	    {
+	    	undo_split ( test );
+	    	undo_split ( output );
+
+		if ( output.column != test.column )
+		    found_difference ( COLUMN );
+
 		found_difference ( NONBLANK );
+		last_match_was_nonblank_diff = true;
 	    }
 
 	    break;
