@@ -4,7 +4,7 @@
 #
 # File:		overview
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Jan  6 07:22:55 EST 2001
+# Date:		Mon Jan  8 16:53:55 EST 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/01/08 13:59:41 $
+#   $Date: 2001/01/09 03:31:54 $
 #   $RCSfile: overview,v $
-#   $Revision: 1.17 $
+#   $Revision: 1.18 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -46,7 +46,13 @@ puts "
 	Contest Definition Data: The Home Directory
 	Contest Definition Data: Contestant Accounts
 	Contest Definition Data: Auxilary Files
-	Contest Raw Data: The Judging Directory
+	Contest Definition Data: Security
+	Contest Raw Data: Directories
+	Contest Raw Data: Submissions
+	Contest Raw Data: Get Requests
+	Contest Raw Data: Queries
+	Contest Derived Data: Status Files
+	Contest Derived Data: Scoreboard Files
 
 Features
 --------
@@ -573,13 +579,14 @@ are:
 
     TODO
     	When `makejudingdir' runs, it appends instruc-
-	tions to its user to the end of this file.  A
-	typical instruction is `edit ./contest/secure/
-	passwords'.
+	tions to its user to the end of this file.
+	Typical instructions are `edit ./contest/secure/
+	passwords' and `put the following lines in
+	the judge's procmailrc file: ...'.
 
 In addition to these files which are used by HPCM
-programs, there are typically a few other files that
-are not used by HPCM programs themselves.  These are:
+programs, there is typically one other file that is not
+used by HPCM programs themselves.  This is:
 
     Makefile
         The instructions to the UNIX `make' program so
@@ -592,18 +599,6 @@ are not used by HPCM programs themselves.  These are:
 	must be done `by hand'.
 
 	See hpcm/examples/*/Makefile for examples.
-
-    crontab
-        The UNIX crontab file for the judging account,
-	or the part thereof that concerns this contest.
-	This is used by contests that use `sendscore-
-	board' to periodically email the scoreboard to
-	another place (where it is typically displayed
-	on the web).  Usually only email contests do
-	this.
-
-	See hpcm/examples/email_contest/crontab for
-	an example.
 
 
 Contest Definition Data: The Contest Directory
@@ -1155,28 +1150,196 @@ HPCM has the following security goals:
    input, since that is provided to the program
    during judging.
 
-   TBW
+   However, any contestant program that sends informa-
+   tion to the outside world will itself be captured
+   and held in the judging account, serving as damning
+   evidence if it is discovered.  Thus any contestant
+   who wrote such a program would be risking for a very
+   long time, up until the judge's decide to discard
+   information collected during the contest.
 
 
 
+Contest Raw Data: Directories
+------- --- ----- -----------
 
-Contest Raw Data: The Judging Directory
-------- --- ----- --- ------- ---------
+The raw data of the contest consists of submissions and
+requests and the results of processing these.  Each
+submission or request is an email message that is placed
+in a separate directory by itself.  The system then
+works in that directory to develop information, such
+as the binary program created by compiling a submission,
+the output of running this program on the judge's input
+data, and score automatically assigned to the submis-
+sion, and any score later manually assigned to the sub-
+mission.  All of this information is considered to be
+`raw data'.
 
-The contents of the judging directory are:
+In general, contest raw data is only created and never
+destroyed.  Thus it provides both information about the
+state of the contest and an audit trail telling what
+happened during the contest.
 
-    mail
-        The mail directory for the contest.  This con-
-	tains submissions and requests, each in its own
-	subdirectory, with the names of these subdirec-
-	tories including the time of the submission or
-	request and email address of the submitter or
-	requester.
+Raw data is stored in the following directories:
 
-    log
-        The log directory of the contest.  Errors that
-	are not particular to one submission or request
-	are placed here, each in their own file.
+    mail_directory
+        Normally the `mail' subdirectory of the judging
+	directory.
+
+	The mail directory contains a separate subdirec-
+	tory for each piece of email sent to the judge.
+
+    mail_directory/DATE-<<SUBMITTER>>-submission
+        This is a directory holding an email sent to the
+	judge by the SUBMITTER at a time indicated by
+	the DATE.  A specific example of the last
+	name component of the directory is:
+
+	2000-12-10-06:30:49-<<hpcm-t@method>>-submission
+
+	The SUBMITTER is normally the return email
+	address of the email message sent to the judge,
+	but may be editted to remove spaces and alter
+	some special characters.  It is not used per se
+	as an email address by HPCM.  The part before
+	any `@' may be used as a contestant name by
+	the scoreboard software.
+
+	Note that the DATE gives a time in seconds, and
+	is organized so that submissions with later
+	times sort alphanumerically later.
+
+	Because the DATE component is in seconds, there
+	cannot be more than one submission per second
+	from the same SUBMITTER.  Any submission but the
+	first will find that the directory it is
+	supposed to create already exists, and therefore
+	all submissions but the first with the same DATE
+	will be ignored.
+
+	As a consequence, programs like hpcm_get that
+	send email to the judge pause for at least a
+	second after sending each separate piece of
+	email.
+
+	The following are files that can exist in this
+	directory regardless of the kind of email that
+	created the directory.
+
+
+	    $received_file
+		This is a read-only file that holds the
+		piece of email sent to the judge which
+		caused this directory to be created.
+
+	    $reply_file
+	        This is the final reply email sent by
+		the judge concerning this directory.
+		Thus the presence of this file indicates
+		that the judge is done with this direc-
+		tory.
+
+		The judge can also send none-final email
+		replies, which are not stored in this
+		file.
+
+	    $no_reply_file
+	    	This file is created by the judge to in-
+		dicate the judge is done with this di-
+		rectory, but does not intend to create
+		a $reply_file file.  Typically this is
+		just a one line file containing a
+		reason why the judge feels no email
+		reply is needed.   The `lookat' program
+		can revisit directories containing a
+		$no_reply_file file whose contents match
+		some given regular expression; so the
+		contents of this file can serve as a
+		marker to find this directory later.
+
+		When the judge is done with this
+		directory, either the $reply_file file
+		or $no_reply_file file must exist.
+
+	    $reply_history_file
+	        This file is a log of ALL email replies
+		sent by the judge for this directory.
+
+	    DATE-RANDOM-<<PROGRAM>>-unchecked-error
+	    	This `error log' file describes a system
+		error that occurred processing this di-
+		rectory.  Of course, system errors are
+		not supposed to happen, but if they do,
+		this file containing all the available
+		information about the error is created.
+
+	    DATE-RANDOM-<<PROGRAM>>-checked-error
+	        This is an `unchecked-error' file which
+		has been read and `checked' by the
+		judge.  An error file is `checked' by
+		changing the `unchecked' in its name to
+		`checked'.
+
+		The `tracker' program searches for
+		unchecked error log files and calls
+		the judge's attention to them.  Checked
+		error log files are ignored by
+		`tracker'.
+
+	    DATE-RANDOM-<<PROGRAM>>-unchecked-error.mail
+	    DATE-RANDOM-<<PROGRAM>>-checked-error.mail
+	        An error log file may be emailed to a
+		`log_manager' when it is created.  If
+		this is done, a companion .mail file is
+		created containing the email message.
+		This fils is `checked' when its assoc-
+		iated error log file is `checked'.
+
+	There are three kinds of email that may be sent
+	to the judge: solution submissions, get re-
+	quests, and queries (i.e., email that is not one
+	of the first two kinds).  Information specific
+	to each of these kinds of email is described
+	below.
+
+    log_directory
+        Normally the `log' subdirectory of the judging
+	directory.
+
+        Errors that are not particular to one submission
+	or request are placed here, each in their own
+	file with the same name structure (including
+	`checking') as errors put in submission direc-
+	tories.
+
+    ~/HPCM_Error_Log
+        This is an emergency error log directory for
+	use only if the log_directory cannot be found,
+	cannot be created, or is not writable.
+
+
+Contest Raw Data: Submissions
+------- --- ----- -----------
+
+Any email sent to the judge may be called a `submis-
+sion', but more particularly a `submission' is an email
+with a subject of the form `submit FILENAME' and a body
+containing the named file.  Such an email is interpreted
+as submission of a single file that contains the solu-
+tion of a problem.
+
+TBW
+
+Contest Raw Data: Get Requests
+------- --- ----- --- --------
+
+
+Contest Raw Data: Queries
+------- --- ----- -------
+
+
+Contest Derived Data: Status Files
+------- ------- ----- ------ -----
 
     flag
         The flag directory of the contest.  Flag files
@@ -1210,8 +1373,9 @@ The contents of the judging directory are:
 	`-stop' options.
 
 
-Contest Raw Data: The Submission Directories
-------- --- ----- --- ---------- -----------
+Contest Derived Data: Scoreboard Files
+------- ------- ----- ---------- -----
+
 
 
 
