@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Oct 22 22:53:52 EDT 2001
+# Date:		Wed Oct 24 12:13:17 EDT 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/10/23 02:53:26 $
+#   $Date: 2001/10/24 16:13:30 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.74 $
+#   $Revision: 1.75 $
 #
 
 # An optionally modified copy of this file must be
@@ -34,32 +34,55 @@
 # Scoreboard Parameters.
 #
 
-# Contest start and stop times.
+# Contest start, stop, and freeze times.
 #
-# If the start_time is "", the time a problem is
-# gotten is used as the start time for that problem.
-# If the start_time equals "team", the time the team
-# got its first problem listed in the scoreboard is
-# the start time for all problems for that team.
+# The start and stop times are used in actually com-
+# puting the scoreboard proper (by the `scoreboard'
+# program, as follows.
 #
 # If the start time is not "" or "team", all submis-
-# sions and problem gettings before that time are
-# ignored.  If the stop time is not "", all submissions
-# after that stop time are ignored.
+# sions and problem gettings before the given start time
+# are ignored.  If the start time is "", the time a
+# problem is gotten is used as the start time for that
+# problem.  If the start time equals "team", the time
+# the team got its first problem listed in the score-
+# board is the start time for all problems for that
+# team.  If the time problems were gotten cannot be
+# determined, as in a formal contest, problem start
+# times are undetermined if the start time is "" or
+# "team".
+#
+# If the stop time is not "", all submissions after the
+# given stop time are ignored.
+#
+# The freeze time is only used as a parameter in score-
+# board instructions used by the `makescoreboard' pro-
+# gram, and is usually used only for formal contests.
 #
 # The default values are for scoreboarding a practice
 # facility that operates 24 hours a day, every day.
 #
 set scoreboard_start_time ""
-#   [clock scan "Jan 1 00:00:00 EDT 2000"]
+#   [clock scan "Jan 1 10:00:00 EDT 2000"]
+#
+set scoreboard_freeze_time ""
+#   [clock scan "Jan 1 14:00:00 EDT 2000"]
 #
 set scoreboard_stop_time ""
-#   [clock scan "Jan 1 00:00:00 EDT 2030"]
+#   [clock scan "Jan 1 15:00:00 EDT 2000"]
 
-# The start_time and penalty are used to compute the
-# time score: penalty is the number of SECONDS of
-# penalty for an incorrect submission for a problem
-# later gotten correct.
+# Scoreboard name.  Typically just the name of the
+# contest.
+#
+set scoreboard_name ""
+
+# The start time and correct submission time of a pro-
+# blem, and the penalty of the contest, are used to com-
+# pute the problem time.  The penalty is the number of
+# SECONDS added to the problem time for each incorrect
+# submission for the problem prior to the first correct
+# submission for the problem.  It only affects the time
+# of a problem that was submitted correctly.
 #
 set scoreboard_penalty 0
 
@@ -139,14 +162,17 @@ set scoreboard_interval 60
 #	    { scoreboard_instruction* }
 #
 #	scoreboard_instruction ::=
-#	      { OUTPUT filename }
+#	      { OUTPUT filename [start [stop]] }
 #	    | BLANK
 #	    | BAR
 #           | { LINE left-text [center-text
 #                                   [right-text]] }
-#	    | { INPUT filename }
+#	    | { INPUT filename ... }
 #	    | { parameter_name value }
 #	    | BOARD
+#
+#	start ::= "<a date and time>"
+#	stop  ::= "<a date and time>"
 #
 #	parameter_name ::=
 #	    <any XXX such that `scoreboard_XXX' is a
@@ -155,24 +181,34 @@ set scoreboard_interval 60
 #
 # The scoreboard instructions do the following:
 #
-#     { OUTPUT filename }  Set the output file name.
+#     { OUTPUT filename [start [stop] }
+#			   Set the output file name.
+#			   See below for start and stop.
+#
 #     BLANK		   Include a blank line.
+#
 #     BAR		   Include a ===== bar line.
-#     { INPUT filename }   Include a copy of a file.
+#
+#     { INPUT filename ... }
+#			   Include a copy of a first
+#			   readable file in the list of
+#			   files.  Do nothing of no
+#			   listed file is readable.
+#
 #     { LINE left-text [center-text [right-text]] }
 #			   Include a line that has
 #			   left-text left justified,
 #			   center-text centered, and
 #			   right-text right justified.
-#			   If any -text is DATE, it is
-#			   replaced by the current date.
 #			   The right-text or both the
 #			   center- and right- texts can
 #			   be omitted.
+#
 #     { parameter_name value }
 #			Set the named parameter to the
 #			given value for the purposes of
 #			computing a board.
+#
 #     BOARD		Include a scoreboard computed
 #			with the previous parameters.
 #
@@ -185,11 +221,37 @@ set scoreboard_interval 60
 # width' parameter is used to right justify text and
 # produce the ===== BAR lines.
 #
+# If a non "" start time is given in an OUTPUT instruc-
+# tion, that output will not be produced until after
+# the given start time.  If a non "" stop time is given,
+# in an OUTPUT instruction, that output will not be pro-
+# duced if it already exists and has a modification time
+# equal to or greater than the stop time.  Setting the
+# start and stop times equal will produced an output
+# just once after the given time.
+#
+# The start and stop times of an OUTPUT command, the
+# values of a parameter, and the texts of a LINE com-
+# mand can be the special abbreviations TIME, START,
+# STOP, FREEZE, and NAME.  TIME is the time when the
+# `makescoreboard' program starts executing the score-
+# board instructions.  The other abbreviates are the
+# values of the `scoreboard_start_time', `scoreboard_
+# stop_time', `scoreboard_freeze_time', and `scoreboard_
+# name' global variables just before the scoreboard
+# instructions are executed, and after any arguments to
+# `makescoreboard' have been processed.
+#
+# Note that parameter setting instructions are always
+# executed even if the last OUTPUT instruction is not
+# active because of any reason (start or stop time or
+# output being already more recent than inputs).
+#
 # Standard scoreboard instructions for an email contest:
 #
-set scoreboard_instructions {
+set email_scoreboard_instructions {
     { OUTPUT scoreboard.mail }
-    { LINE "See notes below." "" DATE }
+    { LINE "See notes below." NAME TIME }
     BLANK
     BAR
     BOARD
@@ -197,21 +259,70 @@ set scoreboard_instructions {
     BLANK
     { INPUT scoreboard.notes }
 }
-#
-# Standard scoreboard instructions for an informal or
-# formal contest:
-#
-# set scoreboard_instructions {
-#     { OUTPUT contest/scoreboard.1 }
-#     { LINE contest-name "" DATE }
-#     BLANK
-#     { INPUT contest/scoreboard.1head }
-#     BLANK
-#     BAR
-#     BOARD
-#     BAR
-# }
+# Standard scoreboard instructions for an informal
+# contest:
+set informal_scoreboard_instructions {
+    { OUTPUT contest/scoreboard.1 }
+    { LINE NAME "" TIME }
+    BLANK
+    { INPUT contest/scoreboard.1head }
+    BLANK
+    BAR
+    BOARD
+    BAR
+}
+# Standard scoreboard instructions for a formal
+# contest:
+set formal_scoreboard_instructions {
 
+    { OUTPUT contest/scoreboard.freeze FREEZE FREEZE }
+
+    BLANK
+    { LINE "To heighten suspense, scoreboard updating\
+            has been stopped as of:" }
+    { LINE "" FREEZE "" }
+    { LINE "You will be given a copy of the final\
+            scoreboard after winners have been" }
+    { LINE "announced at the post contest meeting." }
+
+    { OUTPUT contest/scoreboard.public START FREEZE }
+    { stop_time FREEZE }
+    BOARD
+
+    { OUTPUT contest/scoreboard.1 }
+
+    { LINE NAME "Public Scoreboard" TIME }
+    { INPUT contest/scoreboard.freeze }
+    BLANK
+    { INPUT contest/scoreboard.1head }
+    BLANK
+    BAR
+    { INPUT contest/scoreboard.public }
+    BAR
+
+    { OUTPUT contest/scoreboard.current FREEZE STOP }
+
+    { LINE NAME "Current Scoreboard" TIME }
+    BLANK
+    BAR
+    { stop_time STOP }
+    BOARD
+    BAR
+    { INPUT contest/who_where }
+    BAR
+
+    { OUTPUT contest/scoreboard.final STOP STOP }
+
+    { LINE NAME "Final Results" "" STOP }
+    BLANK
+    BAR
+    { stop_time STOP }
+    BOARD
+    BAR
+    { INPUT contest/who_where }
+    BAR
+}
+set scoreboard_instructions $email_scoreboard_instructions
 
 # End of scoreboard parameters.
 
