@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Jan 12 21:43:18 EST 2001
+# Date:		Sat Jun 30 10:13:42 EDT 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/01/13 03:31:38 $
+#   $Date: 2001/06/30 14:50:21 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.6 $
+#   $Revision: 1.7 $
 
 # To make a formal contest named `foo':
 #
@@ -334,4 +334,11 @@ print_demos:
 	fprint contest/demos/*/*
 
 print_problems:
-	fprint solutions/*/*.txt
+	@for x in solutions/*/*; \
+	    do case "$$x" in \
+	    *.txt) echo fprint $$x; fprint $$x;; \
+	    *.ps)  echo lpr $$x; lpr $$x;; \
+	    *.html | *.htm) \
+	           echo YOU MUST use a browser \
+			to print $$x by hand;; \
+	    esac; done
