@@ -4,7 +4,7 @@
 #
 # File:		extractmail
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Jan  9 09:16:13 EST 2002
+# Date:		Tue Feb  5 05:45:16 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/01/09 14:22:34 $
+#   $Date: 2002/02/05 11:31:17 $
 #   $RCSfile: extractmail,v $
-#   $Revision: 1.36 $
+#   $Revision: 1.37 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -114,14 +114,14 @@ cd submission_directory; extractmail
     base name `PROBLEM' that is replaced by the problem
     name taken from the $received_file' file `Subject:'
     field, and if the file name has the extension
-    `EXTENSION' that is replaced by the extension taken
+    `.EXTENSION' that is replaced by the extension taken
     from the same place.  If there is no `$files_file'\
         file,
     there is exactly one required submitted file whose
     name is the `problem.extension' in the submission
-    `Subject:' field.  This case is therefore as if the
-    `$files_file' file had the value\
-    	`PROBLEM.EXTENSION'.
+    `Subject:' field, as if there were a `$files_file'\
+    	file
+    with the value `PROBLEM.EXTENSION'.
 
     Submitted files may be encoded in the body of the
     message in the format:
@@ -212,18 +212,9 @@ read_header $received_ch
 
 # Check for legality of subject line:
 #
-if { [catch { llength $message_subject }] } {
-    extract_error \
-	"ERROR: Badly formatted subject field:\
-	 $message_subject"
-} elseif { [llength $message_subject] == 0 } {
-    extract_error \
-        "ERROR: Missing or empty `Subject:' field"
-} elseif { [lindex $message_subject 0] != "submit" } {
-    extract_error \
-	"ERROR: Badly formatted subject field:\
-	 $message_subject"
-} elseif { [llength $message_subject] != 2 } {
+if { [catch { set len [llength $message_subject] }] \
+     || $len != 2 \
+     || [lindex $message_subject 0] != "submit" } {
     extract_error \
 	"ERROR: Badly formatted subject field:\
 	 $message_subject"
@@ -254,8 +245,9 @@ if { $problem == "" } {
 if { $extension != "" \
      && ! [lcontain $allowed_extensions $extension] } {
     extract_error \
-	"ERROR: disallowed extension in\
-	 `Subject: $message_subject'"
+	"ERROR: disallowed extension (should be one of\
+	 $allowed_extensions) in `Subject:\
+	 $message_subject'"
 }
 
 # Compute the list of submittable files.
@@ -271,8 +263,8 @@ if { [file exists $files_file] } {
 } else {
     if { $extension == "" } {
         extract_error \
-	    "ERROR: Bad filename in `Subject:\
-	     $message_subject' (no extension)"
+	    "ERROR: No extension in `Subject:\
+	     $message_subject'"
     }
     set filelist [list $filename]
 }
@@ -304,9 +296,9 @@ foreach item $filelist {
 		    if { $extension == "" } {
 			extract_error \
 			    "ERROR: No extension given\
-			     in `Subject:\
-			     $message_subject'\
-			     (extension is required)"
+			     where one is required in\
+			     `Subject:\
+			     $message_subject'"
 		    }
 		    set ext $extension
 		}
@@ -433,14 +425,29 @@ proc read_non_blank_line {} {
 }
 
 # Close file.  Does nothing if `file_ch' is "".
+#
 # Otherwise closes `file_ch', sets `cleanup_filename'
 # to "", and writes `Extracted $filename' to standard
-# output.
+# output.  Also, if mode == "read", reads one more
+# line from file_ch and if not an eof, announces a
+# mismatch.
 #
 proc close_file { filename } {
-    global file_ch cleanup_filename
+
+    global file_ch cleanup_filename mode
 
     if { $file_ch == "" } return
+
+    if { $mode == "read" } {
+
+	set file_line [gets $file_ch]
+
+	if { ! [eof $file_ch] } {
+	    puts "Mismatch $filename\n\
+		  old: $file_line\n\
+		  new: END OF FILE
+	}
+    }
 
     close $file_ch
     set cleanup_filename ""
@@ -519,6 +526,9 @@ if { [regexp {^HPCM_BEGIN} $line] } {
 	    }
 	}
 
+	# After HPCM_END found, close file in current
+	# directory.
+	#
 	close_file $filename
 
 	# Look for next non-blank line.
@@ -538,7 +548,9 @@ if { [regexp {^HPCM_BEGIN} $line] } {
     }
 
     # Input is unformatted.  Loop through blocks of
-    # non-blank lines in message.
+    # non-blank lines in message.  Mode is "none"
+    # before any file, and is thereafter "write",
+    # "read", or "skip".
     #
     set file_ch ""
     set mode none
@@ -581,6 +593,11 @@ if { [regexp {^HPCM_BEGIN} $line] } {
 	    if { [eof $received_ch] } break
 	}
 
+	# If no filename found and no previous file
+	# started, set the filename if there is only one
+	# allowed file to that allowed file, or signal
+	# an error.
+	#
 	if { $mode == "none" && $filename == "" } {
 	    set filenames [array names filename_array]
 	    if { [llength $filenames] == 1 } {
@@ -595,6 +612,14 @@ if { [regexp {^HPCM_BEGIN} $line] } {
 	    }
 	}
 
+	# If a filename found, end any previous file.
+	# Then set mode to "skip" if filename is ambigu-
+	# ous; otherwise open file in current directory.
+	#
+	# If filename not found, add non-blank lines
+	# found to the end of previously found blank
+	# lines.
+	#
 	if { $filename != "" } {
 	    if { $mode != "none" } {
 	        close_file $opened_filename
@@ -610,18 +635,22 @@ if { [regexp {^HPCM_BEGIN} $line] } {
 	    set lines [concat $blank_lines $lines]
 	}
 
+	# Process accumulated lines according to mode.
+	#
 	switch $mode {
 	    read {
-	        foreach line $lines {
+	        foreach real_line $lines {
 		    set file_line [gets $file_ch]
 		    if { [eof $file_ch] } {
-			puts "Mismatch $filename\n\
+			puts "Mismatch\
+			      $opened_filename\n\
 			      old: END OF FILE\n\
 			      new: $real_line"
 			set mode skip
 		    } elseif { $file_line \
 		    		   != $real_line } {
-			puts "Mismatch $filename\n\
+			puts "Mismatch\
+			      $opened_filename\n\
 			      old: $file_line\n\
 			      new: $real_line"
 			set mode skip
@@ -645,6 +674,10 @@ if { [regexp {^HPCM_BEGIN} $line] } {
 	    if { [regexp $NWS $line] } break
 	}
 
+	# If eof encountered, close any open file in the
+	# current directory and end loop processing
+	# received message.
+	#
 	if { [eof $received_ch] } {
 	    if { $mode != "none" } {
 	        close_file $opened_filename
