@@ -5,7 +5,7 @@
 #
 # File:		manualreply
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Sep 21 11:23:18 EDT 2000
+# Date:		Fri Sep 22 07:57:59 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/09/21 20:34:37 $
+#   $Date: 2000/09/22 12:11:41 $
 #   $RCSfile: manualreply,v $
-#   $Revision: 1.8 $
+#   $Revision: 1.9 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -97,7 +97,7 @@ proc display_window {} {
     set i $window_info
     set e $window_error
     set p $window_prompt
-    puts -nonewline "$b\n$d\n$i\n\n$e\n\n$p"
+    puts -nonewline "$b\n$d\n$i\n\n$e\n$p"
     flush stdout
 }
 
@@ -151,6 +151,12 @@ proc bar_with_text { text } {
 proc set_file_display { filename } {
 
     global window_display_height last_display
+
+    if { ! [file readable $filename] } {
+	refresh_file_list
+    	set_file_list_display
+	return
+    }
 
     set height [expr { $window_display_height - 2 }]
     set display [bar_with_text "$filename:"]
@@ -432,6 +438,172 @@ proc out_check { out } {
     continue?
 }
 
+# Lock current directory with $dispatch_pid_file.  If
+# $dispatch_pid_file already exists, let our user
+# take corrective action.
+#
+proc get_lock {} {
+
+    global dispatch_pid_file window_error window_bar \
+    	   window_prompt
+
+
+    while { "yes" } {
+
+	if { [dispatch_lock] == "yes" } break
+
+	set time [expr { [clock seconds] - \
+			 [file mtime \
+			       $dispatch_pid_file] }]
+
+	if { ! [catch {
+		   set pgid \
+		       [read_file \
+			   $dispatch_pid_file] }] } {
+	    set group_display \
+		[display_process_group $pgid]
+	    set group_display \
+		"Process Group Tree:\n\n$group_display"
+	    set window_error ""
+	    set b $window_bar
+	    set_window_display "$b\n$group_display\n$b"
+	} else {
+	    refresh_file_list
+	    set_file_list_display
+	    set window_error \
+		"ERROR: cannot read $dispatch_pid_file"
+	}
+
+	set_window_info "
+$dispatch_pid_file file exists and is $time seconds old.
+Maybe `autodispatch' or another `manualreply' is running.
+
+u = update above info		d = delete\
+				    $dispatch_pid_file
+k = kill -INT process group	x = exit this program
+m = kill -KILL process group"
+
+	set window_prompt "> "
+
+	while { "yes" } {
+	
+	    display_window
+
+	    set answer [string trim [gets stdin]]
+	    set window_error ""
+	    switch -- $answer {
+		u   {   break
+		    }
+		k   {   catch {
+			    signal_process_group INT \
+				[read_file \
+				    $dispatch_pid_file]
+			} out
+			out_check $out
+			break
+		    }
+		m   {   catch {
+			    signal_process_group KILL \
+				[read_file \
+				    $dispatch_pid_file]
+			} out
+			out_check $out
+			break
+		    }
+		d   {   file delete -force \
+				    $dispatch_pid_file
+			break
+		    }
+		x   {
+			exit_cleanup
+			exit 0
+		    }
+		""   {   if { [eof stdin] } {
+			    exit_cleanup
+			    exit 0
+			} else {
+			    set window_error \
+				"ERROR: empty input"
+			}
+		    }
+		default
+		    {
+			set window_error \
+			    "ERROR: unknown\
+			     answer `$answer'!"
+		    }
+	    }
+	}
+    }
+
+    # Set exit_cleanup function (called before all exits
+    # in judging common code) to unlock current directory.
+    #
+    proc exit_cleanup {} {
+	dispatch_unlock
+    }
+}
+
+# Unlock current directory.
+#
+proc clear_lock {} {
+
+    dispatch_unlock
+    proc exit_cleanup {} {}
+}
+
+# Read the received mail header.
+#
+proc read_received_mail {} {
+
+    global received_file message_subject \
+	   submitted_file submitted_program \
+	   submitted_extension
+
+    set received_ch [open $received_file r]
+    read_header $received_ch
+    close $received_ch
+
+    # Compute submitted program.
+    #
+    if { [llength $message_subject] == 2 \
+	 && [lindex $message_subject 0] == "submit" } {
+	 set submitted_file \
+	     [lindex $message_subject 1]
+	 set submitted_program \
+	     [file rootname $submitted_file]
+	 set submitted_extension \
+	     [file extension $submitted_file]
+    } else {
+	 set submitted_file      ""
+	 set submitted_program   ""
+	 set submitted_extension ""
+    }
+}
+
+# Read a 1-line file and return its line.  Check for
+# the file being non-existing, unreadable, and empty,
+# and in these cases return `none', `UNREADABLE', and
+# `EMPTY'.
+#
+proc read_score { score_file } {
+
+    if { [file exists $score_file] } {
+	if { ! [file readable $score_file] } {
+	    return UNREADABLE
+	} else {
+	    set score [read_file $score_file]
+	    if { $score == "" } {
+		return EMPTY
+	    } else {
+	    	return $score
+	    }
+	}
+    } else {
+	return none
+    }
+}
+
 # Initialize the file list and the last_file variable.
 # Initialize last_display variable (equal to `file_list'
 # or `file'.)
@@ -440,115 +612,14 @@ refresh_file_list
 set last_file ""
 set last_display "file_list"
 
-# Lock current directory with $dispatch_pid_file.  If
-# $dispatch_pid_file already exists, let our user
-# take corrective action.
-#
-while { "yes" } {
-
-    if { [dispatch_lock] == "yes" } break
-
-    set time [expr { [clock seconds] - \
-                     [file mtime $dispatch_pid_file] }]
-
-
-    if { ! [catch { set pgid \
-                        [read_file \
-			    $dispatch_pid_file] }] } {
-        set group_display \
-	    [display_process_group $pgid]
-        set group_display \
-	    "Process Group Tree:\n\n$group_display"
-        set window_error ""
-	set b $window_bar
-	set_window_display "$b\n$group_display\n$b"
-    } else {
-	set_file_list_display
-        set window_error \
-            "ERROR: cannot read $dispatch_pid_file"
-    }
-
-    set_window_info "
-$dispatch_pid_file file exists and is $time seconds old.
-Maybe `autodispatch' or another `manualreply' is running.
-
-u = update above info		d = delete\
-                                    $dispatch_pid_file
-k = kill -INT process group	x = exit this program
-m = kill -KILL process group"
-
-    set window_prompt "> "
-
-    while { "yes" } {
-    
-	display_window
-
-	set answer [string trim [gets stdin]]
-	set window_error ""
-	switch -- $answer {
-	    u	{   break
-		}
-	    k	{   catch {
-			signal_process_group INT \
-			    [read_file \
-                                $dispatch_pid_file]
-		    } out
-		    out_check $out
-		    break
-		}
-	    m	{   catch {
-			signal_process_group KILL \
-			    [read_file \
-                                $dispatch_pid_file]
-		    } out
-		    out_check $out
-		    break
-		}
-	    d	{   file delete -force \
-				$dispatch_pid_file
-		    break
-		}
-	    x	{
-		    exit_cleanup
-		    exit 0
-	    	}
-	    ""	{   if { [eof stdin] } {
-			exit_cleanup
-			exit 0
-		    } else {
-			set window_error \
-			    "ERROR: empty input"
-		    }
-		}
-	    default
-		{
-		    set window_error "ERROR: unknown\
-			answer `$answer'!"
-		}
-	}
-    }
-}
-
-# Set exit_cleanup function (called before all exits
-# in judging common code) to unlock current directory.
-#
-proc exit_cleanup {} {
-    dispatch_unlock
-}
-
-
-# Read the received mail header.
-#
-set received_ch [open $received_file r]
-read_header $received_ch
-close $received_ch
+get_lock
+read_received_mail
 
 # If auto score file, reply file, no replay file,
 # and unchecked errors do not exists, consider running
 # autojudge.
 #
-if { [llength $message_subject] == 2 \
-     && [lindex $message_subject 0] == "submit"
+if { $submitted_program != "" \
      && [llength [glob -nocomplain \
                        $reply_file \
                        $no_reply_file \
@@ -577,13 +648,94 @@ It appears that `autojudge' should be run."
     }
 }
 
+# Procedure to get a new manual_score by manual entry by
+# the program user.
+#
+proc get_new_score { current_score } {
+
+    switch $current_score {
+        "Incorrect Output"		{ set code io }
+        "Formatting Error"		{ set code fe }
+        "Syntax Error"			{ set code se }
+        "Program Crashed		{ set code pc }
+        "Completely Correct"		{ set code cc }
+        "Incomplete Output"		{ set code io }
+        "Cpu Time Limit Exceeded"	{ set code te }
+        "Output Size Exceeded"		{ set code oe }
+    }
+
+    while { "yes" } {
+
+	puts -nonewline "
+======================================================
+Please select a new current score:
+  io = Incorrect Output     cc = Completely Correct
+  fe = Formatting Error     ic = Incomplete Output
+  se = Syntax Error         te = Cpu Time Limit Exceeded
+  pc = Program Crashed      oe = Output Size Exceeded
+
+($code) > "
+
+	flush stdout
+
+	set answer [string string[gets stdin]
+	switch [string trim [gets stdin]] {
+	    "" { if { [eof stdin] } {
+		     exit 0
+		 } else {
+		     return $current_score
+		 }
+	       }
+	    io { return "Incorrect Output" }
+	    fe { return "Formatting Error" }
+	    se { return "Syntax Error" }
+	    pc { return "Program Crashed" }
+	    cc { return "Completely Correct" }
+	    ic { return "Incomplete Output" }
+	    te { return "Cpu Time Limit Exceeded" }
+	    oe { return "Output Size Limit Exceeded" }
+	}
+    }
+}
+
 set directory [file tail [pwd]]
 set proposed_score "none"
+
+set auto_score   [read_score $auto_score_file]
+set manual_score [read_score $manual_score_file]
+    
 set scoring_instructions [find_scoring_instructions]
 
-set_file_list_display
+set last_display "file_list"
 set window_error ""
-set window_prompt "> "
+
+set main_menu "
+#  = look at #      \
+v# = view #         \
+e# = edit #         \
+x  = exit
+ls = list files     \
+c# = checkoff #     \
+u# = uncheckoff #   \
+sh = shell
+ir = initiate reply \
+er = edit reply     \
+sr = send reply     \
+ss = send score
+sm = scoring menu   \
+aj = autojudge      \
+ai = autoinfo"
+
+set scoring_menu "
+io = Incorrect Output    cc = Completely Correct      \
+#  = look at #
+fe = Formatting Error    ic = Incomplete Output       \
+mm = back to main menu
+se = Syntax Error        te = Cpu Time Limit Exceeded \
+ss = send score + mm
+pc = Program Crashed     oe = Output Size Exceeded"
+
+set menu $main_menu
 
 while { "yes" } {
 
@@ -591,19 +743,35 @@ while { "yes" } {
 	refresh_file_list
 	set_file_list_display
     } else {
-	set_file_display
+	set_file_display $last_file
     }
-	
-    set_window_info "Directory: $directory
-Proposed Score: $proposed_score     Scoring\
-    Instructions: $scoring_instructions
 
-#  = look at #        v# = view #        e# = edit #
-ls = list files       c# = checkoff #	 u# = uncheckoff #
-ir = initiate reply   er = edit reply    sr = send reply
-ms = manualscore      aj = autojudge	 ad = autodispatch
-x  = exit	      sh = shell"
+    if { $submitted_program == "" } {
+    	set scoring_info ""
+	set window_info_height 5
+    } else {
+	set scoring_info "
+Scoring Instructions: $scoring_instructions"
 
+	if { $manual_score == "none" } {
+	    set scoring_info "$scoring_info
+Scores:    Auto: $auto_score    Proposed: $proposed_score"
+	    set window_info_height 8
+	} elseif { $proposed_score == "none" } {
+	    set scoring_info "$scoring_info
+Scores:    Auto: $auto_score    Manual: $manual_score"
+	    set window_info_height 8
+	} else {
+	    set scoring_info "$scoring_info
+Scores:    Auto:     $auto_score    Manual: $manual_score
+           Proposed: $proposed_score"
+	    set window_info_height 9
+	}
+    }
+
+    set_window_info "Directory: $directory$scoring_info
+$menu"
+    set window_prompt "> "
     display_window
     set window_error ""
 
@@ -646,24 +814,24 @@ x  = exit	      sh = shell"
 		out_check $out
 	    }
 	}
-	{ls} {
-	    set_file_list_display
-	}
-	{ir} {
+	{^ls$} { set last_display "file_list" }
+	{^ir$} {
 	    compose_reply -all
 	    set last_file $reply_file+
 	    edit_file $last_file
 	}
-	{er} {
+	{^er$} {
+	    if { ! [file exists $reply_file+] } {
+		compose_reply -all
+	    }
 	    set last_file $reply_file+
 	    edit_file $last_file
 	}
-	{sr} {
+	{^sr$} {
 	    if { ! [file exists $reply_file+] } {
 		puts "No reply composed!"
 	    } else {
 		set_file_display $reply_file+
-		set_window_info ""
 		set window_error ""
 		set window_prompt \
 		    "Do you want to send the above\
@@ -671,17 +839,18 @@ x  = exit	      sh = shell"
 		display_window
 
 		if { [yes?] } {
-		    puts "Sending..."
+		    set window_prompt \
+		       "Sending..."
+		    display_window
 		    send_reply
 		    set last_file $reply_file
 		    continue?
 		} else {
-		    puts "Send ABORTED!"
-		    continue?
+		    set window_error "Send ABORTED!"
 		}
 	    }
 	}
-	{aj} {
+	{^aj$} {
 	    puts "Running autojudge"
 	    exec autojudge >@ stdout 2>@ stderr
 
@@ -691,22 +860,33 @@ x  = exit	      sh = shell"
 	    }
 	    continue?
 	}
-	{sh} {
-	    call_shell
-	}
-	{ad} {
-	    exec autodispatch -force \
-	         >@ stdout 2>@ stderr
+	{^sh$} { call_shell }
+	{^ai$} {
+	    exec autoinfo >@ stdout 2>@ stderr
 	    continue?
 	}
-	{ms} {
-	    exec manualscore >@ stdout 2>@ stderr
-	    continue?
-	}
-	{x} {
+	{^sm$} { set menu $scoring_menu }
+	{^mm$} { set menu $main_menu }
+	{^x$} {
 	    exit_cleanup
 	    exit 0
 	}
+	{^io$} { set proposed_score \
+		     "Incorrect Output" }
+	{^cc$} { set proposed_score\
+		     "Completely Correct" }
+	{^fe$} { set proposed_score\
+		     "Formatting Error" }
+	{^ic$} { set proposed_score\
+		     "Incomplete Output" }
+	{^se$} { set proposed_score\
+		     "Syntax Error" }
+	{^te$} { set proposed_score\
+		     "Cpu Time Limit Exceeded" }
+	{^pc$} { set proposed_score\
+		     "Program Crashed" }
+	{^oe$} { set proposed_score\
+		     "Output Size Exceeded" }
 	{^$} {
 	    if { [eof stdin] } {
 		exit_cleanup
