@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Sep  4 04:08:14 EDT 2000
+# Date:		Sat Nov 11 10:43:26 EST 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/10/07 17:49:39 $
+#   $Date: 2000/11/11 15:47:21 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.8 $
+#   $Revision: 1.9 $
 
 all:	hpcm_sandbox hpcm_sendmail modes
 
@@ -35,11 +35,11 @@ hpcm_sendmail:	../../secure/src/hpcm_sendmail.c
 	chmod u+s hpcm_sendmail
 
 modes:
-	chmod a+rx TRASH_ACCOUNT TRASH_PROBLEMS \
-		   help hpcm_extract hpcm_sandbox \
-		   hpcm_sendmail.sh hpcm_submit print \
-		   print2 fprint lpq scoreboard xcsh \
-		   hpcm_get
+	chmod a+rx . TRASH_ACCOUNT help \
+		   hpcm_extract hpcm_get hpcm_submit \
+		   print print2 fprint lpq \
+		   scoreboard xcsh
+	chmod a+x .. ../.. ../../..
 
 clean:
 	rm -f hpcm_sandbox hpcm_sendmail

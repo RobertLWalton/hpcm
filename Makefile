@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Nov  7 01:23:46 EST 2000
+# Date:		Sat Nov 11 10:38:13 EST 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/11/07 06:23:11 $
+#   $Date: 2000/11/11 15:49:52 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.6 $
+#   $Revision: 1.7 $
 
 all:	submakes
 
@@ -32,19 +32,14 @@ submakes:
 
 # Print files keyed for `user', `remote', etc.
 #
-user.files \
-remote.files \
+common.files \
+email.files \
+informal.files \
+formal.files \
+demo.files \
 pascal.files \
 system.files\
 test.files \
 problem.files \
 library.files:
-	@echo `sed <File_List -n -e \
-		'/^$*		*/s///p' `
-
-# Print both problem and library files:
-#
-librarian.files:
-	@echo `sed <File_List -n \
-		-e '/^problem		*/s///p' \
-		-e '/^library		*/s///p' `
+	@sed <File_List -n -e '/^$*		*/s///p'
