@@ -6,7 +6,7 @@
 #
 # File:		lookat
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Oct 20 08:46:30 EDT 2001
+# Date:		Sat Nov 10 06:28:41 EST 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/10/20 13:11:00 $
+#   $Date: 2001/11/10 12:37:38 $
 #   $RCSfile: lookat,v $
-#   $Revision: 1.10 $
+#   $Revision: 1.11 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -37,12 +37,23 @@ set size_limit 100000
 
 # Abbreviations for atoms.
 #
-array set abbreviations {
-    SUBJECT	{^Received_Mail$::^Subject:}
-    AUTO	{^Auto_Score$::.}
-    MANUAL	{^Manual_Score$::.}
-    GOTTEN	{^Gotten$::\.(txt|html|htm|ps)$}
-}
+set gf $gotten_file
+set asf $auto_score_file
+array set abbreviations "
+    SUBJECT	{^$received_file\$::^Subject:}
+    AUTO	{^$auto_score_file\$::.}
+    MANUAL	{^$manual_score_file\$::.}
+    GOTTEN	{^$gf\$::\\.(txt|html|htm|ps)\$}
+    NOREPLY	{^$no_reply_file\$::.}
+    IO		{^$asf\$::Incorrect Output}
+    CC		{^$asf\$::Completely Correct}
+    FE		{^$asf\$::Formatting Error}
+    IC		{^$asf\$::Incomplete Output}
+    SE		{^$asf\$::Syntax Error}
+    TE		{^$asf\$::Cpu Time Limit Exceeded}
+    PC		{^$asf\$::Program Crashed}
+    OE		{^$asf\$::Output Size Limit Exceeded}
+"
 
 # Make a list of abbreviations for documentation.
 #
@@ -159,27 +170,33 @@ if { $argc != 1 || [regexp {^-doc} [lindex $argv 0]] } {
 # filename_regexp(i) and line_regexp(i) are the parts of
 # the atom.
 #
-set logical_expression \
-    [compile_logical_expression \
-        [lindex $argv 0] abbreviations atom value]
-foreach i [array names atom] {
+proc set_expression { expression } {
 
-    # Extract f(ilename-)regexp and
-    # l(ine-)regexp.
-    #
-    if { [regexp {^(.*)::(.*)$} $atom($i) \
-		 forget fregexp lregexp] } {
-	if {    [regexp {:(:|$)} $fregexp] \
-	     || [regexp {(^|:):} $lregexp] } {
-	    error "Ambiguous atom: `$atom($i)'."
+    global logical_expression abbreviations atom value \
+           filename_regexp line_regexp
+
+    set logical_expression \
+	[compile_logical_expression \
+	    $expression abbreviations atom value]
+    foreach i [array names atom] {
+
+	# Extract f(ilename-)regexp and
+	# l(ine-)regexp.
+	#
+	if { [regexp {^(.*)::(.*)$} $atom($i) \
+		     forget fregexp lregexp] } {
+	    if {    [regexp {:(:|$)} $fregexp] \
+		 || [regexp {(^|:):} $lregexp] } {
+		error "Ambiguous atom: `$atom($i)'."
+	    }
+	} else {
+	    set fregexp ""
+	    set lregexp $atom($i)
 	}
-    } else {
-	set fregexp ""
-	set lregexp $atom($i)
-    }
 
-    set filename_regexp($i) $fregexp
-    set line_regexp($i) $lregexp
+	set filename_regexp($i) $fregexp
+	set line_regexp($i) $lregexp
+    }
 }
 
 
@@ -197,90 +214,101 @@ foreach i [array names atom] {
 set manualcount 0
 set manualdirs ""
 
-
-# Loop through the subdirectory names.
+# Compute list of directories, using compiled
+# logical expression.
 #
-foreach dir \
-	[lsort \
-	   [glob -nocomplain $mail_directory/*]] {
+proc compute_directory_list {} {
 
-    # Be sure its a submission directory and find
-    # submitter and date.
+    global mail_directory atom value filename_regexp \
+           line_regexp manualcount manualdirs \
+	   size_limit logical_expression
 
-    if { ! [file isdirectory $dir] } continue
-
-    set subdir [file tail $dir]
-
-    if { [regexp {^([^<>]*)-<<(.*)>>-submission$} \
-    		   $subdir forget date submitter] } {
-
-	set submitter [string trim $submitter]
-	if { $submitter == "" } {
-	    set submitter UNKNOWN
-	}
-    } else continue
-
-    # Initialize the atom values.
+    # Loop through the subdirectory names.
     #
-    foreach i [array names atom] {
-	set value($i) 0
-	set not_file($i) yes
+    foreach dir \
+	    [lsort \
+	       [glob -nocomplain $mail_directory/*]] {
 
-	if { $filename_regexp($i) == "" } {
-	    set value($i) \
-	        [regexp -- $line_regexp($i) $submitter]
-	} elseif { $filename_regexp($i) == "DATE" } { \
-	    set value($i) \
-	        [regexp -- $line_regexp($i) $date]
-	} else {
-	    set not_file($i) no
-	}
-    }
+	# Be sure its a submission directory and find
+	# submitter and date.
 
-    # Loop through the files.  
-    #
-    set entry [list $dir]
-    foreach file [glob -nocomplain $dir/*] {
+	if { ! [file isdirectory $dir] } continue
 
-        set filename [file tail $file]
-	set read_yet no
+	set subdir [file tail $dir]
 
-	# Loop through the atoms.
+	if { [regexp {^([^<>]*)-<<(.*)>>-submission$} \
+		       $subdir forget date submitter] } {
+
+	    set submitter [string trim $submitter]
+	    if { $submitter == "" } {
+		set submitter UNKNOWN
+	    }
+	} else continue
+
+	# Initialize the atom values.
 	#
 	foreach i [array names atom] {
+	    set value($i) 0
+	    set not_file($i) yes
 
-	    if { $value($i) || $not_file($i) } continue
-
-	    if { ! [regexp -- $filename_regexp($i) \
-	    		      $filename] } continue
-
-	    if { $read_yet == "no" } {
-	        set ch [open $file r]
-		set contents [read $ch $size_limit]
-		set contents [split $contents "\n"]
-		close $ch
-		set read_yet yes
+	    if { $filename_regexp($i) == "" } {
+		set value($i) \
+		    [regexp -- $line_regexp($i) $submitter]
+	    } elseif { $filename_regexp($i) == "DATE" } { \
+		set value($i) \
+		    [regexp -- $line_regexp($i) $date]
+	    } else {
+		set not_file($i) no
 	    }
+	}
 
-	    # Loop through the lines of the file.
+	# Loop through the files.  
+	#
+	set entry [list $dir]
+	foreach file [glob -nocomplain $dir/*] {
+
+	    set filename [file tail $file]
+	    set read_yet no
+
+	    # Loop through the atoms.
 	    #
-	    foreach line $contents {
-		if { [regexp -- $line_regexp($i) \
-		                $line] } {
-		    set value($i) 1
-		    lappend entry [list $filename $line]
-		    break
+	    foreach i [array names atom] {
+
+		if { $value($i) || $not_file($i) } \
+		    continue
+
+		if { ! [regexp -- $filename_regexp($i) \
+				  $filename] } continue
+
+		if { $read_yet == "no" } {
+		    set ch [open $file r]
+		    set contents [read $ch $size_limit]
+		    set contents [split $contents "\n"]
+		    close $ch
+		    set read_yet yes
+		}
+
+		# Loop through the lines of the file.
+		#
+		foreach line $contents {
+		    if { [regexp -- $line_regexp($i) \
+				    $line] } {
+			set value($i) 1
+			lappend entry \
+			        [list $filename $line]
+			break
+		    }
 		}
 	    }
 	}
-    }
 
-    # If logical expression is true, add filename to
-    # list.
-    #
-    if { [expr $logical_expression] } {
-	incr manualcount
-	lappend manualdirs $entry
+	# If logical expression is true, add filename to
+	# list.
+	#
+	if { [expr $logical_expression] } {
+	    incr manualcount
+	    lappend manualdirs $entry
+	}
     }
 }
 
@@ -359,8 +387,11 @@ proc exec_manualreply { i } {
 }
 
 
+
 # Execute manual reply on subdirectories.
 #
+set_expression [lindex $argv 0]
+compute_directory_list
 if { $manualcount == 0 } {
     puts "There are NO matching directories."
 } else {
