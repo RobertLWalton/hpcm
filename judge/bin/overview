@@ -2,9 +2,9 @@
 #
 # Make judge's overview document.
 #
-# File:		makeoverview
+# File:		overview
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Jan  6 02:18:40 EST 2001
+# Date:		Sat Jan  6 07:22:55 EST 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/01/06 09:26:03 $
+#   $Date: 2001/01/06 16:25:19 $
 #   $RCSfile: overview,v $
-#   $Revision: 1.13 $
+#   $Revision: 1.14 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -44,6 +44,7 @@ puts "
 	Contest Definition Data: The Judging Directory
 	Contest Definition Data: The Contest Directory
 	Contest Definition Data: The Home Directory
+	Contest Definition Data: Contestant Accounts
 	Contest Definition Data: Auxilary Files
 	Contest Raw Data: The Judging Directory
 
@@ -570,6 +571,12 @@ are:
 	to other locations for display on the web.
 	This is normally used only for email contests.
 
+    TODO
+    	When `makejudingdir' runs, it appends instruc-
+	tions to its user to the end of this file.  A
+	typical instruction is `edit ./contest/secure/
+	passwords'.
+
 In addition to these files which are used by HPCM
 programs, there are typically a few other files that
 are not used by HPCM programs themselves.  These are:
@@ -818,6 +825,11 @@ components that contestants can access.
 		Only the account and password fields are
 		needed by HPCM to run a contest.
 
+		Note that in making up a list of contes-
+		tant accounts, you should include one
+		test account, which you can use to see
+		if everything is working.
+
 	    passwords_header
 	        This is a file used by hpcm_print_pass-
 		words.  This program prints each account
@@ -872,9 +884,167 @@ components that contestants can access.
 Contest Definition Data: The Home Directory
 ------- ---------- ----- --- ---- ---------
 
+Each contestant account must be initialized identically
+before the start of a contest.  This is done with the
+help of some maintainence programs using a special di-
+rectory which is called, informally, the `contest/home'
+directory.
+
+To initialize a contestant account, a program called
+TRASH_ACCOUNT is run.  This first removes all files
+and directories from the account.  It then loads a
+completely new set of files and directories from the
+`setup.tar' file in the `contest/home' directory.
+
+However, what if something needs changing during the
+contest?  As an aid to making this easier, each con-
+testant account is set up so that most of the files and
+directories in the account's home directory are symbol-
+ic links to a real file or directory within the
+`contest/home' directory.  Then changing the real file
+or directory changes the file or directory for all the
+contestant accounts at once.  Of course the real file
+or directory must have a+r and maybe a+x permissions,
+and cannot be writable by its users.
+
+There are a few files and directories which, for
+security reasons, cannot be shared among contestants,
+because the programs that use them insist they be
+owned by the account running the program.  Examples
+are the `.procmailrc' file which is used to automa-
+tically extract files from the responses to hpcm_
+get in an informal contest, and the `.ssh' directory
+which can optionally be used to make it easy for
+the judge to log into any contestant account.
+
+The `contest/home' directory is set up and maintained
+by the SETUP_PROTOTYPE program.  To use SETUP_PROTOTYPE,
+a prototype account must be created, and it is the files
+and symbolic links in this account that are saved and
+then restored in all the contestant accounts.
+
+There are several special files in the `contest/home'
+directory.
+
+    setup.tar
+        The tar file that contains all the files
+	and symbolic links which are to be in a
+	contestant account after TRASH_ACCOUNT is
+	run (except for .hpcm_contest: see below).
+	It is made by SETUP_PROTOTYPE by tar'ing
+	all the files and symbolic links in the
+	prototype account.
+
+    setup.ls
+        The output of `ls -aR' run just after files
+	have been restored from setup.tar.  Used to
+	check for a valid restoration.
+
+    empty.ls
+       The output of `ls -a' run just after all files
+       have been deleted by TRASH_ACCOUNT, and before
+       restoring files from setup.tar.  Used to check
+       for valid file removal.
+
+There is one symbolic link that TRASH_ACCOUNT does not
+set using setup.tar.  This is the .hpcm_contest symbolic
+link to the contest directory.  As a consequence, the
+.hpcm_contest of a contestant account may not the same
+as the .hpcm_contest of the prototype account, and
+therefore one `contest/home' directory may be used by
+many different contests, each of which symbolically
+link their `home' subdirectory to the same `contest/
+home' directory.
+
+The `contest/home' directory is made and maintained by
+the SETUP_PROTOTYPE program: see the documentation of
+that program for details.  Also see the documentation
+of the TRASH_ACCOUNT program.
+
+
+Contest Definition Data: Contestant Accounts
+------- ---------- ----- ---------- --------
+
+After making the following:
+
+    ~JJJ			The judging account.
+
+    ~JJJ/contest_cccc		A contest directory.
+
+    ~JJJ/prototype_home		The `contest/home'
+    				directory made by
+				SETUP_PROTOTYPE.
+
+    ~JJJ/contest_cccc/home	A symbolic link to
+    				~JJJ/prototype_home.
+
+    ~JJJ/contest_cccc/secure/passwords
+    				The file listing all
+				the contestant
+				accounts and their
+				passwords.
+
+    ~JJJ/contest_cccc/secure/trashable
+    				A list of the accounts
+				for which TRASH_
+				ACCOUNT will work:
+				see above.
+
+it is possible to make all the contestant accounts
+very easily by logging in as root and running:
+
+ 	cd ~JJJ/hpcm/secure/bin
+ 	./hpcm_make_accounts ~JJJ/contest_cccc
+ 	./hpcm_set_passwords ~JJJ/contest_cccc
+ 	./hpcm_TRASH_ACCOUNTS ~JJJ/contest_cccc
+
+The first of three programs run here makes the accounts
+listed in secure/passwords, the second sets the pass-
+words of these accounts, and the third runs TRASH_
+ACCOUNT in each of these accounts.  Note that only con-
+testant accounts, and NOT the prototype account, should
+be listed in secure/passwords.
+
+Most of the files that are in a contestant account are
+just those provided by the UNIX operating system to
+every newly created account.  However the following
+files need special attention:
+
+    .cshrc (or other shell initialization file)
+    	The `path' must be modified to include
+	`.hpcm_contest/bin'.  If special compilers
+	or interpreters are being used, the path
+	should also include these.  It may be desirable
+	to turn off autologout (unset this variable in
+	.cshrc), especially in a formal contest in
+	which the judge's log the contestants in.
+
+    .procmailrc
+        For an informal contest, this must include stuff
+	to extract files from responses to hcpm_get.
+	See hpcm/examples/informal/Makefile.
+
+    .ssh/authorized_keys
+        Creating this file correctly can enable the
+	judge to log into each contestant account with-
+	out using the account's password.
+
 
 Contest Definition Data: Auxilary Files
 ------- ---------- ----- -------- -----
+
+There are a few files in the judging account that are
+shared among all the contests supported by the account:
+
+    ~/.procmailrc
+    	When the makejudgingdir program creates the
+	contest/secure/hpcm_sendmail.rc file, it
+	writes into the TODO file some line that must
+	be copied by hand to the ~/.procmailrc file.
+	These lines write email submissions sent to the
+	contest to the correct judging directory.
+
+    crontab
 
 
 Contest Raw Data: The Judging Directory

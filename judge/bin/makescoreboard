@@ -4,7 +4,7 @@
 #
 # File:		makescoreboard
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Dec 10 07:04:35 EST 2000
+# Date:		Sat Jan  6 10:45:39 EST 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/12/10 12:05:21 $
+#   $Date: 2001/01/06 16:25:18 $
 #   $RCSfile: makescoreboard,v $
-#   $Revision: 1.5 $
+#   $Revision: 1.6 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -30,31 +30,72 @@ set log_globally yes
 catch {
 
 set document "
-makescoreboard \[-start | -status | -stop\] \[interval\]
+makescoreboard \[-start | -status | -stop\] \\
+               \[-email address\]\
+	       \[-parameters parameter-file\] \\
+               \[interval\]
 
     This program makes the scoreboard putting it in the
-    file contest_directory/scoreboard.1 at periodic
-    intervals.  The interval in seconds can be set by
-    the interval argument, but will default to 60 sec-
-    onds.  This program calls scorefinder and scoreboard
-    to make the scoreboard, and prepends any contest
-    directory scoreboard.1head file to the output of the
-    scoreboard program.  This program uses the directory
+    file contest_directory/scoreboard.1 and/or e-mailing
+    it to a given address at periodic intervals.  The
+    interval in seconds can be set by the interval argu-
+    ment, but will default to 60 seconds.
+    
+    This program calls
+    
+	scorefinder | scoreboard \[parmeters-file\]
+
+    to recompute the scoreboard.
+    
+    If the judging_directory/contest directory exists,
+    this program recomputes the file:
+
+    	judging_directory/contest/scoreboard.1
+
+    whenever the scoreboard is recomputed, by prepending
+    the file
+
+    	judging_directory/contest/scoreboard.1head
+
+    to the recomputed scoreboard.
+
+    This program prepends any
+    contest_directory/scoreboard.1head file to the out-
+    put of the scoreboard program when making the
+    scoreboard.1 file, and postfixes the file
+    ./scoreboard.notes to the output of the scoreboard
+    program to form the message to send to an email
+    address.  This program uses the directory
     score flag file and mtimes of files, including
     $judging_parameters_file, to avoid actually\
-    				recomputing the
-    scoreboard.1 file unnecessarily.
+    				recomputing and
+    resending the scoreboard unnecessarily.
 
-    Deleting the existing scoreboard.1 file will cause
-    this program to recompute that file when its next
-    interval expires.
+    If the -email option is given, this program e-mails
+    to the address given in the option the recomputed
+    scoreboard with the file
+    
+    	judging_directory/scoreboard.notes
+
+    appended, whenever the scoreboard is recomputed.
+
+    Deleting an existing scoreboard.1 file, our touching
+    (see the UNIX touch(1) command) or changing any
+    of the files:
+
+    	$judging_parameters_file
+	contest_directory/scoreboard.1head
+	judging_directory/scoreboard.notes
+
+    will cause this program to recompute the scoreboard
+    when its next interval expires.
     
     Calling this program with an interval of 0 will
-    cause this program to recompute scoreboard.1 and
-    exit immediately.
+    cause this program to recompute the scoreboard just
+    once and then exit immediately.
 
-    This program ignores signals when writing the score-
-    board, and terminates without error on a signal
+    This program ignores signals when recomputing the
+    scoreboard, and terminates without error on a signal
     while the program is sleeping for the interval.
 
     If called with the -start option, this program
