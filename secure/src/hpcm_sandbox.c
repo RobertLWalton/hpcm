@@ -11,9 +11,9 @@
  * RCS Info (may not be true date or author):
  *
  *   $Author: acm-cont $
- *   $Date: 2000/09/03 19:45:34 $
+ *   $Date: 2000/09/04 02:04:31 $
  *   $RCSfile: hpcm_sandbox.c,v $
- *   $Revision: 1.2 $
+ *   $Revision: 1.3 $
  */
 
 #include <stdlib.h>
@@ -41,7 +41,7 @@ char documentation [] =
 "      -stacksize N   Stack Size in Bytes (50k)\n"
 "      -filesize N    Output File Size in Bytes (50k)\n"
 "      -core N        Core Dump Size in Bytes (0)\n"
-"      -openfiles N   Number of Open Files (5)\n"
+"      -openfiles N   Number of Open Files (20)\n"
 "      -processes N   Number of Processes (1)\n"
 "\n"
 "    Here N is a positive decimal integer that can\n"
@@ -105,7 +105,7 @@ int main ( int argc, char ** argv )
     int stacksize = 50 * 1024;
     int filesize = 50 * 1024;
     int core = 0;
-    int openfiles = 5;
+    int openfiles = 20;
     int processes = 1;
     int watch = 0;
 
