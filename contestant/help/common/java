@@ -1,0 +1,94 @@
+JAVA Help		    Thu Oct 31 05:36:17 EST 2002
+
+Input
+-----
+
+Input generally has to be parsed into numbers and
+perhaps other things.  There are two ways: either read
+lines and parse the tokens in each line, or read tokens
+directly from a stream.  The latter method is better
+when the input is such that line ends are to be treated
+no differently than single spaces.
+
+The following code reads a sequence of numbers from
+the input using the line oriented method, but does so
+in a way that hides the line ends:
+
+
+
+    Reader reader
+        = BufferedReader
+	      ( InputStreamReader ( System.in ) );
+    StreamTokenizer tokenizer
+        = new StreamTokenizer ( reader );
+    tokenizer.resetSyntax();
+    tokenizer.wordChars ( ' ', '\u00FF' );
+    tokenizer.spaceChars ( '\u0000', ' ' );
+    tokenizer.parseNumbers();
+    tokenizer.ordinaryChar ( ',' );
+    tokenizer.ordinaryChar ( '(' );
+    tokenizer.ordinaryChar ( ')' );
+    //
+    // The tokenizer character tables are now set up to
+    // read words and numbers and the single character
+    // tokens `,', `(', and `)'.  Line ends are treated
+    // as space characters.
+
+    while ( tokenizer.nextToken() )
+    {
+        if ( tokenizer.ttype == StreamTokenizer.TT_EOF )
+	    break;
+	else if ( tokenizer.ttype == StreamTokenizer.TT_NUMBER )
+	{
+	    System.out.print ( "NUMBER ");
+	    System.out.print ( tokenizer.nval );
+	    System.out.println();
+	}
+	else if ( tokenizer.ttype == StreamTokenizer.TT_WORD )
+	{
+	    System.out.print ( "WORD ");
+	    System.out.print ( tokenizer.sval );
+	    System.out.println();
+	}
+	else if ( tokenizer.ttype == '(' )
+	{
+	    System.out.print ( "(");
+	    System.out.println();
+	}
+	else if ( tokenizer.ttype == ')' )
+	{
+	    System.out.print ( ")");
+	    System.out.println();
+	}
+	else if ( tokenizer.ttype == ',' )
+	{
+	    System.out.print ( ",");
+	    System.out.println();
+	}
+	else if ( tokenizer.ttype == '(' )
+	{
+	    System.out.print ( "(");
+	    System.out.println();
+	}
+	else throw new RuntimeException
+	    ( "Bad token type " + tokenizer.ttype );
+    }
+
+
+
+
+
+File:		java
+Author:		Bob Walton <walton@deas.harvard.edu>
+Date:		See top of file.
+
+The authors have placed this file in the public domain;
+they make no warranty and accept no liability for this
+file.
+
+RCS Info (may not be true date or author):
+
+    $Author: hc3 $
+    $Date: 2002/10/31 11:21:23 $
+    $RCSfile: java,v $
+    $Revision: 1.1 $
