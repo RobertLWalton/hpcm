@@ -6,7 +6,7 @@
 #
 # File:		makejudgingdir
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Jan  9 00:07:31 EST 2002
+# Date:		Wed Jan  9 07:08:53 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/01/09 05:24:55 $
+#   $Date: 2002/01/09 12:38:03 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.75 $
+#   $Revision: 1.76 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -1208,23 +1208,25 @@ proc process_index_specification {} {
 		    # Compute selected files.
 		    #
 		    set sff $source/$files_file
-		    if { [llength $exts] == 0 } {
-		        set files \
-			    [glob -nocomplain \
-			    	  $sff $sff.*]
-		    } else {
-		        set files ""
+		    set files [glob -nocomplain \
+			            $sff $sff.*]
+		    if { [llength $exts] != 0 } {
+		        set ext_files ""
 			foreach ext $exts {
-			    if { [file exists \
-			    	       $sff.$ext] } {
-			    	lappend files $sff.$ext
+			    if { [lcontain \
+			            $files \
+				    $sff.$ext] } {
+			    	lappend ext_files \
+					$sff.$ext
 			    }
 			}
-			if { [llength $files] == 0 } {
+			if { [llength $ext_files] \
+				== 0 } {
 			    error "No problem $sff.XXX \
 			    	   files for XXX in\
 				   $exts"
 			}
+			set files $ext_files
 		    }
 
 		    # Compute concatenated value of
@@ -1271,7 +1273,8 @@ proc process_index_specification {} {
 				        {^-[-A-Z]*-$} \
 					$item] } {
 				    set mode none
-				} else {
+				} elseif { $mode != \
+					     "none" } {
 				    set ma ${mode}_array
 				    set ${ma}($item) yes
 				}
@@ -1383,6 +1386,12 @@ proc process_index_specification {} {
 		    		} {
 			error "$source solution is not\
 			       a directory"
+		    } elseif { [regexp {/} \
+		    		       $targettail] } {
+			error "`$targettail' is to be\
+			       linked into the\
+			       solutions directory but\
+			       contains a `/'"
 		    }
 		    set s_d $solutions_directory+
 		    link_file $source \
