@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Oct 21 03:44:55 EDT 2001
+# Date:		Mon Oct 29 08:09:30 EST 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/10/21 07:44:37 $
+#   $Date: 2001/10/29 13:19:19 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.6 $
+#   $Revision: 1.7 $
 
 
 # Read standard parameters.  The filename MUST be
@@ -39,23 +39,85 @@ source ~/hpcm/judge/lib/hpcm_judging.rc
 #
 # set scoreboard_submitters { ! test-account }
 
-# Set the start times for the contest.  In order
-# to get the contest scoreboard to show demo
-# problems before the contest begins, leave the
-# scoreboard_start_time equal to "" until the
-# contest starts.
+# Set the start/freeze/stop times for the contest.  In
+# order to get the contest scoreboard to show demo pro-
+# blems before the contest begins, leave the scoreboard_
+# start_time commented out (and thereby set to "") until
+# after the first non-demo submissions.
 #
-set scoreboard_start_time ""
-#   [clock scan "Jan 1 10:00:00 EDT 2000"]
-
-set scoreboard_stop_time \
-    [clock scan "Jan 1 15:00:00 EDT 2000"]
+# set scoreboard_start_time  "Jan 1 10:00:00 EDT 2000"
+set scoreboard_freeze_time "Jan 1 14:00:00 EDT 2000"
+set scoreboard_stop_time   "Jan 1 15:00:00 EDT 2000"
 
 # Set penalty time IN SECONDS for submitting an
 # incorrect solution to a problem for which a correct
 # solution is later submitted.
 #
 set scoreboard_penalty 0
+
+# Scoreboard name, i.e, the name of the contest.
+#
+set scoreboard_name ""
+
+# List of addresses for `makescoreboard' to email
+# scoreboard to.
+#
+set scoreboard_addresses { }
+
+# Standard scoreboard instructions for a formal
+# contest:
+set scoreboard_instructions {
+
+    { OUTPUT contest/scoreboard.freeze FREEZE FREEZE }
+
+    BLANK
+    { LINE "To heighten suspense, scoreboard updating\
+            has been stopped as of:" }
+    { LINE "" FREEZE "" }
+    { LINE "You will be given a copy of the final\
+            scoreboard after winners have been" }
+    { LINE "announced at the post contest meeting." }
+
+    { OUTPUT contest/scoreboard.public START FREEZE }
+
+    { stop_time FREEZE }
+    BOARD
+
+    { OUTPUT contest/scoreboard.1 }
+    GRANT_ACCESS
+    SEND
+
+    { LINE NAME "Public Scoreboard" TIME }
+    { INPUT contest/scoreboard.freeze }
+    BLANK
+    { INPUT contest/scoreboard.1head }
+    BLANK
+    BAR
+    { INPUT contest/scoreboard.public }
+    BAR
+
+    { OUTPUT contest/scoreboard.current FREEZE STOP }
+
+    { LINE NAME "Current Scoreboard" TIME }
+    BLANK
+    BAR
+    { stop_time STOP }
+    BOARD
+    BAR
+    { INPUT contest/who_where }
+    BAR
+
+    { OUTPUT contest/scoreboard.final STOP STOP }
+
+    { LINE NAME "Final Results" "" STOP }
+    BLANK
+    BAR
+    { stop_time STOP }
+    BOARD
+    BAR
+    { INPUT contest/who_where }
+    BAR
+}
 
 # Set modes to automatically reply in so far as possible
 # and have manual review of everything in which the
