@@ -1,10 +1,10 @@
 #!/bin/sh
 #
-# Makes contest/scoreboard.1 every minute.
+# Recomputes the scoreboard every minute.
 #
 # File:		makescoreboard
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Jan  6 10:45:39 EST 2001
+# Date:		Sun Jan  7 06:50:13 EST 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/01/07 05:19:58 $
+#   $Date: 2001/01/07 12:02:18 $
 #   $RCSfile: old_makescoreboard,v $
-#   $Revision: 1.7 $
+#   $Revision: 1.8 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -31,7 +31,7 @@ catch {
 
 set document "
 makescoreboard \[-start | -status | -stop\] \\
-               \[-email address\]\
+               \[-email address\] \\
 	       \[-parameters parameter-file\] \\
                \[interval\]
 
@@ -43,46 +43,37 @@ makescoreboard \[-start | -status | -stop\] \\
     
     This program calls
     
-	scorefinder | scoreboard \[parmeters-file\]
+	scorefinder | scoreboard \[parameters-file\]
 
     to recompute the scoreboard.
     
-    If the judging_directory/contest directory exists,
-    this program recomputes the file:
+    If the contest_directory (usually juging_directory/
+    contest) exists, this program recomputes the file:
 
-    	judging_directory/contest/scoreboard.1
+    	contest_directory/scoreboard.1
 
     whenever the scoreboard is recomputed, by prepending
-    the file
+    the date and then the file
 
-    	judging_directory/contest/scoreboard.1head
+    	contest_directory/scoreboard.1head
 
     to the recomputed scoreboard.
 
-    This program prepends any
-    contest_directory/scoreboard.1head file to the out-
-    put of the scoreboard program when making the
-    scoreboard.1 file, and postfixes the file
-    ./scoreboard.notes to the output of the scoreboard
-    program to form the message to send to an email
-    address.  This program uses the directory
-    score flag file and mtimes of files, including
-    $judging_parameters_file, to avoid actually\
-    				recomputing and
-    resending the scoreboard unnecessarily.
-
     If the -email option is given, this program e-mails
     to the address given in the option the recomputed
-    scoreboard with the file
+    scoreboard with date prepended and the file
     
     	judging_directory/scoreboard.notes
 
     appended, whenever the scoreboard is recomputed.
-
+    A copy of the mail sent is recorded in the file
+    
+    	judging_directory/scoreboard.mail
+
     As an example use of the -email option, if the email
     option is
 
-      -email '\"password scoreboard\"<foo@@bar>'
+      -email '\"password scoreboard\"<foo@bar>'
 
     and the .procmailrc file of account foo on machine
     bar contains
@@ -93,7 +84,7 @@ makescoreboard \[-start | -status | -stop\] \\
       chmod a+r public_html/private/password/scoreboard
 
     then the effect of sending the scoreboard to the
-    email address will be to put a copy the computed
+    email address will be to put a copy of the computed
     scoreboard, with optional trailing `scoreboard.
     notes', into the publicly readable file
 
@@ -104,10 +95,21 @@ makescoreboard \[-start | -status | -stop\] \\
     word cannot interfere with the system or see the
     scoreboard (if the `private' directory is not pub-
     licly readable).
+
+    If the contest directory exists, then in that
+    directory the files scoreboard.1, scoreboard.2,
+    scoreboard.3, and scoreboard.4 represent the four
+    pages of the scoreboard (latter pages are optional).
+    All but the first page must be edited by hand, and
+    can be used for extensive notes on the contest.
+    For the email version of the scoreboard, the
+    scoreboard.notes file appears after the scoreboard
+    and can be used for extensive notes.
 
-    Deleting an existing scoreboard.1 file, our touching
-    (see the UNIX touch(1) command) or changing any
-    of the files:
+    Deleting an existing scoreboard.1 file, deleting an
+    existing scoreboard.mail file when the -email option
+    is given, our touching (see the UNIX touch(1)
+    command) or changing any of the files:
 
     	$judging_parameters_file
 	contest_directory/scoreboard.1head
@@ -115,7 +117,7 @@ makescoreboard \[-start | -status | -stop\] \\
 
     will cause this program to recompute the scoreboard
     when its next interval expires.
-    
+
     Calling this program with an interval of 0 will
     cause this program to recompute the scoreboard just
     once and then exit immediately.
@@ -148,9 +150,18 @@ makescoreboard \[-start | -status | -stop\] \\
     outputs information about the status of any process
     started by `makescoreboard -start'.
 
+    In some contests the scoreboard is to be frozen
+    during the last hour of the contest, to increase
+    suspense.  To do this, use the -stop option, and
+    then edit the scoreboard.1 file by hand to indicate
+    the contest is frozen.  If using an emailed score-
+    board, edit the scoreboard.mail file by hand and
+    resend it using `/usr/bin/sendmail -io -t'.
+
     With the -start, -status, or -stop option this
     program does not log errors but writes them to the
-    standard error.  Without these options, this program
+    standard error.  This program does the same with
+    program argument errors.  Otherwise, this program
     logs errors in the log directory."
 
 set email_address ""
@@ -190,8 +201,7 @@ proc process_arguments { argv } {
     }
 }
 
-# Process any -start option.  All arguments be
-# it must be a non-zero interval.
+# Process any -start option.
 #
 if { $argc >= 1 && [lindex $argv 0] == "-start" } {
 
@@ -240,8 +250,9 @@ if { $argc == 1 && [lindex $argv 0] == "-status" } {
 	     puts $display
 	     puts ""
 	     puts "Run `tracker' to find error logs,\
-	           or look in log directory for"
-	     puts "unchecked errors."
+	           or look in"
+	     puts "$log_directory for unchecked\
+	           errors."
 	 }
     } else {
         puts "All previous makescoreboards have been\
@@ -304,6 +315,7 @@ process_arguments $argv
 set sbfile  $contest_directory/scoreboard.1
 set sbhead  $contest_directory/scoreboard.1head
 set sbnotes $judging_directory/scoreboard.notes
+set sbmail  $judging_directory/scoreboard.mail
 set jparam  $judging_directory/$judging_parameters_file
 
 # Ignore signals except during sleep (see below).
@@ -314,15 +326,19 @@ make_signals_ignored
 #
 while { "yes" } {
 
+    # Record the time we start computing the scoreboard.
+    #
+    set time [clock seconds]
+    set date [clock format $time]
+
     # Clear score flag.  If its reset after we have
-    # started to compute new scoreboard.1, then we need
+    # started to compute new scoreboard, then we need
     # to compute again.
     #
     clear_flag $score_flag_file
 
     # Collect scoreboard.
     #
-    set date [clock format [clock seconds]]
     if { $parameters_file == "" } {
 	catch { exec scorefinder | scoreboard } \
 	      scoreboard
@@ -349,7 +365,9 @@ while { "yes" } {
 	if { [file readable $sbnotes] } {
 	    catch { exec cat $sbnotes } tail
 	    set email_scoreboard \
-	        "See notes below.           $date
+	        "To: $email_address
+
+See notes below.           $date
 
 =================== ===================\
 =================== ===================
@@ -360,7 +378,9 @@ $scoreboard
 $tail"
 
 	} else {
-	    set email_scoreboard "$date
+	    set email_scoreboard "To: $email_address
+
+$date
 
 $scoreboard"
 	   
@@ -368,9 +388,14 @@ $scoreboard"
 
 	# Send the scoreboard to the email-address.
 	#
-	send_message "To: $email_address
+	send_message $email_scoreboard
 
-	$email_scoreboard"
+	# Delete and rewrite scoreboard.mail
+	#
+	if { [file exists $sbmail] } {
+	    file delete -force $sbmail
+	}
+	write_file $sbmail $email_scoreboard
     }
 
     # Handle case with contest directory.
@@ -388,9 +413,10 @@ $scoreboard"
 	if { [file readable $sbhead] } {
 	    catch { exec cat $sbhead } head
 	    set scoreboard_page \
-	        "$head
+	        "$date
 
-$date
+$head
+
 =================== ===================\
 =================== ===================
 $scoreboard
@@ -422,7 +448,7 @@ $scoreboard"
     if { $interval == 0 } break
 
     # Sleep waiting for something to happen that
-    # indicates scoreboard.1 needs recomputing.
+    # indicates scoreboard needs recomputing.
     #
     while { "yes" } {
 
@@ -431,12 +457,15 @@ $scoreboard"
 	make_signals_ignored
 
     	if { [test_flag $score_flag_file] } break
-	if { ! [file exists $sbfile] } break
+	if { [file isdirectory $contest_directory]
+	     && ! [file exists $sbfile] } break
+	if { $email_address != ""
+	     && ! [file exists $sbmail] } break
 	if { [file exists $sbhead] \
-	     && [file mtime $sbfile] \
-	        < [file mtime $sbhead] } break
-	if { [file mtime $sbfile] \
-	        < [file mtime $jparam] } break
+	     && $time < [file mtime $sbhead] } break
+	if { [file exists $sbnotes] \
+	     && $time < [file mtime $sbnotes] } break
+	if { $time < [file mtime $jparam] } break
     }
 }
 

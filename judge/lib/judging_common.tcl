@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Jan  6 21:23:42 EST 2001
+# Date:		Sun Jan  7 06:40:10 EST 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/01/07 05:20:00 $
+#   $Date: 2001/01/07 12:02:19 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.53 $
+#   $Revision: 1.54 $
 #
 
 # Table of Contents
@@ -1131,7 +1131,9 @@ proc read_file { filename } {
     return $line
 }
 
-# Write one-line file.
+# Write one-line file.  Actually, the line argument may
+# be a string containing many lines, and the whole file
+# is simply written all at once.
 #
 proc write_file { filename line } {
     set file_ch [open $filename w]
