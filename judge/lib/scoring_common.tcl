@@ -2,7 +2,7 @@
 #
 # File:		scoring_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Feb 12 01:55:24 EST 2003
+# Date:		Fri Mar 21 07:06:06 EST 2003
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2003/02/12 07:07:33 $
+#   $Date: 2003/03/21 12:10:46 $
 #   $RCSfile: scoring_common.tcl,v $
-#   $Revision: 1.41 $
+#   $Revision: 1.42 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -992,6 +992,7 @@ proc execute_response_commands \
 
 	    BLANK		-
 	    RECEIVED-HEADER	-
+	    RECEIVED-FULL-HEADER	-
 	    RECEIVED-BODY	{
 	    	if { $length != 1 } {
 		    response_error $command

@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Mar 19 08:21:11 EST 2003
+# Date:		Fri Mar 21 07:05:20 EST 2003
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2003/03/19 13:18:50 $
+#   $Date: 2003/03/21 12:10:46 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.105 $
+#   $Revision: 1.106 $
 #
 
 # Table of Contents
@@ -1342,6 +1342,10 @@ proc header_is_authentic {} {
 #	    Subject fields of the $received_file
 #	    message.
 #
+#	RECEIVED-FULL-HEADER
+#	    Includes the ENTIRE header of the $received_
+#	    file message.
+#
 #	RECEIVED-BODY
 #	    Includes the body of the $received_file mes-
 #	    sage.  This command can appear at most once.
@@ -1368,6 +1372,7 @@ proc reply { args } {
 proc compose_reply { args } {
 
     global received_file reply_file \
+    	   message_header \
            message_From_line message_to \
            message_from message_date \
 	   message_reply_to message_subject \
@@ -1482,6 +1487,10 @@ proc compose_reply { args } {
 		    puts $reply_ch \
 		         "Subject:$message_subject"
 		}
+	    }
+	    RECEIVED-FULL-HEADER {
+
+		puts $reply_ch $message_header
 	    }
 	    RECEIVED-BODY {
 
