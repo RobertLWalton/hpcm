@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Nov  4 04:35:39 EST 2000
+# Date:		Tue Nov 14 20:14:09 EST 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,10 +11,29 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/11/04 21:55:56 $
+#   $Date: 2000/11/15 04:25:30 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.49 $
+#   $Revision: 1.50 $
 #
+
+# Table of Contents
+#
+#	Including this Code
+#	Dispatch Locking Functions
+#	Date Functions
+#	Checked File Functions
+#	Error Logging Functions
+#	Message Header Functions
+#	Reply Functions
+#	File Read/Write Functions
+#	Flag Functions
+#	Inline Code
+
+
+
+# Including this Code
+# --------- ---- ----
+
 
 # Include this code in TCL program via:
 #
@@ -24,8 +43,8 @@
 #	catch {
 #
 #	... your program ...
-#	.., (do not change argc, argv0, argv)
-#	... terminates with `exit 0' ...
+#	... (do not change argc, argv0, argv)
+#	... terminates with `exit 0' or `error ...'
 #
 #	} caught_output
 #	caught_error
@@ -40,14 +59,14 @@
 #
 #	set log_mode none
 #
-# If you do not want any errors written to log files.
+# if you do not want any errors written to log files.
 # See `log_error' below.
-
+#
 # The catch and `caught_error' function catches all
 # program errors and causes them to be announced on the
 # standard error output and be logged according to the
 # log_mode setting.  This can cause errors to be
-# recorded in an error file and to generate email
+# recorded in an error log file and to generate email
 # notification.
 
 # Default error log directory name.  For use if we
@@ -59,22 +78,18 @@ set default_log_directory $env(HOME)/HPCM_Error_Log
 #
 set judging_parameters_file hpcm_judging.rc
 
-# Received mail subject field first word to program
-# mapping for autodispatch:
-#
-array set autodispatch_map {
-    submit	autojudge
-    get		autoinfo
-}
-
 # Exit cleanup.  Called to do special cleanup before
 # exit.  Default does nothing.  This proc may be
 # redefined by program.
 #
 proc exit_cleanup {} {}
+
+# Dispatch Locking Functions
+# -------- ------- ---------
+
 
 # Lock current directory by creating $dispatch_pid_file.
-# Return `yes' is success, and `no' if failure.
+# Return `yes' if success, and `no' if failure.
 #
 proc dispatch_lock {} {
     global dispatch_pid_file
@@ -98,6 +113,10 @@ proc dispatch_unlock {} {
     global dispatch_pid_file
     file delete -force $dispatch_pid_file
 }
+
+# Date Functions
+# ---- ---------
+
 
 # Convert a [clock seconds] value into a date in
 # the form yyyy-mm-dd-hh:mm:ss that is useable as
@@ -121,6 +140,10 @@ proc filename_date_to_clock { date } {
     return [clock scan \
 	    "$month/$day/$year $hour:$minute:$second"]
 }
+
+# Checked File Functions
+# ------- ---- ---------
+
 
 # Returns 1 iff the filename is checked, and 0 iff it is
 # unchecked.  Calls error if the filename has no check
@@ -171,6 +194,10 @@ proc make_unchecked { filename } {
     }
     return ${a}unchecked${c}
 }
+
+# Error Logging Functions
+# ---- -------- ---------
+
 
 # Function called at end of program when a fatal error
 # in the program is caught.  Since the error is logged,
@@ -188,9 +215,10 @@ proc caught_error {} {
 # may want to continue.  The error is printed on the
 # standard error output.  Unless `log_mode' is `none',
 # the error is also written to a file.  If `log_mode'
-# is `auto', the error is also emailed to any
-# submitter/requester identified in $received_mail and
-# to any log manager.
+# is `auto' or `auto+manual', the error is also emailed
+# to any submitter/requester identified in the $receiv-
+# ed_mail file, and if the `log_mode' is `auto', this
+# mail is cc'ed to any log manager.
 #
 # When the error information is written to a file, a
 # separate file is created for each error.  If the
@@ -213,6 +241,13 @@ proc caught_error {} {
 # The word `unchecked' in the name will be changed to
 # `checked' when a person checks off on the error.
 #
+# If the error is emailed to the submitter/requester,
+# the mail sent is put in a separate file whose name
+# is as just given but with the `.mail' extension.
+#
+# Recording an error in a log file always sets the
+# `needs reply' flag.
+
 # Number of calls to log_error in during this program.
 #
 set log_error_count 0
@@ -236,6 +271,8 @@ proc log_error { error_output } {
     incr log_error_count
     if { $log_error_count > $log_error_maximum } {
     	set log_mode none
+    } elseif { $log_error_count > 1001 } {
+        exit 2
     } elseif { $log_error_count > 1000 } {
 	exit_cleanup
         exit 2
@@ -248,7 +285,7 @@ proc log_error { error_output } {
     puts stderr $error_output
 
     # If `log_mode' is `none', do not write to file, but
-    # print errorCode an errorInfo to standard error
+    # print errorCode and errorInfo to standard error
     # output and return.
     #
     if { $log_mode == "none" } {
@@ -281,7 +318,8 @@ proc log_error { error_output } {
     #
     set count 0
     while { "yes" } {
-        set d [clock_to_filename_date [clock seconds]]
+        set date [clock seconds]
+        set d [clock_to_filename_date $date]
         set u [format %06d \
 		  [expr { [clock clicks] % 1000000 } ]]
         set p [file tail $argv0]
@@ -316,7 +354,7 @@ proc log_error { error_output } {
     puts $log_ch "----------------------------------"
     puts $log_ch "$argv0 $argv"
     puts $log_ch ""
-    puts $log_ch "date: [clock format [clock seconds]]"
+    puts $log_ch "date: [clock format $date]"
     puts $log_ch "pwd: [pwd]"
     puts $log_ch ""
     puts $log_ch $error_output
@@ -370,9 +408,12 @@ proc log_error { error_output } {
 	    # pathname of the log file to a submitter/
 	    # requester for security reasons.
 
-	    set dir_tail [file tail $log_dir]
+	    if { $log_dir == "." } {
+		set dir_tail [file tail [pwd]]
+	    } else {
+		set dir_tail [file tail $log_dir]
+	    }
 	    set log_tail [file tail $log_file]
-	    set log_tail $dir_tail/$log_tail
 
 	    # Open mail file and write `To:' and `Cc:'
 	    # fields.
@@ -387,9 +428,16 @@ proc log_error { error_output } {
 		puts $mail_ch "To: $cc"
 	    }
 
-	    # Write `Subject:' field and announce error.
+	    # Write reply-to field equal to $received_
+	    # mail `To' field.
+	    #
+	    puts $mail_ch "Reply-To:$message_to"
+
+	    # Write `Subject:' field, `X-HPCM-Test-
+	    # Subject' field, and announce error.
 	    #
 	    puts $mail_ch "Subject: $log_tail"
+	    puts $mail_ch "         in $dir_tail"
 	    if { $received_ch != "" \
 	         && $message_x_hpcm_test_subject \
 		    != "" } {
@@ -450,6 +498,10 @@ proc log_error { error_output } {
 
     set_flag $needs_reply_flag_file
 }
+
+# Message Header Functions
+# ------- ------ ---------
+
 
 # Read an email message header from the channel. If
 # given, the first line of the header is the second
@@ -483,10 +535,11 @@ proc log_error { error_output } {
 #
 # All the values have the final \n stripped off.  All
 # the field values have the `field-name:' stripped off.
-# If there are two copies of a field, only the last is
-# recorded.  If there are no copies of a field in the
-# message, the message_... global variable for that
-# field is set to "".
+# Field values may be multi-line, but if there are two
+# copies of a field, only the last is recorded.  If
+# there are no copies of a field in the message, the
+# message_... global variable for that field is set to
+# "".
 #
 # If a third argument is given, it is a list of field
 # names (written with all lower case letters) that
@@ -528,27 +581,43 @@ proc read_header { ch { first_line "" }
 		x-hpcm-signature x-hpcm-signature-ok \
 		x-hpcm-test-subject"
 
+    # Get first line of message.
+    #
     set line $first_line
     if { $line == "" } {
         set line [gets $ch]
 	if { [eof $ch] } return
     }
 
+    # Set `From ' if found line.
+    #
     if { [regexp "^From\ " $line] } {
     	set message_From_line $line
     }
 
+    # Loop until empty line looking for fields listed
+    # in the `fields' variable above.
+    #
     while { "yes" } {
     	if { $line == "" } break
 
 	set found_field no
 
+	# Loop through field names we are looking for.
+	#
 	foreach fieldname $fields {
 	    if { [regexp -nocase \
 	                 "^(${fieldname}):(.*)\$" \
 			 $line forget \
 			 realname fieldvalue] } {
 
+		# Come here when line is for the
+		# field we are looking for.
+
+		# Process any extra lines in a
+		# multi-line field, and read first
+		# line AFTER field value (or EOF).
+		#
 		while { "yes" } {
 		    set line [gets $ch]
 		    if { [eof $ch] \
@@ -560,6 +629,10 @@ proc read_header { ch { first_line "" }
 			"$fieldvalue\n$line"
 		}
 
+		# If field is not to be omitted, set
+		# the global variables for it and for
+		# the entire message header.
+		#
 		if { [lsearch -exact \
 		              $omit_fields \
 			      $fieldname]  < 0 } {
@@ -576,11 +649,19 @@ proc read_header { ch { first_line "" }
 		    }
 		}
 
+		# Indicate we found a field for the
+		# line and got next line after field,
+		# and stop looking at field names.
+		#
 		set found_field yes
 		break
 	    }
 	}
 
+	# If we did not find a field matching line,
+	# store line in message header and get next
+	# line.
+	#
 	if { $found_field == "no" } {
 	    if { $message_header == "" } {
 		set message_header $line
@@ -591,6 +672,8 @@ proc read_header { ch { first_line "" }
 	    set line [gets $ch]
 	}
 
+	# If next line is really and EOF, break.
+	#
 	if { [eof $ch] } break
     }
 }
@@ -730,6 +813,10 @@ proc header_is_authentic {} {
 
     return [compute_authentication]
 }
+
+# Reply Functions
+# ----- ---------
+
 
 # Construct a mail reply file and send it to the sender
 # of any received mail file.  The From, To, Reply-To,
@@ -959,6 +1046,10 @@ proc blank_body { ch } {
 	}
     }
 }
+
+# File Read/Write Functions
+# ---- ---------- ---------
+
 
 # Find the scoring instructions in the $scoring_
 # instructions file or in the $default_scoring_
@@ -1026,6 +1117,10 @@ proc write_file { filename line } {
     puts $file_ch $line
     close $file_ch
 }
+
+# Flag Functions
+# ---- ---------
+
 
 # Set flag.
 #
@@ -1049,10 +1144,10 @@ proc clear_flag { flagfilename } {
     global flag_directory
     file delete -force $flag_directory/$flagfilename
 }
+
+# Inline Code
+# ------ ----
 
-#### END OF FUNCTION DEFINITIONS ####
-
-#### BEGINNING OF INLINE CODE ####
 
 # Locate the directory containing the judging para-
 # meters file.  This should be unique.  If unique, the
@@ -1092,3 +1187,11 @@ if { [llength $judging_directory] == 1 } {
 # Set signals to cause errors.
 #
 make_signals_errors
+
+# Received mail subject field first word to program
+# mapping for autodispatch:
+#
+array set autodispatch_map {
+    submit	autojudge
+    get		autoinfo
+}
