@@ -7,7 +7,7 @@
 #
 # File:		tracker
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Nov  5 12:16:47 EST 2000
+# Date:		Mon Nov  6 11:40:14 EST 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -16,9 +16,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/11/06 02:28:52 $
+#   $Date: 2000/11/06 16:39:56 $
 #   $RCSfile: tracker,v $
-#   $Revision: 1.5 $
+#   $Revision: 1.6 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -299,7 +299,7 @@ proc add_err {} {
 # dispatch and no reply or no_reply to directory list,
 # and return printable summary string.
 #
-proc add_nonauto {} {
+proc add_queries {} {
 
     global directory_list directory_list_length \
     	   rec_array rep_array autodispatch_map
@@ -367,7 +367,8 @@ proc add_pid { { too_old "" } } {
 proc add_auto {} {
 
     global directory_list directory_list_length \
-    	   rec_array rep_array pid_array
+    	   rec_array rep_array pid_array \
+	   autodispatch_map
 
     set result ""
     foreach dir [lsort [array names rec_array]] {
@@ -406,6 +407,79 @@ proc add_auto {} {
     return $result
 }
 
+# Return summary of successful replies, etc.
+#
+proc summary {} {
+
+    global rec_array rep_array err_array chk_array
+
+    set replies 0
+    set no_replies 0
+    set submits 0
+    set gets 0
+    set queries 0
+    set uncheckeds 0
+    set checkeds 0
+
+    foreach dir [array names rec_array] {
+        set rec_line $rec_array($dir)
+	set subject [lindex $rec_line 2]
+	set dword [lindex $subject 0]
+	if { $dword == "submit" } {
+	    incr submits
+	} elseif { $dword == "get" } {
+	    incr gets
+	} else {
+	    incr queries
+	}
+	if { [info exists rep_array($dir)] } {
+	    set rep_line $rep_array($dir)
+	    if { [lindex $rep_line 1] != "" } {
+	        incr replies
+	    } else {
+	        incr no_replies
+	    }
+	}
+	if { [info exists err_array($dir)] } {
+	    incr uncheckeds
+	}
+	if { [info exists chk_array($dir)] } {
+	    incr checkeds
+	}
+    }
+
+    set r1 ""
+    set r2 ""
+    if { $submits != 0 } {
+        set r1 "$r1, $submits Submits"
+    }
+    if { $gets != 0 } {
+        set r1 "$r1, $gets Gets"
+    }
+    if { $queries != 0 } {
+        set r1 "$r1, $queries Queries"
+    }
+    if { $replies != 0 } {
+        set r1 "$r1, $replies Replies"
+    }
+    if { $no_replies != 0 } {
+        set r1 "$r1, $no_replies No Replies"
+    }
+    if { $checkeds != 0 } {
+        set r2 "$r2, $checkeds Checked Errors"
+    }
+    if { $uncheckeds != 0 } {
+        set r2 "$r2, $uncheckeds UNCHECKED Errors"
+    }
+    set r [string range $r1$r2 2 end]
+    if { [string length $r] > 79 } {
+        set r1 [string range $r1 2 end]
+        set r2 [string range $r2 2 end]
+	set r "$r1\n$r2"
+    }
+    return $r
+}
+
 # Given the number of an entry in the directory list,
 # call manualreply for that directory, and on return
 # reread that directory.  Return a string that can be
@@ -435,6 +509,19 @@ proc call_manualreply { index } {
     close $ch
 
     return "Done with $dir"
+}
+
+# Clip output of add functions to n - m directories.
+#
+proc clip { out m n } {
+    set limit [expr { $n - $m }]
+    set outlist [split $out "\n"]
+    set len [llength $outlist]
+    if { 2 * $limit < $len - 1 } {
+	set offset [expr { 2 * $limit }]
+	set out [join [lrange $outlist 0 $offset] "\n"]
+    }
+    return $out
 }
 
 # Loop until eof.
@@ -473,16 +560,76 @@ while { "yes" } {
 
     set output ""
     while { "yes" } {
-	set directory_list ""
-	set directory_list_length 0
-	puts [add_err]
+        clear_list
+
+	set err_list [add_err]
 	set err_last $directory_list_length
-	puts [add_nonauto]
-	set nonauto_last $directory_list_length
-	puts [add_pid]
+	set queries_list [add_queries]
+	set queries_last $directory_list_length
+	set pid_list [add_pid]
 	set pid_last $directory_list_length
-	puts [add_auto]
-	set auto_last $directory_list_length
+
+	if { $directory_list_length == 0 } {
+
+	    set auto_list [add_auto]
+	    if { $directory_list_length != 0 } {
+
+		set list ""
+		foreach dir $directory_list {
+		    if { [regexp \
+		          {^[^<>]*-<<.*>>-submission$} \
+			  $dir] } {
+			set dir $mail_directory/$dir
+		    }
+		    lappend list $dir
+		}
+		set ch [open "|trackfinder\
+			      [join $list]" r]
+		read_input $ch
+		close $ch
+		clear_list
+		set auto_list [add_auto]
+	    }
+
+	    if { $directory_list_length == 0 } {
+		puts "\n[summary]"
+	    } else {
+	        puts "1-$directory_list_length.\
+		      Are being automatically\
+		      processed;"
+		puts "You should not need to do\
+		      anything."
+		puts [clip $auto_list 0 5]
+	    }
+	} else {
+	    set o ""
+	    set f 0
+	    if { $err_list != "" } {
+	        incr f
+	        set o "$o\n$f-$err_last. \
+		       Unchecked Errors"
+	        set o \
+		    "$o[clip $err_list 0 5]"
+		set f $err_last
+	    }
+	    if { $queries_list != "" } {
+	        incr f
+	        set o "$o\n$f-$queries_last. \
+		       Queries"
+	        set o \
+		    "$o[clip $queries_list $err_last 5]"
+		set f $queries_last
+	    }
+	    if { $pid_list != "" } {
+	        incr f
+	        set o "$o\n$f-$pid_last. \
+		       Stuck Submissions"
+	        set o \
+		    "$o[clip $pid_list $queries_last 5]"
+		set f $pid_last
+	    }
+	    puts $o
+	}
 	puts ""
 	puts "$output"
 	puts -nonewline "> "
