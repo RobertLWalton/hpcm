@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Author:	walton@deas.harvard.edu
-# Version:	3
+# Date:		Sat Sep  2 08:01:14 EDT 2000
 #
 # Change: Java has been added.
 #
@@ -45,47 +45,42 @@
 .SUFFIXES:
 .SUFFIXES: .c .cc .p .java
 
-default:	count.out
+default:	count.view
 
 .c:
-	gcc -g -o $* $*.c -lm
+	rm -f $* $*.cerr $*.out $*.err
+	-gcc -g -o $* $*.c -lm 2>$*.cerr
 
 .cc:
-	g++ -g -o $* $*.cc -lm
+	rm -f $* $*.cerr $*.out $*.err
+	-g++ -g -o $* $*.cc -lm 2>$*.cerr
 
 .p:
-	pc -g -o $* $*.p -lm
+	rm -f $* $*.cerr $*.out $*.err
+	-pc -g -o $* $*.p -lm 2>$*.cerr
 
 .java:
-	javac -g $*.java
-	echo >$* java $*
-	chmod u+x $*
+	rm -f $* $*.class $*.cerr $*.out $*.err
+	-javac -g $*.java 2>$*.cerr
+	-echo >$* java $* 2>>$*.cerr
+	-chmod u+x $* 2>>$*.cerr
 
 count.out:	count count.in
 	rm -f count.out count.err
 	-csh -c 'limit cputime 30; \
 		 limit datasize 2m; \
-		 limit filesize 50k; count' \
-			<count.in >count.out 2>count.err
-	: ========; cat count.err count.out; : =========
+		 limit filesize 50k; \
+		 limit stacksize 1m; \
+		 limit openfiles 5; \
+		 count; \
+		 exit 0' \
+	    <count.in >count.out 2>count.err
 
-#
+count.view:	count.out 
+	hpcm_view count
 
 submit:		count.out
-	( if test -r count.c; \
-		then program=count.c; \
-	  elif test -r count.cc; \
-		then program=count.cc; \
-	  elif test -r count.p; \
-		then program=count.p; \
-	  elif test -r count.java; \
-		then program=count.java; \
-	  fi; \
-	  echo '[[..ACM..BEGIN..]]' $$program; \
-	  cat $$program | sed -e '/^/s//../'; \
-	  echo '[[..ACM..END..]]' ) \
-	    | mailx -s '[[..ACM..SUBMIT..]]' \
-		acm-cont $$USER
+	hpcm_submit count
 
 clean:
-	rm -f count count.out count.class
+	rm -f count count.out count.class core

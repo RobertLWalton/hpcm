@@ -5,6 +5,17 @@
 # File:		hpcm_submit
 # Author:	Bob Walton <walton@deas.harvard.edu>
 # Date:		Fri Sep  1 08:38:46 EDT 2000
+#
+# The authors have placed this program in the public
+# domain; they make no warranty and accept no liability
+# for this program.
+#
+# RCS Info (may not be true date or author):
+#
+#   $Author: acm-cont $
+#   $Date: 2000/09/02 13:23:08 $
+#   $RCSfile: hpcm_submit,v $
+#   $Revision: 1.2 $
 
 case "$1" in
     "" | -*)
@@ -13,7 +24,28 @@ case "$1" in
 		;;
 esac
 
-( echo BEGIN $1; \
-  cat $1 | sed -e '/^/s//../'; \
-  echo END $1 ) \
-| mail -s "submit $1" walton $USER
+program=""
+extras=""
+for e in .c .cc .java .p; do
+    if test -r $1$e; then
+        if test "$program" = ""; then
+	    program=$1$e
+	else
+	    extras="$extras $1$e"
+	fi
+    fi
+done
+
+if test "$program" = ""; then
+    echo "ERROR: no files to submit"
+    exit 1
+elif test "$extras" != ""; then
+    echo "ERROR: too many files to submit:"
+    echo "       $program$extras"
+    exit 1
+fi
+
+( echo BEGIN $program; \
+  cat $program | sed -e '/^/s//../'; \
+  echo END $program ) \
+| mail -s "submit $program" walton $USER
