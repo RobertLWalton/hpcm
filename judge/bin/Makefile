@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/12/09 04:52:35 $
+#   $Date: 2000/12/09 04:58:05 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.9 $
+#   $Revision: 1.10 $
 
 all:	scorediff hpcm_sandbox_x hpcm_print_passwords
 
@@ -44,7 +44,8 @@ secure_hpcm_sandbox_x:
 	@if test hpcm_sandbox_x -ot \
 		 ../../secure/src/hpcm_sandbox.c; \
 	    then echo ===============================; \
-	         echo WARNING: ${SECURE_BIN}/hpcm_sandbox \
+	         echo WARNING: \
+		      ${SECURE_BIN}/hpcm_sandbox \
 	    	      is out of date; \
 	         echo ===============================; \
 	    fi
