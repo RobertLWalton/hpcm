@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Aug 28 15:58:23 EDT 2000
+# Date:		Mon Sep 11 06:13:04 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: acm-cont $
-#   $Date: 2000/09/03 19:45:33 $
+#   $Date: 2000/09/11 10:19:46 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.3 $
+#   $Revision: 1.4 $
 
 # Kill all implicit rules
 #
@@ -26,6 +26,3 @@ hpcm_sandbox:	hpcm_sandbox.c
 
 clean:
 	rm -f hpcm_sandbox
-
-test:
-	-exit 1

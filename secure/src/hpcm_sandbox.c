@@ -2,7 +2,7 @@
  *
  * File:	hpcm_sandbox.c
  * Authors:	Bob Walton (walton@deas.harvard.edu)
- * Date:	Mon Sep  4 11:19:38 EDT 2000
+ * Date:	Mon Sep 11 06:14:00 EDT 2000
  *
  * The authors have placed this program in the public
  * domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
  * RCS Info (may not be true date or author):
  *
  *   $Author: acm-cont $
- *   $Date: 2000/09/06 21:23:41 $
+ *   $Date: 2000/09/11 10:19:46 $
  *   $RCSfile: hpcm_sandbox.c,v $
- *   $Revision: 1.6 $
+ *   $Revision: 1.7 $
  */
 
 #include <stdlib.h>
@@ -240,7 +240,7 @@ int main ( int argc, char ** argv )
 	exit ( 1 );
     }
 
-    /* If -watch, start parent */
+    /* If -watch, start child and watch it. */
 
     if ( watch )
     {
@@ -251,6 +251,8 @@ int main ( int argc, char ** argv )
 
 	if ( child != 0 )
 	{
+	    /* Parent executes this. */
+
 	    int status;
 
 	    if ( wait ( & status ) < 0 )
@@ -291,12 +293,22 @@ int main ( int argc, char ** argv )
 			  " %s\n",
 			  sys_siglist [ sig ] );
 
+		/* Parent exit when child died by
+		   signal.
+		*/
 		exit ( 128 + sig );
 	    }
 
+	    /* Parent exit when child did NOT die by
+	       signal.
+	    */
 	    exit ( 0 );
 	}
     }
+
+    /* Child (or original process if no -watch)
+       continues execution here.
+    */
 
     if ( geteuid() == 0 ) {
 
@@ -304,7 +316,7 @@ int main ( int argc, char ** argv )
 
 	gid_t groups [1];
 
-	/* Cleat the supplementary groups. */
+	/* Clear the supplementary groups. */
 
 	if ( setgroups ( 0, groups ) < 0 )
 	    errno_exit ( "root setgroups" );
@@ -343,6 +355,10 @@ int main ( int argc, char ** argv )
 
 	/* End root execution. */
     }
+
+    /* Set the real user and group IDs to to effective
+       user and group IDs.
+    */
 
     euid = geteuid ();
     egid = getegid ();
@@ -400,7 +416,7 @@ int main ( int argc, char ** argv )
 	        ( "setrlimit RLIMIT_NPROC" );
     }
 
-    /* Execute program with argument and `SANDBOX'
+    /* Execute program with arguments and `SANDBOX'
        as the only environment.
     */
 
