@@ -2,7 +2,7 @@
 #
 # File:		scoring_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Mar  9 08:46:11 EST 2002
+# Date:		Sat Mar  9 09:35:57 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/03/09 14:32:38 $
+#   $Date: 2002/03/09 15:09:22 $
 #   $RCSfile: scoring_common.tcl,v $
-#   $Revision: 1.26 $
+#   $Revision: 1.27 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -468,7 +468,7 @@ proc compute_score { } {
 	set waf \
 	    [info exists \
 	          instruction_array(words-are-format)]
-	switch $type {
+	switch -- $type {
 
 	    integer -
 	    float -
@@ -560,9 +560,9 @@ proc compute_score { } {
 # `submitted_extension' must be set to the problem name
 # and extension.
 #
-# Returns a list of commands whose execution merely
-# serves to specify options for disposition of
-# $reply_file+.  Specifically, any FINAL, NOT-FINAL,
+# This function returns a list of commands whose execu-
+# tion merely serve to specify options for disposition
+# of $reply_file+.  Specifically, any FINAL, NOT-FINAL,
 # NO-REPLY, or EDIT commands that are executed are
 # merely returned in this list, and have no direct
 # effect on the contents of $reply_file+.  This list
@@ -578,19 +578,20 @@ proc compose_response { { compose_reply_options "" } } {
     if { [catch { llength \
 		      $default_response_instructions \
 		      		}] } {
-	error "Badly formatted \
-	       default_response_instructions value"
+	error "default_response_instructions value is\
+	       not a TCL list"
     }
 
+    # Compute response instructions.
+    #
     if { [file exists $response_instructions_file] } {
         set response_instructions \
             [read_entire_file \
 	         $response_instructions_file]
 	if { [catch { llength \
 			  $response_instructions }] } {
-	    error "Badly formatted \
-	    	   $response_instructions_file file\
-		   value"
+	    error "$response_instructions_file file\
+		   value is not a TCL list"
 	}
         set response_instructions \
             [concat $response_instructions \
@@ -600,8 +601,18 @@ proc compose_response { { compose_reply_options "" } } {
 	    $default_response_instructions
     }
 
+    # Execute first pass over response instructions
+    # and compute a list of action response instructions
+    # to be executed in `commands'.
+    #
     set commands ""
     parse_block $response_instructions commands
+
+    # Execute second pass on action response instructions
+    # and return those whose action is to be performed by
+    # our caller (i.e., are instructions for disposal of
+    # $reply_file+).
+    #
     return [execute_response_commands \
     	        $compose_reply_options $commands]
 }
@@ -625,8 +636,8 @@ proc send_response { commands } {
     		      {FINAL NOT-FINAL NO-REPLY} \
 		      $commands]] != 1 } {
 	error "In $response_instructions_file file\
-	       value, not exactly one of NO-REPLY,\
-	       FINAL, and NOT-FINAL were executed:\
+	       value, not exactly one of\nNO-REPLY,\
+	       FINAL, and NOT-FINAL were executed:\n \
 	       $commands"
     }
     if { [lcontain $commands FINAL] } {
@@ -645,9 +656,9 @@ proc send_response { commands } {
 proc parse_block { block commands } {
 
     if { [catch { llength $block }] } {
-	error "Badly formatted \
-	       $response_instructions_file file\
-	       value part:\n    $block"
+	error "$response_instructions_file file\
+	       value part is not a TCL list:\n   \
+	       $block"
     }
 
     upvar $commands c
@@ -744,7 +755,8 @@ proc execute_response_commands \
 		    } {
 	    response_error $command
 	}
-        switch -- [lindex $command 0] {
+        set opcode [lindex $command 0]
+        switch -- $opcode {
 	    FINAL	-
 	    NOT-FINAL	-
 	    NO-REPLY	-
@@ -752,7 +764,7 @@ proc execute_response_commands \
 	    	if { $length != 1 } {
 		    response_error $command
 		}
-	        lappend return_commands $command
+	        lappend return_commands $opcode
 	    }
 
 	    CC		{
@@ -784,8 +796,8 @@ proc execute_response_commands \
 	    LINE	-
 	    LINES	-
 	    BAR		{
-	        set new_command [lindex $command 0]
-		switch $new_command {
+	        set new_command $opcode
+		switch -- $opcode {
 		    LINE {
 			if { $length != 2 } {
 			    response_error $command
@@ -910,7 +922,7 @@ set current_group ""
 #   group name part.  The number `-'s in the argument
 #   and group name must also be equal.
 #
-#   A numeric argument # switches to the #'th proof of
+#   A numeric argument switches to the #'th proof of
 #   the current_group.
 #
 #   An argument `n' goes to the next proof of the
@@ -991,7 +1003,7 @@ proc get_proof { args } {
 	} elseif { [regexp {^[0-9]+$} $arg] } {
 	    set n $arg
 	} else {
-	    switch -exact -- $arg {
+	    switch -- $arg {
 	        n { incr n }
 		p { incr n -1 }
 		default {
