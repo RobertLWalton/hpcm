@@ -11,9 +11,9 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: hc3 $
-//   $Date: 2000/10/29 13:59:31 $
+//   $Date: 2000/10/29 17:18:40 $
 //   $RCSfile: scorediff.cc,v $
-//   $Revision: 1.12 $
+//   $Revision: 1.13 $
 
 // This is version 2, a major revision of the first
 // scorediff program.  This version is more explicitly
@@ -269,12 +269,12 @@ struct file
     //		+    -    +.   -.
     //		e    e+   e-   E    E+   E-
     //
+    // Also set to the character following a number,
+    // whatever that may be.
+    //
     // Must be such that the backup is empty when
     // scantoken decides to put something in the
     // backup.
-    //
-    // Also set to "\n" to produce a new line at the
-    // beginning of a file.
 
     char * back;	// If pointing at `\0', there
     			// are no backed up characters
@@ -349,7 +349,10 @@ void scantoken ( file & f )
 	else if ( c == '\v' ) -- column;
 
 	if ( wp < endwp ) * wp ++ = c;
-	else too_long ( "whitespce" );
+	else whitespace_too_long ();
+
+	c = get_character ( f );
+	++ column;
     }
 
     * wp = 0;
@@ -362,36 +365,50 @@ void scantoken ( file & f )
     }
 
     char * tp = f.token;
+    char * endtp = tp + MAX_SIZE;
+    int decimals = -1;
 
     switch ( c ) {
 
     case '+':
     case '-':
-	* tp ++ = c;
+	if ( tp < endtp ) * tp ++ = c;
+	else token_too_long ();
+
 	c = get_character ( f );
 	++ column;
+
 	switch ( c ) {
 	case '.':
-	    * tp ++ = c;
+	    ++ decimals;
+
+	    if ( tp < endtp ) * tp ++ = c;
+	    else token_too_long ();
+
 	    c = get_character ( f );
 	    ++ column;
+
 	    if ( ! isdigit ( c ) ) goto backout;
 	    break;
+
 	default:
 	    if ( ! isdigit ( c ) ) goto backout;
 	}
 	break;
 
     case '.':
-	* tp ++ = c;
+	if ( tp < endtp ) * tp ++ = c;
+	else token_too_long ();
 	c = get_character ( f );
 	++ column;
+	++ decimals;
 	if ( ! isdigit ( c ) ) goto backout;
 	break;
 
     default:
         if ( ! isdigit ( c ) ) {
-	    * tp ++ = c;
+	    if ( tp < endtp ) * tp ++ = c;
+	    else token_too_long ();
 	    * tp ++ = '\0';
 	    f.is_number = false;
 	    f.column = column;
@@ -402,102 +419,81 @@ void scantoken ( file & f )
 
     // Come here when c is the first digit of a number.
 
-    * tp ++ = c;
+    if ( tp < endtp ) * tp ++ = c;
+    else token_too_long ();
     c = get_character ( f );
+    ++ column;
 
+    f.is_number = true;
 
-    if ( c != '+' && c != '-' && c != '.'
-                   && ! isdigit ( c1 ) )
-    {
-        assert ( c2 == 0 );
-    	f.isnumber = false;
-	return c1;
+    // Get rest of mantissa.
+    //
+    while ( 1 ) {
+        if ( isdigit ( c ) ) {
+	    if ( decimals >= 0 ) ++ decimals;
+	} else if ( c == '.' ) {
+	    if ( decimals < 0 ) ++ decimals;
+	    else break;
+	} else break;
+
+	if ( tp < endtp ) * tp ++ = c;
+	else token_too_long ();
+	c = get_character ( f );
+	++ column;
     }
 
-    char * limit = f.buffer + sizeof ( f.buffer ) - 1;
+    // Get exponent if present.
+    //
+    f.has_exponent = false;
 
-    f.end = f.buffer;
-    * f.end ++ = c1;
+    if ( c == 'e' || c == 'E' ) {
+        char * expp = tp;
+	int expcolumn = column;
+	if ( tp < endtp ) * tp ++ = c;
+	else token_too_long ();
+	c = get_character ( f );
+	++ column;
 
-    bool found_point = ( c1 == '.' );
-    bool found_digit = isdigit ( c1 );
-
-    f.decimals = found_point ? 0 : -1;
-    f.hasexponent = false;
-
-    char c = ( c2 == 0 ? getc ( f ) : c2 );
-
-    while (1) {
-
-	if ( f.end >= limit )
-	    break;
-	else if ( c == '.' )
-	{
-	    if ( found_point ) 
-		break;
-	    else
-	    {
-		found_point = true;
-		f.decimals = 0;
-	    }
-	}
-	else if ( isdigit ( c ) )
-	{
-	    found_digit = true;
-	    if ( found_point )
-	    	++ f.decimals;
-	}
-	else break;
-
-	* f.end ++ = c;
-        c = getc ( f );
-    }
-
-    if ( ! found_digit )
-    {
-	f.isnumber = false;
-
-    	* f.end = 0;
-	return backup ( f, f.buffer, c );
-    }
-
-    if ( ( c == 'e' || c == 'E' )
-         &&
-	 f.end < limit - 20 )
-    {
-    	char * endsave = f.end;
-
-	* f.end ++ = c;
-	c = getc ( f );
-
-	if ( c == '+' || c == '-' )
-	{
-	    * f.end ++ = c;
-	    c = getc ( f );
+	if ( c == '+' || c == '-' ) {
+	    if ( tp < endtp ) * tp ++ = c;
+	    else token_too_long ();
+	    c = get_character ( f );
+	    ++ column;
 	}
 
-	if ( isdigit ( c ) )
-	{
-	    while ( isdigit ( c ) && f.end < limit )
-	    {
-		* f.end ++ = c;
-		c = getc ( f );
-	    }
-	    f.hasexponent = true;
-	}
-	else
-	{
-	    * f.end = 0;
-	    c = backup ( f, endsave, c );
-	    f.end = endsave;
+	if ( ! isdigit ( c ) ) {
+	    assert ( * f.back == 0 );
+	    * tp = 0;
+	    strcp ( backup, expp );
+	    f.back = f.backup;
+	    tp = expp;
+	    column = expcolumn;
+	} else {
+	    do {
+		if ( tp < endtp ) * tp ++ = c;
+		else token_too_long ();
+		c = get_character ( f );
+		++ column;
+	    } while ( isdigit ( c ) );
+	    f.has_exponent = true;
 	}
     }
 
-    * f.end = 0;
-    f.isnumber = true;
+    * tp = 0;
+
+    f.column = -- column;
+    f.decimals = decimals;
+
+    assert ( * f.back == 0 );
+
+    if ( c != EOF ) {
+	f.back = f.backup;
+	f.backup[0] = c;
+	f.backup[1] = 0;
+    }
 
     char * e;
-    f.number = strtod ( f.buffer, & e );
+    f.number = strtod ( f.token, & e );
     assert ( e == f.end || ! finite ( f.number ) );
     	//
     	// If number is too large then f.number is
@@ -505,7 +501,21 @@ void scantoken ( file & f )
 	// the end of the number; which is probably
 	// a bug in strtod.
 
-    return c;
+    return;
+
+// Come here if partial number scanned and found
+// not to be a number.
+//
+backout:
+    column -= tp - f.token;
+    * tp ++ = c;
+    * tp ++ = 0;
+    strcpy ( f.backup, f.token + 1 );
+    f.back = f.backup;
+    f.token[1] = 0;
+    f.column = column;
+    f.is_number = false;
+    return;
 }
 
 // Tests two numbers just scanned for two files to
