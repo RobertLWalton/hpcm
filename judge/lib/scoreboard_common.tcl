@@ -6,7 +6,7 @@
 #
 # File:		scoreboard
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Jul 19 07:05:41 EDT 2001
+# Date:		Thu Jul 19 08:38:09 EDT 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/07/19 12:25:04 $
+#   $Date: 2001/07/19 13:11:21 $
 #   $RCSfile: scoreboard_common.tcl,v $
-#   $Revision: 1.16 $
+#   $Revision: 1.17 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -154,7 +154,7 @@ if { $argc == 1 } {
 # where all the times have 15 digits exactly, so they
 # can be sorted.
 #
-# An array element may not exists, in which case it
+# An array element may not exist, in which case it
 # should be treated as equal to the empty list.
 
 # The following are the lists of all submitters and
@@ -289,20 +289,10 @@ proc format_time { time } {
 # zeros, and sss is the total number of submissions,
 # in 3 digits with leading zeros (those with more sub-
 # missions are deemed more interesting, other things
-# being equal, which they may be true among submitters
+# being equal, which may be true among submitters
 # with no correct submissions).  The sort code is
 # 000.999999999.000 iff the submitter has made no sub-
-# missions, and all the problem_scores are `......'.
-# 
-# To print an output line for the submitter, the sub-
-# mitter needs to be truncated to 12 characters and
-# printed left adjusted in 12 columns.  Each problem
-# score needs to be printed right adjusted in 8 columns.
-# The time_score needs to be printed right adjusted in
-# 10 columns.  If the modifier is `n', a `*' should pre-
-# fix the time_score.  All submitters with the same
-# number of problems correct are grouped under the head-
-# er `# Problems Correct:'.
+# missions and all the problem_scores are `......'.
 #
 set score_list ""
 set max_time_score 999999999
@@ -478,17 +468,24 @@ set spaces256 $spaces128$spaces128
 
 # Compute number of problems per line (ppl).
 # Also max_column of output (first column is 0).
+#
+# scoreboard_width is the number of columns in the
+# scoreboard.
 
-set ppl [expr { ( $scoreboard_width - 16 ) / 8 } ]
+set ppl [expr { ( $scoreboard_width - 20 ) / 10 } ]
 set np [llength $sorted_problems]
 if { $np < $ppl } { set ppl $np }
-set max_column [expr { 16 + 8 * $ppl - 1 }]
+set max_column [expr { 20 + 10 * $ppl - 1 }]
 
 # Compute line marker characters.  First and last
 # line markers are SPACE, and in last line all
 # spaces will be replaced by underbars (_).
 #
-# [string index $markers N] marks line N
+# [string index $markers N] marks line N.  The first
+# character of `markers' is unused.
+#
+# scoreboard_markers are the marker characters used,
+# in order.
 #
 set nl [expr { ( $np + $ppl - 1 ) / $ppl }]
 if { $nl <= 2 } {
@@ -523,10 +520,10 @@ proc label_problems {} {
 		} else {
 		    set line ""
 		}
-		set line [format {%-16.16s} $line]
+		set line [format {%-20.20s} $line]
 	    }
 	    incr count
-	    set line "$line$m[format {%7.7s} $problem]"
+	    set line "$line$m[format {%9.9s} $problem]"
     }
     if { $count <= $ppl } {
 	puts $line
@@ -589,19 +586,11 @@ foreach item [lsort -decreasing $score_list] {
 	    } else {
 		set line ""
 	    }
-	    set line [format {%-16.16s} $line]
+	    set line [format {%-20.20s} $line]
 	}
 	incr count
 
-	# In the event there are more than 9 submissions
-	# and an incomplete submission, chop off the $m
-	# and not the * or a digit.
-	#
-	if { [string length $score] >= 8 } {
-	    set line "$line[format {%8.8s} $score]"
-	} else {
-	    set line "$line$m[format {%7.7s} $score]"
-	}
+	set line "$line$m[format {%9.9s} $score]"
     }
     if { $count <= $ppl } {
 	puts $line
