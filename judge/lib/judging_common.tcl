@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Sep 17 11:24:54 EDT 2003
+# Date:		Wed Oct 13 10:08:00 EDT 2004
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2003/09/17 15:22:05 $
+#   $Date: 2004/10/13 14:09:19 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.114 $
+#   $Revision: 1.115 $
 #
 
 # Table of Contents
@@ -498,8 +498,8 @@ proc log_error { error_output } {
 		if { $cc != "" } {
 		    puts $mail_ch \
 			 "Please correct and resubmit,\
-		          or wait for response from"
-		    puts $mail_ch "$cc."
+		          or wait for"
+		    puts $mail_ch "a response from $cc."
 		} else {
 		    puts $mail_ch \
 			 "Please correct and resubmit,\
