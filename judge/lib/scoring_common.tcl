@@ -2,7 +2,7 @@
 #
 # File:		scoring_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Jan 30 06:46:01 EST 2002
+# Date:		Sun Feb 10 11:42:24 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/01/30 11:58:10 $
+#   $Date: 2002/02/10 16:42:14 $
 #   $RCSfile: scoring_common.tcl,v $
-#   $Revision: 1.22 $
+#   $Revision: 1.23 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -763,7 +763,8 @@ proc execute_response_commands \
 		    regsub -all -- {-MANUAL-SCORE-} \
 		           $string $manual_score string
 		    regsub -all -- {-PROPOSED-SCORE-} \
-		           $string $proposed_score string
+		           $string $proposed_score \
+			   string
 		    lappend new_command $string
 		}
 		lappend processed_commands $new_command
