@@ -2,7 +2,7 @@
  *
  * File:	hpcm_sendmail.c
  * Authors:	Bob Walton (walton@deas.harvard.edu)
- * Date:	Mon Jan 14 07:27:32 EST 2002
+ * Date:	Mon Jan 14 07:39:40 EST 2002
  *
  * The authors have placed this program in the public
  * domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
  * RCS Info (may not be true date or author):
  *
  *   $Author: hc3 $
- *   $Date: 2002/01/14 12:38:05 $
+ *   $Date: 2002/01/14 12:40:36 $
  *   $RCSfile: hpcm_sendmail.c,v $
- *   $Revision: 1.9 $
+ *   $Revision: 1.10 $
  */
 
 #include <stdlib.h>
@@ -397,9 +397,9 @@ int main ( int argc, char ** argv )
        where <contest-directory> defaults to 
        ~/.hpcm_contest.  Using the real user ID, the
        contest directory is resolved if it is a symbol-
-       lic link, as unresolved name many not be access-
-       ible by the effective user.  E.g., only the real
-       user can access ~/.hpcm_contest directly.
+       lic link, as the unresolved name many not be
+       accessible by the effective user.  E.g., only the
+       real user can access ~/.hpcm_contest directly.
     */
     if ( setreuid (-1, ruid) < 0 )
 	errno_exit ( "set ruid" );
@@ -446,12 +446,19 @@ int main ( int argc, char ** argv )
 		            sizeof ( rcfilename ) );
 	
 	if ( errno == EINVAL ) {
+
+	    /* Contest_directory is NOT a symbolic
+	       link.
+	    */
 	    length = strlen ( contest_directory );
 	    if ( length > sizeof ( rcfilename ) - 50 )
 		too_big_exit
 		    ( "contest directory name" );
 	    strcpy ( rcfilename, contest_directory );
 	} else {
+
+	    /* Contest_directory is a symbolic link.
+	    */
 	    if ( length < 0 )
 		errno_exit
 		    ( "contest directory link name" );
