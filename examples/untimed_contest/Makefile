@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Jul 31 05:16:28 EDT 2002
+# Date:		Thu Aug  1 00:42:51 EDT 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/07/31 09:12:10 $
+#   $Date: 2002/08/01 04:59:09 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.42 $
+#   $Revision: 1.43 $
 
 # To make an email contest named `foo':
 #
@@ -52,7 +52,7 @@
 #    If an instruction says `rerun makejudgingdir',
 #    do this by rerunning `make'.
 #
-#    Among other things you will be asked to set edit
+#    Among other things you will be asked to edit email
 #    routing information into ~/.procmailrc.
 
 # 6. Review the `makescoreboard' program (see `make-
@@ -80,22 +80,25 @@
 #    the Contest_Address file in the judging directory
 #    and executing `make test'.  Then read the email
 #    replies and compare the X-HPCM-Test-Subject field
-#    with the results in the body of the email.  You can
-#    also extract the replies from your email, if you
-#    like, with the help of the hpcm_extract_test_
-#    replies program, and compare them with the .reply
-#    files in the hpcm/examples/test_submissions direc-
-#    tory.
+#    with the results in the body of the email.
 #
+#    You can read and analyze the email replies auto-
+#    matically by placing them in an `mbox' file in the
+#    judging directory and in that directory executing:
+#
+#		make extract_replies
+#		make diff_replies
+
 #    It is also possible to transmit the contents of
 #    the hpcm/examples/test_submissions directory to
 #    a remote location along with the hpcm_sendmail
 #    program and use `make test_email' in that directory
-#    to send test submissions.
+#    to send test submissions.  See the hpcm/examples/
+#    test_submissions/Makefile file.
 #
-#    Note that one of the submissions times out, and for
-#    that the autojudge will take over a minute to
-#    reply.
+#    Note that one of the test submissions times out,
+#    and for that submission the autojudge will take
+#    over a minute to reply.
 #
 #    You can run subsets of the tests by using `make
 #    test_xxx' for various `xxx;: see hpcm/examples/
@@ -148,7 +151,8 @@ S=${HPCM}/examples/test_submissions
 # file or subdirectory in one of the three contest di-
 # rectories `help/', `demos/', or `problems/'.
 #
-# Note that in `help/index' the items already have the
+# Note that in `help/index' below (not the same as
+# `../contestant/help/index') the items already have the
 # `include' option.  `help/index' is used to start the
 # contestants `help/index' file and provide a `this_
 # contest' item for the file `help/this_contest'.
