@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: acm-cont $
-#   $Date: 2000/08/25 12:05:33 $
+#   $Date: 2000/08/25 17:28:13 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.15 $
+#   $Revision: 1.16 $
 #
 
 # Include this code in TCL program via:
@@ -44,6 +44,26 @@ set default_log_directory "~/HPCM_Error_Log"
 # Judging parameters file name:
 #
 set judging_parameters_file "hpcm_judging.rc"
+
+# Replace all line feeds in a string by spaces, then
+# replace any all whitespace string by the empty string,
+# then strip all whitespace from the beginning and end
+# of the string, and lastly return the resulting string.
+#
+proc prepare_field_value { value } {
+
+    regsub -all "\n" $value "\ " value
+
+    regexp "^()\[\ \t\]+\$" $value \
+           forget value
+
+    regexp "^(.*\[^\ \t\])\[\ \t\]+\$" $value \
+           forget value
+    regexp "^\[\ \t\]+(\[^\ \t\].*)\$" $value \
+           forget value
+
+    return value
+
 
 # Convert a [clock seconds] value into a date in
 # the form yyyy-mm-dd-hh:mm:ss that is useable as
@@ -290,7 +310,7 @@ proc log_error { error_output } {
 # values have the `field-name:' stripped off.  If there are
 # two copies of a field, only the last is recorded.
 #
-proc read_message { ch { first_line "" } } {
+proc read_header { ch { first_line "" } } {
     global message_header message_From_line \
            message_from message_to message_date \
 	   message_reply_to message_subject
@@ -306,7 +326,7 @@ proc read_message { ch { first_line "" } } {
     set line $first_line
     if { $line == "" } {
         set line [gets $ch]
-	if { [eof $ch] } break
+	if { [eof $ch] } return
     }
 
     if { [regexp "^From\ " $line } {
@@ -350,7 +370,7 @@ proc read_message { ch { first_line "" } } {
     }
 }
 
-# Using information from the last call to read_message,
+# Using information from the last call to read_header,
 # return the `To:' field value for a reply to that
 # message.  This is the message `Reply-to' field if that
 # is not empty, or the message `From' filed if that is
@@ -415,7 +435,7 @@ proc compose_reply { args } {
 
     set received_ch [open $received_file r]
 
-    read_message $received_ch
+    read_header $received_ch
 
     if { [file exists ${reply_file}+] } {
     	file delete -force ${reply_file}+
@@ -510,51 +530,37 @@ proc send_reply {} {
 # The following function returns the subject of the
 # $received_file in the current directory.  Both the
 # `Subject:' and any preceding or following whitespace
-# are stripped from the result.
+# are stripped from the result, and any line feeds
+# are placed by spaces.
 #
-# If no `Subject:' line is found in the header, or more
-# than one `Subject:' lines are found, or if the -nobody
-# argument is given an the body contains a non-blank
-# line, then error is called with an appropriate error
-# message.
+# If no `Subject:' line is found in the header, or if
+# the -nobody argument is given and the body contains a
+# non-blank line, then error is called with an appropri-
+# ate error message.
 #
-proc find_subject { args } {
+# Read_header is called and its global message_...
+# variables are set.
+#
+proc find_subject { { option -body } } {
 
-    global Header_line_regexp received_file
+    global received_file message_subject
 
-    if { $args == "" } {
+    if { $option == "-body" } {
 	set body yes
-    } elseif { $args == "-nobody" } {
-	set body yes
+    } elseif { $option == "-nobody" } {
+	set body no
     } else {
-        error "Bad arguments to find_subject: $args"
+        error "Bad argument to find_subject: $option"
     }
 
     set received_ch [open $received_file r]
 
-    # Read header
-    #
-    set subject_found no
-    while { "yes" } {
-        set line [gets $received_ch]
-	if { [eof $received_ch] } {
-	    break
-	} elseif { [regexp \
-		"^Subject:\[\ \t\]*(\[^\ \t\].*)\$" \
-		$line all subject] } {
-	    if { $subject_found } {
-	        error "More than one `Subject:' line"
-	    }
-	    set subject_found yes
-	} elseif { [regexp $Header_line_regexp $line] } {
-	    # Header line is OK
-	} else {
-	    break
-	}
-    }
+    read_header $received_ch
 
-    if { $subject_found == "no" } {
-	error "No `Subject:' line found"
+    set subject [prepare_field_value $message_subject]
+
+    if { $subject == "" } {
+    	error "Empty subject"
     }
 
     if { $body == "no" } {
