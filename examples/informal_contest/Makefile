@@ -1,8 +1,7 @@
 # Makefile for an `informal' Contest
 #
 # File:		Makefile
-# Date:		Tue Jan  9 09:06:02 EST 2001
-#
+# Date:		Tue Jan  9 12:45:20 EST 2001
 # Author:	Bob Walton (walton@deas.harvard.edu)
 #
 # The authors have placed this program in the public
@@ -12,14 +11,15 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/01/09 14:03:05 $
+#   $Date: 2001/01/09 17:52:16 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.9 $
+#   $Revision: 1.10 $
 
 # To make an informal contest named `foo':
 #
 #  1. Import the HPCM system into ~/hpcm.  See direc-
-#     tions in hpcm/judge/bin/installing_hpcm.
+#     tions in `Installing HPCM' (hpcm/judge/bin/
+#     installing_hpcm).
 #
 #  2. Create a judging directory ~/judging_foo_password
 #     where the password is needed to keep outsiders
@@ -95,8 +95,8 @@
 #     you do not, printouts will contain the account
 #     name.
 #
-#     Also, `make;' executes `startcontest' so it is
-#     not necessary to execute it separately.
+#     Also, `make' executes `startcontest' so it is
+#     not necessary to execute that separately.
 #
 # 11. One of the instructions will be to make a con-
 #     testant prototype account: see
@@ -119,16 +119,16 @@
 #
 #     Next, before you run SETUP_PROTOTYPE in the proto-
 #     type account, move the `procmailrc' file from the
-#     judging account to the prototype account home dir-
-#     ectory, changing its name to `.procmailrc' in that
-#     directory.  This is a bit tricky, since you are
-#     moving a file across accounts: be sure the result
-#     has mode 600 and owner and group of the prototype
-#     account.  The `.procmailrc' file must be owned by
-#     the account in whose home directory it is placed:
+#     judging account to the prototype account's actual
+#     home directory (not to ~/prototype_home) , chang-
+#     ing its name to `.procmailrc' in that directory.
+#     This is a bit tricky, since you are moving a file
+#     across accounts: be sure the result has mode 600
+#     and owner and group of the prototype account.
+#     The `.procmailrc' file must be owned by the
+#     account in whose home directory it is placed:
 #     this is why it cannot be put in ~/prototype_home
 #     like other files (e.g., .cshrc).
-#
 
 #     Then run:
 #	  ~JJJ/contest_foo/bin/SETUP_PROTOTYPE \
@@ -231,8 +231,10 @@
 #		./contest/scoreboard.1
 #     at intervals if something has changed.  This
 #     background process can be stopped by the
-#     `makescoreboard -stop' command, and its status
-#     can be checked by `makescoreboard -status'.
+#     `makescoreboard -stop' command, its status
+#     can be checked by `makescoreboard -status',
+#     and the scoreboard can be instantly updated
+#     by `makescoreboard 0'.
 #
 
 # 18. Contest judging is automatic.  If you set the
@@ -255,8 +257,8 @@ INDICES=    help/index, \
 	    private/=problems/, \
 	    demo:include, \
 	    preliminary96:include, \
-	    selection96:include, \
-	    selection97:include
+	    preliminary97:include, \
+	    bospre2000:include
 
 all:
 	makejudgingdir -informal ${INDICES}
@@ -286,5 +288,3 @@ stop_scoreboard:
 
 update_scoreboard:
 	makescoreboard 0
-
-

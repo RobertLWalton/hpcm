@@ -2,7 +2,6 @@
 #
 # File:		Makefile
 # Date:		Tue Jan  9 12:12:40 EST 2001
-#
 # Author:	Bob Walton (walton@deas.harvard.edu)
 #
 # The authors have placed this program in the public
@@ -12,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/01/09 17:37:13 $
+#   $Date: 2001/01/09 17:52:15 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.11 $
+#   $Revision: 1.12 $
 
 # To make an email contest named `foo':
 #
