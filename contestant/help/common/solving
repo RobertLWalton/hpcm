@@ -1,24 +1,48 @@
-Solving Problems Help	    Mon Sep 18 18:12:38 EDT 2000
+Solving Problems Help	    Wed Oct 18 12:29:01 EDT 2000
 
 What Problems?
 --------------
 
-The problems are in your `problems' subdirectory.  There
-is one subdirectory of that for each problem, e.g., the
+When you first log in, there are no problems.  You have
+to get the problems with the `hpcm_get' command.
 
-	problems/demo
+To get the demonstration problems before the contest
+starts, you can just type the command
 
-subdirectory holds the `demo' problem.  Note, by the
-way, that the demo problem is really a demo problem,
-and not one of the regular contest problems.
+	hpcm_get
 
-You can get an index of the problems and a guess at
-their relative difficulty by using the command:
+The demonstration problems are put in the `demos' subdi-
+rectory of your home directory (you can always get to
+this with the `cd ~/demos' UNIX command, where `~' de-
+notes your home directory).
 
-	help
+In a formal contest, all you need to do to get the
+problems is type the command
 
-This command also gives any information particular to
-the current contest.
+	hpcm_get
+
+AGAIN, after the contest starts.  The contest problems
+are put in the `problems' subdirectory of your home
+directory (you can always get to this with the
+`cd ~/problems' UNIX command).
+
+Each problem has its own subdirectory in the `problems'
+subdirectory.  Thus a problem named `pppp' would have
+a problem directory named `~/problems/pppp'.
+
+You can display an index of the problems and an estimate
+of their relative difficulty by using the command:
+
+	help problems
+
+In an informal contest you have to get each problem
+one at a time, because the scoreboard uses the time
+you get a problem as the problem start time.  To get
+a problem named `pppp' in an informal contest use
+the command:
+
+	hpcm_get problems/pppp
+
 
 
 Working on a Problem
@@ -26,29 +50,46 @@ Working on a Problem
 
 For a problem named `pppp' you should write a file
 named `pppp.c', `pppp.cc', `pppp.java', or `pppp.p'
-in the directory named `problems/pppp'.
+in the directory `~/problems/pppp'.  The suffix of
+the file you write determines the programming language 
+you are using:
+
+	.c 	for C
+	.cc	for C++
+	.java	for JAVA
+	.p	for PASCAL
+
+You must write only ONE of these files; you CANNOT
+have a solution in two different languages at once.
 
 The description of a problem named `pppp' is in a file
-named `pppp.txt'.
+named `pppp.txt'.  In a formal contest, a printout of
+this file is given to you at the start of the contest,
+but the file does NOT appear in the problem directory.
+In an informal contest, this file is gotten into the
+problem directory by hpcm_get, and you must print it
+yourself or look at it with an editor.
 
 You should write an input file named `pppp.in' in the
 problem directory.
 
 Then the following UNIX commands can be executed in the
-problem directory.  You can try them out using the demo
-directory.  You can try `make submit' in this demo
-directory, and the judges will `judge' the demo submis-
-sion, though of course it will not count.  See the
-README file in the demo directory.
+problem directory.  You can try them out using the de-
+monstration problem in the `~/demos/count' directory.
+You can try `make submit' in this directory, and the
+judges will `judge' the demo submission, though of
+course it will not count.  See the README file in this
+directory for more instructions.
 
     make	Same as `make pppp.out' (see below).
 
     make pppp	Makes the binary program file `pppp' by
                 running gcc on pppp.c, or g++ on
-		pppp.cc, etc., depending upon which of
-		pppp.c, pppp.cc, or pppp.p exist.  Does
-		nothing if `pppp' is more up to date
-		than pppp.c, pppp.cc, etc.
+		pppp.cc, javac on pppp.java, or p2c on
+	        pppp.p., depending upon which of pppp.c,
+		pppp.cc, pppp.java or pppp.p exist.
+		Does nothing if `pppp' is more up to
+		date than pppp.c, pppp.cc, etc.
 
     make pppp.out
 		Makes `pppp' as above and then runs it
@@ -64,21 +105,41 @@ README file in the demo directory.
     make submit
 		Makes `pppp.out' just to be sure that
 		nothing crashes, and then e-mails
-		pppp.c, pppp.cc, etc.  pppp.p to the
-		judges.  Note the pppp.in file MUST
+		pppp.c, pppp.cc, ppp.java, or pppp.p to
+		the judges.  Note the pppp.in file MUST
 		exist to submit, to make pppp.out, but
 		pppp.in can be empty.
 
     make clean	Removes `pppp' and pppp.out.
 
+Resource Limits
+-------- ------
+
+If you look at the `Makefile' in the problem directory
+you will see that it contains memory and time resource
+limits which constrain your problem.  Memory limits
+are typically several megabytes and time limits are
+typically 60 seconds.  Harder problems require care to
+be sure you stay within these limits.
+
+Most problems are such that solutions in C or C++ will
+run in a few seconds.  If you have long running times,
+you may have chosen an algorithm too inefficient to
+avoid the time limit.
+
+
+Debugging
+---------
+
 To debug, you do not have to use pppp.in and make
 pppp.out.  You can just make pppp and run it as a UNIX
 command, typing input at it.  BUT, to submit you must
 have some pppp.in file, though it can be a zero length
-file.
+file.  Also, the resource limits will not be applied
+if you do not use pppp.in and `make'.
 
-The gdb debugger works for C and C++.  Both gdb and dbx
-work well under EMACS.
+The gdb debugger works for C and C++.  Gdb works well
+under EMACS.
 
 For java, making pppp also makes pppp.class, which can
 be run with the debugger jdb.
