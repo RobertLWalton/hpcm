@@ -2,7 +2,7 @@
 //
 // File:	scorediff.cc
 // Authors:	Bob Walton (walton@deas.harvard.edu)
-// Date:	Mon Aug 27 22:04:20 EDT 2001
+// Date:	Tue Aug 28 22:59:12 EDT 2001
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: hc3 $
-//   $Date: 2001/08/28 05:09:00 $
+//   $Date: 2001/08/29 02:50:35 $
 //   $RCSfile: scorediff.cc,v $
-//   $Revision: 1.34 $
+//   $Revision: 1.35 $
 
 // This is version 2, a major revision of the first
 // scorediff program.  This version is more explicitly
@@ -408,6 +408,9 @@ struct file
 			// is no decimal point.
     bool has_exponent;	// For a number token, true iff
     			// the token has an exponent.
+    bool is_float;	// For a number token, true iff
+    			// decimals >= 0 or has_exponent
+			// is true.
 
     // Whitespace description.
     //
@@ -739,6 +742,7 @@ void scan_token ( file & f )
     f.length	= tp - f.token;
     f.column	= -- column;
     f.decimals	= decimals;
+    f.is_float	= ( f.decimals >= 0 ) || f.has_exponent;
 
     // Put c into backup.
 
@@ -1138,7 +1142,7 @@ inline void found_difference
 // ence.  If so, calls found_difference (FLOAT) (or
 // found_difference (INTEGER)), and updates `float_
 // absdiff_maximum' and `float_reldiff_maximum' (or
-// integer_absdiff_maximum' and `integer_reldiff_
+// `integer_absdiff_maximum' and `integer_reldiff_
 // maximum') by writing the differences just found
 // into these variables iff the new differences are
 // larger than the previous values of these variables.
@@ -1147,24 +1151,22 @@ inline void found_difference
 // or SIGN if the two number `decimals' or `has_expo-
 // nent' file members are unequal, or the number signs
 // are unequal (where a sign is the first character of a
-// token if that is `+' or `-' and is `\0' otherwise).
+// token if that is `+' or `-' and is `\0' otherwise)
+// and the numbers are both integers.
 //
 // If there is no computable difference, calls found_
 // difference(INFINITY) instead.  This happens if one of
 // the numbers is not `finite' or their difference is
 // not `finite'.
-//
-// Returns true if found_difference(INFINITY) was called
-// and false otherwise.
 // 
-bool diffnumber ()
+void diffnumber ()
 {
     if ( ! finite ( output.number )
 	 ||
 	 ! finite ( test.number ) )
     {
 	found_difference ( INFINITY );
-	return true;
+	return;
     }
 
     double absdiff =
@@ -1172,7 +1174,7 @@ bool diffnumber ()
     if ( ! finite ( absdiff ) )
     {
 	found_difference ( INFINITY );
-	return true;
+	return;
     }
     if ( absdiff < 0 ) absdiff = - absdiff;
 
@@ -1194,13 +1196,10 @@ bool diffnumber ()
         // Actually, this should never happen.
 
 	found_difference ( INFINITY );
-	return true;
+	return;
     }
 
-    if (    output.decimals >= 0
-         || test.decimals >= 0
-	 || output.has_exponent
-	 || test.has_exponent )
+    if ( output.is_float || test.is_float )
     {
 	found_difference ( FLOAT, absdiff, reldiff );
 
@@ -1219,6 +1218,15 @@ bool diffnumber ()
 
 	if ( reldiff > integer_reldiff_maximum )
 	    integer_reldiff_maximum = reldiff;
+
+	char oc = output.token[0];
+	char tc = test.token[0];
+
+	if ( oc != '-' && oc != '+' ) oc = 0;
+	if ( tc != '-' && tc != '+' ) tc = 0;
+
+	if ( oc != tc )
+	    found_difference ( SIGN );
     }
 
     if ( output.decimals != test.decimals )
@@ -1226,17 +1234,6 @@ bool diffnumber ()
 
     if ( output.has_exponent != test.has_exponent )
 	found_difference ( EXPONENT );
-
-    char oc = output.token[0];
-    char tc = test.token[0];
-
-    if ( oc != '-' && oc != '+' ) oc = 0;
-    if ( tc != '-' && tc != '+' ) tc = 0;
-
-    if ( oc != tc )
-    	found_difference ( SIGN );
-
-    return false;
 }
 
 // Main program.
@@ -1342,7 +1339,6 @@ int main ( int argc, char ** argv )
     // tokens, recording any differences found.
 
     bool done		= false;
-    difference & nb	= differences[WORD];
 
     bool last_match_was_word_diff	= false;
     bool skip_whitespace_comparison	= false;
@@ -1399,11 +1395,9 @@ int main ( int argc, char ** argv )
 		skip_whitespace_comparison = true;
 		break;
 	    case NUMBER_TOKEN:
-	        if (    test.decimals >= 0
-		     || test.has_exponent )
-		    found_difference ( FLOAT_EOF1 );
-		else
-		    found_difference ( INTEGER_EOF1 );
+		found_difference ( test.is_float ?
+				   FLOAT_EOF1 :
+				   INTEGER_EOF1 );
 		skip_whitespace_comparison = true;
 		break;
 	    }
@@ -1415,13 +1409,12 @@ int main ( int argc, char ** argv )
 
 	    if ( test.type == EOF_TOKEN )
 	    {
-	        if ( output.type == WORD_TOKEN )
-		    found_difference ( WORD_EOF2 );
-	        else if (    output.decimals >= 0
-			  || output.has_exponent )
-		    found_difference ( FLOAT_EOF2 );
-		else
-		    found_difference ( INTEGER_EOF2 );
+		found_difference
+		    ( output.type == WORD_TOKEN ?
+		      WORD_EOF2 :
+		      output.is_float ?
+		      FLOAT_EOF2 :
+		      INTEGER_EOF2 );
 		skip_whitespace_comparison = true;
 		break;
 	    }
@@ -1445,6 +1438,9 @@ int main ( int argc, char ** argv )
 		    split_word ( output, test.length );
 	    }
 
+	    // Compare tokens for match that is either
+	    // exact or exact but for case.
+
 	    char * tp1 = output.token;
 	    char * tp2 = test.token;
 	    bool token_case = false;
@@ -1466,6 +1462,9 @@ int main ( int argc, char ** argv )
 	    {
 	        assert ( * tp1 == 0 );
 
+		// Tokens are equal except perhaps for
+		// case.
+
 		if ( token_case )
 		    found_difference
 		        ( output.type != NUMBER_TOKEN ?
@@ -1474,12 +1473,20 @@ int main ( int argc, char ** argv )
 
 	    else if ( output.type == NUMBER_TOKEN )
 	    {
+	        // Tokens are not equal with case
+		// ignored, but both are numbers.
+
 	        assert ( test.type == NUMBER_TOKEN );
 		diffnumber ();
 	    }
 
 	    else
 	    {
+	        // Tokens are not equal with case
+		// ignored, and both are words.
+
+		assert ( test.type == WORD_TOKEN );
+
 	    	undo_split ( test );
 	    	undo_split ( output );
 
@@ -1551,16 +1558,8 @@ int main ( int argc, char ** argv )
 
 		if ( newlines == output.newlines )
 		{
-		    bool output_is_float =
-		         output.type == NUMBER_TOKEN
-		         && ( output.decimals >= 0 
-			      || output.has_exponent );
-		    bool test_is_float =
-		         test.type == NUMBER_TOKEN
-		         && ( test.decimals >= 0 
-			      || test.has_exponent );
-		    if (    ! output_is_float
-		         && ! test_is_float )
+		    if (    ! output.is_float
+		         && ! test.is_float )
 			found_difference
 			    ( newlines == 0 ?
 			      WHITESPACE :
