@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Mar 19 00:15:01 EST 2002
+# Date:		Wed Jul 31 04:41:02 EDT 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/03/19 05:16:37 $
+#   $Date: 2002/07/31 08:35:36 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.18 $
+#   $Revision: 1.19 $
 
 # make
 #	Makes documentation as fprintable .doc files in
@@ -44,8 +44,8 @@ DOCS=	overview.doc \
 	judge/fcheck.doc \
 	judge/fcheckc.doc \
 	judge/file_list.doc \
-	judge/filtered_diff.doc \
 	judge/fprint.doc \
+	contestant/filtered_diff.doc \
 	contestant/fprint.doc \
 	contestant/help.doc \
 	contestant/hpcm_clisp.doc \
@@ -188,11 +188,6 @@ judge/file_list.doc:	hpcm_judging.rc \
 	rm -f judge/file_list.doc
 	-../../judge/bin/file_list -doc \
 	    >judge/file_list.doc
-judge/filtered_diff.doc:	hpcm_judging.rc \
-		        ../../judge/bin/filtered_diff
-	rm -f judge/filtered_diff.doc
-	-../../judge/bin/filtered_diff -doc \
-	    >judge/filtered_diff.doc
 judge/fprint.doc:	hpcm_judging.rc \
 			../../judge/bin/fprint
 	rm -f judge/fprint.doc
@@ -323,6 +318,11 @@ secure/hpcm_TRASH_ACCOUNTS.doc:	\
 
 # ../../contestant/bin docs
 #
+contestant/filtered_diff.doc: \
+		../../contestant/bin/filtered_diff
+	rm -f contestant/filtered_diff.doc
+	-../../contestant/bin/filtered_diff -doc \
+	    >contestant/filtered_diff.doc
 contestant/fprint.doc:	../../contestant/bin/fprint
 	rm -f contestant/fprint.doc
 	-../../contestant/bin/fprint -doc \
