@@ -6,7 +6,7 @@
 #
 # File:		makejudgingdir
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Oct  6 18:27:07 EDT 2000
+# Date:		Sat Oct  7 03:59:54 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/10/07 02:31:43 $
+#   $Date: 2000/10/07 09:22:18 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.17 $
+#   $Revision: 1.18 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -629,6 +629,10 @@ if { $argi >= $argc \
     exit 1
 }
 
+# Universal abbreviations to shorten lines.
+#
+set c_d $contest_directory
+
 # Check for some elementary errors, such as ./contest
 # not existing if it is needed.
 #
@@ -642,29 +646,27 @@ if {    $problems_option \
      || $trashable_option \
      || $printer_option \
      || $home_option } {
-    if {    ! [file isdirectory $contest_directory] \
-         || ! [file executable $contest_directory] \
-         || ! [file readable $contest_directory] } {
-	error "$contest_directory' is not a useable\
-	       directory"
+    if {    ! [file isdirectory $c_d] \
+         || ! [file executable $c_d] \
+         || ! [file readable $c_d] } {
+	error "$c_d' is not a useable directory"
     }
-    puts "Granting a+x access to $contest_directory"
-    grant_access $contest_directory x
+    puts "Granting a+x access to $c_d"
+    grant_access $c_d x
 }
 if { $bin_option } {
-    if {    ! [file isdirectory "$contest_directory/contestant"] \
-         || ! [file executable "$contest_directory/contestant"] \
-         || ! [file readable "$contest_directory/contestant"] } {
-	error "`$contest_directory/contestant' is not\
-	       a useable directory"
+    if {    ! [file isdirectory "$c_d/contestant"] \
+         || ! [file executable "$c_d/contestant"] \
+         || ! [file readable "$c_d/contestant"] } {
+	error "`$c_d/contestant' is not a useable\
+	       directory"
     }
 }
 if { $home_option } {
-    if {    ! [file isdirectory "$contest_directory/home"] \
-         || ! [file executable "$contest_directory/home"] \
-         || ! [file readable "$contest_directory/home"] } {
-	error "`$contest_directory/home' is not a\
-	       useable directory"
+    if {    ! [file isdirectory "$c_d/home"] \
+         || ! [file executable "$c_d/home"] \
+         || ! [file readable "$c_d/home"] } {
+	error "`$c_d/home' is not a useable directory"
     }
 }
 
@@ -756,7 +758,7 @@ proc make_substitutions { name } {
 #   demos_option
 #   help_option
 #   info_directory	directory names
-#   contest_directory
+#   contest_directory (c_d)
 #   solutions_directory
 
 # Helper function.
@@ -767,26 +769,26 @@ proc make_substitutions { name } {
 proc get_index_chs { targetdir } {
 
     global info_option help_option \
-           info_directory contest_directory \
+           info_directory c_d \
            help_index_chs problems_index_chs \
 	   demos_index_chs \
 
     set chs ""
     if { $info_option || $help_option } {
 	switch $targetdir {
-	help		{ set file help/index
+	help		{ set file index
 			  set head "Help Index" }
-	problems	{ set file help/problems
+	problems	{ set file problems
 			  set head "Problems Index" }
-	demos		{ set file help/demos
+	demos		{ set file demos
 			  set head "Demos Index" }
 	}
 	if { $info_option } {
-	    lappend chs [open $info_directory/$file w]
+	    lappend chs \
+	    	    [open $info_directory/help/$file w]
 	}
 	if { $help_option } {
-	    lappend chs \
-	    	    [open $contest_directory/$file w]
+	    lappend chs [open $c_d/help+/$file w]
 	}
 
 	set ${targetdir}_index_chs $chs
@@ -965,7 +967,7 @@ proc process_index_specification {} {
 		    set destination \
 		        "$targetdir+/$targettail"
 		    set destination \
-		      "$contest_directory/$destination"
+		        "$c_d/$destination"
 		    if { [file isfile $source] } {
 			file mkdir \
 			     [file dirname \
@@ -1012,9 +1014,7 @@ proc process_index_specification {} {
 		    }
 		    set d $targettail
 		    while { "yes" } {
-			set cd $contest_directory
-		    	grant_access \
-			    $cd/$targetdir+/$d
+		    	grant_access $c_d/$targetdir+/$d
 			set d [file dirname $d]
 			if { $d == "." } break
 		    }
@@ -1031,8 +1031,7 @@ proc process_index_specification {} {
 			error "$source solution is not\
 			       a directory"
 		    }
-		    set sdp \
-		        $contest_directory/solutions+
+		    set sdp $c_d/solutions+
 		    link_file $source \
 			      "$sdp/[file tail \
 			      		  $targettail]"
@@ -1094,12 +1093,11 @@ if { $info_option } {
 }
 foreach dir {problems demos help} {
     if { [set ${dir}_option] } {
-	if { [file exists $contest_directory/$dir+] } {
-	    puts "Deleting $contest_directory/$dir+"
-	    exec rm -rf $contest_directory/$dir+ \
-	         >@ stdout
+	if { [file exists $c_d/$dir+] } {
+	    puts "Deleting $c_d/$dir+"
+	    exec rm -rf $c_d/$dir+ >@ stdout
 	}
-	file mkdir $contest_directory/$dir+
+	file mkdir $c_d/$dir+
     }
 }
 if { $solutions_option } {
@@ -1120,8 +1118,9 @@ if { $this_contest_option \
 # Make help/index file.
 #
 if { $this_contest_option \
-      && ! [file isfile $help_directory/index] } {
-    set index_ch [open $help_directory/index]
+      && ! [file isreadable $help_directory/index] } {
+    set index_ch [open $help_directory/index w]
+
     puts $index_ch "    help/index"
     puts $index_ch "        This file."
     puts $index_ch ""
@@ -1132,10 +1131,15 @@ if { $this_contest_option \
     puts $index_ch "    help/problems"
     puts $index_ch "        Index of contest problems."
     puts $index_ch ""
+
+    # The following must be last so its inclusion
+    # causes the preceding to be included.
+
     puts $index_ch "*** help/this_contest"
     puts $index_ch "        Information about this\
     			    contest."
     puts $index_ch ""
+
     close $index_ch
     grant_access $help_directory/index
 }
@@ -1143,14 +1147,19 @@ if { $this_contest_option \
 # Make help/this_contest file.
 #
 if { $this_contest_option \
-      && ! [file isfile $help_directory/this_contest] } {
-    set tc_ch [open $help_directory/this_contest]
+      && ! [file isreadable \
+      		 $help_directory/this_contest] } {
+    set tc_ch [open $help_directory/this_contest w]
+
     puts $tc_ch [format {%-28s%28s} \
     			"About This Contest" \
 		        [clock format \
 			       [clock seconds]]]
     puts $tc_ch ""
+
+    close $tc_ch ""
     grant_access $help_directory/this_contest
+    TODO "edit $help_directory/this_contest"
 }
 
 # Set up channel lists.
@@ -1228,6 +1237,12 @@ foreach dir {problems help demos} {
         close $ch
     }
 }
+if { [file exists $c_d/help+/index] } {
+    grant_access $c_d/help+/index]
+}
+if { [file exists $c_d/help+/demos] } {
+    grant_access $c_d/help+/demos]
+}
 
 # Rename directories iff $directory+ differs from
 # $directory as determined by `diff -r'.  If a directory
@@ -1268,21 +1283,28 @@ if { $info_option } {
     rename_directory $info_directory
 }
 if { $problems_option } {
-
-    rename_directory $contest_directory/problems
-    TODO "run `startcontest' to chmod a+rx\
-	  $contest_directory/problems" \
-	 "and $contest_directory/help/problems\
-	  when contest starts"
+    rename_directory $c_d/problems
 }
 if { $help_option } {
-    rename_directory $contest_directory/help
+    rename_directory $c_d/help
 }
 if { $demos_option } {
-    rename_directory $contest_directory/demos
+    rename_directory $c_d/demos
 }
 if { $solutions_option } {
     rename_directory $solutions_directory
+}
+
+if { ( $problems_option \
+       && ! [regexp {r.x} \
+       		    [get_access $c_d/problems]] ) \
+     || \
+     ( $help_option \
+       && ! [regexp {r..} [get_access \
+       			      $c_d/help/problems]] ) } {
+    TODO "run `startcontest' when contest starts" \
+         "to chmod a+rx $c_d/problems" \
+	 "and/or $c_d/help/problems"
 }
 
 # Make mail directory.
@@ -1293,76 +1315,70 @@ if { $mail_option \
     grant_access $mail_directory x
 }
 
-# Make $contest_directory/help2 directory.
+# Make $c_d/help2 directory.
 #
 if { $help2_option \
-     && ! [file isdirectory \
-     		$contest_directory/help2] } {
+     && ! [file isdirectory $c_d/help2] } {
     if { ! [catch {
 	      set help2_type \
-		  [file type \
-		  	$contest_directory/help2] }] \
-				} {
+		  [file type $c_d/help2] }] } {
 	if { $help2_type == "link" } {
-	    puts "Deleting $contest_directory/help2"
-	    file delete -force $contest_directory/help2
+	    puts "Deleting $c_d/help2"
+	    file delete -force $c_d/help2
 	} else {
-	    error "$contest_directory/help2 exists\
-	           but is not a directory"
+	    error "$c_d/help2 exists but is not a\
+	           directory"
 	}
     }
-    link_file ./help $contest_directory/help2
+    link_file ./help $c_d/help2
 }
 
-# Make $contest_directory/bin directory.
+# Make $c_d/bin directory.
 #
 if { $bin_option \
-     && ! [file isdirectory $contest_directory/bin] } {
-    set source $contest_directory/contestant/bin
-    if { ! [file isdirectory $source] } {
-    	error "bin: $source is not a directory"
+     && ! [file isdirectory $c_d/bin] } {
+    if { ! [file isdirectory $c_d/contestant/bin] } {
+    	error "bin: $c_d/contestant/bin is not a\
+	       directory"
     }
-    if { ! [file executable $source] } {
-    	error "bin: $source has no x permission"
+    if { ! [file executable $c_d/contestant/bin] } {
+    	error "bin: $c_d/contestant/bin has no x\
+	       permission"
     }
     if { ! [catch { set bin_type \
-			[file type \
-			      $contest_directory/bin] \
-			      	}] } {
+			[file type $c_d/bin] }] } {
 	if { $bin_type == "link" } {
-	    puts "Deleting $contest_directory/bin"
-	    file delete -force $contest_directory/bin
+	    puts "Deleting $c_d/bin"
+	    file delete -force $c_d/bin
 	} else {
-	    error "$contest_directory/bin exists but\
-	           is not a directory"
+	    error "$c_d/bin exists but is not a\
+	           directory"
 	}
     }
 
-    puts "Linking $contest_directory/bin to $source"
-    link_file contestant/bin $contest_directory/bin
+    puts "Linking $c_d/bin to $c_d/contestant/bin"
+    link_file contestant/bin $c_d/bin
 
     TODO_hpcm_make
 }
 
-# Abbreviate secure directory.
-#
-set cds $contest_directory/secure
 # Make secure directory.
 #
-if { $secure_option && ! [file isdirectory $cds] } {
-    file mkdir $cds
-    chmod og-rwx $cds
+if { $secure_option \
+     && ! [file isdirectory $c_d/secure] } {
+    file mkdir $c_d/secure
+    deny_access $c_d/secure
 }
 
 # Make or edit secure/passwords file.
 #
 if { $secure_option } {
-    if { ! [file readable $cds/passwords] } {
-	close [open $cds/passwords w]
-	TODO "edit $cds/passwords"
-	chmod og-rwx $cds/passwords
+    if { ! [file readable $c_d/secure/passwords] } {
+	close [open $c_d/secure/passwords w]
+	deny_access $c_d/secure/passwords
+	TODO "edit $c_d/secure/passwords"
     } else {
-        set passwords_ch [open $cds/passwords r]
+        set passwords_ch [open $c_d/secure/passwords r]
 	set lines ""
 	set changed no
 	while { "yes" } {
@@ -1382,15 +1398,12 @@ if { $secure_option } {
 	close $passwords_ch
 	if { $changed} {
 	    set passwords_ch \
-	        [open \
-		   $cds/passwords \
-		   w]
+	        [open $c_d/secure/passwords w]
 	    foreach line $lines {
 	        puts $passwords_ch $line
 	    }
 	    close $passwords_ch
-	    TODO "inspect\
-	          $cds/passwords" \
+	    TODO "inspect $c_d/secure/passwords" \
 		 "to which passwords have been added"
 	}
     }
@@ -1399,8 +1412,9 @@ if { $secure_option } {
 # Make secure/hpcm_sendmail.rc file.
 #
 if { $secure_option \
-     && ! [file readable $cds/hpcm_sendmail.rc] } {
-    set rc_ch [open $cds/hpcm_sendmail.rc w]
+     && ! [file readable \
+     		$c_d/secure/hpcm_sendmail.rc] } {
+    set rc_ch [open $c_d/secure/hpcm_sendmail.rc w]
     puts $rc_ch \
 	 "To: [make_password]<[id user]@[id host]>"
     puts $rc_ch "Key: [make_password]"
@@ -1409,24 +1423,23 @@ if { $secure_option \
 	   forget key_name forget2
     puts $rc_ch "Key-Name: $key_name"
     close $rc_ch
-    chmod og-rwx $cds/hpcm_sendmail.rc
-    TODO "edit $cds/hpcm_sendmail.rc" \
+    deny_access $c_d/secure/hpcm_sendmail.rc
+    TODO "edit $c_d/secure/hpcm_sendmail.rc" \
 	 "either remove the Key and Key-Name" \
 	 "or edit the hpcm_judging.rc\
 	  authorization variables"
 }
 
-# Make $contest_directory/who_where
+# Make $c_d/who_where
 #
 if { $who_where_option } {
-    if { ! [file readable \
-    		 $contest_directory/who_where] } {
-	set who_where_ch \
-	    [open $contest_directory/who_where w]
-	set passwords_ch \
-	    [open $contest_directory/secure/passwords r]
-	set wwcepe \
-	    "WHO:WHERE:COACH-EMAIL:PRACTICE-EMAIL"
+    set wwcepe "WHO:WHERE:COACH-EMAIL:PRACTICE-EMAIL"
+    if { ! [file readable $c_d/secure/passwords] } {
+        error "$c_d/secure/passwords does not exist\
+	       for -who_where option"
+    } elseif { ! [file readable $c_d/who_where] } {
+	set who_where_ch [open $c_d/who_where w]
+	set passwords_ch [open $c_d/secure/passwords r]
 	while { "yes" } {
 	    set line [gets $passwords_ch]
 	    if { [eof $passwords_ch] } break
@@ -1437,72 +1450,103 @@ if { $who_where_option } {
 	}
 	close $passwords_ch
 	close $who_where_ch
-	grant_access $$contest_directory/who_where
+	grant_access $c_d/who_where
 
-	TODO "edit $contest_directory/who_where"
-    } else {
-    # TBW
+	TODO "edit $c_d/who_where"
+    } elseif { [file mtime $c_d/who_where] \
+	       < [file mtime $c_d/secure/passwords] } {
+
+	set who_where_ch [open $c_d/who_where r]
+	while { "yes" } {
+	    set line [gets $who_where_ch]
+	    if { [eof $who_where_ch] } break
+	    regexp {^([^:]*):} $line forget account
+	    set who_where_array($account) yes
+	}
+	close $who_where_ch
+
+	set new_account_list ""
+
+	set passwords_ch [open $c_d/secure/passwords r]
+	while { "yes" } {
+	    set line [gets $passwords_ch]
+	    if { [eof $passwords_ch] } break
+	    regexp {^([^:]*)(:|$)} $line \
+	           forget account forget2
+	    if { ! [info exists \
+	                 who_where_array($account)] \
+		 && $account != "none" } {
+		lappend new_account_list $account
+	    }
+	}
+	close $passwords_ch
+
+	if { $new_account_list != "" } {
+	    set who_where_ch [open $c_d/who_where w]
+	    foreach account $new_account_list {
+		puts $who_where_ch "$account:wwcepe"
+	    }
+	    close $who_where_ch
+
+	    TODO "edit $c_d/who_where"
+	}
     }
 }
 
-# Make $contest_directory/printer
+# Make $c_d/trashable
+#
+if { $trashable_option } {
+    if { ! [file readable $c_d/secure/passwords] } {
+        error "$c_d/secure/passwords does not exist\
+	       for -trashable option"
+    } elseif { ! [file readable $c_d/trashable] \
+	       || [file mtime $c_d/trashable] \
+	          < [file mtime $c_d/secure/passwords] \
+		  	} {
+	set trashable_ch [open $c_d/trashable w]
+	set passwords_ch [open $c_d/secure/passwords r]
+	while { "yes" } {
+	    set line [gets $passwords_ch]
+	    if { [eof $passwords_ch] } break
+	    regexp {^([^:]*)(:|$)} $line \
+	    	   forget account forget2
+	    if { $account != "none" } {
+		puts $trashable_ch $account
+	    }
+	}
+	close $passwords_ch
+	close $trashable_ch
+	grant_access $c_d/trashable
+
+	TODO "check and maybe edit $c_d/trashable"
+    }
+}
+
+# Make $c_d/printer
 #
 if { $printer_option \
-     && ! [file isreadable \
-     		$contest_directory/printer] } {
-    set printer_ch [open $contest_directory/printer w]
+     && ! [file isreadable $c_d/printer] } {
+    set printer_ch [open $c_d/printer w]
     if { [info exists env(PRINTER)] } {
 	puts $printer_ch $env(PRINTER)
     } else {
 	puts $printer_ch UNKNOWN
     }
     close $printer_ch
-    grant_access $contest_directory/printer
+    grant_access $c_d/printer
 
-    TODO "edit $contest_directory/printer"
+    TODO "edit $c_d/printer"
 }
 
-# Make $contest_directory/trashable
-#
-if { $trashable_option \
-     && [file readable $cds/passwords] \
-     && ( ! [file readable \
-     		  $contest_directory/trashable] \
-	  || [file mtime \
-	  	   $contest_directory/trashable] \
-	     < [file mtime $cds/passwords] ) } {
-
-    set trashable_ch \
-    	[open $contest_directory/trashable w]
-    set passwords_ch [open $cds/passwords r]
-    while { "yes" } {
-	set line [gets $passwords_ch]
-	if { [eof $passwords_ch] } break
-	regexp {^([^:]*):} $line forget account
-	if { $account != "none" } {
-	    puts $trashable_ch $account
-	}
-    }
-    close $passwords_ch
-    close $trashable_ch
-    grant_access $contest_directory/trashable
-
-    TODO "check and maybe edit\
-          $contest_directory/trashable"
-}
-
-# Abbreviate $contest_directory/home.
-#
-set cdh $contest_directory/home
-
-# Check for $contest_directory/home directory.
+# Check for $c_d/home directory.
 #
 if { $home_option } {
-    if {    ! [file isdirectory $cdh] \
-         || ! [file readable $cdh] \
-         || ! [file readable $cdh/empty.ls] \
-         || ! [file readable $cdh/setup.ls] \
-         || ! [file readable $cdh/setup.tar] \
+    if {    ! [file isdirectory $c_d/home] \
+         || ! [file readable $c_d/home] \
+         || ! [file executable $c_d/home] \
+         || ! [file readable $c_d/home/empty.ls] \
+         || ! [file readable $c_d/home/setup.ls] \
+         || ! [file readable $c_d/home/setup.tar] \
 		} {
 	TODO "run SETUP_PROTYPE in prototype account" \
 	     "and rerun `makejudgingdir -home'"
@@ -1519,19 +1563,19 @@ if { $TODO_written || $TODO_existed } {
     set TODO_ch [open TODO r]
     if { $TODO_existed } {
         if { $TODO_written } {
-	    puts "old+new TODO:"
+	    puts "==================== old+new TODO:"
 	} else {
-	    puts "old TODO:"
+	    puts "==================== old TODO:"
 	}
     } else {
-	puts "new TODO:"
+	puts "==================== new TODO:"
     }
     while { "yes" } {
     	set line [gets $TODO_ch]
 	if { [eof $TODO_ch] } break
 	puts $line
     }
-    puts "-------- end of TODO"
+    puts "==================== end of TODO"
     close $TODO_ch
 }
 
