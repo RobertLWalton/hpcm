@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Sep 17 08:56:25 EDT 2001
+# Date:		Fri Oct 19 05:38:14 EDT 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,15 +11,16 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/09/17 12:43:46 $
+#   $Date: 2001/10/19 09:41:23 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.22 $
+#   $Revision: 1.23 $
 
 # To make an email contest named `foo':
 #
-# 1. Import the HPCM system into ~/hpcm.  See directions
-#    in `Installing HPCM' (hpcm/judge/bin/installing_
-#    hpcm).
+# 1. Create a judging account (see `Judging', hpcm/
+#    judging/bin/judging) and import the HPCM system
+#    into its ~/hpcm directory (see `Installing HPCM',
+#    hpcm/judge/bin/installing_hpcm).
 #
 # 2. Create a judging directory ~/judging_foo_password
 #    where the password is needed to keep outsiders from

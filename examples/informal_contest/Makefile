@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Sep 23 21:36:44 EDT 2001
+# Date:		Fri Oct 19 05:39:36 EDT 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,15 +11,16 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/09/24 01:31:31 $
+#   $Date: 2001/10/19 09:41:24 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.19 $
+#   $Revision: 1.20 $
 
 # To make an informal contest named `foo':
 #
-# 1. Import the HPCM system into ~/hpcm.  See directions
-#    in `Installing HPCM' (hpcm/judge/bin/installing_
-#    hpcm).
+# 1. Create a judging account (see `Judging', hpcm/
+#    judging/bin/judging) and import the HPCM system
+#    into its ~/hpcm directory (see `Installing HPCM',
+#    hpcm/judge/bin/installing_hpcm).
 #
 # 2. Make a contestant prototype account, which we will
 #    refer to here as PPP.  Follow the instructions in:
@@ -52,9 +53,9 @@
 #      ~/judging_foo_password/contest -> ~/contest_foo
 #      ~/contest_foo/contestant -> ~/hpcm/contestant
 #      ~/contest_foo/home -> ~PPP/home
-#
-#    by executing:
 
+#    by executing:
+#
 #	cd ~/judging_foo_password
 #	ln -s ~/contest_foo contest
 #
