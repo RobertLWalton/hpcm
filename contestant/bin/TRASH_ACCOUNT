@@ -4,7 +4,7 @@
 #
 # File:		TRASH_ACCOUNT
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Wed Oct 22 07:01:41 EDT 2003
+# Date:		Wed Oct 22 08:23:20 EDT 2003
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2003/10/22 11:46:31 $
+#   $Date: 2003/10/22 12:30:39 $
 #   $RCSfile: TRASH_ACCOUNT,v $
-#   $Revision: 1.11 $
+#   $Revision: 1.12 $
 
 # Change to the accounts home directory.
 #
@@ -58,7 +58,30 @@ TRASH_ACCOUNT [contest]
     .hpcm_contest/extra_setup.tar is readable, this
     program executes in the account home directory
     
-    	tar xpvf .hpcm_contest/extra_setup.tar"
+    	tar xpvf .hpcm_contest/extra_setup.tar
+
+    For example, extra_setup.tar can be used to put ssh
+    authorization into the current (contestant) account,
+    so a judge can ssh to the current account without
+    using the account password.  To do this, just pre-
+    pare the contest extra_setup.tar file as follows.
+
+    Extra_setup.tar is prepared by working in the
+    judge's account.  First prepare an appropriate
+    ~/.ssh/identity.pub file.  Then execute
+
+	cd SOME-DIRECTORY-OTHER-THAN-~
+	mkdir .ssh
+	chmod 700 .ssh
+	cp ~/.ssh/identity.pub .ssh/authorized_keys
+	chmod 400 .ssh/authorized_keys
+	tar cf extra_setup.tar .ssh
+
+    If your ssh uses ssh protocol 2 instead of ssh pro-
+    tocol 1, then you should use the files id_rsa.pub
+    and authorized_keys2, instead of identity.pub and
+    authorized_keys."
+
 	exit 1
 	;;
     * )
