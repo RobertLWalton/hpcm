@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: acm-cont $
-#   $Date: 2000/08/25 12:05:32 $
+#   $Date: 2000/08/26 04:01:45 $
 #   $RCSfile: receivemail,v $
-#   $Revision: 1.14 $
+#   $Revision: 1.15 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -59,12 +59,19 @@ receivemail \[directory\]
     as the current directory to dispatch a program to
     reply to the message.
 
-    The name of the subdirectory for a message is a
-    reformatted version of the `From' line that begins
-    the message.
+    The name of the subdirectory for a message has the
+    form:
+		dddd-[<SU>]-{<tttt>}
+
+    where dddd is the date in filename format and tttt
+    is the email address to reply to, or is derived
+    therefrom.  If tttt cannot be computed, it has the
+    form `UNKNOWN-uuuu' where uuuu is a random number
+    that induces uniqueness.
 
     If a message is read that already has a directory,
-    the message is ignored.
+    the message is ignored.  Note that this means that
+    no one can send more than one message per second.
 
     If the directory argument is given, this program
     makes that directory current before searching for
@@ -72,9 +79,10 @@ receivemail \[directory\]
 
     If there are non-blank lines before the first `From'
     line in the input, these are organized into a spec-
-    ial message from the current user to him/herself.
-    The subject of this message is something ignored
-    by `dispatchmail'.
+    ial message from the user `UNKNOWN-uuuu', where uuuu
+    is a random number that induces uniqueness.  The
+    subject of this message is something ignored by
+    `dispatchmail'.
 
     This program outputs the names of the directories
     actually created."
@@ -82,6 +90,16 @@ receivemail \[directory\]
 if { $my_argc != 0 } {
     puts $document
     exit 1
+}
+
+# Make sure making subdirectory of the mail
+# directory will not fail because the mail directory
+# does not exist or is not writable.
+#
+if { ! [file isdirectory "$mail_directory"] } {
+    error "$mail_directory is not a directory."
+} elseif { ! [file writable "$mail_directory"] } {
+    error "$mail_directory is not writable."
 }
 
 # Read stdin until non-blank line found.
@@ -95,107 +113,82 @@ while { "yes" } {
     }
 }
 
-# Make sure making subdirectory of the mail
-# directory will not fail because the mail directory
-# does not exist or is not writable.
-#
-if { ! [file isdirectory "$mail_directory"] } {
-    error "$mail_directory is not a directory."
-} elseif { ! [file writable "$mail_directory"] } {
-    error "$mail_directory is not writable."
-}
-
-# If the first non-blank mail line is not a `From' line,
-# create a message header for a (fake) message from the
-# current user to him/herself complaining about the text
-# that does not have a `From' line, and then proceed to
-# include this text in the message until a `From' line
-# or end of input is reached.
-#
-if { ! [regexp $From_line_regexp $line] } {
-
-    # Compute a fake From line for our fake message.
-    # Keep trying until one that does not match an
-    # existing directory is found.
-    #
-    set try_count 0
-    while { "yes" } {
-        set From_line \
-	    "From [id user]\
-	          [clock format [clock seconds]]"
-	}
-	set dirname [From_line_to_dirname $From_line]
-
-	if { ! [catch {
-	          make_directory \
-		      "$mail_directory/$dirname"
-		} ] } {
-	    break;
-	}
-
-	# Limit this madness.
-	#
-	incr try_count
-	if { $try_count > 100 } {
-	    error \
-	        "Cannot create unique subdirectory of\
-		 $mail_directory after 100 tries."
-	}
-
-	# Be sure the next name generated is different.
-	#
-	sleep 1
-    }
-
-    puts $dirname
-
-    set d "$mail_directory/$dirname"
-    set message_ch [open "$d/$received_file" w]
-
-    puts $message_ch \
-         $From_line
-    puts $message_ch \
-         "To: [id user]"
-    puts $message_ch \
-         "Subject: Text in mail input before `From'\
-	  line" 
-    puts $message_ch \
-         ""
-    puts $message_ch \
-         "The following text appeared in mail input\
-	  before"
-    puts $message_ch \
-         "any `From' line appeared."
-    puts $message_ch \
-         ""
-    puts $message_ch \
-         "---------------------- text:"
-
-    while { "yes" } {
-    	puts $message_ch $line
-	set line [gets stdin]
-	if { [eof stdin] } {
-	    break
-        } elseif { [regexp $From_line_regexp $line] } {
-	    break
-	}
-    }
-    puts $message_ch \
-         "---------------------- end text"
-    close $message_ch
-
-    if { [eof stdin] } {
-    	exit 0
-    }
-}
-
 # Loop to handle each message.  Starts with $line
-# equal to the `From' line of the message.
+# equal to the `From' line of the message unless
+# it is the first non-blank line of the input and
+# that is not a `From' line.
 #
 while { "yes" } {
 
     set From_line $line
-    set dirname [From_line_to_dirname $From_line]
+
+    # Read header
+    #
+    if { [regexp {^From\ } $line } {
+    	read_header stdin $line
+	set fake_message no
+    } else {
+
+	set fake_message yes
+
+        # If this is non-blank text before the first
+	# `From' line in the input, fake a header.
+	#
+    	set null_ch [open /dev/null r]
+	read_header $null_ch \
+	            "From UNKNOWN\
+		     [clock format [clock seconds]]"
+	close $null_ch
+	set message_subject \
+	    "Subject: lines received in front of\
+	              From line"
+	set message_header \
+	   "$message_header\n$message_subject"
+
+	# Since there is no `From:' or `Reply-to' in
+	# this fake header, the computed reply-to will
+	# be `UNKNOWN'.
+    }
+
+    # Compute Reply-to.
+    #
+    set reply_to [compute_message_reply_to]
+    if { $reply_to == "UNKNOWN" \
+         && [llength $message_From_line] >= 2 } {
+    	set reply_to [lindex $message_From_line 1]
+    }
+
+    # Reformat Reply-to.  Delete all whitespace,
+    # and if Reply-to ends with <...>, replace
+    # Reply-to by the ...
+    #
+    regsub -all "\ |\t\n" $reply_to "" reply_to
+    regexp {(<[^<>]*>)$} $reply_to forget reply_to
+
+    if { $reply_to == "" } {
+    	set reply_to UNKNOWN
+    }
+
+    if { $reply_to == "UNKNOWN" } {
+        set uuuuuu [format %06d \
+		  [expr { [clock clicks] % 1000000 } ]]
+    	set reply_to "UNKNOWN-$uuuuuu"
+    }
+
+    # Compute the message date.
+    #
+    set date $message_date
+    if { $date == "" } {
+    	set date [lreplace $message_From_line 0 1]
+	set date [string trim $date]
+    }
+    if { $date == "" } {
+        set date [clock format [clock seconds]]
+    }
+
+    set dddd [clock_to_filename_date [clock scan $date]]
+    set dirname "$dddd-\[<SU>\]-{<$reply_to>}"
+    	
 
     # Make directory for message.  On sucess copy
     # message to the directory.  On failure, skip the
@@ -211,8 +204,7 @@ while { "yes" } {
 	    set line [gets stdin]
 	    if { [eof stdin] } {
 	    	break;
-	    } elseif { [regexp $From_line_regexp \
-	               $line] } {
+	    } elseif { [regexp {^From\ } $line] } {
 		break;
 	    }
 	}
@@ -225,15 +217,21 @@ while { "yes" } {
 	set d "$mail_directory/$dirname"
 	set message_ch [open "$d/$received_file" w]
 
+	puts $message_ch $message_header
+	puts $message_ch ""
+
 	while { "yes" } {
-	    puts $message_ch $line
-	    set line [gets stdin]
+	    if { $fake_message } {
+	    	set fake_message no
+	    } else {
+		set line [gets stdin]
+	    }
 	    if { [eof stdin] } {
 	    	break;
-	    } elseif { [regexp $From_line_regexp \
-	               $line] } {
+	    } elseif { [regexp {^From\ } $line] } {
 		break;
 	    }
+	    puts $message_ch $line
 	}
 
 	close $message_ch

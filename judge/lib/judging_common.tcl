@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: acm-cont $
-#   $Date: 2000/08/25 17:28:13 $
+#   $Date: 2000/08/26 04:01:45 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.16 $
+#   $Revision: 1.17 $
 #
 
 # Include this code in TCL program via:
@@ -54,16 +54,8 @@ proc prepare_field_value { value } {
 
     regsub -all "\n" $value "\ " value
 
-    regexp "^()\[\ \t\]+\$" $value \
-           forget value
-
-    regexp "^(.*\[^\ \t\])\[\ \t\]+\$" $value \
-           forget value
-    regexp "^\[\ \t\]+(\[^\ \t\].*)\$" $value \
-           forget value
-
-    return value
-
+    return [string trim value]
+}
 
 # Convert a [clock seconds] value into a date in
 # the form yyyy-mm-dd-hh:mm:ss that is useable as
@@ -86,59 +78,6 @@ proc filename_date_to_clock { date } {
     }
     return [clock scan \
 	    "$month/$day/$year $hour:$minute:$second"]
-}
-
-# Convert a `From' line from a mail message into a
-# directory name of the form dddd-[<SU>]-{<ssss>}
-# where dddd is the date in filename format and ssss
-# is the sender field of the `From' line.
-#
-proc From_line_to_dirname { From_line } {
-
-    global From_line_regexp
-
-    if { ! [regexp $From_line_regexp \
-                   $From_line all sender date] } {
-	error "Not a legal mail file `From' line:\n\
-	      \    $From_line"
-    }
-
-    set d [clock_to_filename_date [clock scan $date]]
-    return "$d-\[<SU>\]-{<$sender>}"
-}
-
-# Do the reverse conversion to that of the above
-# function.
-#
-proc dirname_to_From_line { dirname } {
-
-    if { ! [regexp {^(.*)-[<S.>]-{<(.*)>}$} $dirname \
-                   all date sender] } {
-        error \
-	    "Directory name is not encoded version\
-	     of mail file `From line':\n\
-	     \    $dirname"
-    }
-
-    return "From $sender \
-            [clock format \
-	           [filename_date_to_clock $date]]"
-}
-
-# Extract the sender from a directory name that encodes
-# a `From' line.
-#
-proc dirname_to_sender { dirname } {
-
-    if { ! [regexp {^(.*)-[<S.>]-{<(.*)>}$} $dirname \
-                   all date sender] } {
-        error \
-	    "Directory name is not encoded version\
-	     of mail file `From line':\n\
-	     \    $dirname"
-    }
-
-    return $sender
 }
 
 # Returns 1 iff the current directory is checkeed, 0 if
