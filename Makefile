@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Jan 15 11:24:28 EST 2001
+# Date:		Mon Jan 15 17:25:56 EST 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/01/15 16:35:17 $
+#   $Date: 2001/01/15 22:34:03 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.16 $
+#   $Revision: 1.17 $
 
 # See STATUS file for description of versions.
 #
@@ -102,16 +102,15 @@ hpcm_${VERSION}.tar:	HPCM_MD5_Signatures \
                         distributable_files_${VERSION}
 	rm -f hpcm_${VERSION}.tar
 	cd ..; tar cf hpcm/hpcm_${VERSION}.tar \
-	   HPCM_MD5_Signatures --files-from \
-	   hpcm/distributable_files_${VERSION}
+	   hpcm/HPCM_MD5_Signatures \
+	   `cat hpcm/distributable_files_${VERSION}`
 
 hpcm_non_distributable_${VERSION}.tar:	\
 		non_distributable_files_${VERSION}
 	rm -f hpcm_non_distributable_${VERSION}.tar
 	cd ..; tar cf \
 	   hpcm/hpcm_non_distributable_${VERSION}.tar \
-	   --files-from \
-	   hpcm/non_distributable_files_${VERSION}
+	   `cat hpcm/non_distributable_files_${VERSION}`
 
 distributable_files_${VERSION}:	File_List Makefile
 	rm -f distributable_files_${VERSION}
