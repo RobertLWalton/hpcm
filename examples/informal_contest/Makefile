@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Sep 16 03:59:15 EDT 2001
+# Date:		Mon Sep 17 08:36:57 EDT 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/09/16 08:00:13 $
+#   $Date: 2001/09/17 12:57:04 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.14 $
+#   $Revision: 1.15 $
 
 # To make an informal contest named `foo':
 #
@@ -48,14 +48,14 @@
 #
 # 6. Move the file scoreboard.1head into the ./contest
 #    directory (which is now linked to ~/contest_foo).
-#
 
 # 7. Create a file named ./contest/secure/passwords
 #    that is just a list of all the contestant accounts
-#    that will be created.  You must create the
-#    ./contest/secure directory.  Be sure this direc-
-#    tory and all the files in it are accessible only
-#    by the judge's account JJJ.
+#    that will be created, one account name per line.
+#    You must create the ./contest/secure directory.  Be
+#    sure this directory and all the files in it are
+#    accessible only by the judge's account JJJ: e.g.,
+#    use `chmod 700' on the directory.
 #
 #    Be sure to include a contestant account which
 #    you will use to test the system, and to which no
@@ -82,12 +82,11 @@
 #    judging directory and routing information into
 #    ~/.procmailrc.
 #
-
 #    For an informal contest, you may not need to
 #    edit the WHERE fields in the who_where file.  If
 #    you do not, printouts will contain the account
 #    name.
-#
+
 #    Also, `make' executes `startcontest' so it is
 #    not necessary to execute that separately.
 #
@@ -101,17 +100,25 @@
 #	~/hpcm/contestant/bin/SETUP_PROTOTYPE -doc
 #
 #     Following these directions, you first make a brand
-#     new account, the prototype account.  Then you make
-#     a prototype directory inside the judge's account,
-#     with a name like
+#     new account, the prototype account.  Then using
+#     this account you make a prototype directory inside
+#     the judge's home directory, ~JJJ, with a name
+#     like `~JJJ/prototype_home'.  To do this, execute
+#     `chmod o+wx ~' while in the judge's account, and
+#     then while in the prototype account execute:
 #
-#	~/prototype_home
+#	mkdir ~JJJ/prototype_home
+#	chmod 755 ~JJJ/prototype_home
 #
-#     This directory is owned by the prototype account,
-#     and is a+rx.  This directory is then symbolically
-#     linked to the name ~/contest_foo/home by executing
-#     inside the contest directory:
+#     and then execute `chmod o-w ~' in the judge's
+#     account.  This directory `~JJJ/prototype_home' is
+#     owned by the prototype account, and is a+rx.
 #
+#     Now working in the judge's account, symbolically
+#     link `~/prototype_home' to the name `~/contest_
+#     foo/home' by executing:
+#
+#	cd ~/contest_foo
 #	ln -s ~/prototype_home home
 
 #     Next, before you run SETUP_PROTOTYPE in the proto-
@@ -157,14 +164,13 @@
 #     contest/home in that account.
 #
 #     Another good thing to add to the environment is
-#     `alias ll -lL'.  This is actually of more use in
-#     formal contests, where gotten files are symbol-
-#     ically linked, and contestants may be confused by
-#     all the symbolic links.  But prototype home dir-
-#     ectories may be shared between informal and for-
-#     mal contests, so it is useful to have this envir-
-#     onment setting.
-#
+#     `alias ll -lL'.  This is of most use in formal
+#     contests, where gotten files are symbolically
+#     linked, and contestants may be confused by all the
+#     symbolic links.  But prototype home directories
+#     may be shared between informal and formal con-
+#     tests, so it is useful to have this environment
+#     setting.
 #
 # 13. Be sure there are appropriate account names and
 #     passwords in the file ./contest/secure/passwords,
@@ -194,7 +200,6 @@
 #     presumably not been made yet (but its OK if they
 #     already exist).
 #
-#
 # 15. Then as root (you must log into the root account,
 #     you cannot use `su', as the paths will not be
 #     right), run the following commands:
@@ -217,6 +222,9 @@
 #     regardless of which contest ~/.hpcm_contest was
 #     linked to in the prototype account).
 #
+#     This finishes everything you have to do in the
+#     root account.
+#
 # 16. Run `make nontrashable' in your judging directory.
 #     This removes the file ./contest/trashable and pre-
 #     vents any contestants from accidentally trashing
@@ -224,16 +232,17 @@
 #     requires the contestant's account name appear in
 #     ~JJJ/contest_foo/trashable).
 
-# 17. Run `makescoreboard -start' to start the score-
+# 17. Run `make start_scoreboard' to start the score-
 #     board background process.  This process makes
+#
 #		./contest/scoreboard.1
+#
 #     at intervals if something has changed.  This
 #     background process can be stopped by the
-#     `makescoreboard -stop' command, its status
-#     can be checked by `makescoreboard -status',
+#     `make stop_scoreboard' command, its status
+#     can be checked by `make check_scoreboard',
 #     and the scoreboard can be instantly updated
-#     by `makescoreboard 0'.
-#
+#     by `make update_scoreboard'.
 #
 # 18. Contest judging is automatic.  If you set the
 #     `reply_manager' and `log_manager' variables to
@@ -242,7 +251,7 @@
 #     program to find unchecked errors.
 #
 # 19. Test the contest by using the test contestant
-#     account.
+#     account.  Try submitting the demos/count solution.
 
 # The location of the hpcm directory.
 #
@@ -251,12 +260,13 @@ HPCM=${HOME}/hpcm
 # INDICES below is a description of the help, problems,
 # and demos files to be available to contestants.
 # INDICES consists of a series of entries each concern-
-# ing an index file.  For #example, the entry:
+# ing an index file.  For example, the entry:
 #
 #	    ${HPCM}/contestant/help/index, \
 #		common/=help/, \
-#		email/=help/, \
-#		    email:include, \
+#		informal/=help/, \
+#		advanced/=help/, \
+#		    informal:include, \
 #		    common:include \
 #		    advanced:include \
 #
@@ -277,8 +287,8 @@ HPCM=${HOME}/hpcm
 # all replacements are made in the first line of the
 # item, the item is used if and only if it has the
 # `include' option.  And if used, the item represents a
-# file or subdirectory in one of the three directories
-# `help/', `demos/', or `problems/'.
+# file or subdirectory in one of the three contest di-
+# rectories `help/', `demos/', or `problems/'.
 #
 # Note that in `help/index' the items already have the
 # `include' option.  `help/index' is used to start the
