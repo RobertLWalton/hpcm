@@ -6,7 +6,7 @@
 #
 # File:		makejudgingdir
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Oct  7 03:59:54 EDT 2000
+# Date:		Sat Oct  7 07:56:32 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/10/07 09:22:18 $
+#   $Date: 2000/10/07 12:19:48 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.18 $
+#   $Revision: 1.19 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -785,7 +785,7 @@ proc get_index_chs { targetdir } {
 	}
 	if { $info_option } {
 	    lappend chs \
-	    	    [open $info_directory/help/$file w]
+	    	    [open $info_directory+/help/$file w]
 	}
 	if { $help_option } {
 	    lappend chs [open $c_d/help+/$file w]
@@ -828,7 +828,7 @@ proc process_index_specification {} {
 	   problems_option demos_option \
 	   help_option \
            info_directory solutions_directory \
-	   problems_directory demos_directory
+	   problems_directory demos_directory c_d
 
 
     # Be sure index directory is absolute name, else
@@ -917,7 +917,7 @@ proc process_index_specification {} {
 		}
 
 		if { [set ${targetdir}_header_used] \
-		     == no } {
+		     == "no" } {
 		    set ${targetdir}_header_used yes
 		    if { $item_header != "" } {
 		        foreach ch $index_chs {
@@ -926,7 +926,7 @@ proc process_index_specification {} {
 		    }
 		}
 		foreach ch $index_chs {
-		    puts $newindex_ch "$indent$target"
+		    puts $ch "$indent$target"
 		}
 
 		set ${targetdir}_index_written yes
@@ -1025,15 +1025,18 @@ proc process_index_specification {} {
 		if { $solutions_option \
 		     && [lsearch -exact \
 		     		 {problems demos} \
-				 $targetdir] >= 0 } {
+				 $targetdir] >= 0 \
+		     && [lsearch -exact \
+		     	         $options \
+				 nosolution] < 0 } {
 		    if { ! [file isdirectory $source] \
 		    		} {
 			error "$source solution is not\
 			       a directory"
 		    }
-		    set sdp $c_d/solutions+
+		    set s_d $solutions_directory+
 		    link_file $source \
-			      "$sdp/[file tail \
+			      "$s_d/[file tail \
 			      		  $targettail]"
 		}
 	    }
@@ -1090,6 +1093,7 @@ if { $info_option } {
 	exec rm -rf $info_directory+ >@ stdout
     }
     file mkdir $info_directory+
+    file mkdir $info_directory+/help
 }
 foreach dir {problems demos help} {
     if { [set ${dir}_option] } {
