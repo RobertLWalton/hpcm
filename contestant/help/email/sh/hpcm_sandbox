@@ -4,7 +4,7 @@
 #
 # File:		hpcm_sandbox
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Sat Sep  9 16:25:50 EDT 2000
+# Date:		Sun Sep 10 03:34:10 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,14 +13,19 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: acm-cont $
-#   $Date: 2000/09/09 20:18:14 $
+#   $Date: 2000/09/10 08:33:47 $
 #   $RCSfile: hpcm_sandbox,v $
-#   $Revision: 1.5 $
+#   $Revision: 1.6 $
 
 # If you have a linux system you can symbolically
 # link this to ~/bin/hpcm_sandbox and use the problem
-# Makefiles.
+# Makefiles.  This will probably also work for other
+# UNIX systems, though you may need to change the
+# ulimit(1) command and possibly the processing of
+# signal exit codes for -watch.
 
+# Set defaults for resource limits.
+#
 cputime=600
 datasize=`expr 4 \* 1024 \* 1024`
 filesize=`expr 4 \* 1024 \* 1024`
@@ -29,14 +34,22 @@ core=`expr 4 \* 1024 \* 1024`
 openfiles=30
 processes=30
 
+# Collect information from arguments.
+#
+# Operation is last argument if that is -cputime, ... .
+# Watch is "" if no and "yes" if yes.
+# Program is the name of the program plus arguments.
+#
 operation=""
 watch=""
 program=""
-badargs=""
 
 for arg in "$@"; do
 
-    case "$arg" in
+    if test ! -z "$program"; then
+    	program="$program $arg"
+
+    else case "$arg" in
 	-cputime | -datasize | -filesize \
 	         | -stacksize | -openfiles \
 		 | -processes | -core )
@@ -104,35 +117,21 @@ for arg in "$@"; do
 	    watch=yes
 	    ;;
 
-	"" )
-	    ;;
-	    
-	-* )
-	    badargs="$badargs $arg"
-	    ;;
-
 	* )
-	    if test -z "$program"; then
-	    	program=$arg
-	    else
-		badargs="$badargs $arg"
-	    fi
+	    program=$arg
 	    ;;
-    esac
+    esac; fi
 
 done
 
-if test -z "$program" -o ! -z "$badargs"; then
-    if test ! -z "$badargs"; then
-	echo "ERROR: bad arguments: $badargs"
-    elif test -z "$program"; then
-	echo ERROR: no program specified
-    fi
-    echo "
-hpcm_sandbox [options] program
+case $program in
 
-    This program first checks its arguments for
-    options that set resource limits:
+    "" | -* )
+	echo "
+hpcm_sandbox [options] program arguments
+
+    This program first checks its arguments for options
+    that set resource limits:
 
       -cputime N     Cpu Time in Seconds (600)
       -datasize N    Data Area Size in Bytes (4m)
@@ -142,51 +141,35 @@ hpcm_sandbox [options] program
       -openfiles N   Number of Open Files (30)
       -processes N   Number of Processes (30)
 
-    Here N is a positive decimal integer that can
-    end with \`k' to multiply it by 1024 or \`m' to
-    multiply it by 1024 * 1024.  The values above in
-    parentheses are the default values.
+    Here N is a positive decimal integer that can end
+    with \`k' to multiply it by 1024 or \`m' to multiply
+    it by 1024 * 1024.  The values above in parentheses
+    are the default values.
 
     There is also another possible option:
 
       -watch
 
-    With this option, this program forks with the
-    parent waiting for the child to complete the
-    the rest of this program's action.  If the
-    child terminates with a signal, the parent
-    prints an error message identifying the signal.
-    It does this using \`sys_siglist' (psignal(3))
-    and changes SIGKILL with measured CPU time over
-    the limit to SIGXCPU.  The parent returns a 0
-    exit code if the child does not terminate with a
-    signal, and returns 128 + the signal number as
-    an exit code if the child does terminate with
-    a signal.
+    With this option, this program forks with the parent
+    waiting for the child to complete the the rest of
+    this program's action.  If the child terminates with
+    a signal, the parent prints an error message
+    identifying the signal.  The parent returns a 0 exit
+    code if the child does not terminate with a signal,
+    and returns 128 + the signal number as an exit code
+    if the child does terminate with a signal.
 
-    Next, if this program's effective user ID is
-    \`root', this program eliminates any supplemen-
-    tary groups that the process might have, and
-    changes the effective user and group IDs to
-    those of \`sandbox', as looked up in /etc/passwd.
-
-    Then this program sets the real user and group
-    IDs to the effective user and group IDs, sets
-    the resource limits determined by the options
-    and defaults, sets the environment to contain
-    just "SANDBOX", and executes the program with
-    the given arguments.
-
-    Normally the \`sandbox' user is not allowed to
-    log in and owns no files or directories.
-
-    This version of the program actually emulates
-    the real hpcm_sandbox program, and does not
-    set some of the resource limits or change
-    the user and group IDs to \`sandbox'.
+    This version of the program actually just emulates
+    the real hpcm_sandbox program, the main difference
+    being that this version does not change the process
+    real and effective user and group IDs.
 "
-fi
+	;;
+esac
 
+# Set the resource limits.  Ignore errors; but all
+# these in fact work in linux.
+#
 ulimit -t $cputime
 ulimit -d `expr $datasize / 1024`
 ulimit -f `expr $filesize / 1024`
@@ -196,6 +179,13 @@ ulimit -u $processes
 ulimit -n $openfiles
 
 
+# Execute the program.  If -watch given, look to see if
+# the program returned with a signal, if and yes, print
+# a message identifying the signal and exit with a code
+# equal to 128+signal number (just as /bin/sh does).
+# Otherwise exit with code 0 (so contestants do not have
+# to control their exit code).
+#
 if test ! -z "$watch"; then
     $program
     status=$?
