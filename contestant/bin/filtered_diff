@@ -5,7 +5,7 @@
 #
 # File:		filtered_diff
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Mar 18 10:00:14 EST 2002
+# Date:		Mon Mar 18 10:06:37 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/03/18 14:57:46 $
+#   $Date: 2002/03/18 15:25:34 $
 #   $RCSfile: filtered_diff,v $
-#   $Revision: 1.1 $
+#   $Revision: 1.2 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -63,14 +63,18 @@ proc abbreviations_doc { } {
 
     set result ""
     foreach abbrev [lsort [array names abbreviations]] {
+	set ab [string range "$abbrev                " \
+	               0 15]
+        set result "$result        $ab"
 	set value $abbreviations($abbrev)
-	if { [string length $value] > 27 } {
-	    set v "[string range $value 0 12]  ..... "
-	    set value "$v[string range $value \
-	    			 end-12 end]"
+	regsub -all "\t" $value "\\t" value
+	regsub -all "\ " $value "\\ " value
+	while { [string length $value] > 30 } {
+	    set v [string range $value 0 29]
+	    set value [string range $value 30 end]
+	    set result "$result$v\n\t\t\t"
 	}
-        set result "$result       \
-	    $abbrev	$value\n"
+	set result "$result$value\n"
     }
     return $result
 }
@@ -82,18 +86,24 @@ filtered_diff file1 file2 regular-expression ...
     text within a line that matches any of the given
     regular expressions is replaced by XXX.  Exits
     with 0 status code if there are no differences;
-    otherwise exists with status code 1 and annotates
-    the first difference in stderr.
+    otherwise exits with status code 1 and notates the
+    first difference in the standard error output.
     
     If a regular expression begins with `{NC}' then
-    letter case is ignored in matching the regular
-    expression.  If a regular expression begins with
-    `{WB}' then whitespace must surround what the
-    regular expression matches.
+    letter case is ignored in matching the regular ex-
+    pression.  If a regular expression begins with
+    `{WB}' then whitespace must surround what the regu-
+    lar expression matches.  If a regular expression
+    begins with `{#}' for some natural number #, then
+    the regular expression is used only for line number
+    # of the files.
 
-    The following abbreviations are recognized for reg-
-    ular expressions:
-
+    The following abbreviations are recognized for the
+    indicated regular expressions.  Here the regular
+    expressions have been split across lines, and tab
+    and space are represented by `\\t' and `\\ ' in the
+    regular expressions.
+
 [abbreviations_doc]
     "
 
@@ -139,10 +149,23 @@ while { "yes" } {
 	}
 	set NC no
 	set WB no
-        while { [regexp {^{(NC|WB)}(.*)$} $regexp \
-	                forget option regexp] } {
-	    set $option yes
+	set count_ok 1
+        while { [regexp {^{(NC|WB|[0-9]+)}(.*)$} \
+			$regexp forget option regexp] \
+			} {
+	    switch $option {
+	        NC -
+		WB {
+		    set $option yes
+		}
+		default {
+		    set count_ok \
+		        [expr "$count == $option"]
+		}
+	    }
 	}
+
+	if { ! $count_ok } continue
 
 	set replace XXX
 	if { $WB } {
