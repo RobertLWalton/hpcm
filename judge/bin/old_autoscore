@@ -10,14 +10,11 @@ if { [info command signal] == "signal" } {
     signal error SIGINT
 }
 
-# Grep expressions to search for in output file to
+# Regexp expressions to search for in output file to
 # detect limit overruns:
 #
-set cputime_grep "{Cputime limit exceeded}"
-set filesize_grep "{Filesize limit exceeded}"
-set coredump_grep "{core dumped}"
-set memorysize_grep "cannot allocate"
-more TBD
+set time_limit_regexp {Cputime limit exceeded}
+set output_limit_regexp {Filesize limit exceeded}
 
 set document "
 judge
@@ -40,75 +37,115 @@ if { ! [file readable $test_file] } {
     fatal_error "not readable: $test_file"
 }
 
-if { ! [file readable judging_instructions] } {
-    set judging_instructions \
-        $default_judging_instructions
-} else {
-    set judging_instructions_fd \
-        [open judging_instructions r]
-    set judging_instructions \
-        [gets $judging_instructions_fd}
-    close $judging_instructions_fd
-}
+set error_file "[file rootname $output_file].err"
+if { [file exists $error_file] ) } {
 
-set spacebreak_ok	no
-set linebreak_ok	no
-set whitespace_ok	no
-set number_ok		no
-set number_diff		0.0
+    if { ! [file readable $error_file] } {
+	fatal_error "not readable: $error_file"
+    }
 
-set number_last no
-foreach i $judging_instructions {
-    if { $number_last } {
-        set number_diff $i
-	set number_last no
-    } else if { $i == number } {
-        set number_ok yes
-	set number_last yes
-    } else if { $i == "spacebreak" } {
-        set spacebreak_ok yes
-    } else if { $i == "linebreak" } {
-        set linebreak_ok yes
-    } else if { $i == "whitespace" } {
-        set whitespace_ok yes
-    } else {
-        fatal_error "Unknown judging_instruction: $i"
+    set score ""
+    set line_count 0
+    set error_fd [open $error_file r]
+    while { yes } {
+    	set line [gets $error_fd]
+	if { [eof $error_fd] } break
+	incr line_count
+	if { [regexp -nocase -- \
+	             $time_limit_regexp $line] } {
+	    set score "Time Limit Exceeded"
+	    break;
+	}
+	else if { [regexp -nocase -- \
+	             $output_limit_regexp $line] } {
+	    set score "Output Limit Exceeded"
+	    break;
+	}
+    }
+    close $error_fd
+
+    if { $score == "" && line_count > 0 } {
+    	set score "Program Crashed"
     }
 }
 
-set score ""
+if { $score == "" } {
 
-set scorediff [exec scorediff $output_file $test_file]
+    if { ! [file readable judging_instructions] } {
+	set judging_instructions \
+	    $default_judging_instructions
+    } else {
+	set judging_instructions_fd \
+	    [open judging_instructions r]
+	set judging_instructions \
+	    [gets $judging_instructions_fd]
+	close $judging_instructions_fd
+    }
 
-set number_last no
-foreach d $scorediff {
-    if { $last_number } {
-	set last_number no
-        if { $d > $number_diff } {
+    set spacebreak_ok	no
+    set linebreak_ok	no
+    set whitespace_ok	no
+    set number_ok		no
+    set number_diff		0.0
+
+    set number_last no
+    foreach i $judging_instructions {
+	if { $number_last } {
+	    set number_diff $i
+	    set number_last no
+	} else if { $i == number } {
+	    set number_ok yes
+	    set number_last yes
+	} else if { $i == "spacebreak" } {
+	    set spacebreak_ok yes
+	} else if { $i == "linebreak" } {
+	    set linebreak_ok yes
+	} else if { $i == "whitespace" } {
+	    set whitespace_ok yes
+	} else {
+	    fatal_error "Unknown judging_instruction: $i"
+	}
+    }
+
+    set score ""
+
+    set scorediff [exec scorediff $output_file $test_file]
+
+    set number_last no
+    foreach d $scorediff {
+	if { $last_number } {
+	    set last_number no
+	    if { $d > $number_diff } {
+		set score "Incorrect Output"
+		break
+	    }
+	} else if { $d == "nonblank" } {
+	    set score "Incorrect Output"
+	    break
+	} else if { $d == "whitespace" } {
+	    if { ! $whitespace_ok } {
+		set score "Incorrect Format" 
+	    }
+	} else if { $d == "spacebreak" } {
+	    if { ! $spacebreak_ok } {
+		set score "Incorrect Format" 
+	    }
+	} else if { $d == "linebreak" } {
+	    if { ! $linebreak_ok } {
+		set score "Incorrect Format" 
+	    }
+	} else if { $d == "number" } {
+	    if { ! $number_ok } {
+		set score "Incorrect Output" 
+		break
+	    }
+	    set last_number yes
+	} else if { $d == "eof1" } {
+	    set score "Incomplete Output"
+	    break
+	} else if { $d == "eof2" } {
 	    set score "Incorrect Output"
 	    break
 	}
-    } else if { $d == "nonblank" } {
-    	set score "Incorrect Output"
-	break
-    } else if { $d == "whitespace" } {
-        if { ! $whitespace_ok } {
-	    set score "Incorrect Format" 
-        }
-    } else if { $d == "spacebreak" } {
-        if { ! $spacebreak_ok } {
-	    set score "Incorrect Format" 
-        }
-    } else if { $d == "linebreak" } {
-        if { ! $linebreak_ok } {
-	    set score "Incorrect Format" 
-        }
-    } else if { $d == "number" } {
-        if { ! $number_ok } {
-	    set score "Incorrect Output" 
-	    break
-        }
-	set last_number yes
     }
 }
-

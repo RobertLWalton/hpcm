@@ -16,12 +16,6 @@ set allowed_extensions_default \
     ".c .cc .java"
 set allowed_extensions_filename \
     "allowed_submission_extensions"
-set limits_default \
-    "limit cputime 30;\
-     limit filesize 1m;\
-     limit datasize 8m;\
-     limit stacksize 4m;\
-     limit openfiles 3"
 
 set document "
 judge
@@ -42,10 +36,9 @@ proc fatal_error { args } {
     exit 1
 }
 
-proc submission_error { args } {
+proc error_for_score_file { args } {
     global score_file
     set score_fd [open $score_file w]
-    puts $score_fd "Submission Error"
     puts $score_fd [lindex $args 0]
     puts "ERROR: [lindex $args 0]"
     lreplace args 0 0
@@ -55,6 +48,11 @@ proc submission_error { args } {
     }
     close $score_fd
     exit 1
+}
+
+proc submission_error { args } {
+    eval "error_for_score_file {Submission Error}\
+         [list args]"
 }
 
 set program_directory [file dirname $argv0]
@@ -149,7 +147,9 @@ if { ! [file readable $submitted_program] \
     	file delete $submitted_program
     }
     puts "Making ${submitted_program}"
-    exec make $submitted_program
+    if { [catch { exec make $submitted_program }] } {
+        error_for_score_file "Syntax Error"
+    }
     exec chmod a+x $submitted_program
 }
 
@@ -161,25 +161,8 @@ if { ! [file readable "${submitted_program}.out" \
      || [file mtime "${submitted_program}.in"] \
            < [file mtime "${submitted_program}.in"] } {
 
-    if { [file readable execution_limits] } {
-    	set fd [open execution_limits r]
-	set limits = ""
-	while { yes } {
-	    set line [gets $fd]
-	    if { [eof $fd] } break
-	    set limits "$limits;$line"
-	}
-    }
-    else {
-        set limits $default_limits
-    }
-
     puts "Making ${submitted_program}.out"
-    exec << "$limits;\
-             nobody $submitted_program\
-             < ${submitted_program}.in\
-             >& ${submitted_program}.out" \
-	 /bin/csh -f
+    exec make $submitted_program
 }
 
 TBW

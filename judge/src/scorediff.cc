@@ -15,6 +15,12 @@ char documentation [] =
 "    whitespace	Both files had whitespace in the same\n"
 "		place, but there was differing amounts\n"
 "		of whitespace.\n"
+"    eof1	The first file ended and the second\n"
+"		file had remaining non-space\n"
+"		characters.\n"
+"    eof2	The second file ended and the first\n"
+"		file had remaining non-space\n"
+"		characters.\n"
 "    number D	Two files had a number in the same\n"
 "		place, but the numbers were not repre-\n"
 "		sented by the same character string,\n"
@@ -179,6 +185,8 @@ int main ( int argc, char ** argv )
     bool spacebreak	= false;
     bool linebreak	= false;
     bool whitespace	= false;
+    bool eof1		= false;
+    bool eof2		= false;
     bool number		= false;
     bool nonblank	= false;
     double number_diff	= 0.0;
@@ -198,7 +206,7 @@ int main ( int argc, char ** argv )
 		if ( c2 == EOF ) break;
 	    }
 
-	    nonblank = true;
+	    eof1 = true;
 
 	    break;
      	}
@@ -310,4 +318,37 @@ int main ( int argc, char ** argv )
 	    break;
      	}
     }
+
+    bool any = false;
+
+    if ( spacebreak ) {
+    	cout << (any ? " spacebreak" : "spacebreak");
+	any = true;
+    }
+    if ( linebreak ) {
+    	cout << (any ? " linebreak" : "linebreak");
+	any = true;
+    }
+    if ( whitespace ) {
+    	cout << (any ? " whitespace" : "whitespace");
+	any = true;
+    }
+    if ( eof1 ) {
+    	cout << (any ? " eof1" : "eof1");
+	any = true;
+    }
+    if ( eof2 ) {
+    	cout << (any ? " eof2" : "eof2");
+	any = true;
+    }
+    if ( number ) {
+    	cout << (any ? " number " : "number ")
+	     << number_diff;
+	any = true;
+    }
+    if ( nonblank ) {
+    	cout << (any ? " nonblank" : "nonblank");
+	any = true;
+    }
+    cout << (any ? "" : "none") << eol;
 }
