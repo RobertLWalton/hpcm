@@ -11,9 +11,9 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: hc3 $
-//   $Date: 2001/07/01 07:06:05 $
+//   $Date: 2001/07/01 14:33:33 $
 //   $RCSfile: scorediff.cc,v $
-//   $Revision: 1.24 $
+//   $Revision: 1.25 $
 
 // This is version 2, a major revision of the first
 // scorediff program.  This version is more explicitly
@@ -35,7 +35,12 @@ int finite (double);	// Not always in math.h
 // Maximum size of a token, or of whitespace preceding
 // a token.
 //
-#define MAX_SIZE 10200
+unsigned const MAX_SIZE = 10200;
+
+// Default maximum number of proof lines containing any
+// one type of difference.
+//
+unsigned const MAX_PROOF_LINES = 10;
 
 char documentation [] =
 "scorediff [options] output_file test_file\n"
@@ -170,7 +175,7 @@ char documentation [] =
 "    by an an optional sign followed by digits.  A\n"
 "    number is scanned by the strtod(3) function.\n"
 "\n"
-"    A word is a string of non-whitespace characers\n"
+"    A word is a string of non-whitespace characters\n"
 "    that does not contain a number.  If two words S\n"
 "    and L are being matched, and S is shorter than\n"
 "    L, then L is split into a first word of the same\n"
@@ -210,7 +215,7 @@ char documentation [] =
 "\n"
 "    Note that if the two matching numbers have expo-\n"
 "    nents and the letter case of the `e' or `E' in\n"
-"    the two exponents does not match, then the dif-\n"
+"    the two exponents does not match, then the diff-\n"
 "    erence will always be reported as a `float'\n"
 "    difference and not a `case' difference.\n"
 "\f\n"
@@ -229,16 +234,17 @@ char documentation [] =
 "    of the difference.  Proofs are output on proof-\n"
 "    lines that have the following syntax:\n"
 "\n"
-"          proof-line ::=\n"
+"          line-proof ::=\n"
 "                    output-line-number\n"
 "                    test-line-number\n"
+"                    token-proof token-proof*\n"
+"\n"
+"          token-proof ::=\n"
+"                    output-token-end-column\n"
+"                    test-token-end-column\n"
 "                    proof proof*\n"
 "\n"
-"          proof ::= difference-description\n"
-"                    token-locator\n"
-"\n"
-"          difference-description ::=\n"
-"                    `nonblank' | `case' | `column' |\n"
+"          proof ::= `nonblank' | `case' | `column' |\n"
 "                    `decimal' | `exponent' |\n"
 "                    `integer' absolute-difference\n"
 "                              relative-difference |\n"
@@ -251,34 +257,46 @@ char documentation [] =
 "          relative-difference ::=\n"
 "                    floating-point-number\n"
 "\f\n"
-"          token-locator ::=\n"
-"                    output-token-end-column\n"
-"                    test-token-end-column\n"
-"\n"
 "    where the column numbers in a line start with 0\n"
 "    and the line numbers in a file start with 1.\n"
 "    Here non-floating-point numbers output as part\n"
 "    of proofs are unsigned integers.  All the proofs\n"
-"    with the same output and test file line numbers\n"
-"    are put on the same proof-line.\n"
+"    concerning the same pair of matching tokens are\n"
+"    grouped together into a token-proof that begins\n"
+"    with the ending column numbers of the matching\n"
+"    tokens.  All the token-proofs whose tokens are\n"
+"    in the same lines within their respective files\n"
+"    are grouped together into one line-proof that\n"
+"    begins with the line numbers of the respective\n"
+"    lines.  Each line-proof is output on a line by\n"
+"    itself\n"
 "\n"
-"    Program options may be used to suppress the out-\n"
-"    put of proofs by this program.  An option con-\n"
-"    sisting of a `-' followed by difference name\n"
-"    followed by an unsigned integer N suppresses all\n"
-"    but the first N proofs with that difference\n"
-"    name.  Thus `-case 5' suppresses all but the\n"
-"    first 5 `case' proofs.  If N is omitted, it is\n"
-"    assumed to be 0 (and next program argument must\n"
-"    NOT begin with a digit).  Thus `-case' with no\n"
-"    following number suppresses all `case' proofs.\n"
+"    There is a limit for each difference type to the\n"
+"    number of proofs of that type that will be out-\n"
+"    put.  Specifically, if the limit is N for diff-\n"
+"    erence type T, then after N line-proofs each\n"
+"    containing at least one proof of type T have\n"
+"    output, no more proofs of type T will be output.\n"
+"\n"
+"    These limits default to 10 for each difference\n"
+"    type, but the limits can be changed by program\n"
+"    options.  An option consisting of a `-' followed\n"
+"    by a difference name followed by an unsigned\n"
+"    integer N sets the limit to N for the named\n"
+"    difference.  Thus `-case 5' suppresses all\n"
+"    `case' proofs after 5 line-proofs containing\n"
+"    `case' proofs have been output.  If N is omit-\n"
+"    ted, it is assumed to be 0 (and next program\n"
+"    argument must NOT begin with a digit).  Thus\n"
+"    `-case' with no following number suppresses all\n"
+"    `case' proofs.\n"
 "\n"
 "    The `-float' and `-integer' program options\n"
 "    differ in that they have the forms:\n"
 "\n"
 "        -float absolute-diff relative-diff N\n"
 "        -integer absolute-diff relative-diff N\n"
-"\n"
+"\f\n"
 "    and the program outputs only the first N `float'\n"
 "    or `integer' proofs that have an absolute or\n"
 "    relative difference larger than the values given\n"
@@ -287,9 +305,13 @@ char documentation [] =
 "    the program argument following them does NOT\n"
 "    begin with a digit or decimal point.\n"
 "\n"
-"    The first `nonblank' difference found terminates\n"
-"    this program and the search for more differ-\n"
-"    ences.\n"
+"    If N is the limit on the number of line-proofs\n"
+"    containing a `nonblank' proof, then after the\n"
+"    last of these N line-proofs is finished, this\n"
+"    program terminates without continuing its search\n"
+"    for more differences.  Here if N == 0, then for\n"
+"    the purposes of applying this rule, N is treated\n"
+"    as if it were 1.\n"
 ;
 
 // A token is either a number token, an end of file
@@ -715,8 +737,6 @@ void split_word ( file & f, int n )
     assert ( f.type == WORD_TOKEN );
     assert ( n < f.length );
 
-    cout << "SPLIT " << f.token << " " << n << endl;
-
     f.remainder_length = f.length - n;
     char * p = f.token + n;
     f.remainder_c = * p;
@@ -751,29 +771,40 @@ enum difference_type {
 struct difference
 {
     char *	name;
-    bool	flag;
+
+    bool	found;
         // True if difference has been found.
+
+    unsigned	last_output_line;
+    unsigned	last_test_line;
+       // Line numbers of last proof output that
+       // contains this type of difference.  Zero
+       // if no proof containing this difference
+       // has been output.
+
     unsigned	proof_limit;
-       // Decremented whenever a proof is output.
        // If zero, suppresses output of proofs.
+       // Decremented whenever non-zero and a
+       // proof is output whose line numbers do
+       // not equal those recorded above.
 };
 
 difference differences[] = {
-    { "linebreak", false, UINT_MAX },
-    { "spacebreak", false, UINT_MAX },
-    { "whitespace", false, UINT_MAX },
-    { "beginspace", false, UINT_MAX },
-    { "linespace", false, UINT_MAX },
-    { "endspace", false, UINT_MAX },
-    { "eof1", false, UINT_MAX },
-    { "eof2", false, UINT_MAX },
-    { "float", false, UINT_MAX },
-    { "integer", false, UINT_MAX },
-    { "decimal", false, UINT_MAX },
-    { "exponent", false, UINT_MAX },
-    { "case", false, UINT_MAX },
-    { "column", false, UINT_MAX },
-    { "nonblank", false, UINT_MAX }
+    { "linebreak",	false, 0, 0, MAX_PROOF_LINES },
+    { "spacebreak",	false, 0, 0, MAX_PROOF_LINES },
+    { "whitespace",	false, 0, 0, MAX_PROOF_LINES },
+    { "beginspace",	false, 0, 0, MAX_PROOF_LINES },
+    { "linespace",	false, 0, 0, MAX_PROOF_LINES },
+    { "endspace",	false, 0, 0, MAX_PROOF_LINES },
+    { "eof1",		false, 0, 0, MAX_PROOF_LINES },
+    { "eof2",		false, 0, 0, MAX_PROOF_LINES },
+    { "float",		false, 0, 0, MAX_PROOF_LINES },
+    { "integer",	false, 0, 0, MAX_PROOF_LINES },
+    { "decimal",	false, 0, 0, MAX_PROOF_LINES },
+    { "exponent",	false, 0, 0, MAX_PROOF_LINES },
+    { "case",		false, 0, 0, MAX_PROOF_LINES },
+    { "column",		false, 0, 0, MAX_PROOF_LINES },
+    { "nonblank",	false, 0, 0, MAX_PROOF_LINES }
 };
 
 // Maximum numeric differences found so far.
@@ -803,8 +834,8 @@ struct proof
 
 struct proof_line
 {
-    unsigned		output_line_number;
-    unsigned		test_line_number;
+    unsigned		output_line;
+    unsigned		test_line;
     proof *		proofs;
     proof_line *	next;
 };
@@ -823,20 +854,20 @@ inline void output_proof
 
     if ( last_proof_line == NULL
 	 ||
-         last_proof_line->output_line_number
+         last_proof_line->output_line
 	 != output.line
 	 ||
-	 last_proof_line->test_line_number
+	 last_proof_line->test_line
 	 != test.line )
     {
-        proof_line * pline		= new
-	                                  proof_line;
-	pline->output_line_number	= output.line;
-	pline->test_line_number		= test.line;
-	pline->proofs			= NULL;
-	pline->next			= NULL;
+        proof_line * pline	= new proof_line;
 
-	last_proof			= NULL;
+	pline->output_line	= output.line;
+	pline->test_line	= test.line;
+	pline->proofs		= NULL;
+	pline->next		= NULL;
+
+	last_proof		= NULL;
 
 	if ( last_proof_line == NULL )
 	    first_proof_line		= pline;
@@ -862,7 +893,10 @@ inline void output_proof
 
     last_proof		= p;
 
-    -- differences[type].proof_limit;
+    difference & d = differences[type];
+
+    d.last_output_line = output.line;
+    d.last_test_line   = test.line;
 }
 
 // Record a found difference.
@@ -872,15 +906,27 @@ inline void found_difference
 	  double absdiff = 0.0,
 	  double reldiff = 0.0 )
 {
-    differences[type].flag = true;
-    if ( differences[type].proof_limit > 0
+    difference & d = differences[type];
+
+    d.found = true;
+
+    if ( d.proof_limit > 0
          && (    type != FLOAT
 	      || absdiff > float_absdiff_limit
 	      || reldiff > float_reldiff_limit )
          && (    type != INTEGER
 	      || absdiff > integer_absdiff_limit
 	      || reldiff > integer_reldiff_limit ) )
-        output_proof ( type, absdiff, reldiff );
+    {
+	if ( d.last_output_line != 0
+	     && ( d.last_output_line != output.line
+	         ||
+	         d.last_test_line != test.line ) )
+	    -- d.proof_limit;
+
+	if ( d.proof_limit > 0 )
+	    output_proof ( type, absdiff, reldiff );
+    }
 }
 
 // Tests two numbers just scanned for the output and
@@ -1063,10 +1109,10 @@ int main ( int argc, char ** argv )
     open ( test, argv[2] );
 
     // Loop that reads the two files and compares their
-    // tokens, setting flags describing any differences
-    // found.
+    // tokens, recording any differences found.
 
     bool done		= false;
+    difference & nb	= differences[NONBLANK];
 
     while ( ! done )
     {
@@ -1075,6 +1121,18 @@ int main ( int argc, char ** argv )
 	//
 	scan_token ( output );
 	scan_token ( test );
+
+	// Terminate loop if we have output the last
+	// nonblank containing proof line.
+
+	if ( nb.last_output_line != 0
+	     &&
+	     nb.proof_limit <= 1
+	     &&
+	     ( nb.last_output_line != output.line
+	       ||
+	       nb.last_test_line != test.line ) )
+	    break;
 
         // Terminate loop if just one file has an
 	// EOF_TOKEN.
@@ -1151,7 +1209,6 @@ int main ( int argc, char ** argv )
 	    if ( output.type != test.type )
 	    {
 		found_difference ( NONBLANK );
-		done = true;
 		break;
 	    }
 
@@ -1208,29 +1265,29 @@ int main ( int argc, char ** argv )
 	    {
 	        assert ( test.type == NUMBER_TOKEN );
 		diffnumber ();
-
-		done = differences[NONBLANK].flag;
 	    }
 
 	    else
 	    {
 		found_difference ( NONBLANK );
-		done = true;
 	    }
 
 	    break;
      	}
     }
 
-    // Loop done and difference flags are now computed.
-    // Produce output line according to difference
-    // flags.
+    // The loop is done, and differences are now
+    // recorded in memory.
+
+    // Produce first output line listing all found
+    // differences, regardless of the proofs to be
+    // output.
 
     bool any = false;
 
     for ( int i = 0; i < MAX_DIFFERENCE; ++ i )
     {
-        if ( differences[i].flag )
+        if ( differences[i].found )
 	{
 	    if ( any ) cout << " ";
 	    cout << differences[i].name;
@@ -1246,17 +1303,36 @@ int main ( int argc, char ** argv )
 
     cout << (any ? "" : "none") << endl;
 
+    // Output proof lines.
+
     for ( proof_line * pline = first_proof_line;
           pline != NULL;
 	  pline = pline->next )
     {
-        cout << pline->output_line_number << " "
-             << pline->test_line_number;
+        cout << pline->output_line << " "
+             << pline->test_line;
+
+	int last_output_column	= -1;
+	int last_test_column	= -1;
 
 	for ( proof * p = pline->proofs;
 	      p != NULL;
 	      p = p->next )
 	{
+	    if ( last_output_column
+	             != p->output_token_end_column
+	         ||
+		 last_test_column
+	             != p->test_token_end_column )
+	    {
+		last_output_column =
+		    p->output_token_end_column;
+		last_test_column =
+		    p->test_token_end_column;
+		cout << " " << last_output_column;
+		cout << " " << last_test_column;
+	    }
+
 	    cout << " " << differences[p->type].name;
 	    if (    p->type == FLOAT
 	         || p->type == INTEGER )
@@ -1264,8 +1340,6 @@ int main ( int argc, char ** argv )
 		cout << " " << p->absdiff;
 		cout << " " << p->reldiff;
 	    }
-	    cout << " " << p->output_token_end_column;
-	    cout << " " << p->test_token_end_column;
 	}
 	cout << endl;
     }
