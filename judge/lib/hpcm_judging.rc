@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Feb  7 14:53:41 EST 2003
+# Date:		Fri Feb  7 19:28:09 EST 2003
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2003/02/07 20:29:08 $
+#   $Date: 2003/02/08 00:31:11 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.128 $
+#   $Revision: 1.129 $
 
 # Table of Contents:
 #
@@ -774,9 +774,11 @@ set output_limit_regexp {file size limit exceeded}
 #   solution	Return SOLUTION if score is `Completely
 #		Correct'.
 #   first	Return location of FIRST error if score
-#		is not `Completely Correct'.
+#		is not `Completely Correct' and is
+#		automatically determined.
 #   summary	Return SUMMARY of errors if score is not
-#		`Completely Correct'.
+#		`Completely Correct' and is automatical-
+#		ly determined.
 #
 #   ""		None of above.
 #
@@ -838,6 +840,19 @@ set response_instructions {
 	    BLANK
 	    { LINE "    -AUTO-SCORE-" }
 	    FINAL
+
+	    if { $auto_score == "Completely Correct" } {
+	        # do nothing here, but see below
+	    } elseif { [regexp first $response_mode] } {
+		BLANK
+		BAR
+		FIRST
+	    } elseif { [regexp summary $response_mode] \
+	    			} {
+		BLANK
+		BAR
+		SUMMARY
+	    }
 	} elseif { [lcontain {auto+manual manual+auto} \
 			     $scoring_mode] } {
 
@@ -932,6 +947,24 @@ set response_instructions {
     BLANK
     { BAR "this message replies to:" }
     RECEIVED-HEADER
+
+    if { $proposed_score == "Completely Correct" || \
+         ( ! $proposed && \
+           $manual_score == "Completely Correct" ) || \
+         ( ! $proposed && ! $manual && \
+           $auto_score == "Completely Correct" ) } {
+
+        if { [regexp solution $response_mode] } {
+	    BLANK
+	    BAR
+	    { LINE "For comparison purposes,\
+		    our solution follows." }
+	    { LINE "PLEASE do NOT make ANY\
+		    solution PUBLIC." }
+	    BAR
+	    SOLUTION
+	}
+    }
 }
 
 # The `response_instructions' variable value is a TCL
