@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Dec 10 21:34:46 EST 2000
+# Date:		Mon Dec 11 15:05:03 EST 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/12/11 03:27:30 $
+#   $Date: 2000/12/12 03:39:16 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.9 $
+#   $Revision: 1.10 $
 
 all:	submakes
 
@@ -44,6 +44,7 @@ pascal.files \
 doc.files\
 system.files\
 test.files \
+tdata.files \
 problem.files \
 library.files \
 legal.files:
