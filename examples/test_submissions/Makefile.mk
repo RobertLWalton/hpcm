@@ -2,7 +2,7 @@
 #
 # File:		Makefile.mk
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Mar 18 10:35:53 EST 2002
+# Date:		Mon Mar 18 19:09:24 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/03/18 15:34:31 $
+#   $Date: 2002/03/19 00:08:48 $
 #   $RCSfile: Makefile.mk,v $
-#   $Revision: 1.7 $
+#   $Revision: 1.8 $
 
 # In the following, RCSfile and Revision are for
 # get_count.
@@ -24,7 +24,7 @@ diff_replies:
 	    DATE RECEIVED_BY MESSAGE_ID \
 	    TO FROM ERROR SUBMISSION \
 	    'RCSfile: (Makefile|get_count.reply),v' \
-	    '\$$Revision: 1.7 $$'; \
+	    'Revision: [0-9]+.[0-9]+ \$$'; \
 	done
 
 test_email:	test_count_correct \
