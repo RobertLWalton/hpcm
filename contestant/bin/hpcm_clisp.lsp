@@ -12,9 +12,9 @@
 ;;;; RCS Info (may not be true date or author):
 ;;;;
 ;;;;   $Author: hc3 $
-;;;;   $Date: 2002/01/11 08:08:30 $
+;;;;   $Date: 2002/01/11 08:34:07 $
 ;;;;   $RCSfile: hpcm_clisp.lsp,v $
-;;;;   $Revision: 1.14 $
+;;;;   $Revision: 1.15 $
 ;;;;
 ;;;;
 ;;;; This file was originally written by the Bob Walton
@@ -108,17 +108,23 @@
 		 (PAUSE *run-pause*))
   
   "
-  Process an :IN file (default extension \".in\") as if
-  it were typed into the current LISP listener.  E.g.:
+  Process an :IN file somewhat as if it were typed into
+  the LISP listener.  E.g.:
 
 	(run :in \"test1\")
 
   Without an :OUT argument (:OUT defaults to NIL),
   output goes to the screen.   The :OUT argument sends
-  the output to a file (with default extension
-  \".out\"); e.g.:
+  the output to a file; e.g.:
 
 	(run :in \"test1\" :out \"test1\")
+
+  If the :IN file does not exist this program tries
+  adding the \".in\" extension to it.  In this case,
+  if the :OUT file has no extension, this program
+  adds the \".out\" extension to it.  An :OUT value of
+  T is equivalent to the name of the :IN file with the
+  extension changed to \".out\".
 
   If a :PAUSE argument is given a true value, and if
   output is to the screen, then RUN will pause just
@@ -156,10 +162,6 @@
                 ":IN ~S is not the type of value that"
 		" can name a file.")
 	     in)))
-  
-  (cond
-   ((null (pathname-type in))
-    (setf in (make-pathname :type "in" :defaults in))))
   
   (cond
    ((eq out t)
@@ -174,10 +176,16 @@
 		"can name a file.")
 	     out)))
   
+  
   (cond
-   ((and out (null (pathname-type out)))
-    (setf out
-          (make-pathname :type "out" :defaults out))))
+   ((and (null (pathname-type in))
+   	 (not (open in :direction :probe)))
+    (setf in (make-pathname :type "in" :defaults in))
+    (cond
+     ((and out (null (pathname-type out)))
+      (setf out
+            (make-pathname :type "out" :defaults out))))
+  ))
   
   (unwind-protect
    (let ((eof-value (cons nil nil))
