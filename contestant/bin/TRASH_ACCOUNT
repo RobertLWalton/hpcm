@@ -4,7 +4,7 @@
 #
 # File:		TRASH_ACCOUNT
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Sun Oct  8 04:30:21 EDT 2000
+# Date:		Sun Nov 12 03:49:52 EST 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,43 +13,55 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/10/08 08:50:11 $
+#   $Date: 2000/11/12 09:07:26 $
 #   $RCSfile: TRASH_ACCOUNT,v $
-#   $Revision: 1.8 $
+#   $Revision: 1.9 $
 
+# Change to the accounts home directory.
+#
 cd
 
+# Process first argument.
+#
 case "$1" in
 
     "" )
-    	if test -x ~/.hpcm_contest
+    	if test -x ${HOME}/.hpcm_contest
 	then
-	    contest=`ls -l ~/.hpcm_contest`
-	    contest=`expr "$contest" : '.*-> *\([^ ]*\) *$' `
+	    contest=`ls -l ${HOME}/.hpcm_contest`
+	    contest=`expr "$contest" : \
+	                  '.*-> *\([^ ]*\) *$' `
 	else
-	    echo "
+	    echo ${HOME}/.hpcm_contest does not exist
+	    exit 1
+	fi
+	;;
+
+    -* )
+	echo "
 TRASH_ACCOUNT [contest]
 
     Removes all files from the current account and re-
     loads them from contest/setup.tar.  Checks after re-
-    moving files that \`ls -a' equals contest/empty.ls.
-    Checks after reloading that \`ls -a' equals contest/
+    moving files that \`ls -a' equals contest/empty.ls,
+    and after reloading that \`ls -aR' equals contest/
     setup.ls.  Before doing anything, checks that the
     current account name is listed on a line by itself
     in contest/trashable, and also checks that files
     such as contest/home/setup.tar are readable.  If the
     contest argument is not given, it is taken to be the
     target of the symbolic link ~/.hpcm_contest, if that
-    exists.  If this program succeeds, it links ~/
-    .hpcm_contest to the value of the contest argument."
-    	    exit 1
-	fi
+    exists.  If this program succeeds, it links ~/.hpcm_
+    contest to the value of the contest argument."
+	exit 1
 	;;
     * )
     	contest=$1
 	;;
 esac
 
+# Be sure contest directory has an absolute path name.
+#
 case "$contest" in
     /* )
     	;;
@@ -59,17 +71,19 @@ case "$contest" in
     	;;
 esac
 
+# Be sure the files we need are readable.
+#
 if test ! -r $contest/home/setup.tar
 then
-	echo cannot read $contest/setup.tar
+	echo cannot read $contest/home/setup.tar
 	exit 1
 elif test ! -r $contest/home/empty.ls
 then
-	echo cannot read $contest/empty.ls
+	echo cannot read $contest/home/empty.ls
 	exit 1
 elif test ! -r $contest/home/setup.ls
 then
-	echo cannot read $contest/setup.ls
+	echo cannot read $contest/home/setup.ls
 	exit 1
 elif test ! -r $contest/trashable
 then
@@ -77,6 +91,9 @@ then
 	exit 1
 fi
 
+# Check that our account name is listed in the trash-
+# able file.
+#
 grep "^`id -un`\$" $contest/trashable >/dev/null
 if test $? -ne 0
 then
@@ -85,11 +102,17 @@ then
 	exit 1
 fi
 
+# Check that we are in fact in the home directory of
+# our account.
+#
 if test `pwd` != "/home/`id -un`"; then
 	echo Home directory is not "/home/`id -un`"
 	exit 1
 fi
 
+# Delete everything in our home directory (except
+# undeletable storage system .snapshot subdirectory).
+#
 for i in .[a-zA-Z]* *
 do
 	case $i in
@@ -99,11 +122,24 @@ do
 		rm -rf $i
 	esac
 done
-
 echo rm done
+
+# Verify deleting against empty.ls.
+#
 ls -a | diff $contest/home/empty.ls -
+
+# Reload everything from setup.tar.
+#
 tar xf $contest/home/setup.tar
 echo tar done
+
+# Verify reload against setup.ls.
+#
 ls -aR | diff $contest/home/setup.ls -
+
+# Link ~/.hpcm_contest to contest directory.
+#
 rm -f .hpcm_contest
 ln -s $contest .hpcm_contest
+
+exit 0
