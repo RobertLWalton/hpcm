@@ -4,7 +4,7 @@
 #
 # File:		makescoreboard
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Nov  4 05:09:21 EST 2000
+# Date:		Thu Dec  7 12:41:07 EST 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/11/04 10:53:08 $
+#   $Date: 2000/12/07 18:46:09 $
 #   $RCSfile: makescoreboard,v $
-#   $Revision: 1.2 $
+#   $Revision: 1.3 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -30,7 +30,7 @@ set log_globally yes
 catch {
 
 set document "
-makescoreboard \[interval\]
+makescoreboard \[-start | -stop\] \[interval\]
 
     This program makes the scoreboard putting it in the
     file contest_directory/scoreboard.1 at periodic
@@ -55,7 +55,106 @@ makescoreboard \[interval\]
 
     This program ignores signals when writing the score-
     board, and terminates without error on a signal
-    while the program is sleeping for the interval."
+    while the program is sleeping for the interval.
+
+    If called with the -start option, this program
+    creates a subprocess in which it calls itself with-
+    out the -start option, and writes the process ID of
+    that subprocess into the $scoreboard_pid_file file\
+    		in
+    the judging directory.  While doing this, this pro-
+    gram outputs information about its progress (however
+    the subprocess does not output anything).  But if
+    the $scoreboard_pid_file already exists, AND the\
+    		process
+    ID it contains is valid, this program prints infor-
+    mation about the ID'ed process and does nothing
+    else.
+    
+    If called with the -stop option, this program does
+    nothing but send kill signals to the process whose
+    ID is listed in the $scoreboard_pid_file file, and
+    then deletes the file.  While doing this it outputs
+    information about its progress.
+
+    With the -start or -stop option this program does
+    not log errors but writes them to the standard
+    error.  Without these options, this program logs
+    errors in the log directory."
+
+# Process any -start option.  If second argument exists,
+# it must be a non-zero interval.
+#
+if { $argc >= 1 && [lindex $argv 0] == "-start" \
+     && ( $argc == 1 || \
+          ( $argc == 2 && \
+	    [regexp {^[1-9]} [lindex $argv 1]] ) ) } {
+    set log_mode none
+    set spid $judging_directory/$scoreboard_pid_file
+    if { [file exists $spid] } {
+         set pid [read_file $spid]
+	 set display [display_process_tree $pid]
+	 if { ! [regexp -nocase \
+	                {^no process .* exists} \
+		        $display] } {
+	     puts "Previous makescoreboard still\
+	           running:"
+	     puts $display
+	     exit 0
+	 }
+	 file delete -force $spid
+    }
+    set pid [eval exec makescoreboard \
+                       [lrange $argv 1 end] \
+    	               >& /dev/null &]
+    write_file $spid $pid
+    exit 0
+}
+
+# Process any -stop option.  No second argument
+# may exist.
+#
+if { $argc == 1 && [lindex $argv 0] == "-stop" } {
+    set log_mode none
+    set spid $judging_directory/$scoreboard_pid_file
+    if { [file exists $spid] } {
+         set pid [read_file $spid]
+	 set display [display_process_tree $pid]
+	 if { ! [regexp -nocase \
+	                {^no process .* exists} \
+		        $display] } {
+	     puts "Killing previous makescoreboard:"
+	     puts $display
+	     set count 0
+	     while { "true" } {
+		 incr count 1
+		 if { $count <= 5 } {
+		     catch { signal_process_tree \
+		             HUP $pid } out
+		     puts $out
+		 } elseif { $count <= 10 } {
+		     catch { signal_process_tree \
+		             KILL $pid } out
+		     puts $out
+		 } else {
+		     puts "ERROR: Giving Up!"
+		     exit 1
+		 }
+		 sleep 1
+		 set display [display_process_tree $pid]
+		 if { [regexp -nocase \
+			      {^no process .* exists} \
+			      $display] } {
+		     break
+		 }
+	     }
+	 }
+	 file delete -force $spid
+    } else {
+        puts "No previous makescoreboard running."
+    }
+    exit 0
+}
 
 # If any non interval arguments, print documentation and
 # exit.
