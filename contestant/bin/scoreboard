@@ -4,7 +4,7 @@
 #
 # File:		scoreboard
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Sat Mar  9 18:55:30 EST 2002
+# Date:		Fri Feb 13 08:47:00 EST 2004
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,13 +13,21 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/03/09 23:57:56 $
+#   $Date: 2004/02/13 14:09:44 $
 #   $RCSfile: scoreboard,v $
-#   $Revision: 1.8 $
+#   $Revision: 1.9 $
 
 # Time between refreshes.
 #
 time=30
+debug=no
+
+case "$1" in
+    -debug)
+        debug=yes
+	shift
+	;;
+esac
 
 # Save contest argument if any and shift it away.
 # Also print documentation on -doc* argument.
@@ -27,7 +35,7 @@ time=30
 case "$1" in
     -doc*)
     	echo "
-scoreboard [contest] [page-number] [user]
+scoreboard [-debug] [contest] [page-number] [user]
 
     Displays each page of the scoreboard for $time sec-
     conds and then repeats, if no page-number is given.
@@ -68,7 +76,14 @@ scoreboard [contest] [page-number] [user]
     scoreboard_map file to continue lines.  If a back-
     slash is to be included in the regular expression,
     it must be doubled.  The regular expression is as
-    per the \`expr(1)' UNIX command.
+    per the \`expr(1)' UNIX command.  This means that
+    alternatives are represented by \`\\(a\\|b\\)'
+    with a backslash before the (, |, and ).  BUT,
+    in the scoreboard_map file THREE backslashes must
+    be used before the (, |, or ); the first two to
+    get the \\ that expr(1) sees, and the last to pro-
+    tect the (, |, ) during the shell read operation.
+    Thus one must use \`\\\\\\(a\\\\\\|b\\\\\\)'.
 
     If ~/.hpcm_contest/scoreboard_map is not readable,
     the filename list defaults to:
@@ -82,7 +97,9 @@ scoreboard [contest] [page-number] [user]
     The file for page 1 must always be readable, as must
     the file for any page specifically requested.  If
     all pages are to be displayed, any page other than 1
-    whose file is unreadable is ignored."
+    whose file is unreadable is ignored.
+    
+    The -debug option prints the expr(1) commands used."
 
     	exit 1
 	;;
@@ -142,11 +159,17 @@ then
 	    exit 1
 	fi
 
-	uresult=`expr "$user" : "$uregexp\$"`
-	cresult=`expr "$contest" : "$cregexp\$"`
-	if test $uresult -ne 0 -a \
-		\( "$contest" = "" -o \
-		   $cresult -ne 0 \)
+	if test $debug == yes
+	then
+	    echo DEBUG: \
+	         expr "$user" : "\\($uregexp\\)\$"
+	    echo DEBUG: \
+	         expr "$contest" : "\\($cregexp\\)\$"
+	fi
+
+	uresult=`expr "$user" : "\\($uregexp\\)\$"`
+	cresult=`expr "$contest" : "\\($cregexp\\)\$"`
+	if test "$uresult" != "" -a "$cresult" != ""
 	then
 	    break
 	fi
