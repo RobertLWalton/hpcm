@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/10/07 10:11:50 $
+#   $Date: 2000/10/07 10:12:27 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.5 $
+#   $Revision: 1.6 $
 
 all:	scorediff hpcm_sandbox_x hpcm_print_passwords
 
@@ -51,7 +51,9 @@ secure_hpcm_sandbox_x:
 
 unsecure_hpcm_sandbox_x:
 	@echo ${SECURE_HPCM_SANDBOX} does not exist
+	@echo ======================================
 	@echo Making UNSECURE hpcm_sandbox_x
+	@echo ======================================
 	(cd ../../secure/src; make hpcm_sandbox)
 	cp -p ../../secure/src/hpcm_sandbox \
 	    hpcm_sandbox_x
