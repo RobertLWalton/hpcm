@@ -2,7 +2,7 @@
 #
 # File:		scoring_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Mar  9 10:12:14 EST 2002
+# Date:		Sat Mar  9 10:28:46 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/03/09 15:23:20 $
+#   $Date: 2002/03/09 16:01:15 $
 #   $RCSfile: scoring_common.tcl,v $
-#   $Revision: 1.28 $
+#   $Revision: 1.29 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -881,8 +881,8 @@ proc response_error { command } {
 #	fe:  formatting error proofs
 #	ne:  non error proofs
 #
-# Note that is one of these groups has no proofs, then
-# that group does not actually exist, as its proofs
+# Note that if one of these groups has no proofs, then
+# that group does not actually exist, and its proofs
 # cannot be displayed.
 #
 # In addition, each proof difference type for which
@@ -893,13 +893,17 @@ proc response_error { command } {
 set current_group ""
 #
 # If the current_group is "", it should be taken to be
-# the first one of `io', `ie', `fe', or `ne' whose
+# the first one of `io', `ic', `fe', or `ne' whose
 # corresponding list of proofs is non-empty.
 #
 # The proofs for proof group xx are listed in sorted
 # order in proof_group_array(xx).  Note that if an
 # element of this array would be an empty list, instead
-# the element does not exist.
+# the element does not exist.  Elements of this array
+# have the same format as elements of proof_array; and
+# in fact proof_group_array(xx) == proof_array(xx) if
+# the latter exists (which it does NOT if xx == io, ic,
+# fe, or ne).
 #
 # current_group_array(xx) is the index+1 of the current
 # proof in proof_group_array(xx).  If current_proof_
@@ -922,7 +926,7 @@ set current_group ""
 #   a group name, the argument and the group name are
 #   split into parts separated by `-', and each argument
 #   part must equal the beginning of the corresponding
-#   group name part.  The number `-'s in the argument
+#   group name part.  The number of `-'s in the argument
 #   and group name must also be equal.
 #
 #   A numeric argument switches to the #'th proof of
@@ -970,6 +974,9 @@ proc get_proof { args } {
     foreach arg $args {
 
         if { [regexp {^[a-z].} $arg] } {
+
+	    # Match argument to group name.
+
 	    regsub -all -- {-} $arg {[^-]*-} regexp
 	    set regexp "^$regexp\[^-\]*\$"
 
@@ -1004,8 +1011,15 @@ proc get_proof { args } {
 		}
 	    }
 	} elseif { [regexp {^[0-9]+$} $arg] } {
+
+	    # Set number of current proof to argument.
+
 	    set n $arg
+
 	} else {
+
+	    # Process p and n commands.
+
 	    switch -- $arg {
 	        n { incr n }
 		p { incr n -1 }
@@ -1019,6 +1033,9 @@ proc get_proof { args } {
     }
 
     if { $group == "" } {
+
+        # This should never happen.
+
         set window_error \
 	    "There are no displayable proofs."
 	return no
@@ -1053,14 +1070,23 @@ proc get_proof { args } {
 #	compute_proof_info
 #
 # The files referenced in the proof are $basename.out
-# and $basename.test.
+# and $basename.test where $basename is the base of
+# $score_filename.
 #
 # If there is no error, window_error is set to "" and
 # `yes' is returned.  Otherwise window_error is set to
 # an error description and `no' is returned.
 #
-# If there is no error, sets the `last_display'
-# variable to `proof'.
+# At its beginning this function calls `get_proof'
+# without arguments and returns `no' if that call
+# returns `no'.
+#
+# This function calls compute_file_display for
+# $basename.out and out_file_array and for
+# $basename.test and test_file_array.
+#
+# If there is no error, this function sets the
+# `last_display' variable to `proof'.
 #
 proc set_proof_display { } {
 
