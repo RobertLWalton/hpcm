@@ -6,7 +6,7 @@
 #
 # File:		dispatchmail
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Feb  5 19:31:39 EST 2002
+# Date:		Fri May 17 07:16:17 EDT 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,14 +15,22 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/02/06 00:33:03 $
+#   $Date: 2002/05/17 11:19:59 $
 #   $RCSfile: dispatchmail,v $
-#   $Revision: 1.9 $
+#   $Revision: 1.10 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
 
 # Use tcl rather than tclsh so that `signal' is defined.
+
+# Compute absolute name of current directory as we
+# may change the current directory.
+#
+set current_directory [file dirname $argv0]
+if { ! [regexp {^/} $current_directory] } {
+    set current_directory [pwd]/$current_directory
+}
 
 # If an argument is given, use it as a name of a
 # directory to make current, and consume the argument.
@@ -42,7 +50,7 @@ if { $my_argc >= 1 \
 
 # Include common code and parameters:
 #
-set lib_directory "[file dirname $argv0]/../lib"
+set lib_directory "$current_directory/../lib"
 source $lib_directory/judging_common.tcl
 set log_globally yes
 catch {
