@@ -5,7 +5,7 @@
 #
 # File:		autojudge
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Jan 21 20:25:27 EST 2002
+# Date:		Tue Jan 22 07:55:31 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/01/22 01:26:46 $
+#   $Date: 2002/01/22 13:13:21 $
 #   $RCSfile: autojudge,v $
-#   $Revision: 1.61 $
+#   $Revision: 1.62 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -346,18 +346,22 @@ autojudge \[problem\[.extension\]\]
 
     If the $response_instructions_file file exists,\
     	then that
-    file contains extra instructions about how to format
-    the reply for a given $auto_score_file value and a
-    given value of the scoring_mode global variable.
-    The $response_instructions_file file is a TCL list\
+    file contains instructions that format the reply for
+    a given $auto_score_file value and a given value of
+    the scoring_mode global variable.  The contents of
+    the $response_instructions_file file is a TCL list\
     	value
-    consisting indicators and commands.  There are two
-    kinds of indicators: score indicators and mode indi-
-    cators.  Commands are grouped into command lists,
-    which consist of all commands between two indica-
-    tors.  A command list is governed by an indicator if
-    the indicator is the last of its kind (score or
-    mode) preceding command list.
+    consisting of indicators and commands.  There are
+    two kinds of indicators: score indicators and mode
+    indicators.  Commands are grouped into command
+    lists, which consist of all commands between two
+    indicators.  A command list is governed by an indi-
+    cator if the indicator is the last of its kind
+    (score or mode) preceding the command list.  The
+    first command list whose governing indicators ALL
+    match scoring_mode or $auto_score_file values is\
+    	execu-
+    ted.
 
     A score indicator is an $auto_score_file file value\
     	with
@@ -379,20 +383,21 @@ autojudge \[problem\[.extension\]\]
     The first command list all of whose governing indi-
     cators match is executed.  Note that a command list
     may have no governing indicators, in which case the
-    list is always executed (it would have to also be
-    the first command list).
+    list is always executed (it would have to also have
+    to precede any indicators to have no governing indi-
+    cators).
 
     The default value of the\
 		$response_instructions_file file
     is the following:
 
 	-manual-
-	    -Others-
+	    -Other-Scores-
 	    	NON-AUTO
 
 	-auto-
 
-	    -Others-
+	    -Other-Scores-
 		FINAL
 		{LINES \"
 	    For -PROBLEM- the automatically determined\\
@@ -416,7 +421,7 @@ autojudge \[problem\[.extension\]\]
 		{ BAR \"this message replies to:\" }
 		RECEIVED-HEADER
 
-	    -Others-
+	    -Other-Scores-
 		NON-FINAL
 		{LINES \"
 	    For -PROBLEM- the automatically determined\\
