@@ -2,7 +2,7 @@
 #
 # File:		display_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Jul 23 12:54:46 EDT 2002
+# Date:		Tue Jul 23 13:57:07 EDT 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/07/23 17:50:41 $
+#   $Date: 2002/07/23 18:09:29 $
 #   $RCSfile: display_common.tcl,v $
-#   $Revision: 1.35 $
+#   $Revision: 1.36 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -182,8 +182,8 @@ proc set_window_info { info } {
     if { $height > $window_info_height } {
     	error "window info too high:\n$info"
     }
-    set offset [expr { $window_info_height \
-    		       - $height - 1 }]
+    set offset [expr $window_info_height \
+    		     - $height - 1]
     set window_info \
         "[string range $window_newlines \
 	         0 $offset]$info"
@@ -309,16 +309,16 @@ proc out_check { out } {
 proc get_lock {} {
 
     global dispatch_pid_file window_error window_bar \
-    	   window_prompt
+    	   window_prompt window_info_height
 
 
     while { "yes" } {
 
 	if { [dispatch_lock] == "yes" } break
 
-	set time [expr { [clock seconds] - \
-			 [file mtime \
-			       $dispatch_pid_file] }]
+	set time \
+	    [expr [clock seconds] \
+		  - [file mtime $dispatch_pid_file]]
 
 	if { ! [catch {
 		   set pid \
@@ -742,7 +742,7 @@ proc get_file { id } {
 	} else {
 	    set last_file \
 		[lindex [lindex $file_list \
-                            [expr { $id - 1 }]] 2]
+                            [expr $id - 1]] 2]
 	}
     } else {
         set found ""
@@ -994,18 +994,17 @@ proc set_file_list_display {} {
 	if { $time == "TBD" } {
 	    set tttt TBD
 	} else {
-	    set time [expr { $time \
-			     - $file_list_origin_mtime
-                           }]
+	    set time \
+	        [expr $time - $file_list_origin_mtime]
 	    if { $time < 0 } {
 		set sign "-"
-		set time [expr { - $time }]
+		set time [expr - $time]
 	    } else {
 		set sign ""
 	    }
-	    set mm [expr { $time / 60 }]
-	    set hh [expr { $mm / 60 }]
-	    set mm [expr { $mm - 60 * $hh }]
+	    set mm [expr $time / 60]
+	    set hh [expr $mm / 60]
+	    set mm [expr $mm - 60 * $hh]
 	    set tttt "$sign[format {%d:%02d} $hh $mm]"
 	    if { [string length $tttt] > 6 } {
 		set tttt "${sign}inf"
@@ -1067,8 +1066,8 @@ proc set_file_display { filename } {
     # displayed.  The 5 includes the prompt, error line,
     # blank line, and two bar lines.
     #
-    set height [expr { $window_height \
-                       - $window_info_height - 5 }]
+    set height [expr $window_height \
+                     - $window_info_height - 5]
 
     # Compute the window display in $display.
     #
@@ -1089,7 +1088,7 @@ proc set_file_display { filename } {
     close $file_ch
 
     if { $n > $height } {
-	set more [expr { $n - $height }]
+	set more [expr $n - $height]
     	set bar [bar_with_text ". . . . .\
 		 there are $more more lines in this\
 		 file"]
@@ -1187,7 +1186,7 @@ proc tab_expand { line } {
         if { $column == -8 } {
 	    set column 0
 	} else {
-	    set b [expr { 8 - $column % 8 }]
+	    set b [expr 8 - $column % 8]
 	    incr column $b
 	    incr b -1
 	    set output \
@@ -1279,10 +1278,10 @@ proc compute_file_display \
 		    incr c2 $k
 		    incr k $hlength
 		    set l1 [string range $line 0 \
-				 [expr { $c1 - 1 }]]
+				 [expr $c1 - 1]]
 		    set l2 [string range $line $c1 $c2]
 		    set l3 [string range $line \
-				 [expr { $c2 + 1 }] end]
+				 [expr $c2 + 1] end]
 		    set line "$l1$hon$l2$hoff$l3"
 
 		    set highlights \
