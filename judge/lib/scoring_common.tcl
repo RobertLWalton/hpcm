@@ -2,7 +2,7 @@
 #
 # File:		scoring_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Feb  3 06:03:19 EST 2003
+# Date:		Fri Feb  7 00:35:30 EST 2003
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2003/02/03 19:22:01 $
+#   $Date: 2003/02/07 05:56:07 $
 #   $RCSfile: scoring_common.tcl,v $
-#   $Revision: 1.34 $
+#   $Revision: 1.35 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -811,6 +811,42 @@ proc compute_solution_files { } {
     return $files
 }
 
+# Given a proof from proof_array, output commands
+# describing it to processed commands.
+#
+# The following global variables must be set:
+#
+# process_proof_file	.fout or .out file name
+# process_proof_out	.fout or .out file channel id
+# process_proof_number	line number of next line
+# process_proof_line	current line
+#
+#
+proc process_proof { proof processed_commands } {
+
+    upvar $processed_commands pc
+
+    global submitted_problem \
+	   process_proof_file process_proof_out \
+    	   process_proof_number process_proof_line
+
+    set number [lindex $proof 1]
+    set column [lindex $proof 3]
+
+    while { $proof_proof_number < $number } {
+        set process_proof_line [gets $process_proof_out]
+	if { [eof $process_proof_out] } {
+	    error "Unexpected EOF for\
+	           $process_proof_file"
+	}
+	incr process_proof_number
+    }
+    lappend pc [list LINE "LINE NUMBER $number,\
+                           COLUMN $column:"]
+    lappend pc [list LINE $process_proof_line]
+}
+
+
 # Helper function for execute_response_commands below.
 # Just processes FIRST or SUMMARY command out-of-line to
 # make code neater.
@@ -820,7 +856,9 @@ proc process_first_or_summary_command \
 
     upvar $processed_commands pc
 
-    global submitted_problem proof_array
+    global submitted_problem proof_array \
+           process_proof_file process_proof_out \
+	   process_proof_number
 
     set sfile ${submitted_problem}.score
     if { ! [file exists $sfile] } {
@@ -836,10 +874,21 @@ proc process_first_or_summary_command \
 	compute_score_and_proof_arrays $sfile
 	score [compute_score]
 
+	if { [file exists ${submitted_problem}.fout] } {
+	    set process_proof_file \
+	        ${submitted_problem}.fout
+	} elseif { [file exists \
+	                 ${submitted_problem}.out] } {
+	    set process_proof_file \
+	        ${submitted_problem}.out
+	}
+
 	foreach x {
 	    {incorrect_output {Incorrect Output}}
 	    {incomplete_output {Incomplete Output}}
 	    {formatting_error {Formatting Error}} } {
+
+
 	    set xname  [lindex $x 0]
 	    set xscore [lindex $x 1]
 	    global ${xname}_types
@@ -850,9 +899,29 @@ proc process_first_or_summary_command \
 		            proof_array($difference)]
 	    }
 	    set proofs [lsort $proofs]
+
+	    if { [llength $proofs] == 0 } continue
+
+	    if { [catch {
+	    	    set process_proof_out \
+		        [open $process_proof_file r] \
+			}] } {
+	        error "Cannot open $process_proof_file"
+	    }
+	    set process_proof_number 0
+
 	    if { $command == "FIRST" } {
+
+	        lappend pc [list LINE "The first error\
+				       supporting the\
+				       score `$xscore'\
+				       is:"]
+		process_proof [lindex $proofs 0] pc
+		break
 	    } elseif { $command == "SUMMARY" } {
 	    }
+
+	    close $process_proof_out
 	}
     }
     error "Not implemented yet: $command"
