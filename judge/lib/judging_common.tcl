@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: acm-cont $
-#   $Date: 2000/09/06 21:23:40 $
+#   $Date: 2000/09/09 15:17:29 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.28 $
+#   $Revision: 1.29 $
 #
 
 # Include this code in TCL program via:
@@ -36,7 +36,12 @@
 #
 # in front of the `catch {' if you want errors to be
 # logged in the log directory instead of the current
-# directory.  See `log_error' below.
+# directory.  Put
+#
+#	set log_errors no
+#
+# If you do not want any errors written to log files.
+# See `log_error' below.
 
 # The catch and `caught_error' function catches all
 # program errors and causes them to be announced on the
@@ -173,7 +178,10 @@ proc caught_error {} {
 }
 
 # Function called to log an error when the program
-# may want to continue.
+# may want to continue.  The error is printed on the
+# standard output.  Unless the `log_errors' variable
+# exists and equals `no', the error is also written
+# to a file.
 #
 # The error information is written as a separate file.
 # If the log_globally variable does not exist or does
@@ -200,12 +208,26 @@ proc log_error { error_output } {
 
     global argv0 argv errorCode errorInfo \
 	   default_log_directory \
-	   log_directory log_globally
+	   log_directory log_globally \
+	   log_errors
 
     # Write error to standard output.
     #
     puts stderr "ERROR during $argv0 $argv"
     puts stderr $error_output
+
+    # If `set log_errors no' has happened, return
+    # without writing a file, but write errorCode
+    # an errorInfo to standard output.
+    #
+    if { ( [info exists log_errors] \
+           && $log_errors == "no" ) } {
+	puts ""
+	puts "errorCode: $errorCode"
+	puts "errorInfo:"
+	puts $errorInfo
+	return
+    }
 
     # Compute $log_dir, the logging directory
     # to be used.  Make it if necessary.  Be
