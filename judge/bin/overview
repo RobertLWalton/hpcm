@@ -4,7 +4,7 @@
 #
 # File:		overview
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Jan 14 00:38:25 EST 2001
+# Date:		Mon Jan 15 07:51:32 EST 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/01/14 14:21:59 $
+#   $Date: 2001/01/15 14:17:14 $
 #   $RCSfile: overview,v $
-#   $Revision: 1.24 $
+#   $Revision: 1.25 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -59,6 +59,7 @@ puts "
 	Programs: Judging
 	Programs: Contest Making
 	Programs: Maintenance
+	Programs: Common Subroutines
 
 Features
 --------
@@ -79,9 +80,11 @@ following features:
 		    any time to get problems and submit
 		    solutions.
 
-	formal	    Contestants are given accounts and
-		    printouts of problems at a fixed
-		    contest starting time.
+	formal	    Contestants are given accounts which
+		    can only be used locally, and con-
+		    testants are given printouts of pro-
+		    blems at a fixed contest starting
+		    time.
 
     o Has an automatic judge, that can be used exclu-
       sively, or as an aid to a human judge.
@@ -122,9 +125,9 @@ Bash can be obtained at:
 Installing HPCM
 ---------- ----
 
-There is a separate document, `Installing HPCM', that
-describes how to obtain and install HPCM.  HPCM can be
-obtained from
+There is a separate document, `Installing HPCM' (hpcm/
+judge/bin/installing_hpcm), that describes how to obtain
+and install HPCM.  HPCM can be obtained from
 
 	www.deas.harvard.edu/~hc3/hpcm
 
@@ -186,7 +189,7 @@ Contest Raw Data
 Contest Derived Data
     Scoreboards and contest tracking summaries.
 
-
+
 HPCM also contains several different categories of
 programs:
 
@@ -202,6 +205,10 @@ Contest Making Programs
 Maintenance Programs
     Programs run to maintain the library, produce doc-
     umentation, or test the HPCM system.
+
+Common Subroutines
+    Subroutines usable by any HPCM TCL program.
+
 
 Library Data: Problems
 ------- ----- --------
@@ -358,10 +365,19 @@ directory using an absolute pathname.  Unfortunately,
 existing JAVA systems have a bug that causes them to
 convert relative pathnames of .class files into absolute
 pathnames before they are used, so the .class files
-cannot be found by the `sandbox' user.  The fix for this
+cannot be found by the `sandbox' user.  One fix for this
 currently is to run the programs manually by
 
 	pppp <pppp.in >pppp.out
+
+Another fix is to do a
+
+	chmod a+x .. ../.. ../../.. ../../../..
+
+in the library problem directory; but this has the dis-
+advantage that contestants will then be able to read any
+*.class files in this directory: see `Contest Definition
+Data: Security' below.
 
 Lastly, the `make clean' command in the problem direc-
 tory deletes all temporary files, including `pppp',
@@ -490,6 +506,10 @@ one judging account can have many judging directories,
 each the root of a disjoint subtree of directories.
 Therefore one judging account can judge many contests.
 
+An HPCM can therefore execute anywhere in the directory
+tree rooted at a judging directory, and the program will
+find the judging directory and its hpcm_judging.rc file.
+
 The judging directory contains several components that
 define the contest, in addition to many components that
 belong to the raw data of the contest, and are listed
@@ -527,7 +547,7 @@ are:
 	is the root of a subdirectory tree that holds
 	the files that can be obtained by contestants
 	via email (the contestants often use hpcm_get
-	which for email and formal contests uses email
+	which for email and informal contests uses email
 	under the hood).  Thus the contents of the info
 	directory proper are just three subdirectories:
 	help, demos, and problems.  These in turn con-
@@ -669,9 +689,8 @@ components that contestants can access.
 
 	This `help' directory and its contents are
 	made automatically by `makejudgingdir'.  It is
-	an exact copy of info/help (except that both
-	contest/help and info/help do not exist for
-	formal contests).
+	an exact copy of info/help (except that info/
+	help does not exist for some (formal) contests).
 
 	The following are some special help files
 	of note:
@@ -740,7 +759,7 @@ components that contestants can access.
 	judges to monitor printer activity.
 
 	This file is made by `makejudgingdir' and can
-	be removed or made o-w by hand.
+	be removed or made o-rw by hand.
 
     problems
     	This directory contains problem directories for
@@ -762,9 +781,9 @@ components that contestants can access.
 	are in the `demos' directory instead of the
 	`problems' directory.
 
-	Within the problem directory there is an a+r
+	Within each problem directory there is an a+r
 	copy of the `Makefile' of the problem.  It is
-	also possible to put a a+r copy of the `.txt'
+	also possible to put an a+r copy of the `.txt'
 	file describing the problem, but this is NOT
 	usually done for formal contests, as for these
 	only paper printouts of .txt files are normally
@@ -832,6 +851,7 @@ components that contestants can access.
 	This directory, if it does not already exist,
 	will be made by the `makejudgingdir' program,
 	as will some of the files in the directory.
+	The files in this directory are:
 
 	    hpcm_sendmail.rc
 	        This file contains parameters for hpcm_
@@ -1142,7 +1162,7 @@ Contest Definition Data: Security
 HPCM has the following security goals:
 
 1. Prevent a foreign account from pretending to be
-   a contestant account.  This is only possible
+   a contestant account.  This is only achievable
    for informal and formal contests (but not for
    email contests).
 
@@ -1207,13 +1227,13 @@ HPCM has the following security goals:
    access any files or directories except those public-
    ally available.
 
-   The sandbox is implemented by the judge's hpcm_
-   sandbox program, which must be installed in the UNIX
-   /usr/sbin directory (or equivalent), and is set to
-   do a root set-user-id.  The contestant's hpcm_sandbox
-   program is the same binary, but in the hpcm/
-   contestant/bin directory, and without any set-user-id
-   capability.
+   The sandbox is implemented by the judge's hpcm_sand-
+   box program, which must be installed in the UNIX
+   /sbin directory (or equivalent), and is set to do a
+   root set-user-id.  The contestant's hpcm_sandbox pro-
+   gram is the same binary, but in the hpcm/contestant/
+   bin directory, and without any set-user-id capabili-
+   ty.
 
    However, current JAVA implementations seem to have
    the following security flaw: they convert relative
@@ -1253,9 +1273,16 @@ HPCM has the following security goals:
    contestant's program can read another contestant's
    .class files.
 
+   To reduce the chances of this working, the `auto-
+   judge' program removes a+x permissions from a *-
+   submission directory immediately after running a
+   solution program in that directory.  This means that
+   the time window for reading any .class files in that
+   directory is small.
+
    A contestant program can always read the judge's
-   input, since that is provided to the program
-   during judging.
+   input, since that is provided to the program during
+   judging.
 
    However, any contestant program that sends informa-
    tion to the outside world will itself be captured
@@ -1266,6 +1293,39 @@ HPCM has the following security goals:
    up until the judge's decide to discard information
    collected during the contest.
 
+4. Prevent one contestant from executing another contes-
+   tants solution.  This goal is achieved with a defect.
+
+   This may sound like a ridiculous goal, because any
+   security system should achieve it without trying, but
+   due to the problems with JAVA, this goal is only im-
+   perfectly achieved.
+
+   In order to execute a submitted program with hpcm_
+   sandbox changing real and effective user and group
+   IDs to those of the `sandbox' account, both the
+   *-submission directory and the submitted program must
+   be made a+x first.  If the mail directory were not
+   also a+x, there would be no way for outsiders to get
+   into the *-submission directory.  But because of the
+   JAVA bug, the mail directories is also a+x.
+
+   Thus one contestant's submission can guess the time
+   of another contestant's submission and execute that
+   other contestant's submission.  A relatively simple C
+   program can do this, in effect replacing itself by
+   the submission of another contestant.
+
+   To reduce the probability of success, the `autojudge'
+   program removes a+x directories from any *-submission
+   directory right after running a solution in that dir-
+   ectory.  This means that the time window in which
+   another contestant might be able to run this solution
+   is small.
+
+   As for 3 above, any contestant program that tries
+   this stunt leaves itself behind as damning evidence
+   for a very long time.
 
 Contest Raw Data: Directories
 ------- --- ----- -----------
@@ -1352,7 +1412,7 @@ Raw data is stored in the following directories:
 	directory.
 
         Errors that are not particular to one submission
-	and therefore cannot be places in a *-submission
+	and therefore cannot be placed in a *-submission
 	directory are placed here, each in their own
 	file with the same name structure (including
 	`checking') as errors put in submission direc-
@@ -1406,6 +1466,14 @@ sections below.  Files that can exist in all kinds of
 
 	The judge can also send non-final email replies,
 	which are NOT stored in this file.
+
+    $reply_file+
+        Every reply is first composed in this file, and
+	then emailed.  When emailed, this file is either
+	deleted or renamed to $reply_file (if it is the
+	final reply).  Thus strictly speaking this file
+	is not a `raw data' file, as it is not part of
+	the audit trail.
 
     $no_reply_file
 	This file is created by the judge to indicate
@@ -1524,7 +1592,7 @@ details about many of these files):
     $reply_history_file	History of all replies.
 
 
-If an error happens during the process or producing
+If an error happens during the process of producing
 these files, the process stops.  An error in extracting
 pppp.eee, or an error in the name of the file (pppp is
 not a problem in the solutions directory or eee is not
@@ -1541,28 +1609,33 @@ generated.
 
 If there is NO error, the $auto_score_file is `Complete-
 ly Correct', this score is final, it is sent to the con-
-testant, and a $reply_file file is created.
+testant, and a $reply_file file is created.  All this
+is done if there is NO error regardless of the scoring
+mode.
 
 The behavior of `autojudge' is similar to the behavior
 of `make' in a contestant's problem directory (see help
 files) or a problem library problem directory (see
 above).  The main differences are that the `autojudge'
 extracts the `pppp.eee' file, captures compiler errors
-in `pppp.cerr', and captures run errors in `pppp.err'.
+in `pppp.cerr', captures run errors in `pppp.err', and
+scores `pppp.out' generating $auto_score_file and\
+	possib-
+ly reply email.
 
 The section `Contest Raw Data: Data Flow' below gives
 some more details for solution submission directories.
-
-If the `autojudge' does not produces a final reply, it
-creates a $needs_reply_flag_file file in the flag dir-
-ectory to signal that this directories needs the atten-
-tions of `manualreply'.  The `manualreply' program must
-then be run to assign a manual score, which is stored in
-a `$manual_score_file' file.   Email containing this
-score is sent to the contestant as a final reply and is
-stored in the $reply_file file.
-
 
+If the `autojudge' does not produce a final reply, it
+creates a $needs_reply_flag_file file in the flag dir-
+ectory to signal that this *-submission directory needs
+the attentions of `manualreply'.  The `manualreply'
+program must then be run to assign a manual score, which
+is stored in a `$manual_score_file' file.   Email con-
+taining this score is sent to the contestant as a final
+reply and is stored in the $reply_file file.
+
+
 Contest Raw Data: Get Requests
 ------- --- ----- --- --------
 
@@ -1581,10 +1654,11 @@ the email's *-submission directory:
 
     $reply_file		Final reply.
     $reply_history_file	History of all replies.
-    $gotten_file	List of files successfully
+    $gotten_file		List of files\
+    				successfully
     			gotten.
-
-The `autoinfo' program always produces a final replay
+
+The `autoinfo' program always produces a final reply
 the therefore a $reply_file file.  It may produce two
 email replies: one containing error messages and one
 containing files successfully gotten.  These two kinds
@@ -1598,7 +1672,7 @@ Processing of get requests is completely automatic;
 there is never any need for manual reply (baring a sys-
 tem error, of course).
 
-
+
 Contest Raw Data: Queries
 ------- --- ----- -------
 
@@ -1606,7 +1680,7 @@ A query submission is an email with a subject that does
 not begin with either `submit' or `get'.  Such an email
 is used to ask a question of the judge.
 
-If the `reply_mode' is `auto', the `dispatchmail' pro-
+If the `reply_mode' is `auto', the `autodispatch' pro-
 gram produces an email reply and a $reply_file file
 automatically.  If the `reply_manager' is not \"\", this
 email is CC'ed to the `reply_manager' who can respond
@@ -2007,7 +2081,7 @@ maintenance.
     			lines (but unlimited length
 			pages, for code).
     chkpage		Helper for fcheck{,c}.
-    difffilter		Diff two directories and filter
+    difffilter		Filter `diff' output to remove
     			certain 1 line differences from
 			the output.
 
@@ -2018,6 +2092,144 @@ testing the system.
     			judge for test purposes.
     test_submit		Send a solution as email to the
     			judge for test purposes.
+
+
+Programs: Common Subroutines
+--------- ------ -----------
+
+The file hpcm/judge/lib/judging_common.tcl contains sub-
+routines usable by any HPCM TCL program.  A brief sum-
+mary of these is:
+
+    proc exit_cleanup {}
+    	Called on every exit; can be redefined to per-
+	form cleanup actions.
+
+    proc dispatch_lock {}
+    proc dispatch_unlock {}
+    	Manage the *-submission/$dispatch_pid_file file.
+
+    proc clock_to_filename_date { clock }
+    proc filename_date_to_clock { date }
+        Convert standard data formats to/from the date
+	format used in *-submission directory names and
+	error log file names.
+
+    proc is_checked { filename }
+    proc make_checked { filename }
+    proc make_unchecked { filename }
+        Manages the `checked' flag in an error log file
+	name.
+
+    proc caught_error {}
+        Catch an error occurring in an HCPM TCL program.
+
+    proc log_error { error_output }
+        Log an error to an error log file.
+
+    proc read_header { ch { first_line \"\" }
+			  { omit_fields \"\" } }
+	Read the header of received email.
+
+    proc compute_message_reply_to {}
+    proc compute_message_date {}
+    proc compute_authentication {}
+        Compute the effective Reply-To, Date, and
+	X-HPCM-Signature-OK email header field values.
+
+    proc header_is_authentic {}
+        Test whether message is authentic.
+
+    proc reply { args }
+        Call compose_reply and then send_reply.
+
+    proc compose_reply { args }
+        Compose a reply in $reply_file+.
+
+    proc send_reply { args }
+        Send the reply stored in $reply_file+.
+
+    proc blank_body { ch }
+        Check if received email has a blank body.
+
+    proc find_scoring_instructions {}
+        Compute the effective scoring instructions.
+
+    proc put_file { filename
+		   { ch stdout }
+		   { line_count 1000000000 } }
+	Write an entire file of the first so many lines
+	of a file to a channel.
+
+    proc read_file { filename }
+        Read and return the first line of a file.
+
+    proc write_file { filename line }
+        Write an entire file, usually a one line file.
+
+    proc set_flag { flagfilename }
+    proc test_flag { flagfilename }
+    proc clear_flag { flagfilename }
+    	Manage flags in the flag directory.
+
+The file hpcm/judge/lib/hpcm_judging.rc contains sub-
+routines usable by any HPCM TCL program that are simple
+interfaces to underlying operating systems capabilities,
+or that are customizable interfaces to basic functions
+such as editing.  A brief summary of these is:
+
+    proc send_mail { message_file }
+    proc send_message { message }
+    	Send a file or variable value as email.
+
+    proc compute_signature { value }
+        Compute the MD5 signature of a value.
+
+    proc create_file { filename }
+    proc create_directory { dirname }
+        Create a file or directory, unless the file or
+	directory already exists, and return an indica-
+	tion of whether a new file or directory was
+	created.  Used for locking.
+
+    proc link_file { source { target . } }
+        Symbolically link source to target.
+
+    proc grant_access { filename { allow rx } }
+    	Add a+x or a+r permissions to file.
+
+    proc get_access { filename }
+        Discover `a' permissions of file.
+
+    proc deny_access { filename }
+        Deny all permissions for a file except to owner.
+
+    proc view_file { filename }
+        Look at a file (e.g., with an editor).
+
+    proc edit_file { filename }
+        Edit a file with your favorite editor.
+
+    proc call_shell {}
+        Invoke your favorite shell for interactive use.
+
+    proc current_pid {}
+        Return the current process' ID.
+
+    proc display_process_tree { root_pid }
+        Display the processes in the process tree rooted
+	at a given process ID.
+
+    proc signal_process_tree { signal root_pid }
+        Send a KILL or INT signal to all the processes
+	in a process tree rooted at a given process ID.
+
+    proc make_signals_errors {}
+    proc make_signals_ignored {}
+    proc make_signals_default {}
+        Set all `likely' UNIX signals to cause a TCL
+	error, be ignored, or cause their default
+	action.
 "
 
 exit 0
