@@ -1,12 +1,12 @@
 #!/bin/sh
 #
 # Looks at all the subdirectories of the mail directory
-# that have a designated file containing a line matching
-# a given regular expression.
+# that have files containing a lines matching regular
+# expressions.
 #
 # File:		lookat
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Nov 11 02:26:33 EST 2001
+# Date:		Mon Apr 29 09:11:54 EDT 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/11/11 07:24:17 $
+#   $Date: 2002/04/29 13:50:32 $
 #   $RCSfile: lookat,v $
-#   $Revision: 1.14 $
+#   $Revision: 1.15 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -32,7 +32,7 @@ source $lib_directory/display_common.tcl
 set log_mode none
 catch {
 
-# Maximum number of bytes in a file that are read.
+# Maximum number of bytes in a file that will be read.
 #
 set size_limit 100000
 
@@ -107,6 +107,20 @@ lookat 'logical-expression'
     beginning of the name or line, and a `\$' matches
     the end of the name or line.
 
+    The logical-expression argument is parsed into a TCL
+    list before parts of its atoms are interpreted as
+    regular expressions.  This means that in order to
+    get a `\\', `\"', `{', or `}' into a regular
+    expression, you must put `\\\\', `\\\"', `\\{',
+    or `\\}' into the logical-expression argument.
+    However, if atoms contain whitespace, they can be
+    quoted with \"'s or {}'s.
+
+    is processed by this program, any backslashes (\\)
+    in the argument must be doubled.  Thus to get
+    `\\.' into a regular expression, one must put
+    `\\\\.' into the logical-expression argument.
+
     There are some abbreviations of atoms that are re-
     cognized, namely the following:
 
@@ -120,13 +134,39 @@ lookat 'logical-expression'
     subdirectory, the first filename and line matched
     for the atom is displayed.  The user of this program
     can execute `manualreply' on a subdirectory by typ-
-    ing the number within the list of the subdirectory.
-    Upon return from manualreply, the list is redis-
-    played, but it is NOT recomputed.
+    ing its number within the list of the subdirector-
+    ies.  Upon return from manualreply, the list is re-
+    displayed, but it is NOT recomputed.
 
     Unlike most HPCM judging programs, errors made by
     this program are not written to log files, but are
     announced on standard error.
+
+    This program is interactive.  A summary of its
+    commands is:
+
+        #	Call manualreply on subdirectory # of
+		the subdirectory list, where # is
+		a strictly positive integer.
+
+	e logical-expression
+		Recompute the subdirectory list using
+		the new logical expression.
+
+	u	Move up in the subdirectory list.
+	p	Ditto (move to previous).
+
+	d	Move down in the subdirectory list.
+	n	Ditto (move to next).
+
+	x	Exit.
+
+	control-D
+		Exit.
+
+	?	Print help documentation.
+
+	a	Print abbreviations.
 
     Some examples:
 
@@ -150,8 +190,8 @@ lookat 'logical-expression'
 	lookat '! Auto::. & ( 1 | Gotten::\\\\.txt\$ )'
 	    Lists non-autoscored submissions and for
 	    each any Gotten file line for a .txt file.
-	    Note '\\\\' becomes `\\' after UNIX shell
-	    processing.
+	    Note '\\\\' becomes `\\' in the regular
+	    expression.
 
 	lookat '! AUTO & ( 1 | GOTTEN )'
 	    Ditto but file names are more specific and
@@ -177,7 +217,8 @@ u = move up in the subdirectory list      \
 d = move down in the subdirectory list    \
 	n = ditto (next)
 
-x = exit          control-D = exit         ? = help
+x = exit      control-D = exit     \
+	a = print abbreviations      ? = help
 "
 
 
@@ -527,6 +568,10 @@ if { $manualcount == 0 } {
 		    compute_directory_list
 	        }
 	    }
+	    {^a$} {
+	        puts [abreviations_doc]
+		puts ""
+		continue?
 	    {^\?} {
 	        puts $help
 		puts ""
