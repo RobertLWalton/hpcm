@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Mar 17 10:33:58 EST 2003
+# Date:		Tue Mar 18 07:48:04 EST 2003
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2003/03/17 19:20:36 $
+#   $Date: 2003/03/18 13:32:08 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.102 $
+#   $Revision: 1.103 $
 #
 
 # Table of Contents
@@ -885,11 +885,11 @@ proc read_header { ch { find_part no }
 	    # Find part fields.
 	    #
 	    set ct "${ws}*content-type${ws}*:"
-	    set ct "${ct}${ws}*(${nws}*)(${ws}|\$)"
+	    set ct "${ct}${ws}*(${nws}.*)\$"
 	    set cte \
 		"${ws}*content-transfer-encoding"
 	    set cte "${cte}${ws}*:${ws}*"
-	    set cte "${cte}(${nws}*)(${ws}|\$)"
+	    set cte "${cte}(${nws}.*)\$"
 	    while { "yes" } {
 
 		set line [gets $ch]
@@ -912,8 +912,9 @@ proc read_header { ch { find_part no }
 	set ctv $content_type_values
 	set ctev \
 	    $content_transfer_encoding_values
-	if { ! [regexp "^(${ctv})\$" $type] \
-	     || ! [regexp "^(${ctev})\$" $encoding] } {
+	if { ! [regexp -nocase "^(${ctv})\$" $type] \
+	     || ! [regexp -nocase "^(${ctev})\$" \
+	                  $encoding] } {
 	    if { $multipart } {
 	    	continue
 	    } else break
@@ -1002,6 +1003,7 @@ proc read_header { ch { find_part no }
 	    } else {
 		regsub -all "\r\n" $translated \
 			    "\n" translated
+		regsub "\n\$" $translated "" translated
 		set translated \
 		    [split $translated "\n"]
 	    }
@@ -1017,9 +1019,9 @@ proc read_header { ch { find_part no }
 	if { $message_terminator != "" } {
 	    set length 0
 	    set term "^${message_terminator}\$"
-	    foreach line $translated {
+	    foreach tline $translated {
 	        incr length
-	        if { [regexp $term $line] } {
+	        if { [regexp -nocase $term $tline] } {
 		    set last $length
 		    incr last -2
 		    set translated \
@@ -1038,8 +1040,8 @@ proc read_header { ch { find_part no }
 	# If body not empty, end search for parts.
 	#
 	set body_non_empty no
-	foreach line $translated {
-	    if { [regexp "\[^\ \t\]" $line] } {
+	foreach tline $translated {
+	    if { [regexp "\[^\ \t\]" $tline] } {
 		set body_non_empty yes
 		break
 	    }
