@@ -1,11 +1,11 @@
 # Makefile for the `count' Demonstration Problem
 #
 # File:		Makefile
-# Date:		Fri Feb 15 15:40:55 EST 2002
+# Date:		Sun Feb 17 08:11:51 EST 2002
 #
 # Exactly ONE of the four files count.c (C), count.cc
-# (C++), count.p (Pascal), or count.java (Java) should
-# exist.
+# (C++), count.p (Pascal), count.java (Java), or
+# count.lsp (Commonlisp) should exist.
 #
 # UNIX commands supported by this Makefile:
 #
@@ -83,7 +83,7 @@ default:	count.out
 	rm -f $* $*.fas $*.lib core
 	hpcm_clisp -c $*.lsp
 	echo >$* '#!/bin/sh'
-	echo >>$* "exec `which hpcm_clisp` -I $*.fas"
+	echo >>$* "exec `hpcm_clisp -which` -I $*.fas"
 	chmod a+r $*.fas
 	chmod a+rx $*
 
@@ -125,6 +125,6 @@ clean:
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/02/16 00:36:46 $
+#   $Date: 2002/02/17 13:16:19 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.22 $
+#   $Revision: 1.23 $
