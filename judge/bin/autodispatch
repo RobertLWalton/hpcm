@@ -5,7 +5,7 @@
 #
 # File:		autodispatch
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Jan 22 21:23:20 EST 2002
+# Date:		Mon Jan 28 15:31:46 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/01/23 02:29:19 $
+#   $Date: 2002/01/28 20:47:48 $
 #   $RCSfile: autodispatch,v $
-#   $Revision: 1.16 $
+#   $Revision: 1.17 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -34,8 +34,8 @@ set my_argv $argv
 if { $my_argc >= 1 \
      && ! [regexp {^-} [lindex $my_argv 0]] } {
     cd [lindex $my_argv 0]
-    set my_argv [lreplace $my_argv 0 0]
-    set my_argc [expr { $my_argc - 1 }]
+    set my_argv [lrange $my_argv 1 end]
+    incr my_argc -1
 }
 
 # Include common code and parameters:
@@ -91,9 +91,9 @@ autodispatch \[directory\] \[-force\]
     In general, it calls the program indicated by the
     `autodispatch_map' array element for the first word
     (list element) of the subject field, if the subject
-    field is not empty, and the array element is de-
-    fined.  If the array element is not defined, no pro-
-    gram is called.
+    field is a valid non-empty TCL list, and the array
+    element is defined.  Otherwise, no program is call-
+    ed.
 
     If no program is called and if the reply mode is
     `auto', this program will compose a reply.  If the
@@ -104,13 +104,13 @@ autodispatch \[directory\] \[-force\]
     the reply says that no-one will look at the mes-
     sage.
 
-    If no program is called and if the reply mode is
-    NOT `auto', this program will set the `needs reply'
-    flag (the flag directory $needs_reply_flag_file\
-			    file).
-    This signals other programs (e.g. tracker) that they
-    should search for submission directories for which
-    the manualreply program should be called.
+    If no program is called and if the reply mode is NOT
+    `auto', this program will NOT compose a reply, but
+    will instead set the `needs reply' flag (the flag
+    directory $needs_reply_flag_file file).  This sig-
+    nals other programs (e.g. tracker) that they should
+    search for submission directories for which the man-
+    ualreply program should be called.
 
     Finally this program exits without error or output,
     except for output produced by autojudge or other
@@ -122,8 +122,8 @@ set force_option no
 if { $my_argc >= 1 \
      && [lindex $my_argv 0] == "-force" } {
     set force_option yes
-    set my_argv [lreplace $my_argv 0 0]
-    set my_argc [expr { $my_argc - 1 }]
+    set my_argv [lrange $my_argv 1 end]
+    incr my_argc -1
 }
 
 # If there are leftover arguments, print document and
@@ -177,8 +177,8 @@ if { [header_is_authentic] == "no" } {
 
 # Execute any program appropriate to the subject.
 #
-set s [lindex $message_subject 0]
-if { [llength $message_subject] >= 1 \
+if {  ! [catch { set s [lindex $message_subject 0] }] \
+     && [llength $message_subject] >= 1 \
      && [info exists autodispatch_map($s)] } {
     exec $autodispatch_map($s) >@ stdout 2>@ stderr
 
@@ -202,7 +202,7 @@ if { [llength $message_subject] >= 1 \
 	              wait for" } \
 	      "LINE {a response from $reply_manager}" \
 	      BLANK \
-	      {BAR "This message replies to:"} \
+	      {BAR "this message replies to:"} \
 	      RECEIVED-HEADER \
 	      BLANK \
 	      RECEIVED-BODY
@@ -216,17 +216,18 @@ if { [llength $message_subject] >= 1 \
 	      { LINE "Please fix the subject field or\
 	              send the message elsewhere." } \
 	      BLANK \
-	      {BAR "This message replies to:"} \
+	      {BAR "this message replies to:"} \
 	      RECEIVED-HEADER \
 	      BLANK \
 	      RECEIVED-BODY
     }
 
-# Else if `auto+manual' reply mode: this is manual case,
-# and anther program will see there is no $reply_file,
-# no $no_reply_file, no $dispatch_pid_file, etc., and
-# that the subject is unsuitable for autodispatch, and
-# then this other program will schedule manual action.
+# Else if `auto+manual' or `manual' reply mode: this is
+# manual case, and another program will see there is no
+# $reply_file, no $no_reply_file, no $dispatch_pid_file,
+# etc., and that the subject is unsuitable for autodis-
+# patch, and then this other program will schedule man-
+# ual action.
 #
 } else {
     set_flag $needs_reply_flag_file
