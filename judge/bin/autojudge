@@ -5,7 +5,7 @@
 #
 # File:		autojudge
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Feb 10 08:22:56 EST 2003
+# Date:		Wed Feb 12 01:36:40 EST 2003
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2003/02/10 13:21:44 $
+#   $Date: 2003/02/12 06:37:34 $
 #   $RCSfile: autojudge,v $
-#   $Revision: 1.85 $
+#   $Revision: 1.86 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -529,11 +529,6 @@ proc execute_links { files } {
     global problem extension solution_directory \
            linked_files
 
-    if { [catch { llength $files }] } {
-        error "$files_file file value is not formatted\
-	       as a TCL list:\n    $files"
-    }
-
     # Failure occurs if there is no source for a -LINK-
     # target, or if a target has a .EXTENSION but no
     # extension is given by the submitter.  If there is
@@ -760,6 +755,10 @@ if { [file exists $problem.rc] } {
 #
 if { [file exists $files_file] } {
     set files [read_entire_file $files_file]
+
+    if { [catch { llength $files }] } {
+	error "$files_file file is not a TCL list"
+    }
 } else {
     set possibilities \
         [find_exts $solution_directory/$files_file]
