@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Sep 17 08:36:57 EDT 2001
+# Date:		Sun Sep 23 21:36:44 EDT 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/09/21 12:49:50 $
+#   $Date: 2001/09/24 01:31:31 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.18 $
+#   $Revision: 1.19 $
 
 # To make an informal contest named `foo':
 #
@@ -46,7 +46,8 @@
 #    hpcm_judging.rc appropriately.  In this Makefile
 #    edit just the INDICES variable below at this time.
 #
-# 5. Make the symbolic links:
+# 5. Make directory ~/contest_foo.  Then make the
+#    symbolic links:
 #
 #      ~/judging_foo_password/contest -> ~/contest_foo
 #      ~/contest_foo/contestant -> ~/hpcm/contestant
@@ -71,7 +72,7 @@
 # 7. Create a file named ~/contest_foo/secure/passwords
 #    by executing:
 #
-#	cd ~contest_foo
+#	cd ~/contest_foo
 #	mkdir secure
 #	chmod 700 secure
 #	cd secure
@@ -268,8 +269,8 @@ HPCM=${HOME}/hpcm
 #		informal/=help/, \
 #		advanced/=help/, \
 #		    informal:include, \
-#		    common:include \
-#		    advanced:include \
+#		    common:include, \
+#		    advanced:include
 #
 # concerns the index file whose name (relative to this
 # directory) is ${HPCM}/contestant/help/index.  You
@@ -315,7 +316,7 @@ INDICES=    help/index, \
 		informal/=help/, \
 		advanced/=help/, \
 		    informal:include, \
-		    common:include \
+		    common:include, \
 		    advanced:include \
 	    ${HPCM}/problem_library/index, \
 		public/=problems/, \
