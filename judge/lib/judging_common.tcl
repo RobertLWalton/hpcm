@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Oct 20 08:45:22 EDT 2001
+# Date:		Fri Jan  4 09:21:42 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/10/20 13:17:23 $
+#   $Date: 2002/01/04 14:31:27 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.61 $
+#   $Revision: 1.62 $
 #
 
 # Table of Contents
@@ -88,30 +88,39 @@ proc exit_cleanup {} {}
 # -------- ------- ---------
 
 
-# Lock current directory by creating $dispatch_pid_file.
+# Lock given directory by creating $dispatch_pid_file
+# in the directory (defaults to current directory).
 # Return `yes' if success, and `no' if failure.
 #
-proc dispatch_lock {} {
+proc dispatch_lock { { directory . } } {
+
     global dispatch_pid_file
 
-    if { [create_file $dispatch_pid_file] } {
+    set lock_file $directory/$dispatch_pid_file
+
+    if { [create_file $lock_file] } {
 
 	# Store the current process ID in $dispatch_
 	# pid_file.
 	#
-	write_file $dispatch_pid_file [current_pid]
+	write_file $lock_file [current_pid]
 	return yes
     } else {
     	return no
     }
 }
 
-# Unlock the current directory by deleting any
-# existing $dispatch_pid_file.
+# Unlock given directory (defaults to current directory)
+# by deleting any existing $dispatch_pid_file in the
+# directory.
 #
-proc dispatch_unlock {} {
+proc dispatch_unlock { { directory . } } {
+
     global dispatch_pid_file
-    file delete -force $dispatch_pid_file
+
+    set lock_file $directory/$dispatch_pid_file
+
+    file delete -force $lock_file
 }
 
 # Date Functions
