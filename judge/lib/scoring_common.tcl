@@ -2,7 +2,7 @@
 #
 # File:		scoring_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Mar  9 11:16:13 EST 2002
+# Date:		Sat Mar  9 11:24:13 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/03/09 16:15:17 $
+#   $Date: 2002/03/09 17:59:42 $
 #   $RCSfile: scoring_common.tcl,v $
-#   $Revision: 1.30 $
+#   $Revision: 1.31 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -1204,10 +1204,10 @@ proc compute_proof_info { } {
 	}
     }
 
-    if { [array exists current_group_array] {
+    if { [array exists current_group_array] } {
         unset current_group_array
     }
-    if { [array exists proof_group_array] {
+    if { [array exists proof_group_array] } {
         unset proof_group_array
     }
     foreach group [array names proof_array] {
