@@ -10,12 +10,12 @@
 #
 # RCS Info (may not be true date or author):
 #
-#   $Author: acm-cont $
-#   $Date: 2000/09/04 09:25:26 $
+#   $Author: hc3 $
+#   $Date: 2000/09/18 08:30:21 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.1 $
+#   $Revision: 1.2 $
 
-all:	hpcm_sandbox
+all:	hpcm_sandbox modes
 
 # Kill all implicit rules
 #
@@ -26,6 +26,11 @@ hpcm_sandbox:	../../secure/src/hpcm_sandbox.c
 	(cd ../../secure/src; make hpcm_sandbox)
 	cp -p ../../secure/src/hpcm_sandbox .
 	chmod 555 hpcm_sandbox
+
+modes:
+	chmod a+rx TRASH_ACCOUNT help hpcm_sandbox \
+		   hpcm_sendmail hpcm_submit print \
+		   print2 scoreboard xcsh
 
 clean:
 	rm -f hpcm_sandbox
