@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/09/08 13:03:10 $
+#   $Date: 2001/09/08 18:29:52 $
 #   $RCSfile: manualreply,v $
-#   $Revision: 1.26 $
+#   $Revision: 1.27 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -90,6 +90,76 @@ if { $my_argc != 0 } {
 }
 
 
+# Menus.
+
+set main_menu "
+                    \
+? = help            \
+x = exit            \
+
+#  = look at #      \
+v# = view #         \
+e# = edit #         \
+ls = list files
+pr = lookat proofs  \
+c# = checkoff #     \
+u# = uncheckoff #   \
+sh = shell
+ir = initiate reply \
+er = edit reply     \
+sr = send reply     \
+nr = no reply
+sm = scoring menu   \
+aj = autojudge      \
+ai = autoinfo       \
+ss = send score"
+
+set scoring_menu "
+                         ? = help                     \
+x  = exit
+io = Incorrect Output    cc = Completely Correct      \
+#  = look at #
+fe = Formatting Error    ic = Incomplete Output       \
+mm = back to main menu
+se = Syntax Error        te = Cpu Time Limit Exceeded \
+ss = send score + mm
+pc = Program Crashed     oe = Output Size Exceeded    \
+pr = lookat proofs"
+
+# Help displays.
+#
+# These must begin and end with a blank line.  The
+# blank lines are changed to window bars by code.
+
+set help(?) "
+? WHAT		gives help for WHAT, where WHAT can be:
+
+# = file identifier \
+? = help            \
+x = exit            \
+aj = autojudge
+v  = view #         \
+e  = edit #         \
+ls = list files     \
+ai = autoinfo
+pr = lookat proofs  \
+c  = checkoff #     \
+u  = uncheckoff #   \
+sh = shell
+ir = initiate reply \
+er = edit reply     \
+sr = send reply     \
+nr = no reply
+
+sm = goto scoring menu   mm = goto main menu           ss = send score + mm
+
+io = Incorrect Output    cc = Completely Correct 
+fe = Formatting Error    ic = Incomplete Output 
+se = Syntax Error        te = Cpu Time Limit Exceeded
+pc = Program Crashed     oe = Output Size Exceeded
+"
+
+
 # Menu Initialization
 # ---- --------------
 
@@ -130,40 +200,6 @@ It appears that `autojudge' should be run."
     }
 }
 
-set main_menu "
-                    \
-? = help            \
-x = exit            \
-
-#  = look at #      \
-v# = view #         \
-e# = edit #         \
-ls = list files
-pr = lookat proofs  \
-c# = checkoff #     \
-u# = uncheckoff #   \
-sh = shell
-ir = initiate reply \
-er = edit reply     \
-sr = send reply     \
-nr = no reply
-sm = scoring menu   \
-aj = autojudge      \
-ai = autoinfo       \
-ss = send score"
-
-set scoring_menu "
-                         ? = help                     \
-x  = exit
-io = Incorrect Output    cc = Completely Correct      \
-#  = look at #
-fe = Formatting Error    ic = Incomplete Output       \
-mm = back to main menu
-se = Syntax Error        te = Cpu Time Limit Exceeded \
-ss = send score + mm
-pc = Program Crashed     oe = Output Size Exceeded    \
-pr = lookat proofs"
-
 set menu $main_menu
 
 set directory [file tail [pwd]]
@@ -175,12 +211,14 @@ set last_display ""
 #
 proc refresh_display {} {
 
-    global last_display last_file
+    global last_display last_file last_help
 
     if { $last_display == "file_list" } {
 	set_file_list_display
-    } else {
+    } elseif { $last_display == "file" } {
 	set_file_display $last_file
+    } elseif { $last_display == "help" } {
+	set_window_display $last_help
     }
 }
 
@@ -190,7 +228,6 @@ proc refresh_info {} {
 
     global proposed_score manual_score auto_score \
     	   window_info_height directory menu \
-	   last_display last_file \
 	   scoring_instructions submitted_program
 
     set old_info_height $window_info_height
@@ -590,6 +627,22 @@ while { "yes" } {
 		sm { set menu $scoring_menu }
 	    }
 	    refresh_info
+	}
+	{^\?} {
+	    regexp {^? *([^ ]*)$} $answer forget what
+	    if { $what == "" } {
+	        set what "?"
+	    } elseif { ! [info exists help($what)] } {
+		set window_error \
+		    "ERROR: no help available for\
+				  `$what'!"
+		set what "?"
+	    }
+	    set last_help $help($what)
+	    set last_help \
+	        "$window_bar$last_help$window_bar"
+	    set_window_display $last_help
+	    set last_display help
 	}
 	{^$} {
 	    if { [eof stdin] } {
