@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Oct 18 12:30:53 EDT 2001
+# Date:		Sun Oct 21 03:17:53 EDT 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/10/18 16:31:28 $
+#   $Date: 2001/10/21 07:33:22 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.70 $
+#   $Revision: 1.71 $
 #
 
 # An optionally modified copy of this file must be
@@ -33,19 +33,8 @@
 
 # Scoreboard Parameters.
 #
-# List of problems, list of submitters, start_time,
-# stop_time, penalty.  Times are in seconds.  Each list
-# is thought of as an allow list: listed problems or
-# submitters are allowed.  If the lists are empty, all
-# problems or submitters are allowed.  There are also
-# associated deny lists: problems or submitters in the
-# deny lists are denied, even if they are allowed by the
-# allow lists.
-#
-# The start_time and penalty are used to compute the
-# time score: penalty is the number of seconds of
-# penalty for an incorrect submission for a problem
-# later gotten correct.
+
+# Contest start and stop times.
 #
 # If the start_time is "", the time a problem is
 # gotten is used as the start time for that problem.
@@ -60,26 +49,66 @@
 #
 # The default values are for scoreboarding a practice
 # facility that operates 24 hours a day, every day.
-# 
-set scoreboard_problems {
-    }
-
-set scoreboard_problems_deny {
-    }
-
-set scoreboard_submitters {
-    }
-
-set scoreboard_submitters_deny {
-    }
-
+#
 set scoreboard_start_time ""
 #   [clock scan "Jan 1 00:00:00 EDT 2000"]
-
+#
 set scoreboard_stop_time ""
 #   [clock scan "Jan 1 00:00:00 EDT 2030"]
 
+# The start_time and penalty are used to compute the
+# time score: penalty is the number of SECONDS of
+# penalty for an incorrect submission for a problem
+# later gotten correct.
+#
 set scoreboard_penalty 0
+
+# Logical expressions specifying problems and submit-
+# ters.  Each logical expression is a TCL list whose
+# elements are operators, parentheses `(' and `)', and
+# atoms.  The allowed operators are `!', `&', `^', and
+# `|' in highest precedence first order, denoting `not',
+# `and', `exclusive-or', and `inclusive-or'.  Operators
+# and parentheses MUST be surrounded by whitespace.
+#
+# The atoms `0' and `1' represent `false' and `true'.
+# All other atoms are regular expressions that are
+# matched to the ENTIRE problem name or submitter name,
+# and are true iff they match.
+#
+# The problems logical expression is stored in `score-
+# board_problems'.  If it is not the empty list, only 
+# problems matching it are included in the scoreboard.
+# The submitter logical expression is similar and is
+# stored in `scoreboard_submitters'.
+#
+# Some simple examples of logical expressions are:
+#
+#   ! count	    Match all names but `count'.
+#
+#   count | pascal  Match only `count' and `pascal'.
+#
+#   count|pascal    Ditto, but with only one regular
+#		    expression atom that contains a
+#		    `|', instead of two atoms and a
+#		    `|' logical operator.
+#
+#   bpi[0-9]+	    Match all names of the form
+#		    `bpi' followed by one or more
+#		    digits.
+#
+#   bpi.* & ! bpit  Match all names beginning with
+#		    `bpi' except the one name
+#		    `bpit'.
+#
+# The regular expressions are TCL regular expressions.
+# Note that a regular expression must not as a charac-
+# ter string be the same as an operator or parenthesis
+# or special atom `0' or `1'.
+# 
+set scoreboard_problems { }
+set scoreboard_submitters { }
+
 
 # Maximum width of scoreboard in columns.
 #
@@ -89,6 +118,10 @@ set scoreboard_width 80
 # two lines worth of problems.
 #
 set scoreboard_markers "|+@#$%&<>"
+
+# End of scoreboard parameters.
+
+
 
 # Maximum number of proofs for each type of difference
 # that are recorded in the .score file.
