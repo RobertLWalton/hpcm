@@ -4,7 +4,7 @@
 #
 # File:		overview
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Jan 19 08:33:53 EST 2002
+# Date:		Sat Jan 19 10:11:28 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/01/19 13:50:19 $
+#   $Date: 2002/01/19 20:21:20 $
 #   $RCSfile: overview,v $
-#   $Revision: 1.51 $
+#   $Revision: 1.52 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -460,12 +460,120 @@ tory deletes all temporary files, including `pppp',
 Library Data: Complex Problems
 ------- ----- ------- --------
 
-.ISF files.
+The standard problem formt described in the last section
+has many limitations.  Only one file, Makefile, is pro-
+vided to support the contestant.  Only one file, e.g.
+pppp.c, can be submitted.  At most one file, e.g.
+pppp.txt, can be used to describe the problem.  There is
+no way to supply a contestant with an initial version of
+a file the contestant is supposed to submit.
+
+All this can be changed by including a `$files_file'\
+	file in
+the problem directory.  The default value of this file
+is-
+
+	-DESCRIPTION-
+	    PROBLEM.<description-extension>
+	-SOURCE-
+	    $make_file
+	-REQUIRED-
+	    PROBLEM.EXTENSION
+        -LINK-
+	    { $make_file $make_file.EXTENSION\
+	    	$make_file }
+	    PROBLEM.in
+	    { PROBLEM.test PROBLEM.out PROBLEM.test }
+	-OPTIONAL-LINK-
+	    $scoring_instructions_file
+	    $scoring_filter_file
+	    { PROBLEM.ftest PROBLEM.fout PROBLEM.ftest }
+
+Here `PROBLEM' denotes the name of the problem, and
+`EXTENSION' the programming language extension taken
+the subject field of he submission.  The above says that
+the file describing the problem has the name PROBLEM.ttt
+where .ttt is some extension such as .txt or .ps; the
+file given to the contestant (as SOURCE) is $make_file;
+and when a submission is scored by the judge a bunch of
+files are linked from the solution directory to the
+directory in which the submission is being scored.  For
+example, the PROBLEM.test file must be linked and it is
+linked to the solution PROBLEM.out file if that exists
+or to the solution PROBLEM.text file otherwise.  The
+PROBLEM.ftest file is similar, but linking it is option-
+al.
+
+In general the `$files_file' file consists of special
+symbols, like -DESCRIPTION- and -SOURCE-, each followed
+by items that are either file names of lists of file
+names.  Different special symbols are processed by dif-
+ferent HPCM programs: e.g., -DESCRIPTION- is processed
+by makejudgingdir and -LINK- by autojudge.  The follow-
+ing is a list of the recognized special symbols, the
+programs that recognize them, and a description in brief
+of their function.  See program documantation for more
+details.
+
+    Recognized by makejudgingdir:
+
+        -DESCRIPTION-	Items name files that are given
+			to contestant in email or in-
+			formal contests to describe the
+			problem.
+
+	-SOURCE-	Items name files that are given
+			to the contestant as read-only
+			files that support solution
+			development (e.g. Makefile).
+
+    Recognized by extractmail:
+
+	-REQUIRED-	Items name files that must be
+			submitted.
+
+	-OPTIONAL-	Items name files that may op-
+			tionally be submitted.
+
+    Recognized by autojudge:
+
+	-LINK-		Items name files that must be
+			linked from the solution di-
+			rectory to the submission
+			directory.  The file name in
+			the solution directory can be
+			different from the file name
+			in the submission directory.
+
+	-OPTIONAL-LINK-	Ditto but the files need not be
+			linked if the correct files do
+			not exist in the solution direc-
+			tory.
+
+In addition to the control over problem files given by
+the `$files_file' file, two other HPCM features support
+complex problems.
+
+First, if there is a -SOURCE- file named xxx.ISF, then
+this is an initial value for a read-write submittable
+file named xxx.  The hpcm_get and hpcm_extract programs
+support this by automatically copying xxx.ISF to xxx if
+the latter does not exist, and making xxx writable.
+
+Second, if there is a file named\
+	$response_instructions_file
+linked to the submissions directory, responses from the
+autojudge program can contain extra information about
+scores, including positions of errors or first errors
+in pppp.out, summaries of errors found, and extra com-
+ment lines or copies of information files.  See the
+documentation of autojudge for details.
+
+Some complex problems are in the directory:
 
     hpcm/problem_library/symbolic_computing
 	    Problems for the text book `Introduction
 	    to Symbolic Computing' by Robert Walton.
-
 
 
 Library Data: Help Documentation
