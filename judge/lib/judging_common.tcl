@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: acm-cont $
-#   $Date: 2000/08/24 11:09:06 $
+#   $Date: 2000/08/25 12:05:33 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.14 $
+#   $Revision: 1.15 $
 #
 
 # Include this code in TCL program via:
@@ -174,10 +174,17 @@ proc caught_error {} {
 # Function called to log an error when the program
 # may want to continue.
 #
-# The error information is written as a separate
-# file in $log_directory.  If $log_directory is not
-# usable, $default_log_directory defined above is used
-# instead.  The format of the file name is:
+# The error information is written as a separate file.
+# If the log_globally variable does not exist or does
+# not equal `yes' and the current directory is writable,
+# the file is written into the current directory.
+# Otherwise if the log_directory variable exists and
+# names a directory that exists or can be made and is
+# writable once it is made, then the file is written
+# into this directory.  Otherwise the file is written
+# into $default_log_directory, which is defined above
+# as an emergency last resort.  The format of the file
+# name is:
 #
 #	d-[<EU>]-{<p>}-u
 #
@@ -205,16 +212,18 @@ proc log_error { error_output } {
     # to be used.  Make it if necessary.  Be
     # sure its writable.
     #
-    if { [info exists log_directory] \
-	 && $log_directory != "" } {
-        set log_dir "$log_directory"
+    if { ( ! [info exists log_globally] \
+           ||  $log_globally != "yes" ) \
+	 && [file writable "."] } {
+        set log_dir "."
+    } elseif { [info exists log_directory] \
+	       && ! [catch { file mkdir \
+	                          $log_directory } ] \
+	       && [file writable $log_directory] } {
+    	set log_dir $log_directory
     } else {
+	file mkdir $default_log_directory
     	set log_dir $default_log_directory
-    }
-    if { [catch { file mkdir $log_dir } ] \
-	 || ! [file writable $log_dir] } {
-	set log_dir $default_log_directory
-	file mkdir $log_dir
     }
 
     # Create $log_file filename for output.
@@ -260,14 +269,114 @@ proc log_error { error_output } {
     puts $log_ch $errorInfo
     close $log_ch
 }
+
+# Read an email message header from the channel. If given, the
+# first line of the header is the second argument (note that email
+# header lines cannot be empty.  Stop reading at the first empty
+# line and discard that line.
+#
+# The results are returned in global variables:
+#
+#	message_header		All the lines of the header
+#	message_From_line	The first line if it begins with
+#				`^From\ '.
+#	message_from		The `From:' field value.
+#	message_to		The `To:' field value.
+#	message_reply_to	The `Reply-To:' field value.
+#	message_subject		The `Subject:' field value.
+#	message_date		The `Date:' field value.
+#
+# All the values have the final \n stripped off.  All the field
+# values have the `field-name:' stripped off.  If there are
+# two copies of a field, only the last is recorded.
+#
+proc read_message { ch { first_line "" } } {
+    global message_header message_From_line \
+           message_from message_to message_date \
+	   message_reply_to message_subject
+
+    set message_header		""
+    set message_From_line	""
+    set message_from		""
+    set message_to		""
+    set message_date		""
+    set message_reply_to	""
+    set message_subject		""
+
+    set line $first_line
+    if { $line == "" } {
+        set line [gets $ch]
+	if { [eof $ch] } break
+    }
+
+    if { [regexp "^From\ " $line } {
+    	set message_From_line $line
+    }
+
+    while { "yes" } {
+    	if { $line == "" } break
+
+	set found_field no
+	foreach fieldname \
+	        "to subject from date reply-to" {
+	    if { [regexp -nocase \
+	                 "^${fieldname}:(.*)\$"
+			 wholeline fieldvalue] } {
+		set varname "message_$fieldname"
+		subexp -all -- "-" $varname "_" varname
+		set $varname $fieldvalue
+
+		while { "yes" } {
+		    set line [gets $ch]
+		    if { [eof $ch] \\
+			 || ! [regexp "^\ \t" $line] } \
+			break;
+		    set $varname \
+			"[set $varname]\n$line"
+		    set message_header \
+			"$message_header\n$line"
+		}
+		set found_field yes
+		break
+	    }
+	}
+
+	if { $found_field == "no" } {
+	    set message_header "$message_header\n$line"
+	    set line [gets $ch]
+	}
+
+	if { [eof $ch] break }
+    }
+}
+
+# Using information from the last call to read_message,
+# return the `To:' field value for a reply to that
+# message.  This is the message `Reply-to' field if that
+# is not empty, or the message `From' filed if that is
+# not empty, or `UNKNOWN' as a last resort.
+#
+proc compute_message_reply_to {} {
+
+    global message_from message_reply_to
+
+    if { $message_reply_to != "" } {
+	return $message_reply_to
+    } elseif { $message_reply_from != "" } {
+	return $message_reply_from
+    } else {
+    	return "UNKNOWN"
+    }
+}
     
-# Construct a mail reply file and send it to the
-# sender of any received mail file.  The option `-all'
-# causes the entire received mail file to be included
-# immediately at the end of the message.  Otherwise
-# just the header is included.  In either case this
-# information is separated from the rest of the message
-# by a blank space and a line containing `-----'
+# Construct a mail reply file and send it to the sender
+# of any received mail file.  The From, To, Subject, and
+# Date fields of the received mail Header are copied at
+# the end of the message.  The option `-all' causes the
+# body of the received mail file to be included.  In
+# any case this information is separated from the rest
+# of the message by a blank space and a line containing
+# `-----'
 #
 # Non-option arguments are lines to be copied into the
 # body of the reply.  The reply header is automatically
@@ -289,8 +398,14 @@ proc reply { args } {
 #
 proc compose_reply { args } {
 
-    global received_file reply_file Header_line_regexp
+    global received_file reply_file \
+           message_From_line \
+           message_from message_to message_date \
+	   message_reply_to message_subject
 
+    # If -all is present, set `all_option' to `yes' and
+    # shift the arguments left.
+    #
     set all_option no
     if { [llength $args] >= 1 \
          && [lindex $args 0] == "-all" } {
@@ -298,29 +413,18 @@ proc compose_reply { args } {
 	set args [lreplace $args 0 0]
     }
 
-    set to [dirname_to_sender [file tail [pwd]]
-
     set received_ch [open $received_file r]
 
-    set subject ""
-
-    while { "yes" } {
-    	set line [gets $received_ch]
-	if { [eof $received_ch] } break
-	if { [regexp {^Subject:(.*)$} \
-	             $line all subject] } break
-    }
-    close $received_ch
+    read_message $received_ch
 
     if { [file exists ${reply_file}+] } {
     	file delete -force ${reply_file}+
     }
 
     set reply_ch    [open ${reply_file}+ w]
-    set received_ch [open $received_file]
 
-    puts $reply_ch   "To: $to"
-    puts $reply_ch   "Subject: RE:$subject"
+    puts $reply_ch   "To:[compute_message_reply_to]"
+    puts $reply_ch   "Subject: RE:$message_subject"
     puts $reply_ch   ""
     foreach line $args {
         puts $reply_ch   $line
@@ -329,26 +433,42 @@ proc compose_reply { args } {
     puts $reply_ch   "------------------------------\
                       This message replies to:"
 
-    set in_header yes
-    set From_line_found no
+    set From_line_sent no
+
+    if { [regexp "\[^\ \t\n\]" $message_to]  } {
+	puts $reply_ch "To:$message_to"
+    }
+
+    if { [regexp "\[^\ \t\n\]" $message_from]  } {
+	puts $reply_ch "From:$message_from"
+    } else if { $message_From_line != "" } {
+	puts $reply_ch ">$message_From_line
+	set From_line_sent yes
+    }
+
+    if { [regexp "\[^\ \t\n\]" $message_date]  } {
+	puts $reply_ch "Date:$message_date"
+    } else if { $From_line_sent == "no" \
+                && $message_From_line != "" } {
+	puts $reply_ch ">$message_From_line
+	set From_line_sent yes
+    }
+
+    if { [regexp "\[^\ \t\n\]" $message_reply_to]  } {
+	puts $reply_ch "Subject:$message_reply_to"
+    }
+
+    if { [regexp "\[^\ \t\n\]" $message_subject]  } {
+	puts $reply_ch "Subject:$message_subject"
+    }
+
+    puts $reply_ch ""
+
     while { "yes" } {
 	set line [gets $received_ch]
 	if { [eof $received_ch] } {
 	    break
-	} elseif { [regexp {^From\ } $line] } {
-	    puts $reply_ch ">$line"
-	    set From_line_found yes
-	} elseif { $in_header == "no" } {
-	    puts $reply_ch "$line"
-	} elseif { ! [regexp $Header_line_regexp \
-	                     $line] } {
-	    if { $all_option == "no" } break;
-	    set in_header no
-	    puts $reply_ch "$line"
-	} elseif { [regexp {^(Subject|To):} $line] } {
-	    puts $reply_ch "$line"
-	} elseif { $From_line_found == "no" \
-	           && [regexp {^(From|Date):} $line] } {
+	} else {
 	    puts $reply_ch "$line"
 	}
     }
@@ -364,54 +484,12 @@ proc send_reply {} {
 
     global reply_file history_file
 
-    set to [dirname_to_sender [file tail [pwd]]
-
-    set reply_ch [open ${reply_file}+ r]
     set history_ch  [open $history_file a]
 
     puts $history_ch "From [id user]@[info hostname]\
 		      [clock format [clock seconds]]"
 
-    set header yes
-    set to_ok  no
-    while { "yes" } {
-    	set line [gets $reply_ch]
-	if { [eof $reply_ch] } {
-	    break
-	} elseif { $header && $line == "To: $to" } {
-	    set to_ok yes
-	} elseif { $header && $to_ok == "no" \
-	           && [regexp {^To:} $line] } {
-	    puts $history_ch ""
-	    puts $history_ch "`To:' line has been\
-	                      tampered with"
-	    puts $history_ch "THIS MESSAGE WAS NOT\
-	                      BEEN SENT!"
-	    puts $history_ch ""
-	    close $history_ch
-	    error "`To:' line has been tampered with\
-	           in ${reply_file}+:\n\
-	           \    $line"
-	} elseif { ! [regexp {:} $line] } {
-	    set header no
-	}
-
-	puts $history_ch $line
-    }
-
-    if { $to_ok == "no" } {
-	puts $history_ch \
-	    ""
-	puts $history_ch \
-	    "`To:' line has been tampered with"
-	puts $history_ch \
-	    "THIS MESSAGE WAS NOT BEEN SENT!"
-	puts $history_ch \
-	    ""
-	close $history_ch
-	error "`To:' line has deleted from\
-	       ${reply_file}+"
-    }
+    put_file "${reply_file}+" $history_ch
 
     # A blank line is needed before the next `From'
     # line so the `From' line will be recognized.
@@ -422,7 +500,11 @@ proc send_reply {} {
 
     file rename -force "${reply_file}+" $reply_file
 
-    send_mail $reply_file $to
+    # Send the reply_file.  If there is a bad `To:'
+    # address, there will be an error, which will
+    # usually be logged locally.
+    #
+    send_mail $reply_file
 }
 
 # The following function returns the subject of the
@@ -569,12 +651,12 @@ if { [info command signal] == "signal" } {
 # parameters file.  This should be unique.
 #
 set judging_parameters_file_list ""
-foreach d ". .. ../.. ../../.. ../../../.." {
+foreach __d__ ". .. ../.. ../../.. ../../../.." {
     if { [file exists \
-	       "$d/$judging_parameters_file"] } {
+	       "$__d__/$judging_parameters_file"] } {
 	lappend judging_parameters_file_list \
-		"$d/$judging_parameters_file"
-	set judging_parameters_directory $d
+		"$__d__/$judging_parameters_file"
+	set judging_parameters_directory $__d__
     }
 }
 

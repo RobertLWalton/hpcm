@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: acm-cont $
-#   $Date: 2000/08/24 11:09:06 $
+#   $Date: 2000/08/25 12:05:33 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.13 $
+#   $Revision: 1.14 $
 #
 
 # An optionally modified copy of this file must be
@@ -46,13 +46,14 @@ set allowed_extensions ".c .cc .java"
 ###### Functions to call operating system programs #####
 
 # Program to send mail, as does UNIX `sendmail'.  Takes
-# mail message file and list of target addresses as
-# arguments.  Message file will have `To:' lines match-
-# ing address arguments.
+# mail message file with correctly set `To:' field and
+# sends the message to the addresses listed there.  If
+# some of these addresses are in error, this command
+# suffers a catchable error (and the mail may be put
+# into ~/dead.letter).
 #
-proc send_mail { message_file args } {
-    eval exec /usr/sbin/sendmail -oi \
-              < $message_file $args
+proc send_mail { message_file } {
+    exec /usr/sbin/sendmail -oi -t < $message_file
 }
 
 # Program to create a file and suffer an error if the
