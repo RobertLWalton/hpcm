@@ -5,7 +5,7 @@
 #
 # File:		receivemail
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Dec  4 02:31:41 EST 2000
+# Date:		Tue Jan  9 05:51:55 EST 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/12/04 07:34:07 $
+#   $Date: 2001/01/09 11:55:08 $
 #   $RCSfile: receivemail,v $
-#   $Revision: 1.24 $
+#   $Revision: 1.25 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -77,6 +77,16 @@ receivemail \[directory\]
     delay for at least 1 second (to be safe delay for
     2 seconds) after emailing each request.
 
+    Any X-HPCM-Signature-OK header field in a received
+    message is stripped from the message.  If the
+    `use_authentication' global variable is true, the
+    authentication for the message is computed using
+    the X-HPCM-Signature field, and the result is
+    saved in the X-HPCM-Signature-OK field of the
+    message stored in the $received_file file.  No
+    attempt is made to ignore or reply to non-authentic
+    messages.
+
     If the directory argument is given, this program
     makes that directory current before searching for
     the `$judging_parameters_file' file.
@@ -86,7 +96,7 @@ receivemail \[directory\]
     ial message from the user `UNKNOWN' with date equal
     to the current time.  The subject of this message is
     something ignored by `autodispatch'.
-
+
     This program outputs the names of the subdirector-
     ies of the mail directory that are actually created.
     The output of this program can be piped into the

@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/01/09 03:31:54 $
+#   $Date: 2001/01/09 11:55:07 $
 #   $RCSfile: overview,v $
-#   $Revision: 1.18 $
+#   $Revision: 1.19 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -1078,23 +1078,39 @@ HPCM has the following security goals:
    sendmail.rc file, even though the contestant
    accounts cannot.  This hpcm_sendmail.rc file
    contains a key name and key.  The hpcm_sendmail
-   program adds three fields to the mail it sends:
+   program adds three header fields to the mail it
+   sends:
 
-   	HPCM-Reply-To
+   	X-HPCM-Reply-To
 	    The email address HPCM uses as the
 	    identity of the account sending the
 	    email, and therefore as the identity
 	    of the contestant.
-	HPCM-Date
+	X-HPCM-Date
 	    The time the email is sent, which HPCM
 	    uses as the time of submission.
-	HPCM-Signature
+	X-HPCM-Signature
 	    A signature of the two fields just given,
 	    made using the key name and value.
 
     Upon receipt the signature is verified by the
     judging software, and unverifyable email is
     rejected.
+
+    More specifically, HPCM programs do the following.
+    First, they use X-HPCM-Data and X-HPCM-Reply-To
+    in preference to the normal mail Date and Reply-To
+    header fields.  Second, when the email is first
+    processed by `receivemail', any X-HPCM-Signature-OK
+    header field in the received mail is stripped from
+    the incoming message, and this field is recomputed
+    from the two header fields just mentioned and the
+    X-HPCM-Signature header field.  The recomputed
+    X-HPCM-Signature-OK field is stored in the message
+    $received_file file for use by subsequent process-
+    ing.  Recomputation and use of X-HPCM-Signature_OK
+    may be surpressed by setting the `use-authentica-
+    tion' global variable to false.
 
 2. Prevent code written by contestants from corrupting
    the files of the judge.
@@ -1107,6 +1123,14 @@ HPCM has the following security goals:
    the contestant program to `sandbox'.  This user
    should not be able to access any files or directories
    except those publicaly available.
+
+   The sandbox is implemented by the judge's hpcm_
+   sandbox program, which must be installed in the UNIX
+   /usr/sbin directory (or equivalent), and is set to
+   do a root set-user-id.  The contestant's hpcm_sandbox
+   program is the same binary, but in the hpcm/
+   contestant/bin directory, and without any set-user-id
+   capability.
 
    However, current JAVA implementations seem to have
    the following security flaw: they convert relative
@@ -1186,18 +1210,22 @@ Raw data is stored in the following directories:
         Normally the `mail' subdirectory of the judging
 	directory.
 
-	The mail directory contains a separate subdirec-
+	The mail_directory contains a separate subdirec-
 	tory for each piece of email sent to the judge.
 
-    mail_directory/DATE-<<SUBMITTER>>-submission
+	The mail_directory is created by `makejudging-
+	dir' and must exist before judge's email is
+	received.
+
+    mail_directory/dddd-<<ssssss>>-submission
         This is a directory holding an email sent to the
-	judge by the SUBMITTER at a time indicated by
-	the DATE.  A specific example of the last
-	name component of the directory is:
+	judge by the submitter ssssss at a time indica-
+	ted by the date dddd.  A specific example of the
+	last name component of the directory is:
 
 	2000-12-10-06:30:49-<<hpcm-t@method>>-submission
 
-	The SUBMITTER is normally the return email
+	The submitter is normally the return email
 	address of the email message sent to the judge,
 	but may be editted to remove spaces and alter
 	some special characters.  It is not used per se
@@ -1205,17 +1233,17 @@ Raw data is stored in the following directories:
 	any `@' may be used as a contestant name by
 	the scoreboard software.
 
-	Note that the DATE gives a time in seconds, and
+	Note that the date gives a time in seconds, and
 	is organized so that submissions with later
 	times sort alphanumerically later.
 
-	Because the DATE component is in seconds, there
-	cannot be more than one submission per second
-	from the same SUBMITTER.  Any submission but the
-	first will find that the directory it is
-	supposed to create already exists, and therefore
-	all submissions but the first with the same DATE
-	will be ignored.
+	Because the date is in seconds, there cannot be
+	more than one submission per second from the
+	same submitter.  Any submission but the first
+	will find that the directory it is supposed to
+	create already exists, and therefore all submis-
+	sions but the first with the same date will be
+	ignored.
 
 	As a consequence, programs like hpcm_get that
 	send email to the judge pause for at least a
@@ -1265,7 +1293,7 @@ Raw data is stored in the following directories:
 	        This file is a log of ALL email replies
 		sent by the judge for this directory.
 
-	    DATE-RANDOM-<<PROGRAM>>-unchecked-error
+	    dddd-rrrr-<<ppppp>>-unchecked-error
 	    	This `error log' file describes a system
 		error that occurred processing this di-
 		rectory.  Of course, system errors are
@@ -1273,26 +1301,33 @@ Raw data is stored in the following directories:
 		this file containing all the available
 		information about the error is created.
 
-	    DATE-RANDOM-<<PROGRAM>>-checked-error
-	        This is an `unchecked-error' file which
-		has been read and `checked' by the
-		judge.  An error file is `checked' by
-		changing the `unchecked' in its name to
-		`checked'.
+		dddd is the date in seconds, rrrr is a
+		random number to make the file unique
+		even if several system errors happen in
+		the same second, ppppp is the name of
+		the program that sufferred the system
+		error.
 
-		The `tracker' program searches for
-		unchecked error log files and calls
-		the judge's attention to them.  Checked
-		error log files are ignored by
-		`tracker'.
+	    dddd-rrrr-<<ppppp>>-checked-error
+	        This is an `unchecked-error' file (see
+		just above) which has been read and
+		`checked' by the judge.  An error file
+		is `checked' by changing the `unchecked'
+		in its name to `checked'.
 
-	    DATE-RANDOM-<<PROGRAM>>-unchecked-error.mail
-	    DATE-RANDOM-<<PROGRAM>>-checked-error.mail
+		The `tracker' program searches for un-
+		checked error log files and calls the
+		judge's attention to them.  Checked
+		error log files are ignored by `track-
+		er'.
+
+	    dddd-rrrr-<<ppppp>>-unchecked-error.mail
+	    dddd-rrrr-<<ppppp>>-checked-error.mail
 	        An error log file may be emailed to a
 		`log_manager' when it is created.  If
 		this is done, a companion .mail file is
 		created containing the email message.
-		This fils is `checked' when its assoc-
+		This file is `checked' when its assoc-
 		iated error log file is `checked'.
 
 	There are three kinds of email that may be sent
@@ -1312,10 +1347,16 @@ Raw data is stored in the following directories:
 	`checking') as errors put in submission direc-
 	tories.
 
+	The log_directory is created automatically when
+	it is first needed.
+
     ~/HPCM_Error_Log
         This is an emergency error log directory for
 	use only if the log_directory cannot be found,
 	cannot be created, or is not writable.
+
+	This directory is created automatically when it
+	is first needed.
 
 
 Contest Raw Data: Submissions
@@ -1323,10 +1364,29 @@ Contest Raw Data: Submissions
 
 Any email sent to the judge may be called a `submis-
 sion', but more particularly a `submission' is an email
-with a subject of the form `submit FILENAME' and a body
-containing the named file.  Such an email is interpreted
-as submission of a single file that contains the solu-
-tion of a problem.
+with a subject of the form `submit ffff', where ffff is
+a file name, and with a body containing the named file.
+Such an email is interpreted as submission of a single
+file that contains the solution of a problem.
+
+The file being submitted may appear in the body of the
+email in either of two ways.  It may be `formatted' or
+`unformatted'.  If formatted, it appears as:
+
+	HPCM_BEGIN ffff
+	.. first line of file
+	.. next line of file
+	.. rest of file, each line preceded by ..
+	HPCM_END ffff
+
+If unformatted the file is just the body of the email
+message, verbatim.
+
+Only formatted submissions are usually allowed in
+informal and formal contests.  Unformatted submissions
+are typically allowed in email contests so that
+contestants who do not have program support (hpcm_
+submit) can submit easily.
 
 TBW
 
