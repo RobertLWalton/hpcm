@@ -2,7 +2,7 @@
 #
 # File:		scoring_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Sep  7 06:59:33 EDT 2001
+# Date:		Fri Sep  7 07:59:50 EDT 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/09/07 11:45:26 $
+#   $Date: 2001/09/07 11:48:48 $
 #   $RCSfile: scoring_common.tcl,v $
-#   $Revision: 1.11 $
+#   $Revision: 1.12 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -690,7 +690,9 @@ proc set_proof_display { } {
 #	compute_score_and_proof_arrays
 #	compute_score
 #
-proc set_proof_info {} {
+# Extra are lines added to the end of the info.
+#
+proc set_proof_info { extra } {
 
     global incorrect_output_types \
            incomplete_output_types \
@@ -724,8 +726,11 @@ proc set_proof_info {} {
 	set info "$info\n"
 	incr lines
     }
-    set info "$info    n = next proof    p = previous proof"
-    incr lines 2
+    set info "$info    n = next proof    p\
+                         = previous proof$extra"
+    incr lines 1
+    incr [llength [split $extra "\n"]]
+
     set window_info_height $lines
     set_window_info $info
 }
