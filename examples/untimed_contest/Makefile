@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Sep 16 02:49:26 EDT 2001
+# Date:		Sun Sep 16 04:09:52 EDT 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/09/16 06:42:59 $
+#   $Date: 2001/09/16 07:56:35 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.20 $
+#   $Revision: 1.21 $
 
 # To make an email contest named `foo':
 #
@@ -145,7 +145,7 @@ SCOREBOARD_ADDRESS="password"<account@computer>
 # contestants `help/index' file and provide a `this_
 # contest' item for the file `help/this_contest'.
 #
-# Note that in `${HPCM}/problem_library_index' demo
+# Note that in `${HPCM}/problem_library/index' demo
 # items already have file names beginning with `demos/'.
 #
 # Note each index file entry consists of a series of
