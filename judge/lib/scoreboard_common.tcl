@@ -3,7 +3,7 @@
 #
 # File:		scoreboard_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Oct  6 14:37:47 EDT 2002
+# Date:		Fri Oct 18 21:15:49 EDT 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -12,9 +12,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/10/06 21:16:21 $
+#   $Date: 2002/10/19 01:30:05 $
 #   $RCSfile: scoreboard_common.tcl,v $
-#   $Revision: 1.42 $
+#   $Revision: 1.43 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -64,6 +64,8 @@
 #	    = i    if incorrect score
 #	  F = f    if final score
 #	    = n    if non-final score
+#	s	problem start time (added during
+#		   pruning: see below)
 #
 # Each item has the form
 #
@@ -83,7 +85,7 @@
 # should be treated as equal to the empty list.
 #
 # Before pruning, all data from scorefinder are present
-# whose submitter and problem match any regular expres-
+# whose submitter and problem match any logical expres-
 # sions in the scoreboard_submitters and scoreboard_
 # problems global variables, and whose scorefinder codes
 # match the regular expression selected by the scoring_
@@ -468,7 +470,9 @@ proc prune_scoreboard_array { } {
 	# ter) to yes iff there is a correct (or incor-
 	# rect not following a correct) score for a pro-
 	# blem and submitter after the problem (in)cor-
-	# rect cut time.
+	# rect cut time but before any final cut time.
+	# Delete "g" items.  Delete items after any
+	# stop time.
 	#
 	if { $start_mode != "" } {
 	    set start [format {%015d} $start]
