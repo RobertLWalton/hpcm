@@ -4,7 +4,7 @@
 #
 # File:		hpcm_get
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Mon Dec  4 07:56:27 EST 2000
+# Date:		Wed Sep 12 06:54:58 EDT 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,11 +13,20 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/12/04 12:54:31 $
+#   $Date: 2001/09/12 17:04:57 $
 #   $RCSfile: hpcm_get
-#   $Revision: 1.4 $
+#   $Revision: 1.5 $
 
-cd
+# If this is not bash and bash is available, switch
+# to using bash.  Note that `which bash` may output
+# a grubby error message and no error code if bash
+# does not exist.
+#
+bash=`which bash 2>&1`
+if test "$BASH" = "" -a -x "$bash"
+then
+    exec bash "$0" "$@"
+fi
 
 # Check for an consume -* options.
 #
@@ -68,13 +77,28 @@ hpcm_get [-force] [name ...]
 	    ;;
 esac
 
-# Find directory into which to get stuff.
+# Look for .HPCM_ADDRESS file to fine HPCM_HOME.
 #
-home=${HPCM_HOME:-$HOME}
-
-if test ! -d "$home"
+if test -r .HPCM_ADDRESS
 then
-    echo "$home is not a directory"
+    HPCM_HOME=.
+elif test -r ../.HPCM_ADDRESS
+then
+    HPCM_HOME=..
+elif test -r ../../.HPCM_ADDRESS
+then
+    HPCM_HOME=../..
+fi
+
+if test "$HPCM_HOME" = ""
+then
+    echo ERROR: Could not find .HPCM_ADDRESS file
+    echo "      " and HPCM_HOME environment variable \
+		  is not set
+    exit 1
+elif test ! -d "$HPCM_HOME"
+then
+    echo "$HPCM_HOME is not a directory"
     exit 1
 fi
 
@@ -113,7 +137,7 @@ do
     # Get $name by email if it has not already been
     # gotten or if -force option given.
     #
-    if test -e "$home/$name" -a "$force" = "no"
+    if test -e "$HPCM_HOME/$name" -a "$force" = "no"
     then
     	echo "IGNORING \`$name';"
 	echo "    it has been gotten already;"
