@@ -2,7 +2,7 @@
 #
 # File:		scoring_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Sep  8 07:43:05 EDT 2001
+# Date:		Sun Sep  9 22:05:41 EDT 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/09/08 13:03:11 $
+#   $Date: 2001/09/10 04:07:26 $
 #   $RCSfile: scoring_common.tcl,v $
-#   $Revision: 1.14 $
+#   $Revision: 1.15 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -479,101 +479,144 @@ proc compute_score { } {
 # Proof Display
 # ----- -------
 
+							/
 # The proof display code displays one proof at a time.
-# There is a current difference type, and for each
-# difference type, there is a current proof.  The
-# current proof of the current difference type can be
-# displayed.
+# There is a current proof group, and for each group,
+# there is a current proof.  The current proof of the
+# current group can be displayed.
 #
-set current_type ""
+# The main proof groups are:
 #
-# If the current_type is "", it should be taken to be
-# the first element of [concat $incorrect_output_types
-# $incomplete_output_types $formatting_error_types].
+#	io:  incorrect output proofs
+#	ic:  incomplete output proofs
+#	fe:  formatting error proofs
+#	ne:  non error proofs
 #
-# current_proof_array(type) is the index+1 of the
-# current proof in proof_array(type).  If current_
-# proof_array(type) is unset, it should be taken as if
-# it were set to 1.
+# In addition, each proof difference type for which
+# there are some proofs forms a group by itself.  E.g.,
+# if there are `word' proofs then there is a `word'
+# group.
+#
+set current_group ""
+#
+# If the current_group is "", it should be taken to be
+# the first one of `io', `ie', `fe', or `ne' whose
+# corresponding list of proofs is non-empty.
+#
+# The proofs for proof group xx are listed in sorted
+# order in proof_group_array(xx).  Note that if an
+# element of this array would be an empty list, instead
+# the element does not exist.
+#
+# current_group_array(xx) is the index+1 of the current
+# proof in proof_group_array(xx).  If current_proof_
+# array(xx) is unset, it should be taken as if it were
+# set to 1.
 
-# Function to set the current_type and its current_
+
+
+# Function to set the current_group and its current_
 # proof_array element.  Takes a list of arguments which
-# are processed in order.  An alphabetic argument with
-# at least two letters is matched to the beginning of a
-# difference type name that has some proofs in proof_
-# array, and switches to that difference type.  A number
-# N switches to the N'th proof of the current_type.  An
-# `n' goes to the next proof of the current_type; a `p'
-# to the previous proof of the current type.  After all
-# arguments are processed, checks that the result
-# designates an existing proof.
+# are processed in order.  The arguments may be as follows:
+#
+#    An alphabetic argument of at least two characters
+#    beginning with a letter is matched to each group
+#    name that has some proofs.  If the argument equals
+#    a group name, the group is selected.  If the
+#    argument matches the beginning of a group name,
+#    that group is selected if it is the only group
+#    whose name matches the argument.  If the argument
+#    contains one `-', and a group name contains one
+#    `-', and the part of the argument before the `-'
+#    matches the beginning of the part of the group
+#    name before its `-', while the part of the argument
+#    after the `-' matches the beginning of the part of
+#    the group name after its `-', then the group with
+#    the matching name is selected, if it is the only
+#    group whose name matches the argument.
+#
+#   A numeric argument # switches to the #'th proof of
+#   the current_group.
+#
+#   An argument `n' goes to the next proof of the
+#   current_group.
+#
+#   An argument `p' goes to the previous proof of the
+#   current_group.
+#
+# After all arguments are processed, this function
+# checks that the result designates an existing proof.
 #
 # If called with no arguments, merely ensures that
-# current_type and its current_proof_array element are
+# current_group and its current_group_array element are
 # set if they can be set without error.
 #
 # If there is no error, window_error is set to "" and
 # `yes' is returned.  Otherwise window_error is set to
 # an error description, `no' is returned, and no change
-# is made in current_type or current_proof_array.
+# is made in current_group or current_group_array.
+#
+# The following functions must have been called before
+# this function is called:
+#
+#	compute_instruction_array
+#	compute_score_and_proof_arrays
+#	compute_score
+#	compute_proof_info
 #
 proc get_proof { args } {
 
-    global window_error proof_array \
-           current_type current_proof_array \
-    	   incorrect_output_types \
-           incomplete_output_types \
-	   formatting_error_types
+    global window_error proof_group_array \
+           current_group current_group_array
 
-    set type $current_type
-
-    if { $type == "" } {
-        set type [lindex [concat \
-			    $incorrect_output_types \
-			    $incomplete_output_types \
-			    $formatting_error_types] 0]
-    }
-
-    if { $type == "" } {
-        set type [lindex [array names proof_array] 0]
-    }
-
-    if { [info exists current_proof_array($type)] } {
-        set n $current_proof_array($type)
+    set group $current_group
+        
+    if { $group != "" } {
+        set n $current_group_array($group)
     } else {
         set n 1
     }
 
     foreach arg $args {
 
-        if { [regexp {^[a-z][a-z]} $arg] } {
+        if { [regexp {^[a-z].} $arg] } {
 	    set found ""
-	    foreach t [array names proof_array] {
+	    foreach t [array names proof_group_array] {
 	        if { $arg == $t } {
 		    set found $t
 		    break
 	        } elseif { [regexp "^$arg" $t] } {
 		    lappend found $t
+	        } elseif {    [regexp \
+		                 {^([^-]*)-([^-]*)$} \
+		                 $arg forget \
+				 arg1 arg2] \
+			   && [regexp \
+		                 {^([^-]*)-([^-]*)$} \
+		                 $t forget \
+				 t1 t2] \
+			   && [regexp "^$arg1 $t1] \
+			   && [regexp "^$arg2 $t2] } {
+		    lappend found $t
 		}
 	    }
 	    if { [llength $found] == 0 } {
 		set window_error \
-		    "There are no proofs whose\
-		     difference type begins with\
-		     `$arg'"
+		    "There is no proof group with\
+		     proofs whose name matches `$arg'"
 		return no
 	    } elseif { [llength $found] > 1 } {
 		set window_error \
-		    "There is more than one difference\
-		     type with proofs whose name begins\
-		     with `$arg'"
+		    "There is more than one proof group\
+		     with proofs whose name matches\
+		     `$arg'"
 		return no
 	    } else {
-	        set type [lindex $found 0]
+	        set group [lindex $found 0]
 
 		if { [info exists \
-		      current_proof_array($type)] } {
-		    set n $current_proof_array($type)
+		      current_group_array($group)] } {
+		    set n $current_group_array($group)
 		} else {
 		    set n 1
 		}
@@ -593,31 +636,30 @@ proc get_proof { args } {
 	}
     }
 
-    if { $type == "" } {
+    if { $group == "" } {
         set window_error \
 	    "There are no displayable proofs."
 	return no
     }
 
-    if { ! [info exists proof_array($type)] \
-         || [llength $proof_array($type)] \
-	    == 0 } {
+    if { ! [info exists proof_group_array($group)] } {
         set window_error \
-	    "There are no displayable proofs of type\
-	     `$type'"
+	    "There are no displayable proofs in proof\
+	     group `$group'"
 	return no
     }
 
-    set max [llength $proof_array($type)]
+    set max [llength $proof_array($group)]
 
     if { $n < 1 || $max < $n } {
         set window_error \
-	    "There is no $n'th proof of type `$type'"
+	    "There is no $n'th proof of group `$group'"
 	return no
     }
 
-    set current_type $type
-    set current_proof_array($type) $n
+    set current_group $group
+    set current_group_array($group) $n
+    return yes
 }
 
 # Display the current proof.  The following functions
@@ -626,6 +668,7 @@ proc get_proof { args } {
 #	compute_instruction_array
 #	compute_score_and_proof_arrays
 #	compute_score
+#	compute_proof_info
 #
 # The files referenced in the proof are $basename.out
 # and $basename.test.
@@ -639,19 +682,18 @@ proc get_proof { args } {
 #
 proc set_proof_display { } {
 
-    global current_type current_proof_array \
-    	   proof_array score_filename \
+    global current_group current_group_array \
+    	   proof_group_array score_filename \
 	   window_height window_info_height \
-	   window_error \
-	   last_display
+	   window_error last_display
 
     if { [get_proof] == "no" } {
     	return no
     }
 
-    set proofs $proof_array($current_type)
+    set proofs $proof_group_array($current_group)
 
-    set i $current_proof_array($current_type)
+    set i $current_group_array($current_group)
 
     set proof [lindex $proofs [expr { $i - 1 }]]
 
@@ -663,8 +705,7 @@ proc set_proof_display { } {
     set tc2   [lindex $proof 6]
     set oh    [list [list $oline $oc1 $oc2]]
     set th    [list [list $tline $tc1 $tc2]]
-    set desc  [concat $current_type \
-    		      [lrange $proof 7 end]]
+    set desc  [lrange $proof 7 end]
     set desc  "\[$i\]  $desc"
 
     # L is the number of lines of each file that are to
@@ -699,7 +740,7 @@ proc set_proof_display { } {
     set last_display proof
 }
 
-# Display summary information about existing proofs in
+# Return summary information about existing proofs in
 # the info part of the display.  The following functions
 # must have been called first:
 #
@@ -707,15 +748,37 @@ proc set_proof_display { } {
 #	compute_score_and_proof_arrays
 #	compute_score
 #
-# Extra are lines added to the end of the info.
+# Text listing the proof difference types in several
+# lines is returned.  Also variables used by get_proof
+# are initialized.
 #
-proc set_proof_info { extra } {
+# The proof difference types are grouped according to
+# the evidence they give.  The groups are:
+#
+#	Incorrect Output (io)
+#	Incomplete Output (ic)
+#	Formatting Error (fe)
+#	Non Error (ne)
+#
+set proof_group_name_array(io) {Incorrect Output}
+set proof_group_name_array(ic) {Incomplete Output}
+set proof_group_name_array(fe) {Formatting Error}
+set proof_group_name_array(ne) {Non Error}
+#
+proc compute_proof_info { } {
 
     global incorrect_output_types \
            incomplete_output_types \
 	   formatting_error_types \
-	   proof_array score_array \
+	   non_error_types \
+	   proof_array score_array proof_group_array \
+	   proof_group_name_array \
+	   current_group current_group_array \
 	   window_info_height
+
+    foreach group [array names current_group_array] {
+        unset current_group_array($group)
+    }
 
     set error_types \
         [concat $incorrect_output_types \
@@ -727,27 +790,45 @@ proc set_proof_info { extra } {
 	    lappend non_error_types
 	}
     }
+    foreach group [array names proof_group_array] {
+        unset proof_group_array($group)
+    }
+    foreach group [array names proof_array] {
+        set proof_group_array($group) \
+	    $proof_array($group)
+	set current_group_array($group) 1
+    }
 
+    set io_type $incorrect_output_types
+    set ic_type $incomplete_output_types
+    set fe_type $formatting_error_types
+    set ne_type $non_error_types
+
+    set current_group ""
     set info ""
-    set lines 0
-
-    foreach x {Incorrect_Output Incomplete_Output \
-                                Formatting_Error \
-				Non_Error } {
-	set types [set [string tolower $x]_types]
+    foreach group {io ic fe ne} {
+	set types [set ${group}_types]
 	if { $types == "" } continue
-	set info "$info[split $x "_"]:"
+
+	set name $proof_group_name_array($group)
+	set info "$info$name ($group):"
+	set proofs ""
 	foreach t $types {
 	    set info "$info $score_array($t)"
+	    set proofs \
+	        [concat $proofs $proof_array($t)]
 	}
-	set info "$info\n"
-	incr lines
-    }
-    set info "$info    n = next proof    p\
-                         = previous proof$extra"
-    incr lines 2
-    incr lines [llength [split $extra "\n"]]
+	if { $proofs != "" } {
+	    set proof_group_array($group) \
+	        [lsort $proofs]
+	    set current_group_array($group) 1
+	    if { $current_group == "" } {
+	        set current_group $group
+	    }
+	}
 
-    set window_info_height $lines
-    set_window_info $info
+	set info "$info\n"
+    }
+
+    return $info
 }
