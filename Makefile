@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Feb 19 03:03:03 EST 2003
+# Date:		Wed Feb 19 03:16:15 EST 2003
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2003/02/19 08:10:53 $
+#   $Date: 2003/02/19 08:14:00 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.27 $
+#   $Revision: 1.28 $
 
 # See STATUS file for description of versions.
 #
@@ -247,7 +247,7 @@ hpcm_${VERSION}${TAREXT}:	HPCM_MD5_Signatures \
 hpcm_solutions_${VERSION}${TAREXT}:	\
                         hpcm_solutions_${VERSION}.files
 	d=`pwd`;d=`basename $$d`; test $$d = hpcm
-	rm -f hpcm_${VERSION}${TAREXT}
+	rm -f hpcm_solutions_${VERSION}${TAREXT}
 	cd ..; \
 	   tar cf \
 	       hpcm/hpcm_solutions_${VERSION}${TAREXT} \
