@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Jan 30 06:45:12 EST 2002
+# Date:		Tue Feb  5 21:13:07 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/01/30 11:58:10 $
+#   $Date: 2002/02/06 02:27:55 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.83 $
+#   $Revision: 1.84 $
 #
 
 # Table of Contents
@@ -718,7 +718,12 @@ proc compute_message_reply_to {} {
     } elseif { [regexp "\[^\ \t\n\]" \
                        $message_from] } {
 	return $message_from
-    } elseif { [llength $message_From_line] >= 2 } {
+    } elseif { [catch { set len \
+    			    [llength \
+			         $message_From_line] \
+				 	}] } {
+        return "UNKNOWN"
+    } elseif { $len >= 2 } {
 	return [lindex $message_From_line 1]
     } else {
     	return "UNKNOWN"
@@ -743,8 +748,13 @@ proc compute_message_date {} {
     } elseif { [regexp "\[^\ \t\n\]" \
                        $message_date] } {
 	return $message_date
-    } elseif { [llength $message_From_line] >= 3 } {
-	return [lreplace $message_From_line 0 1]
+    } elseif { [catch { set len \
+    			    [llength \
+			         $message_From_line] \
+				 	}] } {
+    	return [clock format [clock seconds]]
+    } elseif { $len >= 3 } {
+	return [lrange $message_From_line 2 end]
     } else {
     	return [clock format [clock seconds]]
     }
