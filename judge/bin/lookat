@@ -6,7 +6,7 @@
 #
 # File:		lookat
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Sep 22 14:36:58 EDT 2001
+# Date:		Sun Sep 23 00:34:30 EDT 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/09/22 18:24:40 $
+#   $Date: 2001/09/23 05:37:08 $
 #   $RCSfile: lookat,v $
-#   $Revision: 1.4 $
+#   $Revision: 1.5 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -48,11 +48,16 @@ lookat 'logical-expression'
     and is `true' iff the directory contains a file
     whose filename matches the filename-regexp and whose
     contents contain a line that matches the line-
-    regexp.
+    regexp.  As special cases, if filename-regexp is
+    empty (in which case the `::' can be optionally
+    omitted), the line-regexp is matched against the
+    submitter's name; and if filename-regexp is `DATE',
+    the line-regexp is matched against the submission
+    date (in filename format).
 
     The allowed operators of the logical-expression are
     `!', `&', `^', and `|' in highest precedence first
-    order, denoting `not', `and', `exclisive-or', and
+    order, denoting `not', `and', `exclusive-or', and
     `inclusive-or'.  Parentheses can be used in the
     logical expression.  Operators and parentheses MUST
     be surrounded by whitespace.
@@ -65,7 +70,7 @@ lookat 'logical-expression'
 
     If a file is larger than $size_limit bytes, at most
     the first $size_limit bytes of the file are read.
-
+
     After the list of subdirectories is computed, the
     list is displayed, and the user of this program
     is asked whether to execute `manualreply' on the
@@ -185,10 +190,10 @@ foreach dir \
 
 	if { $filename_regexp($i) == "" } {
 	    set value($i) \
-	        [regexp $line_regexp($i) $submitter]
+	        [regexp -- $line_regexp($i) $submitter]
 	} elseif { $filename_regexp($i) == "DATE" } { \
 	    set value($i) \
-	        [regexp $line_regexp($i) $date]
+	        [regexp -- $line_regexp($i) $date]
 	} else {
 	    set not_file($i) no
 	}
@@ -210,8 +215,8 @@ foreach dir \
 
 	    if { $value($i) || $not_file($i) } continue
 
-	    if { ! [regexp $filename_regexp($i) \
-	    		   $filename] } continue
+	    if { ! [regexp -- $filename_regexp($i) \
+	    		      $filename] } continue
 
 	    if { $read_yet == "no" } {
 	        set ch [open $file r]
@@ -224,7 +229,8 @@ foreach dir \
 	    # Loop through the lines of the file.
 	    #
 	    foreach line $contents {
-		if { [regexp $line_regexp($i) $line] } {
+		if { [regexp -- $line_regexp($i) \
+		                $line] } {
 		    set value($i) 1
 		    lappend entry [list $filename $line]
 		    break
