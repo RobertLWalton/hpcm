@@ -11,9 +11,9 @@
  * RCS Info (may not be true date or author):
  *
  *   $Author: hc3 $
- *   $Date: 2000/11/15 16:01:00 $
+ *   $Date: 2000/12/04 07:11:01 $
  *   $RCSfile: hpcm_sandbox.c,v $
- *   $Revision: 1.12 $
+ *   $Revision: 1.13 $
  */
 
 #include <stdlib.h>
@@ -80,11 +80,11 @@ char documentation [] =
 "    otherwise, and executes the program with the\n"
 "    given arguments.  If HPCM_SANDBOX_ENV is de-\n"
 "    fined, it consists of whitespace separated\n"
-"    strings that become the environment, with recig-\n"
-"    nition of `\\ ', `\\t', `\\n', `\\f', `\\v', and\n"
-"    `\\\\' within the HPCM_SANDBOX_ENV value as\n"
+"    strings that become the environment, with re-\n"
+"    placement of `\\ ', `\\t', `\\n', `\\f', `\\v',\n"
+"    and `\\\\' within each environment string by\n"
 "    space, tab, new line, form feed, vertical tab,\n"
-"    and backslash.\n"
+"    and backslash, respectively.\n"
 "\n"
 "    Normally the `sandbox' user is not allowed to\n"
 "    log in and owns no files or directories.\n"
