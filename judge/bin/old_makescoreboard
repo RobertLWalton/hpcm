@@ -4,7 +4,7 @@
 #
 # File:		makescoreboard
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Feb  9 10:38:27 EST 2002
+# Date:		Sun Feb 24 04:09:55 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/02/09 15:55:13 $
+#   $Date: 2002/02/24 12:18:52 $
 #   $RCSfile: old_makescoreboard,v $
-#   $Revision: 1.31 $
+#   $Revision: 1.32 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -105,7 +105,7 @@ makescoreboard { start | status | stop | update } \\
     	$scorefinder_output_file
     file.  This is also done if the\
     	$scorefinder_output_file
-    no longer exists.
+    file no longer exists.
 
     If called with the `stop' command, this program does
     nothing but send kill signals to the process whose
@@ -115,8 +115,11 @@ makescoreboard { start | status | stop | update } \\
     formation about its progress.
 
     If called with the `status' command, this program
-    just outputs information about the status of any
-    process started by `makescoreboard start'.
+    just outputs information about the status of the
+    process whose ID is stored in the\
+    	$scoreboard_pid_file
+    file.
+
 
     With the `update', `status', or `stop' commands this
     program does not log errors but writes them to the
@@ -158,6 +161,10 @@ set pid_file \
     $judging_directory/$scoreboard_pid_file
 
 # Compute possible parameters and save original values.
+# parameters_array(name) stores the value that
+# scoreboard_name should have at the beginning of
+# processing the scoreboard instructions.  Note that
+# `name' is not allowed to be `instructions'.
 #
 foreach name [info globals scoreboard_*] {
     regexp {^scoreboard_(.*)$} $name forget pname
@@ -193,7 +200,7 @@ proc file_changed { mtime_list } {
        set name  [lindex $item 1]
 
        if { $mtime == "none" } {
-           if { [file readable $name] } {
+           if { [file exists $name] } {
 	       return yes;
 	   }
        } elseif { $mtime == "out" } {
@@ -201,7 +208,7 @@ proc file_changed { mtime_list } {
 	       return yes;
 	   }
        } else {
-           if { ! [file readable $name] } {
+           if { ! [file exists $name] } {
 	       return yes;
 	   } elseif { [file mtime $name] > $mtime } {
 	       return yes;
@@ -215,14 +222,16 @@ proc file_changed { mtime_list } {
 #
 set parameter_mtime_list changed
 
-# Mtime of latest parameter file.
+# Mtime of latest of all the parameter files.
 #
 set parameter_mtime ""
 
 # Process arguments.  If parameter files (including
 # the judging_parameters_file) have not changed,  just
-# restore values of scoreboard_ variables listed in
-# parameters_array.
+# restore values of scoreboard_xxx variables listed in
+# parameters_array.  Otherwise reprocess the arguments
+# and set resulting values of scoreboard_xxx variables
+$ in parameters_array.
 #
 proc process_arguments { { first_time no } } {
 
@@ -269,7 +278,12 @@ proc process_arguments { { first_time no } } {
     #
     foreach arg [lrange $argv 1 end] {
 	if { [regexp "^${LB}" $arg] } {
-	    set scoreboard_instructions [lindex $arg 0]
+	    if { [catch { set scoreboard_instructions \
+	                      [lindex $arg 0] }] } {
+	        error "scoreboard instructions\
+		       argument is not a TCL list:\
+		       $arg"
+	    }
 	} else {
 	    source $arg
 	    set mtime [file mtime $arg]
@@ -311,7 +325,8 @@ proc unabbreviate { value } {
 }
 
 
-# Mtime-list for scoreboard instructions files.
+# Mtime-list for scoreboard instructions INPUT and
+# OUTPUT files.
 #
 set file_mtime_list changed
 
@@ -456,8 +471,12 @@ proc process_instructions {} {
     # with the instruction before the next OUTPUT in-
     # struction or end of all instructions.
 
-    set instructions \
-        [lrange $scoreboard_instructions 0 end]
+    if { [catch { set instructions \
+                      [lrange $scoreboard_instructions \
+		              0 end] }] } {
+        error "scoreboard_instructions is not a TCL\
+	       list: $scoreboard_instructions"
+    }
     set pc 0
     set end_pc [llength $instructions]
     set output_found no
@@ -465,6 +484,12 @@ proc process_instructions {} {
     while { "yes" } {
 
         set instruction [lindex $instructions $pc]
+	if { [catch { llength $instruction }] } {
+	    error "a scoreboard_instructions'\
+	           instruction is not a TCL list:\
+		   $instruction"
+	    
+	}
 	set opcode [lindex $instruction 0]
 
 	# If we are at the end of a sequence of
@@ -587,8 +612,8 @@ proc process_instructions {} {
 
 	    yes_INPUT {
 
-	        # Loop through input files until a read-
-		# able one is found.
+	        # Loop through input files until an
+		# existing one is found.
 		#
 		foreach in_file \
 		        [lrange $instruction 1 end] {
@@ -599,10 +624,10 @@ proc process_instructions {} {
 
 		    # Add input file to mtime_list.
 		    #
-		    if { [file readable $in_file] } {
+		    if { [file exists $in_file] } {
 			set mtime [file mtime $in_file]
 
-			# If readable input file is
+			# If existing input file is
 			# later than output file, force
 			# update.
 			#
@@ -651,7 +676,8 @@ proc process_instructions {} {
 	        # Parameter setting instructions are
 		# executed in the first pass only if
 		# they are before all OUTPUT instruc-
-		# tions.
+		# tions.  Otherwise they are executed
+		# in pass2.
 		#
 	        if { $output_found == "no" } {
 		    set_parameter $instruction
@@ -917,7 +943,7 @@ proc pass2 { instructions pc end_pc update } {
 		    set line "$line$right"
 		}
 
-		# Add line to contents of output.
+		# Add line(s) to contents of output.
 		#
 		set contents "$contents$line\n"
 	    }
@@ -933,10 +959,10 @@ proc pass2 { instructions pc end_pc update } {
 		        [file join $judging_directory \
 			           $in_file]
 
-		    # Add first readable input file to
+		    # Add first existing input file to
 		    # the output contents.
 		    #
-		    if { [file readable $in_file] } {
+		    if { [file exists $in_file] } {
 			if { [file size $in_file] > 0 \
 					} {
 			    set c [read_entire_file \
@@ -1083,8 +1109,15 @@ switch -- $command {
 
 	# Wait for any output from first run.
 	#
+	set count 0
 	while { ! [file exists $pid_file] } {
 	    sleep 1
+	    incr count
+	    if { $count > 120 } {
+	        error "makescoreboard -start- did not\
+		       write $pid_file in a timely\
+		       manner"
+	    }
 	}
     }
 
@@ -1115,7 +1148,7 @@ switch -- $command {
 	    sleep $interval
 	    set c 0
 
-	    # Run up to 4 time ignoring errors.
+	    # Run up to 4 times ignoring errors.
 	    # Then if there are 4 erroneous runs, try
 	    # a run in which errors stop the program.
 	    #
