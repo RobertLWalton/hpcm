@@ -6,7 +6,7 @@
 #
 # File:		makejudgingdir
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Oct 22 22:25:56 EDT 2001
+# Date:		Tue Jan  8 08:43:21 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/10/23 02:25:44 $
+#   $Date: 2002/01/08 18:06:50 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.71 $
+#   $Revision: 1.72 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -174,11 +174,14 @@ makejudgingdir option ... index_specification ...
     a symbolic link is made to the item if it has the
     item `all' option, or if it is a file.  If it is
     a directory with no `all' option, a new directory
-    is created containing a symbolic link to any
-    Makefile and any problem description files in the
-    directory.  The problem description file links are
-    included within the ./info directory even if no
-    -description program option is given.
+    is created containing a symbolic link to any problem
+    source and description files in the directory.  The
+    exact definitions of problem source and description
+    files are given below, but by default, Makefile is
+    the only source file, and files such as *.txt files
+    files are description files.  Problem description
+    file links are included within the ./info directory
+    even if no -description program option is given.
 
     When an item is included in the ./contest directory
     (i.e., in ./contest/demos, ./contest/problems, or
@@ -191,13 +194,13 @@ makejudgingdir option ... index_specification ...
 
     are left with og-rx mode.  The `startcontest' prog-
     ram sets the mode of these to a+rx.  For a directory
-    item with no `all' option, the item's Makefile is
-    copied, and the item's problem description files are
-    copied if and only if the -description option is
-    given.  For directory items with the `all' option,
-    the directory is copied recursively, except no
-    subdirectories whose last component name is `CVS' or
-    `RCS' are copied.
+    item with no `all' option, the item's problem source
+    files are copied, and the item's problem description
+    files are copied if and only if the -description op-
+    tion is given.  For directory items with the `all'
+    option, the directory is copied recursively, except
+    no subdirectories whose last component name is `CVS'
+    or `RCS' are copied.
 
     If we consider the directory pairs:
 
@@ -336,6 +339,15 @@ makejudgingdir option ... index_specification ...
 		  `makejudgingdir' program for ./contest
 		  subdirectories.
 
+      .XXX	  Where `.XXX' is any extension listed
+      		  in the `allowed_extensions' global
+		  variable.  Options of this form are
+		  used in conjunction with files named
+		  `$files_file.XXX' to determine the
+		  problem source and description files
+		  of a directory: see below.
+
+
     The `include' option is rarely encoded directly in
     the index files.  Instead options categorizing the
     entries are made up by the author of an index file
@@ -417,11 +429,101 @@ makejudgingdir option ... index_specification ...
     the items within the ./info and ./contest
     directories and as the names of the item in any
     output index files.
+
+    When an index item names a problem or demo directory
+    and the `all' option is not given, it is necessary
+    to determine the problem (or demo) source and de-
+    scription files.  In this case the directory is in-
+    spected for a file named `$files_file' and for files
+    with names of the form `$files_file.*', and the set
+    of options is inspected for options equal to exten-
+    sions listed in the `allowed_extensions' variable,
+    which defaults to:
+    	$allowed_extensions
+    If the set of options that are allowed extensions is
+    not empty, then the files named `$files_file.XXX'
+    where .XXX is an allowed extension that is an option
+    are selected to determine the source and description
+    files of the directory, and it is an error if there
+    are no such files.  If there are no allowed exten-
+    sion options, then any file named `$files_file' and
+    all files with names of the form `$files_file.*' are
+    selected, and if there are no such files, a default
+    is use that is equivalent to selecting a file whose
+    value is:
 
+    	-SOURCE-	Makefile
+	-DESCRIPTION-	<problem description files>
+
+    where the problem description files are any files
+    whose base name is the base name of the directory
+    and whose extension is one of those listed in the
+    `problem_description_extensions' global variable
+    that defaults to:
+    	$problem_description_extensions
+
+    Any selected `$files_file*' file is interpreted as a
+    TCL list (with list elements separated by spaces,
+    tabs, or new lines) whose elements are special
+    symbols, file names, and { } bracketed sublists.
+    The special symbols consist of upper case letters
+    and the `-' character, and begin and end with `-'.
+    All list items following a special symbol S but
+    before the next special symbol are governed by S.
+    This program understands the following two special
+    symbols:
+
+    	-SOURCE-	The list items governed by
+			-SOURCE- are the names of files
+			that are to be distributed to
+			the contestant.
+    
+    	-DESCRIPTION-	The list items governed by
+			-DESCRIPTION- are the names of
+			files that are to be distributed
+			to the contestant, except they
+			are not to be placed in any
+			./contest/problems or ./contest/
+			demos subdirectory if the
+			-description program option is
+			absent.
+
+    List items governed by other special symbols are
+    ignored by this program.  There is an implied
+    `-REQUIRED-' before the beginning of the list, that
+    governs list items appearing before any special
+    symbol in the list.  The same special symbol can
+    appear multiple times in the list.  A single file
+    name can be listed several times as -SOURCE- or
+    several times as -DESCRIPTION- but may not be both
+    -SOURCE- and -DESCRIPTION-.
+
+    If several `$files_file*' files are selected, the
+    are concatenated before they are interpreted as
+    just indicated.  Thus a source (or description) file
+    is one listed in any selected `$files_file*' file.
+
+    By convention, a problem or demo source file that
+    has the extension `.ISF' is intended as the initial
+    version of a writable contestant file that the con-
+    testant will submit and may alter before submitting.
+    The writable contestant file itself has the name of
+    the initialization file with the `.ISF' stripped
+    from its end.  Thus a source file named `foo.c.ISF'
+    should be copied into a writable contestant file
+    named `foo.c' that will be submitted (by the con-
+    testant executing `make submit').  `.ISF' stands for
+    `initial submittable file'.
+    
+    This current program does nothing special with files
+    having the `.ISF' extension.  It is the `hpcm_get'
+    program that automatically copies a file with a name
+    such as `xxx.ISF' into a writable file named `xxx'.
+
     We proceed to describe the program options not di-
     rectly involved with making ./info, ./contest/help,
     ./contest/problems, or ./contest/demos.
-
+
     The -this_contest program option creates the follow-
     ing if they do not exist:
 
@@ -456,11 +558,11 @@ makejudgingdir option ... index_specification ...
     the JAVA interpreter turns relative file names into
     absolute file names, requiring `a+x' permissions
     in the path from the root to the object file.
-
+
     The -help2 program option creates the ./contest/
     help2 directory if it does not exist.  It is simply
     linked to the ./contest/help directory.
- 
+
     Note that the contestant's `help' command searches
     ./contest/help1, ./contest/help2, ./contest/help3,
     and ./contest/help4 in order for help files.
@@ -495,12 +597,12 @@ makejudgingdir option ... index_specification ...
     If the ./contest/secure/hpcm_sendmail.rc file is
     made, instructions for editing it and the
     ~/.procmailrc file are written into ./TODO.
-
+
     The ./contest/secure/passwords file consists of
     lines of the form
 
     	account:password:who:c-email:t-email:comment
-
+
     Here `account' is a the login name of the contes-
     tant, `who' is a description of who the contestant
     is, and the `c-email' and `t-email' fields are the
