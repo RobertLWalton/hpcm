@@ -4,7 +4,7 @@
 #
 # File:		makeoverview
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Dec 11 06:45:09 EST 2000
+# Date:		Thu Jan  4 20:01:03 EST 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/12/11 12:37:57 $
+#   $Date: 2001/01/05 03:08:26 $
 #   $RCSfile: overview,v $
-#   $Revision: 1.9 $
+#   $Revision: 1.10 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -34,6 +34,8 @@ puts "
 		     ---- --------
 
 	Features
+	Requirements
+	Installing HPCM
 	Creating a Contest
 	Data and Programs
 	Library Data: Problems
@@ -78,17 +80,53 @@ following features:
       so that HPCM can easily be adapted and modified.
 
 
+Requirements
+------------
+
+HPCM currently requires a UNIX system with Bourne shell
+and TCL language interpreters.
+
+One program, hpcm_extract, requires the `read -r' Bourne
+shell command, and a Bourne shell `echo' command that
+does not specially interpret the `\\' character.  If you
+are using a UNIX system whose Bourne shell does not
+support these features, the simplest fix is to import
+the GNU Bourne shell, bash, and fix hpcm_extract to
+use it.
+
+TCL can be obtained at:	 	www.scriptics.com
+
+Bash can be obtained at:
+
+	www.gnu.org/software/bash/bash.html
+
+
+Installing HPCM
+---------- ----
+
+There is a separate document, `Installing HPCM', that
+describes how to obtain and install HPCM.  HPCM can be
+obtained from
+
+	www.deas.harvard.edu/~hc3/hpcm
+
+
 Creating a Contest
 -------- - -------
 
 To create a contest, first read the help files
 
-
 	hpcm/contestant/help/*/*
 
-to get a good idea of what you are creating.  Choose
-the type of contest you want to create (email, informal,
-formal) and then read the instructions in
+to get a good idea of what you are creating.  The file
+
+	hpcm/contestant/help/index
+
+explains what each of these files contains and suggests
+an order in which these files may be read.
+
+Then choose the type of contest you want to create
+(email, informal, formal) and read the instructions in
 
 	hpcm/examples/<contest-type>_contest/Makefile
 
@@ -103,9 +141,9 @@ and try to understand the parameters in that file as
 best you can.
 
 In order to better understand what you are doing, you
-should read the following overview and then read the
-individual program documentation for some of the pro-
-grams used to set up or judge contests.
+may wish to read the following overview, and then read
+the individual program documentation for some of the
+programs used to set up or judge contests.
 
 
 Data and Programs
@@ -159,114 +197,7 @@ Each problem (and each demonstration problem) has its
 own directory within the problem library.  The last
 component of the name of this directory is the name of
 the problem, and is also the basename of files describ-
-int the problem and solving the problem.
-
-If a problem has name `pppp', then the following files
-in the `pppp' directory describe the problem:
-
-    pppp.txt	Problem description.
-
-    Makefile	Gives instructions for compiling and
-                running the problem solution.
-
-These files are made available to the contestant, though
-in a formal contest only a printout of the pppp.txt file
-is made available.
-
-In order to be able to score a problem, three more files
-are placed in the problem directory within the program
-library:
-
-    pppp.in		    The judges test input.
-    pppp.test		    The judges test output.
-    Scoring_Instructions    Optional file containing
-    			    parameters that control how
-			    the automatic scoring is
-			    done (e.g., what numeric
-			    tolerances are permitted).
-
-A contest has a solutions directory that contains sym-
-bolic links to the library problem directories for every
-problem that can be judged during the contest.  The
-files just mentioned become input to the judging.
-
-In addition to the files already mentioned, the library
-problem directory usually contains a judges solution
-written in one of the contest programming languages.
-The solution is written as a file whose extension indi-
-cates the programming language of the solution.  Typical
-possibilities are:
-
-    pppp.c	C language solution.
-    pppp.cc	C++ language solution.
-    pppp.java	JAVA language solution.
-    pppp.p	PASCAL language solution.
-
-The programming languages allowed may vary; but every
-solution language must be explicitly supported by the
-problem Makefile.
-
-It is possible to compile and run the solution within
-the library problem directory in the same manner as
-a problem is compiled and run by contestants and by the
-judge.  Doing this results in making temporary files
-that can be removed by the `make clean' command in the
-problem directory.
-
-Compilation creates a binary file named `pppp' and may
-create other files for some languages:
-
-    pppp	    The executable program binary.
-    pppp*.class	    JAVA class files.
-    pppp.p2c	    C translation of PASCAL program.
-
-The solution is written to take input from the standard
-input (the terminal by default) and put output to the
-standard output (also the terminal by default).  The
-Makefile contrives to run the program with resource
-limits so the standard input and output are mapped to
-a .in file and a .out file.  Running the solution using
-the Makefile reads or creates the following files:
-
-    pppp.in	Test input.
-    pppp.out	Test output.
-    core	Dump of program if it crashes.
-
-Its important to note that the solution code should NOT
-open any files.
-
-The `make' command in the problem directory makes the
-binary program if that does not exist or it is older
-than the solution source file, and then makes the
-pppp.out file if that does not exist or it is older than
-the binary file or the .in file.
-
-If a problem directory symbolically linked into a con-
-test solutions directory has pppp.out file, this file
-will be treated as the judge's output in PREFERENCE to
-any pppp.test file.  Thus if a judge finds an error in
-the judge's solution, the judge merely needs to fix
-the solution file and run the `make' command in the
-problem directory to fix the judge's output.  After the
-contest the judge can replace the pppp.test file by
-a copy of the correct pppp.out file.
-
-However, there is a difficulty with running JAVA
-solutions in a library problem directory using `make'.
-The judge's hpcm_sandbox program runs the binary as
-a user named `sandbox' that cannot access the problem
-directory using an absolute pathname.  Unfortunately,
-existing JAVA systems have a bug that causes them to
-convert relative pathnames of .class files into absolute
-pathnames before they are used, so the .class files
-cannot be found by the `sandbox' user.  The fix for this
-currently is to run the progams manually by
-
-	pppp <pppp.in >pppp.out
-
-The `make clean' command in the problem directory de-
-letes all temporary files, including `pppp', `pppp.out',
-`core', and `.class' files.
+ing the problem and solving the problem.
 
 The library problem directories are placed within one of
 three subdirectories of the hpcm/problem_library direc-
@@ -301,6 +232,118 @@ are in the directory
 
 	hpcm/problem_library/legal
 
+
+If a problem has name `pppp', then the problem has a
+problem directory named `pppp' within one of the
+directories just mentioned, and the following files
+within this problem directory describe the problem:
+
+    pppp.txt	Problem description.
+
+    Makefile	Gives instructions for compiling and
+                running the problem solution.
+
+These files are made available to the contestant, though
+in a formal contest only a printout of the pppp.txt file
+is made available.
+
+In order to be able to score a problem, three more files
+are placed in the problem directory within the program
+library:
+
+    pppp.in		    The judges test input.
+    pppp.test		    The judges test output.
+    Scoring_Instructions    Optional file containing
+    			    parameters that control how
+			    the automatic scoring is
+			    done (e.g., what numeric
+			    tolerances are permitted).
+			    See the documentation of
+			    the `autoscore' program.
+
+A contest has a solutions directory that contains sym-
+bolic links to the library problem directories for every
+problem that can be judged during the contest.  The
+files just mentioned become input to the judging.
+
+In addition to the files already mentioned, the library
+problem directory usually contains a judge's solution
+written in one of the contest programming languages.
+The solution is written as a file whose extension indi-
+cates the programming language of the solution.  Typical
+possibilities are:
+
+    pppp.c	C language solution.
+    pppp.cc	C++ language solution.
+    pppp.java	JAVA language solution.
+    pppp.p	PASCAL language solution.
+
+The programming languages allowed may vary; but every
+solution language must be explicitly supported by the
+problem Makefile.
+
+It is possible to compile and run the solution within
+the library problem directory in the same manner as
+a problem is compiled and run by contestants and by the
+judge.  Doing this results in making temporary files
+that can be removed by the `make clean' command in the
+problem directory.
+
+Compilation creates a temporary binary file named `pppp'
+and may create other temporary files for some languages:
+
+    pppp	    The executable program binary.
+    pppp*.class	    JAVA class files.
+    pppp.p2c	    C translation of PASCAL program.
+
+The solution is written to take input from the standard
+input (the terminal by default) and put output to the
+standard output (also the terminal by default).  The
+Makefile contrives to run the program with resource
+limits and so that the standard input and output are
+mapped to a .in file and a .out file.  Running the
+solution using the Makefile reads or creates the
+following temporary files:
+
+    pppp.in	Solution input.
+    pppp.out	Solution output.
+    core	Dump of program if it crashes.
+
+It is important to note that the solution code should
+NOT open any files.
+
+The `make' command in the problem directory makes the
+binary program if that does not exist or it is older
+than the solution source file, and then makes the
+pppp.out file if that does not exist or it is older than
+the binary file or the .in file.
+
+If a problem directory symbolically linked into a con-
+test solutions directory has a pppp.out file, this file
+will be treated as the judge's output in PREFERENCE to
+any pppp.test file.  Thus if a judge finds an error in
+the judge's solution, the judge merely needs to fix
+the judge's solution and run the `make' command in the
+solution problem directory to fix the judge's output.
+After the contest the judge can replace the pppp.test
+file by a copy of the correct pppp.out file.
+
+However, there is a difficulty with running JAVA
+solutions in a library problem directory using `make'.
+The judge's hpcm_sandbox program runs the binary as
+a user named `sandbox' that cannot access the problem
+directory using an absolute pathname.  Unfortunately,
+existing JAVA systems have a bug that causes them to
+convert relative pathnames of .class files into absolute
+pathnames before they are used, so the .class files
+cannot be found by the `sandbox' user.  The fix for this
+currently is to run the progams manually by
+
+	pppp <pppp.in >pppp.out
+
+The `make clean' command in the problem directory de-
+letes all temporary files, including `pppp', `pppp.out',
+`core', and `.class' files.
 
 
 Library Data: Help Documentation
