@@ -2,7 +2,7 @@
 #
 # File:		display_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Aug 26 09:18:10 EDT 2001
+# Date:		Sun Aug 26 21:34:17 EDT 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/08/26 13:30:27 $
+#   $Date: 2001/08/27 03:19:03 $
 #   $RCSfile: display_common.tcl,v $
-#   $Revision: 1.9 $
+#   $Revision: 1.10 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -510,6 +510,10 @@ proc get_file_item { filename } {
 
     global file_list
 
+    if { $file_list == " " } {
+    	refresh_file_list
+    }
+
     foreach item $file_list {
         if { [lindex $item 2] == $filename } {
 	    return $item
@@ -517,6 +521,30 @@ proc get_file_item { filename } {
     }
 
     return ""
+}
+
+# Return list of all the items whose file names match
+# a given regexp.  The regexp must match the entire
+# filename (a ^ and $ will be added to the regexp by
+# this function).
+#
+proc get_file_items { regexp } {
+
+    global file_list
+
+    if { $file_list == " " } {
+    	refresh_file_list
+    }
+
+    set result ""
+
+    foreach item $file_list {
+        if { [regexp "^$regexp\$" $filename] } {
+	    lappend result $item
+	}
+    }
+
+    return $result
 }
 
 # Recompute the file list.  New files are marked unless
