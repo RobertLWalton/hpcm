@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Oct 18 04:10:48 EDT 2001
+# Date:		Mon Jan 14 14:10:01 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/10/18 08:13:39 $
+#   $Date: 2002/01/14 19:14:14 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.10 $
+#   $Revision: 1.11 $
 
 # make
 #	Makes documentation as fprintable .doc files in
@@ -47,6 +47,7 @@ DOCS=	overview.doc \
 	judge/fprint.doc \
 	contestant/fprint.doc \
 	contestant/help.doc \
+	contestant/hpcm_clisp.doc \
 	contestant/hpcm_extract.doc \
 	contestant/hpcm_get.doc \
 	secure/hpcm_make_accounts.doc \
@@ -54,6 +55,7 @@ DOCS=	overview.doc \
 	contestant/hpcm_sandbox.doc \
 	judge/hpcm_sandbox.doc \
 	contestant/hpcm_sendmail.doc \
+	judge/hpcm_sendmail.doc \
 	secure/hpcm_set_passwords.doc \
 	contestant/hpcm_submit.doc \
 	secure/hpcm_TRASH_ACCOUNTS.doc \
@@ -190,6 +192,11 @@ judge/hpcm_sandbox.doc:	hpcm_judging.rc \
 	rm -f judge/hpcm_sandbox.doc
 	-../../judge/bin/hpcm_sandbox -doc \
 	    >judge/hpcm_sandbox.doc
+judge/hpcm_sendmail.doc:	hpcm_judging.rc \
+			../../judge/bin/hpcm_sendmail
+	rm -f judge/hpcm_sendmail.doc
+	-../../judge/bin/hpcm_sendmail -doc \
+	    >judge/hpcm_sendmail.doc
 installing_hpcm.doc:	hpcm_judging.rc \
 			../../judge/bin/installing_hpcm
 	rm -f installing_hpcm.doc
@@ -296,6 +303,11 @@ contestant/help.doc:	../../contestant/bin/help
 	rm -f contestant/help.doc
 	-../../contestant/bin/help -doc \
 	    >contestant/help.doc
+contestant/hpcm_clisp.doc:	\
+		../../contestant/bin/hpcm_clisp
+	rm -f contestant/hpcm_clisp.doc
+	-../../contestant/bin/hpcm_clisp -doc \
+	    >contestant/hpcm_clisp.doc
 contestant/hpcm_extract.doc:	\
 		../../contestant/bin/hpcm_extract
 	rm -f contestant/hpcm_extract.doc
