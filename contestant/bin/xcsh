@@ -4,7 +4,7 @@
 #
 # File:		xcsh
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Mon Nov 13 12:22:56 EST 2000
+# Date:		Tue Apr  2 09:46:09 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,11 +13,11 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/11/13 17:21:22 $
+#   $Date: 2002/04/02 15:46:01 $
 #   $RCSfile: xcsh,v $
-#   $Revision: 1.4 $
+#   $Revision: 1.5 $
 
-location=80x35+2+100
+location=80x35+5+25
 program=""
 title="`hostname -s`"
 
@@ -43,6 +43,28 @@ hcrm="-hrnet&hcr-grtt-medium-r-normal-"
 
 font="$lucidm-18-$m1"
 
+location_documentation="
+Location should be 1, 2, 3, 4, or WxH+X+Y, WxH-X+Y,
+WxH+X-Y, or WxH-X-Y.  Locations 1, 2, 3, 4 progress from
+the upper left downward and rightward.  W and H are the
+width in columns and height in lines.  +X (-X) gives the
+offset in pixels X of the window from the left (right)
+of the screen.  +Y (-Y) gives the offset in pixels Y of
+the window from the top (bottom) of the screen."
+
+font_documentation="
+Font argument is PPWS:
+    PP = [1-9][0-9] = point size:
+         10-21, 24-26, 31, 34, 37, 50
+    W = [bm] = weight: b = bold, m = medium
+    S = [abdhlmns] or ms = style
+        a=adobe, b=bitstream, d=dec, h=hcr, l=lucid,
+	m=misc, n=sony, s=schumacher,
+	ms=misc semicondensed
+If S is omitted or incorrect, possible values for
+PPWS with the given PPW are listed."
+
+
 while test $# -gt 0
 do
     case "$1" in
@@ -67,17 +89,12 @@ do
 	4 )
 	    location=80x35+80+100
 	    ;;
-	[5-90] )
-	    echo "location should be 1, 2, 3, 4, or" \
-		    "WxH+X+Y"
-	    echo "  W and H are width in columns and" \
-		    "height in lines"
-	    echo "  X and Y are the upper left corner" \
-		    "offset in pixels"
-	    exit 1
+	[0-9]*x[0-9]*[-+][0-9]*[-+][0-9]* )
+	    location="$2"
 	    ;;
 	* )
-	    location="$2"
+	    echo "$location_documentation"
+	    exit 1
 	    ;;
 	esac
 	shift
@@ -382,6 +399,10 @@ do
 	exit 1
 	;;
 
+    21b* )
+        echo there are none: try 21m
+	exit 1
+	;;
     21mh )
 	font="$hcrm-21-$m1"
 	;;
@@ -456,6 +477,10 @@ do
 	exit 1
 	;;
 
+    31b* )
+        echo there are none: try 31m
+	exit 1
+	;;
     31mh )
 	font="$hcrm-31-$m1"
 	;;
@@ -486,6 +511,10 @@ do
 	exit 1
 	;;
 
+    37b* )
+        echo there are none: try 37m
+	exit 1
+	;;
     37mh )
 	font="$hcrm-37-$m1"
 	;;
@@ -494,6 +523,10 @@ do
 	exit 1
 	;;
 
+    50b* )
+        echo there are none: try 50m
+	exit 1
+	;;
     50mh )
 	font="$hcrm-50-$m1"
 	;;
@@ -502,41 +535,19 @@ do
 	exit 1
 	;;
 
-    [1-8]* )
-        echo "font argument is PPWS"
-        echo "PP = [1-9][0-9] = point size:"
-	echo "     10-21, 24-26, 31, 34, 37, 50"
-        echo "W = [bm] = weight: b = bold, m = medium"
-        echo "S = [abdhlmns] or ms = style"
-	echo "    a=adobe, b=bitstream, d=dec, h=hcr,"
-	echo "    l=lucid, m=misc, n=sony," \
-			"s=schumacher,"
-	echo "    ms=misc semicondensed"
+    [1-9][0-9]* )
+	echo "$font_documentation"
 	exit 1
 	;;
 
     * )
-    	echo "xcsh [font] [-l location] [-h host]"
-	echo ""
-        echo "Font argument is PPWS:"
-        echo "  PP = [1-9][0-9] = point size:"
-	echo "       10-21, 24-26, 31, 34, 37, 50"
-        echo "  W = [bm] = weight: b = bold, m = medium"
-        echo "  S = [abdhlmns] or ms = style"
-	echo "      a=adobe, b=bitstream, d=dec, h=hcr,"
-	echo "      l=lucid, m=misc, n=sony," \
-			"s=schumacher,"
-	echo "      ms=misc semicondensed"
-	echo ""
-	echo "location argument is 1, 2, 3, 4, or" \
-		"WxH+X+Y"
-	echo "  W and H are width in columns and" \
-	    	"height in lines"
-    	echo "  X and Y are the upper left corner" \
-		"offset in pixels"
-	echo ""
-	echo "If host is given, program is" \
-		'`ssh host'"'."
+    	echo "
+xcsh [font] [-l location] [-h host]
+$font_documentation
+$location_documentation
+
+If host is given, the program "'`ssh host'"' is used
+for login by the xterminal window."
 	exit 1
 	;;
 
