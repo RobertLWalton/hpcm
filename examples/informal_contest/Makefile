@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/09/21 12:00:10 $
+#   $Date: 2001/09/21 12:49:50 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.17 $
+#   $Revision: 1.18 $
 
 # To make an informal contest named `foo':
 #
@@ -76,7 +76,7 @@
 #	chmod 700 secure
 #	cd secure
 #	vi passwords  (or use another editor)
-#	# edit passwords and quit editory
+#	# edit passwords and quit editor
 #	chmod 600 passwords
 #
 #    The `~/contest_foo/secure' directory contains stuff
