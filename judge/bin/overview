@@ -4,7 +4,7 @@
 #
 # File:		overview
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Jan 18 06:14:56 EST 2002
+# Date:		Fri Jan 18 15:17:34 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/01/18 14:30:14 $
+#   $Date: 2002/01/18 20:42:42 $
 #   $RCSfile: overview,v $
-#   $Revision: 1.49 $
+#   $Revision: 1.50 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -102,7 +102,7 @@ following features:
       those found in advanced Computer Science courses.
 
     o Supports running multiple long term contests
-      simulatneously.
+      simultaneously.
 
     o Keeps a complete log of everything that happens
       during contests in the form of files that can be
@@ -181,7 +181,7 @@ Then choose the type of contest you want to create
 (email, informal, formal) and read the instructions in
 
 	hpcm/examples/<contest-type>_contest/Makefile
-
+
 This file also contains basic advice on how to judge
 the contest.
 
@@ -191,7 +191,7 @@ You should also read
 
 and try to understand the parameters in that file as
 best you can.
-
+
 In order to better understand what you are doing, you
 may wish to read the following overview, and then read
 the individual program documentation for some of the
@@ -221,11 +221,11 @@ Contest Raw Data
     Files that capture submissions and information gen-
     erated during judging, such as binary program files,
     output files, scores, and email replies.
-
+
 Contest Derived Data
     Scoreboards and contest tracking summaries.
 
-
+
 HPCM also contains several different categories of
 programs:
 
@@ -422,9 +422,39 @@ advantage that contestants will then be able to read any
 *.class files in this and other library problem direc-
 tories: see `Contest Definition Data: Security' below.
 
+Some things change if a problem directory also contains
+a file named:
+
+	$scoring_filter_file
+
+In this case, both the pppp.out and pppp.test files are
+run through the program named $scoring_filter_file to\
+	pro-
+duce files named pppp.fout and pppp.ftest, respectively.
+Then instead of comparing pppp.out and pppp.test to pro-
+duce a score, HPCM compares pppp.fout and pppp.ftest.
+For example, if a problem asks for a shortest path
+through a graph whose nodes are labeled with upper case
+letters, pppp.out might contain the lines
+
+    Case 5: B -> D -> E -> F -> C
+    Case 6: B -> F -> H -> A -> K -> M
+
+and pppp.fout might contain corresponding lines:
+
+    Case 5: 4
+    Case 6: not a legal path
+
+where 4 is the length of the `Case 5' path.  If 4 is the
+length of the shortest path, pppp.ftest would have the
+same `Case 5' line, but of course it would not have the
+same `Case 6' line.  Note that the $scoring_filter_file\
+	pro-
+gram can input pppp.in and even pppp.test.
+
 Lastly, the `make clean' command in the problem direc-
 tory deletes all temporary files, including `pppp',
-`pppp.out', `core', and `.class' files.
+`pppp.out', `pppp.fout', `core', and `.class' files.
 
 Library Data: Complex Problems
 ------- ----- ------- --------
@@ -530,7 +560,7 @@ Library Data: System Maintenance
 ------- ----- ------ -----------
 
 There are a few files in the system root directory
-(hpcm) that are used for system maintenace.
+(hpcm) that are used for system maintenance.
 
 
     Makefile	Typing `make' in the system root di-
