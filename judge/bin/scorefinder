@@ -1,11 +1,11 @@
-#!/bin/sh -f
+#!/bin/sh
 #
 # Looks at the subdirectories of the mail directory for
 # score files, and prints the scores found.
 #
 # File:		scorefinder
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Sep 16 07:30:46 EDT 2000
+# Date:		Fri Sep 29 07:30:39 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/09/28 20:42:16 $
+#   $Date: 2000/09/29 11:38:02 $
 #   $RCSfile: scorefinder,v $
-#   $Revision: 1.3 $
+#   $Revision: 1.4 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -85,6 +85,9 @@ scorefinder \[-gotten\]
     `description gotten'.  Here the date is taken from
     the $gotten_file file `Date:' field.
 
+    The -gotten flag is set automatically if the
+    `scoreboard_start_time' variable equals \"\".
+
     This program logs errors in the log directory."
 
 
@@ -101,6 +104,8 @@ if { $my_argc >= 1 \
     set gotten_option yes
     set my_argv [lreplace $my_argv 0 0]
     set my_argc [expr { $my_argc - 1 }]
+} elseif { $scoreboard_start_time == "" } {
+    set gotten_option yes
 }
 
 # If there are leftover arguments, print document and
