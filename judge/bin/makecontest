@@ -6,7 +6,7 @@
 #
 # File:		makejudgingdir
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Oct 17 09:27:58 EDT 2001
+# Date:		Thu Oct 18 02:08:48 EDT 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/10/17 13:32:58 $
+#   $Date: 2001/10/18 06:19:49 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.63 $
+#   $Revision: 1.64 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -1250,7 +1250,7 @@ proc process_index_specification {} {
 if { $info_option } {
     if { [file exists $info_directory+] } {
         puts "Deleting $info_directory+"
-	exec rm -rf $info_directory+ >@ stdout
+	file delete -force -- $info_directory+
     }
     file mkdir $info_directory+
     file mkdir $info_directory+/help
@@ -1259,7 +1259,7 @@ foreach dir {problems demos help} {
     if { [set ${dir}_option] } {
 	if { [file exists $c_d/$dir+] } {
 	    puts "Deleting out-of-date $c_d/$dir+"
-	    exec rm -rf $c_d/$dir+ >@ stdout
+	    file delete -force -- $c_d/$dir+
 	}
 	file mkdir $c_d/$dir+
 	if { $dir != "problems" } {
@@ -1270,7 +1270,7 @@ foreach dir {problems demos help} {
 if { $solutions_option } {
     if { [file exists $solutions_directory+] } {
         puts "Deleting $solutions_directory+"
-	exec rm -rf $solutions_directory+ >@ stdout
+	file delete -force -- $solutions_directory+
     }
     file mkdir $solutions_directory+
 }
@@ -1667,12 +1667,12 @@ proc rename_directory { directory } {
          == "no" } {
     	puts "New $directory does not differ from\
 	      previous version."
-	exec rm -rf $directory+ >@stdout
+	file delete -force -- $directory+
 	return no
     } else {
 
 	if { [file exists $directory--] } {
-	    exec rm -rf $directory-- >@ stdout
+	    file delete -force -- $directory--
 	}
 	if { [file exists $directory-] } {
 	    puts "Renaming $directory- to $directory--"
@@ -1739,7 +1739,7 @@ if { $help2_option \
 		  [file type $c_d/help2] }] } {
 	if { $help2_type == "link" } {
 	    puts "Deleting $c_d/help2"
-	    file delete -force $c_d/help2
+	    file delete -force -- $c_d/help2
 	} else {
 	    error "$c_d/help2 exists but is not a\
 	           directory"
@@ -1768,7 +1768,7 @@ if { $bin_option \
 			[file type $c_d/bin] }] } {
 	if { $bin_type == "link" } {
 	    puts "Deleting $c_d/bin"
-	    file delete -force $c_d/bin
+	    file delete -force -- $c_d/bin
 	} else {
 	    error "$c_d/bin exists but is not a\
 	           directory"
@@ -2009,7 +2009,7 @@ if { $who_where_option } {
         # If $changed is `yes', write $new_who_where.
 	#
 	if { $changed } {
-	    file delete -force $c_d/who_where
+	    file delete -force -- $c_d/who_where
 	    set who_where_ch [open $c_d/who_where w]
 	    foreach line $new_who_where {
 		puts $who_where_ch $line
@@ -2039,7 +2039,7 @@ if { $trashable_option } {
 	          < [file mtime $c_d/secure/passwords] \
 		  	} {
 	if { [file exists $c_d/trashable] } {
-	    file delete -force $c_d/trashable
+	    file delete -force -- $c_d/trashable
 	}
 	set trashable_ch [open $c_d/trashable w]
 	set passwords_ch [open $c_d/secure/passwords r]
@@ -2113,7 +2113,7 @@ if { $printer_map_option \
 if { $printer_jobs_option \
      && ! [file readable $c_d/printer_jobs] } {
     close [open $c_d/printer_jobs w]
-    exec chmod a+rw $c_d/printer_jobs
+    grant_access $c_d/printer_jobs rw
 
     TODO "Delete $c_d/printer_jobs if you do not" \
          "want it to list all printer jobs."
