@@ -5,7 +5,7 @@
 #
 # File:		reply
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Oct  4 23:39:28 EDT 2000
+# Date:		Sun Nov  5 04:37:05 EST 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/10/05 04:06:55 $
+#   $Date: 2000/11/05 10:04:03 $
 #   $RCSfile: old_reply,v $
-#   $Revision: 1.2 $
+#   $Revision: 1.3 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -96,13 +96,15 @@ while { "yes" } {
     set repliedcount 0
     set autodirs ""
     set waitdirs ""
+    set manualdirs ""
     foreach dir \
-            [glob -nocomplain \
-		  $mail_directory/*-<<*>>-submission] {
+            [lsort \
+	       [glob -nocomplain \
+		  $mail_directory/*-<<*>>-submission]] {
 
 	set subdir [file tail $dir]
 
-	if { ! [regexp {^(.*)-<<(.*)>>-submission$} \
+	if { ! [regexp {^([^<>]*)-<<(.*)>>-submission$} \
 		       $subdir forget \
 		       date submitter] } {
 	    continue;
@@ -158,31 +160,58 @@ while { "yes" } {
 	}
 
 	incr manualcount
-	exec manualreply $dir >@ stdout 2>@ stderr
+	lappend manualdirs $dir
     }
 
+    if { $autocount != 0 } {
+	puts "Directories executing `autodispatch':"
+	foreach d $autodirs {
+	    puts "    $d"
+	}
+    }
+    if { $waitcount != 0 } {
+	puts "Directories waiting to execute\
+	      `autodispatch':"
+	foreach d $waitdirs {
+	    puts "    $d"
+	}
+    }
     if { $manualcount == 0 } {
-    	if { $autocount != 0 } {
-	    puts "Directories executing `autodispatch':"
-	    foreach d $autodirs {
-	    	puts "    $d"
-	    }
-	}
-    	if { $waitcount != 0 } {
-	    puts "Directories waiting to execute\
-	          `autodispatch':"
-	    foreach d $waitdirs {
-	    	puts "    $d"
-	    }
-	}
-	if { [expr { $autocount + $waitcount }] \
-	     == 0 } {
+        if { $autocount == 0 && $waitcount == 0 } {
 	    puts "$repliedcount replies sent:\
-	          EVERYTHING IS ALL DONE!"
+		  EVERYTHING IS ALL DONE!"
+	    break
+	} else {
+	    puts -nonewline \
+		 "\nType ENTER or RETURN to continue;\
+		  control-D to exit."
+	    flush stdout
+	    gets stdin
+	    if { [eof stdin] } break
+	    else continue
 	}
-
-	break
     }
+
+    while { $manualcount != 0 } {
+
+	puts "Directories waiting to execute\
+	      `manualreply':"
+	foreach d $manualdirs {
+	    puts "    $d"
+	}
+	puts -nonewline \
+	     "\nType ENTER or RETURN to continue;\
+	      control-D to exit."
+	flush stdout
+	gets stdin
+	if { [eof stdin] } break
+
+	set dir [lindex $manualdirs 0]
+	exec manualreply $dir >@ stdout 2>@ stderr
+	incr manualcount -1
+	set manualdirs [lrange $manualdirs 1 end]
+    }
+
 }
 
 exit 0
