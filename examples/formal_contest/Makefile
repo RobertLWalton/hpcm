@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Jan 12 13:10:38 EST 2001
+# Date:		Fri Jan 12 21:43:18 EST 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/01/12 18:05:31 $
+#   $Date: 2001/01/13 02:38:03 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.4 $
+#   $Revision: 1.5 $
 
 # To make a formal contest named `foo':
 #
@@ -258,6 +258,31 @@
 #
 # 21. Test the contest using the test contestant
 #     account.
+#
+# 22. You may want to print out handouts.  The following
+#     is a suggestion.  Execute `make print_help', re-
+#     move the `demos' and `problems' pages, and reorder
+#     the other pages so `index' is first and the other
+#     help file pages are in order they are listed in
+#     the index.  This produces a `help handout'.
+#
+#     Then `make print_problems', and make a `problems
+#     handout' that consists of these pages, in the
+#     order given in the `problems' help page, preced-
+#     ed by that `problems' help page.
+#
+#     Lastly `make print_demos', and make a `demos
+#     handout' that consists of these pages, in the
+#     order given in the `demos' help page, preced-
+#     ed by that `demos' help page.
+
+#     The help and demos handout can be given out before
+#     the contest starts, along with any extra sheets
+#     on such topics as where teams are located and
+#     when and where the food will be (or this info can
+#     be put into this_contest).  The problems handout
+#     is given out at the very start of the contest
+#     proper.
 
 HPCM=${HOME}/hpcm
 
@@ -300,3 +325,12 @@ stop_scoreboard:
 
 update_scoreboard:
 	makescoreboard 0
+
+print_help:
+	fprint contest/help/*
+
+print_demos:
+	fprint contest/demos/*/*
+
+print_problems:
+	fprint contest/problems/*/*.txt
