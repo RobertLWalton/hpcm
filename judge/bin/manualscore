@@ -5,7 +5,7 @@
 #
 # File:		manualscore
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Sep 12 15:11:31 EDT 2000
+# Date:		Fri Sep 15 11:29:56 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,10 +13,10 @@
 #
 # RCS Info (may not be true date or author):
 #
-#   $Author: acm-cont $
-#   $Date: 2000/09/12 19:09:35 $
+#   $Author: hc3 $
+#   $Date: 2000/09/15 16:28:42 $
 #   $RCSfile: manualscore,v $
-#   $Revision: 1.15 $
+#   $Revision: 1.16 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -99,7 +99,7 @@ set bdiff_file   	$submitted_program.bdiff
 #
 if { ! [file readable $auto_score_file] } {
     puts "No $auto_score_file; Executing autojudge"
-    exec autojudge
+    exec autojudge >@ stdout 2>@ stderr
     if { ! [file readable $auto_score_file] } {
         puts "autojudge failed to make\
 	      $auto_score_file file"
@@ -291,7 +291,7 @@ x = exit without doing anthing
 
     # Compute action and file of interest.
     #
-    set action "view"
+    set action view
     switch [lindex $answer 0] \
     	d	{ set last_file [make_diff] } \
     	b	{ set last_file [make_bdiff] } \
@@ -300,10 +300,10 @@ x = exit without doing anthing
     	e	{ set last_file $error_file } \
     	c	{ set last_file $compiler_error_file } \
     	p	{ set last_file $submitted_file } \
-	a	{ set action "accept" } \
-	r	{ set action "reject" } \
-	x	{ set action "exit" } \
-	default	{ set action "unknown" }
+	a	{ set action accept } \
+	r	{ set action reject } \
+	x	{ set action exit } \
+	default	{ set action unknown }
 
     # Perform action.
     #

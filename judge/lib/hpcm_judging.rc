@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Sep 14 07:16:04 EDT 2000
+# Date:		Fri Sep 15 12:05:50 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -10,10 +10,10 @@
 #
 # RCS Info (may not be true date or author):
 #
-#   $Author: acm-cont $
-#   $Date: 2000/09/14 13:33:06 $
+#   $Author: hc3 $
+#   $Date: 2000/09/15 16:28:42 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.30 $
+#   $Revision: 1.31 $
 #
 
 # An optionally modified copy of this file must be
@@ -142,6 +142,8 @@ proc compute_signature { value } {
 # and both readable and writable by the current user.
 #
 proc create_file { filename } {
+    global errorCode errorInfo
+
     if { [catch { exec lockfile -0 -r 0 $filename } \
                 out] } {
 	if { [regexp {Sorry, giving up on} out] } {
@@ -208,6 +210,24 @@ proc set_current_pgid {} {
     id process group set
 }
 
+# Function to display the state of processes with
+# a given process group leader.  Return value is
+# display.
+#
+proc display_process_group { pgid } {
+    catch { exec pstree -pa $pgid } out
+    if { $out == "" } {
+    	set out "No processes in process group $pgid"
+    }
+    return $out
+}
+
+# Function to send signal to process group.  Signal
+# must be KILL or INT.
+#
+proc signal_process_group { signal pgid } {
+    kill -pgroup $signal $pgid
+}
 
 ######### Things usually not changed ############
 

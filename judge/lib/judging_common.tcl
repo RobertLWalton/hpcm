@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Sep 14 10:19:05 EDT 2000
+# Date:		Fri Sep 15 08:58:36 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -10,10 +10,10 @@
 #
 # RCS Info (may not be true date or author):
 #
-#   $Author: acm-cont $
-#   $Date: 2000/09/14 14:17:31 $
+#   $Author: hc3 $
+#   $Date: 2000/09/15 16:28:43 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.36 $
+#   $Revision: 1.37 $
 #
 
 # Include this code in TCL program via:
@@ -53,7 +53,7 @@
 # Default error log directory name.  For use if we
 # cannot find judging parameters.
 #
-set default_log_directory ~/HPCM_Error_Log
+set default_log_directory $env(HOME)/HPCM_Error_Log
 
 # Judging parameters file name:
 #
@@ -232,6 +232,7 @@ proc log_error { error_output } {
     if { $log_error_count > $log_error_maximum } {
     	set log_mode none
     } elseif { $log_error_count > 1000 } {
+	exit_cleanup
         exit 2
     }
 
@@ -261,7 +262,7 @@ proc log_error { error_output } {
            ||  $log_globally != "yes" ) \
 	 && [file writable "."] } {
         set log_dir "."
-    } elseif { [info exists $log_directory] \
+    } elseif { [info exists log_directory] \
 	       && ! [catch { file mkdir \
 	                          $log_directory } ] \
 	       && [file writable $log_directory] } {

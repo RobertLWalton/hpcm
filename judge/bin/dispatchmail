@@ -6,7 +6,7 @@
 #
 # File:		dispatchmail
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Sep 14 10:27:41 EDT 2000
+# Date:		Fri Sep 15 11:21:08 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,10 +14,10 @@
 #
 # RCS Info (may not be true date or author):
 #
-#   $Author: acm-cont $
-#   $Date: 2000/09/14 20:14:40 $
+#   $Author: hc3 $
+#   $Date: 2000/09/15 16:28:41 $
 #   $RCSfile: dispatchmail,v $
-#   $Revision: 1.5 $
+#   $Revision: 1.6 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -59,6 +59,9 @@ dispatchmail \[directory\]
     line, from the standard input.  Treating each as the
     name of a subdirectory of the mail directory, this
     program calls `autodispatch' for each subdirectory.
+    When `autodispatch' is called, the standard output
+    and error output is sent to /dev/null to be dis-
+    carded.
 
     This program outputs each subdirectory name just
     before it calls autodispatch for the subdirectory."
@@ -78,7 +81,7 @@ while { "yes" } {
     set subdirectory [gets stdin]
     if { [eof stdin] } break
     puts $subdirectory
-    exec autodispatch 2> /dev/null \
+    exec autodispatch >& /dev/null \
                       $mail_directory/$subdirectory
 }
 

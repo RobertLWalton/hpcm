@@ -5,7 +5,7 @@
 #
 # File:		autojudge
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Sep 12 13:48:15 EDT 2000
+# Date:		Fri Sep 15 11:13:35 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,10 +13,10 @@
 #
 # RCS Info (may not be true date or author):
 #
-#   $Author: acm-cont $
-#   $Date: 2000/09/12 19:09:34 $
+#   $Author: hc3 $
+#   $Date: 2000/09/15 16:28:41 $
 #   $RCSfile: autojudge,v $
-#   $Revision: 1.22 $
+#   $Revision: 1.23 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -131,7 +131,7 @@ if { $argc != 0 } {
 
 # Get submitted file.  If none available, exit.
 #
-set submitted_file [exec extractmail]
+set submitted_file [exec extractmail 2>@ stderr]
 if { $submitted_file == "" } {
     exit 0
 }
@@ -314,8 +314,8 @@ if { [should_be_made \
 
     puts "Making $submitted_program"
     catch { exec make $submitted_program \
-    		 2> $submitted_program.cerr } out
-    puts $out
+    		 >@ stdout \
+    		 2> $submitted_program.cerr }
 
     # Print any non-empty .cerr file.
     #
@@ -366,8 +366,8 @@ if { [should_be_made \
 
     puts "Making $submitted_program.out"
     catch { exec make $submitted_program.out \
-		 2> $submitted_program.err } out
-    puts $out
+    	         >@ stdout \
+		 2> $submitted_program.err }
 
     if { [file exists $submitted_program.err] \
 	 && [file size $submitted_program.err] \
@@ -401,7 +401,7 @@ if { [llength $file_list] >= 2 \
             [list $auto_score_file] \
 	    $file_list] } {
 
-    exec autoscore $submitted_program
+    exec autoscore $submitted_program 2>@ stderr
 }
 
 # Make $reply_file if necessary.

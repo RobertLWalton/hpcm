@@ -5,7 +5,7 @@
 #
 # File:		manualreply
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Sep 12 15:07:52 EDT 2000
+# Date:		Fri Sep 15 11:28:10 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,10 +13,10 @@
 #
 # RCS Info (may not be true date or author):
 #
-#   $Author: acm-cont $
-#   $Date: 2000/09/12 19:09:35 $
+#   $Author: hc3 $
+#   $Date: 2000/09/15 16:28:42 $
 #   $RCSfile: manualreply,v $
-#   $Revision: 1.4 $
+#   $Revision: 1.5 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -56,7 +56,7 @@ if { [llength $message_subject] == 2 \
                        *-unchecked-error]] == 0 } {
 
     puts "Running autojudge"
-    exec autojudge
+    exec autojudge >@ stdout 2>@ stderr
 
     if { ! [file exists $auto_score_file] } {
 	puts "autojudge FAILED to make $auto_score_file"
@@ -133,7 +133,7 @@ proc put_file_list {} {
 	                 [lindex $item 3] \
 		         $n \
 		         [lindex $item 1]]
-	set commented "$next ([lindex $item 2])"
+	set commented "${next} ([lindex $item 2])"
 
 	if { [string length $commented] <= 80 } {
 	    set next $commented
@@ -278,10 +278,11 @@ ad = call autodispatch      ms = call manualscore
 	    call_shell
 	} \
 	{ad} {
-	    exec autodispatch -force
+	    exec autodispatch -force \
+	         >@ stdout 2>@ stderr
 	} \
 	{ms} {
-	    exec manualscore
+	    exec manualscore >@ stdout 2>@ stderr
 	} \
 	{x} {
 	    exit 0
