@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Aug  2 12:04:30 EDT 2002
+# Date:		Tue Sep 24 00:43:21 EDT 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/08/02 16:07:19 $
+#   $Date: 2002/09/24 04:43:19 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.29 $
+#   $Revision: 1.30 $
 
 # To make an informal contest named `foo':
 #
@@ -451,7 +451,7 @@ dangerous_test_clean:
 	rm -rf mail/* flag log replies mbox
 
 dangerous_clean:
-	rm -rf mail help flag log \
+	rm -rf mail help flag log web \
 	       solutions* info* TODO replies mbox \
 	       contest/help* contest/scoreboard.1 \
 	       contest/printer_map \
@@ -459,4 +459,3 @@ dangerous_clean:
 	       contest/printer_jobs \
 	       contest/who_where \
 	       contest/secure
-

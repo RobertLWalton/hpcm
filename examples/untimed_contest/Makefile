@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Aug  2 12:11:43 EDT 2002
+# Date:		Tue Sep 24 00:42:56 EDT 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/08/02 16:11:48 $
+#   $Date: 2002/09/24 04:43:18 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.49 $
+#   $Revision: 1.50 $
 
 # To make an email contest named `foo':
 #
@@ -278,4 +278,4 @@ dangerous_clean:
 	rm -rf mail help info* solutions* TODO \
 	       Contest_Address flag log \
 	       scoreboard.mail Scorefinder_Output \
-	       Scoeboard_PID replies mbox
+	       Scoeboard_PID replies mbox web
