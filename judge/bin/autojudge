@@ -5,7 +5,7 @@
 #
 # File:		autojudge
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Jan 22 07:55:31 EST 2002
+# Date:		Tue Jan 22 10:54:20 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/01/22 13:13:21 $
+#   $Date: 2002/01/22 15:53:29 $
 #   $RCSfile: autojudge,v $
-#   $Revision: 1.62 $
+#   $Revision: 1.63 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -965,6 +965,79 @@ if { [catch { exec extractmail } extractout] } {
 # $files_file (or its default value).
 #
 execute_links $files
+
+# Function to execute a response instruction command
+# list.
+#
+proc execute_response_commands { reply_mode commands } {
+}
+
+# Function to process $response_instructions_file value.
+#
+proc execute_response_instructions \
+    { response_instructions auto_score } {
+
+    global scoring_mode
+
+    set score -${auto_score}-
+    regsub { } $score - score
+    set mode -${scoring_mode}-
+    set score_match 1
+    set mode_match 1
+    set reply_mode ""
+    set commands ""
+    set commands_executed 0
+    foreach item $response_instructions {
+        if { [catch { set length [llength $item] }] } {
+	    error "Bad $response_instructions_file file\
+	           value list item: $item"
+	}
+        if { [regexp {^-.*-$} $item] && $length == 1 } {
+	    if { $commands_executed } {
+	        execute_response_commands $reply_mode \
+					  $commands
+		break
+	    }
+	    switch -- $item {
+	        -manual- -
+		-auto- {
+		    set mode_match \
+		        [expr { $mode == $item } ]
+		}
+		-auto+manual- -
+		-manual+auto- {
+		    set mode_match \
+		        [lcontains {-auto+manual- \
+			            -manual+auto-} \
+				   $mode]
+		}
+		-Other-Modes- {
+		    set mode_match t
+		}
+		-Other-Scores- {
+		    set score_match t
+		}
+		default {
+		    set score_match \
+		        [expr { $score == $item }]
+		}
+	    }
+
+	} elseif { $score_match && $mode_match } {
+	    set commands_executed 1
+	    switch -- $item {
+	        FINAL		-
+		NON-FINAL	-
+		NON-AUTO	{
+		    set reply_mode $item
+		}
+		default {
+		    lappend commands $item
+		}
+	    }
+	}
+    }
+}
 
 # Function to send reply to user containing new auto
 # score.
