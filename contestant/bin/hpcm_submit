@@ -1,0 +1,72 @@
+#!/bin/sh -f
+#
+# Submit a file.
+#
+# File:		hpcm_submit
+# Author:	Bob Walton <walton@deas.harvard.edu>
+# Date:		Sun Sep 10 15:46:13 EDT 2000
+#
+# The authors have placed this program in the public
+# domain; they make no warranty and accept no liability
+# for this program.
+#
+# RCS Info (may not be true date or author):
+#
+#   $Author: hc3 $
+#   $Date: 2000/09/18 02:24:18 $
+#   $RCSfile: hpcm_submit,v $
+#   $Revision: 1.1 $
+
+extensions=".c .cc .java .p"
+
+case "$1" in
+    "" | -*)
+	echo "
+hpcm_submit file
+
+    Submits the file.  If the file has no extension, a
+    search is made for a readable file with an appro-
+    priate extension added (e.g., .cc or .java), and
+    if exactly one is found, that file is used."
+
+	exit 1
+	;;
+    *.* )
+    	if test -r $1
+	then
+	    file=$1
+	else
+	    echo cannot read $1
+	    exit 1
+	fi
+	;;
+    * )
+        found=0
+    	for e in $extensions
+	do
+	    if test -r $1$e
+	    then
+	        file=$1$e
+		found=`expr $found + 1`
+	    fi
+	done
+
+	if test $found -eq 0
+	then
+	    echo file $1.'*' not found
+	    exit 1
+	elif test $found -ne 1
+	then
+	    echo too many files $1.'*' found
+	    exit 1
+	fi
+esac
+
+# Submit program file by email.
+#
+( echo Subject: submit $file; \
+  echo ""; \
+  echo BEGIN $file; \
+  cat $file | sed -e '/^/s//../'; \
+  echo END $file ) \
+| hpcm_sendmail

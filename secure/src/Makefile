@@ -10,19 +10,22 @@
 #
 # RCS Info (may not be true date or author):
 #
-#   $Author: acm-cont $
-#   $Date: 2000/09/11 10:19:46 $
+#   $Author: hc3 $
+#   $Date: 2000/09/18 02:24:52 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.4 $
+#   $Revision: 1.5 $
 
 # Kill all implicit rules
 #
 .SUFFIXES:
 
-all: hpcm_sandbox
+all: hpcm_sandbox hpcm_sendmail
 
 hpcm_sandbox:	hpcm_sandbox.c
 	gcc -o hpcm_sandbox hpcm_sandbox.c
 
+hpcm_sendmail:	hpcm_sendmail.c
+	gcc -o hpcm_sendmail hpcm_sendmail.c
+
 clean:
-	rm -f hpcm_sandbox
+	rm -f hpcm_sandbox hpcm_sendmail

@@ -1,45 +1,71 @@
-#! /bin/csh -f
+#!/bin/sh -f
+#
+# Display scoreboard.
+#
+# File:		scoreboard
+# Author:	Bob Walton <walton@deas.harvard.edu>
+# Date:		Sun Sep 17 21:50:27 EDT 2000
+#
+# The authors have placed this program in the public
+# domain; they make no warranty and accept no liability
+# for this program.
+#
+# RCS Info (may not be true date or author):
+#
+#   $Author: hc3 $
+#   $Date: 2000/09/18 02:24:18 $
+#   $RCSfile: scoreboard,v $
+#   $Revision: 1.2 $
 
-set time=30
+time=30
 
-if ( $#argv > 0 ) then
+case "$1" in
+    [1-9] )
+	if test ! -r ~/.hpcm_contest/scoreboard.$1
+	then
+	    echo cannot read \
+	         ~/.hpcm_contest/scoreboard.$1
+	    exit 1
+	fi
 
-    while (1)
-
-	clear
-	cat ~acm-cont/contestant/judging/scoreboard.$1
-	sleep 60
-
-    end
-else
-
-    while (1)
-
-	clear
-	cat ~acm-cont/contestant/judging/scoreboard.1
-	sleep $time
-	if ( -r ~acm-cont/contestant/judging/scoreboard.2 ) then
+	while test 1 = 1
+	do
 	    clear
-	    cat ~acm-cont/contestant/judging/scoreboard.2
+	    cat ~/.hpcm_contest/scoreboard.$1
 	    sleep $time
-	else
-	    continue
-	endif
-	if ( -r ~acm-cont/contestant/judging/scoreboard.3 ) then
-	    clear
-	    cat ~acm-cont/contestant/judging/scoreboard.3
-	    sleep $time
-	else
-	    continue
-	endif
-	if ( -r ~acm-cont/contestant/judging/scoreboard.4 ) then
-	    clear
-	    cat ~acm-cont/contestant/judging/scoreboard.4
-	    sleep $time
-	else
-	    continue
-	endif
+	done
+	;;
+    "" )
+	if test ! -r ~/.hpcm_contest/scoreboard.1
+	then
+	    echo cannot read \
+	         ~/.hpcm_contest/scoreboard.1
+	    exit 1
+	fi
+	
+	while test 1 = 1
+	do
+	    for i in 1 2 3 4
+	    do
+		if test -r ~/.hpcm_contest/scoreboard.$i
+		then
+		    clear
+		    cat ~/.hpcm_contest/scoreboard.$i
+		    sleep $time
+		fi
+	    done
+	done
+	;;
+    * )
+    	echo "
+scoreboard [page]
 
-    end
+    Displays each page of the scoreboard for $time sec-
+    conds and then repeats, if no page argument given.
+    Otherwise just displays the page given page, and
+    refreshes the display every $time seconds."
+    	exit 1
+	;;
+esac
 
-endif
+exit 0

@@ -4,7 +4,7 @@
 #
 # File:		hpcm_sendmail
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Sun Sep 10 15:46:13 EDT 2000
+# Date:		Sun Sep 17 21:50:09 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/09/18 01:38:07 $
+#   $Date: 2000/09/18 02:24:18 $
 #   $RCSfile: hpcm_sendmail.sh,v $
-#   $Revision: 1.2 $
+#   $Revision: 1.3 $
 
 case "$1" in
      "")
@@ -34,12 +34,13 @@ cat email_file | hpcm_sendmail
 esac
 
 # Locate the To address.
-if test ! -r ~/.hpcm_contest/sendmail.rc
+if test ! -r ~/.hpcm_contest/hpcm_sendmail.rc
 then
-	echo cannot read ~/.hpcm_contest/sendmail.rc
+	echo cannot read \
+	     ~/.hpcm_contest/hpcm_sendmail.rc
 	exit 1
 fi
-to=`grep '^To:' ~/.hpcm_contest/sendmail.rc`
+to=`grep '^To:' ~/.hpcm_contest/hpcm_sendmail.rc`
 
 # Submit program file by email.
 #

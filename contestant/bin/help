@@ -4,7 +4,7 @@
 #
 # File:		help
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Sun Sep 10 15:46:13 EDT 2000
+# Date:		Sun Sep 17 21:50:27 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,23 +13,29 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/09/18 01:38:25 $
+#   $Date: 2000/09/18 02:24:18 $
 #   $RCSfile: help,v $
-#   $Revision: 1.1 $
-
-if test ! -r ~/.hpcm_contest/help
-then
-	echo cannot read ~/.hpcm_contest/help
-	exit 1
-end
+#   $Revision: 1.2 $
 
 case "$1" in
      "")
-     		less ~/.hpcm_contest/help/help.help
+     		item=help
     		;;
      *)
-		less ~/.hpcm_contest/help/$1.help
+		item=$1
 		;;
 esac
 
-exit 0
+for i in 1 2 3 4
+do
+    if test -r ~/.hpcm_contest/help$i/$item.help
+    then
+	less ~/.hpcm_contest/help$i/$item.help
+    	exit 0
+    fi
+end
+
+echo cannot read \
+     '~/.hpcm_contest/help[1234]'/$item.help
+
+exit 1
