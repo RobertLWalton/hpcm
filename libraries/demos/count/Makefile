@@ -1,7 +1,7 @@
 # Makefile for the `count' Demonstration Problem
 #
 # File:		Makefile
-# Date:		Mon Sep 11 06:38:38 EDT 2000
+# Date:		Tue Dec  5 07:20:27 EST 2000
 #
 # Exactly ONE of the four files count.c (C), count.cc
 # (C++), count.p (Pascal), or count.java (Java) should
@@ -70,7 +70,7 @@ default:	count.out
 	javac -g $*.java
 	echo >$* '#!/bin/sh'
 	echo >>$* "exec `which java` $*"
-	chmod a+r $*.class
+	chmod a+r *.class
 	chmod a+rx $*
 #
 # hpcm_sandbox below may execute `count' as a special
@@ -107,7 +107,7 @@ clean:
 #
 # RCS Info (may not be true date or author):
 #
-#   $Author: acm-cont $
-#   $Date: 2000/09/11 11:22:35 $
+#   $Author: hc3 $
+#   $Date: 2000/12/05 12:17:56 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.15 $
+#   $Revision: 1.16 $
