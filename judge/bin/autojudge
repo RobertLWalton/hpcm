@@ -5,7 +5,7 @@
 #
 # File:		autojudge
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Aug 28 16:49:30 EDT 2000
+# Date:		Mon Sep  4 10:38:30 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: acm-cont $
-#   $Date: 2000/08/28 20:52:35 $
+#   $Date: 2000/09/04 14:31:12 $
 #   $RCSfile: autojudge,v $
-#   $Revision: 1.19 $
+#   $Revision: 1.20 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -41,18 +41,38 @@ cd submission_directory; judge
     submitter by creating and sending `$reply_file' as
     specified by the scoring mode.
 
-    Specifically, this program calls `extractmail' to
-    extract the submitted file from the program.  This
-    program then checks the legality of the submitted
-    file name, and generates and sends `$reply_file'
-    automatically if the name is illegal.
+    Specifically, this program makes the following in
+    order:
+
+	the submitted file by calling extractmail
+	$make_file file
+	$scoring_instructions_file file, if it exists
+	.in solutin input file
+	.test solutin output file
+	the program binary (and .cerr file)
+	the .out file (and .err file)
+	the $auto_score_file file
+	the $reply_file file, sometimes
+
+    If any of these files exists, it checks to be sure
+    they are not older than the previous files (starting
+    with the submitted file not being older than the
+    $received_file file), and remakes any of the above
+    files that are out of date.  Errors in this process
+    can cause $reply_file to be generated early.
+
+    First, this program calls `extractmail' to extract
+    the submitted file from the program.  This program
+    then checks the legality of the submitted file name,
+    and generates and sends `$reply_file' automatically
+    if the name is illegal.
     
     If the file name is legal, this program symbolical-
     ly links the following solution directory files into
     the current directory:
 
     		$make_file
-		$instructions_file if it exists
+		$scoring_instructions_file if it exists
 		.in solution input file
 		.test solution output file
     
@@ -81,9 +101,10 @@ cd submission_directory; judge
     possibly changed.
     
     If the score is to be manually reviewed, this prog-
-    ram deletes any $reply_file it may create, to signal
-    that the final reply has not been given to the sub-
-    mitter, and manual action is necessary to generate
+    ram deletes any $reply_file containing a score taken
+    from the $auto_score_file file, to signal that the
+    final reply has not been given to the submitter,
+    and further manual action is necessary to generate
     this reply.
 
     This program prints information about its progress.
@@ -99,6 +120,18 @@ if { $argc != 0 } {
     exit 1
 }
 
+set submitted_file [exec extractmail]
+
+if { $submitted_file == "" } {
+    exit 0
+}
+
+set submitted_program [file rootname $submitted_file]
+set submitted_extension [file extension $submitted_file]
+
+set program_solution \
+    "$solutions_directory/$submitted_program"
+
 proc illegal_filename_error { filename } {
     reply \
           "ERROR: submitted file has illegal name:\
@@ -110,23 +143,6 @@ proc illegal_filename_error { filename } {
           name: $filename"
     exit 0
 }
-
-set submitted_file [exec extractmail]
-
-if { $submitted_file == "" } {
-    if { [file readable $reply_file] } {
-        exit 0
-    } else {
-	error "Extract failed but $reply_file\
-	       is unreadable"
-    }
-}
-
-set submitted_program [file rootname $submitted_file]
-set submitted_extension [file extension $submitted_file]
-
-set program_solution \
-    "$solutions_directory/$submitted_program"
 
 if { ! [file isdirectory $program_solution] } {
     illegal_filename_error $submitted_file
@@ -142,11 +158,11 @@ if { ! [file readable $make_file] } {
     link_file "$program_solution/$make_file"
 }
 
-if { ! [file readable $instructions_file] \
-     && [file exists \
-	  "$program_solution/$instructions_file"] } {
-    puts "Linking $instructions_file"
-    link_file "$program_solution/$instructions_file"
+set sif $scoring_instructions_file
+if { ! [file readable $sif] \
+     && [file exists "$program_solution/$sif"] } {
+    puts "Linking $sif"
+    link_file "$program_solution/$sif"
 }
 
 if { ! [file readable ${submitted_program}.in] } {
@@ -165,63 +181,118 @@ if { ! [file readable ${submitted_program}.test] } {
 
 proc auto_score_reply { auto_score } {
 
-    global scoring_mode reply_file
+    global scoring_mode reply_file submitted_file
 
     if { $auto_score == "Completely Correct" \
          || $scoring_mode == "auto" } {
 	reply "For ${submitted_file} the automatically\
-	       determined final score is:\
-	       \    $auto_score"
+	       determined final score is:" \
+	      "" \
+	      "    $auto_score"
+	puts "Emailed final auto-score:\
+	      \    $auto_score"
     } elseif { [regexp {auto} $scoring_mode] } {
 	reply "For ${submitted_file} the automatically\
-	       determined score is:     $auto_score" \
+	       determined score is:" \
+	      "" \
+	      "    $auto_score" \
 	      "" \
 	      "However, this score WILL BE REVIEWED by\
 	       the human judge (soon)."
 	file delete -force $reply_file
+	puts "Emailed auto-score (review later):\
+	      \    $auto_score"
+    } else {
+	puts "Auto-score (NOT emailed):\
+	      \    $auto_score"
     }
-    puts "Automatic Score:    $auto_score"
 }
 
-if { ! [file readable $submitted_program] \
-     || [file mtime $submitted_program] \
-           < [file mtime Makefile] \
-     || [file mtime $submitted_program] \
-           < [file mtime $submitted_file] } {
+# should_be_made file_list1 file_list2 
+#
+# If any file_list1 file is older than any file_list2
+# file, and all file_list2 files exist, delete any
+# file_list1 files that exist and return `yes'.  If no
+# file_list1 files exists and all file_list2 files
+# exist, return `yes'.  Else return `no'.
+#
+#
+proc should_be_made { file_list1 file_list2 } {
 
-    if { [file exists $submitted_program] } {
-	puts "Deleting out-of-date $submitted_program"
-    	file delete -force $submitted_program
+    # Set mtime1 to the oldest of the file_list1
+    # mtimes, or 0 if no file_list1 file exists.
+    #
+    set mtime1 0
+    foreach file1 $file_list1 {
+	if { [file exists $file1] } {
+	    set mt [file mtime $file1]
+	    if { $mtime1 == 0 || $mtime1 > $mt } {
+	    	set mtime1 $mt
+	    }
+	}
+    }
+    # Set mtime2 to the newest of the file_list2
+    # mtimes, or 0 if any file_list2 file does not
+    # exist.
+    #
+    set mtime2 0
+    foreach file2 $file_list2 {
+	if { [file exists $file2] } {
+	    set mt [file mtime $file2]
+	    if { $mtime2 < $mt } {
+	    	set mtime2 $mt
+	    }
+	} else {
+	    set mtime2 0
+	    break
+	}
     }
 
-    if { [file exists "${submitted_program}.cerr"] } {
-	puts "Deleting out-of-date \
-	     ${submitted_program}.cerr"
-    	file delete -force "${submitted_program}.cerr"
+    # If mtime1 < mtime2 we need to make file_list1
+    # from file_list2
+    #
+    if { $mtime1 < $mtime2 } {
+    	foreach file1 $file_list1 {
+	    if { [file exists $file1] } {
+	        puts "Deleting out-of-date $file1"
+		file delete -force $file1
+	    }
+	}
+	return yes
+    } else {
+        return no
     }
+}
 
-    if { [file exists $auto_score_file] } {
-	puts "Deleting out-of-date $auto_score_file"
-    	file delete -force "$auto_score_file"
-    }
+if { [should_be_made \
+         [list $submitted_program \
+	       "$submitted_program.cerr"] \
+	 [list $make_file \
+	       $submitted_file]] } {
 
     puts "Making ${submitted_program}"
-    catch { exec make $submitted_program } out
+    catch { exec make $submitted_program \
+    		 2> "${submitted_program}.cerr" } out
     puts $out
 
     if { ( [file exists "${submitted_program}.cerr"] \
 	   && [file size "${submitted_program}.cerr"] \
 	      > 0 ) \
-         || ! [file exists $submitted_program"] } {
+         || ! [file exists $submitted_program] } {
 
 	if { [file exists \
 		   "${submitted_program}.cerr"] \
 	     && [file size \
 		      "${submitted_program}.cerr"] \
-		  > 0 ) } {
-	    put_file "${submitted_program}.cerr"
+		  > 0 } {
+	    puts "========== COMPILER ERRORS\
+		  (${submitted_program}.cerr)\
+		  =========="
+	    put_file "${submitted_program}.cerr" \
+		     stdout 10
+	    puts "============================="
 	} else {
-	    puts "No $submitted_program file produced"
+	    puts "No `$submitted_program' file produced"
 	}
 
 	if { [file exists $auto_score_file] } {
@@ -235,49 +306,58 @@ if { ! [file readable $submitted_program] \
     exec chmod a+x $submitted_program
 }
 
-if { ! [file readable "${submitted_program}.out"] \
-     || [file mtime "${submitted_program}.out"] \
-           < [file mtime $submitted_program] \
-     || [file mtime "${submitted_program}.out"] \
-           < [file mtime "${submitted_program}.in"] } {
-
-    if { [file exists "${submitted_program}.out"] } {
-	puts "Deleting out-of-date\
-	               ${submitted_program}.out"
-    	file delete -force "${submitted_program}.out"
-    }
-
-    if { [file exists "${submitted_program}.err"] } {
-	puts "Deleting out-of-date\
-	               ${submitted_program}.err"
-    	file delete -force "${submitted_program}.err"
-    }
-
-    if { [file exists $auto_score_file] } {
-	puts "Deleting out-of-date $auto_score_file"
-    	file delete -force "$auto_score_file"
-    }
+if { [should_be_made \
+         [list "${submitted_program}.out" \
+	       "${submitted_program}.err"] \
+	 [list $submitted_program \
+	       $make_file \
+	       "${submitted_program}.in"]] } {
 
     puts "Making ${submitted_program}.out"
-    catch { exec make "${submitted_program}.out" } out
+    catch { exec make "${submitted_program}.out" \
+		 2> "${submitted_program}.err" } out
     puts $out
+    puts "=============================="
+
+    if { [file exists \
+	       "${submitted_program}.err"] \
+	 && [file size \
+		  "${submitted_program}.err"] \
+	      > 0 } {
+	puts "========== ERRORS\
+	      (${submitted_program}.err)\
+	      =========="
+	put_file "${submitted_program}.err" \
+		 stdout 10
+	puts "============================="
+    } elseif { ! [file exists \
+                       "${submitted_program}.out"] } {
+	puts "No `${submitted_program}.out' file\
+	      produced"
+    }
 }
 
+set file_list [list "${submitted_program}.test"]
 
-if { ! [file readable $auto_score_file] \
-     || [file mtime $auto_score_file] \
-           < [file mtime "${submitted_program}.out"] \
-     || ( [file exists "${submitted_program}.err"] \
-	   && [file mtime $auto_score_file] \
-              < [file mtime \
-		      "${submitted_program}.err"] ) } {
-    set auto_score [exec autoscore $submitted_program]
-
+if { [file exists "${submitted_program}.out"] } {
+    lappend file_list "${submitted_program}.out"
 } else {
-    set auto_score  [file_read "$auto_score_file]
+    lappend file_list "${submitted_program}.err"
 }
 
-auto_score_reply $auto_score
+if { [should_be_made \
+         [list $auto_score_file] \
+	 $file_list] } {
+
+    exec autoscore $submitted_program
+}
+
+if { [should_be_made \
+         [list $reply_file] \
+	 [list $auto_score_file]] } {
+
+    auto_score_reply [read_file $auto_score_file]
+}
 
 exit 0
 
