@@ -5,7 +5,7 @@
 #
 # File:		autojudge
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Jan 22 22:02:14 EST 2002
+# Date:		Wed Jan 23 07:55:19 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/01/23 03:29:06 $
+#   $Date: 2002/01/23 14:02:57 $
 #   $RCSfile: autojudge,v $
-#   $Revision: 1.65 $
+#   $Revision: 1.66 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -435,44 +435,40 @@ autojudge \[problem\[.extension\]\]
 		{ BAR \"this message replies to:\" }
 		RECEIVED-HEADER
 
-    The possible $response_instructions_file commands\
-    	are:
+    The $response_instructions_file file commands are\
+    	execu-
+    ted to construct the reply.  The possible commands
+    are:
 
 	FINAL
-	    The score is final even if automatically de-
-	    rived.
+	    The final reply is sent.  A $reply_file file
+	    is creaed in the current directory.
 
 	NON-FINAL 
-	    The score is not final, and will be manually
-	    reviewed.
+	    A non-final reply is sent.  No $reply_file
+	    file is created in the current directory
+	    (though the reply is recorded in the
+	    $reply_history_file file).
 
-	NON-AUTO
-	    No automatic score reply will be sent to the
-	    submitter.
+	NO-REPLY
+	    No reply is sent.  All other commands are
+	    ignored.
 
-	FIRST
-	    Type and position of the first score deter-
-	    mining error will be reported to the sub-
-	    mitter.
+	{ LINES \"string\" ... }
+	{ LINE \"string\" }
+	    The strings, each followed by a line feed, are
+	    included in the reply.  Note that the strings
+	    may themselves include line feeds.
 
-	SUMMARY
-	    A summary of all score determining errors
-	    will be reported to the submitter.
-
-	{LINES \"string\"}
-	    The string, followed by a line feed, will
-	    be included at the end of the reply message.
-	    If you want a blank line separating the
-	    string for previous text, begin the string
-	    with a blank line.  A line feed is automat-
-	    ically appended to the string.
-
-	    If -PROBLEM- appears in the string it is re-
+	    If -PROBLEM- appears in a string it is re-
 	    placed by the problem name, and if -SCORE-
 	    appears, it is replaced by the\
 	    	$auto_score_file
 	    value.
-
+
+	BLANK
+	    Include a blank line in the reply.
+
 	BAR
 	    Inserts a 72 character ----- bar line.
 
@@ -482,17 +478,25 @@ autojudge \[problem\[.extension\]\]
 	    number of characters in the line is 72.
 
 	{INPUT filename}
-	    Include a copy of the file in the reply
-	    message.
+	    Include a copy of the file in the reply.
 
 	RECEIVED-HEADER
-	    Include a copy of the Date, To, From, and
-	    Subject header lines of the $received_file
-	    file.
+	    Include a copy of the Date, To, From, Reply-
+	    To, and Subject header lines of the
+	    $received_file file in the reply.
 
 	RECEIVED-BODY
-	    Include a copy of the body of the
-	    $received_file file.
+	    Include the body of the $received_file file
+	    in the reply.
+
+	FIRST
+	    Include lines describing the type and posi-
+	    tion of the first score determining error in
+	    the reply.
+
+	SUMMARY
+	    Include lines summarizing of all score de-
+	    termining errors in the reply.
 
     This program prints information about its progress.
  
