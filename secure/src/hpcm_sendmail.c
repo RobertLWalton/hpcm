@@ -2,7 +2,7 @@
  *
  * File:	hpcm_sendmail.c
  * Authors:	Bob Walton (walton@deas.harvard.edu)
- * Date:	Mon Sep 11 06:14:00 EDT 2000
+ * Date:	Mon Oct  2 05:10:10 EDT 2000
  *
  * The authors have placed this program in the public
  * domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
  * RCS Info (may not be true date or author):
  *
  *   $Author: hc3 $
- *   $Date: 2000/09/24 04:56:00 $
+ *   $Date: 2000/10/02 09:08:51 $
  *   $RCSfile: hpcm_sendmail.c,v $
- *   $Revision: 1.2 $
+ *   $Revision: 1.3 $
  */
 
 #include <stdlib.h>
@@ -28,6 +28,18 @@ extern const char * const sys_siglist[];
 #include <pwd.h>
 #include <sys/utsname.h>
 #include <time.h>
+
+#ifndef MD5SUM_LENGTH
+#   define MD5SUM_LENGTH 32
+#endif
+
+#ifndef MD5SUM
+#   define MD5SUM "/usr/bin/md5sum"
+#endif
+
+#ifndef MD5SUM_ENV
+#   define MD5SUM_ENV "HPCM_MD5SUM"
+#endif
 
 #ifndef SENDMAIL
 #   define SENDMAIL "/usr/sbin/sendmail", "-oi", "-t"
@@ -58,6 +70,8 @@ char documentation [] =
 "    standard error output if any system call is in\n"
 "    error.\n" ;
 
+char * md5sum_argv[] = { MD5SUM, NULL };
+char * md5sum_env[]  = { MD5SUM_ENV, NULL };
 char * sendmail_argv[] = { SENDMAIL, NULL };
 char * sendmail_env[]  = { SENDMAIL_ENV, NULL };
 
@@ -105,6 +119,8 @@ pid_t exec_program
     	errno_exit ( "pipe" );
 
     child = fork ();
+
+    if ( child < 0 ) errno_exit ( "fork" );
 
     if ( child ) {
 
@@ -189,7 +205,7 @@ pid_t exec_program
 /* Copy all characters read from a file to the standard
    output.  Add an `\n' if characters were copied and
    the last was not a `\n'.  Return 1 if there were
-   characters copies and 0 if not.
+   characters copied and 0 if not.
 */
 int flush_output ( FILE * file )
 {
@@ -214,24 +230,28 @@ int flush_output ( FILE * file )
 }
 
 /* Check the completing status of a program started by
-   exec_program.  Close the input to this program.  Copy
-   any output produced by this program to the standard
-   output, and close the output files.  Wait for the
-   program to terminate.  Exit with error message if the
-   program terminates with non-zero status.
+   exec_program.  Close the input to this program unless
+   the nocloseinput option is true.  Copy any output
+   produced by this program to the standard output, and
+   close the output file. Ditto for standard error.
+   Wait for the program to terminate.  Exit with error
+   message if the program terminates with non-zero
+   status or the standard error was not empty.
 */
 void check_program
     ( FILE * files[3],
       pid_t child,
-      char * const argv[] )
+      char * const argv[],
+      int nocloseinput )
 {
     int child_exit_status;
+    int stderr_nonempty;
 
-    if ( fclose ( files[0] ) == EOF )
+    if ( ! nocloseinput && fclose ( files[0] ) == EOF )
     	errno_exit ( "closing input to subprogram" );
 
     flush_output ( files[1] );
-    flush_output ( files[2] );
+    stderr_nonempty = flush_output ( files[2] );
 
     if ( waitpid ( child, & child_exit_status, 0 ) < 0 )
 	errno_exit ( "wait" );
@@ -269,13 +289,19 @@ void check_program
 	       status.
 	    */
 	    exit ( code );
+	} else if ( stderr_nonempty ) {
+	    fprintf ( stderr,
+		      "hpcm_sendmail: %s"
+		      " terminated with error output\n",
+		      argv[0] );
+	    exit ( ECANCELED );
 	}
     }
     else
     {
 	fprintf ( stderr,
 		  "hpcm_sendmail: %s"
-		  " terminated for unknwon reason\n",
+		  " terminated for unknown reason\n",
 		  argv[0] );
 
 	/* Parent exit when child died by
@@ -325,7 +351,7 @@ int main ( int argc, char ** argv )
 
     /* Full hpcm_sendmail.rc file name:
 
-    	`dirname $0`/../secure/hpcm_sendmail.rc
+    	~/.hpcm_contest/secure/hpcm_sendmail.rc
 
     */
     char rcfilename	[MAXLEN];
@@ -350,6 +376,20 @@ int main ( int argc, char ** argv )
     */
     char date		[MAXLEN];
 
+    /* Signature: field value:
+
+		"key_name md5sum-value"
+
+       where the md5sum-value is the md5sum of:
+
+		"X-HPCM-Date:date\n
+	         X-HPCM-Reply-To:reply_to\n
+		 key\n"
+    */
+
+     char signature	[MAXLEN];
+
+
 
     /* If there are any arguments, print doc. */
 
@@ -360,24 +400,29 @@ int main ( int argc, char ** argv )
     }
 
     /* Compute rcfilename =
-          "`dirname $0`/../secure/hpcm_sendmail.rc"
+          "~/.hpcm_contest/secure/hpcm_sendmail.rc"
     */
     {
 	char * p;
+	char * home = getenv ( "HOME" );
 
-	if ( strlen ( argv[0] )
-	     > sizeof ( rcfilename ) - 100 )
-	    too_big_exit ( "program name (arg0)" );
-	strcpy ( rcfilename, argv[0] );
-
-	p = rindex ( rcfilename, '/' );
-	if ( p == NULL )
-	{
-	    p = rcfilename;
-	    * p ++ = '.';
+	if ( home == NULL ) {
+	    fprintf ( stderr,
+		      "hpcm_sendmail:"
+		      " cannot find `HOME'"
+		      " environment variable\n" );
+	    exit ( 1 );
 	}
 
-	strcpy ( p, "/../secure/hpcm_sendmail.rc" );
+	if ( strlen ( home )
+	     > sizeof ( rcfilename ) - 100 )
+	    too_big_exit
+		( "HOME environment variable" );
+	strcpy ( rcfilename, home );
+
+	p = rcfilename + strlen ( rcfilename );
+	strcpy ( p, "/.hpcm_contest/secure/"
+                    "hpcm_sendmail.rc" );
     }
 
     /* Read rc file and save parameters.
@@ -386,9 +431,14 @@ int main ( int argc, char ** argv )
 	char line [MAXLEN];
     	FILE * rcfile = fopen ( rcfilename, "r" );
 
-	if ( rcfile == NULL )
+	if ( rcfile == NULL ) {
+	    fprintf ( stderr,
+		      "hpcm_sendmail:"
+		      " cannot open %s\n",
+		      rcfilename );
 	    errno_exit
-		( "opening hpcm_sendmail.rc" );
+		( "opening hpcm_judging.rc" );
+	}
 
 	to[0]		= 0;
 	key[0]		= 0;
@@ -407,18 +457,21 @@ int main ( int argc, char ** argv )
 	    }
 
 	    /* Check line length and strip trailing
-	       `\n'.
+	       whitespace (gets rid of trailing '\n'
+	       and trailing whitespace for key).
 	    */
 	    {
 	    	int len = strlen ( line );
+	    	char * p = line + len;
 
 		if ( len > sizeof ( line ) - 10 )
 		    too_big_exit
 			( "line read from"
 			  " hpcm_sendmail.rc" );
 
-		if ( line[len-1] == '\n' )
-			line[len-1] = 0;
+		while ( p > line && isspace ( p[-1] ) )
+		    -- p;
+		* p = '\0';
 	    }
 
 	    if ( strncasecmp ( line, "#", 1 ) == 0 )
@@ -492,14 +545,6 @@ int main ( int argc, char ** argv )
 	p += strlen ( p );
 	if ( p > endp - 10 )
 	    too_big_exit ( "Reply-To: field value" );
-
-	* p ++ = '.';
-	if ( getdomainname ( p, ( endp - p ) - 5 ) < 0 )
-	    errno_exit ( "gethostname" );
-	p += strlen ( p );
-	if ( p > endp - 10 )
-	    too_big_exit ( "Reply-To: field value" );
-
     }
 
     /* Compute date. */
@@ -517,6 +562,74 @@ int main ( int argc, char ** argv )
     printf ( "Key-Name:%s\n", key_name );
     printf ( "Reply-To:%s\n", reply_to );
     printf ( "Date:%s\n", date );
+
+
+    /* Compute signature. */
+    {
+    	FILE * files[3];
+	pid_t child = exec_program ( files,
+				     md5sum_argv,
+				     md5sum_env );
+	char * p = signature;
+	char * endp = signature + sizeof ( signature );
+	char * md5sump;
+
+	fprintf ( files[0], "X-HPCM-Date:%s\n"
+			    "X-HPCM-Reply-To:%s\n"
+			    "%s\n",
+			    date,
+			    reply_to,
+			    key + strspn ( key, " \t" )
+			    );
+	fclose ( files[0] );
+
+	strcpy ( signature, key_name );
+	p += strlen ( p );
+	if ( p > endp - 10 )
+	    too_big_exit ( "Signature: field value" );
+	* p ++ = ' ';
+
+	if ( fgets ( p, endp - p - 5, files[1] )
+	     == NULL )
+	{
+	    if ( feof ( files[1] ) ) {
+	    	fprintf ( stderr, "hpcm_sendmail:"
+				  " premature eof from"
+				  " md5sum\n" );
+		exit ( 1 );
+	    }
+	    else
+		errno_exit
+		    ( "reading md5sum output" );
+	}
+	md5sump = p;
+	p += strlen ( p );
+	if ( p > endp - 10 )
+	    too_big_exit ( "Signature: field value" );
+	while ( p > signature && isspace ( p[-1]) )
+	    -- p;
+        if ( p <= signature || * -- p != '-' ) {
+	    fprintf ( stderr, "hpcm_sendmail:"
+			      " badly formatted md5sum"
+			      " output\n    %s\n",
+			      md5sump );
+	    exit ( 1 );
+	}
+	while ( p > signature && isspace ( p[-1]) )
+	    -- p;
+	if ( p - md5sump != MD5SUM_LENGTH ) {
+	    fprintf ( stderr, "hpcm_sendmail:"
+			      " badly formatted md5sum"
+			      " output\n    %s\n",
+			      md5sump );
+	    exit ( 1 );
+	}
+	* p = '\0';
+
+	check_program ( files, child, md5sum_argv, 1 );
+    }
+    
+    printf ( "Signature:%s\n", signature );
 
     return 0;
 }
