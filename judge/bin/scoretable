@@ -6,7 +6,7 @@
 #
 # File:		scoreboard
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Oct 21 03:54:49 EDT 2001
+# Date:		Sat Oct 27 07:26:35 EDT 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/10/21 07:54:10 $
+#   $Date: 2001/10/27 12:07:08 $
 #   $RCSfile: scoretable,v $
-#   $Revision: 1.24 $
+#   $Revision: 1.25 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -32,7 +32,16 @@ set log_globally yes
 catch {
 
 set document "
-scoreboard \[parameters_file\]
+scoreboard \[ parameter-file-name | \\
+             parameter-name-value-list \] ...
+
+    When this program starts, it processes its arguments
+    as follows.  Any named parameter file is `sourced'.
+    Any argument that begins with a `{' is treated as a
+    TCL list (after the outer `{ }' brackets are re-
+    moved) of items each of the format `{PN V}'.  For
+    each item, the global variable `scoreboard_PN' is
+    set to the value V.
 
     This program inputs the output of `scorefinder' to
     get scores, and organizes the scores into a table.
@@ -46,13 +55,13 @@ scoreboard \[parameters_file\]
 	the value of `scoreboard_stop_time', unless
 	that value is \"\";
 
-	its problem satisifies the logical expression in
+	its problem satisfies the logical expression in
 	`scoreboard_problems', or that expression is an
 	empty list;
 
-	its submitter satisifies the logical expression in
-	`scoreboard_submitters', or that expression is an
-	empty list;
+	its submitter satisfies the logical expression
+	in `scoreboard_submitters', or that expression
+	is an empty list;
 
     The logical expressions are TCL lists whose elements
     are operators, parentheses `(' and `)', and atoms.
@@ -61,12 +70,12 @@ scoreboard \[parameters_file\]
     `and', `exclusive-or', and `inclusive-or'.  Opera-
     tors and parentheses MUST be surrounded by white-
     space.
-
+
     The atoms `0' and `1' represent `false' and `true'.
     All other atoms are regular expressions that are
     matched to the ENTIRE problem name or submitter
     name, and are true iff they match.
-
+
     Some simple examples of logical expressions are:
 
       ! count		Match all names but `count'.
@@ -155,21 +164,34 @@ scoreboard \[parameters_file\]
     settings, e.g. `scoreboard_problems' etc., in the
     same manner as the normal parameters file."
 
+# } This closes extra left bracket in documentation so
+# outer {} brackets work.
 
-# If any non parameters_file arguments, print
-# documentation and exit.
+# On first -doc* argument, print documentation and exit.
 #
-if { $argc > 1 \
-     || ( $argc == 1 \
-          && [regexp {^-} [lindex $argv 0]] ) } {
+if { [regexp {^-doc} [lindex $argv 0]] } {
     puts $document
     exit 1
 }
 
-# Initialize program parameters.
+# Process arguments.
 #
-if { $argc == 1 } {
-    source [lindex $argv 0]
+set LB "{"
+# } to balance left bracket in last line
+#
+foreach arg $argv {
+    if { [regexp "^${LB}" $arg] } {
+	foreach item [lindex $arg 0] {
+	    set name  [lindex $item 0]
+	    set value [lindex $item 1]
+	    if { ! [info exists scoreboard_$name] } {
+	    	error "scoreboard_$name does not exist"
+	    }
+	    set scoreboard_$name $value
+	}
+    } else {
+	source $arg
+    }
 }
 
 # Compile scoreboard_problems and scoreboard_submitters.
@@ -189,6 +211,17 @@ if { [llength $scoreboard_submitters] > 0 } {
 	    submitter_atoms submitter_values ]
 } else {
     set submitter_expression ""
+}
+
+# Compile times.
+#
+set start_time $scoreboard_start_time
+if { ! [regexp {^(|team)$} $start_time] } {
+    set start_time [clock scan $start_time]
+}
+set stop_time $scoreboard_stop_time
+if { $stop_time != "" } {
+    set stop_time [clock scan $stop_time]
 }
 
 # The value ${submitter}_array($problem) is a list of
@@ -254,14 +287,12 @@ while { "yes" } {
 
     set time [filename_date_to_clock $date]
 
-    if { $scoreboard_start_time != "" \
-         && $scoreboard_start_time != "team" \
-         && $time < $scoreboard_start_time } {
+    if { $start_time != "" && $start_time != "team" \
+         && $time < $start_time } {
     	continue;
     }
 
-    if { $scoreboard_stop_time != "" \
-         && $time > $scoreboard_stop_time } {
+    if { $stop_time != "" && $time > $stop_time } {
     	continue;
     }
 
@@ -273,7 +304,7 @@ while { "yes" } {
 	lappend submitters $submitter
     }
 
-    if { $scoreboard_start_time == "team" \
+    if { $start_time == "team" \
          && $score == "dg" \
          && ( ! [info exists \
 	              start_time_array($submitter)] \
@@ -382,7 +413,7 @@ foreach submitter $submitters {
 	# Compute problem start time, which may equal
 	# "" or "team".
 	#
-	set problem_start_time $scoreboard_start_time
+	set problem_start_time $start_time
 	if { $problem_start_time == "team"
 	     && [info exists \
 	              start_time_array($submitter)] } {
