@@ -4,7 +4,7 @@
 #
 # File:		SETUP_PROTOTYPE
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Fri Dec  1 05:24:33 EST 2000
+# Date:		Sun Dec  3 03:42:58 EST 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/12/01 10:21:13 $
+#   $Date: 2000/12/03 08:59:09 $
 #   $RCSfile: SETUP_PROTOTYPE,v $
-#   $Revision: 1.1 $
+#   $Revision: 1.2 $
 
 files_and_directories_not_moved=".ssh .snapshot .Xauthority"
 
@@ -53,9 +53,14 @@ SETUP_PROTOTYPE
 
     The prototype account should initially be a brand
     new account in which the first form of the call
-    to SETUP_PROTOTYPE given above is executed.
+    to SETUP_PROTOTYPE given above is executed.  After
+    being executed once, and after the prototype
+    account's .cshrc and .bashrc files are edited as
+    indicated below, the second form of the call to
+    SETUP_PROTOTYPE can be used in the prototype
+    account.
 
-    `contest' is the absolute pathname of the contest
+    \`contest' is the absolute pathname of the contest
     directory.  The name ~/.hpcm_contest will be linked
     to this directory after SETUP_PROTOTYPE is run once,
     so the contest directory need not be mentioned when
@@ -80,12 +85,17 @@ SETUP_PROTOTYPE
     SETUP_PROTOTYPE takes all ordinary files and direc-
     tories that it finds in ~ (the prototype account
     home directory) and moves then to the contest/home
-    directory.  For every file or directory `foo' moved,
+    directory.  For every file or directory foo moved,
     SETUP_PROTOTYPE links ~/foo to .hpcm_contest/home/
     foo.  There are some exceptions that are NOT moved,
     namely:
 
     	$files_and_directories_not_moved
+
+    It is possible to replace this list of exceptions
+    by making a ~/.hpcm_keep file listing the desired
+    exceptions before SETUP_PROTOTYPE is run.  The
+    ~/.hpcm_keep file may or may not list itself.
 
     After moving files and directories, SETUP_PROTOTYPE
     makes the following files in contest/home:
@@ -93,11 +103,17 @@ SETUP_PROTOTYPE
     	empty.ls	Ls -a of empty account directory
 			after all files are rm -f'ed.
 	setup.tar	Tar file used to restore all
-			files into a contest directory
-			after all files are rm -f'ed.
-    	setup.ls	Ls -aR of contest account direc-
-			tory right after setup.tar is
-			used to restore files.
+			files into a contestant account
+			home directory after all files
+			are rm -f'ed.
+    	setup.ls	Ls -aR of contestant account
+			home directory right after
+			setup.tar is used to restore
+			files to that directory.
+
+    These files are to be used by TRASH_ACCOUNT to
+    reinitialize the home directories of contestant
+    accounts.
 
     SETUP_PROTOTYPE also manages permissions of contest/
     home and the things it contains.  It sets the per-
@@ -119,9 +135,10 @@ SETUP_PROTOTYPE
     edit these files after the contestant accounts
     are all set up.
 
-    You should also delete from ~ symbolic links that
-    should not be used: such as links to Xterminal
-    control files that will not be used by contestants.
+    After running SETUP_PROTOTYPE you should delete from
+    ~ symbolic links that should not be used, such as
+    links to xterminal server control files that will
+    not be used by contestants.
 
     If you want to use ssh to log into contest accounts
     using a key known to the judge, you can make ~/.ssh
@@ -131,7 +148,9 @@ SETUP_PROTOTYPE
     or file, or ssh will ignore them.  This means they
     must be setup BEFORE SETUP_PROTOTYPE is run for the
     last time, so they will be in setup.tar.  The
-    authorized_keys cannot be changed afterwards, unlike
+    authorized_keys cannot be changed after SETUP_
+    PROTOTYPE is run for the last time before running
+    TRASH_ACCOUNT on the contestant accounts, unlike
     .cshrc and .bashrc.
 
     If the contest argument is not given, it is taken to
@@ -176,11 +195,18 @@ then
 	exit 1
 fi
 
+# Read ~/.hpcm_keep if that exists.
+#
+if test -f .hpcm_keep
+then
+	files_and_directories_not_moved=`cat .hpcm_keep`
+fi
+
 # Move everything in the home directory that is not
 # a symbolic link already, except things listed in
 # files_and_directories_not_moved.
 #
-for i in .[a-zA-Z]* *
+for i in .[a-zA-Z0-9]* *
 do
 	found=no
 	for j in $files_and_directories_not_moved
@@ -197,12 +223,12 @@ do
 		continue
 	fi
 
-	if test ! -d "$i$ -a ! -f "$i$
+	if test ! -d "$i" -a ! -f "$i"
 	then
 		continue
 	fi
 
-        if test -r "$i$
+        if test -r "$i"
 	then
 	    if chmod a+r "$i"
 	    then
@@ -213,7 +239,7 @@ do
 	    fi
 	fi
 
-        if test -x "$i$
+        if test -x "$i"
 	then
 	    if chmod a+x "$i"
 	    then
@@ -231,19 +257,19 @@ do
 		echo ERROR in mv "$i" $contest/home
 		exit 1
 	fi
-	if ln -s "./hpcm_contest/home/$i" "$i"
+
+	if ln -s ".hpcm_contest/home/$i" "$i"
 	then
 		echo "linked $i to" \
 		     ".hpcm_contest/home/$i"
 	else
 		echo ERROR in ln -s \
-		     "./hpcm_contest/home/$i" "$i"
+		     ".hpcm_contest/home/$i" "$i"
 		exit 1
 	fi
 
 	esac
 done
-echo rm done
 
 # Link ~/.hpcm_contest to contest directory.
 #
@@ -252,15 +278,21 @@ ln -s $contest .hpcm_contest
 
 # Create empty.ls.
 #
+rm -f $contest/home/empty.ls
 echo >$contest/home/empty.ls "."
 echo >>$contest/home/empty.ls ".."
+chmod a+r $contest/home/empty.ls
 
 # Create setup.tar.
 #
-tar cf $contest/home/setup.tar .[a-zA-Z]* *
+rm -f $contest/home/setup.tar
+tar cf $contest/home/setup.tar .[a-zA-Z0-9]* *
+chmod a+r $contest/home/setup.tar
 
 # Create setup.ls
 #
+rm -f $contest/home/setup.ls
 ls -aR >$contest/home/setup.ls
+chmod a+r $contest/home/setup.ls
 
 exit 0
