@@ -4,7 +4,7 @@
 #
 # File:		autoinfo
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Oct 16 00:56:59 EDT 2000
+# Date:		Wed Oct 25 00:35:34 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/10/16 04:57:23 $
+#   $Date: 2000/10/25 10:40:03 $
 #   $RCSfile: autoinfo,v $
-#   $Revision: 1.20 $
+#   $Revision: 1.21 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -33,34 +33,57 @@ cd submission_directory; autoinfo
 
     Reads the `$received_file' file in the current
     directory.  Thus file must contain a single email
-    message with a subject line of the form:
+    request message with a subject line of the form:
 
     	Subject: get name ...
 
-    The body of the message must be empty.
+    The body of the message must be empty.  Otherwise
+    this program sends a reply indicating a bad request
+    and exits without error or output.
 
-    The names are processed recursively to form a list
-    of files, and three other lists: a list of illegal
-    names, a list of unreadable names, and a list of
-    forbidden names.  The files are returned to the user
-    in the reply email, as is any non-empty list of
-    illegal, unreadable, or forbidden names.  With each
-    forbidden name there is an error message explaining
-    why the name is forbidden.  If the recursion gets
-    to too great a depth, the system error function is
-    called and there is no response.
+    Note that whenever this program replies to a message
+    whose subject field is of the form `get ...', the
+    subject of the reply has the form
+
+	Subject: RE: get ...
+
+    if the reply message contains files gotten, but the
+    subject of the reply has the form 
+
+	Subject: Errors In: get ...
+
+    if the reply concerns errors in the request message.
+    Files gotten are always returned in a message by
+    themselves without any information about errors, and
+    error information is always returned in a message
+    that does not contain any files gotten, so that mes-
+    sages containing files gotten can be selected for
+    automatic processing by examining their subject
+    fields.
+
+    The names listed in the subject field of the re-
+    ceived message are processed recursively to form a
+    list of file names, and three other lists: a list of
+    illegal names, a list of unreadable names, and a
+    list of forbidden names.  The named files are re-
+    turned to the user in reply email, and any non-empty
+    lists of illegal, unreadable, or forbidden names are
+    returned in separate reply email.  With each forbid-
+    den name there is an error message explaining why
+    the name is forbidden.
 
     A name is first looked up on the `info_map', an
-    array that can map a name.  If `info_map(name)'
-    does not exist, the name is not mapped.  If instead
-    `info_map(nam)' has the form of a list beginning
-    with the word `FORBIDDEN', then the name is put on
-    the forbidden list, and the second element of the
-    list becomes the error message explaining why the
-    name is forbidden.  Thus for a forbidden name the
-    value of `info_map(name)' should have the form:
+    array that can map a name.  If `info_map(name)' has
+    no value, the name is not mapped.  If instead the
+    value of `info_map(name)' has the form of a list
+    beginning with the word `FORBIDDEN', then the name
+    is put on the forbidden list, and the second element
+    of the `info_map(name)' value becomes the error mes-
+    sage explaining why the name is forbidden.  Thus for
+    a forbidden name the value of `info_map(name)'
+    should have the form:
 
-    	FORBIDDEN {error_message}
+    	{ FORBIDDEN {error_message} }
 
     In reply mail this will be output in the context:
 
@@ -81,7 +104,11 @@ cd submission_directory; autoinfo
     to map the tails `CVS' and `RCS' to empty lists,
     thus eliminating them.
 
-    Next the name is checked for legallity.  If the name
+    If the recursion involved in mapping gets to too
+    great a depth, the system error function is called
+    and there is no response.
+
+    Next the name is checked for legality.  If the name
     begins with `.' or contains a `.' right after a `/'
     it is considered to be illegal and is consigned to
     the list of illegal names.

@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Oct  2 14:00:09 EDT 2000
+# Date:		Wed Oct 25 06:42:42 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/10/10 05:23:09 $
+#   $Date: 2000/10/25 10:41:41 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.46 $
+#   $Revision: 1.47 $
 #
 
 # Include this code in TCL program via:
@@ -58,6 +58,14 @@ set default_log_directory $env(HOME)/HPCM_Error_Log
 # Judging parameters file name:
 #
 set judging_parameters_file hpcm_judging.rc
+
+# Received mail subject field first word to program
+# mapping for autodispatch:
+#
+array set autodispatch_map {
+    submit	autojudge
+    get		autoinfo
+}
 
 # Exit cleanup.  Called to do special cleanup before
 # exit.  Default does nothing.  This proc may be
