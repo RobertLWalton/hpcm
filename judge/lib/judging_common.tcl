@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Mar 29 09:35:53 EST 2003
+# Date:		Sat Mar 29 11:20:41 EST 2003
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2003/03/29 16:16:51 $
+#   $Date: 2003/03/29 16:39:50 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.110 $
+#   $Revision: 1.111 $
 #
 
 # Table of Contents
@@ -954,7 +954,7 @@ proc read_part_header { ch } {
 	     && [string equal -length $bndlen \
 			$line $bnd] } {
 	    # Avoid getting more lines if we are
-	    # already at ending boundary.
+	    # already at part ending boundary.
 	} elseif { [regexp -nocase \
 	                   "^${ws}*(7bit|8bit)" \
 			   $encoding] } {
