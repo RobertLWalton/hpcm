@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Oct 18 03:04:39 EDT 2001
+# Date:		Thu Oct 18 11:39:20 EDT 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/10/18 07:04:13 $
+#   $Date: 2001/10/18 15:53:28 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.67 $
+#   $Revision: 1.68 $
 #
 
 # An optionally modified copy of this file must be
@@ -499,6 +499,33 @@ proc edit_file { filename } {
 #
 proc make_file { name err_file } {
     exec make $name >@ stdout 2> $err_file
+}
+
+# Diff two directories.  Must be like Unix
+# `diff -r directory1 directory2'.
+#
+proc diff_directories { directory1 directory2 } {
+    exec diff -r $directory1 $directory2
+}
+
+# Diff two files.  Write all output, including error
+# output, to a third file, with a header line in that
+# file saying what was done.  Errors are ignored as
+# far as TCL is concerned (they produce error messages
+# in `output').
+#
+# Like UNIX `diff'.  The option `-b' may be given, and
+# is like the `-b' option to UNIX `diff'.
+#
+proc diff_files { file1 file2 output { options "" } } {
+    if { $options == "" } {
+        command = "diff"
+    } else {
+        command = "diff $options"
+    }
+    write_file $output "===== $command $file1 $file2"
+    catch { eval exec $command \
+                 [list $file1 $file2 >>& $output] }
 }
 
 # Function to call shell.  Change to your favorite
