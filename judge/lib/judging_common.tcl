@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Jan 26 22:01:53 EST 2002
+# Date:		Sat Jan 26 22:06:00 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/01/27 03:03:59 $
+#   $Date: 2002/01/27 03:31:39 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.74 $
+#   $Revision: 1.75 $
 #
 
 # Table of Contents
@@ -1198,6 +1198,9 @@ proc compose_response { { compose_reply_options "" } } {
 # Else calls error.
 #
 proc send_response { commands } {
+
+    global response_instructions_file
+
     if { [lcontain $commands FINAL] } {
     	send_reply
     } elseif { [lcontain $commands NOT-FINAL] } {
@@ -1205,8 +1208,9 @@ proc send_response { commands } {
     } elseif { [lcontain $commands NO-REPLY] } {
     	return
     } else {
-        error "response instructions do not contain\
-	       NO-REPLY, FINAL, or NOT-FINAL."
+	error "In $response_instructions_file file\
+	       value, none of NO-REPLY, FINAL, or\
+	       NOT-FINAL were executed."
     }
 }
 
@@ -1385,8 +1389,8 @@ proc execute_response_commands \
 
 	    default	{
 		error "In $response_instructions_file\
-		       file, unrecognized command:\
-		       $command"
+		       file value, unrecognized\
+		       command: $command"
 	    }
 	}
     }
@@ -1395,6 +1399,11 @@ proc execute_response_commands \
          || [lcontain $return commands NOT-FINAL] } {
 	eval compose_reply $compose_reply_options \
 			   $processed_commands
+    } elseif { ! [lcontain $return_commands NO-REPLY] \
+    			} {
+	error "In $response_instructions_file file\
+	       value, none of NO-REPLY, FINAL, or\
+	       NOT-FINAL were executed."
     }
     return $return_commands
 }
