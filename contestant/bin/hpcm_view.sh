@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: acm-cont $
-#   $Date: 2000/09/02 13:23:08 $
+#   $Date: 2000/09/03 10:17:09 $
 #   $RCSfile: hpcm_view.sh,v $
-#   $Revision: 1.1 $
+#   $Revision: 1.2 $
 
 case "$1" in
     "" | -*)
@@ -78,6 +78,11 @@ else
     echo ""
     echo -n "ERROR: the output file ($1.out)"
     echo " does not exist"
+fi
+
+if test -r core; then
+    echo ""
+    echo "ERROR: a core dump file (core) exists"
 fi
 
 exit 0

@@ -2,13 +2,11 @@
 #
 # File:		Makefile
 # Author:	walton@deas.harvard.edu
-# Date:		Sat Sep  2 08:01:14 EDT 2000
+# Date:		Sun Sep  3 05:13:39 EDT 2000
 #
-# Change: Java has been added.
-#
-# Exactly ONE of the four files count.c (C),
-# count.cc (C++), count.p (Pascal), or count.java (Java)
-# should exist.
+# Exactly ONE of the four files count.c (C), count.cc
+# (C++), count.p (Pascal), or count.java (Java) should
+# exist.
 #
 # UNIX commands supported by this Makefile:
 #
@@ -66,8 +64,14 @@ default:	count.view
 	-chmod u+x $* 2>>$*.cerr
 
 count.out:	count count.in
-	rm -f count.out count.err
-	hpcm_sandbox count \
+	rm -f count.out count.err core
+	-chmod a+x count
+	hpcm_sandbox -cputime 60 \
+	             -datasize 1m \
+		     -stacksize 1m \
+		     -filesize 50k \
+		     -openfiles 3 \
+		     count \
 	    <count.in >count.out 2>count.err
 
 count.view:	count.out 
