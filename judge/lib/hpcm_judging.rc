@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Oct 23 08:23:39 EDT 2002
+# Date:		Wed Oct 23 08:39:35 EDT 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/10/23 12:34:23 $
+#   $Date: 2002/10/23 13:00:06 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.117 $
+#   $Revision: 1.118 $
 
 # Table of Contents:
 #
@@ -686,9 +686,10 @@ set web_manager_address ""
 #			judge does not send the score
 #			to the contestant.
 #
-# Note that the definition of scoring mode is contained
-# in the response instructions below, and can therefore
-# be changed by changing the response instructions.
+# Note that the definition of scoring mode is completely
+# contained in the response instructions below and the
+# scoreboard_mode_array above, and can therefore be
+# changed by changing just these.
 #
 set scoring_mode auto
 
@@ -887,10 +888,10 @@ set default_response_instructions {
 #   $proposed
 #	Equals \$proposed_score != \"None\".
 #
-# Note these variables cannot be set by reponse instruc-
-# tion commands, nor should any expression change the
-# state of the TCL program when it is evaluated (e.g., 
-# do NOT use `[catch { set foo 9 }]').
+# Note these variables cannot be set by response in-
+# struction commands, nor should any expression change
+# the state of the TCL program when it is evaluated
+# (e.g., do NOT use `[catch { set foo 9 }]').
 #
 # The $response_instructions_file file commands are exe-
 # cuted to construct the reply.  The possible commands
@@ -993,8 +994,8 @@ set default_response_instructions {
 #	HPCM_END filename
 #
 # Set following to `no' if submissions may also have
-# the file verbatim in the body of the submission mes-
-# sage.  See `extractmail' for details.
+# files verbatim in the body of the submission message.
+# See `extractmail' for details.
 #
 set format_submissions no
 
@@ -1029,10 +1030,9 @@ array set authentication_keys {
 
 # Allowed Extensions:
 #
-# Whitespace separated list of allowed extensions for
-# submitted programs:
+# TCL list of allowed extensions for submitted programs:
 #
-set allowed_extensions ".c .cc .java .p .lsp"
+set allowed_extensions {.c .cc .java .p .lsp}
 
 # Submitter compress function.  Used to compress the
 # full submitter email name when displaying the sub-
@@ -1053,9 +1053,10 @@ proc submitter_compress { submitter } {
     # Short_submitter is submitter with @ and stuff
     # after it removed.
 
-    if { [regexp {^([^@]*)@.*\.([^.]*)\.[^.]*$} \
+    if { [regexp {^([^@]*)@(|.*\.)([^.]*)\.[^.]*$} \
                  $submitter forget \
-		 short_submitter organization] } {
+		 short_submitter forget2 organization] \
+			     } {
 	set long_submitter \
 	    "$short_submitter@$organization"
     } else {
@@ -1120,7 +1121,8 @@ set use_gmt no
 #			to log_manager if that is not
 #			"".  Reply email does NOT use
 #			normal reply mechanism.
-#	none		Error is NOT logged to a file.
+#	none		Error is NOT logged to a file
+#			or emailed.
 #
 # Errors are always printed to the standard error
 # output.
@@ -1129,7 +1131,7 @@ set log_mode auto
 
 # Log Manager:
 #
-# Email address to send log files to if in `auto'
+# Email address to cc log files to if in `auto'
 # log_mode.
 #
 set log_manager ""
@@ -1148,6 +1150,7 @@ set log_error_maximum 10
 
 # info_map(name) if it exists is a list of names which
 # replace `name' when a `get name' request is made.
+# This list may be empty.
 #
 # If info_map(name) equals {FORBIDDEN {error_message}}
 # then `name' cannot be returned by a `get name' request
@@ -1179,6 +1182,11 @@ array set info_tail_map {
 # the non-blank part of the window, and the window_
 # blank_height is the number of blank lines that should
 # be above the non-blank part of the window.
+#
+# WARNING: If window_height is too large, programs such
+# as manualreply and lookat may appear to be malfunc-
+# tioning because the information they display is being
+# scrolled off the top of the screen.
 #
 set window_blank_height 16
 set window_height 24
