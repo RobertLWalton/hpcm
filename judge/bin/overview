@@ -4,7 +4,7 @@
 #
 # File:		makeoverview
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Jan  4 20:01:03 EST 2001
+# Date:		Fri Jan  5 04:17:18 EST 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/01/05 03:08:26 $
+#   $Date: 2001/01/05 09:55:38 $
 #   $RCSfile: overview,v $
-#   $Revision: 1.10 $
+#   $Revision: 1.11 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -42,6 +42,10 @@ puts "
 	Library Data: Help Documentation
 	Library Data: Example Contests
 	Contest Definition Data: The Judging Directory
+	Contest Definition Data: The Contest Directory
+	Contest Definition Data: The Home Directory
+	Contest Definition Data: Auxilary Files
+	Contest Raw Data: The Judging Directory
 
 Features
 --------
@@ -354,6 +358,11 @@ tree rooted at
 
 	hpcm/contestant/help
 
+A help file index (in a format proscribed by the
+`makejudingdir' program) is in
+
+	hpcm/contestant/help/index
+
 Each `help' file is a short ASCII text document on some
 topic contestants may need to know about.  For example,
 there is a `help' file on the mechanics of solving a
@@ -385,7 +394,7 @@ as follows:
     formal	Help files used for formal contests
     		only.
 
-The `email/sh' subdirectories contains actual code.  If
+The `email/sh' subdirectory contains actual code.  If
 similar code is written in other languages, e.g. tcl,
 other subdirectories, e.g. `email/tcl', would be
 created.
@@ -466,17 +475,29 @@ Therefore one judging account can judge many contests.
 The judging directory contains several components that
 define the contest, in addition to many components that
 belong to the raw data of the contest, and are listed
-elsewhere below.  THe components that define the con-
-test are:
+elsewhere below.  Starting from a few contest defining
+components, the other contest defining components can
+be made automatically by the `makejudgingdir' program.
+
+The contest defining components of the judging directory
+are:
 
     hpcm_judging.rc
-        The contest parameters file.
+        The contest parameters file.  This is editted
+	by hand to define the contest.
 
     solutions
         The solution directory for the contest.  Each
 	component of the solution directory is a symbol-
-	lic link to a problem directory.  Usually these
+	lic link to a problem directory.  Often these
 	problem directories are in the problem library.
+	But for formal contests problems are often used
+	that have not yet been entered into the problem
+	library, and the problem directories for these
+	are usually in a special (and secure) directory
+	that has an index file listing the problems.
+	This index file is in a format suitable for the
+	`makejudgingdir' program.
 
 	The solutions directory and its contents are
 	made automatically by `makejudgingdir'.
@@ -499,8 +520,8 @@ test are:
     contest
         The contest directory of the contest.  Actually,
 	this is not a subdirectory proper of the judging
-	directory, but in the judging directory
-	`contest' is symbolically linked to the contest
+	directory, but `contest' in the judging direc-
+	tory is symbolically linked to the contest
 	directory.  This is because the contest direct-
 	ory must be accessible by the contestants, who
 	must not be able to access other components of
@@ -509,15 +530,20 @@ test are:
 	Only informal and formal contests have a contest
 	directory.  Email contests do not.
 
+	The contest directory itself and the symbolic
+	link from the judging directory to the contest
+	directory must be made by hand.
+
 	The contents of the contest directory are made
 	automatically by `makejudgingdir', with the
 	exception of a few symbolic links to other
-	directories.
+	directories and a few files (see `Contest Def-
+	inition Data: The Contest Directory' below).
 
     help
         The help directory of the contest.  This is not
 	used during the contest proper, but is merely a
-	staging error for the `this_contest' help file.
+	staging area for the `this_contest' help file.
 	It contains the following files that are created
 	by `makejudgingdir':
 
@@ -543,10 +569,10 @@ test are:
 
 In addition to these files which are used by HPCM
 programs, there are typically a few other files that
-are not used by HPCM directory.  These are:
+are not used by HPCM programs themselves.  These are:
 
     Makefile
-        The instructions to the UNIX make program so
+        The instructions to the UNIX `make' program so
 	that running `make' in the judging directory
 	will run `makejudgingdir' to build all the
 	contest definition files.  The parameters to
@@ -561,7 +587,18 @@ are not used by HPCM directory.  These are:
 	another place (where it is typically displayed
 	on the web).  Usually only email contests do
 	this.
-	
+
+
+Contest Definition Data: The Contest Directory
+------- ---------- ----- --- ------- ---------
+
+
+Contest Definition Data: The Home Directory
+------- ---------- ----- --- ---- ---------
+
+
+Contest Definition Data: Auxilary Files
+------- ---------- ----- -------- -----
 
 
 Contest Raw Data: The Judging Directory
@@ -613,7 +650,10 @@ The contents of the judging directory are:
 	scoreboard' program with its `-start' and
 	`-stop' options.
 
-	    
+
+Contest Raw Data: The Submission Directories
+------- --- ----- --- ---------- -----------
+
 
 
 
