@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Jan  7 22:02:51 EST 2001
+# Date:		Wed Jan 10 04:32:19 EST 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,13 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/01/08 04:26:34 $
+#   $Date: 2001/01/10 10:26:05 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.11 $
+#   $Revision: 1.12 $
+
+# See STATUS file for description of versions.
+#
+VERSION=0.0
 
 all:	submakes
 
@@ -39,18 +43,60 @@ common.files \
 email.files \
 inform.files \
 formal.files \
-example.files \
+exmpl.files \
 demo.files \
 pascal.files \
 doc.files\
 system.files\
 test.files \
 tdata.files \
-problem.files \
-library.files \
+prob.files \
+plib.files \
 legal.files:
-	@sed <File_List -n -e '/^$*		*/s///p'
+	@sed <File_List -n -e '/^N*$*		*/s///p'
+
+distributable.files:
+	@sed <File_List -n \
+	     -e '/^[a-z][a-z]*		*/s///p'
+
+non-distributable.files:
+	@sed <File_List -n \
+	     -e '/^N[a-z][a-z]*		*/s///p'
 
 all.files:
 	@sed <File_List -n \
-	     -e '/^[a-z][a-z]*		*/s///p'
+	     -e '/^N*[a-z][a-z]*		*/s///p'
+
+# Make tar files.
+#
+tar:	hpcm-${VERSION}.tar \
+        hpcm-non-distributable-${VERSION}.tar
+
+hpcm-${VERSION}.tar:	distributable-files-${VERSION}
+	rm -f hpcm-${VERSION}.tar
+	cd ..; tar cf hpcm/hpcm-${VERSION}.tar \
+	   --files-from \
+	   hpcm/distributable-files-${VERSION}
+
+hpcm-non-distributable-${VERSION}.tar:	\
+		non-distributable-files-${VERSION}
+	rm -f hpcm-non-distributable-${VERSION}.tar
+	cd ..; tar cf \
+	   hpcm/hpcm-non-distributable-${VERSION}.tar \
+	   --files-from \
+	   hpcm/non-distributable-files-${VERSION}
+
+distributable-files-${VERSION}:	File_List Makefile
+	rm -f distributable-files-${VERSION}
+	make --no-print-directory \
+	     distributable.files \
+	     | sed -e 's/^\./hpcm/' \
+	     > distributable-files-${VERSION}
+
+non-distributable-files-${VERSION}:	\
+				File_List Makefile
+	rm -f non-distributable-files-${VERSION}
+	make --no-print-directory \
+	     non-distributable.files \
+	     | sed -e 's/^\./hpcm/' \
+	     > non-distributable-files-${VERSION}
