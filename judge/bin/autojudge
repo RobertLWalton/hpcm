@@ -5,7 +5,7 @@
 #
 # File:		autojudge
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Jan  3 05:44:54 EST 2002
+# Date:		Thu Jan  3 11:44:10 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/01/03 15:21:24 $
+#   $Date: 2002/01/03 18:57:27 $
 #   $RCSfile: autojudge,v $
-#   $Revision: 1.44 $
+#   $Revision: 1.45 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -351,7 +351,8 @@ if { $argc == 1 } {
 
     # Get problem.
     #
-    if {    [llength $message_subject] != 2 \
+    if {    [catch { llength $message_subject }] \
+         || [llength $message_subject] != 2 \
 	 || [lindex $message_subject 0] != "submit" } {
 	error "Illegal message subject:\
 	      $message_subject"
@@ -461,7 +462,7 @@ if { [catch { exec extractmail } extractout] } {
     puts $extractout
     set submitted_files ""
     foreach line [split $extractout "\n"] {
-        if { [lindex $line 0] == "Extracted" } {
+        if { [regexp {^Extracted } $line] } {
 	    lappend submitted_files [lindex $line 1]
 	}
     }
