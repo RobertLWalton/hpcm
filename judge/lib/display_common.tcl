@@ -2,7 +2,7 @@
 #
 # File:		display_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Jan 22 20:27:25 EST 2002
+# Date:		Tue Jan 22 21:05:34 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/01/23 02:03:47 $
+#   $Date: 2002/01/23 02:10:11 $
 #   $RCSfile: display_common.tcl,v $
-#   $Revision: 1.23 $
+#   $Revision: 1.24 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -1321,7 +1321,7 @@ proc compose_score_reply {} {
 		    BLANK \
 		    {LINE "for this submission (see\
 		           below for submission\
-			   time)."}
+			   time)."} \
 		    BLANK \
 		    {BAR "This message replies to:"} \
 		    RECEIVED-HEADER
@@ -1336,12 +1336,13 @@ proc compose_score_reply {} {
 		    BLANK \
 		    {LINE "has been OVERRIDDEN by the\
 		           human judge!"} \
+		    BLANK \
 		    {LINE "The human judge has assigned\
 		           the NEW FINAL score:"} \
 		    BLANK \
 		    "LINE {    $proposed_score}" \
 		    BLANK \
-		    {LINE "for this submission (see\
+		    {LINE "to this submission (see\
 		           below for submission\
 			   time)."} \
 		    BLANK \
@@ -1379,12 +1380,13 @@ proc compose_score_reply {} {
 		    {LINE "has been UNEXPECTEDLY\
 		           OVERRIDDEN by the human\
 			   judge!"} \
+		    BLANK \
 		    {LINE "The human judge has assigned\
 		           the NEW FINAL score:"} \
 		    BLANK \
 		    "LINE {    $proposed_score}" \
 		    BLANK \
-		    {LINE "for this submission (see\
+		    {LINE "to this submission (see\
 		           below for submission\
 			   time)."} \
 		    BLANK \
@@ -1400,7 +1402,7 @@ proc compose_score_reply {} {
 	    compose_reply \
 		"LINE {For $submitted_file\
 		       your PREVIOUS FINAL\
-		       manula score of:}" \
+		       manual score of:}" \
 		BLANK \
 		"LINE {    $manual_score}" \
 		BLANK \
@@ -1425,12 +1427,13 @@ proc compose_score_reply {} {
 		{LINE "has been UNEXPECTEDLY\
 		       OVERRIDDEN by the human\
 		       judge!"} \
+		BLANK \
 		{LINE "The human judge has assigned\
 		       the NEW FINAL score:"} \
 		BLANK \
 		"LINE {    $proposed_score}" \
 		BLANK \
-		{LINE "for this submission (see\
+		{LINE "to this submission (see\
 		       below for submission\
 		       time)."} \
 		BLANK \
