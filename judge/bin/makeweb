@@ -7,7 +7,7 @@
 #
 # File:		makeweb
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Sep 23 11:51:44 EDT 2002
+# Date:		Tue Sep 24 00:30:22 EDT 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -16,9 +16,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/09/23 20:21:38 $
+#   $Date: 2002/09/24 04:30:32 $
 #   $RCSfile: makeweb,v $
-#   $Revision: 1.1 $
+#   $Revision: 1.2 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -68,6 +68,16 @@ makeweb contest_name options
 	help_directory is the location of the help and
 	demos index.html file relative to this web dir-
 	ectory.
+
+    -scoreboard scoreboard_file
+
+        Include a reference to the scoreboard which is
+	store in the indicated file.
+
+    -manager manager_address
+
+        At the end place a contact information for the
+	web page manager at the given email address.
 
   Note that if problem descriptions are not included in
   the problem directories, then they will not be includ-
@@ -79,6 +89,8 @@ makeweb contest_name options
 set autojudge_address ""
 set solutions_password ""
 set help_directory ""
+set scoreboard_file ""
+set manager_address ""
 
 # Argi is the index of the current argument, for use in
 # lindex.
@@ -96,6 +108,8 @@ while { $argi < $argc } {
         -email	    { set autojudge_address $parameter}
         -solutions  { set solutions_password $parameter}
         -help	    { set help_directory $parameter}
+        -scoreboard { set scoreboard_file $parameter}
+        -manager    { set manager_address $parameter}
 	default	    { break }
     }
     incr argi 2
@@ -217,21 +231,25 @@ denotes the programming language you used as follows:
 <TR>
 <TD WIDTH=200>&nbsp;</TD>
 <TD><TT>.c</TT></TD>
+<TD WIDTH=50>&nbsp;</TD>
 <TD>C</TD>
 </TR>
 <TR>
 <TD WIDTH=200>&nbsp;</TD>
 <TD><TT>.cc</TT></TD>
+<TD WIDTH=50>&nbsp;</TD>
 <TD>C++</TD>
 </TR>
 <TR>
-<TD WIDTH=100>&nbsp;</TD>
+<TD WIDTH=200>&nbsp;</TD>
 <TD><TT>.java</TT></TD>
+<TD WIDTH=50>&nbsp;</TD>
 <TD>JAVA</TD>
 </TR>
 <TR>
 <TD WIDTH=200>&nbsp;</TD>
 <TD><TT>.lsp</TT></TD>
+<TD WIDTH=50>&nbsp;</TD>
 <TD>COMMONLISP</TD>
 </TR>
 </TABLE>
@@ -261,6 +279,18 @@ Help files and demos are available
 "
 }
 
+# Output -scoreboard information.
+#
+if { $scoreboard_file != "" } {
+    puts $ch "
+<P>
+A scoreboard telling which submitters have correctly
+solved which problems is
+<A HREF=\"$scoreboard_file\">here</A>.
+"
+}
+
+
 # Output -solutions information.
 #
 if { $solutions_password != "" } {
@@ -280,7 +310,7 @@ get from the managers of this web page.
 #
     puts $ch "
 <P>
-An annotated index to the problems is
+An annotated index of the problems is
 <A HREF=\"problems\">here</A>.
 <P>
 The problems and their files are as follows.  Note that
@@ -291,30 +321,56 @@ files with extensions
 <TT>.ps</TT> contain problem descriptions, while
 <TT>Makefile</TT> files describe how the autojudge
 runs solutions.
-<UL>"
+<P>
+<TABLE>
+<TR>
+<TH WIDTH=50>&nbsp;</TH>
+<TH>Problem</TH>
+<TH WIDTH=50>&nbsp;</TH>
+<TH ALIGN=\"left\">Files</TH>
+</TR>"
 
 # Process problems.
 #
-foreach pdir [glob -nocomplain $problems_dir/*] {
+foreach pdir \
+        [lsort [glob -nocomplain $problems_dir/*]] {
 
     set problem [file tail $pdir]
     file mkdir $web_directory/$problem
     grant_access $web_directory/$problem
-    puts $ch "<LI> $problem:"
+    puts $ch "<TR>"
+    puts $ch "<TD WIDTH=50>&nbsp;</TD>"
+    puts $ch "<TD>$problem</TD>"
+    puts $ch "<TD WIDTH=50>&nbsp;</TD>"
+    puts $ch "<TD>"
 
-    foreach pfile [glob -nocomplain $pdir/*] {
+    foreach pfile [lsort [glob -nocomplain $pdir/*]] {
         set fname [file tail $pfile]
 	set wfile $problem/$fname
 	copy_file $pfile $web_directory/$wfile
 	grant_access $web_directory/$wfile
 	puts $ch "<A HREF=\"$wfile\">$fname</A>"
     }
+    puts $ch "</TD>"
+    puts $ch "</TR>"
 }
 
 # Output trailer for problems.
 #
 puts $ch "
-</UL>"
+</TABLE>"
+
+# Output web page manager contact information.
+#
+if { $manager_address != "" } {
+set address $manager_address
+regsub -all {>} $address {\&gt;} address
+regsub -all {<} $address {\&lt;} address
+puts $ch "
+<P>
+If you have questions email the manager of this
+web page at <TT>$address</TT>"
+}
 
 
 # Output trailer for $web_directory/index.html
@@ -340,16 +396,25 @@ if { $solutions_password != "" } {
     <FONT COLOR=\"red\">$contest_name</FONT></H1>
     <H2 ALIGN=\"CENTER\">
     <FONT COLOR=\"red\">Problem Solutions</FONT></H2>
-    <UL>"
+    <P>
+    <TABLE>
+    <TR>
+    <TH WIDTH=50>&nbsp;</TH>
+    <TH>Problem</TH>
+    <TH WIDTH=50>&nbsp;</TH>
+    <TH ALIGN=\"left\">Solution File(s)</TH>
+    </TR>"
 
     # Process problems.
     #
-    foreach pdir [glob -nocomplain $problems_dir/*] {
+    foreach pdir \
+            [lsort [glob -nocomplain $problems_dir/*]] {
 
 	set problem [file tail $pdir]
 	set soldir $solutions_directory/$problem
 	set files ""
-        foreach sfile [glob -nocomplain $soldir/*] {
+        foreach sfile \
+	        [lsort [glob -nocomplain $soldir/*]] {
 	    set ext [file extension $sfile]
 	    if { [lcontain $allowed_extensions $ext] } {
 	        lappend files [file tail $sfile]
@@ -360,19 +425,26 @@ if { $solutions_password != "" } {
 	    continue
 	}
 
-	puts $ch "<LI> $problem:"
+	puts $ch "<TR>"
+	puts $ch "<TD WIDTH=50>&nbsp;</TD>"
+	puts $ch "<TD>$problem</TD>"
+	puts $ch "<TD WIDTH=50>&nbsp;</TD>"
+	puts $ch "<TD>"
 
 	foreach file $files {
 	    copy_file $soldir/$file $sdir/$file
 	    grant_access $sdir/$file
 	    puts $ch "<A HREF=\"$file\">$file</A>"
 	}
+
+	puts $ch "</TD>"
+	puts $ch "</TR>"
     }
 
     # Output trailer for $sdir/index.html
     #
     puts $ch "
-    </UL>
+    </TABLE>
     </BODY>
     <HTML>"
     close $ch
