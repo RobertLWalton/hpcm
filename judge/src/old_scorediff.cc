@@ -2,7 +2,7 @@
 //
 // File:	scorediff.cc
 // Authors:	Bob Walton (walton@deas.harvard.edu)
-// Date:	Mon Sep 11 09:51:47 EDT 2000
+// Date:	Mon Sep 11 13:38:43 EDT 2000
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: acm-cont $
-//   $Date: 2000/09/11 14:28:52 $
+//   $Date: 2000/09/11 18:13:56 $
 //   $RCSfile: old_scorediff.cc,v $
-//   $Revision: 1.8 $
+//   $Revision: 1.9 $
 
 #include <stdlib.h>
 #include <iostream.h>
@@ -201,7 +201,7 @@ inline int getc ( file & f )
 	f.nextcolumn = 0;
     else if ( c == '\t' )
 	f.nextcolumn += 8 - ( f.nextcolumn % 8 );
-    else
+    else if ( c != EOF )
 	++ f.nextcolumn;
 
     return c;
@@ -209,7 +209,7 @@ inline int getc ( file & f )
 
 // Skips over whitespace in file, returning first non-
 // whitespace character returned by getc of file.
-// Returns the count of '\n's seen in the files line-
+// Returns the count of '\n's seen in the file's line-
 // breaks member.  Takes a character argument that is
 // the first character tested for whitespace, before
 // getc is called.
@@ -387,7 +387,9 @@ int scannumber ( file & f, int c1, int c2 = 0 )
 // by writing the differences just found into them
 // iff these new differences are larger than the
 // previous value of `number_absdiff' or `number_
-// reldiff' respectively.
+// reldiff' respectively.  Also sets the decimal
+// and exponent flags if the two number `decimals'
+// or `hasexponent' members are unequal.
 //
 // If there is no computable difference, sets the
 // `nonblank' flag argument instead.  This happens
@@ -401,12 +403,6 @@ inline void diffnumber
 	  double & number_absdiff,
 	  double & number_reldiff )
 {
-    if ( file1.decimals != file2.decimals )
-    	decimal = true;
-
-    if ( file1.hasexponent != file2.hasexponent )
-    	exponent = true;
-
     if ( ! finite ( file1.number )
 	 ||
 	 ! finite ( file2.number ) )
@@ -452,14 +448,18 @@ inline void diffnumber
 
     if ( reldiff > number_reldiff )
 	number_reldiff = reldiff;
+
+    if ( file1.decimals != file2.decimals )
+    	decimal = true;
+
+    if ( file1.hasexponent != file2.hasexponent )
+    	exponent = true;
 }
 
 // Main program.
 //
 int main ( int argc, char ** argv )
 {
-    int c1, c2;
-
     file file1;
     file file2;
 
@@ -496,8 +496,16 @@ int main ( int argc, char ** argv )
     double number_absdiff	= 0.0;	// Numeric
     double number_reldiff	= 0.0;	// differences.
 
-    c1 = getc ( file1 );
-    c2 = getc ( file2 );
+    // Current characters from the two files.
+    //
+    int c1 = getc ( file1 );
+    int c2 = getc ( file2 );
+
+    // Flags that are true iff the current characters
+    // follow whitespace.
+    //
+    bool follows_whitespace1 = false;
+    bool follows_whitespace2 = false;
 
     while (1)
     {
@@ -512,7 +520,8 @@ int main ( int argc, char ** argv )
 	//
 	// Furthermore, one of these things preceeds c1
 	// in file1 iff the same kind of thing preceeds
-	// c2 in file2.
+	// c2 in file2, except that one character can
+	// follow whitespace and the other may not.
 	//
 	// Scanned numbers and whitespace are as long as
 	// possible, so a character c1 or c2 could not
@@ -532,8 +541,12 @@ int main ( int argc, char ** argv )
 
 	    if ( isspace ( c2 ) )
 	    {
-		spacebreak = true;
+		if ( ! follows_whitespace1 )
+		    spacebreak = true;
+
 		c2 = scanspace ( file2, c2 );
+		follows_whitespace2 = true;
+
 		if ( file2.linebreaks > 0 )
 		    linebreak = true;
 
@@ -552,6 +565,9 @@ int main ( int argc, char ** argv )
 		    c1 = getc ( file1 );
 		    c2 = getc ( file2 );
 		} while ( c1 == c2 && isspace ( c1 ) );
+
+		follows_whitespace1 = true;
+		follows_whitespace2 = true;
 
 		if ( isspace ( c1 ) )
 		{
@@ -582,20 +598,30 @@ int main ( int argc, char ** argv )
 	        c1 = scanspace ( file1, c1 );
 	        c2 = scanspace ( file2, c2 );
 
+		follows_whitespace1 = true;
+		follows_whitespace2 = true;
+
 		if ( file1.linebreaks
 			!= file2.linebreaks )
 		    linebreak = true;
 	    }
 	    else
 	    {
-	        spacebreak = true;
+	    	if ( ! follows_whitespace2 )
+		    spacebreak = true;
+
 		c1 = scanspace ( file1, c1 );
+		follows_whitespace1 = true;
+
 		if ( file1.linebreaks > 0 )
 		    linebreak = true;
 	    }
      	}
 	else if ( c1 == c2 )
 	{
+	    follows_whitespace1 = false;
+	    follows_whitespace2 = false;
+
 	    if ( c1 == '.' )
 	    {
 	    	c1 = getc ( file1 );
@@ -674,8 +700,12 @@ int main ( int argc, char ** argv )
 	}
         else if ( isspace ( c2 ) )
 	{
-	    spacebreak = true;
+	    if ( ! follows_whitespace1 )
+		spacebreak = true;
+
 	    c2 = scanspace ( file2, c2 );
+	    follows_whitespace2 = true;
+
 	    if ( file2.linebreaks > 0 )
 		linebreak = true;
      	}
@@ -688,6 +718,9 @@ int main ( int argc, char ** argv )
 		    c2 = scannumber ( file2, c2 ),
 		    file1.isnumber || file2.isnumber ) )
 	{
+	    follows_whitespace1 = false;
+	    follows_whitespace2 = false;
+
 	    if ( ( ! file1.isnumber )
 	         ||
 		 ( ! file2.isnumber ) )
@@ -708,6 +741,9 @@ int main ( int argc, char ** argv )
 	}
 	else if ( toupper ( c1 ) == toupper ( c2 ) )
 	{
+	    follows_whitespace1 = false;
+	    follows_whitespace2 = false;
+
 	    caseflag = true;
 
 	    if ( file1.column != file2.column )
