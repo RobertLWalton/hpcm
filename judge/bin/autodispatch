@@ -5,7 +5,7 @@
 #
 # File:		autodispatch
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Dec  3 10:09:47 EST 2000
+# Date:		Tue Jan 22 21:23:20 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/12/03 15:10:19 $
+#   $Date: 2002/01/23 02:29:19 $
 #   $RCSfile: autodispatch,v $
-#   $Revision: 1.15 $
+#   $Revision: 1.16 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -192,24 +192,34 @@ if { [llength $message_subject] >= 1 \
 #
 } elseif { $reply_mode == "auto" } {
     if { $reply_manager != "" } {
-	reply -all -cc \
-	     "This message cannot be properly answered\
-	       automatically," \
-	      "and there is no person to prompty answer\
-	       this message." \
-	      "" \
-	      "Please fix the subject field or\
-	        wait for" \
-	      "a response from $reply_manager"
+	reply -cc \
+	      { LINE "This message cannot be properly\
+	              answered automatically," } \
+	      { LINE "and there is no person to prompty\
+	      	      answer this message." } \
+	      BLANK \
+	      { LINE "Please fix the subject field or\
+	              wait for" } \
+	      "LINE {a response from $reply_manager}" \
+	      BLANK \
+	      {BAR "This message replies to:"} \
+	      RECEIVED-HEADER \
+	      BLANK \
+	      RECEIVED-BODY
     } else {
-	reply -all \
-	     "This message cannot be properly answered\
-	       automatically," \
-	      "and there is no person to prompty answer\
-	       this message." \
-	      "" \
-	      "Please fix the subject field or\
-	       send the message elsewhere."
+	reply \
+	      { LINE "This message cannot be properly\
+	              answered automatically," } \
+	      { LINE "and there is no person to prompty\
+	      	      answer this message." } \
+	      BLANK \
+	      { LINE "Please fix the subject field or\
+	              send the message elsewhere." } \
+	      BLANK \
+	      {BAR "This message replies to:"} \
+	      RECEIVED-HEADER \
+	      BLANK \
+	      RECEIVED-BODY
     }
 
 # Else if `auto+manual' reply mode: this is manual case,

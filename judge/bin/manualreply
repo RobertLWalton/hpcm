@@ -5,7 +5,7 @@
 #
 # File:		manualreply
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Nov 10 08:01:59 EST 2001
+# Date:		Tue Jan 22 21:19:56 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/11/10 13:01:57 $
+#   $Date: 2002/01/23 02:29:19 $
 #   $RCSfile: manualreply,v $
-#   $Revision: 1.46 $
+#   $Revision: 1.47 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -747,7 +747,7 @@ if { [file writable "."] } {
 
 refresh_file_list
 
-# If auto score file, reply file, no replay file,
+# If auto score file, reply file, no_reply file,
 # and unchecked errors do not exists, consider running
 # autojudge, if not in readonly mode.
 #
@@ -1206,7 +1206,13 @@ while { "yes" } {
 	}
 	{^ir$} {
 	    if { [not_readonly] } {
-		compose_reply -all
+		compose_reply \
+		    {LINE "EDIT YOUR REPONSE HERE"} \
+		    BLANK \
+		    { BAR "this message replies to:" } \
+		    RECEIVED-HEADER \
+		    BLANK \
+		    RECEIVED-BODY
 		set last_file $reply_file+
 		edit_file $last_file
 		refresh_file_list
@@ -1217,7 +1223,15 @@ while { "yes" } {
 	{^er$} {
 	    if { [not_readonly] } {
 		if { ! [file exists $reply_file+] } {
-		    compose_reply -all
+		    compose_reply \
+			{LINE "EDIT YOUR REPONSE\
+			       HERE"} \
+			BLANK \
+			{ BAR "this message replies\
+			       to:" } \
+			RECEIVED-HEADER \
+			BLANK \
+			RECEIVED-BODY
 		}
 		set last_file $reply_file+
 		edit_file $last_file
