@@ -4,7 +4,7 @@
 #
 # File:		hpcm_extract_test_replies
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Tue Feb 12 06:08:54 EST 2002
+# Date:		Tue Feb 12 06:50:47 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/02/12 11:08:53 $
+#   $Date: 2002/02/12 11:50:06 $
 #   $RCSfile: hpcm_extract_test_replies,v $
-#   $Revision: 1.1 $
+#   $Revision: 1.2 $
 
 # If this is not bash and bash is available, switch
 # to using bash.  Note that `which bash` may output
@@ -35,14 +35,17 @@ fi
 case "$1" in
     ?*)
 	echo "
-extract_test_replies <mbox-file
+hpcm_extract_test_replies <mbox-file
 
     Reads mail from the standard input and divides it
     into messages.  For each message, if the message has
     an X-HPCM-Test-Subject that begins with \`NAME:'
     surrounded by whitespace, this program copies the
     message into a file named \`NAME.reply' if no such
-    file exists, or \`NAME.reply+' otherwise."
+    file exists, or \`NAME.reply+' otherwise.
+
+    Note that the \`NAME:' must be on the first line of
+    the X-HPCM-Test-Subject field."
 
 	exit 1
 	;;
@@ -57,7 +60,6 @@ esac
 #			skipping lines
 #
 mode=look
-header=
 
 # Loop through lines of stdin.
 #
@@ -89,6 +91,7 @@ do
 
 	From\ *)
 	    header=
+	    first=yes
 	    mode=header
 	    ;;
 	esac
@@ -98,9 +101,25 @@ do
         # Save lines of header.  If satisfactory X-HPCM-
 	# Test-Subject line found, switch to copy mode.
 	#
-	header="$header\n$REPLY"
+	if test $first = yes
+	then
+	    first=no
+	else
+	    header="$header
+"
+	fi
+	header="$header$REPLY"
 
     	case "$REPLY" in
+
+	"")
+	    mode=look
+	    ;;
+
+	From\ *)
+	    header=
+	    first=yes
+	    ;;
 
 	X-HPCM-Test-Subject:*)
 	    # If field begins with `name:' then switch
@@ -109,20 +128,20 @@ do
 	    WS="[ 	]"
 	    NC="[^ 	:]"
 	    MATCH="[Xx]-[Hh][Pp][Cc][Mm]"
-	    MATCH="${MATCH}-[Tt][Ee][Ss][Ts]"
+	    MATCH="${MATCH}-[Tt][Ee][Ss][Tt]"
 	    MATCH="${MATCH}-[Ss][Uu][Bb][Jj]"
 	    MATCH="${MATCH}[Ee][Cc][Tt]"
 	    MATCH="${MATCH}:${WS}${WS}*"
-	    MATCH="${MATCH}:"'\('"${NC}*"'\):'
+	    MATCH="${MATCH}"'\('"${NC}*"'\):'
 	    name=`expr "$REPLY" : "${MATCH}"'$' `
-	    if test $name = ""
+	    if test "$name" = ""
 	    then
 		name=`expr "$REPLY" : "${MATCH}${WS}" `
 	    fi
-	    if test $name != ""
+	    if test "$name" != ""
 	    then
 		file=${name}.reply
-		if test -e $file
+		if test -e "$file"
 		then
 		    file="${file}+"
 		    rm -f $file
@@ -151,7 +170,11 @@ do
 	    exec 3>&-
 	    echo "\`$file' extracted successfully."
 	    header=
+	    first=yes
 	    mode=header
+	    ;;
+	*)
+	    echo "$REPLY" >&3
 	    ;;
 	esac
 	;;
