@@ -2,7 +2,7 @@
  *
  * File:	hpcm_sendmail.c
  * Authors:	Bob Walton (walton@deas.harvard.edu)
- * Date:	Mon Oct  2 05:10:10 EDT 2000
+ * Date:	Sat Oct  7 06:02:06 EDT 2000
  *
  * The authors have placed this program in the public
  * domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
  * RCS Info (may not be true date or author):
  *
  *   $Author: hc3 $
- *   $Date: 2000/10/02 13:32:41 $
+ *   $Date: 2000/10/07 10:02:50 $
  *   $RCSfile: hpcm_sendmail.c,v $
- *   $Revision: 1.6 $
+ *   $Revision: 1.7 $
  */
 
 #include <stdlib.h>
@@ -24,7 +24,6 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <sys/signal.h>
-extern const char * const sys_siglist[];
 #include <pwd.h>
 #include <sys/utsname.h>
 #include <time.h>
@@ -265,7 +264,7 @@ void check_program
 		  " terminated with signal:"
 		  " %s\n",
 		  argv[0],
-		  sys_siglist [ sig ] );
+		  strsignal ( sig ) );
 
 	/* Parent exit when child died by
 	   signal.

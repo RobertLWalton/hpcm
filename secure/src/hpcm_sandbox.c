@@ -2,7 +2,7 @@
  *
  * File:	hpcm_sandbox.c
  * Authors:	Bob Walton (walton@deas.harvard.edu)
- * Date:	Mon Sep 11 06:14:00 EDT 2000
+ * Date:	Sat Oct  7 05:56:06 EDT 2000
  *
  * The authors have placed this program in the public
  * domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
  * RCS Info (may not be true date or author):
  *
  *   $Author: hc3 $
- *   $Date: 2000/10/07 09:52:50 $
+ *   $Date: 2000/10/07 10:02:50 $
  *   $RCSfile: hpcm_sandbox.c,v $
- *   $Revision: 1.8 $
+ *   $Revision: 1.9 $
  */
 
 #include <stdlib.h>
@@ -57,20 +57,19 @@ char documentation [] =
 "    the rest of this program's action.  If the\n"
 "    child terminates with a signal, the parent\n"
 "    prints an error message identifying the signal.\n"
-"    It does this using `sys_siglist' (psignal(3))\n"
-"    and changes SIGKILL with measured CPU time over\n"
-"    the limit to SIGXCPU.  The parent returns a 0\n"
-"    exit code if the child does not terminate with a\n"
-"    signal, and returns 128 + the signal number as\n"
-"    an exit code if the child does terminate with\n"
-"    a signal.\n"
+"    It does this using (strsignal(3)) and changes\n"
+"    SIGKILL with measured CPU time over the limit to\n"
+"    SIGXCPU.  The parent returns a 0 exit code if\n"
+"    the child does not terminate with a signal, and\n"
+"    returns 128 + the signal number as an exit code\n"
+"    if the child does terminate with a signal.\n"
 "\n"
 "    Next, if this program's effective user ID is\n"
 "    `root', this program eliminates any supplemen-\n"
 "    tary groups that the process might have, and\n"
 "    changes the effective user and group IDs to\n"
 "    those of `sandbox', as looked up in /etc/passwd.\n"
-"\n"
+"\f\n"
 "    Then this program sets the real user and group\n"
 "    IDs to the effective user and group IDs, sets\n"
 "    the resource limits determined by the options\n"
