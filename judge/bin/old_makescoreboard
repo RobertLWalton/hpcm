@@ -4,7 +4,7 @@
 #
 # File:		makescoreboard
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Oct 30 01:10:59 EST 2001
+# Date:		Tue Oct 30 02:34:48 EST 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/10/30 07:34:56 $
+#   $Date: 2001/10/30 08:36:47 $
 #   $RCSfile: old_makescoreboard,v $
-#   $Revision: 1.26 $
+#   $Revision: 1.27 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -76,15 +76,15 @@ makescoreboard { start | status | stop | update } \\
     and then exits immediately.
 
     If called with the `start' command, this program
-    writes its process ID of the $scoreboard_pid_file\
-    		file
-    in the judging directory, and begins to reprocess
-    the scoreboard instructions at periodic intervals.
-    But if the $scoreboard_pid_file file already\
-    		exists, AND
-    the process ID it contains is valid, this program
-    prints information about the ID'ed process and does
-    nothing else.
+    executes itself as a subprocess and writes into the
+    $scoreboard_pid_file file in the judging directory\
+    					the
+    process ID of the subprocess.  This subprocess pro-
+    cess the scoreboard instructions at periodic inter-
+    vals.  But if the $scoreboard_pid_file file already
+    exists, AND the process ID it contains is valid,
+    this program prints information about the ID'ed
+    process and does nothing else.
 
     The first time the `start' command processes the
     scoreboard instructions, it does so just like the
@@ -132,7 +132,7 @@ makescoreboard { start | status | stop | update } \\
 # argument.
 #
 set command [lindex $argv 0]
-if { ! [regexp {^(update|start|status|stop)$} \
+if { ! [regexp {^(update|start|status|stop|-start-)$} \
                $command] } {
     puts $document
     exit 1
@@ -369,6 +369,7 @@ proc process_instructions {} {
          || [test_flag $score_flag_file] } {
 
 	make_signals_ignored
+	clear_flag $score_flag_file
 	file delete -force -- $finder_file
 	exec scorefinder -gotten > $finder_file
 	make_signals_default
@@ -1008,7 +1009,7 @@ proc pass2 { instructions pc end_pc update } {
 
 # Process command.
 #
-switch $command {
+switch -- $command {
 
     start {
 
@@ -1027,6 +1028,20 @@ switch $command {
 	     file delete -force $pid_file
 	}
 
+	# Run makescoreboard as a subprocess.
+	#
+        eval exec makescoreboard -start- \
+	     [lrange $argv 1 end] &
+
+	# Wait for any output from first run.
+	#
+	while { ! [file exists $pid_file] } {
+	    sleep 1
+	}
+    }
+
+    -start- {
+
 	# Save interval before processing instructions.
 	#
 	set interval $scoreboard_interval
@@ -1036,10 +1051,15 @@ switch $command {
 	#
         process_instructions
 
-	# Set pid file and restore log mode.
+	# Restore log mode and disable standard output
+	# and error.
+	#
+	set log_mode $saved_log_mode
+	disable_outputs
+
+	# Set pid file.
 	#
 	write_file $pid_file [current_pid]
-	set log_mode $saved_log_mode
 
 	# Resume a periodic intervals.
 	#
