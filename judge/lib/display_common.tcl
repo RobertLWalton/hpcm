@@ -2,7 +2,7 @@
 #
 # File:		display_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Mar  9 21:04:41 EST 2002
+# Date:		Tue Jul 23 00:30:07 EDT 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/03/10 02:06:24 $
+#   $Date: 2002/07/23 04:48:20 $
 #   $RCSfile: display_common.tcl,v $
-#   $Revision: 1.31 $
+#   $Revision: 1.32 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -62,10 +62,10 @@
 # The window has the following parts which are display-
 # ed in the order given:
 #
-#	window_blank	blank lines above window
-#	window_display	file list or file
-#	window_info	information specific to window
-#	1 blank line
+#			blank lines above window
+#	window_display	window contents proper
+#	window_info	information about window type
+#			1 blank line
 #	window_error	error line just above prompt
 #	window_prompt	prompt and user response line
 #
@@ -80,9 +80,10 @@
 # Of the following variables, window_error and window_
 # prompt can be set directly, while the other variables
 # should be set by the set_window_display and set_
-# window_info functions.
+# window_info functions.  Each of these variables is
+# a sequence of lines separated by newlines, \n, but
+# with NO newline at the end of the last line.
 #
-set window_blank ""
 set window_display ""
 set window_info ""
 set window_error ""
@@ -98,13 +99,20 @@ set window_prompt ""
 # set window_blank_height 16
 # set window_height 24
 #
-# The following is reset frequently as window_info
-# changes.
+# The following is set directly by the user, and may
+# need to be reset before calling set_window_info.
+# It is the exact number of lines in window_info.
 #
-set window_info_height 8
+set window_info_height 1
+
+# The following is computed automatically by set_
+# window_display.  It is the exact number of lines
+# in window_display.
+#
+set window_display_height 1
 
 
-# Constant for use in functions.
+# Constants for use in functions.
 #
 set window_newlines "\n\n\n\n\n\n\n\n\n\n"
 set window_newlines "$window_newlines$window_newlines"
@@ -119,12 +127,31 @@ set window_newlines "$window_newlines$window_newlines"
 # have the same layout, we get the effect of having a
 # single window.
 #
+# The number of blank lines in above the window display
+# area is set to be sure the entire displayed window
+# with blank lines will have window_height + window_
+# blank_height lines.
+#
 proc display_window {} {
 
-    global window_blank window_display window_info \
+    global window_newlines \
+           window_height window_blank_height \
+	   window_info_height window_display_height \
+	   window_display window_info \
     	   window_error window_prompt
 
-    set b $window_blank
+    # Compute blank lines at top of display.
+    #
+    # We need to leave 3 lines for the window_prompt,
+    # window_error, and the blank line above these.
+    #
+    set offset \
+        [expr   $window_height \
+	      + $window_blank_height \
+	      - $window_display_height \
+	      - $window_info_height - 3 - 1]
+    set b [string range $window_newlines 0 $offset]
+
     set d $window_display
     set i $window_info
     set e $window_error
@@ -141,7 +168,9 @@ proc display_window {} {
 # next window to be displayed.  Add blank lines to the
 # top of the given `info' to make it have window_info_
 # height lines, or call error if the `info' has more
-# than window_info_height lines.
+# than window_info_height lines.  You may need to set
+# window_info_heigth directly before calling this
+# function.
 #
 proc set_window_info { info } {
 
@@ -161,31 +190,17 @@ proc set_window_info { info } {
 }
 
 
-# Set the window_display and window_blank variable to
-# specify the blank and display parts of the next window
-# to be displayed.  The number of blank lines in window_
-# blank is set to be sure the entire displayed window
-# with blank lines will have window_height + window_
-# blank_height lines.
+# Set the window_display and window_display_height
+# variables to specify the display part of the window
+# to be displayed.
 #
 proc set_window_display { display } {
 
-    global window_blank window_display \
-    	   window_height window_info_height \
-	   window_blank_height window_newlines
+    global window_display window_display_height
+	   
 
-    set height [llength [split $display "\n"]]
-
-    # We need to leave 3 lines for the window_prompt,
-    # window_error, and the blank line above these.
-    #
-    set offset \
-        [expr { $window_height \
-	        + $window_blank_height \
-	        - $window_info_height - 3 \
-		- $height - 1 }]
-    set window_blank \
-        [string range $window_newlines 0 $offset]
+    set window_display_height \
+        [llength [split $display "\n"]]
     set window_display $display
 }
 
