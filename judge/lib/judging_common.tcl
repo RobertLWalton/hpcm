@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Jan 20 09:05:30 EST 2002
+# Date:		Sun Jan 20 10:19:00 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/01/20 15:16:36 $
+#   $Date: 2002/01/20 15:21:17 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.63 $
+#   $Revision: 1.64 $
 #
 
 # Table of Contents
@@ -1313,7 +1313,8 @@ if { [llength $judging_directory] == 1 } {
 	set p [file attributes $f -permissions]
 	if { $p & 4 } {
 	    error "security violation: $f is readable\
-	    	   by `others'"
+	    	   by `others'\n      \
+		   you should execute chmod o-r $f"
 	}
 	source $f
     } else {
