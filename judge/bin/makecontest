@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/10/06 14:32:24 $
+#   $Date: 2000/10/06 17:26:22 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.15 $
+#   $Revision: 1.16 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -67,9 +67,9 @@ makejudgingdir options index_specification ...
     -bin	Make ./contest/bin
     -secure	Make ./contest/secure/passwords,
 		     ./contest/secure/hpcm_sendmail.rc
-    -printer    Make ./contest/printer
     -who_where  Make ./contest/who_where
     -trashable  Make ./contest/trashable
+    -printer    Make ./contest/printer
     -home	Make ./contest/home
 
   Index Specification:
@@ -518,17 +518,18 @@ set argi 0
 set info_option			no
 set solutions_option		no
 set problems_option		no
+set demos_option 		no
 set txt_option			no
-set mail_option			no
 set help_option			no
-set help_formal_option		no
-set help_informal_option	no
+set help2_option		no
+set this_contest_option		no
+set mail_option			no
 set bin_option			no
-set home_option			no
 set secure_option		no
 set who_where_option		no
-set printer_option		no
 set trashable_option		no
+set printer_option		no
+set home_option			no
 #
 while { "yes" } {
     if { $argi >= $argc } break;
@@ -538,42 +539,44 @@ while { "yes" } {
 			  set mail_option	yes }
         -formal		{ set solutions_option	yes
 			  set problems_option	yes
-			  set mail_option	yes
+			  set demos_option	yes
 			  set help_option	yes
-			  set help_formal_option \
-						yes
+			  set help2_option	yes
+			  set this_contest_option \
+			  			yes
+			  set mail_option	yes
 			  set bin_option	yes
-			  set home_option	yes
 			  set secure_option	yes
 			  set who_where_option	yes
-			  set printer_option	yes }
+			  set printer_option	yes
+			  set home_option	yes }
         -informal	{ set solutions_option	yes
-			  set info_option	yes
-			  set mail_option	yes
 			  set help_option	yes
-			  set help_informal_option \
-						yes
+			  set help2_option	yes
+			  set this_contest_option \
+			  			yes
+			  set mail_option	yes
 			  set bin_option	yes
-			  set home_option	yes
 			  set secure_option	yes
 			  set who_where_option	yes
-			  set printer_option	yes }
+			  set printer_option	yes
+			  set home_option	yes }
         -info		{ set info_option 	yes }
         -solutions	{ set solutions_option 	yes }
         -problems	{ set problems_option 	yes }
+        -demos		{ set demos_option 	yes }
         -txt		{ set txt_option 	yes }
-        -mail		{ set mail_option 	yes }
         -help		{ set help_option 	yes }
-        -help_formal	{ set help_formal_option \
+        -help2		{ set help2_option 	yes }
+	-this_contest	{ set this_contest_option \
 						yes }
-        -help_informal	{ set help_informal_option \
-						yes }
+        -mail		{ set mail_option 	yes }
         -bin		{ set bin_option 	yes }
-        -home		{ set home_option 	yes }
         -secure		{ set secure_option 	yes }
         -who_where	{ set who_where_option 	yes }
-        -printer	{ set printer_option 	yes }
         -trashable	{ set trashable_option 	yes }
+        -printer	{ set printer_option 	yes }
+        -home		{ set home_option 	yes }
 	default		{ break }
     }
     incr argi
@@ -629,26 +632,23 @@ if { $argi >= $argc \
 # Check for some elementary errors, such as ./contest
 # not existing if it is needed.
 #
-if { $problems_option \
+if {    $problems_option \
+     || $demos_option \
      || $help_option \
-     || $help_formal_option \
-     || $help_informal_option \
+     || $help2_option \
      || $bin_option \
-     || $home_option \
      || $secure_option \
      || $who_where_option \
+     || $trashable_option \
      || $printer_option \
-     || $trashable_option } {
+     || $home_option } {
     if { ! [file isdirectory "contest"] \
          || ! [file executable "contest"] \
          || ! [file readable "contest"] } {
 	error "`./contest' is not a useable directory"
     }
 }
-if { $help_option \
-     || $help_formal_option \
-     || $help_informal_option \
-     || $bin_option } {
+if { $bin_option } {
     if { ! [file isdirectory "contest/contestant"] \
          || ! [file executable "contest/contestant"] \
          || ! [file readable "contest/contestant"] } {
@@ -656,14 +656,13 @@ if { $help_option \
 	       directory"
     }
 }
-
-# Logically derived options:
-#
-if { $help_option \
-     && ( $problems_option || $info_option ) } {
-    set help_problems_option yes
-} else {
-    set help_problems_option no
+if { $home_option } {
+    if { ! [file isdirectory "contest/home"] \
+         || ! [file executable "contest/home"] \
+         || ! [file readable "contest/home"] } {
+	error "`./contest/home' is not a useable\
+	       directory"
+    }
 }
 
 # Array specifying option substitutions.  For each
@@ -674,24 +673,17 @@ if { $help_option \
 # is the list of options that is the substitution.
 
 # Expand a list of options and return the result.
-# Do not let the depth of expansion run away.
 #
-proc expand_options { option_list { depth 0 } } {
+proc expand_options { option_list } {
 
     global option_array
-
-    if { $depth > 100 } {
-    	error "Infinite recursive option substitution"
-    }
 
     set result ""
     foreach option $option_list {
         if { [info exists option_array($option)] } {
 	    set result \
 	        [concat $result \
-		        [expand_options \
-			    $option_array($option) \
-			    [expr { $depth + 1 }]]]
+			$option_array($option)]
 	} else {
 	    lappend result $option
 	}
@@ -700,12 +692,11 @@ proc expand_options { option_list { depth 0 } } {
     return $result
 }
 
-# List of substitutions to be made in the names
-# of the current input index file.  Each item of
-# the list has the form `{source target}' which
-# specifies that if a name begins with the
-# string `source' that string should be replaced
-# by the string `target'.
+# List of substitutions to be made in the names of the
+# current input index file.  Each item of the list has
+# the form `{source target}' which specifies that if a
+# name begins with the string `source' that string
+# should be replaced by the string `target'.
 #
 set substitutions ""
 
@@ -746,9 +737,12 @@ proc make_substitutions { name } {
 #
 #   index_file		the input index file name
 #   index_directory	index directory name
-#   newindex_ch		output index file channel
-#   newhelp_ch		output .contest/help1/problems
-#			file channel
+#   helpindex_chs	output help/index file channel
+#			list; "" if none
+#   demosindex_chs	output help/demos file channel
+#			list; "" if none
+#   problemsindex_chs	output help/problems file
+#			channel list; "" if none
 #   option_array	option substitutions
 #			(see above)
 #   substitutions	filename substitutions
@@ -756,19 +750,58 @@ proc make_substitutions { name } {
 #   info_option		options
 #   solutions_option
 #   problems_option
+#   demos_option
+#   help_option
 #   info_directory	directory names
-#   solutions_directory	directory names
-#   problems_directory	directory names
+#   contest_directory
+#   solutions_directory
 #
+# Helper function.
+#
+# If ${targetdir}index_ch is "", see if it should be
+# something else, and return its correct value.
+#
+proc get_index_chs { targetdir } {
+    set chs ""
+    if { $info_option || $help_option } {
+	switch $targetdir {
+	help		{ set file help/index
+			  set head "Help Index" }
+	problems	{ set file help/problems
+			  set head "Problems Index" }
+	demos		{ set file help/demos
+			  set head "Demos Index" }
+	}
+	if { $info_option } {
+	    lappend chs [open $info_directory/$file w]
+	}
+	if { $help_option } {
+	    lappend chs \
+	    	    [open $contest_directory/$file w]
+	}
+
+	set ${targetdir}index_chs $chs
+
+	foreach ch $chs {
+	    puts $ch [format {%-28s%28s} $head \
+	    		     [clock format \
+			     	    [clock seconds]]]
+	    puts $ch ""
+	}
+    }
+    return $chs
+}
+
 proc process_index_specification {} {
 
     global index_file index_directory \
-           newindex_ch newhelp_ch \
+           helpindex_chs problemsindex_chs \
+	   demosindex_chs \
            info_option solutions_option \
-	   problems_option \
-	   help_problems_option \
+	   problems_option demos_option \
+	   help_option \
            info_directory solutions_directory \
-	   problems_directory
+	   problems_directory demos_directory
 
 
     # Be sure index directory is absolute name, else
@@ -776,15 +809,27 @@ proc process_index_specification {} {
     #
     if { ! [regexp {^/} $index_directory] } {
 	set index_directory [pwd]/$index_directory
+	# Replace /*/../ by / recursively.
+	while { [regsub {/[^/]*/\.\./} $index_directory \
+			{/} index_directory] == 1 } {}
     }
 
     # Read the input index file and process its entries.
     #
     set index_ch [open $index_file r]
-    set index_copy	no
-    set index_did_copy	no
-    set help_copy	no 
-    set help_did_copy	no
+    set in_header		no
+    set in_item			no
+
+    set index_chs		""
+
+    set header_entry		""
+    set helpindex_header	no
+    set demosindex_header	no
+    set problemsindex_header	no
+
+    set helpindex_used		no
+    set demosindex_used		no
+    set problemsindex_used	no
 
     while { "yes" } {
 
@@ -796,7 +841,9 @@ proc process_index_specification {} {
 	if { [llength $line] >= 1 \
 	     && [lindex $line 0] == "***" } {
 
-	    # Beginnning item entry.
+	    # Beginning item entry.
+
+	    set in_header	no
 
 	    set name [lindex $line 1]
 	    set options \
@@ -807,157 +854,177 @@ proc process_index_specification {} {
 		   $line forget indent forget2
 	    regsub {\*\*\*} $indent {   } indent
 
-	    # Process info option.
-	    #
-	    if { [lsearch -exact $options info] >= 0 \
-	         && $info_option } {
+	    if { [lsearch -exact $options include] \
+	         < 0 } {
+	    	set in_item	no
+	    } else {
+		set in_item	yes
 
 		set target [make_substitutions $name]
 
-		set index_copy yes
-		puts $newindex_ch "$indent$target"
-		set index_did_copy yes
-
-		set target $info_directory+/$target
-
-		if { [lsearch -exact $options all] \
-		     >= 0 \
-		     || [file isfile $source] } {
-		    file mkdir [file dirname $target]
-		    link_file $source $target
-		} else {
-		    file mkdir $target
-		    link_file $source/Makefile \
-		              $target/Makefile
-		    set problem [glob $source/*.txt]
-		    if { [llength $problem] != 1 } {
-			error "Too many or too few\
-			       $source/*.txt files"
-		    }
-		    set problem [file tail $problem]
-		    link_file $source/$problem \
-		              $target/$problem
+		if { ! [regexp {^([^/]*)/+([^/].*)$} \
+		               $target forget \
+			       targetdir targettail] \
+		     || [lsearch -exact \
+				 {help demos problems} \
+				 $targetdir] < 0 \
+		     || [lsearch -exact {. ..} \
+		                 $targettail] >= 0 } {
+		    error "Bad item name directory\
+		    	   after substitution: $target"
 		}
-	    } else {
-		# Come here if no `info' option.
-	    	set index_copy no
-	    }
 
-	    # Process problems option.
-	    #
-	    if { [lsearch -exact $options problems] \
-	         >= 0 \
-		 && $problems_option } {
+	        set index_chs \
+		    [set ${targetdir}index_chs]
 
-		if { ! [file isdirectory $source] } {
-		    error "$source problem is not a\
-		           directory"
+		if { $index_chs == "" } {
+		    set index_chs \
+		    	[get_index_chs $targetdir]
 		}
-		set target [file tail $name]
-		set target $problems_directory+/$target
-		file mkdir $target
-		grant_access $target
 
-		if { [lsearch -exact $options all] \
-		     >= 0 } {
-		    foreach file [glob -nocomplain \
-		    		       $source/*] {
-
-			# Note: in TCL, isfile tests
-			# the target of links.
-
-			if { [file isfile $file] \
-			     && [file readable $file] \
-			     } {
-			    set tail [file tail $file]
-			    file copy $file \
-			    	      $target/$tail
-			    grant_access $target/$tail
+		if { [set ${targetdir}index_header] \
+		     == no } {
+		    set ${targetdir}index_header yes
+		    if { $item_header != "" } {
+		        foreach ch $index_chs {
+			    puts $ch $item_header
 			}
 		    }
-		} else {
-		    file copy $source/Makefile \
-		              $target/Makefile
-	            grant_access $target/Makefile
+		}
+		foreach ch $index_chs {
+		    puts $newindex_ch "$indent$target"
+		}
 
-		    if { $txt_option } {
-			set problem \
-			    [glob $source/*.txt]
-			if { [llength $problem] \
-			     != 1 } {
+		set ${targetdir}index_used yes
+
+		# Process info option.
+		#
+		if { $info_option } {
+
+		    set destination \
+		    	$info_directory+/$target
+
+		    if { [lsearch -exact $options all] \
+			 >= 0 \
+			 || [file isfile $source] } {
+			file mkdir \
+			     [file dirname $destination]
+			link_file $source $destination
+		    } else {
+			file mkdir $destination
+			link_file $source/Makefile \
+				  $destination/Makefile
+			set problem [glob $source/*.txt]
+			if { [llength $problem] != 1 } {
 			    error "Too many or too few\
 				   $source/*.txt files"
 			}
 			set problem [file tail $problem]
-			file copy $source/$problem \
-				  $target/$problem
-			grant_access $target/$problem
+			link_file $source/$problem \
+				  $destination/$problem
 		    }
 		}
-	    }
 
-	    # Process help for problems and info
-	    # options.
-	    #
-	    if { ( [lsearch -exact $options problems] \
-	           >= 0
-		   || \
-	           [lsearch -exact $options info] \
-	           >= 0 ) \
-		 && $help_problems_option } {
+		# Process $targetdir option.
+		#
+		if { [set ${targetdir}_options] } {
 
-		if { ! [file isdirectory $source] } {
-		    error "$source problem is not a\
-		           directory"
+		    set destination \
+		        "$targetdir+/$targettail"
+		    set destination \
+		        "./contest/$destination"
+		    if { [file isfile $source] } {
+			file mkdir \
+			     [file rootname \
+			           $destination]
+			file copy $source \
+				  $destination
+		    } elseif { [file isdirectory \
+		    		     $source] } {
+			file mkdir $destination
+			
+			if { [lsearch -exact $options \
+				             all] \
+			     >= 0 } {
+			    recursive_file_copy \
+				$source \
+				$destination
+			} else {
+			    file copy $source/Makefile \
+				      $target/Makefile
+			    grant_access \
+			    	$target/Makefile
+
+			    if { $txt_option } {
+				set problem \
+				    [glob $source/*.txt]
+				if { [llength \
+				          $problem] \
+				     != 1 } {
+				    error \
+					"Too many or\
+					 too few\
+					 $source/*.txt\
+					 files"
+				}
+				set problem \
+				    [file tail $problem]
+				file copy\
+				     $source/$problem \
+				     $target/$problem
+				grant_access \
+				    $target/$problem
+			    }
+			}
+		    }
+		    set d $targettail
+		    while { "yes" } {
+		    	grant_access \
+			    ./contest/$targetdir+/$d
+			set d [file rootname $d]
+			if { $d == "." } break
+		    }
 		}
-		set target [file tail $name]
 
-		set help_copy yes
-		puts $newhelp_ch "$indent$target"
-		set help_did_copy yes
-
-	    } else {
-		# Come here if no `help' entry.
-	    	set help_copy no
-	    }
-
-	    # Process solution option.
-	    #
-	    if { [lsearch -exact $options solutions] \
-	         >= 0 \
-		 && $solutions_option } {
-		if { ! [file isdirectory $source] } {
-		    error "$source solution is not a\
-		           directory"
+		# Process solutions option.
+		#
+		if { $solutions_option } {
+		    if { ! [file isdirectory $source] \
+		    		} {
+			error "$source solution is not\
+			       a directory"
+		    }
+		    set sdp \
+		        $contest_directory/solutions+
+		    link_file $source \
+			      "$sdp/[file tail \
+			      		  $targettail]"
 		}
-	        set sdp $solutions_directory+
-	        link_file $source \
-			  "$sdp/[file tail $name]"
 	    }
+
+	} elseif { $in_header } {
+
+	    # Line inside header.
+
+	    set item_header "$item_header\n$line"
 
 	} elseif { [regexp "^\[^\ \t\]" $line] } {
 
-	    # Beginning of header entry or line
-	    # inside current header entry.
+	    # Beginning of header entry.
 
-	    if { $info_option } {
-		puts $newindex_ch $line
+	    set item_header		$line
+	    set in_header		yes
+	    set in_item			no
+	    set helpindex_header	no
+	    set demosindex_header	no
+	    set problemsindex_header	no
 
-		set index_copy		yes
-		set index_did_copy	yes
-	    }
-	    
-	    set help_copy	no
+	} elseif { $in_item } {
 
-	} else {
+	    # Line inside item.
 
-	    # Line inside header or item entry.
-
-	    if { $index_copy } {
-		puts $newindex_ch $line
-	    }
-	    if { $help_copy } {
-		puts $newhelp_ch $line
+	    foreach ch $index_chs {
+		puts $ch $line
 	    }
 	}
     }
