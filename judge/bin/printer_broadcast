@@ -1,0 +1,163 @@
+#! /bin/sh
+#
+# Pipe a postscript file to all the printers.
+#
+# File:		printer_broadcast
+# Author:	Bob Walton <walton@deas.harvard.edu>
+# Date:		Tue Nov 13 22:21:52 EST 2001
+#
+# The authors have placed this program in the public
+# domain; they make no warranty and accept no liability
+# for this program.
+#
+# RCS Info (may not be true date or author):
+#
+#   $Author: hc3 $
+#   $Date: 2001/11/14 03:30:18 $
+#   $RCSfile: printer_broadcast,v $
+#   $Revision: 1.1 $
+
+Pswitch=0
+
+case "$1" in
+   -P)
+       Pswitch=1
+       ;;
+   -doc* )
+   	echo "
+printer_pipe [-P] filename [username]
+
+    Print the standard input to all the printers in the
+    
+    	~/.hpcm_contest/printer_map
+
+    file if that is readable, or the printer named in
+    the
+    
+    	~/.hpcm_contest/printer
+    
+    file otherwise, or if neither file is readable, use
+    the printer named in the PRINTER environment var-
+    iable.  The printing to each printer is done just
+    like hpcm/contestant/bin/printer_pipe, except the
+    \`where' argument is replaced by \`JUDGE', and
+    printer names beginning with \`!' are ignored (so
+    contestant specified printers are ignored).
+    
+    The standard input to this program should be a
+    file to be piped to the printers.  It is usually a
+    postscript file, but can be ASCII with form feeds.
+
+    If the -P option is given, the list of printer
+    names is output, and no printing is done."
+
+    	exit 1
+	;;
+esac
+
+filename="$1"
+
+case "$2" in
+    "" )
+	user=`id -un`
+	;;
+    *)
+        user="$2"
+	;;
+esac
+
+printers=""
+
+if test -r "${HOME}/.hpcm_contest/printer_map"
+then
+
+    # Open print map.
+    #
+    exec 3<"${HOME}/.hpcm_contest/printer_map"
+
+    # Set expr match regexps.
+    #
+    ws="[ 	][ 	]*"
+    nws="[^ 	][^ 	]*"
+
+    # Read print map lines until match found.
+    #
+    while read -r <&3
+    do
+	printer=`expr "$REPLY" : \
+		      "$nws$ws\\($nws\\)\$"`
+	printers="$printers $printer"
+    done
+
+    # Close printer_map file.
+    #
+    exec 3<&-
+
+elif test -r "${HOME}/.hpcm_contest/printer"
+then
+    printers=`cat "${HOME}/.hpcm_contest/printer"`
+elif test "${PRINTER:-}" -ne ""
+then
+    printers=$PRINTER
+else
+    echo >&2 Could not find printers.
+    exit 1
+fi
+
+if test $Pswitch -ne 0
+then
+    echo $printers
+    exit 0
+fi
+
+tmpfile="/tmp/printer_broadcast$$"
+trap "rm -f $tmpfile" 0
+rm -f $tmpfile
+cat >$tmpfile
+
+for printer in $printers
+do
+    # Ignore blank printer names or printer names
+    # beginning with !.
+    #
+    if test ` expr "$printer" : "!" ` -ne 0
+    then
+    	continue
+    fi
+
+    if test "$printer" = ""
+    then
+    	continue
+    fi
+
+    # If printer_jobs exists, announce job therein.
+    #
+    if test -w ${HOME}/.hpcm_contest/printer_jobs; then
+	shortpr=`expr "$printer" : "\\([^<]*\\)<"`
+	if test "$shortpr" = ""
+	then
+	    shortpr="$printer"
+	fi
+	line=`date "+%a %r"`
+	line="$line $shortpr $filename $user(JUDGE)"
+	echo "$line" \
+	     >> ${HOME}/.hpcm_contest/printer_jobs
+    fi
+
+    # Send the print job to the printer.
+
+    case "$printer" in
+	*@*)
+	    ( echo "To: $printer"; \
+	      echo "Subject: $filename $user(JUDGE)"; \
+	      echo ""; cat $tmpfile ) \
+	          | /usr/sbin/sendmail -t
+	    ;;
+	*)
+	    lpr -P$printer < $tmpfile
+	    ;;
+    esac
+
+done
+
+exit 0
