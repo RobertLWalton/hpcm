@@ -1,9 +1,9 @@
 # Makefile for the `count' Demonstration Problem
 #
 # File:		Makefile
-# Date:		Sun Feb 17 08:11:51 EST 2002
+# Date:		Mon Feb 18 10:39:30 EST 2002
 #
-# Exactly ONE of the four files count.c (C), count.cc
+# Exactly ONE of the five files count.c (C), count.cc
 # (C++), count.p (Pascal), count.java (Java), or
 # count.lsp (Commonlisp) should exist.
 #
@@ -89,7 +89,9 @@ default:	count.out
 
 # hpcm_sandbox below may execute `count' as a special
 # unprivileged user named `sandbox', so various files
-# must be `a+x' or `a+r'.
+# must be `a+x' or `a+r'.  `hpcm_clisp -which' returns
+# in the judging account the name of a version of the
+# hpcm_clisp program that can be run in the sandbox.
 
 count.out:	count count.in
 	rm -f count.out core
@@ -107,10 +109,10 @@ count.out:	count count.in
 	@cat count.out
 	@echo "============== END OUTPUT =============="
 
+#
 submit:		count.out
 	hpcm_submit count
 
-#
 clean:
 	rm -f count *.class count.p2c core count.out \
 	      count.fas count.lib
@@ -125,6 +127,6 @@ clean:
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/02/17 13:16:19 $
+#   $Date: 2002/02/18 15:54:46 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.23 $
+#   $Revision: 1.24 $
