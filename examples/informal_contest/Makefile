@@ -1,33 +1,38 @@
 # Makefile for an `informal' Contest
 #
 # File:		Makefile
-# Date:		Fri Dec  8 08:09:44 EST 2000
+# Date:		Sat Dec  9 02:30:12 EST 2000
 #
 # To make an informal contest named `foo':
 #
 #  1. Import the HPCM system into ~/hpcm.
 #
-#  2. Run		cd ~/hpcm/secure/bin
-#			make hpcm_sandbox
+#  2. Assuming /sbin is the right directory for secure
+#     root setuid programs, run:
+#
+#			cd ~/hpcm/secure/src
 #			su
-#			chown root.root hpcm_sandbox
-#			chmod a+rx hpcm_sandbox
-#			chmod u+s hpcm_sandbox
-#			mv hpcm_sandbox /sbin
+#			make root_install
 #			exit
 #
 #     This installs the hpcm_sandbox program as a setuid
 #     root program in the system /sbin directory, which
 #     is the appropriate thing for Linux.  If you put
-#     this setuid binary in another place, you may have
-#     to adjust ~/hpcm/judge/bin/Makefile.
+#     this setuid binary in another place, say `/foo',
+#     you should replace the `make' command above by
+#
+#		make SECURE_BIN=/foo root_install
+#
+#     If you skip this step, an unsecure hpcm_sandbox
+#     will be installed (in the next step) for the
+#     judge, which will mean that malicious contestant
+#     programs could corrupt the judging files.
 #
 #  3. Run		cd ~/hpcm
 #			make
 #
-#     This sets various modes and makes a few binary
-#     files.  It also installs a symbolic link to
-#     /sbin/hpcm_sandbox in ~/hpcm/judge/bin.
+#     This sets some file modes and makes a few binary
+#     files.
 #
 #  4. Put ~/hcpm/judge/bin in the PATH of the current
 #     (judge's) account.  Do NOT put ~/hpcm/contestant/
@@ -72,9 +77,13 @@
 #     directory and all the files in it are accessible
 #     only to the judge's account JJJ.
 #
+#     Be sure to include a `contestant account' which
+#     you will use to test the system, and to which no
+#     actual contestant will be assigned.
+#
 
-# 11. Run `makejudgingdir -this_contest' and then edit
-#     the `./help/this_contest' file.
+# 11. Run `make this_contest' and then edit the `./help/
+#     this_contest' file.
 #
 # 12. Run `make' in your judging directory.  Note this
 #     runs `startcontest', which merely gives a+r
@@ -221,6 +230,9 @@ all:
 	chmod a+x . ..
 	startcontest
 
+this_contest:
+	makejudgingdir -this_contest
+
 trashable:
 	makejudgingdir -trashable
 
@@ -248,6 +260,6 @@ update_scoreboard:
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/12/08 14:12:11 $
+#   $Date: 2000/12/09 07:43:16 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.4 $
+#   $Revision: 1.5 $
