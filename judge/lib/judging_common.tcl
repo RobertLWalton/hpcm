@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Mar 29 14:22:47 EST 2003
+# Date:		Tue Sep 16 06:03:39 EDT 2003
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2003/03/29 19:25:06 $
+#   $Date: 2003/09/16 10:28:01 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.112 $
+#   $Revision: 1.113 $
 #
 
 # Table of Contents
@@ -1595,20 +1595,41 @@ proc blank_body { ch } {
 # ---- ---------
 
 
-# Remove noise from a file name.  Specifically:
-#    // => /			/./ => /
-#    /foo/../ => /		/.<end> => <end>
-#    /foo/..<end> => <end>	/<end> => <end>
+# Remove noise from a file name.  Specifically remove
+#    empty components, "." components, and "foo/.."
+#    component pairs where possible.
 #
 proc scrub_filename { name } {
-    while { [regsub {//} $name {/} name] > 0 } {}
-    while { [regsub {/([^/.]|\.[^/.])[^/]*/\.\./} \
-		$name {/} name] > 0 } {}
-    while { [regsub {/\./} $name {/} name] > 0 } {}
-    regsub {/\.$} $name {} name
-    regsub {/$} $name {} name
-    regsub {/([^/.]|\.[^/.])[^/]*/\.\.$} $name {} name
-    return $name
+    set inlist [split $name /]
+    set outlist {}
+    set abs ""
+    if { [lindex $inlist 0] == "" } {
+    	set abs "/"
+    }
+    foreach component $inlist {
+        if { $component == "" || $component == "." } {
+	    continue
+	} elseif { $component == ".." } {
+	    set len [llength $outlist]
+	    if { $len >= 1 } {
+	        set outlist \
+		    [lrange $outlist 0 [expr $len - 2]]
+	    } else {
+	        lappend outlist $component
+	    }
+	} else {
+	    lappend outlist $component
+	}
+    }
+
+    # Warning: join has a bug: [join [list ""] /] == "".
+
+    set value "$abs[join $outlist /]"
+    if { $value == "" } {
+        return "."
+    } else {
+	return $value
+    }
 }
 
 
