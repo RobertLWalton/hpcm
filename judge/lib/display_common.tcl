@@ -2,7 +2,7 @@
 #
 # File:		display_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Aug 25 08:24:48 EDT 2001
+# Date:		Sat Aug 25 10:04:44 EDT 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/08/25 13:51:03 $
+#   $Date: 2001/08/25 14:41:25 $
 #   $RCSfile: display_common.tcl,v $
-#   $Revision: 1.5 $
+#   $Revision: 1.6 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -27,6 +27,7 @@
 #	Locking Functions
 #	File List
 #	Reading Files
+#	Displaying Files
 #	Reply Functions
 
 # Including this Code
@@ -427,7 +428,7 @@ proc get_listed_files { } {
 
     set extra_files ""
     foreach file $listed_files {
-        if { [regexp "^(.*)\.out$" $file \
+        if { [regexp {^(.*)\.out$} $file \
 				   forget base] } {
 	    if { [lsearch -exact $listed_files \
 	                         $base.test] >= 0 } {
@@ -633,80 +634,6 @@ proc refresh_file_list { } {
     }
 }
 
-# Set the window display to the file list.  Set the
-# last_display variable to `file_list'.
-#
-proc set_file_list_display {} {
-
-    global file_list file_list_origin_mtime \
-    	   window_bar last_display
-
-    set display "$window_bar"
-
-    set n 0
-    set previous ""
-
-    # If `previous' is non-empty it is the previous
-    # item and has no more than 39 characters.
-    #
-    foreach item $file_list {
-	incr n
-	set time [lindex $item 1]
-	if { $time == "TBD" } {
-	    set tttt TBD
-	} else {
-	    set time [expr { $time \
-			     - $file_list_origin_mtime
-                           }]
-	    if { $time < 0 } {
-		set sign "-"
-		set time [expr { - $time }]
-	    } else {
-		set sign ""
-	    }
-	    set mm [expr { $time / 60 }]
-	    set hh [expr { $mm / 60 }]
-	    set mm [expr { $mm - 60 * $hh }]
-	    set tttt "$sign[format {%d:%02d} $hh $mm]"
-	    if { [string length $tttt] > 6 } {
-		set tttt "${sign}inf"
-	    }
-	}
-	set next [format {%3d. %6.6s%1.1s %s} \
-			 $n \
-			 $tttt [lindex $item 4] \
-			 [lindex $item 2]]
-	set commented "${next} [lindex $item 3]"
-
-	if { [string length $commented] <= 80 } {
-	    set next $commented
-	}
-	if { [string length $next] > 39 } {
-	    if { $previous != "" } {
-	    	set next "$previous\n$next"
-	    }
-	    set previous ""
-	} elseif { $previous != "" } {
-	    set next [format {%-40s%s} $previous $next]
-	    set previous ""
-	} else {
-	    set previous $next
-	    set next ""
-	}
-
-	if { $next != "" } {
-	    set display "$display\n$next"
-	}
-    }
-
-    if { $previous != "" } {
-	set display "$display\n$previous"
-    }
-
-    set_window_display "$display\n$window_bar"
-    set last_display file_list
-}
-
 # Given a file number, set `last_file' to the name of
 # the corresponding file, set `window_error' to "", and
 # return `yes'.  If there is an error, leave `last_file'
@@ -721,51 +648,78 @@ proc set_file_list_display {} {
 # may not succeed: its perfectly possible to set `last_
 # file' to a non-existant file.
 #
-proc get_file { number } {
+proc get_file { id } {
 
     global file_list \
 	   last_file window_error make_file_array \
 	   submitted_program
 
     set window_error ""
-    if { $number == "" } {
+
+    if { $id == "" } {
 	if { $last_file == "" } {
 	    set window_error "No previous file!"
 	    return no
 	} else {
 	    return yes
 	}
-    } elseif { $number < 1 \
-               || $number > [llength $file_list] } {
-	set window_error "Bad file number: $number"
-	return no
-    } else {
-	set last_file \
-            [lindex [lindex $file_list \
-                            [expr { $number - 1 }]] 2]
+    }
 
-	if { $submitted_program == \
-		[file rootname $last_file] } {
-	    set extension [file extension $last_file]
-	    if { [info exists \
-		       make_file_array($extension)] } {
-		eval $make_file_array($extension)
+    if { [regexp {^[0-9]+$} $id forget] } {
+        if { $id < 1 || $id > [llength $file_list] } {
+	    set window_error "Bad file number: $id"
+	    return no
+	} else {
+	    set last_file \
+		[lindex [lindex $file_list \
+                            [expr { $id - 1 }]] 2]
+	}
+    } else {
+        set found ""
+	foreach item $file_list {
+	    set filename [lindex $item 2]
+	    if { [regexp "\\.$id\$" $filename] \
+	         || \
+		 ( [regexp {^[A-Z]} $id forget] \
+		   && \
+		   [regexp "^$id" $filename] ) } { \
+	        lappend found $filename
 	    }
 	}
-	return yes
+
+	set l [llength $found]
+	if { $l == 0 } {
+	    set window_error \
+	        "Bad file extension or beginning: $id"
+	    return no
+	} elseif { $l == 1 } {
+	    set last_file $found
+	} else {
+	    set window_error \
+	        "Ambiguous file extension or\
+		 beginning: $id"
+	    return no
+	}
     }
+
+    set extension [file extension $last_file]
+    if { [info exists \
+	       make_file_array($extension)] } {
+	eval [list $make_file_array($extension) \
+	           $last_file]
+    }
+    return yes
 }
 
-# Procedure to make $submitted_program.diff if
-# possible.
+# Procedure to make xxx.diff or xxx.bdiff if possible.
 #
-proc make_diff {} {
+proc make_diff { file } {
 
-    global submitted_program
+    set base [file rootname $file]
 
-    set diff_file $submitted_program.diff
-    set out_file  $submitted_program.out
-    set test_file $submitted_program.test
+    set diff_file $file
+    set out_file  $base.out
+    set test_file $base.test
 
     if { ! [file readable $out_file] }  return
     if { ! [file readable $test_file] } return
@@ -782,104 +736,20 @@ proc make_diff {} {
 	}
     }
 
+    if { [file extension $file] == "diff" } {
+	set command "diff"
+    } else {
+	set command "diff -b"
+    }
+
     write_file $diff_file \
-	       "===== diff $out_file $test_file"
-    catch { exec diff $out_file $test_file \
-                      >>& $diff_file }
+	       "===== $command $out_file $test_file"
+    catch { eval exec $command \
+                 [list $out_file $test_file \
+		       >>& $diff_file] }
 }
 set make_file_array(.diff) make_diff
-
-# Procedure to make $submitted_program.bdiff if
-# possible.
-#
-proc make_bdiff {} {
-
-    global submitted_program
-
-    set bdiff_file $submitted_program.bdiff
-    set out_file  $submitted_program.out
-    set test_file $submitted_program.test
-
-    if { ! [file readable $out_file] }  return
-    if { ! [file readable $test_file] } return
-
-    if { [file exists $bdiff_file] } {
-        if { [file mtime $bdiff_file] \
-	         < [file mtime $out_file] \
-	     || \
-	     [file mtime $bdiff_file] \
-	         < [file mtime $test_file] } {
-	    file delete -force $bdiff_file
-	} else {
-	    return
-	}
-    }
-
-    write_file $bdiff_file \
-	       "===== diff -b $out_file $test_file"
-    catch { exec diff -b $out_file $test_file \
-                      >>& $bdiff_file }
-}
-set make_file_array(.bdiff) make_bdiff
-
-
-# Set the window display to display the first lines
-# of the file.  Set the last_display variable to
-# `file'.  If the file is unreadable or is not a plain
-# file, switch to displaying the file list instead.
-#
-proc set_file_display { filename } {
-
-    global window_height window_info_height \
-           last_display
-
-    if { ! [file readable $filename] \
-         || ! [file isfile $filename] } {
-	refresh_file_list
-    	set_file_list_display
-	return
-    }
-
-    # Height is the number of lines of the file that are
-    # displayed.  The 5 includes the prompt, error line,
-    # blank line, and two bar lines.
-    #
-    set height [expr { $window_height \
-                       - $window_info_height - 5 }]
-
-    # Compute the window display in $display.
-    #
-    set display [bar_with_text "$filename:"]
-
-    set file_ch [open $filename r]
-    set n 0
-    while { "yes" } {
-    	set line [gets $file_ch]
-	if { [eof $file_ch] } break
-
-	incr n
-
-	if { $n <= $height } {
-	    set display "$display\n$line"
-	}
-    }
-    close $file_ch
-
-    if { $n > $height } {
-	set more [expr { $n - $height }]
-    	set bar [bar_with_text ". . . . .\
-		 there are $more more lines in this\
-		 file"]
-    } else {
-        set bar [bar_with_text " end-of-file"]
-    }
-
-    # Set the window display and indicate a file was
-    # the last thing displayed.
-    #
-    set_window_display "$display\n$bar"
-    set last_display file
-}
+set make_file_array(.bdiff) make_diff
 
 # Reading Files
 # ------- -----
@@ -1005,6 +875,142 @@ set read_array($received_file) read_received_file
 set submitted_file      ""
 set submitted_program   ""
 set submitted_extension ""
+
+
+# Displaying Files
+# ---------- -----
+
+# Set the window display to the file list.  Set the
+# last_display variable to `file_list'.
+#
+proc set_file_list_display {} {
+
+    global file_list file_list_origin_mtime \
+    	   window_bar last_display
+
+    set display "$window_bar"
+
+    set n 0
+    set previous ""
+
+    # If `previous' is non-empty it is the previous
+    # item and has no more than 39 characters.
+    #
+    foreach item $file_list {
+	incr n
+	set time [lindex $item 1]
+	if { $time == "TBD" } {
+	    set tttt TBD
+	} else {
+	    set time [expr { $time \
+			     - $file_list_origin_mtime
+                           }]
+	    if { $time < 0 } {
+		set sign "-"
+		set time [expr { - $time }]
+	    } else {
+		set sign ""
+	    }
+	    set mm [expr { $time / 60 }]
+	    set hh [expr { $mm / 60 }]
+	    set mm [expr { $mm - 60 * $hh }]
+	    set tttt "$sign[format {%d:%02d} $hh $mm]"
+	    if { [string length $tttt] > 6 } {
+		set tttt "${sign}inf"
+	    }
+	}
+	set next [format {%3d. %6.6s%1.1s %s} \
+			 $n \
+			 $tttt [lindex $item 4] \
+			 [lindex $item 2]]
+	set commented "${next} [lindex $item 3]"
+
+	if { [string length $commented] <= 80 } {
+	    set next $commented
+	}
+	if { [string length $next] > 39 } {
+	    if { $previous != "" } {
+	    	set next "$previous\n$next"
+	    }
+	    set previous ""
+	} elseif { $previous != "" } {
+	    set next [format {%-40s%s} $previous $next]
+	    set previous ""
+	} else {
+	    set previous $next
+	    set next ""
+	}
+
+	if { $next != "" } {
+	    set display "$display\n$next"
+	}
+    }
+
+    if { $previous != "" } {
+	set display "$display\n$previous"
+    }
+
+    set_window_display "$display\n$window_bar"
+    set last_display file_list
+}
+
+# Set the window display to display the first lines
+# of the file.  Set the last_display variable to
+# `file'.  If the file is unreadable or is not a plain
+# file, switch to displaying the file list instead.
+#
+proc set_file_display { filename } {
+
+    global window_height window_info_height \
+           last_display
+
+    if { ! [file readable $filename] \
+         || ! [file isfile $filename] } {
+	refresh_file_list
+    	set_file_list_display
+	return
+    }
+
+    # Height is the number of lines of the file that are
+    # displayed.  The 5 includes the prompt, error line,
+    # blank line, and two bar lines.
+    #
+    set height [expr { $window_height \
+                       - $window_info_height - 5 }]
+
+    # Compute the window display in $display.
+    #
+    set display [bar_with_text "$filename:"]
+
+    set file_ch [open $filename r]
+    set n 0
+    while { "yes" } {
+    	set line [gets $file_ch]
+	if { [eof $file_ch] } break
+
+	incr n
+
+	if { $n <= $height } {
+	    set display "$display\n$line"
+	}
+    }
+    close $file_ch
+
+    if { $n > $height } {
+	set more [expr { $n - $height }]
+    	set bar [bar_with_text ". . . . .\
+		 there are $more more lines in this\
+		 file"]
+    } else {
+        set bar [bar_with_text " end-of-file"]
+    }
+
+    # Set the window display and indicate a file was
+    # the last thing displayed.
+    #
+    set_window_display "$display\n$bar"
+    set last_display file
+}
 
 
 # Reply Functions

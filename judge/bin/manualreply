@@ -5,7 +5,7 @@
 #
 # File:		manualreply
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Aug 24 23:01:08 EDT 2001
+# Date:		Sat Aug 25 10:38:23 EDT 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/08/25 02:48:49 $
+#   $Date: 2001/08/25 14:41:24 $
 #   $RCSfile: manualreply,v $
-#   $Revision: 1.22 $
+#   $Revision: 1.23 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -235,9 +235,23 @@ $menu"
 		set_file_display $last_file
 	    }
 	}
+        {^v } {
+	    regexp {^v +([^ ]*)$} $answer forget id
+	    if { [get_file $id] } {
+		view_file $last_file
+		set_file_display $last_file
+	    }
+	}
 	{^e[0-9]*$} {
 	    regexp {^e([0-9]*)$} $answer forget n
 	    if { [get_file $n] } {
+		edit_file $last_file
+		set_file_display $last_file
+	    }
+	}
+	{^e } {
+	    regexp {^e +([^ ]*)$} $answer forget id
+	    if { [get_file $id] } {
 		edit_file $last_file
 		set_file_display $last_file
 	    }
@@ -429,8 +443,13 @@ $menu"
 	    set window_error "ERROR: empty input"
 	}
 	{default} {
-	    set window_error "ERROR: cannot understand\
-				`$answer'!"
+	    if { [get_file $answer] } {
+		set_file_display $last_file
+	    } else {
+		set window_error \
+		    "ERROR: cannot understand\
+				  `$answer'!"
+	    }
         }
 
     }
