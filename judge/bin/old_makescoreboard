@@ -4,7 +4,7 @@
 #
 # File:		makescoreboard
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Oct 23 08:54:41 EDT 2001
+# Date:		Wed Oct 24 12:22:20 EDT 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/10/23 12:53:26 $
+#   $Date: 2001/10/24 16:21:04 $
 #   $RCSfile: old_makescoreboard,v $
-#   $Revision: 1.10 $
+#   $Revision: 1.11 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -31,8 +31,8 @@ catch {
 
 set document "
 makescoreboard { -start | -status | -stop | -update } \\
-               \[ parameter-file | \\
-	          scoreboard-instructions \]
+               \[ parameter-filename | \\
+	          scoreboard-instructions \] ...
 
     This program makes scoreboards by following the
     instructions stored in the `scoreboard_instructions'
@@ -107,9 +107,11 @@ makescoreboard { -start | -status | -stop | -update } \\
     program argument errors.  Otherwise, this program
     logs errors in the log directory."
 
-set email_address ""
-set parameters_file ""
-set interval 60
+# Print documentation if -doc.* first argument.
+#
+if { [regexp {^-doc} [lindex $argv 0]] } {
+    puts $document
+}
 
 # Constant equal to 256 spaces.
 #
@@ -131,15 +133,17 @@ set finder_file \
 set pid_file \
     $judging_directory/$scoreboard_pid_file
 
-# Print documentation if arguments say to.
+# Process arguments.
 #
-if { [llength $argv] > 2 \
-     || ( [llength $argv] == 1 \
-          && [regexp {^-doc} [lindex $argv 0]] ) } {
-    puts $document
+foreach arg $argv {
+    if { [regexp "^{" $arg] } {
+        set scoreboard_instructions $arg
+    } else {
+        source $arg
+    }
 }
 
-# Compute possible parameters.
+# Compute possible parameters and save original values.
 #
 foreach name [info globals scoreboard_*] {
     regexp {^scoreboard_(.*)$} $name forget pname
@@ -148,53 +152,85 @@ foreach name [info globals scoreboard_*] {
     }
 }
 
-# Process argument.
-#
-if { [llength $argv] == 1 } {
-    set arg [lindex $argv 0]
-    if { [regexp "^{" $arg] } {
-        set scoreboard_instructions $arg
-    } else {
-        source $arg
+
+proc unabbreviate { value } {
+
+    global abbreviation
+
+    if { [info exists abbreviation($value)] } {
+        return $abbreviation($value)
+    { else {
+        return $value
     }
 }
 
-
 proc pass1 { instructions } {
 
-    set pc 0
-    set endpc [llength $instructions]
-    set outpc -1
+    global parameters_array abbreviation
 
-    if { [lindex [lindex $instructions 0] 0] \
-         != "OUTPUT" } {
-        error "first scoreboard instruction is not\
-	       OUTPUT"
+    # Reinstall initial parameter values.
+    #
+    foreach name [array names parameters_array] {
+        set scoreboard_$name $parameters_array($name)
     }
 
+    # Save abbreviations.
+    #
+    set abbreviation(START)  scoreboard_start_time
+    set abbreviation(STOP)   scoreboard_stop_time
+    set abbreviation(FREEZE) scoreboard_freeze_time
+    set abbreviation(NAME)   scoreboard_name
+    set time		     [clock seconds]
+    set abbreviation(TIME)   [clock format $time]
+
+    set pc 0
+    set end_pc [llength $instructions]
+    set out_pc -1
+
+
     while { "yes" } {
+
         set instruction [lindex $instructions $pc]
-        if { ( $pc >= $endpc \
-	       || $instruction == "OUTPUT" ) } {
 
-	    pass2 $instructions $outputpc $pc $update
+        if { ( $pc >= $end_pc \
+	       || $instruction == "OUTPUT" ) \
+	     && $out_pc >= 0 } {
+	    if { $out_start != "" \
+	          || $time \
+		     < [clock scan $out_start] ) {
+	        set update no
+	    }
+	    if {    $out_mtime != "" \
+	         && $out_stop != "" \
+	         && $out_mtime \
+		    >= [clock scan $out_stop] } {
+	        set update no
+	    }
 
-	    if { $pc >= $endpc } break
+	    pass2 $instructions $out_pc $pc $update
+
+	    if { $pc >= $end_pc } break
 	}
 
 	set opcode [lindex $instruction 0]
 	switch $opcode {
 	    OUTPUT {
-	        set outpc $pc
-	    	set update no
-		set outfile [lindex $instruction 1]
-		set outfile \
-		   "$judging_directory/$outfile"
-		if { [file readable $outfile] } {
-		    set out_mtime [file mtime $outfile]
+		set out_file  [lindex $instruction 1]
+		set out_start [lindex $instruction 2]
+		set out_stop  [lindex $instruction 2]
+		set out_file \
+		   [file join $judging_directory \
+		              $out_file]
+		set out_start [unabbreviate $out_start]
+		set out_stop [unabbreviate $out_stop]
+		if { [file readable $out_file] } {
+		    set out_mtime [file mtime $out_file]
 		} else {
 		    set update yes
+		    set out_mtime ""
 		}
+	        set out_pc $pc
+	    	set update no
 	    }
 
 	    BLANK {}
@@ -202,13 +238,19 @@ proc pass1 { instructions } {
 	    LINE {}
 
 	    INPUT {
-		set infile [lindex $instruction 1]
-		set infile "$judging_directory/$infile"
-	        if { $update == "no" \
-		     && [file readable $infile] \
-		     && [file mtime $infile] \
-		        > $out_mtime } {
-		    set update yes
+		foreach in_file \
+		        [lrange $instruction 1 end] {
+		    set in_file \
+		        [file join $judging_directory \
+			           $in_file]
+		    if { [file readable $in_file] } {
+			if { $update == "no" \
+			     && [file mtime $in_file]
+				> $out_mtime } {
+			    set update yes
+			}
+			break;
+		    }
 		}
 	    }
 	    BOARD {
@@ -225,7 +267,7 @@ proc pass1 { instructions } {
     }
 }
 
-proc pass2 { instructions pc endpc update } {
+proc pass2 { instructions pc end_pc update } {
 
     global parameters_array scoreboard_width
 
@@ -234,9 +276,8 @@ proc pass2 { instructions pc endpc update } {
 
     incr pc
     set contents ""
-    set date [clock format [clock seconds]]
 
-    while { $pc < $endpc } {
+    while { $pc < $end_pc } {
         set instruction [lindex $instructions $pc]
 	incr pc
 	set opcode [lindex $instruction 0]
@@ -258,15 +299,9 @@ proc pass2 { instructions pc endpc update } {
 	        set center [lindex $instruction 2]
 	        set right  [lindex $instruction 3]
 
-		if { $left == "DATE" } {
-		    set left $date
-		}
-		if { $center == "DATE" } {
-		    set center $date
-		}
-		if { $right == "DATE" } {
-		    set right $date
-		}
+		set left   [unabbreviate $left]
+		set center [unabbreviate $center]
+		set right  [unabbreviate $right]
 
 		set left_end [string length $left]
 		incr left_end -1
@@ -326,12 +361,20 @@ proc pass2 { instructions pc endpc update } {
 	    }
 
 	    INPUT_yes {
-		set infile [lindex $instruction 1]
-		set infile "$judging_directory/$infile"
-		if { [file size $infile] > 0 ] } {
-		    set contents \
-		    	"$contents[read_entire_file \
-				      $infile]\n"
+		foreach in_file \
+		        [lrange $instruction 1 end] {
+		    set in_file \
+		        [file join $judging_directory \
+			           $in_file]
+		    if { [file readable $in_file] } {
+			if { [file size $in_file] > 0 \
+					} {
+			    set c [read_entire_file \
+			    		$in_file]
+			    set contents "$contents$c"
+			}
+			break;
+		    }
 		}
 	    }
 	    BOARD_yes {
@@ -340,7 +383,7 @@ proc pass2 { instructions pc endpc update } {
 		        [array names parameters_array] {
 		    lappend \
 		        [list $name \
-			      $parameters_array($name)]
+			      [set scoreboard_$name]
 		}
 	        set contents \
 		    "$contents[exec scoreboard \
@@ -362,8 +405,8 @@ proc pass2 { instructions pc endpc update } {
 		           name"
 		}
 
+		set value [unabbreviate $value]
 		set scoreboard_$name $value
-		set parameters_array($name) $value
 	    }
 	}
     }
