@@ -1,4 +1,4 @@
-# Programming Contest Source Code Makefile
+# HPCM Judging Source Code Makefile
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: acm-cont $
-#   $Date: 2000/08/19 16:13:34 $
+#   $Date: 2000/08/27 02:54:04 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.1 $
+#   $Revision: 1.2 $
 
 all: scorediff
 

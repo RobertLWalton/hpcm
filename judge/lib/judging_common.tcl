@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: acm-cont $
-#   $Date: 2000/08/26 04:01:45 $
+#   $Date: 2000/08/27 02:54:03 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.17 $
+#   $Revision: 1.18 $
 #
 
 # Include this code in TCL program via:
@@ -86,7 +86,8 @@ proc filename_date_to_clock { date } {
 #
 proc is_checked {} {
     set old_dir [file tail [pwd]]
-    if { ! [regexp {^(.*{<[^>]*)([UC])(>}.*)$} $old_dir a b c] } {
+    if { ! [regexp {^(.*{<[^>]*)([UC])(>}.*)$} \
+                   $old_dir a b c] } {
 	error "$old_dir does not include a checkmark"
     }
     return [expr { $b == "C" }]
@@ -99,7 +100,8 @@ proc is_checked {} {
 #
 proc make_checked {} {
     set old_dir [file tail [pwd]]
-    if { ! [regexp {^(.*{<[^>]*)([UC])(>}.*)$} $old_dir a b c] } {
+    if { ! [regexp {^(.*{<[^>]*)([UC])(>}.*)$} \
+                   $old_dir a b c] } {
 	error "$old_dir does not include a checkmark"
     }
     if { $b != "C" } {
@@ -113,7 +115,8 @@ proc make_checked {} {
 #
 proc make_unchecked {} {
     set old_dir [file tail [pwd]]
-    if { ! [regexp {^(.*{<[^>]*)([UC])(>}.*)$} $old_dir a b c] } {
+    if { ! [regexp {^(.*{<[^>]*)([UC])(>}.*)$} \
+                    $old_dir a b c] } {
 	error "$old_dir does not include a checkmark"
     }
     if { $b != "U" } {
@@ -229,25 +232,28 @@ proc log_error { error_output } {
     close $log_ch
 }
 
-# Read an email message header from the channel. If given, the
-# first line of the header is the second argument (note that email
-# header lines cannot be empty.  Stop reading at the first empty
-# line and discard that line.
+# Read an email message header from the channel. If
+# given, the first line of the header is the second
+# argument (note that email header lines cannot be
+# empty.  Stop reading at the first empty line and
+# discard that line.
 #
 # The results are returned in global variables:
 #
-#	message_header		All the lines of the header
-#	message_From_line	The first line if it begins with
-#				`^From\ '.
-#	message_from		The `From:' field value.
-#	message_to		The `To:' field value.
-#	message_reply_to	The `Reply-To:' field value.
-#	message_subject		The `Subject:' field value.
-#	message_date		The `Date:' field value.
+#	message_header		All the lines of the
+#				header
+#	message_From_line	The first line if it
+#				begins with `^From\ '.
+#	message_from		`From:' field value.
+#	message_to		`To:' field value.
+#	message_reply_to	`Reply-To:' field value.
+#	message_subject		`Subject:' field value.
+#	message_date		`Date:' field value.
 #
-# All the values have the final \n stripped off.  All the field
-# values have the `field-name:' stripped off.  If there are
-# two copies of a field, only the last is recorded.
+# All the values have the final \n stripped off.  All
+# the field values have the `field-name:' stripped off.
+# If there are two copies of a field, only the last is
+# recorded.
 #
 proc read_header { ch { first_line "" } } {
     global message_header message_From_line \
