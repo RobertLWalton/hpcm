@@ -4,7 +4,7 @@
 #
 # File:		fprint
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Mon Jun 25 05:31:38 EDT 2001
+# Date:		Wed Oct  1 13:11:11 EDT 2003
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,14 +13,20 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/06/25 09:45:10 $
+#   $Date: 2003/10/01 17:21:28 $
 #   $RCSfile: fprint,v $
-#   $Revision: 1.6 $
+#   $Revision: 1.7 $
+
+P="-P $PRINTER"
 
 case "$1" in
+   -o )
+       P='-o -'
+       shift
+       ;;
    -doc* )
    	echo "
-fprint [filename ...]
+fprint [-o] [filename ...]
 
     Print the files named (or the standard input if
     the filenames are missing) in a format well suited
@@ -29,7 +35,9 @@ fprint [filename ...]
     least 40 lines on a file page.
 
     The printer used is the value of the PRINTER
-    environment variable."
+    environment variable.  If the -o option is given,
+    the output is written to the standard output and
+    not printed."
 
     	exit 1
 	;;
@@ -37,9 +45,8 @@ esac
 
 # Print files.
 #
-enscript -j -2r -b "\$n|\$W  \$C  %n|\$% of \$=" \
+enscript -j -2r -b "\$n|\$W  \$C|\$% of \$=" \
 	--margins=48:48:: \
-	-F Courier-Bold14 -f Courier10 \
-	-P $PRINTER "$@"
+	-F Courier-Bold14 -f Courier10 $P "$@"
 
 exit 0
