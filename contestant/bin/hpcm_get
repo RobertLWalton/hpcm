@@ -1,0 +1,209 @@
+#!/bin/sh
+#
+# Get demos, problems, etc for the contestant.
+#
+# File:		hpcm_get
+# Author:	Bob Walton <walton@deas.harvard.edu>
+# Date:		Mon Sep 25 15:26:08 EDT 2000
+#
+# The authors have placed this program in the public
+# domain; they make no warranty and accept no liability
+# for this program.
+#
+# RCS Info (may not be true date or author):
+#
+#   $Author: hc3 $
+#   $Date: 2000/10/07 17:48:28 $
+#   $RCSfile: hpcm_get
+#   $Revision: 1.1 $
+
+cd
+
+force=no
+case "$1" in
+
+    -force )
+	    force=yes
+	    shift
+	    ;;
+    -* )
+	    echo "
+hpcm_get [-force] [name ...]
+
+    When used without a name, gets everything currently
+    allowed.
+
+    When used with a name, gets the named files or
+    directories.  Getting a directory recursively gets
+    the contents of the directory.
+
+    Everything gotten is installed in the directory
+    defined by the HPCM_HOME environment variable, or
+    in ~ if HPCM_HOME is not defined.
+
+    So for example,
+    			hpcm_get demos
+
+    gets files named `demos/...' and puts them in the
+    directory ~/demos if HPCM_HOME is undefined.
+
+    Without the -force option, hpcm_get refuses to
+    get things that seem to be already gotten.  With
+    -force, it will get them anyway, which is useful
+    if the version gotten is more recent or complete
+    than what was previously gotten.
+
+    If the current account is a contest account, then
+    the directory link ~/.hpcm_contest exists, and if
+    possible the gotten files are symbolically linked
+    to readonly files in a judge's contest directory.
+    Otherwise, files are gotten by sending email and
+    using the hpcm_extract program to extract the files
+    from reply email.  In any case directories are
+    `gotten' by making new directories: directories
+    are never symbolically linked.
+
+    One reason for getting problems by email is that
+    the autojudge can record the time the problems
+    were gotten.  This makes it possible to run
+    contests in which the time that a particular team
+    competes is not predetermined."
+
+    	    exit 1
+	fi
+	;;
+esac
+
+home=${HPCM_HOME:-~}
+
+if test ! -d "$home"
+then
+    echo "$home is not a directory"
+    exit 1
+fi
+
+if test -x ~/.hpcm_contest
+then
+    contest=`ls -l ~/.hpcm_contest`
+    contest=`expr "$contest" : '.*-> *\([^ ]*\) *$' `
+else
+    contest=""
+fi
+
+case "$contest" in
+    "" )
+    	
+    	;;
+    /* )
+    	;;
+    *)
+    	echo $contest is NOT an absolute pathname
+	exit 1
+    	;;
+esac
+
+for name in "${@:-help demos problems}
+do
+
+    case "$name" in
+        help/* | help )
+
+		if test "$contest" != "" \
+		        -a -d "$contest/help" \
+		        -a -r "$contest/help" \
+		        -a -x "$contest/help"
+		then continue
+		fi
+
+		dir=help ;;
+        demos/* | demos )
+		dir=demos ;;
+        problems/* | problems )
+		dir=problems ;;
+	*)	echo "Bad name: does not begin with" \
+		     "help, demos, or problems:"
+		echo "    $name    IGNORED"
+		continue
+		;;
+    esac
+
+    if test "$contest" != "" \
+            -a -d "$contest/$dir"
+    then
+    	if test -r "$contest/$dir" \
+	        -a -x "$contest/dir" \
+	        -a -r "$contest/dir"
+	then
+	    ds1=""
+	    n=$name
+	    while test yes = yes
+	    do
+	    	n=`dirname "$n"`
+		if test "$n" = "."
+		then break
+		fi
+		ds1="$n $ds1"
+	    done
+
+	    if test -d "$contest/$name"
+	    then
+	        ds2=`cd "$contest/$name"; \
+		    find . -type d -print`
+	        fs=`cd "$contest/$name"; \
+		    find . -type f -print`
+	    else
+	        ds2=""
+	        fs=$name
+	    fi
+
+	    for d in $ds1 $ds2
+	    do
+	    	if test ! -d "$home/$d"
+		then
+		    if mkdir "$home/$d"
+		    then
+		    else
+		    	echo "Cannot mkdir $home/$d"
+			exit 1
+		    fi
+		fi
+	    done
+
+	    for f in $fs
+	    do
+	        if test -f "$home/$f"
+		then
+	    	elif ln -s "$contest/$f" "$home/$f"
+		then
+		else
+		    echo "Cannot ln -s $contest/$f" \
+		         "$home/$f"
+		    exit 1
+		fi
+	    done
+		
+	elif test "$dir" = problems
+	then
+	    echo "$dir is not available; it should"
+	    echo "become available when the" \
+		 "contest starts"
+	else
+	    echo "$dir is not available; for some"
+	    echo "reason the judge has protected it."
+	fi
+
+	continue
+    fi
+
+    if test -e "$home/$name" -a "$force" = "no"
+    then
+    	echo "$name IGNORED: it has been gotten"
+    	echo "$(use -force to get it again)"
+    else
+	echo "Sending email to get $name"
+        echo "Subject: get $name" | hpcm_sendmail
+    fi
+
+done
+
+exit 0
