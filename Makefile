@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Oct 27 01:03:38 EST 2002
+# Date:		Sat Nov  9 03:31:33 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,15 +11,17 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/10/27 06:11:18 $
+#   $Date: 2002/11/09 08:36:17 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.21 $
+#   $Revision: 1.22 $
 
 # See STATUS file for description of versions.
 #
-VERSION=0.0
+VERSION=1.000
 
 all:	submakes
+
+signatures:	HPCM_MD5_Signatures
 
 # Kill all implicit rules
 #
@@ -50,9 +52,30 @@ HPCM_MD5_Signatures:	signatures_header \
 			distributable_files_${VERSION} \
 		    non_distributable_files_${VERSION}
 	rm -f HPCM_MD5_Signatures
-	cat signatures_header >  HPCM_MD5_Signatures
-	echo ============== Date of Signatures: \
-	     "`date`" >>  HPCM_MD5_Signatures
+	echo "HPCM MD5 SIGNATURES" \
+	     > HPCM_MD5_Signatures
+	echo "---- --- ----------" \
+	     >> HPCM_MD5_Signatures
+	echo "" \
+	     >> HPCM_MD5_Signatures
+	echo "${COPYRIGHT}" \
+	     >> HPCM_MD5_Signatures
+	echo "" \
+	     >> HPCM_MD5_Signatures
+	cat signatures_header \
+	     >>  HPCM_MD5_Signatures
+	echo "" \
+	     >> HPCM_MD5_Signatures
+	echo "HPCM Version: ${VERSION}" \
+	     >>  HPCM_MD5_Signatures
+	echo "Date of Signatures:" \
+	     "`date`" \
+	     >>  HPCM_MD5_Signatures
+	echo " ====== " " ====== " \
+	     " ====== " " ====== " \
+	     " ====== " " ====== " \
+	     " ====== " " ====== " \
+	     >> HPCM_MD5_Signatures
 	cd ..; \
 	   md5sum `cat \
 	      hpcm/distributable_files_${VERSION} \
@@ -65,9 +88,9 @@ HPCM_MD5_Signatures:	signatures_header \
 md5_check:
 	cd ..; \
 	   sed < hpcm/HPCM_MD5_Signatures \
-	       -e '1,/^=====/'d | \
-	       md5sum --check | \
-	       grep -v '^[^ 	]*: OK$$'
+	       -e '1,/^ ====== /'d | \
+	       md5sum --check 2>&1 | \
+	       sed -e '/^[^ 	]*: OK$$/d'
 		
 
 # Make tar files.
@@ -98,7 +121,7 @@ distributable_files_${VERSION}:	File_List Makefile
 non_distributable_files_${VERSION}:	\
 				File_List Makefile
 	rm -f non_distributable_files_${VERSION}
-	file_list \! public \
+	file_list '! public' \
 	     | sed -e 's/^\./hpcm/' \
 	     > non_distributable_files_${VERSION}
 
