@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Jul 31 04:41:02 EDT 2002
+# Date:		Wed Sep 25 09:32:01 EDT 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/07/31 08:35:36 $
+#   $Date: 2002/09/25 13:34:50 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.19 $
+#   $Revision: 1.20 $
 
 # make
 #	Makes documentation as fprintable .doc files in
@@ -67,6 +67,7 @@ DOCS=	overview.doc \
 	contestant/lpq.doc \
 	judge/makejudgingdir.doc \
 	judge/makescoreboard.doc \
+	judge/makeweb.doc \
 	judge/manualreply.doc \
 	contestant/print.doc \
 	contestant/print2.doc \
@@ -243,6 +244,11 @@ judge/makescoreboard.doc:	hpcm_judging.rc \
 	rm -f judge/makescoreboard.doc
 	-../../judge/bin/makescoreboard -doc \
 	    >judge/makescoreboard.doc
+judge/makeweb.doc:	hpcm_judging.rc \
+			../../judge/bin/makeweb
+	rm -f judge/makeweb.doc
+	-../../judge/bin/makeweb -doc \
+	    >judge/makeweb.doc
 judge/manualreply.doc:	hpcm_judging.rc \
 			../../judge/bin/manualreply
 	rm -f judge/manualreply.doc

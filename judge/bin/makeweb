@@ -7,7 +7,7 @@
 #
 # File:		makeweb
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Sep 24 01:29:11 EDT 2002
+# Date:		Wed Sep 25 08:24:23 EDT 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -16,9 +16,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/09/24 05:28:14 $
+#   $Date: 2002/09/25 13:31:53 $
 #   $RCSfile: makeweb,v $
-#   $Revision: 1.3 $
+#   $Revision: 1.4 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -33,104 +33,84 @@ set log_mode none
 catch {
 
 set document "
-makeweb contest_name options
+makeweb \[ parameter-file-name | \\
+           parameter-name-value-list \] ...
 
-  Make the web directory of a contest.  Other director-
-  ies, info, contest/help, contest/problems, must
-  already exist.  The web directory contains an
-  index.html file, problem statements, and optionally
-  problem solutions.  The web directory can be copied to
-  another location and made accessible to the WWW.
+  When this program starts, it processes its arguments
+  as follows.  Any named parameter file is `sourced'.
+  Any argument that begins with a `{' is treated as a
+  TCL list (after the outer `{ }' brackets are removed)
+  of items each of the format `{PN V}'.  For each item,
+  the global variable `web_PN' is set to the value V.
 
-  The contest_name is used in a header for the web
-  directory index.html file.
+  This program makes a web directory for a contest.
+  Other directories, info, contest/help, contest/
+  problems, must already exist.  The web directory
+  contains an index.html file, problem statements, and
+  optionally problem solutions.  The web directory can
+  be copied to another location and made accessible to
+  the WWW.
 
-  Options:
-
-    -email autojudge_address
-
-	Include a description of how to submit a problem
-	via email in the index.  The autojudge_address
-	is the address to which submissions are to be
-	sent.
-
-    -solutions password
-
-        Include solutions in a private/password subdir-
-	ectory.  Without knowing the password, the
-	solutions subdirectory cannot be accessed.
-
-    -help help_directory
-
-	Include a reference to help and demo files.  The
-	help_directory is the location of the help and
-	demos index.html file relative to this web dir-
-	ectory.
-
-    -scoreboard scoreboard_file
-
-        Include a reference to the scoreboard which is
-	store in the indicated file.
-
-    -manager manager_address
-
-        At the end place a contact information for the
-	web page manager at the given email address.
-
-  If any parameter for the above options is an empty
-  string, the option is treated as if it was not given.
+  Options are controlled by `web page parameter' global
+  variables in hpcm_judging.rc.  See that file for
+  documentation.
 
   Note that if problem descriptions are not included in
   the problem directories, then they will not be includ-
-  ed in the web directory."
+  ed in the web directory.
 
-# Option parameters.  Parameter is "" if option is
-# missing.
+  Unlike most HPCM judging programs, errors made by this
+  program are not written to log files, but are announ-
+  ced on the standard error output."
+
+# } This closes extra left bracket in documentation so
+# outer {} brackets work.
+
+# On first -doc* argument, print documentation and exit.
 #
-set autojudge_address ""
-set solutions_password ""
-set help_directory ""
-set scoreboard_file ""
-set manager_address ""
-
-# Argi is the index of the current argument, for use in
-# lindex.
-#
-set contest_name [lindex $argv 0]
-set argi 1
-
-while { $argi < $argc } {
-    set argj $argi
-    incr argj
-    if { $argj >= $argc } break
-    set parameter [lindex $argv $argj]
-
-    switch -- [lindex $argv $argi] {
-        -email	    { set autojudge_address $parameter}
-        -solutions  { set solutions_password $parameter}
-        -help	    { set help_directory $parameter}
-        -scoreboard { set scoreboard_file $parameter}
-        -manager    { set manager_address $parameter}
-	default	    { break }
-    }
-    incr argi 2
-}
-
-# If no arguments left or first remaining argument
-# begins with `-', print documentation and exit with
-# error.
-#
-if { $contest_name == "" \
-     || [regexp {^-doc} $contest_name] \
-     || $argi < $argc } {
+if { [regexp {^-doc} [lindex $argv 0]] } {
     puts $document
     exit 1
+}
+
+# Process arguments.
+#
+set LB "{"
+# } to balance left bracket in last line
+#
+foreach arg $argv {
+    if { [regexp "^${LB}" $arg] } {
+	if { [catch { set items [lindex $arg 0] }] } {
+	    error "argument is not a TCL list: $arg"
+	}
+	foreach item $items {
+	    if { [catch { set len [llength $item] }] \
+	         || $len != 2 } {
+	        "argument element is not a length 2\
+		 TCL list: $item"
+	    }
+	    set name  [lindex $item 0]
+	    set value [lindex $item 1]
+	    if { ! [info exists web_$name] } {
+	    	error "web_$name does not exist"
+	    }
+	    set web_$name $value
+	}
+    } else {
+	source $arg
+    }
 }
 
 # Complain of web directory already exists.
 #
 if { [file exists $web_directory] } {
     error "$web_directory already exists"
+}
+
+# Complain if no contest name.
+#
+if { $web_contest_name == "" } {
+    error "web_contest_name is \"\""
 }
 
 # Universal abbreviations to shorten lines.
@@ -162,7 +142,7 @@ foreach d {problems help} {
 
 # Be sure solutions directory exists if needed.
 #
-if { $solutions_password != "" } {
+if { $web_solutions_password != "" } {
     set dir $solutions_directory
     if {    ! [file isdirectory $dir] \
          || ! [file executable $dir] \
@@ -183,12 +163,12 @@ grant_access $web_directory/problems
 
 # Make solutions subdirectory if necessary.
 #
-if { $solutions_password != "" } {
+if { $web_solutions_password != "" } {
 
     # Set abbreviations for use in rest of this program.
     #
     set pdir $web_directory/private
-    set sdir $pdir/$solutions_password
+    set sdir $pdir/$web_solutions_password
 
     file mkdir $sdir
     grant_access $sdir
@@ -201,15 +181,15 @@ if { $solutions_password != "" } {
 set ch [open $web_directory/index.html w]
 puts $ch "
 <HTML>
-<TITLE>$contest_name</TITLE>
+<TITLE>$web_contest_name</TITLE>
 <BODY VLINK=\"blue\" LINK=\"red\">
 <H1 ALIGN=\"CENTER\">
-<FONT COLOR=\"red\">$contest_name</FONT></H1>"
+<FONT COLOR=\"red\">$web_contest_name</FONT></H1>"
 
 # Output -email information.
 #
-if { $autojudge_address != "" } {
-    set address $autojudge_address
+if { $web_autojudge_address != "" } {
+    set address $web_autojudge_address
     regsub -all {>} $address {\&gt;} address
     regsub -all {<} $address {\&lt;} address
     puts $ch "
@@ -272,29 +252,29 @@ match the correct output.
 
 # Output -help information.
 #
-if { $help_directory != "" } {
+if { $web_help_URL != "" } {
     puts $ch "
 <P>
 Help files and demos are available
-<A HREF=\"$help_directory\">here</A>.
+<A HREF=\"$web_help_URL\">here</A>.
 "
 }
 
 # Output -scoreboard information.
 #
-if { $scoreboard_file != "" } {
+if { $web_scoreboard_URL != "" } {
     puts $ch "
 <P>
 A scoreboard telling which submitters have correctly
 solved which problems is
-<A HREF=\"$scoreboard_file\">here</A>.
+<A HREF=\"$web_scoreboard_URL\">here</A>.
 "
 }
 
 
 # Output -solutions information.
 #
-if { $solutions_password != "" } {
+if { $web_solutions_password != "" } {
     puts $ch "
 <P>
 Solutions are available at the URL made by adding
@@ -363,8 +343,8 @@ puts $ch "
 
 # Output web page manager contact information.
 #
-if { $manager_address != "" } {
-set address $manager_address
+if { $web_manager_address != "" } {
+set address $web_manager_address
 regsub -all {>} $address {\&gt;} address
 regsub -all {<} $address {\&lt;} address
 puts $ch "
@@ -384,27 +364,27 @@ grant_access $web_directory/index.html
 
 # If -solutions, output $sdir/index.html
 #
-if { $solutions_password != "" } {
+if { $web_solutions_password != "" } {
 
     # Output header for $sdir/index.html
     #
     set ch [open $sdir/index.html w]
     puts $ch "
-    <HTML>
-    <TITLE>$contest_name</TITLE>
-    <BODY VLINK=\"blue\" LINK=\"red\">
-    <H1 ALIGN=\"CENTER\">
-    <FONT COLOR=\"red\">$contest_name</FONT></H1>
-    <H2 ALIGN=\"CENTER\">
-    <FONT COLOR=\"red\">Problem Solutions</FONT></H2>
-    <P>
-    <TABLE>
-    <TR>
-    <TH WIDTH=50>&nbsp;</TH>
-    <TH>Problem</TH>
-    <TH WIDTH=50>&nbsp;</TH>
-    <TH ALIGN=\"left\">Solution File(s)</TH>
-    </TR>"
+<HTML>
+<TITLE>$web_contest_name</TITLE>
+<BODY VLINK=\"blue\" LINK=\"red\">
+<H1 ALIGN=\"CENTER\">
+<FONT COLOR=\"red\">$web_contest_name</FONT></H1>
+<H2 ALIGN=\"CENTER\">
+<FONT COLOR=\"red\">Problem Solutions</FONT></H2>
+<P>
+<TABLE>
+<TR>
+<TH WIDTH=50>&nbsp;</TH>
+<TH>Problem</TH>
+<TH WIDTH=50>&nbsp;</TH>
+<TH ALIGN=\"left\">Solution File(s)</TH>
+</TR>"
 
     # Process problems.
     #
@@ -445,9 +425,9 @@ if { $solutions_password != "" } {
     # Output trailer for $sdir/index.html
     #
     puts $ch "
-    </TABLE>
-    </BODY>
-    <HTML>"
+</TABLE>
+</BODY>
+<HTML>"
     close $ch
     grant_access $sdir/index.html
 }
