@@ -2,7 +2,7 @@
 #
 # File:		scoring_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Oct 31 06:54:06 EST 2001
+# Date:		Sat Nov 24 13:08:41 EST 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/10/31 11:56:17 $
+#   $Date: 2001/11/24 18:06:39 $
 #   $RCSfile: scoring_common.tcl,v $
-#   $Revision: 1.19 $
+#   $Revision: 1.20 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -336,19 +336,17 @@ proc compute_scoring_array { xxx_array line name } {
 # Scoring Functions
 # ------- ---------
 
-# Function that computes the .score file given the
-# .out and .test files.  The scoring instructions and
-# the `difference_type_proof_limit' value from `hpcm_
-# judging.rc' are used to obtain an optimal set of
-# proofs.
-#
-# The file names used are $basename.out, $basename.test,
-# and $basename.score.
+# Function that computes the .score file given the .out
+# and .test files (or .fout and .ftest files).  The
+# scoring instructions and the `difference_type_proof_
+# limit' value from `hpcm_judging.rc' are used to obtain
+# an optimal set of proofs.  The scorediff program is
+# called by `scorediff outfile testfile > scorefile'.
 #
 # `compute_instruction_array' must be called before
 # this routine is called.
 #
-proc compute_score_file { basename } {
+proc compute_score_file { outfile testfile scorefile } {
 
     global difference_type_proof_limit \
            instruction_array fake_instruction_types
@@ -372,8 +370,7 @@ proc compute_score_file { basename } {
     }
 
     eval [list exec scorediff] $limits \
-         [list $basename.out $basename.test \
-	       > $basename.score]
+         [list $outfile $testfile > $scorefile]
 }
 
 # Computes score based on the scoring databases computed
