@@ -1,11 +1,11 @@
 # Makefile for the `count' Demonstration Problem
 #
 # File:		Makefile
-# Date:		Mon Feb 18 10:39:30 EST 2002
+# Date:		Thu Oct  7 09:43:00 EDT 2004
 #
-# Exactly ONE of the five files count.c (C), count.cc
-# (C++), count.p (Pascal), count.java (Java), or
-# count.lsp (Commonlisp) should exist.
+# Exactly ONE of the four files count.c (C), count.cc
+# (C++), count.java (Java), or count.lsp (Commonlisp)
+# should exist.
 #
 # UNIX commands supported by this Makefile:
 #
@@ -13,18 +13,18 @@
 #
 #	make count	Makes the binary program file
 #			`count' by running gcc on
-#			count.c, or g++ on count.cc, or
-#			p2c on count.p, or javac on
-#			count.java, or hpcm_clisp on
-#			count.lsp depending upon which
-#			of count.c, count.cc, count.p,
-#			count.java, or count.lsp exist.
-#			Also makes a shell script named
-#			`count' for count.java and
-#			count.lsp files.  Does nothing
-#			if `count' is more up to date
-#			than count.c, count.cc, count.p,
-#			count.java, or count.lsp.
+#			count.c, or g++ on count.cc,
+#			or javac on count.java,
+#			or hpcm_clisp on count.lsp,
+#			depending upon which of count.c,
+#			count.cc, count.java, or
+#			count.lsp exist.  Also makes a
+#			shell script named `count' for
+#			count.java and count.lsp files.
+#			Does nothing if `count' is more
+#			up to date than count.c,
+#			count.cc, count.java, or
+#			count.lsp.
 #
 #	make count.out	Makes `count' as above and
 #			then runs it with standard
@@ -39,18 +39,17 @@
 #	make submit	Makes `count.out' just to be
 #			sure that nothing crashes, and
 #			then e-mails count.c, count.cc,
-#			count.java, count.p, or
-#			count.lsp to the judges.
+#			count.java, or count.lsp to the
+#			judges.
 #
 #	make clean	Removes `count', count.out, and
 #			other intermediate files that
 #			might exist, such as `core',
-#			`count.class', `count.p2c', or
-#			count.fas.
+#			`count.class', or count.fas.
 
 
 .SUFFIXES:
-.SUFFIXES: .c .cc .java .p .lsp
+.SUFFIXES: .c .cc .java .lsp
 
 default:	count.out
 
@@ -62,13 +61,6 @@ default:	count.out
 	rm -f $* core
 	g++ -g -o $* $*.cc -lm
 
-.p:
-	rm -f $* $*.p2c core
-	p2c -o $*.p2c $*.p
-	gcc -g -o $* -x c $*.p2c -lp2c -lm
-
-# Do NOT try to use -check option for p2c as it fouls up
-# eof detection.
 #
 
 .java:
@@ -114,7 +106,7 @@ submit:		count.out
 	hpcm_submit count
 
 clean:
-	rm -f count *.class count.p2c core count.out \
+	rm -f count *.class core count.out \
 	      count.fas count.lib
 
 
@@ -127,6 +119,6 @@ clean:
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/02/18 15:54:46 $
+#   $Date: 2004/10/07 14:17:28 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.24 $
+#   $Revision: 1.25 $
