@@ -2,7 +2,7 @@
 #
 # File:		scoring_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Mar  9 19:21:29 EST 2002
+# Date:		Sun Feb  2 10:53:52 EST 2003
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/03/10 00:20:42 $
+#   $Date: 2003/02/02 19:06:26 $
 #   $RCSfile: scoring_common.tcl,v $
-#   $Revision: 1.32 $
+#   $Revision: 1.33 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -739,6 +739,78 @@ proc eval_response_if { item } {
     return [expr $item]
 }
 
+# Function to return a list of the -REQUIRED- and
+# -OPTIONAL- files from the `$files_file' file, or the
+# single file name `$submitted_problem$submitted_
+# extension' if there is no `$files_file' file.
+#
+proc compute_solution_files { } {
+
+    global files_file \
+           submitted_problem submitted_extension
+
+    if { $submitted_problem == "" } {
+	error "Attempt to respond to non-submit"
+    }
+
+    # Compute `$files_file' file value.
+    #
+    if { [file exists $files_file] } {
+
+	if { [catch { set files_value \
+			  [read_entire_file \
+			       $files_file] \
+		    }] } {
+	    error "Cannot read $file_files"
+	}
+    } else {
+	if { $submitted_extension == "" } {
+	    error "No extension in message subject"
+	}
+	set files_value \
+	    [list \
+	       $submitted_problem$submitted_extension]
+    }
+
+    # Compute list of files.
+    #
+    set files ""
+    set include yes
+    foreach item $files_value {
+	switch -- $item {
+	    -REQUIRED-	-
+	    -OPTIONAL-	{
+		set include yes
+	    }
+	    default {
+		if { [regexp {^-[-A-Z]*-$} $item] } {
+		    set include no
+		} elseif { $include } {
+		    set root [file rootname $item]
+		    set ext [file extension $item]
+		    if { $root == "PROBLEM" } {
+			set root $submitted_problem
+		    }
+		    if { $ext == ".EXTENSION" } {
+			if { $submitted_extension == \
+			     "" } {
+			    error \
+				"No message subject\
+				 extension given\
+				 where one is required\
+				 by `$files_file' file"
+			}
+			set ext $submitted_extension
+		    }
+		    lappend files $root$ext
+		}
+	    }
+	}
+    }
+
+    return $files
+}
+
 # Function to execute response instruction commands
 # after if-statement processing.
 #
@@ -747,7 +819,8 @@ proc execute_response_commands \
 
     global response_instructions_file \
     	   auto_score manual_score proposed_score \
-	   submitted_problem submitted_extension
+	   submitted_problem submitted_extension \
+	   solutions_directory
 
     set problem $submitted_problem$submitted_extension
 
@@ -826,6 +899,23 @@ proc execute_response_commands \
 		    lappend new_command $string
 		}
 		lappend processed_commands $new_command
+	    }
+
+	    SOLUTION	{
+	    	if { $length != 1 } {
+		    response_error $command
+		}
+		set sdir $solutions_directory
+		set sdir $sdir/$submitted_problem
+	        foreach file [compute_solution_files] {
+		    set f $sdir/$file
+		    if { [file exists $f] } {
+		        lappend processed_commands \
+			        [list BAR $file]
+			lappend processed_commands \
+				[list INPUT $f]
+		    }
+		}
 	    }
 
 	    FIRST	-
