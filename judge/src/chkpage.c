@@ -3,7 +3,7 @@
 **
 ** Author:	Bob Walton (walton@deas.harvard.edu)
 ** File:	chkpage.c
-** Date:	Tue Apr 23 06:22:05 EDT 2002
+** Date:	Sat Nov 16 05:25:15 EST 2002
 **
 ** The authors have placed this program in the public
 ** domain; they make no warranty and accept no liability
@@ -12,9 +12,9 @@
 ** RCS Info (may not be true date or author):
 **
 **   $Author: hc3 $
-**   $Date: 2002/04/23 10:31:36 $
+**   $Date: 2002/11/16 10:25:54 $
 **   $RCSfile: chkpage.c,v $
-**   $Revision: 1.6 $
+**   $Revision: 1.7 $
 */
 
 #include <stdio.h>
@@ -146,7 +146,10 @@ void checkfile
 		page_too_long = 0;
 	    }
 	    else if ( c == '\n' )
+	    {
 	        ++ line_in_page;
+	        ++ line_in_file;
+	    }
 	    else if ( c == EOF )
 	    {
 	        if ( line_not_empty )
@@ -162,7 +165,6 @@ void checkfile
 		break;
 	    }
 
-	    ++ line_in_file;
 	    column = 1;
 	    line_not_empty = 0;
 	    bp = buffer;
