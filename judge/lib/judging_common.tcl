@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Mar 18 07:48:04 EST 2003
+# Date:		Wed Mar 19 00:39:01 EST 2003
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2003/03/18 13:32:08 $
+#   $Date: 2003/03/19 06:22:18 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.103 $
+#   $Revision: 1.104 $
 #
 
 # Table of Contents
@@ -533,23 +533,7 @@ proc log_error { error_output } {
 # empty).  Stop reading at the first empty line and
 # discard that line.
 #
-# But if the find_part argument is set to `yes', and the
-# message is multipart, skip to the first NON-EMPTY part
-# that has an acceptable Content-Type and Content-
-# Transfer-Encoding, as determined by the content_type_
-# values and content_transfer_encoding_values global
-# variables.  It is an error if there are no parts,
-# empty or not.  However, if there is an empty part, it
-# is not an error, and the part is merely empty.
-#
-# If find_part is `yes', read_body must be used to read
-# the lines of the body, and if the Content-Transfer-
-# Encoding is `quoted-printable' or `base64', the lines
-# of the message will be translated.
-#
-# The results are returned in global variables.  Unless
-# otherwise indicated, header fields are for the main
-# message header and not for a part.
+# The results are returned in global variables.
 #
 #	message_header		All the lines of the
 #				header (but NOT the
@@ -564,30 +548,8 @@ proc log_error { error_output } {
 #	message_content_transfer_encoding
 #				`Content-Transfer-
 #				 Encoding:' field value.
-#				For multi-part messages,
-#				this is for the part.
-#				May be "quoted-
-#				printable".
 #	message_content_type	`Content-Type:' field
-#				value.  For multi-part
-#				messages, this is for
-#				the part.
-#	message_part_boundary	`boundary=' parameter
-#				value within the
-#				`Content-Type:' field
-#				value, for the main
-#				message (not a part).
-#	message_part_content_transfer_encoding
-#				`Content-Transfer-
-#				 Encoding:' field value
-#				of message part, or of
-#				whole message for non-
-#				multipart messages.
-#	message_part_content_type
-#				`Content-Type:' field
-#				value of message part,
-#				or of whole message for
-#				non-multipart messages.
+#				value.
 #	message_x_hpcm_date	`X-HPCM-Date:' field
 #				value.
 #	message_x_hpcm_reply_to	`X-HPCM-Reply-To:'
@@ -616,30 +578,11 @@ proc log_error { error_output } {
 #
 #	{ x-hpcm-signature-ok }
 #
-# The global message_header_error is set non-"" if
-# there is some error.  Messages can only have an error
-# if find_part is "yes".
 #
-# The global message_terminator is set to a regexp that
-# matches a line that terminates the message (part)
-# body, or is set to "" if there is no such regexp.
-#
-# If find_part is `yes' and the Content-Transfer-
-# Encoding is `quoted-printable' or `base64', the body
-# of the message is read and translated and stored in
-# the message_translated_body variable as a list of
-# lines.  In this case message_translated_index is set
-# to 0, the index of the first line in the body, and
-# message_translated_length is set to the number of
-# lines in message_translated_body.  Otherwise
-# message_translated_index is set to -1.  
-#
-proc read_header { ch { find_part no }
-		      { first_line "" }
+proc read_header { ch { first_line "" }
                       { omit_fields "" } } {
+
     global message_header \
-	   message_header_error \
-	   message_terminator \
 	   message_From_line \
            message_from \
 	   message_to \
@@ -648,9 +591,6 @@ proc read_header { ch { find_part no }
 	   message_subject \
 	   message_content_transfer_encoding \
 	   message_content_type \
-	   message_part_boundary \
-	   message_part_content_transfer_encoding \
-	   message_part_content_type \
 	   message_x_hpcm_date \
 	   message_x_hpcm_reply_to \
 	   message_x_hpcm_signature \
@@ -659,19 +599,9 @@ proc read_header { ch { find_part no }
 
     global content_type_values \
 	   content_transfer_encoding_values \
-	   format_submissions \
-	   unformatted_part_end_line \
-	   unformatted_end_line
-
-    global message_translated_body \
-    	   message_translated_index \
-    	   message_translated_length
+	   format_submissions
 
     set message_header			""
-    set message_header_error		""
-    set message_translated_body		""
-    set message_translated_index	-1
-    set message_translated_length	0
 
     set message_From_line		""
     set message_from			""
@@ -681,9 +611,6 @@ proc read_header { ch { find_part no }
     set message_subject			""
     set message_content_transfer_encoding 7bit
     set message_content_type		text/plain
-    set message_part_boundary		""
-    set message_part_content_transfer_encoding 7bit
-    set message_part_content_type	text/plain
     set message_x_hpcm_date		""
     set message_x_hpcm_reply_to		""
     set message_x_hpcm_signature	""
@@ -796,14 +723,93 @@ proc read_header { ch { find_part no }
 	#
 	if { [eof $ch] } break
     }
+}
 
-    # Set the default part content type and transfer
-    # encoding.
-    #
-    set message_part_content_transfer_encoding \
-        $message_content_transfer_encoding
-    set message_part_content_type \
-        $message_content_type
+
+# Read email body part from the channel.  Must be called
+# after read_header has been called, and before read_
+# part_line is called.  Read_part_line must be called to
+# read the lines of the body part.
+#
+# Prepares read_part_line to read lines from the first
+# NON-EMPTY part that has an acceptable Content-Type and
+# Content-Transfer-Encoding, as determined by the
+# content_type_values and content_transfer_encoding_
+# values global variables.  A non-multipart message is
+# treated as if its body were the one and only part of
+# the message.  It is an error if a multipart message
+# has no parts, empty or not.  However, if there is an
+# empty part, it is not an error, and the part is read
+# by read_part_line is merely empty.
+#
+# By empty part we mean a part with no non-whitespace
+# characters.
+#
+# Some results are returned in the following global
+# variables:
+#
+#	message_part_boundary	`boundary=' parameter
+#				value within the
+#				`Content-Type:' field
+#				value for a multipart
+#				message. "" for non-
+#				multipart messages.
+#	message_part_content_transfer_encoding
+#				`Content-Transfer-
+#				 Encoding:' field value
+#				of message part, or of
+#				whole message for non-
+#				multipart messages.
+#				Defaults to main message
+#				header value.
+#	message_part_content_type
+#				`Content-Type:' field
+#				value of message part,
+#				or of whole message for
+#				non-multipart messages.
+#				Defaults to main message
+#				header value.
+#	message_part_error	Set to error message if
+#			        there is an error, or to
+#				"" if there is no error.
+#
+# All the values have the final \n stripped off.  All
+# the field values have the `field-name:' stripped off.
+# Field values may be multi-line, but if there are two
+# copies of a field, only the last is recorded.  If
+# there are no copies of a field in the message, the
+# message_... global variable for that field is set to
+# "".
+#
+# The global message_terminator is used: see hpcm_
+# judging.rc.
+#
+proc read_part_header { ch } {
+
+    global message_terminator \
+	   message_content_transfer_encoding \
+	   message_content_type \
+	   message_part_boundary \
+	   message_part_content_transfer_encoding \
+	   message_part_content_type \
+	   message_part_error
+
+    global content_type_values \
+	   content_transfer_encoding_values
+
+    global message_translated_body \
+    	   message_translated_index \
+    	   message_translated_length
+
+    set message_part_error		""
+    set message_part_boundary		""
+
+    set message_translated_body		""
+    set message_translated_index	-1
+    set message_translated_length	0
+
+    set ws "\[\t\ \n\r\f\]"
+    set nws "\[^\t\ \n\r\f\]"
 
     # Remember if this is a multipart message.
     #
@@ -842,10 +848,6 @@ proc read_header { ch { find_part no }
 	set message_part_boundary $boundary
     }
 
-    # If we are not trying to find parts, return.
-    #
-    if { $find_part == "no" } return
-
 
     # Loop through parts until we find a NON-EMPTY one
     # with legal Content-Type and Content-Transfer-
@@ -854,18 +856,17 @@ proc read_header { ch { find_part no }
     # return an error.  If there are such parts but
     # all are empty, set up to return an empty body.
     #
+    set line ""
     while { "yes" } {
-
-	set type text/plain
-	set encoding \
-	    [string trim \
-	            $message_content_transfer_encoding]
 
     	# If multipart, skip to next message boundary
 	# and find part Content-Type and Content-
 	# Transfer-Encoding.
 	#
 	if { $multipart } {
+
+	    set type text/plain
+	    set encoding 7bit
 
 	    set bnd "--$message_part_boundary"
 	    set bndlen [string length $bnd]
@@ -882,6 +883,16 @@ proc read_header { ch { find_part no }
 	    #
 	    if { [eof $ch] } break
 
+	    # If last boundary found, break.
+	    #
+	    set endbnd "$bnd--"
+	    set endbndlen $bndlen
+	    incr endbndlen 2
+	    if { [string equal -nocase \
+	    		       -length $endbndlen \
+			       $line $endbnd] } \
+	    	break
+
 	    # Find part fields.
 	    #
 	    set ct "${ws}*content-type${ws}*:"
@@ -890,12 +901,20 @@ proc read_header { ch { find_part no }
 		"${ws}*content-transfer-encoding"
 	    set cte "${cte}${ws}*:${ws}*"
 	    set cte "${cte}(${nws}.*)\$"
+	    set next_line [gets $ch]
 	    while { "yes" } {
-
-		set line [gets $ch]
+		set line $next_line
 		if { [eof $ch] } break
-		if { [string trim $line] == "" } break
+		if { $line == "" } break
 		if { [regexp {^--} $line] } break
+
+		set next_line [gets $ch]
+		while { ! [eof $ch] \
+		        && [regexp "^\[\ \t\].*${nws}" \
+			           $next_line] } {
+		    set line "$line\n$next_line"
+		    set next_line [gets $ch]
+		}
 		if { [regexp -nocase $ct $line \
 			     forget type] } {
 		} elseif { [regexp -nocase \
@@ -904,6 +923,17 @@ proc read_header { ch { find_part no }
 				   encoding] } {
 		}
 	    }
+	}
+
+	# If not multipart, set the type and encoding
+	# from the message header.
+	#
+	if { ! $multipart } {
+	    set type \
+	        [string trim $message_content_type]
+	    set encoding \
+	        [string trim \
+		    $message_content_transfer_encoding]
 	}
 
 	# If type and encoding are not legal, continue
@@ -1041,7 +1071,7 @@ proc read_header { ch { find_part no }
 	#
 	set body_non_empty no
 	foreach tline $translated {
-	    if { [regexp "\[^\ \t\]" $tline] } {
+	    if { [regexp $nws $tline] } {
 		set body_non_empty yes
 		break
 	    }
@@ -1057,16 +1087,23 @@ proc read_header { ch { find_part no }
     }
 }
 
-# Using information from the last call to read_header,
-# return the next body line.  Set the end_of_file
-# variable to "yes" if at end of file or next line
+# Using information from the last call to read_part_
+# header, return the next body line.  Set the end_of_
+# file variable to "yes" if at end of file or next line
 # is terminator, and to "no" otherwise.  Return line,
 # or return "" on end of file.
 #
-# The call to read_header MUST have had a `yes'
-# find_part argument.
+# The information from read_part_line, internal to that
+# routine and this, is
 #
-proc read_body { ch end_of_file } {
+#	message_translated_body
+#	    List of lines of body.
+#	message_translated_length
+#	    Length of this list.
+#	message_translated_index
+#	    Index (0, 1, 2, ...) of next line to return.
+#
+proc read_part_line { ch end_of_file } {
 
     global message_translated_index \
 	   message_translated_length \
@@ -1076,10 +1113,10 @@ proc read_body { ch end_of_file } {
     set eof no
 
     if { $message_translated_index < 0 } {
-        error "read_body called when read_header\
-	       was called with `no' find_part\
-	       or read_header returned\
-	       message_header_error"
+        error "read_part_line called when\
+	       read_part_header was not called or\
+	       read_part_header returned a\
+	       message_part_error"
     }
 
     if { $message_translated_index \
@@ -1540,7 +1577,7 @@ proc send_reply { args } {
 proc blank_body { ch } {
 
     while { "yes" } {
-	set line [read_body $ch eof]
+	set line [read_part_line $ch eof]
 	if { $eof } {
 	    return yes
 	} elseif { [regexp "^\[\ \t\]*\$" $line] } {
