@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/01/28 18:18:27 $
+#   $Date: 2002/01/30 18:27:44 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.31 $
+#   $Revision: 1.32 $
 
 # To make an email contest named `foo':
 #
@@ -240,3 +240,11 @@ test_get:	Contest_Address \
 test_query:	Contest_Address \
 	$S/query.send \
 	$S/bad_subject_format.send
+
+test_problem_name:	Contest_Address \
+	$S/bad_problem_name1.send \
+	$S/bad_problem_name2.send \
+	$S/bad_problem_name3.send \
+	$S/bad_problem_name4.send \
+	$S/bad_problem_name5.send \
+	$S/bad_problem_name6.send
