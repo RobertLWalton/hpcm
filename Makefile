@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Feb 19 03:16:15 EST 2003
+# Date:		Fri Feb 21 22:05:13 EST 2003
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2003/02/19 08:14:00 $
+#   $Date: 2003/02/22 03:03:10 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.28 $
+#   $Revision: 1.29 $
 
 # See STATUS file for description of versions.
 #
@@ -54,7 +54,8 @@ NONDIS = non_distributable
 # make tar
 #	Make distributable and non-distributable tar
 #	files:
-#		hpcm_${VERSION}${TAREXT},
+#
+#		hpcm_${VERSION}${TAREXT}
 #		hpcm_solutions_${VERSION}${TAREXT}
 #       	hpcm_${NONDIS}_${VERSION}${TAREXT}
 #
