@@ -5,7 +5,7 @@
 #
 # File:		manualreply
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Jul 27 16:48:29 EDT 2002
+# Date:		Sun Jul 28 02:49:30 EDT 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/07/27 21:13:21 $
+#   $Date: 2002/07/28 08:30:21 $
 #   $RCSfile: manualreply,v $
-#   $Revision: 1.54 $
+#   $Revision: 1.55 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -55,8 +55,8 @@ set my_argv $argv
 if { $my_argc >= 1 \
      && ! [regexp {^-} [lindex $my_argv 0]] } {
     cd [lindex $my_argv 0]
-    set my_argv [lreplace $my_argv 0 0]
-    set my_argc [expr { $my_argc - 1 }]
+    set my_argv [lrange $my_argv 1 end]
+    incr my_argc -1
 }
 
 # Include common code and parameters:
@@ -85,6 +85,13 @@ manualreply \[directory\]
     file may also be written with a score that is sent
     in the reply.  Unchecked error log files may be
     inspected and checked off.
+
+    While running, this program locks the current direc-
+    tory by creating a $dispatch_pid_file file.  If no
+    $auto_score_file, $reply_file, $no_reply_file, or\
+    	unchecked error
+    files exist when this program is started, this
+    program will suggest that `autojudge' should be run.
 
     As a complex interactive program, manualreply has
     extensive builtin help documentation."
@@ -340,21 +347,34 @@ by `autojudge').  Each proof consists of a pair of\
 and one in the .test file, that should match but do\
     not.  The mismatch is given
 a name, called a difference type name, such as\
-    `integer' or `word'.  The tokens
-and the lines surrounding them are displayed.  The\
-    tokens are highlighted.  The
-difference type name is displayed on the last ==== bar\
-    line.  If the difference
-type is `integer' or `float', after its name the\
-    absolute and relative differ-
-ence of the mismatched integer or floating point\
-    number tokens are displayed.
+    `integer' or `word'.  The
+mismatched tokens and the lines surrounding them are\
+    displayed.  The mismatched
+tokens are highlighted.  The difference type name is\
+    displayed on the last ====
+bar line.
 
 Type `? pr2' for more information.
 "
 
 set help(pr2) "
-pr      (2 of 4)
+pr      (2 of 5)
+
+If the difference type is `integer' or `float', after\
+    its name in the ==== bar
+line the absolute and relative difference of the\
+    mismatched integer or floating
+point number tokens are displayed.
+
+Documentation for different difference types is\
+    available by executing the
+`scorediff -doc' command (outside manualreply).
+
+Type `? pr3' for more information.
+"
+
+set help(pr3) "
+pr      (3 of 5)
 
 You can look at proofs in a particular proof group:\
     e.g, if the score is
@@ -366,43 +386,57 @@ group.  Proofs are ordered according to position of the\
     tokens in the files.
 The number of the current proof within its group is in\
     brackets on the last
-==== bar line of the display.  For groups that support\
-    scores, the name of the
-group is also within these brackets.
-
-Type `? pr3' for more information.
-"
-
-set help(pr3) "
-pr      (3 of 4)
-
-There is one group for each possible score for which\
-    there are supporting
-proofs.  These groups, their two letter group names,\
-    and the difference types
-of proofs supporting each score are listed just above\
-    the prompt.  Also listed
-for each difference type is the number of proofs of\
-    that type in square brackets
-(however, only the first so many proofs of each type\
-    are available).
-
-There is also one proof group for each difference type\
-    listed in the lines
-above the prompt that describe the score groups.
+==== bar line of the display.  If the name of the proof\
+    group is different from
+the name a difference type, the name of the group is\
+    also within the brackets.
 
 Type `? pr4' for more information.
 "
 
 set help(pr4) "
-pr      (4 of 4)
+pr      (4 of 5)
 
-To change the proof group type its name.   You can\
-    contract this name by
-omitting characters from its end or before any\
-    `-' in the name, so long as
-what you type begins with a letter and has two or\
-    more characters.
+There is one proof group for each possible score for\
+    which there are supporting
+proofs.  E.g., the `io' group consists of proofs\
+    supporting the score
+`Incorrect Output', and the `fe' group consists of\
+    proofs supporting the
+score `Formatting Error'.  These groups, their two\
+    letter group names, and the
+difference types of proofs supporting each score are\
+    listed just above the
+prompt.  Also listed for each difference type is the\
+    number of proofs of that
+type in square brackets (however, only the first so\
+    many proofs of each type
+are available).
+
+Type `? pr5' for more information.
+"
+
+set help(pr5) "
+pr      (5 of 5)
+
+In addition to the proof group for each score, there is\
+    also a proof group
+for each difference type.  Thus `integer' is the proof\
+    group for a difference
+type, while `io' is the proof group a score (Incorrect\
+    Output).
+
+To change the proof group being displayed, type the\
+    name of the group.   You
+can contract this name by omitting characters from its\
+    end or before any `-',
+so long as what you type begins with a letter and has\
+    two or more characters.
+Thus if for a particular submission there are type\
+    differences `word' and
+`word-eof1', but not `word-eof2', then `word' can be\
+    abbreviated by `wo' and
+`word-eof1' can be abbreviated by `w-'.
 "
 
 set help(c) "
@@ -422,8 +456,33 @@ brought to the attention of a person.  But checked\
     error files are ignored by
 these programs, as they assume a checked error file\
     has been read by a person.
+
+Type `? .mail' for information about `.mail' files\
+    associated with error files.
 "
 set help(c#) $help(c)
+
+set help(.mail) "
+.mail
+
+Associated with an error file there is sometimes a file\
+    with the same name
+but with the extension `.mail' added.  This file\
+    contains an email message
+sent to a submitter.  Except to look at this email\
+    message, this file
+should be ignored.  The absence of this file indicates\
+    no submitter was
+notified of the error.
+
+Error files can be checked or unchecked, according to\
+    whether or not they
+have `-checked' or `-unchecked' in their names.  When\
+    an error file name is
+changed to alter its checked status, the name of its\
+    associated `.mail' file
+is also changed.
+"
 
 set help(u) "
 u
@@ -436,14 +495,9 @@ if # is omitted) to be a unchecked error file.  This is\
 file so the `checked' part of the name becomes\
     `unchecked'.
 
-Unchecked error files are searched for by programs such\
-    as `tracker', and
-brought to the attention of a person.  But checked\
-    error files are ignored by
-these programs, as they assume a checked error file\
-    has been read by a person.
-
 It is unusual for a checked file to be made unchecked.
+
+Type `? c' for more information about error files.
 "
 set help(u#) $help(u)
 
@@ -1048,16 +1102,17 @@ proc display_help { } {
     global help window_error last_help window_bar \
            last_display answer
 
-    regexp {^\? *([^ ]*)$} $answer forget what
-    if { $what == "" } {
-	set what "?"
-    } elseif { ! [info exists help($what)] } {
+    set what [string trim [string range $answer 1 end]]
+    regsub -all "\[\ \t\]" $what "" topic
+    if { $topic == "" } {
+	set topic "?"
+    } elseif { ! [info exists help($topic)] } {
 	set window_error \
 	    "ERROR: no help available for\
 			  `$what'!"
-	set what "?"
+	set topic "topics"
     }
-    set last_help $help($what)
+    set last_help $help($topic)
     set last_help \
 	"$window_bar$last_help$window_bar"
     set_window_display $last_help
