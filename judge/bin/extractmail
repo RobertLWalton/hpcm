@@ -4,7 +4,7 @@
 #
 # File:		extractmail
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Dec 22 05:06:09 EST 2001
+# Date:		Wed Jan  2 19:46:27 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/12/22 13:14:11 $
+#   $Date: 2002/01/03 02:10:33 $
 #   $RCSfile: extractmail,v $
-#   $Revision: 1.29 $
+#   $Revision: 1.30 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -40,10 +40,10 @@ cd submission_directory; extractmail
 
     If there is a `$files_file' file in the current di-
     rectory, it lists the names of all the files that
-    supposed to be submitted.  Otherwise only one file
-    may be submitted, and it must have the file name
-    `problemname.extension', where the extension must
-    be given in the message `Subject:' field.
+    are supposed to be submitted.  Otherwise only one
+    file may be submitted, and it must have the file
+    name `problemname.extension', where the extension
+    must be given in the message `Subject:' field.
 
     For each file successfully extracted, this program
     writes the line `Extracted FFFF' to the standard
@@ -61,26 +61,27 @@ cd submission_directory; extractmail
 
     will capture both the standard and error outputs in
     the variable `out' and return a 0/1 value indicating
-    whether there were any errors.  If there were errors
+    whether there were any errors.  If there are errors
     that concern the judge, and not just the submitter,
     the text `SYSTEM ERROR' will appear in the output
-    and thence the `out' variable.  Otherwise the value
-    of `out' will be suitable for inclusion in a reply
-    to the submitter as a description of errors.
+    and thence the `out' variable.  Otherwise, if there
+    are errors,  the value of `out' will be suitable for
+    inclusion in a reply to the submitter as a descrip-
+    tion of the errors.
 
     If there is a `$files_file' file in the current\
     			directory,
     all submitted files must have names listed in this
-    `$files_file' file.  This file is interpreted as
-    a TCL list (with list elements separated by spaces,
-    tabs, or new lines) whose elements are
-    special symbols, file names, and { } bracketed
-    sublists.  The special symbols consist of upper case
-    letters and the `-' character, and begin and end
-    with `-'.  All list items following a special
-    symbol S but before the next special symbol are
-    governed by S.  This program understands the follow-
-    ing two special symbols:
+    file.  The `$files_file' file is interpreted as a\
+	TCL
+    list (with list elements separated by spaces, tabs,
+    or new lines) whose elements are special symbols,
+    file names, and { } bracketed sublists.  The special
+    symbols consist of upper case letters and the `-'
+    character, and begin and end with `-'.  All list
+    items following a special symbol S but before the
+    next special symbol are governed by S.  This program
+    understands the following two special symbols:
     
     	-REQUIRED-	The list items governed by
 			-REQUIRED- are the names of
@@ -151,9 +152,14 @@ cd submission_directory; extractmail
     cation time equal to or later than that of the
     $received_file file, the submitted file is NOT writ-
     ten, but is instead compared to the existing file.
-    If the comparison matches, the `Extracted FFFF' out-
-    put line is generated, but if there is a mismatch,
-    a system error message is generated.
+    Whether or not the comparison matches, the `Extract-
+    ed FFFF' output line is generated, but if there is a
+    mismatch, the line `Mistmatch FFFF' is output along
+    with a description of the mismatch, all in the
+    standard output and NOT the error output.  Thus mis-
+    matches are NOT considered to be errors, and a judge
+    can change an extracted file and rerun the autojudge
+    program successfully.
 
     It is an error if the problem name contains `/' or
     `.' or begins with `-'.  It is a system error if the
@@ -439,12 +445,10 @@ if { [regexp {^HPCM_BEGIN} $line] } {
 			set file_line [gets $file_ch]
 			if { $file_line \
 				!= $real_line } {
-			    extract_error \
-				"SYSTEM ERROR: file\
-				 mismatch for\
-				 `$filename':\nold:\
-				 $file_line\nnew:\
-				 $real_line"
+			    puts "Mismatch $filename\n\
+				 old: $file_line\n\
+				 new: $real_line"
+			    set mode skip
 			}
 		    }
 		    skip { }
@@ -571,12 +575,10 @@ if { [regexp {^HPCM_BEGIN} $line] } {
 			     `$filename'"
 		    } elseif { $file_line \
 		    		   != $real_line } {
-			extract_error \
-			    "SYSTEM ERROR: file\
-			     mismatch for\
-			     `$filename':\nold:\
-			     $file_line\nnew:\
-			     $real_line"
+			puts "Mismatch $filename\n\
+			     old: $file_line\n\
+			     new: $real_line"
+			set mode skip
 		    }
 		}
 	    }
