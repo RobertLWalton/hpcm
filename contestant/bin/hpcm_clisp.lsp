@@ -3,7 +3,7 @@
 ;;;; File:	hpcm_clisp.lsp
 ;;;; Author:	Bob Walton <walton@deas.harvard.edu>
 ;;;; Modifier:  CS 182 (Attila Bodis)
-;;;; Date:	Sat Mar  9 16:02:59 EST 2002
+;;;; Date:	Sat Mar  9 16:36:22 EST 2002
 ;;;;
 ;;;; The authors have placed this program in the public
 ;;;; domain; they make no warranty and accept no
@@ -12,9 +12,9 @@
 ;;;; RCS Info (may not be true date or author):
 ;;;;
 ;;;;   $Author: hc3 $
-;;;;   $Date: 2002/03/09 21:33:29 $
+;;;;   $Date: 2002/03/09 21:43:25 $
 ;;;;   $RCSfile: hpcm_clisp.lsp,v $
-;;;;   $Revision: 1.20 $
+;;;;   $Revision: 1.21 $
 ;;;;
 ;;;;
 ;;;; This file was originally written by the Bob Walton
@@ -58,8 +58,8 @@
 #+clisp
 (setf system::*prin-linelength* 56)
 
-# The purpose of the following is now unclear.
-# (setf LS '|Wrong window, try again...|)
+;; The purpose of the following is now unclear.
+;; (setf LS '|Wrong window, try again...|)
 
 #+allegro
 (proclaim '(optimize (speed 2) (safety 1) (space 1)
@@ -86,10 +86,10 @@
 ;; Note: in CLISP (system::unwind-to-driver) resets to
 ;; top level, if this is ever needed.
 
-# The following code needs to be cleaned up, but we
-# have no allegro to test it on so we have left it
-# alone for now.
-#
+;; The following code needs to be cleaned up, but we
+;; have no allegro to test it on so we have left it
+;; alone for now.
+;;
 #+allegro
 (defun TRANSCRIBE-ERROR (c)
   (typecase
@@ -134,14 +134,6 @@
   (fresh-line)
   (princ '|--->|)
   (fresh-line))
-
-(defun eval-and-print (s-expression)
-  (finish-output) ;; In case crash follows.
-  (dolist (val (multiple-value-list
-		  (eval s-expression)))
-	  (fresh-line)
-	  (write val :escape t :pretty t)
-	  (fresh-line)))
 
 (defun RUN (&key (IN *run-in*) (OUT *run-out*)
 		 (PAUSE *run-pause*))
