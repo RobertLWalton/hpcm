@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Oct 27 07:04:38 EDT 2000
+# Date:		Sat Nov  4 04:35:39 EST 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/10/27 14:41:46 $
+#   $Date: 2000/11/04 21:55:56 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.48 $
+#   $Revision: 1.49 $
 #
 
 # Include this code in TCL program via:
@@ -1054,12 +1054,6 @@ proc clear_flag { flagfilename } {
 
 #### BEGINNING OF INLINE CODE ####
 
-# Set interrupt signal to cause an error.
-#
-if { [info command signal] == "signal" } {
-    signal error SIGINT
-}
-
 # Locate the directory containing the judging para-
 # meters file.  This should be unique.  If unique, the
 # name is stored in the `judging_directory' variable.
@@ -1094,3 +1088,7 @@ if { [llength $judging_directory] == 1 } {
     }
     error $__m__
 }
+
+# Set signals to cause errors.
+#
+make_signals_errors
