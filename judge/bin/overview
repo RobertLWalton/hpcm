@@ -4,7 +4,7 @@
 #
 # File:		overview
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Feb  1 08:41:48 EST 2002
+# Date:		Fri Feb  1 23:43:11 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/02/01 15:01:40 $
+#   $Date: 2002/02/02 06:04:08 $
 #   $RCSfile: overview,v $
-#   $Revision: 1.57 $
+#   $Revision: 1.58 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -2064,7 +2064,7 @@ follows:
                      |
                      v
         mail_directory/dddd-<<sssss>>-submission
-            $received_file
+               $received_file
                      |
                      | dispatchmail (called
                      | from ~/.procmailrc)
@@ -2089,25 +2089,62 @@ follows:
 | \[Subject: `submit: pppp.eee']
 | autojudge (called from autodispatch)
 +--------------+
-               | extractmail (called from autojudge)
+               |
                v
 
                |
+               | autojudge
+               v
+            $files_file (if any)
+               |
+               | \[is `$files_file' file present and\
+                                       does
+               |  it list -SOLUTION-MAKE- files]
+               |
+               +-------------+
+               |             |
+          \[no] |             | \[yes]
+               |             |
+               |             |  make filename ...
+               |             |  (called in
+               |             |   solutions_directory/ppp
+               |             |   by autojudge)
+               |             |
+               |      files made in
+               |  solutions_directory/ppp
+               |             |
+               |             |
+               |<------------+
+               |
+               | extractmail (called from autojudge)
                v
                +-----------------+
                |                 |
-    \[no error] |                 | \[error]
+    \[no error] |                 | \[non-system error]
+               |                 |
+               |                 | autojudge
                v                 v
             pppp.eee        $reply_file
-               |            $reply_history_file
+            or other        $reply_history_file
+         submitted files
+               |
+               |
+               v
+
                |
                | autojudge
-               | (importing from
+               | (linking files from
                |  solutions_directory/pppp)
+               |
                v
             $make_file
             pppp.test 
+            pppp.ftest (if any)
+            $scoring_filter_file (if any)
             $scoring_instructions_file (if any)
+            $response_instructions_file (if any)
+            additional linked files\
+                         (if `$files_file' file)
                |
                | make pppp (called from autojudge)
                |
@@ -2117,30 +2154,32 @@ follows:
                |
                +-------------+
                |             |
-  \[ppp exists] |             | \[pppp does not exist]
+ \[pppp exists] |             | \[pppp does not exist]
                |             |
                |             | autojudge
                |             v
                |        $auto_score_file =\
-	                `Syntax Error'
+                        `Syntax Error'
                |        $reply_history_file
                |          if scoring_mode != `manual'
                |        $reply_file
                |          if scoring_mode == `auto'
                |
-               | make pppp.out (called from autojudge)
-               |
                v
 
+               |
+               | make pppp.out (called from autojudge)
                |
                v
             pppp.out (standard output)
             pppp.err (standard error output)
             core (if program crashes)
                |
+               | \[is pppp.err empty]
+               |
                +-------------+
                |             |
-  \[empty .err] |             | \[non-empty .err]
+         \[yes] |             | \[no]
                |             |
                |             | autojudge
                |             v
@@ -2150,29 +2189,69 @@ follows:
                |        $reply_file
                |          if scoring_mode == `auto'
                |
-               | autoscore (called from autojudge)
-	       |
-	       +--------------------+
-	       |                    |
-    \[non-empty |                    | \[empty or
-     .out]     |                    |  missing .out]
-	       |                    |
-               | scorediff (called  |
-	       | from autoscore)    |
-	       |                    |
-	       v		    |
-	    pppp.score		    |
-	       |                    |
-               |<-------------------+
-	       |
-               | autoscore (called from autojudge)
-	       v
-           $auto_score_file
                |
-	       v
+               | \[is $scoring_filter_file or pppp.ftest
+               |  present, and is pppp.out non-empty]
+               |
+               +----------------+
+               |                |
+          \[no] |                | \[yes]
+               |                |
+               |                |\
+                                $scoring_filter_file
+               |                | (called by autojudge)
+               |                v
+               |             ppp.fout
+               |                |
+               |                |
+               |<---------------+
+               |
+               v
 
                |
-	       v
+               | autoscore (called from autojudge)
+               |
+               |
+               +------------------------+
+               |                        |
+    \[non-empty |                        | \[empty or
+     .out or   |                        |   missing
+     .fout]    |                        |   .out or
+               |                        |   .fout]
+               | scorediff (called      |
+               | from autoscore)        |
+               |                        |
+               v                        |
+            pppp.score                  |
+               |                        |
+               |                        |
+               | autoscore              |
+               | (called from           |
+               |  autojudge)            |
+               |                        |
+               v                        |
+           $auto_score_file     $auto_score_file =\
+                                 `Program Crashed'
+               |                        |
+               |                        |
+               |<-----------------------+
+               |
+               |
+               v
+
+               |
+               | \[is $response_instructions_file\
+                               present]
+               |
+               +--------------------+
+               |                    |
+          \[no] |                    | \[yes]
+               |                    |
+               |                    v
+               |              $reply_file maybe
+               |              $reply_history_file maybe
+               |
+               |
                +---------------+
                |               |
   \[score ==    |               | \[score !=
@@ -2186,7 +2265,8 @@ follows:
                v
            $reply_file
        $reply_history_file
-
+
+
 If a system error occurs at any point, which can only
 happen if HPCM has a bug, then processing stops and
 an unchecked error log file is created.  If processing
