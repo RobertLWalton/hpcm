@@ -319,8 +319,14 @@ while {1} {
 
 	incr number_of_files
 
-	set submitted_file \
-	    [lindex $line 1]
+	if { [llength $line] >= 2 } {
+	    set submitted_file [lindex $line 1]
+	    set submitted_file [file split $submitted_file]
+	    set submitted_file [lindex $submitted_file end]
+	} else {
+	    set submitted_file "name_omitted"
+	}
+
 	set submitted_program \
 	    [file rootname $submitted_file]
 	set submitted_extension \
@@ -339,7 +345,14 @@ while {1} {
 	    if { $first_submitted_file != "" } {
 
 		set score_file \
-		 "$directory/${submitted_program}.score"
+		    [glob -nocomplain \
+		          "$directory/*.score"]
+		if ( [llength $score_file] != 1 } {
+		    set score_file \
+			"[file rootname \
+			       $first_submitted_file \
+			       ].score"
+		}
 
 		if { ! [file exists $score_file] } {
 		    set score_fd no
