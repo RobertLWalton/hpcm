@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Oct 24 23:51:46 EDT 2002
+# Date:		Fri Oct 25 00:53:34 EDT 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/10/25 03:52:18 $
+#   $Date: 2002/10/25 05:02:27 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.17 $
+#   $Revision: 1.18 $
 
 
 # Read standard parameters.  The filename MUST be
@@ -25,28 +25,9 @@ source ~/hpcm/judge/lib/hpcm_judging.rc
 # The following overwrites parameters set by the
 # above `source' command.
 
-# The scoreboard should ignore the `count' problem
-# after other problems are submitted.  So after some
-# other problems are submitted, remove the `#' that
-# comments this out.
+# Set the start/freeze/stop times for the contest.
 #
-# set scoreboard_problems { ! count }
-
-# The scoreboard should ignore the test account after
-# you have finished testing.  So replace `test-account'
-# with the name of your test account, and, after test-
-# ing, remove the `#' that comments this out.
-#
-# set scoreboard_submitters { ! test-account }
-
-# Set the start/freeze/stop times for the contest.  In
-# order to get the contest scoreboard to show demo pro-
-# blems before the contest begins, leave the scoreboard_
-# start_time set to "" until after the first non-demo
-# submissions.
-#
-set scoreboard_start_time  ""
-# set scoreboard_start_time "Jan 1 10:00:00 2000"
+set scoreboard_start_time  "Jan 1 10:00:00 2000"
 set scoreboard_freeze_time "Jan 1 14:00:00 2000"
 set scoreboard_stop_time   "Jan 1 15:00:00 2000"
 
@@ -93,10 +74,32 @@ set scoreboard_instructions {
             scoreboard after winners have been" }
     { LINE "announced at the post contest meeting." }
 
+    { OUTPUT contest/scoreboard.public "" START }
+
+    { start_time "" }
+    { stop_time FREEZE }
+    { LINE "The demo problem `count' will disappear\
+            from the scoreboard once the contest" }
+    { LINE "starts.  Until the contest starts, dates of\
+            first correct submission are" }
+    { LINE "displayed (for demo problems).  After the\
+            contest starts, problem times" }
+    { LINE "(differences of first correct submission\
+            times and contest start time)" }
+    { LINE "will be displayed." }
+    BAR
+    BOARD
+    BAR
+
     { OUTPUT contest/scoreboard.public START FREEZE }
 
+    { start_time START }
     { stop_time FREEZE }
+    { problems { ! count } }
+    { submitters { ! test-account } }
+    BAR
     BOARD
+    BAR
 
     { OUTPUT contest/scoreboard.1 }
     GRANT_ACCESS
@@ -107,9 +110,7 @@ set scoreboard_instructions {
     BLANK
     { INPUT contest/scoreboard.1head }
     BLANK
-    BAR
     { INPUT contest/scoreboard.public }
-    BAR
 
     { OUTPUT contest/scoreboard.current FREEZE STOP }
 
