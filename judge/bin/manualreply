@@ -5,7 +5,7 @@
 #
 # File:		manualreply
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Sep 26 03:49:11 EDT 2001
+# Date:		Sat Sep 29 02:28:31 EDT 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/09/26 10:55:59 $
+#   $Date: 2001/09/29 06:42:23 $
 #   $RCSfile: manualreply,v $
-#   $Revision: 1.40 $
+#   $Revision: 1.41 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -148,6 +148,8 @@ Gives help for WHAT, where WHAT can be:
     Any standard filename, e.g. `? Received_Mail', or\
     	any standard file
     extension, e.g., `? .diff'.
+    
+Type `? topics' for list of help topics.
 "
 
 set help(#) "
@@ -608,6 +610,112 @@ $manual_score_file	The score enterred manually\
 set help($manual_score_file) $help($auto_score_file)
 set help(.score) $help($auto_score_file)
 
+
+
+set help(.c) "
+.c	Source file for a solution written in C.
+
+.cc	Source file for a solution written in C++.
+
+.java	Source file for a solution written in JAVA.
+
+.p	Source file for a solution written in PASCAL.
+"
+set help(.cc) $help(.c)
+set help(.java) $help(.c)
+set help(.p) $help(.c)
+
+
+
+set help($make_file) "
+$make_file	Makefile to make solution binary and\
+		    .out file.  Symbolic link
+		to solution directory.
+
+$scoring_instructions_file	Scoring instructions\
+			    for autoscore program. \
+			    Optional.
+			Symbolic link to solution\
+			    directory.
+"
+set help($scoring_instructions_file) $help($make_file)
+
+
+set help(.p2c) "
+.p2c	Intermediate file, the translation of a PASCAL\
+	    .p file into the
+        C language.
+
+.class	JAVA relocatable binary (byte code) file.
+
+.cerr	Solution compiler error output.  Does NOT\
+	    affect score.
+
+No extension; with same basename as solution source.
+	Binary executable of the solution.  For JAVA\
+	    this is a shell script
+	invoking the .class file with the same basename\
+	    as the source.
+	If missing, score is `Syntax Error'.
+"
+set help(.class) $help(.p2c)
+set help(.cerr) $help(.p2c)
+
+
+
+set help(.in) "
+.in	Judge's input.  Symbolic link to solution\
+	    directory.
+
+.test	Judge's output.  Symbolic link to solution\
+	    directory.
+
+.out	Solution output.  If empty, score is `Program\
+	    Crashed'.
+
+.err	Solution error output.  If non-empty, score is\
+	    `Program Crashed' or
+        something more specific, such as `Output Limit\
+		    Exceeded'.
+
+core	Core dump of the solution execution; usually\
+	    only present if the
+	solution crashed.  Does NOT affect score.
+"
+set help(.test) $help(.in)
+set help(.out) $help(.in)
+set help(.err) $help(.in)
+set help(core) $help(.in)
+
+
+set help(.diff) "
+.diff	Result of `diff *.out *.test'.  This file is\
+	    not created until it
+	is viewed.
+
+.bdiff	Result of `diff -b *.out *.test'.  This file\
+	    is not created until it
+	is viewed.
+"
+set help(.bdiff) $help(.diff)
+
+
+set help(topics) "
+List of help topics:
+
+"
+set c 0
+foreach topic [lsort [array names help]] {
+    set l [string length $topic]
+    incr l 4
+    incr c $l
+    if { $c > 80 } {
+        set help(topics) "$help(topics)\n"
+	set c $l
+    }
+    set help(topics) "$help(topics)    $topic"
+}
+set help(topics) "$help(topics)\n"
 
 # Menu Initialization
 # ---- --------------

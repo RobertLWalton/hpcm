@@ -2,7 +2,7 @@
 #
 # File:		display_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Sep 26 03:45:13 EDT 2001
+# Date:		Sat Sep 29 02:29:47 EDT 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/09/26 08:49:16 $
+#   $Date: 2001/09/29 06:42:23 $
 #   $RCSfile: display_common.tcl,v $
-#   $Revision: 1.19 $
+#   $Revision: 1.20 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -931,7 +931,7 @@ proc make_diff { file } {
 	}
     }
 
-    if { [file extension $file] == "diff" } {
+    if { [file extension $file] == ".diff" } {
 	set command "diff"
     } else {
 	set command "diff -b"
