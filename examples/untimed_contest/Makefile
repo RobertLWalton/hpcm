@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Aug  1 01:12:04 EDT 2002
+# Date:		Thu Aug  1 01:58:03 EDT 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/08/01 05:06:30 $
+#   $Date: 2002/08/01 05:52:26 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.44 $
+#   $Revision: 1.45 $
 
 # To make an email contest named `foo':
 #
@@ -78,9 +78,9 @@
 #
 # 8. Test the contest by putting the contest address in
 #    the Contest_Address file in the judging directory
-#    and executing `make test'.  Then read the email
-#    replies and compare the X-HPCM-Test-Subject field
-#    with the results in the body of the email.
+#    and executing `make test'.  Then read each email
+#    reply and compare its X-HPCM-Test-Subject field
+#    with the results in the body of the reply.
 #
 #    You can read and analyze the email replies auto-
 #    matically by placing them in an `mbox' file in the
