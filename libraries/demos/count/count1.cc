@@ -12,8 +12,9 @@ main()
 
 	char buffer [101];
 
-	while ( cin.getline ( buffer, sizeof ( buffer ) ),
-		! cin.eof() )
+	while
+	  ( cin.getline ( buffer, sizeof ( buffer ) ),
+	    ! cin.eof() )
 	{
 	    char * cp = buffer;
 	    while ( * cp == ' ' ) ++ cp;

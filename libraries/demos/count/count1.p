@@ -54,7 +54,8 @@ begin
 			else
 			    begin
 				read (c);
-				nonblank := not ( c = ' ' );
+				nonblank :=
+				    not ( c = ' ' );
 				characters :=
 				    characters + 1
 			    end
@@ -67,7 +68,8 @@ begin
 			else
 			    begin
 				read (c);
-				nonblank := not ( c = ' ' );
+				nonblank :=
+				    not ( c = ' ' );
 				characters :=
 				    characters + 1
 			    end

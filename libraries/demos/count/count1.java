@@ -2,7 +2,8 @@ import java.io.*;
 
 public class count {
 
-    public static void main (String[] args) throws IOException {
+    public static void main (String[] args)
+	    throws IOException {
 
 	int paragraph = 1;
 	boolean eof_seen = false;
@@ -32,7 +33,8 @@ public class count {
 		}
 
 		int cp = 0;
-		while ( cp < len && buffer [cp] == ' ' ) ++ cp;
+		while (    cp < len
+		        && buffer [cp] == ' ' ) ++ cp;
 
 		if ( cp == len ) break;
 
@@ -41,8 +43,12 @@ public class count {
 		do
 		{
 		    ++ words;
-		    while ( cp < len && buffer [cp] != ' ' ) ++ cp;
-		    while ( cp < len && buffer [cp] == ' ' ) ++ cp;
+		    while (    cp < len 
+		            && buffer [cp] != ' ' )
+			++ cp;
+		    while (    cp < len
+		            && buffer [cp] == ' ' )
+			++ cp;
 		} while ( cp != len );
 
 		characters += cp;
