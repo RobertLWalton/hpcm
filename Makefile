@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Nov  9 03:31:33 EST 2002
+# Date:		Fri Jan 24 08:28:42 EST 2003
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/11/09 08:36:17 $
+#   $Date: 2003/01/24 14:02:50 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.22 $
+#   $Revision: 1.23 $
 
 # See STATUS file for description of versions.
 #
@@ -22,6 +22,8 @@ VERSION=1.000
 all:	submakes
 
 signatures:	HPCM_MD5_Signatures
+
+# slocs:	make .sloc files: see below.
 
 # Kill all implicit rules
 #
@@ -45,6 +47,15 @@ submakes:
 	(cd ./contestant/help/; make)
 	(cd ./judge/bin/; make)
 	(cd ./judge/doc/; make)
+
+# Make SLOC count files.
+#
+slocs:
+	rm -f source.slocs solution.slocs
+	sloc_counts -s `file_list 'src | lib | bin' ` \
+		    > source.slocs
+	sloc_counts -s `file_list 'solution' ` \
+		    > solution.slocs
 
 # Make MD5 Signatures File:
 #
@@ -131,7 +142,7 @@ cleanall:
 	    ( cd `dirname $$x`; make clean ) \
 	    done
 
-clean:	cleantar
+clean:	cleantar cleanslocs
 
 cleantar:
 	rm -f HPCM_MD5_Signatures \
@@ -139,3 +150,6 @@ cleantar:
 	      non_distributable_files_${VERSION} \
 	      hpcm_${VERSION}.tar \
 	      hpcm_non_distributable_${VERSION}.tar
+
+cleanslocs:
+	rm -f *.slocs
