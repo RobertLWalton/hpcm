@@ -5,7 +5,7 @@
 #
 # File:		makejudgingdir
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Sep 15 11:26:18 EDT 2000
+# Date:		Sun Sep 24 15:02:41 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/09/15 16:28:41 $
+#   $Date: 2000/09/24 20:08:57 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.6 $
+#   $Revision: 1.7 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -39,8 +39,9 @@ cd judging_directory; makejudgingdir index_spec ...
     according to instructions in the index specifica-
     tions.  Each index specification has the form:
 
-    	index_file\[: index_directory\], name1s=name1t,
-		name2s=name2t, ...
+      index_file\[: index_directory\], name1s=name1t, \\
+	    option1s:'option11t option12t ...', \\
+	    name2s=name2t, ...
 
     The index files are read and concatenated to form
     the `index' file in the new info directory, with
@@ -99,6 +100,16 @@ cd judging_directory; makejudgingdir index_spec ...
 			*.txt file in the item directory
 			will be included in the info
 			directory.
+
+    Option substitution occurs before the options are
+    otherwise processed.  A substitution of the form
+
+    	option1s:'option11t option12t ...'
+
+    in the index specification replaces option1s by the
+    options in the list `option11t option12t ...'.
+    Substitution is recursive.  After option substitu-
+    tion, unknown options are ignored.
 
     If an item is included in the new info directory,
     the item entry is included in the index of that
@@ -180,6 +191,40 @@ file mkdir $info_directory+
 file mkdir $solutions_directory+
 set newindex_ch [open $info_directory+/index w]
 
+# Array specifying option substitutions.  For each
+# op1 to be substituted for, the value of
+#
+#	option_array(op1)
+#
+# is the list of options that is the substitution.
+
+# Expand a list of options and return the result.
+# Do not let the depth of expansion run away.
+#
+proc expand_options { option_list { depth 0 } } {
+
+    global option_array
+
+    if { $depth > 100 } {
+    	error "Infinite recursive option substitution"
+    }
+
+    set result ""
+    foreach option $option_list {
+        if { [info exists option_array($option)] } {
+	    set result \
+	        [concat $result \
+		        [expand_options \
+			    $option_array($option) \
+			    [expr { $depth + 1 }]]]
+	} else {
+	    lappend result $option
+	}
+    }
+
+    return $result
+}
+
 # List of substitutions to be made in the names
 # of the current input index file.  Each item of
 # the list has the form `{source target}' which
@@ -227,7 +272,9 @@ proc make_substitutions { name } {
 #   index_file		the input index file name
 #   index_directory	index directory name
 #   newindex_ch		output index file channel
-#   substitutions	specification substitutions
+#   option_array	option substitutions
+#			(see above)
+#   substitutions	filename substitutions
 #			(see above)
 #
 proc process_index_specification {} {
@@ -261,7 +308,8 @@ proc process_index_specification {} {
 	    # Beginnning item entry.
 
 	    set name [lindex $line 1]
-	    set options [lreplace $line 0 1]
+	    set options \
+	        [expand_options [lreplace $line 0 1]]
 
 	    # Process info option.
 	    #
@@ -368,6 +416,9 @@ foreach arg $argv {
 	}
 	set index_file $arg
 	set substitutions ""
+	foreach opt [array names option_array] {
+	    unset option_array($opt)
+	}
     } elseif { $mode == "directory" } {
     	if { [regexp {^(.*),$} $arg forget arg] } {
 	    set mode substitution
@@ -379,13 +430,19 @@ foreach arg $argv {
     	if { ! [regexp {^(.*),$} $arg forget arg] } {
 	    set mode file
 	}
-	if { ! [regexp {^([^=]*)=([^=]*)$} $arg forget \
+	if { [regexp {^([^=]*)=([^=]*)$} $arg forget \
 	               source destination] } {
-	    error "Too few or too many `=' signs in\
+	    lappend substitutions \
+		    [list $source $destination]
+	} elseif { [regexp {^([^:]*):([^:]*)$} \
+	                   $arg forget \
+	               source destination] } {
+	    set option_array($source) \
+	        [string trim $destination]
+	} else {
+	    error "Badly formatted substitution:\
 	           `$arg'"
 	}
-	lappend substitutions \
-	        [list $source $destination]
     }
 
     if { $mode == "file" } {
