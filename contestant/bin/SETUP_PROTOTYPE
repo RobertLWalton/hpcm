@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/09/21 05:19:38 $
+#   $Date: 2001/09/21 05:43:34 $
 #   $RCSfile: SETUP_PROTOTYPE,v $
-#   $Revision: 1.15 $
+#   $Revision: 1.16 $
 
 # List of files always added implicitly to .hpcm_keep
 # and .hpcm_exclude.  Note each line feed is to be
@@ -438,10 +438,14 @@ else
 fi
 
 # Link ~/bin to `dirname $0` if that begins with /
+# but does not begin with `$HOME/'.
 #
 dir=`dirname $0`
 
 case "$dir" in
+    $HOME/*)
+	# Do nothing
+    	;;
     /*)
 	rm -rf bin
 
@@ -483,9 +487,14 @@ fi
 
 # Create setup.ls
 #
-rm -f ~/home/setup.ls
-if (ls -aR >~/home/setup.ls $files; \
-    chmod a+r ~/home/setup.ls)
+if ( rm -rf ~/home/setup.ls ~/SETUP_PROTOTYPE.tmp; \
+     mkdir ~/SETUP_PROTOTYPE.tmp; \
+     cd ~/SETUP_PROTOTYPE.tmp; \
+     tar xf ../home/setup.tar; \
+     ls -aR >../home/setup.ls; \
+     cd; \
+     rm -rf ~/SETUP_PROTOTYPE.tmp; \
+     chmod a+r ~/home/setup.ls )
 then
 	echo "created ~/home/setup.ls"
 else
