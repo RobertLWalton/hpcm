@@ -1,4 +1,4 @@
-OPTIMAL MATCHINGS HELP      Mon Sep  2 14:44:43 EDT 2002
+OPTIMAL MATCHINGS HELP      Tue Sep  3 04:10:03 EDT 2002
 
 A matching is a 1-1 function from some domain set D into
 some range set R.  As a function, it is a subset of
@@ -6,16 +6,16 @@ ordered pairs (x,y) in DxR.  Suppose a weight number
 w(x,y) is assigned to each such pair.  Define the weight
 of a function to be the sum of the weights of its pairs.
 Then an optimal matching is a matching that either
-minimizes or maximized the weight of the matching.
+minimizes or maximizes the weight of the matching.
 
 In what follows we will define V to be the set D union R
 and call elements of V `vertices', and we will refer to
 pairs (x,y) in DxR as `edges'.  For the rest of this
 document we will refer to the same fixed D, R, and V.
 
-A signed graph is an assignment to each edge (x,y) in
-DxR one of the numbers -1, 0, or +1.  We will consider
-a function (and therefore a matching) to be a signed
+A signed graph is an assignment of one of the numbers
+-1, 0, or +1 to each edge (x,y) in DxR.  We will consi-
+der a function (and therefore a matching) to be a signed
 graph that assigns 0 to each (x,y) not in the function
 and +1 to each (x,y) in the function.  If G is a signed
 graph, the edges assigned +1 are called the positive
@@ -32,19 +32,16 @@ vertices that are endpoints of a negative edge but not
 a positive edge are called negative endpoints of the
 path.  Note that a path can have any number of positive
 or negative endpoints, including none.
-
-An path P is connected if its edges can be written in a
+
+A path P is connected if its edges can be written in a
 sequence such that the signs of the edges alternate and
 each pair of consecutive edges shares at least one end-
-point.  A connected path P is called a loop if and only
-if no vertex is in exactly one edge of P.  If a connect-
-ed path P is not a loop, it can be shown that P has
-exactly two vertices that are in just one edge of P, and
-these are then called the endpoints of P.
-
+point.  A connected path either has no endpoints, and is
+then called a loop, or has exactly two endpoints.
+
 The sum of two signed graphs G1 and G2 is the signed
 graph G1 + G2 that assigns to each edge the sum of the
-number assigned to the edge by G1 and G2.  G1 + G2 will
+numbers assigned to the edge by G1 and G2.  G1 + G2 will
 not exist if G1 and G2 share a positive edge or share a
 negative edge, as no edge in G1 + G2 can be assigned +2
 or -2.
@@ -69,25 +66,26 @@ an augmenting path of M if M + P exists and is also a
 matching.  If M1 and M2 are matchings, it can be shown
 that M2 - M1 is a path, and therefore it is an augment-
 ing path of M1, with M2 = M1 + (M2 - M1).
-
+
 It can be shown that a path P is an augmenting path for
 M if and only if all negative edges in P are positive in
 M and any positive endpoints of P are not in the domain
 or range of M.  If follows that the connected components
 of an augmenting path for M are also augmenting paths of
 M.
-
+
 If M1 and M2 are matchings with domain(M2) = domain(M1)
 union {x} for some element x of D, then it can be shown
-that the connected components of M2 - M1 are zero or
-more loops plus exactly one non-loop, the non-loop has x
-as a positive endpoint in D, and has one other positive
-endpoint that is in R.
+that the connected components of M2 - M1 are of three
+kinds.  First, there may be loops.  Second, there is
+exactly one non-loop that has two positive endpoints one
+of which is x.  Third, there may be non-loops that have
+one positive and one negative endpoint, both in R.
 
 Let w(x,y) be a weighting function from edges (x,y) in
 DxR to numbers.  Define the weight of a signed graph G,
-w(G), to be the sum over all edges (x,y) of w(x,y)
-multiplies by the number (-1, 0, +1) assigned to (x,y)
+w(G), to be the sum over all edges (x,y) of w(x,y) mul-
+tiplied by the number (-1, 0, or +1) assigned to (x,y)
 by G.  Then if G1 and G2 are signed graphs, w(G1 + G2) =
 w(G1) + w(G2) if G1 + G2 exists, and w(G1 - G2) =
 w(G1) - w(G2) if G1 - G2 exists.
@@ -102,19 +100,20 @@ domain(M1) union {x}.  Then M2 - M1 is an augmenting
 path with w(M2) = w(M1) + w(M2 - M1).  Therefore
 to find M2 we merely need to find an augmenting path P
 for M1 which has minimal w(P), and then set M2 = M1 + P.
-
-Suppose this P has a component P' which is a loop.  Then
-P' is an augmenting path for M1 and if we set M1' =
-M1 + P', we find that M1' and M have the same domain and
-w(M1') = w(M1) + w(P').  Since M is minimal for its
-domain, we have w(P') >= 0 necessarily.  w(P) is the sum
-of the weights of the components of P, so if w(P') were
-> 0, then w(P) could not be minimal.  Therefore w(P') =
-0, and we can omit P' from P and get still get a minimal
-matching on domain(M1) union {x}.  More specifically, if
-P = P' + P'' where P' and P'' are disjoint paths, then
-if M2'' = M1 + P'', w(M2'') = w(M2).
 
+Suppose this P has a component P' which does NOT have
+x as an endpoint.  P' is an augmenting path for M1 and
+if we set M1' = M1 + P', we find that M1' and M1 have
+the same domain and w(M1') = w(M1) + w(P').  Since M1 is
+minimal for its domain, we have w(P') >= 0 necessarily.
+w(P) is the sum of the weights of the components of P,
+so if w(P') were > 0, then w(P) could not be minimal.
+Therefore w(P') = 0, and we can omit P' from P and still
+get a minimal matching on domain(M1) union {x}.  More
+specifically, if P'' = P - P', then P'' is a subpath of
+P and an augmenting path of M1, and if M2'' = M1 + P'',
+w(M2'') = w(M2) is minimal.
+
 So to find M2 we need merely find a minimal connected
 augmenting path P for M1, and this path will have x
 as one of its positive endpoints, and some point in R
@@ -129,7 +128,7 @@ M1, and these become the negative edges of P.  The posi-
 tive edges of P are (x,y1), (x1,y2), (x2,y3), ...,
 (xk,y).  We merely need to find x1, x2, ..., xk, y such
 that w(P) is minimal.
-
+
 Consider the directed graph H with vertices in
 domain(M1) union {x} and weighted edges as follows.
 There one edge from xa to xb if xb is in domain(M1), and
@@ -143,16 +142,18 @@ weight, loops in H can also be shown to have zero
 weight, and we can choose a minimal path from x to xk
 that has no loop.  So to find P, we need merely find
 minimal paths without loops in H from x to each point in
-domain(M1), and then search over all endpoints y.
+xk in domain(M1), and then exhaustively search over all
+xk and all endpoints y in R.
 
-In summary, we build a minimal M one domain point at
-a time, finding an augmenting path P for each new
+In summary, we build a minimal matching one domain point
+at a time, finding an augmenting path P for each new
 domain point.  To find P, we compute H which depends
 upon the matching found so far, find minimal paths
 without loops in H, and then find the minimal P by
-checking all possible endpoints for each minimal path.
+an exhaustive search over points in the domain of the
+matching found so far and points in R.
+
  
-
 
 
 File:		optimal_matchings
@@ -166,6 +167,6 @@ file.
 RCS Info (may not be true date or author):
 
     $Author: hc3 $
-    $Date: 2002/09/02 19:01:47 $
+    $Date: 2002/09/03 08:43:10 $
     $RCSfile: optimal_matchings,v $
-    $Revision: 1.2 $
+    $Revision: 1.3 $
