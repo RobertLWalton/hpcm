@@ -4,7 +4,7 @@
 #
 # File:		hpcm_extract_test_replies
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Tue Feb 12 06:50:47 EST 2002
+# Date:		Tue Feb 12 11:52:22 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/02/12 11:50:06 $
+#   $Date: 2002/02/12 17:13:48 $
 #   $RCSfile: hpcm_extract_test_replies,v $
-#   $Revision: 1.2 $
+#   $Revision: 1.3 $
 
 # If this is not bash and bash is available, switch
 # to using bash.  Note that `which bash` may output
@@ -90,8 +90,7 @@ do
     	case "$REPLY" in
 
 	From\ *)
-	    header=
-	    first=yes
+	    header="$REPLY"
 	    mode=header
 	    ;;
 	esac
@@ -101,14 +100,8 @@ do
         # Save lines of header.  If satisfactory X-HPCM-
 	# Test-Subject line found, switch to copy mode.
 	#
-	if test $first = yes
-	then
-	    first=no
-	else
-	    header="$header
-"
-	fi
-	header="$header$REPLY"
+	header="$header
+$REPLY"
 
     	case "$REPLY" in
 
@@ -117,8 +110,7 @@ do
 	    ;;
 
 	From\ *)
-	    header=
-	    first=yes
+	    header="$REPLY"
 	    ;;
 
 	X-HPCM-Test-Subject:*)
@@ -169,8 +161,7 @@ do
 	From\ *)
 	    exec 3>&-
 	    echo "\`$file' extracted successfully."
-	    header=
-	    first=yes
+	    header="$REPLY"
 	    mode=header
 	    ;;
 	*)
