@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Sep 16 06:03:39 EDT 2003
+# Date:		Wed Sep 17 11:24:54 EDT 2003
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2003/09/16 10:28:01 $
+#   $Date: 2003/09/17 15:22:05 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.113 $
+#   $Revision: 1.114 $
 #
 
 # Table of Contents
@@ -1611,9 +1611,9 @@ proc scrub_filename { name } {
 	    continue
 	} elseif { $component == ".." } {
 	    set len [llength $outlist]
-	    if { $len >= 1 } {
-	        set outlist \
-		    [lrange $outlist 0 [expr $len - 2]]
+	    if {    $len >= 1 \
+	         && [lindex $outlist end] != ".." } {
+	        set outlist [lrange $outlist 0 end-1]
 	    } else {
 	        lappend outlist $component
 	    }
