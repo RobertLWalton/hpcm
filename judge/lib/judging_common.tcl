@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/10/17 12:28:51 $
+#   $Date: 2001/10/17 12:36:09 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.55 $
+#   $Revision: 1.56 $
 #
 
 # Table of Contents
@@ -291,9 +291,9 @@ proc log_error { error_output } {
     #
     if { $log_mode == "none" } {
 	puts stderr "-----"
-	puts stderr "-----errorCode: $errorCode"
+	puts stderr "errorCode: $errorCode"
+	puts stderr "errorInfo follows:"
 	puts stderr "-----"
-	puts stderr "-----errorInfo:"
 	puts stderr $errorInfo
 	puts stderr "------------------------------"
 	return
@@ -362,7 +362,8 @@ proc log_error { error_output } {
     puts $log_ch "date: [clock format $date]"
     puts $log_ch "pwd: [pwd]"
     puts $log_ch "errorCode: $errorCode"
-    puts $log_ch "errorInfo:"
+    puts $log_ch "errorInfo follows:"
+    puts $log_ch "-----"
     puts $log_ch $errorInfo
     puts $log_ch "----------------------------------"
     close $log_ch
