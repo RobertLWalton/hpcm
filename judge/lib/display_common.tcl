@@ -2,7 +2,7 @@
 #
 # File:		display_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Aug 24 22:56:45 EDT 2001
+# Date:		Sat Aug 25 06:26:05 EDT 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/08/25 03:22:09 $
+#   $Date: 2001/08/25 10:14:46 $
 #   $RCSfile: display_common.tcl,v $
-#   $Revision: 1.2 $
+#   $Revision: 1.3 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -465,7 +465,13 @@ proc refresh_file_list { } {
 
         # Set ctime, mtime, and filename of item.
 	#
-	set mtime [file mtime $file]
+	# Beware of file being link, in which case
+	# mtime does not work.
+	#
+	if { [catch { set mtime [file mtime $file] }] } {
+	    file lstat $file temp
+	    set mtime [set temp(mtime)]
+	}
 	if { $file == $received_file } {
 	    set origin $mtime
 	}
@@ -478,10 +484,12 @@ proc refresh_file_list { } {
 
 	# Set comment of item.
 	#
-	set size [file size $file]
-	if { [file isdirectory $file] } {
+	
+	if { ! [file exists $file] } {
+	    lappend item "(dangling link)"
+	} elseif { [file isdirectory $file] } {
 	    lappend item "(directory)"
-	} elseif { $size == 0 } {
+	} elseif { [set size [file size $file]] == 0 } {
 	    lappend item "(empty)"
 	} elseif { ! [file readable $file] } {
 	    lappend item "(unreadable file)"
