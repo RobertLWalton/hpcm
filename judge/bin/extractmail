@@ -4,7 +4,7 @@
 #
 # File:		extractmail
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Feb  5 07:51:38 EST 2002
+# Date:		Tue Sep 24 16:04:30 EDT 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/02/06 00:33:03 $
+#   $Date: 2002/09/25 01:11:45 $
 #   $RCSfile: extractmail,v $
-#   $Revision: 1.39 $
+#   $Revision: 1.40 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -564,11 +564,11 @@ if { [regexp {^HPCM_BEGIN} $line] } {
 	set filename ""
 	set filename_duplicated no
 	set FILE "File:$WS*($NWS+)"
-	set TWOFILES "$FILE($WS+|$WS.*$WS)$FILE"
+	set TWOFILES "${FILE}($WS+|$WS.*$WS)$FILE"
     	while { [regexp $NWS $line] } {
 
 	    if { [regexp \
-	    	    "(^|$WS)$FILE(\$|$WS)" \
+	    	    "(^|$WS)${FILE}(\$|$WS)" \
 		    $line forget1 forget2 fname \
 		    forget3] } {
 		if { $filename == "" } {
@@ -654,12 +654,13 @@ if { [regexp {^HPCM_BEGIN} $line] } {
 			      old: $file_line\n\
 			      new: $real_line"
 			set mode skip
+			break
 		    }
 		}
 	    }
 	    write {
-	        foreach line $lines {
-		    puts $file_ch $line
+	        foreach real_line $lines {
+		    puts $file_ch $real_line
 		}
 	    }
 	    skip { }
