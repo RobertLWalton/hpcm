@@ -4,7 +4,7 @@
 #
 # File:		hpcm_extract
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Mon Oct  9 11:44:47 EDT 2000
+# Date:		Fri Nov 10 13:30:39 EST 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/10/10 04:39:57 $
+#   $Date: 2000/11/10 18:48:39 $
 #   $RCSfile: hpcm_extract,v $
-#   $Revision: 1.5 $
+#   $Revision: 1.6 $
 
 # Print documentation if -... argument.
 #
@@ -37,7 +37,13 @@ hpcm_extract [directory]
 
     before the file is of the form:
 
-    	Subject: RE: get ...
+    	Subject: get ...
+
+    Note that this line will NOT be the subject line of
+    the reply message, but the subject line of the
+    request message that is quoted in the reply message
+    just before the files: the difference being that
+    there is no \` RE:' in the request message subject.
 
     The extracted files are placed in the directory
     specified by the single argument, or if no argument
@@ -138,17 +144,23 @@ REPLY="---<>--<>---<>--<>---<>----- end of file"
 	Subject:*)
 	    subject="$REPLY"
 	    # Set subject_ok according to whether
-	    # subject is `get ...'
+	    # subject is `get ...'.  This Subject
+	    # line is not that of the message proper,
+	    # but it that quoted in the message
+	    # just before the files.  Thus there is
+	    # no ` RE:' in this subject.
 	    #
 	    SUBJECT="[Ss][Uu][Bb][Jj][Ee][Cc][Tt]"
 	    WS="[ 	]*"
-	    RE="[Rr][Ee]"
 	    GET="[Gg][Ee][Tt]"
 	    ok=`expr "$REPLY" : \
 		"${SUBJECT}:${WS}${GET}" `
 	    if test $ok -ne 0
 	    then
 	    	subject_ok=yes
+		subject=`expr "$REPLY" : \
+		              "${SUBJECT}:"'\(.*\)$' `
+		subject="Subject: RE:$subject"
 	    else
 	    	subject_ok=no
 	    fi
@@ -257,22 +269,43 @@ REPLY="---<>--<>---<>--<>---<>----- end of file"
 	    ;;
 	esac
 
-	if test "$file" = "end of files"
-	then
+	case "$file<$subject_ok>" in
+
+	"end of files<yes>" )
 	    if test $has_errors = no
 	    then
-	    	echo NO ERRORS IN EXTRACTION
+	    	echo NO ERRORS in extraction
 	    fi
 	    echo ""
 	    mode=header
-	elif test $subject_ok = no
-	then
+	    ;;
+
+	"end of files<no>" )
+	    echo BAD SUBJECT: no files extracted
+	    echo ""
+	    mode=header
+	    ;;
+
+	*"<no>" )
 	    mode=skip
-	else
+	    ;;
+
+	"<yes>" )
+	    echo WARNING: empty file name
+	    has_errors=yes
+	    mode=skip
+	    ;;
+
+	/* | .* | */.* | -* | */-* )
+	    echo WARNING: illegal file name \
+	                  '(skipped):' "$file"
+	    has_errors=yes
+	    mode=skip
+	    ;;
+
+	*"<yes>" )
 
 	    # Make directories required by file name.
-	    # Note $file = "end of files" requires no
-	    # directories.
 	    #
 	    dirs=""
 	    dir=`dirname "$file"`
@@ -327,7 +360,8 @@ REPLY="---<>--<>---<>--<>---<>----- end of file"
 		mode=skip
 		has_errors=yes
 	    fi
-	fi
+	    ;;
+	esac
     	;;
     esac
 done
