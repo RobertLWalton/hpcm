@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2003/02/07 20:29:06 $
+#   $Date: 2003/02/08 07:31:00 $
 #   $RCSfile: autojudge,v $
-#   $Revision: 1.83 $
+#   $Revision: 1.84 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -133,12 +133,11 @@ autojudge \[-manual\] \[problem\[.extension\]\]
     tence of a solution directory for the problem and
     symbolically links the `PROBLEM.rc' and\
     		`$files_file'
-    files from this directory into the current\
-    		directory,
-    if those files exist.  If the `PROBLEM.rc' file\
-    exists, it is sourced.  If the `$files_file' file\
-    		does
-    not exist, it is given the default value:
+    files from this directory into the current direc-
+    tory, if these files exist.  If the `PROBLEM.rc'
+    file exists, it is sourced.  If the\
+    		`$files_file' file
+    does not exist, it is given the default value:
 
         -LINK-
 	    { $make_file $make_file.EXTENSION\
@@ -246,38 +245,44 @@ autojudge \[-manual\] \[problem\[.extension\]\]
     there is an error, as $make_file is -LINK- and not
     -OPTIONAL-LINK-.
 
-    In linking any `$files_file' file from the solution
-    directory, this program behaves as if there were
-    an initial `$files_file' file value of:
+    In linking any `PROBLEM.rc' or `$files_file' file
+    from the solution directory, this program behaves as
+    if there were an initial `$files_file'\
+    		file value of:
 
     	-OPTIONAL-LINK-
+	    { PROBLEM.rc rc.EXTENSION PROBLEM.rc }
 	    { $files_file $files_file.EXTENSION\
 	      $files_file }
 
-    Thus in the solution directory,\
-    	$files_file.EXTENSION
-    is preferred over `$files_file'.
+    Thus in the solution directory, rc.EXTENSION and
+    $files_file.EXTENSION are preferred over\
+    	PROBLEM.rc
+    and `$files_file'.
 
     It is an error if the solution directory has no
-    `$files_file' file but does have `$files_file.*'\
-    	files,
-    none of which match the extension given by the sub-
-    mitter.
+    `PROBLEM.rc' file but does have `rc.*' files none of
+    which match the extension given by the submitter;
+    or if the solution directory has no `$files_file'\
+    		file
+    but does have `$files_file.*' files, none of which
+    match the extension given by the submitter.
 
     All errors involving linking are submitter errors if
     there might be some extension that the submitter
     could specify which would make the submission cor-
     rect.  Otherwise the errors are system errors.
 
-    After linking any `$files_file' file from the\
-    	solution
-    directory, this program makes any files governed
-    by -SOLUTION-MAKE- in the `$files_file' file.  If
-    there is such a file F listed, and it does not al-
-    ready exist in the solution directory, this program
-    executes `make F' in the solution directory.  During
-    this process this program locks the solution direc-
-    tory with a $dispatch_pid_file file.  Note that
+    After linking any `PROBLEM.rc' and `$files_file'\
+    		files
+    from the solution directory, this program makes any
+    files governed by -SOLUTION-MAKE- in the\
+    	`$files_file'
+    file.  If there is such a file F listed, and it does
+    not already exist in the solution directory, this
+    program executes `make F' in the solution directory.
+    During this process this program locks the solution
+    directory with a $dispatch_pid_file file.  Note that
     `PROBLEM' or `EXTENSION' are not substituted for in
     -SOLUTION-MAKE- file names; but the same effect can
     be had by having different `$files_file.EXTENSION'\
@@ -739,6 +744,18 @@ execute_links "
 # Source any PROBLEM.rc file.
 #
 source_file $problem.rc
+if { [file exists $problem.rc] } {
+    source_file $problem.rc
+} else {
+    set possibilities \
+        [find_exts $solution_directory/rc]
+    
+    if { [llength $possibilities] > 0 } {
+	subject_error \
+	    "unallowed extension (should be one of\
+	     $possibilities) in"
+    }
+}
 
 # Read $files_file.
 #
