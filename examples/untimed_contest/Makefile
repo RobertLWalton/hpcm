@@ -1,7 +1,7 @@
 # Makefile for an `email' Contest
 #
 # File:		Makefile
-# Date:		Tue Jan  9 07:46:59 EST 2001
+# Date:		Tue Jan  9 09:05:32 EST 2001
 #
 # Author:	Bob Walton (walton@deas.harvard.edu)
 #
@@ -12,9 +12,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/01/09 12:44:21 $
+#   $Date: 2001/01/09 14:05:38 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.9 $
+#   $Revision: 1.10 $
 
 # To make an email contest named `foo':
 #
@@ -49,7 +49,7 @@
 #    files.  The worst that can happen from running
 #    `make' unnecessarily is to get redundant instruc-
 #    tions in the ./TODO file (see below).
-#
+
 # 6. Follow the instructions in the TODO file that
 #    will have been created in the judging directory.
 #    After you follow an instruction, edit it out of
@@ -104,7 +104,7 @@ all:
 
 this_contest:
 	makejudgingdir -this_contest
-
+
 scoreboard:
 	scorefinder | scoreboard
 

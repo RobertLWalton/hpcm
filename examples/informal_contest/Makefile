@@ -1,45 +1,27 @@
 # Makefile for an `informal' Contest
 #
 # File:		Makefile
-# Date:		Sun Dec 10 06:31:27 EST 2000
+# Date:		Tue Jan  9 09:06:02 EST 2001
 #
+# Author:	Bob Walton (walton@deas.harvard.edu)
+#
+# The authors have placed this program in the public
+# domain; they make no warranty and accept no liability
+# for this program.
+#
+# RCS Info (may not be true date or author):
+#
+#   $Author: hc3 $
+#   $Date: 2001/01/09 14:03:05 $
+#   $RCSfile: Makefile,v $
+#   $Revision: 1.9 $
+
 # To make an informal contest named `foo':
 #
-#  1. Import the HPCM system into ~/hpcm.
+#  1. Import the HPCM system into ~/hpcm.  See direc-
+#     tions in hpcm/judge/bin/installing_hpcm.
 #
-#  2. Assuming /sbin is the right directory for secure
-#     root setuid programs, run:
-#
-#			cd ~/hpcm/secure/src
-#			su
-#			make root_install
-#			exit
-#
-#     This installs the hpcm_sandbox program as a setuid
-#     root program in the system /sbin directory, which
-#     is the appropriate thing for Linux.  If you put
-#     this setuid binary in another place, say `/foo',
-#     you should replace the `make' command above by
-#
-#		make SECURE_BIN=/foo root_install
-#
-#     If you skip this step, an unsecure hpcm_sandbox
-#     will be installed (in the next step) for the
-#     judge, which will mean that malicious contestant
-#     programs could corrupt the judging files.
-#
-#  3. Run		cd ~/hpcm
-#			make
-#
-#     This sets some file modes and makes a few binary
-#     files.
-#
-#  4. Put ~/hcpm/judge/bin in the PATH of the current
-#     (judge's) account.  Do NOT put ~/hpcm/contestant/
-#     bin in that PATH.
-#
-
-#  5. Create a judging directory ~/judging_foo_password
+#  2. Create a judging directory ~/judging_foo_password
 #     where the password is needed to keep outsiders
 #     from guessing the path to the received submis-
 #     sions, because JAVA requires this path be a+x to
@@ -48,44 +30,45 @@
 #     This password is never really used, and so can be
 #     something awfully unguessable.
 #
-#  6. Put copies of the files in this directory into
+# 3.  Put copies of the files in this directory into
 #     your judging directory, and edit the names and
 #     passwords in these files appropriately.  Edit the
-#     index specifications (value of the INDICES vari-
-#     able below) to specify the problems you want (run
-#     `makejudgingdir -doc' to find the format and mean-
-#     ing of index specifications).
+#     index specifications specifying the problems you
+#     want to include (at the end of the value of the
+#     INDICES variable below) to specify the problems
+#     you want (run `makejudgingdir -doc' to find the
+#     format and meaning of index specifications).
 #
-#  7. Make a contest directory named ~/contest_foo.
+#  4. Make a contest directory named ~/contest_foo.
 #     Symbolically link this to the name
 #	~/judging_foo_password/contest
 #     by executing inside the judging directory:
 #	ln -s ~/contest_foo contest
 #
-#  8. Symbolically link ~/hpcm/contestant to the
+#  5. Symbolically link ~/hpcm/contestant to the
 #     name ~/contest_foo/contestant by executing
 #     inside the contest directory:
 #	ln -s ~/hpcm/contestant contestant
 #
-#  9. Move the file scoreboard.1head into the
-#     ~/contest_foo (now also the ./contest) directory.
+#  6. Move the file scoreboard.1head into the ./contest
+#     directory (which is now linked to ~/contest_foo).
 #
 
-# 10. Create a file named contest_foo/secure/passwords
+#  7. Create a file named ./contest/secure/passwords
 #     that is just a list of all the contestant accounts
 #     that will be created.  You must create the
-#     contest_foo/secure directory.  Be sure this
-#     directory and all the files in it are accessible
-#     only to the judge's account JJJ.
+#     ./contest/secure directory.  Be sure this direc-
+#     tory and all the files in it are accessible only
+#     by the judge's account JJJ.
 #
-#     Be sure to include a `contestant account' which
+#     Be sure to include a contestant account which
 #     you will use to test the system, and to which no
 #     actual contestant will be assigned.
 #
-# 11. Run `make this_contest' and then edit the `./help/
+#  8. Run `make this_contest' and then edit the `./help/
 #     this_contest' file.
 #
-# 12. Run `make' in your judging directory.  Note this
+#  9. Run `make' in your judging directory.  Note this
 #     runs `startcontest', which merely gives a+r
 #     permission to the ./contest/help/problems file
 #     that lists the problems.
@@ -96,7 +79,7 @@
 #     `make' unnecessarily is to get redundant instruc-
 #     tions in the ./TODO file (see below).
 #
-# 13. Follow the instructions in the TODO file that
+# 10. Follow the instructions in the TODO file that
 #     will have been created in the judging directory.
 #     After you follow an instruction, edit it out of
 #     the TODO file.
@@ -115,7 +98,7 @@
 #     Also, `make;' executes `startcontest' so it is
 #     not necessary to execute it separately.
 #
-# 14. One of the instructions will be to make a con-
+# 11. One of the instructions will be to make a con-
 #     testant prototype account: see
 #
 #	~/hpcm/contestant/bin/SETUP_PROTOTYPE -doc
@@ -140,7 +123,7 @@
 #     ectory, changing its name to `.procmailrc' in that
 #     directory.  This is a bit tricky, since you are
 #     moving a file across accounts: be sure the result
-#     has mode 660 and owner and group of the prototype
+#     has mode 600 and owner and group of the prototype
 #     account.  The `.procmailrc' file must be owned by
 #     the account in whose home directory it is placed:
 #     this is why it cannot be put in ~/prototype_home
@@ -158,7 +141,7 @@
 #     directory for this contest, but you will need to
 #     symbolically link ~/contest_foo/home.
 #
-# 15. Be sure you follow the instructions in the SETUP_
+# 12. Be sure you follow the instructions in the SETUP_
 #     PROTOTYPE documentation about editing prototype
 #     home directory files such as .cshrc to setup the
 #     right contestant environment.  Adding ~/.hpcm_
@@ -185,7 +168,7 @@
 #     onment setting.
 #
 
-# 16. Be sure there are appropriate account names and
+# 13. Be sure there are appropriate account names and
 #     passwords in the file ./contest/secure/passwords,
 #     as you are about to make these accounts and set
 #     these passwords.  The command
@@ -206,7 +189,7 @@
 #     be a test account that you can use to check
 #     whether the system is running.
 #
-# 17. Run `make trashable' in your judging directory.
+# 14. Run `make trashable' in your judging directory.
 #     This makes the file ./contest/trashable which
 #     lists the contestant accounts that can be reini-
 #     tialized by `TRASH_ACCOUNT'.  These accounts have
@@ -214,7 +197,7 @@
 #     already exist).
 #
 
-# 18. Then as root (you must log into the root account,
+# 15. Then as root (you must log into the root account,
 #     you cannot use `su', as the paths will not be
 #     right), run the following commands:
 #
@@ -236,14 +219,14 @@
 #     regardless of which contest ~/.hpcm_contest was
 #     linked to in the prototype account).
 #
-# 19. Run `make nontrashable' in your judging directory.
+# 16. Run `make nontrashable' in your judging directory.
 #     This removes the file ./contest/trashable and pre-
 #     vents any contestants from accidentally trashing
 #     their own account by running TRASH_ACCOUNT (which
 #     requires the contestant's account name appear in
 #     ~JJJ/contest_foo/trashable).
 #
-# 20. Run `makescoreboard -start' to start the score-
+# 17. Run `makescoreboard -start' to start the score-
 #     board background process.  This process makes
 #		./contest/scoreboard.1
 #     at intervals if something has changed.  This
@@ -252,7 +235,7 @@
 #     can be checked by `makescoreboard -status'.
 #
 
-# 21. Contest judging is automatic.  If you set the
+# 18. Contest judging is automatic.  If you set the
 #     `reply_manager' and `log_manager' variables to
 #     your email address, you will be notified of any
 #     errors or questions.  You many use the `tracker'
@@ -305,16 +288,3 @@ update_scoreboard:
 	makescoreboard 0
 
 
-
-# Author:	Bob Walton (walton@deas.harvard.edu)
-#
-# The authors have placed this program in the public
-# domain; they make no warranty and accept no liability
-# for this program.
-#
-# RCS Info (may not be true date or author):
-#
-#   $Author: hc3 $
-#   $Date: 2000/12/10 11:49:31 $
-#   $RCSfile: Makefile,v $
-#   $Revision: 1.8 $
