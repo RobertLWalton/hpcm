@@ -53,7 +53,7 @@
 ;;;;
 ;;;;
 
-(defun BYE () (EXIT))	; Allegro doesn't have this
+;;;; (defun BYE () (EXIT))	; Allegro doesn't have this
 
 ; Override defaults for better output
 (setf *break-on-errors* t)
@@ -245,7 +245,7 @@
 
 (defun INTERNAL-VI (file)
   ; If vi is called on a non-existent file, the command argument
-  ; +set lisp showmatch autoindent below has not effect.  So we
+  ; +set lisp showmatch autoindent below has no effect.  So we
   ; create the file if it does not exist first.
   
   (let ((f (open file
@@ -254,10 +254,7 @@
 		 :if-exists		nil)))
        (if f (close f)))
   
-  (run-shell-command
-   (concatenate 'string
-		"cd " (EXCL::CURRENT-DIRECTORY-STRING) "; "
-		"vi '+set lisp sm ai' " file)))
+  (shell (concatenate 'string "vi '+set lisp sm ai' " file)))
 
 (defun VI (&optional (FILE *VI-FILE*))
   
@@ -307,10 +304,7 @@
 
 (defun INTERNAL-PICO (file)
   
-  (run-shell-command
-   (concatenate 'string
-		"cd " (EXCL::CURRENT-DIRECTORY-STRING) "; "
-		"pico " file)))
+  (shell (concatenate 'string "pico " file)))
 
 (defun PICO (&optional (FILE *PICO-FILE*))
   
@@ -352,3 +346,16 @@
   (internal-pico *picor-file*)
 
   (run :in *picor-file* :out out))
+
+;; (putprop sym pval pname)
+;;
+;; Associates pval with the property pname for the symbol sym.  Returns pval.
+;; (The following definition of putprop is from section 3.1 of the project
+;; book.  It is included here for your convenience.)
+;;
+(defun putprop (sym pval pname)
+  (setf (get sym pname) pval))
+
+;; Attempts to fix backspace problems
+(defun bksp () (run-shell-command "stty erase '^H'"))
+(defun del () (run-shell-command "stty erase '^?'"))
