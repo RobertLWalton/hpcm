@@ -2,7 +2,7 @@
 //
 // File:	scorediff.cc
 // Authors:	Bob Walton (walton@deas.harvard.edu)
-// Date:	Wed Jul 18 06:00:40 EDT 2001
+// Date:	Sun Aug  5 07:25:50 EDT 2001
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: hc3 $
-//   $Date: 2001/07/18 10:13:23 $
+//   $Date: 2001/08/05 11:28:10 $
 //   $RCSfile: scorediff.cc,v $
-//   $Revision: 1.30 $
+//   $Revision: 1.31 $
 
 // This is version 2, a major revision of the first
 // scorediff program.  This version is more explicitly
@@ -61,10 +61,16 @@ char documentation [] =
 "\n"
 "    The types of differences are:\n"
 "\n"
+"    spacebreak	For two matching tokens, one is pre-\n"
+"		ceded by whitespace (possibly con-\n"
+"		taining a newline), and the other has\n"
+"		no preceding whitespace at all.\n"
+"\n"
 "    linebreak	For two matching tokens, the preced-\n"
-"		ing whitespace of one has a different\n"
-"		number of new lines than the preced-\n"
-"		ing whitespace of the other.\n"
+"		ing whitespaces of both are non-\n"
+"		empty, and one preceding whitespace\n"
+"		has a different number of new lines\n"
+"		than the other.\n"
 "\n"
 "    whitespace	For two matching tokens, the preced-\n"
 "		ing whitespaces both have no new\n"
@@ -76,11 +82,6 @@ char documentation [] =
 "		cognized if either following matching\n"
 "		token is a number with a decimal\n"
 "		point or exponent.\n"
-"\n"
-"    spacebreak	For two matching tokens, one is pre-\n"
-"		ceded by whitespace containing no new\n"
-"		lines, and the other has no preceding\n"
-"		whitespace at all.\n"
 "\f\n"
 "    endspace	For two matching tokens, the preced-\n"
 "		ing whitespaces have the same number\n"
@@ -1461,14 +1462,14 @@ int main ( int argc, char ** argv )
 	// results of word splitting can be taken into
 	// account in token ending column numbers.
 
-	if ( output.newlines != test.newlines )
-	    found_difference ( LINEBREAK );
-	else if ( (    output.whitespace[0] != 0
-	            && test.whitespace[0]   == 0 )
-		  ||
-		  (    output.whitespace[0] == 0
-		    && test.whitespace[0]   != 0 ) )
+	if ( (    output.whitespace[0] != 0
+	       && test.whitespace[0]   == 0 )
+	     ||
+	     (    output.whitespace[0] == 0
+	       && test.whitespace[0]   != 0 ) )
 	    found_difference ( SPACEBREAK );
+	else if ( output.newlines != test.newlines )
+	    found_difference ( LINEBREAK );
 	else
 	{
 	    char * wp1		= output.whitespace;
