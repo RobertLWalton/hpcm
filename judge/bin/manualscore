@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: acm-cont $
-#   $Date: 2000/08/21 03:40:26 $
+#   $Date: 2000/08/21 05:09:29 $
 #   $RCSfile: manualscore,v $
-#   $Revision: 1.4 $
+#   $Revision: 1.5 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -72,7 +72,7 @@ if { [file exists $reply_file] } }
     exit 0
 }
 
-set auto_score [getfile $auto_score_file]
+set auto_score [readfile $auto_score_file]
 
 if { $auto_score == "Completely Correct" } {
     puts "$auto_score; Terminating manual scoring"
@@ -81,8 +81,6 @@ if { $auto_score == "Completely Correct" } {
 
 set From_line [find_From_line]
 
-puts "Score $From_line"
-puts "Auto Score: $auto_score"
 
 if { [file exists $compiler_error_file] } {
     set last_file $compiler_error_file
@@ -92,134 +90,120 @@ if { [file exists $compiler_error_file] } {
     set last_file [make_bdiff]
 }
 
+set manual_score $auto_score
+
 while { "yes" } {
+
+    puts "Scoring $From_line"
+    puts "Auto Score: $auto_score    Current score:\
+                                     $manual_score"
+
     putfile $last_file stdout 10
+
     puts -nonewline "
 ------------------------------------------------------
-d = view .diff      b = view .bdiff      o = view .out
-t = view .test      e = view .err        p = view $submitted_extension
-a = verify auto score                    c = view .cerr
-r = reject auto score			 x = exit
+d = view .diff      b = view .bdiff     o = view .out
+t = view .test      e = view .err       p = view $submitted_extension
+a = exit accepting current score        c = view .cerr
+r = reject current score, and enter new current score
+x = exit without doing anthing
 
 > "
+    set answer [gets stdin]
+    if { [eof stdin] } {
+    	exit 0
+    }
+    set action "view"
 
+    switch -glob $answer \
+    	d*	{ set last_file $diff_file } \
+    	b*	{ set last_file $bdiff_file } \
+    	o*	{ set last_file $output_file } \
+    	t*	{ set last_file $test_file } \
+    	e*	{ set last_file $error_file } \
+    	c*	{ set last_file $cerror_file } \
+    	p*	{ set last_file $submitted_file } \
+	a*	{ set action "accept" } \
+	r*	{ set action "reject" } \
+	x*	{ set action "exit" } \
+	default	{ set action "unknown" }
 
-# Include common error catching code:
-#
-} caught_output
-caught_error
+    switch $action \
+        accept	{
+		    writefile $manual_score_file \
+		              $manual_score
 
-	    echo ""
-	    echo Enter Score
-	    echo "    s = syntax error"
-	    echo "    x = program crashed"
-	    echo "    t = too much time, memory," \
-				"or output"
-	    echo "    i = incorrect output"
-	    echo "    ic = incomplete output"
-	    echo "    f = formating error"
-	    echo "    cc = completely correct"
-	    echo "    d = defer scoring"
-	    echo -n "Score: "
-	    switch ($<)
-	    case s:
-		set score="Syntax Error"
-		break
-	    case x:
-		set score="Program Crashed"
-		break
-	    case t:
-		set score="Too Much Time, Memory, or Output"
-		break
-	    case i:
-		set score="Incorrect Output"
-		break
-	    case ic:
-		set score="Incomplete Output"
-		break
-	    case f:
-		set score="Formating Error"
-		break
-	    case cc:
-		set score="Completely Correct"
-		break
-	    case d:
-		set score="Defer Scoring"
-		break
-	    case test:
-		echo ===================== \
-		     $program.test \
-		     ===================== 
-		more -20 $program.test
-		echo ===================== \
-		     =====================
-		continue
-	    case out:
-		echo ===================== \
-		     $program.out \
-		     ===================== 
-		more -20 $program.out
-		echo ===================== \
-		     =====================
-		continue
-	    case diff:
-		echo ===================== \
-		     $program.diff \
-		     ===================== 
-		more -20 $program.diff
-		echo ===================== \
-		     =====================
-		continue
-	    case bdiff:
-		echo ===================== \
-		     $program.bdiff \
-		     ===================== 
-		more -20 $program.bdiff
-		echo ===================== \
-		     =====================
-		continue
-	    case src:
-		view $src
-		continue
-	    default: 
-		echo "Could not understand; try again."
-		continue
-	    endsw
-	end
+		    if { $manual_score \
+		         == $auto_score } {
+			reply "Your automatic score of:\
+			       $auto_score" \
+			      "has been accepted by the\
+			       human judge!"
+		    } else {
+			reply "Your automatic score of:\
+			       $auto_score" \
+			      "has been REJECTED by the\
+			       human judge!" \
+			      "" \
+			      "The human judge has\
+			       assigned the FINAL\
+			       SCORE: $manual_score"
+		    }
 
-	while (1)
-	    set from=`pwd | sed -e 's|.*/From \([^ /]*\) [^/]*$|\1|' `
-	    echo ""
-	    echo "Do you really want to score" \
-		 "this as: ${score}"
-	    if ( "$score" != "Defer Scoring" ) then
-		echo "    and mail it to ${from}?"
-	    endif
-	    echo -n "Yes or no: "
-	    switch ($<)
-	    case yes:
-		if ( "$score" != "Defer Scoring" ) then
-		    echo ""
-		    echo "Making $program.score"
-		    echo "$score" > $program.score
-		    echo "Deleting $program"
-		    rm -f $program
-		    echo "Executing mailscore $from"
-		    echo ""
-		    mailscore "$from"
-		    echo ""
-		else
-		    echo "NOT making $program.score"
-		endif
-		break
-	    case no:
-		break
-	    default:
-		echo "Could not understand; try again."
-		continue
-	    endsw
-	end
-endif
+		    exit 0
+		}
+	reject	{
+		    puts "Auto Score: $auto_score\
+		         \    Current score:\
+			      $manual_score"
+		    puts ""
+		    puts -nonewline "
+Please select a new current score:
+  i = Incorrect Output      cc = Completely Correct
+  f = Formatting Error      ic = Incomplete Output
+  s = Syntax Error          te = Cpu Time Limit Exceeded
+  c = Program Crashed       oe = Output Size Exceeded
+  k = keep old current score
+
+> "
+  
+		    set answer [gets stdin]
+		    if { ! [eof stdin] } {
+			switch -glob $answer \
+			    i	{ set manual_score
+			    	      "Incorrect\
+				       Output" } \
+			    f	{ set manual_score
+			    	      "Formatting\
+				       Error" } \
+			    s	{ set manual_score
+			    	      "Syntax\
+				       Error" } \
+			    c	{ set manual_score
+			    	      "Program\
+				       Crashed" } \
+			    cc	{ set manual_score
+			    	      "Completely\
+				       Correct" } \
+			    ic	{ set manual_score
+			    	      "Incomplete\
+				       Output" } \
+			    te	{ set manual_score
+			    	      "Cpu Time Limit\
+				       Exceeded" } \
+			    oe	{ set manual_score
+			    	      "Output Size\
+				       Limit\
+				       Exceeded" } \
+			    k   {} \
+			    default	\
+			    	{ puts "Unknown:\
+				        $answer" }
+		    }
+		} \
+	exit	{ exit 0 } \
+	unknown	{ puts "Unknown: $answer }
+}
 
 
 # Include common error catching code:
