@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Jan  9 12:45:20 EST 2001
+# Date:		Tue Jan  9 13:17:34 EST 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,11 +11,11 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/01/09 18:31:30 $
+#   $Date: 2001/01/09 18:30:55 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.11 $
+#   $Revision: 1.1 $
 
-# To make an informal contest named `foo':
+# To make a formal contest named `foo':
 #
 #  1. Import the HPCM system into ~/hpcm.  See direc-
 #     tions in `Installing HPCM' (hpcm/judge/bin/
@@ -68,10 +68,7 @@
 #  8. Run `make this_contest' and then edit the `./help/
 #     this_contest' file.
 #
-#  9. Run `make' in your judging directory.  Note this
-#     runs `startcontest', which merely gives a+r
-#     permission to the ./contest/help/problems file
-#     that lists the problems.
+#  9. Run `make' in your judging directory.
 #
 #     You should rerun `make' whenever you may have
 #     changed something it uses to build the contest
@@ -89,15 +86,13 @@
 #     judging directory and routing information into
 #     ~/.procmailrc.
 #
-
-#     For an informal contest, you may not need to
-#     edit the WHERE fields in the who_where file.  If
+#     Another thing you will be asked to do is edit
+#     the WHERE fields in the who_where file.  If
 #     you do not, printouts will contain the account
-#     name.
-#
-#     Also, `make' executes `startcontest' so it is
-#     not necessary to execute that separately.
-#
+#     name.  If you do, be sure the WHERE fields are
+#     short enough not to overrun other printout
+#     header fields.
+
 # 11. One of the instructions will be to make a con-
 #     testant prototype account: see
 #
@@ -117,19 +112,12 @@
 #
 #	ln -s ~/prototype_home home
 #
-#     Next, before you run SETUP_PROTOTYPE in the proto-
-#     type account, move the `procmailrc' file from the
-#     judging account to the prototype account's actual
-#     home directory (not to ~/prototype_home) , chang-
-#     ing its name to `.procmailrc' in that directory.
-#     This is a bit tricky, since you are moving a file
-#     across accounts: be sure the result has mode 600
-#     and owner and group of the prototype account.
-#     The `.procmailrc' file must be owned by the
-#     account in whose home directory it is placed:
-#     this is why it cannot be put in ~/prototype_home
-#     like other files (e.g., .cshrc).
-
+#     Note that you do NOT need a .procmailrc file for
+#     a formal contest.  But you might want to include
+#     one (see ../informal_contest/Makefile) if you are
+#     going to share the prototype home directory
+#     between formal and informal contests.
+#
 #     Then run:
 #	  ~JJJ/contest_foo/bin/SETUP_PROTOTYPE \
 #             ~JJJ/contest_foo in the
@@ -140,7 +128,7 @@
 #     tests, so you may not need to make a new prototype
 #     directory for this contest, but you will need to
 #     symbolically link ~/contest_foo/home.
-#
+
 # 12. Be sure you follow the instructions in the SETUP_
 #     PROTOTYPE documentation about editing prototype
 #     home directory files such as .cshrc to setup the
@@ -158,14 +146,14 @@
 #     the prototype account and cd'ing to .hpcm_
 #     contest/home in that account.
 #
-#     Another good thing to add to the environment is
-#     `alias ll -lL'.  This is actually of more use in
-#     formal contests, where gotten files are symbol-
-#     ically linked, and contestants may be confused by
-#     all the symbolic links.  But prototype home dir-
-#     ectories may be shared between informal and for-
-#     mal contests, so it is useful to have this envir-
-#     onment setting.
+#     Two good things to add to .cshrc for a formal
+#     contest are `alias ll -lL' and `unset autologout'.
+#     The first is useful because in formal contests
+#     files gotten by hpcm_get are symbolically linked,
+#     and contestants may be confused by all the symbol-
+#     ic links.  The second is useful if the judges are
+#     logging in contestants, as without it the computer
+#     may log contestants out at awkward times.
 #
 
 # 13. Be sure there are appropriate account names and
@@ -237,11 +225,23 @@
 #     by `makescoreboard 0'.
 #
 
-# 18. Contest judging is automatic.  If you set the
-#     `reply_manager' and `log_manager' variables to
-#     your email address, you will be notified of any
-#     errors or questions.  You many use the `tracker'
-#     program to find unchecked errors.
+# 18. Be sure to remember to RUN `startcontest' at
+#     the time the contest starts.  Also, edit
+#     hpcm_judging.rc in the judging directory at
+#     that time to set the correct start time for
+#     the contest, exclude the demo problems, and
+#     exclude any test account.
+#
+# 19. Contest judging is partly automatic.  You must
+#     run the `tracker' program to find submission
+#     directories in which `manualreply' is to be run
+#     (by `tracker') to compute manual scores, reply to
+#     queries, and examine system errors.  You need to
+#     practice with `manualreply' before the contest.
+#
+# 20. If you want to freeze the scoreboard near the end
+#     of the contest, follow the directions in
+#     `makescoreboard -doc'
 
 HPCM=${HOME}/hpcm
 
@@ -263,7 +263,6 @@ INDICES=    help/index, \
 all:
 	makejudgingdir -informal ${INDICES}
 	chmod a+x . ..
-	startcontest
 
 this_contest:
 	makejudgingdir -this_contest
