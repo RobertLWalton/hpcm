@@ -7,7 +7,7 @@
 #
 # File:		tracker
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Dec  4 11:36:17 EST 2000
+# Date:		Thu Nov  1 09:23:46 EST 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -16,9 +16,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/12/04 16:38:40 $
+#   $Date: 2001/11/01 14:28:36 $
 #   $RCSfile: tracker,v $
-#   $Revision: 1.9 $
+#   $Revision: 1.10 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -29,6 +29,7 @@ exec tcl "$0" "$@"
 #
 set lib_directory "[file dirname $argv0]/../lib"
 source $lib_directory/judging_common.tcl
+source $lib_directory/display_common.tcl
 set log_mode none
 catch {
 
@@ -249,7 +250,182 @@ proc read_input { ch } {
 	if { [eof $ch] } break
     }
 }
+
+# Function to return time summary by problem.
+# Arguments are possible times: min, med(ian), avg, max.
+#
+proc time_summary { args } {
 
+    global rec_array ext_array bin_array out_array \
+           sco_array
+
+    set disp_min 0
+    set disp_med 0
+    set disp_avg 0
+    set disp_max 0
+    foreach xxx $args {
+        set disp_$xxx 1
+    }
+
+    set r "
+			    Times in Seconds
+Problem		rec-ext	ext-bin	bin-out	out-sco\
+		bin-sco rec-sco
+"
+
+    foreach dir [array names rec_array] {
+
+        set rec_line $rec_array($dir)
+	set rec_time [lindex $rec_line 1]
+
+	if { ! [info exists ext_array($dir)] } \
+	    continue
+        set ext_line $ext_array($dir)
+	set ext_time [lindex $ext_line 1]
+	set filename [lindex $ext_line 2]
+	if { ! [regexp {^(.*)\.} \
+	               $filename forget problem] } \
+	    continue
+
+	set rec_ext_time \
+	    [expr { $ext_time - $rec_time }]
+	if { ! [info exists rec_ext_array($problem)] } {
+	    set rec_ext_array($problem) \
+	        [list $rec_ext_time]
+	} else {
+	    lappend rec_ext_array($problem) \
+	            $rec_ext_time
+	}
+
+	if { ! [info exists bin_array($dir)] } \
+	    continue
+        set bin_line $bin_array($dir)
+	set bin_time [lindex $bin_line 1]
+	set bin_time2 [lindex $bin_line 2]
+	if { $bin_time < $bin_time2 } {
+	    set bin_time $bin_time2
+	}
+
+	set ext_bin_time \
+	    [expr { $bin_time - $ext_time }]
+	if { ! [info exists ext_bin_array($problem)] } {
+	    set ext_bin_array($problem) \
+	        [list $ext_bin_time]
+	} else {
+	    lappend ext_bin_array($problem) \
+	            $ext_bin_time
+	}
+
+	if { ! [info exists out_array($dir)] } \
+	    continue
+        set out_line $out_array($dir)
+	set out_time [lindex $out_line 1]
+	set out_time2 [lindex $out_line 2]
+	if { $out_time < $out_time2 } {
+	    set out_time $out_time2
+	}
+
+	set bin_out_time \
+	    [expr { $out_time - $bin_time }]
+	if { ! [info exists bin_out_array($problem)] } {
+	    set bin_out_array($problem) \
+	        [list $bin_out_time]
+	} else {
+	    lappend bin_out_array($problem) \
+	            $bin_out_time
+	}
+
+	if { ! [info exists sco_array($dir)] } \
+	    continue
+        set sco_line $sco_array($dir)
+	set sco_time [lindex $sco_line 1]
+
+	set out_sco_time \
+	    [expr { $sco_time - $out_time }]
+	if { ! [info exists out_sco_array($problem)] } {
+	    set out_sco_array($problem) \
+	        [list $out_sco_time]
+	} else {
+	    lappend out_sco_array($problem) \
+	            $out_sco_time
+	}
+
+	set bin_sco_time \
+	    [expr { $sco_time - $bin_time }]
+	if { ! [info exists bin_sco_array($problem)] } {
+	    set bin_sco_array($problem) \
+	        [list $bin_sco_time]
+	} else {
+	    lappend bin_sco_array($problem) \
+	            $bin_sco_time
+	}
+
+	set rec_sco_time \
+	    [expr { $sco_time - $rec_time }]
+	if { ! [info exists rec_sco_array($problem)] } {
+	    set rec_sco_array($problem) \
+	        [list $rec_sco_time]
+	} else {
+	    lappend rec_sco_array($problem) \
+	            $rec_sco_time
+	}
+    }
+
+    foreach problem [array names rec_ext_array] {
+        set min_time ""
+        set avg_time ""
+        set med_time ""
+        set max_time ""
+
+	foreach xxx_yyy { rec_ext ext_bin bin_out \
+	                  out_sco bin_sco rec_sco } {
+	    if { ! [info exists \
+	                 ${xxx_yyy}_array($problem)] } \
+		 break
+	    set times \
+		[lsort [set ${xxx_yyy}_array($problem)]]
+	    set min \
+		[format { %7d} [lindex $times 0]]
+	    set len [llength $times]
+	    set med [expr { $len / 2 }]
+	    set med \
+		[format { %7d} [lindex $times $med]]
+	    set avg 0
+	    foreach t $times {
+	        incr avg $t
+	    }
+	    set avg \
+		[format { %7d} [expr { $avg / $len }]]
+	    incr len -1
+	    set max \
+		[format { %7d} [lindex $times $len]]
+
+	    set min_time "$min_time$min"
+	    set med_time "$med_time$med"
+	    set avg_time "$avg_time$avg"
+	    set max_time "$max_time$max"
+	}
+
+	set pr ""
+	if { $disp_min } {
+	   set pr "$pr\n           min:$min_time"
+	}
+	if { $disp_med } {
+	   set pr "$pr\n           med:$med_time"
+	}
+	if { $disp_avg } {
+	   set pr "$pr\n           avg:$avg_time"
+	}
+	if { $disp_max } {
+	   set pr "$pr\n           max:$max_time"
+	}
+	set r "$r\n[format {%-10.10s} $problem]\
+	           [string range $pr 12 end]"
+    }
+
+    return $r
+}
+
 # List of directories.  Used to select directories
 # for manualreply.
 #
@@ -691,8 +867,20 @@ while { "yes" } {
 	flush stdout
 	set answer [string trim [gets stdin]]
 	if { [eof stdin] } break
-	if { ! [catch { expr { $answer } }] } {
-	    set output [call_manualreply $answer]
+	switch -regexp -- $answer {
+	    {^ti} {
+		set args [lrange $answer 1 end]
+		if { [llength $args] == 0 } {
+		    set args {med avg}
+		}
+	        puts [eval time_summary $args]
+		continue?
+	    }
+	    default {
+		if { ! [catch { expr { $answer } }] } {
+		    set output [call_manualreply $answer]
+		}
+	    }
 	}
     }
 
