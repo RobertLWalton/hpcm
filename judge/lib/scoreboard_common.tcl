@@ -3,7 +3,7 @@
 #
 # File:		scoreboard_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Feb 24 09:45:30 EST 2002
+# Date:		Tue Feb 26 11:43:23 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -12,9 +12,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/02/24 15:20:33 $
+#   $Date: 2002/02/26 17:26:01 $
 #   $RCSfile: scoreboard_common.tcl,v $
-#   $Revision: 1.36 $
+#   $Revision: 1.37 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -197,11 +197,7 @@ proc compute_scoreboard_array { input_ch } {
 
 	set sap $submitter/$problem
 	set item [list [format {%015d} $time] $code]
-	if { [info exists scoreboard_array($sap)] } {
-	    lappend scoreboard_array($sap) $item
-	} else {
-	    set scoreboard_array($sap) [list $item]
-	}
+	lappend scoreboard_array($sap) $item
     }
 }
 

@@ -2,7 +2,7 @@
 #
 # File:		display_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Jan 30 01:00:24 EST 2002
+# Date:		Tue Feb 26 11:34:39 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/01/30 06:00:50 $
+#   $Date: 2002/02/26 17:26:00 $
 #   $RCSfile: display_common.tcl,v $
-#   $Revision: 1.28 $
+#   $Revision: 1.29 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -484,15 +484,14 @@ proc get_listed_files { } {
 	foreach file $listed_files {
 	    if { [regexp {^(.*)\.out$} $file \
 				       forget base] } {
-		if { [lsearch -exact $listed_files \
-				     $base.test] >= 0 \
-				     } {
-		    if { [lsearch -exact $listed_files \
-				  $base.diff] < 0 } {
+		if { [lcontain $listed_files \
+			       $base.test] } {
+		    if { ! [lcontain $listed_files \
+				     $base.diff] } {
 			lappend extra_files $base.diff
 		    }
-		    if { [lsearch -exact $listed_files \
-				  $base.bdiff] < 0 } {
+		    if { ! [lcontain $listed_files \
+				     $base.bdiff] } {
 			lappend extra_files $base.bdiff
 		    }
 		}
@@ -502,8 +501,7 @@ proc get_listed_files { } {
 
     # Comupte mtime if $received_file exists.
 
-    if { [lsearch -exact $listed_files $received_file] \
-         >= 0 } {
+    if { [lcontain $listed_files $received_file] } {
 	set file_list_origin_mtime \
 	    [file mtime $received_file]
     }

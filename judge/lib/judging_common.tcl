@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Feb 16 02:13:20 EST 2002
+# Date:		Tue Feb 26 11:49:50 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/02/16 07:21:31 $
+#   $Date: 2002/02/26 17:26:01 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.85 $
+#   $Revision: 1.86 $
 #
 
 # Table of Contents
@@ -651,9 +651,8 @@ proc read_header { ch { first_line "" }
 		# the global variables for it and for
 		# the entire message header.
 		#
-		if { [lsearch -exact \
-		              $omit_fields \
-			      $fieldname]  < 0 } {
+		if { ! [lcontain $omit_fields \
+			         $fieldname] } {
 		    set varname message_$fieldname
 		    regsub -all -- "-" $varname "_" \
 		           varname

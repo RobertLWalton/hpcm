@@ -2,7 +2,7 @@
 #
 # File:		scoring_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Feb 10 11:42:24 EST 2002
+# Date:		Tue Feb 26 11:49:29 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/02/10 16:42:14 $
+#   $Date: 2002/02/26 17:26:01 $
 #   $RCSfile: scoring_common.tcl,v $
-#   $Revision: 1.23 $
+#   $Revision: 1.24 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -263,9 +263,8 @@ proc compute_score_and_proof_arrays { args } {
 	    while { [regexp {^[a-zA-Z]} \
 	                    [lindex $work 0]] } {
 		set type [lindex $work 0]
-		if { [lsearch -exact \
-	              {number integer float} $type] \
-		     >= 0 } {
+		if { [lcontain {number integer float} \
+		               $type] } {
 		    if { [llength $work] < 3 } {
 			error "too short proof line:\
 			       $line"
@@ -312,9 +311,8 @@ proc compute_scoring_array { xxx_array line name } {
 	switch $state {
 	    type {
 		set array($item) $item
-		if { [lsearch -exact \
-	              {number integer float} $item] \
-		     >= 0 } {
+		if { [lcontain {number integer float} \
+		               $item] } {
 		    set previous $item
 		    set state first
 		}
@@ -364,8 +362,7 @@ proc compute_score_file { outfile testfile scorefile } {
 	    [concat $limits \
 	            [list -[lindex $arguments 0]] \
 	            [lrange $arguments 1 end]]
-        if { [lsearch -exact {number integer float} \
-	                     $type] >= 0 } {
+        if { [lcontain {number integer float} $type] } {
 	    lappend limits $difference_type_proof_limit
 	}
     }
@@ -410,8 +407,7 @@ proc compute_score { } {
 
         if { [info exists instruction_array($type)] } {
 
-	    if { [lsearch -exact {integer float} \
-	                         $type] >= 0 } {
+	    if { [lcontain {integer float} $type] } {
 		set s $score_array($type)
 		set i $instruction_array($type)
 		if { [lindex $s 1] <= [lindex $i 1] \
@@ -1030,8 +1026,7 @@ proc set_proof_display { } {
     set oh    [list [list $oline $oc1 $oc2]]
     set th    [list [list $tline $tc1 $tc2]]
     set desc  [lrange $proof 7 end]
-    if { [lsearch -exact {io ic fe ne} $current_group] \
-         >= 0 } {
+    if { [lcontain {io ic fe ne} $current_group] } {
 	set desc  "\[$current_group $i\]  $desc"
     } else {
 	set desc  "\[$i\]  $desc"
@@ -1112,7 +1107,7 @@ proc compute_proof_info { } {
 	        $formatting_error_types]
     set non_error_types ""
     foreach type [array names score_array] {
-        if { [lsearch -exact $error_types $type] < 0 } {
+        if { ! [lcontain $error_types $type] } {
 	    lappend non_error_types
 	}
     }
