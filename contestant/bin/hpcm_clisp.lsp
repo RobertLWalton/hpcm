@@ -55,9 +55,12 @@
 ;;;;
 ;;;;	 Added setting of SYSTEM::*PRIN-LINELENGTH* for CLISP.
 ;;;;	 Added revised TRANSCRIBE-ERROR for CLISP.
-;;;;	 Added calls to PEEK-CHAR to remove spurious blank
+;;;;	 Added FLUSH-LINE-FEED to remove spurious blank
 ;;;;			lines in CLISP.
-;;;;
+;;;;     Fixed :PAUSE T problem in RUN for CLISP: CLISP
+;;;;	       READ-FROM-STRING does not work on blank line
+;;;;	       unless BOTH eof-error-p and eof-value are
+;;;;	       given as NIL
 ;;;;
 
 #+allegro
@@ -247,10 +250,10 @@
 					; Print prompt.
 	      (fresh-line)
 	      (princ '|=> ? |)
-	      (let ((line (read-line *terminal-io* nil)))
+	      (let ((line (read-line *terminal-io* nil "")))
 		(catch error-tag
 		  (unwind-protect
-		      (eval (read-from-string line nil))
+		      (eval (read-from-string line nil nil))
 		    (throw error-tag nil))))
 	      (dolist (val (multiple-value-list (eval s-expression)))
 		      (write val :escape t :pretty t)
