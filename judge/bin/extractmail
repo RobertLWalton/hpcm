@@ -4,7 +4,7 @@
 #
 # File:		extractmail
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Nov 18 04:11:03 EST 2001
+# Date:		Sun Nov 18 14:20:03 EST 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/11/18 09:48:31 $
+#   $Date: 2001/11/18 19:17:28 $
 #   $RCSfile: extractmail,v $
-#   $Revision: 1.20 $
+#   $Revision: 1.21 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -135,172 +135,265 @@ if { $argc != 0 } {
     exit 1
 }
 
-# Create a reply file complaining of a submission
-# error, and email this reply to the submitter.  Include
-# the submission email in the reply.
-#
-proc extract_error_reply { args } {
-    eval reply -all \
-         {"ERROR during submission file extraction:"} \
-	 $args \
-	 {""} \
-	 {"THIS SUBMISSION (see below) IGNORED"} \
-	 {"YOU MUST RESUBMIT"}
-
+proc extract_error { message } {
+    puts stderr $message
     exit_cleanup
     exit 0
 }
 
 # Read the header.
 #
-set received_ch [open $received_file r]
+if { [catch { set received_ch \
+		  [open $received_file r] }] } {
+    extract_error \
+        "SYSTEM ERROR: cannot read $received_file"
+}
+set received_mtime [file mtime $received_file]
 read_header $received_ch
 
 # Check for legality of subject line:
 #
 if { [llength $message_subject] == 0 } {
-    error "Missing or empty `Subject:' field"
+    extract_error \
+        "ERROR: Missing or empty `Subject:' field"
+    exit 0
 } elseif { [lindex $message_subject 0] != "submit" } {
-    extract_error_reply \
-	"Badly formatted subject field:" \
-	"Subject: $message_subject"
+    extract_error \
+	"ERROR: Badly formatted subject field:\
+	 $message_subject"
 } elseif { [llength $message_subject] != 2 } {
-    extract_error_reply \
-	"Badly formatted subject field:" \
-	"Subject: $message_subject"
+    extract_error \
+	"ERROR: Badly formatted subject field:\
+	 $message_subject"
 }
 
-# Extract the filename and check its legality.
+# Extract the problem name and possible filename and
+# check legality.
 #
 set filename [lindex $message_subject 1]
-
-if { [regexp {^\.|^-|/} $filename] } {
-    extract_error_reply \
-        "Illegal filename (has `/' or beginning `.'\
-			   or beginning `-'):\
-	 $filename"
+set problem [file rootname $filename]
+if { [regexp {\.} $problem] } {
+    extract_error \
+         "ERROR: Bad problem name (contains `.'):\
+	  $problem"
+} elseif { [regexp {/} $problem] } {
+    extract_error \
+         "ERROR: Bad problem name (contains `/'):\
+	  $problem"
+} elseif { [regexp {^-} $problem] } {
+    extract_error \
+         "ERROR: Bad problem name (begins with `-'):\
+	  $problem"
 }
 
-# If named file is readable and is more recent than the
-# received mail file, then print the file name and exit
-# without error.
+if { [file exists $files_file] } {
+    if { [catch { set filenames \
+		      [lrange [read_entire_file \
+		                   $files_file] \
+			      0 end] }] } {
+        extract_error \
+	    "SYSTEM ERROR: Cannot read $file_files"
+    }
+
+    if { $filename != $problem \\
+         && [lsearch $filenames $filename] < 0 } {
+        extract_error \
+	    "ERROR: bad file name in\
+	     `Subject: $message_subject'"
+    }
+} else {
+    set filenames ""
+    if { $filename != $problem } {
+	set extension [file extension $filename]
+	if { [lsearch $allowed_extensions \
+		      $extension] < 0 } {
+	    extract_error \
+		"ERROR: bad file name extension in\
+		 `Subject: $message_subject'"
+	}
+        lappend filenames $filename
+    }
+}
+
+# WS matching whitespace character and NWS matching
+# non-whitespace character.
 #
-if { [file readable $filename] \
-     && [file mtime $received_file] \
-	 <= [file mtime $filename] } {
-    puts $filename
-    exit 0
-}
-
-# If $filename exists, delete it.
-#
-if { [file exists $filename] } {
-    puts "Deleting out-of-date $filename"
-    file delete -force $filename
-}
-
 set WS "\[\ \t\]"
 set NWS "\[^\ \t]"
 
-# Look for HPCM_BEGIN line or beginning of file.
+# If clean_filename is not "", close file_ch and delete
+# cleanup_filename.
 #
-while { "yes" } {
-
-    set line [gets $received_ch]
-    if { [eof $received_ch] } {
-        extract_error_reply \
-	    "Could not find `HPCM_BEGIN' or other\
-	     non-blank line in message body."
-    } elseif { [regexp "^HPCM_BEGIN$WS+($NWS+)$WS*\$" \
-                       $line forget beginname] \
-	       && $beginname == $filename } {
-	set hpcm_begin_found yes
-    	break
-    } elseif { [regexp {^HPCM_BEGIN} $line] } {
-    	extract_error_reply \
-	    "Badly formatted HPCM_BEGIN line:" $line
-    } elseif { [regexp "^$WS*\$" $line] } {
-    	# blank lines are ok
-    } else {
-	if { [info exists format_submissions] \
-	     && $format_submissions == "yes" } {
-	    extract_error_reply \
-		"Bad line in body before `HPCM_BEGIN'\
-		 line:" \
-		$line
-	} else {
-	    set hpcm_begin_found no
-	    break
-	}
-    }
-}
-
-# Prepare to copy file.
-#
-set file_ch [open $filename w]
-
-# Set cleanup for error exits.
-#
+set cleanup_filename ""
 proc exit_cleanup {} {
-    global file_ch filename
-    close $file_ch
-    file delete -force $filename
-}
-
-if { $hpcm_begin_found } {
-
-    # Copy file removing beginning `..'s until HPCM_END
-    # line found.
-    #
-    while { "yes" } {
-	set line [gets $received_ch]
-	if { [eof $received_ch] } {
-	    extract_error_reply \
-		"Could not find HPCM_END line."
-	} elseif { [regexp {^\.\.(.*)$} $line \
-			   forget real_line] } {
-	    puts $file_ch $real_line
-	} elseif { [regexp \
-	              "^HPCM_END$WS+($NWS+)$WS*\$" \
-		      $line forget endname] \
-		   && $endname == $filename } {
-	    break
-	} elseif { [regexp "^HPCM_END" $line] } {
-	    extract_error_reply \
-		"Badly formatted HPCM_END line:" $line
-	} else {
-	    extract_error_reply \
-		"Bad line between HPCM_BEGIN and\
-		 HPCM_END:" $line
-	}
-    }
-
-    # Look for extaneous non-blank text after HPCM_END
-    # line.
-    #
-    while { "yes" } {
-	set line [gets $received_ch]
-	if { [eof $received_ch] } {
-	    break
-	} elseif { [regexp "^$WS*\$" $line] } {
-	    # blank lines are ok
-	} else {
-	    extract_error_reply \
-		"Bad line after HPCM_END:" $line
-	}
-    }
-} else { # not $hpcm_begin_found
-    while { "yes" } {
-	puts $file_ch $line
-	set line [gets $received_ch]
-	if { [eof $received_ch] } break
+    global file_ch cleanup_filename
+    if { $cleanup_filename != "" } {
+	close $file_ch
+	file delete -force $cleanup_filename
     }
 }
 
-# Close files, print name of submitted file, and exit
-# without error.
+# Open file for reading or writing.  Return the
+# open channel in the global variable `file_ch' and
+# return `read' or `write' if the file is opened for
+# reading or writing.  A file is opened for reading
+# if it exists and has an mtime >= received_mtime;
+# and is opened for writing otherwise.  If opened for
+# writing, any existing file is deleted.
 #
-close $file_ch
+proc open_file { filename } {
+
+    global filenames problem received_mtime file_ch \
+           cleanup_filename
+
+    if { [lsearch $filenames $filename] < 0 \
+         && (    [llength $filenames] > 0 \
+              || [file rootname $filename] != $problem \
+	      || [lsearch [file extension $filename] \
+	                  $allowed_extensions] < 0 ) } {
+        extract_error "ERROR: Bad file name: $filename"
+    }
+
+    if { [file exists $filename] } {
+
+        if { [file mtime $filename] \
+	         >= $received_mtime } {
+	    if { [catch { set file_ch \
+	                      [open $filename r] }] } {
+		extract_error \
+		    "SYSTEM ERROR: Cannot read\
+		     $filename"
+	    }
+	    return read
+	} else {
+	    puts "Deleting out-of-date $filename"
+	    file delete -force $filename
+	}
+    }
+
+    if { [catch { set file_ch [open $filename w] }] } {
+        extract_error \
+	    "SYSTEM ERROR: Cannot write $filename"
+    }
+
+    # Set cleanup for error exits.
+    #
+    set cleanup_filename $filename
+
+    return write
+}
+
+# Return next non-blank line in received_ch.  Return ""
+# on end of file.
+#
+proc read_nonblank_line {} {
+
+    global received_ch NWS
+
+    while { "yes" } {
+	set line [gets $received_ch]
+	if { [eof $received_ch] } {
+	    return ""
+	} elseif { [regexp $NWS $line] } {
+	    return $line
+	}
+    }
+}
+
+# Close file.
+#
+proc close_file {} {
+    global file_ch cleanup_filename
+    close $file_ch
+    set cleanup_filename ""
+    puts "Extracted $filename"
+}
+
+# Skip over blank lines at start of body.
+#
+set line [read_non_blank_line]
+if { $line == "" } {
+    extract_error "ERROR: message body is blank"
+}
+
+# Select formatted or non-formatted input.
+#
+if { [regexp {^HPCM_BEGIN} $line] } {
+
+    # Input is formatted.  Loop through files in
+    # input.
+    #
+    while { "yes" } {
+
+    	# Process HPCM_BEGIN line.
+	#
+        if { ! [regexp "^HPCM_BEGIN$WS+($NWS+)$WS*\$" \
+                       $line forget filename] } {
+	    extract_error \
+	        "ERROR: bad HPCM_BEGIN line:\n$line"
+	}
+	set mode [open_file $filename]
+
+	# Process file removing beginning `..'s until
+	# HPCM_END line found.
+	#
+	while { "yes" } {
+	    set line [gets $received_ch]
+	    if { [eof $received_ch] } {
+		extract_error \
+		    "ERROR: Could not find\
+		     `HPCM_END $filename' line"
+	    } elseif { [regexp {^\.\.(.*)$} $line \
+			       forget real_line] } {
+		if { $mode == "write" } {
+		    puts $file_ch $real_line
+		} else {
+		    set file_line [gets $file_ch]
+		    if { $file_line != $real_line } {
+		        extract_error \
+			    "SYSTEM ERROR: file\
+			     mismatch for `$filename'
+		    }
+		}
+	    } elseif { \
+		  [regexp \
+		      "^HPCM_END$WS+($NWS+)$WS*\$" \
+		      $line forget endname] \
+		  && $endname == $filename } {
+		break
+	    } elseif { [regexp "^HPCM_END" $line] \
+			    } {
+		extract_error \
+		    "ERROR: Badly formatted\
+		     `HPCM_END $filename'\
+		     line:\n$line"
+	    } else {
+		extract_error \
+		    "ERROR: Bad line between\
+		     `HPCM_BEGIN $filename' and\
+		     `HPCM_END $filename':\n$line"
+	    }
+	}
+
+	close_file
+
+	# Look for next non-blank line.
+	#
+	set line [read_non_blank_line]
+	if { $line == "" } break
+    }
+} else {
+    if { [info exists format_submissions] \
+	 && $format_submissions == "yes" } {
+	extract_error \
+	    "ERROR: Bad line in body before\
+	     `HPCM_BEGIN' line or unformatted\
+	     file:\n$line"
+    }
+}
+
+# Close received_ch and exit.
+#
 close $received_ch
 puts $filename
 exit 0
