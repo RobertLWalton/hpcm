@@ -2,7 +2,7 @@
 #
 # File:		Makefile.mk
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Mar 29 11:26:43 EST 2003
+# Date:		Sun Mar 30 10:54:38 EST 2003
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2003/03/29 16:25:05 $
+#   $Date: 2003/03/30 16:11:27 $
 #   $RCSfile: Makefile.mk,v $
-#   $Revision: 1.21 $
+#   $Revision: 1.22 $
 
 extract_replies:	mbox
 	rm -rf replies
@@ -31,7 +31,8 @@ diff_replies:
 	    SUBMISSION STATUS \
 	    'RCSfile: .*,v' \
 	    'Revision: [0-9]+.[0-9]+ \$$' \
-	    'X-HPCM-Signature: .*'; \
+	    'X-HPCM-Signature: .*' \
+	    'X-HPCM-Reply-To: .*'; \
 	done
 
 test_email:	test_count_correct \
