@@ -4,7 +4,7 @@
 #
 # File:		extractmail
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Sep 12 15:40:44 EDT 2000
+# Date:		Thu Oct 26 14:20:40 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/10/26 18:15:11 $
+#   $Date: 2000/10/26 18:24:24 $
 #   $RCSfile: extractmail,v $
-#   $Revision: 1.14 $
+#   $Revision: 1.15 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -51,6 +51,11 @@ cd submission_directory; extract
     There may be nothing else in the body of the message
     except blank lines preceding and following the file.
 
+    If this program succeeds in extracting the submitted
+    file without error, this program prints the name
+    of the submitted file to the standard output as a
+    single line, and prints nothing else.
+
     If the submission email has a `Subject' line as
     above and the filename given is for an already
     existing readable file whose modification time is
@@ -60,21 +65,16 @@ cd submission_directory; extract
     and printing the name of the submitted file to the
     standard output.
 
-    If this program succeeds in extracting the submitted
-    file without error, this program prints the name
-    of the submitted file to the standard output as a
-    single line, and prints nothing else.
-
-    Otherwise, if the submitted email has even the
-    slightest formatting error, or if the filename is
-    illegal (contains a `/', or begins with either `.'
-    or `-') this program constructs a `$reply_file' file
-    giving reasons why the submission email is invalid.
-    This `$reply_file' file is emailed to the submitter.
-    In this case this program exits with exit code 0,
+    If the submitted email has even the slightest for-
+    matting error, or if the filename is illegal (con-
+    tains a `/', or begins with either `.' or `-') this
+    program constructs a `$reply_file' file giving
+    reasons why the submission email is invalid.  This
+    `$reply_file' file is emailed to the submitter.  In
+    this case this program exits with exit code 0,
     indicating no error, but does not print anything to
-    the standard output, indicating no file was
-    extracted.
+    the standard output, indicating no file was extract-
+    ed.
 
     If something goes very wrong, such as finding that
     the `$received_file' file is not readable, this
@@ -84,9 +84,8 @@ cd submission_directory; extract
     exits with exit code 0.  The program also does this
     if the `Subject:' field value is such that `auto-
     dispatch' will not invoke the `autojudge' program
-    (the value has less than two items when viewed as
-    a list, or does not have a first item equal to
-    `submit')."
+    (the value is empty, or does not have a first item
+    equal to `submit')."
 
 if { $argc != 0 } {
     puts $document
@@ -114,13 +113,11 @@ proc extract_error_reply { args } {
 set received_ch [open $received_file r]
 read_header $received_ch
 
-# Check for legallity of subject line:
+# Check for legality of subject line:
 #
 if { [llength $message_subject] == 0 } {
     error "Missing or empty `Subject:' field"
-} elseif { [llength $message_subject] < 2 \
-           || [lindex $message_subject 0] \
-	      != "submit" } {
+} elseif { [lindex $message_subject 0] != "submit" } {
     error \
 	"Badly formatted subject field:" \
 	"Subject: $message_subject"
@@ -134,10 +131,10 @@ if { [llength $message_subject] == 0 } {
 #
 set filename [lindex $message_subject 1]
 
-if { [regexp {^\.|^\-|\/} $filename] } {
+if { [regexp {^\.|^-|/} $filename] } {
     extract_error_reply \
         "Illegal filename (has `/' or beginning `.'\
-	                                     or `-'):\
+			   or beginning `-'):\
 	 $filename"
 }
 
