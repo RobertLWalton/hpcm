@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Mar 19 00:39:01 EST 2003
+# Date:		Wed Mar 19 08:21:11 EST 2003
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2003/03/19 06:22:18 $
+#   $Date: 2003/03/19 13:18:50 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.104 $
+#   $Revision: 1.105 $
 #
 
 # Table of Contents
@@ -129,7 +129,7 @@ proc dispatch_unlock { { directory . } } {
 
 
 # Convert a [clock seconds] value into a date in
-# the form yyyy-mm-dd-hh:mm:ss that is useable as
+# the form yyyy-mm-dd-hh:mm:ss that is usable as
 # part of a filename.  Respect the use_gmt global
 # variable.
 #
@@ -354,7 +354,7 @@ proc log_error { error_output } {
 
 	if { $count > 100 } {
 
-	    # Desparation move.  Should never happen.
+	    # Desperation move.  Should never happen.
 	    #
 	    set e LOGGING-FILENAME-GENERATION
 	    set e ${e}-unchecked_error
@@ -623,8 +623,8 @@ proc read_header { ch { first_line "" }
 		x-hpcm-signature x-hpcm-signature-ok \
 		x-hpcm-test-subject"
 
-    set ws "\[\t\ \n\r\]"
-    set nws "\[^\t\ \n\r\]"
+    set ws "\[\t\ \n\r\f\]"
+    set nws "\[^\t\ \n\r\f\]"
 
     # Get first line of message.
     #
@@ -956,7 +956,7 @@ proc read_part_header { ch } {
 	    $encoding
 	set message_part_content_type $type
 
-	# Accumlate the translation as a list of lines
+	# Accumulate the translation as a list of lines
 	# in `translated'.
 
 	set translated ""
@@ -1144,13 +1144,13 @@ proc compute_message_reply_to {} {
     global message_x_hpcm_reply_to message_reply_to \
            message_from message_From_line
 
-    if { [regexp "\[^\ \t\n\]" \
+    if { [regexp "\[^\ \t\n\r\f\]" \
 	         $message_x_hpcm_reply_to] } {
 	return $message_x_hpcm_reply_to
-    } elseif { [regexp "\[^\ \t\n\]" \
+    } elseif { [regexp "\[^\ \t\n\r\f\]" \
                        $message_reply_to] } {
 	return $message_reply_to
-    } elseif { [regexp "\[^\ \t\n\]" \
+    } elseif { [regexp "\[^\ \t\n\r\f\]" \
                        $message_from] } {
 	return $message_from
     } elseif { [catch { set len \
@@ -1177,10 +1177,10 @@ proc compute_message_date {} {
     global message_x_hpcm_date message_date \
            message_From_line
 
-    if { [regexp "\[^\ \t\n\]" \
+    if { [regexp "\[^\ \t\n\r\f\]" \
 	         $message_x_hpcm_date] } {
 	return $message_x_hpcm_date
-    } elseif { [regexp "\[^\ \t\n\]" \
+    } elseif { [regexp "\[^\ \t\n\r\f\]" \
                        $message_date] } {
 	return $message_date
     } elseif { [catch { set len \
@@ -1458,7 +1458,7 @@ proc compose_reply { args } {
 	    }
 	    RECEIVED-HEADER {
 
-		set nws "\[^\ \t\n\]"
+		set nws "\[^\ \t\n\r\f\]"
 		if { ! [regexp $nws $message_from] \
 		     || \
 		     ! [regexp $nws $message_date] \
@@ -1569,10 +1569,9 @@ proc send_reply { args } {
     }
 }
 
-# Read message body lines from channel.  Return `yes' if
-# eof or a message_terminator line encountered before a
-# non-blank line.  Return `no' if other non-blank line
-# encountered.
+# Read message body lines using read_part_line.  Return
+# `yes' if no non-blank line encounted before eof.
+# Return `no' otherwise.
 #
 proc blank_body { ch } {
 
@@ -1580,7 +1579,8 @@ proc blank_body { ch } {
 	set line [read_part_line $ch eof]
 	if { $eof } {
 	    return yes
-	} elseif { [regexp "^\[\ \t\]*\$" $line] } {
+	} elseif { [regexp "^\[\ \t\r\n\f\]*\$" \
+			   $line] } {
 	    # blank lines are ok
 	} else {
 	    return no
