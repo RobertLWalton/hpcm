@@ -7,7 +7,7 @@
 #
 # File:		tracker
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Feb 26 12:41:27 EST 2002
+# Date:		Fri May 17 05:53:47 EDT 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -16,9 +16,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/02/26 17:44:43 $
+#   $Date: 2002/05/17 10:09:48 $
 #   $RCSfile: tracker,v $
-#   $Revision: 1.21 $
+#   $Revision: 1.22 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -38,14 +38,28 @@ tracker
 
     This program inputs the output of `trackfinder' to
     get tracking information.  This program is menu
-    driven, with commmands that permit the tracking
+    driven, with commands that permit the tracking
     information to be displayed in various ways, and
     commands that permit the `manualreply' program to
     be dispatched for a subdirectory.
 
+    The main tracking function is to select submis-
+    sions whose directories need the attention of
+    manualreply.  If there are unchecked error files in
+    any non-submission-specific logging directory, that
+    directory is also selected.  A summary of all
+    selected directories is output, and manualreply can
+    be launched on any selected directory.
+
+    In addition this program can print statistics show-
+    ing how many submissions got a given score for a
+    given program or a given score for a given submit-
+    ter.  Also how much time is spent in the different
+    submission processing steps, for each problem.
+
     Unlike most HPCM judging programs, errors made by
     this program are not written to log files, but are
-    announced on standard error."
+    written to the standard error output instead."
 
 
 # If any arguments, print documentation and exit.
@@ -81,15 +95,20 @@ if { $argc > 0 } {
 # begin with a date and sorting on filenames sorts on
 # the dates.
 
-# Helper function to read scores from input channel:
+# Helper function for read_input below.  Save the line
+# in ${type}_array($dirname) after checking that no
+# line was previously saved therein and that the line
+# is a properly formatted TCL list with list length !=
+# length.
 #
-proc save_line { line type minlength dirname } {
+proc save_line { line type length dirname } {
 
     global ${type}_array
 
     if { [info exists ${type}_array($dirname)] } {
 	error "Too many `$type' lines for $dirname"
-    } elseif { [llength $line] < $minlength } {
+    } elseif { [catch { set linelen [llength $line] }] \
+    	       || $linelen != $length } {
 	error "Badly formatted `$type' line:\n\
 	      \   $line"
     } else {
@@ -195,7 +214,7 @@ proc read_input { ch } {
 		    save_line $line out 3 $dirname
 		}
 	    sco {
-		    save_line $line sco 4 $dirname
+		    save_line $line sco 5 $dirname
 		}
 	    rep {
 		    save_line $line rep 3 $dirname
@@ -207,7 +226,10 @@ proc read_input { ch } {
 		    save_line $line pid 3 $dirname
 		}
 	    chk {
-		    if { [llength $line] < 3 } {
+		    if { [catch { set len \
+		                      [llength $line] \
+				}] \
+		         || $len != 3 } {
 			error "Badly formatted `chk'\
 			       line:\n    $line"
 		    } else {
@@ -217,7 +239,10 @@ proc read_input { ch } {
 		    }
 		}
 	    err {
-		    if { [llength $line] < 3 } {
+		    if { [catch { set len \
+		                      [llength $line] \
+				}] \
+		         || $len != 3 } {
 			error "Badly formatted `err'\
 			       line:\n    $line"
 		    } else {
