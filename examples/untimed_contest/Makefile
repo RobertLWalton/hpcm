@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Jan 28 13:01:07 EST 2002
+# Date:		Tue Feb  5 07:11:29 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/01/30 18:27:44 $
+#   $Date: 2002/02/06 00:37:01 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.32 $
+#   $Revision: 1.33 $
 
 # To make an email contest named `foo':
 #
@@ -214,37 +214,15 @@ Contest_Address:
 	  cat $*.mail) | ${SENDMAIL}
 	sleep 2
 
-test_all:	test_query
+test_all:	test_count_correct \
+		test_count_incorrect \
+		test_system_error \
+		test_get \
+		test_query \
+		test_problem_name
 
-test_count_correct:	Contest_Address \
-	$S/count_correct.c.send \
-	$S/count_correct.cc.send \
-	$S/count_correct.java.send \
-	$S/count_correct.p.send
+TEST_PREREQUISITES=Contest_Address
+include ../test_submissions/Makefile.mk
 
-test_count_incorrect:	Contest_Address \
-	$S/count_crash.cc.send \
-	$S/count_timeout.java.send \
-	$S/count_too_much_output.c.send
-
-test_system_error:	Contest_Address \
-	$S/system_error.send \
-
-test_get:	Contest_Address \
-	$S/get_count.send \
-	$S/get_bad_body.send \
-	$S/get_illegal_filenames.send \
-	$S/get_unreadable_files.send \
-	$S/get_forbidden_files.send
-
-test_query:	Contest_Address \
-	$S/query.send \
-	$S/bad_subject_format.send
-
-test_problem_name:	Contest_Address \
-	$S/bad_problem_name1.send \
-	$S/bad_problem_name2.send \
-	$S/bad_problem_name3.send \
-	$S/bad_problem_name4.send \
-	$S/bad_problem_name5.send \
-	$S/bad_problem_name6.send
+test_clean:
+	rm -rf mail/*
