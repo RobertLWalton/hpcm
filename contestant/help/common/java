@@ -1,78 +1,74 @@
-JAVA Help		    Thu Oct 31 05:36:17 EST 2002
+JAVA Help		    Fri Nov  1 06:58:23 EST 2002
+
+API Documentation
+--- ------------
+
+JAVA API documentation is usually available on-line
+during a contest.  The command to access it is:
+
+	javahelp
+
+You should NOT use other means to access such documenta-
+tion, and in particular, using the internet typically
+is a violation of contest rules.
+
 
 Input
 -----
 
-Input generally has to be parsed into numbers and
-perhaps other things.  There are two ways: either read
-lines and parse the tokens in each line, or read tokens
-directly from a stream.  The latter method is better
-when the input is such that line ends are to be treated
-no differently than single spaces.
+Line oriented input is best done with
 
-The following code reads a sequence of numbers from
-the input using the line oriented method, but does so
-in a way that hides the line ends:
+	java.io.BufferedReader.readLine
+	java.util.StringTokenizer.getToken
+
+An example is in the count1.java demo.  When using this
+method, strings returned by getToken may have to be
+converted to numbers.  This can be done by code such as
+
+	String s = ...;
+	int i = Integer.parseInt ( s );
+	long l = Long.parseLong ( s );
+	double d = Double.parseDouble ( s );
+
+If lines are to be treated just like space characters,
+using
+
+	java.io.StreamTokenizer
+	
+is a good idea.  An example is in the javaio.java demo.
+
+
+Output
+------
+
+Output of floating point numbers with a specified number
+of decimal places is done with
+
+	java.text.DecimalFormat
+
+See the javaio.java demo.  It is important in some
+contests to use a DecimalFormat object created with the
+ENGLISH Locale.
+
+String and free format number output examples merely use
+
+	System.out.println
+	
+and are given in the count1.java an javaio.java demos.
 
 
+Crashes
+-------
 
-    Reader reader
-        = BufferedReader
-	      ( InputStreamReader ( System.in ) );
-    StreamTokenizer tokenizer
-        = new StreamTokenizer ( reader );
-    tokenizer.resetSyntax();
-    tokenizer.wordChars ( ' ', '\u00FF' );
-    tokenizer.spaceChars ( '\u0000', ' ' );
-    tokenizer.parseNumbers();
-    tokenizer.ordinaryChar ( ',' );
-    tokenizer.ordinaryChar ( '(' );
-    tokenizer.ordinaryChar ( ')' );
-    //
-    // The tokenizer character tables are now set up to
-    // read words and numbers and the single character
-    // tokens `,', `(', and `)'.  Line ends are treated
-    // as space characters.
-
-    while ( tokenizer.nextToken() )
-    {
-        if ( tokenizer.ttype == StreamTokenizer.TT_EOF )
-	    break;
-	else if ( tokenizer.ttype == StreamTokenizer.TT_NUMBER )
-	{
-	    System.out.print ( "NUMBER ");
-	    System.out.print ( tokenizer.nval );
-	    System.out.println();
-	}
-	else if ( tokenizer.ttype == StreamTokenizer.TT_WORD )
-	{
-	    System.out.print ( "WORD ");
-	    System.out.print ( tokenizer.sval );
-	    System.out.println();
-	}
-	else if ( tokenizer.ttype == '(' )
-	{
-	    System.out.print ( "(");
-	    System.out.println();
-	}
-	else if ( tokenizer.ttype == ')' )
-	{
-	    System.out.print ( ")");
-	    System.out.println();
-	}
-	else if ( tokenizer.ttype == ',' )
-	{
-	    System.out.print ( ",");
-	    System.out.println();
-	}
-	else if ( tokenizer.ttype == '(' )
-	{
-	    System.out.print ( "(");
-	    System.out.println();
-	}
-	else throw new RuntimeException
-	    ( "Bad token type " + tokenizer.ttype );
-    }
+It is fairly common for JAVA programs which run well for
+the contestant to crash when run by the judge.  The
+usual cause is judge's input data that triggers an ex-
+ception not observed with contestant input data.
+Examples are when an out-of-range array index is used,
+or the program one runs off the end of an input line
+and calls getToken with no more tokens.  The best debug-
+ging strategy is to try to find input data that breaks
+the program.
 
 
 
@@ -89,6 +85,6 @@ file.
 RCS Info (may not be true date or author):
 
     $Author: hc3 $
-    $Date: 2002/10/31 11:21:23 $
+    $Date: 2002/11/01 12:19:12 $
     $RCSfile: java,v $
-    $Revision: 1.1 $
+    $Revision: 1.2 $
