@@ -4,7 +4,7 @@
 #
 # File:		overview
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Jul 19 10:03:01 EDT 2001
+# Date:		Sun Jul 29 17:58:57 EDT 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/07/19 13:57:16 $
+#   $Date: 2001/07/29 22:10:30 $
 #   $RCSfile: overview,v $
-#   $Revision: 1.28 $
+#   $Revision: 1.29 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -1583,20 +1583,21 @@ A solution submission directory is processed by the
 in order (see `Library Data: Problems' above for more
 details about many of these files):
 
-    pppp.eee		The submitted file.
-    pppp.in		Judge's input.
-    $make_file		Problem Makefile.
-    pppp.test		Judge's output.
-    $scoring_instructions_file
+   pppp.eee		The submitted file.
+   pppp.in		Judge's input.
+   $make_file		Problem Makefile.
+   pppp.test		Judge's output.
+   $scoring_instructions_file\
 			Optional scoring instructions.
-    pppp		Binary program.
-    pppp.cerr		Compiler error output.
-    pppp.out		Solution standard output.
-    pppp.err		Solution error output.
-    core		Possible core dump.
-    $auto_score_file		Autojudge score.
-    $reply_file		Possible final reply.
-    $reply_history_file	History of all replies.
+   pppp			Binary program.
+   pppp.cerr		Compiler error output.
+   pppp.out		Solution standard output.
+   pppp.err		Solution error output.
+   core			Possible core dump.
+   pppp.score		Output of scorediff.
+   $auto_score_file		Autojudge score.
+   $reply_file		Possible final reply.
+   $reply_history_file	History of all replies.
 
 
 If an error happens during the process of producing
@@ -1791,7 +1792,7 @@ follows:
                +-------------+
                |             |
                | \[empty      | \[non-empty .err]
-               |   .err]     |
+               |  .err]      |
                |             | autojudge
                |             v
                |        $auto_score_file
@@ -1801,22 +1802,40 @@ follows:
                |          if scoring_mode == `auto'
                |
                | autoscore (called from autojudge)
-               |     scorediff (called from autoscore)
+	       |
+	       +--------------------+
+	       |                    |
+	       | \[non-empty .out]   | \[empty or
+	       |                    |  missing .out]
+	       |                    |
+               | scorediff (called  |
+	       | from autoscore)    |
+	       |                    |
+	       v		    |
+	    pppp.score		    |
+	       |                    |
+               |<-------------------+
+	       |
+               | autoscore (called from autojudge)
+	       v
+           $auto_score_file
                |
+	       v
+
+               |
+	       v
                +---------------+
                |               |
                | \[score ==     | \[score !=
                |  `Completely  |  `Completely  
                |   Correct']   |   Correct']
                |               v
-               |        $auto_score_file
                |        $reply_history_file
                |          if scoring_mode != `manual'
                |        $reply_file
                |          if scoring_mode == `auto'
                v
-       $auto_score_file = `Completely Correct'
-       $reply_file
+           $reply_file
        $reply_history_file
 
 If a system error occurs at any point, which can only
