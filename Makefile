@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Mar 29 23:03:57 EST 2003
+# Date:		Sun Mar 30 12:41:41 EST 2003
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2003/03/30 04:01:05 $
+#   $Date: 2003/03/30 17:55:08 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.37 $
+#   $Revision: 1.38 $
 
 # See STATUS file for description of versions.
 #
@@ -82,7 +82,8 @@ NONDIS = non_distributable
 #
 # make web
 #	Make web directory containing public files, and
-#	web${TAREXT} which is a tar of that directory.
+#	hpcm_${VERSION}_web${TAREXT} which is a tar of
+#	that directory.
 #
 # make clean
 #	Clean everything in this directory.
@@ -338,7 +339,9 @@ web:	cleanweb hpcm_${VERSION}${TAREXT} \
 	then echo HPCM_WEB_PASSWORD not set; \
 	     echo Not putting solutions into web; \
 	else make web_solutions; fi
-	cd web; tar cf ../web${TAREXT} * ${TARZIP}
+	cd web; tar cf ../hpcm_${VERSION}_web${TAREXT} \
+		       * ${TARZIP}
+	chmod a-wx hpcm_${VERSION}_web${TAREXT}
 
 web_solutions:	web/index.html \
 		web_solutions_index.html \
@@ -388,4 +391,4 @@ cleancvs:
 	rm -f HPCM_${VERSION}_CVS_MD5_Signatures
 
 cleanweb:
-	rm -rf web web${TAREXT}
+	rm -rf web hpcm_${VERSION}_web${TAREXT}
