@@ -3,7 +3,7 @@
 ;;;; File:	hpcm_clisp.lsp
 ;;;; Author:	Bob Walton <walton@deas.harvard.edu>
 ;;;; Modifier:  CS 182 (Attila Bodis)
-;;;; Date:	Fri Jan 11 02:29:25 EST 2002
+;;;; Date:	Fri Jan 11 03:02:28 EST 2002
 ;;;;
 ;;;; The authors have placed this program in the public
 ;;;; domain; they make no warranty and accept no
@@ -12,9 +12,9 @@
 ;;;; RCS Info (may not be true date or author):
 ;;;;
 ;;;;   $Author: hc3 $
-;;;;   $Date: 2002/01/11 08:00:31 $
+;;;;   $Date: 2002/01/11 08:08:30 $
 ;;;;   $RCSfile: hpcm_clisp.lsp,v $
-;;;;   $Revision: 1.13 $
+;;;;   $Revision: 1.14 $
 ;;;;
 ;;;;
 ;;;; This file was originally written by the Bob Walton
@@ -202,7 +202,9 @@
 	 ((not out)
 	  (setf *standard-input*
 		(make-echo-stream *run-input*
-		                  *terminal-io*)))
+		                  *terminal-io*))
+	  (fresh-line)
+	  (terpri))
 	 (out
 
 	  (setf *terminal-io*
