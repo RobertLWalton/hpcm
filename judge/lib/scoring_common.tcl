@@ -2,7 +2,7 @@
 #
 # File:		scoring_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Aug 29 17:45:41 EDT 2001
+# Date:		Wed Sep  5 22:12:07 EDT 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/08/29 21:33:06 $
+#   $Date: 2001/09/06 02:00:33 $
 #   $RCSfile: scoring_common.tcl,v $
-#   $Revision: 1.7 $
+#   $Revision: 1.8 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -362,13 +362,28 @@ proc compute_score_file { basename } {
 # Computes score based on the scoring databases computed
 # by `compute_instruction_array' and `compute_score_and_
 # proof_arrays'.  These functions must be called first.
-# Returns the score.
+# Returns the score.  Also sets the variables:
+#
+#	incorrect_output_types
+#	incomplete_output_types
+#	formatting_error_types
+#
+# to lists of the differences which support these
+# scores; e.g., incorrect_output_types might include
+# `word' if that is not just a formatting error, or
+# `integer' if the limits on an integer difference
+# were exceeded.
 #
 proc compute_score { } {
 
-    global instruction_array score_array
+    global instruction_array score_array \
+    	   incorrect_output_types \
+    	   incomplete_output_types \
+    	   formatting_error_types
 
-    set score ""
+    set incorrect_output_types ""
+    set incomplete_output_types ""
+    set formatting_error_types ""
 
     foreach type [array names score_array] {
 
@@ -399,8 +414,7 @@ proc compute_score { } {
 	    infinity -
 	    integer-eof2 -
 	    float-eof2 {
-		set score "Incorrect Output"
-		break
+		lappend incorrect_output_types $type
 	    }
 
 	    word-eof2 -
@@ -408,19 +422,16 @@ proc compute_score { } {
 		set waf words-are-format
 		if { [info exists \
 		           instruction_array($waf)] } {
-		    if { $score == "" } {
-			set score "Formatting Error" 
-		    }
+		    lappend formatting_error_types $type
 		} else {
-		    set score "Incorrect Output"
-		    break
+		    lappend incorrect_output_types $type
 		}
 	    }
 
 	    word-eof1 -
 	    integer-eof1 -
 	    float-eof1 {
-		set score "Incomplete Output"
+		lappend incomplete_output_types $type
 	    }
 
 	    decimal -
@@ -434,9 +445,7 @@ proc compute_score { } {
 	    linespace -
 	    spacebreak -
 	    linebreak {
-	        if { $score == "" } {
-		    set score "Formatting Error" 
-		}
+		lappend formatting_error_types $type
 	    }
 
 	    none { }
@@ -446,9 +455,14 @@ proc compute_score { } {
 	}
     }
 
-    if { $score == "" } {
-        set score "Completely Correct"
-    }
 
-    return $score
+    if { $incorrect_output_types != "" } {
+    	return "Incorrect Output"
+    } elseif { $incomplete_output_types != "" } {
+    	return "Incomplete Output"
+    } elseif { $formatting_error_types != "" } {
+    	return "Formatting Error"
+    } else {
+        return "Completely Correct"
+    }
 }
