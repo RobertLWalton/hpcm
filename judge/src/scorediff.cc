@@ -2,7 +2,7 @@
 //
 // File:	scorediff.cc
 // Authors:	Bob Walton (walton@deas.harvard.edu)
-// Date:	Wed Apr 24 11:24:08 EDT 2002
+// Date:	Wed Apr 24 11:42:14 EDT 2002
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: hc3 $
-//   $Date: 2002/04/24 15:26:27 $
+//   $Date: 2002/04/24 16:02:16 $
 //   $RCSfile: scorediff.cc,v $
-//   $Revision: 1.49 $
+//   $Revision: 1.50 $
 
 // This is version 2, a major revision of the first
 // scorediff program.  This version is more explicitly
@@ -379,12 +379,20 @@ char documentation [] =
 "    erences may be omitted if they are zero and the\n"
 "    program argument following them does NOT begin\n"
 "    with a digit or decimal point.\n"
+"\f\n"
+"    If no `-float' option is given, then any differ-\n"
+"    ence in the representation of equal numbers, one\n"
+"    of which is floating point, will output a\n"
+"    `float 0 0' proof.  Similarly if no `-integer'\n"
+"    option is given, then any difference in repre-\n"
+"    sentation of equal integers will output an\n"
+"    `integer 0 0' proof.\n"
 "\n"
 "    The special option `-all N' sets the limits for\n"
 "    all the types of differences, where N is taken\n"
 "    to be 0 if it is omitted (the next argument must\n"
 "    NOT begin with a digit).\n"
-"\f\n"
+"\n"
 "    If more than one limit setting option affects\n"
 "    the limit of a difference type, the last such\n"
 "    option is the effective option for that type.\n"
@@ -1103,10 +1111,10 @@ double integer_reldiff_maximum	= 0.0;
 // Numeric differences equal to or below these are
 // NOT output as proofs.
 //
-double float_absdiff_limit	= 0.0;
-double float_reldiff_limit	= 0.0;
-double integer_absdiff_limit	= 0.0;
-double integer_reldiff_limit	= 0.0;
+double float_absdiff_limit	= -1.0;
+double float_reldiff_limit	= -1.0;
+double integer_absdiff_limit	= -1.0;
+double integer_reldiff_limit	= -1.0;
 
 struct proof
     // A description of one single proof to be output.
@@ -1597,7 +1605,10 @@ int main ( int argc, char ** argv )
 		if ( token_case )
 		    found_difference
 		        ( output.type != NUMBER_TOKEN ?
-			  CASE : FLOAT );
+			      CASE :
+			  output.is_float ?
+			      FLOAT :
+			      INTEGER );
 	    }
 
 	    else if ( output.type == NUMBER_TOKEN )
