@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Sep 25 14:11:13 EDT 2002
+# Date:		Mon Feb 17 05:30:28 EST 2003
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/09/25 18:14:31 $
+#   $Date: 2003/02/17 10:31:23 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.32 $
+#   $Revision: 1.33 $
 
 # To make an informal contest named `foo':
 #
@@ -402,7 +402,7 @@ INDICES=    help/index, \
 		public/=problems/, \
 		private/=problems/, \
 		    demo:include, \
-		    practice01:include
+		    P1:include
 
 all:
 	makejudgingdir -informal ${INDICES}
