@@ -7,7 +7,7 @@
 #
 # File:		tracker
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Oct  2 14:02:08 EDT 2000
+# Date:		Wed Oct  4 14:44:43 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -16,9 +16,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/10/04 06:31:14 $
+#   $Date: 2000/10/05 04:06:55 $
 #   $RCSfile: tracker,v $
-#   $Revision: 1.1 $
+#   $Revision: 1.2 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -300,6 +300,83 @@ proc read_input { ch } {
     }
 }
 
+# List of directories.  Used to select directories
+# for manualreply.
+#
+set directory_list ""
+set directory_list_length 0
+
+# Clear the directory list.
+#
+proc clear_list {} {
+    global directory_list directory_list_length
+    set directory_list		""
+    set directory_list_length	0
+}
+
+# Add directories with unchecked errors to directory
+# list and print summary.
+#
+proc add_err {} {
+
+    global directory_list directory_list_length \
+    	   err_array
+
+    set items ""
+    foreach dir [array names err_array] {
+        set files [lsort $err_array($dir)]
+	if { [llength $files] == 0 } continue
+	lappend items [list [lindex $files 0] \
+			    $dir $files]
+    }
+    set result ""
+    foreach item [lsort $items] {
+        set dir   [lindex $item 1]
+        set files [lindex $item 2]
+	lappend directory_list $dir
+	incr directory_list_length
+	set result "$result\n[format {%3d. %s} \
+	     $directory_list_length $dir]"
+	foreach file $files {
+	    set result "$result\n         $file"
+	}
+    }
+
+    return $result
+}
+
+# Add directories with `Subject:'s not handled by
+# autodispatch and no reply or no_reply.
+#
+proc add_nonauto {} {
+
+    global directory_list directory_list_length \
+    	   rec_array rep_array
+
+    set result ""
+    foreach dir [array names rec_array] {
+        set rec_line $rec_array($dir)
+	if { [info exists rep_array($dir)] } {
+	    continue
+	}
+	set subject [lindex $rec_line 2]
+	if { [llength $subject] >= 1 \
+	     && [lsearch -exact {submit get} \
+	     		 [lindex $subject 0]] >= 0 } {
+	    continue
+	}
+
+	lappend directory_list $dir
+	incr directory_list_length
+	set result "$result\n[format {%3d. %s} \
+	                      $directory_list_length \
+			      $dir]"
+	set result "$result\n         $subject"
+    }
+
+    return $result
+}
+
 # Return a time in 6 characters or less, the last
 # character indicating unit.  The format is either
 #
@@ -327,8 +404,8 @@ proc format_time { time } {
 }
 
 read_input stdin
-
-puts [array get chk_array]
+puts [add_err]
+puts [add_nonauto]
 
 exit 0
 
