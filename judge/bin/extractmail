@@ -4,7 +4,7 @@
 #
 # File:		extractmail
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Jan  4 12:55:25 EST 2002
+# Date:		Sat Jan  5 17:20:15 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/01/04 17:57:42 $
+#   $Date: 2002/01/06 01:01:25 $
 #   $RCSfile: extractmail,v $
-#   $Revision: 1.34 $
+#   $Revision: 1.35 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -36,21 +36,32 @@ cd submission_directory; extractmail
     tory.  Thus file must contain an email with a sub-
     ject line of the form:
 
-    	Subject: submit problemname\[.extension\]
+    	Subject: submit problem\[.extension\]
 
-    If there is a `$files_file' file in the current di-
-    rectory, it lists the names of all the files that
-    are supposed to be submitted.  Otherwise only one
-    file may be submitted, and it must have the file
-    name `problemname.extension', where the extension
-    must be given in the message `Subject:' field.
+    where `problem' is the problem name and `extension',
+    if present, tells the language of the problem sub-
+    misson.  If there is a `$files_file' file in the
+    current directory, it lists the names of all the
+    files that are supposed to be submitted, after a
+    manner described below.  Otherwise only one file may
+    be submitted, and it must have the file name
+    `problem.extension', where the extension must be
+    given in the message `Subject:' field.
+
+    The problem name cannot contain `.' or `/' or begin
+    with `-', and the extension name, if given, cannot
+    contain `/' and must be one of the extensions in the
+    `allowed_extensions' global variable, whose value by
+    default is:
+
+    	$allowed_extensions
 
     For each file successfully extracted, this program
     writes the line `Extracted FFFF' to the standard
     output, where FFFF is the file name.  Note that this
     program may write other information lines to the
     standard output.
-    
+
     For each error, this program writes an error message
     to the standard error output.  However, this program
     always exits with exit code 0, so the presence of
@@ -68,7 +79,7 @@ cd submission_directory; extractmail
     are errors,  the value of `out' will be suitable for
     inclusion in a reply to the submitter as a descrip-
     tion of the errors.
-
+
     If there is a `$files_file' file in the current\
     			directory,
     all submitted files must have names listed in this
@@ -82,7 +93,7 @@ cd submission_directory; extractmail
     items following a special symbol S but before the
     next special symbol are governed by S.  This program
     understands the following two special symbols:
-    
+
     	-REQUIRED-	The list items governed by
 			-REQUIRED- are the names of
 			files that MUST be submitted.
@@ -99,16 +110,19 @@ cd submission_directory; extractmail
     symbol in the list.  The same special symbol can
     appear multiple times in the list.
 
-    If there is no `$files_file' file, there is exactly\
-    	one
-    required submitted file whose name comes from the
-    submission `Subject:' field and must be the problem
-    name followed by one of the extensions in the
-    `allowed_extensions' global variable, whose value by
-    default is:
+    If any -REQUIRED- or -OPTIONAL- file name has the
+    base name `PROBLEM' that is replaced by the problem
+    name taken from the $received_file' file `Subject:'
+    field, and if the file name has the extension
+    `EXTENSION' that is replaced by the extension taken
+    from the same place.  If there is no `$files_file'\
+        file,
+    there is exactly one required submitted file whose
+    name is the `problem.extension' in the submission
+    `Subject:' field.  This case is therefore as if the
+    `$files_file' file had the value\
+    	`PROBLEM.EXTENSION'.
 
-    	$allowed_extensions
-
     Submitted files may be encoded in the body of the
     message in the format:
 
@@ -117,7 +131,7 @@ cd submission_directory; extractmail
 	..<2nd line of file>
 	<more lines, each preceded by `..'>
 	HPCM_END filename
-
+
     This format MUST be used if the `format_submissions'
     global variable is defined and equal to `yes'.  If
     this format is used, there must be nothing else in
@@ -161,13 +175,13 @@ cd submission_directory; extractmail
     errors, and a judge can change an extracted file and
     rerun the autojudge program successfully.
 
-    It is an error if the problem name contains `/' or
-    `.' or begins with `-'.  It is a system error if the
-    `Subject:' field does not begin with `submit' or has
-    too many list items, if the $received_file file is
-    unreadable, if the `$files_file' file exits but is
-    unreadable, or if the current directory does not
-    permit new files to be deleted or created as
+    It is a system error if the `Subject:' field is bad-
+    ly formatted, if the $received_file file is unread-
+    able, if the `$files_file' file exits but is\
+    	unreadable,
+    if the `$files_file' file lists no -REQUIRED- or
+    -OPTIONAL- files, or if the current directory does
+    not permit new files to be deleted or created as
     necessary."
 
 # If there are arguments, print documentation and exit.
@@ -219,18 +233,30 @@ if { [catch { llength $message_subject }] } {
 #
 set filename [lindex $message_subject 1]
 set problem [file rootname $filename]
-if { [regexp {\.} $problem] } {
+set extension [file extension $filename]
+if { $problem == "" } {
+    extract_error \
+	"ERROR: no problem name in\
+	 `Subject: $message_subject'"
+} elseif { [regexp {\.} $problem] } {
     extract_error \
          "ERROR: Bad problem name (contains `.'):\
 	  $problem"
 } elseif { [regexp {/} $filename] } {
     extract_error \
-         "ERROR: Bad file or problem name\
+         "ERROR: Bad problem name or extension\
 	  (contains `/'): $filename"
 } elseif { [regexp {^-} $problem] } {
     extract_error \
          "ERROR: Bad problem name (begins with `-'):\
 	  $problem"
+}
+if { $extension != "" \
+     && [lsearch -exact $allowed_extensions \
+	         $extension] < 0 } {
+    extract_error \
+	"ERROR: disallowed extension in\
+	 `Subject: $message_subject'"
 }
 
 # Compute the list of submittable files.
@@ -244,17 +270,10 @@ if { [file exists $files_file] } {
 	    "SYSTEM ERROR: Cannot read $file_files"
     }
 } else {
-    if { $filename == $problem } {
+    if { $extension == "" } {
         extract_error \
 	    "ERROR: Bad filename in `Subject:\
 	     $message_subject' (no extension)"
-    }
-    set extension [file extension $filename]
-    if { [lsearch -exact $allowed_extensions \
-		  $extension] < 0 } {
-	extract_error \
-	    "ERROR: bad file name extension in\
-	     `Subject: $message_subject'"
     }
     set filelist [list $filename]
 }
@@ -277,7 +296,22 @@ foreach item $filelist {
 	    if { [regexp {^-[-A-Z]*-$} $item] } {
 	        set mode ""
 	    } elseif { $mode != "" } {
-		set filename_array($item) $mode
+	        set root [file rootname $item]
+		set ext [ file extension $item]
+		if { $root == "PROBLEM" } {
+		    set root $problem
+		}
+		if { $ext == ".EXTENSION" } {
+		    if { $extension == "" } {
+			extract_error \
+			    "ERROR: No extension given\
+			     in `Subject:\
+			     $message_subject'\
+			     (extension is required)"
+		    }
+		    set ext $extension
+		}
+		set filename_array($root$ext) $mode
 	    }
 	}
     }
@@ -582,15 +616,15 @@ if { [regexp {^HPCM_BEGIN} $line] } {
 	        foreach line $lines {
 		    set file_line [gets $file_ch]
 		    if { [eof $file_ch] } {
-			extract_error \
-			    "SYSTEM ERROR: premature\
-			     eof reading existing\
-			     `$filename'"
+			puts "Mismatch $filename\n\
+			      old: END OF FILE\n\
+			      new: $real_line"
+			set mode skip
 		    } elseif { $file_line \
 		    		   != $real_line } {
 			puts "Mismatch $filename\n\
-			     old: $file_line\n\
-			     new: $real_line"
+			      old: $file_line\n\
+			      new: $real_line"
 			set mode skip
 		    }
 		}
