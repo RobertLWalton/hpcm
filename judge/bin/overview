@@ -4,7 +4,7 @@
 #
 # File:		overview
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Feb 10 11:51:21 EST 2002
+# Date:		Tue Feb 12 19:44:39 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/02/11 09:58:21 $
+#   $Date: 2002/02/13 00:47:05 $
 #   $RCSfile: overview,v $
-#   $Revision: 1.64 $
+#   $Revision: 1.65 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -695,7 +695,12 @@ type of contest.  Some of these subdirectories are:
 			description of each message, and
 			the Makefiles in the contest
 			directories above for examples
-			using these files.
+			using these files.  Also files
+			that are replies to these sub-
+			missions (and can be extracted
+			from mail by hpcm_extract_test_
+			replies: see Programs: Mainten-
+			ance below).
 
     test_contest	A `test contest' that merely
     			tests the autojudge.  This is
@@ -710,7 +715,7 @@ to create a contest by making a judging directory, copy-
 ing the files in the `hpcm/examples' subdirectory into
 the judging directory, editing these copies, etc.
 
-
+
 Library Data: System Maintenance
 ------- ----- ------ -----------
 
@@ -720,7 +725,7 @@ There are a few files in the system root directory
 
     File_List	This file lists all the files that can
     		be distributed.
-
+
     TODO	This file lists known deficiencies of
     		HPCM.
 
@@ -742,7 +747,7 @@ in which `make' stores copies of all per-program docu-
 mentation.
 
 
-
+
 Contest Definition Data: The Judging Directory
 ------- ---------- ----- --- ------- ---------
 
@@ -754,7 +759,7 @@ The heart of the contest is the judging directory.  This
 typically has a name of the form:
 
 	~/judging_cccc_ppppppppppp
-
+
 where cccc is the name of the contest and ppppppppppp is
 a string of random numbers and letters that makes the
 directory name hard to guess.  The reason for this is
@@ -773,7 +778,7 @@ suffices.  The judge's account has u+r permission on
 directories, so the `*' works for the judge's account,
 but there is NO read permission on the directories for
 outside users.
-
+
 The judging directory contains the hpcm_judging.rc file
 that defines parameters for the contest.  Whenever most
 HPCM programs in hpcm/judge/bin are executed, they
@@ -792,7 +797,7 @@ An HPCM program can therefore execute anywhere in the
 directory tree rooted at a judging directory, and the
 program will find the judging directory and its hpcm_
 judging.rc file.
-
+
 The judging directory contains several components that
 define the contest, in addition to many components that
 belong to the raw or derived data of the contest, and
@@ -813,7 +818,7 @@ are:
 	component of the solutions directory is a sym-
 	bolic link to a problem directory.  Often these
 	problem directories are in the problem library.
-
+
 	But for formal contests problems are often used
 	that have not yet been entered into the problem
 	library, and the problem directories for these
@@ -825,7 +830,7 @@ are:
 	The solutions directory and its contents (i.e.,
 	the symbolic links) are made automatically by
 	`makejudgingdir'.
-
+
     info
         The info directory for the contest.  This only
 	exists for email and informal contests, and it
@@ -852,7 +857,7 @@ are:
 	ory must be accessible by the contestants, who
 	must not know the full name of the judging di-
 	rectory.
-
+
 	Only informal and formal contests have a contest
 	directory.  Email contests do not.
 
@@ -865,7 +870,7 @@ are:
 	exception of a few symbolic links to other
 	directories and a few files (see `Contest Def-
 	inition Data: The Contest Directory' below).
-
+
     help
         The help directory within the judging directory.
 	This is not used during the contest proper, but
@@ -886,7 +891,7 @@ are:
 	automatically by `makejudgingdir', but then
 	the person defining the contest must edit the
 	`this_contest' file and re-run `makejudgingdir'.
-
+
     scoreboard.notes
         A file standardly appended to the scoreboard by
 	the `makescoreboard' program when it emails the
@@ -903,7 +908,7 @@ are:
 	Typical instructions are `edit ./contest/secure/
 	passwords' and `put the following lines in
 	the judge's ~/.procmailrc file: ...'.
-
+
 In addition to these files which are used by HPCM
 programs, there is typically one other file that is not
 used by HPCM programs themselves.  This is:
@@ -920,7 +925,7 @@ used by HPCM programs themselves.  This is:
 
 	See hpcm/examples/*/Makefile for examples.
 
-
+
 Contest Definition Data: The Contest Directory
 ------- ---------- ----- --- ------- ---------
 
@@ -933,7 +938,7 @@ an account in which `~/.hpcm_contest' is symbolically
 linked to the contest directory.  The contest directory
 itself has a+x permissions and contains the following
 components that contestants can access.
-
+
     bin
     	A directory containing programs the contestants
 	can execute.  The name `~/.hpcm_contest/bin' is
@@ -959,7 +964,7 @@ components that contestants can access.
 	The `makejudgingdir' program symbolically links
 	`bin' to `contestant/bin' in the contest direc-
 	tory.  See `contestant' below.
-
+
     contestant
 	The name `contestant' in the contest directory
 	must be symbolically linked by hand to the
@@ -970,7 +975,7 @@ components that contestants can access.
         This is a directory that contains demonstration
 	problems.  It is strictly analogous to the
 	`problems' directory, see below.
-
+
     help
     	This directory contains a+r copies of all the
 	help files for the contestants.  These can be
@@ -996,14 +1001,14 @@ components that contestants can access.
 
 	    problems
 	    	Index of contest problems.
-
+
 	One file, ./contest/help/problems, does not
 	have a+r permissions when it is made, so that
 	contestants in a formal contest cannot find
 	out about the problems before the contest
 	starts.  The `startcontest' program sets the
 	permissions on this file to a+r.
-
+
     home
     	This is a symbolic link to a directory that is
 	informally called the `contest/home' directory
@@ -1033,11 +1038,11 @@ components that contestants can access.
 	file is used only if printer_map is not readable
 	by contestants.  See hpcm/contestant/printer_
 	pipe for details.
-
+
 	This file is made by `makejudgingdir' if neither
 	it or printer_map exist, and may be edited or
 	removed by hand.
-
+
     printer_jobs
         If this file exists and is a+w, each use of the
 	printer by one of the print commands in the
@@ -1064,7 +1069,7 @@ components that contestants can access.
 	mal contests, the same information (plus problem
 	description (.txt, .html, etc.) files), see
 	below) is put in info/problems and info/demos.
-
+
 	Each non-demonstration problem directory in the
 	contest directory is a subdirectory of this
 	`problems' directory and has as its name the
@@ -1074,7 +1079,7 @@ components that contestants can access.
 	tory.  Demonstration problems are similar but
 	are in the `demos' directory instead of the
 	`problems' directory.
-
+
 	Within each problem directory there is standard-
 	ly an a+r copy of the `Makefile' of the problem.
 	It is also possible to include an a+r copy of a
@@ -1092,7 +1097,7 @@ components that contestants can access.
 	-DESCRIPTION- files can be included to describe
 	the problem, if desired, though this is not
 	usually done for formal contests.
-
+
 	For a formal contest, the contestant's hpcm_get
 	program creates a problem directory ppp in the
 	contestant's account, and symbolically links
@@ -1108,7 +1113,7 @@ components that contestants can access.
 	available in a contestant's directory by hpcm_
 	get has the name xxx.ISF, then hpcm_get makes a
 	writable copy named xxx of that file.
-
+
 	This `contest/problems' directory (unlike the
 	`contest/demos' directory) does not have a+rx
 	permissions when it is made, so that contestants
@@ -2653,8 +2658,17 @@ maintenance.
     file_list		Make lists of HPCM files from
     			logical expressions involving
 			keywords.
-
 
+In addition the following program in hpcm/contestant/bin
+is used for maintenance.
+
+    hpcm_extract_test_replies
+    			Extract messages in a mailbox
+			that have an X-HPCM-Test-Subject
+			field beginning with a test
+			name.
+
+
 Programs: Common Functions
 --------- ------ ---------
 
@@ -2675,7 +2689,7 @@ ed by HPCM TCL programs:
 
     hpcm/judge/lib/scoreboard_common.tcl
     	Scoreboard functions.
-
+
 Programs: System/User Interface Common Functions
 --------  ----------- --------- ------ ---------
 
@@ -2691,7 +2705,7 @@ functions.  A brief summary of these functions is:
     proc submitter_compress { submitter }
         Compress the email address of a submitter to
 	make a scoreboard contestant name.
-
+
     proc send_mail { message_file }
     proc send_message { message }
     	Send a file or variable value as email.
@@ -2715,7 +2729,7 @@ functions.  A brief summary of these functions is:
 
     proc get_access { filename }
         Discover `a' permissions of file.
-
+
     proc deny_access { filename }
         Deny all permissions for a file or directory
 	except to owner.
@@ -2729,7 +2743,7 @@ functions.  A brief summary of these functions is:
     proc make_file { name err_file }
         Make the `name' by using the `make' program on
 	the Makefile in the current directory.
-
+
     proc diff_directories { directory1 directory2 }
         Diff two directories, as per UNIX `diff -r'.
 
@@ -2755,7 +2769,7 @@ functions.  A brief summary of these functions is:
     proc process_found { display }
         Returns true iff root process existed when
 	display_process_tree returned display.
-
+
     proc signal_process_tree { signal root_pid }
         Send a KILL or INT signal to all the processes
 	in a process tree rooted at a given process ID.
@@ -2769,7 +2783,7 @@ functions.  A brief summary of these functions is:
 
     proc disable_outputs {}
         Route stderr and stdout to /dev/null.
-
+
     proc account_name {}
     proc host_name {}
     	Return the account name or host network name.
@@ -2791,7 +2805,7 @@ mary of these is:
     	Manage the submission directory\
 		$dispatch_pid_file
 	file.
-
+
     proc clock_to_filename_date { clock }
     proc filename_date_to_clock { date }
         Convert standard time data to/from the date
@@ -2806,7 +2820,7 @@ mary of these is:
 
     proc caught_error {}
         Catch an error occurring in an HCPM TCL program.
-
+
     proc log_error { error_output }
         Log an error to an error log file, to the stand-
 	ard error output, or to an email.
@@ -2829,7 +2843,7 @@ mary of these is:
 
     proc compose_reply { args }
         Compose a reply in $reply_file+.
-
+
     proc send_reply { args }
         Send the reply stored in $reply_file+.
 
@@ -2844,7 +2858,7 @@ mary of these is:
 		   { line_count 1000000000 } }
 	Write an entire file of the first so many lines
 	of a file to a channel.
-
+
     proc read_file { filename }
         Read and return the first line of a file.
 
@@ -2863,7 +2877,7 @@ mary of these is:
                                       abbreviations
 				      atoms values }
 	Compile a logical expression.
-
+
 Programs: Display Common Functions
 --------  ------- ------ ---------
 
@@ -2882,7 +2896,7 @@ displays.  A brief summary of these is:
 
     proc bar_with_text { text }
         Return a `===' bar ending with the text.
-
+
     proc yes? {}
         Read input and check it for `yes' or `no'.
 
@@ -2901,7 +2915,7 @@ displays.  A brief summary of these is:
 
     proc get_listed_files { }
         Compute list of files to be put in file list.
-
+
     proc get_file_item { filename }
     	Get item from file list describing file.
 
@@ -2921,7 +2935,7 @@ displays.  A brief summary of these is:
 
     proc read_score { score_file }
     	Read a one line score file.
-
+
     proc make_diff { file }
         Make a .diff or .bdiff file if necessary.
 
@@ -2941,7 +2955,7 @@ displays.  A brief summary of these is:
 
     proc tab_expand { line }
         Return line with tabs expanded.
-
+
     proc compute_file_display { filename xxx_array
     				first_line_number
 				last_line_number
@@ -2952,7 +2966,7 @@ displays.  A brief summary of these is:
     proc send_query { header }
     	Create an email a query to the judge.
 
-
+
 Programs: Scoring Common Functions
 --------  ------- ------ ---------
 
@@ -2979,7 +2993,7 @@ scores.  A brief summary of these is:
     proc compose_response \\
 	    { { compose_reply_options \"\" } }
     	Compose a reply indicating the score.
-
+
     proc send_response { commands }
     	Send any previously composed response.
 
@@ -2990,7 +3004,7 @@ scores.  A brief summary of these is:
     proc set_proof_display { }
     	Set current window display part to display the
 	current proof.
-
+
     proc compute_proof_info { }
     	Set current window info part to display summary
 	of proofs in proof array.

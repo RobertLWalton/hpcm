@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Feb  4 22:11:37 EST 2002
+# Date:		Tue Feb 12 19:56:54 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/02/05 03:16:37 $
+#   $Date: 2002/02/13 00:55:40 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.13 $
+#   $Revision: 1.14 $
 
 # make
 #	Makes documentation as fprintable .doc files in
@@ -49,6 +49,7 @@ DOCS=	overview.doc \
 	contestant/help.doc \
 	contestant/hpcm_clisp.doc \
 	contestant/hpcm_extract.doc \
+	contestant/hpcm_extract_test_replies.doc \
 	contestant/hpcm_get.doc \
 	secure/hpcm_make_accounts.doc \
 	judge/hpcm_print_passwords.doc \
@@ -323,6 +324,12 @@ contestant/hpcm_extract.doc:	\
 	rm -f contestant/hpcm_extract.doc
 	-../../contestant/bin/hpcm_extract -doc \
 	    >contestant/hpcm_extract.doc
+ETR=hpcm_extract_test_replies
+contestant/${ETR}.doc:	\
+		../../contestant/bin/${ETR}
+	rm -f contestant/${ETR}.doc
+	-../../contestant/bin/${ETR} -doc \
+	    >contestant/${ETR}.doc
 contestant/hpcm_get.doc:	\
 		        ../../contestant/bin/hpcm_get
 	rm -f contestant/hpcm_get.doc
