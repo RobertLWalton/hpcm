@@ -4,7 +4,7 @@
 #
 # File:		judge
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Aug 13 18:46:35 EDT 2000
+# Date:		Wed Aug 16 06:43:27 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: acm-cont $
-#   $Date: 2000/08/14 01:20:40 $
+#   $Date: 2000/08/16 11:24:46 $
 #   $RCSfile: autojudge,v $
-#   $Revision: 1.6 $
+#   $Revision: 1.7 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -32,9 +32,11 @@ set allowed_extensions_default \
     ".c .cc .java"
 set allowed_extensions_filename \
     "allowed_submission_extensions"
+set score_file \
+    "judge.score"
 
 set document "
-cd submission_directory; judge
+cd submission_directory; judge [-auto]
 
     Given the submission directory as the current dir-
     ectory, and given that the submission directory
@@ -46,15 +48,19 @@ cd submission_directory; judge
 
     TBW"
 
-if { $argc != 0 } {
+if { $argc == 0 } {
+    set autoscore no
+} elseif { $argc == 1 && [lindex $argv 0] == "-auto" } {
+    set autoscore yes
+} else {
     puts $document
-    exit 0
+    exit 1
 }
 
 proc fatal_error { args } {
     puts "ERROR: [lindex $args 0]"
-    lreplace args 0 0
-    foreach $m $args {
+    set args [lreplace $args 0 0]
+    foreach m $args {
     	puts "       $m"
     }
     exit 1
@@ -65,8 +71,8 @@ proc error_for_score_file { args } {
     set score_fd [open $score_file w]
     puts $score_fd [lindex $args 0]
     puts "ERROR: [lindex $args 0]"
-    lreplace args 0 0
-    foreach $m $args {
+    set args [lreplace $args 0 0]
+    foreach m $args {
 	puts $score_fd $m
     	puts "       $m"
     }
@@ -75,8 +81,7 @@ proc error_for_score_file { args } {
 }
 
 proc submission_error { args } {
-    eval "error_for_score_file {Submission Error}\
-         [list args]"
+    eval "error_for_score_file {Submission Error} $args"
 }
 
 set program_directory [file dirname $argv0]
@@ -102,7 +107,7 @@ set score_file [glob -nocomplain "*.score"]
 
 if { [llength $score_file] == 1 } {
     if ( ! [file readable $score_file] } {
-        [fatal "cannot read $score_file"]
+        fatal_error "cannot read $score_file"
     }
     set score_fd [open $score_file r]
     set score [gets $score_fd]
@@ -114,29 +119,19 @@ if { [llength $score_file] == 1 } {
     file delete -force $score_file
 }
 else if { [llength $score_file] > 1 } {
-    [fatal "too many score files: $score_file"]
+    fatal_error "too many score files: $score_file"
 }
 
 set submitted_file ""
 
 foreach e $allowed_extensions {
-    foreach f [glob -nocomplain "*.$e] {
+    foreach f [glob -nocomplain "*.$e"] {
     	lappend submitted_file $f
     }
 }
 
-if { [llength $submitted_file] == 0 } {
-    set score_file unknown.score
-    [submission_error "no program file"]
-}
-else if { [llength $submitted_file] > 1 } {
-    set score_file unknown.score
-    [submission_error "too many program files: $submitted_file"]
-}
-
 set submitted_program [file rootname $submitted_file]
 set submitted_extension [file extension $submitted_file]
-set score_file "${submitted_program}.score"
 
 set solution_dir = "../$submitted_program"
 
@@ -168,12 +163,15 @@ if { ! [file readable $submitted_program] \
 
     if { [file exists $submitted_program] } {
 	puts "Deleting out-of-date $submitted_program"
-    	file delete $submitted_program
+    	file delete -force $submitted_program
     }
     puts "Making ${submitted_program}"
-    if { [catch { exec make $submitted_program }] } {
+    if { [catch { exec make $submitted_program } \
+                out] } {
+        puts $out
         error_for_score_file "Syntax Error"
     }
+    puts $out
     exec chmod a+x $submitted_program
 }
 
@@ -185,148 +183,24 @@ if { ! [file readable "${submitted_program}.out" \
      || [file mtime "${submitted_program}.in"] \
            < [file mtime "${submitted_program}.in"] } {
 
+    if { [file exists "${submitted_program}.out"] } {
+	puts "Deleting out-of-date ${submitted_program}.out"
+    	file delete -force "${submitted_program}.out"
+    }
+
+    if { [file exists "${submitted_program}.err"] } {
+	puts "Deleting out-of-date ${submitted_program}.err"
+    	file delete -force "${submitted_program}.err"
+    }
+
     puts "Making ${submitted_program}.out"
-    exec make $submitted_program
+    exec make "$submitted_program.out"
 }
 
-TBW
+set score [exec autoscore $submitted_program]
 
-if { ! [file readable "${submitted_program}.diff" \
-     || [file mtime "${submitted_program}.diff"] \
-           < [file mtime ${submitted_program}.out] \
-     || [file mtime "${submitted_program}.diff"] \
-           < [file mtime ${submitted_program}.test] } {
-
-    puts "Making ${submitted_program}.diff"
-    exec diff "${submitted_program}.out" \
-              "${submitted_program}.test"
-
+if { $auto == "no" && $score != "Completely Correct" } {
+    exec manualscore $submitted_program
 }
 
-if ( ! -r $program.score && -r $program.diff ) then
-	echo ======================================== \
-		$program.bdiff
-	more -20 $program.bdiff
-	echo ======================================== \
-		$program.diff
-	more -20 $program.diff
-	echo ========================================
-
-	while (1)
-	    echo ""
-	    echo Enter Score
-	    echo "    s = syntax error"
-	    echo "    x = program crashed"
-	    echo "    t = too much time, memory," \
-				"or output"
-	    echo "    i = incorrect output"
-	    echo "    ic = incomplete output"
-	    echo "    f = formating error"
-	    echo "    cc = completely correct"
-	    echo "    d = defer scoring"
-	    echo "    out = print .out file"
-	    echo "    test = print .test file"
-	    echo "    diff = print .diff file"
-	    echo "    bdiff = print .bdiff file"
-	    echo "    src = view code file"
-	    echo -n "Score: "
-	    switch ($<)
-	    case s:
-		set score="Syntax Error"
-		break
-	    case x:
-		set score="Program Crashed"
-		break
-	    case t:
-		set score="Too Much Time, Memory, or Output"
-		break
-	    case i:
-		set score="Incorrect Output"
-		break
-	    case ic:
-		set score="Incomplete Output"
-		break
-	    case f:
-		set score="Formating Error"
-		break
-	    case cc:
-		set score="Completely Correct"
-		break
-	    case d:
-		set score="Defer Scoring"
-		break
-	    case test:
-		echo ===================== \
-		     $program.test \
-		     ===================== 
-		more -20 $program.test
-		echo ===================== \
-		     =====================
-		continue
-	    case out:
-		echo ===================== \
-		     $program.out \
-		     ===================== 
-		more -20 $program.out
-		echo ===================== \
-		     =====================
-		continue
-	    case diff:
-		echo ===================== \
-		     $program.diff \
-		     ===================== 
-		more -20 $program.diff
-		echo ===================== \
-		     =====================
-		continue
-	    case bdiff:
-		echo ===================== \
-		     $program.bdiff \
-		     ===================== 
-		more -20 $program.bdiff
-		echo ===================== \
-		     =====================
-		continue
-	    case src:
-		view $src
-		continue
-	    default: 
-		echo "Could not understand; try again."
-		continue
-	    endsw
-	end
-
-	while (1)
-	    set from=`pwd | sed -e 's|.*/From \([^ /]*\) [^/]*$|\1|' `
-	    echo ""
-	    echo "Do you really want to score" \
-		 "this as: ${score}"
-	    if ( "$score" != "Defer Scoring" ) then
-		echo "    and mail it to ${from}?"
-	    endif
-	    echo -n "Yes or no: "
-	    switch ($<)
-	    case yes:
-		if ( "$score" != "Defer Scoring" ) then
-		    echo ""
-		    echo "Making $program.score"
-		    echo "$score" > $program.score
-		    echo "Deleting $program"
-		    rm -f $program
-		    echo "Executing mailscore $from"
-		    echo ""
-		    mailscore "$from"
-		    echo ""
-		else
-		    echo "NOT making $program.score"
-		endif
-		break
-	    case no:
-		break
-	    default:
-		echo "Could not understand; try again."
-		continue
-	    endsw
-	end
-endif
-
+exit 0

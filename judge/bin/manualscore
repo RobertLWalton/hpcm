@@ -1,0 +1,239 @@
+#! /bin/sh -f
+#
+# Manually examine and possibly modify the judge.score
+# file in a submission directory
+#
+# File:		manualscore
+# Author:	Bob Walton (walton@deas.harvard.edu)
+# Date:		Wed Aug 16 07:06:59 EDT 2000
+#
+# The authors have placed this program in the public
+# domain; they make no warranty and accept no liability
+# for this program.
+#
+# RCS Info (may not be true date or author):
+#
+#   $Author: acm-cont $
+#   $Date: 2000/08/16 11:24:46 $
+#   $RCSfile: manualscore,v $
+#   $Revision: 1.1 $
+#
+# The next line starts tcl \
+exec tcl "$0" "$@"
+
+# Use tcl rather than tclsh so that `signal' is defined.
+
+if { [info command signal] == "signal" } {
+    signal error SIGINT
+}
+
+# File names:
+#
+set score_file	      "judge.score"
+
+set document "
+cd submission_directory
+manualscore program_name
+
+							/
+    Given the submission directory as the current dir-
+    ectory, given the program name (e.g. pppp), given
+    the output file (pppp.out), optional error file
+    (pppp.err), and test file (pppp.test, the judge's
+    solution's version of the output file), and given 
+    the `judge.score' file computed by autoscore,
+    interacts with the user to review and modify the
+    `judge.score' file.
+
+    TBW"
+
+proc fatal_error { args } {
+    puts "ERROR: [lindex $args 0]"
+    set args [lreplace $args 0 0]
+    foreach m $args {
+    	puts "       $m"
+    }
+    exit 1
+}
+
+if { $argc != 1 } {
+    puts $document
+    exit 1
+}
+
+set program_name [lindex $argv 0]
+set output_file "${program_name}.out"
+set error_file  "${program_name}.err"
+set test_file   "${program_name}.test"
+
+if { ! [file readable $output_file] } {
+    fatal_error "not readable: $output_file"
+}
+
+if { ! [file readable $test_file] } {
+    fatal_error "not readable: $test_file"
+}
+
+if { ! [file readable $score_file] } {
+    fatal_error "not readable: $score_file"
+}
+
+if { ! [file writable $score_file] } {
+    fatal_error "not writable: $score_file"
+}
+
+set score_fd [open $score_file r]
+set score [gets $score_fd]
+close $score_fd
+
+if { $score == "Completely Correct" } {
+    puts $score
+    exit 0
+}
+
+putfile judge.score
+
+if { [file exists $error_file] \
+     && [file size $error_file] > 0 } {
+    putfile $error_file
+}
+
+if { ! [file readable "${submitted_program}.diff" \
+     || [file mtime "${submitted_program}.diff"] \
+           < [file mtime ${submitted_program}.out] \
+     || [file mtime "${submitted_program}.diff"] \
+           < [file mtime ${submitted_program}.test] } {
+
+    puts "Making ${submitted_program}.diff"
+    exec diff "${submitted_program}.out" \
+              "${submitted_program}.test"
+
+}
+
+if ( ! -r $program.score && -r $program.diff ) then
+	echo ======================================== \
+		$program.bdiff
+	more -20 $program.bdiff
+	echo ======================================== \
+		$program.diff
+	more -20 $program.diff
+	echo ========================================
+
+	while (1)
+	    echo ""
+	    echo Enter Score
+	    echo "    s = syntax error"
+	    echo "    x = program crashed"
+	    echo "    t = too much time, memory," \
+				"or output"
+	    echo "    i = incorrect output"
+	    echo "    ic = incomplete output"
+	    echo "    f = formating error"
+	    echo "    cc = completely correct"
+	    echo "    d = defer scoring"
+	    echo "    out = print .out file"
+	    echo "    test = print .test file"
+	    echo "    diff = print .diff file"
+	    echo "    bdiff = print .bdiff file"
+	    echo "    src = view code file"
+	    echo -n "Score: "
+	    switch ($<)
+	    case s:
+		set score="Syntax Error"
+		break
+	    case x:
+		set score="Program Crashed"
+		break
+	    case t:
+		set score="Too Much Time, Memory, or Output"
+		break
+	    case i:
+		set score="Incorrect Output"
+		break
+	    case ic:
+		set score="Incomplete Output"
+		break
+	    case f:
+		set score="Formating Error"
+		break
+	    case cc:
+		set score="Completely Correct"
+		break
+	    case d:
+		set score="Defer Scoring"
+		break
+	    case test:
+		echo ===================== \
+		     $program.test \
+		     ===================== 
+		more -20 $program.test
+		echo ===================== \
+		     =====================
+		continue
+	    case out:
+		echo ===================== \
+		     $program.out \
+		     ===================== 
+		more -20 $program.out
+		echo ===================== \
+		     =====================
+		continue
+	    case diff:
+		echo ===================== \
+		     $program.diff \
+		     ===================== 
+		more -20 $program.diff
+		echo ===================== \
+		     =====================
+		continue
+	    case bdiff:
+		echo ===================== \
+		     $program.bdiff \
+		     ===================== 
+		more -20 $program.bdiff
+		echo ===================== \
+		     =====================
+		continue
+	    case src:
+		view $src
+		continue
+	    default: 
+		echo "Could not understand; try again."
+		continue
+	    endsw
+	end
+
+	while (1)
+	    set from=`pwd | sed -e 's|.*/From \([^ /]*\) [^/]*$|\1|' `
+	    echo ""
+	    echo "Do you really want to score" \
+		 "this as: ${score}"
+	    if ( "$score" != "Defer Scoring" ) then
+		echo "    and mail it to ${from}?"
+	    endif
+	    echo -n "Yes or no: "
+	    switch ($<)
+	    case yes:
+		if ( "$score" != "Defer Scoring" ) then
+		    echo ""
+		    echo "Making $program.score"
+		    echo "$score" > $program.score
+		    echo "Deleting $program"
+		    rm -f $program
+		    echo "Executing mailscore $from"
+		    echo ""
+		    mailscore "$from"
+		    echo ""
+		else
+		    echo "NOT making $program.score"
+		endif
+		break
+	    case no:
+		break
+	    default:
+		echo "Could not understand; try again."
+		continue
+	    endsw
+	end
+endif
+
