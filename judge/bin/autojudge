@@ -5,7 +5,7 @@
 #
 # File:		autojudge
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Jan 22 10:54:20 EST 2002
+# Date:		Tue Jan 22 21:55:48 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/01/22 15:53:29 $
+#   $Date: 2002/01/23 02:55:14 $
 #   $RCSfile: autojudge,v $
-#   $Revision: 1.63 $
+#   $Revision: 1.64 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -567,12 +567,16 @@ set extension [file extension $argument]
 #
 proc subject_error { what { comment "" } } {
     global message_subject
-    reply \
-          "ERROR: $what is illegal$comment in\
-	  	  `Subject: $message_subject'" \
-	  ""  \
-	  "THIS SUBMISSION (see below) IGNORED"  \
-	  "You must resubmit with a legal $what"
+    reply "LINE {ERROR: $what is illegal$comment in\
+	  	 `Subject: $message_subject'}" \
+	  BLANK \
+	  { LINE "THIS SUBMISSION (see below)\
+	          IGNORED" } \
+	  "LINE {You must resubmit with a legal\
+	         $what}" \
+	  BLANK \
+	  { BAR "this message replies to:" } \
+	  RECEIVED-HEADER
     puts "SUBMISSION ERROR: $what is illegal$comment in\
           `Subject: $message_subject'"
     exit 0
@@ -937,13 +941,18 @@ if { [catch { exec extractmail } extractout] } {
 	# submitter.  Include the submission email in
 	# the reply.
 	#
-	reply -all \
-            "ERROR during file extraction:" \
-	    "" \
-	    $extractout \
-	    "" \
-	    "THIS SUBMISSION (see below) IGNORED" \
-	    "YOU MUST RESUBMIT"
+	reply {LINE "ERROR during file extraction:" } \
+	      BLANK \
+	      [list LINES $extractout] \
+	      BLANK \
+	      { LINE "THIS SUBMISSION (see below)\
+	              IGNORED" } \
+	      { LINE "YOU MUST RESUBMIT" } \
+	      BLANK \
+	      { BAR "this message replies to:" } \
+	      RECEIVED-HEADER \
+	      BLANK \
+	      RECEIVED-BODY
 
 	puts $extractout
 	puts "Reply indicating error emailed to\
@@ -1049,21 +1058,28 @@ proc auto_score_reply { auto_score } {
 
     if { $auto_score == "Completely Correct" \
          || $scoring_mode == "auto" } {
-	reply "For $problem the automatically\
-	       determined final score is:" \
-	      "" \
-	      "    $auto_score"
+	reply "LINE {For $problem the automatically\
+	             determined final score is:}" \
+	      BLANK \
+	      "LINE {    $auto_score}"
+	      BLANK \
+	      { BAR "this message replies to:" } \
+	      RECEIVED-HEADER
 	puts "Emailed final auto-score:\
 	      \    $auto_score"
     } elseif { [regexp {auto} $scoring_mode] } {
 	compose_reply \
-              "For $problem the automatically\
-	       determined score is:" \
-	      "" \
-	      "    $auto_score" \
-	      "" \
-	      "However, this score WILL BE REVIEWED by\
-	       the human judge (soon)."
+              "LINE {For $problem the automatically\
+	             determined score is:}" \
+	      BLANK \
+	      "LINE {    $auto_score}" \
+	      BLANK \
+	      { LINE "However, this score WILL BE\
+	              REVIEWED by the human judge\
+		      (soon)." } \
+	      BLANK \
+	      { BAR "this message replies to:" } \
+	      RECEIVED-HEADER
 	send_reply -notfinal
 	set_flag $needs_reply_flag_file
 	puts "Emailed auto-score (review later):\
