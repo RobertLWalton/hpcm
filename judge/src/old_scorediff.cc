@@ -2,7 +2,7 @@
 //
 // File:	scorediff.cc
 // Authors:	Bob Walton (walton@deas.harvard.edu)
-// Date:	Sat Oct  7 06:39:04 EDT 2000
+// Date:	Mon Jan 15 09:08:08 EST 2001
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: hc3 $
-//   $Date: 2000/10/07 10:53:23 $
+//   $Date: 2001/01/15 15:46:51 $
 //   $RCSfile: old_scorediff.cc,v $
-//   $Revision: 1.10 $
+//   $Revision: 1.11 $
 
 #include <stdlib.h>
 #include <iostream.h>
@@ -71,7 +71,7 @@ char documentation [] =
 "		different numbers of decimal places,\n"
 "		or one had a decimal point and the\n"
 "		other did not.\n"
-"\n"
+"\f\n"
 "    exponent	Two numbers were compared and one had\n"
 "		an exponent but the other did not.\n"
 "\n"
@@ -104,7 +104,7 @@ char documentation [] =
 "    is scanned by the strtod(3) function.  Numbers\n"
 "    longer than about 4000 characters are arbitrar-\n"
 "    ily truncated.\n"
-"\n"
+"\f\n"
 "    The relative value of the difference between two\n"
 "    numbers x and y is:\n"
 "\n"
@@ -175,7 +175,9 @@ struct file
 			// points.
 };
 
-// Open file for reading.
+// Open file for reading.  Put a phantom `\n' at the
+// beginning of each file so `spacebreak' does not
+// falsely detect at the beginning of a file.
 //
 int open ( file & f, char * filename )
 {
@@ -188,7 +190,8 @@ int open ( file & f, char * filename )
     }
 
     f.back = f.backup;
-    * f.back = 0;
+    f.backup [0] = '\n';
+    f.backup [1] = 0;
 
     f.nextcolumn = 0;
 }

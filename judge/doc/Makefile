@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Jan 14 09:07:08 EST 2001
+# Date:		Mon Jan 15 08:57:34 EST 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/01/14 14:22:00 $
+#   $Date: 2001/01/15 15:43:38 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.7 $
+#   $Revision: 1.8 $
 
 # make
 #	Makes documentation as fprintable .doc files in
@@ -86,10 +86,14 @@ all:	judge contestant secure test ${DOCS}
 .SUFFIXES:
 
 fprint:	${DOCS}
-	fprint ${DOCS}
+	fprint ${DOCS} \
+	       ../lib/hpcm_judging.rc \
+	       ../lib/judging_common.tcl
 
 fcheck:	${DOCS}
 	fcheck ${DOCS}
+	fcheckc ../lib/hpcm_judging.rc \
+	        ../lib/judging_common.tcl
 
 hpcm_judging.rc:
 	ln -s ../lib/hpcm_judging.rc
@@ -105,6 +109,11 @@ secure:
 
 test:
 	mkdir test
+
+clean:
+	rm -rf overview.doc installing_hpcm.doc \
+	       judge contestant secure test \
+	       hpcm_judging.rc
 
 # ../bin docs
 #
@@ -349,8 +358,3 @@ test/test_submit.doc:	hpcm_judging.rc \
 	rm -f test/test_submit.doc
 	-../../judge/test/test_submit -doc \
 	    >test/test_submit.doc
-
-clean:
-	rm -rf overview.doc installing_hpcm.doc \
-	       judge contestant secure \
-	       hpcm_judging.rc

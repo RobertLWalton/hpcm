@@ -5,7 +5,7 @@
 #
 # File:		autojudge
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Dec  3 10:51:55 EST 2000
+# Date:		Mon Jan 15 10:31:01 EST 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/12/03 16:02:22 $
+#   $Date: 2001/01/15 15:41:38 $
 #   $RCSfile: autojudge,v $
-#   $Revision: 1.28 $
+#   $Revision: 1.29 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -398,6 +398,12 @@ if { [should_be_made \
     catch { exec make $submitted_program.out \
     	         >@ stdout \
 		 2> $submitted_program.err }
+
+    # Remove any a+x on the current directory as a
+    # `best effort' security measure in the face of
+    # the JAVA bug that requires .. to be a+x.
+    #
+    deny_access "."
 
     # Print any non-empty .err file.
     #
