@@ -4,7 +4,7 @@
 #
 # File:		autoinfo
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Oct 25 00:35:34 EDT 2000
+# Date:		Wed Oct 25 22:35:09 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/10/25 10:40:03 $
+#   $Date: 2000/10/26 10:29:11 $
 #   $RCSfile: autoinfo,v $
-#   $Revision: 1.21 $
+#   $Revision: 1.22 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -63,14 +63,14 @@ cd submission_directory; autoinfo
 
     The names listed in the subject field of the re-
     ceived message are processed recursively to form a
-    list of file names, and three other lists: a list of
-    illegal names, a list of unreadable names, and a
-    list of forbidden names.  The named files are re-
-    turned to the user in reply email, and any non-empty
-    lists of illegal, unreadable, or forbidden names are
-    returned in separate reply email.  With each forbid-
-    den name there is an error message explaining why
-    the name is forbidden.
+    list of files go be gotten, and three other lists: a
+    list of illegal names, a list of unreadable names,
+    and a list of forbidden names.  The files to be
+    gotten are returned to the user in reply email, and
+    any non-empty lists of illegal, unreadable, or for-
+    bidden names are returned in separate reply email.
+    With each forbidden name there is an error message
+    explaining why the name is forbidden.
 
     A name is first looked up on the `info_map', an
     array that can map a name.  If `info_map(name)' has
@@ -109,28 +109,46 @@ cd submission_directory; autoinfo
     and there is no response.
 
     Next the name is checked for legality.  If the name
-    begins with `.' or contains a `.' right after a `/'
-    it is considered to be illegal and is consigned to
-    the list of illegal names.
+    begins with `.' or `-', or contains a `.' or `-'
+    right after a `/', it is considered to be illegal,
+    and is consigned to the list of illegal names.
 
     Then the name is checked for readablilty.  If the
     name does not name a readable existing ordinary file
-    or directory within the in info directory, after
-    symbolic links are followed, the name is consigned
-    to the list of unreadable names.
+    or directory within the info directory, after sym-
+    bolic links are followed, the name is consigned to
+    the list of unreadable names.
 
     Next, if relative to the info directory the name
     names a directory D, the name is replaced by the
     names relative to the info directory of the read-
-    able components of the directory D (excluding
-    as usual components whose names begin with `.').
+    able ordinary file or directory components (after
+    symbolic links are followed) of the directory D
+    (excluding as usual components whose names begin
+    with `.').
 
-    At this point the name is known to name an ordinary
-    readable file within the info directory, and con-
-    tents of this file are returned in the reply mes-
-    sage.  If this file contains a line beginning with
-    `From ', the line is prefixed with `>' when it is
-    copied into the reply mail.
+    If the name gets to this point without having been
+    put on a list or replaced, it is put on the list
+    of files to be gotten.  The contents of these got-
+    ten files are returned in a reply message.  If a
+    gotten file contains a line beginning with `From ',
+    the line is prefixed with `>' when it is copied into
+    the reply mail.
+
+    This program prints the names of the gotten files on
+    a single line, and prints nothing if there are no
+    gotten files.
+
+    This program writes the date and the names of the
+    gotten files into the $gotten_file file.  The first
+    line of this file has the form:
+
+    		Date: current-date
+
+    and the rest of the lines, one for each gotten file,
+    have the form:
+
+    		File: file-name
 
     If something goes very wrong, such as finding that
     the `$received_file' file is not readable, this
@@ -159,7 +177,7 @@ read_header $received_ch
 switch [llength $message_subject] {
 
     0		{
-	error "No `Subject:' field in message"
+	error "No or empty `Subject:' field in message"
     }
 
     default	{
@@ -175,7 +193,7 @@ switch [llength $message_subject] {
 if { [blank_body $received_ch] == "no" } {
     reply -all \
           "ERROR while reading requesting email:" \
-          "    Non-blank body in message."
+          "    Non-blank body in message." \
 	  "" \
 	  "THIS REQUEST (see below) IGNORED" \
 	  "YOU MUST RESUBMIT" 
@@ -242,7 +260,7 @@ proc info_expand { name } {
 
     set file $info_directory/$name
 
-    if { [regexp {(^|/)\.} $name] } {
+    if { [regexp {(^|/)(\.|-)} $name] } {
     	lappend illegals $name
     } elseif { ! [file readable $file] } {
         lappend unreadables $name
@@ -270,7 +288,7 @@ set lines ""
 
 if { $forbiddens != "" } {
     lappend lines \
-	    "The following file names are forbidden:"
+	    "Some requested file names are forbidden:"
     foreach item $forbiddens {
 	lappend lines \
 		"    [lindex $item 0]: [lindex $item 1]"
@@ -312,7 +330,7 @@ if { $lines != "" } {
 	send_reply
     } else {
 	lappend lines \
-		"Requested files will be returned in\
+		"OK requested files will be returned in\
 		 a subsequent message."
 	eval compose_reply -errors $lines
 	send_reply -notfinal
@@ -340,9 +358,9 @@ if { $ok_names != "" } {
 
     set dashes "---<>--<>---<>--<>---<>-----"
 
-    foreach file $ok_names {
-	puts $reply_ch "$dashes $file:"
-	set file_ch [open $info_directory/$file r]
+    foreach name $ok_names {
+	puts $reply_ch "$dashes $name:"
+	set file_ch [open $info_directory/$name r]
 	while { "yes" } {
 	    set line [gets $file_ch]
 	    if { [eof $file_ch] } break
@@ -363,8 +381,8 @@ if { [file exists $gotten_file] } {
 }
 set gotten_ch [open $gotten_file w]
 puts $gotten_ch "Date: [clock format [clock seconds]]"
-foreach file $ok_names {
-    puts $gotten_ch "File: $file"
+foreach name $ok_names {
+    puts $gotten_ch "File: $name"
 }
 close $gotten_ch
 
