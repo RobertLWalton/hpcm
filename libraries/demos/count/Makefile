@@ -1,7 +1,7 @@
 # Makefile for the `count' Demonstration Problem
 #
 # File:		Makefile
-# Date:		Wed Feb 13 08:43:49 EST 2002
+# Date:		Fri Feb 15 15:40:55 EST 2002
 #
 # Exactly ONE of the four files count.c (C), count.cc
 # (C++), count.p (Pascal), or count.java (Java) should
@@ -15,15 +15,16 @@
 #			`count' by running gcc on
 #			count.c, or g++ on count.cc, or
 #			p2c on count.p, or javac on
-#			count.java, depending upon which
+#			count.java, or hpcm_clisp on
+#			count.lsp depending upon which
 #			of count.c, count.cc, count.p,
-#			or count.java exist.  Also makes
-#			a shell script named `count' for
-#			count.java and count.lsp files.
-#			Does nothing if `count' is more
-#			up to date than count.c,
-#			count.cc, count.p, count.java,
-#			or count.lsp.
+#			count.java, or count.lsp exist.
+#			Also makes a shell script named
+#			`count' for count.java and
+#			count.lsp files.  Does nothing
+#			if `count' is more up to date
+#			than count.c, count.cc, count.p,
+#			count.java, or count.lsp.
 #
 #	make count.out	Makes `count' as above and
 #			then runs it with standard
@@ -44,7 +45,8 @@
 #	make clean	Removes `count', count.out, and
 #			other intermediate files that
 #			might exist, such as `core',
-#			`count.class', or `count.p2c'.
+#			`count.class', `count.p2c', or
+#			count.fas.
 
 
 .SUFFIXES:
@@ -78,11 +80,12 @@ default:	count.out
 	chmod a+rx $*
 
 .lsp:
-	rm -f $* core
+	rm -f $* $*.fas $*.lib core
+	hpcm_clisp -c $*.lsp
 	echo >$* '#!/bin/sh'
 	echo >>$* \
-	 "exec `which hpcm_clisp` -I $*.lsp"
-	chmod a+r $*.lsp
+	 "exec `which hpcm_clisp` -I $*.fas"
+	chmod a+r $*.fas
 	chmod a+rx $*
 
 # hpcm_sandbox below may execute `count' as a special
@@ -110,7 +113,8 @@ submit:		count.out
 
 #
 clean:
-	rm -f count *.class count.p2c core count.out
+	rm -f count *.class count.p2c core count.out \
+	      count.fas count.lib
 
 
 # Author:	walton@deas.harvard.edu
@@ -122,6 +126,6 @@ clean:
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/02/13 15:55:17 $
+#   $Date: 2002/02/15 20:54:18 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.20 $
+#   $Revision: 1.21 $

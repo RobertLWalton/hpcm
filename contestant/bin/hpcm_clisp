@@ -4,7 +4,7 @@
 #
 # File:		hpcm_clisp
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Wed Feb 13 10:39:18 EST 2002
+# Date:		Fri Feb 15 15:48:01 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/02/13 16:02:18 $
+#   $Date: 2002/02/15 20:52:32 $
 #   $RCSfile: hpcm_clisp,v $
-#   $Revision: 1.4 $
+#   $Revision: 1.5 $
 
 d=`dirname $0`
 
@@ -31,6 +31,7 @@ hpcm_clisp [input-file [output-file]]
 hpcm_clisp t
 hpcm_clisp -i load-file -x s-expression
 hpcm_clisp -I load-file
+hpcm_clisp -c load-file
 
     Execute COMMONLISP interpreter.  If input-file is
     given, it replaces terminal input, and if output-
@@ -56,11 +57,19 @@ hpcm_clisp -I load-file
     If -I load-file is given, the load-file is loaded
     and the (main) function is called, and the only
     output is that printed by this (main) function.
+
+    If -c load-file is given, the load-file is compiled
+    to produce a *.fas compiled file that may be loaded
+    with -i or -I.  Other files, such as *.lib files,
+    may be produced for use by the compiler.
 "
     	exit 1
 	;;
     "")
 	exec clisp -q -i $d/hpcm_clisp.lsp
+	;;
+    -c)
+        exec clisp -q -c "$2"
 	;;
     -i)
         exec clisp -q "$@"
