@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Jan 12 11:30:05 EST 2001
+# Date:		Mon Jan 15 11:24:28 EST 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/01/12 16:30:38 $
+#   $Date: 2001/01/15 16:35:17 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.15 $
+#   $Revision: 1.16 $
 
 # See STATUS file for description of versions.
 #
@@ -59,7 +59,7 @@ distributable.files:
 	@sed <File_List -n \
 	     -e '/^[a-z][a-z]*		*/s///p'
 
-non-distributable.files:
+non_distributable.files:
 	@sed <File_List -n \
 	     -e '/^N[a-z][a-z]*		*/s///p'
 
@@ -67,39 +67,66 @@ all.files:
 	@sed <File_List -n \
 	     -e '/^N*[a-z][a-z]*		*/s///p'
 
+# Make MD5 Signatures File:
+#
+HPCM_MD5_Signatures:	signatures_header \
+			distributable_files_${VERSION} \
+		    non_distributable_files_${VERSION}
+	rm -f HPCM_MD5_Signatures
+	cat signatures_header >  HPCM_MD5_Signatures
+	echo ============== Date of Signatures: \
+	     "`date`" >>  HPCM_MD5_Signatures
+	cd ..; \
+	   md5sum `cat \
+	      hpcm/distributable_files_${VERSION} \
+	      hpcm/non_distributable_files_${VERSION} \
+	            ` \
+	      >>  hpcm/HPCM_MD5_Signatures
+
+# Check MD5 Signatures
+#
+md5_check:
+	cd ..; \
+	   sed < hpcm/HPCM_MD5_Signatures \
+	       -e '1,/^=====/'d | \
+	       md5sum --check | \
+	       grep -v '^[^ 	]*: OK$$'
+		
+
 # Make tar files.
 #
-tar:	cleantar hpcm-${VERSION}.tar \
-        hpcm-non-distributable-${VERSION}.tar
+tar:	cleantar hpcm_${VERSION}.tar \
+        hpcm_non_distributable_${VERSION}.tar
 
-hpcm-${VERSION}.tar:	distributable-files-${VERSION}
-	rm -f hpcm-${VERSION}.tar
-	cd ..; tar cf hpcm/hpcm-${VERSION}.tar \
-	   --files-from \
-	   hpcm/distributable-files-${VERSION}
+hpcm_${VERSION}.tar:	HPCM_MD5_Signatures \
+                        distributable_files_${VERSION}
+	rm -f hpcm_${VERSION}.tar
+	cd ..; tar cf hpcm/hpcm_${VERSION}.tar \
+	   HPCM_MD5_Signatures --files-from \
+	   hpcm/distributable_files_${VERSION}
 
-hpcm-non-distributable-${VERSION}.tar:	\
-		non-distributable-files-${VERSION}
-	rm -f hpcm-non-distributable-${VERSION}.tar
+hpcm_non_distributable_${VERSION}.tar:	\
+		non_distributable_files_${VERSION}
+	rm -f hpcm_non_distributable_${VERSION}.tar
 	cd ..; tar cf \
-	   hpcm/hpcm-non-distributable-${VERSION}.tar \
+	   hpcm/hpcm_non_distributable_${VERSION}.tar \
 	   --files-from \
-	   hpcm/non-distributable-files-${VERSION}
+	   hpcm/non_distributable_files_${VERSION}
 
-distributable-files-${VERSION}:	File_List Makefile
-	rm -f distributable-files-${VERSION}
+distributable_files_${VERSION}:	File_List Makefile
+	rm -f distributable_files_${VERSION}
 	make --no-print-directory \
 	     distributable.files \
 	     | sed -e 's/^\./hpcm/' \
-	     > distributable-files-${VERSION}
+	     > distributable_files_${VERSION}
 
-non-distributable-files-${VERSION}:	\
+non_distributable_files_${VERSION}:	\
 				File_List Makefile
-	rm -f non-distributable-files-${VERSION}
+	rm -f non_distributable_files_${VERSION}
 	make --no-print-directory \
-	     non-distributable.files \
+	     non_distributable.files \
 	     | sed -e 's/^\./hpcm/' \
-	     > non-distributable-files-${VERSION}
+	     > non_distributable_files_${VERSION}
 
 cleanall:
 	for x in `find . -name Makefile -print`; \
@@ -110,7 +137,8 @@ cleanall:
 clean:	cleantar
 
 cleantar:
-	rm -f distributable-files-${VERSION} \
-	      non-distributable-files-${VERSION} \
-	      hpcm-${VERSION}.tar \
-	      hpcm-non-distributable-${VERSION}.tar
+	rm -f HPCM_MD5_Signatures \
+	      distributable_files_${VERSION} \
+	      non_distributable_files_${VERSION} \
+	      hpcm_${VERSION}.tar \
+	      hpcm_non_distributable_${VERSION}.tar
