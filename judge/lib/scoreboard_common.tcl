@@ -5,7 +5,7 @@
 #
 # File:		scoreboard_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Feb  8 11:46:12 EST 2002
+# Date:		Fri Feb  8 19:45:40 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/02/08 16:44:42 $
+#   $Date: 2002/02/09 02:45:04 $
 #   $RCSfile: scoreboard_common.tcl,v $
-#   $Revision: 1.31 $
+#   $Revision: 1.32 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -471,9 +471,9 @@ proc compute_scoreboard_list {} {
     set max_time_score 999999999
     foreach submitter $submitters {
 
-	# Compute total time score, number of problems cor-
-	# rect, modifier (f or n), total number of submis-
-	# sions.
+	# Compute total time score, number of problems
+	# correct, modifier (f or n), total number of
+	# submissions.
 	#
 	set time_score 0
 	set problems_correct 0
@@ -539,7 +539,7 @@ proc compute_scoreboard_list {} {
 		    incr submissions
 		}
 
-		if { [regexp {..i} $score] } {
+		if { [regexp {..n} $score] } {
 		    set problem_modifier n
 		}
 	    }
@@ -549,9 +549,6 @@ proc compute_scoreboard_list {} {
 	    #
 	    if { $problem_time != "" } {
 
-		set c [expr { $problem_incorrect + 1 }]
-		set problem_score \
-		    "[format_time $problem_time]$c"
 		set problem_increment \
 		    [expr { ( $problem_time \
 			      + $scoreboard_penalty \
@@ -567,22 +564,23 @@ proc compute_scoreboard_list {} {
 		}
 		incr problems_correct
 
-	    } elseif { $problem_incorrect != 0 } {
-		set problem_score \
-		    "..../$problem_incorrect"
-	    } else {
-		set problem_score "......"
 	    }
 
+	    # If problem has non-final submission, set
+	    # submitter modifier to "N".
+	    #
 	    if { $problem_modifier == "n" } {
-		set problem_score "*$problem_score"
 		set modifier n
 	    }
 
 	    # Append problem score to problem_scores
 	    # list.
 	    #
-	    lappend problem_scores $problem_score
+	    lappend problem_scores \
+	            [format_problem_score \
+	    		 $problem_time \
+			 $problem_incorrect \
+			 $problem_modifier]
 	}
 
 	# Add score list item to score list.
@@ -608,28 +606,58 @@ proc compute_scoreboard_list {} {
 # Scoreboard Functions
 # ---------- ---------
 
-# Return a time in 6 characters or less, the last
-# character indicating unit.  The format is either
+# Return the printed score of a problem, given the
+# problem time (which is "" if the problem was never
+# correct), the number of incorrect submissions, and
+# the modifier which is "n" if unreviewed non-final
+# scores exist.
+#
+# The time if present is encoded in 6 characters or
+# less, the last character indicating unit.  The format
+# is one of:
 #
 #	MM:SSs		s = denotes seconds
 #	HH:MMm		m = denotes minutes
 #	DD:HHh		h = denotes hours
 #	DDDDDd		d = denotes days
 #
-proc format_scoreboard_time { time } {
-    set MM [expr { $time / 60 }]
-    set SS [expr { $time - 60 * $MM } ] 
-    set HH [expr { $MM / 60 }]
-    set MM [expr { $MM - 60 * $HH }]
-    set DD [expr { $HH / 24 }]
-    set HH [expr { $HH - 24 * $DD }]
-    if { $DD > 99 } {
-    	return "${DD}d"
-    } elseif { $DD > 0 } {
-    	return "[format {%d:%02d} $DD $HH]h"
-    } elseif { $HH > 0 } {
-    	return "[format {%d:%02d} $HH $MM]m"
+# If the time is not present, `....' is used to repre-
+# sent the missing time.  If the number of submissions
+# is not 0, this is appended to the returned score.  If
+# the modifier is "n", "*" is prefixed to the score.
+#
+proc format_problem_score { time incorrect modifier } {
+
+    if { $time != "" } {
+
+	set MM [expr { $time / 60 }]
+	set SS [expr { $time - 60 * $MM } ] 
+	set HH [expr { $MM / 60 }]
+	set MM [expr { $MM - 60 * $HH }]
+	set DD [expr { $HH / 24 }]
+	set HH [expr { $HH - 24 * $DD }]
+	if { $DD > 99 } {
+	    set score "${DD}d"
+	} elseif { $DD > 0 } {
+	    set score "[format {%d:%02d} $DD $HH]h"
+	} elseif { $HH > 0 } {
+	    set score "[format {%d:%02d} $HH $MM]m"
+	} else {
+	    set score "[format {%d:%02d} $MM $SS]s"
+	}
+
+	incr incorrect 1
+	set score [format_time $problem_time]$incorrect
+
+    } elseif { $incorrect != 0 } {
+	set score ..../$incorrect
     } else {
-    	return "[format {%d:%02d} $MM $SS]s"
+	set score ......
     }
+
+    if { $modifier == "n" } {
+	set score *$score
+    }
+
+    return $score
 }
