@@ -2,7 +2,7 @@
 #
 # File:		scoring_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Feb  8 00:00:55 EST 2003
+# Date:		Wed Feb 12 01:55:24 EST 2003
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2003/02/08 06:15:53 $
+#   $Date: 2003/02/12 07:07:33 $
 #   $RCSfile: scoring_common.tcl,v $
-#   $Revision: 1.40 $
+#   $Revision: 1.41 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -301,15 +301,18 @@ proc compute_score_and_proof_arrays { args } {
 }
 
 # Function to do the common work of the above functions.
-# Array is the array to compute, line is the input line,
-# and name is a description of the line for error mes-
-# sages.
+# Array is the array to compute, instructions is the
+# input line or scoring_instructions variable value,
+# and name is a description of the instructions for
+# error messages.
 #
-proc compute_scoring_array { xxx_array line name } {
+proc compute_scoring_array \
+	{ xxx_array instructions name } {
 
-    if { [catch {llength $line}] } {
+    if { [catch {llength $instructions}] } {
         error "scoring instructions or scorediff output\
-	       first line is not a TCL list:\n $line"
+	       first line is not a TCL\
+	       list:\n$instructions"
     }
 
     upvar $xxx_array array
@@ -319,7 +322,7 @@ proc compute_scoring_array { xxx_array line name } {
     }
 
     set state type
-    foreach item $line {
+    foreach item $instructions {
 	switch $state {
 	    type {
 		set array($item) $item
@@ -736,6 +739,11 @@ proc compute_solution_files { } {
 		    }] } {
 	    error "Cannot read $file_files"
 	}
+
+	if { [catch { llength $files_value }] } {
+	    error "$files_file file is not a TCL list"
+	}
+
     } else {
 	if { $submitted_extension == "" } {
 	    error "No extension in message subject"
@@ -808,10 +816,18 @@ proc process_proof { proof processed_commands } {
     set column [lindex $proof 3]
     incr column
 
+    if { $process_proof_number > $number } {
+        error "Proof out of sequence,\
+	       file: $process_proof_file,\
+	       last line read is number\
+	       $process_proof_number,\nproof\
+	       is: $proof"
+    }
     while { $process_proof_number < $number } {
         set process_proof_line [gets $process_proof_ch]
 	if { [eof $process_proof_ch] } {
-	    set process_proof_line END-OF-FILE
+	    set process_proof_line \
+	        "<<---END-OF-FILE--->>"
 	}
 	incr process_proof_number
     }
@@ -1031,7 +1047,7 @@ proc execute_response_commands \
 		    set f $sdir/$file
 		    if { [file exists $f] } {
 		        lappend processed_commands \
-			        [list BAR $file]
+			        [list BAR $file:]
 			lappend processed_commands \
 				[list INPUT $f]
 		    }
