@@ -11,9 +11,9 @@
  * RCS Info (may not be true date or author):
  *
  *   $Author: hc3 $
- *   $Date: 2000/10/02 10:29:20 $
+ *   $Date: 2000/10/02 13:32:41 $
  *   $RCSfile: hpcm_sendmail.c,v $
- *   $Revision: 1.5 $
+ *   $Revision: 1.6 $
  */
 
 #include <stdlib.h>
@@ -311,41 +311,15 @@ void check_program
     }
 }
 
-/* Copy src string to des string as per strcpy,
-   but strip whitespace from beginning and end
-   of result.
-UNUSED?
-*/
-void trimcpy ( char * des, char * src )
-{
-    char c;
-    char * end;
-
-    while ( ( c = * src ++ ) && isspace ( c ) );
-
-    end = des;
-
-    while ( c )
-    {
-    	* des ++ = c;
-	if ( ! isspace ( c ) ) end = des;
-	c = * src ++;
-    }
-
-    * end = 0;
-}
-
 /* Main program.
 */
 int main ( int argc, char ** argv )
 {
 
-    /* Real and effective user and group id's. */
+    /* Original real and effective user ids. */
 
     uid_t ruid = getuid ();
     uid_t euid = geteuid ();
-    gid_t rgid = getgid ();
-    gid_t egid = getegid ();
 
 #   define MAXLEN 400
 
@@ -396,7 +370,6 @@ int main ( int argc, char ** argv )
      char signature	[MAXLEN];
 
 
-
     /* If there are any arguments, print doc. */
 
     if ( argc > 1 )
@@ -408,9 +381,13 @@ int main ( int argc, char ** argv )
     /* Compute rcfilename =
           "~/.hpcm_contest/secure/hpcm_sendmail.rc"
     */
+    if ( setreuid (-1, ruid) < 0 )
+	errno_exit ( "set ruid" );
     {
 	char * p;
 	char * home = getenv ( "HOME" );
+	int length;
+	char contestname [MAXLEN];
 
 	if ( home == NULL ) {
 	    fprintf ( stderr,
@@ -421,15 +398,38 @@ int main ( int argc, char ** argv )
 	}
 
 	if ( strlen ( home )
-	     > sizeof ( rcfilename ) - 100 )
+	     > sizeof ( contestname ) - 100 )
 	    too_big_exit
 		( "HOME environment variable" );
-	strcpy ( rcfilename, home );
+	strcpy ( contestname, home );
 
-	p = rcfilename + strlen ( rcfilename );
-	strcpy ( p, "/.hpcm_contest/secure/"
-                    "hpcm_sendmail.rc" );
+	p = contestname + strlen ( contestname );
+	strcpy ( p, "/.hpcm_contest" );
+	length = readlink ( contestname,
+			    rcfilename,
+		            sizeof ( rcfilename ) );
+	if ( length < 0 )
+	    errno_exit ( ".hpcm_contest link name" );
+	if ( length == 0 ) {
+	    fprintf ( stderr,
+		      "empty .hpcm_contest link"
+		      "name\n" );
+	    exit ( 1 );
+	}
+	if ( length > sizeof ( rcfilename ) - 50 )
+	    too_big_exit
+		( ".hpcm_contest target name" );
+	strcpy ( rcfilename + length,
+		 "/secure/hpcm_sendmail.rc" );
+	if ( rcfilename[0] != '/' ) {
+	    fprintf ( stderr,
+		      "non-absolute .hpcm_contest link"
+		      "name\n" );
+	    exit ( 1 );
+	}
     }
+    if ( setreuid (-1, euid) < 0 )
+	errno_exit ( "set euid" );
 
     /* Read rc file and save parameters.
     */

@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/10/02 12:15:34 $
+#   $Date: 2000/10/02 13:32:40 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.6 $
+#   $Revision: 1.7 $
 
 all:	hpcm_sandbox hpcm_sendmail modes
 
@@ -32,6 +32,7 @@ hpcm_sendmail:	../../secure/src/hpcm_sendmail.c
 	(cd ../../secure/src; make hpcm_sendmail)
 	cp -p ../../secure/src/hpcm_sendmail .
 	chmod 555 hpcm_sendmail
+	chmod u+s hpcm_sendmail
 
 modes:
 	chmod a+rx TRASH_ACCOUNT TRASH_PROBLEMS \
