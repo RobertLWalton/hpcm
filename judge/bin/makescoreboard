@@ -4,7 +4,7 @@
 #
 # File:		makescoreboard
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Oct 27 06:36:46 EDT 2001
+# Date:		Sat Oct 27 10:04:00 EDT 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/10/27 12:07:07 $
+#   $Date: 2001/10/27 14:02:33 $
 #   $RCSfile: makescoreboard,v $
-#   $Revision: 1.15 $
+#   $Revision: 1.16 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -55,6 +55,11 @@ makescoreboard { start | status | stop | update } \\
     The $scorefinder_output_file file is used as input\
     						   by
     the `scoreboard' program to produce scoreboards.
+    To avoid conflicts between the `start' and `update'
+    commands, this program adds a `+' to the end of the
+    name $scorefinder_output_file when running the\
+	update
+    command.
 
     This program ignores signals when computing score-
     boards, and terminates without error on a signal
@@ -63,42 +68,45 @@ makescoreboard { start | status | stop | update } \\
     If called with an `update' command, this program
     processes the scoreboard instructions just once
     and then exits immediately.
-
+
     If called with the `start' command, this program
     writes its process ID of the $scoreboard_pid_file\
     		file
-    in the judging directory, and begins to rerun itself
-    at periodic intervals.  But if the\
-    		$scoreboard_pid_file
-    file already exists, AND the process ID it contains
-    is valid, this program prints information about the
-    ID'ed process and does nothing else.
-
-    With the `start' command, this program first makes
-    scoreboards as per the `update' command, and then
-    this program reruns at intervals determined by the 
-    `scoreboard_interval' global variable.  After every
-    interval, this program checks the files input during
-    the last making of a scoreboard to see if any have
-    changed since the last run.  If not, this program
-    does nothing; otherwise the program makes a new
-    scoreboard remakes the scoreboard as per `update'.
-    The $judging_parameters_file file in the judging\
+    in the judging directory, and begins to reprocess
+    the scoreboard instructions at periodic intervals.
+    But if the $scoreboard_pid_file file already\
+    		exists, AND
+    the process ID it contains is valid, this program
+    prints information about the ID'ed process and does
+    nothing else.
+
+    The first time the `start' command processes the
+    scoreboard instructions, it does so just like the
+    `update' command.  Then this program resumes at
+    intervals determined by the `scoreboard_interval'
+    global variable.  After every interval, this
+    program checks to see if any inputs to the last run
+    have been changed, or any outputs have been deleted,
+    and if yes, this program reruns the scoreboard in-
+    structions.  The inputs checked for change include
+    the $judging_parameters_file file in the judging\
     					directory
-    and the parameter files listed in the arguments are
-    among the files checked for change, and these are
-    re-`sourced' when they change.  Before checking
-    files for change, the $score_flag_file flag is
-    checked, and if present, the\
-    			$scorefinder_output_file
-    file is remade by calling `scorefinder'.
+    and the parameter files listed in the arguments.
+    Before checking files for change, the\
+    		$score_flag_file
+    flag is checked, and if present, the `scorefinder'
+    program is called to remake the\
+    	$scorefinder_output_file
+    file.  This is also done if the\
+    	$scorefinder_output_file
+    no longer exists.
 
     If called with the `stop' command, this program does
     nothing but send kill signals to the process whose
     ID is listed in the $scoreboard_pid_file file, and
     then deletes the file.  While doing this it outputs
     information about its progress.
-
+
     If called with the `status' command, this program
     just outputs information about the status of any
     process started by `makescoreboard start'.
@@ -111,31 +119,33 @@ makescoreboard { start | status | stop | update } \\
     reruns for the `start' command, this program logs
     errors in the log directory."
 
+# } to balance extra left bracket in documentation.
+
 # Print documentation if illegal (or -doc) first
 # argument.
 #
 set command [lindex $argv 0]
 if { ! [regexp {^(update|start|status|stop)$} $command] } {
     puts $document
+    exit 1
 }
 
 # Constant equal to 256 spaces.
 #
 set space "        "
-set space "$space$space$
-set space "$space$space$
-set space "$space$space$
-set space "$space$space$
-set space "$space$space$
+set space "$space$space"
+set space "$space$space"
+set space "$space$space"
+set space "$space$space"
+set space "$space$space"
 
-if { $scoreboard_width > 256 } {
-    error "scoreboard width > 256"
-}
-
-# Some abbreviations.
+# Compute file names.
 #
 set finder_file \
     $judging_directory/$scorefinder_output_file
+if { $command == "update" } {
+    set finder_file $finder_file+
+}
 set pid_file \
     $judging_directory/$scoreboard_pid_file
 
@@ -149,7 +159,7 @@ foreach name [info globals scoreboard_*] {
 }
 
 # Return `yes' if a file in the mtime_list has changed.
-# Otherwise returns `no'.
+# Otherwise return `no'.
 #
 # The mtime_file list is a list of items each of the
 # format:
@@ -157,22 +167,30 @@ foreach name [info globals scoreboard_*] {
 #	{ file-mtime file-name }
 #
 # The file-mtime can be a `clock seconds' value, or
-# `none' if the file did not exist.  A file changes is
-# it appears or disappears or has a larger mtime than
-# it did.
+# `none' if the file did not exist, or `out' if the
+# file was output.  A file changes if it appears or
+# disappears or now has a larger mtime than its file-
+# mtime clock seconds value.
 #
 # If mtime_list has the special value `changed', this
 # function always returns `yes'.
 #	
 proc file_changed { mtime_list } {
+
     if { $mtime_list == "changed" } {
         return yes
     }
+
     foreach item $mtime_list {
        set mtime [lindex $item 0]
        set name  [lindex $item 1]
+
        if { $mtime == "none" } {
            if { [file readable $name] } {
+	       return yes;
+	   }
+       } elseif { $mtime == "out" } {
+           if { ! [file exists $name] } {
 	       return yes;
 	   }
        } else {
@@ -199,7 +217,10 @@ set parameter_mtime ""
 # restore values of scoreboard_ variables listed in
 # parameters_array.
 #
-proc process_arguments {} } {
+set LB "{"
+# } to balance left bracket in last line
+#
+proc process_arguments {} {
 
     global judging_directory judging_parameters_file \
            parameter_mtime_list parameters_array \
@@ -220,14 +241,16 @@ proc process_arguments {} } {
     set parameter_mtime_list ""
 
     set pf $judging_directory/$judging_parameters_file
-    if { $parameter_mtime_list != "changed" } { source $pf }
+    if { $parameter_mtime_list != "changed" } {
+        source $pf
+    }
     set mtime [file mtime $pf]
     lappend parameter_mtime_list [list $mtime $pf]
     set parameter_mtime $mtime
 
-    foreach arg $argv {
-	if { [regexp "^{" $arg] } {
-	    set scoreboard_instructions $arg
+    foreach arg [lrange $argv 1 end] {
+	if { [regexp "^${LB}" $arg] } {
+	    set scoreboard_instructions [lindex $arg 0]
 	} else {
 	    source $arg
 	    set mtime [file mtime $arg]
@@ -278,6 +301,24 @@ set earliest_future_time ""
 #
 set last_parameters_mtime $parameters_mtime
 
+# Process parameter setting instruction.
+#
+proc set_parameter { instruction } {
+
+    global parameters_array
+
+    set name  [lindex $instruction 0]
+    set value [lindex $instruction 1]
+
+    if { ! [info exists parameters_array($name)] } {
+	error "$name is not a parameter name"
+    }
+
+    set value [unabbreviate $value]
+    global scoreboard_$name
+    set scoreboard_$name $value
+}
+
 # Process scoring instructions.
 #
 proc process_instructions {} {
@@ -286,45 +327,34 @@ proc process_instructions {} {
            file_mtime_list earliest_future_time \
 	   last_parameters_mtime parameters_mtime \
 	   finder_file judging_directory \
-	   score_flag_file
+	   score_flag_file parameters_array
     foreach name [array names parameters_array] {
 	global scoreboard_$name
     }
 
+    # Use a single `run time' in computations.
+    #
     set time [clock seconds]
 
     # Reinstall initial parameter values.
     #
     process_arguments
 
-    if { $file_mtime_list == "changed" \
+    # Recompute $finder_file if necessary.
+    #
+    if {    $file_mtime_list == "changed" \
+         || ! [file readable $finder_file]
          || [test_flag $score_flag_file] } {
 
-	set gotten ""
-	if { [regexp {^(|team)$} \
-	             $scoreboard_start_time] } {
-	    set gotten -gotten
-	}
-
-	# The following code ensures that two copies of
-	# scorefinder do not try to write the same file
-	# at once.  It is possible that while one copy
-	# is being written its filename will be deleted
-	# and another will be started.
-
 	make_signals_ignored
-	while { "yes" } {
-	    file delete -force -- $finder_file
-	    if { [create_file $finder_file] } break
-	    make_signals_default
-	    sleep 2
-	    make_signals_ignored
-	}
-	eval exec scorefinder $gotten \
-	     > $finder_file
+	file delete -force -- $finder_file
+	exec scorefinder -gotten > $finder_file
 	make_signals_default
     }
 
+    # If we have no reason to rerun scoreboard instruc-
+    # tions, return.
+    #
     if {    $last_parameters_mtime \
                >= $parameters_mtime \
 	 && ! [file_changed $file_mtime_list]
@@ -335,33 +365,47 @@ proc process_instructions {} {
 
     # Save abbreviations.
     #
-    set abbreviation_array(START)  scoreboard_start_time
-    set abbreviation_array(STOP)   scoreboard_stop_time
+    set abbreviation_array(START)  \
+        $scoreboard_start_time
+    set abbreviation_array(STOP)   \
+        $scoreboard_stop_time
     set abbreviation_array(FREEZE) \
-				 scoreboard_freeze_time
-    set abbreviation_array(NAME)   scoreboard_name
-    set abbreviation_array(TIME)   [clock format $time]
+	$scoreboard_freeze_time
+    set abbreviation_array(NAME)   \
+        $scoreboard_name
+    set abbreviation_array(TIME)   \
+        [clock format $time]
 
     # Ignore signals while processing instructions.
     #
     make_signals_ignored
 
-    set instructions $scoreboard_instructions
+    # Loop to process instructions for first pass.
+    #
+    # Instructions are stored as list to make computa-
+    # tion faster.
+    #
+    # Pass2 is called for every sequence of instructions
+    # beginning with an OUTPUT instruction and ending
+    # with an instruction other than OUTPUT.
+
+    set instructions [concat $scoreboard_instructions]
     set pc 0
     set end_pc [llength $instructions]
-    set out_pc -1
 
     set earliest_future_time ""
+    set last_parameters_mtime $parameters_mtime
+    set output_found no
 
     while { "yes" } {
 
         set instruction [lindex $instructions $pc]
+	set opcode [lindex $instruction 0]
 
-        if { ( $pc >= $end_pc \
-	       || $instruction == "OUTPUT" ) \
-	     && $out_pc >= 0 } {
+        if { ( $pc >= $end_pc || $opcode == "OUTPUT" ) \
+	     && $output_found } {
 	    if { $out_start != "" \
-	          || $time $out_start } {
+	         && $time < $out_start } {
 	        set update no
 	    }
 	    if {    $out_mtime != "" \
@@ -371,13 +415,14 @@ proc process_instructions {} {
 	    }
 
 	    pass2 $instructions $out_pc $pc $update
-
-	    if { $pc >= $end_pc } break
 	}
 
-	set opcode [lindex $instruction 0]
-	switch $opcode {
-	    OUTPUT {
+	if { $pc >= $end_pc } break
+	incr pc
+
+	switch $output_found-$opcode {
+	    no-OUTPUT -
+	    yes-OUTPUT {
 		set out_file  [lindex $instruction 1]
 		set out_start [lindex $instruction 2]
 		set out_stop  [lindex $instruction 3]
@@ -410,72 +455,88 @@ proc process_instructions {} {
 			    $out_stop
 		    }
 		}
-		if { [file readable $out_file] } {
+		if { [file exists $out_file] } {
+		    set update no
 		    set out_mtime [file mtime $out_file]
 		} else {
 		    set update yes
 		    set out_mtime ""
 		}
 	        set out_pc $pc
-	    	set update no
+		set output_found yes
 		lappend file_mtime_list \
 			[list out $out_file]
 	    }
 
-	    BLANK {}
+	    yes-SEND {}
+	    yes-GRANT_ACCESS {}
 
-	    BAR -
-	    LINE {
+	    yes-BLANK {}
+
+	    yes-BAR -
+	    yes-LINE {
 	    	if { $last_parameters_mtime \
 		     < $parameters_mtime } {
 		    set update yes
 		}
 	    }
 
-	    INPUT {
+	    yes-INPUT {
 		foreach in_file \
 		        [lrange $instruction 1 end] {
 		    set in_file \
 		        [file join $judging_directory \
 			           $in_file]
 		    if { [file readable $in_file] } {
-			if { $update == "no" \
-			     && [file mtime $in_file]
-				> $out_mtime } {
+			set mtime [file mtime $in_file]
+			if {    $out_mtime != "" \
+			     && $mtime > $out_mtime } {
 			    set update yes
 			}
 			lappend file_mtime_list \
-			        [list [file mtime \
-				            $in_file] \
-				      $in_file]
+			        [list $mtime $in_file]
 			break;
 		    } else {
 			lappend file_mtime_list \
-				[list del $in_file]
+				[list none $in_file]
 		    }
 		}
 	    }
-	    BOARD {
+	    yes-BOARD {
 	    	if { $last_parameters_mtime \
 		     < $parameters_mtime } {
 		    set update yes
 		}
 		if { [file readable $finder_file] } {
-		    if { $update == "no" \
-			 && [file mtime $finder_file] \
-			    > $out_mtime } {
+		    set mtime [file mtime $finder_file]
+		    if {    $out_mtime != "" \
+			 && $mtime > $out_mtime } {
 			set update yes
 		    }
-		    [list [file mtime $finder_file] \
-			  $finder_file]
+		    lappend file_mtime_list \
+		            [list $mtime $finder_file]
 		} else {
 		    lappend file_mtime_list \
-			    [list del $finder_file]
+			    [list none $finder_file]
 		}
 
 	    }
-	    SEND {}
-	    default {}
+	    no-SEND -
+	    no-GRANT_ACCESS -
+	    no-BLANK -
+	    no-BAR -
+	    no-LINE -
+	    no-INPUT -
+	    no-BOARD {
+	        error "`$instruction' appears before\
+		       OUTPUT instruction"
+	    }
+
+	    default {
+	        if { $output_found == "no" } {
+		    set_parameter $instruction
+		}
+	    }
 	}
     }
     make_signals_default
@@ -491,34 +552,64 @@ proc pass2 { instructions pc end_pc update } {
 
     set instructions $scoreboard_instructions
     set out_file [lindex [lindex $instructions $pc] 1]
-    set out_file $judging_directory/$out_file"
+    set out_file \
+        [file join $judging_directory $out_file]
 
     incr pc
     set contents ""
     set send no
-    set send_qualifier ""
+    set grant_access no
+
+    set bar ""
+    set w [expr { $scoreboard_width / 5 } ]
+    while { $w > 0 } {
+	set bar "$bar== =="
+	incr w -1
+    }
 
     while { $pc < $end_pc } {
-        set instruction [lindex $instructions $pc]
+	set instruction [lindex $instructions $pc]
 	incr pc
 	set opcode [lindex $instruction 0]
 	switch $opcode_$update {
 
-	    BLANK_yes {
-	        set contents "$contents\n"
-	    }
-	    BAR_yes {
-	        set w [expr { $scoreboard_width / 10 } ]
-		while { $w > 0 } {
-		    set contents "$contents========= "
-		    incr w -1
+	    SEND_yes {
+		set send_qualifier \
+		    [lindex $instruction 1]
+		set name [lindex $instruction 2]
+		if { $name == "" } {
+		    set name = addresses
 		}
+		if { ! [info exists scoreboard_$name] \
+						} {
+		   set send_addresses ""
+		} else {
+		   set send_addresses \
+		       [set scoreboard_$name]
+		}
+		set send yes
+	    }
+
+	    GRANT_ACCESS {
+		set grant_access yes
+	    }
+
+	    BLANK_yes {
 		set contents "$contents\n"
 	    }
+
+	    BAR_yes {
+		set contents "$contents$bar\n"
+	    }
+
 	    LINE_yes {
-	        set left   [lindex $instruction 1]
-	        set center [lindex $instruction 2]
-	        set right  [lindex $instruction 3]
+
+		if { $scoreboard_width > 256 } {
+		    error "scoreboard width > 256"
+		}
+		set left   [lindex $instruction 1]
+		set center [lindex $instruction 2]
+		set right  [lindex $instruction 3]
 
 		set left   [unabbreviate $left]
 		set center [unabbreviate $center]
@@ -528,58 +619,85 @@ proc pass2 { instructions pc end_pc update } {
 		incr left_end -1
 		set right_begin \
 		    [expr { $scoreboard_width - \
-		            [string length $right] }]
+			    [string length $right] }]
 		set center_length \
 		    [string length $center]
 		set center_begin  \
 		    [expr { ( $scoreboard_width \
-		              - $center_length ) / 2 }]
+			      - $center_length ) / 2 }]
 		set center_end \
 		    [expr { $center_begin \
-		            + $center_length - 1 }]
-		set contents "$contents$left"
+			    + $center_length - 1 }]
+
+		if { $left_end >= $scoreboard_width } {
+		    error "LINE left text too wide:\
+		           $left"
+		} else if { $right_end < 0 } {
+		    error "LINE right text too wide:\
+		           $right"
+		} else if { $center_begin < 0 \
+		            || $center_end \
+			       >= $scoreboard_width } {
+		    error "LINE center text too wide:\
+		           $center"
+		}
+
+		set line "$left"
+
 		set center_done no
-		set right_done no
-		if { $left_end < $center_begin \
-		     && $center_end < $right_begin } {
+		set right_done  no
+
+		if {    $center != ""
+		     && ( $left == "" \
+		          || $left_end + 2 \
+			     < $center_begin ) \
+		     && ( $right == "" \
+		          || $center_end + 2 \
+			     < $right_begin ) } {
 		    incr left_end 1
 		    incr center_begin -1
-		    set contents \
-		        "$contents[string \
-			              range $space \
-				      $left_end \
-				      $center_begin]"
-		    set contents "$contents$center"
+		    set line \
+			"$line[string \
+				  range $space \
+				  $left_end \
+				  $center_begin]"
+		    set line "$line$center"
 		    set center_done yes
 		    set left_end $center_end
 		}
-		if { $left_end < $right_begin } {
+		if { $right != ""
+		     && ( $left_end == -1 \
+		          || $left_end + 2 \
+			     < $right_begin ) } {
 		    incr left_end 1
 		    incr right_begin -1
-		    set contents \
-		        "$contents[string \
-			              range $space \
-				      $left_end \
-				      $right_begin]"
-		    set contents "$contents$right"
+		    set line \
+			"$line[string \
+				  range $space \
+				  $left_end \
+				  $right_begin]"
+		    set line "$line$right"
 		    set right_done yes
 		}
-		if { $center_done == "no" } {
+		if { $center != "" && \
+		     $center_done == "no" } {
 		    incr center_begin -1
-		    set contents \
-		        "$contents\n[string \
-			                range $space \
-					0 $center_begin]
-		    set contents "$contents$center\n"
+		    set line \
+			"$line\n[string \
+				    range $space \
+				    0 $center_begin]
+		    set line "$line$center"
 		}
-		if { $right_done == "no" } {
+		if { $right != "" \
+		     && $right_done == "no" } {
 		    incr right_begin -1
-		    set contents \
-		        "$contents\n[string \
-			                range $space \
-					0 $right_begin]
-		    set contents "$contents$right\n"
+		    set line \
+			"$line\n[string \
+				    range $space \
+				    0 $right_begin]
+		    set line "$line$right"
 		}
+		set contents "$contents$line\n"
 	    }
 
 	    INPUT_yes {
@@ -593,7 +711,7 @@ proc pass2 { instructions pc end_pc update } {
 					} {
 			    set c [read_entire_file \
 			    		$in_file]
-			    set contents "$contents$c"
+			    set contents "$contents$c\n"
 			}
 			break;
 		    }
@@ -603,7 +721,7 @@ proc pass2 { instructions pc end_pc update } {
 	        set parameters ""
 		foreach name \
 		        [array names parameters_array] {
-		    lappend \
+		    lappend parameters \
 		        [list $name \
 			      [set scoreboard_$name]]
 		}
@@ -622,11 +740,6 @@ proc pass2 { instructions pc end_pc update } {
 		}
 	        set contents "$contents$scoreboard\n"
 	    }
-	    SEND_yes {
-	    	set send_qualifier \
-		    [lindex $instruction 1]
-		set send yes
-	    }
 	    BLANK_no {}
 	    BAR_no {}
 	    LINE_no {}
@@ -634,17 +747,7 @@ proc pass2 { instructions pc end_pc update } {
 	    BOARD_no {}
 	    SEND_no {}
 	    default {
-		set name $opcode
-		set value [lindex $instruction 1]
-	        if { ! [info exists \
-		             parameters_array($name)] \
-			     } {
-		    error "$name is not a parameter\
-		           name"
-		}
-
-		set value [unabbreviate $value]
-		set scoreboard_$name $value
+		set_parameter $instruction
 	    }
 	}
     }
@@ -653,9 +756,12 @@ proc pass2 { instructions pc end_pc update } {
 	set ch [open $out_file w]
         puts -nonewline $ch $contents
 	close $ch
+	if { $grant_access } {
+	    grant_access $out_file
+	}
 
 	if { $send } {
-	    foreach to $scoreboard_addresses {
+	    foreach to $send_addresses {
 	        if { $send_qualifier != "" \
 	             && ! [regexp {<} $to] } {
 		    set to "<$to>"
@@ -670,6 +776,7 @@ proc pass2 { instructions pc end_pc update } {
 
 # Process command.
 #
+set saved_log_mode $log_mode
 set log_mode none
 switch $command {
 
@@ -687,15 +794,28 @@ switch $command {
 	     }
 	     file delete -force $pid_file
 	}
-	write_file $pid_file [current_pid]
 
 	set interval $scoreboard_interval
 
         process_instructions
 
+	write_file $pid_file [current_pid]
+	set log_mode $saved_log_mode
+
 	while { "yes" } {
 	    sleep $interval
-	    process_instructions
+	    set c 0
+	    while { "yes" } {
+	        incr c
+		if { $c < 5 } {
+		    if { ! [catch {
+		              process_instructions }] \
+			          } break
+		    sleep 10
+		} else {
+		    process_instructions
+		}
+	    }
 	}
     }
 
