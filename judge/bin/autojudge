@@ -5,7 +5,7 @@
 #
 # File:		autojudge
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Jan 15 10:31:01 EST 2001
+# Date:		Sun Jul 29 15:51:04 EDT 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/01/15 15:41:38 $
+#   $Date: 2001/07/29 20:18:42 $
 #   $RCSfile: autojudge,v $
-#   $Revision: 1.29 $
+#   $Revision: 1.30 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -51,6 +51,7 @@ cd submission_directory; autojudge
 	.test solution output file
 	the program binary (and .cerr file)
 	the .out file (and .err file)
+	the .score file
 	the $auto_score_file file
 	the $reply_file file, sometimes
 
@@ -101,8 +102,13 @@ cd submission_directory; autojudge
     If an executable binary file was made, this program
     makes a .out output file by using the $make_file,
     and captures any error output in a .err file.  Then
-    this program runs `autoscore' to produce an automa-
-    tic score in the $auto_score_file file.
+    this program runs `autoscore' to produce a .score
+    file and an automatic score in the $auto_score_file
+    file.  Any .score file will be not produced (and
+    even deleted if it exists) if the score can be
+    determined without it, i.e., if the score is deter-
+    mined by the .err file or if the .out file does not
+    exist or is empty.
 
     Lastly, this program may create a `$reply_file'
     and send it as email to the submitter.  It does this
@@ -122,7 +128,7 @@ cd submission_directory; autojudge
     action is necessary to generate this reply.
 
     This program prints information about its progress.
-
+
     Unless this program creates a $reply_file file that
     is intended to be the final reply to the submitter
     (because the score is `Completely Correct' or the
@@ -133,7 +139,7 @@ cd submission_directory; autojudge
     (e.g. tracker) that they should search for submis-
     sion directories for which the manualreply program
     should be called.
-
+
     Note that if the `autoscore' program writes the
     $auto_score_file file, that program will set the\
 					    score
