@@ -2,7 +2,7 @@
 //
 // File:	scorediff.cc
 // Authors:	Bob Walton (walton@deas.harvard.edu)
-// Date:	Sun Jul  1 03:14:51 EDT 2001
+// Date:	Wed Jul  4 07:47:18 EDT 2001
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: hc3 $
-//   $Date: 2001/07/01 16:58:54 $
+//   $Date: 2001/07/04 14:18:28 $
 //   $RCSfile: scorediff.cc,v $
-//   $Revision: 1.26 $
+//   $Revision: 1.27 $
 
 // This is version 2, a major revision of the first
 // scorediff program.  This version is more explicitly
@@ -47,7 +47,8 @@ char documentation [] =
 "\n"
 "    Returns on a single line a list of the types of\n"
 "    differences between the two files, followed by\n"
-"    lines that are `proofs' of these differences.\n"
+"    lines that contain `proofs' of these differ-\n"
+"    ences.\n"
 "\n"
 "    To find differences, the files are parsed into\n"
 "    non-blank `tokens', and successive tokens of the\n"
@@ -71,7 +72,7 @@ char documentation [] =
 "		these whitespaces do not match\n"
 "		exactly.\n"
 "\n"
-"		However, this difference is not re-\n"
+"		However, this difference is NOT re-\n"
 "		cognized if either following matching\n"
 "		token is a number with a decimal\n"
 "		point or exponent.\n"
@@ -107,7 +108,7 @@ char documentation [] =
 "		following the last new line for the\n"
 "		other token.\n"
 "\n"
-"		However, this difference is not re-\n"
+"		However, this difference is NOT re-\n"
 "		cognized if either following matching\n"
 "		token is a number with a decimal\n"
 "		point or exponent.\n"
@@ -138,7 +139,7 @@ char documentation [] =
 "\n"
 "    integer A R    Same as `float A R', but for two\n"
 "		matching number tokens, NEITHER of\n"
-"		which contains a a decimal point or\n"
+"		which contains a decimal point or\n"
 "		exponent.\n"
 "\n"
 "    decimal	Two matching numbers have different\n"
@@ -245,8 +246,8 @@ char documentation [] =
 "\n"
 "    For each kind of difference found in the two\n"
 "    files, the scorediff program outputs a `proof'\n"
-"    of the difference.  Proofs are output on proof-\n"
-"    lines that have the following syntax:\n"
+"    of the difference.  Proofs are output on lines\n"
+"    that have the following syntax:\n"
 "\n"
 "          line-proof ::=\n"
 "                    output-line-number\n"
@@ -262,7 +263,7 @@ char documentation [] =
 "                    `decimal' | `exponent' |\n"
 "                    `integer' absolute-difference\n"
 "                              relative-difference |\n"
-"                    `integer' absolute-difference\n"
+"                    `float'   absolute-difference\n"
 "                              relative-difference\n"
 "\f\n"
 "          absolute-difference ::=\n"
@@ -283,7 +284,7 @@ char documentation [] =
 "    are grouped together into one line-proof that\n"
 "    begins with the line numbers of the respective\n"
 "    lines.  Each line-proof is output on a line by\n"
-"    itself\n"
+"    itself.\n"
 "\n"
 "    There is a limit for each difference type to the\n"
 "    number of proofs of that type that will be out-\n"
@@ -311,13 +312,13 @@ char documentation [] =
 "        -float absolute-diff relative-diff N\n"
 "        -integer absolute-diff relative-diff N\n"
 "\n"
-"    and the program outputs only the first N `float'\n"
-"    or `integer' proofs that have an absolute or\n"
-"    relative difference larger than the values given\n"
-"    in the program option.  In these options the\n"
-"    differences may be omitted if they are zero and\n"
-"    the program argument following them does NOT\n"
-"    begin with a digit or decimal point.\n"
+"    and the program outputs only `float' or\n"
+"   `integer' proofs that have an absolute or rela-\n"
+"    tive difference larger than the values given in\n"
+"    the program option.  In these options the diff-\n"
+"    erences may be omitted if they are zero and the\n"
+"    program argument following them does NOT begin\n"
+"    with a digit or decimal point.\n"
 "\n"
 "    If N is the limit on the number of line-proofs\n"
 "    containing a `nonblank' proof, then after the\n"
@@ -335,6 +336,8 @@ enum token_type {
     NUMBER_TOKEN, EOF_TOKEN, WORD_TOKEN };
 
 struct file
+    // Information about one of the input files (output
+    // or test file).
 {
     ifstream stream;	// Input stream.
     char * filename;	// File name.
@@ -373,7 +376,15 @@ struct file
     //
     // If a word token is split, this information is
     // set so the next call to scan a token will return
-    // the remainder of the split token.
+    // the remainder of the split token.  To split a
+    // word token a `\0' is inserted at the end of the
+    // first result of the split, after recording the
+    // character being replaced in `remainder_c' below.
+    // Thus the reminder, or second result of the split,
+    // follows the first part of the split in the
+    // token[] member, except the remainder is missing
+    // its first character, which is saved in
+    // `remainder_c'.
     //
     int remainder_length;  // Length of remainder.
     			// 0 if no remainder.
@@ -593,7 +604,7 @@ void scan_token ( file & f )
 
     // Get rest of mantissa.
     //
-    while ( 1 ) {
+    while ( true ) {
         if ( isdigit ( c ) ) {
 	    if ( decimals >= 0 ) ++ decimals;
 	} else if ( c == '.' ) {
@@ -679,7 +690,7 @@ void scan_token ( file & f )
 //
 word:
 
-    while ( 1 ) {
+    while ( true ) {
         if (    isspace ( c )
 	     || isdigit ( c )
 	     || c == EOF ) break;
@@ -785,11 +796,14 @@ enum difference_type {
 // Difference data.
 //
 struct difference
+    // Information about one type of difference.
 {
     char *	name;
+    	// Name of difference type.
 
     bool	found;
-        // True if difference has been found.
+        // True if difference of this type has been
+	// found.
 
     unsigned	last_output_line;
     unsigned	last_test_line;
@@ -799,12 +813,17 @@ struct difference
        // has been output.
 
     unsigned	proof_limit;
-       // If zero, suppresses output of proofs.
-       // Decremented whenever non-zero and a
-       // proof is output whose line numbers do
-       // not equal those recorded above.
+       // If zero, suppresses output of proofs of this
+       // difference type.  Decremented conceptually at
+       // the end of a line in either file if a proof
+       // for a difference of this type has been output
+       // for that line.  In actual practice, the
+       // decrementing is not done till the next
+       // difference of this type is found.
 };
 
+// Information on the various differences found.
+//
 difference differences[] = {
     { "linebreak",	false, 0, 0, MAX_PROOF_LINES },
     { "spacebreak",	false, 0, 0, MAX_PROOF_LINES },
@@ -840,28 +859,50 @@ double integer_absdiff_limit	= 0.0;
 double integer_reldiff_limit	= 0.0;
 
 struct proof
+    // A description of one single proof to be output.
 {
     difference_type	type;
+        // Difference type.
+
     unsigned		output_token_end_column;
     unsigned		test_token_end_column;
+        // Column numbers.
+
     double		absdiff;
     double		reldiff;
+    	// Numeric differences for numeric difference
+	// types.
+
     proof *		next;
+        // Next proof in list of proofs on one proof
+	// line.
 };
 
 struct proof_line
+    // A description of one single line of proofs that
+    // is to be output.
 {
     unsigned		output_line;
     unsigned		test_line;
+        // Line numbers.
+
     proof *		proofs;
+        // First proof on this line.
+
     proof_line *	next;
+        // Next proof line to be output.
 };
 
 proof_line *	first_proof_line	= NULL;
 proof_line *	last_proof_line		= NULL;
-proof *		last_proof		= NULL;
+    // First and last proof lines being output.
 
-// Output a new proof.
+proof *		last_proof		= NULL;
+    // Last proof being output on last proof
+    // line being output.
+
+// Output a new proof.  Use current line and
+// column numbers.
 //
 inline void output_proof
 	( difference_type type,
@@ -935,6 +976,14 @@ inline void found_difference
 	      || absdiff > integer_absdiff_limit
 	      || reldiff > integer_reldiff_limit ) )
     {
+        // Conceptually, d.proof_limit is decremented
+	// at the end of a proof line containing an
+	// output of a proof of the given `type'.  But
+	// in practice, to reduce coding complexity,
+	// the decrementing is deferred until the next
+	// proof of this type is discovered, and then
+	// the decrementing is done here.
+	//
 	if ( d.last_output_line != 0
 	     && ( d.last_output_line != output.line
 	         ||
@@ -956,9 +1005,11 @@ inline void found_difference
 // into these variables iff the new differences are
 // larger than the previous values of these variables.
 //
-// Also calls found_difference for DECIMAL or EXPONENT
-// if the two number `decimals' or `has_exponent' file
-// members are unequal.
+// Also calls found_difference for DECIMAL, EXPONENT,
+// or SIGN if the two number `decimals' or `has_expo-
+// nent' file members are unequal, or the number signs
+// are unequal (where a sign is the first character of a
+// token if that is `+' or `-' and is `\0' otherwise).
 //
 // If there is no computable difference, calls found_
 // difference(NONBLANK) instead.  This happens if one of
@@ -1052,7 +1103,7 @@ int main ( int argc, char ** argv )
 
     // Process options.
 
-    while ( argc >= 3 && argv[1][0] == '-' )
+    while ( argc >= 4 && argv[1][0] == '-' )
     {
 
 	char * name = argv[1] + 1;
@@ -1062,23 +1113,24 @@ int main ( int argc, char ** argv )
 	{
 	    // special case.
 
-	    double absdiff_limit =
-		   isdigit ( argv[2][0] )
-		|| argv[2][0] == '.' ?
-	    	atof ( argv[2] ) : 0.0;
+	    double absdiff_limit = 0.0;
+	    double reldiff_limit = 0.0;
+
 	    if (    isdigit ( argv[2][0] )
 	         || argv[2][0] == '.' )
-		    ++ argv, -- argc;
+	    {
+		absdiff_limit = atof ( argv[2] );
+		++ argv, -- argc;
+		if ( argc < 3 ) break;
+	    }
 
-	    if ( argc < 3 ) break;
-
-	    double reldiff_limit =
-		   isdigit ( argv[2][0] )
-		|| argv[2][0] == '.' ?
-	    	atof ( argv[2] ) : 0.0;
 	    if (    isdigit ( argv[2][0] )
 	         || argv[2][0] == '.' )
-		    ++ argv, -- argc;
+	    {
+		reldiff_limit = atof ( argv[2] );
+		++ argv, -- argc;
+		if ( argc < 3 ) break;
+	    }
 
 	    if ( name[0] == 'f' )
 	    {
@@ -1090,8 +1142,6 @@ int main ( int argc, char ** argv )
 	    	integer_absdiff_limit = absdiff_limit;
 	    	integer_reldiff_limit = reldiff_limit;
 	    }
-
-	    if ( argc < 3 ) break;
 	}
         else if ( strcmp ( "doc", name ) == 0 )
 	    break;
@@ -1101,6 +1151,8 @@ int main ( int argc, char ** argv )
 	    if ( strcmp ( differences[i].name, name )
 	         == 0 ) break;
 	}
+
+	assert ( argc >= 3 );
 
     	if ( i < MAX_DIFFERENCE )
 	    differences[i].proof_limit
@@ -1121,7 +1173,8 @@ int main ( int argc, char ** argv )
     }
 
     // Print documentation and exit with error status
-    // unless there are exactly two program arguments.
+    // unless there are exactly two program arguments
+    // left.
 
     if ( argc != 3 )
     {
@@ -1150,6 +1203,17 @@ int main ( int argc, char ** argv )
 
 	// Terminate loop if we have output the last
 	// nonblank containing proof line.
+	//
+	// Conceptually we decrement nb.proof_limit at
+	// the end of a line in either file if a `non-
+	// blank' proof has been output for that line,
+	// but in practice the decrement is deferred
+	// until the next `nonblank' difference is
+	// discovered, which has not happened yet.  So
+	// we must compensate.
+	//
+	// Note that nb.proof_limit == 0 is treated as
+	// np.proof_limit == 1 for this test.
 
 	if ( nb.last_output_line != 0
 	     &&
@@ -1160,19 +1224,34 @@ int main ( int argc, char ** argv )
 	       nb.last_test_line != test.line ) )
 	    break;
 
+	// If both tokens are words and one is longer
+	// than the other, split the longer word.  This
+	// must be done before whitespace checks to get
+	// consistent column numbers in difference
+	// proofs.
+
+	if (    output.type == WORD_TOKEN
+	     && test.type   == WORD_TOKEN )
+	{
+	    if ( output.length < test.length )
+		split_word ( test, output.length );
+	    else if ( test.length < output.length )
+		split_word ( output, test.length );
+	}
+
         // Terminate loop if just one file has an
 	// EOF_TOKEN.
 
 	if (    output.type == EOF_TOKEN
-	     && test.type != EOF_TOKEN )
+	     && test.type   != EOF_TOKEN )
 	{
 	    found_difference ( EOF1 );
 	    done = true;
 	    break;
 	}
 	else
-	if (    test.type == EOF_TOKEN
-	     && output.type != EOF_TOKEN )
+	if (    output.type != EOF_TOKEN
+	     && test.type   == EOF_TOKEN )
 	{
 	    found_difference ( EOF2 );
 	    done = true;
@@ -1204,10 +1283,21 @@ int main ( int argc, char ** argv )
 
 		if ( * wp1 == * wp2 ) break;
 
+		// Come here if a difference in white-
+		// space has been detected.  `newlines'
+		// is the number of newlines scanned so
+		// far.
+
+		// Skip to just before next newline or
+		// string end in each whitespace.
+
 		while ( * wp1 && * wp1 != '\n' ) ++ wp1;
 		while ( * wp2 && * wp2 != '\n' ) ++ wp2;
 
-		if ( output.newlines == 0 )
+		assert ( output.newlines
+		         == test.newlines );
+
+		if ( newlines == output.newlines )
 		{
 		    bool output_is_float =
 		         output.type == NUMBER_TOKEN
@@ -1219,24 +1309,13 @@ int main ( int argc, char ** argv )
 			      || test.has_exponent );
 		    if (    ! output_is_float
 		         && ! test_is_float )
-		        found_difference ( WHITESPACE );
+			found_difference
+			    ( newlines == 0 ?
+			      WHITESPACE :
+			      BEGINSPACE );
 		}
 		else if ( newlines == 0 )
 			found_difference ( ENDSPACE );
-		else if ( newlines == output.newlines )
-		{
-		    bool output_is_float =
-		         output.type == NUMBER_TOKEN
-		         && ( output.decimals >= 0 
-			      || output.has_exponent );
-		    bool test_is_float =
-		         test.type == NUMBER_TOKEN
-		         && ( test.decimals >= 0 
-			      || test.has_exponent );
-		    if (    ! output_is_float
-		         && ! test_is_float )
-			found_difference ( BEGINSPACE );
-		}
 		else
 		    found_difference ( LINESPACE );
 	    }
@@ -1260,16 +1339,6 @@ int main ( int argc, char ** argv )
 	    {
 		found_difference ( NONBLANK );
 		break;
-	    }
-
-	    if ( output.type == WORD_TOKEN )
-	    {
-	        assert ( test.type == WORD_TOKEN );
-
-		if ( output.length < test.length )
-		    split_word ( test, output.length );
-		else if ( test.length < output.length )
-		    split_word ( output, test.length );
 	    }
 
 	    if ( output.column != test.column )
@@ -1299,16 +1368,7 @@ int main ( int argc, char ** argv )
 		if ( token_case )
 		    found_difference
 		        ( output.type != NUMBER_TOKEN ?
-			  CASE :
-			  output.decimals >= 0 ?
-			  FLOAT :
-			  test.decimals >= 0 ?
-			  FLOAT :
-			  output.has_exponent ?
-			  FLOAT :
-			  test.has_exponent ?
-			  FLOAT :
-			  INTEGER );
+			  CASE : FLOAT );
 	    }
 
 	    else if ( output.type == NUMBER_TOKEN )
@@ -1326,8 +1386,8 @@ int main ( int argc, char ** argv )
      	}
     }
 
-    // The loop is done, and differences are now
-    // recorded in memory.
+    // The file reading loop is done, and differences
+    // are now recorded in memory, ready for outputting.
 
     // Produce first output line listing all found
     // differences, regardless of the proofs to be
@@ -1362,6 +1422,8 @@ int main ( int argc, char ** argv )
         cout << pline->output_line << " "
              << pline->test_line;
 
+	// Output proofs within a proof line.
+
 	int last_output_column	= -1;
 	int last_test_column	= -1;
 
@@ -1391,6 +1453,7 @@ int main ( int argc, char ** argv )
 		cout << " " << p->reldiff;
 	    }
 	}
+
 	cout << endl;
     }
 
