@@ -2,7 +2,7 @@
 #
 # File:		display_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Sep 22 03:58:18 EDT 2001
+# Date:		Tue Sep 25 22:05:45 EDT 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/09/22 07:54:29 $
+#   $Date: 2001/09/26 02:19:55 $
 #   $RCSfile: display_common.tcl,v $
-#   $Revision: 1.17 $
+#   $Revision: 1.18 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -30,6 +30,7 @@
 #	File Cacheing
 #	Displaying Files
 #	Reply Functions
+#	Query Functions
 
 # Including this Code
 # --------- ---- ----
@@ -1418,4 +1419,68 @@ proc send_score_reply {} {
     write_file $manual_score_file $proposed_score
     set_flag $score_flag_file
     set manual_score $proposed_score
+}
+
+# Query Functions
+# ----- ---------
+
+# Create and mail a query to the judge.  Part of the
+# header is given as a single argument, which may
+# include several lines, each ending with a line feed.
+#
+proc send_query { header } {
+
+    global window_error window_prompt \
+    	   contest_directory
+
+    set i 0
+    while { "yes" } {
+	set filename "/tmp/manualreply-$i.email"
+        if { [create_file $filename] } break
+	incr i
+    }
+    set ch [open $filename w]
+    puts -nonewline $ch "$header\n\n"
+    close $ch
+
+    while { "yes" } {
+	edit_file $filename
+
+	set window_error ""
+
+	set window_prompt \
+	    "Do you want to send this to the judge? > "
+
+	display_window
+
+	if { [yes?] } {
+	    if { [catch {
+	          exec \
+		  $contest_directory/bin/hpcm_sendmail \
+		  < $filename } out] } {
+		puts "ERROR sending to judge:"
+		puts $out
+		continue?
+		set window_error "Message aborted!"
+	    } else {
+		set window_error \
+		    "Message sent to judge!"
+	    }
+	    break
+	} else {
+
+	    set window_prompt \
+		"Do you want to send edit it some\
+		 more? > "
+
+	    display_window
+
+	    if { [yes?] == "no" } {
+		set window_error "Message aborted!"
+		break
+	    }
+	}
+    }
+
+    file delete -force $filename
 }
