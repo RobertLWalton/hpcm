@@ -11,9 +11,9 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: hc3 $
-//   $Date: 2001/08/29 02:50:35 $
+//   $Date: 2001/08/29 02:54:20 $
 //   $RCSfile: scorediff.cc,v $
-//   $Revision: 1.35 $
+//   $Revision: 1.36 $
 
 // This is version 2, a major revision of the first
 // scorediff program.  This version is more explicitly
@@ -1558,8 +1558,15 @@ int main ( int argc, char ** argv )
 
 		if ( newlines == output.newlines )
 		{
-		    if (    ! output.is_float
-		         && ! test.is_float )
+		    bool output_is_float =
+		        output.type == NUMBER_TOKEN
+			&& output.is_float;
+		    bool test_is_float =
+		        test.type == NUMBER_TOKEN
+			&& test.is_float;
+
+		    if (    ! output_is_float
+		         && ! test_is_float )
 			found_difference
 			    ( newlines == 0 ?
 			      WHITESPACE :
