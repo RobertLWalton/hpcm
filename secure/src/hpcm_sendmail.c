@@ -11,9 +11,9 @@
  * RCS Info (may not be true date or author):
  *
  *   $Author: hc3 $
- *   $Date: 2000/10/02 09:08:51 $
+ *   $Date: 2000/10/02 10:22:57 $
  *   $RCSfile: hpcm_sendmail.c,v $
- *   $Revision: 1.3 $
+ *   $Revision: 1.4 $
  */
 
 #include <stdlib.h>
@@ -630,6 +630,124 @@ int main ( int argc, char ** argv )
     }
     
     printf ( "Signature:%s\n", signature );
+
+    /* Send the mail. */
+    {
+    	FILE * files[3];
+	pid_t child = exec_program ( files,
+				     sendmail_argv,
+				     sendmail_env );
+	char line [MAXLEN];
+
+	/* Output To line. */
+	fprintf ( files[0], "To:%s\n", to );
+
+	/* Read and copy any header, stopping at empty
+	   line after header.
+	*/
+	if ( fgets ( line, sizeof (line), stdin )
+	     == NULL )
+	{
+	    if ( feof ( stdin ) ) {
+	    	fprintf ( stderr, "hpcm_sendmail:"
+				  " empty mail input\n"
+				  );
+		exit ( 1 );
+	    }
+	    else
+		errno_exit
+		    ( "reading mail from input" );
+	}
+	if ( strlen ( line ) > sizeof ( line ) - 10 )
+	    too_big_exit ( "input mail line" );
+
+	/* A header is defined to begin with a line
+	   that begins with with:
+	   	word{-word}*:
+	  where
+	  	word::=upper-case-letter letter*
+	*/
+    	if ( isupper ( line [0] ) ) {
+	    char * p = line;
+	    int header_found;
+	    while ( 1 ) {
+	        if ( isupper ( *p ) ) {
+		    while ( isalpha ( * ++ p ) );
+		} else {
+		    header_found = 0;
+		    break;
+		}
+
+		if ( * p == '-' ) {
+		    ++ p;
+		    continue;
+		} else if ( * p == ':' ) {
+		    header_found = 1;
+		    break;
+		} else {
+		    header_found = 0;
+		    break;
+		}
+	    }
+
+	    if ( header_found ) {
+		while ( 1 ) {
+		    fputs ( line, files[0] );
+		    if ( fgets ( line, sizeof (line),
+		    		       stdin )
+			 == NULL )
+		    {
+			if ( feof ( stdin ) ) {
+			    strcpy ( line, "\n" );
+			    break;
+			}
+			else
+			    errno_exit
+				( "reading mail from"
+				  " input" );
+		    }
+		    if ( strlen ( line )
+		         > sizeof ( line ) - 10 )
+			too_big_exit
+			    ( "input mail line" );
+		    if ( line[0] == '\n' ) break;
+		}
+	    }
+	}
+
+	/* Output our end of header and empty line
+	   separating header and body.
+	*/
+	fprintf ( files[0], "X-HPCM-Date:%s\n"
+			    "X-HPCM-Reply-To:%s\n"
+			    "X-HPCM-Signature:%s\n"
+			    "\n",
+			    date,
+			    reply_to,
+			    signature );
+
+	/* Output body. */
+	if ( line[0] != '\n' ) fputs ( line, files[0] );
+	while ( 1 ) {
+	    if ( fgets ( line, sizeof (line), stdin )
+		 == NULL )
+	    {
+		if ( feof ( stdin ) ) {
+		    break;
+		}
+		else
+		    errno_exit
+			( "reading mail from input" );
+	    }
+	    if ( strlen ( line )
+		 > sizeof ( line ) - 10 )
+		too_big_exit ( "input mail line" );
+	    fputs ( line, files[0] );
+	}
+
+	check_program
+	    ( files, child, sendmail_argv, 0 );
+    }
 
     return 0;
 }
