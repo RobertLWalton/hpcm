@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Sep 25 09:32:01 EDT 2002
+# Date:		Wed Sep 25 09:40:05 EDT 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,22 +11,21 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/09/25 13:34:50 $
+#   $Date: 2002/09/25 13:44:22 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.20 $
+#   $Revision: 1.21 $
 
 # make
 #	Makes documentation as fprintable .doc files in
 #	this subdirectory tree.
 #
 # make fprint
-#	Makes and fprints documentation.  Overview and
-#	installing_hpcm are first, and the rest is
-#	program documentation files in alphabetical
-#	order.
+#	Makes and fprints documentation.  Overview doc-
+#	uments are first, and the rest is program docu-
+#	mentation files in alphabetical order.
 #
 # make fcheck
-#	Makes and runs fcheck on documentation.
+#	Makes and fchecks documentation.
 
 # List DOCS in order of printing.
 #
@@ -93,9 +92,10 @@ SOURCES = \
 	../lib/hpcm_judging.rc \
 	../lib/judging_common.tcl \
 	../lib/display_common.tcl \
+	../lib/scoreboard_common.tcl \
 	../lib/scoring_common.tcl
 
-all:	bin judge contestant secure test ${DOCS}
+all:	bin judge contestant secure ${DOCS}
 
 # Kill all implicit rules
 #
@@ -123,13 +123,10 @@ contestant:
 secure:
 	mkdir secure
 
-test:
-	mkdir test
-
 clean:
 	rm -rf overview.doc installing_hpcm.doc \
 	       judging.doc \
-	       judge contestant secure test \
+	       judge contestant secure \
 	       hpcm_judging.rc
 
 # ../bin docs
