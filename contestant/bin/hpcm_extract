@@ -1,0 +1,228 @@
+#!/bin/sh
+#
+# Extract files from mail.
+#
+# File:		hpcm_extract
+# Author:	Bob Walton <walton@deas.harvard.edu>
+# Date:		Sat Sep 30 01:35:30 EDT 2000
+#
+# The authors have placed this program in the public
+# domain; they make no warranty and accept no liability
+# for this program.
+#
+# RCS Info (may not be true date or author):
+#
+#   $Author: hc3 $
+#   $Date: 2000/09/30 05:34:14 $
+#   $RCSfile: hpcm_extract,v $
+#   $Revision: 1.1 $
+
+case "$1" in
+    "" | -*)
+	echo "
+hpcm_extract directory
+
+    Reads mail from the standard input and extracts
+    files in the mail that were sent by HPCM in response
+    to \`get' requests.  More specifically, any files
+    surrounded by lines beginning with:
+
+	---<>--<>---<>--<>---<>-----
+
+    are extracted, if the last line beginning with
+
+    	Subject:
+
+    before the file is of the form:
+
+    	Subject: RE: get ...
+
+    The extracted files are placed in the directory
+    specified by the single argument.  If a file
+    already exists in that directory, it is not
+    extracted, but is compared against the existing
+    file.
+
+    The standard output records what was done.  It
+    does not include the file contents."
+
+	exit 1
+	;;
+    * )
+	if test ! -d "$1";
+	then
+	    echo "$1 is not a directory."
+	    exit 1
+	fi
+	;;
+esac
+
+# Mode is one of:
+#
+#	header		Look for Subject: lines
+#	extract		Extract lines
+#	diff		Diff lines
+#	look		Look at the current line
+#			to choose between header,
+#			extract, or diff.
+#
+mode=header
+subject_ok=no
+subject=
+From=
+from=
+date=
+while test x = x
+do
+    read
+    if test $? -ne 0
+    then
+        if test $mode != header
+	then
+	    echo "Missing end of file line."
+	    has_errors=yes
+REPLY="---<>--<>---<>--<>---<>----- end of file"
+	else
+	    break
+	fi
+    fi
+    case $mode in
+
+    header)
+    	case "$REPLY" in
+	From\ *)
+	    From="$REPLY"
+	    ;;
+	From:*)
+	    from="$REPLY"
+	    ;;
+	Date:*)
+	    date="$REPLY"
+	    ;;
+	Subject:*)
+	    subject="$REPLY"
+	    ok=`expr "$REPLY" : "Subject:[ 	]*get" `
+	    if test $ok -ne 0
+	    then
+	    	subject_ok=yes
+	    else
+	    	subject_ok=no
+	    fi
+	    ;;
+	'---<>--<>---<>--<>---<>-----'*)
+	    mode=look
+	    echo -e "----------"
+	    if test "$From" != ""
+	    then echo ">$From"; fi
+	    if test "$from" != ""
+	    then echo "$from"; fi
+	    if test "$date" != ""
+	    then echo "$date"; fi
+	    if test "$subject" != ""
+	    then echo "$subject"; fi
+	    has_errors=no
+	    ;;
+	esac
+    	;;
+
+    extract)
+    	case "$REPLY" in
+	'---<>--<>---<>--<>---<>-----'*)
+	    exec 3>&-
+	    mode=look
+	    ;;
+	*)
+	    echo "$REPLY" >&3
+	    ;;
+	esac
+    	;;
+
+    diff)
+    	case "$REPLY" in
+	'---<>--<>---<>--<>---<>-----'*)
+	    exec 3<&-
+	    if test $diff = yes
+	    then
+	    	echo "Received new $file different" \
+		     "from previous version."
+		echo "Left previous version intact."
+		has_errors=yes
+	    fi
+	    mode=look
+	    ;;
+	*)
+	    line="$REPLY"
+	    read <&3
+	    if test "$REPLY" != "$line"
+	    then
+	    	diff=yes
+	    fi
+	    ;;
+	esac
+    	;;
+
+    skip)
+    	case "$REPLY" in
+	'---<>--<>---<>--<>---<>-----'*)
+	    mode=look
+	    ;;
+	esac
+    	;;
+    esac
+
+    case $mode in
+    look)
+        file=`expr "$REPLY" : \
+	     '---<>--<>---<>--<>---<>-----\(.*\)$' `
+	file=`expr "$file" : \
+		   '[ 	]*\([^ 	].*\)$' `
+	file=`expr "$file" : \
+		   '\(.*[^ 	]\)[ 	]*$' `
+
+	dirs=""
+	dir=`dirname "$file"`
+	while test "$dir" != "."
+	do
+	    dirs="$dir $dirs"
+	    dir=`dirname "$dir"`
+	done
+
+	for dir in $dirs
+	do
+	    if test ! -d "$1/$dir"
+	    then
+		mkdir "$1/$dir"
+		if test $? -ne 0
+		then
+		    echo "Could not make $1/$dir."
+		    has_errors=yes
+		fi
+	    fi
+	done
+
+	if test "$file" = "end of files"
+	then
+	    if test $has_errors = no
+	    then
+	    	echo NO ERRORS IN EXTRACTION
+	    fi
+	    mode=header
+	elif test -r "$1/$file"
+	then
+	    mode=diff
+	    diff=no
+	    exec 3<"$1/$file"
+	elif test ! -e "$1/$file"
+	then
+	    mode=extract
+	    exec 3>"$1/$file"
+	else
+	    mode=skip
+	    echo "Unreadable $1/$file already exists."
+	    has_errors=yes
+	fi
+    	;;
+    esac
+done
+
+exit 0
