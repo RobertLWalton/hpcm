@@ -2,7 +2,7 @@
 //
 // File:	scorediff.cc
 // Authors:	Bob Walton (walton@deas.harvard.edu)
-// Date:	Wed Jun 13 00:41:14 EDT 2001
+// Date:	Sun Jul  1 01:12:01 EDT 2001
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: hc3 $
-//   $Date: 2001/06/19 08:45:23 $
+//   $Date: 2001/07/01 05:13:30 $
 //   $RCSfile: scorediff.cc,v $
-//   $Revision: 1.22 $
+//   $Revision: 1.23 $
 
 // This is version 2, a major revision of the first
 // scorediff program.  This version is more explicitly
@@ -1115,10 +1115,10 @@ int main ( int argc, char ** argv )
 		    if ( output.newlines == 0 )
 			found_difference ( WHITESPACE );
 		    else
-			found_difference ( BEGINSPACE );
+			found_difference ( ENDSPACE );
 		}
 		else if ( newlines == output.newlines )
-		    found_difference ( ENDSPACE );
+		    found_difference ( BEGINSPACE );
 		else
 		    found_difference ( LINESPACE );
 	    }
@@ -1154,6 +1154,9 @@ int main ( int argc, char ** argv )
 		else if ( test.length < output.length )
 		    split_word ( output, test.length );
 	    }
+
+	    if ( output.column != test.column )
+	        found_difference ( COLUMN );
 
 	    char * tp1 = output.token;
 	    char * tp2 = test.token;
