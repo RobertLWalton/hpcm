@@ -5,7 +5,7 @@
 #
 # File:		scorefinder
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Sep 15 22:21:30 EDT 2000
+# Date:		Sat Sep 16 07:30:46 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/09/16 05:41:29 $
+#   $Date: 2000/09/16 11:24:21 $
 #   $RCSfile: scorefinder,v $
-#   $Revision: 1.1 $
+#   $Revision: 1.2 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -47,7 +47,7 @@ scorefinder
     For each such, this program outputs one line of the
     form:
 
-    	date submitter problem score
+    	date submitter problem code score
 
     In this line, the date is taken literally from the
     subdirectory name.  The submitter is taken from the
@@ -58,7 +58,7 @@ scorefinder
     $received_file file in the subdirectory, and using
     the problem name `UNKNOWN' if this cannot be done
     or the subject field has the wrong format.  The
-    score is one of:
+    code is one of:
 
       mc  $manual_score_file	== `Completely Correct'
       mi  $manual_score_file	!= `Completely Correct'
@@ -66,7 +66,9 @@ scorefinder
       ai  $auto_score_file	!= `Completely Correct'
 
     where the $auto_score_file file is ignored if the
-    $manual_score_file file exits.
+    $manual_score_file file exits.  The score is the
+    actual score used to compute the code, quoted by
+    \"'s.
 
     This program logs errors in the log directory."
 
@@ -90,28 +92,28 @@ foreach dir [glob -nocomplain \
     	continue;
     }
 
-    set score ""
+    set code ""
     if { [file readable $dir/$manual_score_file] } {
-    	set file_score 
+    	set score 
 	    [read_file $dir/$manual_score_file]
-	if { $file_score == "Completely Correct" } {
-	    set score mc
-	} elseif { $file_score != "" } {
-	    set score mi
+	if { $score == "Completely Correct" } {
+	    set code mc
+	} elseif { $score != "" } {
+	    set code mi
 	}
     }
-    if { $score == "" \
+    if { $code == "" \
          && [file readable $dir/$auto_score_file] } {
-    	set file_score \
+    	set score \
 	    [read_file $dir/$auto_score_file]
-	if { $file_score == "Completely Correct" } {
-	    set score ac
-	} elseif { $file_score != "" } {
-	    set score ai
+	if { $score == "Completely Correct" } {
+	    set code ac
+	} elseif { $score != "" } {
+	    set code ai
 	}
     }
 
-    if { $score == "" } continue;
+    if { $code == "" } continue;
 
     regexp {^([^@]*)@} $submitter forget submitter
 
@@ -136,7 +138,7 @@ foreach dir [glob -nocomplain \
 	}
     }
 
-    puts "$date $submitter $program $score"
+    puts "$date $submitter $program $code \"$score\""
 }
 
 exit 0

@@ -6,7 +6,7 @@
 #
 # File:		scoreboard
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Sep 15 22:21:30 EDT 2000
+# Date:		Sat Sep 16 07:30:27 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/09/16 05:41:29 $
+#   $Date: 2000/09/16 11:24:21 $
 #   $RCSfile: scoretable,v $
-#   $Revision: 1.1 $
+#   $Revision: 1.2 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -32,7 +32,7 @@ set log_globally yes
 catch {
 
 set document "
-scoreboard
+scoreboard \[score_file \[parameters_file\] \]
 
     This program runs `scorefinder' to get scores,
     and organizes the scores into a table.  A score
@@ -53,7 +53,7 @@ scoreboard
     The scoreboard has a line for each submitter of the
     form
 
-    submitter  score1  score2  ......  total-score
+    submitter  score1  score2  ......  time_score
 
     Here each score is the score for a problem, and has
     the form `h:mm/n', where h:mm is the time in hour:
@@ -65,7 +65,7 @@ scoreboard
 
     Submission times are measured from the `scoreboard_
     start_time', and are actually measured in seconds.
-    The total-score is the sum of all the correct
+    The time_score is the sum of all the correct
     submission times, plus a penalty time the number
     of incorrect submissions that are for a problem
     for which there is a later correct submission.  The
@@ -82,13 +82,33 @@ scoreboard
 
     The scoreboard groups the teams by the number of
     problems they have correct, and within each group
-    sorts teams by total score."
+    sorts teams by total score.
+
+    Normaly no parameters are given to this program, but
+    for test purposes and for historical rerun purposes
+    a score_file and parameters_file may be given.  The
+    score_file is used as the source of scores in place
+    of the output of the `scorefinder' program.  The
+    parameters_file is read and may contain parameter
+    settings, `scoreboard_ problems' etc., in the same
+    manner as the normal parameters file."
+
 
 # If any arguments, print documentation and exit.
 #
-if { $argc != 0 } {
+if { $argc > 2 || [regexp {^-} [lindex $argv 0]] } {
     puts $document
     exit 1
+}
+
+# Initialize program parameters.
+#
+set score_file "| scorefinder"
+if { $argc >= 1 } {
+    set score_file [lindex $argv 0]
+    if { $argc == 2 } {
+	source [lindex $argv 1]
+    }
 }
 
 # Create an array for each submitter.  Initially
@@ -115,7 +135,7 @@ foreach submitter $scoreboard_submitters {
 
 # Open a pipe from `scorefinder'.
 #
-set scores_ch [open "|scorefinder" r]
+set scores_ch [open $score_file r]
 
 # Read the scores and accumulate them in the submitter
 # arrays.
@@ -123,7 +143,7 @@ while { "yes" } {
     set line [gets $scores_ch]
     if { [eof $scores_ch] } break
 
-    if { [llength $line] != 4 } {
+    if { [llength $line] < 4 } {
     	error "Bad input line from `scorefinder': $line"
     }
 
@@ -170,8 +190,8 @@ set sorted_problems [lsort $scoreboard_problems]
 # Create the score list.  Each item in this list
 # has the form:
 #
-#	{ problems-correct time-score modifier
-#	  submitter problem-score ... }
+#	{ problems_correct time_score modifier
+#	  submitter problem_score ... }
 #
 # This begins with the number of correct problems,
 # followed by the score in seconds.  The former is a 3
@@ -181,17 +201,17 @@ set sorted_problems [lsort $scoreboard_problems]
 # used to compute the previous numbers were final, and
 # `n' if some were not final.  The submitter is the
 # submitter: each submitter has one item in this list.
-# The problem-scores are the scores as they will be
+# The problem_scores are the scores as they will be
 # printed in the output.
 #
 # To print an output line for the submitter, the sub-
 # mitter needs to be truncated to 8 characters and
 # printed left adjusted in 8 columns.  Each problem
 # score needs to be printed right adjusted in 8 columns.
-# The time-score needs to be changed to have leading
+# The time_score needs to be changed to have leading
 # blanks and printed right adjusted in 8 columns.  If
 # modifier is `n' a `*' should replace the first blank
-# before the time-score.  All submitters with the same
+# before the time_score.  All submitters with the same
 # number of problems correct are grouped under the
 # header `# Problems Correct:'.
 #
@@ -268,6 +288,100 @@ foreach submitter $scoreboard_submitters {
 }
 
 puts $score_list
+puts ""
+
+# Start output of scoreboard.
+#
+set spaces16 "                "
+set spaces8  [string range $spaces16 0 7]
+
+# Output lines labeling problems at top of scoreboard.
+#
+proc label_problems {} {
+
+    global sorted_problems spaces16
+
+    set count  0
+    set indent 8
+    foreach problem $sorted_problems {
+	    if { $count % 8 == 0 } {
+		if { $count > 0 } {
+		    puts ""
+		}
+		puts -nonewline \
+		     [string range $spaces16 \
+			     0 [expr { $indent - 1 }]]
+		incr indent 2
+	    }
+	    incr count
+	    puts -nonewline [format { %7.7s} $problem]
+    }
+    puts ""
+}
+
+# Loop thought sorted score_list and output each
+# submitter.
+#
+set current_problems_correct ""
+foreach item $score_list {
+}
+    set problems_correct \
+    	[string trimleft [lindex $item 0] "0"]
+    if { $problems_correct == "" } {
+    	set problems_correct 0
+    }
+    set time_score \
+    	[string trimleft [lindex $item 1] "0"]
+    set modifier [lindex $item 2]
+    set submitter [lindex $item 3]
+    set problem_scores [lreplace $item 0 3]
+    if { $modifier == "n" } {
+    	set time_score "*$time_score"
+    }
+
+    if { $problems_correct \
+         != $current_problems_correct } {
+    	set current_problems_correct $problems_correct
+	puts "Teams with $problems_correct Problems\
+	      Correct:"
+	label_problems
+	set item_count 1
+    } else {
+	if { $item_count % 4 == 0 } {
+	    puts ""
+	}
+	incr item_count
+    }
+
+    set count 0
+    set indent 8
+    foreach score $problem_scores {
+	if { $count % 8 == 0 } {
+	    if { $count == 8 } {
+	    	puts [format { %7.7s} $time_score]
+	    } elseif { $count > 0 } {
+	    	puts ""
+	    }
+	    if { $count == 0 } {
+		puts -nonewline \
+		     [format {%-7.7s } $submitter]
+	    } else {
+		puts -nonewline \
+		     [string range $spaces16 \
+			     0 [expr { $indent - 1 }]]
+	    }
+	    incr indent 2
+	}
+	incr count
+	puts -nonewline [format { %7.7s} $score]
+    }
+
+    if { $count <= 8 } {
+	puts [format { %7.7s} $time_score]
+    } else {
+    	puts ""
+    }
+}
 
 exit 0
 
