@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Aug 28 16:32:18 EDT 2000
+# Date:		Tue Aug 29 08:31:00 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: acm-cont $
-#   $Date: 2000/08/28 20:52:36 $
+#   $Date: 2000/08/29 12:39:51 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.23 $
+#   $Revision: 1.24 $
 #
 
 # Include this code in TCL program via:
@@ -109,7 +109,6 @@ proc is_checked { filename } {
 	error "$filename does not include a checkmark"
     }
     return [expr { $b == "checked" }]
-    }
 }
 
 # Function to change the name of a file from
@@ -319,7 +318,7 @@ proc read_header { ch { first_line "" }
     set message_x_hpcm_signature	""
     set message_x_hpcm_signature_ok	""
 
-    set fields "header from to date reply-to subject\
+    set fields "from to date reply-to subject\
                 x-hpcm-reply-to x-hpcm-date\
 		x-hpcm-signature x-hpcm-signature-ok"
 
@@ -329,7 +328,7 @@ proc read_header { ch { first_line "" }
 	if { [eof $ch] } return
     }
 
-    if { [regexp "^From\ " $line } {
+    if { [regexp "^From\ " $line] } {
     	set message_From_line $line
     }
 
@@ -340,12 +339,13 @@ proc read_header { ch { first_line "" }
 
 	foreach fieldname $fields {
 	    if { [regexp -nocase \
-	                 "^${fieldname}:(.*)\$"
-			 forget fieldvalue] } {
+	                 "^(${fieldname}):(.*)\$" \
+			 $line forget \
+			 realname fieldvalue] } {
 
 		while { "yes" } {
 		    set line [gets $ch]
-		    if { [eof $ch] \\
+		    if { [eof $ch] \
 			 || ! [regexp \
 			           "^\[\ \t\]" \
 				   $line] } \
@@ -355,14 +355,19 @@ proc read_header { ch { first_line "" }
 		}
 
 		if { [lsearch -exact \
-		              $omitfields \
+		              $omit_fields \
 			      $fieldname]  < 0 } {
 		    set varname "message_$fieldname"
-		    subexp -all -- "-" $varname "_" \
+		    regsub -all -- "-" $varname "_" \
 		           varname
 		    set $varname $fieldvalue
-		    set message_header \
-			"$message_header\n$fieldvalue"
+		    set f "${realname}:${fieldvalue}"
+		    if { $message_header == "" } {
+		    	set message_header $f
+		    } else {
+			set message_header \
+			    "$message_header\n$f"
+		    }
 		}
 
 		set found_field yes
@@ -371,11 +376,16 @@ proc read_header { ch { first_line "" }
 	}
 
 	if { $found_field == "no" } {
-	    set message_header "$message_header\n$line"
+	    if { $message_header == "" } {
+		set message_header $line
+	    } else {
+		set message_header \
+		    "$message_header\n$line"
+	    }
 	    set line [gets $ch]
 	}
 
-	if { [eof $ch] break }
+	if { [eof $ch] } break
     }
 }
 
@@ -500,7 +510,7 @@ proc header_is_authentic {} {
     global message_x_hpcm_signature_ok \
            use_authentication
 
-    if { $use_authentication == "no" } {
+    if { $use_authentication != "yes" } {
     	return yes
     }
 
