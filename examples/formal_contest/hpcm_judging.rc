@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Oct 25 00:53:34 EDT 2002
+# Date:		Wed Oct 22 14:36:34 EDT 2003
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/10/25 05:02:27 $
+#   $Date: 2003/10/22 18:33:06 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.18 $
+#   $Revision: 1.19 $
 
 
 # Read standard parameters.  The filename MUST be
@@ -59,10 +59,65 @@ set scoreboard_name ""
 #
 set scoreboard_addresses { }
 
-# Standard scoreboard instructions for a formal
-# contest:
+# Scoreboard instructions for a small formal contest:
 #
-set scoreboard_instructions {
+set small_contest_scoreboard_instructions {
+
+    { OUTPUT contest/scoreboard.1 "" START }
+    GRANT_ACCESS
+
+    { LINE NAME "Pre-Contest Scoreboard" TIME }
+    BLANK
+    { INPUT contest/scoreboard.1head }
+    BLANK
+    { LINE "The demo problems `count', `javaio', and\
+            `pascal' will disappear from the" }
+    { LINE "scoreboard once the contest starts.  Until\
+            the contest starts, dates of" }
+    { LINE "first correct submission are displayed (for\
+            demo problems).  After the" }
+    { LINE "contest starts, problem times (differences\
+            of first correct submission" }
+    { LINE "times and contest start time) will be\
+            displayed." }
+    BLANK
+    { start_time "" }
+    { stop_time START }
+    BAR
+    BOARD
+    BAR
+
+    { OUTPUT contest/scoreboard.1 START STOP }
+    GRANT_ACCESS
+
+    { LINE NAME "Scoreboard" TIME }
+    BLANK
+    { INPUT contest/scoreboard.1head }
+    BLANK
+    { start_time START }
+    { stop_time STOP }
+    { problems { ! count & ! javaio & ! pascal } }
+    { submitters { ! test-account } }
+    BAR
+    BOARD
+    BAR
+
+    { OUTPUT contest/scoreboard.final STOP STOP }
+
+    { LINE NAME "Final Results" "" STOP }
+    BLANK
+    BAR
+    { start_time START }
+    { stop_time STOP }
+    BOARD
+    BAR
+    { INPUT contest/who_where }
+    BAR
+}
+
+# Scoreboard instructions for a large formal contest:
+#
+set large_contest_scoreboard_instructions {
 
     { OUTPUT contest/scoreboard.freeze FREEZE FREEZE }
 
@@ -78,15 +133,16 @@ set scoreboard_instructions {
 
     { start_time "" }
     { stop_time FREEZE }
-    { LINE "The demo problem `count' will disappear\
-            from the scoreboard once the contest" }
-    { LINE "starts.  Until the contest starts, dates of\
-            first correct submission are" }
-    { LINE "displayed (for demo problems).  After the\
-            contest starts, problem times" }
-    { LINE "(differences of first correct submission\
-            times and contest start time)" }
-    { LINE "will be displayed." }
+    { LINE "The demo problems `count', `javaio', and\
+            `pascal' will disappear from the" }
+    { LINE "scoreboard once the contest starts.  Until\
+            the contest starts, dates of" }
+    { LINE "first correct submission are displayed (for\
+            demo problems).  After the" }
+    { LINE "contest starts, problem times (differences\
+            of first correct submission" }
+    { LINE "times and contest start time) will be\
+            displayed." }
     BAR
     BOARD
     BAR
@@ -95,7 +151,7 @@ set scoreboard_instructions {
 
     { start_time START }
     { stop_time FREEZE }
-    { problems { ! count } }
+    { problems { ! count  & ! javaio & ! pascal } }
     { submitters { ! test-account } }
     BAR
     BOARD
@@ -125,7 +181,7 @@ set scoreboard_instructions {
 
     { OUTPUT contest/scoreboard.final STOP STOP }
 
-    { LINE NAME "Final Results" "" STOP }
+    { LINE NAME "Final Results" STOP }
     BLANK
     BAR
     { stop_time STOP }
@@ -134,6 +190,11 @@ set scoreboard_instructions {
     { INPUT contest/who_where }
     BAR
 }
+
+# Scoreboard instructions for this contest:
+#
+set scoreboard_instructions \
+    $large_contest_scoreboard_instructions
 
 # Set modes to automatically reply in so far as possible
 # and have manual review of everything in which the
