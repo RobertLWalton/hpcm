@@ -4,7 +4,7 @@
 #
 # File:		hpcm_extract
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Sat Mar  9 17:00:12 EST 2002
+# Date:		Sat Mar  9 17:56:53 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/03/09 22:00:50 $
+#   $Date: 2002/03/09 23:08:08 $
 #   $RCSfile: hpcm_extract,v $
-#   $Revision: 1.15 $
+#   $Revision: 1.16 $
 
 # If this is not bash and bash is available, switch
 # to using bash.  Note that `which bash` may output
@@ -103,6 +103,9 @@ then
 elif test -r ../../../HPCM_ADDRESS
 then
     home=../../..
+elif test -r ../../../../HPCM_ADDRESS
+then
+    home=../../../..
 else
     echo "ERROR: Cannot find HPCM_ADDRESS file."
     exit 1
@@ -122,7 +125,8 @@ fi
 #	skip		Skip lines (due to error)
 #	look		Look at the current line
 #			to choose between header,
-#			extract, or diff.
+#			extract, or diff.  Line
+#			must begin with ---<>...
 #
 mode=header
 subject_ok=no
@@ -146,11 +150,13 @@ do
 	then
 	    # Create fake missing end of file.
 	    #
+	    echo ""
 	    echo "ERROR: missing end of file line."
+	    echo ""
 	    has_errors=yes
 REPLY="---<>--<>---<>--<>---<>----- end of file"
 	else
-	    # Real end of file, end loop.
+	    # Real end of file, end loop and program.
 	    #
 	    break
 	fi
@@ -246,10 +252,12 @@ REPLY="---<>--<>---<>--<>---<>----- end of file"
 		    chmod u+w "$home/$base"
 		    echo "\`$file' copied to \`$base'."
 		else
+		    echo ""
 		    echo WARNING: \
 		         "\`$file' NOT copied to" \
 		         "\`$base',"
 		    echo "as \`$base' already exists."
+		    echo ""
 		    has_errors=yes
 		fi
 	    fi
@@ -269,7 +277,17 @@ REPLY="---<>--<>---<>--<>---<>----- end of file"
     diff)
     	case "$REPLY" in
 	'---<>--<>---<>--<>---<>-----'*)
-	    # End of file being diffed.  Close fd 3.
+
+	    # End of file being diffed.  Check existing
+	    # file for end of file.
+	    # 
+	    read -r <&3
+	    if test $? -eq 0
+	    then
+	        diff=yes
+	    fi
+
+	    # Close fd 3.
 	    #
 	    exec 3<&-
 	    if test $diff = yes
@@ -292,7 +310,10 @@ REPLY="---<>--<>---<>--<>---<>----- end of file"
 	    #
 	    line="$REPLY"
 	    read -r <&3
-	    if test "$REPLY" != "$line"
+	    if test $? -ne 0
+	    then
+	        diff=yes
+	    elif test "$REPLY" != "$line"
 	    then
 	    	diff=yes
 	    fi
@@ -333,9 +354,13 @@ REPLY="---<>--<>---<>--<>---<>----- end of file"
 	case "$file<$subject_ok>" in
 
 	"end of files<yes>" )
+	    echo ""
 	    if test $has_errors = no
 	    then
-	    	echo NO ERRORS in extraction
+	    	echo NO ERRORS or WARNINGS in extraction
+	    else
+		echo There were ERRORS or WARNINGS \
+		     in extraction
 	    fi
 	    echo ""
 	    mode=header
@@ -352,14 +377,18 @@ REPLY="---<>--<>---<>--<>---<>----- end of file"
 	    ;;
 
 	"<yes>" )
+	    echo ""
 	    echo WARNING: empty file name
+	    echo ""
 	    has_errors=yes
 	    mode=skip
 	    ;;
 
 	/* | .* | */.* | -* | */-* )
+	    echo ""
 	    echo WARNING: illegal file name \
 	                  '(skipped):' "$file"
+	    echo ""
 	    has_errors=yes
 	    mode=skip
 	    ;;
