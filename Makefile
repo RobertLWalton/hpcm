@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Dec 11 15:05:03 EST 2000
+# Date:		Sun Jan  7 22:02:51 EST 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/12/12 03:39:16 $
+#   $Date: 2001/01/08 04:26:34 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.10 $
+#   $Revision: 1.11 $
 
 all:	submakes
 
@@ -29,6 +29,7 @@ submakes:
 	(cd ./contestant/bin/; make)
 	(cd ./contestant/help/; make)
 	(cd ./judge/bin/; make)
+	(cd ./judge/doc/; make)
 
 informal.files:		inform.files
 
@@ -49,3 +50,7 @@ problem.files \
 library.files \
 legal.files:
 	@sed <File_List -n -e '/^$*		*/s///p'
+
+all.files:
+	@sed <File_List -n \
+	     -e '/^[a-z][a-z]*		*/s///p'

@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/01/07 13:51:19 $
+#   $Date: 2001/01/08 04:26:35 $
 #   $RCSfile: installing_hpcm,v $
-#   $Revision: 1.1 $
+#   $Revision: 1.2 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -34,8 +34,81 @@ puts "
 		     ---------- ----
 
 
+Information about HPCM
+----------- ----- ----
 
-"
+The web page for HPCM is:
+
+	www.deas.harvard.edu/~hc3/hpcm
+
+There is an overview of HPCM that tells what the system
+does.
+
+
+Requirements
+------------
+
+HPCM currently requires a UNIX system with Bourne shell
+and TCL language interpreters.
+
+A couple of programs require the `read -r' Bourne
+shell command, and a Bourne shell `echo' command that
+does not specially interpret the `\\' character.  If you
+are using a UNIX system whose Bourne shell does not
+support these features, the simplest fix is to import
+the GNU Bourne shell, bash, and fix the programs con-
+taining `read -r' to use it (these programs are current-
+ly hpcm_extract and SET_PROTOTYPE).
+
+TCL can be obtained at:	 	www.scriptics.com
+
+Bash can be obtained at:
+
+	www.gnu.org/software/bash/bash.html
+
+
+Installation of HPCM
+------------ -- ----
+
+1. Import the HPCM system into ~/hpcm.  This can be
+   done by untaring the hpcm.tar file while the
+   current directory is ~.  It is also possible to
+   put the hpcm system elsewhere.  The example
+   contests assume HPCM is installed in ~/hpcm,
+   but they can be modified if HPCM is installed
+   elsewhere.
+
+2. Assuming /sbin is the right directory for secure
+   root setuid programs, run:
+
+		cd ~/hpcm/secure/src
+		su
+		make root_install
+		exit
+
+   This installs the hpcm_sandbox program as a setuid
+   root program in the system /sbin directory, which
+   is the appropriate thing for Linux.  If you put
+   this setuid binary in another place, say `/foo',
+   you should replace the `make' command above by
+
+		make SECURE_BIN=/foo root_install
+
+   If you skip this step, an insecure hpcm_sandbox
+   will be installed (in the next step) for the
+   judge, which will mean that malicious contestant
+   programs could corrupt the judging files.
+
+3. Run		cd ~/hpcm
+		make
+
+   This sets some file modes, makes a few binary files,
+   and makes the judge's documentation files in hpcm/
+   judge/doc.
+
+4. Put ~/hcpm/judge/bin in the PATH of the current
+   (judge's) account.  Do NOT put ~/hpcm/contestant/
+   bin in that PATH."
 
 exit 0
 
