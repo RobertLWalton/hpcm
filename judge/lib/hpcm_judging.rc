@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Feb 16 09:00:33 EST 2002
+# Date:		Sun Feb 24 09:34:32 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/02/16 14:00:01 $
+#   $Date: 2002/02/24 14:42:48 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.107 $
+#   $Revision: 1.108 $
 
 # Table of Contents:
 #
@@ -387,13 +387,10 @@ set scoreboard_interval 60
 #
 #   See notes below.           NAME               TIME
 #
-#   == ==== ==== ==== ==== ==== ==== ==== ==== ==== ==
 #	   <scoreboard proper>
-#   == ==== ==== ==== ==== ==== ==== ==== ==== ==== ==
 #
 #   <contents of $judging_instructions/scoreboard.notes>
 #
-#   == ==== ==== ==== ==== ==== ==== ==== ==== ==== ==
 #
 # This file is then emailed to the addresses in the
 # scoreboard_addresses global variable.
@@ -403,13 +400,9 @@ set email_scoreboard_instructions {
     { SEND scoreboard }
     { LINE "See notes below." NAME TIME }
     BLANK
-    BAR
     BOARD
-    BAR
     BLANK
     { INPUT scoreboard.notes }
-    BLANK
-    BAR
 }
 
 # Standard scoreboard instructions for an informal
@@ -428,9 +421,7 @@ set email_scoreboard_instructions {
 #   <contents of $judging_instructions/contest/
 #			scoreboard.1head>
 #
-#   == ==== ==== ==== ==== ==== ==== ==== ==== ==== ==
 #	   <scoreboard proper>
-#   == ==== ==== ==== ==== ==== ==== ==== ==== ==== ==
 #
 set informal_scoreboard_instructions {
     { OUTPUT contest/scoreboard.1 }
@@ -440,9 +431,7 @@ set informal_scoreboard_instructions {
     BLANK
     { INPUT contest/scoreboard.1head }
     BLANK
-    BAR
     BOARD
-    BAR
 }
 
 # Standard scoreboard instructions for a formal contest
@@ -464,10 +453,8 @@ set informal_scoreboard_instructions {
 #   <contents of $judging_instructions/contest/
 #			scoreboard.1head>
 #
-#   == ==== ==== ==== ==== ==== ==== ==== ==== ==== ==
 #   <contents of $judging_instructions/contest/
 #			scoreboard.public>
-#   == ==== ==== ==== ==== ==== ==== ==== ==== ==== ==
 #
 # The file
 #
@@ -529,31 +516,23 @@ set formal_scoreboard_instructions {
     BLANK
     { INPUT contest/scoreboard.1head }
     BLANK
-    BAR
     { INPUT contest/scoreboard.public }
-    BAR
 
     { OUTPUT contest/scoreboard.current FREEZE STOP }
 
     { LINE NAME "Current Scoreboard" TIME }
     BLANK
-    BAR
     { stop_time STOP }
     BOARD
-    BAR
     { INPUT contest/who_where }
-    BAR
 
     { OUTPUT contest/scoreboard.final STOP STOP }
 
     { LINE NAME "Final Results" "" STOP }
     BLANK
-    BAR
     { stop_time STOP }
     BOARD
-    BAR
     { INPUT contest/who_where }
-    BAR
 }
 
 # Set default scoreboard instructions to those for
@@ -561,6 +540,25 @@ set formal_scoreboard_instructions {
 #
 set scoreboard_instructions \
     $email_scoreboard_instructions
+
+# Scoreboard_mode_array is a map from the scoring_mode
+# to a regular expression that must match all score-
+# finder codes used to construct the scoreboard.  It
+# is only changed if the set of possible scoring modes
+# is being changed.  Scoreboard_mode_array($scoring_
+# mode) is a TCL regular expression that must match the
+# entire code output by scorefinder in order for the
+# line containing the code to be used in computing a
+# scoreboard.
+#
+set scoreboard_mode_array(manual) \
+    {m(i|c)f|g}
+set scoreboard_mode_array(auto) \
+    {(a|m)(i|c)f|g}
+set scoreboard_mode_array(auto+manual) \
+    {(a|m)(i|c)(n|f)|g}
+set scoreboard_mode_array(manual+auto) \
+    {(a|m)(i|c)(n|f)|g}
 
 # Scoring Parameters
 # ------- ----------
@@ -617,6 +615,10 @@ set output_limit_regexp {file size limit exceeded}
 # cases omitted by that value.  The EXIT command (see
 # below ) should be used in any $response_instructions_
 # file value to be sure this default does not execute.
+#
+# The response instructions and the scoreboard_mode_
+# array together define the possible scoring_mode values
+# and their meanings.
 #
 # See below for a detailed description of response in-
 # structions.
