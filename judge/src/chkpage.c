@@ -3,11 +3,18 @@
 **
 ** Author:	Bob Walton (walton@deas.harvard.edu)
 ** File:	chkpage.c
-** Version:	1
+** Date:	Tue Apr 23 05:18:41 EDT 2002
 **
 ** The authors have placed this program in the public
 ** domain; they make no warranty and accept no liability
 ** for this program.
+**
+** RCS Info (may not be true date or author):
+**
+**   $Author: hc3 $
+**   $Date: 2002/04/23 09:17:35 $
+**   $RCSfile: chkpage.c,v $
+**   $Revision: 1.3 $
 */
 
 #include <stdio.h>
@@ -25,62 +32,150 @@ char documentation [] =
 "\n"
 "    CC defaults to 80 colums and LL to 58 lines.\n"
 "\n"
-"    Too long lines and lines overflowing a page are\n"
-"    output.  Nothing is output if the files are all\n"
-"    OK.\n";
+"    This program interprets newline as a line sepa-,\n"
+"    rator, horizontal tab as going to the next tab\n"
+"    stop, form feed as starting both a new page and\n"
+"    a new line, and carriage return as going back to\n"
+"    the first column without starting a new line.\n"
+"    All other control characters are illegal.  Tab\n"
+"    stops are set every 8 columns.  All this is con-\n"
+"    sistant with common UNIX print programs.\n"
+"\n"
+"    Too long lines, lines overflowing a page, lines\n"
+"    containing illegal characters, and a last line\n"
+"    that does not end with a line feed, form feed,\n"
+"    or carriage return are output.  Nothing is out-\n"
+"    put if the files are all OK.\n"
+;
 
 void checkfile
     ( FILE * in, char * name,
       int maxcolumn, int maxline )
 {
-    int line = 1;
-    int line_in_page = 0;
+    /* Buffer holding line for error messages. */
 
-    char buffer [257];
+    char buffer[82];
+    char * bp = buffer;
+    char * endbp = buffer + 80;
 
-    int column = 0;
-    while ( fgets ( buffer, 257, in ) )
+    int line_in_file = 1;
+    int line_in_page = 1;
+    int column = 1;
+    int illegal_character = 0;
+    int line_not_empty = 0;
+    int line_too_long = 0;
+    int page_too_long = 0;
+
+    while ( 1 )
     {
-	char * cp = buffer;
-	char c = * cp ++;
+        int c = getc ( in );
 
-	while ( c != 0 && c != '\n' )
+	if ( c == '\t' )
 	{
-	    if ( c == '\t' )
-		column += 8 - ( column % 8 );
-	    else if ( c == '\f' )
-		line_in_page = 0;
-	    else ++ column;
-	    c = * cp ++;
+	    column += 8 - ( ( column - 1 ) % 8 );
+	    if ( column > maxcolumn + 1 )
+		line_too_long = 1;
+	    line_not_empty = 1;
+	    if ( bp < endbp ) * bp ++ = c;
 	}
-
-	if ( column > maxcolumn )
+	else if ( c == '\r' )
 	{
-	    printf ( "LINE TOO LONG: " );
-	    if ( name ) printf ( "%s: ", name );
-	    printf ( "%d: %s", line, buffer );
-	    if ( c != '\n' ) printf ( "\n" );
+	    column = 1;
+
+	    /* Notes:
+	    **
+	    ** 1. \r disrupts printout of error by
+	    **    overwriting beginning of error message
+	    **    so we do NOT put it in the buffer.
+	    **
+	    ** 2. In \n\r\f, \r should be an empty line,
+	    **    so we do NOT set line_not_empty.
+	    */
 	}
-
-	if ( c == '\n' )
+	else if ( c == '\n' || c == '\f' || c == EOF )
 	{
-	    ++ line_in_page;
+	    /* End of line */
 
-	    if ( line_in_page > maxline )
+	    * bp ++ = '\n';
+	    * bp = 0;
+
+	    if ( illegal_character != 0 )
+	    {
+		printf ( "LINE CONTAINS \\0%o: ",
+		          illegal_character );
+		if ( name ) printf ( "%s: ", name );
+		printf ( "%d: %s", line_in_file,
+		         buffer );
+		illegal_character = 0;
+	    }
+
+	    if ( line_too_long )
+	    {
+		printf ( "LINE TOO LONG: " );
+		if ( name ) printf ( "%s: ", name );
+		printf ( "%d: %s", line_in_file,
+		         buffer );
+		line_too_long = 0;
+	    }
+
+	    if ( line_in_page > maxline
+	         &&
+		 ( line_not_empty || c == '\n' )
+	         &&
+		 ! page_too_long )
 	    {
 		printf ( "PAGE TOO LONG: " );
 		if ( name ) printf ( "%s: ", name );
-		printf ( "%d: %s", line, buffer );
+		printf ( "%d: %s", line_in_file,
+		         buffer );
+		page_too_long = 1;
 	    }
 
-	    ++ line;
-	    column = 0;
+	    if ( c == '\f' )
+	    {
+		line_in_page = 1;
+		page_too_long = 0;
+	    }
+	    else if ( c == '\n' )
+	        ++ line_in_page;
+	    else if ( c == EOF )
+	    {
+	        if ( line_not_empty )
+		{
+		    printf ( "NON-EMPTY LAST FILE LINE"
+		    	     " DOES NOT END WITH LINE"
+			     " FEED OR FORM FEED:\n"
+			     "    ");
+		    if ( name ) printf ( "%s: ", name );
+		    printf ( "%d: %s", line_in_file,
+		    	     buffer );
+		}
+		break;
+	    }
+
+	    ++ line_in_file;
+	    column = 1;
+	    line_not_empty = 0;
+	    bp = buffer;
+	}
+	else if ( c < 032 || c >= 0177 )
+	{
+	    illegal_character = c;
+	    line_not_empty = 1;
+	    if ( bp < endbp ) * bp ++ = c;
+	}
+	else
+	{
+	    if ( column > maxcolumn )
+		line_too_long = 1;
+	    ++ column;
+	    line_not_empty = 1;
+	    if ( bp < endbp ) * bp ++ = c;
 	}
     }
 }
 
 
-
 int main ( int argc, char ** argv )
 {
     int maxcolumn = 80;
@@ -116,7 +211,7 @@ int main ( int argc, char ** argv )
 
 	++ argv; -- argc;
     }
-
+
     if ( argc <= 1 )
 	checkfile ( stdin, NULL, maxcolumn, maxline );
     else while ( argc >= 2 )
