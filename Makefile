@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Jan 10 04:32:19 EST 2001
+# Date:		Fri Jan 12 11:30:05 EST 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/01/10 10:54:49 $
+#   $Date: 2001/01/12 16:30:38 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.14 $
+#   $Revision: 1.15 $
 
 # See STATUS file for description of versions.
 #
@@ -69,7 +69,7 @@ all.files:
 
 # Make tar files.
 #
-tar:	hpcm-${VERSION}.tar \
+tar:	cleantar hpcm-${VERSION}.tar \
         hpcm-non-distributable-${VERSION}.tar
 
 hpcm-${VERSION}.tar:	distributable-files-${VERSION}
@@ -107,7 +107,9 @@ cleanall:
 	    ( cd `dirname $$x`; make clean ) \
 	    done
 
-clean:
+clean:	cleantar
+
+cleantar:
 	rm -f distributable-files-${VERSION} \
 	      non-distributable-files-${VERSION} \
 	      hpcm-${VERSION}.tar \
