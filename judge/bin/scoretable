@@ -6,7 +6,7 @@
 #
 # File:		scoreboard
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Feb 24 07:54:25 EST 2002
+# Date:		Sun Feb 24 08:42:48 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/02/24 13:10:55 $
+#   $Date: 2002/02/24 13:47:28 $
 #   $RCSfile: scoretable,v $
-#   $Revision: 1.32 $
+#   $Revision: 1.33 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -84,7 +84,15 @@ set LB "{"
 #
 foreach arg $argv {
     if { [regexp "^${LB}" $arg] } {
-	foreach item [lindex $arg 0] {
+	if { [catch { set items [lindex $arg 0] }] } {
+	    error "argument is not a TCL list: $arg"
+	}
+	foreach item $items {
+	    if { [catch { set len [llength $item] }] \
+	         || $len != 2 } {
+	        "argument element is not a length 2\
+		 TCL list: $item"
+	    }
 	    set name  [lindex $item 0]
 	    set value [lindex $item 1]
 	    if { ! [info exists scoreboard_$name] } {
@@ -166,7 +174,7 @@ proc label_problems {} {
 
 		if { $count == 0 } {
 		    set line "Contestant Name"
-		} elseif { $count == $ppl } {
+		} elseif { $count == 1 } {
 		    set line "Correct/Tot_Time"
 		} else {
 		    set line ""
@@ -208,9 +216,7 @@ foreach item $scoreboard_list {
     set submitter [lindex $item 4]
     set problem_scores [lreplace $item 0 4]
 
-    set total_score $time_score
-
-    set total_score "$problems_correct/$total_score"
+    set total_score "$problems_correct/$time_score"
 
     if { $modifier == "n" } {
     	set total_score "*${total_score}"
@@ -230,7 +236,7 @@ foreach item $scoreboard_list {
 
 	    if { $count == 0 } {
 		set line $submitter
-	    } elseif { $count == $ppl } {
+	    } elseif { $count == 1 } {
 		set line "$total_score"
 	    } else {
 		set line ""
