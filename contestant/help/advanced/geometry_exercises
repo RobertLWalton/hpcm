@@ -1,11 +1,18 @@
-GEOMETRY EXERCISES HELP    Fri Mar 19 01:20:41 EST 2004
+GEOMETRY EXERCISES HELP    Sat Mar 20 10:47:05 EST 2004
 
 These are programming exercises you can do to help
 strengthen your geometry problem skills.
 
-Distances:
----------
+Problem: Find the shortest path between two points in a
+plane that has circular holes in it.  The part of a path
+that transverses a hole does NOT count toward the length
+of the path.
 
+    Solution: This is just a shortest path problem where
+    the set of points is the original two points plus
+    the centers of the circular holes, and the distance
+    between two points is their total distance minus the
+    radii of any holes centered at the points.
 
 Compute the distance between a point (x,y) and an
 infinite line through points (x1,y1) and (x2,y2).
@@ -225,15 +232,14 @@ between two points inside the polygon is completely
 inside the polygon.
 
 The convex hull of a set of points V in a plane is a
-sequence of points of V, p(1), ..., p(N), such that
-for every i, all the points of V are on or to the
-right of the line through p(i) and p((i mod N)+1),
-and such that no point p(j) is on this line except
-of course p(i) and p((i mod N)+1).  Then the finite
-lines from p(i) to p((i mod N)+1) for i = 1, ..., N
-are the sides of the smallest convex polygon such
-that all the points of V are inside this polygon or
-on its boundary.
+sequence of points of V, p(1), ..., p(N), such that for
+every i, all the points of V are on or to the right of
+the line through p(i) and p((i mod N)+1), and such that
+no point p(j) is on this line except of course p(i) and
+p((i mod N)+1).  Then the finite lines from p(i) to
+p((i mod N)+1) for i = 1, ..., N are the sides of the
+smallest convex polygon such that all the points of V
+are inside this polygon or on its boundary.
 
 Find the convex hull of a set of 2D points.
 
@@ -264,55 +270,58 @@ Find the convex hull of a set of 2D points.
     that begins with a sort of V and has running time
     dominated by the sort time, O(|V| log|V|).
 
-Find whether some point r is inside a convex polygon.
+Find whether some point p is inside a convex polygon.
 
-TBD
+    Suppose we have a convex hull p(1), ..., p(N) in
+    clockwise order that defines a convex polygon.  So
+    the sides of the polygon with a clockwise orienta-
+    tion are the lines from p(i) to p((i mod N)+1), for
+    i = 1, ..., N, and no three points lie on the same
+    line.
 
-    Suppose we have a convex hull p(1), ..., p(N) in clockwise
-    order that defines a convex polygon.  So the sides of
-    the polygon with a clockwise orientation are the lines
-    from p(i) to p((i mod N)+1), for i = 1, ..., N.  We
-    assume no three of these points lie on the same line.
+    Then a point p is inside the convex polygon but not
+    on the boundary of the polygon iff p is to the right
+    of each clockwise oriented side of the polygon.  Or
+    more specifically, p is to the right of the infinite
+    line that extends the side.
 
-    Then a point r is inside the convex polygon but not on
-    the boundary of the polygon iff r is to the right of
-    each clockwise oriented side of the polygon.  Or more
-    specifically, r is to the right of the infinite line
-    that extends the side.
+Find whether the interior of the line segment between
+points pa and pb intersects the interior of a convex
+polygon.
 
-    So when does the interior of a line from r1 to r2 inter-
-    sect the inside of a convex polygon?  It does if the
-    interior of the line from r1 to r2 intersects the inter-
-    ior of any side of the polygon.  It also does if r1 and
-    r2 are both inside or on the boundary of the polygon,
-    but are not both on the same single side of the polygon.
+    The line segment intersects the interior of the
+    polygon if the interior of the line segement inter-
+    sects the interior of any side of the polygon.  It
+    also does if pa and pb are both inside or on the
+    boundary of the polygon, but are not both on the
+    same single side of the polygon.
 
-    These are the only two cases where the interior of the
-    line from r1 to r2 can intersect the interior of the
-    polygon, UNLESS some of the convex hull points p1, ...,
-    p(N) are in the interior of the line from r1 to r2.  In
-    this last case, use a convex hull point in the interior
-    of the line to divide the line in two, and recursively
-    ask if the interiors of either of the two new line seg-
-    ments intersect the interior of the polygon.
-
-    So all one has to do is take the clockwise sides of the
-    polygon and check that the interior of the finite line
-    from r1 and r2 intersects the interior of some side, or
-    that for each polygon side, r1 and r2 are both on or to
-    the right of the infinite line extending the side, and
-    r1 and r2 are not both on that line.  During this pro-
-    cess one checks each convex hull point p to see if it is
-    in the interior of the line from r1 to r2, and if it is,
-    one then divides the line from r1 to r2 up into two
-    segments, one from r1 to p and one from p to r2, and
-    then one applies the algorithm recursively to see if the
-    interior of either of these two segments intersects the
+    These are the only two cases where the interior of
+    the line segment can intersect the interior of the
+    polygon, UNLESS some of the convex hull points p(1),
+    ..., p(N) are in the interior of the line segment.
+    In this last case, use a convex hull point in the
+    interior of the line segment to divide the line
+    segment in two, and recursively ask if the interiors
+    of either of the two new line segments intersect the
     interior of the polygon.
 
+    So all one has to do is take the clockwise sides of
+    the polygon and check whether the interior of the
+    line segment intersects the interior of some side,
+    and whether for each polygon side, the line segment
+    ends are both on or to the right of the infinite
+    line extending the side, and the ends are not both
+    on that line.  If the latter is true for all sides,
+    the segment is inside the polygon.  During this
+    process one checks each convex hull point to see if
+    it is in the interior of the line segment, and if it
+    is, one then divides the line segment up into two
+    segments at the hull point, and then one applies the
+    algorithm recursively to see if the interior of
+    either of these two segments intersects the interior
+    of the polygon.
 
-Polygon Maze
-------- ----
 
 Problem: Given a set of convex polygons in a plane, and
 two points p and q outside any convex polygon, find the
@@ -320,29 +329,152 @@ shortest path from p to q that does not go inside any
 convex polygon.  Paths may travel on the edges of a
 polygon if these are not inside some other polygon.
 
-Solution: Let V be the set of vertices of the polygons
-plus the two points p and q.  Then the path to be found
-can be represented as a sequence of straight line
-segments with vertices in V (proof to reader).  So it
-is a shortest path in an undirected graph whose vertices
-are V such that given points r1 and r2 in V, there is
-an edge in this undirected graph between r1 and r2 iff
-the interior of the line from r1 to r2 does not inter-
-sect the interior of any polygon.  Actually, we can make
-the computation simpler by also deleting an edge from r1
-to r2 if the interior of the line from r1 to r2 contains
-any member of V, as the shortest path can be composed of
-line segments between members of V that do not contain
-other members of V.
+    Solution: Let V be the set of vertices of the poly-
+    gons plus the two points p and q.  Then the path to
+    be found can be represented as a sequence of
+    straight line segments with vertices in V (proof to
+    reader).  So it is a shortest path in an undirected
+    graph whose vertices are V such that given points pa
+    and pb in V, there is an edge in this undirected
+    graph between pa and pb iff the interior of the line
+    from pa to pb does not intersect the interior of any
+    polygon.  Actually, we can make the computation
+    simpler by also deleting an edge from pa to pb if
+    the interior of the line from pa to pb contains any
+    member of V, as the shortest path can be composed of
+    line segments between members of V that do not
+    contain other members of V.
 
-
-Circular Anti-Maze
--------- ---------
+Intersect a horizontal infinite line with a non-degener-
+ate polygon to produce a set of line segments.  Include
+any part of the line that runs along a side of the poly-
+gon.
 
-Find the shortest path between two points in a plane
-that has circular holes in it.  The part of a path
-that transverses a hole does NOT count toward the
-length of the path.
+    Consider a scan starting at negative infinity on the
+    line and moving along the line to positive infinity.
+    The scan is initially in the OUTSIDE state, and as
+    it moves, may transition to the INSIDE state and
+    back, where OUTSIDE means outside the polygon and
+    INSIDE means inside or on the boundary of the poly-
+    gon.  The list of transition points is the list of
+    line segment ends needed.
+
+    Sort the sides of the polygon by the x coordinate
+    at which they cross the horizontal infinite line.
+    If a side runs along the line, sort it by its
+    minimum coordinate.  Then this is the order these
+    sides will be encountered by the scan.
+
+    If the scan encounters a side intersected in its
+    interior by the infinite line, this is alwas a
+    transition point, and the scan state flips, from
+    OUTSIDE to INSIDE or vice versa.
+
+    If the scan encounters a side intersecting at one
+    of its ends, i.e., a polygon vertex, life is more
+    interesting.  If the vertex is the low x vertex of
+    a side running along and parallel to the scan line,
+    the scan state becomes INSIDE.  Otherwise if the
+    scan has not encountered another side with the same
+    end point, the scan must move to the next side in
+    the sorted list, which will NOT move the scan along
+    its scan line, as the next side will share the end
+    point with the current side.  Then when the scan has
+    both sides with the end point, and one side is not
+    parallel to the scan line, the scan must decide
+    whether set its state to INSIDE or OUTSIDE.
+
+    If the sides of the polygon are directed in clock-
+    wise order, of the two sides that intersect in a
+    common end which is the current scan point, one will
+    be incoming and one outgoing.  Let OUT be the
+    counterclockwise angle of the outgoing side with
+    respect to the positive x-axis, and -IN be the
+    counterclockwise angle of the direction reversed in-
+    comiong side with respect to the positive x-axis.
+    Then -IN != OUT (else the polygon would be
+    degenerate), OUT != 0 (else the case where the
+    scan is at the low x vertex of a side running along
+    the scan line would apply), and IN != 0 (ditto).
+    Set the scan state to INSIDE if and only if
+    -IN > OUT, and to OUTSIDE if -IN < OUT.
+
+Compute the intersection of two non-degenerate polygons.
+
+    First compute the intersections of polygon sides,
+    one side from each polygon, and put these in a list.
+    For each intersection, compute an incoming and an
+    outgoing polygon side, that indicate the direction
+    of travel when the intersection point is used as
+    a vertex in an intersection polygon.
+
+    This is easy if all intersections are at the mid-
+    points of sides.  Assume this for the moment.
+
+    For each intersection compute its distance DI from
+    the origin of its incoming side and the distance
+    DO from the origin of its outgoing side.
+
+    Then run the following alogorithm recursively.
+    Pick a point from the list of intersections, and
+    call it the anchor of a new intersection polygon.
+    Make the anchor current.  Then iteratively compute
+    a next intersection as follows.  The next intersec-
+    tion must have as its incoming side the outgoing
+    side of the current intersection.  The distance
+    DI of the next intersection must be greater than
+    the distance DO of the current intersection.  And
+    if there are several qualifying next intersections,
+    the one with minimum DI must be choosen.   After
+    computing the next intersection, make it current,
+    and remove it from the list of intersections.
+    Stop if the new current intersection is the anchor.
+    The list of current intersections found is another
+    intersection polygon.
+
+    Several intersection polygons can be found this way,
+    and the process stops when the list of intersections
+    is empty.
+
+    The situation is more difficult when a vertex from
+    one polygon can be on the boundary of the other
+    polygon.  In this case, we conpute intersections by
+    considering all pairs of sides, IN and OUT, one from
+    each polygon, and ask whether there is an intersec-
+    tion with IN as the incoming side and OUT as the
+    outgoing side.  There are several cases.
+
+    If IN and OUT do not intersect at all, there is no
+    intersection.  If they intersect in their interiors,
+    there is an intersection.  If they are parallel,
+    the only intersection that needs to be considered is
+    the target of IN, and this might be an intersection
+    if it is on OUT and not the target of OUT.  Other-
+    wise the intersection is a single point that is the
+    end of one or both sides.  It must be the target of
+    IN or the origin of OUT or both to be a possible
+    intersection.
+
+    Possible intersections are screened as follows.  If
+    the possible intersection is the target of IN, the
+    continuation IN' of IN is the side after IN in the
+    clockwise list of sides of IN's polygon.  If the
+    possible intersection is not the target of IN, then
+    IN' = IN.  Simlarly the continuation of OUT, OUT',
+    is the side before OUT in the clockwise list of the
+    sides of OUT's polygon, if the possible intersection
+    is the origin of OUT.  Otherwise OUT' = OUT.
+
+    Now let IN, IN', OUT, OUT' denote the counterclock-
+    wise angles of the directed sides of the same names
+    measured from OUT, so OUT = 0.  Let -IN and -OUT'
+    be the angles of the sides IN and OUT' with opposite
+    direction.  Then -IN != IN' and -OUT' != OUT, else
+    the polygons would be degenerate.  Also by defini-
+    tion OUT = 0.
+
+
+
 
 Rotate 2D coordinates.
 
@@ -367,69 +499,86 @@ Rotate 2D coordinates.
 
 	    R(90 degrees).v =  (vy,-vx)
 
+Rotate in 2D coordinates.
 
-Robot Arms
------ ----
+    The following is the rotation Rz(theta) around the
+    z-axis of a vector v=(vx,vy,vz) by an angle theta:
 
-Suppose we have a planar robot arm.  Such an arm con-
-sists of line segments in an order.  The beginning of
-each segment is a pivot point, around which a servo can
-rotate the segment and anything attached to its end.
-The end of a segment is attached to the beginning of the
-next segment, or to the robot hand if the segment is the
-last segment of the arm.  We will define the end of the
-last segment to also be a pivot point: it could have a
-servo to rotate the hand.
+    Rz(theta).v =
 
-The parameters of the arm are the lengths of the seg-
-ments and the angular settings of the servos.  A servo
-is typically set to have 0 angle if the segment follow-
-ing it continues in the same direction as the segment
-preceding it.  We will assume that a positive angle
-means the arm following the servo is rotated clockwise
-by that angle.  Particular robot arms may use other
-conventions for servo angles.  We will also assume that
-the first pivot point is at the origin, and that the
-setting of 0 degrees for the first servo points the
-first segment along the positive x-axis.
-
-The position of the pivot points of such an arm can be
-computed recursively by induction on the number of
-segments in the arm.  If there are 0 segments, there is
-only one pivot point (the hand's), and it is at the
-origin.  Otherwise assume for the moment that the first
-segment is such that its end (not its beginning) is at
-the origin and its orientation is in the direction of
-the positive x-axis, so its server setting is 0 degrees.
-Next compute the positions of the pivot points at the
-ends of the other segments by induction.
+           |   cos(theta)   sin(theta)  0 | | vx |
+           |                              | |    |
+           | - sin(theta)   cos(theta)  0 | | vy | =
+           |                              | |    |
+	   |   0            0           1 | | vz |
 
-Now translate the origin to the beginning of the first
-segment by adding the length of this segment to the
-x coordinate of every pivot point.  The beginning of the
-first segment is now the origin.  The setting of the
-first servo is still 0 degrees.
-
-Now rotate all the pivot points about the origin by the
-amount indicated by the setting of the first servo.
-This finishes the computation.
-
-This computation is easy because we use induction to
-build the arm from its end, and not from its beginning.
+	   |   vx cos(theta) + vy sin(theta) |
+	   |                                 |
+	   | - vx sin(theta) + vy cos(theta) |
+	   |                                 |
+	   |               vz                |
 
 
-File:		2D_geometry
-Author:		Bob Walton <walton@deas.harvard.edu>
-Date:		See top of file.
+    Most particularly, if theta = 90 degrees, then
 
-The authors have placed this file in the public domain;
-they make no warranty and accept no liability for this
-file.
+		
+	                 |  0   1  0 |
+	                 |           |
+	Rz(90 degrees) = | -1   0  0 |
+	                 |           |
+	                 |  0   0  1 |
+	
 
-RCS Info (may not be true date or author):
+        Rz(90 degrees).v =  (vy,-vx,vz)
 
-    $Author: hc3 $
-    $Date: 2004/03/19 07:00:16 $
-    $RCSfile: geometry_exercises,v $
-    $Revision: 1.2 $
+    We can see from this last that the signs of the
+    sin(theta) elements of the rotation matrix have been
+    chosen so that if the x-axis goes toward your right,
+    the z-axis goes up, and the y-axis goes away from
+    you, then a rotation with theta > 0 is clockwise
+    looking down on the xy-plane.
 
+    One can also write matrices easily for rotations
+    about the x-axis or y-axis.  The only issue is
+    choosing the signs of the sin(theta) components.
+    There are two choices, as the two sin(theta) com-
+    ponents always have opposite signs.
+
+A robot arm is a set of line segments connected end to
+end, and at the end of each line segment a servo that
+can rotate all the segments beyond the servo.  The servo
+at the last endpoint can rotate a hand at the end of
+the last segment.  The hand is conceptually an ortho-
+gonal basis, representable by an orthonormal matrix.
+The line endpoints are conceptually just points.
+
+The arm has a home position; e.g., all segments vertical
+and the hand aligned with the coordinate system.  In
+this home position, each servo is defined by the direc-
+tion it can rotate.  In 2D a typical servo can rotate
+clockwise or counterclockwise.  In 3D the servo can
+rotate around any of the x-, y-, or z- axes.
+
+Compute the locations of the endpoints and orientation
+of the hand of a robot.
+
+    The trick is to build the robot from the hand end
+    up.  Assume the initial position of the robot is
+    vertical with hand oriented along the coordinate
+    axes.
+
+    If the robot has no line segments and no servos,
+    it has only an end point with a hand, and the hand
+    is always oriented along the coordinate axes.  Thus
+    the end point is the origin and the hand orientation
+    is the unit matrix.
+
+    If we add a servo that has a rotation matrix to the
+    origin of the robot, all end points in the robot are
+    rotated by the servo matrix, and the hand orientation
+    is rotated by multiplying by that matrix.
+
+    If we add a line segment to beginning of the robot,
+    all end points in the robot are translated vertically
+    by the length of the line segment, and the hand
+    orientation does not change.
