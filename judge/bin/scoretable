@@ -6,7 +6,7 @@
 #
 # File:		scoreboard
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Nov  5 06:34:59 EST 2000
+# Date:		Sun Nov  5 07:51:14 EST 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/11/05 12:16:50 $
+#   $Date: 2000/11/05 13:13:57 $
 #   $RCSfile: scoretable,v $
-#   $Revision: 1.11 $
+#   $Revision: 1.12 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -295,15 +295,14 @@ proc format_time { time } {
 # missions, and all the problem_scores are `......'.
 # 
 # To print an output line for the submitter, the sub-
-# mitter needs to be truncated to 8 characters and
-# printed left adjusted in 8 columns.  Each problem
+# mitter needs to be truncated to 12 characters and
+# printed left adjusted in 12 columns.  Each problem
 # score needs to be printed right adjusted in 8 columns.
-# The time_score needs to be changed to have leading
-# blanks and printed right adjusted in 8 columns.  If
-# modifier is `n' a `*' should replace the first blank
-# before the time_score.  All submitters with the same
-# number of problems correct are grouped under the
-# header `# Problems Correct:'.
+# The time_score needs to be printed right adjusted in
+# 10 columns.  If the modifier is `n', a `*' should pre-
+# fix the time_score.  All submitters with the same
+# number of problems correct are grouped under the head-
+# er `# Problems Correct:'.
 #
 set score_list ""
 set max_time_score 999999999
@@ -321,30 +320,45 @@ if { $scoring_mode == "manual" } {
 
 foreach submitter $submitters {
 
+    # Compute total time score, number of problems cor-
+    # rect, modifier (f or n), total number of submis-
+    # sions.
+    #
     set time_score 0
     set problems_correct 0
     set modifier f
-    set problem_scores ""
     set submissions 0
 
+    # Compute the problem scores for the score list
+    # item in $problem_scores.
+    #
+    set problem_scores ""
     foreach problem $sorted_problems {
-	set problem_incorrect 0
-	set problem_time ""
-	set problem_modifier f
-	if { [info exists \
-		   ${submitter}_array($problem)] } {
-	    set problem_list \
-	        [set ${submitter}_array($problem)]
-	} else {
-	    set problem_list ""
-	}
 
+	# Compute problem start time, which may equal
+	# "" or "team".
+	#
 	set problem_start_time $scoreboard_start_time
 	if { $problem_start_time == "team"
 	     && [info exists \
 	              start_time_array($submitter)] } {
 	    set problem_start_time \
 		$start_time_array($submitter)
+	}
+
+	# Compute problem time, number of incorrect
+	# submissions, and problem modifier.
+	#
+	set problem_time	""
+	set problem_incorrect	0
+	set problem_modifier	f
+
+	if { [info exists \
+		   ${submitter}_array($problem)] } {
+	    set problem_list \
+	        [set ${submitter}_array($problem)]
+	} else {
+	    set problem_list ""
 	}
 
 	foreach item [lsort $problem_list] {
@@ -355,8 +369,12 @@ foreach submitter $submitters {
 			   item_time] } {
 		set item_time 0
 	    }
+
 	    if { [lsearch -exact $ccodes $score] \
                  >= 0 } {
+
+		# Score is correct.
+
 		if { $problem_start_time != "" \
 		     && $problem_start_time != "team" \
 		     		} {
@@ -370,15 +388,23 @@ foreach submitter $submitters {
 		}
 		incr submissions
 		break
+
 	    } elseif { [lsearch -exact $icodes $score] \
                        >= 0 } {
+
+		# Score is incorrect.
+
 		if { $score == "ai" \
 		     && $scoring_mode != "auto" } {
 		    set problem_modifier n
 		}
 		incr problem_incorrect
 		incr submissions
+
 	    } elseif { $score == "dg" } {
+
+		# Time is when problem was gotten.
+
 	    	if { $problem_start_time == "" } {
 		    set problem_start_time \
 		    	$item_time
@@ -386,6 +412,9 @@ foreach submitter $submitters {
 	    }
 	}
 
+	# Add to time_score and count of problems cor-
+	# rect, and compute problem_score.
+	#
 	if { $problem_time == "undef" } {
 
 	    set c [expr { $problem_incorrect + 1 }]
@@ -421,9 +450,14 @@ foreach submitter $submitters {
 	    set problem_score "*$problem_score"
 	    set modifier n
 	}
+
+	# Append problem score to problem_scores list.
+	#
 	lappend problem_scores $problem_score
     }
 
+    # Add score list item to score list.
+    #
     set ccc [format {%03d} $problems_correct]
     set ttttttttt \
         [format {%09d} [expr 999999999 - $time_score]]
@@ -437,13 +471,13 @@ foreach submitter $submitters {
 
 # Start output of scoreboard.
 #
-set spaces16 "                "
+set spaces32 "                                "
 
 # Output lines labeling problems at top of scoreboard.
 #
 proc label_problems {} {
 
-    global sorted_problems spaces16
+    global sorted_problems spaces32
 
     set count  0
     set indent 13
@@ -455,7 +489,7 @@ proc label_problems {} {
 		    puts ""
 		}
 		puts -nonewline \
-		     [string range $spaces16 \
+		     [string range $spaces32 \
 			     0 [expr { $indent - 1 }]]
 		incr indent 2
 	    }
@@ -476,6 +510,8 @@ set current_problems_correct ""
 set number_of_problems [llength $sorted_problems]
 foreach item [lsort -decreasing $score_list] {
 
+    # If team has no submissions, stop the presses.
+    #
     if { [lindex $item 0] == "000.999999999.000" } {
 	break
     }
@@ -493,6 +529,11 @@ foreach item [lsort -decreasing $score_list] {
     	set time_score "*$time_score"
     }
 
+    # If we have a change in the number of problems
+    # a team has correct, print a new header for the
+    # new group of teams with a given number of
+    # problems correct.
+    #
     if { $problems_correct \
          != $current_problems_correct } {
     	set current_problems_correct $problems_correct
@@ -508,6 +549,8 @@ foreach item [lsort -decreasing $score_list] {
 	incr item_count
     }
 
+    # Print the line(s) for the team.
+    #
     set count 0
     set indent 13
     foreach score $problem_scores {
@@ -522,7 +565,7 @@ foreach item [lsort -decreasing $score_list] {
 		     [format {%-12.12s } $submitter]
 	    } else {
 		puts -nonewline \
-		     [string range $spaces16 \
+		     [string range $spaces32 \
 			     0 [expr { $indent - 1 }]]
 	    }
 	    incr indent 2
