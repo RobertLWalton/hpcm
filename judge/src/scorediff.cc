@@ -2,7 +2,7 @@
 //
 // File:	scorediff.cc
 // Authors:	Bob Walton (walton@deas.harvard.edu)
-// Date:	Wed Apr 24 09:54:47 EDT 2002
+// Date:	Wed Apr 24 10:06:32 EDT 2002
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: hc3 $
-//   $Date: 2002/04/24 13:53:56 $
+//   $Date: 2002/04/24 14:08:16 $
 //   $RCSfile: scorediff.cc,v $
-//   $Revision: 1.46 $
+//   $Revision: 1.47 $
 
 // This is version 2, a major revision of the first
 // scorediff program.  This version is more explicitly
@@ -35,7 +35,7 @@ int finite (double);	// Not always in math.h
 // Maximum size of a token, or of whitespace preceding
 // a token.
 //
-unsigned const MAX_SIZE = 10200;
+unsigned const MAX_SIZE = 10100;
 
 // Default maximum number of proof lines containing any
 // one type of difference.
