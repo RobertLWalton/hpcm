@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Mar 11 05:41:07 EST 2003
+# Date:		Wed Mar 19 12:27:59 EST 2003
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2003/03/11 10:41:36 $
+#   $Date: 2003/03/19 17:30:03 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.35 $
+#   $Revision: 1.36 $
 
 # See STATUS file for description of versions.
 #
@@ -224,14 +224,17 @@ HPCM_${VERSION}_CVS_MD5_Signatures:	\
 	     >> HPCM_${VERSION}_CVS_MD5_Signatures
 	md5sum hpcm_${VERSION}_cvs${TAREXT} \
 	  >>  HPCM_${VERSION}_CVS_MD5_Signatures
-	md5sum `find cvsroot -type f -print` \
-	  >> HPCM_${VERSION}_CVS_MD5_Signatures
+	cd cvsroot; md5sum `find . -type f -print | \
+	                    sed -e '/^\.\//s///' ` \
+	  >> ../HPCM_${VERSION}_CVS_MD5_Signatures
 
 # Check CVS MD5 Signatures
 #
 cvsmd5check:	cvsroot
-	sed < HPCM_${VERSION}_CVS_MD5_Signatures \
-	    -e '1,/^ ====== /'d | \
+	cd cvsroot; \
+	    sed <../HPCM_${VERSION}_CVS_MD5_Signatures \
+	    -e '1,/^ ====== /'d \
+	    -e '/hpcm_.*_cvs\${TAREXT}/s//..\/&/' | \
 	    md5sum --check 2>&1 | \
 	    sed -e '/^[^ 	]*: OK$$/d'
 		
