@@ -2,7 +2,7 @@
 #
 # File:		scoring_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Aug 27 05:12:49 EDT 2001
+# Date:		Mon Aug 27 07:42:54 EDT 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/08/27 10:33:51 $
+#   $Date: 2001/08/27 11:57:40 $
 #   $RCSfile: scoring_common.tcl,v $
-#   $Revision: 1.2 $
+#   $Revision: 1.3 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -27,7 +27,6 @@
 
 # Including this Code
 # --------- ---- ----
-
 
 # Include this code in TCL program via:
 #
@@ -67,8 +66,8 @@
 # instructions.
 #
 # Note that the `number' type may appear in `instruc-
-# tion_array' but not in `score_array'.  However, if
-# `number' is in the scoring instructions but `integer'
+# tion_array', but not in `score_array'.  However, if
+# `number' is in the scoring instructions, but `integer'
 # or `float' is not, then `integer' or `float' will be
 # added to the `instruction_array' copying the absolute
 # and relative differences from the `number' entry in
@@ -94,9 +93,8 @@
 # of which are the test-line number.  The list stored
 # in each `proof_array(type)' is sorted, thereby sorting
 # the proofs in the list first by output-line number and
-# second by test line number.
-
-
+# second by test-line number.
+
 # Function to compute the `instruction_array' using
 # the current value of `find_scoring_instructions'.
 #
@@ -109,15 +107,17 @@ proc compute_instruction_array { }
 			  "scoring instructions"
 
     if { [info exists instruction_array(number)] } {
+        set differences \
+	    [lrange 1 end $instruction_array(number)]]
 	if { ! [info exists \
 	             instruction_array(integer)] } {
 	     set instruction_array(integer) \
-	         $instruction_array(number)
+	         [concat integer $differences]
 	}
 	if { ! [info exists \
 	             instruction_array(float)] } {
 	     set instruction_array(float) \
-	         $instruction_array(number)
+	         [concat float $differences]
 	}
     }
 }
@@ -136,7 +136,7 @@ proc compute_score_and_proof_arrays { args }
     global proof_array
 
     switch [llength $args] {
-        { 0
+        0 {
 	    set items [get_file_items {.*\.score}]
 
 	    if { [llength $items] != 1 } {
@@ -145,10 +145,10 @@ proc compute_score_and_proof_arrays { args }
 
 	    set filename [lindex [lindex 1 $items] 2]
 	}
-	{ 1
+	1 {
 	    set filename [lindex $args 0]
 	}
-	{ default
+	default {
 	    error "too many args to\
 	           compute_score_and_proof_arrays"
 	}
@@ -175,7 +175,7 @@ proc compute_score_and_proof_arrays { args }
 	set output_line [lindex $work 0]
 	set test_line [lindex $work 1]
 	set sort_id \
-	    [format "%06d%06d" $output_line $test_line]
+	    [format {%06d%06d} $output_line $test_line]
 	set work [lrange $work 2 end]
 
 	while { [llength $work] >= 4 } {
@@ -184,6 +184,14 @@ proc compute_score_and_proof_arrays { args }
 	    set test_begin_column   [lindex $work 2]
 	    set test_end_column     [lindex $work 3]
 	    set work [lrange 4 end]
+
+	    set proof [list $sort_id \
+			    $output_line \
+			    $test_line \
+			    $output_begin_column \
+			    $output_end_column \
+			    $test_begin_column \
+			    $test_end_column]
 
 	    while { [regexp {^[a-zA-Z]} \
 	                    [lindex $work 0] } {
@@ -202,17 +210,11 @@ proc compute_score_and_proof_arrays { args }
 		    set work [lrange $work 1 end]
 		}
 
-		set proof [list $sort_id \
-				$output_line \
-				$test_line \
-				$output_begin_column \
-				$output_end_column \
-				$test_begin_column \
-				$test_end_column]
-		set proof [concat $proof $differences]
-		lappend proof_array($type) $proof
+		lappend proof_array($type) \
+		        [concat $proof $differences]
 	    }
 	}
+
 	if { [llength $work] != 0 } {
 	    error "too short proof line: $line"
 	}
@@ -226,20 +228,23 @@ proc compute_score_and_proof_arrays { args }
 }
 
 # Function to do the common work of the above functions.
+# Array is the array to compute, line is the input line,
+# and name is a description of the line for error mes-
+# sages.
 #
 proc compute_scoring_array { array line name } {
 
     global instruction_array score_array
 
     foreach type [array names $array] {
-        unset $array($name)
+        unset ${array}($name)
     }
 
     set state type
     foreach item $line {
 	switch $state {
-	    { type
-		set $array($type) $item
+	    type {
+		set ${array}($type) $item
 		if { [lsearch -exact \
 	              {number integer float} $item] \
 		     >= 0 } {
@@ -247,12 +252,12 @@ proc compute_scoring_array { array line name } {
 		    set state first
 		}
 	    }
-	    { first
-	    	lappend $array($previous) $item
+	    first {
+	    	lappend ${array}($previous) $item
 		set state second
 	    }
 	    { second
-	    	lappend $array($previous) $item
+	    	lappend ${array}($previous) $item
 		set state type
 	    }
 	}
@@ -267,8 +272,9 @@ proc compute_scoring_array { array line name } {
 
 # Function that computes the .score file given the
 # .out and .test files.  The scoring instructions and
-# `difference_type_proof_limit' value from `hpcm_judg-
-# ing.rc' are used to obtain an optimal set of proofs.
+# the `difference_type_proof_limit' value from `hpcm_
+# judging.rc' are used to obtain an optimal set of
+# proofs.
 #
 # The file names used are $basename.out, $basename.test,
 # and $basename.score.
@@ -281,7 +287,7 @@ proc compute_score_file { basename } {
     global difference_type_proof_limit \
            instruction_array
 
-    set limits "-limits $difference_type_proof_limit"
+    set limits "-all $difference_type_proof_limit"
 
     foreach type [array names instruction_array] {
 	set arguments $instruction_array($type)
@@ -320,11 +326,6 @@ proc compute_score { } {
 
         if { [info exists instruction_array($type)] } {
 
-	    # If integer or float type and instruction
-	    # absolute or relative difference is less
-	    # than score difference, return `Incorrect
-	    # Output'.
-
 	    if { [lsearch -exact {integer float} \
 	                         $type] >= 0 } {
 		set score score_array($type)
@@ -336,9 +337,7 @@ proc compute_score { } {
 		     <= [lindex $instruction 2] } {
 		    continue
 		}
-	    } else {
-		continue
-	    }
+	    } else continue
 	}
 
 	switch $type {
