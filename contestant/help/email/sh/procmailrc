@@ -1,6 +1,25 @@
-
-:0 c
+# Select replies from hpcm_get messages,
+# and avoid selecting output of hpcm_extract.
+#
+:0
 * ^Subject:[ 	]+RE:[ 	]+get
 * ! ^X-HPCM-Subject:
-| my_hpcm/help/sh/hpcm_extract my_hpcm | \
+{
+  # Pipe the reply through hpcm_extract and send
+  # the output of that as mail to ourselves.
+  #
+  :0 c: hpcm/get_mbox$LOCKEXT
+  | hpcm/help/sh/hpcm_extract hpcm | \
 	procmail -m .procmailrc
+
+  # Save the same reply in hpcm/get_mbox.  Its rare
+  # to want to see the reply itself, but this saves
+  # it in case hpcm_extract fails oddly.
+  #
+  :0:
+  hpcm/get_mbox
+}
+
+# Note: if you get a name such as hpcm/help/sh/
+# hpcm_extract wrong, mail typically vanishes without
+# any error messages.
