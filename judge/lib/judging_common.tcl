@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Aug 29 08:31:00 EDT 2000
+# Date:		Wed Aug 30 16:11:05 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: acm-cont $
-#   $Date: 2000/08/29 12:55:55 $
+#   $Date: 2000/08/30 20:19:36 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.25 $
+#   $Revision: 1.26 $
 #
 
 # Include this code in TCL program via:
@@ -57,18 +57,6 @@ set judging_parameters_file "hpcm_judging.rc"
 # redefined by program.
 #
 proc exit_cleanup {} {}
-
-# Replace all line feeds in a string by spaces, then
-# replace any all whitespace string by the empty string,
-# then strip all whitespace from the beginning and end
-# of the string, and lastly return the resulting string.
-#
-proc prepare_field_value { value } {
-
-    regsub -all "\n" $value "\ " value
-
-    return [string trim $value]
-}
 
 # Convert a [clock seconds] value into a date in
 # the form yyyy-mm-dd-hh:mm:ss that is useable as
@@ -589,7 +577,7 @@ proc compose_reply { args } {
 
     if { ! [regexp "\[^\ \t\n\]" $message_from] \
          || ! [regexp "\[^\ \t\n\]" $message_date]  } {
-	puts $reply_ch ">$message_From_line
+	puts $reply_ch ">$message_From_line"
     }
 
     if { [regexp "\[^\ \t\n\]" $message_to]  } {
@@ -675,63 +663,22 @@ proc send_reply {} {
     file rename -force "${reply_file}+" $reply_file
 }
 
-# The following function returns the subject of the
-# $received_file in the current directory.  Both the
-# `Subject:' and any preceding or following whitespace
-# are stripped from the result, and any line feeds
-# are replaced by spaces.
+# Read lines from channel.  Return `yes' if eof encoun-
+# tered before a non-blank line.  Return `no' if non-
+# blank line encountered.
 #
-# If no `Subject:' line is found in the header, or if
-# the -nobody argument is given and the body contains a
-# non-blank line, then error is called with an appropri-
-# ate error message and the errorCode value:
-# "FIND_SUBJECT".
-#
-# Read_header is called and its global message_...
-# variables are set.
-#
-proc find_subject { { option -body } } {
+proc blank_body { ch } {
 
-    global received_file message_subject
-
-    if { $option == "-body" } {
-	set body_option yes
-    } elseif { $option == "-nobody" } {
-	set body_option no
-    } else {
-        error "Bad argument to find_subject: $option"
-    }
-
-    set received_ch [open $received_file r]
-
-    read_header $received_ch
-
-    set subject [prepare_field_value $message_subject]
-
-    if { $subject == "" } {
-    	error "Empty subject" "" FIND_SUBJECT
-    }
-
-    if { $body_option == "no" } {
-
-	# Check that body is blank.
-	#
-	while { "yes" } {
-	    set line [gets $received_ch]
-	    if { [eof $received_ch] } {
-		break
-	    } elseif { [regexp "^\[\ \t\]*\$" $line] } {
-		# blank lines are ok
-	    } else {
-		error "Non-blank body line:\n\
-		      \    $line" "" FIND_SUBJECT
-	    }
+    while { "yes" } {
+	set line [gets $ch]
+	if { [eof $ch] } {
+	    return yes
+	} elseif { [regexp "^\[\ \t\]*\$" $line] } {
+	    # blank lines are ok
+	} else {
+	    return no
 	}
     }
-
-    close $received_ch
-
-    return $subject
 }
 
 # Find the scoring instructions in the $scoring_

@@ -4,7 +4,7 @@
 #
 # File:		autoinfo
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Aug 30 14:31:19 EDT 2000
+# Date:		Wed Aug 30 16:00:36 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: acm-cont $
-#   $Date: 2000/08/30 18:36:20 $
+#   $Date: 2000/08/30 20:19:34 $
 #   $RCSfile: autoinfo,v $
-#   $Revision: 1.9 $
+#   $Revision: 1.10 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -32,12 +32,12 @@ set document "
 cd submission_directory; autoinfo
 
     Reads the `$received_file' file in the current
-    directory.  Thus file must have a subject line of
-    the form:
+    directory.  Thus file must contain a single email
+    message with a subject line of the form:
 
     	Subject: get name ...
 
-    The body of the mail file must be empty.
+    The body of the message must be empty.
 
     The names are taken relative to the info directory,
     and may either files or directories.  A directory
@@ -91,23 +91,35 @@ proc info_error_reply { args } {
     exit 0
 }
 
-# Find the subject.  If bad subject reply.  If other
-# error propagate the error.
+# Find the subject.  If bad subject call error.
 #
-if { [catch { set subject [find_subject -nobody] } \
-            caught_out] } {
-    switch -exact -- $errorCode {
-	FIND_SUBJECT	{ info_error_reply $catch_out }
-	default		{ error $caught_out $errorInfo \
-				$errorCode }
+set received_ch [open $received_file r]
+read_header $received_ch
+switch [llength $message_subject] {
+
+    0		{
+	error "No `Subject:' field in message"
+    }
+
+    1		{
+	error "Too short `Subject:' field in message:\n\
+	      \   Subject:$message_subject"
+    }
+
+    default	{
+	if { [lindex $message_subject 0] != "get" } {
+	    error "Bad `Subject:' field in message:\n\
+		  \   Subject:$message_subject"
+	}
     }
 }
 
-if { [llength $subject] < 2 \
-     || [lindex $subject 0] != "get" } {
-     info_error_reply "Badly formatted subject line:" \
-	"Subject:$message_subject"
+# If non-empty body reply with error.
+#
+if { [blank_body $received_ch] == "no" } {
+     info_error_reply "Non-blank body in message"
 }
+close $received_ch
 
 # Compute list of readable file names, list of unread-
 # able file names, and list of illegal file names.
@@ -137,7 +149,7 @@ proc info_expand { name } {
     }
 }
 
-foreach n [lreplace $subject 0 0] {
+foreach n [lreplace $message_subject 0 0] {
     info_expand $n
 }
 
@@ -167,14 +179,13 @@ set reply_ch [open "${reply_file}+" a]
 
 puts $reply_ch ""
 
-set whosh "*****-----*****-----"
-set hsohw "-----*****-----*****"
+set dashes "------------------------------"
 
 foreach n $names {
-    puts $reply_ch "$whosh ${n} $hsohw"
+    puts $reply_ch "$dashes $n:"
     put_file "$info_directory/$n" $reply_ch
 }
-puts $reply_ch "$whosh end $hsohw"
+puts $reply_ch "$dashes end of files"
 
 close $reply_ch
 
