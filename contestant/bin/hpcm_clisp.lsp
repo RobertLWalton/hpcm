@@ -71,6 +71,7 @@
 (setf *print-pretty* t)
 (setf *print-circle* nil)
 (setf *read-default-float-format* 'double-float)
+(setf LS '|Wrong window, try again...|)
 #+allegro
 (setf *print-right-margin* 56)
 #+clisp
@@ -293,7 +294,7 @@
 		 :if-exists		nil)))
        (if f (close f)))
   
-  (shell (concatenate 'string "vi '+set lisp sm ai' " file)))
+  (shell (concatenate 'string "vim '+set lisp sm ai' " file)))
 
 (defun VI (&optional (FILE *VI-FILE*))
   
@@ -386,14 +387,13 @@
 
   (run :in *picor-file* :out out))
 
-;; (putprop sym pval pname)
+;; (put object property value)  
 ;;
-;; Associates pval with the property pname for the symbol sym.  Returns pval.
-;; (The following definition of putprop is from section 3.1 of the project
-;; book.  It is included here for your convenience.)
+;; Associates value with the given property for the symbol object.
+;; Returns value.
 ;;
-(defun putprop (sym pval pname)
-  (setf (get sym pname) pval))
+(defun put (object property value)  
+  (setf (get object property) value))
 
 ;; Attempts to fix backspace problems
 (defun bksp () (run-shell-command "stty erase '^H'"))
