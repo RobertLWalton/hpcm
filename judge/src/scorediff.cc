@@ -11,9 +11,9 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: hc3 $
-//   $Date: 2001/07/01 14:33:33 $
+//   $Date: 2001/07/01 16:58:54 $
 //   $RCSfile: scorediff.cc,v $
-//   $Revision: 1.25 $
+//   $Revision: 1.26 $
 
 // This is version 2, a major revision of the first
 // scorediff program.  This version is more explicitly
@@ -71,6 +71,11 @@ char documentation [] =
 "		these whitespaces do not match\n"
 "		exactly.\n"
 "\n"
+"		However, this difference is not re-\n"
+"		cognized if either following matching\n"
+"		token is a number with a decimal\n"
+"		point or exponent.\n"
+"\n"
 "    spacebreak	For two matching tokens, one is pre-\n"
 "		ceded by whitespace containing no new\n"
 "		lines, and the other has no preceding\n"
@@ -102,16 +107,21 @@ char documentation [] =
 "		following the last new line for the\n"
 "		other token.\n"
 "\n"
+"		However, this difference is not re-\n"
+"		cognized if either following matching\n"
+"		token is a number with a decimal\n"
+"		point or exponent.\n"
+"\n"
 "    eof1	When the first file ends, the second\n"
 "		file has a remaining non-eof token.\n"
 "		In this case, preceding whitespaces\n"
 "		are NOT compared.\n"
-"\n"
+"\f\n"
 "    eof2	When the second file ends, the first\n"
 "		file has a remaining non-eof token.\n"
 "		In this case, preceding whitespaces\n"
 "		are NOT compared.\n"
-"\f\n"
+"\n"
 "    float A R	For two matching number tokens,\n"
 "		at least ONE of which contains a\n"
 "		a decimal point or exponent, the\n"
@@ -139,6 +149,10 @@ char documentation [] =
 "    exponent	For two matching numbers one has an\n"
 "		exponent but the other does not.\n"
 "\n"
+"    sign	For two matching numbers, only one\n"
+"		begins with a sign, or the two num-\n"
+"		bers begin with different signs.\n"
+"\f\n"
 "    case	Two matching non-number tokens are\n"
 "		NOT identical, but would be identical\n"
 "		if letter case differences were\n"
@@ -146,7 +160,7 @@ char documentation [] =
 "\n"
 "    column	Two matching tokens end in differ-\n"
 "		ent columns.\n"
-"\f\n"
+"\n"
 "    nonblank	At least one of two matching tokens\n"
 "		is a word token, and it is not true\n"
 "		that both are word tokens of the same\n"
@@ -174,7 +188,7 @@ char documentation [] =
 "    exponent.  An exponent is an `e' or `E' followed\n"
 "    by an an optional sign followed by digits.  A\n"
 "    number is scanned by the strtod(3) function.\n"
-"\n"
+"\f\n"
 "    A word is a string of non-whitespace characters\n"
 "    that does not contain a number.  If two words S\n"
 "    and L are being matched, and S is shorter than\n"
@@ -183,7 +197,7 @@ char documentation [] =
 "    the token that follows S.  Thus any two words\n"
 "    being matched are forced to have the same\n"
 "    length.\n"
-"\f\n"
+"\n"
 "    It is an error if a token longer than 10,100\n"
 "    characters is found, or if a sequence of con-\n"
 "    secutive whitespace characters longer than\n"
@@ -212,13 +226,13 @@ char documentation [] =
 "\n"
 "    For the purpose of computing the column of a\n"
 "    character, tabs are set every 8 columns.\n"
-"\n"
+"\f\n"
 "    Note that if the two matching numbers have expo-\n"
 "    nents and the letter case of the `e' or `E' in\n"
 "    the two exponents does not match, then the diff-\n"
 "    erence will always be reported as a `float'\n"
 "    difference and not a `case' difference.\n"
-"\f\n"
+"\n"
 "    To avoid whitespace comparison anomalies, a new\n"
 "    line is added in front of each file before the\n"
 "    file is parsed.  Thus differences in whitespace\n"
@@ -250,13 +264,13 @@ char documentation [] =
 "                              relative-difference |\n"
 "                    `integer' absolute-difference\n"
 "                              relative-difference\n"
-"\n"
+"\f\n"
 "          absolute-difference ::=\n"
 "                    floating-point-number\n"
 "\n"
 "          relative-difference ::=\n"
 "                    floating-point-number\n"
-"\f\n"
+"\n"
 "    where the column numbers in a line start with 0\n"
 "    and the line numbers in a file start with 1.\n"
 "    Here non-floating-point numbers output as part\n"
@@ -290,13 +304,13 @@ char documentation [] =
 "    argument must NOT begin with a digit).  Thus\n"
 "    `-case' with no following number suppresses all\n"
 "    `case' proofs.\n"
-"\n"
+"\f\n"
 "    The `-float' and `-integer' program options\n"
 "    differ in that they have the forms:\n"
 "\n"
 "        -float absolute-diff relative-diff N\n"
 "        -integer absolute-diff relative-diff N\n"
-"\f\n"
+"\n"
 "    and the program outputs only the first N `float'\n"
 "    or `integer' proofs that have an absolute or\n"
 "    relative difference larger than the values given\n"
@@ -369,9 +383,10 @@ struct file
     //
     // Set to characters backed over in the input string
     // when scan_token determines that some characters
-    // encountered scanning a word begin a number or that
-    // some characters encountered scanning a number do
-    // not begin an exponent.  Possible values are:
+    // encountered scanning a word begin a number or
+    // that some characters encountered scanning a
+    // number do not begin an exponent.  Possible
+    // values are:
     //
     //		+#   -#   .#   +.#  -.#
     //		e    e+   e-   E    E+   E-
@@ -760,6 +775,7 @@ enum difference_type {
     INTEGER,
     DECIMAL,
     EXPONENT,
+    SIGN,
     CASE,
     COLUMN,
     NONBLANK,
@@ -802,6 +818,7 @@ difference differences[] = {
     { "integer",	false, 0, 0, MAX_PROOF_LINES },
     { "decimal",	false, 0, 0, MAX_PROOF_LINES },
     { "exponent",	false, 0, 0, MAX_PROOF_LINES },
+    { "sign",		false, 0, 0, MAX_PROOF_LINES },
     { "case",		false, 0, 0, MAX_PROOF_LINES },
     { "column",		false, 0, 0, MAX_PROOF_LINES },
     { "nonblank",	false, 0, 0, MAX_PROOF_LINES }
@@ -1017,6 +1034,15 @@ void diffnumber ()
 
     if ( output.has_exponent != test.has_exponent )
 	found_difference ( EXPONENT );
+
+    char oc = output.token[0];
+    char tc = test.token[0];
+
+    if ( oc != '-' && oc != '+' ) oc = 0;
+    if ( tc != '-' && tc != '+' ) tc = 0;
+
+    if ( oc != tc )
+    	found_difference ( SIGN );
 }
 
 // Main program.
@@ -1182,11 +1208,35 @@ int main ( int argc, char ** argv )
 		while ( * wp2 && * wp2 != '\n' ) ++ wp2;
 
 		if ( output.newlines == 0 )
-		    found_difference ( WHITESPACE );
+		{
+		    bool output_is_float =
+		         output.type == NUMBER_TOKEN
+		         && ( output.decimals >= 0 
+			      || output.has_exponent );
+		    bool test_is_float =
+		         test.type == NUMBER_TOKEN
+		         && ( test.decimals >= 0 
+			      || test.has_exponent );
+		    if (    ! output_is_float
+		         && ! test_is_float )
+		        found_difference ( WHITESPACE );
+		}
 		else if ( newlines == 0 )
 			found_difference ( ENDSPACE );
 		else if ( newlines == output.newlines )
-		    found_difference ( BEGINSPACE );
+		{
+		    bool output_is_float =
+		         output.type == NUMBER_TOKEN
+		         && ( output.decimals >= 0 
+			      || output.has_exponent );
+		    bool test_is_float =
+		         test.type == NUMBER_TOKEN
+		         && ( test.decimals >= 0 
+			      || test.has_exponent );
+		    if (    ! output_is_float
+		         && ! test_is_float )
+			found_difference ( BEGINSPACE );
+		}
 		else
 		    found_difference ( LINESPACE );
 	    }

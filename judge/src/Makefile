@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/07/01 05:13:30 $
+#   $Date: 2001/07/01 16:58:54 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.6 $
+#   $Revision: 1.7 $
 
 # Kill all implicit rules
 #
@@ -29,7 +29,8 @@ scorediff_test.score:	scorediff2 \
 			scorediff_test.test \
 			scorediff_test.reference
 	rm -f scorediff_test.score
-	scorediff2 scorediff_test.out \
+	scorediff2 -column 50 \
+		   scorediff_test.out \
 	           scorediff_test.test \
 		   > scorediff_test.score
 	diff scorediff_test.score \
