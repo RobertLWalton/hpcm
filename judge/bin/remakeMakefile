@@ -1,10 +1,10 @@
 #!/bin/sh
 #
-# Make a problem Makefile from prototypes.
+# Remake a problem Makefile made from prototypes.
 #
-# File:		makeMakefile
+# File:		remakeMakefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Nov  4 04:05:25 EST 2000
+# Date:		Wed Feb 13 00:21:58 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,32 +13,36 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/11/04 09:23:35 $
+#   $Date: 2002/02/13 05:20:36 $
 #   $RCSfile: remakeMakefile,v $
-#   $Revision: 1.4 $
+#   $Revision: 1.5 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
 
 set document "
-makeMakefile source destination ...
+remakeMakefile checkfile sourcefile problemdir ...
 
-    The program copies source/Makefile to destination/
-    Makefile for each destination not identical to the
-    source.  If the destination Makefile already exists,
-    its first line is not changed; otherwise a new first
-    line that needs to be edited is created.  Lines
-    other than the first are copied from the source,
-    with the exception that a line matching
+    For each problemdir, this program makes temporary
+    modified versions of checkfile and sourcefile using
+    information from problemdir/Makefile file.  Then
+    this program copies the modified sourcefile to the
+    problemdir/Makefile if the modified checkfile exact-
+    ly equals problemdir/Makefile and the modified
+    sourcefile does NOT exactly equal problemdir/Make-
+    file.  If checkfile is \"\" the test that checkfile
+    equals problemdir/Makefile is omitted.
 
-    	P = source_basename
+    The modification of a Makefile consists of replacing
+    the first line of the file by the first line of
+    problemdir/Makefile, and replacing the `problem_
+    name' of any file line of the form
 
-    is changed to
+    	P = problem_name
 
-        P = destination_basename
-    
-    Here the `=' must be surrounded by single SPACE
-    characters.
+    with the last component of `problemdir'.  Here the
+    `=' must be surrounded by single SPACE characters,
+    but other spacing may vary.
 
     Unlike most HPCM judging programs, this program does
     not read any hpcm_judging.rc file and errors made by
@@ -47,60 +51,108 @@ makeMakefile source destination ...
 # If too few arguments or first argument begins with
 # `-', print documentation and exit with error.
 #
-if { $argc < 2 || [regexp {^-} [lindex $argv 0]] } {
+if { $argc < 3 || [regexp {^-} [lindex $argv 0]] } {
     puts $document
     exit 1
 }
 
 # Process arguments.
 #
-set source [lindex $argv 0]
-foreach destination $argv {
+set checkfile [lindex $argv 0]
+set sourcefile [lindex $argv 1]
+set WS "\[\ \t\]"
+set NWS "\[^\ \t\]"
 
-    if { $source == $destination } continue;
+# Function returns 1 if modified file equals problemdir/
+# Makefile, and 0 otherwise.
+#
+proc test_file { file problemdir } {
 
-    set srcmakefile $source/Makefile
-    set desmakefile $destination/Makefile
-    set srcregexp "P = [file tail $source]"
-    set desstring "P = [file tail $destination]"
+    global WS NWS
 
-    # Get first line.
-    #
-    set first_line \
-        "# Makefile for [file tail $destination]\
-	 Problem"
-    if { [file readable $desmakefile] } {
-	set des_ch [open $desmakefile r]
-	set line [gets $des_ch]
-	if { ! [eof $des_ch] } {
-	    set first_line $line
-	}
-	close $des_ch
-    }
+    set problem [file tail $problemdir]
+    set file_ch [open $checkfile r]
+    set out_ch [open $problemdir/Makefile r]
+    set first yes
 
-    # Open files and process first line.
-    #
-    set src_ch [open $srcmakefile r]
-    set des_ch [open $desmakefile w]
-    gets $src_ch
-    if { [eof $src_ch] } {
-    	error "$srcmakefile is empty"
-    }
-    puts $des_ch $first_line
-
-    # Copy the rest of the lines with the substitution.
-    #
     while { "yes" } {
-    	set line [gets $src_ch]
-	if { [eof $src_ch] } break
-	regsub $srcregexp $line $desstring line
-	puts $des_ch $line
+	set file_line [gets $file_ch]
+	set out_line [gets $out_ch]
+	if { [eof $file_ch] } {
+	    set match [eof $out_ch]
+	    break
+	} elseif { [eof $out_ch] } {
+	    set match 0
+	    break
+	}
+	if { $first } {
+	    set first no
+	} else {
+	    if { [regexp \
+		      "^($WS*)P = $NWS+($WS*)\$" \
+		      $file_line forget \
+		      bws ews] } {
+		set file_line \
+		    "${bws}P = $problem$ews"
+	    }
+	    if { $file_line != $out_line } {
+		set match 0
+		break
+	    }
+	}
     }
+    close $file_ch
+    close $out_ch
+    return $match
+}
 
-    # Close up this copy.
-    #
-    close $src_ch
-    close $des_ch
+# Function to copy modified file to problemdir/Makefile.
+# The target is deleted after its first line is read.
+#
+proc copy_file { file problemdir } {
+
+    global WS NWS
+
+    set problem [file tail $problemdir]
+    set file_ch [open $checkfile r]
+    set out_ch [open $problemdir/Makefile r]
+    set first_line [gets $out_ch]
+    close $out_ch
+    file delete -force $problemdir/Makefile
+    set out_ch [open $problemdir/Makefile w]
+    set first yes
+
+    while { "yes" } {
+	set file_line [gets $file_ch]
+	if { [eof $file_ch] } break
+	if { $first } {
+	    set first no
+	    set file_line $first_line
+	} else {
+	    if { [regexp \
+		      "^($WS*)P = $NWS+($WS*)\$" \
+		      $file_line forget \
+		      bws ews] } {
+		set file_line \
+		    "${bws}P = $problem$ews"
+	    }
+	    puts $out_ch $file_line
+	}
+    }
+    close $file_ch
+    close $out_ch
+}
+
+foreach problemdir [lrange $argv 2 end] {
+
+    if {      $checkfile != "" \
+         && ! [test_file $checkfile $problemdir] } \
+	continue
+
+    if { [test_file $sourcefile $problemdir] } \
+        continue
+
+    copy_file $sourcefile $problemdir
 }
 
 exit 0
