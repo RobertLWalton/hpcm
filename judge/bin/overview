@@ -4,7 +4,7 @@
 #
 # File:		overview
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Oct 16 08:37:07 EDT 2001
+# Date:		Tue Oct 16 23:46:55 EDT 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/10/16 14:48:04 $
+#   $Date: 2001/10/17 04:03:11 $
 #   $RCSfile: overview,v $
-#   $Revision: 1.34 $
+#   $Revision: 1.35 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -1144,40 +1144,50 @@ just those provided by the UNIX operating system to
 every newly created account.  However the following
 files need special attention:
 
-    .cshrc (or other shell initialization file)
+    .cshrc and initialization files for other shells
+
+        These files are in the prototype home directory,
+	and because contestants symbolically link to
+	them, may be modified after contestant accounts
+	have been created and initialized.
+
     	The `path' must be modified to include
 	`.hpcm_contest/bin'.  If special compilers
 	or interpreters are being used, the path
-	should also include these.  It may be desirable
-	to turn off autologout (unset this variable in
-	.cshrc), especially in a formal contest in
-	which the judge's log the contestants in.
-	Also `alias ll -lL' is desirable in a formal
-	contest, as the symbolic links to problem
-	files may be confusing to the contestants.
+	should also include these.  Other changes are
+	likely to be useful: see SETUP_PROTOTYPE docu-
+	mentation for details.
 
     .procmailrc
+
+        This file must be included in the prototype home
+	directory setup.tar file as it cannot be symbol-
+	ically linked due to security considerations.
+
         For an informal contest, this must include stuff
 	to extract files from responses to hcpm_get.
-	See hpcm/examples/informal/Makefile and
-	hpcm/examples/informal/procmailrc.  This file
-	must be owned by the account in whose home dir-
-	ectory it appears, or else it will not be used
-	for security reasons.  Therefore it cannot be
-	shared among contestant accounts, and is not
-	symbolically linked in these accounts (there is
-	a separate copy in each contestant account).
+	Therefore, it is set up to do this for all
+	contestant accounts, so the prototype account
+	may be shared between informal and formal con-
+	tests.  See SETUP_PROTOTYPE documentation for
+	details.
 
     .ssh/authorized_keys
+
+        This file must be included in the prototype home
+	directory setup.tar file as it cannot be symbol-
+	ically linked due to security considerations.
+
         Creating this file correctly can enable the
 	judge to log into each contestant account with-
-	out using the account's password.  Like the
-	.procmailrc file, the .ssh directory and its
-	contents cannot be shared among contestant
-	accounts, and there must be a separate copy in
-	each contestant account.
+	out using the account's password.  If this is
+	done, it means contests using this mechanism
+	must have different prototype accounts if they
+	want to use different keys to access contestant
+	accounts.  See SETUP_PROTOTYPE documentation for
+	details.
 
-
+
 Contest Definition Data: Auxiliary Files
 ------- ---------- ----- --------- -----
 
@@ -1207,8 +1217,8 @@ among all the contests supported by the account:
 	where ~/judging_cccc_ppppppppppp is the judg-
 	ing directory for the contest in the judging
 	account JJJ.
-
 
+
 Contest Definition Data: Security
 ------- ---------- ----- --------
 
