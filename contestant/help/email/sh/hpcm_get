@@ -4,7 +4,7 @@
 #
 # File:		hpcm_get
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Wed Sep 12 06:54:58 EDT 2001
+# Date:		Wed Sep 12 13:13:21 EDT 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,14 +13,15 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/09/12 17:04:57 $
+#   $Date: 2001/09/12 17:16:38 $
 #   $RCSfile: hpcm_get
-#   $Revision: 1.5 $
+#   $Revision: 1.6 $
 
-# If this is not bash and bash is available, switch
-# to using bash.  Note that `which bash` may output
-# a grubby error message and no error code if bash
-# does not exist.
+# If this is not bash and bash is available, switch to
+# using bash.  Note that `which bash` may output a
+# grubby error message and no error code if bash does
+# not exist.  Some non-bash sh'es have trouble with
+# `test -e'.
 #
 bash=`which bash 2>&1`
 if test "$BASH" = "" -a -x "$bash"
@@ -48,15 +49,19 @@ hpcm_get [-force] [name ...]
     directories.  Getting a directory recursively gets
     the contents of that directory.
 
-    Everything gotten is installed in the directory
-    defined by the HPCM_HOME environment variable, or
-    in ~ if HPCM_HOME is not defined.
+    Everything gotten is installed in the \`contest
+    home' directory.  This directory is found by sear-
+    ching the current directory and its ancestors for
+    the first directory to contain a readable .HPCM_
+    ADDRESS file.
 
     So for example,
     			hpcm_get demos
 
     gets files named \`demos/...' and puts them in the
-    directory ~/demos if HPCM_HOME is undefined.
+    directory ../../demos if ../.. is the contest home
+    directory because it contains a readable .HPCM_
+    ADDRESS file while . and .. do not.
 
     Without the -force option, hpcm_get refuses to
     get things that seem to be already gotten.  With
@@ -68,38 +73,32 @@ hpcm_get [-force] [name ...]
     ting email replies.  If the hpcm_extract program is
     called automatically for the replies (say because
     it is invoked by .procmailrc), the gotten files are
-    automatically installed within the HPCM_HOME or ~
+    automatically installed within the contest home
     directory.  Otherwise the files in the reply mail
     must be manually extracted, and hpcm_get assumes
-    these files will be extracted into HPCM_HOME or ~."
+    these files will be extracted into the contest home
+    directory."
 
     	    exit 1
 	    ;;
 esac
 
-# Look for .HPCM_ADDRESS file to fine HPCM_HOME.
+# Look for .HPCM_ADDRESS file to fine home.
 #
 if test -r .HPCM_ADDRESS
 then
-    HPCM_HOME=.
+    home=.
 elif test -r ../.HPCM_ADDRESS
 then
-    HPCM_HOME=..
+    home=..
 elif test -r ../../.HPCM_ADDRESS
 then
-    HPCM_HOME=../..
-fi
-
-if test "$HPCM_HOME" = ""
+    home=../..
+elif test -r ../../../.HPCM_ADDRESS
 then
-    echo ERROR: Could not find .HPCM_ADDRESS file
-    echo "      " and HPCM_HOME environment variable \
-		  is not set
-    exit 1
-elif test ! -d "$HPCM_HOME"
-then
-    echo "$HPCM_HOME is not a directory"
-    exit 1
+    home=../../..
+else
+    echo "ERROR: Could not find .HPCM_ADDRESS file"
 fi
 
 # Loop through the name arguments, or use `help demos'
@@ -137,7 +136,7 @@ do
     # Get $name by email if it has not already been
     # gotten or if -force option given.
     #
-    if test -e "$HPCM_HOME/$name" -a "$force" = "no"
+    if test -e "$home/$name" -a "$force" = "no"
     then
     	echo "IGNORING \`$name';"
 	echo "    it has been gotten already;"
