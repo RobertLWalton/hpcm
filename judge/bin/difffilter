@@ -1,0 +1,165 @@
+#!/bin/sh
+#
+# Filter the output of diff to remove certain single
+# line differences.
+#
+# File:		difffilter
+# Author:	Bob Walton (walton@deas.harvard.edu)
+# Date:		Mon Nov 20 15:15:20 EST 2000
+#
+# The authors have placed this program in the public
+# domain; they make no warranty and accept no liability
+# for this program.
+#
+# RCS Info (may not be true date or author):
+#
+#   $Author: hc3 $
+#   $Date: 2000/11/20 20:54:46 $
+#   $RCSfile: difffilter,v $
+#   $Revision: 1.1 $
+#
+# The next line starts tcl \
+exec tcl "$0" "$@"
+
+# Use tcl rather than tclsh so that `signal' is defined.
+
+# Include common code and parameters:
+#
+set lib_directory "[file dirname $argv0]/../lib"
+source $lib_directory/judging_common.tcl
+set log_mode none
+catch {
+
+set document "
+diff ... | difffilter regular-expression ...
+
+    Filter the output of diff to remove entries of the
+    form:
+
+	1c1
+	< something1
+	---
+	> something2
+
+    where both something1 and something2 match one of
+    the regular-expression arguments.  If all differ-
+    ences between files f1 and f2 are removed, any line
+    of the form `diff ... f1 f2' before these differ-
+    ences is also removed.
+
+    The regular expressions should not begin with `-'."
+
+
+# If no arguments or the first argument begins with `-',
+# print documentation and exit with error.
+#
+if { $argc == 0 \
+     || [regexp {^-} [lindex $argv 0]] } {
+    puts $document
+    exit 1
+}
+
+set diffline ""
+
+while { "yes" } {
+
+    set line [gets stdin]
+    if { [eof stdin] } break
+
+    if { [regexp {^diff } $line] } {
+	set diffline $line
+    } elseif { $line == "1c1" } {
+
+	# 1c1 found
+
+	set line [gets stdin]
+	if { [eof stdin] } {
+	    if { $diffline != "" } {
+		puts $diffline
+		set diffline ""
+	    }
+	    puts "1c1"
+	    break
+	}
+
+	set matched no
+	if { [regexp {< (.*)$} $line \
+		     forget something] } {
+	    foreach regexp $argv {
+		if { [regexp $regexp $something] } {
+		    set matched yes
+		    set matchexp $regexp
+		    set firstline $line
+		    break
+		}
+	    }
+	}
+
+	if { $matched } {
+
+	    # 1c1
+	    # < something
+	    # has been found
+
+	    set line [gets stdin]
+	    if { [eof stdin] \
+                 || $line != "---" } {
+		if { $diffline != "" } {
+		    puts $diffline
+		    set diffline ""
+		}
+		puts "1c1"
+		puts $firstline
+		if { [eof stdin] } {
+		    break
+		} else { puts $line }
+	    } else {
+
+		# 1c1
+		# < something
+		# ---
+		# has been found
+
+		set line [gets stdin]
+		if { [eof stdin] \
+		     || ! [regexp {^> (.*)$} $line \
+				  forget something] \
+		     || ! [regexp $matchexp \
+				  $something] } {
+		    if { $diffline != "" } {
+			puts $diffline
+			set diffline ""
+		    }
+		    puts "1c1"
+		    puts $firstline
+		    puts "---"
+		    if { [eof stdin] } {
+			break
+		    } else { puts $line }
+		}
+	    }
+	} else {	# not matched
+	    if { $diffline != "" } {
+		puts $diffline
+		set diffline ""
+	    }
+	    puts "1c1"
+	    puts $line
+	}
+	
+    } else {	# Non-1c1 line
+        if { $diffline != "" } {
+	    puts $diffline
+	    set diffline ""
+	}
+	puts $line
+    }
+}
+
+
+exit 0
+
+# Include common error catching code:
+#
+} caught_output
+caught_error
