@@ -4,7 +4,7 @@
 #
 # File:		makeoverview
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Jan  5 04:17:18 EST 2001
+# Date:		Sat Jan  6 02:18:40 EST 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/01/05 15:27:19 $
+#   $Date: 2001/01/06 09:26:03 $
 #   $RCSfile: overview,v $
-#   $Revision: 1.12 $
+#   $Revision: 1.13 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -46,7 +46,7 @@ puts "
 	Contest Definition Data: The Home Directory
 	Contest Definition Data: Auxilary Files
 	Contest Raw Data: The Judging Directory
-
+
 Features
 --------
 
@@ -75,7 +75,7 @@ following features:
 
     o Has a library of problems and supports easy semi-
       automated creation of new contests.
-
+
     o Keeps a complete log of everything that happens
       during contests in the form of files that can be
       easily analyzed for different purposes.
@@ -83,20 +83,21 @@ following features:
     o Is written modularly in TCL and Bourne Shell (sh)
       so that HPCM can easily be adapted and modified.
 
-
+
 Requirements
 ------------
 
 HPCM currently requires a UNIX system with Bourne shell
 and TCL language interpreters.
 
-One program, hpcm_extract, requires the `read -r' Bourne
+A couple or programs require the `read -r' Bourne
 shell command, and a Bourne shell `echo' command that
 does not specially interpret the `\\' character.  If you
 are using a UNIX system whose Bourne shell does not
 support these features, the simplest fix is to import
-the GNU Bourne shell, bash, and fix hpcm_extract to
-use it.
+the GNU Bourne shell, bash, and fix the programs con-
+taining use it (these programs are currently hpcm_
+extract and SET_PROTOTYPE).
 
 TCL can be obtained at:	 	www.scriptics.com
 
@@ -186,8 +187,8 @@ Contest Making Programs
     Programs run to make a contest.
 
 Maintenance Programs
-    Programs run to maintain the library or test the
-    HPCM system.
+    Programs run to maintain the library, produce doc-
+    umentation, or test the HPCM system.
 
 Library Data: Problems
 ------- ----- --------
@@ -211,9 +212,10 @@ tory:
 
 	public	Problems that can be freely distributed
 		to the public, without any restriction
-		on verbatim copying, and with no re-
-		striction on alteration and redistribu-
-		tion unless otherwise indicated.
+		on verbatim copying, without any re-
+		strictions on verbatim redistribution,
+		and with no restriction on alteration
+		unless otherwise indicated.
 
 	private	Problems that cannot be redistributed
 		to the public.  These have been taken
@@ -250,13 +252,13 @@ within this problem directory describe the problem:
 These files are made available to the contestant, though
 in a formal contest only a printout of the pppp.txt file
 is made available.
-
+
 In order to be able to score a problem, three more files
 are placed in the problem directory within the program
 library:
 
-    pppp.in		    The judges test input.
-    pppp.test		    The judges test output.
+    pppp.in		    The judge's test input.
+    pppp.test		    The judge's test output.
     Scoring_Instructions    Optional file containing
     			    parameters that control how
 			    the automatic scoring is
@@ -264,7 +266,7 @@ library:
 			    tolerances are permitted).
 			    See the documentation of
 			    the `autoscore' program.
-
+
 A contest has a solutions directory that contains sym-
 bolic links to the library problem directories for every
 problem that can be judged during the contest.  The
@@ -285,7 +287,7 @@ possibilities are:
 The programming languages allowed may vary; but every
 solution language must be explicitly supported by the
 problem Makefile.
-
+
 It is possible to compile and run the solution within
 the library problem directory in the same manner as
 a problem is compiled and run by contestants and by the
@@ -299,7 +301,7 @@ and may create other temporary files for some languages:
     pppp	    The executable program binary.
     pppp*.class	    JAVA class files.
     pppp.p2c	    C translation of PASCAL program.
-
+
 The solution is written to take input from the standard
 input (the terminal by default) and put output to the
 standard output (also the terminal by default).  The
@@ -321,7 +323,7 @@ binary program if that does not exist or it is older
 than the solution source file, and then makes the
 pppp.out file if that does not exist or it is older than
 the binary file or the .in file.
-
+
 If a problem directory symbolically linked into a con-
 test solutions directory has a pppp.out file, this file
 will be treated as the judge's output in PREFERENCE to
@@ -331,7 +333,7 @@ the judge's solution and run the `make' command in the
 solution problem directory to fix the judge's output.
 After the contest the judge can replace the pppp.test
 file by a copy of the correct pppp.out file.
-
+
 However, there is a difficulty with running JAVA
 solutions in a library problem directory using `make'.
 The judge's hpcm_sandbox program runs the binary as
@@ -349,7 +351,7 @@ The `make clean' command in the problem directory de-
 letes all temporary files, including `pppp', `pppp.out',
 `core', and `.class' files.
 
-
+
 Library Data: Help Documentation
 ------- ----- ---- -------------
 
@@ -358,7 +360,7 @@ tree rooted at
 
 	hpcm/contestant/help
 
-A help file index (in a format proscribed by the
+A help file index (in a format prescribed by the
 `makejudingdir' program) is in
 
 	hpcm/contestant/help/index
@@ -374,7 +376,7 @@ paper page using a reasonable size font.  The fprint
 program prints these files: the fcheck program checks
 that they have no line longer than 56 columns and no
 page longer than 40 lines.
-
+
 The subdirectories of `hpcm/contestant/help' are
 as follows:
 
@@ -387,7 +389,7 @@ as follows:
     		language that can be used by contestants
 		of an email contest on their own com-
 		puters.
-
+
     informal	Help files used for informal contests
     		only.
 
@@ -409,7 +411,7 @@ Subdirectories of
 
 contain parameter files necessary to set up a specific
 type of contest.  Some of these subdirectories are:
-
+
     email_contest	Example email contest.
 
     informal_contest	Example informal contest.
@@ -426,7 +428,7 @@ to create a contest by making a judging directory, copy-
 ing the files in the `hpcm/examples' subdirectory into
 the judging directory, editing these copies, etc.
 
-
+
 Contest Definition Data: The Judging Directory
 ------- ---------- ----- --- ------- ---------
 
@@ -449,7 +451,7 @@ is a security bug in JAVA, surely), so to prohibit out-
 siders from getting into the judge's subdirectory tree
 it is necessary that the judging directory name be un-
 guessable.
-
+
 Fortunately the judge really does not need to use the
 full name of the judging directory except in vary rare
 instances, as `~/judging_cccc_*' or the equivalent
@@ -491,6 +493,7 @@ are:
 	component of the solution directory is a symbol-
 	lic link to a problem directory.  Often these
 	problem directories are in the problem library.
+
 	But for formal contests problems are often used
 	that have not yet been entered into the problem
 	library, and the problem directories for these
@@ -524,8 +527,8 @@ are:
 	tory is symbolically linked to the contest
 	directory.  This is because the contest direct-
 	ory must be accessible by the contestants, who
-	must not be able to access other components of
-	the judging directory.
+	must not know the full name of the judging di-
+	rectory.
 
 	Only informal and formal contests have a contest
 	directory.  Email contests do not.
@@ -559,13 +562,13 @@ are:
 	The help directory and its contents are made
 	automatically by `makejudgingdir', but then
 	the person defining the contest must edit the
-	`this_contest' file and rerun `makejudgingdir'.
+	`this_contest' file and re-run `makejudgingdir'.
 
     scoreboard.notes
         A file appended to the scoreboard by the `send-
 	scoreboard' program that emails the scoreboard
 	to other locations for display on the web.
-	This is used only for email contests normally.
+	This is normally used only for email contests.
 
 In addition to these files which are used by HPCM
 programs, there are typically a few other files that
@@ -577,7 +580,9 @@ are not used by HPCM programs themselves.  These are:
 	will run `makejudgingdir' to build all the
 	contest definition files.  The parameters to
 	`makejudgingdir' are complex, and need to be
-	kept in a file.
+	kept in a file.  The Makefile may also do
+	some of the things that this overview says
+	must be done `by hand'.
 
 	See hpcm/examples/*/Makefile for examples.
 
@@ -625,7 +630,9 @@ components that contestants can access.
 	in the ~/hpcm/contestant/bin must have a+x or
 	a+rx permissions.  Running `make' inside the
 	~/hpcm directory, a part of the installation
-	procedure of hpcm, sets these permissions.
+	procedure of HPCM, sets these permissions.
+	See `Installing HPCM' (hcpm/judge/doc/instal-
+	ling_hpcm.doc).
 
 	The `makejudgingdir' program symbolically links
 	`bin' to `contestant/bin' in the contest direc-
@@ -642,14 +649,22 @@ components that contestants can access.
 	problems.  It is strictly analogous to the
 	`problems' directory, see below.
 
+    help
+    	This directory contains a+r copies of all the
+	help files for the contestants.  These can be
+	read by the contestant `help' program.
+
+	This `help' directory and its contents are
+	made automatically by `makejudgingdir'.
+
     home
     	This is a symbolic link to a directory that is
-	called the `contest/home' directory and that
-	contains files shared amoung all contestant
-	accounts.  For example, in a contestant account
-	the `.cshrc' name is symbolically linked to
-	`.hpcm_contest/home/.cshrc', and thence to the
-	`.cshrc' file in the contest/home directory.
+	informally called the `contest/home' directory
+	and that contains files shared amoung all con-
+	testant accounts.  For example, in a contestant
+	account the `.cshrc' name is symbolically linked
+	to `.hpcm_contest/home/.cshrc', and thence to
+	the `.cshrc' file in the contest/home directory.
 	Therefore editing the `.cshrc' file within the
 	contest/home directory changes that file in ALL
 	contestant accounts.
@@ -681,12 +696,12 @@ components that contestants can access.
 	below) `WHERE' field, if available, and is
 	otherwise the contestant account name.
 
-	This file can be used by the `lpq' program to
-	print out printer status, and by the judges
-	to monitor printer activity.
+	This file can be used by the contestant `lpq'
+	program to print out printer status, and by the
+	judges to monitor printer activity.
 
-	This file is made by `makejudgingdir' and may
-	be removed by hand.
+	This file is made by `makejudgingdir' and can
+	be removed or made o-w by hand.
 
     problems
     	This directory contains problem directories for
@@ -694,16 +709,19 @@ components that contestants can access.
 	analogous `demos' directory (see above) contains
 	demonstration problems.
 
-	Each problem directory in the contest directory
-	is a subdirectory of this `problems' directory
-	and has as its name the name of the problem.
-	Thus a problem named `pppp' would have
-	`problems/pppp' as the name of its problem
-	directory within the contest directory.
+	Each non-demonstration problem directory in the
+	contest directory is a subdirectory of this
+	`problems' directory and has as its name the
+	name of the problem.  Thus a problem named
+	`pppp' would have `problems/pppp' as the name of
+	its problem directory within the contest direc-
+	tory.  Demonstration problems are similar but
+	are in the `demos' directory instead of the
+	`problems' directory.
 
 	Within the problem directory there is a a+r copy
 	of the `Makefile' of the problem.  It is also
-	possible to put a copy of the `.txt' file
+	possible to put a a+r copy of the `.txt' file
 	describing the problem, but this is NOT usually
 	done for formal contests.  For demonstration
 	problems (in `demos') many a+r file copies may
@@ -711,7 +729,7 @@ components that contestants can access.
 	and output and solutions in different program-
 	ming languages are often provided.
 
-	This `problems' directory exists only for formal
+	The `problems' directory exists only for formal
 	contests.  For informal or email contests, simi-
 	lar information is placed in the `info/problems'
 	(and `info/demos' for demonstration problems)
@@ -734,13 +752,121 @@ components that contestants can access.
     scoreboard.2
     scoreboard.3
     scoreboard.4
+        The scoreboard, which can be read by the contes-
+	tant `scoreboard' program, can have up to four
+	pages, which are stored in the a+r files
+	scoreboard.1 through scoreboard.4.  The first of
+	these files is made automatically by the `make-
+	scoreboard' program, which concatenates the
+	scoreboard.1head file to the computed scoreboard.
+	The scoreboard.1head, scoreboard.2, scoreboard.3,
+	and scoreboard.4 files must be edited by hand.
+	See the documentation of `makescoreboard' and
+	`scoreboard' for details.
 
     secure
+    	This directory contains files that cannot be
+	accessed by contestants, but can be accessed by
+	the judging account, and can be accessed by the
+	hpcm_sendmail program which can be run by
+	contestants but sets its user id (by the UNIX
+	setuid mechanism) to the judging account.
+	
+	This directory, if it does not already exist,
+	will be made by the `makejudgingdir' program,
+	as will some of the files in the directory.
+
+	The files in the directory are:
+
+	    hpcm_sendmail.rc
+	        This file contains parameters for hpcm_
+		sendmail.  Specifically, the email
+		address to send mail to in order to
+		contact the judge (this email address
+		typically contains a password), and the
+		key-name and key to use in signing the
+		email (or more specifically, the HPCM
+		return email address and date fields of
+		the email).  An example hpcm_sendmail.rc
+		file is:
+
+		    To: 13cc299bd7<walton@walton1>
+		    Key: 55071403c7
+		    Key-Name: judging_informal
+
+		This file is made by the makejudgingdir
+		program, which creates random passwords
+		for the email address and key.
+
+	    passwords
+	    	This file lists the contestant accounts,
+		and is used to create these accounts.
+		Each line of this file has the format:
+
+		    account:password:who:C:T:comment
+
+	        where C is the coach's email address and
+		and T is the team's email address.  The
+		first field is the contestant account
+		name.  The `who' field is the team name
+		in description form.
+
+		The password field can be generated by
+		the makejudgingdir program.  The rest
+		of the file must be made by hand.
+
+		Only the account and password fields are
+		needed by HPCM to run a contest.
+
+	    passwords_header
+	        This is a file used by hpcm_print_pass-
+		words.  This program prints each account
+		name and password on a separate page
+		with the contents of this file at the
+		beginning of the page.  It is used only
+		when account names and passwords are to
+		be handed to contestants: typically this
+		is only in an informal contest.
 
     who_where
+        This file is a copy of the secure/passwords file
+	but with the password field value replaced by
+	a `WHERE' value, that tells where the team is
+	physically located.  This file is used by the
+	print programs: the where field labels the pages
+	of print output and the line output to any
+	print_jobs file.  If the who_where file is
+	missing, not a+r, or the `WHERE' field has not
+	been filled in by hand, the print programs use
+	the contestant account name instead.
+
+	The who_where file is made automatically from
+	the secure/passwords file by makejudgingdir,
+	and will be updated automatically by that
+	program when the secure/passwords file changes.
+	However, the `WHERE' field in the who_where
+	file must then be filled in by hand.
 
     trashable
+        This file lists all contestant accounts that
+	can be `trashed'.  To `trash' an account is
+	to remove all its files and then reload its
+	files from ./hpcm_contest/home/setup.tar, which
+	is just the files in the prototype contestant
+	account.  See the documentation of the SETUP_
+	PROTOTYPE program and see `Contest Definition
+	Data: The Home Directory' below.
 
+	The `trashable' file is made from secure/
+	passwords by the `makejudgingdir -trashable'
+	command.  It should only be made just before
+	trashing the contestant accounts, and should
+	be removed immediately after trashing these
+	accounts.  There is a program runnable by a
+	contestant account, TRASH_ACCOUNT, that will
+	trash the contestant account, but only if the
+	name of that account is listed in an a+r
+	.hpcm_contest/trashable file.
 
 
 Contest Definition Data: The Home Directory
