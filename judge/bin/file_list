@@ -1,11 +1,12 @@
 #!/bin/sh
 #
-# Given keywords, list the files the File_List that
-# have matching keywords.
+# Given a logical expression containing keywords, list
+# the files the File_List whose keywords satisfy the
+# expression.
 #
 # File:		file_list
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Sep 15 10:20:36 EDT 2001
+# Date:		Fri Mar 22 08:14:50 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/09/15 16:54:59 $
+#   $Date: 2002/03/22 13:46:53 $
 #   $RCSfile: file_list,v $
-#   $Revision: 1.1 $
+#   $Revision: 1.2 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -30,8 +31,9 @@ file_list expression
     List all the file names in the HPCM File_List file
     for which the expression is true, where the names
     in the expression are taken as key names.  The
-    operators `!', `&' and `|' are permitted, as are
-    parentheses.  Precedence order is `!', `&', `|'.
+    operators `!', `&', `^', and `|' are permitted, as
+    are parentheses.  Precedence order is `!', `&', `^',
+    `|'.
 "
 
 if { $argc == 0 || [regexp {^-doc} [lindex $argv 0]] } {
@@ -48,11 +50,13 @@ set vars ""
 set expression ""
 
 foreach var $argv {
-    if { [regexp {^[_a-zA-Z0-9]} $var] } {
+    if { [regexp {^[_a-zA-Z][_a-zA-Z0-9]*} $var] } {
         lappend vars $var
         set expression "$expression \$$var"
-    } else {
+    } elseif { [lcontain {( ) ! & ^ |} $var] } {
 	set expression "$expression $var"
+    } else {
+        error "Bad atom `$var' in `$argv'"
     }
 }
 
