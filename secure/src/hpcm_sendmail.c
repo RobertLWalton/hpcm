@@ -2,7 +2,7 @@
  *
  * File:	hpcm_sendmail.c
  * Authors:	Bob Walton (walton@deas.harvard.edu)
- * Date:	Sat Oct  7 06:02:06 EDT 2000
+ * Date:	Wed Nov 15 10:50:05 EST 2000
  *
  * The authors have placed this program in the public
  * domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
  * RCS Info (may not be true date or author):
  *
  *   $Author: hc3 $
- *   $Date: 2000/10/07 10:02:50 $
+ *   $Date: 2000/11/15 16:01:00 $
  *   $RCSfile: hpcm_sendmail.c,v $
- *   $Revision: 1.7 $
+ *   $Revision: 1.8 $
  */
 
 #include <stdlib.h>
@@ -77,7 +77,7 @@ char * sendmail_env[]  = { SENDMAIL_ENV, NULL };
 void errno_exit ( char * m )
 {
     fprintf ( stderr, "hpcm_sendmail: system call error:"
-                      " %s: %s\n",
+                      " %s:\n    %s\n",
 		      m, strerror ( errno ) );
     exit ( errno );
 }
@@ -303,8 +303,8 @@ void check_program
 		  " terminated for unknown reason\n",
 		  argv[0] );
 
-	/* Parent exit when child died by
-	   signal.
+	/* Parent exit when child terminated for
+	   unknown reason.
 	*/
 	exit ( ECANCELED );
     }
@@ -365,8 +365,7 @@ int main ( int argc, char ** argv )
 	         X-HPCM-Reply-To:reply_to\n
 		 key\n"
     */
-
-     char signature	[MAXLEN];
+    char signature	[MAXLEN];
 
 
     /* If there are any arguments, print doc. */
@@ -379,6 +378,12 @@ int main ( int argc, char ** argv )
 
     /* Compute rcfilename =
           "~/.hpcm_contest/secure/hpcm_sendmail.rc"
+       after resolving symbolic link
+		~/.hpcm_contest
+       The name of the file after resolution must be 
+       usable by the effective user who will not be able
+       to access ~/.hpcm_contest directly.  Only the
+       real user can access ~/.hpcm_contest directly.
     */
     if ( setreuid (-1, ruid) < 0 )
 	errno_exit ( "set ruid" );
@@ -442,7 +447,7 @@ int main ( int argc, char ** argv )
 		      " cannot open %s\n",
 		      rcfilename );
 	    errno_exit
-		( "opening hpcm_judging.rc" );
+		( "opening hpcm_sendmail.rc" );
 	}
 
 	to[0]		= 0;
@@ -584,7 +589,7 @@ int main ( int argc, char ** argv )
 			    );
 	fclose ( files[0] );
 
-	strcpy ( signature, key_name );
+	strcpy ( p, key_name );
 	p += strlen ( p );
 	if ( p > endp - 10 )
 	    too_big_exit ( "Signature: field value" );

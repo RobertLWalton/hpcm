@@ -2,7 +2,7 @@
  *
  * File:	hpcm_sandbox.c
  * Authors:	Bob Walton (walton@deas.harvard.edu)
- * Date:	Tue Oct 31 04:01:36 EST 2000
+ * Date:	Wed Nov 15 10:48:37 EST 2000
  *
  * The authors have placed this program in the public
  * domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
  * RCS Info (may not be true date or author):
  *
  *   $Author: hc3 $
- *   $Date: 2000/10/31 09:11:22 $
+ *   $Date: 2000/11/15 16:01:00 $
  *   $RCSfile: hpcm_sandbox.c,v $
- *   $Revision: 1.11 $
+ *   $Revision: 1.12 $
  */
 
 #include <stdlib.h>
@@ -80,7 +80,7 @@ char documentation [] =
 "    otherwise, and executes the program with the\n"
 "    given arguments.  If HPCM_SANDBOX_ENV is de-\n"
 "    fined, it consists of whitespace separated\n"
-"    strings that become the environment, with rec-\n"
+"    strings that become the environment, with recig-\n"
 "    nition of `\\ ', `\\t', `\\n', `\\f', `\\v', and\n"
 "    `\\\\' within the HPCM_SANDBOX_ENV value as\n"
 "    space, tab, new line, form feed, vertical tab,\n"
@@ -96,7 +96,7 @@ char documentation [] =
 void errno_exit ( char * m )
 {
     fprintf ( stderr, "hpcm_sandbox: system call error:"
-                      " %s: %s\n",
+                      " %s:\n    %s\n",
 		      m, strerror ( errno ) );
     exit ( 1 );
 }
