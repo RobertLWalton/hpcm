@@ -5,7 +5,7 @@
 #
 # File:		autojudge
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Nov 18 07:18:38 EST 2001
+# Date:		Sun Nov 18 07:33:17 EST 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/11/18 12:21:51 $
+#   $Date: 2001/11/18 12:57:11 $
 #   $RCSfile: autojudge,v $
-#   $Revision: 1.33 $
+#   $Revision: 1.34 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -30,7 +30,7 @@ source $lib_directory/judging_common.tcl
 catch {
 
 set document "
-cd submission_directory; autojudge
+cd submission_directory; autojudge \[problem\]
 
     Given the submission directory as the current dir-
     ectory, and given that the submission directory
@@ -41,10 +41,17 @@ cd submission_directory; autojudge
     submitter by creating and sending `$reply_file' as
     specified by the scoring mode.
 
+    If the `problem' argument is given, this names the
+    problem and the solution binary, and is the basename
+    of the .in, .out, .test, .cerr, .err, and .score
+    files.  Otherwise the problem name is extracted from
+    the `Subject:' field of the $received_file file.
+
     Specifically, this program makes the following in
     order:
 
-	the submitted file by calling extractmail
+	$files_file file, if it exists
+	the submitted files by calling extractmail
 	$make_file file
 	$scoring_instructions_file file, if it exists
 	.in solution input file
@@ -63,28 +70,28 @@ cd submission_directory; autojudge
     making the program binary can cause $auto_score_file
     and maybe $reply_file to be generated early.
 
-    First, this program calls `extractmail' to extract
-    the submitted file from the program.  This program
-    then checks the legality of the submitted file name,
-    and generates and sends `$reply_file' automatically
-    if the name is illegal.  A file name is illegal if
-    it does not have an extension listed in the value of
-    the `allowed_extensions' variable, or if there is
-    no subdirectory of the solutions directory that has
-    the same name as the basename of the file.
+    First, this program verifies the existence of a so-
+    lution directory for the problem and symbolically
+    links the $files_file file from this directory into
+    the current directory, if that file exists.  Then
+    this program calls `extractmail' to extract the
+    submitted files from the program.  If there is a
+    non-system error in this extraction, this program
+    generates and sends `$reply_file' automatically to
+    the submitter.
     
-    If the file name is legal, this program symbolical-
-    ly links the following solution directory files into
-    the current directory:
+    If the extraction had no errors, this program sym-
+    bolically links the following solution directory
+    files into the current directory:
 
-    		$make_file
-		$scoring_instructions_file if it exists
-		.in solution input file
-		.test solution output file
+    	$make_file
+	$scoring_instructions_file if it exists
+	.in solution input file
+	.test solution output file
 
     The .test file is linked to the solution .out file
     if that exists, or the solution .test file other-
-    wise.  If the solution .out file exists and and the
+    wise.  If the solution .out file exists and the
     the current directory .test file is linked to the
     solution directory .test file, the current directory
     .test file is relinked to the solution .out file.
@@ -149,32 +156,42 @@ cd submission_directory; autojudge
     boards need to be recomputed.
 
     If something goes very wrong, such as finding that
-    the `$received_file' file is not readable, this
-    program creates an error log file in the current
-    directory, prints information about the error to the
-    standard error output, and exits with exit code 0."
+    the `$received_file' file is not readable, or having
+    `extractmail' return a system error, this program
+    creates an error log file in the current directory,
+    prints information about the error to the standard
+    error output, and exits with exit code 0."
 
-# If any arguments, print documentation and exit.
+# If too many arguments or -doc argument, print docu-
+# mentation and exit.
 #
-if { $argc != 0 } {
+if { $argc > 1 || [regexp {^-doc} [lindex $argv 0]] } {
     puts $document
     exit 1
 }
 
-# Read header.
+# Compute problem name.
 #
-set received_ch [open $received_file r]
-read_header $received_ch
-close $received_ch
+if { $argc == 1 } {
+    set problem [lindex $argv 0]
+} else {
 
-# Get problem.
-#
-set problem [lindex $message_subject 1]
-regexp {^([^.]*)\.} $problem forget problem
-if { [llength $message_subject] != 2 \
-     || [lindex $message_subject 0] != "submit" \
-     || $problem == "" } {
-    error "Illegal message subject: $message_subject"
+    # Read message header.
+    #
+    set received_ch [open $received_file r]
+    read_header $received_ch
+    close $received_ch
+
+    # Get problem.
+    #
+    set problem [lindex $message_subject 1]
+    regexp {^([^.]*)\.} $problem forget problem
+    if {    [llength $message_subject] != 2 \
+	 || [lindex $message_subject 0] != "submit" \
+	 || $problem == "" } {
+	error "Illegal message subject:\
+	      $message_subject"
+    }
 }
 
 # Compute names.
@@ -183,9 +200,7 @@ set submitted_program $problem
 set program_solution \
     $solutions_directory/$submitted_program
 
-# On illegal filename error, send error reply to sub-
-# mitter, print error message on standard output, and
-# exit.
+# Check for existence of problem solution.
 #
 if { ! [file isdirectory $program_solution] } {
     reply \
@@ -209,10 +224,10 @@ if { ! [file readable $files_file] \
 # Get submitted files.  If error, on SYSTEM ERROR pass
 # to `error' function and otherwise reply to submitter.
 #
-if { [catch { exec extractmail }] extractout } {
-    if { [regexp {SYSTEM ERROR} $extractout } {
+if { [catch { exec extractmail } extractout] } {
+    if { [regexp {SYSTEM ERROR} $extractout] } {
         error "System error during\
-	       extractmail\n\n$extractout"
+	       extractmail:\n\n$extractout"
     } else {
 
 	# Create a reply file complaining of an extrac-
@@ -221,7 +236,7 @@ if { [catch { exec extractmail }] extractout } {
 	# the reply.
 	#
 	reply -all \
-            "ERROR during submission file extraction:" \
+            "ERROR during file extraction:" \
 	    "" \
 	    $extractout \
 	    "" \
