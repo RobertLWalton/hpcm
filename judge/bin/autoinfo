@@ -4,7 +4,7 @@
 #
 # File:		autoinfo
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Sep 10 16:52:36 EDT 2000
+# Date:		Tue Sep 12 13:17:58 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: acm-cont $
-#   $Date: 2000/09/10 21:03:56 $
+#   $Date: 2000/09/12 17:19:35 $
 #   $RCSfile: autoinfo,v $
-#   $Revision: 1.12 $
+#   $Revision: 1.13 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -25,7 +25,7 @@ exec tcl "$0" "$@"
 # Include common code and parameters:
 #
 set lib_directory "[file dirname $argv0]/../lib"
-source "$lib_directory/judging_common.tcl"
+source $lib_directory/judging_common.tcl
 catch {
 
 set document "
@@ -40,7 +40,7 @@ cd submission_directory; autoinfo
     The body of the message must be empty.
 
     The names are taken relative to the info directory,
-    and may either files or directories.  A directory
+    and may be either files or directories.  A directory
     name is replaced by the names of all readable files
     and subdirectories in the given directory, recur-
     sively, except that directories named `CVS' and
@@ -78,6 +78,9 @@ cd submission_directory; autoinfo
     field value is not a list of at least 2 items the
     first of which is `get'."
 
+# If there are any arguments, print documentation and
+# exit.
+#
 if { $argc != 0 } {
     puts $document
     exit 1
@@ -139,7 +142,7 @@ proc info_expand { name } {
 
     global names unreadables illegals info_directory
 
-    set file "$info_directory/$name"
+    set file $info_directory/$name
 
     if { [regexp {^\.|^\-|\/\.} $name] } {
     	lappend illegals $name
@@ -153,7 +156,8 @@ proc info_expand { name } {
 		}
 	    }
 	}
-    } elseif { [file readable $file] } {
+    } elseif { [file isfile $file] \
+               && [file readable $file] } {
         lappend names $name
     } else {
         lappend unreadables $name
@@ -186,7 +190,7 @@ if { $error_lines != "" } {
 compose_reply "The requested files appear below\
                following the request message header."
 
-set reply_ch [open "${reply_file}+" a]
+set reply_ch [open ${reply_file}+ a]
 
 puts $reply_ch ""
 
@@ -194,7 +198,7 @@ set dashes "------------------------------"
 
 foreach n $names {
     puts $reply_ch "$dashes $n:"
-    put_file "$info_directory/$n" $reply_ch
+    put_file $info_directory/$n $reply_ch
 }
 puts $reply_ch "$dashes end of files"
 
