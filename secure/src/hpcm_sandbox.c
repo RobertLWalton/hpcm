@@ -10,10 +10,10 @@
  *
  * RCS Info (may not be true date or author):
  *
- *   $Author: acm-cont $
- *   $Date: 2000/09/11 10:19:46 $
+ *   $Author: hc3 $
+ *   $Date: 2000/10/07 09:52:50 $
  *   $RCSfile: hpcm_sandbox.c,v $
- *   $Revision: 1.7 $
+ *   $Revision: 1.8 $
  */
 
 #include <stdlib.h>
@@ -26,7 +26,6 @@
 #include <sys/wait.h>
 #include <sys/param.h>
 #include <sys/signal.h>
-extern const char * const sys_siglist[];
 #include <errno.h>
 #include <pwd.h>
 
@@ -291,7 +290,7 @@ int main ( int argc, char ** argv )
 			  "hpcm_sandbox: Child"
 			  " terminated with signal:"
 			  " %s\n",
-			  sys_siglist [ sig ] );
+			  strsignal ( sig ) );
 
 		/* Parent exit when child died by
 		   signal.
@@ -409,11 +408,13 @@ int main ( int argc, char ** argv )
 	    errno_exit
 	        ( "setrlimit RLIMIT_NOFILE" );
 
+#	ifdef RLIMIT_NPROC
 	limit.rlim_cur = processes;
 	limit.rlim_max = processes;
         if ( setrlimit ( RLIMIT_NPROC, & limit ) < 0 )
 	    errno_exit
 	        ( "setrlimit RLIMIT_NPROC" );
+#	endif
     }
 
     /* Execute program with arguments and `SANDBOX'
