@@ -6,7 +6,7 @@
 #
 # File:		lookat
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Apr 29 09:53:45 EDT 2002
+# Date:		Mon Apr 29 10:19:30 EDT 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/04/29 14:04:31 $
+#   $Date: 2002/04/29 14:27:04 $
 #   $RCSfile: lookat,v $
-#   $Revision: 1.16 $
+#   $Revision: 1.17 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -239,7 +239,7 @@ proc set_expression { expression } {
 
     set logical_expression $expression
 
-    if { [info exists atom] } {
+    if { [array exists atom] } {
 	unset atom
 	unset value
 	unset filename_regexp
@@ -479,18 +479,16 @@ proc exec_manualreply { i } {
 }
 
 
-# Execute manual reply on subdirectories.
+# Set up the interactive loop.
 #
 set_expression [lindex $argv 0]
 compute_directory_list
-if { $manualcount == 0 } {
-    puts "There are NO matching directories."
-} else {
+set directory_height [expr { $window_height - 3 }]
+set error_line ""
+set start 1
 
-    set directory_height [expr { $window_height - 3 }]
-
-    set start 1
-    set error_line ""
+# Run the interactive loop.
+#
     while { "yes" } {
 
         puts "\n\n\n\n\n"
@@ -499,7 +497,13 @@ if { $manualcount == 0 } {
 	    			 $start]
 	puts "#=display directory #  \
 	      e new-logical-expression  \
-	      u=up  d=down  ?=help  x=exit"
+	      u=up  d=down  ?=more help  x=exit"
+	if { $error_line == "" \
+	     && $manualcount == 0 } {
+	    set error_line \
+	        "There are NO matching directories.  Use\
+		 the `e' command."
+	}
 	puts $error_line
 	puts -nonewline "> "
 
@@ -537,9 +541,9 @@ if { $manualcount == 0 } {
 	    }
 	    {^p$} -
 	    {^u$} {
-	    	if { $start > 5 } {
-		    incr start -5
-		} else {
+		set step [expr { $next - $start }]
+		set start [expr { $start - $step }]
+	    	if { $start < 1 } {
 		    set start 1
 		}
 	    }
@@ -564,6 +568,7 @@ if { $manualcount == 0 } {
 		        $old_logical_expression
 		    compute_directory_list
 	        }
+		set start 1
 	    }
 	    {^a$} {
 		puts ""
