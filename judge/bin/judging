@@ -4,7 +4,7 @@
 #
 # File:		judging
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Feb  4 20:51:02 EST 2002
+# Date:		Tue Oct 22 07:56:59 EDT 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/02/05 02:53:43 $
+#   $Date: 2002/10/22 12:46:59 $
 #   $RCSfile: judging,v $
-#   $Revision: 1.12 $
+#   $Revision: 1.13 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -37,6 +37,7 @@ puts "
 	Making a Contest
 	Judging a Formal Contest
 	Auxiliary Judging
+	Fixing Autojudging Difficulties
 	Formal Contest Emergencies
 	Judging non-Formal Contests
 
@@ -127,7 +128,7 @@ where XXX is the name of the contest.  However, usually
 judge's do not need to execute these programs, so this
 should not be necessary.  Note that if the judging
 account is being used for several contests, this will
-only work for one of contest as a time.
+only work for one contest at a time.
 
 Hpcm must be installed in the judging account: see the
 separate document `Installing HPCM'.  One typically
@@ -236,12 +237,21 @@ turn off autologout, set the umask to 27, and set the
 shell for new mail notification.
 
 So that the auxiliary judges can quickly find the
-judging directory, you may want to link it symbolically
+judge's directory, you may want to link it symbolically
 to ~/judge (HPCM software does not use this).  You can
 do this by
 
-	ln -s /home/JJJ/judging* ~/judge
+	ln -s /home/JJJ ~/judge
 
+Then the auxiliary judge can get to the contest judging
+directory by
+
+	cd ~/judge/judging*
+
+Another application is for the auxiliary judge to get to
+the HPCM documentation directory by
+
+	cd ~/judge/hpcm/judge/doc
 
 During the contest an auxiliary judge can examine sub-
 missions using the `lookat' command to invoke `manual-
@@ -250,7 +260,7 @@ the `sq' command to send a query or comment to the
 main contest judge about a particular submission.  The
 main judge can use the `xq' command to examine this
 submission.
-
+
 The auxiliary judge can also send a query or comment to
 the main judge by editing the file ~/foo and executing
 
@@ -274,6 +284,59 @@ the judge's hpcm_sendmail command to send a query to the
 main judge.
 
 
+Fixing Autojudging Difficulties
+------ ----------- ------------
+
+Even if you are doing `manual only' judging (which is
+uncommon), the autojudge is run by the system to get a
+score before that is manually reviewed.  The autojudge
+typically works very well as long at the contestant's
+program runs the same in the judge's environment as it
+does in the contestant's environment.  With C and C++
+under RedHat Linux, this has never been a problem, but
+JAVA is another matter.
+
+The most common difficulty is having too small limits on
+data and stack sizes.  When this happens, a JAVA program
+tends to die before it starts without producing an error
+message.  A hint that this has happened is an empty .out
+file for a JAVA submission.  You can prove this has hap-
+pened by running the program in its directory by direct
+command; e.g., if the problem is named foo, run
+`foo <foo.in' in the submission directory.  This runs
+the program outside the sandbox without resource limits
+(though you are in trouble if the program is a virus, so
+you might want to peek at the program first).
+
+The fix in this case is to increase the datasize and
+stacksize limits in the problem Makefile.  In fact, you
+may want to increase these in all the problem Makefiles.
+The judge's versions of these Makefiles are found in the
+subdirectories of the `solutions' directory.  The con-
+testant's versions are found in the subdirectories of
+either the `contest/problems' or `info/problems' direc-
+tories.
+
+Another possible problem with JAVA is that JAVA programs
+only access .class files by using absolute file names.
+This means that when the program is run by the judge in
+a sandbox, the entire path to the .class file from the
+root directory must have execute (x) permissions.
+Normally this is not a problem as HPCM has been designed
+to make sure all the `x' permissions are granted to
+various directories.  The symptom is some form of `class
+not defined' message.  The fix is to add x permissions
+to directories, or add `chmod a+x ...' commands to the
+problem Makefiles.
+
+In any case, after fixing the problem just use the
+manualreply program to rerun the autojudge.  In the
+worst case it may be necessary to delete any program
+source file in the submission directory first to cause
+the autojudge to redo everything from the received
+submission.
+
+
 Formal Contest Emergencies
 ------ ------- -----------
 
@@ -291,7 +354,7 @@ to have cell phones, cordless phones, or beepers (any of
 which may be borrowed).  The jprint command, that allows
 any judge to print a message for site managers on the
 site printers, may suffice.
-
+
 To prepare to judge a formal contest that you really
 want to work, you should read the documentation and
 in some cases the code of the very few programs that are
@@ -312,7 +375,7 @@ involved in actual judging.  These are:
 
     scorediff		Read documentation.
 
-
+
 Some of these programs call procedures in
 
 	hcpm/judge/lib/judging_common.tcl
@@ -331,7 +394,7 @@ are: have everyone on one machine, so email is internal
 to that machine; or have an email guru available to fix
 problems with email.
 
-
+
 An Example Contest Emergency
 -- ------- ------- ---------
 
@@ -346,7 +409,7 @@ files, and processes started dying spontaneously.  The
 judge was very concerned since he though this kind of
 problem had been solved by UNIX kernels and would not
 appear.
-
+
 The contest was a distributed contest, with a judge at
 one school and two sites with contestants at other
 schools.  The judge and one of the site managers talked
@@ -359,7 +422,7 @@ about how many processes they ran.  With the help of
 these actions, the problem went away within about 10
 minutes, though there was aftermath that we will
 describe below.
-
+
 One piece of good news is that the judge had backup
 available in the form of an assistant who had some rough
 knowledge of Linux OS issues.  The assistant found,
@@ -385,7 +448,7 @@ watch their processes.  The site manager for that team
 was contacted and asked to work with the team to reduce
 their number of open files.  There were no subsequent
 operating system problems with the contest.
-
+
 However, because processes died spontaneously, some sub-
 missions were not handled correctly during the time when
 processes were failing, and fixup was required.  Al-
@@ -393,7 +456,7 @@ though contestants can be told to resubmit, manual re-
 view of submissions also permits fixups of difficulties
 caused by process failure.  To do this, a rough know-
 ledge of how the `autojudge' program works is necessary.
-
+
 One common problem that occurred in this case is erron-
 eous scores of `Syntax Error'.  This error occurs when
 the `autojudge' program cannot make an executable binary
@@ -423,7 +486,7 @@ firmation of the auto score, the `er' and `sr' commands
 in manual reply may be used to send an explanation to
 the contestant, stating why the auto score was recom-
 puted.
-
+
 Note that the `lookat' program can also be used to
 display some information about submissions in a rough
 time range (by using `DATE::<regular-expression>'),
@@ -431,7 +494,7 @@ and double check that everything has been fixed up.
 
 
 
-
+
 Backup Plans
 ------ -----
 
@@ -460,7 +523,7 @@ necessary to split the contest, with the site that had
 difficulties becoming a separate contest, as it would
 be unfair to have teams at a site with difficulties
 competing against teams at a site with no difficulties.
-
+
 It is not a bad idea to have a backup computer for the
 judge (and for the contestants if all are on a single
 computer), and to use some program to periodically
@@ -471,7 +534,7 @@ a distributed contest, the ideal might be to have the
 backup computer located at a different site, in case
 the network at the judge's site went down.
 
-
+
 
 Judging Email and Informal Contests
 ------- ----- --- -------- --------
