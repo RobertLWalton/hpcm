@@ -1,7 +1,7 @@
 # Makefile for an `email' Contest
 #
 # File:		Makefile
-# Date:		Tue Jan  9 09:05:32 EST 2001
+# Date:		Tue Jan  9 12:12:40 EST 2001
 #
 # Author:	Bob Walton (walton@deas.harvard.edu)
 #
@@ -12,14 +12,15 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/01/09 14:05:38 $
+#   $Date: 2001/01/09 17:37:13 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.10 $
+#   $Revision: 1.11 $
 
 # To make an email contest named `foo':
 #
 # 1. Import the HPCM system into ~/hpcm.  See directions
-#    in hpcm/judge/bin/installing_hpcm.
+#    in `Installing HPCM' (hpcm/judge/bin/installing_
+#    hpcm).
 #
 # 2. Create a judging directory ~/judging_foo_password
 #    where the password is needed to keep outsiders from
@@ -59,12 +60,13 @@
 #    routing information into ~/.procmailrc.
 #
 # 7. Review the -email option of the `makescoreboard'
-#    program.  If you wish to use this to send the
-#    scoreboard somewhere to be posted on the web, edit
-#    the SCOREBOARD_ADDRESS parameter in this file, and
-#    use `make start_scoreboard' to start the scoreboard
-#    job.  Use `make check_scoreboard' to check job
-#    status, `make stop_scoreboard' to stop the job, and
+#    program (see `makescoreboard -doc').  If you wish
+#    to use this to send the scoreboard somewhere to be
+#    posted on the web, edit the SCOREBOARD_ADDRESS
+#    parameter in this Makefile, and use `make start_
+#    scoreboard' to start the scoreboard job.  Use
+#    `make check_scoreboard' to check job status,
+#    `make stop_scoreboard' to stop the job, and
 #    make `update_scoreboard' to provide an instant
 #    update of the scoreboard.
 #
@@ -95,8 +97,8 @@ INDICES=    help/index, \
 	    private/=problems/, \
 	    demo:include, \
 	    preliminary96:include, \
-	    selection96:include, \
-	    selection97:include
+	    preliminary97:include, \
+	    bospre2000:include
 
 all:
 	makejudgingdir -email ${INDICES}
