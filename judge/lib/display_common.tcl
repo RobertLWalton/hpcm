@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/08/25 02:48:50 $
+#   $Date: 2001/08/25 03:22:09 $
 #   $RCSfile: display_common.tcl,v $
-#   $Revision: 1.1 $
+#   $Revision: 1.2 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -56,13 +56,6 @@
 #
 # The display data and functions manage the display.
 
-# Several of the following functions add text lines to
-# the end of a variable, rather than writing to stdout.
-# By accumulating text in a variable and writing it in
-# a single puts statement, and by designing successive
-# puts strings to have the same layout, we get the
-# effect of having a single window.
-#
 # The window has the following parts which are display-
 # ed in the order given:
 #
@@ -80,6 +73,11 @@
 # unless it is too large.  The window_display should end
 # with a `==========' bar to separate it from the win-
 # dow_info.
+#
+# Of the following variables, window_error and window_
+# prompt can be set directly, while the other variables
+# should be set by the set_window_display and set_
+# window_info functions.
 #
 set window_blank ""
 set window_display ""
@@ -102,6 +100,9 @@ set window_prompt ""
 #
 set window_info_height 8
 
+
+# Constant for use in functions.
+#
 set window_newlines "\n\n\n\n\n\n\n\n\n\n"
 set window_newlines "$window_newlines$window_newlines"
 set window_newlines "$window_newlines$window_newlines"
@@ -109,6 +110,11 @@ set window_newlines "$window_newlines$window_newlines"
 set window_newlines "$window_newlines$window_newlines"
 
 # Display the current window.
+#
+# By accumulating text and writing it in a single puts
+# statement, and by designing successive puts strings to
+# have the same layout, we get the effect of having a
+# single window.
 #
 proc display_window {} {
 
@@ -128,11 +134,11 @@ proc display_window {} {
     flush stdout
 }
 
-# Set the window_info variable the info part of the next
-# window to be displayed.  Add blank lines to the top of
-# the given `info' to make it have window_info_height
-# lines, or call error if the `info' has more than
-# window_info_height lines.
+# Set the window_info variable to the info part of the
+# next window to be displayed.  Add blank lines to the
+# top of the given `info' to make it have window_info_
+# height lines, or call error if the `info' has more
+# than window_info_height lines.
 #
 proc set_window_info { info } {
 
@@ -195,7 +201,7 @@ proc bar_with_text { text } {
     set l [expr 80 - 2 - [string length $text]]
     return "[string range $window_bar 0 $l] $text"
 }
-
+
 # Set the window display to display the first lines
 # of the file.  Set the last_display variable to
 # `file'.  If the file is unreadable or is not a plain
