@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Oct 23 00:04:21 EDT 2003
+# Date:		Sun Oct 24 04:32:19 EDT 2004
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2003/10/23 04:52:52 $
+#   $Date: 2004/10/24 08:43:36 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.27 $
+#   $Revision: 1.28 $
 
 # To make a formal contest named `foo':
 #
@@ -284,7 +284,6 @@
 #     queries, and examine system errors.  You need to
 #     practice with `manualreply' before the contest.
 #
-#
 # 19. If you want to freeze the scoreboard near the end
 #     of the contest, edit the freeze time in hpcm_
 #     judging.rc accordingly.  Othewise make this time
@@ -411,7 +410,25 @@
 # 23. A web page containing non-contest-specific help
 #     and demos files can be made according to instruc-
 #     tions in hpcm/contestant/help/Makefile.
-# 24. A web page containing problem descriptions, and
+#
+# 24. At the end of the contest, the procedure for
+#     finishing is typically the following.  A final
+#     scoreboard is made automatically; in some cases
+#     it appears in scoreboard.final. However, this
+#     scoreboard generally has asterisks because the
+#     human judge has not finished manually reviewing
+#     all the submissions at the end of the contest
+#     when this scoreboard is automatically made.  To
+#     remove the asterisks just finish the manual
+#     review, remove the final scoreboard file, and
+#     wait a minute for the scoreboard to be remade.
+#     The scoreboard is automatically made if it does
+#     not exist or has a modification time preceding
+#     the end of contest.  The automatic scoreboard
+#     maker polls about once a minute to see if it has
+#     to do anything.
+
+# 25. A web page containing problem descriptions, and
 #     optionally solutions, can be made by defining the
 #     web page parameters in hpcm_judging.rc and execut-
 #     ing `make web'.
