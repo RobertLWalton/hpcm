@@ -7,7 +7,7 @@
 #
 # File:		tracker
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Feb  7 12:11:21 EST 2002
+# Date:		Sun Feb 10 07:13:59 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -16,9 +16,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/02/07 17:13:59 $
+#   $Date: 2002/02/10 15:52:02 $
 #   $RCSfile: tracker,v $
-#   $Revision: 1.19 $
+#   $Revision: 1.20 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -846,23 +846,22 @@ proc add_pid { { too_old "" } } {
     return $result
 }
 
-# Add directories with Auto_Score file, an auto score
-# not equal to `Completely Correct', and no Manual_Score
-# or Dispatch_PID file.
+# Add directories with Auto_Score file and no
+# Reply_Mail, No_Reply, or Dispatch_PID file.
 #
 proc add_score {} {
 
     global directory_list directory_list_length \
-    	   sco_array pid_array rec_array
+    	   sco_array pid_array rep_array rec_array
 
     set result ""
     foreach dir [lsort [array names sco_array]] {
         set sco_line $sco_array($dir)
-	if { [lindex $sco_line 2] != "" } {
+	set auto_score [lindex $sco_line 3]
+	if { $auto_score == "" } {
 	    continue
 	}
-	set auto_score [lindex $sco_line 3]
-	if { $auto_score == "Completely Correct" } {
+	if { [info exists rep_array($dir)] } {
 	    continue
 	}
 	if { [info exists pid_array($dir)] } {
@@ -1027,7 +1026,7 @@ proc summary {} {
 #
 proc display_directory_list {} {
 
-    global directory_list_length scoring_mode \
+    global directory_list_length \
     	   directory_list mail_directory
 
     clear_list
@@ -1038,11 +1037,7 @@ proc display_directory_list {} {
     set queries_last $directory_list_length
     set pid_list [add_pid]
     set pid_last $directory_list_length
-    if { $scoring_mode != "auto" } {
-	set score_list [add_score]
-    } else {
-	set score_list ""
-    }
+    set score_list [add_score]
     set score_last $directory_list_length
 
     if { $directory_list_length == 0 } {

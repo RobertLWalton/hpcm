@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Feb  9 19:11:17 EST 2002
+# Date:		Sun Feb 10 07:00:04 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/02/10 01:18:18 $
+#   $Date: 2002/02/10 15:53:57 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.102 $
+#   $Revision: 1.103 $
 
 # Table of Contents:
 #
@@ -581,6 +581,10 @@ set scoreboard_instructions \
 #			judge does not send the score
 #			to the contestant.
 #
+# Note that the definition of scoring mode is contained
+# in the response instructions below, and can therefore
+# be changed by changing the response instructions.
+#
 set scoring_mode auto
 
 # Maximum number of proofs for each type of difference
@@ -602,17 +606,20 @@ set output_limit_regexp {file size limit exceeded}
 # Response Instructions
 # -------- ------------
 
-# Instructions on how to respond to the submitter when
-# a new score is determined are provided by default in
-# the following variable, and may be provided for each
-# problem in the problem directory $response_instruc-
-# tions_file.
+# Default instructions on how to respond to the submit-
+# ter when a new score is determined are provided in the
+# following variable.   Overriding instructions may be
+# provided for each problem in the problem directory
+# $response_instructions_file.
 #
-# Actually this default value is postpended to any
-# $response_instructions_file value, and picks up any
+# Actually the default instructions are postpended to
+# any $response_instructions_file value, and pick up any
 # cases omitted by that value.  The EXIT command (see
 # below ) should be used in any $response_instructions_
 # file value to be sure this default does not execute.
+#
+# See below for a detailed description of response in-
+# structions.
 #
 set default_response_instructions {
 
@@ -724,23 +731,6 @@ set default_response_instructions {
     RECEIVED-HEADER
 }
 
-# The following is a regular expression that matches
-# all the $auto_score_file values which cause some
-# reply (maybe not final) to be sent to the submitter.
-# The regular expression is matched to the ENTIRE
-# $auto_score_file value.
-#
-# This regular expression must be compatible with the
-# definition of scoring mode implicit in the response
-# instructions.  Scorefinder ignores other # $auto_
-# score_file values.
-# 
-if { $scoring_mode == "manual" } {
-    set reply_auto_scores {No Match}
-} else {
-    set reply_auto_scores {.*}
-}
-
 # A $response_instructions_file value is a TCL list
 # value consisting of commands and if-statements.  The
 # if-statements have the format of TCL if statements:
@@ -789,7 +779,9 @@ if { $scoring_mode == "manual" } {
 #	Equals \$proposed_score != \"None\".
 #
 # Note these variables cannot be set by reponse instruc-
-# tion commands.
+# tion commands, nor should any expression change the
+# state of the TCL program when it is evaluated (e.g., 
+# do NOT use `[catch { set foo 9 }]').
 #
 # The $response_instructions_file file commands are exe-
 # cuted to construct the reply.  The possible commands
@@ -832,7 +824,7 @@ if { $scoring_mode == "manual" } {
 #	  included in the reply.  Note that the strings
 #	  may themselves include line feeds.
 #
-#	  Several special strings are substituted for
+#	  Several special substrings are substituted for
 #	  within each string as follows:
 #
 #	        -PROBLEM-	 The problem name.
@@ -861,7 +853,10 @@ if { $scoring_mode == "manual" } {
 #
 #     RECEIVED-BODY
 #	  Include the body of the $received_file file in
-#	  the reply.
+#	  the reply.  Note that the blank line between
+#	  the header and the body of an email is NOT
+#	  included in either RECEIVED-HEADER or RECEIV-
+#	  ED-BODY.
 #
 #     FIRST
 #	  Include lines describing the type and position
@@ -889,14 +884,16 @@ if { $scoring_mode == "manual" } {
 #	HPCM_END filename
 #
 # Set following to `no' if submissions may also have
-# the file as exactly the body of the submission mes-
-# sage (the file may not begin with HPCM_BEGIN, any
-# initial blank lines in the file are deleted, and
-# blank lines may be added to end of the file).
+# the file verbatim in the body of the submission mes-
+# sage.  See `extractmail' for details.
 #
 set format_submissions no
 
 # Authentication Switch: yes or no
+#
+# Usually yes for informal and formal contests and no
+# for email contest.  See authentication functions in
+# judging_common.tcl for details.
 #
 set use_authentication no
 
