@@ -1,87 +1,395 @@
-// Programming Contest Sandbox Program 
-//
-// File:	sandbox.c
-// Authors:	Bob Walton (walton@deas.harvard.edu)
-// Date:	Tue Aug 15 21:20:44 EDT 2000
-//
-// The authors have placed this program in the public
-// domain; they make no warranty and accept no liability
-// for this program.
-//
-// RCS Info (may not be true date or author):
-//
-//   $Author: acm-cont $
-//   $Date: 2000/08/26 13:25:12 $
-//   $RCSfile: hpcm_sandbox.c,v $
-//   $Revision: 1.1 $
+/* Programming Contest Sandbox Program 
+ *
+ * File:	hpcm_sandbox.c
+ * Authors:	Bob Walton (walton@deas.harvard.edu)
+ * Date:	Sun Sep  3 14:56:38 EDT 2000
+ *
+ * The authors have placed this program in the public
+ * domain; they make no warranty and accept no liability
+ * for this program.
+ *
+ * RCS Info (may not be true date or author):
+ *
+ *   $Author: acm-cont $
+ *   $Date: 2000/09/03 19:45:34 $
+ *   $RCSfile: hpcm_sandbox.c,v $
+ *   $Revision: 1.2 $
+ */
 
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
 #include <unistd.h>
 #include <sys/types.h>
+#include <sys/time.h>
+#include <sys/resource.h>
+#include <sys/wait.h>
+#include <sys/param.h>
+#include <sys/signal.h>
+extern const char * const sys_siglist[];
 #include <errno.h>
+#include <pwd.h>
 
 char documentation [] =
-"sandbox program argument ...\n"
+"hpcm_sandbox [options] program argument ...\n"
 "\n"
-"    Sets the real user and group IDs to the effect-\n"
-"    ive user and group IDs, sets the environment to\n"
-"    contain just \"SANDBOX\", and executes the prog-\n"
-"    gram with the given arguments.  Normally the\n"
-"    binary of this `sandbox' program has `sandbox'\n"
-"    for both owner and group, and has user and group\n"
-"    set ID mode flags, so the program gets run with\n"
-"    its real and effective user and group IDs set to\n"
-"    `sandbox'.  Normally the `sandbox' user is not\n"
-"    allowed to log in and so owns no files or\n"
-"    directories.\n"
+"    This program first checks its arguments for\n"
+"    options that set resource limits:\n"
 "\n"
-"    If the operating system is such that a non-\n"
-"    privileged user cannot set the real user and\n"
-"    group IDs to the effective user and group IDs,\n"
-"    the real IDs will not be set.  But if in addi-\n"
-"    tion the non-priviledged user can set the\n"
-"    effective user and group IDs to the real IDs,\n"
-"    this `sandbox' program will return an error\n"
-"    and not execute the given program.\n" ;
+"      -cputime N     Cpu Time in Seconds (60)\n"
+"      -datasize N    Data Area Size in Bytes (50k)\n"
+"      -stacksize N   Stack Size in Bytes (50k)\n"
+"      -filesize N    Output File Size in Bytes (50k)\n"
+"      -core N        Core Dump Size in Bytes (0)\n"
+"      -openfiles N   Number of Open Files (5)\n"
+"      -processes N   Number of Processes (1)\n"
+"\n"
+"    Here N is a positive decimal integer that can\n"
+"    end with `k' to multiply it by 1024 or `m' to\n"
+"    multiply it by 1024 * 1024.  The values above in\n"
+"    parentheses are the default values.\n"
+"\n"
+"    There is also another possible option:\n"
+"\n"
+"      -watch\n"
+"\n"
+"    With this option, this program forks with the\n"
+"    parent waiting for the child to complete the\n"
+"    the rest of this program's action.  If the\n"
+"    child terminates with a signal, the parent\n"
+"    prints an error message identifying the signal.\n"
+"    In any case the parent returns a 0 exit code.\n"
+"\n"
+"    Next, if this program's effective user ID is\n"
+"    `root', this program eliminates any supplemen-\n"
+"    tary groups that the process might have, and\n"
+"    changes the effective user and group IDs to\n"
+"    those of `sandbox', as looked up in /etc/passwd.\n"
+"\n"
+"    Then this program sets the real user and group\n"
+"    IDs to the effective user and group IDs, sets\n"
+"    the resource limits determined by the options\n"
+"    and defaults, sets the environment to contain\n"
+"    just \"SANDBOX\", and executes the program with\n"
+"    the given arguments.\n"
+"\n"
+"    Normally the `sandbox' user is not allowed to\n"
+"    log in and owns no files or directories.\n"
+"\n"
+"    The program will write an error message on the\n"
+"    standard error output if any system call is in\n"
+"    error.\n" ;
 
 char * env [] = { "SANDBOX", 0 };
 
-int output ( int fd, char * string ) {
-    return write ( fd, string, strlen (string) );
+void errno_exit ( char * m )
+{
+    fprintf ( stderr, "hpcm_sandbox system call error:"
+                      " %s: %s\n",
+		      m, strerror ( errno ) );
+    exit ( 1 );
 }
 
-// Main program.
-//
+/* Main program.
+*/
 int main ( int argc, char ** argv )
 {
-    uid_t uid;
-    gid_t gid;
+    /* Index of next argv to process. */
 
-    if ( argc == 0 ) {
-        output ( 1, documentation );
-	exit ( 1 );
-    }
+    int index = 1;
 
-    uid = geteuid ();
-    gid = getegid ();
+    /* Options with default values. */
 
-    setreuid ( uid, -1 );
-    setregid ( gid, -1 );
+    int cputime = 60;
+    int datasize = 50 * 1024;
+    int stacksize = 50 * 1024;
+    int filesize = 50 * 1024;
+    int core = 0;
+    int openfiles = 5;
+    int processes = 1;
+    int watch = 0;
 
-    setreuid ( -1, getuid() );
-    setregid ( -1, getgid() );
 
-    if ( uid != geteuid() || gid != getegid () )
+    /* Effective IDs of this process after change
+       from `root' to `sandbox' */
+
+    uid_t euid;
+    gid_t egid;
+
+    /* Consume the options. */
+
+    while ( index < argc )
     {
-        output ( 2, "ERROR: sandbox failed to securely"
-	            " set user and group IDs\n" );
+        int * option;
+
+        if ( strcmp ( argv[index], "-watch" )
+	     == 0 )
+	{
+	    watch = 1;
+	    ++ index;
+	    continue;
+	}
+        else if ( strcmp ( argv[index], "-cputime" )
+	     == 0 )
+	    option = & cputime;
+        else if ( strcmp ( argv[index], "-datasize" )
+	     == 0 )
+	    option = & datasize;
+        else if ( strcmp ( argv[index], "-stacksize" )
+	     == 0 )
+	    option = & stacksize;
+        else if ( strcmp ( argv[index], "-filesize" )
+	     == 0 )
+	    option = & filesize;
+        else if ( strcmp ( argv[index], "-core" )
+	     == 0 )
+	    option = & core;
+        else if ( strcmp ( argv[index], "-openfiles" )
+	     == 0 )
+	    option = & openfiles;
+        else if ( strcmp ( argv[index], "-processes" )
+	     == 0 )
+	    option = & processes;
+        else break;
+
+	++ index;
+
+	if ( index >= argc )
+	{
+	    fprintf ( stderr,
+	              "Not enough arguments\n" );
+	    exit (1);
+	}
+
+	/* Compute the number. */
+
+	{
+	    char * s = argv[index];
+	    int n = 0;
+	    int c;
+
+	    while ( c = * s ++ )
+	    {
+	        if ( c < '0' || c > '9' ) break;
+		if ( n > ( 1 << 27 ) )
+		{
+		    fprintf ( stderr,
+			      "Number too large: %s\n",
+			      argv[index] );
+		    exit (1);
+		}
+		n = 10 * n + ( c - '0' );
+	    }
+
+	    if ( c == 'm' )
+	    {
+	        c = * s ++;
+		if ( n >= ( 1 << 11 ) )
+		{
+		    fprintf ( stderr,
+			      "Number too large: %s\n",
+			      argv[index] );
+		    exit (1);
+		}
+		n <<= 20;
+	    } else if ( c == 'k' )
+	    {
+	        c = * s ++;
+		if ( n >= ( 1 << 21 ) )
+		{
+		    fprintf ( stderr,
+			      "Number too large: %s\n",
+			      argv[index] );
+		    exit (1);
+		}
+		n <<= 10;
+	    }
+
+	    if ( c != 0 || n == 0 )
+	    {
+		fprintf ( stderr,
+			  "Bad number: %s\n",
+			  argv[index] );
+		exit (1);
+	    }
+
+	    * option = n;
+        }
+
+	++ index;
+    }
+
+    /* If the program name is not left, print doc. */
+
+    if ( index >= argc  || argv[index][0] == '-' ) {
+        printf ( "%s", documentation );
 	exit ( 1 );
     }
-     
-    execve ( argv[1], argv + 1, env );
 
-    output ( 2, "ERROR: could not execute " );
-    output ( 2, argv[1] );
-    output ( 2, "\n" );
+    /* If -watch, start parent */
 
-    exit ( errno );
+    if ( watch )
+    {
+	pid_t child = fork ();
+
+	if ( child < 0 )
+	    errno_exit ( "fork" );
+
+	if ( child != 0 )
+	{
+	    int status;
+
+	    if ( wait ( & status ) < 0 )
+		errno_exit ( "wait" );
+
+	    if ( WIFSIGNALED ( status ) )
+	    {
+		int sig = WTERMSIG ( status );
+
+		/* Cpu time exceeded is signalled by
+		   SIGKILL, so we check for it and
+		   change the sig to SIGXCPU.
+		 */
+
+		if ( sig == SIGKILL )
+		{
+		    struct rusage usage;
+		    long sec;
+
+		    if ( getrusage ( RUSAGE_CHILDREN,
+		                     & usage )
+			 < 0 )
+		        errno_exit ( "getrusage" );
+
+		    sec  = usage.ru_utime.tv_sec;
+		    sec += usage.ru_stime.tv_sec;
+		    if ( ( usage.ru_utime.tv_usec
+		           + usage.ru_stime.tv_usec )
+			 >= 1000000 )
+		        ++ sec;
+		    if ( sec >= cputime )
+		    	sig = SIGXCPU;
+		}
+
+		fprintf ( stderr,
+			  "Terminated with signal: %s\n",
+			  sys_siglist [ sig ] );
+	    }
+
+	    exit ( 0 );
+	}
+    }
+
+    if ( geteuid() == 0 ) {
+
+        /* Execute if effective user is root. */
+
+	gid_t groups [1];
+
+	/* Cleat the supplementary groups. */
+
+	if ( setgroups ( 0, groups ) < 0 )
+	    errno_exit ( "root setgroups" );
+
+	/* Set the effective user and group ID to
+	   that of the `sandbox' user.
+	*/
+	while ( 1 )
+	{
+	    struct passwd * p;
+
+            p = getpwent ();
+
+	    if ( p == NULL )
+	    {
+	        fprintf ( stderr, "Could not find `sandbox'"
+		                  " in /etc/passwd\n" );
+		exit ( 1 );
+	    }
+
+	    if ( strcmp ( p->pw_name, "sandbox" )
+	         == 0 )
+	    {
+		if ( setregid ( -1, p->pw_gid )
+		     < 0 )
+		     errno_exit ( "root setregid" );
+		if ( setreuid ( -1, p->pw_uid )
+		     < 0 )
+		     errno_exit ( "root setreuid" );
+
+		endpwent ();
+		break;
+	    }
+	}
+
+	/* End root execution. */
+    }
+
+    euid = geteuid ();
+    egid = getegid ();
+
+    if ( setreuid ( euid, -1 ) < 0 )
+        errno_exit ( "setreuid setting real uid" );
+    if ( setregid ( egid, -1 ) < 0 )
+        errno_exit ( "setregid setting real gid" );
+
+    {
+        /* Set the resource limits */
+
+	struct rlimit limit;
+
+	limit.rlim_cur = cputime;
+	limit.rlim_max = cputime;
+        if ( setrlimit ( RLIMIT_CPU, & limit ) < 0 )
+	    errno_exit
+	        ( "setrlimit RLIMIT_CPU" );
+
+	limit.rlim_cur = datasize;
+	limit.rlim_max = datasize;
+        if ( setrlimit ( RLIMIT_DATA, & limit ) < 0 )
+	    errno_exit
+	        ( "setrlimit RLIMIT_DATA" );
+
+	limit.rlim_cur = stacksize;
+	limit.rlim_max = stacksize;
+        if ( setrlimit ( RLIMIT_STACK, & limit ) < 0 )
+	    errno_exit
+	        ( "setrlimit RLIMIT_STACK" );
+
+	limit.rlim_cur = filesize;
+	limit.rlim_max = filesize;
+        if ( setrlimit ( RLIMIT_FSIZE, & limit ) < 0 )
+	    errno_exit
+	        ( "setrlimit RLIMIT_FSIZE" );
+
+	limit.rlim_cur = core;
+	limit.rlim_max = core;
+        if ( setrlimit ( RLIMIT_CORE, & limit ) < 0 )
+	    errno_exit
+	        ( "setrlimit RLIMIT_CORE" );
+
+	limit.rlim_cur = openfiles;
+	limit.rlim_max = openfiles;
+        if ( setrlimit ( RLIMIT_NOFILE, & limit ) < 0 )
+	    errno_exit
+	        ( "setrlimit RLIMIT_NOFILE" );
+
+	limit.rlim_cur = processes;
+	limit.rlim_max = processes;
+        if ( setrlimit ( RLIMIT_NPROC, & limit ) < 0 )
+	    errno_exit
+	        ( "setrlimit RLIMIT_NPROC" );
+    }
+
+    /* Execute program with argument and `SANDBOX'
+       as the only environment.
+    */
+
+    execve ( argv[index], argv + index, env );
+
+    /* If execve fails, print error messages. */
+
+    fprintf ( stderr, "ERROR: could not execute %s\n",
+		      argv[index] );
+    errno_exit ( "execve" );
 }

@@ -11,18 +11,21 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: acm-cont $
-#   $Date: 2000/08/29 10:01:47 $
+#   $Date: 2000/09/03 19:45:33 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.2 $
+#   $Revision: 1.3 $
 
 # Kill all implicit rules
 #
 .SUFFIXES:
 
-all: sandbox
+all: hpcm_sandbox
 
-sandbox:	sandbox.c
-	gcc -o sandbox sandbox.c
+hpcm_sandbox:	hpcm_sandbox.c
+	gcc -o hpcm_sandbox hpcm_sandbox.c
 
 clean:
-	rm -f sandbox
+	rm -f hpcm_sandbox
+
+test:
+	-exit 1
