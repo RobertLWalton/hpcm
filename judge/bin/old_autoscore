@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: acm-cont $
-#   $Date: 2000/08/18 11:25:19 $
+#   $Date: 2000/08/19 10:35:17 $
 #   $RCSfile: old_autoscore,v $
-#   $Revision: 1.6 $
+#   $Revision: 1.7 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -26,15 +26,14 @@ set lib_directory "[file dirname $argv0]/../lib"
 source "$lib_directory/judging_common.tcl"
 
 set document "
-cd submission_directory
-autoscore program_name
+cd submission_directory; autoscore program_name
 
     Given the submission directory as the current dir-
     ectory, given the program name (e.g. pppp), and
     given the output file (pppp.out), optional error
     file (pppp.err), and test file (pppp.test, the
     judge's solution's version of the output file),
-    computes the `judge.score' file in the submission
+    computes the `$score_file' file in the submission
     directory, using purely automatic (non-manual
     means).
 
@@ -49,11 +48,12 @@ autoscore program_name
     matches a regular expression indicating there
     was a cpu time or output size problem.  Currently
     it is not possible to discriminate memory limit
-    exceedments from other memory errors.
+    exceedments from other memory errors, and they
+    are all classed as `Program Crashed'.
 
-    If the error file does not exist or is empty,
-    the program is scored by comparing the output
-    of
+    If the error file does not exist or is empty, the
+    program is scored by comparing the output of
+
     	scorediff output_file test_file
 
     to the whitespace separated items of the first line
@@ -73,13 +73,20 @@ autoscore program_name
 			the same.  However, by itself
 			this item does not permit
 			different numbers of `\\n's.
+
 	linebreak	Allow one file to have line
 			breaks where the other file
 			does not.  Only effective if
-			whitespace is allowed.
+			whitespace or spacebreak is
+			allowed.
+
 	spacebreak	Allow one file to have white-
 			space where the other file has
-			none.
+			none.  However, by itself this
+			item does not permit one file
+			to have `\\n's where there
+			other file has no whitespace.
+
 	number D	Allow the two files to have
 			matching numbers whose absolute
 			difference is as much as D,
@@ -105,58 +112,65 @@ autoscore program_name
     reports `eof1' the output is incomplete.  Otherwise
     the output is correct.
 
-    The score is written to the `judge.score' file
-    in the submission directory and is written as a
-    single line to the output."
+    The score is written to the `$score_file' file in
+    the submission directory and is also written as a
+    single line to the standard output."
 
+# If wrong number of arguments print documentation and
+# exit with error.
+#
 if { $argc != 1 } {
     puts $document
     exit 1
 }
 
+# Set file names and check file permissions.
+#
 set program_name [lindex $argv 0]
 set output_file "${program_name}.out"
 set error_file  "${program_name}.err"
 set test_file   "${program_name}.test"
 
 if { ! [file readable $output_file] } {
-    fatal_error "not readable: $output_file"
+    fatal_error "Not readable: $output_file"
 }
 
 if { ! [file readable $test_file] } {
-    fatal_error "not readable: $test_file"
+    fatal_error "Not readable: $test_file"
 }
 
 if { [file exists $score_file] \
      && ! [file writable $score_file] } {
-    fatal_error "not writable: $score_file"
+    fatal_error "Not writable: $score_file"
 }
 
 if { [file exists $instructions_file] \
      && ! [file readable $instructions_file] } {
-    fatal_error "not readable: $instructions_file"
+    fatal_error "Not readable: $instructions_file"
 }
 
+# Initialize score to blank.
+#
 set score ""
 
-if { [file exists $error_file] } {
+# If error file exists and is not empty, compute score.
+#
+if { [file exists $error_file] \
+     && [file size $error_file] > 0 } {
 
     if { ! [file readable $error_file] } {
-	fatal_error "not readable: $error_file"
+	fatal_error "Not readable: $error_file"
     }
 
-    set line_count 0
     set error_fd [open $error_file r]
-    while { yes } {
+    while { "yes" } {
     	set line [gets $error_fd]
 	if { [eof $error_fd] } break
-	incr line_count
 	if { [regexp -nocase -- \
 	             $time_limit_regexp $line] } {
 	    set score "Cpu Time Limit Exceeded"
 	    break;
-	}
-	elseif { [regexp -nocase -- \
+	} elseif { [regexp -nocase -- \
 	             $output_limit_regexp $line] } {
 	    set score "Output Size Limit Exceeded"
 	    break;
@@ -164,13 +178,18 @@ if { [file exists $error_file] } {
     }
     close $error_fd
 
-    if { $score == "" && line_count > 0 } {
+    if { $score == "" } {
     	set score "Program Crashed"
     }
 }
 
+# If score is still blank, compute the score using
+# the instructions file and the results of scorediff.
+#
 if { $score == "" } {
 
+    # Read the instructions file or use default.
+    #
     if { ! [file readable $instructions_file] } {
 	set scoring_instructions \
 	    $scoring_instructions_default
@@ -182,15 +201,23 @@ if { $score == "" } {
 	close $scoring_instructions_fd
     }
 
+    # Encode the instructions in the following
+    # variables:
+    #
     set spacebreak_ok	no
     set linebreak_ok	no
     set whitespace_ok	no
-    set number_ok		no
-    set number_diff		0.0
+    set number_ok	no
+    set number_diff	0.0
 
     set number_last no
     foreach i $scoring_instructions {
 	if { $number_last } {
+	    if { [catch "expr $i"] } {
+	        fatal_error \
+		    "Non-number after `number' in\
+		     scoring instructions: $i"
+	    }
 	    set number_diff $i
 	    set number_last no
 	} elseif { $i == "number" } {
@@ -207,10 +234,24 @@ if { $score == "" } {
 		"Unknown scoring_instruction: $i"
 	}
     }
+    
+    if { $number_last } {
+	fatal_error \
+	    "Number not followed by floating point\
+	     number" \
+	    "in the scoring instructions:" \
+	    "    $scoring_instructions"
+    }
 
+    # Compute result of scorediff applied to output
+    # and test files.
+    #
     set scorediff \
         [exec scorediff $output_file $test_file]
 
+    # Compute score based on scoring instructions and
+    # results of scorediff.
+    #
     set number_last no
     foreach d $scorediff {
 	if { $number_last } {
