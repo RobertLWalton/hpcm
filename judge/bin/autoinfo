@@ -1,10 +1,10 @@
 #!/bin/sh -f
 #
-# Extract submitted program from received.mail file.
+# Returns files to requester by email.
 #
 # File:		autoinfo
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Aug 16 06:41:25 EDT 2000
+# Date:		Tue Aug 22 06:34:38 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: acm-cont $
-#   $Date: 2000/08/21 05:24:29 $
+#   $Date: 2000/08/22 10:28:29 $
 #   $RCSfile: autoinfo,v $
-#   $Revision: 1.3 $
+#   $Revision: 1.4 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -35,40 +35,40 @@ cd submission_directory; autoinfo
     directory.  Thus file must have a subject line of
     the form:
 
-    	Subject: get filename
+    	Subject: get name ...
 
     The body of the mail file must be empty.
 
-    The named file is looked up in the $info_directory.
-    If readable, it is mailed back to the submitter
-    of the `get file' request.
+    The names are taken relative to the info_directory,
+    and may either files or directories.  A directory
+    name is replaced by the names of all readable files
+    and subdirectories in the given directory, recur-
+    sively.  The result of this is a list of file names.
+    
+    If all the named files are readable, they are mailed
+    mailed back to the requester.  In this case the
+    list of file names is printed to the standard
+    output, and nothing else is printed.
 
-    If this program succeeds in sending the requested
-    file without error, this program prints the name
-    of the requested file to the standard output as a
-    single line, and prints nothing else.
-
-    Otherwise, if the requesting email has even the
-    slightest formatting error, this program constructs a
-    `$reply_file' file giving reasons why the requesting
-    email is invalid.  This `$reply_file' is sent to the
-    email address that is part of the current directory
-    name.  In this case this program exits with error
-    code 0, indicating no error, but does not write
-    anything to the standard output, indicating no file
-    was sent.
+    Otherwise, if any listed file is not readable or if
+    the requesting email has even the slightest format-
+    ting error, this program constructs a `$reply_file'
+    file giving reasons why the requesting email is
+    invalid.  This `$reply_file' is sent to the email
+    address that is part of the current directory name.
+    In this case this program exits with error code 0,
+    indicating no error, but does not write anything to
+    the standard output, indicating no file was sent.
     
     This program exits with non-zero error code only if
-    something is very wrong, e.g. the  `$received_file'
-    is not readable or the `$reply_file' is not
-    writable."
+    something is very wrong, e.g. the `$received_file'
+    file is not readable or the `$reply_file' file is
+    not writable."
 
 if { $argc != 0 } {
     puts $document
     exit 1
 }
-
-set received_ch [open $received_file r]
 
 # Create a reply file complaining of a request error,
 # and email this reply to the requestor.  Include the
@@ -85,89 +85,88 @@ proc info_error_reply { args } {
     exit 0
 }
 
-# Look for subject line.
+if { [catch { set subject [find_subject -nobody] } \
+            catch_out] } {
+    info_error_reply catch_out
+}
+
+if { [llength $subject] < 1 \
+     || [lindex $subject 0] != "get" } {
+     info_error_replay "Badly formatted subject line"
+}
+
+# Compute list of readable file names, list of unread-
+# able file names, and list of illegal file names.
 #
-while { "yes" } {
-    set line [gets $received_ch]
-    if { [eof $received_ch] } {
-        info_error_reply \
-	    "Could not find `Subject' line."
-    } elseif { [regexp "^Subject: get (\[^\ \t\]*)\$" \
-               $line all filename] } {
-	break
-    } elseif { [regexp {^Subject:} $line] } {
-    	info_error_reply \
-	    "Badly formatted subject line"
-    } elseif { [regexp $From_line_regexp $line] } {
-    	# From line is ok
-    } elseif { [regexp ":" $line] } {
-    	# other header lines are ok
+set names ""
+set unreadables ""
+set illegals ""
+#
+proc info_expand { name } {
+
+    global names unreadables illegals info_directory
+
+    set file "$info_directory/$name"
+
+    if { [regexp {^\.|\/\.} $name] } {
+    	lappend illegals $name
+    } elseif { [file isdirectory $file] } {
+        foreach f [lsort [glob $file/*]] {
+	    if { [file readable $f] } {
+	        info_expand "$name/[file tail $f]"
+	    }
+	}
+    } elseif { [file readable $file] } {
+        lappend names $name
     } else {
-    	info_error_reply \
-	    "Bad line in header before `Subject'\
-	         line:" \
-	    $line
+        lappend unreadables $name
     }
 }
 
-# Check that `filename' is legal.
-#
-if { [regexp {^\.|\/\.} $filename] } {
-    info_error_reply \
-        "Illegal filename (has `/.' or beginning `.'):\
-	 $filename"
+foreach n [lreplace $subject 0 0] {
+    info_expand $n
 }
 
-# Check that named file is readable.
-#
-if { ! [file readable "$info_directory/$filename"] } {
-    info_error_reply \
-        "Named file is not readable in info database:\
-	 $filename"
+set error_lines ""
+
+if { $illegals != "" } {
+    lappend error_lines \
+	    "Some requested file names are illegal:"
+    lappend error_lines \
+	    "    $illegals"
+} 
+if { $unreadables != "" } {
+    lappend error_lines \
+	    "Some requested file names are unreadable:"
+    lappend error_lines \
+	    "    $unreadables"
+} 
+
+if { $error_lines != "" } {
+    eval info_error_reply $error_lines
 }
 
-# Look for first non-header line.
-#
-while { "yes" } {
-    set line [gets $received_ch]
-    if { [eof $received_ch] } {
-        break
-    } elseif { ! [regexp ":" $line] } {
-    	break
-    }
-}
-
-# Check that body is blank.
-#
-while { "yes" } {
-    if { [eof $received_ch] } {
-    	break
-    } elseif { [regexp "^\[\ \t\]*\$" $line] } {
-    	# blank lines are ok
-    } else {
-    	info_error_reply \
-	    "Non-blank body line:" \
-	    $line
-    }
-    set line [gets $received_ch]
-}
-close $receive_ch
-
-compose_reply "The file $filename appears below the\
+compose_reply "The requested files appear below\
                following request message header."
 
 set reply_ch [open "${reply_file}+" a]
 
 puts $reply_ch ""
-puts $reply_ch "---------------------- $filename:"
 
-put_file "$info_directory/$filename" $reply_ch
+set whosh "****----****----"
+set hsohw "----****----****"
+
+foreach n $names {
+    puts $reply_ch "$whosh ${n} $hsohw"
+    put_file "$info_directory/$n" $reply_ch
+}
+puts $reply_ch "$whosh end $hsohw"
 
 close $reply_ch
 
 send_reply
 
-puts Sent Info: $filename
+puts $names
 exit 0
 
 # Include common error catching code:

@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: acm-cont $
-#   $Date: 2000/08/21 21:56:07 $
+#   $Date: 2000/08/22 10:28:30 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.10 $
+#   $Revision: 1.11 $
 #
 
 # Include this code in TCL program via:
@@ -36,10 +36,10 @@
 # standard output, be logged in the error log file, and
 # return an exit code of 1 from the program.
 
-# Default error log file name.  For use if we cannot
-# find judging parameters.
+# Default error log directory name.  For use if we
+# cannot find judging parameters.
 #
-set default_error_log_file "~/HPCM_Error_Log"
+set default_log_directory "~/HPCM_Error_Log"
 
 # Judging parameters file name:
 #
@@ -57,33 +57,69 @@ proc caught_error {} {
 # Function called to log an error when the program
 # may want to continue.
 #
+# The error information is written as a separate
+# file in $log_directory.  If $log_directory is not
+# usable, $default_log_directory defined above is used
+# instead.  The format of the file name is:
+#
+#	s[[EU]]u-p
+#
+# where s = number of seconds since the epoch
+#           in 15 decimal digits
+#       u = random 6 digit number for uniqueness
+#       p = name of executing program
+#
+# EU means the file is for an Error that is Unchecked,
+# i.e., not yet seen by a person.  This part of the
+# file name may be change to EC when a person checks off
+# on the error.
+#
 proc log_error { error_output } {
 
     global argv0 argv errorCode errorInfo \
-	   default_error_log_file \
-	   log_directory error_log_file
+	   default_log_directory \
+	   log_directory
 
     puts "ERROR caught for $argv0 $argv"
     puts $error_output
 
     if { [info exists log_directory] \
-         && [info exists error_log_file] \
-	 && $log_directory != "" \
-	 && $error_log_file != "" } {
-
-        set log_file "$log_directory/$error_log_file"
-
-	if { ! [file writable $log_file] } {
-	    if { [catch {
-		      file mkdir $log_directory
-		  }] \
-		 || ! [file writable $log_directory] \
-		 || [file exists $log_file] } {
-		set log_file $default_error_log_file
-	    }
-	}
+	 && $log_directory != "" } {
+        set log_dir "$log_directory"
     } else {
-    	set log_file $default_error_log_file
+    	set log_dir $default_log_directory
+    }
+    if { [catch { file mkdir $log_dir } ] \
+	 || ! [file writable $log_dir] } {
+	set log_dir $default_log_directory
+	file mkdir $log_dir
+    }
+
+    set count 0
+    while { "yes" } {
+        set t [format %015d [clock seconds]]
+        set u [format %06d \
+		  [expr { [clock clicks] % 1000000 } ]]
+        set p [file tail $argv0]
+        set log_file "$log_dir/${t}\[\[EU\]\]${u}-${p}"
+
+	if { ! [catch { exec lockfile -0 -r 0 \
+	                              $log_file } ] } {
+	    chmod u+w $log_file
+	    ftruncate $log_file 0
+	    break
+	}
+
+	incr count
+
+	if { $count > 10 } {
+
+	    # Desparation move.  Should never happen.
+	    #
+	    set e LOGGING-FILENAME-GENERATION-ERROR
+	    set log_file "$log_dir/${e}-\[\[EU\]\]"
+	    break
+	}
     }
 
     puts "Logging to $log_file"
@@ -275,18 +311,32 @@ proc send_reply {} {
 
 # The following function returns the subject of the
 # $received_file in the current directory.  Both the
-# `Subject:' and any following whitespace are stripped
-# from the result.  If no subject line is found, "" is
-# returned.
-# 
-proc find_subject {} {
+# `Subject:' and any preceding or following whitespace
+# are stripped from the result.
+#
+# If no `Subject:' line is found in the header, or more
+# than one `Subject:' lines are found, or if the -nobody
+# argument is given an the body contains a non-blank
+# line, then error is called with an appropriate error
+# message.
+#
+proc find_subject { args } {
 
-    global From_line_regexp received_file
+    global Header_line_regexp received_file
 
-    set subject ""
+    if { $args == "" } {
+	set body yes
+    } elseif { $args == "-nobody" } {
+	set body yes
+    } else {
+        error "Bad arguments to find_subject: $args"
+    }
 
     set received_ch [open $received_file r]
 
+    # Read header
+    #
+    set subject_found yes
     while { "yes" } {
         set line [gets $received_ch]
 	if { [eof $received_ch] } {
@@ -294,15 +344,38 @@ proc find_subject {} {
 	} elseif { [regexp \
 		"^Subject:\[\ \t\]*(\[^\ \t\].*)\$" \
 		$line all subject] } {
-	    break
-	} elseif { [regexp $From_line_regexp $line] } {
-	    # From line is OK
-	} elseif { [regexp {:} $line] } {
-	    # Non-subject header line is OK
+	    if { $subject_found } {
+	        error "More than one `Subject:' line"
+	    }
+	    set subject_found yes
+	} elseif { [regexp $Header_line_regexp $line] } {
+	    # Header line is OK
 	} else {
 	    break
 	}
     }
+
+    if { $subject_found == "no" } {
+	error "No `Subject:' line found"
+    }
+
+    if { $body == "no" } {
+
+	# Check that body is blank.
+	#
+	while { "yes" } {
+	    if { [eof $received_ch] } {
+		break
+	    } elseif { [regexp "^\[\ \t\]*\$" $line] } {
+		# blank lines are ok
+	    } else {
+		error "Non-blank body line:\n\
+		      \    $line"
+	    }
+	    set line [gets $received_ch]
+	}
+    }
+
     close $received_file
 
     return $subject
@@ -329,7 +402,7 @@ proc find_From_line {} {
 # instructions file or in the $default_scoring_
 # instructions.
 #
-prog find_scoring_instructions {} {
+proc find_scoring_instructions {} {
     global scoring_instructions_file \
 	   scoring_instructions_default
 
