@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/09/16 13:18:10 $
+#   $Date: 2001/09/16 13:47:26 $
 #   $RCSfile: hpcm_extract,v $
-#   $Revision: 1.2 $
+#   $Revision: 1.3 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -116,13 +116,13 @@ while { "yes" } {
     set line [gets stdin]
 
     if { [eof stdin] } {
-        if { $mode != header } {
+        if { $mode != "header" } {
 
 	    # Create fake missing end of file.
 	    #
 	    puts "ERROR: missing end of file line."
 	    set has_errors yes
-	    set line "$filesep end of file"
+	    set line "$filesep end of files"
 	} else {
 
 	    # Real end of file, end loop.
@@ -156,7 +156,7 @@ while { "yes" } {
 		# line is not that of the message
 		# header, but it that quoted in the
 		# message just before the files.  Thus
-		$ there is no ` RE:' in this subject.
+		# there is no ` RE:' in this subject.
 		#
 		if { [regexp \
 		         -nocase \
@@ -229,7 +229,7 @@ while { "yes" } {
 
 		# Line in file being diffed.
 		#
-		set old_line [read $ch]
+		set old_line [gets $ch]
 		if { [eof $ch] || $line != $old_line } {
 		    set diff yes
 		}
@@ -253,17 +253,17 @@ while { "yes" } {
 
         # Extract file name from line.
 	#
-	regexp "^$filesep(.*)\$" $line forget file
-	set file [string trim file]
+	regexp "^${filesep}(.*)\$" $line forget file
+	set file [string trim $file]
 	regexp {^(.*):$} $file forget file
 
 	if { $file == "end of files" } {
 	    if { $subject_ok } {
 	        if { $has_errors == "no" } {
-		    puts NO ERRORS in extraction
+		    puts "NO ERRORS in extraction"
 	        }
 	    } else {
-		puts BAD SUBJECT: no files extracted
+		puts "BAD SUBJECT: no files extracted"
 	    }
 	    puts ""
 	    set mode header
@@ -274,7 +274,7 @@ while { "yes" } {
 	    set has_errors yes
 	    set mode skip
 	} elseif { [regexp {^[/.-]} $file] \
-		   || [regexp {/[.-]} $file } {
+		   || [regexp {/[.-]} $file] } {
 
 	    puts "WARNING: illegal file name\
 	                   (skipped): `$file'"
