@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/01/14 06:40:00 $
+#   $Date: 2001/01/14 14:21:59 $
 #   $RCSfile: overview,v $
-#   $Revision: 1.23 $
+#   $Revision: 1.24 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -45,7 +45,7 @@ puts "
 	Contest Definition Data: The Contest Directory
 	Contest Definition Data: The Home Directory
 	Contest Definition Data: Contestant Accounts
-	Contest Definition Data: Auxilary Files
+	Contest Definition Data: Auxiliary Files
 	Contest Definition Data: Security
 	Contest Raw Data: Directories
 	Contest Raw Data: Submissions
@@ -359,7 +359,7 @@ existing JAVA systems have a bug that causes them to
 convert relative pathnames of .class files into absolute
 pathnames before they are used, so the .class files
 cannot be found by the `sandbox' user.  The fix for this
-currently is to run the progams manually by
+currently is to run the programs manually by
 
 	pppp <pppp.in >pppp.out
 
@@ -501,7 +501,7 @@ The contest defining components of the judging directory
 are:
 
     hpcm_judging.rc
-        The contest parameters file.  This is editted
+        The contest parameters file.  This is edited
 	by hand to define the contest.
 
     solutions
@@ -945,7 +945,7 @@ Contest Definition Data: The Home Directory
 
 Each contestant account must be initialized identically
 before the start of a contest.  This is done with the
-help of some maintainence programs using a special di-
+help of some maintenance programs using a special di-
 rectory which is called, informally, the `contest/home'
 directory.
 
@@ -1079,7 +1079,7 @@ files need special attention:
 	to turn off autologout (unset this variable in
 	.cshrc), especially in a formal contest in
 	which the judge's log the contestants in.
-	Also `alias ll -lL' is desireable in a formal
+	Also `alias ll -lL' is desirable in a formal
 	contest, as the symbolic links to problem
 	files may be confusing to the contestants.
 
@@ -1105,8 +1105,8 @@ files need special attention:
 	each contestant account.
 
 
-Contest Definition Data: Auxilary Files
-------- ---------- ----- -------- -----
+Contest Definition Data: Auxiliary Files
+------- ---------- ----- --------- -----
 
 There is one file in the judging account that is shared
 among all the contests supported by the account:
@@ -1116,7 +1116,7 @@ among all the contests supported by the account:
 	contest/secure/hpcm_sendmail.rc file, it
 	writes into the TODO file some lines that must
 	be copied by hand to the ~/.procmailrc file.
-	These lines write email submissions sent to the
+	These lines route email submissions sent to the
 	contest to the correct judging directory.
 
 	For example, if the hpcm_sendmail.rc file
@@ -1176,7 +1176,7 @@ HPCM has the following security goals:
 	    made using the key name and key.
 
     Upon receipt the signature is verified by the
-    judging software, and unverifyable email is
+    judging software, and unverifiable email is
     rejected.
 
     More specifically, HPCM programs do the following.
@@ -1191,7 +1191,7 @@ HPCM has the following security goals:
     X-HPCM-Signature-OK field is stored in the message
     $received_file file for use by subsequent process-
     ing.  Recomputation and use of X-HPCM-Signature-OK
-    may be surpressed by setting the `use-authentica-
+    may be suppressed by setting the `use-authentica-
     tion' global variable to false.
 
 2. Prevent code written by contestants from corrupting
@@ -1271,16 +1271,17 @@ Contest Raw Data: Directories
 ------- --- ----- -----------
 
 The raw data of the contest consists of submissions and
-requests and the results of processing these.  Each
-submission or request is an email message that is placed
-in a separate directory by itself.  The system then
-works in that directory to develop information, such
-as the binary program created by compiling a submission,
-the output of running this program on the judge's input
-data, and score automatically assigned to the submis-
-sion, and any score later manually assigned to the sub-
-mission.  All of this information is considered to be
-`raw data'.
+the results of processing these.  Each submission is an
+email message containing a problem solution, a request
+to get files, or a query.  This email is placed in a
+separate directory by itself.  The system then works in
+that directory to develop information, such as the
+binary program created by compiling a solution submis-
+sion, the output of running this program on the judge's
+input data, the score automatically assigned to the
+submission, and any score later manually assigned to
+the submission.  All of this information is considered
+to be `raw data'.
 
 In general, contest raw data is only created and never
 destroyed.  Thus it provides both information about the
@@ -1290,31 +1291,37 @@ happened during the contest.
 Raw data is stored in the following directories:
 
     mail_directory
+
         Normally the `mail' subdirectory of the judging
 	directory.
 
 	The mail_directory contains a separate subdirec-
 	tory for each piece of email sent to the judge.
+	The processing of that email occurs within this
+	subdirectory.
 
 	The mail_directory is created by `makejudging-
 	dir' and must exist before judge's email is
 	received.
-
+
     mail_directory/dddd-<<ssssss>>-submission
-        This is a directory holding an email sent to the
-	judge by the submitter ssssss at a time indica-
-	ted by the date dddd.  A specific example of the
-	last name component of the directory is:
 
-	2000-12-10-06:30:49-<<hpcm-t@method>>-submission
+        This is the subdirectory of the mail_directory
+	created to process an email sent to the judge by
+	the submitter ssssss at a time indicated by the
+	date dddd.  A specific example of the last name
+	component of the subdirectory is:
+
+	2000-12-10-06:30:49-<<hpcm-t@gigue>>-submission
 
 	The submitter is normally the return email
 	address of the email message sent to the judge,
-	but may be editted to remove spaces and alter
+	but may be edited to remove spaces and alter
 	some special characters.  It is not used per se
 	as an email address by HPCM.  The part before
 	any `@' may be used as a contestant name by
-	the scoreboard software.
+	the scoreboard software, and should therefore
+	be unique to the submitter.
 
 	Note that the date gives a time in seconds, and
 	is organized so that submissions with later
@@ -1325,14 +1332,18 @@ Raw data is stored in the following directories:
 	same submitter.  Any submission but the first
 	will find that the directory it is supposed to
 	create already exists, and therefore all submis-
-	sions but the first with the same date will be
-	ignored.
+	sions but the first with the same date to the
+	nearest second will be ignored.
 
 	As a consequence, programs like hpcm_get that
 	send email to the judge pause for at least a
 	second after sending each separate piece of
 	email.
 
+	This directory is made automatically by the
+	`receivemail' program when the email first
+	arrives.
+
 	More details about the files in this directory
 	are given in following sections.
 
@@ -1341,10 +1352,11 @@ Raw data is stored in the following directories:
 	directory.
 
         Errors that are not particular to one submission
-	or request are placed here, each in their own
+	and therefore cannot be places in a *-submission
+	directory are placed here, each in their own
 	file with the same name structure (including
 	`checking') as errors put in submission direc-
-	tories.
+	tories (see below).
 
 	The log_directory is created automatically when
 	it is first needed.
@@ -1367,12 +1379,14 @@ problem solution, which is called a `solution submis-
 sion'; email requesting files to be returned to a
 contestant, which is called a `get request', and email
 asking a question, which is called a `query'.
-
+
 Each email sent to the judge is placed in a separate
 subdirectory of the mail_directory.  This subdirectory
 has a name of the form:
 
     mail_directory/dddd-<<ssssss>>-submission
+
+See above for details concerning dddd and ssssss.
 
 Files in the email's *-submission directory that are
 specific to each kind of email are described in separate
@@ -1385,14 +1399,14 @@ sections below.  Files that can exist in all kinds of
 	tory to be created.
 
     $reply_file
-	This is the final reply email sent by the judge
+	This is the FINAL reply email sent by the judge
 	concerning this directory.  Thus the presence of
 	this file indicates that the judge is done with
 	this *-submission directory.
 
 	The judge can also send non-final email replies,
 	which are NOT stored in this file.
-
+
     $no_reply_file
 	This file is created by the judge to indicate
 	the judge is done with this *-submission direc-
@@ -1426,8 +1440,13 @@ sections below.  Files that can exist in all kinds of
 	dddd is the date in seconds, rrrr is a random
 	number to make the file unique even if several
 	system errors happen in the same second, ppppp
-	is the name of the program that sufferred the
+	is the name of the program that suffered the
 	system error.
+
+	If an error occurs in an HPCM program that is
+	NOT processing a *-submission directory, this
+	error log file is put in the log_directory (see
+	above), instead of in a *-submission directory.
 
     dddd-rrrr-<<ppppp>>-checked-error
 	This is an `unchecked-error' file (see just
@@ -1437,8 +1456,9 @@ sections below.  Files that can exist in all kinds of
 
 	The `tracker' program searches for unchecked
 	error log files and calls the judge's attention
-	to them.  Checked error log files are ignored by
-	`tracker'.
+	to them.  Error log files may be `checked' by
+	the `manualreply' program.  Checked error log
+	files are ignored by `tracker'.
 
     dddd-rrrr-<<ppppp>>-unchecked-error.mail
     dddd-rrrr-<<ppppp>>-checked-error.mail
@@ -1448,6 +1468,11 @@ sections below.  Files that can exist in all kinds of
 	email message.  This file is `checked' when its
 	associated error log file is `checked'.
 
+
+The section `Contest Raw Data: Data Flow' below outlines
+the creation of raw data files in a *-submission direc-
+tory.
+
 Contest Raw Data: Solution Submissions
 ------- --- ----- -------- -----------
 
@@ -1455,8 +1480,9 @@ A solution submission is an email with a subject of the
 form `submit pppp.eee', where pppp.eee is a file name.
 The email body contains the named file.  The email is
 interpreted as submission of a single file that is a
-solution of the problem named `pppp'.
-
+solution of the problem named `pppp' written in a pro-
+gramming language determined by `eee'.
+
 The file being submitted may appear in the body of the
 email in either of two ways.  It may be `formatted' or
 `unformatted'.  If formatted, it appears as:
@@ -1470,16 +1496,17 @@ email in either of two ways.  It may be `formatted' or
 If unformatted the file is just the body of the email
 message, verbatim.
 
-Only formatted submissions are usually allowed in
-informal and formal contests.  Unformatted submissions
-are typically allowed in email contests so that
-contestants who do not have program support (hpcm_
-submit) can submit easily.
+Only formatted submissions are usually allowed in in-
+formal and formal contests.  Such submissions are gener-
+ated by the hpcm_submit program, which performs the
+required formatting.  Unformatted submissions are
+typically allowed in email contests so that contestants
+who do not have hpcm_submit can submit easily.
 
 A solution submission directory is processed by the
 `autojudge' program.  This produces the following files
 in order (see `Library Data: Problems' above for more
-details about these files):
+details about many of these files):
 
     pppp.eee		The submitted file.
     pppp.in		Judge's input.
@@ -1495,7 +1522,7 @@ details about these files):
     $auto_score_file		Autojudge score.
     $reply_file		Possible final reply.
     $reply_history_file	History of all replies.
-
+
 
 If an error happens during the process or producing
 these files, the process stops.  An error in extracting
@@ -1507,10 +1534,12 @@ $auto_score_file files.  If the scoring mode is `auto',
 this is the final say and a $reply_file file is also
 generated.  If the scoring mode is `auto+manual', the
 contents of $auto_score_file are sent to the contestant
-but not as a final score.  If the scoring mode is
-`manual', no email is sent to the contestant.
+but not as a final score, and NO $reply_file file is
+generated.  If the scoring mode is `manual', no email
+is sent to the contestant, and no $reply_file file is
+generated.
 
-If there is no error, the $auto_score_file is `Complete-
+If there is NO error, the $auto_score_file is `Complete-
 ly Correct', this score is final, it is sent to the con-
 testant, and a $reply_file file is created.
 
@@ -1524,7 +1553,6 @@ in `pppp.cerr', and captures run errors in `pppp.err'.
 The section `Contest Raw Data: Data Flow' below gives
 some more details for solution submission directories.
 
-
 If the `autojudge' does not produces a final reply, it
 creates a $needs_reply_flag_file file in the flag dir-
 ectory to signal that this directories needs the atten-
@@ -1532,21 +1560,21 @@ tions of `manualreply'.  The `manualreply' program must
 then be run to assign a manual score, which is stored in
 a `$manual_score_file' file.   Email containing this
 score is sent to the contestant as a final reply and is
-stored in the $reply_mail file.
+stored in the $reply_file file.
 
-
+
 Contest Raw Data: Get Requests
 ------- --- ----- --- --------
 
 A get request submission is an email with a subject of
 the form `get filename ...'.  The filenames are relative
 to the judging directory's `info' subdirectory, and name
-files to be `gotten', i.e., returned in reply mail to
-the contestant.  A directory can also be named, in which
-case all the files and the subdirectories in the dir-
-ectory will be gotten, recursively.  See the documen-
-tation of the `autoinfo' program, which processes get
-requests, for details.
+files in that directory to be `gotten', i.e., returned
+in reply mail to the contestant.  A directory can also
+be named, in which case all the files and the subdirec-
+tories in the directory will be gotten, recursively.
+See the documentation of the `autoinfo' program, which
+processes get requests, for details.
 
 The `autoinfo' program produces the following files in
 the email's *-submission directory:
@@ -1570,6 +1598,7 @@ Processing of get requests is completely automatic;
 there is never any need for manual reply (baring a sys-
 tem error, of course).
 
+
 Contest Raw Data: Queries
 ------- --- ----- -------
 
@@ -1586,11 +1615,11 @@ from an account other than the judge's.
 If the `reply_mode' is not `auto', the\
 				$needs_reply_flag_file
 file is created in the flag directory to signal that
-this directories needs the attentions of `manualreply'.
+this directory needs the attentions of `manualreply'.
 The `manualreply' program must then be run to generate
 a $reply_file or a $no_reply_file file.
 
-
+
 Contest Raw Data: Data Flow
 ------- --- ----- ---- ----
 
@@ -1630,7 +1659,10 @@ follows:
 | autojudge (called from autodispatch)
 +--------------+
                | extractmail (called from autojudge)
+               v
+
                |
+               v
                +-----------------+
                |                 |
                | \[no error]      | \[error]
@@ -1639,8 +1671,8 @@ follows:
                |            $reply_history_file
                |
                | autojudge
-               | (importing from solutions_directory)
-               |
+               | (importing from
+               |  solutions_directory/pppp)
                v
             $make_file
             pppp.test 
@@ -1666,6 +1698,9 @@ follows:
                |          if scoring_mode == `auto'
                |
                | make pppp.out (called from autojudge)
+               |
+               v
+
                |
                v
             pppp.out (standard output)
@@ -1699,10 +1734,10 @@ follows:
                |        $reply_file
                |          if scoring_mode == `auto'
                v
-       $auto_score_file
+       $auto_score_file = `Completely Correct'
        $reply_file
        $reply_history_file
-
+
 If a system error occurs at any point, which can only
 happen if HPCM has a bug, then processing stops and
 an unchecked error log file is created.  If processing
@@ -1710,13 +1745,14 @@ is within a *-submission directory, the log file is
 created within this directory; otherwise the log file
 is created within the log_directory.
 
-Contest Derived Data: Procssing Status Files
-------- ------- ----- --------- ------ -----
+
+Contest Derived Data: Processing Status Files
+------- ------- ----- ---------- ------ -----
 
 During the processing of raw data and the updating of
 the scoreboard, several files are used to keep track of
 the status of data processing and program processes.
-These files and some of their containing directories
+These files and one of their containing directories
 are:
 
     flag_directory
@@ -1727,9 +1763,9 @@ are:
 	after information is written into other files
 	that may need to be read by certain programs
 	(makescoreboard or tacker).   The programs that
-	read these other files, when the see that a flag
-	file exists, delete the flag file first, and
-	then read the other files to see what to do.
+	read these other files, when they see that a
+	flag file exists, delete the flag file first,
+	and then read the other files to see what to do.
 	Thus these reader programs know that if the
 	flag files do NOT exist, nothing has changed
 	since the last time they read files.
@@ -1742,7 +1778,7 @@ are:
 		$manual_score_file file is written;  the
 		`makescoreboard' program sees this flag
 		and recomputes the scoreboard.
-
+
 	    $needs_reply_flag_file
 	        Created when any action that will re-
 		quire a person to use the `manualreply'
@@ -1751,7 +1787,7 @@ are:
 		the contest directories and files to see
 		where `manualreply' should be run.
 
-    $scoreboard_pid_file
+    judging_directory/$scoreboard_pid_file
         A file in the judging directory containing the
 	process ID of any `makescoreboard' program that
 	is running in background.  This file is main-
@@ -1763,7 +1799,7 @@ are:
     mail_directory/*-submission/$dispatch_pid_file
         This file is used as a lock to prevent more than
 	one `autojudge' or `manualreply' program from
-	running in a submission subdirectory at once.
+	running in a *-submission subdirectory at once.
 	This file is a lock on the *-submission direc-
 	tory.  The file contains the process ID of the
 	program that has locked the directory.
@@ -1773,11 +1809,12 @@ are:
 	without error, assuming some other process is
 	processing the directory.  If `manualreply'
 	tries to create this file and the file already
-	exiss, `manualreply' displays the status of the
+	exists, `manualreply' displays the status of the
 	process identified by this file, and asks its
 	user whether to quit or kill the identified
 	process (if it is still running) and continue.
 
+
 Contest Derived Data: Scoreboard Files
 ------- ------- ----- ---------- -----
 
@@ -1785,15 +1822,16 @@ The `makescoreboard' program can run in background and
 recompute the scoreboard as necessary.  It computes
 one or both of two files.
 
-    scoreboard.mail
+    judging_directory/scoreboard.mail
         A copy of the scoreboard emailed to an address
 	by `makescoreboard'.
 
-    ./contest/scoreboard.1
+    contest_directory/scoreboard.1
         The first of four scoreboard pages visible to
 	the contestant `scoreboard' display program.
 
 See `makescoreboard' for details.
+
 
 Programs: Contestant
 --------- ----------
@@ -1802,25 +1840,29 @@ The programs runnable by the contestant are documented
 in the help files: see `Library Data: Help Documenta-
 tion'.  All these programs are in the hpcm/contestant/
 bin directory, to which the contestant account's .hpcm_
-contest/bin directory is linked.  A quick summary of
-these programs follows:
+contest/bin directory is linked.  This last is in the
+PATH of the contestant account.
+
+A brief summary of these programs follows:
 
     help		Display help files.
     scoreboard		Display scoreboard.
     xcsh		Create new xterm windows.
 
-    hpcm_sendmail	Send email from a contestant
-    			to the judge.
-    hpcm_get		Make file get requests using
-    			hpcm_sendmail or link
-    			problem files into contestant
-			account directories.
-    hpcm_extract	Extract files returned in
-    			email by get requests.
-    hpcm_sandbox	Run contestant submissions
-    			in a sandbox.
-    hpcm_submit		Submit a problem solution
-    			file using hpcm_sendmail.
+    hpcm_sendmail	Send email from a contestant to
+    			the judge.
+    hpcm_get		Make `file get' requests using
+    			hpcm_sendmail or link problem
+			files into contestant account
+			directories.
+    hpcm_extract	Extract files returned in email
+    			replies to `file get' requests.
+    hpcm_sandbox	Run contestant submissions in a
+    			`sandbox'.  For a contestant,
+			this just applies resource
+			limits.
+    hpcm_submit		Submit a problem solution file
+    			using hpcm_sendmail.
 
     fprint		Print 56 column files.
     print		Print 80 column files.
@@ -1828,12 +1870,12 @@ these programs follows:
     			pages per print page.
     lpq			Display printer status.
 
-
+
 Programs: Judging
 --------- -------
 
 The judge's programs are in hpcm/judge/bin, which is
-placed in the PATH of the judge's account.  A quick
+placed in the PATH of the judge's account.  A brief
 summary of the programs used during a contest to run
 the contest follows:
 
@@ -1857,7 +1899,8 @@ the contest follows:
     hpcm_sandbox_x	Run a program in a sandbox.
     			Same as contestant/bin/hpcm_
 			sandbox but with root set user
-			ID.
+			ID, so the contestant's program
+			is run with user ID `sandbox'.
     autoscore		Compute the score from the .out
     			and .test files.
     scorediff		Compare the .out and .test files
@@ -1867,15 +1910,15 @@ the contest follows:
     			problems and ./contest/help/pro-
 			blems to make them readable by
 			contestants.
-
+
     makescoreboard	Recompute the scoreboard files
     			at intervals.
     scoreboard		Compute a scoreboard given the
     			output of `scorefinder'.
     scorefinder		Look through all the *-submis-
     			sion directories for score
-			files and output a summary of
-			all the information found.
+			files and output the information
+			found.
 
     manualreply		Permit a human user (the judge)
     			to inspect the contents of a
@@ -1893,7 +1936,8 @@ the contest follows:
 			this information for `tracker'
 			to use.
     reply		An older simpler version of
-    			`tracker'.
+    			`tracker' (that does NOT use
+			`trackfinder').
     lookat		Find *-submission directories
     			containing a file with a given
 			name and contents, and dispatch
@@ -1905,6 +1949,7 @@ hcpm/judge/bin/Makefile from other directories.  E.g.,
 hpcm_sandbox_x is a compiled version of hpcm/secure/
 src/hpcm_sandbox.c that is normally installed in /sbin.
 
+
 Programs: Contest Making
 --------- ------- ------
 
@@ -1941,27 +1986,38 @@ The following programs are used to make contests:
     hpcm/secure/bin/hpcm_TRASH_ACCOUNTS
 	Run TRASH_ACCOUNT in each contestant account.
 
+
 Programs: Maintenance
 --------- -----------
 
 The following programs in hpcm/judge/bin are used for
-maintainence.
+maintenance.
 
     overview		Print this document.
     installing_hpcm	Print the `Installing HPCM'
     			document.
 
-    makeMakefile	Make problem Makefiles from a
-    			template.
+    makeMakefile	Make problem Makefiles from an-
+    			other problem Makefile that acts
+			as a template.
     testproblems	Test many problems at once.
     fcheck		Check that a file has 56 column
     			lines and 40 line pages.
     fcheckc		Check that a file has 56 column
-    			lines (for code).
-    chkpage		Helper for fcheck(c).
+    			lines (but unlimited length
+			pages, for code).
+    chkpage		Helper for fcheck{,c}.
     difffilter		Diff two directories and filter
     			certain 1 line differences from
 			the output.
+
+The following programs in hpcm/judge/test are used for
+testing the system.
+
+    test_mail		Send a file as email to the
+    			judge for test purposes.
+    test_submit		Send a solution as email to the
+    			judge for test purposes.
 "
 
 exit 0

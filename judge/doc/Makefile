@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Jan 12 22:01:02 EST 2001
+# Date:		Sun Jan 14 09:07:08 EST 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/01/13 02:58:53 $
+#   $Date: 2001/01/14 14:22:00 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.6 $
+#   $Revision: 1.7 $
 
 # make
 #	Makes documentation as fprintable .doc files in
@@ -71,13 +71,15 @@ DOCS=	overview.doc \
 	judge/scorefinder.doc \
 	contestant/SETUP_PROTOTYPE.doc \
 	judge/startcontest.doc \
+	test/test_mail.doc \
 	judge/testproblems.doc \
+	test/test_submit.doc \
 	judge/tracker.doc \
 	judge/trackfinder.doc \
 	contestant/TRASH_ACCOUNT.doc \
 	contestant/xcsh.doc
 
-all:	judge contestant secure ${DOCS}
+all:	judge contestant secure test ${DOCS}
 
 # Kill all implicit rules
 #
@@ -100,6 +102,9 @@ contestant:
 
 secure:
 	mkdir secure
+
+test:
+	mkdir test
 
 # ../bin docs
 #
@@ -330,6 +335,20 @@ contestant/xcsh.doc:	../../contestant/bin/xcsh
 	rm -f contestant/xcsh.doc
 	-../../contestant/bin/xcsh -doc \
 	    >contestant/xcsh.doc
+
+# ../test docs
+#
+test/test_mail.doc:	hpcm_judging.rc \
+			../../judge/test/test_mail
+	rm -f test/test_mail.doc
+	-../../judge/test/test_mail -doc \
+	    >test/test_mail.doc
+
+test/test_submit.doc:	hpcm_judging.rc \
+			../../judge/test/test_submit
+	rm -f test/test_submit.doc
+	-../../judge/test/test_submit -doc \
+	    >test/test_submit.doc
 
 clean:
 	rm -rf overview.doc installing_hpcm.doc \
