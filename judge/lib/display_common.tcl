@@ -2,7 +2,7 @@
 #
 # File:		display_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Jan 24 10:47:09 EST 2002
+# Date:		Sun Jan 27 10:01:19 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/01/24 15:59:11 $
+#   $Date: 2002/01/27 15:32:45 $
 #   $RCSfile: display_common.tcl,v $
-#   $Revision: 1.25 $
+#   $Revision: 1.26 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -692,8 +692,7 @@ proc refresh_file_list { } {
 proc get_file { id } {
 
     global file_list \
-	   last_file window_error make_file_array \
-	   submitted_program
+	   last_file window_error make_file_array
 
     set window_error ""
 
@@ -842,19 +841,17 @@ set read_array($scoring_instructions_file) \
 set scoring_instructions $scoring_instructions_default
 
 # Read the received mail header.  Set the submitted_
-# file, program, and extension variables.  If the
-# subject is inappropriate to a submission, set these
-# variables to "".
+# problem, and extension variables.  If the subject is
+# inappropriate to a submission, set these variables to
+# "".
 #
 proc read_received_file {} {
 
     global received_file message_subject \
-	   submitted_file submitted_program \
-	   submitted_extension
+	   submitted_program submitted_extension
 
     if { ! [file readable $received_file] } {
-	set submitted_file      ""
-	set submitted_program   ""
+	set submitted_problem   ""
 	set submitted_extension ""
 	return
     }
@@ -867,21 +864,19 @@ proc read_received_file {} {
     #
     if { [llength $message_subject] == 2 \
 	 && [lindex $message_subject 0] == "submit" } {
-	set submitted_file \
+	set submitted_name \
 	    [lindex $message_subject 1]
-	set submitted_program \
-	    [file rootname $submitted_file]
+	set submitted_problem \
+	    [file rootname $submitted_name]
 	set submitted_extension \
-	    [file extension $submitted_file]
+	    [file extension $submitted_name]
     } else {
-	set submitted_file      ""
-	set submitted_program   ""
+	set submitted_problem   ""
 	set submitted_extension ""
     }
 }
 set read_array($received_file) read_received_file
-set submitted_file      ""
-set submitted_program   ""
+set submitted_problem   ""
 set submitted_extension ""
 
 
