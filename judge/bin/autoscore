@@ -4,7 +4,7 @@
 #
 # File:		autoscore
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Aug 16 07:30:59 EDT 2000
+# Date:		Wed Aug 30 22:35:58 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: acm-cont $
-#   $Date: 2000/08/24 00:06:03 $
+#   $Date: 2000/08/31 04:25:58 $
 #   $RCSfile: autoscore,v $
-#   $Revision: 1.13 $
+#   $Revision: 1.14 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -36,9 +36,10 @@ cd submission_directory; autoscore program_name
     given the output file (pppp.out), optional error
     file (pppp.err), and test file (pppp.test, the
     judge's solution's version of the output file),
-    computes the `$auto_score_file' file in the
-    submission directory, using purely automatic
-    (non-manual means).
+    computes the `$auto_score_file' file in the\
+                                         submission
+    directory, using purely automatic (non-manual
+    means).
 
     If the error file (pppp.err) exists and is non-
     empty, the score is one of:
@@ -68,14 +69,15 @@ cd submission_directory; autoscore program_name
     to the whitespace separated items of the first line
     of any
     
-	$instructions_file
+	$scoring_instructions_file
 
     file in the submission directory.  If this last
     file is missing, the items default to:
 
     	$scoring_instructions_default
 
-    The possible $instructions_file items are:
+    The possible $scoring_instructions_file file items\
+                                                 are:
 
     	whitespace	Allow matching whitespace in
 			the two files to be not exactly
@@ -96,11 +98,12 @@ cd submission_directory; autoscore program_name
 			to have `\\n's where there
 			other file has no whitespace.
 
-	number D	Allow the two files to have
+	number A R	Allow the two files to have
 			matching numbers whose absolute
-			difference is as much as D,
-			where D is a floating point
-			value.
+			difference is as much as A, and
+			whose relative difference is as
+			much as R, where A and R are
+			floating point values.
 
     The possible scores (with empty error file and
     extant output file) are:
@@ -113,13 +116,22 @@ cd submission_directory; autoscore program_name
     If scorediff reports `nonblank' or `eof2' (output
     has non-whitespace after test file ends), or if
     scorediff reports a `number' difference greater than
-    allowed by the ${instructions_file}, the
+    allowed by the ${scoring_instructions_file}, the
     output is incorrect.  Otherwise, if scorediff
     reports something other than `eof1' that is not
-    allowed by ${instructions_file}, the output
+    allowed by ${scoring_instructions_file}, the output
     has a formatting error.  Otherwise if scorediff
     reports `eof1' the output is incomplete.  Otherwise
     the output is correct.
+
+    The relative difference of two numbers x and y is
+    defined to be:
+
+                       | x - y |
+                    ----------------
+                    max ( |x|, |y| )
+
+    which has a maximum value of 2.
 
     The score is written to the `$auto_score_file' file
     in the submission directory and is also written as a
@@ -168,6 +180,12 @@ if { [file exists $error_file] \
     if { $score == "" } {
     	set score "Program Crashed"
     }
+} elseif { ! [file exists $output_file] } {
+
+    # Error file does not exist or is empty, and
+    # output file does not exist.
+    #
+    set score "Program Crashed"
 }
 
 # If score is still blank, compute the score using
@@ -186,21 +204,30 @@ if { $score == "" } {
     set linebreak_ok	no
     set whitespace_ok	no
     set number_ok	no
-    set number_diff	0.0
+    set number_absdiff	0.0
+    set number_reldiff	0.0
 
-    set number_last no
+    set last ""
     foreach i $scoring_instructions {
-	if { $number_last } {
+	if { $last == "number" } {
 	    if { [catch "expr $i"] } {
 	        error \
 		    "Non-number after `number' in\
 		     scoring instructions: $i"
 	    }
-	    set number_diff $i
-	    set number_last no
+	    set number_absdiff $i
+	    set last absdiff
+	} elseif { $last == "absdiff" } {
+	    if { [catch "expr $i"] } {
+	        error \
+		    "Non-number after `number' in\
+		     scoring instructions: $i"
+	    }
+	    set number_reldiff $i
+	    set last ""
 	} elseif { $i == "number" } {
 	    set number_ok yes
-	    set number_last yes
+	    set last number
 	} elseif { $i == "spacebreak" } {
 	    set spacebreak_ok yes
 	} elseif { $i == "linebreak" } {
@@ -212,10 +239,10 @@ if { $score == "" } {
 	}
     }
     
-    if { $number_last } {
+    if { $last != "" } {
 	error \
-	    "Number not followed by floating point\
-	     number\n\
+	    "Number not followed by two floating point\
+	     numbers\n\
 	    \    in the scoring instructions:\n\
 	    \        $scoring_instructions"
     }
@@ -229,20 +256,26 @@ if { $score == "" } {
     # Compute score based on scoring instructions and
     # results of scorediff.
     #
-    set number_last no
+    set last ""
     foreach d $scorediff {
-	if { $number_last } {
-	    set number_last no
-	    if { $d > $number_diff } {
+	if { $last == "number" } {
+	    if { $d > $number_absdiff } {
 		set score "Incorrect Output"
 		break
 	    }
+	    set last absdiff
+	} elseif { $last == "absdiff" } {
+	    if { $d > $number_reldiff } {
+		set score "Incorrect Output"
+		break
+	    }
+	    set last ""
 	} elseif { $d == "number" } {
 	    if { $number_ok == "no" } {
 		set score "Incorrect Output" 
 		break
 	    }
-	    set number_last yes
+	    set last number
 	} elseif { $d == "nonblank" } {
 	    set score "Incorrect Output"
 	    break
