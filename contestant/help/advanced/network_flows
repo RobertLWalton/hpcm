@@ -1,48 +1,59 @@
-NETWORK FLOWS HELP          Wed Jul 18 11:07:21 EDT 2001
+NETWORK FLOWS HELP          Fri Aug 17 06:41:45 EDT 2001
 
 A network flow problem can usually be reduced to the
 dynamic programming problem of finding the maximum
-capacity path.
+capacity path.  Alternatively it can be reduced to a
+shortest path.
 
-In a network flow problem we are given a directed graph
-in which every arrow is labeled with a capacity, and
-we are asked to find the maximum amount of fluid (or
-whatever) that can flow from a given source node to a
-given destination node, assuming each arrow is a uni-
-directional pipe whose capacity is the maximum fluid
-flow on that pipe.  See the Maximum Flow chapter of
-Cormen, Leiserson, and Rivest.
+A flow network is a directed graph in which every arrow
+is labeled with a capacity, and we are asked to find the
+maximum amount of fluid (or whatever) that can flow from
+a given source vertex to a given destination vertex,
+assuming each arrow is a uni-directional pipe whose 
+capacity is the maximum fluid flow on that pipe.  See
+the Maximum Flow chapter of Cormen, Leiserson, and
+Rivest or the Advanced Combinatorial Algorithms chapter
+of Atallah.
 
-The algorithm is to find an path P with non-zero capa-
-city through the network, and subtract P from the orig-
-inal network N to get a residual network R.  R and N are
-related, in that every flow FR of R that obeys R's capa-
-city restrictions is related to a flow FN of N that
-obeys N's capacity restrictions with the FN equal to FR
-plus the flow of P.
+The simpler algorithms find an path flow P from source
+to destination and subtract P from the original flow
+network N to get a residual flow network R.  P is a
+path from source to destination each of whose edges has
+positive, non-zero capacity in N.  The flow of P is the
+minimum capacity of all P's edges.  It is this flow that
+must be subtracted from the capacities of N, for each
+edge in P, to get the capacities of R.  R and N are then
+related, in that every flow FR of R that obeys R's cap-
+acity restrictions is related to a flow FN of N that
+obeys N's capacity restrictions with the FN equal to
+FR plus the flow of P.
+
+The path P is called an `augmenting path' because the
+maximum flow of N is the sum of P and the maximum flow
+of R.
 
 One iterates the above algorithm until the residual
 network has no remaining path of non-zero capacity.
-There is a then a theorem saying that the maximum flow
-of this residual network is zero.  It follows that the
-maximum flow of the original network is the sum of all
-the path flows that were subtracted out.
-
+There is a then an easy lemma saying that the maximum
+flow of this residual network is zero.  It follows that
+the maximum flow of the original network is the sum of
+all the augmenting paths found by the iterations.
+
 Some cleverness is required in computing residual net-
 works.  If the original network has capacities Cxy from
-node x to node y, and Cyx from node y to node x, and if
-the path being subtracted has flow f from x to y, then
-the residual network has capacities Cxy-f from x to y
-and Cyx+f from y to x.  Even if Cyx was originally 0,
-and there was no explicit arrow from y to x.  This is
-because a flow of f from y to x in the residual network
-can be obtained by reducing the flow subtracted out of
-the original network to 0.
-
-The hard part of all this is finding the right non-zero
-capacity paths.  A sloppy algorithm can find paths that
-have too little flow, and the require too many itera-
-tions.  E.g., consider the network:
+vertex x to vertex y, and Cyx from vertex y to vertex x,
+and if the path being subtracted has flow f > 0 from x
+to y, then the residual network has capacities Cxy-f
+from x to y and Cyx+f from y to x.  Even if Cyx was 
+originally 0, and there was no explicit arrow from y to
+x.  This is because a flow of f from y to x in the
+residual network can be obtained by reducing the flow
+subtracted out of the original network to 0.
+
+The hard part of all this is finding the right augment-
+ing paths.  A sloppy algorithm can find paths that have
+too little flow, and the require too many iterations.
+E.g., consider the network:
 
 
 
@@ -66,42 +77,31 @@ tions.  E.g., consider the network:
        |  1,000,000,000   | v  1,000,000,000   |
        + ----------------> F ------------------+
 
-
+
 Here the problem is to find the maximum flow from B to
 G.  A depth first search that prefers the arrow of
-greatest capacity would find the path B->C->D->E->F->G
-in the first iteration, which only has a flow of 2, and
-then find the path B->F->E->D->C->G in the second iter-
-ation, which only has the flow of 2, and then repeat
-these two iterations over and over.  There would be
-about half a billion iterations in all.  But if the
-first iteration found B->C->G and the second B->F->G,
-the algorithm would complete in just two iterations.
-
-The fastest solution is to find paths with maximum
-capacity.  Calculating the maximum capacity of any path
-is an easy dynamic programming problem (see help file
-on dynamic programming).  Calculating the actual nodes
-of the path can also be done easily by dynamic program-
-ming if one is careful.  Let f be the maximum capacity
-of any path from source to destination.  For each pair
-of nodes compute the length in arrows of the shortest
-path between the nodes, using only arrows of capacity at
-least f, and also compute at the same time the second
-node on one of these shortest paths.  Then by starting
-at the source node n0, proceeding to the second node n1
-on the path from n0 to the destination node, proceeding
-to the second node n2 on the path from n1 to the des-
-tination node, etc, one can find an actual path with
-flow f.  This works because a shortest path cannot have
-cycles, and because if a shortest path P from n0 to d
-has n1 as its second node, then the part of P from n1 to
-d can be replaced by any shortest path from n1 to d and
-still yield a shortest path from n0 to d.
+greatest capacity and does not revisit vertices would
+find the path B->C->D->E->F->G in the first iteration,
+which only has a flow of 2, and then find the path
+B->F->E->D->C->G in the second iteration, which only has
+the flow of 2, and then repeat these two iterations over
+and over.  There would be about half a billion itera-
+tions in all.  But if the first iteration found B->C->G
+and the second B->F->G, the algorithm would complete in
+just two iterations.
 
-If the number of nodes is too large for dynamic program-
-ming, one can also find any shortest path with non-zero
-flow, using a breadth first search.  There is a theorem
-that using shortest paths holds the number of iterations
-to at most VE, where V is the number of vertices and E
-the number of edges.
+The easiest good algorithm for finding augmenting paths
+is to just find a shortest augmenting path.  The number
+of augmenting paths that must be found can be shown to
+be O(|E| |V|), where |E| is the number of edges and |V|
+is the number of vertices in the original flow network.
+
+A slightly better solution is to find an augmenting
+paths with maximum flow.  Calculating the maximum flow
+of any path from source to destination is an easy
+dynamic programming problem (see help file on dynamic
+programming).  It can be shown that the number of
+maximum flow augmenting paths that must be found is at
+most O(|E| log C) where |E| is the number of edges and
+C is the maximum capacity of any edge in the original
+flow network.

@@ -1,5 +1,5 @@
 DYNAMIC PROGRAMMING PROBLEM HELP
-			    Wed Apr 11 15:14:32 EDT 2001
+			    Fri Aug 17 07:43:34 EDT 2001
 
 Dynamic programming algorithm is an algorithm with two
 characteristics:
@@ -29,36 +29,58 @@ to describing the table of subproblem solutions and
 the order in which the table will be computed.
 
 For example, suppose we have an undirected graph with
-nodes connected by edges that have lengths.  Suppose
-there a N nodes, numbered from 0 through N-1.  Then
+vertices connected by edges that have lengths.  Suppose
+there a N vertices, numbered from 0 through N-1.  Then
 the problem is to find the length of a shortest path
-between two given nodes, i and j.
+between two given vertices, i and j.
 
-Let P(i,j,m) denote the problem of finding the length
-of the shortest path between nodes i and j such that
-the path does not have more than 2**m edges.  Then
-P(i,j,0) is easily computed: it is just the length of
-the edge from node i to node j, or infinity if there
-is no such edge.  Also, if m > 0, then P(i,j,m) can be
-computed from the solutions to P(i,k,m-1) and P(k,j,m-1)
-for all 0 <= k < N: it is just
+Let P(i,j,m) denote the length of the shortest path
+between vertices i and j such that the path does not
+have more than 2**m edges.  Then P(i,j,0) is easily
+computed: it is just the length of the edge from vertex
+i to vertex j, or infinity if there is no such edge.
+Also, if m > 0, then P(i,j,m) can be computed from the
+solutions to P(i,k,m-1) and P(k,j,m-1) for all
+0 <= k < N: it is just 
 
     min { P(i,k,m-1) + P(k,j,m-1) : 0 <= k < N }
 
-Going a little deeper into this, the answers to
-P(i,j,m) for all i and j with m fixed form an NxN
-matrix, which we might call M(m).  Then M(0) is just
-the original graph with edges expressed as lengths.
-And for m > 0, M(m) is just the matrix product of
-M(m-1) with itself where instead of using * and +
-as in the normal matrix product, we use + and `min'.
-Thus M(m) can be computed from M(m-1) in roughly
-N**3 operations, and the original problem can be solved
-in N**3 * (log base 2 of N) time.
+Going a little deeper into this, the values of P(i,j,m)
+for all i and j with m fixed form an NxN matrix, which
+we might call M(m).  Then M(0) is just the original
+graph with edges expressed as lengths.  And for m > 0,
+M(m) is just the matrix product of M(m-1) with itself
+where instead of using * and + as in the normal matrix
+product, we use + and `min'.  Thus M(m) can be computed
+from M(m-1) in roughly N**3 operations, and the original
+problem can be solved in N**3 * (log base 2 of N) time.
 
 Notice that one does not need to store M(m) for every
 value of m at one time.  One only needs space for
 M(m-1) and M(m) to compute M(m).
+
+Dynamic programming can also be used to compute an
+actual shortest path, and not just the length of such a
+path.  Note that the shortest path algorithm above will
+work even if edges have negative lengths, as long as
+no loop in the graph has a negative length (if a loop 
+had a negative length the algorithm could not stop after
+log base 2 of N iterations).  We will assume here that
+the length of each loop is not equal to zero.  One can
+always make this true by replacing each path length L
+in the original problem by L*N+e, where e is the number
+of edges in the path.
+
+Then we extend the value of P(i,j,m) to include the
+second vertex on a shortest path from i to j that does
+not have more than 2**m edges.  After the computation is
+done, a path from i to j can be constructed by going
+from i to the computed second vertex on a best path from
+i to j, and iterating until one gets to j.  This works
+because if one best path goes from i to k to j then
+replacing the part of this path from k to j by any best
+path from k to j also gives a best path, and also
+because best paths cannot have loops.
 
 The first step in solving any dynamic programming
 problem is to parameterize the problem.  But notice
@@ -69,3 +91,10 @@ find the distance between i and j.  We say that m is a
 programming problem is to find the hidden parameter
 (or parameters) that are needed to make a fast recursive
 algorithm.
+
+Dynamic programming solutions are often easier to code
+than other solutions to a problem.  One possible use of
+this is as an alternative to breadth first search for
+finding a shortest path, in the sense of a path having
+a minimum number of edges, between two vertices of a
+graph.
