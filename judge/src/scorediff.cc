@@ -2,7 +2,7 @@
 //
 // File:	scorediff.cc
 // Authors:	Bob Walton (walton@deas.harvard.edu)
-// Date:	Sun Jul  1 01:12:01 EDT 2001
+// Date:	Sun Jul  1 03:14:51 EDT 2001
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: hc3 $
-//   $Date: 2001/07/01 05:13:30 $
+//   $Date: 2001/07/01 07:06:05 $
 //   $RCSfile: scorediff.cc,v $
-//   $Revision: 1.23 $
+//   $Revision: 1.24 $
 
 // This is version 2, a major revision of the first
 // scorediff program.  This version is more explicitly
@@ -450,6 +450,10 @@ void scan_token ( file & f )
 	f.length		= f.remainder_length;
 	f.column		+= f.remainder_length;
 	f.remainder_length	= 0;
+
+	f.whitespace[0]		= 0;
+	f.newlines		= 0;
+
 	return;
     }
 
@@ -709,7 +713,9 @@ end_word:
 void split_word ( file & f, int n )
 {
     assert ( f.type == WORD_TOKEN );
-    assert ( n > f.length );
+    assert ( n < f.length );
+
+    cout << "SPLIT " << f.token << " " << n << endl;
 
     f.remainder_length = f.length - n;
     char * p = f.token + n;
@@ -1093,6 +1099,12 @@ int main ( int argc, char ** argv )
 
 	if ( output.newlines != test.newlines )
 	    found_difference ( LINEBREAK );
+	else if ( (    output.whitespace[0] != 0
+	            && test.whitespace[0]   == 0 )
+		  ||
+		  (    output.whitespace[0] == 0
+		    && test.whitespace[0]   != 0 ) )
+	    found_difference ( SPACEBREAK );
 	else
 	{
 	    char * wp1		= output.whitespace;
@@ -1111,12 +1123,10 @@ int main ( int argc, char ** argv )
 		while ( * wp1 && * wp1 != '\n' ) ++ wp1;
 		while ( * wp2 && * wp2 != '\n' ) ++ wp2;
 
-		if ( newlines == 0 ) {
-		    if ( output.newlines == 0 )
-			found_difference ( WHITESPACE );
-		    else
+		if ( output.newlines == 0 )
+		    found_difference ( WHITESPACE );
+		else if ( newlines == 0 )
 			found_difference ( ENDSPACE );
-		}
 		else if ( newlines == output.newlines )
 		    found_difference ( BEGINSPACE );
 		else
