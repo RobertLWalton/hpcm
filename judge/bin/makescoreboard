@@ -4,7 +4,7 @@
 #
 # File:		makescoreboard
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Sep 21 21:34:29 EDT 2002
+# Date:		Thu Sep 26 03:44:45 EDT 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/09/22 01:35:59 $
+#   $Date: 2002/09/26 07:45:04 $
 #   $RCSfile: makescoreboard,v $
-#   $Revision: 1.36 $
+#   $Revision: 1.37 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -407,13 +407,19 @@ proc process_instructions {} {
         return
     }
 
-    # Save abbreviations.
+    # Save abbreviations.  If possible, replace relative
+    # stop and freeze times by normally formatted times
+    # so if they appear in LINE's they will look OK.
     #
     set start_time $scoreboard_start_time
     set abbreviation_array(START) $start_time
 
-    if { ! [regexp {^(problem|team)$} $start_time] } {
-        set st [clock scan $start_time]
+    if { ! [regexp {^(|problem|team)$} $start_time] } {
+        if { [catch { set st [clock scan $start_time] \
+	            }] } {
+	    error "badly formatted \
+	           scoreboard_start_time: $start_time"
+	}
     } else {
         set st ""
     }
