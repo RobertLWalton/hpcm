@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Mar 29 11:20:41 EST 2003
+# Date:		Sat Mar 29 14:22:47 EST 2003
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2003/03/29 16:39:50 $
+#   $Date: 2003/03/29 19:25:06 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.111 $
+#   $Revision: 1.112 $
 #
 
 # Table of Contents
@@ -537,7 +537,8 @@ proc log_error { error_output } {
 #
 #	message_header		All the lines of the
 #				header (but NOT the
-#				'^From\ ' line).
+#				'^From\ ' line), without
+#				the trailing `\n'.
 #	message_From_line	The first line if it
 #				begins with `^From\ '.
 #	message_from		`From:' field value.
@@ -596,10 +597,6 @@ proc read_header { ch { first_line "" }
 	   message_x_hpcm_signature \
 	   message_x_hpcm_signature_ok \
 	   message_x_hpcm_test_subject
-
-    global content_type_values \
-	   content_transfer_encoding_values \
-	   format_submissions
 
     set message_header			""
 
@@ -690,14 +687,13 @@ proc read_header { ch { first_line "" }
 		    regsub -all -- "-" $varname "_" \
 		           varname
 		    set $varname $fieldvalue
-		    set f "${realname}:${fieldvalue}"
 		}
 
 		break
 	    }
 	}
 
-	# If next line is really and EOF, break.
+	# If next line is really an EOF, break.
 	#
 	if { [eof $ch] } break
     }
@@ -721,7 +717,7 @@ proc read_header { ch { first_line "" }
 # by read_part_line is merely empty.
 #
 # By empty part we mean a part with no non-whitespace
-# characters.
+# characters in its body.
 #
 # Some results are returned in the following global
 # variables:
@@ -761,7 +757,8 @@ proc read_header { ch { first_line "" }
 # judging.rc.
 #
 # The message_translated_... global variables are set
-# to define the part lines: see read_part_lines.
+# to define the part lines: see read_part_line.  Only
+# this function and read_part_line use these variables.
 #
 proc read_part_header { ch } {
 
@@ -918,10 +915,10 @@ proc read_part_header { ch } {
 
 	# Set empty type and encoding to defaults.
 	#
-	if { ! [regexp ${nws} $type] } {
+	if { ! [regexp $nws $type] } {
 	    set type text/plain
 	}
-	if { ! [regexp ${nws} $encoding] } {
+	if { ! [regexp $nws $encoding] } {
 	    set encoding 7bit
 	}
 
@@ -1087,9 +1084,8 @@ proc read_part_header { ch } {
 
 # Using information from the last call to read_part_
 # header, return the next body line.  Set the end_of_
-# file variable to "yes" if at end of file or next line
-# is terminator, and to "no" otherwise.  Return line,
-# or return "" on end of file.
+# file variable to "yes" if at end of part, and to "no"
+# otherwise.  Return line, or return "" on end of file.
 #
 # The information from read_part_header, internal to
 # that routine and this, is
