@@ -5,7 +5,7 @@
 #
 # File:		autojudge
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Nov 24 08:26:17 EST 2001
+# Date:		Sat Nov 24 08:31:22 EST 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/11/24 13:27:42 $
+#   $Date: 2001/11/24 13:39:38 $
 #   $RCSfile: autojudge,v $
-#   $Revision: 1.38 $
+#   $Revision: 1.39 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -62,7 +62,7 @@ autojudge \[problem\[.extension\]\]
     order:
 
 	* $files_file file, if it exists
-	. the submitted files by calling extractmail
+	. submitted files made by calling extractmail
 	* $make_file file
 	* any -LINK- files in any $files_file file
 	* $scoring_instructions_file file, if it exists
@@ -73,8 +73,8 @@ autojudge \[problem\[.extension\]\]
 	. the program binary (and .cerr file)
 	. the .out file (and .err file)
 	. the .fout file, sometimes
-	. the .score file
-	. the $auto_score_file file
+	. the .score file made by calling autoscore
+	. the $auto_score_file file made by ditto
 	. the $reply_file file, sometimes
 
     Here the files marked with * are linked into the
@@ -166,7 +166,7 @@ autojudge \[problem\[.extension\]\]
     If an executable binary file was made, this program
     makes a .out output file by using the $make_file,
     and captures any error output in a .err file.  If
-    the .out file exists and is non-empty, and it the
+    the .out file exists and is non-empty, and if the
     $scoring_filter_file file exists, this program then
     runs
 
@@ -282,7 +282,7 @@ proc argument_error {} {
 #
 if {    $problem == "" \
      || [regexp {\.} $problem] \
-     || [regexp {/} $problem] \
+     || [regexp {/}  $problem] \
      || [regexp {^-} $problem]  } {
     argument_error
 }
@@ -295,13 +295,11 @@ if { $extension != "" \
 
 # Compute names.
 #
-set submitted_program $problem
-set program_solution \
-    $solutions_directory/$submitted_program
+set problem_solution $solutions_directory/$problem
 
 # Check for existence of problem solution directory.
 #
-if { ! [file isdirectory $program_solution] } {
+if { ! [file isdirectory $problem_solution] } {
     argument_error
 }
 
@@ -309,19 +307,19 @@ if { ! [file isdirectory $program_solution] } {
 #
 proc link_optional_file { name } {
 
-    global extension program_solution
+    global extension problem_solution
 
     if { [file readable $name] } return
 
-    if { [file exists $program_solution/$name] } {
+    if { [file exists $problem_solution/$name] } {
 	puts "Linking $name"
-	link_file $program_solution/$name
+	link_file $problem_solution/$name
 	return
     } 
     if { [file exists \
-               $program_solution/$name.$extension] } {
+               $problem_solution/$name.$extension] } {
 	puts "Linking $name.$extension to $name"
-	link_file $program_solution/$name.$extension \
+	link_file $problem_solution/$name.$extension \
 		  $name
 	return
     }
@@ -373,40 +371,34 @@ link_optional_file $make_file
 
 set sif $scoring_instructions_file
 if { ! [file readable $sif] \
-     && [file exists $program_solution/$sif] } {
+     && [file exists $problem_solution/$sif] } {
     puts "Linking $sif"
-    link_file $program_solution/$sif
+    link_file $problem_solution/$sif
 }
 
-if { ! [file readable $submitted_program.in] } {
-    puts "Linking $submitted_program.in"
-    link_file \
-         $program_solution/$submitted_program.in
+if { ! [file readable $problem.in] } {
+    puts "Linking $problem.in"
+    link_file $problem_solution/$problem.in
 }
 
-set solout \
-    $program_solution/$submitted_program.out
-set soltest \
-    $program_solution/$submitted_program.test
-if { ! [file readable $submitted_program.test] \
+set solout  $problem_solution/$problem.out
+set soltest $problem_solution/$problem.test
+if { ! [file readable $problem.test] \
      || ( [file readable $solout] \
           && [file extension \
-	           [file readlink \
-		         $submitted_program.test]] \
+	           [file readlink $problem.test]] \
 	     == ".test" ) } {
-    if { ! [catch { file type \
-                         $submitted_program.test \
-			 }] } {
+    if { ! [catch { file type $problem.test }] } {
 	puts "Deleting obsolete\
-	      $submitted_program.test"
-	file delete -force $submitted_program.test
+	      $problem.test"
+	file delete -force $problem.test
     }
     if { [file readable $solout] } {
-	puts "Linking $submitted_program.test to\
-	      solution $submitted_program.out"
-	link_file $solout $submitted_program.test
+	puts "Linking $problem.test to solution\
+	      $problem.out"
+	link_file $solout $problem.test
     } else {
-	puts "Linking $submitted_program.test"
+	puts "Linking $problem.test"
 	link_file $soltest
     }
 }
@@ -507,31 +499,25 @@ proc should_be_made { file_list1 file_list2 } {
 # as the score.
 #
 if { [should_be_made \
-         [list $submitted_program \
-	       $submitted_program.cerr] \
-	 [list $make_file \
-	       $submitted_file]] } {
+         [list $problem $problem.cerr] \
+	 [list $make_file $submitted_file]] } {
 
-    puts "Making $submitted_program"
-    catch { make_file $submitted_program \
-    		      $submitted_program.cerr }
+    puts "Making $problem"
+    catch { make_file $problem $problem.cerr }
 
     # Print any non-empty .cerr file.
     #
-    if { [file exists $submitted_program.cerr] \
-	 && [file size $submitted_program.cerr] \
-	    > 0 } {
+    if { [file exists $problem.cerr] \
+	 && [file size $problem.cerr] > 0 } {
 	puts ""
-	if { [file executable $submitted_program] } {
+	if { [file executable $problem] } {
 	    puts "========== COMPILER WARNINGS\
-	          ($submitted_program.cerr)\
-		  =========="
+	          ($problem.cerr) =========="
 	} else {
 	    puts "========== COMPILER ERRORS\
-	          ($submitted_program.cerr)\
-		  =========="
+	          ($problem.cerr) =========="
 	}
-	put_file $submitted_program.cerr stdout 10
+	put_file $problem.cerr stdout 10
 	puts "============================="
 	puts ""
     }
@@ -539,10 +525,9 @@ if { [should_be_made \
     # If no executable binary produced, record and
     # send `Syntax Error' reply.
     #
-    if { ! [file executable $submitted_program] } {
+    if { ! [file executable $problem] } {
 
-	puts "No executable `$submitted_program' file\
-	      produced"
+	puts "No executable `$problem' file produced"
 
 	if { [file exists $auto_score_file] } {
 	    file delete -force $auto_score_file
@@ -557,16 +542,12 @@ if { [should_be_made \
 # Make .out file if necessary.
 #
 if { [should_be_made \
-         [list $submitted_program.out \
-	       $submitted_program.err] \
-	 [list $submitted_program \
-	       $make_file \
-	       $submitted_program.in]] \
-     && [file executable $submitted_program] } {
+         [list $problem.out $problem.err] \
+	 [list $problem $make_file $problem.in]] \
+     && [file executable $problem] } {
 
-    puts "Making $submitted_program.out"
-    catch { make_file $submitted_program.out \
-		      $submitted_program.err }
+    puts "Making $problem.out"
+    catch { make_file $problem.out $problem.err }
 
     # Remove any a+x on the current directory as a
     # `best effort' security measure in the face of
@@ -576,31 +557,28 @@ if { [should_be_made \
 
     # Print any non-empty .err file.
     #
-    if { [file exists $submitted_program.err] \
-	 && [file size $submitted_program.err] \
-	      > 0 } {
+    if { [file exists $problem.err] \
+	 && [file size $problem.err] > 0 } {
 	puts ""
-	puts "========== ERRORS\
-	      ($submitted_program.err) =========="
-	put_file $submitted_program.err stdout 10
+	puts "========== ERRORS ($problem.err)\
+	      =========="
+	put_file $problem.err stdout 10
 	puts "============================="
 	puts ""
-    } elseif { ! [file exists \
-                       $submitted_program.out] } {
-	puts "No `$submitted_program.out' file\
-	      produced"
+    } elseif { ! [file exists $problem.out] } {
+	puts "No `$problem.out' file produced"
     }
 }
 
 # Make $auto_score_file if necessary.
 #
-set file_list [list $submitted_program.test]
+set file_list [list $problem.test]
 
-if { [file exists $submitted_program.out] } {
-    lappend file_list $submitted_program.out
+if { [file exists $problem.out] } {
+    lappend file_list $problem.out
 }
-if { [file exists $submitted_program.err] } {
-    lappend file_list $submitted_program.err
+if { [file exists $problem.err] } {
+    lappend file_list $problem.err
 }
 
 if { [llength $file_list] >= 2 \
@@ -608,7 +586,7 @@ if { [llength $file_list] >= 2 \
             [list $auto_score_file] \
 	    $file_list] } {
 
-    exec autoscore $submitted_program 2>@ stderr
+    exec autoscore $problem 2>@ stderr
 }
 
 # Make $reply_file if necessary.
