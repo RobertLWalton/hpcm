@@ -5,19 +5,28 @@
 
 (defun read-paragraph (paragraph)
     (do ( (counts '(0 0 0)
-    		  (mapcar #'+ counts line-counts))
+    		  (if (not (equal line-counts 
+		                  '(1 0 0)))
+		      (mapcar #'+ counts line-counts)
+		      counts))
 	  (line-counts (read-one-line) (read-one-line)))
 	( (or (equal line-counts '(0 0 0))
 	      (and (equal line-counts '(1 0 0))
 	    	   (not (equal counts '(0 0 0)))))
-	  (format t "paragraph ~S: ~S lines, ~S words, ~S characters.~%"
-	           paragraph (first counts) (second counts) (third counts))
+	  (cond
+	      ((not (equal counts '(0 0 0)))
+	       (format t "Paragraph ~S" paragraph)
+	       (format t ": ~S lines" (first counts))
+	       (format t ", ~S words" (second counts))
+	       (format t ", ~S characters.~%"
+	               (third counts))))
 	  (not (equal counts '(0 0 0))))))
 
 (defun read-one-line ()
     (let ( (line (read-line t nil 'eof)) )
          (if (eq line 'eof) '(0 0 0)
-	     `(1 ,(read-words line 0 (length line) 0) ,(length line)))))
+	     `(1 ,(read-words line 0 (length line) 0)
+	         ,(length line)))))
 
 (defun read-words (line i length words)
     (do ( (j i (1+ j))
@@ -26,8 +35,11 @@
 	( (or (not c) (not (char= #\Space c)))
 	  (if (not c) words
 	      (do ( (j j (1+ j))
-		    (c (if (< j length) (aref line j))
-		       (if (< j length) (aref line j))) )
+		    (c (if (< j length)
+		           (aref line j))
+		       (if (< j length)
+		           (aref line j))) )
 	          ( (or (not c) (char= #\Space c))
 	            (if (not c) (1+ words)
-		        (read-words line j length (1+ words)))))))))
+		        (read-words line j length
+			            (1+ words)))))))))
