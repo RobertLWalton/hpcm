@@ -11,9 +11,9 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: hc3 $
-//   $Date: 2000/10/29 03:09:17 $
+//   $Date: 2000/10/29 13:59:31 $
 //   $RCSfile: scorediff.cc,v $
-//   $Revision: 1.11 $
+//   $Revision: 1.12 $
 
 // This is version 2, a major revision of the first
 // scorediff program.  This version is more explicitly
@@ -31,9 +31,10 @@
 int finite (double);	// Not always in math.h
 #include <assert.h>
 
-#ifdef getc
-#   undef getc
-#endif
+// Maximum size of a token, or of whitespace preceding
+// a token.
+//
+#define MAX_SIZE 10000
 
 char documentation [] =
 "scorediff output_file test_file\n"
@@ -170,50 +171,98 @@ char documentation [] =
 "    line is added in front of each file before the\n"
 "    file is parsed.\n"
 "\n"
-							/
-"    When an end-of-file token is matched with a non-\n"
-"    end-of-file token, the whitespace preceding the\n"
-"    two tokens are compared in a special way, to\n"
-"    allow for the possibility that the end of file\n"
-"    occurred in the middle of whitespace and not\n"
-"    before a non-eof-token.\n"
-
-TBW
+"    When an end-of-file (eof) token is matched with\n"
+"    a non-eof token, the whitespace preceding the\n"
+"    non-eof token may be truncated before being com-\n"
+"    pared with the whitespace preceding the eof\n"
+"    token, to allow for the possibility that the eof\n"
+"    occurred in the middle of whitespace, and not\n"
+"    just before a non-eof-token.  First, if the\n"
+"    whitespace before the eof token has N > 0 new\n"
+"    lines, any N+1'st new line of the whitespace be-\n"
+"    fore the non-eof token is deleted, as are all-\n"
+"    characters following it.  Then, if now the\n"
+"    whitespaces being compared have the same number\n"
+"    of new lines, including possibly both having no\n"
+"    new lines, we consider in each whitespace being\n"
+"    compared the string of characters after the last\n"
+"    new line in the whitespace, or the string of all\n"
+"    the characters in the whitespace if the white-\n"
+"    space has no new lines.  If the considered\n"
+"    string for the eof exactly matches a prefix for\n"
+"    the considered string of the non-eof, then all\n"
+"    the characters after this prefix in the white-\n"
+"    space preceding the non-eof token are deleted.\n"
+"\n"
+"    For each kind of difference found in the two\n"
+"    files, the scorediff program constructs a\n"
+"    `proof' of the difference.  A proof is a line\n"
+"    with the syntax:\n"
+"\n"
+"          proof ::= difference-description\n"
+"                    output-line-number\n"
+"                    test-line-number\n"
+"                    token-locator token-locator*\n"
+"\n"
+"          difference-description ::=\n"
+"                    `nonblank' | `case' | `column' |\n"
+"                    `decimal' | `exponent' |\n"
+"                    `number' absolute-difference\n"
+"                             relative-difference\n"
+"\n"
+"          absolute-difference ::=\n"
+"                    floating-point-number\n"
+"\n"
+"          relative-difference ::=\n"
+"                    floating-point-number\n"
+"\n"
+"          token-locator ::=\n"
+"                    output-token-start-column\n"
+"                    output-token-start-length\n"
+"                    test-token-start-column\n"
+"                    test-token-start-length\n"
+"\n"
+"    where the column numbers in a line start with 0.\n"
+"    Only one token-locator is required for a proof,\n"
+"    but proofs with the same difference description\n"
+"    and line numbers are merged into proofs with\n"
+"    than one token-locator.\n"
+\n"
 ;
 
 struct file
 {
     ifstream stream;	// Input stream.
+
+    // Token description.
+    //
+    char token [ 10001 ]; // The current token.
+    int line;		// Line number of current token.
     int column;		// Column within the line of
-    			// the last character returned.
-			// If this character is a \n,
-			// this column is the length
-			// of the line.  The first
+    			// the last character of the
+			// current token.  The first
 			// column is 0.
-    int nextcolumn;	// Next value for column.
+    bool is_eof;	// True iff the current token
+    			// is an end-of-file.
+    bool is_number;	// True iff the current token
+    			// is a number.
+    double number;	// For a number token, the
+    			// value of the number.
+    int decimals;	// For a number token, the
+    			// number of digits after the
+    			// decimal point, or -1 if there
+			// is no decimal point.
+    bool hasexponent;	// For a number token, true iff
+    			// the token has an exponent.
 
-    // Set by scanspace:
+    // Whitespace description.
+    //
+    char token [ 10001 ]; // Whitespace preceding the
+    			// current token.
+    int newlines;	// Number of new line characters
+    			// in this whitespace.
 
-    int linebreaks;	// Number of `\n's scanned.
-
-    // Set by Scannumber:
-
-    bool isnumber;	// True iff a number is found.
-    double number;	// Value of any found number.
-    int decimals;	// Number of digits after the
-    			// decimal point in the number,
-			// or -1 if there is no decimal
-			// point.
-    bool hasexponent;	// True iff number has an exp-
-    			// onent.
-    char buffer [ 4000 ];
-    			// The character string of
-    			// any found number.
-    char * end;		// Points to the `\0' at the
-    			// end of any string in the
-			// buffer.
-
-    // Set to backup in input string when scannumber
+    // Set to backup in input string when scantoken
     // determines it has not been passed a number or
     // exponent.  Possible values are:
     //
@@ -221,8 +270,11 @@ struct file
     //		e    e+   e-   E    E+   E-
     //
     // Must be such that the backup is empty when
-    // scannumber decides to put something in the
+    // scantoken decides to put something in the
     // backup.
+    //
+    // Also set to "\n" to produce a new line at the
+    // beginning of a file.
 
     char * back;	// If pointing at `\0', there
     			// are no backed up characters
@@ -246,106 +298,115 @@ int open ( file & f, char * filename )
     	exit ( 1 );
     }
 
+    f.backup[0]= '\n';
+    f.backup[1] = '\0';
     f.back = f.backup;
-    * f.back = 0;
 
-    f.nextcolumn = 0;
+    f.token[0] = 0;
+    f.column = -1;
+    f.is_number = false;
+    f.is_eof = false;
+    f.whitespace[0] = 0;
 }
 
 // Get next character from file, respecting any backup.
 // Returns next character in file or EOF if end of file.
 //
-inline int getc ( file & f )
+inline int get_character ( file & f )
 {
     int c = * f.back;
 
     if ( c != 0 )	++ f.back;
     else		c = f.stream.get();
 
-    f.column = f.nextcolumn;
-
-    if ( c == '\n' )
-	f.nextcolumn = 0;
-    else if ( c == '\t' )
-	f.nextcolumn += 8 - ( f.nextcolumn % 8 );
-    else if ( c != EOF )
-	++ f.nextcolumn;
-
     return c;
 }
 
-// Skips over whitespace in file, returning first non-
-// whitespace character returned by getc of file.
-// Returns the count of '\n's seen in the file's line-
-// breaks member.  Takes a character argument that is
-// the first character tested for whitespace, before
-// getc is called.
+// Scan next token.
 //
-inline int scanspace ( file & f, int c )
+void scantoken ( file & f )
 {
+    if ( f.is_eof ) return;
+
+    int c = get_character ( f );
+    int column = f.column + 1;
+    
+    // Scan whitespace.
+    //
+    char * wp = file.whitespace;
+    char * endwp = wp + MAX_SIZE;
+
     f.linebreaks = 0;
-    while ( isspace ( c ) )
-    {
-        if ( c == '\n' ) ++ f.linebreaks;
-	c = getc ( f );
+
+    while ( isspace ( c ) ) {
+        if ( c == '\n' ) {
+	    column = -1;
+	    ++ f.linebreaks;
+	}
+	else if ( c == '\t' )
+	    colunm += 7 - ( column % 8 );
+	else if ( c == '\f' ) -- column;
+	else if ( c == '\v' ) -- column;
+
+	if ( wp < endwp ) * wp ++ = c;
+	else too_long ( "whitespce" );
     }
-    return c;
-}
 
-// Put string s followed by character c in backup of
-// file f.  Then return the getc of the file.  c must
-// be the last character gotten by getc of the file.
-// All the string s characters must be non-whitespace,
-// but c can be anything, including EOF.
-//
-inline int backup ( file & f, char * s, int c )
-{
-    assert ( * f.back == 0 );
+    * wp = 0;
 
-    char * end   = f.backup;
-    char * limit = f.backup + sizeof ( f.backup ) - 2;
-
-    f.nextcolumn = f.column;
-
-    int c2;
-    while ( c2 = * s ++ )
-    {
-        assert ( end < limit );
-	* end ++ = c2;
-
-	assert ( ! isspace ( c2 ) );
-	-- f.nextcolumn;
+    if ( c == EOF ) {
+    	f.is_eof = true;
+	f.column = column;
+	f.is_number = false;
+	return;
     }
-    if ( c != EOF ) * end ++ = c;
-    * end = 0;
 
-    f.back = f.backup;
+    char * tp = f.token;
 
-    return getc ( f );
-}
+    switch ( c ) {
 
-// Scans a file for a number.  Takes one or two char-
-// acters which are the first characters of the number.
-// Returns the first character not in the number.
-//
-// Sets the `isnumber' member of the file to true iff
-// a number is found.  If a number is found, sets
-// the `buffer' member of the file to the character
-// string of the number and the `number' member of
-// of the file to the value of the number.  Note that
-// this value may be an infinity if the number is too
-// large.
-//
-// Also sets the `decimals' and `hasexponent' members
-// of the file if `isnumber' is set true.
-//
-// If the second input character is supplied, the first
-// character MUST be a legal first character of a
-// number.
-//
-int scannumber ( file & f, int c1, int c2 = 0 )
-{
-    if ( c1 != '+' && c1 != '-' && c1 != '.'
+    case '+':
+    case '-':
+	* tp ++ = c;
+	c = get_character ( f );
+	++ column;
+	switch ( c ) {
+	case '.':
+	    * tp ++ = c;
+	    c = get_character ( f );
+	    ++ column;
+	    if ( ! isdigit ( c ) ) goto backout;
+	    break;
+	default:
+	    if ( ! isdigit ( c ) ) goto backout;
+	}
+	break;
+
+    case '.':
+	* tp ++ = c;
+	c = get_character ( f );
+	++ column;
+	if ( ! isdigit ( c ) ) goto backout;
+	break;
+
+    default:
+        if ( ! isdigit ( c ) ) {
+	    * tp ++ = c;
+	    * tp ++ = '\0';
+	    f.is_number = false;
+	    f.column = column;
+	    return;
+	}
+	break;
+    }
+
+    // Come here when c is the first digit of a number.
+
+    * tp ++ = c;
+    c = get_character ( f );
+
+
+    if ( c != '+' && c != '-' && c != '.'
                    && ! isdigit ( c1 ) )
     {
         assert ( c2 == 0 );
