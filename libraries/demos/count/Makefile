@@ -60,21 +60,25 @@ default:	count.out
 	p2c -check $*.p
 	echo >>$*.c 'int main () { main_(); }'
 	gcc -g -o $* $*.c -lp2c -lm
+	rm -f $*.c
 
 .java:
 	rm -f $* $*.class $*.out core
 	javac -g $*.java
-	echo >$* java $*
-	chmod u+x $*
+	echo >$* '#!/bin/sh'
+	echo >>$* "exec `which java` $*"
+	chmod a+r $*.class
+	chmod a+rx $*
 
 count.out:	count count.in
 	rm -f count.out core
 	chmod a+x count .
 	hpcm_sandbox -cputime 60 \
-	             -datasize 1m \
+	             -datasize 2m \
 		     -stacksize 1m \
 		     -filesize 50k \
 		     -watch \
+		     -processes 10 \
 		     count \
 	    <count.in >count.out
 	@echo ""
