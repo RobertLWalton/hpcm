@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Mar  9 06:42:19 EST 2003
+# Date:		Sun Mar  9 06:53:10 EST 2003
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2003/03/09 11:45:20 $
+#   $Date: 2003/03/09 11:50:31 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.24 $
+#   $Revision: 1.25 $
 
 # make
 #	Makes documentation as fprintable .txt files in
@@ -259,7 +259,7 @@ overview.txt:	hpcm_judging.rc \
 	rm -f overview.txt
 	-../../judge/bin/overview -doc >overview.txt
 judge/printer_broadcast.txt:	hpcm_judging.rc \
-			../../judge/bin/printer_broadcast
+		    ../../judge/bin/printer_broadcast
 	rm -f judge/printer_broadcast.txt
 	-../../judge/bin/printer_broadcast -doc \
 	    >judge/printer_broadcast.txt
