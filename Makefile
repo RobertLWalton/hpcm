@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Feb 19 02:48:32 EST 2003
+# Date:		Wed Feb 19 03:03:03 EST 2003
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2003/02/19 07:56:47 $
+#   $Date: 2003/02/19 08:10:53 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.26 $
+#   $Revision: 1.27 $
 
 # See STATUS file for description of versions.
 #
@@ -53,8 +53,10 @@ NONDIS = non_distributable
 #
 # make tar
 #	Make distributable and non-distributable tar
-#	files, hpcm_${VERSION}${TAREXT} and
-#       hpcm_${NONDIS}_${VERSION}${TAREXT}
+#	files:
+#		hpcm_${VERSION}${TAREXT},
+#		hpcm_solutions_${VERSION}${TAREXT}
+#       	hpcm_${NONDIS}_${VERSION}${TAREXT}
 #
 # make signatures
 #	Make HPCM_MD5_Signatures file, a copyrighted
@@ -125,7 +127,8 @@ slocs:
 #
 HPCM_MD5_Signatures:	signatures_header \
 			hpcm_${VERSION}.files \
-			hpcm_${NONDIS}_${VERSION}.files
+		    hpcm_solutions_${VERSION}.files \
+		    hpcm_${NONDIS}_${VERSION}.files
 	@if test "${COPYRIGHT}" = ""; \
 	then echo COPYRIGHT not defined; exit 1; fi
 	rm -f HPCM_MD5_Signatures
@@ -156,6 +159,7 @@ HPCM_MD5_Signatures:	signatures_header \
 	cd ..; \
 	   md5sum `cat \
 	      hpcm/hpcm_${VERSION}.files \
+	      hpcm/hpcm_solutions_${VERSION}.files \
 	      hpcm/hpcm_${NONDIS}_${VERSION}.files \
 	            ` \
 	      >>  hpcm/HPCM_MD5_Signatures
@@ -227,7 +231,8 @@ md5cvscheck:	cvstmp
 
 # Make tar files.
 #
-tar:	cleantar hpcm_${VERSION}${TAREXT} \
+tar:	hpcm_${VERSION}${TAREXT} \
+        hpcm_solutions_${VERSION}${TAREXT} \
         hpcm_${NONDIS}_${VERSION}${TAREXT}
 
 hpcm_${VERSION}${TAREXT}:	HPCM_MD5_Signatures \
@@ -239,6 +244,16 @@ hpcm_${VERSION}${TAREXT}:	HPCM_MD5_Signatures \
 	   `cat hpcm/hpcm_${VERSION}.files` \
 	   ${TARZIP}
 
+hpcm_solutions_${VERSION}${TAREXT}:	\
+                        hpcm_solutions_${VERSION}.files
+	d=`pwd`;d=`basename $$d`; test $$d = hpcm
+	rm -f hpcm_${VERSION}${TAREXT}
+	cd ..; \
+	   tar cf \
+	       hpcm/hpcm_solutions_${VERSION}${TAREXT} \
+	   `cat hpcm/hpcm_solutions_${VERSION}.files` \
+	   ${TARZIP}
+
 hpcm_${NONDIS}_${VERSION}${TAREXT}:	\
 		hpcm_${NONDIS}_${VERSION}.files
 	d=`pwd`;d=`basename $$d`; test $$d = hpcm
@@ -248,14 +263,22 @@ hpcm_${NONDIS}_${VERSION}${TAREXT}:	\
 	   `cat hpcm/hpcm_${NONDIS}_${VERSION}.files` \
 	   ${TARZIP}
 
-# Make files that list all distributable and non-
-# distributable files.  Begin each file name with `hpcm/'.
+# Make files that list all distributable non-solution,
+# all distributable solution, and all non-distributable
+# files.  Begin each file name with `hpcm/'.
 #
 hpcm_${VERSION}.files:	File_List Makefile
 	rm -f hpcm_${VERSION}.files
-	file_list public \
+	file_list 'public & ! solution' \
 	     | sed -e 's/^\./hpcm/' \
 	     > hpcm_${VERSION}.files
+
+hpcm_solutions_${VERSION}.files:	File_List \
+					Makefile
+	rm -f hpcm_solutions_${VERSION}.files
+	file_list 'public & solution' \
+	     | sed -e 's/^\./hpcm/' \
+	     > hpcm_solutions_${VERSION}.files
 
 hpcm_${NONDIS}_${VERSION}.files:	\
 				File_List Makefile
@@ -275,8 +298,10 @@ clean:	cleantar cleanslocs cleancvs
 cleantar:
 	rm -f HPCM_MD5_Signatures \
 	      hpcm_${VERSION}.files \
+	      hpcm_solutions_${VERSION}.files \
 	      hpcm_${NONDIS}_${VERSION}.files \
 	      hpcm_${VERSION}${TAREXT} \
+	      hpcm_solutions_${VERSION}${TAREXT} \
 	      hpcm_${NONDIS}_${VERSION}${TAREXT}
 
 cleanslocs:
