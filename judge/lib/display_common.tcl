@@ -2,7 +2,7 @@
 #
 # File:		display_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Aug 25 06:26:05 EDT 2001
+# Date:		Sat Aug 25 08:24:48 EDT 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/08/25 11:23:02 $
+#   $Date: 2001/08/25 13:51:03 $
 #   $RCSfile: display_common.tcl,v $
-#   $Revision: 1.4 $
+#   $Revision: 1.5 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -25,8 +25,8 @@
 #	Display
 #	Response Functions
 #	Locking Functions
-#	Reading Files
 #	File List
+#	Reading Files
 #	Reply Functions
 
 # Including this Code
@@ -398,6 +398,431 @@ proc clear_lock {} {
 }
 
 
+# File List
+# ---- ----
+#
+# Data and functions that maintain the list of files
+# to be displayed.  Usually these files are in the
+# current directory.
+
+# Compute the names of the files to be displayed.
+# This default function computes files in the current
+# directory, adding an xxx.diff and xxx.bdiff file
+# if these do not already exist for every pair of
+# files xxx.out xxx.test that do exist.
+#
+# Also compute file_list_mtime_origin.
+#
+# This code can be replaced by code specific to the
+# current program.
+#
+proc get_listed_files { } {
+
+    global file_list_origin_mtime received_file
+
+    set listed_files [glob -nocomplain *]
+
+    # Compute names of non-existent files to be added
+    # to the list because they can be made on demand.
+
+    set extra_files ""
+    foreach file $listed_files {
+        if { [regexp "^(.*)\.out$" $file \
+				   forget base] } {
+	    if { [lsearch -exact $listed_files \
+	                         $base.test] >= 0 } {
+		if { [lsearch -exact $listed_files \
+		              $base.diff] < 0 } {
+		    lappend extra_files $base.diff
+		}
+		if { [lsearch -exact $listed_files \
+			      $base.bdiff] < 0 } {
+		    lappend extra_files $base.bdiff
+		}
+	    }
+	}
+    }
+
+    if { [lsearch -exact $listed_files $received_file] \
+         >= 0 } {
+	set file_list_origin_mtime \
+	    [file mtime $received_file]
+    }
+
+    # Compute
+    return [concat $listed_files $extra_files]
+}
+
+# List of files that are currently displayable.  This
+# list is stored in the global `file_list' variable.
+# The N'th item on the list is itself a list of sub-
+# items with the format:
+#
+#	ctime mtime filename comment new
+#
+# The total list is sorted by ctime.  Ctime equals
+# mtime, the file's modification time, with 0's prepend-
+# ed so all ctimes are the same length and alphanumeric
+# comparison of items will be the same as numeric com-
+# parison of mtimes.  If a file does not exists (e.g.,
+# .diff files for which .out and .test files exist),
+# mtime is `TBD', and items with this mtime get sorted
+# to the end of the list.
+#
+# The comment is to be printed after the filename if
+# the file name is not too long.  Generally non-
+# error log file names are short enough for the comment,
+# and error log file names are too long.
+#
+# `New' is `*' if the file is new since the last time
+# the file list was computed, and the previous file list
+# was not empty.  Otherwise `new' is "".
+#
+# The variable `file_list_origin_mtime' holds the mtime
+# that is to be used as the origin when displaying the
+# listed files.
+#
+# The file list is built by calling `get_listed_files'
+# and using the result of that and the value of the
+# previous `file_list' variable to compute a new
+# `file_list' variable value.  See `get_listed_files'
+# above.
+#
+# When building the file list, the information read by
+# the read_array functions is refreshed as necessary,
+# using corresponding mtime_array information where
+# mtime_array(filename) is the mtime of the file just
+# before read_array(filename) was last called, and
+# mtime_array(filename) does not exist if the file does
+# not exist.  If a file is not in the new list but
+# has an mtime_array entry, this entry is deleted, and
+# the file's read_array function is called.
+#
+set file_list ""
+set file_list_origin_mtime 0
+
+# Return item of file with a given name in the file
+# list, or return "" if file is not in the list.
+#
+proc get_file_item { filename } {
+
+    global file_list
+
+    foreach item $file_list {
+        if { [lindex $item 2] == $filename } {
+	    return $item
+	}
+    }
+
+    return ""
+}
+
+# Recompute the file list.  New files are marked unless
+# the file list was previously empty.
+#
+proc refresh_file_list { } {
+
+    global file_list file_list_origin_mtime \
+	   read_array mtime_array
+
+    set file_list_origin_mtime ""
+    set new_file_list ""
+    set newest 0
+    foreach file [get_listed_files] {
+
+        # Set ctime, mtime, and filename of item.
+	#
+	# Beware of file being link, in which case
+	# mtime does not work.
+	#
+	if { [catch { set mtime [file mtime $file] }] \
+		} {
+	    if { ! [catch { file lstat $file temp }] } {
+		set mtime [set temp(mtime)]
+	    } else {
+	        set mtime TBD
+	    }
+	}
+
+	if { $mtime == "TBD" } {
+	    set item TBD
+	} else {
+	    set item [format {%025d} $mtime]
+	    if { $mtime > $newest } {
+		set newest $mtime
+	    }
+	}
+	lappend item $mtime
+	lappend item $file
+
+	# Set comment of item.
+	#
+	
+	if { $mtime == "TBD" } {
+	    lappend item "(TBD)"
+	} elseif { ! [file exists $file] } {
+	    lappend item "(dangling link)"
+	} elseif { [file isdirectory $file] } {
+	    lappend item "(directory)"
+	} elseif { [set size [file size $file]] == 0 } {
+	    lappend item "(empty)"
+	} elseif { ! [file readable $file] } {
+	    lappend item "(unreadable file)"
+	} else {
+	    set file_ch [open $file r]
+	    set line [gets $file_ch]
+	    gets $file_ch
+	    if { [eof $file_ch] \
+	         && [string length $line] < 35 } {
+	    	lappend item "{$line}"
+	    } else {
+		lappend item "(${size}b)"
+	    }
+	    close $file_ch
+	}
+
+	# Set `new' field of item.
+	#
+	set new ""
+	if { $file_list != "" \
+	     && [get_file_item $file] == "" } {
+	    set new "*"
+	}
+	lappend item $new
+
+	# Add item to new file list.
+	#
+	lappend new_file_list $item
+
+	# Process file if it is one from which we
+	# read information and it has changed since
+	# last call to refresh_file_list.
+	#
+	if { [info exists read_array($file)] } {
+	    if { ! [info exists mtime_array($file)] \
+	         || ( $mtime != "TBD"
+		      &&
+		      $mtime_array($file) < $mtime ) \
+	       } {
+	    	set mtime_array($file) $mtime
+		eval $read_array($file)
+	    }
+	}
+    }
+
+    # Set file list global data to newly computed file
+    # list.
+    #
+    set file_list [lsort $new_file_list]
+
+    if { $file_list_origin_mtime == "" } {
+    	set file_list_origin_mtime $newest
+    }
+
+    # Process any files from which we read information
+    # which have been deleted.
+    #
+    foreach file [array names mtime_array] {
+        if { [set item [get_file_item $file]] == ""
+	     ||
+	     [lindex $item 0] == "TBD" } {
+	    # File has been deleted.
+	    unset mtime_array($file)
+	    eval $read_array($file)
+	}
+    }
+}
+
+# Set the window display to the file list.  Set the
+# last_display variable to `file_list'.
+#
+proc set_file_list_display {} {
+
+    global file_list file_list_origin_mtime \
+    	   window_bar last_display
+
+    set display "$window_bar"
+
+    set n 0
+    set previous ""
+
+    # If `previous' is non-empty it is the previous
+    # item and has no more than 39 characters.
+    #
+    foreach item $file_list {
+	incr n
+	set time [lindex $item 1]
+	if { $time == "TBD" } {
+	    set tttt TBD
+	} else {
+	    set time [expr { $time \
+			     - $file_list_origin_mtime
+                           }]
+	    if { $time < 0 } {
+		set sign "-"
+		set time [expr { - $time }]
+	    } else {
+		set sign ""
+	    }
+	    set mm [expr { $time / 60 }]
+	    set hh [expr { $mm / 60 }]
+	    set mm [expr { $mm - 60 * $hh }]
+	    set tttt "$sign[format {%d:%02d} $hh $mm]"
+	    if { [string length $tttt] > 6 } {
+		set tttt "${sign}inf"
+	    }
+	}
+	set next [format {%3d. %6.6s%1.1s %s} \
+			 $n \
+			 $tttt [lindex $item 4] \
+			 [lindex $item 2]]
+	set commented "${next} [lindex $item 3]"
+
+	if { [string length $commented] <= 80 } {
+	    set next $commented
+	}
+	if { [string length $next] > 39 } {
+	    if { $previous != "" } {
+	    	set next "$previous\n$next"
+	    }
+	    set previous ""
+	} elseif { $previous != "" } {
+	    set next [format {%-40s%s} $previous $next]
+	    set previous ""
+	} else {
+	    set previous $next
+	    set next ""
+	}
+
+	if { $next != "" } {
+	    set display "$display\n$next"
+	}
+    }
+
+    if { $previous != "" } {
+	set display "$display\n$previous"
+    }
+
+    set_window_display "$display\n$window_bar"
+    set last_display file_list
+}
+
+# Given a file number, set `last_file' to the name of
+# the corresponding file, set `window_error' to "", and
+# return `yes'.  If there is an error, leave `last_file'
+# alone, set `window_error' to the error description,
+# and return `no'.
+#
+# Whenever `last_file' is changed, if the new name is
+# of the form $submitted_program.ext for some extension
+# ext, and the array entry make_file_array(.ext) exists,
+# the value of that array entry is called to make or
+# update the new `last_file' file.  The called procedure
+# may not succeed: its perfectly possible to set `last_
+# file' to a non-existant file.
+#
+proc get_file { number } {
+
+    global file_list \
+	   last_file window_error make_file_array \
+	   submitted_program
+
+    set window_error ""
+    if { $number == "" } {
+	if { $last_file == "" } {
+	    set window_error "No previous file!"
+	    return no
+	} else {
+	    return yes
+	}
+    } elseif { $number < 1 \
+               || $number > [llength $file_list] } {
+	set window_error "Bad file number: $number"
+	return no
+    } else {
+	set last_file \
+            [lindex [lindex $file_list \
+                            [expr { $number - 1 }]] 2]
+
+	if { $submitted_program == \
+		[file rootname $last_file] } {
+	    set extension [file extension $last_file]
+	    if { [info exists \
+		       make_file_array($extension)] } {
+		eval $make_file_array($extension)
+	    }
+	}
+	return yes
+    }
+}
+
+# Procedure to make $submitted_program.diff if
+# possible.
+#
+proc make_diff {} {
+
+    global submitted_program
+
+    set diff_file $submitted_program.diff
+    set out_file  $submitted_program.out
+    set test_file $submitted_program.test
+
+    if { ! [file readable $out_file] }  return
+    if { ! [file readable $test_file] } return
+
+    if { [file exists $diff_file] } {
+        if { [file mtime $diff_file] \
+	         < [file mtime $out_file] \
+	     || \
+	     [file mtime $diff_file] \
+	         < [file mtime $test_file] } {
+	    file delete -force $diff_file
+	} else {
+	    return
+	}
+    }
+
+    write_file $diff_file \
+	       "===== diff $out_file $test_file"
+    catch { exec diff $out_file $test_file \
+                      >>& $diff_file }
+}
+set make_file_array(.diff) make_diff
+
+# Procedure to make $submitted_program.bdiff if
+# possible.
+#
+proc make_bdiff {} {
+
+    global submitted_program
+
+    set bdiff_file $submitted_program.bdiff
+    set out_file  $submitted_program.out
+    set test_file $submitted_program.test
+
+    if { ! [file readable $out_file] }  return
+    if { ! [file readable $test_file] } return
+
+    if { [file exists $bdiff_file] } {
+        if { [file mtime $bdiff_file] \
+	         < [file mtime $out_file] \
+	     || \
+	     [file mtime $bdiff_file] \
+	         < [file mtime $test_file] } {
+	    file delete -force $bdiff_file
+	} else {
+	    return
+	}
+    }
+
+    write_file $bdiff_file \
+	       "===== diff -b $out_file $test_file"
+    catch { exec diff -b $out_file $test_file \
+                      >>& $bdiff_file }
+}
+set make_file_array(.bdiff) make_bdiff
+
+
 # Set the window display to display the first lines
 # of the file.  Set the last_display variable to
 # `file'.  If the file is unreadable or is not a plain
@@ -580,405 +1005,6 @@ set read_array($received_file) read_received_file
 set submitted_file      ""
 set submitted_program   ""
 set submitted_extension ""
-
-
-# File List
-# ---- ----
-#
-# Data and functions that maintain the list of files in
-# the current directory.
-
-# List of files in the current directory.  The N'th
-# item on the list is itself a list of subitems
-# with the format:
-#
-#	ctime mtime filename comment new
-#
-# The total list is sorted by ctime.  Ctime equals
-# mtime, the file's modification time, with 0's prepend-
-# ed so all ctimes are the same length and alphanumeric
-# comparison of items will be the same as numeric com-
-# parison of mtimes.
-#
-# After sorting, entries of the form:
-#
-#	TBD TBD filename comment ""
-#
-# may be added to the end of the list of items to
-# indicate files that could be made but do not yet
-# exist.
-#
-# The comment is to be printed after the filename if
-# the file name is not too long.  Generally non-
-# error log file names are short enough for the comment,
-# and error log file names are too long.
-#
-# `New' is `*' if the file is new since the last time
-# the file list was computed, and the previous file list
-# was not empty.  Otherwise `new' is "".
-#
-# Below `file_list' is a simple unsorted list of file
-# names that can be lsearch'ed.  `file_list_items' has
-# the list of items described above, sorted by mtimes.
-# The number of files is in `file_list_length'.  The
-# mtime of the $received_file file is in `file_list_
-# origin_mtime', unless there is no such file, in which
-# case the mtime of the newest file is there instead.
-#
-# When building the file list, the information read by
-# the read_array functions is refreshed as necessary,
-# using corresponding mtime_array information where
-# mtime_array(filename) is the mtime of the file just
-# before read_array(filename) was last called, and
-# mtime_array(filename) does not exist if the file does
-# not exist.
-#
-set file_list ""
-set file_list_items ""
-set file_list_length 0
-set file_list_origin_mtime 0
-
-# Recompute the file list.  New files are marked unless
-# the file list was previously empty.
-#
-# If `submitted_program' is not "" and the .out and
-# .test files for the submitted program exist, then
-# TBD file entries for the .diff and .bdiff files
-# are added to the end of the file list.
-#
-proc refresh_file_list { } {
-
-    global file_list file_list_items file_list_length \
-    	   file_list_origin_mtime received_file \
-	   read_array mtime_array submitted_program
-
-    set new_file_list [glob -nocomplain *]
-    set new_file_list_items ""
-    set n 0
-    set origin ""
-    set newest 0
-    foreach file $new_file_list {
-
-        # Set ctime, mtime, and filename of item.
-	#
-	# Beware of file being link, in which case
-	# mtime does not work.
-	#
-	if { [catch { set mtime [file mtime $file] }] } {
-	    file lstat $file temp
-	    set mtime [set temp(mtime)]
-	}
-	if { $file == $received_file } {
-	    set origin $mtime
-	}
-	if { $mtime > $newest } {
-	    set newest $mtime
-	}
-    	set item [format {%025d} $mtime]
-	lappend item $mtime
-	lappend item $file
-
-	# Set comment of item.
-	#
-	
-	if { ! [file exists $file] } {
-	    lappend item "(dangling link)"
-	} elseif { [file isdirectory $file] } {
-	    lappend item "(directory)"
-	} elseif { [set size [file size $file]] == 0 } {
-	    lappend item "(empty)"
-	} elseif { ! [file readable $file] } {
-	    lappend item "(unreadable file)"
-	} else {
-	    set file_ch [open $file r]
-	    set line [gets $file_ch]
-	    gets $file_ch
-	    if { [eof $file_ch] \
-	         && [string length $line] < 35 } {
-	    	lappend item "{$line}"
-	    } else {
-		lappend item "(${size}b)"
-	    }
-	    close $file_ch
-	}
-
-	# Set `new' field of item.
-	#
-	set new ""
-	if { $file_list_length != 0 \
-	     && [lsearch -exact $file_list $file] \
-	        < 0 } {
-	    set new "*"
-	}
-	lappend item $new
-
-	# Add item to new file list.
-	#
-	lappend new_file_list_items $item
-	incr n
-
-	# Process file if it is one from which we
-	# read information and it has changed since
-	# last call to refresh_file_list.
-	#
-	if { [info exists read_array($file)] } {
-	    if { ! [info exists mtime_array($file)] \
-	         || $mtime_array($file) < $mtime } {
-	    	set mtime_array($file) $mtime
-		eval $read_array($file)
-	    }
-	}
-    }
-
-    # Process any files from which we read information
-    # which have been deleted.
-    #
-    foreach file [array names read_array] {
-        if { [lsearch -exact $new_file_list $file] < 0 \
-	     && [lsearch -exact $file_list $file] >= 0 \
-	     } {
-	    # File has been deleted.
-	    unset mtime_array($file)
-	    eval $read_array($file)
-	}
-    }
-
-    # Set file list global data to newly computed file
-    # list.
-    #
-    set file_list $new_file_list
-    set file_list_items [lsort $new_file_list_items]
-    set file_list_length $n
-
-    if { $origin != "" } {
-    	set file_list_origin_mtime $origin
-    } else {
-    	set file_list_origin_mtime $newest
-    }
-
-    # Add TBD files (non-existant .*diff files) to the
-    # file list if appropriate.
-    #
-    if { $submitted_program != "" } {
-	set diff_file  $submitted_program.diff
-	set bdiff_file $submitted_program.bdiff
-	set out_file   $submitted_program.out
-	set test_file  $submitted_program.test
-
-	if { [lsearch -exact $file_list $out_file] >= 0
-	     && [lsearch -exact $file_list $test_file] \
-		    >= 0 } {
-	    if { [lsearch -exact $file_list \
-				 $diff_file] \
-		  < 0 } {
-		lappend file_list_items \
-		        [list TBD TBD \
-			      $diff_file (TBD) ""]
-		lappend file_list $diff_file
-		incr file_list_length
-	    }
-	    if { [lsearch -exact $file_list \
-				 $bdiff_file] \
-		  < 0 } {
-		lappend file_list_items \
-		        [list TBD TBD \
-			      $bdiff_file (TBD) ""]
-		lappend file_list $bdiff_file
-		incr file_list_length
-	    }
-	}
-    }
-
-}
-
-# Set the window display to the file list.  Set the
-# last_display variable to `file_list'.
-#
-proc set_file_list_display {} {
-
-    global file_list_items file_list_origin_mtime \
-    	   window_bar last_display
-
-    set display "$window_bar"
-
-    set n 0
-    set previous ""
-
-    # If `previous' is non-empty it is the previous
-    # item and has no more than 39 characters.
-    #
-    foreach item $file_list_items {
-	incr n
-	set time [lindex $item 1]
-	if { $time == "TBD" } {
-	    set tttt TBD
-	} else {
-	    set time [expr { $time \
-			     - $file_list_origin_mtime
-                           }]
-	    if { $time < 0 } {
-		set sign "-"
-		set time [expr { - $time }]
-	    } else {
-		set sign ""
-	    }
-	    set mm [expr { $time / 60 }]
-	    set hh [expr { $mm / 60 }]
-	    set mm [expr { $mm - 60 * $hh }]
-	    set tttt "$sign[format {%d:%02d} $hh $mm]"
-	    if { [string length $tttt] > 6 } {
-		set tttt "${sign}inf"
-	    }
-	}
-	set next [format {%3d. %6.6s%1.1s %s} \
-			 $n \
-			 $tttt [lindex $item 4] \
-			 [lindex $item 2]]
-	set commented "${next} [lindex $item 3]"
-
-	if { [string length $commented] <= 80 } {
-	    set next $commented
-	}
-	if { [string length $next] > 39 } {
-	    if { $previous != "" } {
-	    	set next "$previous\n$next"
-	    }
-	    set previous ""
-	} elseif { $previous != "" } {
-	    set next [format {%-40s%s} $previous $next]
-	    set previous ""
-	} else {
-	    set previous $next
-	    set next ""
-	}
-
-	if { $next != "" } {
-	    set display "$display\n$next"
-	}
-    }
-
-    if { $previous != "" } {
-	set display "$display\n$previous"
-    }
-
-    set_window_display "$display\n$window_bar"
-    set last_display file_list
-}
-
-# Given a file number, set `last_file' to the name of
-# the corresponding file, set `window_error' to "", and
-# return `yes'.  If there is an error, leave `last_file'
-# alone, set `window_error' to the error description,
-# and return `no'.
-#
-# Whenever `last_file' is changed, if the new name is
-# of the form $submitted_program.ext for some extension
-# ext, and the array entry make_file_array(.ext) exists,
-# the value of that array entry is called to make or
-# update the new `last_file' file.  The called procedure
-# may not succeed: its perfectly possible to set `last_
-# file' to a non-existant file.
-#
-proc get_file { number } {
-
-    global file_list_items file_list_length \
-	   last_file window_error make_file_array \
-	   submitted_program
-
-    set window_error ""
-    if { $number == "" } {
-	if { $last_file == "" } {
-	    set window_error "No previous file!"
-	    return no
-	} else {
-	    return yes
-	}
-    } elseif { $number < 1 \
-               || $number > $file_list_length } {
-	set window_error "Bad file number: $number"
-	return no
-    } else {
-	set last_file \
-            [lindex [lindex $file_list_items \
-                            [expr { $number - 1 }]] 2]
-
-	if { $submitted_program == \
-		[file rootname $last_file] } {
-	    set extension [file extension $last_file]
-	    if { [info exists \
-		       make_file_array($extension)] } {
-		eval $make_file_array($extension)
-	    }
-	}
-	return yes
-    }
-}
-
-# Procedure to make $submitted_program.diff if
-# possible.
-#
-proc make_diff {} {
-
-    global submitted_program
-
-    set diff_file $submitted_program.diff
-    set out_file  $submitted_program.out
-    set test_file $submitted_program.test
-
-    if { ! [file readable $out_file] }  return
-    if { ! [file readable $test_file] } return
-
-    if { [file exists $diff_file] } {
-        if { [file mtime $diff_file] \
-	         < [file mtime $out_file] \
-	     || \
-	     [file mtime $diff_file] \
-	         < [file mtime $test_file] } {
-	    file delete -force $diff_file
-	} else {
-	    return
-	}
-    }
-
-    write_file $diff_file \
-	       "===== diff $out_file $test_file"
-    catch { exec diff $out_file $test_file \
-                      >>& $diff_file }
-}
-set make_file_array(.diff) make_diff
-
-# Procedure to make $submitted_program.bdiff if
-# possible.
-#
-proc make_bdiff {} {
-
-    global submitted_program
-
-    set bdiff_file $submitted_program.bdiff
-    set out_file  $submitted_program.out
-    set test_file $submitted_program.test
-
-    if { ! [file readable $out_file] }  return
-    if { ! [file readable $test_file] } return
-
-    if { [file exists $bdiff_file] } {
-        if { [file mtime $bdiff_file] \
-	         < [file mtime $out_file] \
-	     || \
-	     [file mtime $bdiff_file] \
-	         < [file mtime $test_file] } {
-	    file delete -force $bdiff_file
-	} else {
-	    return
-	}
-    }
-
-    write_file $bdiff_file \
-	       "===== diff -b $out_file $test_file"
-    catch { exec diff -b $out_file $test_file \
-                      >>& $bdiff_file }
-}
-set make_file_array(.bdiff) make_bdiff
 
 
 # Reply Functions
