@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Jan 27 19:48:20 EST 2002
+# Date:		Sun Jan 27 19:54:37 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/01/28 00:50:26 $
+#   $Date: 2002/01/28 01:22:38 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.26 $
+#   $Revision: 1.27 $
 
 # To make an email contest named `foo':
 #
@@ -182,3 +182,6 @@ stop_scoreboard:
 
 update_scoreboard:
 	makescoreboard update
+
+clean:
+	rm -rf mail help info* solutions* TODO
