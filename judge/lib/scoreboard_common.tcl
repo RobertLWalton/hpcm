@@ -3,7 +3,7 @@
 #
 # File:		scoreboard_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Mar  9 08:37:52 EST 2002
+# Date:		Sat Sep 21 21:14:22 EDT 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -12,9 +12,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/03/09 13:40:07 $
+#   $Date: 2002/09/22 01:31:10 $
 #   $RCSfile: scoreboard_common.tcl,v $
-#   $Revision: 1.38 $
+#   $Revision: 1.39 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -100,10 +100,14 @@
 #    3. Array elements pertaining to a submitter not
 #       meeting the cut times have been deleted.
 #
-#    4. If the scoreboard_start_time is "" or "team",
-#       any array element whose earliest item (before
-#	adding the start time "s" item) does not have
-#	code "g" is deleted.
+#    4. If the scoreboard_start_time is "problem" or
+#	"team", any array element is deleted if its
+#	earliest item (before adding the start time "s"
+#	item) does not have code "g".
+#
+#    5. If the scoreboard_start_time is a date and time,
+#	any array element is deleted if its earliest
+#	item is before the start time.
 
 # Function to read scorefinder output and compute
 # scoreboard_array.  Scorefinder output is read from
@@ -220,7 +224,8 @@ proc prune_scoreboard_array { } {
     #
     # start_mode is one of:
     #
-    #	"" 		no start_time given
+    #	problem 	start_time is when problem is
+    #			gotten
     #	team		start_time is time team gets
     #			first problem
     #   absolute	start_time is date and time
@@ -236,7 +241,7 @@ proc prune_scoreboard_array { } {
     # cut_mode are like stop_mode.
     #
     set start_time $scoreboard_start_time
-    if { [regexp {^(|team)$} $start_time] } {
+    if { [regexp {^(problem|team)$} $start_time] } {
         set start_mode $start_time
     } elseif { [regexp {^(|\+)[0-9]+$} $start_time] } {
         error "scoreboard_start_time is relative"
@@ -368,7 +373,7 @@ proc prune_scoreboard_array { } {
 	# Compute times.
 	#
 	switch $start_mode {
-	    "" {
+	    problem {
 		set item [lindex $items 0]
 		set t [lindex $item 0]
 		regexp {^0+(0|[1-9].*)$} $t forget t
