@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Jan 22 21:37:00 EST 2002
+# Date:		Tue Jan 22 22:00:20 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/01/23 02:36:44 $
+#   $Date: 2002/01/23 03:30:22 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.66 $
+#   $Revision: 1.67 $
 #
 
 # Table of Contents
@@ -974,13 +974,9 @@ proc compose_reply { args } {
 
     # Process commands.
     #
-    set bar "--------------------------------"
+    set bar "------------------------"
     set bar $bar$bar$bar
     foreach command $args {
-    	if { [llength $command] > 1 } {
-	    error "Bad command to compose_reply:\
-		   $command"
-	}
         switch -- [lindex $command 0] {
 
 	    LINE {
@@ -1015,7 +1011,7 @@ proc compose_reply { args } {
 		set nws "\[^\ \t\n\]"
 		if { ! [regexp $nws $message_from] \
 		     || \
-		     ! [regexp "$nws $message_date] \
+		     ! [regexp $nws $message_date] \
 			       		} {
 		    puts $reply_ch ">$message_From_line"
 		}
