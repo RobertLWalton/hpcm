@@ -2,7 +2,7 @@
 //
 // File:	scorediff.cc
 // Authors:	Bob Walton (walton@deas.harvard.edu)
-// Date:	Sun Aug  5 09:01:36 EDT 2001
+// Date:	Mon Aug 27 22:04:20 EDT 2001
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: hc3 $
-//   $Date: 2001/08/05 13:46:14 $
+//   $Date: 2001/08/28 05:09:00 $
 //   $RCSfile: scorediff.cc,v $
-//   $Revision: 1.33 $
+//   $Revision: 1.34 $
 
 // This is version 2, a major revision of the first
 // scorediff program.  This version is more explicitly
@@ -113,16 +113,21 @@ char documentation [] =
 "		cognized if either following matching\n"
 "		token is a number with a decimal\n"
 "		point or exponent.\n"
-"\n"
-"    eof1	When the first file ends, the second\n"
-"		file has a remaining non-eof token.\n"
-"		In this case, preceding whitespaces\n"
-"		are NOT compared.\n"
 "\f\n"
-"    eof2	When the second file ends, the first\n"
-"		file has a remaining non-eof token.\n"
-"		In this case, preceding whitespaces\n"
-"		are NOT compared.\n"
+"    word-eof1		When one file ends, the other\n"
+"    integer-eof1	file has a remaining word,\n"
+"    float-eof1		integer number, or floating\n"
+"    word-eof2		point number.  This token can\n"
+"    integer-eof2	be any token left in the\n"
+"    float-eof2		longer file after the shorter\n"
+"		file ends.  Whitespace after the last\n"
+"		matching non-eof tokens in the files\n"
+"		is NOT compared.  Eof1 means the\n"
+"		first file is shorter, while eof2\n"
+"		means the second file is shorter.\n"
+"		Thus up to three of these differ-\n"
+"		ences can occur in the same file\n"
+"		comparison.\n"
 "\n"
 "    float A R	For two matching number tokens,\n"
 "		at least ONE of which contains a\n"
@@ -147,14 +152,14 @@ char documentation [] =
 "		numbers of decimal places, or one has\n"
 "		a decimal point and the other does\n"
 "		not.\n"
-"\n"
+"\f\n"
 "    exponent	For two matching numbers one has an\n"
 "		exponent but the other does not.\n"
 "\n"
 "    sign	For two matching numbers, only one\n"
 "		begins with a sign, or the two num-\n"
 "		bers begin with different signs.\n"
-"\f\n"
+"\n"
 "    case	Two matching non-number tokens are\n"
 "		NOT identical, but would be identical\n"
 "		if letter case differences were\n"
@@ -163,26 +168,25 @@ char documentation [] =
 "    column	Two matching tokens end in differ-\n"
 "		ent columns.\n"
 "\n"
-"    nonblank	At least one of two matching tokens\n"
+"    word	At least one of two matching tokens\n"
 "		is a word token, and it is not true\n"
 "		that both are word tokens of the same\n"
 "		length (see word splitting below)\n"
 "		that are identical except for letter\n"
 "		case.\n"
 "\n"
-"		Or two matching number tokens cannot\n"
-"		be compared because they are NOT\n"
-"		identical except for letter case and\n"
-"		one or both or their difference is\n"
-"		too large to be represented as a\n"
-"		finite double precision floating\n"
-"		point number.\n"
+"    infinity	Two matching number tokens cannot be\n"
+"		compared because they are NOT identi-\n"
+"		cal except for letter case and one or\n"
+"		both or their difference is too large\n"
+"		to be represented as a finite double\n"
+"		precision floating point number.\n"
 "\n"
 "    none	There are no differences in the files\n"
 "		at all.  This is returned as the sole\n"
 "		contents of an output line that lists\n"
 "		differences.\n"
-"\n"
+"\f\n"
 "    The files are parsed into whitespace, numbers,\n"
 "    words, and end-of-files (eofs).  A number is an\n"
 "    optional sign followed by digits containing an\n"
@@ -190,7 +194,7 @@ char documentation [] =
 "    exponent.  An exponent is an `e' or `E' followed\n"
 "    by an an optional sign followed by digits.  A\n"
 "    number is scanned by the strtod(3) function.\n"
-"\f\n"
+"\n"
 "    A word is a string of non-whitespace characters\n"
 "    that does not contain a number.  If two words S\n"
 "    and L are being matched, and S is shorter than\n"
@@ -198,19 +202,38 @@ char documentation [] =
 "    length as S and a second word to be matched to\n"
 "    the token that follows S, provided that the\n"
 "    first part of L and the whole of S are equal\n"
-"    except perhaps for case.  If L is so split, and\n"
-"    the remainder of L does not equal the token\n"
-"    following S except perhaps for case, this dif-\n"
-"    ference is reported and then the token after S\n"
-"    is matched to the token after L.  Thus failure\n"
-"    to separate words by space, provided the words\n"
-"    are otherwise correct except perhaps for case,\n"
-"    will be reported as a formatting error, while\n"
-"    failure to have words that are equal except\n"
-"    perhaps for case will be reported as a non-\n"
-"    blank difference with the effects of word split-\n"
-"    ting undone so that subsequent tokens will be\n"
-"    more likely to match correctly.\n"
+"    except perhaps for case.\n"
+"\n"
+"    Normally when two tokens do not match, both are\n"
+"    skipped over to get to the next tokens which are\n"
+"    then matched with each other.  But if one of a\n"
+"    pair of non-matching tokens is a word, and there\n"
+"    is a `word' difference between them (they are\n"
+"    not identical with case ignored), then special\n"
+"    rules apply if one of the tokens is a number or\n"
+"    if one of the tokens is a remainder of a split\n"
+"    word.  Specifically, if one of the tokens is a\n"
+"    number and one is a word, only the word is skip-\n"
+"    ped over, on the theory that if consecutive\n"
+"    numbers in the files are equal then any word\n"
+"    mismatches may be formatting errors (or they may\n"
+"    not be, as this is not up to scorediff to de-\n"
+"    cide).  If both tokens are words, but one is a\n"
+"    remainder of a split word, then only this re-\n"
+"    mainder is skipped, on the theory that it should\n"
+"    have been part of the previous match.  In all\n"
+"    cases, mismatches that have occurred before\n"
+"    these special rules are applied are reported\n"
+"    without any attention to the special rules.\n"
+"\f\n"
+"    Note that failure to separate words by space,\n"
+"    provided the words are otherwise correct except\n"
+"    perhaps for case, will be reported as a space-\n"
+"    break, while failure to have words that are\n"
+"    equal except perhaps for case will be reported\n"
+"    as a word difference with the effects of word\n"
+"    splitting undone so that subsequent tokens will\n"
+"    be more likely to match correctly.\n"
 "\n"
 "    It is an error if a token longer than 10,100\n"
 "    characters is found, or if a sequence of con-\n"
@@ -226,7 +249,7 @@ char documentation [] =
 "\n"
 "    and is never larger than 2.  If x == y == 0 this\n"
 "    relative difference is taken to be zero.\n"
-"\f\n"
+"\n"
 "    Numbers that match exactly, character by charac-\n"
 "    ter, do not produce any difference indication.\n"
 "    Numbers that match exactly except for the case\n"
@@ -235,9 +258,9 @@ char documentation [] =
 "    Other than these cases, numbers too large to\n"
 "    compare (either they or their difference are\n"
 "    infinity when represented as double precision\n"
-"    floating point numbers) cause a `nonblank' diff-\n"
-"    erence.\n"
-"\n"
+"    floating point numbers) cause a `word' differ-\n"
+"    ence.\n"
+"\f\n"
 "    For the purpose of computing the column of a\n"
 "    character, tabs are set every 8 columns.\n"
 "\n"
@@ -266,16 +289,17 @@ char documentation [] =
 "                    output-line-number\n"
 "                    test-line-number\n"
 "                    token-proof token-proof*\n"
-"\f\n"
+"\n"
 "          token-proof ::=\n"
 "                    output-token-begin-column\n"
 "                    output-token-end-column\n"
 "                    test-token-begin-column\n"
 "                    test-token-end-column\n"
 "                    proof proof*\n"
-"\n"
-"          proof ::= `nonblank' | `case' | `column' |\n"
+"\f\n"
+"          proof ::= `word' | `case' | `column' |\n"
 "                    `decimal' | `exponent' |\n"
+"                    `infinity' |\n"
 "                    `integer' absolute-difference\n"
 "                              relative-difference |\n"
 "                    `float'   absolute-difference\n"
@@ -300,14 +324,14 @@ char documentation [] =
 "    line-proof that begins with the line numbers of\n"
 "    the respective lines.  Each line-proof is output\n"
 "    on a line by itself.\n"
-"\f\n"
+"\n"
 "    There is a limit for each difference type to the\n"
 "    number of proofs of that type that will be out-\n"
 "    put.  Specifically, if the limit is N for diff-\n"
 "    erence type T, then after N line-proofs each\n"
 "    containing at least one proof of type T have\n"
 "    output, no more proofs of type T will be output.\n"
-"\n"
+"\f\n"
 "    These limits default to 10 for each difference\n"
 "    type, but the limits can be changed by program\n"
 "    options.  An option consisting of a `-' followed\n"
@@ -334,14 +358,15 @@ char documentation [] =
 "    erences may be omitted if they are zero and the\n"
 "    program argument following them does NOT begin\n"
 "    with a digit or decimal point.\n"
-"\f\n"
-"    If N is the limit on the number of line-proofs\n"
-"    containing a `nonblank' proof, then after the\n"
-"    last of these N line-proofs is finished, this\n"
-"    program terminates without continuing its search\n"
-"    for more differences.  Here if N == 0, then for\n"
-"    the purposes of applying this rule, N is treated\n"
-"    as if it were 1.\n"
+"\n"
+"    The special option `-all N' sets the limits for\n"
+"    all the types of differences, where N is taken\n"
+"    to be 0 if it is omitted (the next argument must\n"
+"    NOT begin with a digit).\n"
+"\n"
+"    If more than one limit setting option affects\n"
+"    the limit of a difference type, the last such\n"
+"    option is the effective option for that type.\n"
 ;
 
 // A token is either a number token, an end of file
@@ -876,16 +901,21 @@ enum difference_type {
     BEGINSPACE,
     LINESPACE,
     ENDSPACE,
-    EOF1,
-    EOF2,
+    WORD_EOF1,
+    INTEGER_EOF1,
+    FLOAT_EOF1,
+    WORD_EOF2,
+    INTEGER_EOF2,
+    FLOAT_EOF2,
     FLOAT,
     INTEGER,
     DECIMAL,
     EXPONENT,
     SIGN,
+    INFINITY,
     CASE,
     COLUMN,
-    NONBLANK,
+    WORD,
     MAX_DIFFERENCE
 };
 
@@ -927,16 +957,21 @@ difference differences[] = {
     { "beginspace",	false, 0, 0, MAX_PROOF_LINES },
     { "linespace",	false, 0, 0, MAX_PROOF_LINES },
     { "endspace",	false, 0, 0, MAX_PROOF_LINES },
-    { "eof1",		false, 0, 0, MAX_PROOF_LINES },
-    { "eof2",		false, 0, 0, MAX_PROOF_LINES },
+    { "word-eof1",	false, 0, 0, MAX_PROOF_LINES },
+    { "integer-eof1",	false, 0, 0, MAX_PROOF_LINES },
+    { "float-eof1",	false, 0, 0, MAX_PROOF_LINES },
+    { "word-eof2",	false, 0, 0, MAX_PROOF_LINES },
+    { "integer-eof2",	false, 0, 0, MAX_PROOF_LINES },
+    { "float-eof2",	false, 0, 0, MAX_PROOF_LINES },
     { "float",		false, 0, 0, MAX_PROOF_LINES },
     { "integer",	false, 0, 0, MAX_PROOF_LINES },
     { "decimal",	false, 0, 0, MAX_PROOF_LINES },
     { "exponent",	false, 0, 0, MAX_PROOF_LINES },
     { "sign",		false, 0, 0, MAX_PROOF_LINES },
+    { "infinity",	false, 0, 0, MAX_PROOF_LINES },
     { "case",		false, 0, 0, MAX_PROOF_LINES },
     { "column",		false, 0, 0, MAX_PROOF_LINES },
-    { "nonblank",	false, 0, 0, MAX_PROOF_LINES }
+    { "word",		false, 0, 0, MAX_PROOF_LINES }
 };
 
 // Maximum numeric differences found so far.
@@ -1115,11 +1150,11 @@ inline void found_difference
 // token if that is `+' or `-' and is `\0' otherwise).
 //
 // If there is no computable difference, calls found_
-// difference(NONBLANK) instead.  This happens if one of
+// difference(INFINITY) instead.  This happens if one of
 // the numbers is not `finite' or their difference is
 // not `finite'.
 //
-// Returns true if found_difference(NONBLANK) was called
+// Returns true if found_difference(INFINITY) was called
 // and false otherwise.
 // 
 bool diffnumber ()
@@ -1128,7 +1163,7 @@ bool diffnumber ()
 	 ||
 	 ! finite ( test.number ) )
     {
-	found_difference ( NONBLANK );
+	found_difference ( INFINITY );
 	return true;
     }
 
@@ -1136,7 +1171,7 @@ bool diffnumber ()
 	( output.number - test.number );
     if ( ! finite ( absdiff ) )
     {
-	found_difference ( NONBLANK );
+	found_difference ( INFINITY );
 	return true;
     }
     if ( absdiff < 0 ) absdiff = - absdiff;
@@ -1158,7 +1193,7 @@ bool diffnumber ()
     {
         // Actually, this should never happen.
 
-	found_difference ( NONBLANK );
+	found_difference ( INFINITY );
 	return true;
     }
 
@@ -1267,6 +1302,14 @@ int main ( int argc, char ** argv )
 	    	= isdigit ( argv[2][0] ) ?
 		  (unsigned) atol ( argv[2] ) :
 		  0;
+    	else if ( strcmp ( "all", name ) == 0 )
+	{
+	    int limit = isdigit ( argv[2][0] ) ?
+		        (unsigned) atol ( argv[2] ) :
+		        0;
+	    for ( int j = 0; j < MAX_DIFFERENCE; ++ j )
+		differences[j].proof_limit = limit;
+	}
 	else
 	{
 	    cerr << "Unrecognized option -"
@@ -1299,33 +1342,40 @@ int main ( int argc, char ** argv )
     // tokens, recording any differences found.
 
     bool done		= false;
-    difference & nb	= differences[NONBLANK];
+    difference & nb	= differences[WORD];
 
-    bool last_match_was_nonblank_diff	= false;
+    bool last_match_was_word_diff	= false;
+    bool skip_whitespace_comparison	= false;
 
     while ( ! done )
     {
 
 	// Scan next tokens.
 	//
-	if ( last_match_was_nonblank_diff
-	     && ( output.remainder || test.remainder ) )
+	if ( last_match_was_word_diff
+	     && ( output.remainder ||
+	          test.remainder ||
+	          output.type == NUMBER_TOKEN ||
+		  test.type == NUMBER_TOKEN ) )
 	{
-	    // If the last two tokens had a nonblank
-	    // diff and one was a remainder, undo any
-	    // splits and discard only the remainder,
-	    // leaving the other token for the next
-	    // match.
-
-	    undo_split ( output );
-	    undo_split ( test );
-
 	    assert (    ! output.remainder
 	    	     || ! test.remainder );
+	    assert (    ( output.type != NUMBER_TOKEN )
+		     || ( test.type != NUMBER_TOKEN ) );
 
-	    if ( output.remainder )
+	    // If the last two tokens had a word diff-
+	    // erence and one was a remainder or a
+	    // number, discard the remainder or
+	    // the non-number, leaving the other
+	    // token for the next match.
+
+	    if ( output.type == NUMBER_TOKEN )
+		scan_token ( test );
+	    else if ( test.type == NUMBER_TOKEN )
 		scan_token ( output );
-	    else
+	    else if ( output.remainder )
+		scan_token ( output );
+	    else if ( test.remainder )
 		scan_token ( test );
 	}
 	else
@@ -1334,74 +1384,58 @@ int main ( int argc, char ** argv )
 	    scan_token ( test );
 	}
 
-	// Terminate loop if we have output the last
-	// nonblank containing proof line.
-	//
-	// Conceptually we decrement nb.proof_limit at
-	// the end of a line in either file if a `non-
-	// blank' proof has been output for that line,
-	// but in practice the decrement is deferred
-	// until the next `nonblank' difference is
-	// discovered, which has not happened yet.  So
-	// we must compensate.
-	//
-	// Note that nb.proof_limit == 0 is treated as
-	// np.proof_limit == 1 for this test.
-
-	if ( nb.last_output_line != 0
-	     &&
-	     nb.proof_limit <= 1
-	     &&
-	     ( nb.last_output_line != output.line
-	       ||
-	       nb.last_test_line != test.line ) )
-	    break;
-
-        // Terminate loop if just one file has an
-	// EOF_TOKEN.
-
-	if (    output.type == EOF_TOKEN
-	     && test.type   != EOF_TOKEN )
-	{
-	    found_difference ( EOF1 );
-	    done = true;
-	    break;
-	}
-	else
-	if (    output.type != EOF_TOKEN
-	     && test.type   == EOF_TOKEN )
-	{
-	    found_difference ( EOF2 );
-	    done = true;
-	    break;
-	}
-        
 	// Compare tokens.
 	//
-	last_match_was_nonblank_diff = false;
+	last_match_was_word_diff = false;
         switch ( output.type ) {
 
 	case EOF_TOKEN:
-            assert ( test.type == EOF_TOKEN );
-	    done = true;
+	    switch ( test.type ) {
+	    case EOF_TOKEN:
+		done = true;
+		break;
+	    case WORD_TOKEN:
+	        found_difference ( WORD_EOF1 );
+		skip_whitespace_comparison = true;
+		break;
+	    case NUMBER_TOKEN:
+	        if (    test.decimals >= 0
+		     || test.has_exponent )
+		    found_difference ( FLOAT_EOF1 );
+		else
+		    found_difference ( INTEGER_EOF1 );
+		skip_whitespace_comparison = true;
+		break;
+	    }
+
 	    break;
 
 	case NUMBER_TOKEN:
 	case WORD_TOKEN:
 
-	    assert ( test.type != EOF_TOKEN );
-
-	    if ( output.type != test.type )
+	    if ( test.type == EOF_TOKEN )
 	    {
-		found_difference ( NONBLANK );
-		last_match_was_nonblank_diff = true;
+	        if ( output.type == WORD_TOKEN )
+		    found_difference ( WORD_EOF2 );
+	        else if (    output.decimals >= 0
+			  || output.has_exponent )
+		    found_difference ( FLOAT_EOF2 );
+		else
+		    found_difference ( INTEGER_EOF2 );
+		skip_whitespace_comparison = true;
+		break;
+	    }
+	    else if ( output.type != test.type )
+	    {
+		found_difference ( WORD );
+		last_match_was_word_diff = true;
 		break;
 	    }
 
 	    // If both tokens are words and one is
 	    // longer than the other, split the longer
-	    // word.  If we get a non-blank diff, we
-	    // will undo the split.
+	    // word.  If we get a word diff, we will
+	    // undo the split.
 
 	    if ( output.type == WORD_TOKEN )
 	    {
@@ -1441,8 +1475,7 @@ int main ( int argc, char ** argv )
 	    else if ( output.type == NUMBER_TOKEN )
 	    {
 	        assert ( test.type == NUMBER_TOKEN );
-		last_match_was_nonblank_diff
-		    = diffnumber ();
+		diffnumber ();
 	    }
 
 	    else
@@ -1450,17 +1483,25 @@ int main ( int argc, char ** argv )
 	    	undo_split ( test );
 	    	undo_split ( output );
 
-		found_difference ( NONBLANK );
-		last_match_was_nonblank_diff = true;
+		found_difference ( WORD );
+		last_match_was_word_diff = true;
 	    }
 
 	    break;
      	}
 
+	// The rest of the loop compares columns and
+	// whitespace.  If we are skipping whitespace
+	// comparisons because one file is longer than
+	// the other, continue loop here.
+
+	if ( skip_whitespace_comparison ) continue;
+
 	// Compare column numbers.  This is done after
 	// token comparison so that the results of word
 	// splitting can be taken into account in token
-	// ending column numbers.
+	// ending column numbers.  It is not done if
+	// both files have EOF_TOKENs.
 
 	if (    output.type != EOF_TOKEN
 	     && output.column != test.column )
