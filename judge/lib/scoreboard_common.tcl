@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/09/22 06:08:44 $
+#   $Date: 2001/09/22 06:11:53 $
 #   $RCSfile: scoreboard_common.tcl,v $
-#   $Revision: 1.20 $
+#   $Revision: 1.21 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -519,7 +519,7 @@ proc label_problems {} {
 		if { $count == 0 } {
 		    set line "Contestant Name"
 		} elseif { $count == $ppl } {
-		    set line "Correct/Tot Time"
+		    set line "Correct/Tot_Time"
 		} else {
 		    set line ""
 		}
@@ -530,7 +530,7 @@ proc label_problems {} {
     }
     if { $count <= $ppl } {
 	puts $line
-        set line "Correct/Tot Time"
+        set line "Correct/Tot_Time"
     }
     puts [translit " " "_" \
 		   [string range $line$spaces256 \
