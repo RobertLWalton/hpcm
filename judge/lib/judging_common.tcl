@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Jan 26 21:05:14 EST 2002
+# Date:		Sat Jan 26 22:01:53 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/01/27 02:05:06 $
+#   $Date: 2002/01/27 03:03:59 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.73 $
+#   $Revision: 1.74 $
 #
 
 # Table of Contents
@@ -1142,9 +1142,10 @@ proc blank_body { ch } {
 # reply.  Documentation of the $response_instructions_
 # file value is found in hpcm_judging.rc with the
 # default_response_instructions global variable.  The
-# value of this global variable is added to the end of
-# the response_instructions argument given to this
-# function.
+# value of this global variable is used if the
+# $response_instructions_file does not exist, or is
+# added to the end of the value of that file if the file
+# does exist.
 #
 # The compose_reply_options are a list of options,
 # such as -cc and -error, that are passed to compose_
@@ -1166,17 +1167,22 @@ proc blank_body { ch } {
 # effect on the contents of $reply_file+.  This list
 # may be passed to send_response.
 #
-proc compose_response \
-    { response_instructions \
-      { compose_reply_options "" } } {
+proc compose_response { { compose_reply_options "" } } {
 
-    global default_response_instructions
+    global default_response_instructions \
+           response_instructions_file
+
+    set response_instructions \
+	$default_response_instructions
+    if { [file exists $response_instructions_file] } {
+        set response_instructions \
+            [concat [read_entire_file \
+	                 $response_instructions_file] \
+		    $response_instructions]
+    }
 
     set commands ""
-    parse_block \
-        [concat $response_instructions \
-		$default_response_instructions] \
-	commands
+    parse_block $response_instructions commands
     return [execute_response_commands \
     	        $compose_reply_options $commands]
 }
@@ -1291,7 +1297,7 @@ proc eval_response_if { item } {
 proc execute_response_commands \
 	{ compose_reply_options commands } {
 
-    global reponse_instructions_file problem \
+    global response_instructions_file problem \
     	   auto_score manual_score proposed_score
 
     set processed_commands ""
@@ -1393,7 +1399,7 @@ proc execute_response_commands \
     return $return_commands
 }
 proc response_error { command } {
-    global reponse_instructions_file
+    global response_instructions_file
     error "In $response_instructions_file file value,\
            badly formatted command: $command."
 }
