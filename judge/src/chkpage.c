@@ -12,6 +12,23 @@
 
 #include <stdio.h>
 
+char documentation [] =
+"chkpage [-cCC] [-lLL] [filename ...]\n"
+"\n"
+"    Checks that files contain lines with no more than"
+		" CC\n"
+"    columns and pages with no more than LL lines.\n"
+"\n"
+"    If no filenames are given, the standard input"
+		" is\n"
+"    checked.\n"
+"\n"
+"    CC defaults to 80 colums and LL to 58 lines.\n"
+"\n"
+"    Too long lines and lines overflowing a page are\n"
+"    output.  Nothing is output if the files are all\n"
+"    OK.\n";
+
 void checkfile
     ( FILE * in, char * name,
       int maxcolumn, int maxline )
@@ -21,9 +38,9 @@ void checkfile
 
     char buffer [257];
 
+    int column = 0;
     while ( fgets ( buffer, 257, in ) )
     {
-	int column = 0;
 	char * cp = buffer;
 	char c = * cp ++;
 
@@ -36,7 +53,7 @@ void checkfile
 	    else ++ column;
 	    c = * cp ++;
 	}
-
+
 	if ( column > maxcolumn )
 	{
 	    printf ( "LINE TOO LONG: " );
@@ -57,6 +74,7 @@ void checkfile
 	    }
 
 	    ++ line;
+	    column = 0;
 	}
     }
 }
@@ -92,8 +110,7 @@ int main ( int argc, char ** argv )
 	}
 	else
 	{
-	    printf ( "chkpage: bad argument %s\n",
-		     argv[1] );
+	    printf ( documentation );
 	    exit (1);
 	}
 
