@@ -2,7 +2,7 @@
 #
 # File:		display_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Sep  6 09:09:27 EDT 2001
+# Date:		Fri Sep  7 22:20:48 EDT 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/09/06 13:32:10 $
+#   $Date: 2001/09/08 02:48:04 $
 #   $RCSfile: display_common.tcl,v $
-#   $Revision: 1.13 $
+#   $Revision: 1.14 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -572,7 +572,7 @@ proc refresh_file_list { } {
 	if { [catch { set mtime [file mtime $file] }] \
 		} {
 	    if { ! [catch { file lstat $file temp }] } {
-		set mtime [set temp(mtime)]
+		set mtime $temp(mtime)
 	    } else {
 	        set mtime TBD
 	    }
@@ -1089,21 +1089,23 @@ proc set_file_display { filename } {
 # case, array elements for lines off the end of the
 # file will not exist.
 #
-proc read_file_array { filename array linenumber } {
+proc read_file_array { filename xxx_array linenumber } {
 
-    if { ! [info exists ${array}(ch)] } {
+    upvar $xxx_array array
+
+    if { ! [info exists array(ch)] } {
 
         set ch [open $filename r]
 	set lastline 0
 
-	set ${array}(filename) $filename
-	set ${array}(ch) $ch
-	set ${array}(lastline) $lastline
+	set array(filename) $filename
+	set array(ch) $ch
+	set array(lastline) $lastline
 
     } else {
 
-        set ch [set ${array}(ch)]
-        set lastline [set ${array}(lastline)]
+        set ch $array(ch)
+        set lastline $array(lastline)
 
     }
 
@@ -1113,29 +1115,31 @@ proc read_file_array { filename array linenumber } {
 	set line [gets $ch]
 	if { [eof $ch] } {
 	    close $ch
-	    set ${array}(ch) CLOSED
+	    set array(ch) CLOSED
 	    break
 	}
         incr lastline
-	set ${array}($lastline) $line
+	set array($lastline) $line
     }
 
-    set ${array}(lastline) $lastline
+    set array(lastline) $lastline
 }
 
 # Delete an array used to store lines of a file.  This
 # function closes any open channel kept by the array.
 #
-proc close_file_array { array } {
+proc close_file_array { xxx_array } {
 
-    if { [info exists ${array}(ch)] } {
-    	set ch [set ${array}(ch)]
+    upvar $xxx_array array
+
+    if { [info exists array(ch)] } {
+    	set ch $array(ch)
 	if { $ch != "CLOSED"} {
 	    close $ch
 	}
 
-	foreach n [array names $array] {
-	    unset ${array}($n)
+	foreach n [array names array] {
+	    unset array($n)
 	}
     }
 }
@@ -1169,7 +1173,7 @@ proc tab_expand { line } {
 # Function to compute a display of N lines of a file
 # with some text highlighted.  The display is returned.
 # The first line consts of a bar (===) with the file
-# name and line numbers being displayed.  The highlight
+# name and line numbers being displayed.  The highlights
 # argument is a list of items of the form
 #
 #	line-number first-column last-column
@@ -1190,16 +1194,18 @@ proc tab_expand { line } {
 # and the remaining returned lines are blank.
 #
 proc compute_file_display \
-	{ filename array first_line_number \
-	                 last_line_number \
-			 highlights } {
+	{ filename xxx_array first_line_number \
+	                     last_line_number \
+			     highlights } {
+
+    upvar $xxx_array array
 
     global highlight_on highlight_off
 
     set hlength \
         [string length "$highlight_on$highlight_off"]
 
-    read_file_array $filename $array $last_line_number
+    read_file_array $filename array $last_line_number
 
     set output [bar_with_text "$filename: lines\
     		$first_line_number-$last_line_number:"]
@@ -1215,7 +1221,7 @@ proc compute_file_display \
 
     while { $i <= $last_line_number } {
 
-        if { ! [info exists ${array}($i)] } {
+        if { ! [info exists array($i)] } {
 	    if { $eofyet } {
 	        set line "\n"
 	    } else {
@@ -1226,7 +1232,7 @@ proc compute_file_display \
 	    }
 	} else {
 
-	    set line [set ${array}($i)]
+	    set line $array($i)
 	    if { $j == $i } {
 	        set line [tab_expand $line]
 		set k 0

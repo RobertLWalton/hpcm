@@ -2,7 +2,7 @@
 #
 # File:		scoring_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Sep  7 07:59:50 EDT 2001
+# Date:		Fri Sep  7 22:14:18 EDT 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/09/07 11:48:48 $
+#   $Date: 2001/09/08 02:48:04 $
 #   $RCSfile: scoring_common.tcl,v $
-#   $Revision: 1.12 $
+#   $Revision: 1.13 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -130,6 +130,7 @@ set fake_instruction_types {
 # the current value of `find_scoring_instructions'.
 #
 proc compute_instruction_array { } {
+
     global instruction_array
 
     compute_scoring_array instruction_array \
@@ -173,7 +174,7 @@ proc compute_instruction_array { } {
 #
 proc compute_score_and_proof_arrays { args } {
 
-    global proof_array score_filename
+    global proof_array score_filename score_array
 
     switch [llength $args] {
         0 {
@@ -289,19 +290,19 @@ proc compute_score_and_proof_arrays { args } {
 # and name is a description of the line for error mes-
 # sages.
 #
-proc compute_scoring_array { array line name } {
+proc compute_scoring_array { xxx_array line name } {
 
-    global instruction_array score_array
+    upvar $xxx_array array
 
-    foreach type [array names $array] {
-        unset ${array}($type)
+    foreach type [array names array] {
+        unset array($type)
     }
 
     set state type
     foreach item $line {
 	switch $state {
 	    type {
-		set ${array}($item) $item
+		set array($item) $item
 		if { [lsearch -exact \
 	              {number integer float} $item] \
 		     >= 0 } {
@@ -310,11 +311,11 @@ proc compute_scoring_array { array line name } {
 		}
 	    }
 	    first {
-	    	lappend ${array}($previous) $item
+	    	lappend array($previous) $item
 		set state second
 	    }
 	    second {
-	    	lappend ${array}($previous) $item
+	    	lappend array($previous) $item
 		set state type
 	    }
 	}
@@ -481,7 +482,7 @@ proc compute_score { } {
 # The proof display code displays one proof at a time.
 # There is a current difference type, and for each
 # difference type, there is a current proof.  The
-# current proof of the current difference type is
+# current proof of the current difference type can be
 # displayed.
 #
 set current_type ""
@@ -580,6 +581,11 @@ proc get_proof { args } {
 	    switch -exact $arg {
 	        n { incr n }
 		p { incr n -1 }
+		default {
+		    set window_error \
+			"Cannot understand `$arg'."
+		    return no
+		}
 	    }
 	}
     }
@@ -625,7 +631,8 @@ proc get_proof { args } {
 # `yes' is returned.  Otherwise window_error is set to
 # an error description and `no' is returned.
 #
-# Sets the `last_display' variable to `proof'.
+# If there is no error, sets the `last_display'
+# variable to `proof'.
 #
 proc set_proof_display { } {
 
@@ -697,7 +704,7 @@ proc set_proof_info { extra } {
     global incorrect_output_types \
            incomplete_output_types \
 	   formatting_error_types \
-	   score_array \
+	   proof_array score_array \
 	   window_info_lines
 
     set error_types \
@@ -705,7 +712,7 @@ proc set_proof_info { extra } {
 	        $incomplete_output_types \
 	        $formatting_error_types]
     set non_error_types ""
-    foreach type [array names score_array] {
+    foreach type [array names proof_array] {
         if { [lsearch -exact $error_types $type] < 0 } {
 	    lappend non_error_types
 	}
