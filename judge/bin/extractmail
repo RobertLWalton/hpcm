@@ -4,7 +4,7 @@
 #
 # File:		extractmail
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Nov  8 06:25:35 EST 2001
+# Date:		Sun Nov 18 03:11:24 EST 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/11/08 11:26:51 $
+#   $Date: 2001/11/18 08:47:29 $
 #   $RCSfile: extractmail,v $
-#   $Revision: 1.18 $
+#   $Revision: 1.19 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -31,17 +31,58 @@ catch {
 set document "
 cd submission_directory; extractmail
 
-    Reads the `$received_file' file in the current
-    directory.  Thus file must have a subject line of
-    the form:
+    Reads the `$received_file' file in the current direc-
+    tory.  Thus file must contain an email with a sub-
+    ject line of the form:
 
     	Subject: submit filename
 
-    The submitted file is extracted from the email and
-    placed in the current directory.  The submitted file
-    may simply be the body of the $received_file file
-    message, or the submitted file may be encoded in the
-    body of the message in the format:
+    or
+
+    	Subject: submit problemname
+
+    In the first case there is only one file, which must
+    have the given name; in the second case, there may
+    be more than one file.  Note that problem names may
+    not contain `.'.  The submitted files are extracted
+    from the email and placed in the current directory.
+
+    For each file successfully extracted, this program
+    prints the line `Extracted FFFF' to the standard
+    output, where FFFF is the file name.  For each
+    error, this program prints an error message to the
+    standard error output.  This program always exists
+    with exit code 0.  The TCL command:
+
+    	catch { exec extractmail } out
+
+    will capture both the standard and error outputs in
+    the variable `out' and return a code indicating
+    whether there were any errors.  If there were errors
+    that concern the judge, and not just the submitter,
+    the text `SYSTEM ERROR' appears in the error output.
+    Otherwise the value of `out' will be suitable for
+    inclusion in a reply to the submitter.
+
+    If there is a `$files_file' file in the current\
+    			directory,
+    all submitted files must have names listed in this
+    `$files_file' file.  This file consists of file names
+    separated by whitespace (either spaces or tabs or
+    new lines).  If one of these file names begins with
+    a `?', the `?' is discarded from the file name, and
+    the file is optional.  Otherwise the file must be
+    included in the submission.  If there is no\
+    	`$files_file'
+    file, the submitted file name must be the problem
+    name followed by one of the extensions in the
+    `allowed_extensions' global variable, whose value by
+    default is:
+
+    	$allowed_extensions
+    
+    The submitted files may be encoded in the body of
+    the message in the format:
 
    	HPCM_BEGIN filename
 	..<1st line of file>
@@ -53,47 +94,41 @@ cd submission_directory; extractmail
     variable is defined and equal to `yes'.  If this
     format is used, there must be nothing else in the
     body of the message except blank lines preceding and
-    following the file.  If this format is NOT used, and
-    the file is the entire body of the message, blank
-    lines at the beginning of the file will be deleted
-    when the file is extracted.  Also in this case the
-    file may NOT begin with the word `HPCM_BEGIN'.
+    following the files.
+    
+    If this format is NOT used, the files name be in-
+    cluded verbatim in the body of the message.  Files
+    must be separated by blank lines, and there may be
+    blank lines preceding the first file and following
+    the last file.  All these blank lines will be dis-
+    carded, and not treated as part of any file.  If
+    there is more than one file, or if the `Subject:'
+    field of the $received_file file does not give the
+    filename, then each file must begin with a block of
+    non-blank lines, exactly one of which contains
+    text of the form `File: FFFF', where FFFF is the
+    file name.  This text may be surrounded by white-
+    space (spaces and tabs), there may be no or any
+    kind of whitespace between the `:' and FFFF, but
+    there must be no whitespace in the FFFF.  If a file
+    name is given by both this method and in the
+    `Subject:' field, the names must match.  If files
+    are given verbatim in the body of the message, the
+    files may not begin with `HPCM_BEGIN'.
 
-    If this program succeeds in extracting the submitted
-    file without error, this program prints the name
-    of the submitted file to the standard output as a
-    single line, and prints nothing else.
-
-    If the submission email has a `Subject' line as
-    above and the filename given is for an already
-    existing readable file whose modification time is
-    more recent that that of the `$received_file' file,
-    this program terminates without error and without
-    doing anything beyond reading the `Subject' line
-    and printing the name of the submitted file to the
-    standard output.
+    If a submitted file already exists and has a modifi-
+    cation time equal to or later than that of the
+    $received_file file, the submitted file is NOT writ-
+    ten, but is instead compared to the existing file.
+    If the comparison matches, the `Extracted FFFF' out-
+    put line is generated, but if there is a mismatch,
+    an error message is generated.
 
-    If the submitted email has even the slightest for-
-    matting error, or if the filename is illegal (con-
-    tains a `/', or begins with either `.' or `-') this
-    program constructs a `$reply_file' file giving
-    reasons why the submission email is invalid.  This
-    `$reply_file' file is emailed to the submitter.  In
-    this case this program exits with exit code 0,
-    indicating no error, but does not print anything to
-    the standard output, indicating no file was extract-
-    ed.
-
-    If something goes very wrong, such as finding that
-    the `$received_file' file is not readable, this
-    program creates an error log file in the current
-    directory, does not print anything on the standard
-    output (but does print on the error output), and
-    exits with exit code 0.  The program also does this
-    if the `Subject:' field value is such that `auto-
-    dispatch' will not invoke the `autojudge' program
-    (the value is empty, or does not have a first item
-    equal to `submit')."
+    It is an error if a file name contains `/' or begins
+    with `.' or `-'.  It is a system error if the
+    `Subject:' field does not begin with `submit', or
+    if the $received_file or `$files_file' files are
+    unreadable."
 
 if { $argc != 0 } {
     puts $document
