@@ -2,7 +2,7 @@
 #
 # File:		scoring_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Mar  9 10:28:46 EST 2002
+# Date:		Sat Mar  9 11:16:13 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/03/09 16:01:15 $
+#   $Date: 2002/03/09 16:15:17 $
 #   $RCSfile: scoring_common.tcl,v $
-#   $Revision: 1.29 $
+#   $Revision: 1.30 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -1152,7 +1152,7 @@ proc set_proof_display { } {
     set last_display proof
 }
 
-# Return summary information about existing proofs in as
+# Return summary information about existing proofs as
 # lines intended for inclusion in the info part of the
 # display.  The following functions must have been
 # called first:
@@ -1163,7 +1163,11 @@ proc set_proof_display { } {
 #
 # Text listing the proof difference types in several
 # lines is returned.  Also variables used by get_proof
-# are initialized.
+# are initialized or computed: namely, current_group,
+# current_group_array, proof_group_array.  Current_group
+# is set to the first of io, ic, fe, or ne that has
+# some proofs (see below), or is set to "" if there
+# are no proofs.
 #
 # The proof difference types are grouped according to
 # the evidence they give.  The groups are:
