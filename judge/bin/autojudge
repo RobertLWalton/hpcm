@@ -1,0 +1,340 @@
+#! /bin/sh -f
+# file:		judge
+# author:	Bob Walton (walton@deas.harvard.edu)
+# The next line starts tcl \
+exec tcl "$0" "$@"
+
+# Use tcl rather than tclsh so that `signal' is defined.
+
+if { [info command signal] == "signal" } {
+    signal error SIGINT
+}
+
+# Set program parameters that could be changed.
+#
+set allowed_extensions_default \
+    ".c .cc .java"
+set allowed_extensions_filename \
+    "allowed_submission_extensions"
+
+# Command to exec in order to make .out file
+#
+set make "sandbox /bin/make"
+
+# Grep expressions to search for in output file to
+# detect limit overruns:
+#
+set cputime_grep "Cputime limit exceeded"
+set filesize_grep "Filesize limit exceeded"
+set coredump_grep "core dumped"
+set memorysize_grep "cannot allocate"
+more TBD
+
+set document "
+judge
+
+    TBW"
+
+if { $argc != 0 } {
+    puts $document
+    exit 0
+}
+
+proc fatal_error { args } {
+    puts "ERROR: [lindex $args 0]"
+    lreplace args 0 0
+    foreach $m $args {
+    	puts "       $m"
+    }
+    exit 1
+}
+
+proc submission_error { args } {
+    global score_file
+    set score_fd [open $score_file w]
+    puts $score_fd "Submission Error"
+    puts $score_fd [lindex $args 0]
+    puts "ERROR: [lindex $args 0]"
+    lreplace args 0 0
+    foreach $m $args {
+	puts $score_fd $m
+    	puts "       $m"
+    }
+    close $score_fd
+    exit 1
+}
+
+set program_directory [file dirname $argv0]
+set lib_directory "$program_directory/../lib"
+
+set allowed_extensions_file \
+    "$lib_directory/$allowed_extensions_filename"
+
+if { [file readable $allowed_extensions_file] } {
+    set allowed_extensions_fd \
+        [open $allowed_extensions_file r]
+    set allowed_extensions \
+        [gets $allowed_extensions_fd]
+    close $allowed_extensions_fd
+    puts "Allowed extensions from ${allowed_extensions_file}:"
+    puts "    $allowed extensions"
+} else {
+    set allowed_extensions $allowed_extensions_default
+    puts "Default allowed extensions: $allowed extensions"
+}
+
+set score_file [glob -nocomplain "*.score"]
+
+if { [llength $score_file] == 1 } {
+    if ( ! [file readable $score_file] } {
+        [fatal "cannot read $score_file"]
+    }
+    set score_fd [open $score_file r]
+    set score [gets $score_fd]
+    close $score_fd
+    if { $score != "Defer Scoring" } {
+        puts "Score file exists"
+	exit 0
+    }
+    file delete -force $score_file
+}
+else if { [llength $score_file] > 1 } {
+    [fatal "too many score files: $score_file"]
+}
+
+set submitted_file ""
+
+foreach e $allowed_extensions {
+    set glob_result [glob -nocomplain "*.$e"]
+    if { $glob_result != "" } {
+    	lappend submitted_file $glob_result
+    }
+}
+
+if { [llength $submitted_file] == 0 } {
+    set score_file unknown.score
+    [submission_error "no program file"]
+}
+else if { [llength $submitted_file] > 1 } {
+    set score_file unknown.score
+    [submission_error "too many program files: $submitted_file"]
+}
+
+set submitted_program [file rootname $submitted_file]
+set submitted_extension [file extension $submitted_file]
+set score_file "${submitted_program}.score"
+
+set solution_dir = "../$submitted_program"
+
+if { ! [file isdirectory $solution_dir] } {
+    [submission_error "unknown program name: $submitted_program]
+}
+
+# We use hard links, not symbolic links, for files read
+# when the submitted program evaluates, in order to keep
+# from having to make the parent directory accessible to
+# the sandbox.
+
+if { [file readable Makefile] \
+     && \
+     [file mtime Makefile] \
+         < [file mtime "$solution_dir/Makfile"] } {
+    puts "Deleting out-of-date Makefile"
+    file delete Makefile
+}
+
+if { ! [file readable Makefile] } {
+    puts "Linking Makefile"
+    exec ln $solution_dir/Makefile .
+}
+
+if { [file readable ${submitted_program}.in] \
+     && \
+     [file mtime "${submitted_program}.in"] \
+         < [file mtime \
+	     "$solution_dir/${submitted_program}.in"] \
+	     } {
+    puts "Deleting out-of-date ${submitted_program}.in"
+    file delete "${submitted_program}.in"
+}
+
+if { ! [file readable ${submitted_program}.in] } {
+    puts "Linking ${submitted_program}.in"
+    exec ln $solution_dir/${submitted_program}.in .
+}
+
+if { ! [file readable ${submitted_program}.test] } {
+    puts "Linking ${submitted_program}.test to ${submitted_program}.out"
+    exec ln -s $solution_dir/${submitted_program}.out \
+               $solution_dir/${submitted_program}.test
+}
+
+if { ! [file readable $submitted_program] \
+     || [file mtime $submitted_program \
+           < [file mtime Makefile] \
+     || [file mtime $submitted_program \
+           < [file mtime $submitted_file] } {
+
+    if { [file readable $submitted_program] } {
+	puts "Deleting out-of-date $submitted_program"
+    	file delete $submitted_program
+    }
+    puts "Making ${submitted_program}"
+    exec make $submitted_program
+    exec chmod a+x $submitted_program
+}
+
+if { ! [file readable "${submitted_program}.out" \
+     || [file mtime "${submitted_program}.out"] \
+           < [file mtime Makefile] \
+     || [file mtime "${submitted_program}.out"] \
+           < [file mtime $submitted_program] \
+     || [file mtime "${submitted_program}.in"] \
+           < [file mtime "${submitted_program}.in"] } {
+
+    puts "Making ${submitted_program}.out"
+    eval "exec $make >& ${submitted_program}.out"
+
+}
+
+TBW
+
+if { ! [file readable "${submitted_program}.diff" \
+     || [file mtime "${submitted_program}.diff"] \
+           < [file mtime ${submitted_program}.out] \
+     || [file mtime "${submitted_program}.diff"] \
+           < [file mtime ${submitted_program}.test] } {
+
+    puts "Making ${submitted_program}.diff"
+    exec diff "${submitted_program}.out" \
+              "${submitted_program}.test"
+
+}
+
+if ( ! -r $program.score && -r $program.diff ) then
+	echo ======================================== \
+		$program.bdiff
+	more -20 $program.bdiff
+	echo ======================================== \
+		$program.diff
+	more -20 $program.diff
+	echo ========================================
+
+	while (1)
+	    echo ""
+	    echo Enter Score
+	    echo "    s = syntax error"
+	    echo "    x = program crashed"
+	    echo "    t = too much time, memory," \
+				"or output"
+	    echo "    i = incorrect output"
+	    echo "    ic = incomplete output"
+	    echo "    f = formating error"
+	    echo "    cc = completely correct"
+	    echo "    d = defer scoring"
+	    echo "    out = print .out file"
+	    echo "    test = print .test file"
+	    echo "    diff = print .diff file"
+	    echo "    bdiff = print .bdiff file"
+	    echo "    src = view code file"
+	    echo -n "Score: "
+	    switch ($<)
+	    case s:
+		set score="Syntax Error"
+		break
+	    case x:
+		set score="Program Crashed"
+		break
+	    case t:
+		set score="Too Much Time, Memory, or Output"
+		break
+	    case i:
+		set score="Incorrect Output"
+		break
+	    case ic:
+		set score="Incomplete Output"
+		break
+	    case f:
+		set score="Formating Error"
+		break
+	    case cc:
+		set score="Completely Correct"
+		break
+	    case d:
+		set score="Defer Scoring"
+		break
+	    case test:
+		echo ===================== \
+		     $program.test \
+		     ===================== 
+		more -20 $program.test
+		echo ===================== \
+		     =====================
+		continue
+	    case out:
+		echo ===================== \
+		     $program.out \
+		     ===================== 
+		more -20 $program.out
+		echo ===================== \
+		     =====================
+		continue
+	    case diff:
+		echo ===================== \
+		     $program.diff \
+		     ===================== 
+		more -20 $program.diff
+		echo ===================== \
+		     =====================
+		continue
+	    case bdiff:
+		echo ===================== \
+		     $program.bdiff \
+		     ===================== 
+		more -20 $program.bdiff
+		echo ===================== \
+		     =====================
+		continue
+	    case src:
+		view $src
+		continue
+	    default: 
+		echo "Could not understand; try again."
+		continue
+	    endsw
+	end
+
+	while (1)
+	    set from=`pwd | sed -e 's|.*/From \([^ /]*\) [^/]*$|\1|' `
+	    echo ""
+	    echo "Do you really want to score" \
+		 "this as: ${score}"
+	    if ( "$score" != "Defer Scoring" ) then
+		echo "    and mail it to ${from}?"
+	    endif
+	    echo -n "Yes or no: "
+	    switch ($<)
+	    case yes:
+		if ( "$score" != "Defer Scoring" ) then
+		    echo ""
+		    echo "Making $program.score"
+		    echo "$score" > $program.score
+		    echo "Deleting $program"
+		    rm -f $program
+		    echo "Executing mailscore $from"
+		    echo ""
+		    mailscore "$from"
+		    echo ""
+		else
+		    echo "NOT making $program.score"
+		endif
+		break
+	    case no:
+		break
+	    default:
+		echo "Could not understand; try again."
+		continue
+	    endsw
+	end
+endif
+
