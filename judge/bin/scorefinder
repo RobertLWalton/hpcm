@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/09/16 11:24:21 $
+#   $Date: 2000/09/28 20:42:16 $
 #   $RCSfile: scorefinder,v $
-#   $Revision: 1.2 $
+#   $Revision: 1.3 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -31,7 +31,7 @@ set log_globally yes
 catch {
 
 set document "
-scorefinder
+scorefinder \[-gotten\]
 
     This program examines subdirectories of the mail
     directory that have names of the form:
@@ -70,12 +70,43 @@ scorefinder
     actual score used to compute the code, quoted by
     \"'s.
 
+    If the -gotten option is present, this program also
+    selects subdirectories which contain the file:
+
+    	$gotten_file
+
+    If this file indicates a file named `pppp/pppp.txt'
+    was gotten at a certain date,  this program outputs
+    the line
+
+    	date submitter problem dg
+
+    where the problem is `pppp' and `dg' stands for
+    `description gotten'.  Here the date is taken from
+    the $gotten_file file `Date:' field.
+
     This program logs errors in the log directory."
 
 
-# If any arguments, print documentation and exit.
+# Don't change argc or argv so error output will work.
 #
-if { $argc != 0 } {
+set my_argc $argc
+set my_argv $argv
+
+# Check for and consume -gotten option.
+#
+set gotten_option no
+if { $my_argc >= 1 \
+     && [lindex $my_argv 0] == "-gotten" } {
+    set gotten_option yes
+    set my_argv [lreplace $my_argv 0 0]
+    set my_argc [expr { $my_argc - 1 }]
+}
+
+# If there are leftover arguments, print document and
+# exit with error.
+#
+if { $my_argc != 0 } {
     puts $document
     exit 1
 }
@@ -92,53 +123,93 @@ foreach dir [glob -nocomplain \
     	continue;
     }
 
-    set code ""
-    if { [file readable $dir/$manual_score_file] } {
-    	set score 
-	    [read_file $dir/$manual_score_file]
-	if { $score == "Completely Correct" } {
-	    set code mc
-	} elseif { $score != "" } {
-	    set code mi
-	}
-    }
-    if { $code == "" \
-         && [file readable $dir/$auto_score_file] } {
-    	set score \
-	    [read_file $dir/$auto_score_file]
-	if { $score == "Completely Correct" } {
-	    set code ac
-	} elseif { $score != "" } {
-	    set code ai
-	}
-    }
-
-    if { $code == "" } continue;
-
     regexp {^([^@]*)@} $submitter forget submitter
-
-    if { $date == "" } {
-    	set date UNKNOWN
-    }
     if { $submitter == "" } {
-    	set date UNKNOWN
+	set submitter UNKNOWN
     }
 
-    set program UNKNOWN
-    if { [file readable $dir/$received_file] } {
-    	set received_ch [open $dir/$received_file r]
-	read_header $received_ch
-	close $received_ch
+    # Process any $gotten_file.
+    #
+    if { [file readable $dir/$gotten_file] } {
 
-	if { [llength $message_subject] == 2 \
-	     && [lindex $message_subject 0] \
-	        == "submit" } {
-	    set program [lindex $message_subject 1]
-	    set program [file rootname $program]
+    	if { $gotten_option == "no" } continue
+
+	set gotten_ch [open $dir/$gotten_file r]
+	set date UNKNOWN
+	while { "yes" } {
+	    set line [gets $gotten_ch]
+	    if { [eof $gotten_ch] } break
+	    if { [regexp {^Date:(.*)$} $line \
+	    		 forget date] } {
+		set date [clock_to_filename_date \
+			     [clock scan $date]]
+	    } elseif { [regexp {^File:(.*)$} $line \
+	    		     forget file] } {
+		set file [string trim $file]
+		if { [regexp \
+		         {^(|.*/)([^/]*)/([^/]*).txt$} \
+			 $file forget forget2 \
+			 name1 name2] \
+		     && $name1 == $name2 } {
+		    puts "$date $submitter $name1 dg"
+		}
+	    }
 	}
-    }
+	close $gotten_ch
+    } else {
 
-    puts "$date $submitter $program $code \"$score\""
+	set code ""
+
+	# Process any $manual_score file.
+	#
+	if { [file readable $dir/$manual_score_file] } {
+	    set score 
+		[read_file $dir/$manual_score_file]
+	    if { $score == "Completely Correct" } {
+		set code mc
+	    } elseif { $score != "" } {
+		set code mi
+	    }
+	}
+
+	# If no $manual_score file, process any
+	# $auto_score file.
+	#
+	if { $code == "" \
+	     && [file readable $dir/$auto_score_file] \
+	     } {
+	    set score \
+		[read_file $dir/$auto_score_file]
+	    if { $score == "Completely Correct" } {
+		set code ac
+	    } elseif { $score != "" } {
+		set code ai
+	    }
+	}
+
+	if { $code == "" } continue;
+
+	if { $date == "" } {
+	    set date UNKNOWN
+	}
+
+	set program UNKNOWN
+	if { [file readable $dir/$received_file] } {
+	    set received_ch [open $dir/$received_file r]
+	    read_header $received_ch
+	    close $received_ch
+
+	    if { [llength $message_subject] == 2 \
+		 && [lindex $message_subject 0] \
+		    == "submit" } {
+		set program [lindex $message_subject 1]
+		set program [file rootname $program]
+	    }
+	}
+
+	puts "$date $submitter $program $code\
+	      \"$score\""
+    }
 }
 
 exit 0

@@ -6,7 +6,7 @@
 #
 # File:		scoreboard
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Sep 19 05:52:16 EDT 2000
+# Date:		Thu Sep 28 16:42:40 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/09/19 10:01:42 $
+#   $Date: 2000/09/28 20:42:16 $
 #   $RCSfile: old_scoreboard,v $
-#   $Revision: 1.5 $
+#   $Revision: 1.6 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -117,12 +117,19 @@ if { $argc >= 1 } {
     }
 }
 
-# The value $submitter-array($problem) is a list of
-# items that represent the times and scores read from
-# the input.  Here the `scores' are the codes `mc',
-# `ac' `mi', or `ai'.  Each item has the form
+# The value ${submitter}_array($problem) is a list of
+# items that represent the times and score codes read
+# from the input.  Here the codes are
 #
-#	{ time-in-seconds score }
+#	dg	problem description gotten
+#	ac	automatically scored correct
+#	ai	automatically scored incorrect
+#	mc	manually scored correct
+#	mi	manually scored incorrect
+#
+# Each item has the form
+#
+#	{ time-in-seconds code }
 #
 # where all the times have 15 digits exactly, so they
 # can be sorted.
@@ -185,11 +192,11 @@ while { "yes" } {
     	continue;
     }
 
-    if { [info exists $submitter-array($problem)] } {
-	lappend $submitter-array($problem) \
+    if { [info exists ${submitter}_array($problem)] } {
+	lappend ${submitter}_array($problem) \
 		[list [format {%015d} $time] $score]
     } else {
-	set $submitter-array($problem) \
+	set ${submitter}_array($problem) \
 	    [list [list [format {%015d} $time] $score]]
     }
 }
@@ -198,6 +205,32 @@ close $scores_ch
 # Sort the problems alphabetically.
 #
 set sorted_problems [lsort $problems]
+
+# Return a time in 6 characters or less, the last
+# character indicating unit.  The format is either
+#
+#	MM:SSs		s = denotes seconds
+#	HH:MMm		m = denotes minutes
+#	DD:HHh		h = denotes hours
+#	DDDDDd		d = denotes days
+#
+proc format_time { time } {
+    set MM [expr { $time / 60 }]
+    set SS [expr { $time - 60 * $MM } ] 
+    set HH [expr { $MM / 60 }]
+    set MM [expr { $MM - 60 * $HH }]
+    set DD [expr { $HH / 24 }]
+    set HH [expr { $HH - 24 * $DD }]
+    if { $DD > 99 } {
+    	return "${DD}d"
+    } elseif { $DD > 0 } {
+    	return "[format {%d:%02d} $DD $HH]h"
+    } elseif { $HH > 0 } {
+    	return "[format {%d:%02d} $HH $MM]m"
+    } else {
+    	return "[format {%d:%02d} $MM $SS]s"
+    }
+}
 
 # Create the score list.  Each item in this list
 # has the form:
@@ -238,6 +271,7 @@ set sorted_problems [lsort $problems]
 # header `# Problems Correct:'.
 #
 set score_list ""
+set max_time_score 999999999
 foreach submitter $submitters {
 
     set time_score 0
@@ -251,9 +285,9 @@ foreach submitter $submitters {
 	set problem_time ""
 	set problem_modifier f
 	if { [info exists \
-		   $submitter-array($problem)] } {
+		   ${submitter}_array($problem)] } {
 	    set problem_list \
-	        [set $submitter-array($problem)]
+	        [set ${submitter}_array($problem)]
 	} else {
 	    set problem_list ""
 	}
@@ -273,7 +307,8 @@ foreach submitter $submitters {
 			    $scoreboard_start_time }]
 		incr submissions
 		break
-	    } else {
+	    } elseif { [lsearch -exact {mi ai} $score] \
+                       >= 0 } {
 		if { $score == "ai" \
 		     && $scoring_mode != "auto" } {
 		    set problem_modifier n
@@ -284,30 +319,21 @@ foreach submitter $submitters {
 	}
 
 	if { $problem_time != "" } {
-	    set mm [expr { ( $problem_time + 30 ) \
-			   / 60 }]
-	    set h [expr { $mm / 60 }]
-	    set mm [expr { $mm - 60 * $h }]
 	    set c [expr { $problem_incorrect + 1 }]
-	    if { $h <= 99 && $scoreboard_unit < 86400 } {
-		# 86400 = 24 * 60 * 60 = 1 day in seconds
-		set problem_score "[format {%02d} $mm]/$c"
-		if { $h != 0 } {
-		    set problem_score "$h:$problem_score"
-		}
-	    } else {
-		set t [expr { $problem_time \
-			      + \
-			      $scoreboard_start_time }]
-		set d [clock format $t -format "%b%d"]
-		set problem_score "$d/$c"
-	    }
+	    set problem_score \
+	        "[format_time $problem_time]$c"
 	    incr problems_correct
-	    incr time_score \
-		 [expr { ( $problem_time \
-		           + $scoreboard_penalty \
-			     * $problem_incorrect ) \
-			 / $scoreboard_unit }]
+	    set problem_increment \
+		[expr { ( $problem_time \
+		          + $scoreboard_penalty \
+			    * $problem_incorrect ) }]
+	    if { [expr { $max_time_score \
+		            - $problem_increment }] \
+		 < $time_score } {
+		set time_score $max_time_score
+	    } else {
+		incr time_score $problem_increment
+	    }
 
 	} elseif { $problem_incorrect != 0 } {
 	    set problem_score "..../$problem_incorrect"
@@ -345,7 +371,7 @@ proc label_problems {} {
     global sorted_problems spaces16
 
     set count  0
-    set indent 8
+    set indent 13
     foreach problem $sorted_problems {
 	    if { $count % 8 == 0 } {
 		if { $count > 0 } {
@@ -378,9 +404,6 @@ foreach item [lsort -decreasing $score_list] {
     set submitter [lindex $item 4]
     set problem_scores [lreplace $item 0 4]
 
-    if { $time_score >= 1000000 } {
-	set time_score "[expr { $time_score / 1000 }]k"
-    }
     if { $modifier == "n" } {
     	set time_score "*$time_score"
     }
@@ -400,17 +423,17 @@ foreach item [lsort -decreasing $score_list] {
     }
 
     set count 0
-    set indent 8
+    set indent 13
     foreach score $problem_scores {
 	if { $count % 8 == 0 } {
 	    if { $count == 8 } {
-	    	puts [format { %7.7s} $time_score]
+	    	puts [format { %10.10s} $time_score]
 	    } elseif { $count > 0 } {
 	    	puts ""
 	    }
 	    if { $count == 0 } {
 		puts -nonewline \
-		     [format {%-7.7s } $submitter]
+		     [format {%-12.12s } $submitter]
 	    } else {
 		puts -nonewline \
 		     [string range $spaces16 \
@@ -423,7 +446,7 @@ foreach item [lsort -decreasing $score_list] {
     }
 
     if { $count <= 8 } {
-	puts [format { %7.7s} $time_score]
+	puts [format { %10.10s} $time_score]
     } else {
     	puts ""
     }
