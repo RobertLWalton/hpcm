@@ -1,4 +1,4 @@
-2D GEOMETRY PROBLEM HELP    Tue Sep  4 09:31:48 EDT 2001
+2D GEOMETRY PROBLEM HELP    Sun Aug  4 09:36:13 EDT 2002
 
 For some reason many young computer scientists think
 that geometry problems are hard, and avoid them.  The
@@ -64,11 +64,12 @@ so u and v are the rows of the 2x2 matrix which by left
 multiplication translates from old xy coordinates to new
 uv coordinates.
 
-If u is a unit vector, we call (u.v)u the projection of
-v onto u.  Taking vectors as denoting points (the ends
-of the vectors if all have the same origin), then the
-projection of v onto u is the point on the line along u
-that is closest to the point v.  That is, u.v is the
+If u is a unit vector and v is any vector, we call
+(u.v)u the projection of v onto u.  Taking vectors as
+denoting points (the ends of the vectors if all have the
+same origin), then the projection of v onto u is the
+point on the infinite line going through the origin and
+u that is closest to the point v.  That is, u.v is the
 number K which minimizes | v - Ku |.  You can check this
 with a little algebra.
 
@@ -168,14 +169,15 @@ distance from r to the line is the distance from r to q.
 But if px < rx < qx, then distance from r to the line is
 the distance from r to the point on the line with the
 same x coordinate as r.  This is just the absolute value
-of the y coordinate of r.
+of ry - py (note py = qy).
 
 In order to find the distance when the line is not
 parallel to the x-axis, we introduce new coordinates in
 which the line will be parallel to the x-axis.  To do
 this we find orthogonal unit vectors u and v such that
 u is parallel to the line.  Then the new x coordinates
-are u.p, u.q, u.r and the new y coordinate of r is v.r.
+are u.r, u.p, u.q and the new y coordinates are v.r and
+v.p = v.q.
 
 
 Intersection
@@ -253,7 +255,8 @@ Inside Convex Polygons
 Suppose we have a convex hull p1, ..., p(N) in clockwise
 order that defines a convex polygon.  So the sides of
 the polygon with a clockwise orientation are the lines
-from p(i) to p((i mod N)+1), for i = 1, ..., N.
+from p(i) to p((i mod N)+1), for i = 1, ..., N.  We
+assume no three of these points lie on the same line.
 
 Then a point r is inside the convex polygon but not on
 the boundary of the polygon iff r is to the right of
@@ -266,29 +269,30 @@ sect the inside of a convex polygon?  It does if the
 interior of the line from r1 to r2 intersects the inter-
 ior of any side of the polygon.  It also does if r1 and
 r2 are both inside or on the boundary of the polygon,
-but both are not on the same side of the polygon (or
-equivalently, on the infinite line extending that side).
+but are not both on the same single side of the polygon.
+
 These are the only two cases where the interior of the
 line from r1 to r2 can intersect the interior of the
 polygon, UNLESS some of the convex hull points p1, ...,
 p(N) are in the interior of the line from r1 to r2.  In
-this last case, divide the line up into segments whose
-interiors do not contain any convex hull points, and
-apply the above two cases to see if any of these seg-
+this last case, use a convex hull point in the interior
+of the line to divide the line in two, and recursively
+ask if the interiors of either of the two new line seg-
 ments intersect the interior of the polygon.
 
 So all one has to do is take the clockwise sides of the
 polygon and check that the interior of the finite line
-from r1 and r2 intersects some side, or that for each
-polygon side, r1 and r2 are both on or to the right of
-the infinite line extending the side, and not both r1
-and r2 are on that line.  During this process one must
-check each side beginning point p to see if it is in
-the interior of the line from r1 to r2, and if it is,
+from r1 and r2 intersects the interior of some side, or
+that for each polygon side, r1 and r2 are both on or to
+the right of the infinite line extending the side, and
+r1 and r2 are not both on that line.  During this pro-
+cess one checks each convex hull point p to see if it is
+in the interior of the line from r1 to r2, and if it is,
 one then divides the line from r1 to r2 up into two
 segments, one from r1 to p and one from p to r2, and
-applies the algorithm recursively to see if either of
-these segments intersects the interior of the polygon.
+then one applies the algorithm recursively to see if the
+interior of either of these two segments intersects the
+interior of the polygon.
 
 
 Polygon Maze
@@ -386,6 +390,6 @@ file.
 RCS Info (may not be true date or author):
 
     $Author: hc3 $
-    $Date: 2001/09/15 10:25:09 $
+    $Date: 2002/08/04 15:10:13 $
     $RCSfile: 2D_geometry,v $
-    $Revision: 1.11 $
+    $Revision: 1.12 $
