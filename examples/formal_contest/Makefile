@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/01/13 02:38:03 $
+#   $Date: 2001/01/13 03:31:38 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.5 $
+#   $Revision: 1.6 $
 
 # To make a formal contest named `foo':
 #
@@ -269,7 +269,8 @@
 #     Then `make print_problems', and make a `problems
 #     handout' that consists of these pages, in the
 #     order given in the `problems' help page, preced-
-#     ed by that `problems' help page.
+#     ed by that `problems' help page.  Discard any
+#     demonstration .txt files printed.
 #
 #     Lastly `make print_demos', and make a `demos
 #     handout' that consists of these pages, in the
@@ -333,4 +334,4 @@ print_demos:
 	fprint contest/demos/*/*
 
 print_problems:
-	fprint contest/problems/*/*.txt
+	fprint solutions/*/*.txt
