@@ -6,7 +6,7 @@
 #
 # File:		makejudgingdir
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Oct  1 10:40:00 EDT 2000
+# Date:		Thu Oct  5 06:22:21 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/10/02 07:51:45 $
+#   $Date: 2000/10/05 11:34:36 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.13 $
+#   $Revision: 1.14 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -42,21 +42,28 @@ makejudgingdir options index_spec ...
 		Equals all options but -info,
 		-trashable, -txt, and -help_informal.
     -informal   Sets up an informal contest.
-		Equals all options but -problems,
-		-trashable, -txt, and -help_formal
-    -info	Make ./info
+		Equals all options but -problems, -info,
+		-trashable, -txt, and -help_formal.  One
+		of -problems or -info must be added.
+    -info	Make ./info, ./info/index,
+                     ./info/demo_list
     -solutions  Make ./solutions
-    -problems	Make ./contest/problems
-		Include .txt files only if -txt given.
+    -problems	Make ./contest/problems, ./contest/demo
+		Includes .txt files for non-`all' entries
+		only if -txt given.
     -txt	Include .txt files in ./contest/
-		problems.
+		problems or ./contest/demo. 
     -mail	Make ./mail
     -help_informal
     -help_formal
 	        Make ./contest/help2 link
     -help	Make ./contest/help1/problems,
+    		     ./contest/help1/demos,
 		     ./contest/help1/this_contest,
 		     ./contest/help3 link
+		Must be used with -problems or -info
+		to make the help1 `problems' and `demos'
+		files.
     -bin	Make ./contest/bin link
     -secure	Make ./contest/secure/passwords,
 		     ./contest/secure/hpcm_sendmail.rc
@@ -87,8 +94,8 @@ makejudgingdir options index_spec ...
     index specifications and options is given above.
     The `./contest' directory, if any, should be symbol-
     ically linked to the actual contest directory before
-    this program is run.  In some cases `./contest
-    /contestant' should be symbolically linked to the
+    this program is run.  In some cases `./contest/
+    contestant' should be symbolically linked to the
     `..../hpcm/contestant' directory before this program
     is run.
 
@@ -97,16 +104,17 @@ makejudgingdir options index_spec ...
     this file at the end of this program.
 
     The index files are read and concatenated to form
-    the `index' file in any new info directory and a
-    `problems.help' file in any new problems directory,
-    with unused entries omitted.
+    the `index' file in any new info directory and the
+    `problems' and `demos' help files in any new help1
+    directory, with unused entries omitted.
     
     If an info directory is being made, symbolic links
     are made from it to problem directories referenced
     in the index file.  Ditto for the solutions
-    directory.  The problems directory is similar but
-    instead of making links, selected files are copied
-    into subdirectories of the problems directory.
+    directory.  The problems and demos directories are
+    similar but instead of making links, selected files
+    are copied into subdirectories of the problems or
+    demos directory.
 
     If the program is building a ./info directory, it
     actually builds a ./info+ directory instead.  Then
@@ -122,8 +130,8 @@ makejudgingdir options index_spec ...
     		./info	    becomes    ./info-
     		./info+	    becomes    ./info
 
-    A similar strategem is followed for ./solutions
-    and ./contest/problems directories.
+    A similar strategem is followed for ./solutions,
+    ./contest/problems, and ./contest/demos directories.
 
     Other files and directories are made if they do
     not exist or are out of date.  If this program does
@@ -167,7 +175,15 @@ makejudgingdir options index_spec ...
       info	  Include item in ./info directory.
       solutions	  Include item in ./solutions directory.
       problems	  Include item in ./contest/problems
-      		  directory.
+      		  or ./contest/demos directory.
+      demo	  If item has `info' option, include the
+     		  item name in the ./info/demo_list
+		  file.  If item has a `problems'
+		  option, include the item in the
+		  ./contest/demos directory (if item has
+		  a `problems' option and no `demo'
+		  option, include it in the ./contest/
+		  problems directory).
       all	  If info or problems option present,
                   include all readable files from this
 		  item in the info or problems sub-
@@ -175,22 +191,28 @@ makejudgingdir options index_spec ...
 		  if the item is a directory, only the
 		  Makefile and *.txt file in the item
 		  directory will be included in the
-		  info or problems directory.
+		  info or problems directory, with the
+		  *.txt file being included only if
+		  the `-txt' program option is given.
 
-    These options are rarely encoded directly in the
-    index files.  Instead options categorizing the
-    entries are made up by the author of the index file
-    and mapped by the index specification onto the above
-    options.  Mapping is done by option substitution
-    that occurs before the options are finally pro-
-    cessed.  A substitution of the form:
+    The `info', `solutions', and `problems' options are
+    rarely encoded directly in the index files.  Instead
+    options categorizing the entries are made up by the
+    author of the index file and mapped by the index
+    specification onto the above options.  Mapping is
+    done by option substitution that occurs before the
+    options are finally processed.  A substitution of
+    the form:
 
     	option1s:'option11t option12t ...'
 
     in the index specification replaces option1s by the
     options in the list `option11t option12t ...'.
-    Substitution is recursive.  After option substitu-
-    tion, unknown options are ignored.
+    Substitution is NOT recursive: it is done only on
+    options appearing in the item entries in the index
+    files, and not on options that are the result of
+    a substitution.  After substitutions are done,
+    unknown options are ignored.
 
     If an item is included in the new info directory,
     the item entry is included in the index of that
@@ -201,11 +223,11 @@ makejudgingdir options index_spec ...
     the new index file for that directory is deleted,
     so that new info directory is completely empty.
 
-    If an item is included in a new problems or info
+    If an item is included in a new problems or demo
     directory, and the -help option is present, the
     index item entry is included in a ./contest/help1/
-    problems file.  No header items are included in
-    this file.
+    problems or ./contest/help1/demos file.  No header
+    items are included in these files.
 
     When an item is included in the solutions directory,
     the item must itself be a directory, and the name of
@@ -241,27 +263,35 @@ makejudgingdir options index_spec ...
     the items within the info directory.
 
     When an item entry is copied to the index file of
-    the new info directory, or to a problems.help file,
-    the `***' in the first line of the entry is replace
-    by 3 space characters, the item name is replaced by
-    the name of the item directory within the info dir-
-    ectory for ./info/index or the problems directory
-    for ./problems/problems.help, and the options are
-    removed.
+    the new info directory, or to a problems or demos
+    help file, the `***' in the first line of the entry
+    is replace by 3 space characters, the item name is
+    replaced by the name of the item directory within
+    the info directory for ./info/index or the problems
+    or demos directory for ./help1/problems or ./help1/
+    demos, and the options are removed.
 
     When ./mail is made (by -mail) its mode is set to
     a+x.
 
     When ./contest/help1 is made (by -help) its mode is
-    set to a+rx.  Then ./contest/help1/problems is
-    symbolically linked to ./contest/problems/problems
-    .help, and a default ./contest/help1/this_contest
-    file is made.  None of these things is done if the
-    directories and files to be made already exist.  If
-    the this_contest file is made, an instruction to
-    edit it is appended to the ./TODO file.
+    set to a+rx.
+    
+    The ./contest/help1/problems and ./contest/help1/
+    demos files are made if the -help is used with
+    either -info or -problems.  The mode of ./contest/
+    help1/demos is set to a+r, while the mode of ./
+    contest/help1/problems is left as og-r so that the
+    `startcontest' program can set it to a+r.   A note
+    is written to ./TODO saying that `startcontest'
+    must be run to a+r the ./contest/help1/problems
+    file.
 
-    The .contest/help3 directory is made by symbolically
+    A default ./contest/help1/this_contest file is made
+    (by -help) if it does not exist, and if made, an
+    instruction to edit this file is appended to ./TODO.
+
+    The .contest/help2 directory is made by symbolically
     linking it to ./contest/contestant/help/formal (by
     -help_formal) or ./contest/contestant/help/informal
     (by -help_informal).
@@ -286,8 +316,8 @@ makejudgingdir options index_spec ...
     made, instructions for editing it and the
     ~/.procmailrc file are written into ./TODO.
 
-    If -secure is given and any line in ./secure
-    /passwords has an empty password, a random password
+    If -secure is given and any line in ./secure/
+    passwords has an empty password, a random password
     is generated and inserted in that file.
 
     When ./contest/who_where is made, accounts in ./secure/
