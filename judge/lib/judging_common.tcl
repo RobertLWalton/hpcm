@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Oct 17 09:56:29 EDT 2001
+# Date:		Wed Oct 17 10:41:34 EDT 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/10/17 14:02:35 $
+#   $Date: 2001/10/17 14:46:24 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.57 $
+#   $Revision: 1.58 $
 #
 
 # Table of Contents
@@ -1147,15 +1147,16 @@ proc write_file { filename line } {
 }
 
 # Return entire file as a string.  Each line in the
-# string terminates with a line feed.
+# string terminates with a line feed, except the
+# line feed is omitted from the last line (so an
+# empty file is indistiguishable from a file with
+# a single empty line).
 #
 proc read_entire_file { filename } {
     set file_ch [open $filename r]
-    set result ""
-    while { "yes" } {
-	set line [gets $file_ch]
-	if { [eof $file_ch] } break
-	set result "$result$line\n"
+    set result [gets $file_ch]
+    while { ! [eof $file_ch] } {
+	set result "$result\n[gets $file_ch]"
     }
     close $file_ch
     return $result
