@@ -5,7 +5,7 @@
 #
 # File:		manualreply
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Sep  8 06:11:42 EDT 2001
+# Date:		Sat Sep  8 15:27:46 EDT 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/09/08 18:29:52 $
+#   $Date: 2001/09/08 19:14:43 $
 #   $RCSfile: manualreply,v $
-#   $Revision: 1.27 $
+#   $Revision: 1.28 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -134,9 +134,9 @@ pr = lookat proofs"
 set help(?) "
 ? WHAT		gives help for WHAT, where WHAT can be:
 
-# = file identifier \
-? = help            \
-x = exit            \
+#  = file identifier\
+?  = help           \
+x  = exit           \
 aj = autojudge
 v  = view #         \
 e  = edit #         \
@@ -151,13 +151,212 @@ er = edit reply     \
 sr = send reply     \
 nr = no reply
 
-sm = goto scoring menu   mm = goto main menu           ss = send score + mm
+sm = goto scoring menu   \
+mm = goto main menu      \
+ss = send score + mm
 
-io = Incorrect Output    cc = Completely Correct 
-fe = Formatting Error    ic = Incomplete Output 
+io = Incorrect Output    \
+cc = Completely Correct 
+fe = Formatting Error    \
+ic = Incomplete Output 
+se = Syntax Error        \
+te = Cpu Time Limit Exceeded
+pc = Program Crashed     \
+oe = Output Size Exceeded
+"
+
+set help(#) "
+#
+
+# denotes a `file identifier'.   This is one of:
+
+    A decimal integer, denoting the file with the given\
+    	number listed
+    by the `ls' command.
+
+    A file extension, beginning with a `.'.  This\
+    	denotes the file with the
+    given extension, if that is unambiguously defined.
+
+    The beginning of a file name, if the first\
+        character of the name is
+    a CAPITAL letter.  This denotes the file with the\
+    	given name, if that
+    is unambigously defined.
+
+Typing a file identifier by itself as a command\
+    displays the file.
+"
+
+set help(x) "
+x
+
+Exit from the current program.
+"
+
+set help(aj) "
+aj
+
+Call `autojudge' in the current directory.  The\
+    autojudge program makes
+any missing or out of date Auto_Score file and any\
+    missing or out of date
+files needed to make a new Auto_Score file.
+"
+
+set help(v) "
+v
+v #
+
+View the file identified by the file identifier # (or\
+    the last file displayed
+if # is missing) using an editor in read only mode,\
+    such as UNIX `view'.
+"
+
+set help(e) "
+e
+e #
+
+Edit the file identified by the file identifier # (or\
+    the last file displayed
+if # is missing) using an editor such as UNIX `vi'.
+"
+
+set help(ls) "
+ls
+
+List the names of all the files in the current\
+    directory.  This list is in
+order of the file creation dates, and the time the file\
+    is created is given
+to the nearest minute, relative to the creation time of\
+    the $received_file
+file if that is present, or of the most recent file\
+    otherwise.  Here `inf'
+means a time too large to be displayed.
+
+The files are numbered.  These numbers can be used as\
+    file identifiers in
+other commands.  The numbers will change when files are\
+    deleted.
+
+Type `? ls2' for more information.
+"
+set help(ls2) "
+ls
+
+After each file name listed a comment may appear if\
+    there is room.  Some of
+these are:
+
+    (DDDDDb)		DDDDD is size of the file in\
+			    bytes.
+    (empty)		The file is empty.
+    (directory)		The file is a directory.
+    (dangling link)	The file is a link with no\
+			    resolution.
+    			If a link can be resolved,\
+			    the file it resolves to is
+			the file named.
+    {CCC}		CCC is the contents of the\
+			    file, if the file is a
+    			single line file with contents\
+			    CCC.
+
+Type `? ls3' for more information.
+"
+set help(ls3) "
+ls
+
+If a file is listed that is newly created, a * appears\
+    after the file time.
+This * disappears when the list of files is\
+    regenerated, so its presence
+is not that reliable.
+"
+
+set help(ai) "
+= autoinfo
+"
+
+set help(pr) "
+= lookat proofs
+"
+
+set help(c) "
+= checkoff #
+"
+
+set help(u) "
+= uncheckoff #
+"
+
+set help(sh) "
+= shell
+"
+
+set help(ir) "
+= initiate reply
+"
+
+set help(er) "
+= edit reply
+"
+
+set help(sr) "
+= send reply
+"
+
+set help(nr) "
+= no reply
+"
+
+set help(sm) "
+sm
+
+Change the menu displayed to the scoring menu.  When\
+    not in a subtask such
+as displaying proofs, one of two menus is displayed:\
+    the main menu, or the
+scoring menu.  No matter which of these two menus is\
+    displayed, all
+commands listed on both menus can be entered.
+"
+
+set help(mm) "
+mm
+
+Change the menu displayed to the main menu.  When not\
+    in a subtask such
+as displaying proofs, one of two menus is displayed:\
+    the main menu, or the
+scoring menu.  No matter which of these two menus is\
+    displayed, all
+commands listed on both menus can be entered.
+"
+
+set help(ss) "
+= send score + mm
+"
+
+set help(io) "
+
+io = Incorrect Output    cc = Completely Correct
+fe = Formatting Error    ic = Incomplete Output
 se = Syntax Error        te = Cpu Time Limit Exceeded
 pc = Program Crashed     oe = Output Size Exceeded
+
+Set the proposed score to the indicated value.
 "
+
+set help(cc) $help(io)
+set help(fe) $help(io)
+set help(ic) $help(io)
+set help(se) $help(io)
+set help(te) $help(io)
+set help(pc) $help(io)
+set help(oe) $help(io)
 
 
 # Menu Initialization
