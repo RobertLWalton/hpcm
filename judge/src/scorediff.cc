@@ -2,7 +2,7 @@
 //
 // File:	scorediff.cc
 // Authors:	Bob Walton (walton@deas.harvard.edu)
-// Date:	Thu Feb 12 19:30:57 EST 2004
+// Date:	Sun Nov 14 06:19:29 EST 2004
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: hc3 $
-//   $Date: 2004/02/13 04:10:35 $
+//   $Date: 2004/11/14 12:31:22 $
 //   $RCSfile: scorediff.cc,v $
-//   $Revision: 1.51 $
+//   $Revision: 1.52 $
 
 // This is version 2, a major revision of the first
 // scorediff program.  This version is more explicitly
@@ -73,19 +73,27 @@ char documentation [] =
 "    floating point number, while other numbers are\n"
 "    integers.\n"
 "\n"
+"    The option -nonumber specifies that all number\n"
+"    characters should be treated as word characters,\n"
+"    so there are no number tokens.  The option\n"
+"    -nosign specifies that sign characters preceding\n"
+"    numbers should be treated as word characters, so\n"
+"    numbers can only include signs in their exponent\n"
+"    parts.\n"
+"\n"
 "    The types of differences are:\n"
 "\n"
 "    spacebreak	For two matching tokens, one is pre-\n"
 "		ceded by whitespace (possibly con-\n"
 "		taining a newline), and the other has\n"
 "		no preceding whitespace at all.\n"
-"\n"
+"\f\n"
 "    linebreak	For two matching tokens, the preced-\n"
 "		ing whitespaces of both are non-\n"
 "		empty, and one preceding whitespace\n"
 "		has a different number of new lines\n"
 "		than the other.\n"
-"\f\n"
+"\n"
 "    whitespace	For two matching tokens, the preced-\n"
 "		ing whitespaces both have no new\n"
 "		lines, and both are non-empty, but\n"
@@ -112,7 +120,7 @@ char documentation [] =
 "		matching new lines of the two token\n"
 "		preceding whitespaces do not exactly\n"
 "		agree.\n"
-"\n"
+"\f\n"
 "    beginspace	For two matching tokens, the preced-\n"
 "		ing whitespaces have the same number\n"
 "		N >= 1 of new lines, and the white-\n"
@@ -125,7 +133,7 @@ char documentation [] =
 "		However, this difference is NOT re-\n"
 "		cognized if either following matching\n"
 "		token is a floating point number.\n"
-"\f\n"
+"\n"
 "    word-eof1		When one file ends, the other\n"
 "    integer-eof1	file has a remaining word,\n"
 "    float-eof1		integer number, or floating\n"
@@ -150,7 +158,7 @@ char documentation [] =
 "		ence of the numbers is A, and the re-\n"
 "		lative difference of the numbers is\n"
 "		R.\n"
-"\n"
+"\f\n"
 "		In the line returned reporting diff-\n"
 "		erences in the two files, A and R\n"
 "		are the maximum observed A and R\n"
@@ -164,7 +172,7 @@ char documentation [] =
 "		numbers of decimal places, or one has\n"
 "		a decimal point and the other does\n"
 "		not.\n"
-"\f\n"
+"\n"
 "    exponent	For two matching numbers one has an\n"
 "		exponent but the other does not.\n"
 "\n"
@@ -186,7 +194,7 @@ char documentation [] =
 "		length (see word splitting below)\n"
 "		that are identical except for letter\n"
 "		case.\n"
-"\n"
+"\f\n"
 "    infinity	Two matching number tokens cannot be\n"
 "		compared because they are NOT identi-\n"
 "		cal except for letter case and one or\n"
@@ -198,7 +206,7 @@ char documentation [] =
 "		at all.  This is returned as the sole\n"
 "		contents of the output line that\n"
 "		lists differences.\n"
-"\f\n"
+"\n"
 "    The files are parsed into whitespace, numbers,\n"
 "    words, and end-of-files (eofs).  A number is an\n"
 "    optional sign followed by digits containing an\n"
@@ -523,6 +531,11 @@ struct file
 file output;
 file test;
 
+// Scanning options.
+//
+bool nonumber = false;
+bool nosign = false;
+
 // Open file for reading.
 //
 void open ( file & f, char * filename )
@@ -669,10 +682,14 @@ void scan_token ( file & f )
     char * endtp = tp + MAX_SIZE;
     int decimals = -1;
 
+    if ( nonumber ) goto word;
+
     switch ( c ) {
 
     case '+':
     case '-':
+	if ( nosign ) goto word;
+
 	* tp ++ = c;
 
 	c = get_character ( f );
@@ -846,14 +863,16 @@ word:
 
     while ( true ) {
         if (    isspace ( c )
-	     || isdigit ( c )
+	     || ( isdigit ( c ) && ! nonumber )
 	     || c == EOF ) break;
 
 	switch ( c ) {
 
 	case '+':
 	case '-':
+	    if ( nosign ) break;
 	case '.':
+	    if ( nonumber ) break;
 
 	    // Possible first character of number.
 
@@ -1445,6 +1464,10 @@ int main ( int argc, char ** argv )
 	    for ( int j = 0; j < MAX_DIFFERENCE; ++ j )
 		differences[j].proof_limit = limit;
 	}
+        else if ( strcmp ( "nosign", name ) == 0 )
+	    nosign = true;
+        else if ( strcmp ( "nonumber", name ) == 0 )
+	    nonumber = true;
 	else
 	{
 	    cerr << "Unrecognized option -"
