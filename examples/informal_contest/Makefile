@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Oct 23 01:02:11 EDT 2003
+# Date:		Thu Oct 23 01:07:07 EDT 2003
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2003/10/23 04:59:11 $
+#   $Date: 2003/10/23 05:02:48 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.36 $
+#   $Revision: 1.37 $
 
 # To make an informal contest named `foo':
 #
@@ -310,7 +310,7 @@
 #
 #	 ~/judging_foo_password/help/this_contest
 #     or
-#	 ~/contest_foo/help/this_contest
+#	 ~/judging_foo_password/info/help/this_contest
 #
 #     which are the same file.
 
