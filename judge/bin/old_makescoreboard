@@ -4,7 +4,7 @@
 #
 # File:		makescoreboard
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Oct 17 10:04:11 EDT 2001
+# Date:		Tue Oct 23 08:54:41 EDT 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/10/17 14:04:40 $
+#   $Date: 2001/10/23 12:53:26 $
 #   $RCSfile: old_makescoreboard,v $
-#   $Revision: 1.9 $
+#   $Revision: 1.10 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -30,125 +30,68 @@ set log_globally yes
 catch {
 
 set document "
-makescoreboard \[-start | -status | -stop\] \\
-               \[-email address\] \\
-	       \[-parameters parameter-file\] \\
-               \[interval\]
+makescoreboard { -start | -status | -stop | -update } \\
+               \[ parameter-file | \\
+	          scoreboard-instructions \]
 
-    This program makes the scoreboard putting it in the
-    file contest_directory/scoreboard.1 and/or e-mailing
-    it to a given address at periodic intervals.  The
-    interval in seconds can be set by the interval argu-
-    ment, but will default to 60 seconds.
+    This program makes scoreboards by following the
+    instructions stored in the `scoreboard_instructions'
+    global variable.  If desired the value of this
+    variable can be the second argument to this program:
+    it always begins with a `{' and is thus recoginized
+    as not being a parameter file name.
+
+    This program reruns a intervals determined by the
+    `scoreboard_interval' global variable.  When rerun,
+    if this program finds that the judging directory
+    hpcm_judging.rc file has changed, it reloads this
+    file, and if this program finds that all the files
+    needed to produce a particular scoreboard output
+    file (including hpcm_judging) have not changed,
+    and the output file has not been deleted, this
+    program does not reproduce that output file.
     
     This program calls
     
-	scorefinder | scoreboard \[parameters-file\]
+	scorefinder \\
+	    > judging_directory/$scorefinder_output_file
 
-    to recompute the scoreboard.
-    
-    If the contest_directory (usually juging_directory/
-    contest) exists, this program recomputes the file:
-
-    	contest_directory/scoreboard.1
-
-    whenever the scoreboard is recomputed, by prepending
-    the date and then the file
-
-    	contest_directory/scoreboard.1head
-
-    to the recomputed scoreboard.
-
-    If the -email option is given, this program e-mails
-    to the address given in the option the recomputed
-    scoreboard with date prepended and the file
-    
-    	judging_directory/scoreboard.notes
-
-    appended, whenever the scoreboard is recomputed.
-    A copy of the mail sent is recorded in the file
-    
-    	judging_directory/scoreboard.mail
+    whenever the $score_flag_file in the flag directory
+    changes.  The $scorefinder_output_file is used as\
+    	in-
+    put by the `scoreboard' program to produce score-
+    boards.
 
-    As an example use of the -email option, if the email
-    option is
-
-      -email '\"password scoreboard\"<foo@bar>'
-
-    and the .procmailrc file of account foo on machine
-    bar contains
-
-    :0 b:
-    * ^To:.*password.*scoreboard
-    | cat >public_html/private/password/scoreboard;\\
-      chmod a+r public_html/private/password/scoreboard
-
-    then the effect of sending the scoreboard to the
-    email address will be to put a copy of the computed
-    scoreboard, with optional trailing `scoreboard.
-    notes', into the publicly readable file
-
-      foo@bar:public_html/private/password/scoreboard
-
-    Here `password' can be replaced by an actual pass-
-    word that ensures people who do not know the pass-
-    word cannot interfere with the system or see the
-    scoreboard (if the `private' directory is not pub-
-    licly readable).
-
-    If the contest directory exists, then in that
-    directory the files scoreboard.1, scoreboard.2,
-    scoreboard.3, and scoreboard.4 represent the four
-    pages of the scoreboard (latter pages are optional).
-    All but the first page must be edited by hand, and
-    can be used for extensive notes on the contest.
-    For the email version of the scoreboard, the
-    scoreboard.notes file appears after the scoreboard
-    and can be used for extensive notes.
-
-    Deleting an existing scoreboard.1 file, deleting an
-    existing scoreboard.mail file when the -email option
-    is given, our touching (see the UNIX touch(1)
-    command) or changing any of the files:
-
-    	$judging_parameters_file
-	contest_directory/scoreboard.1head
-	judging_directory/scoreboard.notes
-
-    will cause this program to recompute the scoreboard
-    when its next interval expires.
-
-    Calling this program with an interval of 0 will
-    cause this program to recompute the scoreboard just
-    once and then exit immediately.
-
     This program ignores signals when recomputing the
     scoreboard, and terminates without error on a signal
     while the program is sleeping for the interval.
 
+    If called with an -update option, this program
+    processes the scoreboard instructions just once
+    and then exits immediately.
+
     If called with the -start option, this program
-    creates a subprocess in which it calls itself with-
-    out the -start option, and writes the process ID of
-    that subprocess into the $scoreboard_pid_file file\
-    		in
-    the judging directory.  While doing this, this pro-
-    gram outputs information about its progress (however
-    the subprocess does not output anything).  But if
-    the $scoreboard_pid_file already exists, AND the\
-    		process
-    ID it contains is valid, this program prints infor-
-    mation about the ID'ed process and does nothing
-    else.
+    writes its process ID of the $scoreboard_pid_file\
+    		file
+    in the judging directory, and begins normal execu-
+    tion.  But if this $scoreboard_pid_file file already
+    exists, AND the process ID it contains is valid,
+    this program prints information about the ID'ed
+    process and does nothing else.
 
     If called with the -stop option, this program does
     nothing but send kill signals to the process whose
     ID is listed in the $scoreboard_pid_file file, and
     then deletes the file.  While doing this it outputs
     information about its progress.
-
+
     If called with the -status option, this program just
     outputs information about the status of any process
     started by `makescoreboard -start'.
+
+    If called with the -freeze option, this program
+
+???
 
     In some contests the scoreboard is to be frozen
     during the last hour of the contest, to increase
@@ -167,6 +110,270 @@ makescoreboard \[-start | -status | -stop\] \\
 set email_address ""
 set parameters_file ""
 set interval 60
+
+# Constant equal to 256 spaces.
+#
+set space "        "
+set space "$space$space$
+set space "$space$space$
+set space "$space$space$
+set space "$space$space$
+set space "$space$space$
+
+if { $scoreboard_width > 256 } {
+    error "scoreboard width > 256"
+}
+
+# Some abbreviations.
+#
+set finder_file \
+    $judging_directory/$scorefinder_output_file
+set pid_file \
+    $judging_directory/$scoreboard_pid_file
+
+# Print documentation if arguments say to.
+#
+if { [llength $argv] > 2 \
+     || ( [llength $argv] == 1 \
+          && [regexp {^-doc} [lindex $argv 0]] ) } {
+    puts $document
+}
+
+# Compute possible parameters.
+#
+foreach name [info globals scoreboard_*] {
+    regexp {^scoreboard_(.*)$} $name forget pname
+    if { $pname != "instructions" } {
+	set parameters_array($pname) [set $name]
+    }
+}
+
+# Process argument.
+#
+if { [llength $argv] == 1 } {
+    set arg [lindex $argv 0]
+    if { [regexp "^{" $arg] } {
+        set scoreboard_instructions $arg
+    } else {
+        source $arg
+    }
+}
+
+
+proc pass1 { instructions } {
+
+    set pc 0
+    set endpc [llength $instructions]
+    set outpc -1
+
+    if { [lindex [lindex $instructions 0] 0] \
+         != "OUTPUT" } {
+        error "first scoreboard instruction is not\
+	       OUTPUT"
+    }
+
+    while { "yes" } {
+        set instruction [lindex $instructions $pc]
+        if { ( $pc >= $endpc \
+	       || $instruction == "OUTPUT" ) } {
+
+	    pass2 $instructions $outputpc $pc $update
+
+	    if { $pc >= $endpc } break
+	}
+
+	set opcode [lindex $instruction 0]
+	switch $opcode {
+	    OUTPUT {
+	        set outpc $pc
+	    	set update no
+		set outfile [lindex $instruction 1]
+		set outfile \
+		   "$judging_directory/$outfile"
+		if { [file readable $outfile] } {
+		    set out_mtime [file mtime $outfile]
+		} else {
+		    set update yes
+		}
+	    }
+
+	    BLANK {}
+	    BAR {}
+	    LINE {}
+
+	    INPUT {
+		set infile [lindex $instruction 1]
+		set infile "$judging_directory/$infile"
+	        if { $update == "no" \
+		     && [file readable $infile] \
+		     && [file mtime $infile] \
+		        > $out_mtime } {
+		    set update yes
+		}
+	    }
+	    BOARD {
+	        if { $update == "no" \
+		     && [file readable $finder_file] \
+		     && [file mtime $finder_file] \
+		        > $out_mtime } {
+		    set update yes
+		}
+
+	    }
+	    default {}
+	}
+    }
+}
+
+proc pass2 { instructions pc endpc update } {
+
+    global parameters_array scoreboard_width
+
+    set out_file [lindex [lindex $instructions $pc] 1]
+    set out_file $judging_directory/$out_file"
+
+    incr pc
+    set contents ""
+    set date [clock format [clock seconds]]
+
+    while { $pc < $endpc } {
+        set instruction [lindex $instructions $pc]
+	incr pc
+	set opcode [lindex $instruction 0]
+	switch $opcode_$update {
+
+	    BLANK_yes {
+	        set contents "$contents\n"
+	    }
+	    BAR_yes {
+	        set w [expr { $scoreboard_width / 10 } ]
+		while { $w > 0 } {
+		    set contents "$contents========= "
+		    incr w -1
+		}
+		set contents "$contents\n"
+	    }
+	    LINE_yes {
+	        set left   [lindex $instruction 1]
+	        set center [lindex $instruction 2]
+	        set right  [lindex $instruction 3]
+
+		if { $left == "DATE" } {
+		    set left $date
+		}
+		if { $center == "DATE" } {
+		    set center $date
+		}
+		if { $right == "DATE" } {
+		    set right $date
+		}
+
+		set left_end [string length $left]
+		incr left_end -1
+		set right_begin \
+		    [expr { $scoreboard_width - \
+		            [string length $right] }]
+		set center_length [string length $center]
+		set center_begin  \
+		    [expr { ( $scoreboard_width \
+		              - $center_length ) / 2 }]
+		set center_end \
+		    [expr { $center_begin \
+		            + $center_length - 1 }]
+		set contents "$contents$left"
+		set center_done no
+		set right_done no
+		if { $left_end < $center_begin \
+		     && $center_end < $right_begin } {
+		    incr left_end 1
+		    incr center_begin -1
+		    set contents \
+		        "$contents[string \
+			              range $space \
+				      $left_end \
+				      $center_begin]"
+		    set contents "$contents$center"
+		    set center_done yes
+		    set left_end $center_end
+		}
+		if { $left_end < $right_begin } {
+		    incr left_end 1
+		    incr right_begin -1
+		    set contents \
+		        "$contents[string \
+			              range $space \
+				      $left_end \
+				      $right_begin]"
+		    set contents "$contents$right"
+		    set right_done yes
+		}
+		if { $center_done == "no" } {
+		    incr center_begin -1
+		    set contents \
+		        "$contents\n[string \
+			                range $space \
+					0 $center_begin]
+		    set contents "$contents$center\n"
+		}
+		if { $right_done == "no" } {
+		    incr right_begin -1
+		    set contents \
+		        "$contents\n[string \
+			                range $space \
+					0 $right_begin]
+		    set contents "$contents$right\n"
+		}
+	    }
+
+	    INPUT_yes {
+		set infile [lindex $instruction 1]
+		set infile "$judging_directory/$infile"
+		if { [file size $infile] > 0 ] } {
+		    set contents \
+		    	"$contents[read_entire_file \
+				      $infile]\n"
+		}
+	    }
+	    BOARD_yes {
+	        set parameters ""
+		foreach name \
+		        [array names parameters_array] {
+		    lappend \
+		        [list $name \
+			      $parameters_array($name)]
+		}
+	        set contents \
+		    "$contents[exec scoreboard \
+		    		    "{ $parameters }" \
+				    < $finder_file]"
+	    }
+	    BLANK_no {}
+	    BAR_no {}
+	    LINE_no {}
+	    INPUT_no {}
+	    BOARD_no {}
+	    default {
+		set name $opcode
+		set value [lindex $instruction 1]
+	        if { ! [info exists \
+		             parameters_array($name)] \
+			     } {
+		    error "$name is not a parameter\
+		           name"
+		}
+
+		set scoreboard_$name $value
+		set parameters_array($name) $value
+	    }
+	}
+    }
+
+    if { $update } {
+	set ch [open $out_file w]
+        puts -nonewline $ch $contents
+	close $ch
+    }
+}
 
 proc process_arguments { argv } {
 
