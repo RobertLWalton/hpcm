@@ -6,7 +6,7 @@
 #
 # File:		makejudgingdir
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Jan  8 13:28:05 EST 2002
+# Date:		Wed Jan  9 00:07:31 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/01/08 18:28:18 $
+#   $Date: 2002/01/09 05:24:55 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.74 $
+#   $Revision: 1.75 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -81,16 +81,6 @@ makejudgingdir option ... index_specification ...
     -printer_map    Make ./contest/printer_map and
     		         ./contest/printer_jobs
     -home	Make ./contest/home
-    -pdexts \"extension:...\"
-    		Change the list of problem description
-		file extensions.  Files with these ext-
-		ensions will be copied into ./info,
-		./contest/problems, or ./contest/demos
-		directories according to the setting of
-		other options.  The default problem
-		description file extensions are:
-
-		    $problem_description_extensions
 
   Index Specification:
 
@@ -715,7 +705,6 @@ set trashable_option		no
 set printer_option		no
 set printer_map_option		no
 set home_option			no
-set pdexts	$problem_description_extensions
 #
 while { "yes" } {
     if { $argi >= $argc } break;
@@ -770,12 +759,6 @@ while { "yes" } {
         -printer_map	{ set printer_map_option \
 						yes }
         -home		{ set home_option 	yes }
-	-pdexts		{ incr argi
-                          set pdexts \
-			      [split [lindex $argv \
-			                     $argi] \
-				     ":"]
-			}
 	default		{ break }
     }
     incr argi
@@ -1052,8 +1035,10 @@ proc process_index_specification {} {
 	   problems_option demos_option \
 	   help_option description_option \
            info_directory solutions_directory \
-	   c_d pdexts
+	   c_d problem_description_extensions \
+	   allowed_extensions files_file
 
+    set pdexts $problem_description_extensions
 
     # Be sure index directory is absolute name, else
     # symbolic links will fail.
@@ -1206,6 +1191,110 @@ proc process_index_specification {} {
 
 		set ${targetdir}_index_written yes
 
+		# Compute source and description files
+		# if no `all' option.
+		#
+		set all_option [lcontain $options all]
+		if { ! $all_option } {
+
+		    # Compute allowed extension options.
+		    #
+		    set exts \
+		        [lindex [intersect3 \
+			           $allowed_extensions \
+				   $options] \
+			        1]
+
+		    # Compute selected files.
+		    #
+		    set sff $source/$files_file
+		    if { [llength $exts] == 0 } {
+		        set files \
+			    [glob -nocomplain \
+			    	  $sff $sff.*]
+		    } else {
+		        set files ""
+			foreach ext $exts {
+			    if { [file exists \
+			    	       $sff.$ext] } {
+			    	lappend files $sff.$ext
+			    }
+			}
+			if { [llength $files] == 0 } {
+			    error "No problem $sff.XXX \
+			    	   files for XXX in\
+				   $exts"
+			}
+		    }
+
+		    # Compute concatenated value of
+		    # selected files.
+		    #
+		    if { [llength $files] == 0 } {
+		    	set value \
+			    "-SOURCE- Makefile\
+			     -DESCRIPTION-"
+			set base [file tail $source]
+			set sb $source/$base
+			foreach ext $pdexts {
+			    if { [file exists $sb$ext] \
+			    		} {
+				lappend value $base$ext
+			    }
+			}
+		    } else {
+		        set value ""
+			foreach file $files {
+			    lappend value -REQUIRED-
+			    set value \
+			        [concat \
+				   $value\
+				   [read_entire_file \
+				      $file]]
+			}
+		    }
+
+		    # Process concatenated value of
+		    # selected files.
+		    #
+		    set mode none
+		    foreach item $value {
+		        switch -- $item {
+			    -SOURCE- {
+			    	set mode source
+			    }
+			    -DESCRIPTION- {
+			    	set mode description
+			    }
+			    default {
+			        if { [regexp \
+				        {^-[-A-Z]*-$} \
+					$item] } {
+				    set mode none
+				} else {
+				    set ma ${mode}_array
+				    set ${ma}($item) yes
+				}
+			    }
+			}
+		    }
+		    set source_files \
+		        [array names source_array]
+		    set description_files \
+		        [array names description_array]
+		    set both \
+		        [lindex \
+			   [intersect3 \
+			      $source_files \
+			      $description_files] \
+			   1]
+		    if { [llength $both] != 0 } {
+		        error "Some files are both\
+			       source and description:\
+			       $both"
+		    }
+		}
+
 		# Process info option.
 		#
 		if { $info_option } {
@@ -1213,28 +1302,25 @@ proc process_index_specification {} {
 		    set destination \
 		    	$info_directory+/$target
 
-		    if { [lsearch -exact $options all] \
-			 >= 0 \
+		    if { $all_option \
 			 || [file isfile $source] } {
 			file mkdir \
 			     [file dirname $destination]
 			link_file $source $destination
-		    } else {
+		    } elseif { [file isdirectory \
+		    		     $source] } {
 			file mkdir $destination
-			link_file $source/Makefile \
-				  $destination/Makefile
-			foreach ext $pdexts {
-			    foreach file \
-				[glob -nocomplain \
-				      -- \
-				      "$source/*$ext"] {
-				set file \
-				    [file tail $file]
-				link_file \
-				    $source/$file \
-				    $destination/$file
-			    }
+			foreach file \
+				[concat \
+				   $source_files \
+				   $destination_files] {
+			    link_file $source/$file \
+				      $destination/$file
 			}
+		    } else {
+		        error "Source `$source' is\
+			       neither a file or a\
+			       directory."
 		    }
 		}
 
@@ -1252,32 +1338,23 @@ proc process_index_specification {} {
 		    		     $source] } {
 			file mkdir $dest
 			
-			if { [lsearch -exact $options \
-				             all] \
-			     >= 0 } {
+			if { $all_option } {
 			    recursive_file_copy \
 				$source $dest
 			} else {
-			    file copy $source/Makefile \
-				      $dest/Makefile
-			    grant_access $dest/Makefile
-
+			    set files $source_files
 			    if { $description_option } {
-			      foreach ext $pdexts {
-				foreach file \
-				    [glob
-				      -nocomplain \
-				      -- \
-				      "$source/*$ext"] {
-				  set file \
-				      [file tail $file]
-				  file copy \
-				      $source/$file \
-				      $dest/$file
-				  grant_access \
-				      $dest/$file
-			        }
-			      }
+			        set \
+				  files \
+				  [concat \
+				     $files \
+				     $description_files]
+			    }
+			    foreach files $files {
+				file copy \
+				     $source/$file \
+				     $dest/$file
+				grant_access $dest/$file
 			    }
 			}
 		    } else {
