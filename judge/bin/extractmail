@@ -4,7 +4,7 @@
 #
 # File:		extractmail
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Nov 19 04:10:23 EST 2001
+# Date:		Sat Nov 24 06:01:36 EST 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/11/19 09:07:43 $
+#   $Date: 2001/11/24 11:16:35 $
 #   $RCSfile: extractmail,v $
-#   $Revision: 1.23 $
+#   $Revision: 1.24 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -48,7 +48,7 @@ cd submission_directory; extractmail
     prints the line `Extracted FFFF' to the standard
     output, where FFFF is the file name.  For each
     error, this program prints an error message to the
-    standard error output.  This program always exists
+    standard error output.  This program always exits
     with exit code 0.  The TCL command:
 
     	catch { exec extractmail } out
@@ -64,14 +64,35 @@ cd submission_directory; extractmail
     If there is a `$files_file' file in the current\
     			directory,
     all submitted files must have names listed in this
-    `$files_file' file.  This file consists of file names
-    separated by whitespace (either spaces or tabs or
-    new lines).  If one of these file names begins with
-    a `?', the `?' is discarded from the file name, and
-    the file is optional.  Otherwise the file must be
-    included in the submission.  If there is no\
-    	`$files_file'
-    file, the submitted file name must be the problem
+    `$files_file' file.  This file is interpreted as
+    a TCL list (with list elements separated by spaces,
+    tabs, or new lines) whose elements are file names
+    and the special symbols:
+    
+    	-REQUIRED-	Indicates that the following
+			file names name files that MUST
+			be submitted.
+    
+    	-OPTIONAL-	Indicates that the following
+			file names name files that may
+			optionally be submitted.
+    
+    	-LINK-		Indicates that the following
+			file names name files that MUST
+			be linked from the problem
+			solution directory.
+
+    File names before any special symbol are treated as
+    `-REQUIRED-'.  These special symbols can appear any
+    number of times in the list and will affect all file
+    names following them but before the next special
+    symbol in the list.  The `extractmail' program
+    ignores `-LINK-' file names.
+
+    If there is no `$files_file' file, there is exactly\
+    	one
+    required submitted file whose name comes from the
+    submission `Subject:' field and must be the problem
     name followed by one of the extensions in the
     `allowed_extensions' global variable, whose value by
     default is:
