@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Feb 12 11:05:12 EST 2003
+# Date:		Wed Oct  1 11:05:07 EDT 2003
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2003/02/12 16:07:38 $
+#   $Date: 2003/10/01 15:53:08 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.12 $
+#   $Revision: 1.13 $
 
 # To make web help pages, execute `make web' and copy
 # the `web' directory to you web server, where it will
@@ -26,6 +26,41 @@ all:	emailsh
 # Kill all implicit rules
 #
 .SUFFIXES:
+
+help_index:	index
+	rm -f help_index
+	T='	'; \
+	echo >>help_index \
+	     "HELP INDEX$$T$$T    `date`"
+	echo >>help_index ""
+	A='^\*\*\*[[:space:]][[:space:]]*'; \
+	D='[^[:space:]]*\/'; \
+	M='[^[:space:]\/]*'; \
+	E='[[:space:]].*'; \
+	sed -n <index >>help_index \
+	    -e '/^#/d' \
+	    -e '/'$$A'.* all/b skip' \
+	    -e 'b accept' \
+	    -e ': skip' \
+	    -e 's/.*//' \
+	    -e 'n' \
+	    -e '/'$$A'.* all/b skip' \
+	    -e '/'$$A'/!b skip' \
+	    -e ': accept' \
+	    -e 's/'$$A$$D'\('$$M'\)'$$E'/\1/' \
+	    -e 'p'
+
+demos_index:	../../problem_library/index
+	rm -f demos_index
+	T='	'; \
+	echo >>demos_index \
+	     "DEMOS INDEX$$T$$T    `date`"
+	echo >>demos_index ""
+	sed -n <../../problem_library/index >>demos_index \
+	    -e '/^#/d' \
+	    -e '/^[^[:space:]].* Problems/,$$d' \
+	    -e '/^\*\*\*[[:space:]]/d' \
+	    -e 'p'
 
 emailsh:	email/sh/hpcm_extract \
 		email/sh/hpcm_submit \
@@ -74,4 +109,5 @@ clean:
 	       email/sh/hpcm_submit \
 	       email/sh/hpcm_clisp \
 	       email/sh/hpcm_clisp.lsp \
-	       web web.tar
+	       web web.tar \
+	       help_index demos_index
