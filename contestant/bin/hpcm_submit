@@ -4,7 +4,7 @@
 #
 # File:		hpcm_submit
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Thu Nov  9 00:10:31 EST 2000
+# Date:		Sun Jan 13 14:02:49 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,60 +13,87 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/11/09 05:08:39 $
+#   $Date: 2002/01/13 20:36:19 $
 #   $RCSfile: hpcm_submit,v $
-#   $Revision: 1.2 $
+#   $Revision: 1.3 $
 
-extensions=".c .cc .java .p"
+extensions=".c .cc .java .p .lsp"
+files=""
 
 case "$1" in
     "" | -*)
 	echo "
-hpcm_submit file
+hpcm_submit problem [file ...]
 
-    Submits the file.  If the file has no extension, a
-    search is made for a readable file with an appro-
-    priate extension added (e.g., .cc or .java), and
-    if exactly one is found, that file is used."
+    Submits the files for the problem.  If a file
+    has no extension and is not readable, a search is
+    made for a readable file with one of the following
+    extensions added:
+
+    	$extensions
+    
+    If exactly one such readable file is found, that
+    file is used.
+    
+    If no files are given, the problem is used as a
+    single file name (possibly with extension added)."
 
 	exit 1
 	;;
-    *.* )
-    	if test -r $1
-	then
-	    file=$1
-	else
-	    echo cannot read $1
-	    exit 1
-	fi
-	;;
-    * )
-        found=0
-    	for e in $extensions
-	do
-	    if test -r $1$e
-	    then
-	        file=$1$e
-		found=`expr $found + 1`
-	    fi
-	done
-
-	if test $found -eq 0
-	then
-	    echo file $1.'*' not found
-	    exit 1
-	elif test $found -ne 1
-	then
-	    echo too many files $1.'*' found
-	    exit 1
-	fi
 esac
 
-# Submit program file by email.
+problem="$1"
+if test $# -gt 1
+then
+    shift
+fi
+
+files=""
+for file in "$@"
+do
+    case "$file" in
+	*.* )
+	    ;;
+	* )
+	    if test \! -r "$file"
+	    then
+		found=no
+		f="$file"
+		for e in $extensions
+		do
+		    if test -r "$f$e"
+		    then
+		        if test $found = yes
+			then
+			    echo too many files \
+			         "$f.*" found
+			    exit 1
+			fi
+			file="$f$e"
+			found=yes
+		    fi
+		done
+	    fi
+	    ;;
+    esac
+
+    if test \! -r "$file"
+    then
+    	echo cannot read "$file"
+	exit 1
+    fi
+
+    files="$files $file"
+done
+
+# Submit program files by email.
 #
-( echo Subject: submit $file; \
-  echo ""; \
-  echo HPCM_BEGIN $file; \
-  cat $file | sed -e '/^/s//../'; \
-  echo HPCM_END $file ) \
+( echo Subject: submit $problem; \
+  for file in $files; \
+  do \
+      echo ""; \
+      echo HPCM_BEGIN "$file"; \
+      cat "$file" | sed -e '/^/s//../'; \
+      echo HPCM_END "$file"; \
+  done ) \
 | hpcm_sendmail
