@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Sep  5 06:23:34 EDT 2001
+# Date:		Sun Oct 27 01:03:38 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/09/15 17:10:54 $
+#   $Date: 2002/10/27 06:11:18 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.19 $
+#   $Revision: 1.21 $
 
 # See STATUS file for description of versions.
 #
@@ -24,7 +24,16 @@ all:	submakes
 # Kill all implicit rules
 #
 .SUFFIXES:
-.SUFFIXES:	.files
+
+# The following must be done to make sure things are
+# ready to run when there are auxiliary judges.
+#
+aux auxiliary:	submakes
+	@echo Setting Group Permissions
+	find . -perm +g+r -or \
+	       -perm +u+r -print -exec chmod g+r {} \;
+	find . -perm +g+x -or \
+	       -perm +u+x -print -exec chmod g+x {} \;
 
 # The following must be done to make sure things
 # are ready to run.
@@ -34,45 +43,6 @@ submakes:
 	(cd ./contestant/help/; make)
 	(cd ./judge/bin/; make)
 	(cd ./judge/doc/; make)
-
-informal.files:		inform.files
-advanced.files:		advan.files
-
-# Print files keyed for `user', `remote', etc.
-#
-common.files \
-email.files \
-inform.files \
-formal.files \
-advan.files \
-exmpl.files \
-demo.files \
-pascal.files \
-doc.files\
-system.files\
-test.files \
-tdata.files \
-prob.files \
-plib.files \
-*.files \
-legal.files:
-	@sed <File_List -n  \
-             -e '/^#KEYS:.* $* .*#$$/,/^#$$/{' \
-	     -e '/^#/!p' \
-	     -e '}'
-#	@sed <File_List -n -e '/^N*$*		*/s///p'
-
-distributable.files:
-	@sed <File_List -n \
-	     -e '/^[a-z][a-z]*		*/s///p'
-
-non_distributable.files:
-	@sed <File_List -n \
-	     -e '/^N[a-z][a-z]*		*/s///p'
-
-all.files:
-	@sed <File_List -n \
-	     -e '/^N*[a-z][a-z]*		*/s///p'
 
 # Make MD5 Signatures File:
 #
@@ -121,16 +91,14 @@ hpcm_non_distributable_${VERSION}.tar:	\
 
 distributable_files_${VERSION}:	File_List Makefile
 	rm -f distributable_files_${VERSION}
-	make --no-print-directory \
-	     distributable.files \
+	file_list public \
 	     | sed -e 's/^\./hpcm/' \
 	     > distributable_files_${VERSION}
 
 non_distributable_files_${VERSION}:	\
 				File_List Makefile
 	rm -f non_distributable_files_${VERSION}
-	make --no-print-directory \
-	     non_distributable.files \
+	file_list \! public \
 	     | sed -e 's/^\./hpcm/' \
 	     > non_distributable_files_${VERSION}
 
