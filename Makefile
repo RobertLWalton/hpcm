@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Mar  9 09:34:54 EST 2003
+# Date:		Tue Mar 11 05:41:07 EST 2003
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2003/03/09 14:45:20 $
+#   $Date: 2003/03/11 10:41:36 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.34 $
+#   $Revision: 1.35 $
 
 # See STATUS file for description of versions.
 #
@@ -76,7 +76,7 @@ NONDIS = non_distributable
 #	signatures file is a copyrighted file with
 #	signatures of all files in the cvs tar file.
 #
-# make md5cvscheck
+# make cvsmd5check
 #	Check the signatures in HPCM_${VERSION}_CVS_MD5_
 #	Signatures.
 #
@@ -180,21 +180,21 @@ md5check:
 	       md5sum --check 2>&1 | \
 	       sed -e '/^[^ 	]*: OK$$/d'
 
-# Make cvstmp, a directory that holds the cvs files
+# Make cvsroot, a directory that holds the cvs files
 # to be MD5 summed.  You must make hpcm_cvs_
 # ${VERSION}${TAREXT} by hand.
 #
-cvstmp:	hpcm_${VERSION}_cvs${TAREXT}
-	rm -rf cvstmp
-	mkdir cvstmp
-	cd cvstmp; \
+cvsroot:	hpcm_${VERSION}_cvs${TAREXT}
+	rm -rf cvsroot
+	mkdir cvsroot
+	cd cvsroot; \
 	    tar xf ../hpcm_${VERSION}_cvs${TAREXT} \
 	        ${TARUNZIP}
 
 # Make MD5 CVS Signatures File:
 #
 HPCM_${VERSION}_CVS_MD5_Signatures:	\
-		signatures_header cvstmp
+		signatures_header cvsroot
 	@if test "${HPCM_COPYRIGHT}" = ""; \
 	then echo HPCM_COPYRIGHT not defined; exit 1; fi
 	rm -f HPCM_${VERSION}_CVS_MD5_Signatures
@@ -224,18 +224,16 @@ HPCM_${VERSION}_CVS_MD5_Signatures:	\
 	     >> HPCM_${VERSION}_CVS_MD5_Signatures
 	md5sum hpcm_${VERSION}_cvs${TAREXT} \
 	  >>  HPCM_${VERSION}_CVS_MD5_Signatures
-	cd cvstmp; \
-	   md5sum `find . -type f -print` \
-	      >>  ../HPCM_${VERSION}_CVS_MD5_Signatures
+	md5sum `find cvsroot -type f -print` \
+	  >> HPCM_${VERSION}_CVS_MD5_Signatures
 
 # Check CVS MD5 Signatures
 #
-md5cvscheck:	cvstmp
-	cd cvstmp; \
-	   sed < ../HPCM_${VERSION}_CVS_MD5_Signatures \
-	       -e '1,/^ ====== /'d | \
-	       md5sum --check 2>&1 | \
-	       sed -e '/^[^ 	]*: OK$$/d'
+cvsmd5check:	cvsroot
+	sed < HPCM_${VERSION}_CVS_MD5_Signatures \
+	    -e '1,/^ ====== /'d | \
+	    md5sum --check 2>&1 | \
+	    sed -e '/^[^ 	]*: OK$$/d'
 		
 
 # Make tar files.
@@ -381,7 +379,7 @@ cleanslocs:
 	rm -f *.slocs
 
 cleancvs:
-	rm -rf cvstmp
+	rm -rf cvsroot
 	rm -f HPCM_${VERSION}_CVS_MD5_Signatures
 
 cleanweb:
