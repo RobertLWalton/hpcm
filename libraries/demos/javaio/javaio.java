@@ -2,7 +2,7 @@
 //
 // File:     javaio.java
 // Author:   Bob Walton <walton@deas.harvard.edu>
-// Date:     Fri Nov  1 06:35:28 EST 2002
+// Date:     Thu Feb 12 23:05:12 EST 2004
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: hc3 $
-//   $Date: 2002/11/01 11:36:22 $
+//   $Date: 2004/02/13 04:06:10 $
 //   $RCSfile: javaio.java,v $
-//   $Revision: 1.3 $
+//   $Revision: 1.4 $
 
 import java.io.*;
 import java.text.DecimalFormat;
@@ -43,12 +43,12 @@ public class javaio {
 	// characters as a word.
 	//
 	tokenizer.resetSyntax();
-	tokenizer.wordChars ( ' ', '\u00FF' );
+	tokenizer.wordChars ( '!', '\u00FF' );
 	tokenizer.whitespaceChars ( '\u0000', ' ' );
 	//
-	// The above code is a bit tricky in that is
-	// first sets ' ' to a wordChar and then to
-	// a whitespaceChar.
+	// You must not set the same character to be
+	// both a word character and a whitespace
+	// character.
 
 	// Set to read end of line as a token.
 	// If this function is not called, end of

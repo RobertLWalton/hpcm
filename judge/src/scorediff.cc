@@ -2,7 +2,7 @@
 //
 // File:	scorediff.cc
 // Authors:	Bob Walton (walton@deas.harvard.edu)
-// Date:	Wed Apr 24 11:42:14 EDT 2002
+// Date:	Thu Feb 12 19:30:57 EST 2004
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -11,26 +11,35 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: hc3 $
-//   $Date: 2002/04/24 16:02:16 $
+//   $Date: 2004/02/13 04:10:35 $
 //   $RCSfile: scorediff.cc,v $
-//   $Revision: 1.50 $
+//   $Revision: 1.51 $
 
 // This is version 2, a major revision of the first
 // scorediff program.  This version is more explicitly
 // token oriented.
 
-#include <stdlib.h>
-#include <limits.h>
-#include <iostream.h>
-#include <fstream.h>
-#include <ctype.h>
-#include <string.h>
-#include <math.h>
+#include <cstdlib>
+#include <climits>
+#include <iostream>
+#include <fstream>
+#include <cctype>
+#include <cstring>
+#include <cmath>
 #ifdef sun
 #   include <ieeefp.h>
 #endif
 int finite (double);	// Not always in math.h
-#include <assert.h>
+#include <cassert>
+using namespace std;
+
+// Name defined in include file that is used below and
+// needs to be changed in its usage below.
+//
+#ifdef INFINITY
+#    undef INFINITY
+#    endif
+#define INFINITY Infinity
 
 // Maximum size of a token, or of whitespace preceding
 // a token.
