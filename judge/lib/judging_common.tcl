@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Oct 18 04:27:33 EDT 2001
+# Date:		Sat Oct 20 08:45:22 EDT 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/10/18 08:29:14 $
+#   $Date: 2001/10/20 13:17:23 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.60 $
+#   $Revision: 1.61 $
 #
 
 # Table of Contents
@@ -27,8 +27,8 @@
 #	Reply Functions
 #	File Read/Write Functions
 #	Flag Functions
+#	Logical Expression Compilation
 #	Inline Code
-
 
 
 # Including this Code
@@ -1189,6 +1189,89 @@ proc test_flag { flagfilename } {
 proc clear_flag { flagfilename } {
     global flag_directory
     file delete -force $flag_directory/$flagfilename
+}
+
+# Logical Expression Compilation
+# ------- ---------- -----------
+
+# Compile a logical expression by replacing the atoms
+# in the expression with `$V(N)', where N is the number
+# of the atom in the expression, 0, 1, 2, ..., and V is
+# the `values' parameter to this function.  The compiled
+# logical expression is returned.  The n'th atom in the
+# original expression is stored in `A(n)', where A is
+# the value of the `atoms' parameter to this function.
+#
+# The logical expression is a list whose elements are
+# tokens.  Before any token is processed, it is looked
+# up in the abbreviations array, and any value found
+# replaces the token.  Note that the value must be a
+# single token.  Thus if `AB(T)' is defined, where AB
+# is the `abbreviations' parameter to this function and
+# T is a token in the logical expression (an element of
+# the logical expression viewed as a list), then the
+# value of `AB(T)' replaces T in the logical expression.
+# This rule is NOT recursive.
+#
+# The tokens `0', `1', `(', `)', `|', `&', `^', and `!'
+# are non-atoms.  All other tokens are atoms.
+#
+# Note that the compiled expression must be evaluated
+# in an environment in which the `values' array is
+# visible, and the `abbreviations' and `atoms' arrays
+# are accessed in the environment of the caller of this
+# function.
+#
+proc compile_logical_expression \
+    { expression abbreviations atoms values } {
+
+    upvar $abbreviations abbreviation
+    upvar $atoms atom
+
+    set n 0
+    set depth 0
+    set logical_expression ""
+    foreach token $expression {
+
+	# Replace abbreviation tokens.
+	#
+	if { [info exists abbreviation($token)] } {
+	    set token $abbreviation($token)
+	}
+
+	switch -- $token {
+	    (   {	incr depth }
+	    )   {   incr depth -1
+	    	    if { $depth < 0 } {
+			error "Parentheses mismatch in\
+			       `$expression'."
+		    }
+	    }
+	    0   -
+	    1   -
+	    !   -
+	    &   -
+	    ^   -
+	    |   { }
+
+	    default {
+		set atom($n) $token
+		set token "\$${values}($n)"
+		incr n
+	    }
+	}
+
+	# Append token to logical expression.
+	#
+	set logical_expression \
+	    "$logical_expression $token"
+    }
+
+    if { $depth != 0 } {
+	error "Parentheses mismatch in `$expression'."
+    }
+
+    return $logical_expression
 }
 
 # Inline Code
