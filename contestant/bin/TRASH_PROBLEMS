@@ -1,0 +1,113 @@
+#!/bin/sh
+#
+# Completely reinitialize a contestant or prototype
+# account problems directory.
+#
+# File:		TRASH_PROBLEMS
+# Author:	Bob Walton <walton@deas.harvard.edu>
+# Date:		Mon Sep 25 15:26:08 EDT 2000
+#
+# The authors have placed this program in the public
+# domain; they make no warranty and accept no liability
+# for this program.
+#
+# RCS Info (may not be true date or author):
+#
+#   $Author: hc3 $
+#   $Date: 2000/09/26 11:46:03 $
+#   $RCSfile: TRASH_PROBLEMS,v $
+#   $Revision: 1.1 $
+
+cd
+
+case "$1" in
+
+    "" )
+    	if test -x ~/.hpcm_contest
+	then
+	    contest=`ls -l ~/.hpcm_contest`
+	    contest=`expr "$contest" : \
+                          '.*-> *\([^ ]*\) *$' `
+	else
+	    echo "
+TRASH_PROBLEMS [contest]
+
+    Removes the problems subdirectory of the current
+    account and reinitializes it from the problems sub-
+    directory of the contest directory.  Specifically,
+    makes an image of that contest/problems directory,
+    making real directories, but symbolically linking
+    all files.
+
+    Before doing anything, checks that the current
+    account name is listed on a line by itself in either
+    contest/accounts or contest/prototype."
+    	    exit 1
+	fi
+	;;
+    * )
+    	contest=$1
+	;;
+esac
+
+case "$contest" in
+    /* )
+    	;;
+    *)
+    	echo $contest is NOT an absolute pathname
+	exit 1
+    	;;
+esac
+
+if test ! -r $contest/problems
+then
+	echo cannot read $contest/problems
+	exit 1
+elif test ! -x $contest/problems
+then
+	echo cannot execute $contest/problems
+	exit 1
+elif test ! -r $contest/accounts
+then
+	echo cannot read $contest/accounts
+	exit 1
+elif test ! -r $contest/prototype
+then
+	echo cannot read $contest/prototype
+	exit 1
+fi
+
+grep "^`id -un`\$" $contest/accounts \
+                   $contest/prototype >/dev/null
+if test $? -ne 0
+then
+	echo Bad user `id -un`
+	echo Not in $contest/{accounts,prototype}
+	exit 1
+fi
+
+if test `pwd` != "/home/`id -un`"; then
+	echo Home directory is not "/home/`id -un`"
+	exit 1
+fi
+
+
+if test -e problems; then
+	echo Removing problems
+	rm -rf problems
+fi
+
+for file in ` find $contest/problems -print `
+do
+	file=`expr "$file" : \
+		   "$contest/problems/\\(.*\\)\$" `
+	if test -d "$contest/problems/$file"; then
+	    echo mkdir "problems/$file"
+	    mkdir "problems/$file"
+	elif test -f "$contest/problems/$file"; then
+	    echo ln -s "$contest/problems/$file" \
+		  "problems/$file"
+	    ln -s "$contest/problems/$file" \
+		  "problems/$file"
+	fi
+done

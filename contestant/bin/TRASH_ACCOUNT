@@ -4,7 +4,7 @@
 #
 # File:		TRASH_ACCOUNT
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Sun Sep 24 14:16:34 EDT 2000
+# Date:		Mon Sep 25 15:53:55 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/09/24 18:11:03 $
+#   $Date: 2000/09/26 11:46:03 $
 #   $RCSfile: TRASH_ACCOUNT,v $
-#   $Revision: 1.6 $
+#   $Revision: 1.7 $
 
 cd
 
@@ -36,8 +36,8 @@ TRASH_ACCOUNT [contest]
     Checks after reloading that \`ls -a' equals contest/
     setup.ls.  Before doing anything, checks that the
     current account name is listed on a line by itself
-    in contest/setup.acc, and also checks that files
-    such as contest/setup.tar are readable.  If the
+    in contest/accounts, and also checks that files
+    such as contest/home/setup.tar are readable.  If the
     contest argument is not given, it is taken to be the
     target of the symbolic link ~/.hpcm_contest, if that
     exists.  If this program succeeds, it links ~/
@@ -59,15 +59,15 @@ case "$contest" in
     	;;
 esac
 
-if test ! -r $contest/setup.tar
+if test ! -r $contest/home/setup.tar
 then
 	echo cannot read $contest/setup.tar
 	exit 1
-elif test ! -r $contest/empty.ls
+elif test ! -r $contest/home/empty.ls
 then
 	echo cannot read $contest/empty.ls
 	exit 1
-elif test ! -r $contest/setup.ls
+elif test ! -r $contest/home/setup.ls
 then
 	echo cannot read $contest/setup.ls
 	exit 1
@@ -81,6 +81,7 @@ grep "^`id -un`\$" $contest/accounts >/dev/null
 if test $? -ne 0
 then
 	echo Bad user `id -un`
+	echo Not in $contest/accounts
 	exit 1
 fi
 
@@ -100,9 +101,9 @@ do
 done
 
 echo rm done
-ls -a | diff $contest/empty.ls -
-tar xf $contest/setup.tar
+ls -a | diff $contest/home/empty.ls -
+tar xf $contest/home/setup.tar
 echo tar done
-ls -aR | diff $contest/setup.ls -
+ls -aR | diff $contest/home/setup.ls -
 rm -f .hpcm_contest
 ln -s $contest .hpcm_contest
