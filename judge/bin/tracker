@@ -7,7 +7,7 @@
 #
 # File:		tracker
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat May 18 05:58:08 EDT 2002
+# Date:		Sat May 18 06:20:17 EDT 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -16,9 +16,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/05/18 10:16:29 $
+#   $Date: 2002/05/18 10:35:44 $
 #   $RCSfile: tracker,v $
-#   $Revision: 1.29 $
+#   $Revision: 1.30 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -609,10 +609,9 @@ proc compute_score_array {} {
         regexp {^([^/]*)/([^/]*)$} $sp \
 	       forget submitter problem
 
-	set items ""
-        foreach item [lsort $score_array($sp)] {
-
-	    lappend items $item
+	set items [lsort $score_array($sp)]
+	set score_array($sp) $items
+        foreach item $items {
 
 	    if { [info exists \
 	               problem_array($problem)] } {
@@ -627,10 +626,7 @@ proc compute_score_array {} {
 	    } else {
 	        set submitter_array($submitter) 1
 	    }
-
-	    if { [lindex $item 1] == "cc" } break
 	}
-	set score_array($sp) $items
     }
 }
 
@@ -648,16 +644,16 @@ proc score_summary { kind } {
 			    	  Number of Submissions
 [format {%-14.14s} [string toupper $kind 0 0]]"
     set r "$r    cc    io    fe    ic    se    te   \
-                 pc    oe   total\n"
+                 pc    oe    ac    total\n"
 
-    foreach xx {cc io fe ic se te pc oe} {
+    foreach xx {cc io fe ic se te pc oe ac} {
 	set ${xx}_total 0
     }
 
     foreach item \
             [lsort [array names ${kind}_array]] {
 
-	foreach xx {cc io fe ic se te pc oe} {
+	foreach xx {cc io fe ic se te pc oe ac} {
 	    set $xx 0
 	}
 
@@ -667,14 +663,23 @@ proc score_summary { kind } {
 	}
 
 	foreach sp [array names score_array $sp_match] {
+	    set cc_found no
 	    foreach score_item $score_array($sp) {
-	        incr [lindex $score_item 1]
+	        if { $cc_found } {
+		    incr ac
+		} else {
+		    set score [lindex $score_item 1]
+		    incr $score
+		    if { $score == "cc" } {
+		        set cc_found yes
+		    }
+		}
 	    }
 	}
 
 	set item_total 0
 	set line [format {%-14.14s} $item]
-	foreach xx {cc io fe ic se te pc oe} {
+	foreach xx {cc io fe ic se te pc oe ac} {
 	    if { [set $xx] == 0 } {
 	        set line "$line    --"
 	    } else {
@@ -689,7 +694,7 @@ proc score_summary { kind } {
     }
 
     set line [format {%-14.14s} ""]
-    foreach xx {cc io fe ic se te pc oe} {
+    foreach xx {cc io fe ic se te pc oe ac} {
 	set line "$line -----"
     }
     set line "$line   -----"
@@ -697,7 +702,7 @@ proc score_summary { kind } {
 
     set total 0
     set line [format {%-14.14s} "Total"]
-    foreach xx {cc io fe ic se te pc oe} {
+    foreach xx {cc io fe ic se te pc oe ac} {
 	set line "$line[format {%6d} [set ${xx}_total]]"
 	incr total [set ${xx}_total]
     }
@@ -1034,8 +1039,8 @@ proc display_directory_list {} {
 
     if { $directory_list_length == 0 } {
 
-    	# Come here if only directories that might be
-	# interesting are those being processed by
+    	# Come here if the only directories that might
+	# be interesting are those being processed by
 	# autodispatch.
 
 	set auto_list [add_auto]
@@ -1229,6 +1234,9 @@ The column headings denote score values as follows:
 					Exceeded
     pc = Program Crashed       oe = Output Size Limit\
 					Exceeded
+
+    ac = any submission ignored because it was made
+         AFTER a Completely Correct submission
 "
 	    return yes
 	}
