@@ -1,0 +1,114 @@
+#! /bin/sh -f
+# file:		judge
+# author:	Bob Walton (walton@deas.harvard.edu)
+# The next line starts tcl \
+exec tcl "$0" "$@"
+
+# Use tcl rather than tclsh so that `signal' is defined.
+
+if { [info command signal] == "signal" } {
+    signal error SIGINT
+}
+
+# Grep expressions to search for in output file to
+# detect limit overruns:
+#
+set cputime_grep "{Cputime limit exceeded}"
+set filesize_grep "{Filesize limit exceeded}"
+set coredump_grep "{core dumped}"
+set memorysize_grep "cannot allocate"
+more TBD
+
+set document "
+judge
+
+    TBW"
+
+if { $argc != 2 } {
+    puts $document
+    exit 0
+}
+
+set output_file [lindex $argv 0]
+set test_file [lindex $argv 1]
+
+if { ! [file readable $output_file] } {
+    fatal_error "not readable: $output_file"
+}
+
+if { ! [file readable $test_file] } {
+    fatal_error "not readable: $test_file"
+}
+
+if { ! [file readable judging_instructions] } {
+    set judging_instructions \
+        $default_judging_instructions
+} else {
+    set judging_instructions_fd \
+        [open judging_instructions r]
+    set judging_instructions \
+        [gets $judging_instructions_fd}
+    close $judging_instructions_fd
+}
+
+set spacebreak_ok	no
+set linebreak_ok	no
+set whitespace_ok	no
+set number_ok		no
+set number_diff		0.0
+
+set number_last no
+foreach i $judging_instructions {
+    if { $number_last } {
+        set number_diff $i
+	set number_last no
+    } else if { $i == number } {
+        set number_ok yes
+	set number_last yes
+    } else if { $i == "spacebreak" } {
+        set spacebreak_ok yes
+    } else if { $i == "linebreak" } {
+        set linebreak_ok yes
+    } else if { $i == "whitespace" } {
+        set whitespace_ok yes
+    } else {
+        fatal_error "Unknown judging_instruction: $i"
+    }
+}
+
+set score ""
+
+set scorediff [exec scorediff $output_file $test_file]
+
+set number_last no
+foreach d $scorediff {
+    if { $last_number } {
+	set last_number no
+        if { $d > $number_diff } {
+	    set score "Incorrect Output"
+	    break
+	}
+    } else if { $d == "nonblank" } {
+    	set score "Incorrect Output"
+	break
+    } else if { $d == "whitespace" } {
+        if { ! $whitespace_ok } {
+	    set score "Incorrect Format" 
+        }
+    } else if { $d == "spacebreak" } {
+        if { ! $spacebreak_ok } {
+	    set score "Incorrect Format" 
+        }
+    } else if { $d == "linebreak" } {
+        if { ! $linebreak_ok } {
+	    set score "Incorrect Format" 
+        }
+    } else if { $d == "number" } {
+        if { ! $number_ok } {
+	    set score "Incorrect Output" 
+	    break
+        }
+	set last_number yes
+    }
+}
+

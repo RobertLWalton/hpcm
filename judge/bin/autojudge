@@ -16,6 +16,12 @@ set allowed_extensions_default \
     ".c .cc .java"
 set allowed_extensions_filename \
     "allowed_submission_extensions"
+set limits_default \
+    "limit cputime 30;\
+     limit filesize 1m;\
+     limit datasize 8m;\
+     limit stacksize 4m;\
+     limit openfiles 3"
 
 set document "
 judge
@@ -155,10 +161,25 @@ if { ! [file readable "${submitted_program}.out" \
      || [file mtime "${submitted_program}.in"] \
            < [file mtime "${submitted_program}.in"] } {
 
+    if { [file readable execution_limits] } {
+    	set fd [open execution_limits r]
+	set limits = ""
+	while { yes } {
+	    set line [gets $fd]
+	    if { [eof $fd] } break
+	    set limits "$limits;$line"
+	}
+    }
+    else {
+        set limits $default_limits
+    }
+
     puts "Making ${submitted_program}.out"
-    eval "exec nobody $submitted_program \
-	       <  "${submitted_program}.in" \
-    	       >& "${submitted_program}.out"
+    exec << "$limits;\
+             nobody $submitted_program\
+             < ${submitted_program}.in\
+             >& ${submitted_program}.out" \
+	 /bin/csh -f
 }
 
 TBW
