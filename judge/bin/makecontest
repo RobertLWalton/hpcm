@@ -6,7 +6,7 @@
 #
 # File:		makejudgingdir
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Oct 19 07:09:25 EDT 2001
+# Date:		Fri Oct 19 08:46:42 EDT 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/10/19 11:24:49 $
+#   $Date: 2001/10/19 12:48:40 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.69 $
+#   $Revision: 1.70 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -352,15 +352,19 @@ makejudgingdir option ... index_specification ...
     processed.  A substitution of the form:
 
     	option1s:'option11t option12t ...'
-
+
     in the index specification replaces option1s by the
     options in the list `option11t option12t ...'.
+    As a special case, if `option1s' is `ALL', the
+    options in the list `option11t option12t ...' are
+    always added to the substitution result without
+    replacing any option in the original option list.
     Substitution is NOT recursive: it is done only on
     options appearing in the item entries in the index
     files, and not on options that are the result of
     substitution.  After substitutions are done, unknown
     options are ignored.
-
+
     If an item has the `include' option after option
     substitutions, the item entry is included in an out-
     put index within the ./info directory.   The indices
@@ -386,13 +390,13 @@ makejudgingdir option ... index_specification ...
     may end up being included in several output indices
     if the item entries following it are included in
     several different output indices.
-
+
     The program options -demos, -problems, and -help can
     be used by omission to prevent the ./contest/demos,
     ./contest/problems, or ./contest/help directories
     from being created, but program options never affect
     the content of any output indices that are created.
-
+
     The name of an item is a modification of the name
     of the item as it appears in the input index file
     item entry.  The modification results from subtitu-
@@ -424,14 +428,14 @@ makejudgingdir option ... index_specification ...
     We proceed to describe the program options not di-
     rectly involved with making ./info, ./contest/help,
     ./contest/problems, or ./contest/demos.
-
+
     The -this_contest program option creates the follow-
     ing if they do not exist:
 
 	./help			directory
 	./help/index		file
 	./help/this_contest	file
-
+
     Note these are in the judging directory proper, and
     not in the ./info or ./contest subdirectories.  The
     ./help/index file is an INPUT index file that con-
@@ -463,11 +467,11 @@ makejudgingdir option ... index_specification ...
     The -help2 program option creates the ./contest/
     help2 directory if it does not exist.  It is simply
     linked to the ./contest/help directory.
-    
+ 
     Note that the contestant's `help' command searches
     ./contest/help1, ./contest/help2, ./contest/help3,
     and ./contest/help4 in order for help files.
-
+
     The -bin program option creates the ./contest/bin
     directory if it does not exist.  It is simply linked
     to the ./contest/contestant/bin directory, and a
@@ -801,6 +805,11 @@ proc expand_options { option_list } {
 	    lappend result $option
 	}
     }
+
+    if { [info exists option_array(ALL)] } {
+	set result \
+	    [concat $result $option_array(ALL)]
+	}
 
     return $result
 }
