@@ -5,7 +5,7 @@
 #
 # File:		autojudge
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Jan  4 13:03:36 EST 2002
+# Date:		Sun Jan  6 05:25:46 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/01/04 18:03:28 $
+#   $Date: 2002/01/06 10:27:25 $
 #   $RCSfile: autojudge,v $
-#   $Revision: 1.50 $
+#   $Revision: 1.51 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -364,15 +364,16 @@ set extension [file extension $argument]
 
 # Signal error if bad problem name or extension.
 #
-proc argument_error {} {
-    global argument
+proc subject_error { what { comment "" } } {
+    global message_subject
     reply \
-          "ERROR: problem name is illegal: $argument" \
+          "ERROR: $what is illegal$comment in\
+	  	  `Subject: $message_subject'" \
 	  ""  \
 	  "THIS SUBMISSION (see below) IGNORED"  \
-	  "YOU MUST RESUBMIT WITH A LEGAL PROBLEM NAME"
-    puts "SUBMISSION ERROR: problem name or extension\
-          is illegal: $argument"
+	  "You must resubmit with a legal $what"
+    puts "SUBMISSION ERROR: $what is illegal$comment in\
+          `Subject: $message_subject'"
     exit 0
 }
 
@@ -382,20 +383,22 @@ if {    $problem == "" \
      || [regexp {\.} $problem] \
      || [regexp {/}  $problem] \
      || [regexp {^-} $problem]  } {
-    argument_error
+    subject_error "problem name"
 }
 if { $extension != "" \
      && [lsearch -exact $allowed_extensions \
      			$extension] < 0 } {
-    argument_error
+    subject_error extension
+} elseif { [regexp {/} $extension] } {
+    subject_error extension
 }
 
 
 # Check for existence of problem solution directory.
 #
-set problem_solution $solutions_directory/$problem
-if { ! [file isdirectory $problem_solution] } {
-    argument_error
+set solution_directory $solutions_directory/$problem
+if { ! [file isdirectory $solution_directory] } {
+    subject_error "problem name"
 }
 
 # Function that links files according to the instruc-
@@ -404,12 +407,30 @@ if { ! [file isdirectory $problem_solution] } {
 #
 proc execute_links { files } {
 
-    global problem extension problem_solution
+    global problem extension solution_directory
 
     if { [catch { llength $files }] } {
         error "$files_file file value is not formatted\
 	       as a TCL list:\n$files"
     }
+
+    # Failure occurs if there is no source for a -LINK-
+    # target.  In this case, there may or may not be a
+    # list of .EXTENSION # values that would cause there
+    # to be sources for all -LINK- targets.
+    
+    # List of -LINK- targets that will fail regardless of
+    # .EXTENSION value.
+    #
+    set hard_link_failures ""
+
+    # List of -LINK- targets that fail because .EXTENSION
+    # is wrong, and list of .EXTENSION values that would
+    # permit ALL these targets to succeed.
+    #
+    set soft_link_failures ""
+    set legal_exts not-set-yet
+
     set mode none
     foreach item $files {
         switch -- $item {
@@ -436,8 +457,31 @@ proc execute_links { files } {
 			    [lrange $item 1 end]
 			set target [lindex $item 0]
 		    }
+
+		    set root \
+			[file rootname $target]
+		    set ext \
+			[file extension $target]
+		    if { $root == "PROBLEM" } {
+			set root $problem
+		    }
+		    if { $ext == ".EXTENSION" } {
+		        error "Bad $files_file -LINK-\
+			       or -OPTIONAL-LINK-\
+			       item:\n  .EXTENSION used\
+			       in link target: $item"
+		    }
+		    set target $root$ext
+		    if { $target == "" \
+		         || [regexp {/} $target ] } {
+		        error "Bad $files_file -LINK-\
+			       or -OPTIONAL-LINK-\
+			       target in: $item"
+		    }
+
 		    set source ""
-		    set EXTENSION_findable no
+		    set exts ""
+		    set sd $solution_directory
 		    foreach name $source_list {
 		    	set root \
 			    [file rootname $name]
@@ -448,29 +492,31 @@ proc execute_links { files } {
 			}
 			if { $ext == ".EXTENSION" } {
 
-			    # Compute EXTENSION_findable
-			    # which is true if some
-			    # extension will find a
-			    # source.
-			    #
-			    set ps $problem_solution
-			    set fl \
-			        [glob -nocomplain \
-				      $ps/$root.*]
-			    set EXTENSION_findable \
-			        [expr { [llength $fl] \
-					    > 0 }]
+			    set n $sd/$root$extension
+			    set m \
+			        {^$sd/$root(\.[^/.]+)$}
+			    if { $extension == "" \
+			         || ! [file exists $n] \
+				 	} {
+				foreach f \
+				    [glob -nocomplain \
+				          $sd/$root.*] {
+				    if { [regexp $m $f \
+				                 forget \
+						 e] } {
+					lappend exts $e
+				    }
+				}
+			    }
 
 			    if { $extension == "" } {
 			        continue
 			    }
 			    set ext $extension
 			}
-			set name $root$ext
-			set name \
-			    $problem_solution/$name
-			if { [file exists $name] } {
-			    set source $name
+			if { [file exists \
+			           $sd/$root$ext] } {
+			    set source $root$ext
 			    break
 			}
 		    }
@@ -496,34 +542,39 @@ proc execute_links { files } {
 
 		    	# No source found.
 
+			if { $type == "link" } {
+			    puts "Deleting $target"
+			    file delete -force $target
+			}
+
 		        if { $mode == "link" } {
 
-			    # Its an error if -LINK-.
-			    # If a source might have
-			    # been found had the right
-			    # extension been provided,
-			    # complain to submitter.
-			    # Otherwise its a system
-			    # error.
-			    #
-			    if { $EXTENSION_findable } {
-			        argument_error
+			    if { [llength $exts] > 0 } {
+			        if { $ext_is_illegal \
+				     == "no" } {
+				    set legal_exts $exts
+				}
+				set legal_exts \
+				    [lindex \
+				       [intersect3 \
+				          $legal_exts \
+					  $exts]]
+				lappend \
+				    soft_link_failures \
+				    $target
 			    } else {
-				error "No source file\
-				       found for\
-				       non-optional\
-				       link: $item"
+				lappend \
+				    hard_link_failures \
+				    $target
 			    }
 			}
-			if { $type == "link" } {
-			    puts "Deleting $target"
-			    file delete -force $target
-			}
 		    } else {
+
 			if { $type == "link" } {
 			    puts "Deleting $target"
 			    file delete -force $target
 			}
+
 			set tail [file tail $source]
 			if { $tail == $target } {
 			    puts "Linking $target"
@@ -535,6 +586,20 @@ proc execute_links { files } {
 		    }
 		}
 	    }
+	}
+    }
+
+    if { [llength $hard_link_failures] > 0 }
+	error "No source files found for -LINK-\
+	       targets: $hard_link_failures"
+    } elseif { [llength $soft_link_failures] > 0 } {
+        if { [llength $legal_exts] == 0 } {
+	    error "No source files findable for all\
+	    	   -LINK- targets: $soft_link_failures"
+	} else {
+	    subject_error \
+		extension \
+		" (which should be one of $legal_exts)"
 	}
     }
 }
@@ -570,7 +635,7 @@ if { [file exists $files_file] } {
 #
 proc find_solution_make_files { files } {
 
-    global problem_solution
+    global solution_directory
 
     set solution_make_files ""
     set solution_make no
@@ -583,7 +648,7 @@ proc find_solution_make_files { files } {
 		if { [regexp {^-[-A-Z]*-$} $item] } {
 		    set solution_make no
 		} elseif { $solution_make } {
-		    set target $problem_solution/$item
+		    set target $solution_directory/$item
 		    if { ! [file exists $target] } {
 			lappend solution_make_files \
 				$item
@@ -605,19 +670,19 @@ while { "yes" } {
         [find_solution_make_files $files]
     if { [llength $solution_make_files] == 0 } break
 
-    if { [dispatch_lock $problem_solution] } {
+    if { [dispatch_lock $solution_directory] } {
 	puts "Executing make $solution_make_files"
-	exec sh -c "cd $problem_solution;\
+	exec sh -c "cd $solution_directory;\
 		    make $solution_make_files" \
 	     >&@ stdout
-	dispatch_unlock $problem_solution
+	dispatch_unlock $solution_directory
 	break
     }
 
     incr count
 
     if { $count >= 10 } {
-    	puts "CANNOT LOCK $problem_solution: giving up\
+    	puts "CANNOT LOCK $solution_directory: giving up\
 	      on make $solution_make_files"
 	break
     }
