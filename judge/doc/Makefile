@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Jan 29 06:19:45 EST 2002
+# Date:		Mon Feb  4 22:11:37 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/01/29 11:19:49 $
+#   $Date: 2002/02/05 03:16:37 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.12 $
+#   $Revision: 1.13 $
 
 # make
 #	Makes documentation as fprintable .doc files in
@@ -60,6 +60,7 @@ DOCS=	overview.doc \
 	contestant/hpcm_submit.doc \
 	secure/hpcm_TRASH_ACCOUNTS.doc \
 	judge/lookat.doc \
+	judge/lpq.doc \
 	contestant/lpq.doc \
 	judge/makeMakefile.doc \
 	judge/makejudgingdir.doc \
@@ -75,13 +76,19 @@ DOCS=	overview.doc \
 	judge/scorefinder.doc \
 	contestant/SETUP_PROTOTYPE.doc \
 	judge/startcontest.doc \
-	test/test_mail.doc \
 	judge/testproblems.doc \
-	test/test_submit.doc \
 	judge/tracker.doc \
 	judge/trackfinder.doc \
 	contestant/TRASH_ACCOUNT.doc \
 	contestant/xcsh.doc
+
+# List sources in order of printing.
+#
+SOURCES = \
+	../lib/hpcm_judging.rc \
+	../lib/judging_common.tcl \
+	../lib/display_common.tcl \
+	../lib/scoring_common.tcl
 
 all:	bin judge contestant secure test ${DOCS}
 
@@ -89,15 +96,12 @@ all:	bin judge contestant secure test ${DOCS}
 #
 .SUFFIXES:
 
-fprint:	${DOCS}
-	fprint ${DOCS} \
-	       ../lib/hpcm_judging.rc \
-	       ../lib/judging_common.tcl
+fprint:	${DOCS} ${SOURCES}
+	fprint ${DOCS} ${SOURCES}
 
-fcheck:	${DOCS}
+fcheck:	${DOCS} ${SOURCES}
 	fcheck ${DOCS}
-	fcheckc ../lib/hpcm_judging.rc \
-	        ../lib/judging_common.tcl
+	fcheckc ${SOURCES}
 
 hpcm_judging.rc:
 	ln -s ../lib/hpcm_judging.rc
@@ -213,6 +217,9 @@ judge/lookat.doc:	hpcm_judging.rc \
 		        ../../judge/bin/lookat
 	rm -f judge/lookat.doc
 	-../../judge/bin/lookat -doc >judge/lookat.doc
+judge/lpq.doc:	../../judge/bin/lpq
+	rm -f judge/lpq.doc
+	-../../judge/bin/lpq -doc >judge/lpq.doc
 judge/makeMakefile.doc:	hpcm_judging.rc \
 			../../judge/bin/makeMakefile
 	rm -f judge/makeMakefile.doc
@@ -372,17 +379,3 @@ contestant/xcsh.doc:	../../contestant/bin/xcsh
 	rm -f contestant/xcsh.doc
 	-../../contestant/bin/xcsh -doc \
 	    >contestant/xcsh.doc
-
-# ../test docs
-#
-test/test_mail.doc:	hpcm_judging.rc \
-			../../judge/test/test_mail
-	rm -f test/test_mail.doc
-	-../../judge/test/test_mail -doc \
-	    >test/test_mail.doc
-
-test/test_submit.doc:	hpcm_judging.rc \
-			../../judge/test/test_submit
-	rm -f test/test_submit.doc
-	-../../judge/test/test_submit -doc \
-	    >test/test_submit.doc
