@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Nov 14 23:28:48 EST 2000
+# Date:		Sat Jan  6 21:23:42 EST 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/11/18 18:46:06 $
+#   $Date: 2001/01/07 05:20:00 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.52 $
+#   $Revision: 1.53 $
 #
 
 # Table of Contents
@@ -429,9 +429,12 @@ proc log_error { error_output } {
 	    }
 
 	    # Write reply-to field equal to $received_
-	    # mail `To' field.
+	    # mail `To' field, if that exists.
 	    #
-	    puts $mail_ch "Reply-To:$message_to"
+	    if { [info exists message_to]
+	         && $message_to != "" } {
+		puts $mail_ch "Reply-To:$message_to"
+	    }
 
 	    # Write `Subject:' field, `X-HPCM-Test-
 	    # Subject' field, and announce error.

@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/01/06 16:25:18 $
+#   $Date: 2001/01/07 05:19:58 $
 #   $RCSfile: old_makescoreboard,v $
-#   $Revision: 1.6 $
+#   $Revision: 1.7 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -70,7 +70,7 @@ makescoreboard \[-start | -status | -stop\] \\
     $judging_parameters_file, to avoid actually\
     				recomputing and
     resending the scoreboard unnecessarily.
-
+
     If the -email option is given, this program e-mails
     to the address given in the option the recomputed
     scoreboard with the file
@@ -79,6 +79,32 @@ makescoreboard \[-start | -status | -stop\] \\
 
     appended, whenever the scoreboard is recomputed.
 
+    As an example use of the -email option, if the email
+    option is
+
+      -email '\"password scoreboard\"<foo@@bar>'
+
+    and the .procmailrc file of account foo on machine
+    bar contains
+
+    :0 b:
+    * ^To:.*password.*scoreboard
+    | cat >public_html/private/password/scoreboard;\\
+      chmod a+r public_html/private/password/scoreboard
+
+    then the effect of sending the scoreboard to the
+    email address will be to put a copy the computed
+    scoreboard, with optional trailing `scoreboard.
+    notes', into the publicly readable file
+
+      foo@bar:public_html/private/password/scoreboard
+
+    Here `password' can be replaced by an actual pass-
+    word that ensures people who do not know the pass-
+    word cannot interfere with the system or see the
+    scoreboard (if the `private' directory is not pub-
+    licly readable).
+
     Deleting an existing scoreboard.1 file, our touching
     (see the UNIX touch(1) command) or changing any
     of the files:
@@ -111,13 +137,13 @@ makescoreboard \[-start | -status | -stop\] \\
     ID it contains is valid, this program prints infor-
     mation about the ID'ed process and does nothing
     else.
-    
+
     If called with the -stop option, this program does
     nothing but send kill signals to the process whose
     ID is listed in the $scoreboard_pid_file file, and
     then deletes the file.  While doing this it outputs
     information about its progress.
-
+
     If called with the -status option, this program just
     outputs information about the status of any process
     started by `makescoreboard -start'.
@@ -127,14 +153,53 @@ makescoreboard \[-start | -status | -stop\] \\
     standard error.  Without these options, this program
     logs errors in the log directory."
 
-# Process any -start option.  If second argument exists,
+set email_address ""
+set parameters_file ""
+set interval 60
+
+proc process_arguments { argv } {
+
+    global email_address parameters_file interval \
+           document log_mode contest_directory
+
+    while { [llength $argv] > 0 } {
+        if { [lindex $argv 0] == "-email" } {
+	    set email_address [lindex $argv 1]
+	    set argv [lrange $argv 2 end]
+	} elseif { [lindex $argv 0] == "-parameters" } {
+	    set parameters_file [lindex $argv 1]
+	    if { ! [file readable $parameters_file] } {
+	        error "$parameters_file is not readable"
+	    }
+	    set argv [lrange $argv 2 end]
+	} elseif { ! [catch { expr [lindex $argv 0] }] \
+    	           && [lindex $argv 0] >= 0 } {
+	    set interval [lindex $argv 0]
+	    set argv [lrange $argv 1 end]
+	} else {
+	    puts $document
+	    exit 1
+	}
+    }
+
+    if { $email_address == "" \
+         && ! [file isdirectory $contest_directory] } {
+	set log_mode none
+    	error "no email address and no contest\
+	       directory"
+    }
+}
+
+# Process any -start option.  All arguments be
 # it must be a non-zero interval.
 #
-if { $argc >= 1 && [lindex $argv 0] == "-start" \
-     && ( $argc == 1 || \
-          ( $argc == 2 && \
-	    [regexp {^[1-9]} [lindex $argv 1]] ) ) } {
+if { $argc >= 1 && [lindex $argv 0] == "-start" } {
+
+    # Check arguments for errors
+    #
     set log_mode none
+    process_arguments [lrange $argv 1 end]
+
     set spid $judging_directory/$scoreboard_pid_file
     if { [file exists $spid] } {
          set pid [read_file $spid]
@@ -230,33 +295,16 @@ if { $argc == 1 && [lindex $argv 0] == "-stop" } {
     exit 0
 }
 
-# If any non interval arguments, print documentation and
-# exit.
+# Process arguments
 #
-if { $argc > 1 \
-     || ( $argc == 1 \
-          && [regexp {^-} [lindex $argv 0]] ) } {
-    puts $document
-    exit 1
-}
-
-# Set interval.
-#
-if { $argc == 1 } {
-    set interval [lindex $argv 0]
-    if { [catch { expr $interval }] \
-    	 || $interval < 0 } {
-    	error "$interval is not an integer >= 0"
-    }
-} else {
-    set interval 60
-}
+process_arguments $argv
 
 # Abbreviate long file names.
 #
-set sbfile $contest_directory/scoreboard.1
-set sbhead $contest_directory/scoreboard.1head
-set jparam $judging_directory/$judging_parameters_file
+set sbfile  $contest_directory/scoreboard.1
+set sbhead  $contest_directory/scoreboard.1head
+set sbnotes $judging_directory/scoreboard.notes
+set jparam  $judging_directory/$judging_parameters_file
 
 # Ignore signals except during sleep (see below).
 #
@@ -272,33 +320,102 @@ while { "yes" } {
     #
     clear_flag $score_flag_file
 
-    # Check for unwritable contest directory.
+    # Collect scoreboard.
     #
-    if { ! [file isdirectory $contest_directory] \
-	 || ! [file writable $contest_directory] } {
-	error "$contest_directory is not a writable\
-	       directory"
+    set date [clock format [clock seconds]]
+    if { $parameters_file == "" } {
+	catch { exec scorefinder | scoreboard } \
+	      scoreboard
+    } else {
+	catch { exec scorefinder | \
+		scoreboard $parameters_file } \
+	      scoreboard
     }
 
-    # Delete old scoreboard.1
+    # If the scoreboard is empty, say so explicitly.
     #
-    if { [file exists $sbfile] } {
-	file delete -force $sbfile
+    if { $scoreboard == "" } {
+	set scoreboard "The scoreboard is currently\
+	                EMPTY!  Nothing must have\
+			happened yet."
     }
 
-    # Copy scoreboard.1head to scoreboard.1.
+    # Handle case with email_address.
     #
-    if { [file exists $sbhead] } {
-        exec cat $sbhead - << "\n\n" > $sbfile
+    if { $email_address != "" } {
+
+	# Compute email_scoreboard.
+	#
+	if { [file readable $sbnotes] } {
+	    catch { exec cat $sbnotes } tail
+	    set email_scoreboard \
+	        "See notes below.           $date
+
+=================== ===================\
+=================== ===================
+$scoreboard
+=================== ===================\
+=================== ===================
+
+$tail"
+
+	} else {
+	    set email_scoreboard "$date
+
+$scoreboard"
+	   
+	}
+
+	# Send the scoreboard to the email-address.
+	#
+	send_message "To: $email_address
+
+	$email_scoreboard"
     }
 
-    # Fill in rest of scoreboard.1.
+    # Handle case with contest directory.
     #
-    exec scorefinder | scoreboard >> $sbfile
+    if { [file isdirectory $contest_directory] } {
 
-    # Make scoreboard.1 readable by everyone.
-    #
-    grant_access $sbfile
+	# Check for unwritable contest directory.
+	#
+	if { ! [file writable $contest_directory] } {
+	    error "$contest_directory is not writable"
+	}
+
+	# Compute scoreboard_page.
+	#
+	if { [file readable $sbhead] } {
+	    catch { exec cat $sbhead } head
+	    set scoreboard_page \
+	        "$head
+
+$date
+=================== ===================\
+=================== ===================
+$scoreboard
+=================== ===================\
+=================== ==================="
+
+	} else {
+	    set scoreboard_page "$date
+
+$scoreboard"
+	   
+	}
+
+	# Delete and rewrite scoreboard.1
+	#
+	if { [file exists $sbfile] } {
+	    file delete -force $sbfile
+	}
+	write_file $sbfile $scoreboard_page
+
+	# Make scoreboard.1 readable by everyone.
+	#
+	grant_access $sbfile
+
+    }
 
     # If interval == 0 do NOT loop indefinitely.
     #
