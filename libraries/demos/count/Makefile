@@ -1,7 +1,7 @@
 # Makefile for the `count' Demonstration Problem
 #
 # File:		Makefile
-# Date:		Mon Jan 28 03:52:38 EST 2002
+# Date:		Wed Feb 13 08:12:02 EST 2002
 #
 # Exactly ONE of the four files count.c (C), count.cc
 # (C++), count.p (Pascal), or count.java (Java) should
@@ -17,10 +17,13 @@
 #			p2c on count.p, or javac on
 #			count.java, depending upon which
 #			of count.c, count.cc, count.p,
-#			or count.java exist.  Does
-#			nothing if `count' is more up
-#			to date than count.c, count.cc,
-#			count.p, or count.java.
+#			or count.java exist.  Also makes
+#			a shell script named `count' for
+#			count.java and count.lsp files.
+#			Does nothing if `count' is more
+#			up to date than count.c,
+#			count.cc, count.p, count.java,
+#			or count.lsp.
 #
 #	make count.out	Makes `count' as above and
 #			then runs it with standard
@@ -31,13 +34,13 @@
 #			screen.  Does nothing, however,
 #			if count.out is more recent
 #			than both count.in and count.
-#			
+#			
 #	make submit	Makes `count.out' just to be
 #			sure that nothing crashes, and
 #			then e-mails count.c, count.cc,
-#			count.java, or count.p to the
-#			judges.
-#
+#			count.java, count.p, or
+#			count.lsp to the judges.
+#
 #	make clean	Removes `count', count.out, and
 #			other intermediate files that
 #			might exist, such as `core',
@@ -45,7 +48,7 @@
 
 
 .SUFFIXES:
-.SUFFIXES: .c .cc .java .p
+.SUFFIXES: .c .cc .java .p .lsp
 
 default:	count.out
 
@@ -64,15 +67,23 @@ default:	count.out
 
 # Do NOT try to use -check option for p2c as it fouls up
 # eof detection.
+#
 
 .java:
-	rm -f $* $*.class core
+	rm -f $* *.class core
 	javac -g $*.java
 	echo >$* '#!/bin/sh'
 	echo >>$* "exec `which java` $*"
 	chmod a+r *.class
 	chmod a+rx $*
-#
+
+.lsp:
+	rm -f $* core
+	echo >$* '#!/bin/sh'
+	echo >>$* "exec `which hpcm_clisp` t"
+	chmod a+r $*.lsp
+	chmod a+rx $*
+
 # hpcm_sandbox below may execute `count' as a special
 # unprivileged user named `sandbox', so various files
 # must be `a+x' or `a+r'.
@@ -81,8 +92,8 @@ count.out:	count count.in
 	rm -f count.out core
 	chmod a+x . count
 	hpcm_sandbox -cputime 60 \
-	             -datasize 8m \
-		     -stacksize 2m \
+	             -datasize 4m \
+		     -stacksize 4m \
 		     -filesize 50k \
 		     -watch \
 		     count \
@@ -96,18 +107,20 @@ count.out:	count count.in
 submit:		count.out
 	hpcm_submit count
 
-clean:
-	rm -f count count.class count.p2c core count.out
 #
+clean:
+	rm -f count *.class count.p2c core count.out
+
+
 # Author:	walton@deas.harvard.edu
 #
-# The authors have placed this program in the public
+# The authors have placed this file in the public
 # domain; they make no warranty and accept no liability
-# for this program.
+# for this file.
 #
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/01/28 08:52:57 $
+#   $Date: 2002/02/13 13:38:13 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.17 $
+#   $Revision: 1.18 $
