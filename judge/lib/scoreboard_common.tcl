@@ -3,7 +3,7 @@
 #
 # File:		scoreboard_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Oct 18 21:15:49 EDT 2002
+# Date:		Fri Oct 18 21:32:17 EDT 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -12,9 +12,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/10/19 01:30:05 $
+#   $Date: 2002/10/19 02:06:47 $
 #   $RCSfile: scoreboard_common.tcl,v $
-#   $Revision: 1.43 $
+#   $Revision: 1.44 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -554,14 +554,15 @@ proc prune_scoreboard_array { } {
 # The format of the problem_scores and sort_code depend
 # upon the settings of various scoreboard parameters.
 # The problem_scores will not be more than 9 characters
-# long.  The scoreboard_list is sorted in the order that
-# submitters are to be displayed on the scoreboard.
+# long except in very rare cases.  The scoreboard_list
+# is sorted in the order that submitters are to be
+# displayed on the scoreboard.
 #
 # If scoreboard_display_correct and scoreboard_display_
 # incorrect are both `yes', and scoreboard_start_time
 # is NOT "", the sort code is
 #
-#	ccc.ttttttttt.sss problems_correct
+#		     ccc.ttttttttt.sss
 #
 # where ccc is 10**3 - 1 - the number of correct
 # problems in three digits with leading zeros, ttttttttt
@@ -594,9 +595,10 @@ proc prune_scoreboard_array { } {
 #	no /---/---	submitters_name
 #
 # Note that if scoreboard_display_incorrect is `yes',
-# problems for which there have been only incorrect
-# submissions will appear in the problem list, but if
-# scoreboard_display_incorrect is `no', they will not.
+# problems or submitters for which there have been only
+# incorrect submissions will appear in the problem or
+# submitter list, but if scoreboard_display_incorrect is
+# `no', they will not.
 #
 set scoreboard_list ""
 set scoreboard_problem_list ""
@@ -688,9 +690,21 @@ proc compute_scoreboard_list {} {
 		set problem_items ""
 	    }
 
-	    # Compute problem time, number of incorrect
-	    # submissions, and problem modifier.  Pro-
-	    # blem_time is "" if no correct submission.
+	    # Compute problem start time, problem time,
+	    # number of incorrect submissions, and
+	    # problem modifier.
+	    #
+	    # Problem start time is "" if scoreboard_
+	    # start_time is "", and is otherwise a time
+	    # in the format of [clock seconds].
+	    #
+	    # Problem time is "" if there is no correct
+	    # submission.  Otherwise it is the time of
+	    # the correct submission in [clock seconds]
+	    # format if the problem start time is "", or
+	    # is the time of the correct submission
+	    # minus the problem start time, in seconds,
+	    # if the problem start time is not "".
 	    #
 	    set problem_start_time	""
 	    set problem_time		""
@@ -826,8 +840,10 @@ proc compute_scoreboard_list {} {
 # the correct submission.
 #
 # The value returned has 9 or fewer characters as long
-# as there are at most 98 incorrect submissions or
-# scoreboard_display_incorrect is `no'.
+# as there are at most 98 incorrect submissions, or
+# there is no `*' prefix (see below) and at most 998
+# incorrect submissions, or scoreboard_display_incorrect
+# is `no'.
 #
 # If problem_time is the date and time it is encoded as
 # a date,
