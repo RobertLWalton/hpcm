@@ -4,7 +4,7 @@
 #
 # File:		hpcm_extract
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Wed Sep 12 04:58:23 EDT 2001
+# Date:		Wed Sep 12 14:19:08 EDT 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,14 +13,16 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/09/12 18:07:42 $
+#   $Date: 2001/09/12 18:20:32 $
 #   $RCSfile: hpcm_extract,v $
-#   $Revision: 1.10 $
+#   $Revision: 1.11 $
 
 # If this is not bash and bash is available, switch
 # to using bash.  Note that `which bash` may output
 # a grubby error message and no error code if bash
-# does not exist.
+# does not exist.  Non-bash sh'es cannot handle the
+# -r option to read and perform unwanted backslash
+# interpretation in echo.
 #
 bash=`which bash 2>&1`
 if test "$BASH" = "" -a -x "$bash"
@@ -58,12 +60,12 @@ hpcm_extract [directory]
 
     The extracted files are placed in the directory
     specified by the single argument, or if no argument
-    is given, by the directory specified by the
-    \`HPCM_HOME' environment variable, or if that is
-    also unset, in the account home directory \`~'.  If
-    a file already exists in that directory, it is not
-    extracted, but is compared against the existing
-    file.
+    is given, in the first directory found by searching
+    the current directory and its ancestors for a dir-
+    ectory that contains a readable .HPCM_ADDRESS file.
+    If a file that might be extracted already exists in
+    that directory, the file is not extracted, but is
+    compared against the existing file.
 
     The standard output records what was done.  It
     does not include the file contents.  The standard
@@ -80,8 +82,21 @@ esac
 if test "$1" != ""
 then
     home="$1"
+elif test -r .HPCM_ADDRESS
+then
+    home=.
+elif test -r ../.HPCM_ADDRESS
+then
+    home=..
+elif test -r ../../.HPCM_ADDRESS
+then
+    home=../..
+elif test -r ../../../.HPCM_ADDRESS
+then
+    home=../../..
 else
-    home="${HPCM_HOME:-$HOME}"
+    echo "ERROR: Cannot find .HPCM_ADDRESS file."
+    exit 1
 fi
 
 if test ! -d "$home"
