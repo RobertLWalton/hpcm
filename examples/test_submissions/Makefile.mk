@@ -2,7 +2,7 @@
 #
 # File:		Makefile.mk
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Feb 23 13:02:28 EST 2003
+# Date:		Mon Feb 24 07:08:34 EST 2003
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2003/02/23 18:33:05 $
+#   $Date: 2003/02/24 12:30:14 $
 #   $RCSfile: Makefile.mk,v $
-#   $Revision: 1.17 $
+#   $Revision: 1.18 $
 
 extract_replies:	mbox
 	rm -rf replies
@@ -25,12 +25,11 @@ extract_replies:	mbox
 #
 diff_replies:
 	r=`cd replies; ls *.reply`; for x in $$r; do \
-	  echo $$x; filtered_diff replies/$$x $S/$$x \
+	  echo $$x; filtered_diff replies/$$x $R/$$x \
 	    DATE RECEIVED_BY RECEIVED MESSAGE_ID \
 	    TO CC REPLY_TO RETURN_PATH FROM ERROR \
 	    SUBMISSION \
-	    'automatically determined(| final) score' \
-	    'RCSfile: (Makefile|get_count.reply),v' \
+	    'RCSfile: .*,v' \
 	    'Revision: [0-9]+.[0-9]+ \$$'; \
 	done
 
