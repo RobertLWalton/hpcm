@@ -2,7 +2,7 @@
 //
 // File:	scorediff.cc
 // Authors:	Bob Walton (walton@deas.harvard.edu)
-// Date:	Wed Apr 24 10:51:04 EDT 2002
+// Date:	Wed Apr 24 11:24:08 EDT 2002
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: hc3 $
-//   $Date: 2002/04/24 15:16:47 $
+//   $Date: 2002/04/24 15:26:27 $
 //   $RCSfile: scorediff.cc,v $
-//   $Revision: 1.48 $
+//   $Revision: 1.49 $
 
 // This is version 2, a major revision of the first
 // scorediff program.  This version is more explicitly
@@ -621,7 +621,7 @@ void scan_token ( file & f )
 	    column -= 2;
 
 	// Note: terminals, unlike printers, generally
-	// do not treat \f going back to the first
+	// do not treat \f as going back to the first
 	// column, so we do not here.
 
 
