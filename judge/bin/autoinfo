@@ -4,7 +4,7 @@
 #
 # File:		autoinfo
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Jan 28 04:22:14 EST 2002
+# Date:		Mon Jan 28 16:03:26 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/01/28 10:46:29 $
+#   $Date: 2002/01/28 21:10:12 $
 #   $RCSfile: autoinfo,v $
-#   $Revision: 1.28 $
+#   $Revision: 1.29 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -295,6 +295,9 @@ foreach n [lrange $message_subject 1 end] {
     info_expand $n
 }
 
+
+# Compute the list of lines in the error reply.
+#
 set lines ""
 
 if { [llength $forbiddens] > 0 } {
@@ -327,28 +330,27 @@ if { [llength $unreadables] > 0 } {
     lappend lines ""
 } 
 
+# Send the error reply if necessary.
+#
 if { [llength $lines] > 0 } {
     if { [llength $ok_names] == 0 } {
-	lappend lines \
-		"There were no OK file names provided\
-		 in the requesting message."
-	lappend lines \
-		"The subject of the requesting message\
-		 should have the form:"
-	lappend lines \
-		"    Subject: get filename ..."
 	compose_reply -errors \
 	    [concat LINES $lines] \
+	    { LINE "There were no OK file names\
+	    	    provided in the requesting\
+		    message." } \
+	    { LINE "The subject of the requesting\
+	    	    message should have the form:" } \
+	    { LINE "    Subject: get filename ..." } \
 	    BLANK \
 	    { BAR "this message replies to:" } \
 	    RECEIVED-HEADER
 	send_reply
     } else {
-	lappend lines \
-		"OK requested files will be returned in\
-		 a subsequent message."
 	compose_reply -errors  \
 	    [concat LINES $lines] \
+	    { LINE "OK requested files will be returned\
+	            in a subsequent message."
 	    BLANK \
 	    { BAR "this message replies to:" } \
 	    RECEIVED-HEADER
@@ -356,6 +358,8 @@ if { [llength $lines] > 0 } {
     }
 }
 
+# Compose non-error reply if necessary.
+#
 if { [llength $ok_names] > 0 } {
 
     set lines ""
@@ -401,6 +405,8 @@ if { [llength $ok_names] > 0 } {
     send_reply
 }
 
+# Output up to date $gotten_file.
+#
 if { [file exists $gotten_file] } {
     file delete -force $gotten_file
 }
@@ -411,6 +417,8 @@ foreach name $ok_names {
 }
 close $gotten_ch
 
+# Print names of files gotten and exit.
+#
 puts $ok_names
 exit 0
 
