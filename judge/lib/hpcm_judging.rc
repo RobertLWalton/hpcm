@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Oct 23 08:39:35 EDT 2002
+# Date:		Wed Oct 23 09:06:46 EDT 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/10/23 13:00:06 $
+#   $Date: 2002/10/23 13:16:15 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.118 $
+#   $Revision: 1.119 $
 
 # Table of Contents:
 #
@@ -1388,15 +1388,45 @@ proc deny_access { filename } {
 # Function to view a file.  Change to your favorite
 # editor or display program.
 #
+# This version checks the environment variable
+# HPCM_VIEW for an editor.  HPCM_VIEW may be a TCL
+# list with an editor name and parameters.  If this
+# global variable is not defined, the editor
+# defaults to `view'.
+#
 proc view_file { filename } {
-    exec view $filename >@ stdout 2>@ stderr
+
+    global env
+
+    if { [info exists env(HPCM_VIEW)] } {
+        set editor $env(HPCM_VIEW)
+    } else {
+        set editor view
+    }
+    eval exec $editor \
+         [list $filename >@ stdout 2>@ stderr]
 }
 
 # Function to edit a file.  Change to your favorite
 # editor.
 #
+# This version checks the environment variable
+# HPCM_EDIT for an editor.  HPCM_EDIT may be a TCL
+# list with an editor name and parameters.  If this
+# global variable is not defined, the editor
+# defaults to `vi'.
+#
 proc edit_file { filename } {
-    exec vi $filename >@ stdout 2>@ stderr
+
+    global env
+
+    if { [info exists env(HPCM_EDIT)] } {
+        set editor $env(HPCM_EDIT)
+    } else {
+        set editor vi
+    }
+    eval exec $editor \
+         [list $filename >@ stdout 2>@ stderr]
 }
 
 # Function to invoke the `make' program for a given
