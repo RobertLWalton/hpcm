@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/01/08 11:54:41 $
+#   $Date: 2001/01/08 13:59:41 $
 #   $RCSfile: overview,v $
-#   $Revision: 1.16 $
+#   $Revision: 1.17 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -1111,10 +1111,52 @@ HPCM has the following security goals:
    (both real and effective) of the process executing
    the contestant program to `sandbox'.  This user
    should not be able to access any files or directories
-   except those publically available.
+   except those publicaly available.
+
+   However, current JAVA implementations seem to have
+   the following security flaw: they convert relative
+   .class file names to absolute names before using
+   them.  As a consequence, all the directories in
+   the path from the root to the directory in which a
+   contestant's JAVA submission is being run must have
+   a+x permissions because the contestant's submission
+   is run by the `sandbox' account.  The .class files
+   themselves must have a+r permissions.
+
+   This last difficulty does not permit contestant
+   code to write any files or directories in the
+   judging area.
 
 3. Prevent code written by the contestants from
-   exporting solution code to the outside world.
+   exporting judges information, including solutions
+   of the judge and other contestants, into the
+   outside world.  This goal is met with some defects.
+
+   It is not practical to make it impossible for
+   contestant programs to write information to the
+   outside world.  A contestant can merely open a
+   file in the contestant's account's home directory,
+   after leaving that directory a+w, for example.
+   Or the contestant can exploit /tmp, or open a
+   network connection.
+
+   The `sandbox' previously described prevents
+   contestant programs from being able to read most
+   files and all directories in the judging account.
+   However, because of the problem with JAVA mentioned
+   above, a contestant's account can discover the names
+   of components of a directory by guessing names and
+   looking at the error codes returned.  Given another
+   contestant, and guessing submission times, one
+   contestant's program can read another contestant's
+   .class files.
+
+   A contestant program can always read the judge's
+   input, since that is provided to the program
+   during judging.
+
+   TBW
+
 
 
 
