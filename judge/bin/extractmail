@@ -4,7 +4,7 @@
 #
 # File:		extractmail
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Nov 18 20:16:26 EST 2001
+# Date:		Mon Nov 19 04:10:23 EST 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/11/19 01:13:46 $
+#   $Date: 2001/11/19 09:07:43 $
 #   $RCSfile: extractmail,v $
-#   $Revision: 1.22 $
+#   $Revision: 1.23 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -35,17 +35,14 @@ cd submission_directory; extractmail
     tory.  Thus file must contain an email with a sub-
     ject line of the form:
 
-    	Subject: submit filename
+    	Subject: submit problemname\[.extension\]
 
-    or
-
-    	Subject: submit problemname
-
-    In the first case there is only one file, which must
-    have the given name; in the second case, there may
-    be more than one file.  Note that problem names may
-    not contain `.'.  The submitted files are extracted
-    from the email and placed in the current directory.
+    If there is a `$files_file' file in the current di-
+    rectory, it lists the names of all the files that
+    supposed to be submitted.  Otherwise only one file
+    may be submitted, and it must have the file name
+    `problemname.extension', where the extension must
+    be given in the message `Subject:' field.
 
     For each file successfully extracted, this program
     prints the line `Extracted FFFF' to the standard
@@ -57,7 +54,7 @@ cd submission_directory; extractmail
     	catch { exec extractmail } out
 
     will capture both the standard and error outputs in
-    the variable `out' and return a code indicating
+    the variable `out' and return a 0/1 value indicating
     whether there were any errors.  If there were errors
     that concern the judge, and not just the submitter,
     the text `SYSTEM ERROR' appears in the error output.
@@ -81,8 +78,8 @@ cd submission_directory; extractmail
 
     	$allowed_extensions
     
-    The submitted files may be encoded in the body of
-    the message in the format:
+    Submitted files may be encoded in the body of the
+    message in the format:
 
    	HPCM_BEGIN filename
 	..<1st line of file>
@@ -91,10 +88,10 @@ cd submission_directory; extractmail
 	HPCM_END filename
 
     This format MUST be used if the `format_submissions'
-    variable is defined and equal to `yes'.  If this
-    format is used, there must be nothing else in the
-    body of the message except optional blank lines
-    preceding and following the files.
+    global variable is defined and equal to `yes'.  If
+    this format is used, there must be nothing else in
+    the body of the message except optional blank lines
+    preceding, separating, and following the files.
     
     If this format is NOT used, the files may be in-
     cluded verbatim in the body of the message.  Files
@@ -102,19 +99,22 @@ cd submission_directory; extractmail
     blank lines preceding the first file and following
     the last file.  All these blank lines will be dis-
     carded, and not treated as part of any file.  If
-    there is more than one file, or if the `Subject:'
-    field of the $received_file file does not give the
-    filename, then each file must begin with a block of
-    non-blank lines, exactly one of which contains
-    text of the form `File: FFFF', where FFFF is the
-    file name.  This text may be surrounded by white-
-    space (spaces and tabs), there may be no or any
-    kind of whitespace between the `:' and FFFF, but
-    there must be no whitespace in the FFFF.  If a file
-    name is given by both this method and in the
-    `Subject:' field, the names must match.  If files
-    are given verbatim in the body of the message, the
-    files may not begin with `HPCM_BEGIN'.
+    files are given verbatim in the body of the message,
+    the files may not begin with `HPCM_BEGIN'.
+    
+    When files are given verbatim in the body of the
+    message, each file may have a file name given in the
+    following way.  The first block of non-blank lines
+    at the beginning of the file is searched for text of
+    the form `File: FFFF', where FFFF is the filename.
+    This text must appear within a single line, and may
+    be preceded or followed by whitespace (spaces or
+    tabs), and may have any or no whitespace between the
+    `:' and FFFF.  The FFFF contains only non-whitespace
+    characters.  It is an error if there are extra
+    such pieces of text in a file, or if a file does not
+    specify its name in this manner and there is more
+    than one possible submission file.
 
     If a submitted file already exists and has a modifi-
     cation time equal to or later than that of the
@@ -124,8 +124,8 @@ cd submission_directory; extractmail
     put line is generated, but if there is a mismatch,
     a system error message is generated.
 
-    It is an error if a file name contains `/' or begins
-    with `.' or `-'.  It is a system error if the
+    It is an error if the problem name contains `/' or
+    `.' or begins with `-'.  It is a system error if the
     `Subject:' field does not begin with `submit', or
     if the $received_file or `$files_file' files are
     unreadable."
@@ -167,8 +167,7 @@ if { [llength $message_subject] == 0 } {
 	 $message_subject"
 }
 
-# Extract the problem name and possible filename and
-# check legality.
+# Extract the problem name.
 #
 set filename [lindex $message_subject 1]
 set problem [file rootname $filename]
@@ -186,33 +185,43 @@ if { [regexp {\.} $problem] } {
 	  $problem"
 }
 
+# Compute the list of submittable files.
+#
 if { [file exists $files_file] } {
+
     if { [catch { set filenames \
-		      [lrange [read_entire_file \
-		                   $files_file] \
-			      0 end] }] } {
+		      [read_entire_file $files_file] \
+	        }] } {
         extract_error \
 	    "SYSTEM ERROR: Cannot read $file_files"
     }
-
-    if { $filename != $problem \\
-         && [lsearch -exact $filenames $filename] \
-	        < 0 } {
+} else {
+    if { $filename == $problem } {
         extract_error \
-	    "ERROR: bad file name in\
+	    "ERROR: Bad filename in `Subject:\
+	     $message_subject' (no extension)"
+    }
+    set extension [file extension $filename]
+    if { [lsearch -exact $allowed_extensions \
+		  $extension] < 0 } {
+	extract_error \
+	    "ERROR: bad file name extension in\
 	     `Subject: $message_subject'"
     }
-} else {
-    set filenames ""
-    if { $filename != $problem } {
-	set extension [file extension $filename]
-	if { [lsearch -exact $allowed_extensions \
-		      $extension] < 0 } {
-	    extract_error \
-		"ERROR: bad file name extension in\
-		 `Subject: $message_subject'"
-	}
-        lappend filenames $filename
+    set filenames [list $filename]
+}
+
+# Filename_array has a value for every submittable
+# file.  The possible values are:
+#
+#	required	optional	found
+#
+foreach filename $filenames {
+    if { [regexp {^\?(.*)$} $filename forget filename] \
+    		} {
+	set filename_array($filename) optional
+    } else {
+	set filename_array($filename) required
     }
 }
 
@@ -240,21 +249,21 @@ proc exit_cleanup {} {
 # reading or writing.  A file is opened for reading
 # if it exists and has an mtime >= received_mtime;
 # and is opened for writing otherwise.  If opened for
-# writing, any existing file is deleted.
+# writing, any existing file is deleted.  Also sets
+# cleanup_filename if file is being written, and
+# checks filename for legality.
 #
 proc open_file { filename } {
 
-    global filenames problem received_mtime file_ch \
-           cleanup_filename
+    global filename_array problem received_mtime \
+    	   file_ch cleanup_filename
 
-    if { [lsearch -exact $filenames $filename] < 0 \
-         && (    [llength $filenames] > 0 \
-              || [file rootname $filename] != $problem \
-	      || [lsearch -exact \
-	      		  [file extension $filename] \
-	                  $allowed_extensions] < 0 ) } {
+    if { ! [info exists filename_array($filename)] } {
         extract_error "ERROR: Bad file name: $filename"
+    } elseif { $filename_array($filename) == "found" } {
+        extract_error "ERROR: Redundant file: $filename"
     }
+    set filename_array($filename) found
 
     if { [file exists $filename] } {
 
@@ -395,8 +404,8 @@ if { [regexp {^HPCM_BEGIN} $line] } {
 	     file:\n$line"
     }
 
-    # Input is unformatted.  Loop through files in
-    # input.
+    # Input is unformatted.  Loop through blocks of
+    # non-blank lines in message.
     #
     set file_ch ""
     set mode none
@@ -408,47 +417,49 @@ if { [regexp {^HPCM_BEGIN} $line] } {
 	#
 	set lines ""
 	set filename ""
+	set FILE "File:$WS*($NWS+)"
     	while { [regexp $NWS $line] } {
 
 	    if { [regexp \
-	    	    "(^|$WS)File:$WS*($NWS+)(\$|$WS)" \
+	    	    "(^|$WS)$FILE(\$|$WS)" \
 		    $line forget1 forget2 fname \
 		    forget3] } {
-		lappend filename $fname
+		if { $filename == "" } {
+		    set filename $fname
+		} else {
+		     extract_error \
+		         "ERROR: redundant `File:\
+			  $fname' in file"
+		}
+		if { [regexp \
+		        "(^|$WS)$FILE$WS$FILE(\$|$WS)" \
+			$line] } {
+		     extract_error \
+		         "ERROR: redundant `File:\
+			  ....' in line:\n$line"
+		}
 	    }
 	    lappend lines $line
 	    set line [gets $received_ch]
 	    if { [eof $received_ch] } break
 	}
 
-	switch [llength $filename] {
-	    0 {
-		if { $mode == "none" } {
-		    if { [llength $filenames] != 1 } {
-			extract_error \
-			    "ERROR: no file name in\
-			     `Subject"' field or body"
-		    }
-		    set mode \
-			[open_file [lindex $filenames \
-					   0]]
-		} else {
-		    set lines \
-		        [concat $blank_lines $lines]
-	        }
+	if { $mode == "none" && $filename == "" } {
+	    set filenames [array names filename_array]
+	    if { [llength $filenames] == 1 } {
+	        set filename [lindex $filenames 0]
+	    } else {
+		 extract_error \
+		     "ERROR: no `File: ...' in first\
+		      file in message body"
 	    }
-	    1 {
-	        if { $mode != "none" } {
-		    close_file
-		}
-		set mode \
-		    [open_file [lindex $filename 0]]
-	    }
-	    default {
-	        extract_error \
-		    "ERROR: too many file names:\
-		     $filename"
-	    }
+	}
+
+	if { $filename != "" } {
+	    if { $mode != "none" } close_file
+	    set mode [open_file [lindex $filename 0]]
+	} else {
+	    set lines [concat $blank_lines $lines]
 	}
 
 	switch $mode {
@@ -485,10 +496,17 @@ if { [regexp {^HPCM_BEGIN} $line] } {
     }
 }
 
+# Check for missing files.
+#
+foreach filename [array names filename_array] {
+    if { $filename_array($filename) == "required" } {
+        extract_error "ERROR: missing file: $filename"
+    }
+}
+
 # Close received_ch and exit.
 #
 close $received_ch
-puts $filename
 exit 0
 
 # Include common error catching code:
