@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Mar 14 04:59:08 EST 2003
+# Date:		Fri Mar 14 23:02:21 EST 2003
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2003/03/14 10:03:51 $
+#   $Date: 2003/03/15 04:18:07 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.97 $
+#   $Revision: 1.98 $
 #
 
 # Table of Contents
@@ -799,7 +799,7 @@ proc read_header { ch { first_line "" }
 		    "${ws}*content-transfer-encoding"
 		set cte "${cte}${ws}*:${ws}*"
 		set cte "${cte}(${nws}*)(${ws}|\$)"
-		set type ""
+		set type text/plain
 		set encoding \
 		    $message_content_transfer_encoding
 		while { "yes" } {
