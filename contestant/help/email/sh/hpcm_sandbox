@@ -4,7 +4,7 @@
 #
 # File:		hpcm_sandbox
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Sat Sep  2 09:59:27 EDT 2000
+# Date:		Sun Sep  3 05:16:57 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: acm-cont $
-#   $Date: 2000/09/02 15:09:17 $
+#   $Date: 2000/09/03 10:17:09 $
 #   $RCSfile: hpcm_sandbox,v $
-#   $Revision: 1.1 $
+#   $Revision: 1.2 $
 
 cputime=60
 datasize=`expr 1 \* 1024 \* 1024`
@@ -39,11 +39,11 @@ for arg in "$@"; do
 	    fi
 	    ;;
 	[0-9]* )
-	    if test `expr $arg : .*'[^0-9]' ` -ne 0
+	    if test `expr $arg : '.*[^0-9]' ` -ne 0
 	    then
 		number=`expr $arg : '\([0-9]*\)[^0-9]' `
 		scale=`expr $arg : \
-		            '^[0-9]*\([^0-9].*\)$' `
+		            '[0-9]*\([^0-9].*\)$' `
 
 		case $scale in
 		    "" )	;;
@@ -56,6 +56,9 @@ for arg in "$@"; do
 			    exit 1
 			    ;;
 		esac
+	    else
+	        number=$arg
+		scale=""
 	    fi
 
 	    case $operation in
@@ -121,4 +124,4 @@ ulimit -Hs `expr $stacksize / 1024`
 
 $program
 
-exit 0
+exit $?
