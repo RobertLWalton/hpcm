@@ -2,7 +2,7 @@
 #
 # File:		scoring_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Sep 10 06:13:38 EDT 2001
+# Date:		Wed Oct 31 06:54:06 EST 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/09/10 11:04:05 $
+#   $Date: 2001/10/31 11:56:17 $
 #   $RCSfile: scoring_common.tcl,v $
-#   $Revision: 1.18 $
+#   $Revision: 1.19 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -787,7 +787,7 @@ proc compute_proof_info { } {
 	        $incomplete_output_types \
 	        $formatting_error_types]
     set non_error_types ""
-    foreach type [array names proof_array] {
+    foreach type [array names score_array] {
         if { [lsearch -exact $error_types $type] < 0 } {
 	    lappend non_error_types
 	}
@@ -822,7 +822,13 @@ proc compute_proof_info { } {
 	set info "$info$more"
 	set proofs ""
 	foreach t $types {
-	    set n [llength $proof_array($t)]
+	    if { [info exists proof_array($t)] } { \
+	        set tproofs $proof_array($t)
+	    } else {
+	    	set tproofs ""
+	    }
+
+	    set n [llength $tproofs]
 	    set more "  \[$n\] $score_array($t)"
 	    incr column [string length $more]
 	    if { $column > 80 } {
@@ -831,8 +837,7 @@ proc compute_proof_info { } {
 	        set more "\n  $more"
 	    }
 	    set info "$info$more"
-	    set proofs \
-	        [concat $proofs $proof_array($t)]
+	    set proofs [concat $proofs $tproofs]
 	}
 	if { $proofs != "" } {
 	    set proof_group_array($group) \
