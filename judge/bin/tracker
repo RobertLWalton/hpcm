@@ -7,7 +7,7 @@
 #
 # File:		tracker
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Nov  3 01:06:22 EST 2001
+# Date:		Sat Nov  3 02:38:01 EST 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -16,9 +16,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/11/03 07:27:37 $
+#   $Date: 2001/11/03 08:20:18 $
 #   $RCSfile: tracker,v $
-#   $Revision: 1.12 $
+#   $Revision: 1.13 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -318,6 +318,11 @@ proc time_summary { args } {
     set disp_avg 0
     set disp_max 0
     foreach xxx $args {
+        if { [lsearch -exact {min med max avg} \
+			     $xxx] < 0 } {
+	    error "BAD argument to ti command\
+	          `$xxx'."
+	}
         set disp_$xxx 1
     }
 
@@ -531,8 +536,7 @@ proc compute_score_array {} {
         set sco_line $sco_array($dir)
 	set score [lindex $sco_line 3]
 	if { ! [info exists score_id_array($score)] } {
-	    puts "STRANGE SCORE `$score'"
-	    set score XX
+	    error "STRANGE SCORE `$score'"
 	} else {
 	    set score $score_id_array($score)
 	}
@@ -609,12 +613,12 @@ proc problem_score_summary { } {
     set r "
 			    	Number of Submissions
 Problem		  cc    io    fe    ic    se    te   \
-                  pc    oe    XX"
+                  pc    oe"
 
     foreach problem \
             [lsort [array names problem_array]] {
 
-	foreach xx {cc io fe ic se te pc oe XX} {
+	foreach xx {cc io fe ic se te pc oe} {
 	    set $xx 0
 	}
 
@@ -626,7 +630,7 @@ Problem		  cc    io    fe    ic    se    te   \
 	}
 
 	set line [format {%-14.14s} $problem]
-	foreach xx {cc io fe ic se te pc oe XX} {
+	foreach xx {cc io fe ic se te pc oe} {
 	    if { [set $xx] == 0 } {
 	        set line "$line    --"
 	    } else {
@@ -651,12 +655,12 @@ proc submitter_score_summary { } {
     set r "
 			    	Number of Submissions
 Submitter	  cc    io    fe    ic    se    te   \
-                  pc    oe    XX"
+                  pc    oe"
 
     foreach submitter \
             [lsort [array names submitter_array]] {
 
-	foreach xx {cc io fe ic se te pc oe XX} {
+	foreach xx {cc io fe ic se te pc oe} {
 	    set $xx 0
 	}
 
@@ -668,7 +672,7 @@ Submitter	  cc    io    fe    ic    se    te   \
 	}
 
 	set line [format {%-14.14s} $submitter]
-	foreach xx {cc io fe ic se te pc oe XX} {
+	foreach xx {cc io fe ic se te pc oe} {
 	    if { [set $xx] == 0 } {
 	        set line "$line    --"
 	    } else {
@@ -1096,6 +1100,71 @@ proc call_manualreply { index } {
     return "Done with [file tail $dir]"
 }
 
+proc display_help { arg } {
+
+    global received_file auto_score_file
+
+    puts "HELP `$arg'"
+
+    switch $arg {
+	{} {
+	    puts "
+? = display this help page	x = exit	control-D = exit
+ls = update information about directories that may need attention and display
+     a prioritized list of such directories.  Details are given only for the
+     first directories in this list.
+# = call manualreply for directory # of the `ls' directory list.
+ti \[min\] \[med\] \[avg\] \[max\] = display by problem information about the
+   times taken by various steps in judging the problems.  Type `? ti' for
+   more details.
+pr = display by problem counts of the number of submissions with different
+     final scores.  Type `? pr' for more details.
+su = display by submitter counts of the number of submissions with different
+     final scores.  Type `? pr' for more details."
+	return yes
+	}
+
+	{ti} {
+	    puts "
+ti \[min\] \[med\] \[avg\] \[max\] = display by problem information about the
+   times taken by various steps in judging the problems.  The event names
+   are:
+
+   	sub = submission time
+	rec = mtime of $received_file in which submission email is stored
+	ext = mtime of source (.c, .cc, .java, or .p) file extracted from email
+	bin = max of mtimes of binary output and .cerr files
+	out = max of mtimes of .out and .err files
+	sco = mtime of $auto_score_file
+
+    sub-rec is the time in seconds from sub to rec,
+    rec-ext is the time in seconds from rec to ext,
+    etc."
+	return yes
+	}
+
+	{su} -
+	{pr} {
+	    puts "
+pr = display by problem counts of the number of submissions with different
+     final scores.
+su = display by submitter counts of the number of submissions with different
+     final scores.
+
+The column headings denote score values as follows:
+
+    io = Incorrect Output      cc = Completely Correct 
+    fe = Formatting Error      ic = Incomplete Output
+    se = Syntax Error          te = Cpu Time Limit Exceeded
+    pc = Program Crashed       oe = Output Size Limit Exceeded
+"
+	}
+	default {
+	    return no
+	}
+    }
+}
+
 # Initialize data base.
 #
 read_all_sources
@@ -1106,8 +1175,8 @@ read_all_sources
 # followed by a blank line, a second line (or lines)
 # equal to $output, and then the prompt line.
 #
-set default_output "? == help  ls == directory list \
-                    # = manualreply directory #\
+set default_output "? = help   ls = directory list  \
+                    # = manualreply directory #  \
 		    ti = times  etc"
 set output $default_output
 display_directory_list
@@ -1122,7 +1191,8 @@ while { "yes" } {
     if { [eof stdin] } break
 
     set output $default_output
-    switch -regexp -- $answer {
+
+    if { [catch { switch -regexp -- $answer {
 	{^ti} {
 	    set args [lrange $answer 1 end]
 	    if { [llength $args] == 0 } {
@@ -1148,11 +1218,28 @@ while { "yes" } {
 	    set output [call_manualreply $answer]
 	    display_directory_list
 	}
+	{^\?} {
+	    regexp "^\\?\[ \t\]*(\[^ \t\]*)\$" \
+	           $answer forget arg
+	    if { [display_help $arg] == "no" } {
+		set output "Did not understand\
+		            `$answer'.  Type ? for\
+			    help."
+		display_directory_list
+	    }
+	}
 	default {
 	    set output "Did not understand `$answer'.  \
 	                Type ? for help."
 	    display_directory_list
 	}
+    } } out] } {
+        puts "\n\n\n\n\n\n\n\n"
+	puts "============== ERROR =============="
+        puts $out
+	puts "==================================="
+	set output "ERROR executing `$answer'.  \
+	                Type ? for help."
     }
 }
 
