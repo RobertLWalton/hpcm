@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Mar 18 18:14:49 EST 2002
+# Date:		Mon Mar 18 23:56:41 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/03/18 23:13:43 $
+#   $Date: 2002/03/19 05:00:51 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.16 $
+#   $Revision: 1.17 $
 
 # make
 #	Makes documentation as fprintable .doc files in
@@ -39,6 +39,7 @@ DOCS=	overview.doc \
 	judge/autoscore.doc \
 	judge/chkpage.doc \
 	judge/dispatchmail.doc \
+	judge/hpcm_email_passwords.doc \
 	judge/extractmail.doc \
 	judge/fcheck.doc \
 	judge/fcheckc.doc \
@@ -160,6 +161,11 @@ judge/dispatchmail.doc:	hpcm_judging.rc \
 	rm -f judge/dispatchmail.doc
 	-../../judge/bin/dispatchmail -doc \
 	    >judge/dispatchmail.doc
+judge/hpcm_email_passwords.doc:	hpcm_judging.rc \
+		../../judge/bin/hpcm_email_passwords
+	rm -f judge/hpcm_email_passwords.doc
+	-../../judge/bin/hpcm_email_passwords -doc \
+	    >judge/hpcm_email_passwords.doc
 judge/extractmail.doc:	hpcm_judging.rc \
 			../../judge/bin/extractmail
 	rm -f judge/extractmail.doc
