@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Mar 30 12:15:04 EST 2003
+# Date:		Thu Oct 23 00:04:21 EDT 2003
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2003/03/30 17:14:47 $
+#   $Date: 2003/10/23 04:52:52 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.26 $
+#   $Revision: 1.27 $
 
 # To make a formal contest named `foo':
 #
@@ -186,15 +186,35 @@
 #     who_where file.  Whenever you change passwords,
 #     you may need to rerun hpcm_set_passwords in the
 #     manner described below.
+
+# 12. If you want to have the contestant accounts so
+#     that the judge can log into them using ssh without
+#     using the contestant account password, make a
+#     ~/.ssh/identity.pub file, and then execute:
 #
-# 12. Run `make trashable' in your judging directory.
+#	cd ~/contest_foo
+#	mkdir .ssh
+#	chmod 700 .ssh
+#	cp ~/.ssh/identity.pub .ssh/authorized_keys
+#	chmod 400 .ssh/authorized_keys
+#	tar cf extra_setup.tar .ssh
+#	chmod 444 extra_setup.tar
+#
+#     If your ssh uses ssh protocol 2 instead of ssh
+#     protocol 1, then you should use the files
+#     id_rsa.pub and authorized_keys2, instead of
+#     identity.pub and authorized_keys.  Extra_setup.tar
+#     is untarred into each contestant account by the
+#     TRASH_ACCOUNT program.
+#
+# 13. Run `make trashable' in your judging directory.
 #     This makes the file ./contest/trashable which
 #     lists the contestant accounts that can be reini-
 #     tialized by `TRASH_ACCOUNT'.  These accounts have
 #     presumably not been made yet (but its OK if they
 #     already exist).
-
-# 13. Then as root (you must log into the root account,
+#
+# 14. Then as root (you must log into the root account,
 #     you cannot use `su', as the paths will not be
 #     right), run the following commands, where JJJ is
 #     the judge's account:
@@ -203,7 +223,7 @@
 #	./hpcm_make_accounts ~JJJ/contest_foo
 #	./hpcm_set_passwords ~JJJ/contest_foo
 #	./hpcm_TRASH_ACCOUNTS ~JJJ/contest_foo
-#
+
 #     These will successively make the accounts listed
 #     in ~JJJ/contest_foo/secure/passwords, set the
 #     passwords of these accounts to the passwords list-
@@ -221,14 +241,14 @@
 #     This finishes everything you have to do in the
 #     root account.
 #
-# 14. Run `make nontrashable' in your judging directory.
+# 15. Run `make nontrashable' in your judging directory.
 #     This removes the file ./contest/trashable and pre-
 #     vents any contestants from accidentally trashing
 #     their own account by running TRASH_ACCOUNT (which
 #     requires the contestant's account name appear in
 #     ~JJJ/contest_foo/trashable).
-
-# 15. Run `make start_scoreboard' to start the score-
+#
+# 16. Run `make start_scoreboard' to start the score-
 #     board background process.  This process makes
 #
 #		./contest/scoreboard.1
@@ -239,7 +259,7 @@
 #     can be checked by `make check_scoreboard',
 #     and the scoreboard can be instantly updated
 #     by `make update_scoreboard'.
-#
+
 #     The file ./contest/scoreboard.1head, which is
 #     prefixed to the file ./contest/scoreboard.1 when
 #     the latter is made automatically, can be
@@ -250,34 +270,34 @@
 #     nouncements.  Only as many of these files as are
 #     needed should exist and be world readable.
 #
-# 16. Be sure to remember to RUN `startcontest' at the
+# 17. Be sure to remember to RUN `startcontest' at the
 #     time the contest starts.  Also, edit hpcm_
 #     judging.rc in the judging directory at that time
 #     to set the correct start time for the contest and
 #     exclude the demo problems and any test account
 #     from the scoreboard.
 #
-# 17. Contest judging is partly automatic.  You must
+# 18. Contest judging is partly automatic.  You must
 #     run the `tracker' program to find submission
 #     directories in which `manualreply' is to be run
 #     (by `tracker') to compute manual scores, reply to
 #     queries, and examine system errors.  You need to
 #     practice with `manualreply' before the contest.
 #
-
-# 18. If you want to freeze the scoreboard near the end
+#
+# 19. If you want to freeze the scoreboard near the end
 #     of the contest, edit the freeze time in hpcm_
 #     judging.rc accordingly.  Othewise make this time
 #     equal to or later than the stop time.
 #
-# 19. Test the contest by using the test contestant
+# 20. Test the contest by using the test contestant
 #     account.  Try submitting the demos/count solution.
 #
-# 20. You can also test the contest by executing
+# 21. You can also test the contest by executing
 #     `make test'.  Then read each email reply and
 #     compare its X-HPCM-Test-Subject field with the
 #     results in the body of the reply.
-#
+
 #     You can read and analyze the email replies auto-
 #     matically by placing them in an `mbox' file in the
 #     judging directory and in that directory executing:
@@ -298,7 +318,6 @@
 #     then `make diff_replies' above will also check
 #     the system response to queries and system errors.
 #
-
 #     It is also possible to transmit the contents of
 #     the hpcm/examples/test_submissions directory to
 #     a directory in the test contestant account and
@@ -313,24 +332,73 @@
 #     You can run subsets of the tests by using `make
 #     test_xxx' for various `xxx;: see hpcm/examples/
 #     test_submissions/Makefile.mk.
+
+# 22. You may want to print out handouts.  Here are
+#     some ways to print everything but the problems,
+#     where THIS_CONTEST denotes either
 #
-# 21. You may want to print out handouts.  The following
-#     is a suggestion.  Execute `make print_help', re-
-#     move the `demos' and `problems' pages, and reorder
-#     the other pages so `index' is first and the other
-#     help file pages are in order they are listed in
-#     the index.  This produces a `help handout'.
-#     Then `make print_problems', and make a `problems
-#     handout' that consists of these pages, in the
-#     order given in the `problems' help page, preced-
-#     ed by that `problems' help page.  Discard any
-#     demonstration .txt files printed.
+#	 ~/judging_foo_password/help/this_contest
+#     or
+#	 ~/contest_foo/help/this_contest
 #
-#     Then `make print_demos', and make a `demos
-#     handout' that consists of these pages, in the
-#     order given in the `demos' help page, preceded by
-#     that `demos' help page.
+#     which are the same file.
 #
+#     A. Execute:
+#
+#	     cd ~/hpcm/contestant/
+#	     make ps
+#	     lpr help.ps demos.ps
+#	     fprint THIS_CONTEST
+#
+#	 This makes a generic help printout good for all
+#        contests, a generic demos printout, and a small
+#        contest specific this_contest printout.
+#
+#     B.  Execute:
+#
+#	      cd ~/hpcm/contestant/
+#	      make EXTRAS=THIS_CONTEST help+.ps demos.ps
+#	      lpr help+.ps demos.ps
+#
+#	 This makes a contest specific help printout
+#	 consisting of the this_contest file followed by
+#	 the same generic help files as in help.ps
+#	 above, and also makes a generic demos printout.
+
+#      C. Execute
+#
+#	       cd ~/judging_foo_password
+#	       make print_help
+#
+#         remove the `demos' and `problems' pages, and
+#	  reorder the other pages so `index' is first
+#	  and the other help file pages are in order
+#	  they are listed in the index.  This produces
+#	  a `help handout' specific to the contest.
+#	  Unlike the help handouts above, this handout
+#	  does not contain help for contest types that
+#	  differ from the current contest (e.g., no
+#	  email contest help for a formal contest),
+#
+#         Then execute
+#
+#	       cd ~/judging_foo_password
+#	       make print_demos
+#
+#         and make a `demos handout' that consists of
+#	  these pages, in the order given in the `demos'
+#	  help page, preceded by that `demos' help page
+#	  (which was printed by `make print_help').
+#
+#     To make the problem set handout, execute
+#
+#	       cd ~/judging_foo_password
+#	       make print_problems
+#
+#     and make a `problems handout' that consists of
+#     these pages, in the order given in the `problems'
+#     help page, preceded by that `problems' help page.
+#     Discard any demonstration .txt files printed.
 
 #     The help and demos handout can be given out before
 #     the contest starts, along with any extra sheets
@@ -340,10 +408,10 @@
 #     is given out at the very start of the contest
 #     proper.
 #
-# 22. A web page containing non-contest-specific help
+# 23. A web page containing non-contest-specific help
 #     and demos files can be made according to instruc-
 #     tions in hpcm/contestant/help/Makefile.
-# 23. A web page containing problem descriptions, and
+# 24. A web page containing problem descriptions, and
 #     optionally solutions, can be made by defining the
 #     web page parameters in hpcm_judging.rc and execut-
 #     ing `make web'.
@@ -481,6 +549,7 @@ print_demos:
 	fprint contest/demos/*/*
 
 print_problems:
+	fprint contest/help/problems
 	@for x in solutions/*/*; \
 	    do case "$$x" in \
 	    *.txt) echo fprint $$x; fprint $$x;; \
