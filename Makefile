@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Feb  9 04:16:54 EST 2003
+# Date:		Wed Feb 19 02:48:32 EST 2003
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2003/02/09 10:02:56 $
+#   $Date: 2003/02/19 07:56:47 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.25 $
+#   $Revision: 1.26 $
 
 # See STATUS file for description of versions.
 #
@@ -28,6 +28,10 @@ TARUNZIP = --gunzip
 # TAREXT = .tar
 # TARZIP =
 # TARUNZIP =
+
+# Abbreviation to shorten lines.
+#
+NONDIS = non_distributable
 
 # Commands.
 #
@@ -50,7 +54,7 @@ TARUNZIP = --gunzip
 # make tar
 #	Make distributable and non-distributable tar
 #	files, hpcm_${VERSION}${TAREXT} and
-#       hpcm_non_distributable_${VERSION}${TAREXT}
+#       hpcm_${NONDIS}_${VERSION}${TAREXT}
 #
 # make signatures
 #	Make HPCM_MD5_Signatures file, a copyrighted
@@ -120,8 +124,8 @@ slocs:
 # Make MD5 Signatures File:
 #
 HPCM_MD5_Signatures:	signatures_header \
-			distributable_files_${VERSION} \
-		    non_distributable_files_${VERSION}
+			hpcm_${VERSION}.files \
+			hpcm_${NONDIS}_${VERSION}.files
 	@if test "${COPYRIGHT}" = ""; \
 	then echo COPYRIGHT not defined; exit 1; fi
 	rm -f HPCM_MD5_Signatures
@@ -151,8 +155,8 @@ HPCM_MD5_Signatures:	signatures_header \
 	     >> HPCM_MD5_Signatures
 	cd ..; \
 	   md5sum `cat \
-	      hpcm/distributable_files_${VERSION} \
-	      hpcm/non_distributable_files_${VERSION} \
+	      hpcm/hpcm_${VERSION}.files \
+	      hpcm/hpcm_${NONDIS}_${VERSION}.files \
 	            ` \
 	      >>  hpcm/HPCM_MD5_Signatures
 
@@ -224,41 +228,41 @@ md5cvscheck:	cvstmp
 # Make tar files.
 #
 tar:	cleantar hpcm_${VERSION}${TAREXT} \
-        hpcm_non_distributable_${VERSION}${TAREXT}
+        hpcm_${NONDIS}_${VERSION}${TAREXT}
 
 hpcm_${VERSION}${TAREXT}:	HPCM_MD5_Signatures \
-                        distributable_files_${VERSION}
+                        hpcm_${VERSION}.files
 	d=`pwd`;d=`basename $$d`; test $$d = hpcm
 	rm -f hpcm_${VERSION}${TAREXT}
 	cd ..; tar cf hpcm/hpcm_${VERSION}${TAREXT} \
 	   hpcm/HPCM_MD5_Signatures \
-	   `cat hpcm/distributable_files_${VERSION}` \
+	   `cat hpcm/hpcm_${VERSION}.files` \
 	   ${TARZIP}
 
-hpcm_non_distributable_${VERSION}${TAREXT}:	\
-		non_distributable_files_${VERSION}
+hpcm_${NONDIS}_${VERSION}${TAREXT}:	\
+		hpcm_${NONDIS}_${VERSION}.files
 	d=`pwd`;d=`basename $$d`; test $$d = hpcm
-	rm -f hpcm_non_distributable_${VERSION}${TAREXT}
+	rm -f hpcm_${NONDIS}_${VERSION}${TAREXT}
 	cd ..; tar cf \
-	   hpcm/hpcm_non_distributable_${VERSION}${TAREXT} \
-	   `cat hpcm/non_distributable_files_${VERSION}` \
+	   hpcm/hpcm_${NONDIS}_${VERSION}${TAREXT} \
+	   `cat hpcm/hpcm_${NONDIS}_${VERSION}.files` \
 	   ${TARZIP}
 
 # Make files that list all distributable and non-
 # distributable files.  Begin each file name with `hpcm/'.
 #
-distributable_files_${VERSION}:	File_List Makefile
-	rm -f distributable_files_${VERSION}
+hpcm_${VERSION}.files:	File_List Makefile
+	rm -f hpcm_${VERSION}.files
 	file_list public \
 	     | sed -e 's/^\./hpcm/' \
-	     > distributable_files_${VERSION}
+	     > hpcm_${VERSION}.files
 
-non_distributable_files_${VERSION}:	\
+hpcm_${NONDIS}_${VERSION}.files:	\
 				File_List Makefile
-	rm -f non_distributable_files_${VERSION}
+	rm -f hpcm_${NONDIS}_${VERSION}.files
 	file_list '! public' \
 	     | sed -e 's/^\./hpcm/' \
-	     > non_distributable_files_${VERSION}
+	     > hpcm_${NONDIS}_${VERSION}.files
 
 cleanall:
 	for x in `find . -name Makefile -print`; \
@@ -270,10 +274,10 @@ clean:	cleantar cleanslocs cleancvs
 
 cleantar:
 	rm -f HPCM_MD5_Signatures \
-	      distributable_files_${VERSION} \
-	      non_distributable_files_${VERSION} \
+	      hpcm_${VERSION}.files \
+	      hpcm_${NONDIS}_${VERSION}.files \
 	      hpcm_${VERSION}${TAREXT} \
-	      hpcm_non_distributable_${VERSION}${TAREXT}
+	      hpcm_${NONDIS}_${VERSION}${TAREXT}
 
 cleanslocs:
 	rm -f *.slocs
