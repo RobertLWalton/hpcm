@@ -2,7 +2,7 @@
 #
 # File:		Makefile.mk
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Feb 15 23:57:07 EST 2002
+# Date:		Tue Feb 19 03:31:32 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,11 +11,18 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/02/16 04:55:54 $
+#   $Date: 2002/02/19 08:30:23 $
 #   $RCSfile: Makefile.mk,v $
-#   $Revision: 1.2 $
+#   $Revision: 1.3 $
 
 test_email:	test_count_correct \
+		test_count_incorrect \
+		test_system_error \
+		test_get \
+		test_query \
+		test_problem_name
+
+test_informal:	test_count_correct \
 		test_count_incorrect \
 		test_system_error \
 		test_get \
