@@ -5,7 +5,7 @@
 #
 # File:		manualreply
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Oct  2 19:20:22 EDT 2000
+# Date:		Sat Nov  4 10:39:38 EST 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,14 +14,26 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/10/22 05:40:06 $
+#   $Date: 2000/11/04 19:32:26 $
 #   $RCSfile: manualreply,v $
-#   $Revision: 1.17 $
+#   $Revision: 1.18 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
 
 # Use tcl rather than tclsh so that `signal' is defined.
+
+# Table of Contents:
+#
+#	Startup
+#	Display
+#	Reading Files
+#	File List
+#	Response Functions
+
+
+# Startup
+# -------
 
 # If an subdirectory name is given, make it current, and
 # consume the subdirectory name argument.  This must be
@@ -52,15 +64,16 @@ manualreply \[directory\]
     the `$judging_parameters_file' file or doing\
     anything else.
 
-    Given a submission directory as the current dir-
-    ectory, permit a person to examine the contents of
-    the directory and construct an email reply, or
-    alternatively, create a $no_reply_file file that\
-					indicates
-    that there is to be no reply.  A $manual_score_file\
-					    file
-    may also be constructed and this score sent in the
-    reply."
+    Given a submission directory as the current direc-
+    tory, this program permits a person to examine the
+    contents of this directory and construct an email
+    reply, or alternatively, create a $no_reply_file\
+    		file that
+    indicates there is to be no reply.  A\
+    		$manual_score_file
+    file may also be written with a score that is sent
+    in the reply.  Unchecked error log files may be
+    inspected and checked off."
 
 # If there are any arguments, print documentation and
 # exit with error.
@@ -69,6 +82,11 @@ if { $my_argc != 0 } {
     puts $document
     exit 1
 }
+
+# Display
+# -------
+#
+# The display data and functions manage the display.
 
 # Several of the following functions add text lines to
 # the end of a variable, rather than writing to stdout.
@@ -77,20 +95,23 @@ if { $my_argc != 0 } {
 # puts strings to have the same layout, we get the
 # effect of having a single window.
 #
-# The window has the following parts:
+# The window has the following parts which are display-
+# ed in the order given:
 #
 #	window_blank	blank lines above window
 #	window_display	file list or file
 #	window_info	information specific to window
+#	1 blank line
 #	window_error	error line just above prompt
 #	window_prompt	prompt and user response line
 #
-# The last two are 1 line.  The height of window_info
-# is carefully controlled, the height of the window_
-# display is suggested (its actually a maximum), and
-# the height of the entire window is controlled unless
-# it is too large.  The window_display should end with
-# a bar.
+# The last two parts are 1 line each.  The height of
+# window_info is carefully controlled, the height of the
+# window_display is suggested (its actually a maximum),
+# and the height of the entire window is controlled
+# unless it is too large.  The window_display should end
+# with a `==========' bar to separate it from the win-
+# dow_info.
 #
 set window_blank ""
 set window_display ""
@@ -98,8 +119,13 @@ set window_info ""
 set window_error ""
 set window_prompt ""
 #
-# The following are imported from hpcm_judging.rc:
-#
+# The following are imported from hpcm_judging.rc.
+# Window_height is the nominal height of the visible
+# part of the window, and window_blank_height is the
+# height of the blank part of the window on top of the
+# visible part if the visible part is its nominal
+# height.
+# 
 # set window_blank_height 16
 # set window_height 24
 #
@@ -126,6 +152,10 @@ proc display_window {} {
     set i $window_info
     set e $window_error
     set p $window_prompt
+
+    # We try to output the display all-at-once to get
+    # the effect of a quick refresh.
+    #
     puts -nonewline "$b\n$d\n$i\n\n$e\n$p"
     flush stdout
 }
@@ -169,6 +199,9 @@ proc set_window_display { display } {
 
     set height [llength [split $display "\n"]]
 
+    # We need to leave 3 lines for the window_prompt,
+    # window_error, and the blank line above these.
+    #
     set offset \
         [expr { $window_height \
 	        + $window_blank_height \
@@ -197,21 +230,30 @@ proc bar_with_text { text } {
 
 # Set the window display to display the first lines
 # of the file.  Set the last_display variable to
-# `file'.
+# `file'.  If the file is unreadable or is not a plain
+# file, switch to displaying the file list instead.
 #
 proc set_file_display { filename } {
 
     global window_height window_info_height \
            last_display
 
-    if { ! [file readable $filename] } {
+    if { ! [file readable $filename] \
+         || ! [file isfile $filename] } {
 	refresh_file_list
     	set_file_list_display
 	return
     }
 
+    # Height is the number of lines of the file that are
+    # displayed.  The 5 includes the prompt, error line,
+    # blank line, and two bar lines.
+    #
     set height [expr { $window_height \
                        - $window_info_height - 5 }]
+
+    # Compute the window display in $display.
+    #
     set display [bar_with_text "$filename:"]
 
     set file_ch [open $filename r]
@@ -230,15 +272,26 @@ proc set_file_display { filename } {
 
     if { $n > $height } {
 	set more [expr { $n - $height }]
-    	set bar [bar_with_text "......................\
+    	set bar [bar_with_text ". . . . .\
 		 there are $more more lines in this\
 		 file"]
     } else {
         set bar [bar_with_text " end-of-file"]
     }
+
+    # Set the window display and indicate a file was
+    # the last thing displayed.
+    #
     set_window_display "$display\n$bar"
     set last_display file
 }
+
+# Reading Files
+# ------- -----
+#
+# Following data and functions copy information from
+# files in the current directory into variables within
+# this program whenever the files change.
 
 # Read a 1-line file and return its line.  Check for
 # the file being non-existing, unreadable, and empty,
@@ -358,6 +411,12 @@ set submitted_file      ""
 set submitted_program   ""
 set submitted_extension ""
 
+
+# File List
+# ---- ----
+#
+# Data and functions that maintain the list of files in
+# the current directory.
 
 # List of files in the current directory.  The N'th
 # item on the list is itself a list of subitems
@@ -366,10 +425,10 @@ set submitted_extension ""
 #	ctime mtime filename comment new
 #
 # The total list is sorted by ctime.  Ctime equals
-# mtime, the file's modification time, with 0's
-# prepended so all ctimes are the same length of
-# items will be the same as numeric comparison of
-# mtimes.
+# mtime, the file's modification time, with 0's prepend-
+# ed so all ctimes are the same length and alphanumeric
+# comparison of items will be the same as numeric com-
+# parison of mtimes.
 #
 # After sorting, entries of the form:
 #
@@ -388,19 +447,19 @@ set submitted_extension ""
 # the file list was computed, and the previous file list
 # was not empty.  Otherwise `new' is "".
 #
-# Below `file_list' is a simple list of file names that
-# can be lsearch'ed.  `file_list_items' has the list of
-# items described above.  The number of files is in
-# `file_list_length'.  The mtime of the $received_file
-# file is in `file_list_origin_mtime', unless there is
-# no such file, in which case the mtime of the oldest
-# file is there instead.
+# Below `file_list' is a simple unsorted list of file
+# names that can be lsearch'ed.  `file_list_items' has
+# the list of items described above, sorted by mtimes.
+# The number of files is in `file_list_length'.  The
+# mtime of the $received_file file is in `file_list_
+# origin_mtime', unless there is no such file, in which
+# case the mtime of the newest file is there instead.
 #
-# When building the file list, the information read
-# from the read_array functions is refreshed as
-# necessary, using corresponding mtime_array information
-# where mtime_array(filename) is the mtime of the file
-# just before read_array(filename) was last called, and
+# When building the file list, the information read by
+# the read_array functions is refreshed as necessary,
+# using corresponding mtime_array information where
+# mtime_array(filename) is the mtime of the file just
+# before read_array(filename) was last called, and
 # mtime_array(filename) does not exist if the file does
 # not exist.
 #
@@ -427,19 +486,24 @@ proc refresh_file_list { } {
     set new_file_list_items ""
     set n 0
     set origin ""
-    set oldest 0
+    set newest 0
     foreach file $new_file_list {
+
+        # Set ctime, mtime, and filename of item.
+	#
 	set mtime [file mtime $file]
 	if { $file == $received_file } {
 	    set origin $mtime
 	}
-	if { $mtime > $oldest } {
-	    set oldest $mtime
+	if { $mtime > $newest } {
+	    set newest $mtime
 	}
-    	set item [format {%040d} $mtime]
+    	set item [format {%025d} $mtime]
 	lappend item $mtime
 	lappend item $file
 
+	# Set comment of item.
+	#
 	set size [file size $file]
 	if { [file isdirectory $file] } {
 	    lappend item "(directory)"
@@ -460,6 +524,8 @@ proc refresh_file_list { } {
 	    close $file_ch
 	}
 
+	# Set `new' field of item.
+	#
 	set new ""
 	if { $file_list_length != 0 \
 	     && [lsearch -exact $file_list $file] \
@@ -468,6 +534,8 @@ proc refresh_file_list { } {
 	}
 	lappend item $new
 
+	# Add item to new file list.
+	#
 	lappend new_file_list_items $item
 	incr n
 
@@ -497,6 +565,9 @@ proc refresh_file_list { } {
 	}
     }
 
+    # Set file list global data to newly computed file
+    # list.
+    #
     set file_list $new_file_list
     set file_list_items [lsort $new_file_list_items]
     set file_list_length $n
@@ -504,10 +575,12 @@ proc refresh_file_list { } {
     if { $origin != "" } {
     	set file_list_origin_mtime $origin
     } else {
-    	set file_list_origin_mtime $oldest
+    	set file_list_origin_mtime $newest
     }
 
-
+    # Add TBD files (non-existant .*diff files) to the
+    # file list if appropriate.
+    #
     if { $submitted_program != "" } {
 	set diff_file  $submitted_program.diff
 	set bdiff_file $submitted_program.bdiff
@@ -622,7 +695,7 @@ proc set_file_list_display {} {
 #
 # Whenever `last_file' is changed, if the new name is
 # of the form $submitted_program.ext for some extension
-# ext, and the array entry make_file_array(ext) exists,
+# ext, and the array entry make_file_array(.ext) exists,
 # the value of that array entry is called to make or
 # update the new `last_file' file.  The called procedure
 # may not succeed: its perfectly possible to set `last_
@@ -690,7 +763,7 @@ proc make_diff {} {
     }
 
     write_file $diff_file \
-	       "diff $out_file $test_file"
+	       "===== diff $out_file $test_file"
     catch { exec diff $out_file $test_file \
                       >>& $diff_file }
 }
@@ -723,12 +796,15 @@ proc make_bdiff {} {
     }
 
     write_file $bdiff_file \
-	       "diff -b $out_file $test_file"
+	       "===== diff -b $out_file $test_file"
     catch { exec diff -b $out_file $test_file \
                       >>& $bdiff_file }
 }
 set make_file_array(.bdiff) make_bdiff
 
+
+# Response Functions
+# -------- ---------
 
 # Wait for an answer line to be input.  If it is y, Y,
 # yes, or YES, return `yes'.  If it is n, N, no, or NO,
