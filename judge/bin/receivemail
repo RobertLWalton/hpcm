@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: acm-cont $
-#   $Date: 2000/08/20 14:26:50 $
+#   $Date: 2000/08/22 16:43:08 $
 #   $RCSfile: receivemail,v $
-#   $Revision: 1.10 $
+#   $Revision: 1.11 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -85,8 +85,6 @@ if { $my_argc != 0 } {
     exit 1
 }
 
-set From_line ""
-
 # Read stdin until non-blank line found.
 #
 while { "yes" } {
@@ -126,12 +124,8 @@ if { ! [regexp $From_line_regexp $line] } {
         set From_line \
 	    "From [id user]\
 	          [clock format [clock seconds]]"
-	if { [regexp {/} $From_line] } {
-	    log_error \
-	        "Generated `From' line has /:\
-		 $From_line"
-	    regsub {/} $From_line {::} From_line
 	}
+	set dirname [From_line_to_dirname $From_line]
 
 	# The mkdir system command is used as a kind
 	# of lock: it is assumed to fail only if the
@@ -140,7 +134,7 @@ if { ! [regexp $From_line_regexp $line] } {
 	#
 	if { ! [catch {
 	          exec mkdir \
-		      "$mail_directory/$From_line"
+		      "$mail_directory/$dirname"
 		} ] } {
 	    break;
 	}
@@ -159,9 +153,9 @@ if { ! [regexp $From_line_regexp $line] } {
 	sleep 1
     }
 
-    puts $From_line
+    puts $dirname
 
-    set d "$mail_directory/$From_line"
+    set d "$mail_directory/$dirname"
     set message_ch [open "$d/$received_file" w]
 
     puts $message_ch \
@@ -207,18 +201,11 @@ if { ! [regexp $From_line_regexp $line] } {
 while { "yes" } {
 
     set From_line $line
+    set dirname [From_line_to_dirname $From_line]
 
     # Make directory for message.  On sucess copy
     # message to the directory.  On failure, skip the
     # message.
-
-    # Its a fatal error if $From_line contains /.
-    #
-    if { [regexp {/} $From_line] } {
-	log_error \
-	    "From line in mail has /: $From_line"
-	regsub {/} $From_line {::} From_line
-    }
 
     # The mkdir system command is used as a kind
     # of lock: it is assumed to fail only if the
@@ -226,7 +213,7 @@ while { "yes" } {
     #
     if { [catch \
 	  { exec mkdir \
-	    "$mail_directory/$From_line" } ] } {
+	    "$mail_directory/$dirname" } ] } {
 
 	# Directory must already exist.  Skip message.
 	#
@@ -244,8 +231,8 @@ while { "yes" } {
     	# Directory did NOT exist, and was just made.
 	# Copy message.
 	#
-	puts $From_line
-	set d "$mail_directory/$From_line"
+	puts $dirname
+	set d "$mail_directory/$dirname"
 	set message_ch [open "$d/$received_file" w]
 
 	while { "yes" } {
@@ -266,7 +253,7 @@ while { "yes" } {
 	if { [catch {
 		exec < /dev/null >& /dev/null \
 		     dispatchmail \
-		     "$mail_directory/From_line" &
+		     "$mail_directory/$dirname" &
 	     } catch_out ] } {
 	    log_error $catch_out
 	}
