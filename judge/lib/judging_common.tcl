@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Mar 29 03:51:00 EST 2003
+# Date:		Sat Mar 29 04:08:03 EST 2003
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2003/03/29 09:00:36 $
+#   $Date: 2003/03/29 09:07:17 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.108 $
+#   $Revision: 1.109 $
 #
 
 # Table of Contents
@@ -665,7 +665,7 @@ proc read_header { ch { first_line "" }
 	if { $message_header == "" } {
 	    set message_header $lines
 	} else {
-	    set message_header $message_header\n$lines"
+	    set message_header "$message_header\n$lines"
 	}
 
 	# Loop through field names we are looking for.
