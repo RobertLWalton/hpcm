@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Jan  7 06:40:10 EST 2001
+# Date:		Wed Oct 17 08:28:30 EDT 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/01/07 12:02:19 $
+#   $Date: 2001/10/17 12:28:51 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.54 $
+#   $Revision: 1.55 $
 #
 
 # Table of Contents
@@ -280,8 +280,9 @@ proc log_error { error_output } {
 
     # Write error to standard error output.
     #
+    puts stderr "------------------------------"
     puts stderr "ERROR during $argv0 $argv"
-    puts stderr ""
+    puts stderr "-----"
     puts stderr $error_output
 
     # If `log_mode' is `none', do not write to file, but
@@ -289,10 +290,12 @@ proc log_error { error_output } {
     # output and return.
     #
     if { $log_mode == "none" } {
-	puts stderr ""
-	puts stderr "errorCode: $errorCode"
-	puts stderr "errorInfo:"
+	puts stderr "-----"
+	puts stderr "-----errorCode: $errorCode"
+	puts stderr "-----"
+	puts stderr "-----errorInfo:"
 	puts stderr $errorInfo
+	puts stderr "------------------------------"
 	return
     }
 
@@ -347,21 +350,21 @@ proc log_error { error_output } {
 
     # Write error to $log_file file.
     #
-    puts stderr ""
+    puts stderr "-----"
     puts stderr "Logging to $log_file"
 
     set log_ch [open $log_file a]
     puts $log_ch "----------------------------------"
-    puts $log_ch "$argv0 $argv"
-    puts $log_ch ""
+    puts $log_ch "ERROR during $argv0 $argv"
+    puts $log_ch "-----"
+    puts $log_ch $error_output
+    puts $log_ch "-----"
     puts $log_ch "date: [clock format $date]"
     puts $log_ch "pwd: [pwd]"
-    puts $log_ch ""
-    puts $log_ch $error_output
-    puts $log_ch ""
     puts $log_ch "errorCode: $errorCode"
     puts $log_ch "errorInfo:"
     puts $log_ch $errorInfo
+    puts $log_ch "----------------------------------"
     close $log_ch
 
     # If log_mode is `auto' or `auto+manual' and log_
@@ -498,6 +501,7 @@ proc log_error { error_output } {
 	    send_mail $log_file.mail
 	}
     }
+    puts stderr "------------------------------"
 
     set_flag $needs_reply_flag_file
 }
