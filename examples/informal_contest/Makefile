@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Oct 29 08:48:54 EST 2001
+# Date:		Sat Feb 16 02:41:18 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/10/29 13:48:41 $
+#   $Date: 2002/02/16 07:44:33 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.21 $
+#   $Revision: 1.22 $
 
 # To make an informal contest named `foo':
 #
@@ -51,7 +51,7 @@
 #    symbolic links:
 #
 #      ~/judging_foo_password/contest -> ~/contest_foo
-#      ~/contest_foo/contestant -> ~/hpcm/contestant
+#      ~/contest_foo/bin -> ~/hpcm/contestant/bin
 #      ~/contest_foo/home -> ~PPP/home
 
 #    by executing:
@@ -60,7 +60,7 @@
 #	ln -s ~/contest_foo contest
 #
 #	cd ~/contest_foo
-#	ln -s ~/hpcm/contestant contestant
+#	ln -s ~/hpcm/contestant/bin bin
 #	ln -s ~PPP/home home
 #
 # 6. Move the file scoreboard.1head into the ./contest

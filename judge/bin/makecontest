@@ -6,7 +6,7 @@
 #
 # File:		makejudgingdir
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Feb 16 00:00:26 EST 2002
+# Date:		Sat Feb 16 02:06:51 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,19 +15,14 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/02/16 07:04:25 $
+#   $Date: 2002/02/16 07:43:55 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.82 $
+#   $Revision: 1.83 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
 
 # Use tcl rather than tclsh so that `signal' is defined.
-
-# List of last component names of subdirectories that
-# are NOT to be recursively copied.
-#
-set directories_not_copied {CVS RCS}
 
 # Include common code and parameters:
 #
@@ -92,7 +87,7 @@ makejudgingdir option ... index_specification ...
 
     ./hpcm_judging.rc	 Parameters file.
     ./contest		 Link to contest directory.
-    ./contest/contestant Link to hpcm/contestant.
+    ./contest/bin	 Link to hpcm/contestant/bin.
     ./contest/home	 Link to directory owned by
     			 prototype account.
 
@@ -109,13 +104,13 @@ makejudgingdir option ... index_specification ...
     The `./contest' directory, if any, should be symbol-
     ically linked to the actual contest directory before
     this program is run.  If the `./contest' directory
-    is needed, the `./contest/contestant' directory
-    should be symbolically linked to the `..../hpcm/
-    contestant' directory and the `./contest/home'
-    directory should be symbolically linked to a direc-
-    tory that has been set up by the `SETUP_PROTOTYPE'
-    program and is owned by the prototype account, all
-    before this program is run.
+    is needed, the `./contest/bin' directory should be
+    symbolically linked to the `/..../hpcm/contestant/
+    bin' directory and the `./contest/home' directory
+    should be symbolically linked to a directory that
+    has been set up by the `SETUP_PROTOTYPE' program and
+    is owned by the prototype account, all before this
+    program is run.
 
     This program appends instructions for its user to
     edit certain files and run certain programs to the
@@ -578,16 +573,9 @@ makejudgingdir option ... index_specification ...
     files put in ./contest/help1 will override those
     in ./contest/help that is linked to ./contest/help2.
 
-    The -bin program option creates the ./contest/bin
-    directory if it does not exist.  It is simply linked
-    to the ./contest/contestant/bin directory, and a
-    note to run
-    
-    		cd .../hpcm; make
-		
-    is written into ./TODO, in order to be sure all
-    the programs and modes are correct so the .../hpcm/
-    contestant/bin directory can be used.
+    The -bin program option checks that the ./contest/
+    bin directory exists and has a+rx permissions.  If
+    not, ./TODO's are written.
 
     The -secure program option makes the following if
     they do not exist:
@@ -722,8 +710,7 @@ set printer_option		no
 set printer_map_option		no
 set home_option			no
 #
-while { "yes" } {
-    if { $argi >= $argc } break;
+while { $argi < $argc } {
     switch -- [lindex $argv $argi] {
         -email		{ set info_option 	yes
 			  set solutions_option	yes
@@ -832,15 +819,11 @@ set c_d $contest_directory
 #
 set j_d $judging_directory
 if { ! [regexp {^/} $j_d] } {
-set j_d "[pwd]/$j_d"
+    set j_d "[pwd]/$j_d"
 }
-while { [regsub {/([^/.]|\.[^/.])[^/]*/\.\./} \
-	    $j_d {/} j_d] > 0 } {}
-while { [regsub {/\./} $j_d {/} j_d] > 0 } {}
-regsub {/\.$} $j_d {} j_d
-while { [regsub {//} $j_d {/} j_d] > 0 } {}
+set j_d [scrub_filename $j_d]
 if { [info exists env(HOME)] } {
-    set hd $env(HOME)
+    set hd [scub_filename $env(HOME)]
     regexp "^$hd/(.*)\$" $j_d forget j_d
 }
 
@@ -868,13 +851,6 @@ if {    $problems_option \
     puts "Granting a+x access to $c_d and its parent"
     grant_access $c_d x
     grant_access $c_d/.. x
-}
-if { $bin_option } {
-    if {    ! [file isdirectory "$c_d/contestant"] \
-         || ! [file executable "$c_d/contestant"] } {
-	error "`$c_d/contestant' is not an executable\
-	       directory"
-    }
 }
 
 # Array specifying option substitutions.  For each
@@ -1959,37 +1935,20 @@ if { $help2_option \
     link_file help $c_d/help2
 }
 
-# Make $c_d/bin directory.
+# Check $c_d/bin directory.
 #
-if { $bin_option \
-     && ! [file isdirectory $c_d/bin] } {
-    if { ! [file isdirectory $c_d/contestant/bin] } {
-    	error "bin: $c_d/contestant/bin is not a\
-	       directory"
+if { $bin_option } {
+    if { ! [file exists $c_d/bin] } {
+        TODO "Link ./contest/bin to\
+	      ..../hpcm/contestant/bin"
+    } elseif { ! [file isdirectory $c_d/bin] } {
+        TODO "./contest/bin is not a directory; relink\
+	      it to ..../hpcm/contestant/bin"
+    } elseif { ! [regexp {r.x} [get_access $c_d/bin]] \
+    			} {
+        TODO "./contest/bin is not a+rx; run `make'\
+	     in ~/hpcm"
     }
-    if { ! [file executable $c_d/contestant/bin] } {
-    	error "bin: $c_d/contestant/bin has no x\
-	       permission"
-    }
-    if { ! [file readable $c_d/contestant/bin] } {
-    	error "bin: $c_d/contestant/bin has no r\
-	       permission"
-    }
-    if { ! [catch { set bin_type \
-			[file type $c_d/bin] }] } {
-	if { $bin_type == "link" } {
-	    puts "Deleting $c_d/bin"
-	    file delete -force -- $c_d/bin
-	} else {
-	    error "$c_d/bin exists but is not a\
-	           directory"
-	}
-    }
-
-    puts "Linking $c_d/bin to $c_d/contestant/bin"
-    link_file contestant/bin $c_d/bin
-
-    TODO "Run `make' in `hpcm' directory."
 }
 
 # Make secure directory.
