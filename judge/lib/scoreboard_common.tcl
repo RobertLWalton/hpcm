@@ -6,7 +6,7 @@
 #
 # File:		scoreboard
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Sep 22 02:16:10 EDT 2001
+# Date:		Sat Oct 20 18:39:21 EDT 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/09/22 06:11:53 $
+#   $Date: 2001/10/21 02:09:32 $
 #   $RCSfile: scoreboard_common.tcl,v $
-#   $Revision: 1.21 $
+#   $Revision: 1.22 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -137,6 +137,25 @@ if { $argc == 1 } {
     source [lindex $argv 0]
 }
 
+# Compile scoreboard_problems and scoreboard_submitters.
+#
+if { [llength $scoreboard_problems] > 0 } {
+    set problem_expression \
+        [compile_logical_expression \
+	    $scoreboard_problems no_abbreviations \
+	    problem_atoms problem_values ]
+} else {
+    set problem_expression ""
+}
+if { [llength $scoreboard_submitters] > 0 } {
+    set submitter_expression \
+        [compile_logical_expression \
+	    $scoreboard_submitters no_abbreviations \
+	    submitter_atoms submitter_values ]
+} else {
+    set submitter_expression ""
+}
+
 # The value ${submitter}_array($problem) is a list of
 # items that represent the times and score codes read
 # from the input.  Here the codes are
@@ -178,24 +197,24 @@ while { "yes" } {
     set problem		[lindex $line 2]
     set score		[lindex $line 3]
 
-    if { [llength $scoreboard_problems] > 0 \
-         && [lsearch -exact $scoreboard_problems \
-                         $problem] < 0 } {
-    	continue;
-    }
-    if { [lsearch -exact $scoreboard_problems_deny \
-			 $problem] >= 0 } {
-    	continue;
+    if { $problem_expression != "" } {
+         foreach i [array names problem_atoms] {
+	     set problem_values($i) \
+	         [regexp "^$problem_atoms($i)\$" \
+		         $problem]
+	 }
+         if { ! [expr $problem_expression] } \
+	     continue;
     }
 
-    if { [llength $scoreboard_submitters] > 0 \
-         && [lsearch -exact $scoreboard_submitters \
-                         $submitter] < 0 } {
-    	continue;
-    }
-    if { [lsearch -exact $scoreboard_submitters_deny \
-                         $submitter] >= 0 } {
-    	continue;
+    if { $submitter_expression != "" } {
+         foreach i [array names submitter_atoms] {
+	     set submitter_values($i) \
+	         [regexp "^$submitter_atoms($i)\$" \
+		         $submitter]
+	 }
+         if { ! [expr $submitter_expression] } \
+	     continue;
     }
 
     set time [filename_date_to_clock $date]
