@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Nov 11 10:38:13 EST 2000
+# Date:		Sun Nov 19 06:06:08 EST 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/11/11 15:49:52 $
+#   $Date: 2000/11/19 11:04:38 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.7 $
+#   $Revision: 1.8 $
 
 all:	submakes
 
@@ -30,11 +30,13 @@ submakes:
 	(cd ./contestant/help/; make)
 	(cd ./judge/bin/; make)
 
+informal.files:		inform.files
+
 # Print files keyed for `user', `remote', etc.
 #
 common.files \
 email.files \
-informal.files \
+inform.files \
 formal.files \
 demo.files \
 pascal.files \
