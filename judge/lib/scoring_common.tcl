@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/09/10 05:12:20 $
+#   $Date: 2001/09/10 05:36:41 $
 #   $RCSfile: scoring_common.tcl,v $
-#   $Revision: 1.16 $
+#   $Revision: 1.17 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -100,17 +100,20 @@
 #	sort-ID output-line test-line \
 #		output-begin-column output-end-column \
 #		test-begin-column test-end-column \
+#		difference-type-name \
 #		optional-absolute-difference \
 #		optional-relative-difference
 #
 # Here the absolute and relative differences are includ-
 # ed only for the types `integer' and `float'.  The
-# sort-ID is a 12 digit number the first 6 digits of
-# which are the output-line number and the last 6 digits
-# of which are the test-line number.  The list stored
-# in each `proof_array(type)' is sorted, thereby sorting
-# the proofs in the list first by output-line number and
-# second by test-line number.
+# sort-ID is an 18 digit number the first 6 digits of
+# which are the output-line number, the next 3 digits of
+# which are the output-column number, the next 6 digits
+# of which are the test-line number, and the last 3
+# digits of which are the test-column number.  The list
+# stored in each `proof_array(type)' is sorted, thereby
+# sorting the proofs in the list first by output-line
+# number, then by output-column number, etc.
 #
 # The following global variable is the file name of the
 # of the score file used to load the proof_array.
@@ -224,8 +227,6 @@ proc compute_score_and_proof_arrays { args } {
 	    error "bad line numbers: $line"
 	}
 
-	set sort_id \
-	    [format {%06d%06d} $output_line $test_line]
 	set work [lrange $work 2 end]
 
 	while { [llength $work] >= 4 } {
@@ -242,6 +243,13 @@ proc compute_score_and_proof_arrays { args } {
 			    $test_end_column } }] } {
 		error "bad column numbers: $line"
 	    }
+
+	    set sort_id \
+		[format {%06d%03d%06d%03d} \
+		        $output_line \
+			$output_begin_column \
+			$test_line \
+			$test_begin_column]
 
 	    set proof [list $sort_id \
 			    $output_line \
@@ -261,15 +269,15 @@ proc compute_score_and_proof_arrays { args } {
 			error "too short proof line:\
 			       $line"
 		    }
-		    set differences [lrange $work 1 2]
+		    set difference [lrange $work 0 2]
 		    set work [lrange $work 3 end]
 		} else {
-		    set differences ""
+		    set difference $type
 		    set work [lrange $work 1 end]
 		}
 
 		lappend proof_array($type) \
-		        [concat $proof $differences]
+		        [concat $proof $difference]
 	    }
 	}
 
@@ -650,7 +658,7 @@ proc get_proof { args } {
 	return no
     }
 
-    set max [llength $proof_array($group)]
+    set max [llength $proof_group_array($group)]
 
     if { $n < 1 || $max < $n } {
         set window_error \
@@ -801,10 +809,10 @@ proc compute_proof_info { } {
 	set current_group_array($group) 1
     }
 
-    set io_type $incorrect_output_types
-    set ic_type $incomplete_output_types
-    set fe_type $formatting_error_types
-    set ne_type $non_error_types
+    set io_types $incorrect_output_types
+    set ic_types $incomplete_output_types
+    set fe_types $formatting_error_types
+    set ne_types $non_error_types
 
     set current_group ""
     set info ""
@@ -816,7 +824,8 @@ proc compute_proof_info { } {
 	set info "$info$name ($group):"
 	set proofs ""
 	foreach t $types {
-	    set info "$info $score_array($t)"
+	    set n [llength $proof_array($t)]
+	    set info "$info \[$n\] $score_array($t)"
 	    set proofs \
 	        [concat $proofs $proof_array($t)]
 	}
