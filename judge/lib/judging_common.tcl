@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: acm-cont $
-#   $Date: 2000/08/18 12:08:02 $
+#   $Date: 2000/08/18 15:20:27 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.2 $
+#   $Revision: 1.3 $
 #
 
 # Include this code in TCL program via:
@@ -52,7 +52,7 @@ set judging_parameters_file_list ""
 foreach d ". .. ../.. ../../.. ../../../.." {
     if { [file exists \
 	       "$d/$judging_parameters_file"] } {
-	lappend judging_parameters_list \
+	lappend judging_parameters_file_list \
 		"$d/$judging_parameters_file"
 	set judging_parameters_directory $d
     }

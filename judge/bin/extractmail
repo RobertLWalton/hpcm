@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: acm-cont $
-#   $Date: 2000/08/18 15:00:41 $
+#   $Date: 2000/08/18 15:20:11 $
 #   $RCSfile: extractmail,v $
-#   $Revision: 1.1 $
+#   $Revision: 1.2 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -39,19 +39,32 @@ extract
    The submitted file is extracted from the email and
    placed in the current directory.
 
-   If a file named `filename' is not in the email in the
-   standard submission format, a `replied.email' file is
-   constructed and sent describing the failure.  Ditto
-   if `filename' is badly formatted (e.g., contains a
-   slash), of if the email contains anything in addition
-   to the file in the standard format."
+   If the submission email has a `Subject' line as above
+   and the filename given is for a readable file, this
+   program terminates without doing anything and without
+   error.
+
+   If this program terminates without error, it writes
+   the the extracted filename to the standard output
+   as a single line, and writes nothing else.
+
+   Otherwise, if the submitted email has even the
+   slightest formatting error, this program constructs a
+   `replied.email' file giving reasons why the sub-
+   mission email is invalid.  This `replied.email' is
+   sent to the email address that is part of the current
+   directory name.  In this case this program exits with
+   error code 0, indicating no error, but does not write
+   anything to the standard output, indicating no file
+   was extracted."
+
 
 set received_file "received.email"
 set replied_file  "replied.email"
 
 if { $argc != 0 } {
     puts $document
-    exit 0
+    exit 1
 }
 
 
@@ -67,6 +80,7 @@ proc extract_error_reply { $args } {
 	 $args "" \
 	 "THIS SUBMISSION IGNORED" \
 	 "YOU MUST RESUBMIT"
+    exit 2
 }
 
 # Look for subject line.
@@ -103,7 +117,8 @@ if { [llength [filename split $file]] != 1 } {
 
 # If named file is readable exit without error.
 #
-if { [file readable $file] } {
+if { [file readable $filename] } {
+    puts $filename
     exit 0
 }
 
@@ -173,7 +188,7 @@ while { yes } {
 
 close $file_ch
 
-# Look for extaneous after END line
+# Look for extaneous non-blan text after END line.
 #
 while { yes } {
     set line [gets $received_ch]
@@ -190,4 +205,5 @@ while { yes } {
 
 close $received_ch
 
+puts $filename
 exit 0
