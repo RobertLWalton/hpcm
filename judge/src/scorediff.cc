@@ -11,9 +11,9 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: hc3 $
-//   $Date: 2001/06/12 06:36:24 $
+//   $Date: 2001/06/12 06:48:55 $
 //   $RCSfile: scorediff.cc,v $
-//   $Revision: 1.18 $
+//   $Revision: 1.19 $
 
 // This is version 2, a major revision of the first
 // scorediff program.  This version is more explicitly
@@ -175,7 +175,7 @@ char documentation [] =
 "\n"
 "    and is never larger than 2.  If x == y == 0 this\n"
 "    relative difference is taken to be zero.\n"
-"\n"
+"\f\n"
 "    Numbers that match exactly, character by charac-\n"
 "    ter, do not produce any difference indication.\n"
 "    Numbers that match exactly except for the case\n"
@@ -199,7 +199,7 @@ char documentation [] =
 "    file is parsed.  Thus differences in whitespace\n"
 "    beginning a file are always reported as `begin-\n"
 "    space' differences.\n"
-"\f\n"
+"\n"
 "    When an end-of-file (eof) token is matched with\n"
 "    a non-eof token, no check is made of the white-\n"
 "    space preceding the tokens.\n"
@@ -213,7 +213,7 @@ char documentation [] =
 "                    output-line-number\n"
 "                    test-line-number\n"
 "                    proof proof*\n"
-"\n"
+"\f\n"
 "          proof ::= difference-description\n"
 "                    token-locator\n"
 "\n"
@@ -239,7 +239,7 @@ char documentation [] =
 "    integers.  All the proofs with the same output\n"
 "    test file line numbers are put on the same\n"
 "    proof-line.\n"
-"\f\n"
+"\n"
 "    Program options may be used to suppress the out-\n"
 "    of proofs by this program.  An option consist-\n"
 "    ing of a `-' followed by difference name follow-\n"
@@ -253,7 +253,7 @@ char documentation [] =
 "\n"
 "    The `-number' program option differs in that it\n"
 "    has the form:\n"
-"\n"
+"\f\n"
 "        -number absolute-diff relative-diff N\n"
 "\n"
 "    and the program outputs only the first N\n"
@@ -797,19 +797,16 @@ inline void output_proof
 	pline->output_line_number	= output.line;
 	pline->test_line_number		= test.line;
 	pline->proofs			= NULL;
+	pline->next			= NULL;
 
 	last_proof			= NULL;
 
-	if ( last_proof_line )
-	{
-	    last_proof_line->next	= pline;
-	    last_proof_line		= pline;
-	}
-	else
-	{
+	if ( last_proof_line == NULL )
 	    first_proof_line		= pline;
-	    last_proof_line		= pline;
-	}
+	else
+	    last_proof_line->next	= pline;
+
+	last_proof_line		= pline;
     }
 
     proof * p	= new proof;
@@ -822,14 +819,11 @@ inline void output_proof
     p->next			= NULL;
 
     if ( last_proof == NULL )
-    {
-        last_proof		= p;
 	last_proof_line->proofs	= p;
-    }
     else
-    {
         last_proof->next	= p;
-    }
+
+    last_proof		= p;
 
     -- differences[type].proof_limit;
 }
