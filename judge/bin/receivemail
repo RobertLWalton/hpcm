@@ -1,8 +1,14 @@
 #! /bin/sh -f
 # file:		receive_submissions
 # author:	Bob Walton (walton@deas.harvard.edu)
-# The next line starts tclsh \
-exec tclsh "$0" "$@"
+# The next line starts tcl \
+exec tcl "$0" "$@"
+
+# Use tcl rather than tclsh so that `signal' is defined.
+
+if { [info command signal] == "signal" } {
+    signal error SIGINT
+}
 
 # Set program parameters that could be changed.
 #
@@ -39,19 +45,25 @@ receive_submissions mail_file judging_directory
 	2 or more submitted files in one message.
 	Unallowed extension for submitted file.
 
+    Errors are both logged in the log file and
+    announced on the standard output.  All but the first
+    error above cause a `.score' file to be written
+    with the first line equal to `Submission Error'.
+
     The allowed extensions are read from the file:
         D/../lib/$allowed_extensions_filename
     where D is the directory containing the program.
     If this file is not readable (e.g. does not exist),
     the default allowed extensions are:
     	$allowed_extensions_default
-    
-    Errors are both logged in the log file and
-    announced on the standard output.  All but the first
-    error above causes a `.score' file to be written
-    with the first line equal to `Submission Error'."
 
-
+    In the event of an interrupt or an error, this
+    program may leave:
+	A submission directory with a `.score' file
+	    whose first line is `Submission Error'
+    	An empty submission directory.
+    	An submission directory with an invalid
+	    (e.g. empty) `.score' file."
 
 if { $argc != 2 } {
     puts $document
@@ -115,6 +127,13 @@ set From_line_state none
 set From_line       ""
 set next_From_line  ""
 
+# The following procedure reads the mail_fd until
+# it encounters a submission file end line, and end
+# of file, or a message beginning From line.  If
+# it encounters a From line it sets From_line_state
+# to next_found and next_From_line to the From line
+# itself.
+#
 proc flush_submitted_file {} {
     global mail_fd next_From_line From_line_state \
            From_line_regexp
@@ -137,6 +156,14 @@ proc flush_submitted_file {} {
     }
 }
 
+# The following procedure outputs an error message
+# line to the standard output, the log file, and the
+# score file.  If the score_fd is "no", the score
+# file is opened for writing, `Submission Error'
+# is written to the file's first line, and creation
+# of the score file is logged.  This procedure returns
+# the value of score_fd, which it may change.
+#
 proc output_error { score_fd
 		    score_file
 		    error_message_line } {
@@ -146,7 +173,7 @@ proc output_error { score_fd
 	     "    Creating $score_file"
 	set score_fd \
 	    [open $score_file w]
-	puts $score_fd "Bad Submission"
+	puts $score_fd "Submission Error"
 	puts $From_line
     }
     puts $log_fd   $error_message_line
@@ -156,7 +183,10 @@ proc output_error { score_fd
     return $score_fd
 }
 
-proc copy_file { directory submitted_file } {
+# This procedure handles all processing of a submitted
+# file after the [[..ACM..BEGIN]] line is read.
+#
+proc copy_submitted_file { directory submitted_file } {
     global From_line mail_fd log_fd \
            next_From_line From_line_state \
 	   From_line_regexp
@@ -221,7 +251,7 @@ proc copy_file { directory submitted_file } {
 		     "    Creating $score_file"
 		set score_fd \
 		    [open $score_file w]
-		puts $score_fd "Bad Submission"
+		puts $score_fd "Submission Error"
 		puts $From_line
 	    }
 	    incr number_of_bad_lines
@@ -257,6 +287,13 @@ proc copy_file { directory submitted_file } {
     if { $score_fd != "no" } { close $score_fd }
     close $output_fd
 }
+
+# Below is the main program loop that reads the mail_fd
+# file.  It remembers From lines as it encounters them,
+# and processes submit files as it encounters the
+# [[..ACM..BEGIN..]] lines.  If From_line_state equals
+# next_found, instead of reading mail_fd this loop gets
+# its next line from the next_From_line variable.
 
 set number_of_files 0
 
@@ -302,7 +339,7 @@ while {1} {
 	    if { $first_submitted_file != "" } {
 
 		set score_file \
-		    "$directory/${submitted_program}.score"
+		 "$directory/${submitted_program}.score"
 
 		if { ! [file exists $score_file] } {
 		    set score_fd no
@@ -347,9 +384,29 @@ while {1} {
 	    flush_submitted_file
 	} else {
 	    set first_submitted_file $submitted_file
-	    copy_file $directory $submitted_file
+	    set ecode \
+		[catch {
+		    copy_submitted_file \
+			$directory $submitted_file
+		} emessage]
+	    if { $ecode != 0 } {
+	        puts         $From_line
+	        puts         "    ERROR: $emessage"
+	        puts $log_fd "    ERROR: $emessage"
+	        puts         "    Deleting directory\
+		                  $directory"
+	        puts $log_fd "    Deleting directory\
+		                  $directory"
+		exec rm -rf $directory
+	        puts         "    Abnormal exit $ecode"
+	        puts $log_fd "    Abnormal exit $ecode"
+		exit $ecode
+	    }
 	}
     }
 }
+
+puts $log_fd "Exiting normally"
+puts         "Exiting normally"
 
 exit 0
