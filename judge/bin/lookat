@@ -6,7 +6,7 @@
 #
 # File:		lookat
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Dec  4 02:16:24 EST 2000
+# Date:		Sat Sep 22 14:36:58 EDT 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/12/04 07:22:13 $
+#   $Date: 2001/09/22 18:24:40 $
 #   $RCSfile: lookat,v $
-#   $Revision: 1.3 $
+#   $Revision: 1.4 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -31,16 +31,40 @@ source $lib_directory/judging_common.tcl
 set log_mode none
 catch {
 
-set document "
-lookat filename regexp
+# Maximum number of bytes in a file that are read.
+#
+set size_limit 100000
 
-    This program executes `manualreply' on subdirector-
-    ies of the mail directory that have a file with the
-    given filename which has a line matching the given
-    regular expression.  The filename may have glob
-    metacharacters: e.g., `*-unchecked-error' is a legal
-    filename.  The regular expression may match any part
-    of a line, and letter case is ignored in matching.
+set document "
+lookat 'logical-expression'
+
+    This program executes `manualreply' on each subdi-
+    rectory of the mail directory that matches the log-
+    ical-expression.  Each atom of the logical expres-
+    sion has the form
+
+    	filename-regexp::line-regexp
+
+    and is `true' iff the directory contains a file
+    whose filename matches the filename-regexp and whose
+    contents contain a line that matches the line-
+    regexp.
+
+    The allowed operators of the logical-expression are
+    `!', `&', `^', and `|' in highest precedence first
+    order, denoting `not', `and', `exclisive-or', and
+    `inclusive-or'.  Parentheses can be used in the
+    logical expression.  Operators and parentheses MUST
+    be surrounded by whitespace.
+
+    The regexp's are TCL regular expressions and NOT
+    glob expressions.  They may match any part of
+    a file name or file line.  A `^' matches the
+    beginning of the name or line, and a `\$' matches
+    the end of the name or line.
+
+    If a file is larger than $size_limit bytes, at most
+    the first $size_limit bytes of the file are read.
 
     After the list of subdirectories is computed, the
     list is displayed, and the user of this program
@@ -56,74 +80,305 @@ lookat filename regexp
 
 
 # If wrong number of arguments or first argument
-# begins with a `-', print documentation and exit.
+# begins with a `-doc', print documentation and exit.
 #
-if { $argc != 2 || [regexp {^-} [lindex $argv 0]] } {
+if { $argc != 1 || [regexp {^-doc} [lindex $argv 0]] } {
     puts $document
     exit 1
 }
 
-# Set arguments.
+# Compilation of atoms and logical expression.
 #
-set filename [lindex $argv 0]
-set regexp   [lindex $argv 1]
+# The atoms are numbered 1, 2, ..., N.  For each atom
+# i, value(i) is 0 or 1 according to whether the atom
+# is true in a given directory, filename_regexp(i) and
+# line_regexp(i) are the parts of the atom.  The vari-
+# able `logical_expression' holds the logical-expression
+# with the atoms replaced by `$value(i)' for i - 1, ...,
+# N.
+#
+set N 0
+set depth 0
+set logical_expression ""
+foreach token [lindex $argv 0] {
+    switch -- $token {
+        (   {	incr depth }
+	)   {	if { $depth < 0 } {
+		    error "Parentheses mismatch."
+		}
+		incr depth -1
+	}
+	!   -
+	&   -
+	^   -
+	|   { }
 
-# Loop through the subdirectory names.
+	default {
+	    if { [regexp {^(.*)::(.*)$} $token \
+	                 forget fregexp lregexp] } {
+	        if {    [regexp {:(:|$)} $fregexp] \
+		     || [regexp {(^|:):} $lregexp] } {
+		    error "Ambiguous atom: `$token'."
+		}
+	    } else {
+	        set fregexp ""
+		set lregexp $token
+	    }
+	    incr N
+	    set filename_regexp($N) $fregexp
+	    set line_regexp($N) $lregexp
+	    set token "\$value($N)"
+	}
+    }
+
+    set logical_expression \
+        "$logical_expression $token"
+}
+if { $depth != 0 } {
+    error "Parentheses mismatch."
+}
+
+# List of directories matched and length of list.
+# Manualcount is the number of entries in manualdirs.
+# For each matched directory, there is an entry in
+# the manualdirs list of the form
+#
+#   directoryname {filename line} ...
+#
+# giving the directory name and for each matched
+# atom, the first filename and line that matches for
+# that atom.
 #
 set manualcount 0
 set manualdirs ""
+
+
+# Loop through the subdirectory names.
+#
 foreach dir \
 	[lsort \
 	   [glob -nocomplain $mail_directory/*]] {
 
-    # See if there is a line matching in a
-    # designated file in the subdirectory.
-    #
-    set match no
-    foreach file [glob -nocomplain $dir/$filename] {
-	if { ! [file readable $file] } continue
-	set file_ch [open $file r]
-	while { "yes" } {
-	    set line [gets $file_ch]
-	    if { [eof $file_ch] } break
-	    if { [regexp -nocase -- $regexp $line] } {
-		set match yes
-		break
-	    }
+    # Be sure its a submission directory and find
+    # submitter and date.
+
+    if { ! [file isdirectory $dir] } continue
+
+    set subdir [file tail $dir]
+
+    if { [regexp {^([^<>]*)-<<(.*)>>-submission$} \
+    		   $subdir forget date submitter] } {
+
+	set submitter [string trim $submitter]
+	if { $submitter == "" } {
+	    set submitter UNKNOWN
 	}
-	close $file_ch
-	if { $match } break
+    } else continue
+
+    # Initialize the atom values.
+    #
+    set i 0
+    while { $i < $N } {
+        incr i
+	set value($i) 0
+	set not_file($i) yes
+
+	if { $filename_regexp($i) == "" } {
+	    set value($i) \
+	        [regexp $line_regexp($i) $submitter]
+	} elseif { $filename_regexp($i) == "DATE" } { \
+	    set value($i) \
+	        [regexp $line_regexp($i) $date]
+	} else {
+	    set not_file($i) no
+	}
     }
 
-    # If there was a matching line, add subdirectory
-    # to list.
+    # Loop through the files.  
     #
-    if { $match } {
+    set entry [list $dir]
+    foreach file [glob -nocomplain $dir/*] {
+
+        set filename [file tail $file]
+	set read_yet no
+
+	# Loop through the atoms.
+	#
+	set i 0
+	while { $i < $N } {
+	    incr i
+
+	    if { $value($i) || $not_file($i) } continue
+
+	    if { ! [regexp $filename_regexp($i) \
+	    		   $filename] } continue
+
+	    if { $read_yet == "no" } {
+	        set ch [open $file r]
+		set contents [read $ch $size_limit]
+		set contents [split $contents "\n"]
+		close $ch
+		set read_yet yes
+	    }
+
+	    # Loop through the lines of the file.
+	    #
+	    foreach line $contents {
+		if { [regexp $line_regexp($i) $line] } {
+		    set value($i) 1
+		    lappend entry [list $filename $line]
+		    break
+		}
+	    }
+	}
+    }
+
+    # If logical expression is true, add filename to
+    # list.
+    #
+    if { [expr $logical_expression] } {
 	incr manualcount
-	lappend manualdirs $dir
+	lappend manualdirs $entry
     }
 }
 
+# List directories and their matching files and lines.
+# Output at most `lines'.  Start with the start'th
+# directory (1 is first) and return the index (1 is
+# first) of the directory after the last listed.
+#
+# Only complete entries with all matches are listed,
+# unless the first entry is too long for the number
+# of lines, in which case only some of the matches
+# are listed for that entry.  `lines' should be
+# at least 3.
+#
+proc display_directories { lines start } {
+
+    global manualdirs manualcount
+
+    incr start -1
+    set done_some no
+    
+    while { $start < $manualcount } {
+
+        set entry [lindex $manualdirs $start]
+	set dir [file tail [lindex $entry 0]]
+	set matches [lrange $entry 1 end]
+
+	set omitted_matches 0
+	set lines \
+	    [expr { $lines - 2 - [llength $matches] }]
+	if { $lines < 0 } {
+	    if { $done_some } break
+
+	    set l [llength $matches]
+	    incr l -2
+	    incr l $lines
+	    set matches [lrange $matches 0 $l]
+	    set omitted_matches [expr { 1 - $lines }]
+	}
+	set done_some yes
+
+	incr start
+	puts "$start. $dir"
+	foreach match $matches {
+	    set line \
+	        "    [lindex $match 0]:\
+		     [lindex $match 1]"
+	    if { [string length $line] > 80 } {
+	        set line \
+		    "[string range $line 0 76] ..."
+	    }
+	    puts $line
+	}
+	if { $omitted_matches } {
+	    puts "    . . . . there are\
+	          $omitted_matches more matches . . . ."
+	}
+	puts ""
+    }
+    while { $lines > 0 } {
+        puts ""
+	incr lines -1
+    }
+    incr start
+    return $start
+}
+
+# Execute manual reply on the i'th directory.
+#
+proc exec_manualreply { i } {
+    global manualdirs
+    incr i -1
+    set entry [lindex $manualdirs $i]
+    set dir [lindex $entry 0]
+    exec manualreply $dir >@ stdout 2>@ stderr
+}
+
+
 # Execute manual reply on subdirectories.
 #
-while { $manualcount != 0 } {
+if { $manualcount == 0 } {
+    puts "There are NO matching directories."
+} else {
 
-    puts "Directories waiting to execute\
-	  `manualreply':"
-    foreach d $manualdirs {
-	puts "    [file tail $d]"
+    set directory_height [expr { $window_height - 3 }]
+
+    set start 1
+    set error_line ""
+    while { "yes" } {
+
+        puts "\n\n\n\n\n"
+	set next \
+	    [display_directories $directory_height \
+	    			 $start]
+	puts "#=display directory  \
+	        u=up   d=down   x=exit"
+	puts $error_line
+	puts -nonewline "> "
+
+	flush stdout
+	set answer [gets stdin]
+	if { [eof stdin] } { puts ""; break }
+	set answer [string trim $answer]
+
+	set error_line ""
+	switch -regexp -- $answer {
+	    {^[0-9]+$} {
+		if { $answer < 1 || \
+		     $answer > $manualcount } {
+		    set error_line \
+		        "ERROR: $answer out of\
+				range."
+		} else {
+		    exec_manualreply $answer
+		    set start $answer
+		    if { $start > 1 } {
+		        incr start -1
+		    }
+		}
+	    }
+	    {^u$} {
+	    	if { $start > 5 } {
+		    incr start -5
+		} else {
+		    set start 1
+		}
+	    }
+	    {^d$} {
+	    	if { $next <= $manualcount } {
+		    set start $next
+		}
+	    }
+	    {^x$} break
+	    default {
+	        set error_line \
+		    "ERROR: cannot understand\
+		            `$answer'."
+	    }
+	}
     }
-    puts -nonewline \
-	 "\nType ENTER or RETURN to continue;\
-	  control-D to exit."
-    flush stdout
-    gets stdin
-    if { [eof stdin] } { puts ""; exit 0 }
-
-    set dir [lindex $manualdirs 0]
-    exec manualreply $dir >@ stdout 2>@ stderr
-    incr manualcount -1
-    set manualdirs [lrange $manualdirs 1 end]
 }
 
 exit 0
