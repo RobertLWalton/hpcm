@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Oct 17 10:41:34 EDT 2001
+# Date:		Thu Oct 18 04:27:33 EDT 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/10/17 14:52:00 $
+#   $Date: 2001/10/18 08:29:14 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.59 $
+#   $Revision: 1.60 $
 #
 
 # Table of Contents
@@ -1027,7 +1027,7 @@ proc send_reply { args } {
     # Copy to the $reply_history_file.
     #
     set history_ch  [open $reply_history_file a]
-    puts $history_ch "From [id user]@[info hostname]\
+    puts $history_ch "From [account_name]@[host_name]\
 		      [clock format [clock seconds]]"
     put_file $reply_file+ $history_ch
 
