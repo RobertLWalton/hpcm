@@ -7,7 +7,7 @@
 #
 # File:		makeweb
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Oct 27 01:36:39 EDT 2002
+# Date:		Sun Oct 27 01:21:18 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -16,9 +16,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/10/27 06:01:49 $
+#   $Date: 2002/10/27 06:33:57 $
 #   $RCSfile: makeweb,v $
-#   $Revision: 1.6 $
+#   $Revision: 1.7 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -435,6 +435,9 @@ if { $web_solutions_password != "" } {
 	    continue
 	}
 
+	file mkdir $sdir/$problem
+	grant_access $sdir/$problem
+
 	puts $ch "<TR>"
 	puts $ch "<TD WIDTH=50>&nbsp;</TD>"
 	puts $ch "<TD>$problem</TD>"
@@ -442,9 +445,10 @@ if { $web_solutions_password != "" } {
 	puts $ch "<TD>"
 
 	foreach file $files {
-	    copy_file $soldir/$file $sdir/$file
-	    grant_access $sdir/$file
-	    puts $ch "<A HREF=\"$file\">$file</A>"
+	    copy_file $soldir/$file $sdir/$problem/$file
+	    grant_access $sdir/$problem/$file
+	    puts $ch \
+	         "<A HREF=\"$problem/$file\">$file</A>"
 	}
 
 	puts $ch "</TD>"
