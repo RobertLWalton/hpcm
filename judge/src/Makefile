@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Jul  1 01:02:56 EDT 2001
+# Date:		Sun Jul 29 15:16:24 EDT 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/07/01 16:58:54 $
+#   $Date: 2001/07/29 19:05:31 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.7 $
+#   $Revision: 1.8 $
 
 # Kill all implicit rules
 #
@@ -24,12 +24,12 @@ all: scorediff chkpage
 scorediff:	scorediff.cc
 	g++ -o scorediff scorediff.cc
 
-scorediff_test.score:	scorediff2 \
+scorediff_test.score:	scorediff \
 			scorediff_test.out \
 			scorediff_test.test \
 			scorediff_test.reference
 	rm -f scorediff_test.score
-	scorediff2 -column 50 \
+	scorediff -column 50 \
 		   scorediff_test.out \
 	           scorediff_test.test \
 		   > scorediff_test.score
