@@ -3,7 +3,7 @@
 ;;;; File:	hpcm_clisp.lsp
 ;;;; Author:	Bob Walton <walton@deas.harvard.edu>
 ;;;; Modifier:  CS 182 (Attila Bodis)
-;;;; Date:	Fri Jan 11 03:02:28 EST 2002
+;;;; Date:	Fri Jan 11 03:48:15 EST 2002
 ;;;;
 ;;;; The authors have placed this program in the public
 ;;;; domain; they make no warranty and accept no
@@ -12,9 +12,9 @@
 ;;;; RCS Info (may not be true date or author):
 ;;;;
 ;;;;   $Author: hc3 $
-;;;;   $Date: 2002/01/11 08:34:07 $
+;;;;   $Date: 2002/01/11 08:48:22 $
 ;;;;   $RCSfile: hpcm_clisp.lsp,v $
-;;;;   $Revision: 1.15 $
+;;;;   $Revision: 1.16 $
 ;;;;
 ;;;;
 ;;;; This file was originally written by the Bob Walton
@@ -162,7 +162,7 @@
                 ":IN ~S is not the type of value that"
 		" can name a file.")
 	     in)))
-  
+ 
   (cond
    ((eq out t)
     (setf out (make-pathname :type "out" :defaults in)))
@@ -227,7 +227,7 @@
 	  (setf *break-enable* nil)
 	  
 	  ))
-	
+
 	(do ((s-expression (read nil nil eof-value)
 			   (read nil nil eof-value)))
 	    ((eq s-expression eof-value))
@@ -252,19 +252,31 @@
 	      (finish-output))
 	     (pause
 		    ; Flush out any left over returns.
-	      (do ()
-		  ((null (read-char-no-hang
-		            *terminal-io*))))
-		    ; Print prompt.
-	      (fresh-line)
-	      (princ '|---> ? |)
-	      (let ((line (read-line *terminal-io*
-	                             nil "")))
-		(catch error-tag
-		  (unwind-protect
-		      (eval (read-from-string line
-		                              nil nil))
-		    (throw error-tag nil))))
+	      (do ((done nil))
+	          (done)
+	          (do ()
+		      ((null (read-char-no-hang
+		                *terminal-io*))))
+		        ; Print prompt.
+	          (fresh-line)
+	          (princ '|---> ? |)
+	          (let ((line (read-line *terminal-io*
+	                                 nil "")))
+		    (cond
+		      ((equal line "")
+		       (setq done t))
+		      (t
+		       (catch error-tag
+		         (unwind-protect
+	                     (dolist
+			      (val (multiple-value-list
+	                            (eval
+				     (read-from-string
+				      line nil nil))))
+			      (write val :escape t
+			                 :pretty t)
+		              (fresh-line))
+		           (throw error-tag nil)))))))
 	      (dolist (val (multiple-value-list
 	                      (eval s-expression)))
 		      (write val :escape t :pretty t)
