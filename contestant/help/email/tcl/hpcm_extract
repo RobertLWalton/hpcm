@@ -4,7 +4,7 @@
 #
 # File:		hpcm_extract
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Wed Sep 12 14:19:08 EDT 2001
+# Date:		Sun Sep 16 09:31:44 EDT 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,14 +13,14 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/09/16 10:51:08 $
+#   $Date: 2001/09/16 13:18:10 $
 #   $RCSfile: hpcm_extract,v $
-#   $Revision: 1.1 $
+#   $Revision: 1.2 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
 
-set document ="
+set document "
 hpcm_extract \[directory\]
 
     Reads mail from the standard input and extracts
@@ -63,7 +63,7 @@ hpcm_extract \[directory\]
 # If too many arguments or first argument begins with
 # -doc, print document and exit.
 #
-if { $argc > 1 && [regexp {^-doc} [lindex $argv 0] } {
+if { $argc > 1 || [regexp {^-doc} [lindex $argv 0]] } {
     puts $document
     exit 1
 }
@@ -211,7 +211,7 @@ while { "yes" } {
 		#
 		close $ch
 
-		if { $diff == yes } {
+		if { $diff } {
 		    puts ""
 		    puts "WARNING: received new `$file'"
 		    puts "that is different\
@@ -273,17 +273,19 @@ while { "yes" } {
 	    puts "WARNING: empty file name"
 	    set has_errors yes
 	    set mode skip
-	    ;;
 	} elseif { [regexp {^[/.-]} $file] \
 		   || [regexp {/[.-]} $file } {
 
 	    puts "WARNING: illegal file name\
-	                   (skipped): $file"
+	                   (skipped): `$file'"
 	    set has_errors yes
 	    set mode skip
 	} else {
 
 	    # Make directories required by file name.
+	    # Make them individually, shortest name
+	    # first, so we can annotate the output
+	    # with what was actually created.
 	    #
 	    set dirs ""
 	    set dir [file dirname $file]
@@ -294,10 +296,12 @@ while { "yes" } {
 
 	    foreach dir $dirs {
 		if { [file isdirectory "$home/$dir"] } {
+			# do nothing
 		} elseif { [catch { file mkdir \
 					 "$home/$dir" \
-					 }] } {
-		    puts "ERROR: could not make\
+					 } out] } {
+		    puts $out
+		    puts "ERROR: could not mkdir\
 		          `$home/$dir'."
 		    set has_errors yes
 		    break
@@ -311,7 +315,8 @@ while { "yes" } {
 
 		if { [catch { set ch \
 		                  [open "$home/$file" \
-				         r] }] } {
+				         r] } out] } {
+		    puts $out
 		    puts "ERROR: could not read\
 		          `$home/$file'."
 		    set has_errors yes
@@ -325,7 +330,8 @@ while { "yes" } {
 
 		if { [catch { set ch \
 		                  [open "$home/$file" \
-				         w] }] } {
+				         w] } out] } {
+		    puts $out
 		    puts "ERROR: could not write\
 		          `$home/$file'."
 		    set has_errors yes
