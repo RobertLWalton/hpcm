@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Jul 31 04:32:00 EDT 2002
+# Date:		Wed Oct 23 12:52:55 EDT 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,14 +11,15 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/07/31 08:28:08 $
+#   $Date: 2002/10/23 16:56:44 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.20 $
+#   $Revision: 1.21 $
 
 all:	scorediff hpcm_sandbox_x hpcm_print_passwords \
 	hpcm_email_passwords chkpage \
 	hpcm_clisp.lsp hpcm_extract_test_replies \
-	filtered_diff
+	filtered_diff \
+	check_security
 
 # Kill all implicit rules
 #
@@ -50,6 +51,16 @@ secure_hpcm_sandbox_x:
 	         echo WARNING: \
 		      ${SECURE_BIN}/hpcm_sandbox \
 	    	      is out of date; \
+	         echo ===============================; \
+	    fi
+
+check_security:
+	@if test ! -u hpcm_sandbox_x; \
+	    then echo ===============================; \
+	         echo WARNING: \
+		      hpcm_sandbox_x \
+	    	      is not set-user-id; \
+		 ls -lL hpcm_sandbox_x; \
 	         echo ===============================; \
 	    fi
 
