@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Nov  1 02:01:56 EST 2002
+# Date:		Sat Feb  8 09:42:57 EST 2003
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/11/01 07:02:58 $
+#   $Date: 2003/02/08 14:49:57 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.22 $
+#   $Revision: 1.23 $
 
 all:	scorediff hpcm_sandbox_x hpcm_print_passwords \
 	hpcm_email_passwords chkpage \
@@ -44,10 +44,12 @@ hpcm_sandbox_x:	../../secure/src/hpcm_sandbox.c
 	          unsecure_hpcm_sandbox_x; fi
 
 secure_hpcm_sandbox_x:
+	(cd ../../secure/src; make hpcm_sandbox)
 	ln -s ${SECURE_BIN}/hpcm_sandbox hpcm_sandbox_x
-	@if test hpcm_sandbox_x -ot \
-		 ../../secure/src/hpcm_sandbox.c; \
-	    then echo ===============================; \
+	@if cmp hpcm_sandbox_x \
+	        ../../secure/src/hpcm_sandbox; \
+	    then x=x; \
+	    else echo ===============================; \
 	         echo WARNING: \
 		      ${SECURE_BIN}/hpcm_sandbox \
 	    	      is out of date; \
