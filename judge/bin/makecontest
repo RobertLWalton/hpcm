@@ -6,7 +6,7 @@
 #
 # File:		makejudgingdir
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Nov  3 05:56:27 EST 2000
+# Date:		Fri Nov  3 12:38:04 EST 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/11/03 11:52:50 $
+#   $Date: 2000/11/03 17:38:13 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.35 $
+#   $Revision: 1.36 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -1795,7 +1795,6 @@ if { $secure_option \
 # Make $c_d/who_where
 #
 if { $who_where_option } {
-    set wwcepe "WHO:WHERE:COACH-EMAIL:PRACTICE-EMAIL"
     if { ! [file readable $c_d/secure/passwords] } {
         error "$c_d/secure/passwords does not exist\
 	       for -who_where option"
@@ -1806,8 +1805,12 @@ if { $who_where_option } {
 	    set line [gets $passwords_ch]
 	    if { [eof $passwords_ch] } break
 	    regexp {^([^:]*):} $line forget account
+	    set rest ":"
+	    regexp {^[^:]*:[^:]*(:.*)$} $line \
+	           forget rest
 	    if { $account != "none" } {
-		puts $who_where_ch "$account:$wwcepe"
+		puts $who_where_ch \
+		     "$account:WHERE$rest"
 	    }
 	}
 	close $passwords_ch
@@ -1818,35 +1821,96 @@ if { $who_where_option } {
     } elseif { [file mtime $c_d/who_where] \
 	       < [file mtime $c_d/secure/passwords] } {
 
-	set who_where_ch [open $c_d/who_where r]
-	while { "yes" } {
-	    set line [gets $who_where_ch]
-	    if { [eof $who_where_ch] } break
-	    regexp {^([^:]*):} $line forget account
-	    set who_where_array($account) yes
-	}
-	close $who_where_ch
-
-	set new_account_list ""
-
+	# Read $c_d/secure/passwords, decomposing the
+	# lines into `$account:$password:$rest', saving
+	# $rest in $passwords_array($account), and
+	# making a list of accounts in the order their
+	# lines were encountered in $passwords_accounts
+	# 
 	set passwords_ch [open $c_d/secure/passwords r]
+	set passwords_accounts ""
 	while { "yes" } {
 	    set line [gets $passwords_ch]
 	    if { [eof $passwords_ch] } break
 	    regexp {^([^:]*)(:|$)} $line \
 	           forget account forget2
-	    if { ! [info exists \
-	                 who_where_array($account)] \
-		 && $account != "none" } {
-		lappend new_account_list $account
+	    set rest ""
+	    regexp {^[^:]*:[^:]*:(.*)$} $line \
+	           forget rest
+
+	    if { $account != "none" } {
+		set passwords_array($account) $rest
+		lappend passwords_accounts $account
 	    }
 	}
 	close $passwords_ch
 
-	if { $new_account_list != "" } {
-	    set who_where_ch [open $c_d/who_where a]
-	    foreach account $new_account_list {
-		puts $who_where_ch "$account:$wwcepe"
+	# The lines for the new who_where file are
+	# put in the list $new_who_where.  $changed
+	# is set `yes' if this is a change from the
+	# old who_where file, and `no' otherwise.
+	#
+	set new_who_where ""
+	set changed no
+
+	# Read the old who_where file.  Copy the lines
+	# into $new_who_where, changing the $rest part
+	# to that taken from passwords, and recording
+	# any actual changes in $changed.  Delete
+	# $passwords_array($account) for any account
+	# encountered in the old who_where file.
+	#
+	set who_where_ch [open $c_d/who_where r]
+	while { "yes" } {
+	    set line [gets $who_where_ch]
+	    if { [eof $who_where_ch] } break
+
+	    regexp {^([^:]*)(:|$)} $line \
+	           forget account forget2
+	    set where ""
+	    regexp {^[^:]*:([^:]*)(:|$)} $line \
+	    	   forget where forget2
+	    set rest ""
+	    regexp {^[^:]*:[^:]*:(.*)$} $line \
+	           forget rest
+	    if { [info exists \
+	               passwords_array($account)] } {
+	        set prest \
+		    $passwords_array($account)
+		if { $prest != $rest } {
+		    lappend new_who_where \
+		    	    "$account:$where:$prest"
+		    set changed yes
+		} else {
+		    lappend new_who_where $line
+		}
+		unset passwords_array($account)
+	    } else {
+	        lappend new_who_where $line
+	    }
+	}
+	close $who_where_ch
+
+	# For the accounts in the order encountered in
+	# the $c_d/secure/passwords file, if the account
+	# is not in $new_who_where yet, add it.
+	#
+	foreach account $passwords_accounts {
+	    if { [info exists \
+	               passwords_array($account)] } {
+		set prest $passwords_array($account)
+		lappend new_who_where \
+		        "$account:WHERE:$prest"
+		set changed yes
+	    }
+	}
+
+        # If $changed is `yes', write $new_who_where.
+	#
+	if { $changed } {
+	    set who_where_ch [open $c_d/who_where w]
+	    foreach line $new_who_where {
+		puts $who_where_ch $line
 	    }
 	    close $who_where_ch
 
