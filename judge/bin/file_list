@@ -6,7 +6,7 @@
 #
 # File:		file_list
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Mar 22 08:54:27 EST 2002
+# Date:		Sat Nov  2 09:13:59 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/03/22 14:06:01 $
+#   $Date: 2002/11/02 14:15:45 $
 #   $RCSfile: file_list,v $
-#   $Revision: 1.3 $
+#   $Revision: 1.4 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -30,10 +30,14 @@ file_list expression
 
     List all the file names in the HPCM File_List file
     for which the expression is true, where the names
-    in the expression are taken as key names.  The
+    in the expression are taken as keyword names.  The
     operators `!', `&', `^', and `|' are permitted, as
     are parentheses.  Precedence order is `!', `&', `^',
     `|'.
+
+    See the File_List file for documentation of the
+    format of that file, including special *KEYS* and
+    *ABBREVS* lines interpreted by this program.
 
     Unlike most HPCM judging programs, this program does
     not read any hpcm_judging.rc file and errors made by
@@ -61,7 +65,7 @@ set vars ""
 set expression ""
 
 foreach var $argument {
-    if { [regexp {^[_a-zA-Z][_a-zA-Z0-9]*} $var] } {
+    if { [regexp {^[_a-zA-Z][_a-zA-Z0-9]*$} $var] } {
         lappend vars $var
         set expression "$expression \$$var"
     } elseif { [lcontain {( ) ! & ^ |} $var] } {
@@ -70,8 +74,6 @@ foreach var $argument {
         error "Bad atom `$var' in `$argument'"
     }
 }
-
-set ch [open "[file dirname $argv0]/../../File_List" r]
 
 # We isolate evaluation in an environment where all
 # key and variable names are local (assuming they
@@ -83,33 +85,64 @@ proc evaluator { _expression_ _keys_ _vars_ } {
     return [expr $_expression_]
 }
 
-set outsw 0
-while { "yes" } {
-    set line [gets $ch]
-    if { [eof $ch] } break
-    if { [regexp {^#KEYS:(.*)$} $line forget keys] } {
-	set outsw [evaluator $expression $keys $vars]
-	foreach key $keys {
-	    set key_present($key) yes
+# Replace abbreviations in a list.  The array of
+# abbreviations is given along with the list.  Replace-
+# ment values are sublists of the result, and replace-
+# ment is NOT recursive.
+#
+proc replace_abbrevs { list abbrev } {
+
+    upvar $abbrev ab
+
+    set result ""
+    foreach x $list {
+    	if { [info exists ab($x)] } {
+	    set result [concat $result $ab($x)]
+	} else {
+	    lappend result $x
 	}
-    } elseif { [regexp {^#} $line] } {
-	set outsw 0
-    } elseif { $outsw } {
-	puts $line
     }
+    return $result
 }
 
-set bad_vars ""
-foreach var $vars {
-    if { ! [info exists key_present($var)] } {
-        lappend bad_vars $var
+# Loop through file lines.
+#
+set base_keys ""
+set ch [open "[file dirname $argv0]/../../File_List" r]
+while { "yes" } {
+    set line [gets $ch]
+    if { [eof $ch] } {
+    	break
+    } elseif { [regexp {^#} $line] } {
+    	# Ignore comment.
+    } elseif { [catch { llength $line }] } {
+        error "Line is NOT a TCL list:\n$line"
+    } elseif { [lindex $line 0] == "*ABBREVS*" } {
+        foreach abbrev [lrange $line 1 end] {
+	    if { ! [regexp {^([^=]+)=(.*)$} $abbrev \
+	    		   forget name value] } {
+		error "Bad abbreviation line:\n$line"
+	    }
+	    set key_abbrev($name) $value
+	    set file_abbrev($name) [split $value "/"]
+	}
+    } elseif { [lindex $line 0] == "*KEYS*" } {
+        set base_keys \
+	    [replace_abbrevs [lrange $line 1 end] \
+	                     key_abbrev]
+    } elseif { [evaluator \
+                  $expression \
+		  [concat $base_keys \
+			  [replace_abbrevs \
+			       [lrange $line 1 end] \
+			       key_abbrev]] \
+		  $vars] } {
+        
+	puts [join [replace_abbrevs \
+	              [split [lindex $line 0] "/"] \
+		      file_abbrev] \
+		   "/"]
     }
-}
-if { $bad_vars != "" } {
-    puts stderr "ERROR: Logical expression contains\
-    		 keys never used anywhere in\
-		 File_List:\n    $bad_vars"
-    exit 1
 }
 
 exit 0
