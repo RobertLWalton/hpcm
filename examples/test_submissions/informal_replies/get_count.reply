@@ -1,11 +1,11 @@
-From walton  Fri Mar 22 06:07:27 2002
+From walton  Sat Nov  9 01:12:07 2002
 Return-Path: <walton@walton1.walton>
 Received: (from walton@localhost)
-	by walton1.walton (8.11.6/8.11.6) id g2MB7QW03893;
-	Fri, 22 Mar 2002 06:07:26 -0500
-Date: Fri, 22 Mar 2002 06:07:26 -0500
+	by walton1.walton (8.11.6/8.11.6) id gA96C5n04320;
+	Sat, 9 Nov 2002 01:12:05 -0500
+Date: Sat, 9 Nov 2002 01:12:05 -0500
 From: "Robert L. Walton" <walton@walton1.walton>
-Message-Id: <200203221107.g2MB7QW03893@walton1.walton>
+Message-Id: <200211090612.gA96C5n04320@walton1.walton>
 To: "Robert L. Walton" <walton@walton1.walton>
 Reply-To: email_contest<walton@walton1.walton>
 Subject: RE: get demos/count
@@ -23,7 +23,7 @@ The following requested files appear below after the request message header:
 ----------------------------------------------- this message replies to:
 To: email_contest<walton@walton1.walton>
 From: "Robert L. Walton" <walton@walton1.walton>
-Date: Fri, 22 Mar 2002 06:07:10 -0500
+Date: Sat, 9 Nov 2002 01:11:45 -0500
 Subject: get demos/count
 ------------------------------------------------------------------------
 
@@ -158,9 +158,9 @@ clean:
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/03/22 11:51:21 $
+#   $Date: 2002/11/09 06:55:43 $
 #   $RCSfile: get_count.reply,v $
-#   $Revision: 1.6 $
+#   $Revision: 1.7 $
 ---<>--<>---<>--<>---<>----- demos/count/README:
 The files in this demo directory are:
 
@@ -430,16 +430,41 @@ main()
 		// error code.
 }
 ---<>--<>---<>--<>---<>----- demos/count/count1.java:
+// Count Demo Program: JAVA Version
+//
+// File:     count1.java
+// Author:   Bob Walton <walton@deas.harvard.edu>
+// Date:     Fri Nov  1 06:37:28 EST 2002
+//
+// The authors have placed this program in the public
+// domain; they make no warranty and accept no liability
+// for this program.
+//
+// RCS Info (may not be true date or author):
+//
+//   $Author: hc3 $
+//   $Date: 2002/11/09 06:55:43 $
+//   $RCSfile: get_count.reply,v $
+//   $Revision: 1.7 $
+
 import java.io.*;
+import java.util.StringTokenizer;
 
 public class count {
 
     public static void main (String[] args)
-	    throws IOException {
+	    throws IOException
+    {
 
+	BufferedReader reader
+	   = new BufferedReader
+	         ( new InputStreamReader
+		       ( System.in ) );
+
+	// Loop through paragraphs.
+	//
 	int paragraph = 1;
 	boolean eof_seen = false;
-
 	while ( ! eof_seen )
 	{
 	    int characters = 0;
@@ -448,56 +473,50 @@ public class count {
 
 	    while ( true )
 	    {
-		int buffer [] = new int [ 100 ];
-		int len = 0;
-
-		while ( true )
+		String line = reader.readLine();
+		if ( line == null )
 		{
-		    int c = System.in.read ();
-		    if ( c == '\n' ) break;
-		    else if ( c == -1 )
-		    {
-			eof_seen = true;
-			break;
-		    }
-		    else
-			buffer [len ++] = c;
+		    // readLine returns null on EOF.
+		    //
+		    eof_seen = true;
+		    break;
 		}
 
-		int cp = 0;
-		while (    cp < len
-		        && buffer [cp] == ' ' ) ++ cp;
+		StringTokenizer tokenizer
+		    = new StringTokenizer ( line );
 
-		if ( cp == len ) break;
+		// Break on blank line.
+		//
+		if ( ! tokenizer.hasMoreTokens() )
+		    break;
 
 		++ lines;
 
-		do
+		// Count words in line.
+		//
+		while ( tokenizer.hasMoreTokens() )
 		{
 		    ++ words;
-		    while (    cp < len 
-		            && buffer [cp] != ' ' )
-			++ cp;
-		    while (    cp < len
-		            && buffer [cp] == ' ' )
-			++ cp;
-		} while ( cp != len );
+		    tokenizer.nextToken();
+		}
 
-		characters += cp;
+		// Count characters in line.
+		//
+		characters += line.length();
 	    }
 
+	    // Ignore blank `paragraphs'.
+	    //
 	    if ( lines > 0  )
 	    {
-		System.out.print ( "Paragraph " );
-		System.out.print ( paragraph );
-		System.out.print ( ": " );
-		System.out.print ( lines );
-		System.out.print ( " lines, " );
-		System.out.print ( words );
-		System.out.print ( " words, " );
-		System.out.print ( characters );
-		System.out.print ( " characters." );
-		System.out.println ();
+		// Print paragraph output.
+		//
+		System.out.println
+		    (   "Paragraph " + paragraph + ": "
+		      + lines + " lines, "
+		      + words + " words, "
+		      + characters + " characters."
+		    );
 
 		++ paragraph;
 	    }
