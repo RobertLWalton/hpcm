@@ -5,7 +5,7 @@
 #
 # File:		manualreply
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Sep 21 05:31:10 EDT 2000
+# Date:		Thu Sep 21 11:23:18 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/09/21 11:48:23 $
+#   $Date: 2000/09/21 20:34:37 $
 #   $RCSfile: manualreply,v $
-#   $Revision: 1.7 $
+#   $Revision: 1.8 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -79,7 +79,7 @@ set window_error ""
 set window_prompt ""
 set window_height 40
 set window_display_height 12
-set window_info_height 6
+set window_info_height 8
 
 set window_newlines "\n\n\n\n\n\n\n\n\n\n"
 set window_newlines "$window_newlines$window_newlines"
@@ -97,7 +97,7 @@ proc display_window {} {
     set i $window_info
     set e $window_error
     set p $window_prompt
-    puts "$b\n$d\n$i\n$e\n$p"
+    puts -nonewline "$b\n$d\n$i\n\n$e\n\n$p"
     flush stdout
 }
 
@@ -106,7 +106,8 @@ proc set_window_info { info } {
     global window_info window_info_height \
     	   window_newlines
 
-    set height [llength [split $info "\n"]]
+    set split [split $info "\n"]
+    set height [llength $split]
     if { $height > $window_info_height } {
     	error "window info too high:\n$info"
     }
@@ -131,7 +132,7 @@ proc set_window_display { display } {
 		- $height - 1 }]
     set window_blank \
         [string range $window_newlines 0 $offset]
-    set window_blank $display
+    set window_display $display
 }
 
 set window_bar "===================="
@@ -147,9 +148,9 @@ proc bar_with_text { text } {
 # Set the window display to display the first lines
 # of the file.
 #
-proc set_file_display { filename }
+proc set_file_display { filename } {
 
-    global window_display_height
+    global window_display_height last_display
 
     set height [expr { $window_display_height - 2 }]
     set display [bar_with_text "$filename:"]
@@ -171,11 +172,13 @@ proc set_file_display { filename }
     if { $n > $height } {
 	set more [expr { $n - $height }]
     	set bar [bar_with_text "......................\
-		 there are $more lines in the file"]
+		 there are $more more lines in this\
+		 file"]
     } else {
         set bar [bar_with_text " end-of-file"]
     }
     set_window_display "$display\n$bar"
+    set last_display file
 }
 
 
@@ -238,7 +241,9 @@ proc refresh_file_list { } {
 	lappend item $mtime
 	lappend item $file
 	set size [file size $file]
-	if { $size == 0 } {
+	if { [file isdirectory $file] } {
+	    lappend item "(directory)"
+	} elseif { $size == 0 } {
 	    lappend item "(empty)"
 	} elseif { ! [file readable $file] } {
 	    lappend item "(unreadable file)"
@@ -283,7 +288,7 @@ proc refresh_file_list { } {
 proc set_file_list_display {} {
 
     global file_list_items file_list_origin_mtime \
-    	   window_bar
+    	   window_bar last_display
 
     set display "$window_bar"
 
@@ -342,31 +347,37 @@ proc set_file_list_display {} {
     }
 
     set_window_display "$display\n$window_bar"
+    set last_display file_list
 }
 
 # Given a file number, set `last_file' to the name of
-# the corresponding file, and return `OK'.  If there is
-# an error, leave `last_file' alone, and return an error
-# description (of less than 60 characters) instead.
+# the corresponding file, set `window_error' to "", and
+# return `yes'.  If there is an error, leave `last_file'
+# alone, set `window_error' to the error description,
+# and return `no'.
 #
 proc get_file { number } {
 
-    global file_list file_list_length last_file
+    global file_list_items file_list_length \
+	   last_file window_error
 
+    set window_error ""
     if { $number == "" } {
 	if { $last_file == "" } {
-	    return "No previous file!"
+	    set window_error "No previous file!"
+	    return no
 	} else {
-	    return OK
+	    return yes
 	}
     } elseif { $number < 1 \
                || $number > $file_list_length } {
-	return "Bad file number: $number"
+	set window_error "Bad file number: $number"
+	return no
     } else {
 	set last_file \
-            [lindex [lindex $file_list \
-                            [expr { $number - 1 }]] 1]
-	return OK
+            [lindex [lindex $file_list_items \
+                            [expr { $number - 1 }]] 2]
+	return yes
     }
 }
 
@@ -378,9 +389,10 @@ proc yes? {} {
     	set answer [string trim [gets stdin]]
 	if { [eof stdin] } {
 	    puts "Exiting manualreply"
+	    exit_cleanup
 	    exit 0
 	}
-	switch $answer {
+	switch -- $answer {
 	    y	-
 	    yes	-
 	    Y	-
@@ -392,7 +404,7 @@ proc yes? {} {
 	}
 	if { $answer == "" } {
 	    set window_error \
-		    "ERROR: empty answer"
+		    "ERROR: empty input"
 	} else {
 	    set window_error \
 		    "ERROR: could not understand `$answer'"
@@ -402,27 +414,127 @@ proc yes? {} {
     }
 }
 
+proc continue? {} {
+
+    puts -nonewline "\nType any character to continue "
+    flush stdout
+    gets stdin
+    if { [eof stdin] } {
+	puts "Exiting manualreply"
+	exit_cleanup
+	exit 0
+    }
+}
+ 
+proc out_check { out } {
+    if { $out == "" } return
+    puts $out
+    continue?
+}
+
 # Initialize the file list and the last_file variable.
+# Initialize last_display variable (equal to `file_list'
+# or `file'.)
 #
 refresh_file_list
 set last_file ""
+set last_display "file_list"
 
-set_file_list_display
-set_window_info "
-POO BAH
-"
-set window_prompt "y or n? "
-
-set n 0
+# Lock current directory with $dispatch_pid_file.  If
+# $dispatch_pid_file already exists, let our user
+# take corrective action.
+#
 while { "yes" } {
-    incr n
-    set window_error "TRY $n"
-    display_window
-    yes?
+
+    if { [dispatch_lock] == "yes" } break
+
+    set time [expr { [clock seconds] - \
+                     [file mtime $dispatch_pid_file] }]
+
+
+    if { ! [catch { set pgid \
+                        [read_file \
+			    $dispatch_pid_file] }] } {
+        set group_display \
+	    [display_process_group $pgid]
+        set group_display \
+	    "Process Group Tree:\n\n$group_display"
+        set window_error ""
+	set b $window_bar
+	set_window_display "$b\n$group_display\n$b"
+    } else {
+	set_file_list_display
+        set window_error \
+            "ERROR: cannot read $dispatch_pid_file"
+    }
+
+    set_window_info "
+$dispatch_pid_file file exists and is $time seconds old.
+Maybe `autodispatch' or another `manualreply' is running.
+
+u = update above info		d = delete\
+                                    $dispatch_pid_file
+k = kill -INT process group	x = exit this program
+m = kill -KILL process group"
+
+    set window_prompt "> "
+
+    while { "yes" } {
+    
+	display_window
+
+	set answer [string trim [gets stdin]]
+	set window_error ""
+	switch -- $answer {
+	    u	{   break
+		}
+	    k	{   catch {
+			signal_process_group INT \
+			    [read_file \
+                                $dispatch_pid_file]
+		    } out
+		    out_check $out
+		    break
+		}
+	    m	{   catch {
+			signal_process_group KILL \
+			    [read_file \
+                                $dispatch_pid_file]
+		    } out
+		    out_check $out
+		    break
+		}
+	    d	{   file delete -force \
+				$dispatch_pid_file
+		    break
+		}
+	    x	{
+		    exit_cleanup
+		    exit 0
+	    	}
+	    ""	{   if { [eof stdin] } {
+			exit_cleanup
+			exit 0
+		    } else {
+			set window_error \
+			    "ERROR: empty input"
+		    }
+		}
+	    default
+		{
+		    set window_error "ERROR: unknown\
+			answer `$answer'!"
+		}
+	}
+    }
 }
 
-exit 0
-    
+# Set exit_cleanup function (called before all exits
+# in judging common code) to unlock current directory.
+#
+proc exit_cleanup {} {
+    dispatch_unlock
+}
 
 
 # Read the received mail header.
@@ -431,6 +543,10 @@ set received_ch [open $received_file r]
 read_header $received_ch
 close $received_ch
 
+# If auto score file, reply file, no replay file,
+# and unchecked errors do not exists, consider running
+# autojudge.
+#
 if { [llength $message_subject] == 2 \
      && [lindex $message_subject 0] == "submit"
      && [llength [glob -nocomplain \
@@ -444,6 +560,9 @@ if { [llength $message_subject] == 2 \
     set_window_info "
 It appears that `autojudge' should be run."
     set window_prompt "Do you want to do so (y or n)? "
+    set window_error ""
+
+    display_window
 
     if { [yes?] } {
 
@@ -454,120 +573,153 @@ It appears that `autojudge' should be run."
 	    puts "autojudge FAILED to make\
 	         $auto_score_file"
 	}
-	puts "Type any character to continue"
-	gets stdin
-	if { [eof stdin] } {
-	    puts "Exiting manualreply"
-	    exit 0
-	}
+	continue?
+    }
 }
+
+set directory [file tail [pwd]]
+set proposed_score "none"
+set scoring_instructions [find_scoring_instructions]
+
+set_file_list_display
+set window_error ""
+set window_prompt "> "
 
 while { "yes" } {
 
-    puts "Directory [file tail [pwd]]"
-    puts ""
-    put_file_list
-    puts -nonewline "
-v# = view #           e# = edit #        c# = checkoff #
+    if { $last_display == "file_list" } {
+	refresh_file_list
+	set_file_list_display
+    } else {
+	set_file_display
+    }
+	
+    set_window_info "Directory: $directory
+Proposed Score: $proposed_score     Scoring\
+    Instructions: $scoring_instructions
+
+#  = look at #        v# = view #        e# = edit #
+ls = list files       c# = checkoff #	 u# = uncheckoff #
 ir = initiate reply   er = edit reply    sr = send reply
-sh = call shell       u# = uncheckoff #	 x  = exit
-ad = call autodispatch      ms = call manualscore
+ms = manualscore      aj = autojudge	 ad = autodispatch
+x  = exit	      sh = shell"
 
-> "
-    set answer [gets stdin]
-    if { [eof stdin] } {
-    	exit 0
-    }
+    display_window
+    set window_error ""
 
-    if { [llength $answer] == 0 } {
-    	continue;
-    } elseif { [llength $answer] > 1 } {
-        puts "Unknown: $answer"
-	continue;
-    }
-
-    set answer [lindex $answer 0]
-
-    switch -regexp $answer \
+    set answer [string trim [gets stdin]]
+    switch -regexp -- $answer {
+        {^[1-9][0-9]*$} {
+	    if { [get_file $answer] } {
+		set_file_display $last_file
+	    }
+	}
         {^v[0-9]*$} {
 	    regexp {^v([0-9]*)$} $answer forget n
 	    if { [get_file $n] } {
 		view_file $last_file
+		set_file_display $last_file
 	    }
-	} \
+	}
 	{^e[0-9]*$} {
 	    regexp {^e([0-9]*)$} $answer forget n
 	    if { [get_file $n] } {
 		edit_file $last_file
+		set_file_display $last_file
 	    }
-	} \
+	}
 	{^c[0-9]*$} {
 	    regexp {^c([0-9]*)$} $answer forget n
 	    if { [get_file $n] } {
 		catch { set last_file \
 			    [make_checked \
 			     $last_file] } out
-		if { $out != "" } {
-		    puts $out
-		}
+		out_check $out
 	    }
-	} \
+	}
 	{^u[0-9]*$} {
 	    regexp {^u([0-9]*)$} $answer forget n
 	    if { [get_file $n] } {
 		catch { set last_file \
 		            [make_unchecked \
 			     $last_file] } out
-		if { $out != "" } {
-		    puts $out
-		}
+		out_check $out
 	    }
-	} \
+	}
+	{ls} {
+	    set_file_list_display
+	}
 	{ir} {
 	    compose_reply -all
 	    set last_file $reply_file+
 	    edit_file $last_file
-	} \
+	}
 	{er} {
 	    set last_file $reply_file+
 	    edit_file $last_file
-	} \
+	}
 	{sr} {
 	    if { ! [file exists $reply_file+] } {
 		puts "No reply composed!"
 	    } else {
-	        puts "Do you want to send:"
-	        puts ""
-	        put_file $reply_file+ stdout 12
-		puts -nonewline "
-(y or n)? "
-	        set answer [gets stdin]
-	        if { [eof stdin] } {
-		    exit 0
-		} elseif { [regexp {^[yY]} $answer] } {
+		set_file_display $reply_file+
+		set_window_info ""
+		set window_error ""
+		set window_prompt \
+		    "Do you want to send the above\
+			(y or n)? "
+		display_window
+
+		if { [yes?] } {
 		    puts "Sending..."
 		    send_reply
 		    set last_file $reply_file
+		    continue?
 		} else {
 		    puts "Send ABORTED!"
+		    continue?
 		}
 	    }
-	} \
+	}
+	{aj} {
+	    puts "Running autojudge"
+	    exec autojudge >@ stdout 2>@ stderr
+
+	    if { ! [file exists $auto_score_file] } {
+		puts "autojudge FAILED to make\
+		     $auto_score_file"
+	    }
+	    continue?
+	}
 	{sh} {
 	    call_shell
-	} \
+	}
 	{ad} {
 	    exec autodispatch -force \
 	         >@ stdout 2>@ stderr
-	} \
+	    continue?
+	}
 	{ms} {
 	    exec manualscore >@ stdout 2>@ stderr
-	} \
+	    continue?
+	}
 	{x} {
+	    exit_cleanup
 	    exit 0
 	}
+	{^$} {
+	    if { [eof stdin] } {
+		exit_cleanup
+		exit 0
+	    }
+	    set window_error "ERROR: empty input"
+	}
+	{default} {
+	    set window_error "ERROR: cannot understand\
+				`$answer'!"
+        }
 
-    refresh_file_list
+    }
 }
 
 
