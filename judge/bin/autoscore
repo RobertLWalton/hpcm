@@ -4,7 +4,7 @@
 #
 # File:		autoscore
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Aug 29 14:06:54 EDT 2001
+# Date:		Sat Nov 24 13:02:45 EST 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/08/29 18:58:43 $
+#   $Date: 2001/11/24 18:15:17 $
 #   $RCSfile: autoscore,v $
-#   $Revision: 1.29 $
+#   $Revision: 1.30 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -68,6 +68,16 @@ cd submission_directory; autoscore program_name
 
     	scorediff pppp.out pppp.test
 
+    if no $scoring_filter_file, pppp.fout, or pppp.ftest
+    file exist, or as the output of
+
+    	scorediff pppp.fout pppp.ftest
+
+    if any of the three files just mentioned exist.
+    Note that it is a system error for one of the three
+    files to exist if either the pppp.fout or pppp.ftest
+    files do not exist.
+
     Then the score is computed by comparing the first
     line of the pppp.score file to the whitespace
     separated items of the first line of any
@@ -91,7 +101,7 @@ cd submission_directory; autoscore program_name
 			ly allowed if either whitespace
 			is followed by a floating point
 			number.
-
+
     	beginspace	Allow matching whitespace in
 			the two files to be not exactly
 			the same, if each whitespace is
@@ -105,7 +115,7 @@ cd submission_directory; autoscore program_name
 			the two files to be not exactly
 			the same, if each whitespace is
 			at the end of a line.
-
+
     	linespace	Allow whitespace within blank
 			lines not to match.
 
@@ -126,7 +136,7 @@ cd submission_directory; autoscore program_name
 			at the beginnings and ends of
 			the lines involved, and within
 			blank lines, need not match.
-
+
 	integer A R	Allow the two files to have
 			matching integers whose absolute
 			difference is as much as A, and
@@ -139,7 +149,7 @@ cd submission_directory; autoscore program_name
 
 			An integer is a number with no
 			decimal point or exponent.
-
+
 	float A R	Allow the two files to have mat-
 			ching numbers at least one of
 			which is floating point whose
@@ -165,7 +175,7 @@ cd submission_directory; autoscore program_name
 	exponent	Allow two files to have matching
 			numbers just one of which has an
 			exponent.
-
+
 	sign		Allow two files to have matching
 			numbers just one of which has an
 			explicit sign, or both of which
@@ -178,7 +188,7 @@ cd submission_directory; autoscore program_name
 	case		Allow two files to have letters
 			outside of numbers that match
 			but for case.
-
+
 	column		Allow two files to have matching
 			numbers that do not end in the
 			same line column, or matching
@@ -204,7 +214,7 @@ cd submission_directory; autoscore program_name
     if scorediff reports something that is not allowed
     by the $scoring_instructions_file, the output has a
     formatting error.  Otherwise the output is correct.
-
+
     The relative difference of two numbers x and y is
     defined to be:
 
@@ -214,7 +224,7 @@ cd submission_directory; autoscore program_name
 
     which has a maximum value of 2.  If x = y = 0, the
     relative difference of x and y is defined to be 0.
-
+
     The score is written to the `$auto_score_file' file
     in the submission directory and is also written as a
     single line to the standard output.  The score
@@ -243,10 +253,12 @@ if { $argc != 1 || [regexp {^-} [lindex $argv 0]] } {
 # Set file names and check file permissions.
 #
 set program_name [lindex $argv 0]
-set output_file $program_name.out
-set error_file  $program_name.err
-set test_file   $program_name.test
-set score_file  $program_name.score
+set output_file  $program_name.out
+set foutput_file $program_name.fout
+set error_file   $program_name.err
+set test_file    $program_name.test
+set ftest_file   $program_name.ftest
+set score_file   $program_name.score
 
 # Initialize score to blank.
 #
@@ -304,11 +316,25 @@ if { $score != "" } {
          || [file mtime $score_file] \
 	    < [file mtime $output_file] \
          || [file mtime $score_file] \
-	    < [file mtime $test_file] } {
+	    < [file mtime $test_file] \
+         || ( [file exists $foutput_file] \
+	      && [file mtime $score_file] \
+	         < [file mtime $foutput_file] ) \
+         || ( [file exists $ftest_file] \
+	      && [file mtime $score_file] \
+	         < [file mtime $ftest_file] ) } {
 
     	file delete -force $score_file
 
-	compute_score_file $program_name
+        if {    [file exists $scoring_filter_file] \
+             || [file exists $foutput_file] \
+             || [file exists $ftest_file] } {
+	    compute_score_file \
+	        $foutput_file $ftest_file $score_file
+	} else {
+	    compute_score_file \
+	        $output_file $test_file $score_file
+	}
     }
 
     # Read the .score file.
