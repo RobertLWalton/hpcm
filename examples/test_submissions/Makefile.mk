@@ -2,7 +2,7 @@
 #
 # File:		Makefile.mk
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Feb 13 00:04:07 EST 2004
+# Date:		Sun Apr 11 06:49:10 EDT 2004
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2004/02/13 05:07:13 $
+#   $Date: 2004/04/11 10:53:16 $
 #   $RCSfile: Makefile.mk,v $
-#   $Revision: 1.25 $
+#   $Revision: 1.26 $
 
 extract_replies:	mbox
 	rm -rf replies
@@ -28,9 +28,11 @@ diff_replies:
 	  echo $$x; e=':.*\$$'; \
 	     email_diff replies/$$x $R/$$x -b \
 	    "From " "Received:" "Return-Path:" \
-	    "Date:" "From:" "To:" "Reply-To:" \
-	    "Message-ID" \
+	    "Date:" "From:" "To:" "Reply-To:" "Cc:" \
+	    "Status:" "Message-ID:" \
 	    "Subject:.*unchecked-error" \
+	    "X-HPCM-Date:" "X-HPCM-Reply-To:" \
+	    "X-HPCM-Signature:" \
 	    ">From " \
 	    '#.*\$$Author'$$e \
 	    '#.*\$$Date'$$e \
