@@ -6,7 +6,7 @@
 #
 # File:		makejudgingdir
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Oct 17 09:17:37 EDT 2000
+# Date:		Thu Oct 26 22:23:42 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/10/17 13:44:54 $
+#   $Date: 2000/10/27 05:31:11 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.23 $
+#   $Revision: 1.24 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -33,18 +33,16 @@ catch {
 
 set document "
 cd judging_directory
-makejudgingdir options index_specification ...
+makejudgingdir option ... index_specification ...
 
   Options:
     -email	Sets up an email contest.  Equals -info,
-    		-solutions, and -mail.
+    		-solutions, -mail, and -this_contest.
     -formal     Sets up a formal contest.  Equals all
     		options but -info, -trashable, and -txt.
     -informal   Sets up an informal contest.  Equals all
-    		options but -problems, -demos, -info,
-		-trashable, and -txt.  Either the -info
-		option, or both the -demos and -problems
-		options, should be added.
+    		options but -problems, -demos,
+		-trashable, and -txt.
     -info	Make ./info, ./info/help/index,
     		./info/help/problems, ./info/help/demos.
     -solutions  Make ./solutions
@@ -55,7 +53,7 @@ makejudgingdir options index_specification ...
     		files for non-`all' directory entries
 		only if -txt given.
     -txt	Include .txt files in ./contest/
-		problems or ./contest/demo. 
+		problems or ./contest/demos. 
     -help	Make ./contest/help,
     		     ./contest/help/index,
     		     ./contest/help/problems,
@@ -126,7 +124,7 @@ makejudgingdir options index_specification ...
     copied into an output index file, which is the
     `help/index' file if the item name begins with
     `help/', the `help/problems' file if the item name
-    begins with `problems/', or the `help/ demos' file
+    begins with `problems/', or the `help/demos' file
     if the item name begins with `demos/'.
 
     When an item entry is copied to an output index,
@@ -137,12 +135,13 @@ makejudgingdir options index_specification ...
 
     The input index files also contain header entries
     that precede item entries.  When an item entry is
-    copied into an output index, header entries immedi-
-    ately preceding it are copied into the same output
-    index.  More specifically, a header entry is copied
-    if it is separated from the item entry being copied
-    only by other item entries that were not included
-    in the particular output index being copied to.
+    copied into an output index, the header entry im-
+    mediately preceding it is copied into the same out-
+    put index.  More specifically, a header entry is
+    copied if it is separated from the item entry being
+    copied only by other item entries that were not
+    included in the particular output index being copied
+    to.
 
     When an item is included in the ./info directory,
     a symbolic link is made to the item if it has the
@@ -150,19 +149,26 @@ makejudgingdir options index_specification ...
     a directory with no `all' option, a new directory
     is created containing a symbolic link to any
     Makefile and any .txt file in the directory.  The
-    .txt link is included only if the -txt program
-    option is given.
+    .txt link is included within the ./info directory
+    even if no -txt program option is given.
 
-    When an item is included in the ./contest directory,
-    files are copied and new directories are made.
-    Access is granted using a+r and a+rx directory and
-    file modes, except that
+    When an item is included in the ./contest directory
+    (i.e., in ./contest/demos, ./contest/problems, or
+    ./contest/help) files are copied and new directories
+    are made.  Access is granted using a+r and a+rx file
+    and directory modes, except that
     
     		./contest/problems 
     		./contest/help/problems
 
     are left with og-rx mode.  The `startcontest' prog-
-    ram sets the mode of these to a+rx.
+    ram sets the mode of these to a+rx.  For a directory
+    item with no `all' option, the item's Makefile is
+    copied, and the item's .txt file is copied if and
+    only if the -txt option is given.  For directory
+    items with the `all' option, the directory is copied
+    recursively, except no subdirectories whose last
+    component name is `CVS' or `RCS' are copied.
 
     If we consider the directory pairs:
 
@@ -171,28 +177,39 @@ makejudgingdir options index_specification ...
     	./info/help		./contest/help
 
     then if both directories of a pair are made, both
-    are identical after symbolic links are followed.
-    In particular, the UNIX `diff -r' command should
-    report the directories in a pair to be identical.
+    are identical after symbolic links are followed,
+    except that if there is no -txt option, .txt files
+    are generally copied into ./info/demos and ./info
+    /problems subdirectories but not into ./contest
+    /demos or ./contest/problems subdirectories.  But
+    if the -txt option is given, the UNIX `diff -r
+    command should report the two directories in each
+    of the above pairs to be identical.
 
     Directory items may also be included in the
     ./solutions directory.  In this directory the item
-    name is stripped of any directory prefix; e.g., the
-    name `public_demo/count' becomes `count'.  The
-    inclusion here is by symbolic link from directory to
-    directory: e.g. `./solutions/count' is symbolically
-    linked to the `public_demo/count' item directory
-    (within the appropriate index directory: see below).
+    name after substitutions is stripped of any direc-
+    tory prefix; e.g., the name `demos/count' becomes
+    `count'.  The inclusion here is by symbolic link
+    from directory to directory: e.g. `./solutions
+    /count' is symbolically linked to the item direc-
+    tory.  This means that all demos and problems in the
+    contest must have unique single component names
+    (except for items with the `nosolution' item option:
+    see below).  The name of a solvable demo or problem
+    is also the basename of the solution file submitted
+    for the demo or problem.
 
     If this program is building a ./info directory, it
     actually builds a ./info+ directory instead.  Then
-    it does a `diff -r ./info ./info+', discarding the
-    printed output, to determine if the new directory
-    is any different from the previous directory.  If
-    it is not different, the ./info+ directory is re-
-    moved and nothing else is done.  If the two direc-
-    tories are different, the following renaming
-    occurs:
+    it does a `diff -r ./info ./info+', and checks the
+    output to see if there is any difference between
+    ./info and ./info+ except for the first lines of
+    the help indeces (help/demos, help/problems, and
+    help/index).  If there are no differences, the
+    ./info+ directory is removed and nothing else is
+    done.  If the two directories have other differ-
+    ences, the following renaming occurs:
 
     		./info-	    becomes    ./info--
     		./info	    becomes    ./info-
@@ -327,15 +344,6 @@ makejudgingdir options index_specification ...
     are be used together without -problems or -demos
     to build a ./contest/help directory identical in
     content to the ./info/help directory.
-
-    When an item is included in the solutions directory,
-    the item must itself be a directory, and the name of
-    the item in the solutions directory is the last
-    component of the item name.  This means that all
-    problems in the system should have unique single
-    component names.  The name of a problem is also
-    the basename of the solution file submitted for the
-    problem.
 
     The name of an item is a modification of the name
     of the item as it appears in the input index file
@@ -536,7 +544,9 @@ while { "yes" } {
     switch -- [lindex $argv $argi] {
         -email		{ set info_option 	yes
 			  set solutions_option	yes
-			  set mail_option	yes }
+			  set mail_option	yes
+			  set this_contest_option \
+			  			yes }
         -formal		{ set solutions_option	yes
 			  set problems_option	yes
 			  set demos_option	yes
@@ -550,7 +560,8 @@ while { "yes" } {
 			  set who_where_option	yes
 			  set printer_option	yes
 			  set home_option	yes }
-        -informal	{ set solutions_option	yes
+        -informal	{ set info_option	yes
+			  set solutions_option	yes
 			  set help_option	yes
 			  set help2_option	yes
 			  set this_contest_option \
@@ -1307,16 +1318,58 @@ if { [file exists $c_d/help+/demos] } {
     grant_access $c_d/help+/demos
 }
 
+# Diff two directories.  If the only differences are the
+# first lines of help indices, return `no'.  Else return
+# `yes'.  Returning `yes' when one should have returned
+# `no' introduces a lack of optimization, but no func-
+# tional error.
+#
+proc diff_directories { dir1 dir2 } {
+    catch { exec diff -r $dir1 $dir2 } out
+    set out [split $out "\n"]
+
+    while { [llength $out] > 0 } {
+	set diffexp \
+	  {^diff -r .*/help/([^/ ]*) .*/help/([^/ ]*)$}
+	if { [regexp $diffexp [lindex $out 0] \
+	             forget index1 index2] \
+	     && $index1 == $index2 \
+	     && [lsearch -exact \
+	     	         {demos problems index} \
+			 $index1] \
+		>= 0 } {
+	    if { [lindex $out 1] != "1c1" } {
+	    	return yes
+	    } elseif { ! [regexp {^< [^ ]* Index} \
+				  [lindex $out 2]] } {
+	    	return yes
+	    } elseif { [lindex $out 3] != "---" } {
+	    	return yes
+	    } elseif { ! [regexp {^> [^ ]* Index} \
+				  [lindex $out 4]] } {
+	    	return yes
+	    }
+	    set out [lrange $out 5 end]
+	} elseif { [lindex $out 0] == \
+		   "child process exited abnormally" } {
+	    set out [lrange $out 1 end]
+	} else {
+	    return yes
+	}
+    }
+
+    return no
+}
+
 # Rename directories iff $directory+ differs from
-# $directory as determined by `diff -r'.  If a directory
-# is not renamed, delete it.  Return `yes' if directory
-# renamed, and `no' if deleted.
+# $directory as determined by `diff_directories'.  If a
+# directory is not renamed, delete it.  Return `yes' if
+# directory renamed, and `no' if deleted.
 #
 proc rename_directory { directory } {
-    
-    if { ! [catch { exec diff -r $directory \
-                         $directory+ > /dev/null } ] \
-         } {
+
+    if { [diff_directories $directory $directory+] \
+         == "no" } {
     	puts "New $directory does not differ from\
 	      previous version."
 	exec rm -rf $directory+ >@stdout
