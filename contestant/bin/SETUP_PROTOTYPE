@@ -4,7 +4,7 @@
 #
 # File:		SETUP_PROTOTYPE
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Sun Dec  3 03:42:58 EST 2000
+# Date:		Sun Dec  3 08:40:11 EST 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,11 +13,14 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/12/03 08:59:09 $
+#   $Date: 2000/12/03 14:16:17 $
 #   $RCSfile: SETUP_PROTOTYPE,v $
-#   $Revision: 1.2 $
+#   $Revision: 1.3 $
 
-files_and_directories_not_moved=".ssh .snapshot .Xauthority"
+# Default list of files and directories that are NOT
+# to be moved to $contest/home.
+#
+keep=".ssh .snapshot .Xauthority"
 
 # Change to the accounts home directory.
 #
@@ -42,9 +45,7 @@ case "$1" in
     -* )
 	echo "
 contest/bin/SETUP_PROTOTYPE contest
-
 or
-
 SETUP_PROTOTYPE
 
     Sets up the contest/home directory and the current
@@ -81,7 +82,7 @@ SETUP_PROTOTYPE
     arily to a+wx and use mkdir in the prototype ac-
     count, or one can log in as root and make this
     directory.
-
+
     SETUP_PROTOTYPE takes all ordinary files and direc-
     tories that it finds in ~ (the prototype account
     home directory) and moves then to the contest/home
@@ -90,7 +91,7 @@ SETUP_PROTOTYPE
     foo.  There are some exceptions that are NOT moved,
     namely:
 
-    	$files_and_directories_not_moved
+    	$keep
 
     It is possible to replace this list of exceptions
     by making a ~/.hpcm_keep file listing the desired
@@ -114,7 +115,7 @@ SETUP_PROTOTYPE
     These files are to be used by TRASH_ACCOUNT to
     reinitialize the home directories of contestant
     accounts.
-
+
     SETUP_PROTOTYPE also manages permissions of contest/
     home and the things it contains.  It sets the per-
     mission of contest/home itself to a+rx, and sets
@@ -152,12 +153,20 @@ SETUP_PROTOTYPE
     PROTOTYPE is run for the last time before running
     TRASH_ACCOUNT on the contestant accounts, unlike
     .cshrc and .bashrc.
-
+
     If the contest argument is not given, it is taken to
     be the target of the symbolic link ~/.hpcm_contest,
     if that exists.  If this program succeeds, it links
     ~/.hpcm_contest to the value of the contest argu-
-    ment."
+    ment.
+
+    Although ~/.hpcm_contest in the prototype account
+    ends up being symbolically linked to the contest
+    directory, and this symbolic link is stored in
+    setup.tar, TRASH_ACCOUNT does NOT use this symbolic
+    link stored in setup.tar, permitting the same
+    setup.tar, and therefore the same ~JJJ/prototype_
+    home, to be used for many different contests."
 
 	exit 1
 	;;
@@ -199,17 +208,40 @@ fi
 #
 if test -f .hpcm_keep
 then
-	files_and_directories_not_moved=`cat .hpcm_keep`
+	keep=`cat .hpcm_keep`
 fi
+
+# Check that the user really wants to move stuff.
+#
+echo READY TO MOVE YOUR HOME DIRECTORY FILES AND \
+     "SUBDIRECTORIES!"
+echo -n Do your really want to do "this (yes or no)? "
+read
+if test "$REPLY" != yes
+then
+    echo Guess not: exiting
+    exit 0
+fi
+
+echo -n "Are your sure (yes or no)? "
+read
+if test "$REPLY" != yes
+then
+    echo Guess not: exiting
+    exit 0
+fi
+
+# remove the following
+exit 0
 
 # Move everything in the home directory that is not
 # a symbolic link already, except things listed in
-# files_and_directories_not_moved.
+# `keep'.
 #
 for i in .[a-zA-Z0-9]* *
 do
 	found=no
-	for j in $files_and_directories_not_moved
+	for j in $keep
 	do
 		if test "$i" = "$j"
 		then
