@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Dec  8 23:29:13 EST 2000
+# Date:		Fri Jan 12 01:16:46 EST 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/12/09 05:12:58 $
+#   $Date: 2001/01/12 06:24:45 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.7 $
+#   $Revision: 1.8 $
 
 # Kill all implicit rules
 #
@@ -31,12 +31,12 @@ ${SECURE_BIN}/hpcm_sandbox:	hpcm_sandbox.c
 	test -w ${SECURE_BIN}
 	rm -f hpcm_sandbox
 	make --no-print-directory hpcm_sandbox
-	chmod a+rx hpcm_sandbox
-	chmod u+s hpcm_sandbox
 	-mv -f ${SECURE_BIN}/hpcm_sandbox \
 	       ${SECURE_BIN}/hpcm_sandbox-
 	mv -f hpcm_sandbox \
 	      ${SECURE_BIN}/hpcm_sandbox
+	chmod 755 ${SECURE_BIN}/hpcm_sandbox
+	chmod u+s ${SECURE_BIN}/hpcm_sandbox
 	ls -l ${SECURE_BIN}/hpcm_sandbox*
 	@if test ! -L ../../judge/bin/hpcm_sandbox_x; \
 	    then make --no-print-directory \
