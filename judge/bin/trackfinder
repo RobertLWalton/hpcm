@@ -1,0 +1,227 @@
+#!/bin/sh
+#
+# Looks at the subdirectories of the mail directory and
+# prints information about the existance and dates of
+# files that allows tracker to work.
+#
+# File:		trackfinder
+# Author:	Bob Walton (walton@deas.harvard.edu)
+# Date:		Fri Sep 29 07:30:39 EDT 2000
+#
+# The authors have placed this program in the public
+# domain; they make no warranty and accept no liability
+# for this program.
+#
+# RCS Info (may not be true date or author):
+#
+#   $Author: hc3 $
+#   $Date: 2000/10/03 03:16:09 $
+#   $RCSfile: trackfinder,v $
+#   $Revision: 1.1 $
+#
+# The next line starts tcl \
+exec tcl "$0" "$@"
+
+# Use tcl rather than tclsh so that `signal' is defined.
+
+# Include common code and parameters:
+#
+set lib_directory "[file dirname $argv0]/../lib"
+source $lib_directory/judging_common.tcl
+set log_globally yes
+catch {
+
+set document "
+trackfinder
+
+    This program examines subdirectories of the mail
+    directory that have names of the form:
+
+    	date-<<submitter>>-submission
+
+    It outputs information that tells what files
+    exist in these subdirectories and when the files
+    were last modified.
+
+    Specifically, for each directory a line is output
+    with the form
+
+	sub date {submitter}
+
+    where `sub' denotes `subdirectory' and the date and
+    submitter of this line are copied from the sub-
+    directory name.  After this line the following lines
+    are output indicating which files exist in the sub-
+    directory and what the modification times (mtimes)
+    of these files are:
+
+    	rec  time {subject}	Mtime of and `Subject'
+				field of $received_file.
+    	ext  time {filename}	Mtime of and name of
+				file extracted from
+				$received_file, if this
+				has a `Subject:' of the
+				form `submit filename'.
+	bin  time1 time2	Mtimes of the binary
+				and .cerr files, respec-
+				tively.
+	out  time1 time2	Mtimes of the .out and
+				.err files, respective-
+				ly.
+	sco   time1 time2 {autoscore} {manualscore}
+				Mtimes and contents of
+				$auto_score_file and
+				$manual_score_file,
+				respectively.
+	rep   time1 time2	Mtimes of $reply_file
+				and $no_reply_file,
+				respectively.
+	pid   time		Mtime of\
+				    $dispatch_pid_file.
+
+    If any file is missing, its time is `{}', and any
+    contents are also `{}', as for a missing score file.
+    If all files whose times are in one of the above
+    lines are missing, the line is not output.
+
+    All the non-missing time are integer numbers of
+    seconds relative to the date in the `sub' line that
+    begins the set of lines for a subdirectory.
+
+    This program logs errors in the log directory."
+
+
+# If there are any arguments, print document and
+# exit with error.
+#
+if { $argc != 0 } {
+    puts $document
+    exit 1
+}
+
+proc get_mtime { file } {
+
+    global submit_time
+
+    if { ! [file readable $file] } {
+    	return "{}"
+    } else {
+    	return [expr { [file mtime $file] \
+		       - $submit_time }]
+    }
+}
+
+proc get_file { file } {
+
+    if { ! [file readable $file] } {
+    	return "{}"
+    } else {
+    	return "{[read_file $file]}"
+    }
+}
+
+
+# Loop through the subdirectory names.
+#
+foreach dir \
+    [lsort [glob -nocomplain \
+	         $mail_directory/*-<<*>>-submission]] {
+
+    set subdir [file tail $dir]
+
+    if { ! [regexp {^(.*)-<<(.*)>>-submission$} \
+    		   $subdir forget date submitter] } {
+    	continue;
+    }
+
+    set submitter [string trim $submitter]
+    if { $submitter == "" } {
+	set submitter UNKNOWN
+    }
+
+    puts "sub $date {$submitter}"
+
+    set submit_time [filename_date_to_clock $date]
+
+    set submitted_file	  ""
+    set submitted_program ""
+
+    set mtime [get_mtime $dir/$received_file]
+    if { $mtime != "{}" } {
+
+	set received_ch [open $dir/$received_file r]
+	read_header $received_ch
+	close $received_ch
+
+	set subject [string trim $message_subject]
+
+	puts "rec $mtime {$subject}"
+
+	if { [llength $subject] == 2 \
+	     && [lindex $subject 0] == "submit" } {
+	    set submitted_file [lindex $subject 1]
+	    set submitted_program \
+	        [file rootname $submitted_file]
+	}
+    }
+
+    if { $submitted_file != "" } {
+
+        set mtime [get_mtime $dir/$submitted_file]
+    	if { $mtime != "{}" } {
+	    puts "ext $mtime {$submitted_file}"
+	}
+
+	set mtime1 \
+	    [get_mtime $dir/$submitted_program]
+	set mtime2 \
+	    [get_mtime $dir/$submitted_program.cerr]
+	if { $mtime1 != "{}" || $mtime2 != "{}" } {
+	    puts "bin $mtime1 $mtime2"
+	}
+
+	set mtime1 \
+	    [get_mtime $dir/$submitted_program.out]
+	set mtime2 \
+	    [get_mtime $dir/$submitted_program.err]
+	if { $mtime1 != "{}" || $mtime2 != "{}" } {
+	    puts "out $mtime1 $mtime2"
+	}
+    }
+
+    set mtime1 \
+	[get_mtime $dir/$auto_score_file]
+    set mtime2 \
+	[get_mtime $dir/$manual_score_file]
+    if { $mtime1 != "{}" || $mtime2 != "{}" } {
+	puts "sco $mtime1 $mtime2\
+	      [get_file $dir/$auto_score_file] \
+	      [get_file $dir/$manual_score_file]"
+    }
+
+    set mtime1 [get_mtime $dir/$reply_file]
+    set mtime2 [get_mtime $dir/$no_reply_file]
+    if { $mtime1 != "{}" || $mtime2 != "{}" } {
+	puts "rep $mtime1 $mtime2"
+    }
+
+    set mtime [get_mtime $dir/$dispatch_pid_file]
+    if { $mtime != "{}" } {
+	puts "pid $mtime"
+    }
+
+    foreach file \
+        [lsort [glob -nocomplain $dir/*checked-error]] {
+	set mtime [get_mtime $file]
+	if { $mtime != "{}" } {
+	    puts "log $mtime {[file tail $file]}"
+	}
+    }
+}
+
+exit 0
+
+# Include common error catching code:
+#
+} caught_output
+caught_error

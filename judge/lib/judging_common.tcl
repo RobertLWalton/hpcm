@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/10/02 18:00:17 $
+#   $Date: 2000/10/03 03:16:09 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.44 $
+#   $Revision: 1.45 $
 #
 
 # Include this code in TCL program via:
@@ -652,9 +652,11 @@ proc compute_message_date {} {
 proc compute_authentication {} {
 
     global message_x_hpcm_reply_to \
-           message_x_hpcm_from \
+           message_x_hpcm_date \
 	   message_x_hpcm_signature \
-           message_x_hpcm_signature_ok
+           message_x_hpcm_signature_ok \
+	   message_header \
+	   authentication_keys
 
     if { [llength $message_x_hpcm_signature] < 2 } {
     	set result no
@@ -663,16 +665,16 @@ proc compute_authentication {} {
 	    [lindex $message_x_hpcm_signature 0]
         set signature \
 	    [lindex $message_x_hpcm_signature 1]
-	if { [catch
+	if { [catch \
 	        { set key \
 		      $authentication_keys($keyname) \
 		      }] } {
 	    set result no
 	} else {
 	    set d "X-HPCM-Date:$message_x_hpcm_date\n"
-	    set r "$message_x_hpcm_reply_to\n"
+	    set r $message_x_hpcm_reply_to
 	    set r "X-HPCM-Reply-To:$r\n"
-	    set v "$d$f$key\n"
+	    set v "$d$r$key\n"
 	    set computed_signature \
 	        [compute_signature $v]
 	    if { $signature == $computed_signature } {
