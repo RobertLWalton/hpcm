@@ -2,7 +2,7 @@
 #
 # File:		display_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Jul 23 13:57:07 EDT 2002
+# Date:		Tue Jul 23 14:15:46 EDT 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/07/23 18:09:29 $
+#   $Date: 2002/07/23 18:17:01 $
 #   $RCSfile: display_common.tcl,v $
-#   $Revision: 1.36 $
+#   $Revision: 1.37 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -1055,7 +1055,7 @@ proc set_file_display { filename } {
     global window_height window_info_height \
            last_display
 
-    if { ! [file readable $filename] \
+    if {    ! [file readable $filename] \
          || ! [file isfile $filename] } {
 	refresh_file_list
     	set_file_list_display
@@ -1167,9 +1167,7 @@ proc close_file_array { xxx_array } {
 	    close $ch
 	}
 
-	foreach n [array names array] {
-	    unset array($n)
-	}
+	unset array
     }
 }
 
@@ -1207,9 +1205,11 @@ proc tab_expand { line } {
 #
 #	line-number first-column last-column
 #
-# which must be in sorted order.  The file will be
-# read into the array with the read_file_array
-# function.
+# which must be sorted in the order that the highlights
+# appear in the text.  The highlights may NOT overlap.
+# The first line is number 1, but the first column is
+# number 0.  The file will be read into the array with
+# the read_file_array function.
 #
 # The returned display consists of lines each ending
 # with \n.  There is NO ending bar line: the last
@@ -1350,7 +1350,7 @@ proc send_query { header } {
 	} else {
 
 	    set window_prompt \
-		"Do you want to send edit it some\
+		"Do you want to edit the message some\
 		 more? > "
 
 	    display_window
