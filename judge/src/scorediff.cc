@@ -11,9 +11,9 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: hc3 $
-//   $Date: 2000/10/30 16:29:32 $
+//   $Date: 2001/06/06 05:21:26 $
 //   $RCSfile: scorediff.cc,v $
-//   $Revision: 1.15 $
+//   $Revision: 1.16 $
 
 // This is version 2, a major revision of the first
 // scorediff program.  This version is more explicitly
@@ -34,7 +34,7 @@ int finite (double);	// Not always in math.h
 // Maximum size of a token, or of whitespace preceding
 // a token.
 //
-#define MAX_SIZE 10000
+#define MAX_SIZE 10200
 
 char documentation [] =
 "scorediff output_file test_file\n"
@@ -49,59 +49,65 @@ char documentation [] =
 "    that precedes the matched tokens.  A token is by\n"
 "    definition either a number, or a non-whitespace\n"
 "    character that is not part of a number, or an\n"
-"    end-of-file.\n"
+"    end-of-file (eof).\n"
 "\n"
 "    The types of differences are:\n"
 "\n"
-"    linebreak	For two matching tokens the preceding\n"
-"		whitespace of one had a different num-\n"
-"		ber of new lines than the preceding\n"
-"		whitespace of the other.\n"
+"    linebreak	For two matching non-eof tokens, the\n"
+"		preceding whitespace of one has a\n"
+"		different number of new lines than\n"
+"		the preceding whitespace of the\n"
+"		other.\n"
 "\n"
-"    whitespace	For two matching tokens the preceding\n"
-"		whitespaces both had no new lines,\n"
-"		and both were non-empty, but did not\n"
-"		match exactly.\n"
+"    whitespace	For two matching non-eof tokens, the\n"
+"		preceding whitespaces both have no\n"
+"		new lines, and both are non-empty,\n"
+"		but these whitespaces do not match\n"
+"		exactly.\n"
 "\n"
-"    spacebreak	For two matching tokens, one was pre-\n"
-"		ceded by whitespace containing no\n"
-"		new lines, and the other had no pre-\n"
-"		ceding whitespace at all."
+"    spacebreak	For two matching non-eof tokens, one\n"
+"		is preceded by whitespace containing\n"
+"		no new lines, and the other has no\n"
+"		preceding whitespace at all."
 "\n"
-"    endspace	For two matching tokens the preceding\n"
-"		whitespaces had the same number N of\n"
-"		new lines and N >= 1 and the white-\n"
-"		space characters preceding the first\n"
-"		new line for one token did not exact-\n"
-"		ly match the whitespace characters\n"
-"		preceding the first new line for the\n"
-"		other token.\n"
+"    endspace	For two matching non-eof tokens, the\n"
+"		preceding whitespaces have the same\n"
+"		number N >= 1 of new lines, and the\n"
+"		whitespace characters preceding the\n"
+"		first new line for one token do not\n"
+"		exactly match the whitespace charac-\n"
+"		ters preceding the first new line for\n"
+"		the other token.\n"
 "\n"
-"    linespace	For two matching tokens the preceding\n"
-"		whitespaces had the same number N of\n"
-"		new lines and N >= 1 and the white-\n"
-"		space characters between some pair of\n"
-"		matching new lines of the two token\n"
-"	        preceding whitespaces do not exactly\n"
-"		agree.\n"
+"    linespace	For two matching non-eof tokens, the\n"
+"		preceding whitespaces have the same\n"
+"		number N >= 1 of new lines, and the\n"
+"		whitespace characters between some\n"
+"		pair of matching new lines of the two\n"
+"		token preceding whitespaces do not\n"
+"		exactly agree.\n"
 "\n"
-"    beginspace	For two matching tokens the preceding\n"
-"		whitespaces had the same number N of\n"
-"		new lines and N >= 1 and the white-\n"
-"		space characters following the last\n"
-"		new line for one token did not exact-\n"
-"		ly match the whitespace characters\n"
-"		following the last new line for the\n"
-"		other token.\n"
+"    beginspace	For two matching non-eof tokens, the\n"
+"		preceding whitespaces have the same\n"
+"		number N >= 1 of new lines, and the\n"
+"		whitespace characters following the\n"
+"		last new line for one token do not\n"
+"		exactly match the whitespace charac-\n"
+"		ters following the last new line for\n"
+"		the other token.\n"
 "\n"
-"    eof1	The first file ended and the second\n"
-"		file had a remaining token.\n"
+"    eof1	When the first file ends, the second\n"
+"		file has a remaining token.  In this\n"
+"		case preceding whitespaces are NOT\n"
+"		compared."
 "\n"
-"    eof2	The second file ended and the first\n"
-"		file had a remaining token.\n"
+"    eof2	When second file ends, the first\n"
+"		file has a remaining token.  In this\n"
+"		case preceding whitespaces are NOT\n"
+"		compared."
 "\n"
 "    number A R	For two matching number tokens, the\n"
-"		token character strings did not match\n"
+"		token character strings do not match\n"
 "		exactly, the absolute difference of\n"
 "		the numbers is A, and the relative\n"
 "		difference of the numbers is R.\n"
@@ -112,27 +118,28 @@ char documentation [] =
 "		values for all matching number\n"
 "		tokens.\n"
 "\n"
-"    decimal	Two matching numbers had different\n"
-"		numbers of decimal places, or one had\n"
-"		a decimal point and the other did\n"
+"    decimal	Two matching numbers have different\n"
+"		numbers of decimal places, or one has\n"
+"		a decimal point and the other does\n"
 "		not.\n"
 "\n"
-"    exponent	For two matching numbers one had an\n"
-"		exponent but the other did not.\n"
+"    exponent	For two matching numbers one has an\n"
+"		exponent but the other does not.\n"
 "\n"
-"    case	Two matching non-number tokens were\n"
+"    case	Two matching non-number tokens are\n"
 "		the same letter but different case.\n"
 "\n"
-"    column	Two matching tokens ended in differ-\n"
+"    column	Two matching tokens end in differ-\n"
 "		ent columns.\n"
 "\n"
-"    nonblank	Two matching tokens were not both\n"
-"		number tokens and were not the same\n"
-"		letter except for case."
+"    nonblank	Two matching tokens are not both\n"
+"		number tokens and are not the same\n"
+"		letter ignoring case."
 "\n"
-"    none	If there are no differences, this is\n"
-"		returned as the sole contents of the\n"
-"		output line that lists differences.\n"
+"    none	There are no differences in the files\n"
+"		at all.  This may be returned as the\n"
+"		sole contents of an output line that\n"
+"		lists differences.\n"
 "\n"
 "    The files are parsed into whitespace, numbers,\n"
 "    and other characters.  A number is an optional\n"
@@ -141,8 +148,8 @@ char documentation [] =
 "    An exponent is an `e' or `E' followed by an\n"
 "    an optional sign followed by digits.  A number\n"
 "    is scanned by the strtod(3) function.  Numbers\n"
-"    longer than about 4000 characters are arbitrar-\n"
-"    ily truncated.\n"
+"    longer than 10,100 characters are arbitrarily\n"
+"    truncated.\n"
 "\n"
 "    The relative value of the difference between two\n"
 "    numbers x and y is:\n"
@@ -151,7 +158,8 @@ char documentation [] =
 "                     ----------------\n"
 "                     max ( |x|, |y| )\n"
 "\n"
-"    and is never larger than 2.\n"
+"    and is never larger than 2.  If x == y == 0 this\n"
+"    relative difference is taken to be zero.\n"
 "\n"
 "    If numbers are too large to compare (either they\n"
 "    or their difference is infinity) then they are\n"
@@ -172,32 +180,13 @@ char documentation [] =
 "    file is parsed.\n"
 "\n"
 "    When an end-of-file (eof) token is matched with\n"
-"    a non-eof token, the whitespace preceding the\n"
-"    non-eof token may be truncated before being com-\n"
-"    pared with the whitespace preceding the eof\n"
-"    token, to allow for the possibility that the eof\n"
-"    occurred in the middle of whitespace, and not\n"
-"    just before a non-eof-token.  First, if the\n"
-"    whitespace before the eof token has N > 0 new\n"
-"    lines, any N+1'st new line of the whitespace be-\n"
-"    fore the non-eof token is deleted, as are all-\n"
-"    characters following it.  Then, if now the\n"
-"    whitespaces being compared have the same number\n"
-"    of new lines, including possibly both having no\n"
-"    new lines, we consider in each whitespace being\n"
-"    compared the string of characters after the last\n"
-"    new line in the whitespace, or the string of all\n"
-"    the characters in the whitespace if the white-\n"
-"    space has no new lines.  If the considered\n"
-"    string for the eof exactly matches a prefix for\n"
-"    the considered string of the non-eof, then all\n"
-"    the characters after this prefix in the white-\n"
-"    space preceding the non-eof token are deleted.\n"
+"    a non-eof token, no check is made of the white-\n"
+"    space preceding the tokens."
 "\n"
 "    For each kind of difference found in the two\n"
-"    files, the scorediff program constructs a\n"
-"    `proof' of the difference.  A proof is a line\n"
-"    with the syntax:\n"
+"    files, the scorediff program outputs a `proof'\n"
+"    of the difference.  A proof is a line with the \n"
+"    syntax:\n"
 "\n"
 "          proof ::= difference-description\n"
 "                    output-line-number\n"
@@ -223,18 +212,23 @@ char documentation [] =
 "                    test-token-start-length\n"
 "\n"
 "    where the column numbers in a line start with 0.\n"
-"    Only one token-locator is required for a proof,\n"
-"    but proofs with the same difference description\n"
-"    and line numbers are merged into proofs with\n"
-"    than one token-locator.\n"
-\n"
+"    Here non-floating-point numbers are unsigned\n"
+"    integers.  Only one token-locator is required\n"
+"    for a proof, but proofs with the same difference\n"
+"    description and line numbers are merged to form\n"
+"    proofs with more than one token-locator.\n"
+"\n"
+"    The first `nonblank' difference found terminates\n"
+"    this program and the search for more differ-\n"
+"    ences.\n"
+"\n"
 ;
 
 // A token is either a number token, an end of file
-// (eof) token, or character token, which means a
-// character not in a number.
+// (eof) token, or character token.  This last means a
+// any non-whitespace character not in a number.
 //
-enum token_type { NUMBER, EOF, CHARACTER };
+enum token_type { NUMBER, END_OF_FILE, CHARACTER };
 
 struct file
 {
@@ -244,9 +238,10 @@ struct file
     // Token description.
     //
     token_type type;	// Type of tokens.
-    char tokens [ MAX_SIZE + 1 ]; // The current tokens.
+    char tokens [ MAX_SIZE + 1 ]; // The current tokens,
+    			// if not an end-of-file (eof).
     			// There is either just one nu-
-			// meric or eof token, or there
+			// meric token, or there
 			// are one or more consecutive
 			// character tokens that were
 			// scanned together for effici-
@@ -278,19 +273,16 @@ struct file
     int newlines;	// Number of new line characters
     			// in this whitespace.
 
-    // Set to backup in input string when scan_token
-    // determines it has not been passed a number or
-    // exponent.  Possible values are:
+    // Backup description.
     //
-    //		+    -    +.   -.
+    // Set to characters backed over in the input string
+    // when scan_token determines it has not been passed
+    // an exponent.  Possible values are:
+    //
     //		e    e+   e-   E    E+   E-
     //
     // Also set to the single character following a
     // number or sequence of non-number tokens.
-    //
-    // Must be such that the backup is empty when
-    // scan_token decides to put something in the
-    // backup.
 
     char * back;	// If pointing at `\0', there
     			// are no backed up characters
@@ -306,10 +298,10 @@ struct file
 //
 int open ( file & f, char * filename )
 {
-    f.stream.open ( filename );
     f.filename = new char [strlen ( filename ) + 1 ];
     strcpy ( f.filename, filename );
 
+    f.stream.open ( filename );
     if ( ! f.stream ) {
         cout << "ERROR: not readable: "
 	     << filename << endl;
@@ -320,7 +312,7 @@ int open ( file & f, char * filename )
     f.backup[1]		= '\0';
     f.back		= f.backup;
 
-    f.token[0]		= 0;
+    f.tokens[0]		= 0;
     f.column		= -1;
     f.line		= 0;
     f.type		= CHARACTER;
@@ -346,7 +338,7 @@ void whitespace_too_long ( file & f ) {
 	 << " of "
          << f.filename
 	 << endl;
-    exit 1
+    exit (1);
 }
 
 void token_too_long ( file & f ) {
@@ -355,7 +347,7 @@ void token_too_long ( file & f ) {
 	 << " of "
          << f.filename
 	 << endl;
-    exit 1
+    exit (1);
 }
 
 
@@ -363,31 +355,33 @@ void token_too_long ( file & f ) {
 //
 void scan_token ( file & f )
 {
-    if ( f.type == EOF ) return;
+    if ( f.type == END_OF_FILE ) return;
 
     int c = get_character ( f );
     int column = f.column + 1;
     
     // Scan whitespace.
     //
-    char * wp = file.whitespace;
+    char * wp = f.whitespace;
     char * endwp = wp + MAX_SIZE;
 
-    f.linebreaks = 0;
+    f.newlines = 0;
 
     while ( isspace ( c ) ) {
         if ( c == '\n' ) {
 	    column = -1;
-	    ++ f.linebreaks;
+	    ++ f.newlines;
 	    ++ f.line;
 	}
 	else if ( c == '\t' )
 	    column += 7 - ( column % 8 );
 	else if ( c == '\f' ) -- column;
 	else if ( c == '\v' ) -- column;
+	else if ( c == '\r' ) column = -1;
+
 
 	if ( wp < endwp ) * wp ++ = c;
-	else whitespace_too_long ();
+	else whitespace_too_long ( f );
 
 	c = get_character ( f );
 	++ column;
@@ -396,14 +390,14 @@ void scan_token ( file & f )
     * wp = 0;
 
     if ( c == EOF ) {
-    	f.type		= EOF;
+    	f.type		= END_OF_FILE;
 	f.count		= 1;
 	f.column	= column;
-	f.token[0]	= 0;
+	f.tokens[0]	= 0;
 	return;
     }
 
-    char * tp = f.token;
+    char * tp = f.tokens;
     char * endtp = tp + MAX_SIZE;
     int decimals = -1;
 
@@ -442,7 +436,7 @@ void scan_token ( file & f )
 	break;
 
     default:
-        if ( ! isdigit ( c ) ) goto non-number;
+        if ( ! isdigit ( c ) ) goto non_number;
 	break;
     }
 
@@ -465,7 +459,7 @@ void scan_token ( file & f )
 	} else break;
 
 	if ( tp < endtp ) * tp ++ = c;
-	else token_too_long ();
+	else token_too_long ( f );
 	c = get_character ( f );
 	++ column;
     }
@@ -480,14 +474,14 @@ void scan_token ( file & f )
 	int ecolumn = column;
 
 	if ( tp < endtp ) * tp ++ = c;
-	else token_too_long ();
+	else token_too_long ( f );
 
 	c = get_character ( f );
 	++ column;
 
 	if ( c == '+' || c == '-' ) {
 	    if ( tp < endtp ) * tp ++ = c;
-	    else token_too_long ();
+	    else token_too_long ( f );
 
 	    c = get_character ( f );
 	    ++ column;
@@ -496,14 +490,14 @@ void scan_token ( file & f )
 	if ( ! isdigit ( c ) ) {
 	    assert ( * f.back == 0 );
 	    * tp = 0;
-	    strcp ( backup, ep );
+	    strcpy ( f.backup, ep );
 	    f.back = f.backup;
 	    tp = ep;
 	    column = ecolumn;
 	} else {
 	    do {
 		if ( tp < endtp ) * tp ++ = c;
-		else token_too_long ();
+		else token_too_long ( f );
 		c = get_character ( f );
 		++ column;
 	    } while ( isdigit ( c ) );
@@ -516,18 +510,18 @@ void scan_token ( file & f )
     f.column	= -- column;
     f.decimals	= decimals;
 
-    assert ( * f.back == 0 );
-
     if ( c != EOF ) {
-	assert ( * f.back == 0 );
+	char * p = f.back;
+	if ( * p == 0 ) p = f.backup;
+	else p = f.back + strlen ( f.back );
+	* p ++ = c;
+	* p = 0;
 	f.back = f.backup;
-	f.backup[0] = c;
-	f.backup[1] = 0;
     }
 
     char * e;
-    f.number = strtod ( f.token, & e );
-    assert ( e == f.end || ! finite ( f.number ) );
+    f.number = strtod ( f.tokens, & e );
+    assert ( e == tp || ! finite ( f.number ) );
     	//
     	// If number is too large then f.number is
 	// set to an infinity and e is not set to
@@ -543,9 +537,13 @@ void scan_token ( file & f )
 non_number:
 
     while ( 1 ) {
-        if ( isspace ( c ) || isdigit ( c ) ) break;
-	if ( c == '+' || c == '-' || c == '.' ) break;
-	if ( c == EOF ) break;
+        if ( isspace ( c )
+	     || isdigit ( c )
+	     || c == '+'
+	     || c == '-'
+	     || c == '.'
+	     || c == EOF ) break;
+
 	if ( tp >= endtp ) break;
 
 	* tp ++ = c;
@@ -556,7 +554,7 @@ non_number:
     f.count	= tp - f.tokens;
     f.type	= CHARACTER;
 
-    * tp ++ = 0;
+    * tp = 0;
 
     if ( c != EOF ) {
 	assert ( * f.back == 0 );
@@ -623,7 +621,7 @@ inline void diffnumber
 
     if ( ! finite ( reldiff ) )
     {
-        // Actually this should never happen.
+        // Actually, this should never happen.
 
 	nonblank = true;
 	return;
@@ -696,14 +694,21 @@ int main ( int argc, char ** argv )
 
     while ( ! done )
     {
-        // Truncate whitespace if just one file has an
-	// EOF.
+        // Terminate loop if just one file has an END_OF_FILE.
 
-	if ( file1.type == EOF && file2.type != EOF )
-	    eof_truncate ( file1, file2 );
+	if ( file1.type == END_OF_FILE
+	     && file2.type != END_OF_FILE )
+	{
+	    done = eof1 = true;
+	    break;
+	}
 	else
-	if ( file2.type == EOF && file1.type != EOF )
-	    eof_truncate ( file2, file1 )
+	if ( file2.type == END_OF_FILE
+	     && file1.type != END_OF_FILE )
+	{
+	    done = eof2 = true;
+	    break;
+	}
 
         // Compare whitespace preceding tokens.
 
@@ -743,248 +748,66 @@ int main ( int argc, char ** argv )
 	// Compare tokens.
 	//
         switch ( file1.type ) {
+	case NUMBER:
 	case CHARACTER:
 	    switch ( file2.type ) {
-	    case EOF:
+	    case END_OF_FILE:
 	    	done = eof2 = true;
 		break;
 	    case NUMBER:
-	        done = nonblank = true;
-		break;
 	    case CHARACTER:
+
+	        if ( file1.type != file2.type )
+		{
+		    done = nonblank = true;
+		    break;
+		}
+
 	    	char * tp1 = file1.tokens;
 	    	char * tp2 = file2.tokens;
+		bool token_case = false;
 
-		while ( * tp1 == * tp2 && * tp1 )
+		while ( * tp1 )
+		{
+		    if ( * tp1 != * tp2 )
+		    {
+			if ( toupper ( * tp1 )
+			     == toupper ( * tp2 ) )
+			    token_case = true;
+			else
+			    break;
+		    }
 		    ++ tp1, ++ tp2;
-
-	        if ( * tp1 == * tp2 ) break;
-
-		if ( toupper ( * tp1 ) == toupper ( * tp2 ) )
-		TBW
-	    }
-	case NUMBER:
-	case EOF:
-        if ( file1.is_eof )
-	{
-	    if ( file2.is_eof ) break;
-
-	    if ( isspace ( c2 ) )
-	    {
-		if ( ! follows_whitespace1 )
-		    spacebreak = true;
-
-		c2 = scanspace ( file2, c2 );
-		follows_whitespace2 = true;
-
-		if ( file2.linebreaks > 0 )
-		    linebreak = true;
-
-		if ( c2 == EOF ) break;
-	    }
-
-	    eof1 = true;
-
-	    break;
-     	}
-        else if ( isspace ( c1 ) )
-	{
-	    if ( c2 == c1 )
-	    {
-	    	do {
-		    c1 = getc ( file1 );
-		    c2 = getc ( file2 );
-		} while ( c1 == c2 && isspace ( c1 ) );
-
-		follows_whitespace1 = true;
-		follows_whitespace2 = true;
-
-		if ( isspace ( c1 ) )
-		{
-		    if ( ! isspace ( c2 ) )
-		    {
-			whitespace = true;
-			c1 = scanspace ( file1, c1 );
-			if ( file1.linebreaks > 0 )
-			    linebreak = true;
-		    }
-
-		    // If c1 and c2 are both != white-
-		    // space characters, we leave them
-		    // for later processig.
 		}
-		else if ( isspace ( c2 ) )
+
+	        if ( * tp1 == * tp2 )
 		{
-		    whitespace = true;
-		    c2 = scanspace ( file2, c2 );
-		    if ( file2.linebreaks > 0 )
-			linebreak = true;
+		    if ( file1.type != NUMBER
+		         && token_case )
+		        caseflag = true;
+		    break;
 		}
-	    }
-	    else if ( isspace ( c2 ) )
-	    {
-	    	whitespace = true;
 
-	        c1 = scanspace ( file1, c1 );
-	        c2 = scanspace ( file2, c2 );
-
-		follows_whitespace1 = true;
-		follows_whitespace2 = true;
-
-		if ( file1.linebreaks
-			!= file2.linebreaks )
-		    linebreak = true;
-	    }
-	    else
-	    {
-	    	if ( ! follows_whitespace2 )
-		    spacebreak = true;
-
-		c1 = scanspace ( file1, c1 );
-		follows_whitespace1 = true;
-
-		if ( file1.linebreaks > 0 )
-		    linebreak = true;
-	    }
-     	}
-	else if ( c1 == c2 )
-	{
-	    follows_whitespace1 = false;
-	    follows_whitespace2 = false;
-
-	    if ( c1 == '.' )
-	    {
-	    	c1 = getc ( file1 );
-		c2 = getc ( file2 );
-
-		if ( isdigit ( c1 )  && isdigit ( c2 ) )
+		else if ( file1.type != NUMBER )
 		{
-		    c1 = scannumber ( file1, '.', c1 );
-		    c2 = scannumber ( file2, '.', c2 );
-
-		    assert ( file1.is_number );
-		    assert ( file2.is_number );
-
-		    if ( file1.column != file2.column )
-		    	column = true;
-
-		    if ( strcmp ( file1.buffer,
-		                  file2.buffer )
-			 != 0 )
-		    {
-			diffnumber ( file1, file2,
-			             nonblank, number,
-				     decimal, exponent,
-				     number_absdiff,
-				     number_reldiff );
-		        if ( nonblank ) break;
-		    }
+		    done = nonblank = true;
+		    break;
 		}
-		else
-		{
-		    // As previous character in both
-		    // files was `.', its OK that we
-		    // make this comparison one
-		    // character later than we should.
-		    //
-		    if ( file1.column != file2.column )
-		    	column = true;
-		}
-	    }
-	    else if ( isdigit ( c1 ) )
-	    {
-		c1 = scannumber ( file1, c1 );
-		c2 = scannumber ( file2, c2 );
 
-		assert ( file1.is_number );
-		assert ( file2.is_number );
+		diffnumber ( file1, file2,
+			     nonblank, number,
+			     decimal, exponent,
+			     number_absdiff,
+			     number_reldiff );
 
-		if ( file1.column != file2.column )
-		    column = true;
-
-		if ( strcmp ( file1.buffer,
-			      file2.buffer )
-		     != 0 )
-		{
-		    diffnumber ( file1, file2,
-				 nonblank, number,
-				 decimal, exponent,
-				 number_absdiff,
-				 number_reldiff );
-		    if ( nonblank ) break;
-		}
-	    }
-	    else
-	    {
-		if ( file1.column != file2.column )
-		    column = true;
-
-	        // If c1 and c2 are matching signs we
-		// do not include them in numbers, as
-		// in this case only absolute values of
-		// the numbers need to be diffed.
-
-	    	c1 = getc ( file1 );
-		c2 = getc ( file2 );
-	    }
-	}
-        else if ( isspace ( c2 ) )
-	{
-	    if ( ! follows_whitespace1 )
-		spacebreak = true;
-
-	    c2 = scanspace ( file2, c2 );
-	    follows_whitespace2 = true;
-
-	    if ( file2.linebreaks > 0 )
-		linebreak = true;
-     	}
-	else if ( c2 == EOF )
-	{
-	    eof2 = true;
-	    break;
-	}
-	else if ( ( c1 = scannumber ( file1, c1 ),
-		    c2 = scannumber ( file2, c2 ),
-		    file1.is_number || file2.is_number ) )
-	{
-	    follows_whitespace1 = false;
-	    follows_whitespace2 = false;
-
-	    if ( ( ! file1.is_number )
-	         ||
-		 ( ! file2.is_number ) )
-	    {
-		nonblank = true;
+		if ( nonblank ) done = true;
 		break;
 	    }
+	    break;
 
-	    if ( file1.column != file2.column )
-		column = true;
-
-	    diffnumber ( file1, file2,
-			 nonblank, number,
-			 decimal, exponent,
-			 number_absdiff,
-			 number_reldiff );
-	    if ( nonblank ) break;
-	}
-	else if ( toupper ( c1 ) == toupper ( c2 ) )
-	{
-	    follows_whitespace1 = false;
-	    follows_whitespace2 = false;
-
-	    caseflag = true;
-
-	    if ( file1.column != file2.column )
-		column = true;
-
-	    c1 = getc ( file1 );
-	    c2 = getc ( file2 );
-	}
-        else
-	{
-	    nonblank = true;
+	case END_OF_FILE:
+            assert ( file2.type == END_OF_FILE );
+	    done = true;
 	    break;
      	}
     }
