@@ -1,0 +1,66 @@
+#!/bin/sh
+#
+# Start the contest by setting permissions on files.
+#
+# File:		startcontest
+# Author:	Bob Walton (walton@deas.harvard.edu)
+# Date:		Sun Oct  1 09:22:59 EDT 2000
+#
+# The authors have placed this program in the public
+# domain; they make no warranty and accept no liability
+# for this program.
+#
+# RCS Info (may not be true date or author):
+#
+#   $Author: hc3 $
+#   $Date: 2000/10/02 07:51:46 $
+#   $RCSfile: startcontest,v $
+#   $Revision: 1.1 $
+#
+# The next line starts tcl \
+exec tcl "$0" "$@"
+
+# Use tcl rather than tclsh so that `signal' is defined.
+
+# Include common code and parameters:
+#
+set lib_directory "[file dirname $argv0]/../lib"
+source $lib_directory/judging_common.tcl
+set log_mode none
+catch {
+
+set document "
+cd judging_directory; startcontest
+
+    This program merely sets a+rx permissions on the
+    directory ./contest/problems and the file ./contest/
+    help1/problems if these exist.
+    
+    Unlike most HPCM judging programs, errors made by
+    this program are not written to log files, but are
+    announced on standard error."
+
+
+# If there are any arguments print documentation and
+# exit with error.
+#
+if { $argc > 0 } {
+    puts $document
+    exit 1
+}
+
+if { [file isdirectory contest/problems] } {
+    grant_access contest/problems
+}
+
+if { [file isfile contest/help1/problems] } {
+    grant_access contest/help1/problems
+}
+
+exit 0
+
+# Include common error catching code:
+#
+} caught_output
+caught_error
+

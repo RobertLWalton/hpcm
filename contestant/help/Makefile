@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/09/30 13:46:12 $
+#   $Date: 2000/10/02 07:51:44 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.2 $
+#   $Revision: 1.3 $
 
 all:	modes
 
@@ -23,7 +23,9 @@ all:	modes
 
 modes:
 	for x in common formal informal email; do \
-	    if test -d $$x; then chmod a+r $$x/*; fi; \
+	    if test -d $$x; then \
+		chmod a+x $$x; chmod a+r $$x/*; fi; \
 	done
+	chmod a+x . .. ../..
 
 clean:
