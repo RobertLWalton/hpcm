@@ -1,7 +1,7 @@
 # Makefile for the `count' Demonstration Problem
 #
 # File:		Makefile
-# Date:		Wed Feb 13 08:12:02 EST 2002
+# Date:		Wed Feb 13 08:43:49 EST 2002
 #
 # Exactly ONE of the four files count.c (C), count.cc
 # (C++), count.p (Pascal), or count.java (Java) should
@@ -80,7 +80,8 @@ default:	count.out
 .lsp:
 	rm -f $* core
 	echo >$* '#!/bin/sh'
-	echo >>$* "exec `which hpcm_clisp` t"
+	echo >>$* \
+	 "exec `which hpcm_clisp` -i $*.lsp -x '(main)'"
 	chmod a+r $*.lsp
 	chmod a+rx $*
 
@@ -121,6 +122,6 @@ clean:
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/02/13 13:38:13 $
+#   $Date: 2002/02/13 15:04:57 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.18 $
+#   $Revision: 1.19 $
