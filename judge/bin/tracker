@@ -7,7 +7,7 @@
 #
 # File:		tracker
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Nov  1 09:23:46 EST 2001
+# Date:		Fri Nov  2 01:30:26 EST 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -16,9 +16,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/11/01 14:28:36 $
+#   $Date: 2001/11/02 07:00:17 $
 #   $RCSfile: tracker,v $
-#   $Revision: 1.10 $
+#   $Revision: 1.11 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -371,7 +371,9 @@ Problem		rec-ext	ext-bin	bin-out	out-sco\
 	}
     }
 
-    foreach problem [array names rec_ext_array] {
+    foreach problem \
+            [lsort [array names rec_ext_array]] {
+
         set min_time ""
         set avg_time ""
         set med_time ""
@@ -423,6 +425,194 @@ Problem		rec-ext	ext-bin	bin-out	out-sco\
 	           [string range $pr 12 end]"
     }
 
+    return $r
+}
+
+# Score summaries.
+#
+# score_array(submitter,problem) is a list of items of
+# the form { submission-time, score } where the submis-
+# sion-time is a 14 digit integer suitable for sorting
+# and the score is a two letter abbreviation for the
+# score according to:
+#
+set "score_id_array(Incorrect Output)" io
+set "score_id_array(Completely Correct)" cc
+set "score_id_array(Formatting Error)" fe
+set "score_id_array(Incomplete Output)" ic
+set "score_id_array(Syntax Error)" se
+set "score_id_array(Cpu Time Limit Exceeded)" te
+set "score_id_array(Program Crashed)" pc
+set "score_id_array(Output Size Limit Exceeded)" oe
+#
+# problem_array(problem) is the total number of submis-
+# sions for the problem.  submitter_array(submitter) is
+# the total number of submissions for the submitter.
+#
+# For every problem and submitter, all submissions after
+# the first `Completely Correct' submission are not in
+# any of the arrays just described.
+
+# Function to compute score_array.
+#
+proc compute_score_array {} {
+
+    global ext_array sco_array score_id_array \
+           score_array problem_array submitter_array
+
+    foreach dir [array names sco_array] {
+
+        set sco_line $sco_array($dir)
+	set score [lindex $sco_line 3]
+	if { ! [info exists score_id_array($score)] } {
+	    puts "STRANGE SCORE `$score'"
+	    set score XX
+	} else {
+	    set score $score_id_array($score)
+	}
+
+	if { ! [regexp {^([^<>]*)-<<(.*)>>-submission$} \
+		       $dir forget date submitter] } {
+	    set time 0
+	    set submitter UNKNOWN
+	} else {
+	    if { $submitter == "" } {
+		set submitter UNKNOWN
+	    } else {
+		set submitter \
+		    [submitter_compress $submitter]
+	    }
+	    set time [filename_date_to_clock $date]
+	}
+	set time [format {%014d} $time]
+
+	if { ! [info exists ext_array($dir)] } {
+	   set problem UNKNOWN_EXT
+	} else {
+	   set ext_line $ext_array($dir)
+	   set problem [lindex $ext_line 2]
+	   regexp {^([^.]*)\.} $problem forget problem
+	}
+
+        set item [list $time $score]
+	set sp "$submitter,$problem"
+	if { [info exists score_array($sp)] } {
+	    lappend score_array($sp) $item
+	} else {
+	    set score_array($sp) [list $item]
+	}
+    }
+
+    foreach sp [array names score_array] {
+        regexp {^([^,]*),([^,]*)$} $sp \
+	       forget submitter problem
+
+	set items ""
+        foreach item [lsort $score_array($sp)] {
+
+	    lappend items $item
+
+	    if { [info exists \
+	               problem_array($problem)] } {
+	        incr problem_array($problem)
+	    } else {
+	        set problem_array($problem) 1
+	    }
+
+	    if { [info exists \
+	               submitter_array($submitter)] } {
+	        incr submitter_array($submitter)
+	    } else {
+	        set submitter_array($submitter) 1
+	    }
+
+	    if { [lindex $item 1] == "cc" } break
+	}
+	set score_array($sp) $items
+    }
+}
+
+# Function to return score summary by problem.
+#
+proc problem_score_summary { } {
+
+    compute_score_array
+
+    global score_array problem_array
+
+    set r "
+			    	Number of Submissions
+Problem		  cc    io    fe    ic    se    te   \
+                  pc    oe    XX"
+
+    foreach problem \
+            [lsort [array names problem_array]] {
+
+	foreach xx {cc io fe ic se te pc oe XX} {
+	    set $xx 0
+	}
+
+	foreach sp [array names score_array \
+		          "*,$problem"] {
+	    foreach item $score_array($sp) {
+	        incr [lindex $item 1]
+	    }
+	}
+
+	set line [format {%-14.14s} $problem]
+	foreach xx {cc io fe ic se te pc oe XX} {
+	    if { [set $xx] == 0 } {
+	        set line "$line    --"
+	    } else {
+	        set line \
+		    "$line[format {%6d} [set $xx]]"
+	    }
+	}
+	set r "$r\n\n$line"
+    }
+    
+    return $r
+}
+
+# Function to return score summary by submitter.
+#
+proc submitter_score_summary { } {
+
+    compute_score_array
+
+    global score_array submitter_array
+
+    set r "
+			    	Number of Submissions
+Submitter	  cc    io    fe    ic    se    te   \
+                  pc    oe    XX"
+
+    foreach submitter \
+            [lsort [array names submitter_array]] {
+
+	foreach xx {cc io fe ic se te pc oe XX} {
+	    set $xx 0
+	}
+
+	foreach sp [array names score_array \
+		          "$submitter,*"] {
+	    foreach item $score_array($sp) {
+	        incr [lindex $item 1]
+	    }
+	}
+
+	set line [format {%-14.14s} $submitter]
+	foreach xx {cc io fe ic se te pc oe XX} {
+	    if { [set $xx] == 0 } {
+	        set line "$line    --"
+	    } else {
+	        set line \
+		    "$line[format {%6d} [set $xx]]"
+	    }
+	}
+	set r "$r\n\n$line"
+    }
+    
     return $r
 }
 
@@ -876,9 +1066,18 @@ while { "yes" } {
 	        puts [eval time_summary $args]
 		continue?
 	    }
+	    {^pr} {
+	        puts [problem_score_summary]
+		continue?
+	    }
+	    {^su} {
+	        puts [submitter_score_summary]
+		continue?
+	    }
 	    default {
 		if { ! [catch { expr { $answer } }] } {
-		    set output [call_manualreply $answer]
+		    set output \
+		    	[call_manualreply $answer]
 		}
 	    }
 	}
