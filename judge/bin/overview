@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/01/05 09:55:38 $
+#   $Date: 2001/01/05 15:27:19 $
 #   $RCSfile: overview,v $
-#   $Revision: 1.11 $
+#   $Revision: 1.12 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -579,6 +579,8 @@ are not used by HPCM programs themselves.  These are:
 	`makejudgingdir' are complex, and need to be
 	kept in a file.
 
+	See hpcm/examples/*/Makefile for examples.
+
     crontab
         The UNIX crontab file for the judging account,
 	or the part thereof that concerns this contest.
@@ -588,9 +590,157 @@ are not used by HPCM programs themselves.  These are:
 	on the web).  Usually only email contests do
 	this.
 
+	See hpcm/examples/email_contest/crontab for
+	an example.
+
 
 Contest Definition Data: The Contest Directory
 ------- ---------- ----- --- ------- ---------
+
+Formal and informal contests have a contest directory
+containing files that can be accessed by contestants.
+Email contests do not have this directory.
+
+Each contestant in a formal or informal contest has
+an account in which `~/.hpcm_contest' is symbolically
+linked to the contest directory.  The contest directory
+itself has a+x permissions and contains the following
+components that contestants can access.
+
+    bin
+    	A directory containing programs the contestants
+	can execute.  The name `~/.hpcm_contest/bin' is
+	part of the program search path for each contes-
+	tant account.
+
+	The name `bin' in the contest directory is
+	usually symbolically linked to
+	
+	    ~/hpcm/contestant/bin
+
+	in the judging directory.  Note that this means
+	that ~/hpcm and ~/hpcm/contestant must have
+	a+x permissions, ~/hpcm/contestant/bin must
+	have a+rx permissions, and appropriate programs
+	in the ~/hpcm/contestant/bin must have a+x or
+	a+rx permissions.  Running `make' inside the
+	~/hpcm directory, a part of the installation
+	procedure of hpcm, sets these permissions.
+
+	The `makejudgingdir' program symbolically links
+	`bin' to `contestant/bin' in the contest direc-
+	tory.  See `contestant' below.
+
+    contestant
+	The name `contestant' in the contest directory
+	must be symbolically linked by hand to the
+	hpcm/contestant directory, wherever that is
+	located (usually ~/hpcm/contestant).
+
+    demos
+        This is a directory that contains demonstration
+	problems.  It is strictly analogous to the
+	`problems' directory, see below.
+
+    home
+    	This is a symbolic link to a directory that is
+	called the `contest/home' directory and that
+	contains files shared amoung all contestant
+	accounts.  For example, in a contestant account
+	the `.cshrc' name is symbolically linked to
+	`.hpcm_contest/home/.cshrc', and thence to the
+	`.cshrc' file in the contest/home directory.
+	Therefore editing the `.cshrc' file within the
+	contest/home directory changes that file in ALL
+	contestant accounts.
+
+	The contest/home directory is set up by the
+	SETUP_PROTOTYPE program: see `Contest Definition
+	Data: The Home Directory' below for more
+	details.
+
+    printer
+    	This file contains nothing but the name of the
+	printer to be used by the contestants.  This
+	name should be suitable for use with the -P
+	option to various UNIX print commands.  If the
+	file is missing, these commands use the value
+	of the PRINTER environment variable at the time
+	the commands execute.
+
+	This file is made by `makejudgingdir' and may
+	be edited or removed by hand.
+
+    printer_jobs
+        If this file exists and is a+w, each use of the
+	printer by one of the print commands in the
+	contest bin directory causes a line to be
+	written into this file.  The line gives the
+	time and the location of the contestant.  This
+	location is taken from the who_where file (see
+	below) `WHERE' field, if available, and is
+	otherwise the contestant account name.
+
+	This file can be used by the `lpq' program to
+	print out printer status, and by the judges
+	to monitor printer activity.
+
+	This file is made by `makejudgingdir' and may
+	be removed by hand.
+
+    problems
+    	This directory contains problem directories for
+	each of the contest problems.  The strictly
+	analogous `demos' directory (see above) contains
+	demonstration problems.
+
+	Each problem directory in the contest directory
+	is a subdirectory of this `problems' directory
+	and has as its name the name of the problem.
+	Thus a problem named `pppp' would have
+	`problems/pppp' as the name of its problem
+	directory within the contest directory.
+
+	Within the problem directory there is a a+r copy
+	of the `Makefile' of the problem.  It is also
+	possible to put a copy of the `.txt' file
+	describing the problem, but this is NOT usually
+	done for formal contests.  For demonstration
+	problems (in `demos') many a+r file copies may
+	be in the problem directory, as judge's input
+	and output and solutions in different program-
+	ming languages are often provided.
+
+	This `problems' directory exists only for formal
+	contests.  For informal or email contests, simi-
+	lar information is placed in the `info/problems'
+	(and `info/demos' for demonstration problems)
+	subdirectories of the judging directory.  For a
+	formal contest, the contestant's hpcm_get pro-
+	gram creates a problem directory in the contes-
+	tant's account and symbolically links into that
+	directory all files in the problem directory
+	within the .hpcm/contest/problems directory,
+	i.e., the contest directory in the judge's
+	account.  For an informal contest hpcm_get ob-
+	tains the same information from the `info/
+	problems' directory by email and makes a copy of
+	the files in the contestant account.
+
+	This `problems' directory and its contents are
+	made automatically by `makejudgingdir'.
+
+    scoreboard.1head
+    scoreboard.2
+    scoreboard.3
+    scoreboard.4
+
+    secure
+
+    who_where
+
+    trashable
+
 
 
 Contest Definition Data: The Home Directory
