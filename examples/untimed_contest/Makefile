@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Feb 12 17:21:03 EST 2002
+# Date:		Fri Feb 15 23:50:42 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/02/12 22:19:27 $
+#   $Date: 2002/02/16 04:51:45 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.34 $
+#   $Revision: 1.35 $
 
 # To make an email contest named `foo':
 #
@@ -76,24 +76,30 @@
 #    to start an email contest.  This is only needed for
 #    formal contests.
 #
-# 8. Test the contest by cd'ing to the `hpcm/judge/test'
-#    directory, executing in that directory:
+# 8. Test the contest by putting the contest address in
+#    the Contest_Address file in the judging directory
+#    and executing `make test'.  Then read the email
+#    replies and compare the X-HPCM-Test-Subject field
+#    with the results in the body of the email.  You can
+#    also extract the replies from your email, if you
+#    like, with the help of the hpcm_extract_test_
+#    replies program, and compare them with the .reply
+#    files in the hpcm/examples/test_submissions direc-
+#    tory.
 #
-#	echo >.HPCM_ADDRESS 'judges-email-address'
+#    It is also possible to transmit the contents of
+#    the hpcm/examples/test_submissions directory to
+#    a remote location along with the hpcm_sendmail
+#    program and use `make test_email' in that directory
+#    to send test submissions.
 #
-#    and then executing `make'.  Then read your e-mail
-#    to see if the X-HPCM-Test-Subject field in the
-#    reply messages from the judge matches the score or
-#    other output in the message.  Note that one of the
-#    submissions times out, and for that the judge will
-#    take over a minute to reply.
+#    Note that one of the submissions times out, and for
+#    that the autojudge will take over a minute to
+#    reply.
 #
-#    Note also that some or all of the submissions gen-
-#    erated by the `test_submit' part of `make' may be
-#    for problems you did not include in your contest,
-#    and these will generate `illegal name' messages
-#    instead of `Completely Correct' messages.  You may
-#    wish to edit hpcm/judge/test/Makefile to fix this.
+#    You can run subsets of the tests by using `make
+#    test_xxx' for various `xxx;: see hpcm/examples/
+#    test_submissions/Makefile.mk.
 
 # The location of the hpcm directory.
 #
