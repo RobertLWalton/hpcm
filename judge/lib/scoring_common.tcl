@@ -2,7 +2,7 @@
 #
 # File:		scoring_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Sep  9 22:05:41 EDT 2001
+# Date:		Mon Sep 10 01:12:07 EDT 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/09/10 04:07:26 $
+#   $Date: 2001/09/10 05:12:20 $
 #   $RCSfile: scoring_common.tcl,v $
-#   $Revision: 1.15 $
+#   $Revision: 1.16 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -479,7 +479,6 @@ proc compute_score { } {
 # Proof Display
 # ----- -------
 
-							/
 # The proof display code displays one proof at a time.
 # There is a current proof group, and for each group,
 # there is a current proof.  The current proof of the
@@ -491,6 +490,10 @@ proc compute_score { } {
 #	ic:  incomplete output proofs
 #	fe:  formatting error proofs
 #	ne:  non error proofs
+#
+# Note that is one of these groups has no proofs, then
+# that group does not actually exist, as its proofs
+# cannot be displayed.
 #
 # In addition, each proof difference type for which
 # there are some proofs forms a group by itself.  E.g.,
@@ -517,23 +520,21 @@ set current_group ""
 
 # Function to set the current_group and its current_
 # proof_array element.  Takes a list of arguments which
-# are processed in order.  The arguments may be as follows:
+# are processed in order.  The arguments may be as
+# follows:
 #
-#    An alphabetic argument of at least two characters
-#    beginning with a letter is matched to each group
-#    name that has some proofs.  If the argument equals
-#    a group name, the group is selected.  If the
-#    argument matches the beginning of a group name,
-#    that group is selected if it is the only group
-#    whose name matches the argument.  If the argument
-#    contains one `-', and a group name contains one
-#    `-', and the part of the argument before the `-'
-#    matches the beginning of the part of the group
-#    name before its `-', while the part of the argument
-#    after the `-' matches the beginning of the part of
-#    the group name after its `-', then the group with
-#    the matching name is selected, if it is the only
-#    group whose name matches the argument.
+#   An argument of at least two characters beginning
+#   with a letter is matched to each group name that has
+#   some proofs.  If the argument equals a group name,
+#   that group is selected.  Otherwise the argument may
+#   match one or more group names, and if it matches
+#   exactly one, the named group is selected.  To match
+#   a group name, the argument must either be the
+#   beginning part of the group name, or both the
+#   argument and the group name must contain a `-' that
+#   separates each into two parts, and each part of the
+#   argument must be a beginning of the corresponding
+#   part of the group name.
 #
 #   A numeric argument # switches to the #'th proof of
 #   the current_group.
@@ -595,8 +596,8 @@ proc get_proof { args } {
 		                 {^([^-]*)-([^-]*)$} \
 		                 $t forget \
 				 t1 t2] \
-			   && [regexp "^$arg1 $t1] \
-			   && [regexp "^$arg2 $t2] } {
+			   && [regexp "^$arg1" $t1] \
+			   && [regexp "^$arg2" $t2] } {
 		    lappend found $t
 		}
 	    }
@@ -740,9 +741,10 @@ proc set_proof_display { } {
     set last_display proof
 }
 
-# Return summary information about existing proofs in
-# the info part of the display.  The following functions
-# must have been called first:
+# Return summary information about existing proofs in as
+# lines intended for inclusion in the info part of the
+# display.  The following functions must have been
+# called first:
 #
 #	compute_instruction_array
 #	compute_score_and_proof_arrays
@@ -776,10 +778,6 @@ proc compute_proof_info { } {
 	   current_group current_group_array \
 	   window_info_height
 
-    foreach group [array names current_group_array] {
-        unset current_group_array($group)
-    }
-
     set error_types \
         [concat $incorrect_output_types \
 	        $incomplete_output_types \
@@ -789,6 +787,10 @@ proc compute_proof_info { } {
         if { [lsearch -exact $error_types $type] < 0 } {
 	    lappend non_error_types
 	}
+    }
+
+    foreach group [array names current_group_array] {
+        unset current_group_array($group)
     }
     foreach group [array names proof_group_array] {
         unset proof_group_array($group)
