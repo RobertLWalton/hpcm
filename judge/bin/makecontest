@@ -6,7 +6,7 @@
 #
 # File:		makejudgingdir
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Sep 23 09:02:24 EDT 2002
+# Date:		Mon Sep 23 16:00:28 EDT 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/09/23 13:05:48 $
+#   $Date: 2002/09/23 20:14:25 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.90 $
+#   $Revision: 1.91 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -549,6 +549,11 @@ makejudgingdir option ... index_specification ...
     the same call to `makejudgingdir' that creates the
     ./help/index file.
 
+    The ./help/this_contest file is initialized to a
+    copy of the file named hpcm/contestant/help/ccc/ccc_
+    this_contest_prototype, where ccc is the contest
+    type (email, informal, or formal).
+
     If used, the ./help/index file should be the refer-
     enced by the first index specification given to this
     program.  It contains a header entry designed to
@@ -556,7 +561,7 @@ makejudgingdir option ... index_specification ...
     header entry, all the help index files, `help/
     demos', `help/problems', and `help/index', are men-
     tioned at the beginning of `help/index'.
-
+
     The -mail program option causes the ./mail directory
     to be made if it does not exist.  If it is made, its
     mode is set to a+x as is the mode of its parent and
@@ -564,7 +569,7 @@ makejudgingdir option ... index_specification ...
     the JAVA interpreter turns relative file names into
     absolute file names, requiring `a+x' permissions
     in the path from the root to the object file.
-
+
     The -help2 program option creates the ./contest/
     help2 directory if it does not exist.  It is simply
     linked to the ./contest/help directory.
@@ -1011,7 +1016,7 @@ proc recursive_file_copy { source destination } {
     	set tail [file tail $src]
     	set des "$destination/$tail"
 	if { [file isfile $src] } {
-	    file copy $src $des
+	    copy_file $src $des
 	} elseif { [lcontain $directories_not_copied \
 			     $tail] } {
 	    # do not copy
@@ -1340,7 +1345,7 @@ proc process_index_specification {} {
 		    if { [file isfile $source] } {
 			file mkdir \
 			     [file dirname $dest]
-			file copy $source $dest
+			copy_file $source $dest
 		    } elseif { [file isdirectory \
 		    		     $source] } {
 			file mkdir $dest
@@ -1358,7 +1363,7 @@ proc process_index_specification {} {
 				     $description_files]
 			    }
 			    foreach file $files {
-				file copy \
+				copy_file \
 				     $source/$file \
 				     $dest/$file
 				grant_access $dest/$file
