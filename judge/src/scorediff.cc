@@ -2,7 +2,7 @@
 //
 // File:	scorediff.cc
 // Authors:	Bob Walton (walton@deas.harvard.edu)
-// Date:	Tue Jan 29 06:05:46 EST 2002
+// Date:	Tue Apr 23 13:19:23 EDT 2002
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: hc3 $
-//   $Date: 2002/01/29 11:09:18 $
+//   $Date: 2002/04/23 17:18:44 $
 //   $RCSfile: scorediff.cc,v $
-//   $Revision: 1.42 $
+//   $Revision: 1.43 $
 
 // This is version 2, a major revision of the first
 // scorediff program.  This version is more explicitly
@@ -57,9 +57,12 @@ char documentation [] =
 "    definition either an end-of-file (eof) or a\n"
 "    number or a word.   A word is just a string of\n"
 "    non-whitespace characters that does not contain\n"
-"    a number.  A number with a decimal point or exp-\n"
-"    ponent is a floating point number, while other\n"
-"    numbers are integers.\n"
+"    any part of a number.  Thus words cannot contain\n"
+"    digits, nor can they contain signs, decimal\n"
+"    points, or exponents that are parts of numbers.\n"
+"    A number with a decimal point or exponent is a\n"
+"    floating point number, while other numbers are\n"
+"    integers.\n"
 "\n"
 "    The types of differences are:\n"
 "\n"
@@ -184,8 +187,8 @@ char documentation [] =
 "\n"
 "    none	There are no differences in the files\n"
 "		at all.  This is returned as the sole\n"
-"		contents of an output line that lists\n"
-"		differences.\n"
+"		contents of the output line that\n"
+"		lists differences.\n"
 "\f\n"
 "    The files are parsed into whitespace, numbers,\n"
 "    words, and end-of-files (eofs).  A number is an\n"
@@ -199,15 +202,15 @@ char documentation [] =
 "    integers.\n"
 "\n"
 "    A word is a string of non-whitespace characters\n"
-"    that does not contain a number.  If two words S\n"
-"    and L are being matched, and S is shorter than\n"
-"    L, then L is split into a first word of the same\n"
-"    length as S and a second word to be matched to\n"
-"    the token that follows S, provided that the\n"
-"    first part of L and the whole of S are equal\n"
-"    except perhaps for case.  But if S and the first\n"
-"    part of L are NOT equal except for case, then\n"
-"    L is NOT split.\n"
+"    that does not contain any part of a number.  If\n"
+"    two words S and L are being matched, and S is\n"
+"    shorter than L, then L is split into a first\n"
+"    word of the same length as S and a second word\n"
+"    to be matched to the token that follows S, pro-\n"
+"    vided that the first part of L and the whole of\n"
+"    S are equal except perhaps for case.  But if S\n"
+"    and the first part of L are NOT equal except for\n"
+"    case, then L is NOT split.\n"
 "\f\n"
 "    Normally when two tokens do not match, both are\n"
 "    skipped over to get to the next tokens which are\n"
@@ -217,8 +220,8 @@ char documentation [] =
 "    not identical with case ignored), then special\n"
 "    rules apply if one of the tokens is a remainder\n"
 "    of a split token, if only one of the tokens is\n"
-"    followed by whitespace containing a new line (or\n"
-"    ended by an end-of-file), or if one of the\n"
+"    followed by whitespace containing a new line or\n"
+"    ended by an end-of-file, or if one of the\n"
 "    tokens is a number.  Specifically, if one token\n"
 "    is a remainder of a split word, then only this\n"
 "    remainder is skipped, on the theory that it\n"
@@ -248,8 +251,8 @@ char documentation [] =
 "    secutive whitespace characters longer than\n"
 "    10,100 characters is found.\n"
 "\f\n"
-"    The relative value of the difference between two\n"
-"    numbers x and y is:\n"
+"    The relative difference between two numbers x\n"
+"    and y is:\n"
 "\n"
 "                        | x - y |\n"
 "                     ----------------\n"
@@ -326,7 +329,7 @@ char documentation [] =
 "          relative-difference ::=\n"
 "                    floating-point-number\n"
 "\n"
-"    where the column numbers in a line start with 0\n"
+"    Here the column numbers in a line start with 0\n"
 "    and the line numbers in a file start with 1.\n"
 "    Here non-floating-point numbers output as part\n"
 "    of proofs are unsigned integers.  All the proofs\n"
