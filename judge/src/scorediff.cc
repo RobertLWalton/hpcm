@@ -2,7 +2,7 @@
 //
 // File:	scorediff.cc
 // Authors:	Bob Walton (walton@deas.harvard.edu)
-// Date:	Tue Jun 12 00:28:29 EDT 2001
+// Date:	Wed Jun 13 00:41:14 EDT 2001
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: hc3 $
-//   $Date: 2001/06/12 06:48:55 $
+//   $Date: 2001/06/13 04:31:55 $
 //   $RCSfile: scorediff.cc,v $
-//   $Revision: 1.19 $
+//   $Revision: 1.20 $
 
 // This is version 2, a major revision of the first
 // scorediff program.  This version is more explicitly
@@ -930,12 +930,17 @@ int main ( int argc, char ** argv )
 	{
 	    // special case.
 
-	    if ( argc < 5 ) break;
-
 	    absdiff_limit = atof ( argv[2] );
-	    absdiff_limit = atof ( argv[3] );
-	    ++ argv, -- argc;
-	    ++ argv, -- argc;
+	    if ( isdigit ( argv[2][0] ) )
+		    ++ argv, -- argc;
+
+	    if ( argc < 3 ) break;
+
+	    reldiff_limit = atof ( argv[2] );
+	    if ( isdigit ( argv[2][0] ) )
+		    ++ argv, -- argc;
+
+	    if ( argc < 3 ) break;
 	}
         else if ( strcmp ( "doc", name ) == 0 )
 	    break;
