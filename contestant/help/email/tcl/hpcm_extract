@@ -1,0 +1,346 @@
+#!/bin/sh
+#
+# Extract files from mail.
+#
+# File:		hpcm_extract
+# Author:	Bob Walton <walton@deas.harvard.edu>
+# Date:		Wed Sep 12 14:19:08 EDT 2001
+#
+# The authors have placed this program in the public
+# domain; they make no warranty and accept no liability
+# for this program.
+#
+# RCS Info (may not be true date or author):
+#
+#   $Author: hc3 $
+#   $Date: 2001/09/16 10:51:08 $
+#   $RCSfile: hpcm_extract,v $
+#   $Revision: 1.1 $
+#
+# The next line starts tcl \
+exec tcl "$0" "$@"
+
+set document ="
+hpcm_extract \[directory\]
+
+    Reads mail from the standard input and extracts
+    files in mail sent by HPCM in response to `get'
+    requests.  More specifically, any files surrounded
+    by lines beginning with:
+
+	---<>--<>---<>--<>---<>-----
+
+    are extracted, if the last line beginning with
+
+    	Subject:
+
+    before the file is of the form:
+
+    	Subject: get ...
+
+    Note that this line will NOT be the subject line of
+    the reply message, but the subject line of the
+    request message that is quoted in the reply message
+    just before the files: the difference being that
+    there is no ` RE:' in the request message subject.
+
+    The extracted files are placed in the directory
+    specified by the single argument, or if no argument
+    is given, in the first directory found by searching
+    the current directory and its ancestors for a dir-
+    ectory that contains a readable .HPCM_ADDRESS file.
+    If a file that might be extracted already exists in
+    that directory, the file is not extracted, but is
+    compared against the existing file.
+
+    The standard output records what was done.  It
+    does not include the file contents.  The standard
+    output is formatted as one or more email messages
+    that can be stored in a mailbox or piped into a
+    mailer program such as UNIX `procmail'."
+
+
+# If too many arguments or first argument begins with
+# -doc, print document and exit.
+#
+if { $argc > 1 && [regexp {^-doc} [lindex $argv 0] } {
+    puts $document
+    exit 1
+}
+
+# Compute directory into which to place files.
+#
+if { [llength $argv] == 1 } {
+    set home [lindex $argv 0]
+} elseif { [file readable .HPCM_ADDRESS] } {
+    set home .
+} elseif { [file readable ../.HPCM_ADDRESS] } {
+    set home ..
+} elseif { [file readable ../../.HPCM_ADDRESS] } {
+    set home ../..
+} elseif { [file readable ../../../.HPCM_ADDRESS] } {
+    set home ../../..
+} else {
+    puts "ERROR: Cannot find .HPCM_ADDRESS file."
+    exit 1
+}
+
+if { ! [file isdirectory $home] } {
+    puts "ERROR: `$home' is not a directory."
+    exit 1
+}
+
+# Mode is one of:
+#
+#	header		Look for Subject: lines
+#	extract		Extract lines
+#	diff		Diff lines
+#	skip		Skip lines (due to error)
+#	look		Look at the current line
+#			to choose between header,
+#			extract, or diff.
+#
+set mode header
+set subject_ok no
+set subject ""
+set From ""
+set from ""
+set date ""
+
+set filesep {---<>--<>---<>--<>---<>-----}
+
+# Loop through lines of stdin.
+#
+while { "yes" } {
+
+    set line [gets stdin]
+
+    if { [eof stdin] } {
+        if { $mode != header } {
+
+	    # Create fake missing end of file.
+	    #
+	    puts "ERROR: missing end of file line."
+	    set has_errors yes
+	    set line "$filesep end of file"
+	} else {
+
+	    # Real end of file, end loop.
+	    #
+	    break
+	}
+    }
+
+    switch -exact $mode {
+
+	header {
+
+	    # For headers, save parts of header.
+	    #
+	    if { [regexp {^From } $line] } {
+		set From $line
+		set from ""
+		set date ""
+		set subject ""
+		set subject_ok no
+	    } elseif { [regexp {^From:} $line] } {
+		set from $line
+	    } elseif { [regexp {^Date:} $line] } {
+		set date $line 
+	    } elseif { [regexp {^Subject:} $line] } {
+
+		set subject $line
+
+		# Set subject_ok according to whether
+		# subject is `get ...'.  This Subject
+		# line is not that of the message
+		# header, but it that quoted in the
+		# message just before the files.  Thus
+		$ there is no ` RE:' in this subject.
+		#
+		if { [regexp \
+		         -nocase \
+			 {^Subject:([ 	]*get.*)$} \
+			 $line forget subject] } {
+		    set subject_ok yes
+		    set subject "Subject: RE:$subject"
+		} else {
+		    set subject_ok no
+		}
+	    } elseif { [regexp "^$filesep" $line] } {
+	    
+		# Start of file.  Print header of a new
+		# message containing the output of hpcm_
+		# extract.
+		#
+		if { $From != "" } { puts $From }
+		if { $from != "" } { puts $from }
+		if { $date != "" } { puts $date }
+		if { $subject != "" } { puts $subject }
+		puts "X-HPCM-Subject:\
+		      output of hpcm_extract"
+		puts ""
+		set mode look
+		set has_errors no
+	    }
+	}
+
+	extract {
+
+	    if { [regexp "^$filesep" $line] } {
+
+		# End of file being extracted.
+		#
+		close $ch
+		puts "`$file' extracted successfully."
+		set mode look
+
+	    } else {
+
+		# Line in file being extacted.
+		#
+		puts $ch $line
+	    }
+	}
+
+	diff {
+
+	    if { [regexp "^$filesep" $line] } {
+
+		# End of file being diffed.
+		#
+		close $ch
+
+		if { $diff == yes } {
+		    puts ""
+		    puts "WARNING: received new `$file'"
+		    puts "that is different\
+			  from previous version."
+		    puts "Left previous version intact."
+		    puts ""
+		    set has_errors yes
+		} else {
+		    puts "`$file' matched existing\
+			  `$home/$file'."
+		}
+		set mode look
+
+	    } else {
+
+		# Line in file being diffed.
+		#
+		set old_line [read $ch]
+		if { [eof $ch] || $line != $old_line } {
+		    set diff yes
+		}
+	    }
+	}
+
+	skip {
+
+	    if { [regexp "^$filesep" $line] } {
+
+		# End of file being skipped.
+		#
+		set mode look
+	    }
+	}
+    }
+
+    if { $mode == "look" } {
+
+        # Line in $line begins with `---<>...'.
+
+        # Extract file name from line.
+	#
+	regexp "^$filesep(.*)\$" $line forget file
+	set file [string trim file]
+	regexp {^(.*):$} $file forget file
+
+	if { $file == "end of files" } {
+	    if { $subject_ok } {
+	        if { $has_errors == "no" } {
+		    puts NO ERRORS in extraction
+	        }
+	    } else {
+		puts BAD SUBJECT: no files extracted
+	    }
+	    puts ""
+	    set mode header
+	} elseif { $subject_ok == "no" } {
+	    set mode skip
+	} elseif { $file == "" } {
+	    puts "WARNING: empty file name"
+	    set has_errors yes
+	    set mode skip
+	    ;;
+	} elseif { [regexp {^[/.-]} $file] \
+		   || [regexp {/[.-]} $file } {
+
+	    puts "WARNING: illegal file name\
+	                   (skipped): $file"
+	    set has_errors yes
+	    set mode skip
+	} else {
+
+	    # Make directories required by file name.
+	    #
+	    set dirs ""
+	    set dir [file dirname $file]
+	    while { $dir != "." } {
+		set dirs [concat [list $dir] $dirs]
+		set dir [file dirname $dir]
+	    }
+
+	    foreach dir $dirs {
+		if { [file isdirectory "$home/$dir"] } {
+		} elseif { [catch { file mkdir \
+					 "$home/$dir" \
+					 }] } {
+		    puts "ERROR: could not make\
+		          `$home/$dir'."
+		    set has_errors yes
+		    break
+		} else {
+		    puts "`$home/$dir' made\
+		          successfully."
+		}
+	    }
+
+	    if { [file readable "$home/$file"] } {
+
+		if { [catch { set ch \
+		                  [open "$home/$file" \
+				         r] }] } {
+		    puts "ERROR: could not read\
+		          `$home/$file'."
+		    set has_errors yes
+		    set mode skip
+		} else {
+		    set mode diff
+		    set diff no
+		}
+
+	    } elseif { ! [file exists "$home/$file"] } {
+
+		if { [catch { set ch \
+		                  [open "$home/$file" \
+				         w] }] } {
+		    puts "ERROR: could not write\
+		          `$home/$file'."
+		    set has_errors yes
+		    set mode skip
+		} else {
+		    set mode extract
+		}
+	    } else {
+		puts "ERROR: unreadable\
+		      `$home/$file' already exists."
+		set mode skip
+		set has_errors yes
+	    }
+	}
+    }
+}
+
+exit 0
