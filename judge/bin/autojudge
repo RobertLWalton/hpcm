@@ -1,11 +1,11 @@
-#!/bin/sh -f
+#!/bin/sh
 #
 # Compute all the files needed in a program submission
 # directory in order to score a submission.
 #
 # File:		autojudge
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Sep 15 11:13:35 EDT 2000
+# Date:		Fri Sep 29 08:34:19 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/09/15 16:28:41 $
+#   $Date: 2000/09/29 17:51:37 $
 #   $RCSfile: autojudge,v $
-#   $Revision: 1.23 $
+#   $Revision: 1.24 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -230,14 +230,15 @@ proc auto_score_reply { auto_score } {
 	puts "Emailed final auto-score:\
 	      \    $auto_score"
     } elseif { [regexp {auto} $scoring_mode] } {
-	reply "For $submitted_file the automatically\
+	compose_reply \
+              "For $submitted_file the automatically\
 	       determined score is:" \
 	      "" \
 	      "    $auto_score" \
 	      "" \
 	      "However, this score WILL BE REVIEWED by\
 	       the human judge (soon)."
-	file delete -force $reply_file
+	send_reply -notfinal
 	puts "Emailed auto-score (review later):\
 	      \    $auto_score"
     } else {

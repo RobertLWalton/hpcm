@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Sep 22 14:26:27 EDT 2000
+# Date:		Fri Sep 29 08:21:57 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/09/22 18:25:40 $
+#   $Date: 2000/09/29 17:51:40 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.38 $
+#   $Revision: 1.39 $
 #
 
 # Include this code in TCL program via:
@@ -738,6 +738,9 @@ proc header_is_authentic {} {
 #
 # Any previous reply file is deleted.
 #
+# The -notfinal option to send_reply is NOT available
+# with this function.
+#
 proc reply { args } {
     eval compose_reply $args
     send_reply
@@ -848,12 +851,21 @@ proc compose_reply { args } {
 # the `$reply_file+' file.
 #
 # Before doing the above, this program deletes any
-# $reply_file.  After doing the above, this program
-# renames `$reply_file+' to `$reply_file'.
+# $reply_file.
 #
-proc send_reply {} {
+# After doing the above, this program renames
+# `$reply_file+' to `$reply_file', unless the -notfinal
+# option is given, in which case this program simply
+# deletes `$reply_file+'.
+#
+proc send_reply { args } {
 
     global reply_file reply_history_file
+
+    if { [llength $args] != 0 \
+	 && $args != "-notfinal" } {
+	error "Bad args to send_reply: $args"
+    }
 
     # Delete any $reply_file.
     #
@@ -883,9 +895,13 @@ proc send_reply {} {
     #
     send_mail $reply_file+
 
-    # Rename $reply_file+
+    # Delete or rename $reply_file+
     #
-    file rename -force $reply_file+ $reply_file
+    if { $args == "-notfinal" } {
+        file delete -force $reply_file+
+    } else {
+	file rename -force $reply_file+ $reply_file
+    }
 }
 
 # Read lines from channel.  Return `yes' if eof encoun-

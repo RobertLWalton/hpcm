@@ -1,4 +1,4 @@
-#!/bin/sh -f
+#!/bin/sh
 #
 # Runs the scorefinder program to get scores, and
 # formats the scores into a table according to
@@ -6,7 +6,7 @@
 #
 # File:		scoreboard
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Sep 28 20:21:26 EDT 2000
+# Date:		Fri Sep 29 09:15:36 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/09/29 01:51:30 $
+#   $Date: 2000/09/29 17:51:39 $
 #   $RCSfile: scoretable,v $
-#   $Revision: 1.7 $
+#   $Revision: 1.8 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -272,6 +272,18 @@ proc format_time { time } {
 #
 set score_list ""
 set max_time_score 999999999
+
+# Which codes are correct and incorrect (others
+# are ignored.
+# 
+if { $scoring_mode == "manual" } {
+	set ccodes {mc}
+	set icodes {mi}
+} else {
+	set ccodes {mc ac}
+	set icodes {mi ai}
+}
+
 foreach submitter $submitters {
 
     set time_score 0
@@ -302,7 +314,7 @@ foreach submitter $submitters {
 			   item_time] } {
 		set item_time 0
 	    }
-	    if { [lsearch -exact {mc ac} $score] \
+	    if { [lsearch -exact $ccodes $score] \
                  >= 0 } {
 		if { $problem_start_time != "" } {
 		    set problem_time \
@@ -315,7 +327,7 @@ foreach submitter $submitters {
 		}
 		incr submissions
 		break
-	    } elseif { [lsearch -exact {mi ai} $score] \
+	    } elseif { [lsearch -exact $icodes $score] \
                        >= 0 } {
 		if { $score == "ai" \
 		     && $scoring_mode != "auto" } {

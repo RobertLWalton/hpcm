@@ -1,12 +1,12 @@
-#!/bin/sh -f
+#!/bin/sh
 #
-# Make the subdirectories, symbolic links, and info
-# index of a judging directory, and make the associated
-# contest directory.
+# Make the subdirectories, symbolic links, and indices
+# of a judging directory and its associated contest
+# directory.
 #
 # File:		makejudgingdir
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Sep 25 02:02:41 EDT 2000
+# Date:		Fri Sep 29 09:40:41 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/09/26 11:33:14 $
+#   $Date: 2000/09/29 17:51:38 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.11 $
+#   $Revision: 1.12 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -36,12 +36,20 @@ cd judging_directory
 makejudgingdir options index_spec ...
 
   Options:
-    -practice	Equals -info, -solutions, -mail
-    -contest    Equals all options but -info and
-		-trashable
+    -email	Sets up an email contest.
+		Equals -info, -solutions, -mail
+    -formal     Sets up a formal contest.
+		Equals all options but -info,
+		-trashable, and -txt.
+    -informal   Sets up an informal contest.
+		Equals all options but -problems,
+		-trashable, and -txt.
     -info	Make ./info
     -solutions  Make ./solutions
     -problems	Make ./contest/problems
+		Include .txt files only if -txt given.
+    -txt	Include .txt files in ./contest/
+		problems.
     -mail	Make ./mail
     -help	Make ./contest/help1/problems.help,
 		     ./contest/help1/this_contest.help,
@@ -54,8 +62,9 @@ makejudgingdir options index_spec ...
     -setup      Import stuff from /tmp/hpcm_setup to
 		./contest.  This should include
 		empty.ls, setup.ls, and setup.tar
-    -trashable  Make ./trashable
-    -prototype  Make ./prototype
+    -trashable  Make ./contest/trashable
+    -prototype  Make ./contest/prototype
+    -home	Make ./contest/home
 
   Index Specification:
 
@@ -280,7 +289,7 @@ makejudgingdir options index_spec ...
     file are appended listing accounts in ./secure
     /passwords that were not in the previous ./who_
     where, and instructions for editing are written into
-    TODO.  Instructions are also written if any fields
+    ./TODO.  Instructions are also written if any fields
     of any previous who_where file have not been filled
     in.
 
@@ -337,9 +346,11 @@ set argi 0
 set info_option		no
 set solutions_option	no
 set problems_option	no
+set txt_option		no
 set mail_option		no
 set help_option		no
 set bin_option		no
+set home_option		no
 set secure_option	no
 set who_where_option	no
 set printer_option	no
@@ -350,14 +361,26 @@ set prototype_option	no
 while { "yes" } {
     if { $argi >= $argc } break;
     switch -- [lindex $argv $argi] {
-        -practice	{ set info_option 	yes
+        -email		{ set info_option 	yes
 			  set solutions_option	yes
 			  set mail_option	yes }
-        -contest	{ set solutions_option	yes
+        -formal		{ set solutions_option	yes
 			  set problems_option	yes
 			  set mail_option	yes
 			  set help_option	yes
 			  set bin_option	yes
+			  set home_option	yes
+			  set secure_option	yes
+			  set who_where_option	yes
+			  set printer_option	yes
+			  set setup_option	yes
+			  set prototype_option	yes }
+        -informal	{ set solutions_option	yes
+			  set info_option	yes
+			  set mail_option	yes
+			  set help_option	yes
+			  set bin_option	yes
+			  set home_option	yes
 			  set secure_option	yes
 			  set who_where_option	yes
 			  set printer_option	yes
@@ -366,9 +389,11 @@ while { "yes" } {
         -info		{ set info_option 	yes }
         -solutions	{ set solutions_option 	yes }
         -problems	{ set problems_option 	yes }
+        -txt		{ set txt_option 	yes }
         -mail		{ set mail_option 	yes }
         -help		{ set help_option 	yes }
         -bin		{ set bin_option 	yes }
+        -home		{ set home_option 	yes }
         -secure		{ set secure_option 	yes }
         -who_where	{ set who_where_option 	yes }
         -printer	{ set printer_option 	yes }
@@ -378,6 +403,43 @@ while { "yes" } {
 	default		{ break }
     }
     incr argi
+}
+
+# Set up TODO
+#
+set TODO_ch ""
+set TODO_existed [expr { [file exists TODO] \
+                         && [file size TODO] > 0 }]
+proc TODO { args } {
+    global TODO_ch
+    if { $TODO_ch == "" } {
+    	set TODO_ch [open TODO a]
+    }
+    puts $TODO_ch "----------"
+    foreach line $args {
+    	puts $TODO_ch $line
+    }
+}
+
+# Set up TODO_hpcm_make
+#
+set TODO_hpcm_make_done no
+proc TODO_hpcm_make {} {
+    global TODO_hpcm_make_done
+    if { $TODO_hpcm_make_done == "no" } {
+    	set TODO_hpcm_make_done yes
+	TODO "    run `make' in `hpcm' directory"
+    }
+}
+
+# Make 10 character random password.
+#
+random seed
+proc make_password {} {
+    return [format {%03d%03d%04d} \
+		   [random 1000] \
+		   [random 1000] \
+		   [random 10000]]
 }
 
 # If no arguments left or first remaining argument
@@ -713,23 +775,34 @@ proc process_index_specification {} {
 #
 if { $info_option } {
     if { [file exists $info_directory+] } {
+        puts "Deleting $info_directory+"
 	exec rm -rf $info_directory+ >@ stdout
     }
     file mkdir $info_directory+
     set newindex_ch [open $info_directory+/index w]
 }
-set problems_directory ./contest/problems
 if { $problems_option } {
+
+    set problems_directory ./contest/problems
+
+    if { ! [file isdirectory contest] } {
+    	error "problems: contest is not a directory"
+    }
     if { [file exists $problems_directory+] } {
+        puts "Deleting $problems_directory+"
 	exec rm -rf $problems_directory+ >@ stdout
     }
     file mkdir $problems_directory+
-    grant_access $problems_directory+
     set newhelp_ch \
         [open $problems_directory+/problems.help w]
+    if { ! [file exists $problems_directory] } {
+        puts "Granting a+x access to contest directory"
+    	grant_access contest x
+    }
 }
 if { $solutions_option } {
     if { [file exists $solutions_directory+] } {
+        puts "Deleting $solutions_directory+"
 	exec rm -rf $solutions_directory+ >@ stdout
     }
     file mkdir $solutions_directory+
@@ -816,8 +889,10 @@ if { $problems_option } {
     }
 }
 
-# Rename directories if $directory+ differs from
-# $directory as determined by `diff -r'.
+# Rename directories iff $directory+ differs from
+# $directory as determined by `diff -r'.  If a directory
+# is not renamed, delete it.  Return `yes' if directory
+# renamed, and `no' if deleted.
 #
 proc rename_directory { directory } {
     
@@ -827,6 +902,7 @@ proc rename_directory { directory } {
     	puts "New $directory does not differ from\
 	      previous version."
 	exec rm -rf $directory+ >@stdout
+	return no
     } else {
 
 	if { [file exists $directory--] } {
@@ -844,6 +920,7 @@ proc rename_directory { directory } {
 	    puts "Renaming $directory+ to $directory"
 	    file rename $directory+ $directory
 	}
+	return yes
     }
 }
 
@@ -851,7 +928,10 @@ if { $info_option } {
     rename_directory $info_directory
 }
 if { $problems_option } {
-    rename_directory $problems_directory
+    if { [rename_directory $problems_directory] } {
+    	TODO "    chmod a+rx $problems_directory" \
+	     "when contest starts"
+    }
 }
 if { $solutions_option } {
     rename_directory $solutions_directory
@@ -859,9 +939,129 @@ if { $solutions_option } {
 
 # Make mail directory.
 #
-if { $mail_option } {
+if { $mail_option \
+      && ! [file isdirectory mail] } {
     file mkdir $mail_directory
-    exec chmod a+x $mail_directory >@ stdout
+    grant_access $mail_directory x
+}
+
+# Make bin directory.
+#
+if { $bin_option \
+     && ! [file isdirectory bin] } {
+    set source contest/contestant/bin
+    if { ! [file isdirectory $source] } {
+    	error "bin: $source is not a directory"
+    }
+    if { ! [file executable $source] } {
+    	error "bin: $source has no x permission"
+    }
+    if { ! [catch { set bin_type [file type bin] }] } {
+	if { $bin_type == "link" } {
+	    puts "Deleting bin"
+	    file delete -force bin
+	} else {
+	    error "bin exists but is not a directory"
+	}
+    }
+
+    puts "Linking bin to $source"
+    link_file $source bin
+
+    TODO_hpcm_make
+}
+
+# Make secure directory.
+#
+if { $secure_option } {
+    if { ! [file isdirectory contest] } {
+    	error "secure: contest is not a directory"
+    }
+    if { ! [file isdirectory contest/secure] } {
+    	file mkdir contest/secure
+	chmod og-rwx contest/secure
+    }
+    if { ! [file readable contest/secure/passwords] } {
+	write_file contest/secure/passwords \
+		"ACCOUNT-NAME:PASSWORD"
+	TODO "    edit contest/secure/passwords"
+	chmod og-rwx contest/secure/passwords
+    } else {
+        set passwords_ch \
+	    [open contest/secure/passwords r]
+	set lines ""
+	set changed no
+	while { "yes" } {
+	    set line [gets $passwords_ch]
+	    if { [eof $passwords_ch] } break
+	    if { ! [regexp {^([^:]*):([^:]*)(|:.*)$} \
+	    		   $line forget \
+			   account password rest] \
+		 || [string trim $password] == "" } {
+		set password [make_password]
+	        set line "$account:$password$rest"
+		set changed yes
+	    }
+	    lappend lines $line
+	}
+	close $passwords_ch
+	if { $changed} {
+	    set passwords_ch \
+	        [open contest/secure/passwords w]
+	    foreach line $lines {
+	        puts $passwords_ch $line
+	    }
+	    close $passwords_ch
+	    TODO "    inspect contest/secure/passwords"
+	}
+    }
+    if { ! [file readable \
+    		 contest/secure/hpcm_sendmail.rc] } {
+	set rc_ch \
+	    [open contest/secure/hpcm_sendmail.rc w]
+	puts $rc_ch \
+	     "To: [make_password]<[id user]@[id host]>"
+	puts $rc_ch \
+	     "Key: [make_password]"
+	set key_name [file tail [pwd]]
+	regexp {^(.*)(-|_)[^-_]*$} $key_name \
+	       forget key_name forget2
+	puts $rc_ch \
+	     "Key-Name: $key_name"
+	close $rc_ch
+	chmod og-rwx contest/secure/hpcm_sendmail.rc
+	TODO "    edit contest/secure/hpcm_sendmail.rc" \
+	     "    either remove the Key and Key-Name" \
+	     "    or edit the hpcm_judging.rc\
+		  authorization variables"
+    }
+}
+
+# Finish TODO
+#
+set TODO_written [expr { $TODO_ch != "" }]
+if { $TODO_written || $TODO_existed } {
+    if { $TODO_written } {
+	close $TODO_ch
+    }
+    set TODO_ch [open TODO r]
+    if { $TODO_existed } {
+        if { $TODO_written } {
+	    puts "old+new TODO:"
+	} else {
+	    puts "old TODO:"
+	}
+    } else {
+	puts "new TODO:"
+    }
+    while { "yes" } {
+    	set line [gets $TODO_ch]
+	if { [eof $TODO_ch] } break
+	puts $line
+    }
+    puts "----------"
+    puts "end of TODO"
+    close $TODO_ch
 }
 
 exit 0
