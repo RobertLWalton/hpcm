@@ -1,7 +1,7 @@
 # Makefile for the `count' Demonstration Problem
 #
 # File:		Makefile
-# Date:		Thu Sep  7 04:16:57 EDT 2000
+# Date:		Mon Sep 11 06:38:38 EDT 2000
 #
 # Exactly ONE of the four files count.c (C), count.cc
 # (C++), count.p (Pascal), or count.java (Java) should
@@ -35,7 +35,8 @@
 #	make submit	Makes `count.out' just to be
 #			sure that nothing crashes, and
 #			then e-mails count.c, count.cc,
-#			or count.p to the judges.
+#			count.java, or count.p to the
+#			judges.
 #
 #	make clean	Removes `count', count.out, and
 #			other intermediate files that
@@ -87,8 +88,8 @@ count.out:	count count.in
 		     count \
 	    <count.in >count.out
 	@echo ""
-	@echo -n "========== OUTPUT (count.out)"
-	@echo " =========="
+	@echo "========== OUTPUT (count.out)" \
+	      "=========="
 	@cat count.out
 	@echo "============== END OUTPUT =============="
 
@@ -107,6 +108,6 @@ clean:
 # RCS Info (may not be true date or author):
 #
 #   $Author: acm-cont $
-#   $Date: 2000/09/07 09:24:06 $
+#   $Date: 2000/09/11 11:22:35 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.14 $
+#   $Revision: 1.15 $

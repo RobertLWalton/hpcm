@@ -1,0 +1,100 @@
+#!/bin/sh -f
+#
+# Make a problem Makefile from prototypes.
+#
+# File:		makeMakefile
+# Author:	Bob Walton (walton@deas.harvard.edu)
+# Date:		Mon Sep 11 07:14:54 EDT 2000
+#
+# The authors have placed this program in the public
+# domain; they make no warranty and accept no liability
+# for this program.
+#
+# RCS Info (may not be true date or author):
+#
+#   $Author: acm-cont $
+#   $Date: 2000/09/11 11:22:34 $
+#   $RCSfile: remakeMakefile,v $
+#   $Revision: 1.1 $
+#
+# The next line starts tcl \
+exec tcl "$0" "$@"
+
+set document "
+makeMakefile source destination ...
+
+    The program copies source/Makefile to destination/
+    Makefile for each destination not identical to the
+    source.  The first line of the destination Makefile
+    must already exist and is not changed.  Lines other
+    than the first are copied from the source, with the
+    exception that a line matching
+
+    	P = source_basename
+
+    is changed to
+
+        P = destination_basename
+    
+    Here the `=' must be surrounded by single SPACE
+    characters.
+
+    Unlike most HPCM judging programs, this program does
+    not read any hpcm_judging.rc file and errors made by
+    this program are not written to log files."
+
+# If no arguments or first argument begins with `-',
+# print documentation and exit with error.
+#
+if { $argc == 0 || [regexp {^-} [lindex $argv 0]] } {
+    puts $document
+    exit 1
+}
+
+# Process arguments.
+#
+set source [lindex $argv 0]
+foreach destination $argv {
+
+    if { $source == $destination } continue;
+
+    set srcmakefile ${source}/Makefile
+    set desmakefile ${destination}/Makefile
+    set srcregexp "P = [file tail $source]"
+    set desstring "P = [file tail $destination]"
+
+    # Get first line of destination.
+    #
+    set des_ch [open $desmakefile r]
+    set first_line [gets $des_ch]
+    if { [eof $des_ch] } {
+    	error "$desmakefile is empty"
+    }
+    close $des_ch
+
+    # Open files and process first line.
+    #
+    set src_ch [open $srcmakefile r]
+    set des_ch [open $desmakefile w]
+    gets $src_ch
+    if { [eof $src_ch] } {
+    	error "$srcmakefile is empty"
+    }
+    puts $des_ch $first_line
+
+    # Copy the rest of the lines with the substitution.
+    #
+    while { "yes" } {
+    	set line [gets $src_ch]
+	if { [eof $src_ch] } break
+	regsub $srcregexp $line $desstring line
+	puts $des_ch $line
+    }
+
+    # Close up this copy.
+    #
+    close $src_ch
+    close $des_ch
+}
+
+exit 0
