@@ -6,7 +6,7 @@
 #
 # File:		scoreboard
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Feb 10 11:04:19 EST 2002
+# Date:		Sun Feb 24 07:54:25 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/02/10 16:08:21 $
+#   $Date: 2002/02/24 13:10:55 $
 #   $RCSfile: scoretable,v $
-#   $Revision: 1.31 $
+#   $Revision: 1.32 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -44,126 +44,28 @@ scoreboard \[ parameter-file-name | \\
     each item, the global variable `scoreboard_PN' is
     set to the value V.
 
-    This program inputs the output of `scorefinder' to
-    get scores, and organizes the scores into a table.
-    A score is ignored unless
+    This program inputs (from the standard input) the
+    output of `scorefinder' to get scores, and organizes
+    these scores into a table.  All the rules regarding
+    the various scoreboard_xxx global variables in hpcm_
+    judging.rc are followed: see documentation in that
+    file.
 
-    	its submission time is equal to or greater than
-	the value of `scoreboard_start_time', unless
-	that value is \"\" or \"team\";
+    The scoreboard contains two lines for each submitter
+    of the form
 
-    	its submission time is equal to or less than
-	the value of `scoreboard_stop_time', unless
-	that value is \"\";
+    submitter          pscore  pscore  ......  pscore
+    C/time_score_______pscore__pscore__......__pscore
 
-	its problem satisfies the logical expression in
-	`scoreboard_problems', or that expression is an
-	empty list;
-
-	its submitter satisfies the logical expression
-	in `scoreboard_submitters', or that expression
-	is an empty list;
-
-    The logical expressions are TCL lists whose elements
-    are operators, parentheses `(' and `)', and atoms.
-    The allowed operators are `!', `&', `^', and `|' in
-    highest precedence first order, denoting `not',
-    `and', `exclusive-or', and `inclusive-or'.  Opera-
-    tors and parentheses MUST be surrounded by white-
-    space.
-
-    The atoms `0' and `1' represent `false' and `true'.
-    All other atoms are regular expressions that are
-    matched to the ENTIRE problem name or submitter
-    name, and are true iff they match.
-
-    Some simple examples of logical expressions are:
-
-      ! count		Match all names but `count'.
-
-      count | pascal	Match only `count' and `pascal'.
-
-      count|pascal	Ditto, but with only one regular
-      			expression atom that contains a
-			`|', instead of two atoms and a
-			`|' logical operator.
-
-      bpi\[0-9]+		Match all names of the\
-      				form
-      			`bpi' followed by one or more
-			digits.
-
-      bpi.* & ! bpit	Match all names beginning with
-			`bpi' except the one name
-			`bpit'.
-
-    The regular expressions are TCL regular expressions.
-    Note that a regular expression must not as a charac-
-    ter string be the same as an operator or parenthesis
-    or special atom `0' or `1'.
-
-    The scoreboard has a line for each submitter of the
-    form
-
-    submitter  score1  score2  ......  time_score
-
-    Here each score but the `time_score' is the score
-    for a problem, and has the form `X:YYuN', where X:YY
-    is the time in units u (s = seconds, m = minutes,
-    h = hours, d = days) of the first correct submis-
-    sion, and N is the number of submissions up to and
-    including the first correct submission.  If N = 0,
-    the problem score is `......'.  If there is no cor-
-    rect submission but N != 0, the problem score is
-    `..../N'.  If there is a correct submission but the
-    start time of the problem cannot be computed, the
-    score is `undef/N'.  If a problem time is computed
-    using a non-final score (an automatically computed
-    score that is yet to be reviewed by the human
-    judge), the problem score begins with an `*'.
-
-    The score for a problem is a time equal to the pro-
-    blem submission time minus the problem start time.
-    The start time of a problem is start time of the
-    contest in the variable `scoreboard_start_time', un-
-    less this variable's value is \"\", in which case
-    each problem's start time is time the problem des-
-    cription was gotten (as recorded in a $gotten_file\
-    				file
-    by autoinfo), or unless `score_start_time's value is
-    \"team\", in which case each problem's start time is
-    the time the team (submitter) got its first scorable
-    problem (i.e., problem allowed and not denied).  The
-    time_score for each submitter is the sum of all the
-    correct problem times for that submitter, plus a
-    penalty times the number of incorrect submissions
-    that are for a problem for which there is a later
-    correct submission.  All times are actually measured
-    in seconds, even though the problem times are often
-    reported on the scoreboard itself only to the near-
-    est minute or hour.  The penalty is the value of
-    `scoreboard_penalty', and is in seconds.
-
-    The total score is given in seconds, and is preceded
-    with an `*' if there is a non-final score involved
-    in its computation.  If the total score cannot be
-    computed because of an `undef' problem score, the
-    total score is `undef'.  If the scoring mode is
-    `auto', all scores are final.  If `manual', only
-    manual scores are considered at all, and automatic
-    scores are totally ignored.  If `auto+manual', then
-    automatic scores other than `Completely Correct' are
-    not final, and other scores are final.
-
-    The scoreboard groups the teams by the number of
-    problems they have correct, and within each group
-    sorts teams by total score.
-
-    A parameters_file may be given to this program that
-    will be loaded into the program after hpcm_jud-
-    ging.rc.  This parameters_file may contain parameter
-    settings, e.g. `scoreboard_problems' etc., in the
-    same manner as the normal parameters file."
+    Here the submitter name is from the submission dir-
+    ectories as compressed by the `submitter_compress'
+    function, the pscore's are problem scores, C is the
+    number of problems correct, and the time_score is
+    the total submitter time in seconds.  If more lines
+    per submitter are required, they are added, and each
+    uses a different column separator character before
+    each pscore.  See hpcm/contestant/help/common/
+    scoreboard for more details."
 
 # } This closes extra left bracket in documentation so
 # outer {} brackets work.
