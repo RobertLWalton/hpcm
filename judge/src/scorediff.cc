@@ -2,7 +2,7 @@
 //
 // File:	scorediff.cc
 // Authors:	Bob Walton (walton@deas.harvard.edu)
-// Date:	Wed Apr 24 10:06:32 EDT 2002
+// Date:	Wed Apr 24 10:51:04 EDT 2002
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: hc3 $
-//   $Date: 2002/04/24 14:08:16 $
+//   $Date: 2002/04/24 15:16:47 $
 //   $RCSfile: scorediff.cc,v $
-//   $Revision: 1.47 $
+//   $Revision: 1.48 $
 
 // This is version 2, a major revision of the first
 // scorediff program.  This version is more explicitly
@@ -420,18 +420,6 @@ struct file
 			// column is 0.
     bool remainder;	// True iff token is a remainder
     			// from a split token.
-
-    // One of the following two switches is set by scan-
-    // ning whitespace into `back' by the before_nl
-    // function.
-    //
-    bool before_nl;	// True if whitespace following
-    			// token has a new line or end
-			// of file.
-    bool not_before_nl;	// True if whitespace following
-    			// token does not contain a new
-			// line or end of file.
-
     double number;	// For a number token, the
     			// value of the number.
     int decimals;	// For a number token, the
@@ -443,6 +431,17 @@ struct file
     bool is_float;	// For a number token, true iff
     			// decimals >= 0 or has_exponent
 			// is true.
+
+    // One of the following two switches is set by scan-
+    // ning whitespace into `back' by the before_nl
+    // function.
+    //
+    bool before_nl;	// True if whitespace following
+    			// token has a new line or end
+			// of file.
+    bool not_before_nl;	// True if whitespace following
+    			// token does not contain a new
+			// line or end of file.
 
     // Whitespace description.
     //
@@ -479,14 +478,17 @@ struct file
     // number do not begin an exponent.  Possible
     // values are:
     //
-    //		+#   -#   .#   +.#  -.#
-    //		e    e+   e-   E    E+   E-
+    //		+D   -D   .D   +.D  -.D
+    //		eX   e+Y  e-Y  EX   E+Y   E-Y
     //
-    // where # denotes any digit.  Can also be set to a
-    // single character following a token.  Can also
-    // set set to part of the whitespace following a
-    // token (by before_nl), and this whitespace can
-    // be followed by a single non-whitespace character.
+    // where D denotes any digit, X denotes any charac-
+    // ter that is neither a digit nor a sign, and Y
+    // denotes any character that is not a digit.  Can
+    // also be set to a single character following a
+    // token.  Can also set set to part of the white-
+    // space following a token (by before_nl), and this
+    // whitespace can be followed by a single non-
+    // whitespace character.
 
     char * back;	// If pointing at `\0', there
     			// are no backed up characters
@@ -543,7 +545,7 @@ inline int get_character ( file & f )
 }
 
 void whitespace_too_long ( file & f ) {
-    cerr << "Whitespace too long at line "
+    cerr << "Whitespace too long in line "
          << f.line
 	 << " of "
          << f.filename
@@ -552,7 +554,7 @@ void whitespace_too_long ( file & f ) {
 }
 
 void token_too_long ( file & f ) {
-    cerr << "Token too long at line "
+    cerr << "Token too long in line "
          << f.line
 	 << " of "
          << f.filename
@@ -561,7 +563,8 @@ void token_too_long ( file & f ) {
 }
 
 
-// Scan next token in a file.
+// Scan next token in a file.  EOF_TOKEN is
+// returned repeatedly at end of file.
 //
 void scan_token ( file & f )
 {
@@ -614,6 +617,12 @@ void scan_token ( file & f )
 	else if ( c == '\f' ) -- column;
 	else if ( c == '\v' ) -- column;
 	else if ( c == '\r' ) column = -1;
+	else if ( c == '\b' && column >= 1 )
+	    column -= 2;
+
+	// Note: terminals, unlike printers, generally
+	// do not treat \f going back to the first
+	// column, so we do not here.
 
 
 	if ( wp < endwp ) * wp ++ = c;
@@ -734,7 +743,7 @@ void scan_token ( file & f )
 	c = get_character ( f );
 	++ column;
 
-	// f.token now holds a number followed by an
+	// f.token now holds a mantissa followed by an
 	// `e' or `E'.
 
 	if ( c == '+' || c == '-' ) {
@@ -745,7 +754,7 @@ void scan_token ( file & f )
 	    ++ column;
 	}
 
-	// f.token now holds a number followed by an
+	// f.token now holds a mantissa followed by an
 	// `e' or `E' and possibly then followed by
 	// a sign.
 
@@ -773,7 +782,8 @@ void scan_token ( file & f )
     }
 
     // End of number token.  c is first character beyond
-    // number token.
+    // number token, and c is followed by the backup
+    // string.
 
     * tp = 0;
 
@@ -811,9 +821,9 @@ void scan_token ( file & f )
 // scanned into f.token so far are part of a word,
 // and c is the next character of the word or is a
 // whitespace character or is the beginning of a number
-// token.  In the cases where c is not the next char-
-// acter of the word, f.token is not empty at this
-// point.
+// token or is an EOF.  In the cases where c is not the
+// next character of the word, f.token is not empty at
+// this point.
 //
 word:
 
@@ -883,7 +893,8 @@ word:
 
 end_word:
 
-    // End of word.  c is first character beyond word.
+    // End of word.  c is first character beyond the
+    // word, and c is followed by the backup string.
 
     f.type	= WORD_TOKEN;
     f.length	= tp - f.token;
@@ -1003,7 +1014,7 @@ bool before_nl ( file & f )
 // Possible difference types.
 //
 enum difference_type {
-    LINEBREAK,
+    LINEBREAK = 0,
     SPACEBREAK,
     WHITESPACE,
     BEGINSPACE,
@@ -1387,8 +1398,14 @@ int main ( int argc, char ** argv )
 	    	integer_reldiff_limit = reldiff_limit;
 	    }
 	}
-        else if ( strcmp ( "doc", name ) == 0 )
-	    break;
+        else if ( strncmp ( "doc", name, 3 ) == 0 )
+	{
+	    // Any -doc* option prints documentation
+	    // and exits with error status.
+	    //
+	    cout << documentation;
+	    exit (1);
+	}
 
 	int i; for ( i = 0; i < MAX_DIFFERENCE; ++ i )
 	{
