@@ -3,7 +3,7 @@
 # Compute all the files needed in a program submission
 # directory in order to score a submission.
 #
-# File:		judge
+# File:		autojudge
 # Author:	Bob Walton (walton@deas.harvard.edu)
 # Date:		Wed Aug 16 06:43:27 EDT 2000
 #
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: acm-cont $
-#   $Date: 2000/08/20 01:07:16 $
+#   $Date: 2000/08/20 14:26:49 $
 #   $RCSfile: autojudge,v $
-#   $Revision: 1.11 $
+#   $Revision: 1.12 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -27,6 +27,7 @@ exec tcl "$0" "$@"
 #
 set lib_directory "[file dirname $argv0]/../lib"
 source "$lib_directory/judging_common.tcl"
+catch {
 
 set document "
 cd submission_directory; judge
@@ -98,10 +99,9 @@ if { $submitted_file == "" } {
     if { [file readable $reply_file] } {
         exit 0
     } elseif { [file exits $reply_file] } {
-	fatal_error "Unreadable $reply_file exits"
+	error "Unreadable $reply_file exits"
     } else {
-	fatal_error \
-	    "Extract failed but no $reply_file exits"
+	error "Extract failed but no $reply_file exits"
     }
 }
 
@@ -173,7 +173,7 @@ if { ! [file readable $submitted_program] \
     puts $out
 
     if { ! [file exists $submitted_program" ] } {
-        fatal_error \
+        error \
 	    "Make of $submitted_program failed\
 	     without error indication."
     }
@@ -204,8 +204,7 @@ if { ! [file readable "${submitted_program}.out"] \
     puts $out
 
     if { ! [file exists "${submitted_program}.out" ] } {
-        fatal_error \
-	    "Make of ${submitted_program}.out failed"
+        error "Make of ${submitted_program}.out failed"
     }
 }
 
@@ -221,8 +220,7 @@ if { ! [file readable $auto_score_file] \
     set auto_score [exec autoscore $submitted_program]
 
     if { ! [file exists $auto_score_file] } {
-        fatal_error \
-	    "Autoscore did not make $score_file"
+        error "Autoscore did not make $score_file"
     }
 
     set From_line [file tail [pwd]]
@@ -243,3 +241,8 @@ if { ! [file readable $auto_score_file] \
 }
 
 exit 0
+
+# Include common error catching code:
+#
+} caught_output
+caught_error

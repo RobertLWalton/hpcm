@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: acm-cont $
-#   $Date: 2000/08/19 15:56:05 $
+#   $Date: 2000/08/20 14:26:49 $
 #   $RCSfile: old_autoscore,v $
-#   $Revision: 1.8 $
+#   $Revision: 1.9 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -26,6 +26,7 @@ exec tcl "$0" "$@"
 #
 set lib_directory "[file dirname $argv0]/../lib"
 source "$lib_directory/judging_common.tcl"
+catch {
 
 set document "
 cd submission_directory; autoscore program_name
@@ -134,21 +135,21 @@ set error_file  "${program_name}.err"
 set test_file   "${program_name}.test"
 
 if { ! [file readable $output_file] } {
-    fatal_error "Not readable: $output_file"
+    error "Not readable: $output_file"
 }
 
 if { ! [file readable $test_file] } {
-    fatal_error "Not readable: $test_file"
+    error "Not readable: $test_file"
 }
 
 if { [file exists $auto_score_file] \
      && ! [file writable $auto_score_file] } {
-    fatal_error "Not writable: $auto_score_file"
+    error "Not writable: $auto_score_file"
 }
 
 if { [file exists $instructions_file] \
      && ! [file readable $instructions_file] } {
-    fatal_error "Not readable: $instructions_file"
+    error "Not readable: $instructions_file"
 }
 
 # Initialize score to blank.
@@ -161,7 +162,7 @@ if { [file exists $error_file] \
      && [file size $error_file] > 0 } {
 
     if { ! [file readable $error_file] } {
-	fatal_error "Not readable: $error_file"
+	error "Not readable: $error_file"
     }
 
     set error_fd [open $error_file r]
@@ -216,7 +217,7 @@ if { $score == "" } {
     foreach i $scoring_instructions {
 	if { $number_last } {
 	    if { [catch "expr $i"] } {
-	        fatal_error \
+	        error \
 		    "Non-number after `number' in\
 		     scoring instructions: $i"
 	    }
@@ -232,17 +233,16 @@ if { $score == "" } {
 	} elseif { $i == "whitespace" } {
 	    set whitespace_ok yes
 	} else {
-	    fatal_error \
-		"Unknown scoring_instruction: $i"
+	    error "Unknown scoring_instruction: $i"
 	}
     }
     
     if { $number_last } {
-	fatal_error \
+	error \
 	    "Number not followed by floating point\
-	     number" \
-	    "in the scoring instructions:" \
-	    "    $scoring_instructions"
+	     number\n\
+	    \    in the scoring instructions:\n\
+	    \        $scoring_instructions"
     }
 
     # Compute result of scorediff applied to output
@@ -293,8 +293,7 @@ if { $score == "" } {
 	} elseif { $d == "none" } {
 	    # No error
 	} else {
-	    fatal_error \
-		"Unknown scorediff result: $d" 
+	    error "Unknown scorediff result: $d" 
 	}
     }
 }
@@ -310,3 +309,8 @@ close $score_fd
 puts $score
 
 exit 0
+
+# Include common error catching code:
+#
+} caught_output
+caught_error

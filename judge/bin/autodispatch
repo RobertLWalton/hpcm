@@ -1,0 +1,122 @@
+#! /bin/sh -f
+#
+# Given a submission directory, dispatch any automatic
+# programs, such as `judge'.
+#
+# File:		dispatchmail
+# Author:	Bob Walton (walton@deas.harvard.edu)
+# Date:		Sun Aug 20 04:06:42 EDT 2000
+#
+# The authors have placed this program in the public
+# domain; they make no warranty and accept no liability
+# for this program.
+#
+# RCS Info (may not be true date or author):
+#
+#   $Author: acm-cont $
+#   $Date: 2000/08/20 14:26:49 $
+#   $RCSfile: autodispatch,v $
+#   $Revision: 1.1 $
+#
+# The next line starts tcl \
+exec tcl "$0" "$@"
+
+# Use tcl rather than tclsh so that `signal' is defined.
+
+# If an argument is given, use it as a name of a
+# directory to make current, and the argument is
+# consumed.  This must be done before looking for the
+# parameters file.
+#
+# Don't change argc or argv so error output will work.
+#
+set my_argc $argc
+set my_argv $argv
+if { $argc >= 1 } {
+    cd [lindex $argv 0]
+    set my_argv [lreplace $argv 0 0]
+    set my_argc [expr { $argc - 1 }]
+}
+
+# Include common code and parameters:
+#
+set lib_directory "[file dirname $argv0]/../lib"
+source "$lib_directory/judging_common.tcl"
+catch {
+
+set document "
+dispatchmail \[directory\]
+
+    Reads mail from the standard input and divides it
+    into messages.  For each message, a subdirectory is
+    made in the `$mail_directory' to hold the message,
+    its reply, and any program file extracted from the
+    message, binary of that program, output of that
+    program, etc.  The message is copied into the
+    `$received_file' in that directory and the
+    `dispatchmail' program is called with that directory
+    as the current directory to dispatch a program to
+    reply to the message.
+
+    The name of the subdirectory for a message is the
+    entire `From' line that begins the message,
+    verbatim.
+
+    If a message is read that already has a directory,
+    the message is ignored.
+
+    If the directory argument is given, this program
+    makes that directory current before searching for
+    the `$judging_parameters_file' file.
+
+    If there are non-blank lines before the first `From'
+    line in the input, these are organized into a spec-
+    ial message from the current user to him/herself.
+    The subject of this message is something ignored
+    by `dispatchmail'.
+
+    It is a fatal error if an mail `From' line contains
+    a `/'.
+    
+    This program outputs the `From' lines that become
+    the names of the directories actually created."
+
+if { $my_argc != 0 } {
+    puts $document
+    exit 1
+}
+
+set received_ch [open $received_file r]
+while { "yes" } {
+    set line [gets $received_ch]
+    if { [eof $received_ch] } {
+        error "No `Subject:' line in $received_file"
+    } elseif { [regexp {^Subject:} $line] } {
+        break
+    }
+}
+
+proc dispatch { program } {
+    set pid_ch [open Dispatch_Pid w]
+    puts $pid_ch [id process]
+    close $pid_ch
+    id process group set
+    exec $program
+    file delete -force Dispatch_Pid
+}
+
+proc_cloc
+
+if { [regexp {^Subject: submit } $line] } {
+    dispatch autojudge
+} elseif { [regexp {^Subject: get } $line] } {
+    dispatch autoinfo
+}
+
+exit 0
+
+# Include common error catching code:
+#
+} caught_output
+caught_error
+

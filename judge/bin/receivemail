@@ -2,9 +2,9 @@
 #
 # Process incoming mail for judging.
 #
-# File:		receive
+# File:		receivemail
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Aug 16 06:41:25 EDT 2000
+# Date:		Sun Aug 20 04:06:42 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,410 +13,273 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: acm-cont $
-#   $Date: 2000/08/18 15:00:42 $
+#   $Date: 2000/08/20 14:26:50 $
 #   $RCSfile: receivemail,v $
-#   $Revision: 1.9 $
+#   $Revision: 1.10 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
 
 # Use tcl rather than tclsh so that `signal' is defined.
 
+# If an argument is given, use it as a name of a
+# directory to make current, and the argument is
+# consumed.  This must be done before looking for the
+# parameters file.
+#
+# Don't change argc or argv so error output will work.
+#
+set my_argc $argc
+set my_argv $argv
+if { $argc >= 1 } {
+    cd [lindex $argv 0]
+    set my_argv [lreplace $argv 0 0]
+    set my_argc [expr { $argc - 1 }]
+}
+
 # Include common code and parameters:
 #
 set lib_directory "[file dirname $argv0]/../lib"
 source "$lib_directory/judging_common.tcl"
+catch {
 
 set document "
-receive [directory]
+receive \[directory\]
 
-    Reads mail from the standard input and processes it.
+    Reads mail from the standard input and divides it
+    into messages.  For each message, a subdirectory is
+    made in the `$mail_directory' to hold the message,
+    its reply, and any program file extracted from the
+    message, binary of that program, output of that
+    program, etc.  The message is copied into the
+    `$received_file' in that directory and the
+    `dispatchmail' program is called with that directory
+    as the current directory to dispatch a program to
+    reply to the message.
 
-    If the directory argument is given, changes to that
-    directory before reading judging parameters and
-    processing mail.  The parameter file defines the
-    mail_directory, solution_directory, and info_
-    directory.
+    The name of the subdirectory for a message is the
+    entire `From' line that begins the message,
+    verbatim.
 
-    Each mail message is stored in its own subdirectory
-    in the mail_directory.  This subdirectory has as its
-    name the `From' line beginning the message.  The
-    message is stored in the file `received.mail' in
-    this directory.  If a mail message is received for
-    a second time, as determined by its subdirectory
-    already existing, the mail message is ignored.
+    If a message is read that already has a directory,
+    the message is ignored.
 
+    If the directory argument is given, this program
+    makes that directory current before searching for
+    the `$judging_parameters_file' file.
 
-    given, 
-    For each submission in the mail_file builds a sub-
-    directory of the judging_directory containing the
-    submitted file.  The subdirectory name is the entire
-    `From' line for the submission message in the mail
-    file, which includes the date and submitter.
-    Nothing is done if the subdirectory already exists.
+    If there are non-blank lines before the first `From'
+    line in the input, these are organized into a spec-
+    ial message from the current user to him/herself.
+    The subject of this message is something ignored
+    by `dispatchmail'.
 
-    All actions are logged by appendments to:
-    	judging_directory/$log_filename
+    It is a fatal error if an mail `From' line contains
+    a `/'.
+    
+    This program outputs the `From' lines that become
+    the names of the directories actually created."
 
-    Submission errors include:
-        Submitted file before first mail message.
-	Submitted file improperly terminated.
-	2 or more submitted files in one message.
-	Unallowed extension for submitted file.
-
-    Errors are both logged in the log file and
-    announced on the standard output.  All but the first
-    error above cause a `.score' file to be written
-    with the first line equal to `Submission Error'.
-
-    The allowed extensions are a judging parameter
-    and that is currently set to:
-    	$allowed_extensions
-
-    In the event of an interrupt or an error, this
-    program may leave:
-	A submission directory with a `.score' file
-	    whose first line is `Submission Error'
-    	An empty submission directory.
-    	An submission directory with an invalid
-	    (e.g. empty) `.score' file."
-
-if { $argc != 2 } {
+if { $my_argc != 0 } {
     puts $document
-    exit 0
-}
-
-set mail_file [lindex $argv 0]
-set judging_directory [lindex $argv 1]
-
-if { ! [file readable $mail_file] } {
-    puts "ERROR: not readale:"
-    puts "       $mail_file"
     exit 1
 }
 
-if { ! [file isdirectory $judging_directory] } {
-    puts "ERROR: not a directory:"
-    puts "       $judging_directory"
-    exit 1
+set From_line ""
+
+# Read stdin until non-blank line found.
+#
+while { "yes" } {
+    set line [gets stdin]
+    if { [eof stdin] } {
+	exit 0
+    } elseif { ! [regexp "^\[\ \t\]*\$" $line] } {
+    	break
+    }
 }
 
-set log_file "$judging_directory/$log_filename"
-puts "Logging to $log_file"
-set log_fd   [open $log_file a]
-
-puts $log_fd \
-     "-----------------------------------------------"
-puts $log_fd \
-     "Starting Run: [clock format [clock seconds]]"
-puts $log_fd \
-     "    Mail File: $mail_file"
-
-
-puts $log_fd "    Allowed extensions are:"
-puts $log_fd "        $allowed_extensions"
-
-set mail_fd [open $mail_file r]
-
-# State can be `none', `found', `next_found'
+# Make sure mkdir of a subdirectory of the mail
+# directory will not fail because the mail directory
+# does not exist or is not writable.
 #
-set From_line_state none
-set From_line       ""
-set next_From_line  ""
+if { ! [file isdirectory "$mail_directory"] } {
+    error "$mail_directory is not a directory."
+} elseif { ! [file writable "$mail_directory"] } {
+    error "$mail_directory is not writable."
+}
 
-# The following procedure reads the mail_fd until
-# it encounters a submission file end line, and end
-# of file, or a message beginning From line.  If
-# it encounters a From line it sets From_line_state
-# to next_found and next_From_line to the From line
-# itself.
+# If the first non-blank mail line is not a `From' line,
+# create a message header for a (fake) message from the
+# current user to him/herself complaining about the text
+# that does not have a `From' line, and then proceed to
+# include this text in the message until a `From' line
+# or end of input is reached.
 #
-proc flush_submitted_file {} {
-    global mail_fd next_From_line From_line_state \
-           From_line_regexp
+if { ! [regexp $From_line_regexp $line] } {
 
-    while {1} {
-	set line [gets $mail_fd]
-	if { [eof $mail_fd] } {
+    # Compute a fake From line for our fake message.
+    # Keep trying until one that does not match an
+    # existing directory is found.
+    #
+    set try_count 0
+    while { "yes" } {
+        set From_line \
+	    "From [id user]\
+	          [clock format [clock seconds]]"
+	if { [regexp {/} $From_line] } {
+	    log_error \
+	        "Generated `From' line has /:\
+		 $From_line"
+	    regsub {/} $From_line {::} From_line
+	}
+
+	# The mkdir system command is used as a kind
+	# of lock: it is assumed to fail only if the
+	# directory to be made already exists.  (DON'T
+	# try to use `file mkdir' instead).
+	#
+	if { ! [catch {
+	          exec mkdir \
+		      "$mail_directory/$From_line"
+		} ] } {
+	    break;
+	}
+
+	# Limit this madness.
+	#
+	incr try_count
+	if { $try_count > 100 } {
+	    error \
+	        "Cannot create unique subdirectory of\
+		 $mail_directory after 100 tries."
+	}
+
+	# Be sure the next name generated is different.
+	#
+	sleep 1
+    }
+
+    puts $From_line
+
+    set d "$mail_directory/$From_line"
+    set message_ch [open "$d/$received_file" w]
+
+    puts $message_ch \
+         $From_line
+    puts $message_ch \
+         "To: [id user]"
+    puts $message_ch \
+         "Subject: Text in mail input before `From'\
+	  line" 
+    puts $message_ch \
+         ""
+    puts $message_ch \
+         "The following text appeared in mail input\
+	  before"
+    puts $message_ch \
+         "any `From' line appeared."
+    puts $message_ch \
+         ""
+    puts $message_ch \
+         "---------------------- text:"
+
+    while { "yes" } {
+    	puts $message_ch $line
+	set line [gets stdin]
+	if { [eof stdin] } {
 	    break
-	} elseif {
-	    [regexp \
-		{^\[\[\.\.ACM\.\.END\.\.\]\]} \
-		$line] } {
-	    break
-	} elseif {
-	    [regexp $From_line_regexp $line] } {
-	    set next_From_line $line
-	    set From_line_state next_found
+        } elseif { [regexp $From_line_regexp $line] } {
 	    break
 	}
     }
-}
+    puts $message_ch \
+         "---------------------- end text"
+    close $message_ch
 
-# The following procedure outputs an error message
-# line to the standard output, the log file, and the
-# score file.  If the score_fd is "no", the score
-# file is opened for writing, `Submission Error'
-# is written to the file's first line, and creation
-# of the score file is logged.  This procedure returns
-# the value of score_fd, which it may change.
-#
-proc output_error { score_fd
-		    score_file
-		    error_message_line } {
-    global log_fd From_line
-    if { $score_fd == "no" } {
-	puts $log_fd \
-	     "    Creating $score_file"
-	set score_fd \
-	    [open $score_file w]
-	puts $score_fd "Submission Error"
-	puts $From_line
+    if { [eof stdin] } {
+    	exit 0
     }
-    puts $log_fd   $error_message_line
-    puts $score_fd $error_message_line
-    puts           $error_message_line
-
-    return $score_fd
 }
 
-# This procedure handles all processing of a submitted
-# file after the [[..ACM..BEGIN]] line is read.
+# Loop to handle each message.  Starts with $line
+# equal to the `From' line of the message.
 #
-proc copy_submitted_file { directory submitted_file } {
-    global From_line mail_fd log_fd \
-           next_From_line From_line_state \
-	   From_line_regexp
+while { "yes" } {
 
-    set submitted_program \
-        [file rootname $submitted_file]
-    set submitted_extension \
-        [file extension $submitted_file]
-    set output_file \
-	"$directory/$submitted_file"
-    set score_file \
-	"$directory/${submitted_program}.score"
+    set From_line $line
 
-    puts $log_fd $From_line
-    puts $log_fd \
-	 "    Making directory $directory"
-    file mkdir $directory
+    # Make directory for message.  On sucess copy
+    # message to the directory.  On failure, skip the
+    # message.
 
-    puts $log_fd "    Creating $output_file"
-    set output_fd [open $output_file w]
+    # Its a fatal error if $From_line contains /.
+    #
+    if { [regexp {/} $From_line] } {
+	log_error \
+	    "From line in mail has /: $From_line"
+	regsub {/} $From_line {::} From_line
+    }
 
-    set number_of_good_lines 0
-    set number_of_bad_lines 0
+    # The mkdir system command is used as a kind
+    # of lock: it is assumed to fail only if the
+    # directory already exists.
+    #
+    if { [catch \
+	  { exec mkdir \
+	    "$mail_directory/$From_line" } ] } {
 
-    set score_fd no
-
-    while {1} {
-	set line [gets $mail_fd]
-	if { [eof $mail_fd] } {
-	    set score_fd \
-	        [output_error $score_fd $score_file \
-		 "    ERROR: unexpected eof\
-			 ends submitted file" ]
-	    puts $output_fd \
-		 "ERROR: unexpected eof ends\
-			 this submitted file"
-	    break
-	} elseif { [regexp {^\.\.(.*)$} $line \
-			   all real_part] } {
-	    incr number_of_good_lines
-	    puts $output_fd $real_part
-	} elseif {
-	    [regexp \
-	     {^\[\[\.\.ACM\.\.END\.\.\]\]} \
-	     $line] } {
-	    break
-	} elseif {
-	    [regexp $From_line_regexp $line] } {
-	    set next_From_line $line
-	    set From_line_state next_found
-	    set score_fd \
-	        [output_error $score_fd $score_file \
-		 "    ERROR: unexpected end of message\
-			 ends submitted file" ]
-	    puts $output_fd \
-		 "ERROR: unexpected end of message\
-			 ends this submitted file"
-	    break
-	} else {
-	    if { ! [info exists score_fd] } {
-		puts $log_fd \
-		     "    Creating $score_file"
-		set score_fd \
-		    [open $score_file w]
-		puts $score_fd "Submission Error"
-		puts $From_line
-	    }
-	    incr number_of_bad_lines
-	    puts $output_fd "ERROR: bad line in\
-				submitted file:"
-	    puts $output_fd $line
-	    if { $number_of_bad_lines == 1 } {
-		set score_fd \
-		    [output_error $score_fd \
-		                  $score_file \
-			"    ERROR: bad lines in\
-				  submitted file:" ]
-	    }
-	    if { $number_of_bad_lines <= 5 } {
-		set score_fd \
-		    [output_error $score_fd \
-		                  $score_file \
-			"           $line" ]
-	    } elseif {
-		  $number_of_bad_lines == 6 } {
-		set score_fd \
-		    [output_error $score_fd \
-		                  $score_file \
-		     "           AND THERE ARE\
-			     MORE BAD LINES!" ]
+	# Directory must already exist.  Skip message.
+	#
+	while { "yes" } {
+	    set line [gets stdin]
+	    if { [eof stdin] } {
+	    	break;
+	    } elseif { [regexp $From_line_regexp \
+	               $line] } {
+		break;
 	    }
 	}
-    }
-
-    puts $log_fd \
-	 "    There were $number_of_good_lines\
-	      good lines in file."
-    if { $score_fd != "no" } { close $score_fd }
-    close $output_fd
-}
-
-# Below is the main program loop that reads the mail_fd
-# file.  It remembers From lines as it encounters them,
-# and processes submit files as it encounters the
-# [[..ACM..BEGIN..]] lines.  If From_line_state equals
-# next_found, instead of reading mail_fd this loop gets
-# its next line from the next_From_line variable.
-
-set number_of_files 0
-
-while {1} {
-    if { $From_line_state == "next_found" } {
-    	set line next_From_line
-	set From_line_state none
     } else {
-	set line [gets $mail_fd]
-	if { [eof $mail_fd] } break
-    }
 
-    if  { [regexp $From_line_regexp $line] } {
-    	set From_line $line
-	set From_line_state found
-	set number_of_files 0
-	set directory \
-	    "$judging_directory/$From_line"
-	set first_submitted_file ""
-    } elseif {
-	    [regexp {^\[\[\.\.ACM\.\.BEGIN\.\.\]\]} \
-		    $line] } {
+    	# Directory did NOT exist, and was just made.
+	# Copy message.
+	#
+	puts $From_line
+	set d "$mail_directory/$From_line"
+	set message_ch [open "$d/$received_file" w]
 
-	incr number_of_files
-
-	if { [llength $line] >= 2 } {
-	    set submitted_file [lindex $line 1]
-	    set submitted_file [file split $submitted_file]
-	    set submitted_file [lindex $submitted_file end]
-	} else {
-	    set submitted_file "name_omitted"
-	}
-
-	set submitted_program \
-	    [file rootname $submitted_file]
-	set submitted_extension \
-	    [file extension $submitted_file]
-
-	if { $From_line_state == "none" } {
-	    puts $log_fd \
-		 "ERROR: file before any mail message:\
-		         $submitted_file"
-	    puts \
-		 "ERROR: file before any mail message:\
-		         $submitted_file"
-
-	    flush_submitted_file
-	} elseif { [file isdirectory $directory] } {
-	    if { $first_submitted_file != "" } {
-
-		set score_file \
-		    [glob -nocomplain \
-		          "$directory/*.score"]
-		if ( [llength $score_file] != 1 } {
-		    set score_file \
-			"[file rootname \
-			       $first_submitted_file \
-			       ].score"
-		}
-
-		if { ! [file exists $score_file] } {
-		    set score_fd no
-		} else {
-		    set score_fd [open $score_file a]
-		}
-
-		if { $number_of_files == 2 } {
-		    set score_fd \
-		        [output_error $score_fd \
-				      $score_file \
-			 "    ERROR: extra file in\
-				     submission:\
-			     $first_submitted_file"]
-		}
-
-		set score_fd [output_error $score_fd \
-					   $score_file \
-		     "    ERROR: extra file in\
-		                 submission:\
-				 $submitted_file"]
-		close $score_fd
-	    }
-
-	    flush_submitted_file
-	} elseif { [lsearch \
-	            -exact $allowed_extensions \
-		    $submitted_extension] < 0 } {
-	    puts $log_fd $From_line
-	    puts $log_fd \
-	         "    Making directory $directory"
-	    file mkdir $directory
-
-	    set score_file \
-		"$directory/${submitted_program}.score"
-
-	    set score_fd [output_error no $score_file \
-		 "    ERROR: bad extension on file\
-		             named: $submitted_file"]
-	    close $score_fd
-
-	    flush_submitted_file
-	} else {
-	    set first_submitted_file $submitted_file
-	    set ecode \
-		[catch {
-		    copy_submitted_file \
-			$directory $submitted_file
-		} emessage]
-	    if { $ecode != 0 } {
-	        puts         $From_line
-	        puts         "    ERROR: $emessage"
-	        puts $log_fd "    ERROR: $emessage"
-	        puts         "    Deleting directory\
-		                  $directory"
-	        puts $log_fd "    Deleting directory\
-		                  $directory"
-		exec rm -rf $directory
-	        puts         "    Abnormal exit $ecode"
-	        puts $log_fd "    Abnormal exit $ecode"
-		exit $ecode
+	while { "yes" } {
+	    puts $message_ch $line
+	    set line [gets stdin]
+	    if { [eof stdin] } {
+	    	break;
+	    } elseif { [regexp $From_line_regexp \
+	               $line] } {
+		break;
 	    }
 	}
+
+	close $message_ch
+
+	# Dispatch for new directory:
+	#
+	if { [catch {
+		exec < /dev/null >& /dev/null \
+		     dispatchmail \
+		     "$mail_directory/From_line" &
+	     } catch_out ] } {
+	    log_error $catch_out
+	}
     }
+
+    if { [eof stdin] } break
 }
 
-puts $log_fd "Exiting normally"
-puts         "Exiting normally"
+# Come here on eof for stdin.
 
 exit 0
+
+# Include common error catching code:
+#
+} caught_output
+caught_error

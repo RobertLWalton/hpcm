@@ -2,7 +2,7 @@
 #
 # Extract submitted program from received.mail file.
 #
-# File:		extract
+# File:		extractmail
 # Author:	Bob Walton (walton@deas.harvard.edu)
 # Date:		Wed Aug 16 06:41:25 EDT 2000
 #
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: acm-cont $
-#   $Date: 2000/08/19 15:56:06 $
+#   $Date: 2000/08/20 14:26:49 $
 #   $RCSfile: extractmail,v $
-#   $Revision: 1.4 $
+#   $Revision: 1.5 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -26,6 +26,7 @@ exec tcl "$0" "$@"
 #
 set lib_directory "[file dirname $argv0]/../lib"
 source "$lib_directory/judging_common.tcl"
+catch {
 
 set document "
 cd submission_directory; extract
@@ -83,7 +84,7 @@ if { $argc != 0 } {
 }
 
 if { ! [file readable $received_file] } {
-    fatal_error "Not readable: $received_file"
+    error "Not readable: $received_file"
 }
 
 set received_ch [open $received_file r]
@@ -236,3 +237,8 @@ while { "yes" } {
 close $received_ch
 puts $filename
 exit 0
+
+# Include common error catching code:
+#
+} caught_output
+caught_error
