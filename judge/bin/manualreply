@@ -5,7 +5,7 @@
 #
 # File:		manualreply
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Nov  4 16:22:15 EST 2000
+# Date:		Sat Nov  4 17:04:11 EST 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/11/04 21:50:34 $
+#   $Date: 2000/11/04 22:14:18 $
 #   $RCSfile: manualreply,v $
-#   $Revision: 1.20 $
+#   $Revision: 1.21 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -1357,7 +1357,8 @@ $menu"
 	}
 	{^sr$} {
 	    if { ! [file exists $reply_file+] } {
-		puts "No reply composed!"
+		set window_error \
+		    "ERROR: No reply composed!"
 	    } else {
 		set_file_display $reply_file+
 		set window_error ""
@@ -1370,9 +1371,14 @@ $menu"
 		    set window_prompt \
 		       "Sending..."
 		    display_window
-		    send_reply
+		    catch { send_reply } out
 		    set last_file $reply_file
-		    continue?
+		    if { $out == "" } {
+		    	set window_error "Reply sent!"
+		    } else {
+		        puts "\n$out"
+			continue?
+		    }
 		} else {
 		    set window_error "Send ABORTED!"
 		}
@@ -1400,7 +1406,7 @@ $menu"
 	    } elseif { [compose_score_reply] } {
 		send_score_reply
 		set last_file $reply_file
-		set_file_display $last_file
+		set last_display file
 	        set window_error "Score sent!"
 	    } else {
 	        set window_error "NOTICE: Old manual\
