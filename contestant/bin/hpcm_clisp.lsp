@@ -3,7 +3,7 @@
 ;;;; File:	hpcm_clisp.lsp
 ;;;; Author:	Bob Walton <walton@deas.harvard.edu>
 ;;;; Modifier:  CS 182 (Attila Bodis)
-;;;; Date:	Sat Jan 12 01:32:25 EST 2002
+;;;; Date:	Sat Jan 12 01:50:25 EST 2002
 ;;;;
 ;;;; The authors have placed this program in the public
 ;;;; domain; they make no warranty and accept no
@@ -12,9 +12,9 @@
 ;;;; RCS Info (may not be true date or author):
 ;;;;
 ;;;;   $Author: hc3 $
-;;;;   $Date: 2002/01/12 06:37:40 $
+;;;;   $Date: 2002/01/12 06:50:31 $
 ;;;;   $RCSfile: hpcm_clisp.lsp,v $
-;;;;   $Revision: 1.17 $
+;;;;   $Revision: 1.18 $
 ;;;;
 ;;;;
 ;;;; This file was originally written by the Bob Walton
@@ -254,7 +254,8 @@
 				  (transcribe-error c))
 			 )))
 			 (fresh-line)
-			 (write val :escape t))
+			 (write val :escape t)
+			 (fresh-line))
 		  (throw error-tag nil)))
 	      (finish-output))
 	     (pause
@@ -267,6 +268,8 @@
 		        ; Print prompt.
 	          (fresh-line)
 	          (princ '|---> ? |)
+		  (fresh-line)
+		  (finish-output) ;; In case crash follows.
 	          (let ((line (read-line *terminal-io*
 	                                 nil "")))
 		    (cond
@@ -280,6 +283,7 @@
 	                            (eval
 				     (read-from-string
 				      line nil nil))))
+	                      (fresh-line)
 			      (write val :escape t
 			                 :pretty t)
 		              (fresh-line))
@@ -294,8 +298,10 @@
 	      (fresh-line)
 	      (princ '|--->|)
 	      (fresh-line)
+	      (finish-output) ;; In case crash follows.
 	      (dolist (val (multiple-value-list
 	                      (eval s-expression)))
+	              (fresh-line)
 		      (write val :escape t :pretty t)
 		      (fresh-line))))
 	    (fresh-line)))
