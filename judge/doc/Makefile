@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Mar 18 23:56:41 EST 2002
+# Date:		Tue Mar 19 00:15:01 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/03/19 05:00:51 $
+#   $Date: 2002/03/19 05:16:37 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.17 $
+#   $Revision: 1.18 $
 
 # make
 #	Makes documentation as fprintable .doc files in
@@ -61,6 +61,7 @@ DOCS=	overview.doc \
 	secure/hpcm_set_passwords.doc \
 	contestant/hpcm_submit.doc \
 	secure/hpcm_TRASH_ACCOUNTS.doc \
+	judge/jprint.doc \
 	judge/lookat.doc \
 	judge/lpq.doc \
 	contestant/lpq.doc \
@@ -70,6 +71,7 @@ DOCS=	overview.doc \
 	contestant/print.doc \
 	contestant/print2.doc \
 	contestant/printer_pipe.doc \
+	judge/printer_broadcast.doc \
 	judge/receivemail.doc \
 	judge/remakeMakefile.doc \
 	contestant/scoreboard.doc \
@@ -220,6 +222,10 @@ judging.doc:	hpcm_judging.rc \
 			../../judge/bin/judging
 	rm -f judging.doc
 	-../../judge/bin/judging -doc >judging.doc
+judge/jprint.doc:	hpcm_judging.rc \
+		        ../../judge/bin/jprint
+	rm -f judge/jprint.doc
+	-../../judge/bin/jprint -doc >judge/jprint.doc
 judge/lookat.doc:	hpcm_judging.rc \
 		        ../../judge/bin/lookat
 	rm -f judge/lookat.doc
@@ -251,6 +257,11 @@ overview.doc:	hpcm_judging.rc \
 			../../judge/bin/overview
 	rm -f overview.doc
 	-../../judge/bin/overview -doc >overview.doc
+judge/printer_broadcast.doc:	hpcm_judging.rc \
+			../../judge/bin/printer_broadcast
+	rm -f judge/printer_broadcast.doc
+	-../../judge/bin/printer_broadcast -doc \
+	    >judge/printer_broadcast.doc
 judge/receivemail.doc:	hpcm_judging.rc \
 			../../judge/bin/receivemail
 	rm -f judge/receivemail.doc
