@@ -11,9 +11,9 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: hc3 $
-//   $Date: 2001/08/05 12:53:33 $
+//   $Date: 2001/08/05 13:46:14 $
 //   $RCSfile: scorediff.cc,v $
-//   $Revision: 1.32 $
+//   $Revision: 1.33 $
 
 // This is version 2, a major revision of the first
 // scorediff program.  This version is more explicitly
@@ -901,8 +901,8 @@ struct difference
         // True if difference of this type has been
 	// found.
 
-    unsigned	last_output_line;
-    unsigned	last_test_line;
+    int		last_output_line;
+    int		last_test_line;
        // Line numbers of last proof output that
        // contains this type of difference.  Zero
        // if no proof containing this difference
@@ -960,8 +960,10 @@ struct proof
     difference_type	type;
         // Difference type.
 
-    unsigned		output_token_end_column;
-    unsigned		test_token_end_column;
+    int			output_token_begin_column;
+    int			output_token_end_column;
+    int			test_token_begin_column;
+    int			test_token_end_column;
         // Column numbers.
 
     double		absdiff;
@@ -978,8 +980,8 @@ struct proof_line
     // A description of one single line of proofs that
     // is to be output.
 {
-    unsigned		output_line;
-    unsigned		test_line;
+    int			output_line;
+    int			test_line;
         // Line numbers.
 
     proof *		proofs;
@@ -1034,7 +1036,12 @@ inline void output_proof
     proof * p	= new proof;
 
     p->type			= type;
+    p->output_token_begin_column
+    				= output.column -
+				  output.length + 1;
     p->output_token_end_column	= output.column;
+    p->test_token_begin_column	= test.column -
+				  test.length + 1;
     p->test_token_end_column	= test.column;
     p->absdiff			= absdiff;
     p->reldiff			= reldiff;
@@ -1577,12 +1584,19 @@ int main ( int argc, char ** argv )
 		 last_test_column
 	             != p->test_token_end_column )
 	    {
+		cout << " "
+		     << p->output_token_begin_column
+		     << " "
+		     << p->output_token_end_column;
+		cout << " "
+		     << p->test_token_begin_column
+		     << " "
+		     << p->test_token_end_column;
+
 		last_output_column =
 		    p->output_token_end_column;
 		last_test_column =
 		    p->test_token_end_column;
-		cout << " " << last_output_column;
-		cout << " " << last_test_column;
 	    }
 
 	    cout << " " << differences[p->type].name;
