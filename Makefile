@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Feb 21 22:05:13 EST 2003
+# Date:		Sat Feb 22 04:49:18 EST 2003
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,18 +11,18 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2003/02/22 03:03:10 $
+#   $Date: 2003/02/22 11:34:06 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.29 $
+#   $Revision: 1.30 $
 
 # See STATUS file for description of versions.
 #
-VERSION=1.000
+VERSION=01_000
 
 # Tar extension, zip option, and unzip option.
 # Can be set to use zipped or unzipped tar files.
 #
-TAREXT = .tar.gz
+TAREXT = .tgz
 TARZIP = --gzip
 TARUNZIP = --gunzip
 # TAREXT = .tar
@@ -60,22 +60,29 @@ NONDIS = non_distributable
 #       	hpcm_${NONDIS}_${VERSION}${TAREXT}
 #
 # make signatures
-#	Make HPCM_MD5_Signatures file, a copyrighted
-#	file with signatures of all tar'able files.
+#	Make HPCM_${VERSION}_MD5_Signatures file, a
+#	copyrighted file with signatures of all tar'able
+#	files.
 #
 # make md5check
-#	Check the signatures in HPCM_MD5_Signatures.
+#	Check the signatures in HPCM_${VERSION}_MD5_
+#	Signatures.
 #
 # make cvssignatures
-#	Make HPCM_CVS_MD5_Signatures file from
-#	hpcm_cvs_${VERSION}${TAREXT}.  You must make
-#	this last file by hand; it is a tar file con-
-#	taining the CVS root for HPCM.  The signatures
-#	file is a copyrighted file with signatures
-#	of all files in the cvs tar file.
+#	Make HPCM_${VERSION}_CVS_MD5_Signatures file
+#	from hpcm_cvs_${VERSION}${TAREXT}.  You must
+#	make this last file by hand; it is a tar file
+#	containing the CVS root for HPCM.  The
+#	signatures file is a copyrighted file with
+#	signatures of all files in the cvs tar file.
 #
 # make md5cvscheck
-#	Check the signatures in HPCM_CVS_MD5_Signatures.
+#	Check the signatures in HPCM_${VERSION}_CVS_MD5_
+#	Signatures.
+#
+# make web
+#	Make web directory containing public files, and
+#	web${TAREXT} which is a tar of that directory.
 #
 # make clean
 #	Clean everything in this directory.
@@ -85,12 +92,11 @@ NONDIS = non_distributable
 #	subdirectories that have Makefiles.  Runs
 #	`make clean' in all these directories.
 
-HPCM_CVS_MD5_Signatures:	signatures_header cvstmp
-
 all:	submakes
 
-signatures:	HPCM_MD5_Signatures
-cvssignatures:	HPCM_CVS_MD5_Signatures
+signatures:	HPCM_${VERSION}_MD5_Signatures
+
+cvssignatures:	HPCM_${VERSION}_CVS_MD5_Signatures
 
 # Kill all implicit rules
 #
@@ -126,50 +132,50 @@ slocs:
 
 # Make MD5 Signatures File:
 #
-HPCM_MD5_Signatures:	signatures_header \
+HPCM_${VERSION}_MD5_Signatures:	signatures_header \
 			hpcm_${VERSION}.files \
 		    hpcm_solutions_${VERSION}.files \
 		    hpcm_${NONDIS}_${VERSION}.files
 	@if test "${COPYRIGHT}" = ""; \
 	then echo COPYRIGHT not defined; exit 1; fi
-	rm -f HPCM_MD5_Signatures
-	echo "HPCM MD5 SIGNATURES" \
-	     > HPCM_MD5_Signatures
-	echo "---- --- ----------" \
-	     >> HPCM_MD5_Signatures
+	rm -f HPCM_${VERSION}_MD5_Signatures
+	echo "HPCM ${VERSION} MD5 SIGNATURES" \
+	     > HPCM_${VERSION}_MD5_Signatures
+	echo "---- ------ --- ----------" \
+	     >> HPCM_${VERSION}_MD5_Signatures
 	echo "" \
-	     >> HPCM_MD5_Signatures
+	     >> HPCM_${VERSION}_MD5_Signatures
 	echo "${COPYRIGHT}" \
-	     >> HPCM_MD5_Signatures
+	     >> HPCM_${VERSION}_MD5_Signatures
 	echo "" \
-	     >> HPCM_MD5_Signatures
+	     >> HPCM_${VERSION}_MD5_Signatures
 	cat signatures_header \
-	     >>  HPCM_MD5_Signatures
+	     >>  HPCM_${VERSION}_MD5_Signatures
 	echo "" \
-	     >> HPCM_MD5_Signatures
+	     >> HPCM_${VERSION}_MD5_Signatures
 	echo "HPCM Version: ${VERSION}" \
-	     >>  HPCM_MD5_Signatures
+	     >>  HPCM_${VERSION}_MD5_Signatures
 	echo "Date of Signatures:" \
 	     "`date`" \
-	     >>  HPCM_MD5_Signatures
+	     >>  HPCM_${VERSION}_MD5_Signatures
 	echo " ====== " " ====== " \
 	     " ====== " " ====== " \
 	     " ====== " " ====== " \
 	     " ====== " " ====== " \
-	     >> HPCM_MD5_Signatures
+	     >> HPCM_${VERSION}_MD5_Signatures
 	cd ..; \
 	   md5sum `cat \
 	      hpcm/hpcm_${VERSION}.files \
 	      hpcm/hpcm_solutions_${VERSION}.files \
 	      hpcm/hpcm_${NONDIS}_${VERSION}.files \
 	            ` \
-	      >>  hpcm/HPCM_MD5_Signatures
+	      >>  hpcm/HPCM_${VERSION}_MD5_Signatures
 
 # Check MD5 Signatures
 #
 md5check:
 	cd ..; \
-	   sed < hpcm/HPCM_MD5_Signatures \
+	   sed < hpcm/HPCM_${VERSION}_MD5_Signatures \
 	       -e '1,/^ ====== /'d | \
 	       md5sum --check 2>&1 | \
 	       sed -e '/^[^ 	]*: OK$$/d'
@@ -188,43 +194,44 @@ cvstmp:	hpcm_cvs_${VERSION}${TAREXT}
 
 # Make MD5 CVS Signatures File:
 #
-HPCM_CVS_MD5_Signatures:	signatures_header cvstmp
+HPCM_${VERSION}_CVS_MD5_Signatures:	\
+		signatures_header cvstmp
 	@if test "${COPYRIGHT}" = ""; \
 	then echo COPYRIGHT not defined; exit 1; fi
-	rm -f HPCM_CVS_MD5_Signatures
-	echo "HPCM CVS MD5 SIGNATURES" \
-	     > HPCM_CVS_MD5_Signatures
+	rm -f HPCM_${VERSION}_CVS_MD5_Signatures
+	echo "HPCM_${VERSION} CVS MD5 SIGNATURES" \
+	     > HPCM_${VERSION}_CVS_MD5_Signatures
 	echo "---- --- --- ----------" \
-	     >> HPCM_CVS_MD5_Signatures
+	     >> HPCM_${VERSION}_CVS_MD5_Signatures
 	echo "" \
-	     >> HPCM_CVS_MD5_Signatures
+	     >> HPCM_${VERSION}_CVS_MD5_Signatures
 	echo "${COPYRIGHT}" \
-	     >> HPCM_CVS_MD5_Signatures
+	     >> HPCM_${VERSION}_CVS_MD5_Signatures
 	echo "" \
-	     >> HPCM_CVS_MD5_Signatures
+	     >> HPCM_${VERSION}_CVS_MD5_Signatures
 	cat signatures_header \
-	     >>  HPCM_CVS_MD5_Signatures
+	     >>  HPCM_${VERSION}_CVS_MD5_Signatures
 	echo "" \
-	     >> HPCM_CVS_MD5_Signatures
+	     >> HPCM_${VERSION}_CVS_MD5_Signatures
 	echo "HPCM Version: ${VERSION}" \
-	     >>  HPCM_CVS_MD5_Signatures
+	     >>  HPCM_${VERSION}_CVS_MD5_Signatures
 	echo "Date of Signatures:" \
 	     "`date`" \
-	     >>  HPCM_CVS_MD5_Signatures
+	     >>  HPCM_${VERSION}_CVS_MD5_Signatures
 	echo " ====== " " ====== " \
 	     " ====== " " ====== " \
 	     " ====== " " ====== " \
 	     " ====== " " ====== " \
-	     >> HPCM_CVS_MD5_Signatures
+	     >> HPCM_${VERSION}_CVS_MD5_Signatures
 	cd cvstmp; \
 	   md5sum `find . -type f -print` \
-	      >>  ../HPCM_CVS_MD5_Signatures
+	      >>  ../HPCM_${VERSION}_CVS_MD5_Signatures
 
 # Check CVS MD5 Signatures
 #
 md5cvscheck:	cvstmp
 	cd cvstmp; \
-	   sed < ../HPCM_CVS_MD5_Signatures \
+	   sed < ../HPCM_${VERSION}_CVS_MD5_Signatures \
 	       -e '1,/^ ====== /'d | \
 	       md5sum --check 2>&1 | \
 	       sed -e '/^[^ 	]*: OK$$/d'
@@ -236,12 +243,13 @@ tar:	hpcm_${VERSION}${TAREXT} \
         hpcm_solutions_${VERSION}${TAREXT} \
         hpcm_${NONDIS}_${VERSION}${TAREXT}
 
-hpcm_${VERSION}${TAREXT}:	HPCM_MD5_Signatures \
-                        hpcm_${VERSION}.files
+hpcm_${VERSION}${TAREXT}:	\
+		HPCM_${VERSION}_MD5_Signatures \
+		hpcm_${VERSION}.files
 	d=`pwd`;d=`basename $$d`; test $$d = hpcm
 	rm -f hpcm_${VERSION}${TAREXT}
 	cd ..; tar cf hpcm/hpcm_${VERSION}${TAREXT} \
-	   hpcm/HPCM_MD5_Signatures \
+	   hpcm/HPCM_${VERSION}_MD5_Signatures \
 	   `cat hpcm/hpcm_${VERSION}.files` \
 	   ${TARZIP}
 
@@ -288,16 +296,64 @@ hpcm_${NONDIS}_${VERSION}.files:	\
 	     | sed -e 's/^\./hpcm/' \
 	     > hpcm_${NONDIS}_${VERSION}.files
 
+web:	cleanweb hpcm_${VERSION}${TAREXT} \
+		 HPCM_${VERSION}_MD5_Signatures \
+		 HPCM_${VERSION}_CVS_MD5_Signatures \
+		 web_index.html
+	@if test "${HPCM_WEB_CONTACT}" = ""; \
+	then echo HPCM_WEB_CONTACT not set; \
+	     exit 1; fi
+	cd judge/doc; make overview.doc \
+			   installing_hpcm.doc \
+			   judging.doc
+	mkdir web
+	cp -p hpcm_${VERSION}${TAREXT} \
+	      hpcm_solutions_${VERSION}${TAREXT} \
+	      HPCM_${VERSION}_MD5_Signatures \
+	      HPCM_${VERSION}_CVS_MD5_Signatures \
+	      web
+	cp -p judge/doc/overview.doc \
+	      judge/doc/installing_hpcm.doc \
+	      judge/doc/judging.doc \
+	      web
+	sed   <web_index.html \
+	      -e '/VERSION/s//${VERSION}/g' \
+	      -e '/TAREXT/s//${TAREXT}/g' \
+	      -e '/CONTACT/s//${HPCM_WEB_CONTACT}/g' \
+	      > web/index.html
+	chmod 444 web/*
+	chmod 755 web
+	@if test "${HPCM_WEB_PASSWORD}" = ""; \
+	then echo HPCM_WEB_PASSWORD not set; \
+	     echo Not putting solutions into web; \
+	else make web_solutions; fi
+
+web_solutions:	web/index.html \
+		hpcm_solutions_${VERSION}${TAREXT}
+	test "${HPCM_WEB_PASSWORD}" != ""
+	mkdir web/private 
+	mkdir web/private/${HPCM_WEB_PASSWORD}
+	chmod 711 web/private
+	chmod 755 web/private/${HPCM_WEB_PASSWORD}
+	cp -p hpcm_solutions_${VERSION}${TAREXT} \
+	      web/private/${HPCM_WEB_PASSWORD}
+	sed <web_solutions_index.html \
+	    -e '/VERSION/s//${VERSION}/g' \
+	    -e '/TAREXT/s//${TAREXT}/g' \
+	    >web/private/${HPCM_WEB_PASSWORD}/index.html
+	chmod 444 web/private/${HPCM_WEB_PASSWORD}/*
+
+
 cleanall:
 	for x in `find . -name Makefile -print`; \
 	    do \
 	    ( cd `dirname $$x`; make clean ) \
 	    done
 
-clean:	cleantar cleanslocs cleancvs
+clean:	cleantar cleanslocs cleancvs cleanweb
 
 cleantar:
-	rm -f HPCM_MD5_Signatures \
+	rm -f HPCM_${VERSION}_MD5_Signatures \
 	      hpcm_${VERSION}.files \
 	      hpcm_solutions_${VERSION}.files \
 	      hpcm_${NONDIS}_${VERSION}.files \
@@ -310,4 +366,7 @@ cleanslocs:
 
 cleancvs:
 	rm -rf cvstmp
-	rm -f HPCM_CVS_MD5_Signatures
+	rm -f HPCM_${VERSION}_CVS_MD5_Signatures
+
+cleanweb:
+	rm -rf web web${TAREXT}
