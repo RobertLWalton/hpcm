@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/09/17 12:57:04 $
+#   $Date: 2001/09/17 13:15:41 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.15 $
+#   $Revision: 1.16 $
 
 # To make an informal contest named `foo':
 #
@@ -77,15 +77,17 @@
 #    After you follow an instruction, edit it out of
 #    the TODO file.
 #
+#    If an instruction says `rerun makejudgingdir',
+#    do this by rerunning `make'.
+#
 #    Among other things you will be asked to set edit
 #    authentication keys into hpcm_judging.rc in the
 #    judging directory and routing information into
 #    ~/.procmailrc.
 #
-#    For an informal contest, you may not need to
-#    edit the WHERE fields in the who_where file.  If
-#    you do not, printouts will contain the account
-#    name.
+#    For an informal contest, you may not need to edit
+#    the WHERE fields in the who_where file.  If you do
+#    not, printouts will contain the account name.
 
 #    Also, `make' executes `startcontest' so it is
 #    not necessary to execute that separately.
@@ -243,6 +245,16 @@
 #     can be checked by `make check_scoreboard',
 #     and the scoreboard can be instantly updated
 #     by `make update_scoreboard'.
+#
+#     The file ./contest/scoreboard.1head, which is
+#     prefixed to the file ./contest/scoreboard.1 when
+#     the latter is made automatically, can be
+#     edited to include contest announcements.  The
+#     ./contest/scoreboard.[234] files are the 2'nd,
+#     3'rd, and 4'th pages of the scoreboard, and can be
+#     created and edited to include more contest an-
+#     nouncements.  Only as many of these files as are
+#     needed should exist.
 #
 # 18. Contest judging is automatic.  If you set the
 #     `reply_manager' and `log_manager' variables to
