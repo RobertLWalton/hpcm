@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Feb 24 07:25:23 EST 2003
+# Date:		Tue Feb 25 06:38:02 EST 2003
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2003/02/24 12:23:26 $
+#   $Date: 2003/02/25 11:36:17 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.23 $
+#   $Revision: 1.24 $
 
 # To make a formal contest named `foo':
 #
@@ -284,6 +284,19 @@
 #
 #		make extract_replies
 #		make diff_replies
+#
+#     For the formal contest, there are no automatic
+#     replies for queries and system errors.  Some of
+#     the test messages sent by `make test' are queries
+#     or intentionally trigger system errors.  These
+#     should be verified by running `tracker' in the
+#     contest judging directory and replying using `er'
+#     and then `sr' under manualreply.  If this is done
+#     for ONLY queries and system errors before the
+#     `mbox' file mentioned above is made, and if NO
+#     actual editing is done during the `er' command,
+#     then `make diff_replies' above will also check
+#     the system response to queries and system errors.
 #
 #     It is also possible to transmit the contents of
 #     the hpcm/examples/test_submissions directory to
