@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: acm-cont $
-#   $Date: 2000/08/29 12:39:51 $
+#   $Date: 2000/08/29 12:55:55 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.24 $
+#   $Revision: 1.25 $
 #
 
 # Include this code in TCL program via:
@@ -180,7 +180,7 @@ proc log_error { error_output } {
 
     global argv0 argv errorCode errorInfo \
 	   default_log_directory \
-	   log_directory
+	   log_directory log_globally
 
     # Write error to standard output.
     #
