@@ -5,7 +5,7 @@
 #
 # File:		manualreply
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Aug 26 09:06:43 EDT 2001
+# Date:		Sat Sep  8 06:11:42 EDT 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/08/26 13:30:27 $
+#   $Date: 2001/09/08 10:43:22 $
 #   $RCSfile: manualreply,v $
-#   $Revision: 1.24 $
+#   $Revision: 1.25 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -160,18 +160,31 @@ set menu $main_menu
 
 set directory [file tail [pwd]]
 set proposed_score none
-
-set last_display file_list
 set last_file ""
-set window_error ""
 
-
-# Menu Loop
-# ---- ----
+# Procedure to recompute window_display for menu loop.
+#
+proc refresh_display {} {
 
-while { "yes" } {
+    global last_display last_file
 
-    refresh_file_list
+    if { $last_display == "file_list" } {
+	set_file_list_display
+    } else {
+	set_file_display $last_file
+    }
+}
+
+# Procedure to recompute window_info for menu loop.
+#
+proc refresh_info {} {
+
+    global proposed_score manual_score auto_score \
+    	   window_info_height directory menu \
+	   last_display last_file \
+	   scoring_instructions submitted_program
+
+    set old_info_height $window_info_height
 
     if { $proposed_score == "none" } {
 	if { $manual_score != "none" } {
@@ -208,14 +221,25 @@ Scores:    Auto:     $auto_score    Manual:\
     set_window_info "Directory: $directory$scoring_info
 $menu"
 
-    # Set the display after the window_info_height is
-    # determined.
+    # Refresh the display if window_info_height is
+    # changed.
     #
-    if { $last_display == "file_list" } {
-	set_file_list_display
-    } else {
-	set_file_display $last_file
+    if { $window_info_height != $old_info_height } {
+        refresh_display
     }
+}
+
+
+# Menu Loop
+# ---- ----
+
+refresh_file_list
+refresh_info
+set_file_list_display
+
+set window_error ""
+
+while { "yes" } {
 
     set window_prompt "> "
     display_window
@@ -232,29 +256,41 @@ $menu"
 	    regexp {^v *([0-9]*)$} $answer forget n
 	    if { [get_file $n] } {
 		view_file $last_file
-		set_file_display $last_file
+		set last_display file
 	    }
+	    refresh_file_list
+	    refresh_info
+	    refresh_display
 	}
         {^v } {
 	    regexp {^v +([^ ]*)$} $answer forget id
 	    if { [get_file $id] } {
 		view_file $last_file
-		set_file_display $last_file
+		set last_display file
 	    }
+	    refresh_file_list
+	    refresh_info
+	    refresh_display
 	}
 	{^e *[0-9]*$} {
 	    regexp {^e *([0-9]*)$} $answer forget n
 	    if { [get_file $n] } {
 		edit_file $last_file
-		set_file_display $last_file
+		set last_display file
 	    }
+	    refresh_file_list
+	    refresh_info
+	    refresh_display
 	}
 	{^e } {
 	    regexp {^e +([^ ]*)$} $answer forget id
 	    if { [get_file $id] } {
 		edit_file $last_file
-		set_file_display $last_file
+		set last_display file
 	    }
+	    refresh_file_list
+	    refresh_info
+	    refresh_display
 	}
 	{^c *[0-9]*$} {
 	    regexp {^c *([0-9]*)$} $answer forget n
@@ -276,6 +312,9 @@ $menu"
 		        "Checked $last_file"
 		}
 	    }
+	    refresh_file_list
+	    refresh_info
+	    refresh_display
 	}
 	{^u *[0-9]*$} {
 	    regexp {^u *([0-9]*)$} $answer forget n
@@ -297,12 +336,22 @@ $menu"
 		        "Unchecked $last_file"
 		}
 	    }
+	    refresh_file_list
+	    refresh_info
+	    refresh_display
 	}
-	{^ls$} { set last_display "file_list" }
+	{^ls$} {
+	    refresh_file_list
+	    refresh_info
+	    set_file_list_display
+	}
 	{^ir$} {
 	    compose_reply -all
 	    set last_file $reply_file+
 	    edit_file $last_file
+	    refresh_file_list
+	    refresh_info
+	    set_file_display $last_file
 	}
 	{^er$} {
 	    if { ! [file exists $reply_file+] } {
@@ -310,6 +359,9 @@ $menu"
 	    }
 	    set last_file $reply_file+
 	    edit_file $last_file
+	    refresh_file_list
+	    refresh_info
+	    set_file_display $last_file
 	}
 	{^sr$} {
 	    if { ! [file exists $reply_file+] } {
@@ -339,6 +391,9 @@ $menu"
 		    set window_error "Send ABORTED!"
 		}
 	    }
+	    refresh_file_list
+	    refresh_info
+	    refresh_display
 	}
 	{^nr$} {
 	    set window_error \
@@ -354,6 +409,9 @@ $menu"
 		write_file $no_reply_file $no_reply_line
 		set window_error "$no_reply_file written"
 	    }
+	    refresh_file_list
+	    refresh_info
+	    refresh_display
 	}
 	{^ss$} {
 	    if { $proposed_score == "none" } {
@@ -397,6 +455,9 @@ $menu"
 		}
 	    }
 	    set menu $main_menu
+	    refresh_file_list
+	    refresh_info
+	    refresh_display
 	}
 	{^aj$} {
 	    puts "Running autojudge"
@@ -407,34 +468,67 @@ $menu"
 		     $auto_score_file"
 	    }
 	    continue?
+	    refresh_file_list
+	    refresh_info
+	    refresh_display
 	}
-	{^sh$} { call_shell }
+	{^sh$} {
+	    call_shell
+	    refresh_file_list
+	    refresh_info
+	    refresh_display
+	}
 	{^ai$} {
 	    exec autoinfo >@ stdout 2>@ stderr
 	    continue?
+	    refresh_file_list
+	    refresh_info
+	    refresh_display
 	}
-	{^sm$} { set menu $scoring_menu }
-	{^mm$} { set menu $main_menu }
+	{^sm$} {
+	    set menu $scoring_menu
+	    refresh_info
+	}
+	{^mm$} {
+	    set menu $main_menu
+	    refresh_info
+	}
 	{^x$} {
 	    exit_cleanup
 	    exit 0
 	}
-	{^io$} { set proposed_score \
-		     "Incorrect Output" }
-	{^cc$} { set proposed_score\
-		     "Completely Correct" }
-	{^fe$} { set proposed_score\
-		     "Formatting Error" }
-	{^ic$} { set proposed_score\
-		     "Incomplete Output" }
-	{^se$} { set proposed_score\
-		     "Syntax Error" }
-	{^te$} { set proposed_score\
-		     "Cpu Time Limit Exceeded" }
-	{^pc$} { set proposed_score\
-		     "Program Crashed" }
-	{^oe$} { set proposed_score\
-		     "Output Size Exceeded" }
+	{^io$} {
+	    set proposed_score "Incorrect Output"
+	    refresh_info
+	}
+	{^cc$} {
+	    set proposed_score "Completely Correct"
+	    refresh_info
+	}
+	{^fe$} {
+	    set proposed_score "Formatting Error"
+	    refresh_info
+	}
+	{^ic$} {
+	    set proposed_score "Incomplete Output"
+	    refresh_info
+	}
+	{^se$} {
+	    set proposed_score "Syntax Error"
+	    refresh_info
+	}
+	{^te$} {
+	    set proposed_score "Cpu Time Limit Exceeded"
+	    refresh_info
+	}
+	{^pc$} {
+	    set proposed_score "Program Crashed"
+	    refresh_info
+	}
+	{^oe$} {
+	    set proposed_score "Output Size Exceeded"
+	    refresh_info
+	}
 	{^$} {
 	    if { [eof stdin] } {
 		exit_cleanup
