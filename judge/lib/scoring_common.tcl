@@ -2,7 +2,7 @@
 #
 # File:		scoring_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Apr 20 11:15:57 EDT 2004
+# Date:		Sun Nov 14 07:59:53 EST 2004
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2004/04/20 15:16:21 $
+#   $Date: 2004/11/14 13:12:48 $
 #   $RCSfile: scoring_common.tcl,v $
-#   $Revision: 1.43 $
+#   $Revision: 1.44 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -93,6 +93,11 @@
 # eof1' differences to signal `Formatting Error' instead
 # of `Incorrect Output' or `Incomplete Output'.
 #
+# The `nosign' and `nonumber' types may appear in
+# `instruction_array' but not in `score_array'.  These
+# are just options passed to scorediff that determine
+# how scorediff parses its input into words and numbers.
+#
 # `proof_array' is computed from all the proofs in the
 # .score file.  For each difference type, `proof_
 # array(type)' is a list of all the proofs in the .score
@@ -130,6 +135,16 @@ set score_filename ""
 #
 set fake_instruction_types {
     number space words-are-format
+}
+#
+# The following is a list of the scoring instruction
+# difference types that SHOULD be passed as options
+# to the scorediff program, but are not returned in the
+# first line of the scorediff output or stored in
+# `score_array'.
+#
+set option_instruction_types {
+    nosign nonumber
 }
 
 # Function to compute the `instruction_array' using
@@ -365,7 +380,7 @@ proc compute_score_file { outfile testfile scorefile } {
     global difference_type_proof_limit \
            instruction_array fake_instruction_types
 
-    set limits "-all $difference_type_proof_limit"
+    set options "-all $difference_type_proof_limit"
 
     foreach type [array names instruction_array] {
 
@@ -373,16 +388,16 @@ proc compute_score_file { outfile testfile scorefile } {
 	              $type] >= 0 } continue
 
 	set arguments $instruction_array($type)
-	set limits \
-	    [concat $limits \
+	set options \
+	    [concat $options \
 	            [list -[lindex $arguments 0]] \
 	            [lrange $arguments 1 end]]
         if { [lcontain {number integer float} $type] } {
-	    lappend limits $difference_type_proof_limit
+	    lappend options $difference_type_proof_limit
 	}
     }
 
-    eval [list exec scorediff] $limits \
+    eval [list exec scorediff] $options \
          [list $outfile $testfile > $scorefile]
 }
 
