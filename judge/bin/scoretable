@@ -6,7 +6,7 @@
 #
 # File:		scoreboard
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Sep 18 11:12:40 EDT 2000
+# Date:		Tue Sep 19 03:48:29 EDT 2000
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/09/18 15:28:34 $
+#   $Date: 2000/09/19 08:19:39 $
 #   $RCSfile: scoretable,v $
-#   $Revision: 1.3 $
+#   $Revision: 1.4 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -126,7 +126,8 @@ foreach submitter $scoreboard_submitters {
 
 # The value $submitter-array($problem) is a list of
 # items that represent the times and scores read from
-# the input.  Each item has the form
+# the input.  Here the `scores' are the codes `mc',
+# `ac' `mi', or `ai'.  Each item has the form
 #
 #	{ time-in-seconds score }
 #
@@ -184,20 +185,30 @@ set sorted_problems [lsort $scoreboard_problems]
 # Create the score list.  Each item in this list
 # has the form:
 #
-#	{ problems_correct time_score modifier
+#	{ ccc.ttttttttt.sss problems_correct
+#	  time_score modifier
 #	  submitter problem_score ... }
 #
-# This begins with the number of correct problems,
-# followed by the score in seconds.  The former is a 3
-# digit number with leading zeros, the later is a 10
-# digit number with leading zeros, so the items can be
-# sorted easily.  The modifier is `f' if all inputs
-# used to compute the previous numbers were final, and
-# `n' if some were not final.  The submitter is the
-# submitter: each submitter has one item in this list.
-# The problem_scores are the scores as they will be
-# printed in the output.
+# This begins with a code to sort on, followed by the
+# number of correct problems, followed by the score in
+# seconds.  The modifier is `f' if all inputs used to
+# compute the previous numbers were final, and `n' if
+# some were not final.  The submitter is the submitter:
+# each submitter has one item in this list.  The
+# problem_scores are the scores as they will be printed
+# in the output.
 #
+# In the sort code ccc is the number of correct problems
+# in three digits with leading zeros, ttttttttt is
+# 10**9 - 1 - the time_score, in 9 digits with leading
+# zeros, and sss is the total number of submissions,
+# in 3 digits with leading zeros (those with more sub-
+# missions are deemed more interesting, other things
+# being equal, which they may be true among submitters
+# with no correct submissions).  The sort code is
+# 000.999999999.000 iff the submitter has made no sub-
+# missions, and all the problem_scores are `......'.
+# 
 # To print an output line for the submitter, the sub-
 # mitter needs to be truncated to 8 characters and
 # printed left adjusted in 8 columns.  Each problem
@@ -216,6 +227,7 @@ foreach submitter $scoreboard_submitters {
     set problems_correct 0
     set modifier f
     set problem_scores ""
+    set submissions 0
 
     foreach problem $sorted_problems {
 	set problem_incorrect 0
@@ -225,7 +237,8 @@ foreach submitter $scoreboard_submitters {
 		[lsort \
 		   [set $submitter-array($problem)]] {
 	    set score [lindex $item 1]
-	    if { [lsearch -exact {mc ac} $score] } {
+	    if { [lsearch -exact {mc ac} $score] \
+                 >= 0 } {
 		set problem_time [lindex $item 0]
 		if { ! [regexp {^0*([1-9][0-9]*)$} \
 		               $problem_time forget \
@@ -236,6 +249,7 @@ foreach submitter $scoreboard_submitters {
 		    [expr { $problem_time \
 			    - \
 			    $scoreboard_start_time }]
+		incr submissions
 		break
 	    } else {
 		if { $score == "ai" \
@@ -243,6 +257,7 @@ foreach submitter $scoreboard_submitters {
 		    set problem_modifier n
 		}
 		incr problem_incorrect
+		incr submissions
 	    }
 	}
 
@@ -275,9 +290,14 @@ foreach submitter $scoreboard_submitters {
 	lappend problem_scores $problem_score
     }
 
+    set ccc [format {%03d} $problems_correct]
+    set ttttttttt \
+        [format {%09d} [expr 999999999 - $time_score]]
+    set sss [format {%03d} $submissions]
+
     lappend score_list \
-	    "[format {%03d} $problems_correct]\
-	     [format {%09d} [expr 1000000000 - $time_score]]\
+	    "$ccc.$ttttttttt.$sss\
+	     $problems_correct $time_score\
 	     $modifier $submitter $problem_scores"
 }
 
@@ -315,20 +335,16 @@ proc label_problems {} {
 #
 set current_problems_correct ""
 foreach item [lsort -decreasing $score_list] {
-    set problems_correct \
-    	[string trimleft [lindex $item 0] "0"]
-    if { $problems_correct == "" } {
-    	set problems_correct 0
+
+    if { [lindex $item 0] == "000.999999999.000" } {
+	break
     }
-    set time_score \
-    	[string trimleft [lindex $item 1] "0"]
-    if { $time_score == "" } {
-    	set time_score 0
-    }
-    set time_score [expr 1000000000 - $time_score]
-    set modifier [lindex $item 2]
-    set submitter [lindex $item 3]
-    set problem_scores [lreplace $item 0 3]
+
+    set problems_correct [lindex $item 1]
+    set time_score [lindex $item 2]
+    set modifier [lindex $item 3]
+    set submitter [lindex $item 4]
+    set problem_scores [lreplace $item 0 4]
     if { $modifier == "n" } {
     	set time_score "*$time_score"
     }
