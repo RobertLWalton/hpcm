@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Jan 22 22:00:20 EST 2002
+# Date:		Thu Jan 24 19:41:53 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/01/24 15:59:11 $
+#   $Date: 2002/01/25 00:42:52 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.68 $
+#   $Revision: 1.69 $
 #
 
 # Table of Contents
@@ -1137,90 +1137,29 @@ proc blank_body { ch } {
 # Scoring Reply Functions
 # ------- ----- ---------
 
-# Function to execute response instruction commands
-# after if-statement processing.
+# Function to process $response_instructions_file value
+# and produce a $reply_file+ file.
 #
-proc execute_response_commands { options commands } {
-
-    set count 0
-    set mode ""
-    set processed_commands ""
-    foreach command $commands {
-        incr count
-	if { [catch { llength $command }] } {
-	    error "In $response_instructions_file file\
-	           value, badly formatted command:\
-		   $command."
-	}
-        switch -- [lindex $command 0] {
-	    FINAL	-
-	    NON-FINAL	-
-	    NO-REPLY	{
-	        if { $count != 1 } {
-		    error "In\
-		           $response_instructions_file\
-			   file value, $command is not\
-			   the first executable\
-			   command."
-		}
-	    }
-	    BLANK		-
-	    INPUT		-
-	    RECEIVED-HEADER	-
-	    RECEIVED-BODY	{
-	        lappend processed_commands $command
-	    }
-
-	    LINE	-
-	    LINES	-
-	    BAR		{
-	        set new_command [lindex $command 0]
-		foreach string  \
-			[lrange $command 1 end] {
-		    regsub -all -- {-PROBLEM-} \
-		           $string $problem string
-		    regsub -all -- {-AUTO-SCORE-} \
-		           $string $auto_score string
-		    regsub -all -- {-MANUAL-SCORE-} \
-		           $string $manual_score string
-		    regsub -all -- {-PROPOSED-SCORE-} \
-		           $string $proposed_score string
-		    lappend new_command $string
-		}
-		lappend processed_commands $command
-	    }
-
-	    FIRST	-
-	    SUMMARY	{
-	        error "Not implemented yet: $command"
-	    }
-
-	    default	{
-		error "In $response_instructions_file\
-		       file, unrecognized command:\
-		       $command"
-	    }
-	}
-    }
-
-    if { $mode == "" } {
-	error "In $response_instructions_file file\
-	       first executable command is not\
-	       FINAL, NON-FINAL, or NO-REPLY"
-    }
-
-    eval compose_reply $options \
-         [list $processed_commands]
-}
-
-# Function to evaluate if-statement expression.
+# The global variables scoring_mode, auto_score,
+# manual_score, and proposed_score must be set.  The
+# latter two can be set to `None' if unused.
 #
-proc eval_response_if { item } {
-    global scoring_mode auto_score manual_score \
-           proposed_score
-    set manual [expr { $manual_score != "None" }]
-    set proposed [expr { $proposed_score != "None" }]
-    return [expr $item]
+# Returns a list of commands that are not executed but
+# to produce $reply_file+ but instead specify options
+# for disposition of $reply_file+.  Included are the
+# FINAL, NON-FINAL, NO-REPLY, and EDIT commands.
+#
+proc execute_response_instructions \
+    { response_instructions \
+      { compose_reply_options "" } } {
+
+    set commands ""
+    parse_block \
+        [concat $response_instructions \
+		$default_response_instructions] \
+	commands
+    return [execute_response_commands \
+    	        $compose_reply_options $commands]
 }
 
 # Function to execute the if-statements in a block and
@@ -1285,26 +1224,78 @@ proc parse_block { block commands } {
     return no
 }
 
-# Function to process $response_instructions_file value.
-# The global variables scoring_mode, auto_score,
-# manual_score, and proposed_score must be set.  The
-# latter two can be set to `None' if unused.
+# Function to evaluate if-statement expression.
 #
-proc execute_response_instructions \
-    { args } {
+proc eval_response_if { item } {
+    global scoring_mode auto_score manual_score \
+           proposed_score
+    set manual [expr { $manual_score != "None" }]
+    set proposed [expr { $proposed_score != "None" }]
+    return [expr $item]
+}
 
-    set i [llength $args]
-    incr i -1
-    set response_instructions [lindex $args $i]
-    incr i -1
-    set options [lrange $args 0 $i]
+# Function to execute response instruction commands
+# after if-statement processing.
+#
+proc execute_response_commands { options commands } {
 
-    set commands ""
-    parse_block \
-        [concat $response_instructions \
-		$default_response_instructions] \
-	commands
-    execute_response_commands $options $commands
+    set processed_commands ""
+    set return_commands ""
+    foreach command $commands {
+        incr count
+	if { [catch { llength $command }] } {
+	    error "In $response_instructions_file file\
+	           value, badly formatted command:\
+		   $command."
+	}
+        switch -- [lindex $command 0] {
+	    FINAL	-
+	    NON-FINAL	-
+	    NO-REPLY	-
+	    EDIT	{
+	        lappend return_commands $command
+	    }
+	    BLANK		-
+	    INPUT		-
+	    RECEIVED-HEADER	-
+	    RECEIVED-BODY	{
+	        lappend processed_commands $command
+	    }
+
+	    LINE	-
+	    LINES	-
+	    BAR		{
+	        set new_command [lindex $command 0]
+		foreach string  \
+			[lrange $command 1 end] {
+		    regsub -all -- {-PROBLEM-} \
+		           $string $problem string
+		    regsub -all -- {-AUTO-SCORE-} \
+		           $string $auto_score string
+		    regsub -all -- {-MANUAL-SCORE-} \
+		           $string $manual_score string
+		    regsub -all -- {-PROPOSED-SCORE-} \
+		           $string $proposed_score string
+		    lappend new_command $string
+		}
+		lappend processed_commands $new_command
+	    }
+
+	    FIRST	-
+	    SUMMARY	{
+	        error "Not implemented yet: $command"
+	    }
+
+	    default	{
+		error "In $response_instructions_file\
+		       file, unrecognized command:\
+		       $command"
+	    }
+	}
+    }
+
+    eval compose_reply $options $processed_commands
+    return $return_commands
 }
 
 # File Read/Write Functions
