@@ -13,24 +13,33 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: acm-cont $
-#   $Date: 2000/09/03 10:19:19 $
+#   $Date: 2000/09/09 20:11:09 $
 #   $RCSfile: hpcm_sandbox,v $
-#   $Revision: 1.3 $
+#   $Revision: 1.4 $
 
-cputime=60
-datasize=`expr 1 \* 1024 \* 1024`
-filesize=`expr 50 \* 1024`
-stacksize=`expr 1 \* 1024 \* 1024`
-openfiles=5
+# If you have a linux system you can symbolically
+# link this to ~/bin/hpcm_sandbox and use the problem
+# Makefiles.
+
+cputime=600
+datasize=`expr 4 \* 1024 \* 1024`
+filesize=`expr 4 \* 1024 \* 1024`
+stacksize=`expr 4 \* 1024 \* 1024`
+core=`expr 4 \* 1024 \* 1024`
+openfiles=30
+processes=30
 
 operation=""
+watch=""
 program=""
+badargs=""
 
 for arg in "$@"; do
 
     case "$arg" in
 	-cputime | -datasize | -filesize \
-	         | -stacksize | -openfiles )
+	         | -stacksize | -openfiles \
+		 | -processes | -core )
 	    if test -z "$operation"; then
 		operation=$arg
 	    else
@@ -58,36 +67,32 @@ for arg in "$@"; do
 		esac
 	    else
 	        number=$arg
-		scale=""
 	    fi
 
 	    case $operation in
 		-cputime )
-		    if test $cputime -lt $number; then
-			    cputime=$number
-		    fi
+		    cputime=$number
 		    ;;
 		-datasize )
-		    if test $datasize -lt $number; then
-			    datasize=$number
-		    fi
+		    datasize=$number
 		    ;;
 		-stacksize )
-		    if test $stacksize -lt $number; then
-			    stacksize=$number
-		    fi
+		    stacksize=$number
 		    ;;
 		-filesize )
-		    if test $filesize -lt $number; then
-			    filesize=$number
-		    fi
+		    filesize=$number
 		    ;;
 		-openfiles )
-		    if test $openfiles -lt $number; then
-			    openfiles=$number
-		    fi
+		    openfiles=$number
 		    ;;
-		* )	echo "ERROR: bad argument: $arg"
+		-processes )
+		    processes=$number
+		    ;;
+		-core )
+		    core=$number
+		    ;;
+		* )	echo ERROR: misplaced \
+				 argument: "$arg"
 			exit 1
 			;;
 	    esac
@@ -95,33 +100,146 @@ for arg in "$@"; do
 	    operation=""
 	    ;;
 
-	"" | -* )
-	    echo hi
-	    exit 1
+	-watch )
+	    watch=yes
+	    ;;
+
+	"" )
+	    ;;
+	    
+	-* )
+	    badargs="$badargs $arg"
 	    ;;
 
 	* )
 	    if test -z "$program"; then
 	    	program=$arg
 	    else
-	    	echo "ERROR: bad or extra arg: $arg"
-		exit 1
+		badargs="$badargs $arg"
 	    fi
 	    ;;
     esac
 
 done
 
-if test -z $program; then
-    echo $ERROR: no program specified
-    exit 1
+if test -z "$program" -o ! -z "$badargs"; then
+    if test ! -z "$badargs"; then
+	echo "ERROR: bad arguments: $badargs"
+    elif test -z "$program"; then
+	echo ERROR: no program specified
+    fi
+    echo "
+hpcm_sandbox [options] program
+
+    This program first checks its arguments for
+    options that set resource limits:
+
+      -cputime N     Cpu Time in Seconds (600)
+      -datasize N    Data Area Size in Bytes (4m)
+      -stacksize N   Stack Size in Bytes (4m)
+      -filesize N    Output File Size in Bytes (4m)
+      -core N        Core Dump Size in Bytes (4m)
+      -openfiles N   Number of Open Files (30)
+      -processes N   Number of Processes (30)
+
+    Here N is a positive decimal integer that can
+    end with \`k' to multiply it by 1024 or \`m' to
+    multiply it by 1024 * 1024.  The values above in
+    parentheses are the default values.
+
+    There is also another possible option:
+
+      -watch
+
+    With this option, this program forks with the
+    parent waiting for the child to complete the
+    the rest of this program's action.  If the
+    child terminates with a signal, the parent
+    prints an error message identifying the signal.
+    It does this using \`sys_siglist' (psignal(3))
+    and changes SIGKILL with measured CPU time over
+    the limit to SIGXCPU.  The parent returns a 0
+    exit code if the child does not terminate with a
+    signal, and returns 128 + the signal number as
+    an exit code if the child does terminate with
+    a signal.
+
+    Next, if this program's effective user ID is
+    \`root', this program eliminates any supplemen-
+    tary groups that the process might have, and
+    changes the effective user and group IDs to
+    those of \`sandbox', as looked up in /etc/passwd.
+
+    Then this program sets the real user and group
+    IDs to the effective user and group IDs, sets
+    the resource limits determined by the options
+    and defaults, sets the environment to contain
+    just "SANDBOX", and executes the program with
+    the given arguments.
+
+    Normally the \`sandbox' user is not allowed to
+    log in and owns no files or directories.
+
+    This version of the program actually emulates
+    the real hpcm_sandbox program, and does not
+    set some of the resource limits or change
+    the user and group IDs to \`sandbox'.
+"
 fi
 
-ulimit -Ht $cputime
-ulimit -Hd `expr $datasize / 1024`
-ulimit -Hf `expr $filesize / 1024`
-ulimit -Hs `expr $stacksize / 1024`
+ulimit -t $cputime
+ulimit -d `expr $datasize / 1024`
+ulimit -f `expr $filesize / 1024`
+ulimit -s `expr $stacksize / 1024`
+ulimit -c `expr $core / 1024`
+ulimit -u $processes
+ulimit -n $openfiles
 
-$program
+
+if test ! -z "$watch"; then
+    $program
+    status=$?
+    if test $status -ge 128; then
+        signal=`expr $status - 128`
+    	case $signal in
+	    1 ) signame=SIGHUP ;;
+	    2 ) signame=SIGINT ;;
+	    3 ) signame=SIGQUIT ;;
+	    4 ) signame=SIGILL ;;
+	    5 ) signame=SIGTRAP ;;
+	    6 ) signame=SIGABRT ;;
+	    6 ) signame=SIGIOT ;;
+	    7 ) signame=SIGBUS ;;
+	    8 ) signame=SIGFPE ;;
+	    9 ) signame=SIGKILL ;;
+	    10 ) signame=SIGUSR1 ;;
+	    11 ) signame=SIGSEGV ;;
+	    12 ) signame=SIGUSR2 ;;
+	    13 ) signame=SIGPIPE ;;
+	    14 ) signame=SIGALRM ;;
+	    15 ) signame=SIGTERM ;;
+	    16 ) signame=SIGSTKFLT ;;
+	    17 ) signame=SIGCHLD ;;
+	    18 ) signame=SIGCONT ;;
+	    19 ) signame=SIGSTOP ;;
+	    20 ) signame=SIGTSTP ;;
+	    21 ) signame=SIGTTIN ;;
+	    22 ) signame=SIGTTOU ;;
+	    23 ) signame=SIGURG ;;
+	    24 ) signame=SIGXCPU ;;
+	    25 ) signame=SIGXFSZ ;;
+	    26 ) signame=SIGVTALRM ;;
+	    27 ) signame=SIGPROF ;;
+	    28 ) signame=SIGWINCH ;;
+	    29 ) signame=SIGIO ;;
+	    30 ) signame=SIGPWR ;;
+	    * ) signame=UNKNOWN ;;
+	esac
+	echo "Program terminated by signal: $signame"
+	exit $status
+    fi
+else
+    $program
+fi
 
 exit 0
