@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Sep 16 04:09:52 EDT 2001
+# Date:		Mon Sep 17 08:56:25 EDT 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/09/16 07:56:35 $
+#   $Date: 2001/09/17 12:43:46 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.21 $
+#   $Revision: 1.22 $
 
 # To make an email contest named `foo':
 #
@@ -111,11 +111,12 @@ SCOREBOARD_ADDRESS="password"<account@computer>
 # INDICES below is a description of the help, problems,
 # and demos files to be available to contestants.
 # INDICES consists of a series of entries each concern-
-# ing an index file.  For #example, the entry:
+# ing an index file.  For example, the entry:
 #
 #	    ${HPCM}/contestant/help/index, \
 #		common/=help/, \
 #		email/=help/, \
+#		advanced/=help/, \
 #		    email:include, \
 #		    common:include \
 #		    advanced:include \
@@ -137,8 +138,8 @@ SCOREBOARD_ADDRESS="password"<account@computer>
 # all replacements are made in the first line of the
 # item, the item is used if and only if it has the
 # `include' option.  And if used, the item represents a
-# file or subdirectory in one of the three directories
-# `help/', `demos/', or `problems/'.
+# file or subdirectory in one of the three contest di-
+# rectories `help/', `demos/', or `problems/'.
 #
 # Note that in `help/index' the items already have the
 # `include' option.  `help/index' is used to start the
