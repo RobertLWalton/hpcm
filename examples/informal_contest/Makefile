@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Feb 19 03:12:44 EST 2002
+# Date:		Tue Feb 19 03:46:43 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/02/19 08:43:45 $
+#   $Date: 2002/02/19 08:58:48 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.23 $
+#   $Revision: 1.24 $
 
 # To make an informal contest named `foo':
 #
@@ -255,6 +255,29 @@
 #
 # 17. Test the contest by using the test contestant
 #     account.  Try submitting the demos/count solution.
+#
+# 18. You can also test the contest by executing `make
+#     test'.  Then read the email replies and compare
+#     the X-HPCM-Test-Subject field with the results in
+#     the body of the email.  You can also extract the
+#     replies from your email, if you like, with the
+#     help of the hpcm_extract_test_replies program, and
+#     compare them with the .reply files in the hpcm/
+#     examples/test_submissions directory.
+#
+#     It is also possible to transmit the contents of
+#     the hpcm/examples/test_submissions directory to
+#     the test contestant account and in the test ac-
+#     count directory use `make test_informal' to send
+#     test submissions.
+#
+#     Note that one of the submissions times out, and
+#     for that the autojudge will take over a minute to
+#     reply.
+#
+#     You can run subsets of the tests by using `make
+#     test_xxx' for various `xxx;: see hpcm/examples/
+#     test_submissions/Makefile.mk.
 
 # The location of the hpcm directory.
 #
@@ -364,9 +387,13 @@ update_scoreboard:
 
 dangerous_clean:
 	rm -rf mail help flag log \
-	       solutions* TODO \
-	       contest/problems* contest/demos* \
-	       contest/help* contest/scoreboard.1
+	       solutions* info* TODO *.reply \
+	       contest/help* contest/scoreboard.1 \
+	       contest/printer_map \
+	       contest/printer \
+	       contest/printer_jobs \
+	       contest/who_where \
+	       contest/secure
 
 
 # Tests
@@ -381,4 +408,4 @@ TEST_PREREQUISITES=
 include ${HPCM}/examples/test_submissions/Makefile.mk
 
 test_dangerous_clean:
-	rm -rf mail/* flag log
+	rm -rf mail/* flag log *.reply
