@@ -1,24 +1,23 @@
-#! /bin/csh -f
+#! /bin/sh -f
 
-if ( -f ~acm-cont/contestant/lib/who-where ) then
-    set whowhere=`fgrep $user ~acm-cont/contestant/lib/who-where`
-    set who = `echo "$whowhere" | cut -d: -f2`
-    set where=`echo "$whowhere" | cut -d: -f3`
+progdir=`dirname "$0"`
+libdir="$progdir/../lib"
+user=`id -un`
+
+if test -f $libdir/who-where; then
+    whowhere=`grep "^$user:" $libdir/who-where`
+    who=`echo "$whowhere" | cut -d: -f2`
+    where=`echo "$whowhere" | cut -d: -f3`
 else
-    set who = ""
-    set where=""
-endif
+    who="$user"
+    where=""
+fi
 
-if ( -f ~acm-cont/contestant/lib/contest-printer ) then
-    setenv PRINTER `cat ~acm-cont/contestant/lib/contest-printer`
-endif
+if test -f $libdir/contest-printer; then
+    PRINTER=`cat $libdir/contest-printer`
+fi
 
-( eval "banner '' $user '' '$where' '' $who"; \
-  'echo' '\f'; \
-  /usr/5bin/pr -f -l64 -e -o4 $argv:q ) | \
-  enscript -g -l -M Letter -f Courier10 -p - | \
-  lpr -h -P$PRINTER
+enscript -j -b "\$n|%E  %C  $who($user) at $where|\$% of \$=" \
+	-F Courier-Bold12 -f Courier11 -P $PRINTER "$@"
 
-
-# Quotes around echo are to force use of the utility that translates \f.
-# The lpr at the end is because enscript -h doesn't seem to work.
+exit 0

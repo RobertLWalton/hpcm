@@ -1,25 +1,27 @@
-#! /bin/csh -f
+#! /bin/sh -f
 
-if ( -f ~acm-cont/contestant/lib/who-where ) then
-    set whowhere=`fgrep $user ~acm-cont/contestant/lib/who-where`
-    set who = `echo "$whowhere" | cut -d: -f2`
-    set where=`echo "$whowhere" | cut -d: -f3`
+progdir=`dirname "$0"`
+libdir="$progdir/../lib"
+user=`id -un`
+
+if test -f $libdir/who-where; then
+    whowhere=`grep "^$user:" $libdir/who-where`
+    who=`echo "$whowhere" | cut -d: -f2`
+    where=`echo "$whowhere" | cut -d: -f3`
 else
-    set who = ""
-    set where=""
-endif
+    who="$user"
+    where=""
+fi
 
-if ( -f ~acm-cont/contestant/lib/contest-printer ) then
-    setenv PRINTER `cat ~acm-cont/contestant/lib/contest-printer`
-endif
+if test -f $libdir/contest-printer; then
+    PRINTER=`cat $libdir/contest-printer`
+fi
 
-set tmp="/tmp/:${$}:"
-rm -f $tmp
+enscript -2r -j -b "\$n|%E  %C  $who($user) at $where|\$% of \$=" \
+	-F Courier-Bold12 -f Courier7 -P $PRINTER "$@"
 
-eval "banner '' $user '' '$where' '' $who" > $tmp
-enscript -2r -p - $tmp $argv:q | \
-  lpr -h -P$PRINTER
+exit 0
 
-rm -f $tmp
-
-# The lpr at the end is because enscript -h doesn't seem to work.
+#------------------------------------------------------------------------------X
+
+#------------------------------------------------------------------------------X
