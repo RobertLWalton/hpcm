@@ -2,7 +2,7 @@
 #
 # File:		display_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Jan 29 10:55:18 EST 2002
+# Date:		Wed Jan 30 01:00:24 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/01/29 16:00:53 $
+#   $Date: 2002/01/30 06:00:50 $
 #   $RCSfile: display_common.tcl,v $
-#   $Revision: 1.27 $
+#   $Revision: 1.28 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -784,7 +784,7 @@ proc get_file { id } {
 
 # Read a 1-line file and return its line.  Check for
 # the file being non-existing, unreadable, and empty,
-# and in these cases return `none', `UNREADABLE', and
+# and in these cases return `None', `UNREADABLE', and
 # `EMPTY'.
 #
 proc read_score { score_file } {
@@ -801,7 +801,7 @@ proc read_score { score_file } {
 	    }
 	}
     } else {
-	return none
+	return None
     }
 }
 
@@ -815,7 +815,7 @@ proc read_auto_score {} {
     set auto_score [read_score $auto_score_file]
 }
 set read_array($auto_score_file) read_auto_score
-set auto_score none
+set auto_score None
 
 # Read $manual_score_file
 #
@@ -826,7 +826,7 @@ proc read_manual_score {} {
     set manual_score [read_score $manual_score_file]
 }
 set read_array($manual_score_file) read_manual_score
-set manual_score none
+set manual_score None
 
 # Read $scoring_instructions_file
 #
