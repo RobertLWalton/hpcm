@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Aug  2 10:27:20 EDT 2002
+# Date:		Tue Sep 24 08:39:41 EDT 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,15 +11,15 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/08/02 14:27:36 $
+#   $Date: 2002/09/24 12:41:31 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.9 $
+#   $Revision: 1.10 $
 
-# To make web help pages, execute `make web_page' and
-# copy the `web' directory to you web server, where it
-# will become a directory containing an `index.html'
-# file.  The web.tar file contains the contents of the
-# `web' directory, to make copying easy.
+# To make web help pages, execute `make web' and copy
+# the `web' directory to you web server, where it will
+# become a directory containing an `index.html' file.
+# The web.tar file contains the contents of the `web'
+# directory, to make copying easy.
 
 all:	emailsh
 
@@ -48,7 +48,13 @@ email/sh/hpcm_clisp.lsp:
 	cd email/sh; \
 	    ln -s ../../../bin/hpcm_clisp.lsp .
 
-web_page:	all
+
+# Web_do merely causes `make web' to remake the
+# web directory even if it exists.
+#
+web_do:
+
+web:	all web_do
 	rm -rf web.tar web
 	mkdir web
 	cp -rpL `ls|grep -v '^web$$'` web
