@@ -5,7 +5,7 @@
 #
 # File:		autojudge
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Jan  6 11:29:34 EST 2002
+# Date:		Mon Jan  7 06:13:34 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/01/06 19:28:10 $
+#   $Date: 2002/01/07 11:57:18 $
 #   $RCSfile: autojudge,v $
-#   $Revision: 1.56 $
+#   $Revision: 1.57 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -105,12 +105,27 @@ autojudge \[problem\[.extension\]\]
     	maybe
     $reply_file to be generated early.
 
-    First, this program verifies the existence of a so-
-    lution directory for the problem and symbolically
-    links the `$files_file' file from this directory\
-    	into
-    the current directory, if that file exists.  If this
-    file does not exist, it is given the default value:
+    In general, this program may detect two kinds of
+    errors: system errors and submitter errors.  A
+    system error means the judging files are incorrectly
+    set up, and a submitter error means the submitter
+    sent the wrong information.  On a system error, this
+    program logs the error in an error log file in the
+    current directory and prints information about the
+    error to the standard error output.  On a submitter
+    error, this program creates a $reply_file file that
+    contains a description of the error and sends this
+    to the submitter as the final word on the submis-
+    sion.  In either case this program terminates after
+    reporting the error.
+
+    At its beginning, this program verifies the exis-
+    tence of a solution directory for the problem and
+    symbolically links the `$files_file' file from this\
+    	di-
+    rectory into the current directory, if that file
+    exists.  If the file does not exist, it is given the
+    default value:
 
         -LINK-
 	    { $make_file $make_file.EXTENSION\
@@ -121,7 +136,7 @@ autojudge \[problem\[.extension\]\]
 	    $scoring_instructions_file
 	    $scoring_filter_file
 	    { PROBLEM.ftest PROBLEM.fout PROBLEM.ftest }
-
+
     The `$files_file' file is interpreted as a TCL list
     (with list elements separated by spaces, tabs, or
     new lines) whose elements are special symbols, file
@@ -131,7 +146,7 @@ autojudge \[problem\[.extension\]\]
     items following a special symbol S but before the
     next special symbol are governed by S.  This program
     understands the following three special symbols:
-
+
     	-SOLUTION-MAKE-	The list items governed by
 			-SOLUTION-MAKE- are the names of
 			files that are to be `made' in
@@ -159,14 +174,14 @@ autojudge \[problem\[.extension\]\]
     name can appear several times in the list: e.g.,
     a file name can appear governed by -SOLUTION-MAKE-
     and then again governed by -LINK-.
-
+
     Each item governed by one of the three special
     symbols listed above is either a file name or a list
     of file names.  In any file name, the basename
     `PROBLEM' is replaced by the problem name and the
     extension name `EXTENSION' is replaced by the sub-
     mission extension name.
-
+
     -LINK- and -OPTIONAL-LINK- items may be a { } brac-
     ketted list of file names.  In this case, the first
     file name F is the file name in the current direc-
@@ -188,7 +203,7 @@ autojudge \[problem\[.extension\]\]
     file name F is equivalent to the item `{ F F }'.
 
     The only difference between -LINK- and -OPTIONAL-
-    LINK- is that for -LINK- it is a system error if
+    LINK- is that for -LINK- it is an error if
     after taking the above actions the file F being
     created in the local directory does not exist;
     whereas for -OPTIONAL-LINK- it is no error at all
@@ -202,10 +217,10 @@ autojudge \[problem\[.extension\]\]
     If no extension is given to this program with the
     problem name, any file name whose extension is
     `EXTENSION' is treated as naming a file that does
-    not exist and cannot be created.  It is a system
-    error to try to create such a file, but it is not an
-    error to try to use such a file if it is not an
-    error for the file not to exist.
+    not exist and cannot be created.  It is an error to
+    try to create such a file, but it is not an error to
+    try to use such a file if it is not an error for the
+    file not to exist.
 
     Thus in the default value of the `$files_file' file
     given above, the file named $make_file in the cur-
@@ -215,8 +230,8 @@ autojudge \[problem\[.extension\]\]
     indicated file exists in the solution directory.
     Otherwise the file is linked to $make_file in the
     solution directory, if that file exists.  Otherwise
-    there is a system error, as $make_file is -LINK- and
-    not -OPTIONAL-LINK-.
+    there is an error, as $make_file is -LINK- and not
+    -OPTIONAL-LINK-.
 
     In linking any `$files_file' file from the solution
     directory, this program behaves as if there were
@@ -230,6 +245,17 @@ autojudge \[problem\[.extension\]\]
     	$files_file.EXTENSION
     is preferred over `$files_file'.
 
+    It is an error if the solution directory has no
+    `$files_file' file but does have `$files_file.*'\
+    	files,
+    none of which match the extension given by the sub-
+    mitter.
+
+    All errors involving linking are submitter errors if
+    there might be some extension that the submitter
+    could specify which would make the submission cor-
+    rect.  Otherwise the errors are system errors.
+
     After linking any `$files_file' file from the\
     	solution
     directory, this program makes any files governed
@@ -238,8 +264,13 @@ autojudge \[problem\[.extension\]\]
     ready exist in the solution directory, this program
     excutes `make F' in the solution directory.  During
     this process this program locks the solution direc-
-    tory with a $dispatch_pid_file file.
-
+    tory with a $dispatch_pid_file file.  Note that
+    `PROBLEM' or `EXTENSION' are not substituted for in
+    -SOLUTION-MAKE- file names; but the same effect can
+    be had by having different `$files_file.EXTENSION'\
+    	files
+    for different extensions.
+
     Next this program calls `extractmail' to extract the
     submitted files from the program.  If there is a
     non-system error in this extraction, this program
@@ -259,7 +290,7 @@ autojudge \[problem\[.extension\]\]
     may be made as a consequence of a -SOLUTION-MAKE-
     item (which may or may not name the file to be link-
     ed directly).
-
+
     Next this program makes the program binary by using
     the $make_file.  Any compiler error messages are
     captured in a .cerr file.  If no executable binary
@@ -276,7 +307,7 @@ autojudge \[problem\[.extension\]\]
     runs
 
     	$scoring_filter_file <PPP.out >PPP.fout
-
+
     to make the .fout file, where PPP is the problem
     name.  It is a system error if the\
         $scoring_filter_file
@@ -292,7 +323,7 @@ autojudge \[problem\[.extension\]\]
     determined without it, i.e., if the score is deter-
     mined by the .err file or if the .out file does not
     exist or is empty.
-
+
     Lastly, this program may create a `$reply_file'
     and send it as email to the submitter.  It does this
     if the score is `Completely Correct' or the scoring_
@@ -312,7 +343,7 @@ autojudge \[problem\[.extension\]\]
     erate a final reply.
 
     This program prints information about its progress.
- 
+ 
     Unless this program creates a $reply_file file that
     is intended to be the final reply to the submitter
     (because the score is `Completely Correct' or the
@@ -331,13 +362,17 @@ autojudge \[problem\[.extension\]\]
     tory $score_flag_file file), to signal that any\
 	score-
     boards need to be recomputed.
-
-    If something goes very wrong, such as finding that
-    the `$received_file' file is not readable, or having
-    `extractmail' return a system error, this program
-    creates an error log file in the current directory,
-    prints information about the error to the standard
-    error output, and exits with exit code 0."
+
+    Problem names that contain `/' or `.' or begin with
+    `-' or have no solution directory are illegal, and
+    are submitter errors.  Similarly extension names
+    that contain `/' or are listed in the `allowed_
+    extensions' global variable are illegal and are sub-
+    mitter errors.  It is a system error if the
+    `$received_file' file is not readable, if a\
+	`$files_file'
+    file is misformatted, or if `extractmail' returns a
+    system error."
 
 # If too many arguments or -doc argument, print docu-
 # mentation and exit.
