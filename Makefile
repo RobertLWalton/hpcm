@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/01/10 10:26:05 $
+#   $Date: 2001/01/10 10:39:11 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.12 $
+#   $Revision: 1.13 $
 
 # See STATUS file for description of versions.
 #
@@ -100,3 +100,9 @@ non-distributable-files-${VERSION}:	\
 	     non-distributable.files \
 	     | sed -e 's/^\./hpcm/' \
 	     > non-distributable-files-${VERSION}
+
+clean:
+	rm -f distributable-files-${VERSION} \
+	      non-distributable-files-${VERSION} \
+	      hpcm-VERSION}.tar \
+	      hpcm-non-distributable-${VERSION}.tar
