@@ -3,7 +3,7 @@
 #
 # File:		scoreboard_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Feb 10 04:46:30 EST 2002
+# Date:		Sat Feb 16 21:18:03 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -12,9 +12,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/02/10 10:36:02 $
+#   $Date: 2002/02/17 02:18:57 $
 #   $RCSfile: scoreboard_common.tcl,v $
-#   $Revision: 1.34 $
+#   $Revision: 1.35 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -319,7 +319,7 @@ proc prune_scoreboard_array { } {
 		set t [lindex $item 0]
 		regexp {^0+(0|[1-9].*)$} $t forget t
 		set c [lindex $item 1]
-		if { $c != "d" } {
+		if { $c != "g" } {
 		    unset scoreboard_array($sap)
 		    continue
 		}
