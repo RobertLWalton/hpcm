@@ -4,7 +4,7 @@
 #
 # File:		overview
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Mar 18 18:12:55 EST 2002
+# Date:		Wed Oct 30 21:11:32 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/03/18 23:11:31 $
+#   $Date: 2002/10/31 02:53:02 $
 #   $RCSfile: overview,v $
-#   $Revision: 1.67 $
+#   $Revision: 1.68 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -45,6 +45,7 @@ puts "
 	Library Data: System Maintenance
 	Contest Definition Data: The Judging Directory
 	Contest Definition Data: The Contest Directory
+	Contest Definition Data: Web Pages
 	Contest Definition Data: The Home Directory
 	Contest Definition Data: Contestant Accounts
 	Contest Definition Data: Auxiliary Files
@@ -105,6 +106,11 @@ following features:
     o Supports running long term contests and multiple
       simultaneous contests.
 
+    o Supports contests in which problems are timed and
+      supports contests in which problems are not timed
+      and the scoreboard shows only the date a problem
+      was solved by a contestant.
+
     o Keeps a complete log of everything that happens
       during contests in the form of files that can be
       easily analyzed for different purposes.
@@ -139,11 +145,11 @@ TCL can be obtained at:	 	www.scriptics.com
 
 You may need TCL version 8.0 or later.  You will need
 a version of TCL that includes Extended TCL.
-
+
 Bash can be obtained at:
 
 	www.gnu.org/software/bash/bash.html
-
+
 A suitable JAVA can be obtained from
 
 	www.javasoft.com
@@ -169,7 +175,7 @@ and install HPCM.  HPCM can be obtained from
 	www.deas.harvard.edu/~hc3/hpcm
 
 
-
+
 Creating a Contest
 -------- - -------
 
@@ -183,14 +189,18 @@ to get a good idea of what you are creating.  The file
 
 explains what each of these files contains and suggests
 an order in which these files may be read.
-
+
 Then choose the type of contest you want to create
 (email, informal, formal) and read the instructions in
 
 	hpcm/examples/<contest-type>_contest/Makefile
 
 This file also contains basic advice on how to judge
-the contest.
+the contest.  There is also a type of contest known as
+a `web contest' which is just an email contest in which
+the problem descriptions are placed on the web and the
+scoreboard shows the date a solution was submitted
+instead of a problem time.
 
 You should also read
 
@@ -198,7 +208,7 @@ You should also read
 
 and try to understand the parameters in that file as
 best you can.
-
+
 In order to better understand what you are doing, you
 may wish to read the following overview, and then read
 the individual program documentation for some of the
@@ -219,11 +229,11 @@ Data and Programs
 ---- --- --------
 
 HPCM handles different categories of data:
-
+
 Library Data
     Problem descriptions, help documentation files,
-    example contest parameter files, and system mainten-
-    ance files.
+    example contest parameter files, system maintenance
+    files, and system test files.
 
 Contest Definition Data
     Files that define a contest, including documentation
@@ -238,7 +248,7 @@ Contest Raw Data
 Contest Derived Data
     Scoreboards and contest tracking summaries.
 
-
+
 HPCM also contains several different categories of
 programs:
 
@@ -254,7 +264,7 @@ Contest Making Programs
 Maintenance Programs
     Programs run to maintain the library, produce doc-
     umentation, or test the HPCM system.
-
+
 Common Functions
     Functions usable by HPCM TCL programs.  These come
     in several different packages, including one general
@@ -276,7 +286,7 @@ own directory within the problem library.  The last
 component of the name of this directory is the name of
 the problem, and is also the basename of files describ-
 ing the problem and solving the problem.
-
+
 The library problem directories are placed within one of
 following subdirectories of the hpcm/problem_library
 directory:
@@ -289,7 +299,7 @@ directory:
 		strictions on verbatim redistribution,
 		and with no restriction on alteration
 		unless otherwise indicated.
-
+
 	private	Problems that cannot be redistributed
 		to the public.  These have been taken
 		off the web in most cases, and can be
@@ -311,7 +321,7 @@ are in the directory
 
 	hpcm/problem_library/legal
 
-
+
 If a problem has name `pppp', then the problem has a
 problem directory named `pppp' within one of the
 directories just mentioned, and the following files
@@ -323,7 +333,7 @@ within this problem directory:
 
     Makefile	Gives instructions for compiling and
                 running the problem solution.
-
+
 These files are made available to the contestant, though
 in a formal contest only Makefiles are made available
 electronically, and problem description files are only
@@ -349,7 +359,7 @@ A contest has a solutions directory that contains sym-
 bolic links to the library problem directories for every
 problem that can be judged during the contest.  The
 files just mentioned become input to the judging.
-
+
 In addition to the files already mentioned, the library
 problem directory usually contains a judge's solution
 written in one of the contest programming languages.
@@ -361,7 +371,8 @@ possibilities are:
     pppp.cc	C++ language solution.
     pppp.java	JAVA language solution.
     pppp.p	PASCAL language solution.
-
+    pppp.lsp	COMMONLISP language solution.
+
 The programming languages allowed may vary; but every
 solution language must be explicitly supported by the
 problem Makefile.
@@ -388,7 +399,7 @@ limits and so that the standard input and output are
 mapped to the pppp.in file and the pppp.out file, re-
 spectively.  Running the solution program using the
 Makefile reads or creates the following temporary files:
-
+
     pppp.in	Solution input.
     pppp.out	Solution output.
     core	Dump of program if it crashes.
@@ -396,7 +407,7 @@ Makefile reads or creates the following temporary files:
 It is important to note that the solution code should
 NOT open any files.  Also, the standard error output is
 sent to the terminal, and NOT to a file.
-
+
 The `make' command in the problem directory makes the
 binary program if that does not exist or it is older
 than the solution source file, and then makes the
@@ -425,7 +436,7 @@ cannot be found by the `sandbox' user.  One fix for this
 currently is to run the programs manually by
 
 	pppp <pppp.in >pppp.out
-
+
 Another fix is to do a
 
 	chmod a+x .. ../.. ../../.. ../../../..
@@ -434,7 +445,7 @@ in the library problem directory; but this has the dis-
 advantage that contestants will then be able to read any
 *.class files in this and other library problem direc-
 tories: see `Contest Definition Data: Security' below.
-
+
 Some things change if a problem directory also contains
 a file named:
 
@@ -464,11 +475,12 @@ same `Case 5' line, but of course it would not have the
 same `Case 6' line.  Note that the $scoring_filter_file\
 	pro-
 gram can input pppp.in and even pppp.test.
-
+
 Lastly, the `make clean' command in the problem direc-
 tory deletes all temporary files, including `pppp',
 `pppp.out', `pppp.fout', `core', and `.class' files.
-
+
+
 Library Data: Complex Problems
 ------- ----- ------- --------
 
@@ -745,6 +757,7 @@ system root (hpcm) directory effects is
 
 in which `make' stores copies of all per-program docu-
 mentation.
+
 
 
 
@@ -1285,6 +1298,41 @@ components that contestants can access.
 	.hpcm_contest/trashable file.
 
 
+
+Contest Definition Data: Web Pages
+------- ---------- ----- --- -----
+
+Two directories can be made that can become web page
+sets if copied to an appropriate internet server.  These
+are
+
+    ~/hpcm/contestant/help/web
+        Made by `make web' in the ~/hpcm/contestant/help
+	directory, this web page set contains all the
+	help and demo files.
+
+    ~/judging_cccc_ppppppppppp/web
+        Made by `make web' in the judging directory
+	~/judging_cccc_ppppppppppp, this set of web
+	pages contains the problem statements and
+	optionally the problem solutions.
+
+	For some contests this set of web pages is
+	posted after the contest is over.
+
+	A `web contest' is a form of email contest where
+	problem descriptions are placed on the web in
+	this set of web pages.  Because problem descrip-
+	tions are available before contestants interact
+	with the autojudge, problems cannot be timed in
+	a web contest, and the scoreboard displays only
+	the dates of correct solutions.
+
+	The `make web' command in the judging directory
+	invokes the makeweb program whose parameters are
+	the web page parameters in hpcm_judging.rc.
+
+
 Contest Definition Data: The Home Directory
 ------- ---------- ----- --- ---- ---------
 
@@ -1386,7 +1434,7 @@ After making the following:
 				the contestant
 				accounts and their
 				passwords.
-
+
     ~JJJ/contest_cccc/secure/trashable
     				A list of the accounts
 				for which TRASH_
@@ -1400,7 +1448,7 @@ very easily by logging in as root and running:
  	./hpcm_make_accounts ~JJJ/contest_cccc
  	./hpcm_set_passwords ~JJJ/contest_cccc
  	./hpcm_TRASH_ACCOUNTS ~JJJ/contest_cccc
-
+
 The first of three programs run here makes the accounts
 listed in secure/passwords, the second sets the pass-
 words of these accounts, and the third runs TRASH_
@@ -1426,7 +1474,7 @@ files need special attention:
 	should also include these.  Other changes are
 	likely to be useful: see SETUP_PROTOTYPE docu-
 	mentation for details.
-
+
     .procmailrc
 
         This file must be included in the prototype home
@@ -1440,7 +1488,7 @@ files need special attention:
 	may be shared between informal and formal con-
 	tests.  See SETUP_PROTOTYPE documentation for
 	details.
-
+
     .ssh/authorized_keys
     or
     .ssh/authorized_keys2
@@ -2591,6 +2639,10 @@ The following programs are used to make contests:
     	Make the contest definition files starting
 	from parameters to this program (usually
 	contained in a Makefile) and hpcm_judging.rc.
+
+    hpcm/judge/bin/makeweb
+    	Make a web page set containing problem state-
+	ments and optionally problem solutions.
     	
     hpcm/judge/bin/fprint
     	Print 56 column line files, 2 file pages per
@@ -2609,11 +2661,11 @@ The following programs are used to make contests:
     hpcm/contestant/bin/SETUP_PROTOTYPE
     	Setup the prototype account and the files needed
 	by TRASH_ACCOUNT.
-
+
     hpcm/contestant/bin/TRASH_ACCOUNT
         Initialize (or reinitialize) the files and dir-
 	ectories of a contestant account.
-
+
     hpcm/secure/bin/hpcm_make_accounts
 	Create all the contestant accounts.
 
@@ -2635,7 +2687,6 @@ maintenance.
     			document.
     judging		Print the `HPCM Judging' docu-
     			ment on how to judge contests.
-
     makeMakefile	Make problem Makefiles from an-
     			other problem Makefile that acts
 			as a template.
@@ -2715,13 +2766,16 @@ functions.  A brief summary of these functions is:
     proc link_file { source { target . } }
         Symbolically link source to target.
 
+    proc copy_file { source target }
+        Copy a file.
+
     proc grant_access { filename { allow rx } }
     	Add a+x, a+r, or a+w permissions to file or
 	directory.
-
+
     proc get_access { filename }
         Discover `a' permissions of file.
-
+
     proc deny_access { filename }
         Deny all permissions for a file or directory
 	except to owner.
@@ -2757,11 +2811,11 @@ functions.  A brief summary of these functions is:
     proc display_process_tree { root_pid }
         Display the processes in the process tree rooted
 	at a given process ID.
-
+
     proc process_found { display }
         Returns true iff root process existed when
 	display_process_tree returned display.
-
+
     proc signal_process_tree { signal root_pid }
         Send a KILL or INT signal to all the processes
 	in a process tree rooted at a given process ID.
