@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Feb  8 03:51:05 EST 2002
+# Date:		Sat Feb  9 08:58:49 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/02/08 08:57:43 $
+#   $Date: 2002/02/09 15:58:28 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.100 $
+#   $Revision: 1.101 $
 
 # Table of Contents:
 #
@@ -46,6 +46,9 @@
 # the file containing the `source' statement can itself
 # be sourced with any descendant directory as the
 # current directory.
+#
+# This file is sourced by code in judging_common.tcl.
+# See the `Inline Code' in that file.
 
 # Scoreboard Parameters
 # ---------- ----------
@@ -53,42 +56,102 @@
 # All times are in a format that TCL `clock scan'
 # can convert.  Most date formats work.
 
-# Contest start, stop, and freeze times.
+# Contest start, stop, freeze, and cut times.
 #
-# The start and stop times are used in actually com-
-# puting the scoreboard proper (by the `scoreboard'
+# The start, stop, and cut times are used in actually
+# computing the scoreboard proper (by the `scoreboard'
 # program), as follows.
 #
-# If the start time is not "" or "team", all submis-
-# sions and problem gettings before the given start time
-# are ignored.  If the start time is "", the time a
-# problem is gotten is used as the start time for that
-# problem.  If the start time equals "team", the time
-# the team got its first problem listed in the score-
-# board is the start time for all problems for that
-# team.  If the time problems were gotten cannot be
-# determined, as in a formal contest, problem start
-# times are undetermined if the start time is "" or
-# "team".
+# If the start time is not "" or "team", it is a date
+# and time (a legal argument for `clock scan') and is
+# the start times of all problems.  Any problem which
+# was gotten or first submitted before this start time
+# is ignored.
 #
-# If the stop time is not "", all submissions after the
-# given stop time are ignored.
+# If the start time is "", the time a problem is gotten
+# is used as the start time for that problem.  If the
+# start time equals "team", the time the team got its
+# first problem permitted by the scoreboard_problems
+# global variable (see below) is the start time for all
+# problems for that team.  In both these cases, if the
+# first submission regarding a problem is not a get of
+# that problem, then the problem is ignored.  Such gets
+# happen in email and informal contests, and not in
+# formal contests, so the start time of a formal contest
+# must be a date and time.
+#
+# Cut times are used to exclude teams that stopped
+# early.  They permit a team to simultaneously enter
+# several contests of different durations with the same
+# problems.   Each contest has cut times that exclude
+# teams that do not make submissions within a certain
+# period after the team start time.  More specifically,
+# a team is excluded from the contest if it does not
+# either make a correct submission at or after the
+# `correct cut time' and at or before the `final cut
+# time', or make an incorrect submission at or after
+# the `incorrect cut time' and at or before the `final
+# cut time'.  Cut times can be given as date and time,
+# or they can be given as integers which are numbers
+# of seconds added to the problem start time.
+# 
+# A non "" stop time excludes submissions made after the
+# stop time (this is done AFTER the cut time rules have
+# been applied).  A stop time can be a date and time, or
+# it can be an integer that is added to the start time
+# of the problem.
 #
 # The freeze time is only used as a parameter in score-
 # board instructions used by the `makescoreboard' pro-
 # gram, and is usually used only for formal contests.
+# It may be given in date and time format, or as a
+# number of seconds after a start time that is given in
+# date and time format.
  
 # The default values are for scoreboarding a practice
-# facility that operates 24 hours a day, every day.
+# facility that operates 24 hours a day, every day and
+# allows individuals to tackle one problem at a time.
 #
 set scoreboard_start_time ""
-#   "Jan 1 10:00:00 EDT 2000"
-#
 set scoreboard_freeze_time ""
-#   "Jan 1 14:00:00 EDT 2000"
-#
 set scoreboard_stop_time ""
-#   "Jan 1 15:00:00 EDT 2000"
+set scoreboard_correct_cut_time ""
+set scoreboard_incorrect_cut_time ""
+set scoreboard_final_cut_time ""
+
+# The following values are for a typical 5 hour formal
+# contest (adjust the start time).
+#
+# set scoreboard_start_time "Jan 1 10:00:00 EST 2000"
+# set scoreboard_freeze_time [expr { 4 * 60 * 60 }]
+# set scoreboard_stop_time [expr { 5 * 60 * 60 }]
+# set scoreboard_correct_cut_time ""
+# set scoreboard_incorrect_cut_time ""
+# set scoreboard_final_cut_time ""
+
+# The following values are for an informal team 4 hour
+# contest in which teams can choose their own starting
+# time.  The teams effectively participate in simultan-
+# eous 3, 4, and 5 hour contests: a team that gives up
+# after 3 hours is deemed to have NOT enterred the 4
+# and 5 hour contests.  A team has enterred the 4 hour
+# contest if it makes a correct submission after 3 hours
+# but at or before 5 hours and 10 minutes, or if it
+# makes an incorrect submission after 3 hours but at
+# or before 5 hours and 10 minutes.  The final cut time
+# permits teams to come back and work on problems the
+# next day for practice without affecting the score-
+# board.
+#
+# set scoreboard_start_time team
+# set scoreboard_freeze_time ""
+# set scoreboard_stop_time [expr { 4 * 60 * 60 }]
+# set scoreboard_correct_cut_time \
+#     [expr { 3 * 60 * 60 }]
+# set scoreboard_incorrect_cut_time \
+#     [expr { 3 * 60 * 60 + 10 * 60  }]
+# set scoreboard_final_cut_time \
+#     [expr { 5 * 60 * 60 + 10 * 60  }]
 
 # Scoreboard name.  Typically just the name of the
 # contest.  Used by NAME abbreviation in `scoreboard_
@@ -105,6 +168,10 @@ set scoreboard_name ""
 # of a problem that was submitted correctly.
 #
 set scoreboard_penalty 0
+#
+# A 20 minute penalty is typical if there is a penalty.
+#
+# set scoreboard_penalty [expr { 20 * 60 }]
 
 # Logical expressions specifying problems and submit-
 # ters.  Each logical expression is a TCL list whose
@@ -158,9 +225,14 @@ set scoreboard_submitters { }
 set scoreboard_width 80
 
 # Characters used to mark lines if there are more than
-# two lines worth of problems.
+# two lines worth of problems.  The first line always
+# uses a space character to separate columns; and the
+# last line uses underbar characters everywhere space
+# characters are used.  If there are N > 2 lines, the
+# n'th line for 1 < n < N uses the n-1'st character of
+# the following string as a column separator.
 #
-set scoreboard_markers "@%#^$<&>"
+set scoreboard_markers "|$!#^%@<>"
 
 # List of addresses for `makescoreboard' to email
 # scoreboard to.  If scoreboard_instructions includes
@@ -176,7 +248,7 @@ set scoreboard_markers "@%#^$<&>"
 #	  chmod a+r public_html/xxx
 #
 # See documentation for `scoreboard_instructions' for
-# more details.
+# more details and additional SEND features.
 #
 set scoreboard_addresses { }
 
@@ -201,6 +273,7 @@ set scoreboard_interval 60
 #	    | GRANT_ACCESS
 #	    | BLANK
 #	    | BAR
+#	    | { BAR center-text }
 #           | { LINE left-text [center-text
 #                                   [right-text]] }
 #	    | { INPUT filename ... }
@@ -243,6 +316,12 @@ set scoreboard_interval 60
 #
 #     BAR	Include a ===== bar line.
 #
+#     { BAR center-text }
+#		Include a ===== bar line that has the
+#		text centered in the line, with single
+#		space characters separating the text
+#		from the ===='s.
+#
 #     { INPUT filename ... }
 #		Include a copy of a first readable file
 #		in the list of files.  Do nothing of no
@@ -267,9 +346,10 @@ set scoreboard_interval 60
 #
 # An output file is not actually written until the next
 # OUTPUT command or the end of the instructions. All
-# file names are relative to the judging directory.  The
-# current value of the `scoreboard_width' parameter is
-# used by the LINE and BAR instructions.
+# non-absolute file names are relative to the judging
+# directory.  The current value of the `scoreboard_
+# width' parameter is used by the LINE and BAR instruc-
+# tions.
 #
 # If a non "" start time is given in an OUTPUT instruc-
 # tion, that output will not be produced until after

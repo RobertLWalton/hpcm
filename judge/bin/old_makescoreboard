@@ -4,7 +4,7 @@
 #
 # File:		makescoreboard
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Oct 30 11:11:29 EST 2001
+# Date:		Sat Feb  9 10:38:27 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/10/30 16:12:35 $
+#   $Date: 2002/02/09 15:55:13 $
 #   $RCSfile: old_makescoreboard,v $
-#   $Revision: 1.30 $
+#   $Revision: 1.31 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -393,12 +393,31 @@ proc process_instructions {} {
 
     # Save abbreviations.
     #
-    set abbreviation_array(START)  \
-        $scoreboard_start_time
-    set abbreviation_array(STOP)   \
-        $scoreboard_stop_time
-    set abbreviation_array(FREEZE) \
-	$scoreboard_freeze_time
+    set start_time $scoreboard_start_time
+    set abbreviation_array(START) $start_time
+
+    if { ! [regexp {^(|team)$} $start_time] } {
+        set st [clock scan $start_time]
+    } else {
+        set st ""
+    }
+
+    set stop_time $scoreboard_stop_time
+    if {    [regexp {^(|\+)[0-9]+$} $stop_time] \
+         && $st != "" } {
+        set stop_time \
+	    [clock format [expr { $st + $stop_time }]]
+    }
+    set abbreviation_array(STOP) $stop_time
+
+    set freeze_time $scoreboard_freeze_time
+    if {    [regexp {^(|\+)[0-9]+$} $freeze_time] \
+         && $st != "" } {
+        set freeze_time \
+	    [clock format [expr { $st + $freeze_time }]]
+    }
+    set abbreviation_array(FREEZE) $freeze_time
+
     set abbreviation_array(NAME)   \
         $scoreboard_name
     set abbreviation_array(TIME)   \
@@ -684,9 +703,11 @@ proc pass2 { instructions pc end_pc update } {
     # Compute BAR.
     #
     set bar ""
+    set solid_bar =====
     set w [expr { $scoreboard_width / 5 } ]
     while { $w > 0 } {
 	set bar "$bar== =="
+	set solid_bar $solid_bar=====
 	incr w -1
     }
 
@@ -735,7 +756,33 @@ proc pass2 { instructions pc end_pc update } {
 	    }
 
 	    BAR_yes {
-		set contents "$contents$bar\n"
+	        set text [lindex $instruction 1]
+		if { $text == "" } {
+		    set contents "$contents$bar\n"
+		} else {
+		    set sw $scoreboard_width
+		    set len [string length $text]
+		    incr len 2
+		    if { $len + 4 > $sw} {
+		        error "scoreboard_width not\
+			       wide enough for\
+			       `$instruction'"
+		    }
+		    set left \
+		        [expr { ( $sw - $len ) / 2 }]
+		    set right \
+		        [expr { $sw - $len - $left }]
+		    incr left -1
+		    incr right -1
+		    set left \
+		        [string range $solid_bar \
+			        0 $left]
+		    set right \
+		        [string range $solid_bar \
+			        0 $right]
+		    set contents \
+		        "$contents$left $text $right\n"
+		}
 	    }
 
 	    LINE_yes {
