@@ -5,7 +5,7 @@
 #
 # File:		scorefinder
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Jun 30 02:53:06 EDT 2001
+# Date:		Thu Jul 19 09:24:18 EDT 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/06/30 07:10:40 $
+#   $Date: 2001/07/19 13:47:58 $
 #   $RCSfile: scorefinder,v $
-#   $Revision: 1.9 $
+#   $Revision: 1.10 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -51,25 +51,27 @@ scorefinder \[-gotten\]
 
     In this line, the date is taken literally from the
     subdirectory name.  The submitter is taken from the
-    directory name but has any `@' and characters
-    following the `@' stripped off.  The program is the
-    submitted file name with its extension removed; this
-    is found by reading the subject field of any
-    $received_file file in the subdirectory, and using
-    the problem name `UNKNOWN' if this cannot be done
-    or the subject field has the wrong format.  The
+    directory name and passed through the submitter_
+    compress function, which for some contests strips
+    any `@' and following characters, and for other con-
+    tests compresses what follows the `@'.  The program
+    is the submitted file name with its extension re-
+    moved; this is found by reading the subject field of
+    any $received_file file in the subdirectory, and
+    using the problem name `UNKNOWN' if this cannot be
+    done or the subject field has the wrong format.  The
     code is one of:
 
       mc  $manual_score_file	== `Completely Correct'
       mi  $manual_score_file	!= `Completely Correct'
       ac  $auto_score_file	== `Completely Correct'
       ai  $auto_score_file	!= `Completely Correct'
-
+
     where the $auto_score_file file is ignored if the
     $manual_score_file file exits.  The score is the
     actual score used to compute the code, quoted by
     \"'s.
-
+
     If the -gotten option is present, this program also
     selects subdirectories which contain the file:
 
@@ -132,7 +134,7 @@ foreach dir [glob -nocomplain \
     	continue;
     }
 
-    regexp {^([^@]*)@} $submitter forget submitter
+    set submitter [submitter_compress $submitter]
     if { $submitter == "" } {
 	set submitter UNKNOWN
     }
