@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/08/25 14:41:25 $
+#   $Date: 2001/08/25 15:45:17 $
 #   $RCSfile: display_common.tcl,v $
-#   $Revision: 1.6 $
+#   $Revision: 1.7 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -26,7 +26,8 @@
 #	Response Functions
 #	Locking Functions
 #	File List
-#	Reading Files
+#	File Creating
+#	File Cacheing
 #	Displaying Files
 #	Reply Functions
 
@@ -634,19 +635,24 @@ proc refresh_file_list { } {
     }
 }
 
-# Given a file number, set `last_file' to the name of
+# Given a file id, set `last_file' to the name of
 # the corresponding file, set `window_error' to "", and
 # return `yes'.  If there is an error, leave `last_file'
 # alone, set `window_error' to the error description,
 # and return `no'.
 #
-# Whenever `last_file' is changed, if the new name is
-# of the form $submitted_program.ext for some extension
-# ext, and the array entry make_file_array(.ext) exists,
-# the value of that array entry is called to make or
-# update the new `last_file' file.  The called procedure
-# may not succeed: its perfectly possible to set `last_
-# file' to a non-existant file.
+# The file id may be a number in the file list, may be
+# a file extension, or if it begins with an upper case
+# letter, may be an initial segment of the file name.
+# It is an error if it is ambiguous.
+#
+# Whenever `last_file' is changed, if the new name is of
+# the form xxx.ext for some extension ext, and the array
+# entry make_file_array(.ext) exists, the value of that
+# array entry is called with the file name as argument
+# to make or update the new `last_file' file.  The
+# called procedure may not succeed: its perfectly
+# possible to set `last_file' to a non-existant file.
 #
 proc get_file { id } {
 
@@ -710,6 +716,24 @@ proc get_file { id } {
     }
     return yes
 }
+
+# File Creation
+# ---- --------
+#
+# Following data and functions create files that are
+# one the display list but may not exist yet or may
+# be out of date.
+
+# If a file with name of the form xxx.ext for some
+# extension ext is to be displayed, and the array
+# entry make_file_array(.ext) exists, the value of that
+# array entry is called with the file name as argument
+# to make or update the file.  The called procedure need
+# not succeed: the file need not exist after the
+# procedure finished.
+
+set make_file_array(.diff) make_diff
+set make_file_array(.bdiff) make_diff
 
 # Procedure to make xxx.diff or xxx.bdiff if possible.
 #
@@ -748,14 +772,12 @@ proc make_diff { file } {
                  [list $out_file $test_file \
 		       >>& $diff_file] }
 }
-set make_file_array(.diff) make_diff
-set make_file_array(.bdiff) make_diff
 
-# Reading Files
-# ------- -----
+# File Cacheing
+# ---- --------
 #
 # Following data and functions copy information from
-# files in the current directory into variables within
+# files in the display `file_list' into variables within
 # this program whenever the files change.
 
 # Read a 1-line file and return its line.  Check for
