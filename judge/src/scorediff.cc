@@ -2,7 +2,7 @@
 //
 // File:	scorediff.cc
 // Authors:	Bob Walton (walton@deas.harvard.edu)
-// Date:	Sat Oct 28 22:24:12 EDT 2000
+// Date:	Mon Oct 30 06:10:10 EST 2000
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: hc3 $
-//   $Date: 2000/10/30 04:37:08 $
+//   $Date: 2000/10/30 16:29:32 $
 //   $RCSfile: scorediff.cc,v $
-//   $Revision: 1.14 $
+//   $Revision: 1.15 $
 
 // This is version 2, a major revision of the first
 // scorediff program.  This version is more explicitly
@@ -230,6 +230,12 @@ char documentation [] =
 \n"
 ;
 
+// A token is either a number token, an end of file
+// (eof) token, or character token, which means a
+// character not in a number.
+//
+enum token_type { NUMBER, EOF, CHARACTER };
+
 struct file
 {
     ifstream stream;	// Input stream.
@@ -237,17 +243,23 @@ struct file
 
     // Token description.
     //
-    char token [ MAX_SIZE + 1 ]; // The current token.
-    int line;		// Line number of current token.
-    			// First line is 1.
+    token_type type;	// Type of tokens.
+    char tokens [ MAX_SIZE + 1 ]; // The current tokens.
+    			// There is either just one nu-
+			// meric or eof token, or there
+			// are one or more consecutive
+			// character tokens that were
+			// scanned together for effici-
+			// ency.
+    int count;		// Number of tokens.  1 for
+    			// number or eof token.
+    int line;		// Line number of current
+    			// tokens.  The first line is 1.
     int column;		// Column within the line of
     			// the last character of the
-			// current token.  The first
-			// column is 0.
-    bool is_eof;	// True iff the current token
-    			// is an end-of-file.
-    bool is_number;	// True iff the current token
-    			// is a number.
+			// last of the current tokens.
+			// The first column is 0.
+
     double number;	// For a number token, the
     			// value of the number.
     int decimals;	// For a number token, the
@@ -259,12 +271,14 @@ struct file
 
     // Whitespace description.
     //
-    char token [ MAX_SIZE + 1 ]; // Whitespace preced-
-    			// ing the current token.
+    char whitespace [ MAX_SIZE + 1 ]; // Whitespace pre-
+    			// ceding the current tokens.
+    int wslength;	// Number of characters of
+    			// whitespace in above.
     int newlines;	// Number of new line characters
     			// in this whitespace.
 
-    // Set to backup in input string when scantoken
+    // Set to backup in input string when scan_token
     // determines it has not been passed a number or
     // exponent.  Possible values are:
     //
@@ -272,10 +286,10 @@ struct file
     //		e    e+   e-   E    E+   E-
     //
     // Also set to the single character following a
-    // number, whatever that may be.
+    // number or sequence of non-number tokens.
     //
     // Must be such that the backup is empty when
-    // scantoken decides to put something in the
+    // scan_token decides to put something in the
     // backup.
 
     char * back;	// If pointing at `\0', there
@@ -309,8 +323,7 @@ int open ( file & f, char * filename )
     f.token[0]		= 0;
     f.column		= -1;
     f.line		= 0;
-    f.is_number		= false;
-    f.is_eof		= false;
+    f.type		= CHARACTER;
     f.whitespace[0]	= 0;
 }
 
@@ -348,9 +361,9 @@ void token_too_long ( file & f ) {
 
 // Scan next token.
 //
-void scantoken ( file & f )
+void scan_token ( file & f )
 {
-    if ( f.is_eof ) return;
+    if ( f.type == EOF ) return;
 
     int c = get_character ( f );
     int column = f.column + 1;
@@ -383,10 +396,10 @@ void scantoken ( file & f )
     * wp = 0;
 
     if ( c == EOF ) {
-    	f.is_eof = true;
-	f.column = column;
-	f.is_number = false;
-	f.token[0] = 0;
+    	f.type		= EOF;
+	f.count		= 1;
+	f.column	= column;
+	f.token[0]	= 0;
 	return;
     }
 
@@ -412,11 +425,11 @@ void scantoken ( file & f )
 	    c = get_character ( f );
 	    ++ column;
 
-	    if ( ! isdigit ( c ) ) goto backout;
+	    if ( ! isdigit ( c ) ) goto non_number;
 	    break;
 
 	default:
-	    if ( ! isdigit ( c ) ) goto backout;
+	    if ( ! isdigit ( c ) ) goto non_number;
 	}
 	break;
 
@@ -425,17 +438,11 @@ void scantoken ( file & f )
 	c = get_character ( f );
 	++ column;
 	++ decimals;
-	if ( ! isdigit ( c ) ) goto backout;
+	if ( ! isdigit ( c ) ) goto non_number;
 	break;
 
     default:
-        if ( ! isdigit ( c ) ) {
-	    * tp ++ = c;
-	    * tp ++ = '\0';
-	    f.is_number = false;
-	    f.column = column;
-	    return;
-	}
+        if ( ! isdigit ( c ) ) goto non-number;
 	break;
     }
 
@@ -445,7 +452,7 @@ void scantoken ( file & f )
     c = get_character ( f );
     ++ column;
 
-    f.is_number = true;
+    f.type = NUMBER;
 
     // Get rest of mantissa.
     //
@@ -469,8 +476,8 @@ void scantoken ( file & f )
 
     if ( c == 'e' || c == 'E' ) {
 
-        char * expp = tp;
-	int expcolumn = column;
+        char * ep = tp;
+	int ecolumn = column;
 
 	if ( tp < endtp ) * tp ++ = c;
 	else token_too_long ();
@@ -489,10 +496,10 @@ void scantoken ( file & f )
 	if ( ! isdigit ( c ) ) {
 	    assert ( * f.back == 0 );
 	    * tp = 0;
-	    strcp ( backup, expp );
+	    strcp ( backup, ep );
 	    f.back = f.backup;
-	    tp = expp;
-	    column = expcolumn;
+	    tp = ep;
+	    column = ecolumn;
 	} else {
 	    do {
 		if ( tp < endtp ) * tp ++ = c;
@@ -506,12 +513,13 @@ void scantoken ( file & f )
 
     * tp = 0;
 
-    f.column = -- column;
-    f.decimals = decimals;
+    f.column	= -- column;
+    f.decimals	= decimals;
 
     assert ( * f.back == 0 );
 
     if ( c != EOF ) {
+	assert ( * f.back == 0 );
 	f.back = f.backup;
 	f.backup[0] = c;
 	f.backup[1] = 0;
@@ -528,18 +536,35 @@ void scantoken ( file & f )
 
     return;
 
-// Come here if partial number scanned and found
-// not to be a number.
+// Come here if we have concluded that the characters
+// scanned into f.tokens so far are not part of a
+// number or eof token.
 //
-backout:
-    column -= tp - f.token;
-    * tp ++ = c;
+non_number:
+
+    while ( 1 ) {
+        if ( isspace ( c ) || isdigit ( c ) ) break;
+	if ( c == '+' || c == '-' || c == '.' ) break;
+	if ( c == EOF ) break;
+	if ( tp >= endtp ) break;
+
+	* tp ++ = c;
+	c = get_character ( f );
+	++ column;
+    }
+    f.column	= -- column;
+    f.count	= tp - f.tokens;
+    f.type	= CHARACTER;
+
     * tp ++ = 0;
-    strcpy ( f.backup, f.token + 1 );
-    f.back = f.backup;
-    f.token[1] = 0;
-    f.column = column;
-    f.is_number = false;
+
+    if ( c != EOF ) {
+	assert ( * f.back == 0 );
+	f.back = f.backup;
+	f.backup[0] = c;
+	f.backup[1] = 0;
+    }
+
     return;
 }
 
@@ -640,13 +665,16 @@ int main ( int argc, char ** argv )
     open ( file1, argv[1] );
     open ( file2, argv[2] );
 
-    // Loop that reads the two files and compares
-    // their characters (in c1 and c2), setting flags
-    // describing any differences found.
+    // Loop that reads the two files and compares their
+    // tokens, setting flags describing any differences
+    // found.
 
-    bool spacebreak	= false;	// Difference
-    bool linebreak	= false;	// flags.
+    bool linebreak	= false;	// Difference
+    bool spacebreak	= false;	// flags.
     bool whitespace	= false;
+    bool beginspace	= false;
+    bool linespace	= false;
+    bool endspace	= false;
     bool eof1		= false;
     bool eof2		= false;
     bool number		= false;
@@ -659,48 +687,87 @@ int main ( int argc, char ** argv )
     double number_absdiff	= 0.0;	// Numeric
     double number_reldiff	= 0.0;	// differences.
 
-    // Current characters from the two files.
+    // Scan the first tokens.
     //
-    int c1 = getc ( file1 );
-    int c2 = getc ( file2 );
+    scan_token ( file1 );
+    scan_token ( file2 );
 
-    // Flags that are true iff the current characters
-    // follow whitespace.
-    //
-    bool follows_whitespace1 = false;
-    bool follows_whitespace2 = false;
+    bool done		= false;
 
-    while (1)
+    while ( ! done )
     {
-        // At this point the last thing in each file
-	// before c1 or c2 is one of:
-	//
-	//	the beginning of file
-	//	a scanned number
-	//	a scanned stretch of whitespace
-	//	a character not in a number or
-	//		whitespace
-	//
-	// Furthermore, one of these things preceeds c1
-	// in file1 iff the same kind of thing preceeds
-	// c2 in file2, except that one character can
-	// follow whitespace and the other may not.
-	//
-	// Scanned numbers and whitespace are as long as
-	// possible, so a character c1 or c2 could not
-	// be part of a preceeding number or whitespace.
-	// Exceptions to this rule are made if:
-	//
-	//	(1) c1 and c2 are both preceeded by
-	//	    equal sign characters, + or -,
-	//	    that may start a number
-	//      (2) c1 and c2 are both whitespace
-	//          characters and are preceeded by
-	//          identical whitespace
+        // Truncate whitespace if just one file has an
+	// EOF.
 
-        if ( c1 == EOF )
+	if ( file1.type == EOF && file2.type != EOF )
+	    eof_truncate ( file1, file2 );
+	else
+	if ( file2.type == EOF && file1.type != EOF )
+	    eof_truncate ( file2, file1 )
+
+        // Compare whitespace preceding tokens.
+
+	if ( file1.newlines != file1.newlines )
+	    linebreak = true;
+	else
 	{
-	    if ( c2 == EOF ) break;
+	    char * wp1		= file1.whitespace;
+	    char * wp2		= file2.whitespace;
+	    int newlines	= 0;
+
+	    while (1) {
+		while ( * wp1 == * wp2 ) {
+		    if ( * wp1 == 0 ) break;
+		    if ( * wp1 == '\n' ) ++ newlines;
+		    ++ wp1, ++ wp2;
+		}
+
+		if ( * wp1 == * wp2 ) break;
+
+		while ( * wp1 && * wp1 != '\n' ) ++ wp1;
+		while ( * wp2 && * wp2 != '\n' ) ++ wp2;
+
+		if ( newlines == 0 ) {
+		    if ( file1.newlines == 0 )
+			whitespace = true;
+		    else
+			beginspace = true;
+		}
+		else if ( newlines == file1.newlines )
+		    endspace = true;
+		else
+		    linespace = true;
+	    }
+	}
+        
+	// Compare tokens.
+	//
+        switch ( file1.type ) {
+	case CHARACTER:
+	    switch ( file2.type ) {
+	    case EOF:
+	    	done = eof2 = true;
+		break;
+	    case NUMBER:
+	        done = nonblank = true;
+		break;
+	    case CHARACTER:
+	    	char * tp1 = file1.tokens;
+	    	char * tp2 = file2.tokens;
+
+		while ( * tp1 == * tp2 && * tp1 )
+		    ++ tp1, ++ tp2;
+
+	        if ( * tp1 == * tp2 ) break;
+
+		if ( toupper ( * tp1 ) == toupper ( * tp2 ) )
+		TBW
+	    }
+	case NUMBER:
+	case EOF:
+        if ( file1.is_eof )
+	{
+	    if ( file2.is_eof ) break;
 
 	    if ( isspace ( c2 ) )
 	    {
