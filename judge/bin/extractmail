@@ -4,7 +4,7 @@
 #
 # File:		extractmail
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Nov 24 06:01:36 EST 2001
+# Date:		Sat Nov 24 06:20:08 EST 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/11/24 11:16:35 $
+#   $Date: 2001/11/24 12:37:31 $
 #   $RCSfile: extractmail,v $
-#   $Revision: 1.24 $
+#   $Revision: 1.25 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -83,11 +83,11 @@ cd submission_directory; extractmail
 			solution directory.
 
     File names before any special symbol are treated as
-    `-REQUIRED-'.  These special symbols can appear any
-    number of times in the list and will affect all file
-    names following them but before the next special
-    symbol in the list.  The `extractmail' program
-    ignores `-LINK-' file names.
+    `-REQUIRED-'.  Special symbols can appear any number
+    of times in the list and apply to all file names
+    following them but before the next special symbol in
+    the list.  The `extractmail' program ignores
+    `-LINK-' file names.
 
     If there is no `$files_file' file, there is exactly\
     	one
@@ -128,12 +128,13 @@ cd submission_directory; extractmail
     following way.  The first block of non-blank lines
     at the beginning of the file is searched for text of
     the form `File: FFFF', where FFFF is the filename.
-    This text must appear within a single line, and may
+    This text must appear within a single line, must
     be preceded or followed by whitespace (spaces or
-    tabs), and may have any or no whitespace between the
-    `:' and FFFF.  The FFFF contains only non-whitespace
-    characters.  It is an error if there are extra
-    such pieces of text in a file, or if a file does not
+    tabs) or line boundaries, and may have any or no
+    whitespace between the `:' and FFFF.  The FFFF
+    contains only non-whitespace characters.  It is a
+    possibly undetected error if there are extra such
+    pieces of text in a file, or if a file does not
     specify its name in this manner and there is more
     than one possible submission file.
 
@@ -151,11 +152,16 @@ cd submission_directory; extractmail
     if the $received_file or `$files_file' files are
     unreadable."
 
+# If there are arguments, print documentation and exit.
+#
 if { $argc != 0 } {
     puts $document
     exit 1
 }
 
+# Print error message to standard error output and exit
+# with cleanup.
+#
 proc extract_error { message } {
     puts stderr $message
     exit_cleanup
@@ -177,7 +183,6 @@ read_header $received_ch
 if { [llength $message_subject] == 0 } {
     extract_error \
         "ERROR: Missing or empty `Subject:' field"
-    exit 0
 } elseif { [lindex $message_subject 0] != "submit" } {
     extract_error \
 	"ERROR: Badly formatted subject field:\
@@ -210,7 +215,7 @@ if { [regexp {\.} $problem] } {
 #
 if { [file exists $files_file] } {
 
-    if { [catch { set filenames \
+    if { [catch { set filelist \
 		      [read_entire_file $files_file] \
 	        }] } {
         extract_error \
@@ -229,7 +234,7 @@ if { [file exists $files_file] } {
 	    "ERROR: bad file name extension in\
 	     `Subject: $message_subject'"
     }
-    set filenames [list $filename]
+    set filelist [list $filename]
 }
 
 # Filename_array has a value for every submittable
@@ -237,13 +242,28 @@ if { [file exists $files_file] } {
 #
 #	required	optional	found
 #
-foreach filename $filenames {
-    if { [regexp {^\?(.*)$} $filename forget filename] \
-    		} {
-	set filename_array($filename) optional
-    } else {
-	set filename_array($filename) required
+set mode required
+foreach name $filelist {
+    switch $name {
+	-REQUIRED-	{
+	    set mode required
+	}
+	-REQUIRED-	{
+	    set mode optional
+	}
+	-LINK-	{
+	    set mode ""
+	}
+	default {
+	    if { $mode != "" } {
+		set filename_array($name) $mode
+	    }
+	}
     }
+}
+
+if { [llength [array names filename_array]] < 1 } {
+    error "No allowed submittable files"
 }
 
 # WS matching whitespace character and NWS matching
@@ -318,7 +338,7 @@ proc open_file { filename } {
 # Return next non-blank line in received_ch.  Return ""
 # on end of file.
 #
-proc read_nonblank_line {} {
+proc read_non_blank_line {} {
 
     global received_ch NWS
 
@@ -384,7 +404,10 @@ if { [regexp {^HPCM_BEGIN} $line] } {
 		    if { $file_line != $real_line } {
 		        extract_error \
 			    "SYSTEM ERROR: file\
-			     mismatch for `$filename'
+			     mismatch for\
+			     `$filename':\nold:\
+			     $file_line\nnew:\
+			     $real_line"
 		    }
 		}
 	    } elseif { \
@@ -421,8 +444,8 @@ if { [regexp {^HPCM_BEGIN} $line] } {
 	 && $format_submissions == "yes" } {
 	extract_error \
 	    "ERROR: Bad line in body before\
-	     `HPCM_BEGIN' line or unformatted\
-	     file:\n$line"
+	     `HPCM_BEGIN' line; or disallowed\
+	     unformatted file"
     }
 
     # Input is unformatted.  Loop through blocks of
@@ -449,15 +472,15 @@ if { [regexp {^HPCM_BEGIN} $line] } {
 		    set filename $fname
 		} else {
 		     extract_error \
-		         "ERROR: redundant `File:\
-			  $fname' in file"
+		         "ERROR: extra file name in\
+			  file: `File: $fname'"
 		}
 		if { [regexp \
-		        "(^|$WS)$FILE$WS$FILE(\$|$WS)" \
-			$line] } {
+		     "(^|$WS)$FILE($WS+)$FILE(\$|$WS)" \
+		     $line] } {
 		     extract_error \
-		         "ERROR: redundant `File:\
-			  ....' in line:\n$line"
+		         "ERROR: extra file names in\
+			  file:\n$line"
 		}
 	    }
 	    lappend lines $line
@@ -478,7 +501,7 @@ if { [regexp {^HPCM_BEGIN} $line] } {
 
 	if { $filename != "" } {
 	    if { $mode != "none" } close_file
-	    set mode [open_file [lindex $filename 0]]
+	    set mode [open_file $filename]
 	} else {
 	    set lines [concat $blank_lines $lines]
 	}
@@ -490,7 +513,10 @@ if { [regexp {^HPCM_BEGIN} $line] } {
 		    if { $file_line != $real_line } {
 			extract_error \
 			    "SYSTEM ERROR: file\
-			     mismatch for `$filename'
+			     mismatch for\
+			     `$filename':\nold:\
+			     $file_line\nnew:\
+			     $real_line"
 		    }
 		}
 	    }
