@@ -74,9 +74,6 @@ stop_scoreboard:
 update_scoreboard:
 	sendscoreboard \
         '"wyg2bpitbp scoreboard"<hc3@deas.harvard.edu>'
-
-clean:
-	rm -rf info solutions mail help
 #
 # Author:	Bob Walton (walton@deas.harvard.edu)
 #
@@ -87,6 +84,6 @@ clean:
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/12/01 02:35:58 $
+#   $Date: 2000/12/01 10:25:46 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.6 $
+#   $Revision: 1.7 $
