@@ -3,7 +3,7 @@
 #
 # File:		scoreboard_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Feb 16 21:18:03 EST 2002
+# Date:		Sun Feb 24 09:45:30 EST 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -12,9 +12,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/02/17 02:18:57 $
+#   $Date: 2002/02/24 15:20:33 $
 #   $RCSfile: scoreboard_common.tcl,v $
-#   $Revision: 1.35 $
+#   $Revision: 1.36 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -79,10 +79,13 @@
 # An array element may not exist, in which case it
 # should be treated as equal to the empty list.
 #
-# Before pruning, all data from scorefinder whose sub-
-# mitter and problem match any regular expressions in
-# the scoreboard_submitters and scoreboard_problems glo-
-# bal variables are present, in unsorted order.
+# Before pruning, all data from scorefinder are present
+# whose submitter and problem match any regular expres-
+# sions in the scoreboard_submitters and scoreboard_
+# problems global variables, and whose scorefinder codes
+# match the regular expression selected by the scoring_
+# mode and the scoreboard_mode_array.  The unpruned data
+# are in unsorted order.
 #
 # After pruning, the items in each array element are
 # sorted and data meets the following requirements:
@@ -108,7 +111,8 @@
 proc compute_scoreboard_array { input_ch } {
 
     global scoreboard_problems scoreboard_submitters \
-           scoreboard_array
+           scoreboard_array scoreboard_mode_array \
+	   scoring_mode
 
     # Compile scoreboard_problems and scoreboard_
     # submitters.
@@ -137,11 +141,14 @@ proc compute_scoreboard_array { input_ch } {
     if { [array exists scoreboard_array] } {
 	unset scoreboard_array
     }
+    set code_regexp \
+        "^$scoreboard_mode_array($scoring_mode)\$"
     while { "yes" } {
 	set line [gets $input_ch]
 	if { [eof $input_ch] } break
 
-	if { [llength $line] < 4 } {
+	if {     [catch { set len [llength $line] }] \
+	     || $len < 4 } {
 	    error "Bad input line from `scorefinder':\
 	    	   $line"
 	}
@@ -151,14 +158,22 @@ proc compute_scoreboard_array { input_ch } {
 	set problem	[lindex $line 2]
 	set code	[lindex $line 3]
 
+	if { ! [regexp $code_regexp $code] } continue
+
 	if { $problem_expression != "" } {
 	     foreach i [array names problem_atoms] {
 		 set problem_values($i) \
 		     [regexp "^$problem_atoms($i)\$" \
 			     $problem]
 	     }
-	     if { ! [expr $problem_expression] } \
-		 continue;
+	     if { [catch { \
+	             set v [expr $problem_expression] \
+		         }] } { \
+	         error "Badly constructed\
+		        scoreboard_problems logical\
+		        expression:\
+		        $scoreboard_problems"
+	     } elseif { ! $v } continue;
 	}
 
 	if { $submitter_expression != "" } {
@@ -167,8 +182,15 @@ proc compute_scoreboard_array { input_ch } {
 		     [regexp "^$submitter_atoms($i)\$" \
 			     $submitter]
 	     }
-	     if { ! [expr $submitter_expression] } \
-		 continue;
+	     if { [catch { \
+	             set v \
+		         [expr $submitter_expression] \
+		         }] } { \
+	         error "Badly constructed\
+		        scoreboard_submitters logical\
+		        expression:\
+		        $scoreboard_submitters"
+	     } elseif { ! $v } continue;
 	}
 
 	set time [filename_date_to_clock $date]
@@ -185,8 +207,8 @@ proc compute_scoreboard_array { input_ch } {
 
 # Prune the scoreboard_array.  Uses scoreboard_start_
 # time, scoreboard_stop_time, scoreboard_correct_cut_
-# time, and scoreboard_incorrect_cut_time global vari-
-# ables as inputs.
+# time, scoreboard_incorrect_cut_time, and scoreboard_
+# final_cut global variables as inputs.
 #
 proc prune_scoreboard_array { } {
 
@@ -206,13 +228,15 @@ proc prune_scoreboard_array { } {
     #			first problem
     #   absolute	start_time is date and time
     #
-    # stop_mode, correct_cut_mode, and
-    # incorrect_cut_mode are one of:
+    # stop_mode is one of:
     #
     #	"" 		no stop_time given
     #   absolute	stop_time is date and time
     #   relative	stop_time is relative to problem
     #			start time
+    #
+    # correct_cut_mode, incorrect_cut_mode, and final_
+    # cut_mode are like stop_mode.
     #
     set start_time $scoreboard_start_time
     if { [regexp {^(|team)$} $start_time] } {
@@ -221,7 +245,13 @@ proc prune_scoreboard_array { } {
         error "scoreboard_start_time is relative"
     } else {
         set start_mode absolute
-	set start_time [clock scan $start_time]
+	if { [catch { set start_time \
+	                  [clock scan $start_time] }] \
+			  	} {
+	    error "Badly formatted\
+	           scoreboard_start_time:\
+	           $scoreboard_start_time"
+	}
     }
     set stop_time $scoreboard_stop_time
     if { $stop_time == "" } {
@@ -230,7 +260,12 @@ proc prune_scoreboard_array { } {
         set stop_mode relative
     } else {
         set stop_mode absolute
-	set stop_time [clock scan $stop_time]
+	if { [catch { set stop_time \
+	                  [clock scan $stop_time] }] } {
+	    error "Badly formatted\
+	           scoreboard_stop_time:\
+		   $scoreboard_stop_time"
+	}
     }
     set correct_cut_time $scoreboard_correct_cut_time
     if { $correct_cut_time == "" } {
@@ -240,8 +275,14 @@ proc prune_scoreboard_array { } {
         set correct_cut_mode relative
     } else {
         set correct_cut_mode absolute
-	set correct_cut_time \
-	    [clock scan $correct_cut_time]
+	if { [catch { set correct_cut_time \
+	                  [clock scan \
+			         $correct_cut_time] }] \
+				 	} {
+	        error "Badly formatted\
+		       scoreboard_correct_cut_time:\
+		       $scoreboard_correct_cut_time"
+	    }
     }
     set incorrect_cut_time \
         $scoreboard_incorrect_cut_time
@@ -252,8 +293,14 @@ proc prune_scoreboard_array { } {
         set incorrect_cut_mode relative
     } else {
         set incorrect_cut_mode absolute
-	set incorrect_cut_time \
-	    [clock scan $incorrect_cut_time]
+	if { [catch { set incorrect_cut_time \
+	                  [clock scan \
+			         $incorrect_cut_time] \
+				       }] } {
+	        error "Badly formatted\
+		       scoreboard_incorrect_cut_time:\
+		       $scoreboard_incorrect_cut_time"
+	    }
     }
     set final_cut_time \
         $scoreboard_final_cut_time
@@ -264,14 +311,22 @@ proc prune_scoreboard_array { } {
         set final_cut_mode relative
     } else {
         set final_cut_mode absolute
-	set final_cut_time \
-	    [clock scan $final_cut_time]
+	if { [catch { set final_cut_time \
+	                  [clock scan \
+			         $final_cut_time] }] \
+					    } {
+	        error "Badly formatted\
+		       scoreboard_final_cut_time:\
+		       $scoreboard_final_cut_time"
+	    }
     }
 
 
     # Sort scoreboard_array elements and compute team
     # start times.  Delete elements whose first item
-    # is before an absolute start time.
+    # is before an absolute start time or whose first
+    # item does not have code "g" if an absolute
+    # start time is not given.
     #
     foreach sap [array names scoreboard_array] {
         set items [lsort $scoreboard_array($sap)]
@@ -283,20 +338,22 @@ proc prune_scoreboard_array { } {
 	    if { $t < $start_time } {
 	        unset scoreboard_array($sap)
 	    }
-	} elseif { $start_mode == "team" } {
-	    regexp {^([^/]*)/([^/]*)$} $sap forget \
-	           submitter problem
+	} else {
 	    set item [lindex $items 0]
-	    set t [lindex $item 0]
-	    regexp {^0+(0|[1-9].*)$} $t forget t
 	    set c [lindex $item 1]
 	    if { $c != "g" } {
 	        unset scoreboard_array($sap)
-	    } elseif { \
-	           ! [info exists \
-	                   start_array($submitter)] \
-	        || $t < $start_array($submitter) } {
-	        set start_array($submitter) $t
+	    } elseif { $start_mode == "team" } {
+		regexp {^([^/]*)/([^/]*)$} $sap forget \
+		       submitter problem
+		set t [lindex $item 0]
+		regexp {^0+(0|[1-9].*)$} $t forget t
+	        if { ! [info exists \
+	                     start_array($submitter)] \
+	             || $t < $start_array($submitter) \
+		     		} {
+		    set start_array($submitter) $t
+		}
 	    }
 	}
     }
@@ -319,10 +376,6 @@ proc prune_scoreboard_array { } {
 		set t [lindex $item 0]
 		regexp {^0+(0|[1-9].*)$} $t forget t
 		set c [lindex $item 1]
-		if { $c != "g" } {
-		    unset scoreboard_array($sap)
-		    continue
-		}
 		set start $t
 	    }
 	    team {
@@ -457,7 +510,7 @@ proc prune_scoreboard_array { } {
 # blem_scores are the scores as they will be printed in
 # the output.  The problem names corresponding in order
 # to these scores are in the scoreboard_problem_list
-# global variable.  This list is sorted.
+# global variable.  This last list is sorted.
 #
 # In the sort code ccc is the number of correct problems
 # in three digits with leading zeros, ttttttttt is
@@ -553,7 +606,7 @@ proc compute_scoreboard_list {} {
 
 		if { $code == "s" } {
 
-		    # Time is when problem was gotten.
+		    # Time is problem start time.
 
 		    set problem_start_time $item_time
 
@@ -652,6 +705,9 @@ proc compute_scoreboard_list {} {
 # sent the missing time.  If the number of submissions
 # is not 0, this is appended to the returned score.  If
 # the modifier is "n", "*" is prefixed to the score.
+#
+# The value returned has 9 or fewer characters as long
+# as there are at most 98 incorrect submissions. 
 #
 proc format_problem_score { time incorrect modifier } {
 
