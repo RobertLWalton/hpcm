@@ -5,7 +5,7 @@
 #
 # File:		autojudge
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Nov 18 09:17:35 EST 2001
+# Date:		Mon Nov 19 04:45:13 EST 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/11/18 14:48:15 $
+#   $Date: 2001/11/19 09:45:47 $
 #   $RCSfile: autojudge,v $
-#   $Revision: 1.35 $
+#   $Revision: 1.36 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -30,7 +30,8 @@ source $lib_directory/judging_common.tcl
 catch {
 
 set document "
-cd submission_directory; autojudge \[problem\]
+cd submission_directory
+autojudge \[problem\[.extension\]\]
 
     Given the submission directory as the current dir-
     ectory, and given that the submission directory
@@ -41,12 +42,22 @@ cd submission_directory; autojudge \[problem\]
     submitter by creating and sending `$reply_file' as
     specified by the scoring mode.
 
-    If the `problem' argument is given, this names the
-    problem and the solution binary, and is the basename
-    of the .in, .out, .test, .cerr, .err, and .score
-    files.  Otherwise the problem name is extracted from
-    the `Subject:' field of the $received_file file.
+    If the the problem name and optional extension is
+    not given as an argument, it is extracted from the
 
+    	Subject: problemname\[.extension\]
+
+    field of the message in the $received_file file. \
+    	The
+    `problem' names the problem and the solution binary,
+    and is the basename of the .in, .out, .test, .cerr,
+    .err, and .score files.  The extension, if given,
+    tells the language being used, and must be a member
+    of the `allowed_extensions' global variable value,
+    which by default is:
+    
+    	$allowed_extensions
+
     Specifically, this program makes the following in
     order:
 
@@ -69,7 +80,7 @@ cd submission_directory; autojudge \[problem\]
     the above files that are out-of-date.  Errors in
     making the program binary can cause $auto_score_file
     and maybe $reply_file to be generated early.
-
+
     First, this program verifies the existence of a so-
     lution directory for the problem and symbolically
     links the $files_file file from this directory into
@@ -79,7 +90,7 @@ cd submission_directory; autojudge \[problem\]
     non-system error in this extraction, this program
     generates and sends `$reply_file' automatically to
     the submitter.
-    
+
     If the extraction had no errors, this program sym-
     bolically links the following solution directory
     files into the current directory:
@@ -88,6 +99,14 @@ cd submission_directory; autojudge \[problem\]
 	$scoring_instructions_file if it exists
 	.in solution input file
 	.test solution output file
+
+    In the solution directory, the `$files_file' file\
+    may be present in several forms under names of the
+    form `$files_file.extension'.  If one of these forms
+    has an extension matching that given with the pro-
+    blem name, it is linked into the current directory
+    under the name `$files_file'.  Otherwise there is an
+    error.  The `$make_file' file is treated similarly.
 
     The .test file is linked to the solution .out file
     if that exists, or the solution .test file other-
@@ -173,7 +192,7 @@ if { $argc > 1 || [regexp {^-doc} [lindex $argv 0]] } {
 # Compute problem name.
 #
 if { $argc == 1 } {
-    set problem [lindex $argv 0]
+    set argument [lindex $argv 0]
 } else {
 
     # Read message header.
@@ -184,13 +203,42 @@ if { $argc == 1 } {
 
     # Get problem.
     #
-    set problem [lindex $message_subject 1]
-    set problem [file rootname $problem]
     if {    [llength $message_subject] != 2 \
 	 || [lindex $message_subject 0] != "submit" } {
 	error "Illegal message subject:\
 	      $message_subject"
     }
+    set argument [lindex $message_subject 1]
+}
+set problem [file rootname $argument]
+set extension [file extension $argument]
+
+# Signal error if bad problem name or extension.
+#
+proc argument_error {} {
+    global argument
+    reply \
+          "ERROR: problem name is illegal: $problem" \
+	  ""  \
+	  "THIS SUBMISSION (see below) IGNORED"  \
+	  "YOU MUST RESUBMIT WITH A LEGAL PROBLEM NAME"
+    puts "SUBMISSION ERROR: problem name or extension\
+          is illegal: $argument"
+    exit 0
+}
+
+# Check legality of problem name and optional extension.
+#
+if {    $problem = "" \
+     || [regexp {\.} $problem] \
+     || [regexp {/} $problem] \
+     || [regexp {^-} $problem]  } {
+    argument_error
+}
+if { $extension != "" \
+     && [lsearch -exact $allowed_extensions \
+     			$extension] < 0 } {
+    argument_error
 }
 
 
@@ -200,29 +248,40 @@ set submitted_program $problem
 set program_solution \
     $solutions_directory/$submitted_program
 
-# Check for legality of problem name and existence of
-# problem solution.
+# Check for existence of problem solution directory.
 #
-if {    $problem = "" \
-     || [regexp {\.} $problem] \
-     || ! [file isdirectory $program_solution] } {
-    reply \
-          "ERROR: problem name is illegal: $problem" \
-	  ""  \
-	  "THIS SUBMISSION (see below) IGNORED"  \
-	  "YOU MUST RESUBMIT WITH A LEGAL PROBLEM NAME"
-    puts "SUBMISSION ERROR: problem name is illegal:\
-          $problem"
-    exit 0
+if { ! [file isdirectory $program_solution] } {
+    argument_error
+}
+
+# Line $files_file or $make_file if possible.
+#
+proc link_optional_file { name } {
+
+    global extension program_solution
+
+    if { [file readable $name] } return
+
+    if { [file exists $program_solution/$name] } {
+	puts "Linking $name"
+	link_file $program_solution/$name
+	return
+    } 
+    if { [file exists \
+               $program_solution/$name.$extension] } {
+	puts "Linking $name.$extension to $name"
+	link_file $program_solution/$name.$extension \
+		  $name
+    }
+
+    if { [llength [glob -nocomplain $name.*]] > 0 } {
+        argument_error
+    }
 }
 
 # Link in any $files_file.
 #
-if { ! [file readable $files_file] \
-     && [file exists $program_solution/$files_file] } {
-    puts "Linking $files_file"
-    link_file $program_solution/$files_file
-}
+link_optional_file $files_file
 
 # Get submitted files.  If error, on SYSTEM ERROR pass
 # to `error' function and otherwise reply to submitter.
@@ -258,10 +317,7 @@ if { [catch { exec extractmail } extractout] } {
 
 # Link $make_file, etc.
 #
-if { ! [file readable $make_file] } {
-    puts "Linking $make_file"
-    link_file $program_solution/$make_file
-}
+link_optional_file $make_file
 
 set sif $scoring_instructions_file
 if { ! [file readable $sif] \
