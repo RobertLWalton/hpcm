@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Sep 24 08:39:41 EDT 2002
+# Date:		Tue Sep 24 08:45:05 EDT 2002
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/09/24 12:41:31 $
+#   $Date: 2002/09/24 12:45:42 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.10 $
+#   $Revision: 1.11 $
 
 # To make web help pages, execute `make web' and copy
 # the `web' directory to you web server, where it will
@@ -60,6 +60,9 @@ web:	all web_do
 	cp -rpL `ls|grep -v '^web$$'` web
 	cp -rpL ../../problem_library/demos web/demos
 	rm -rf `find web -name CVS -print`
+	rm -rf `find web \
+	             -name '*this_contest_prototype' \
+		     -print`
 	rm -f web/Makefile
 	find web -type f -exec chmod 444 {} \;
 	find web -type d -exec chmod 755 {} \;
