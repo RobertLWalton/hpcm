@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/10/09 13:53:52 $
+#   $Date: 2000/10/09 16:06:13 $
 #   $RCSfile: autoinfo,v $
-#   $Revision: 1.17 $
+#   $Revision: 1.18 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -39,32 +39,71 @@ cd submission_directory; autoinfo
 
     The body of the message must be empty.
 
-    The names are taken relative to the info directory,
-    and may be either files or directories.  A directory
-    name is replaced by the names of all readable files
-    and subdirectories in the given directory, recur-
-    sively, except that directories named `CVS' and
-    `RCS' are ignored.  The result of this is a list of
-    file names.
+    The names are processed recursively to form a list
+    of files, and three other lists: a list of illegal
+    names, a list of unreadable names, and a list of
+    forbidden names.  The files are returned to the user
+    in the reply email, as is any non-empty list of
+    illegal, unreadable, or forbidden names.  With each
+    forbidden name there is an error message explaining
+    why the name is forbidden.  If the recursion gets
+    to too great a depth, the system error function is
+    called and there is no response.
 
-    File names that begin with `.' or `-' or that
-    contain a `.' right after a `/' are considered
-    illegal.
-    
-    If all names are legal and all the named files are
-    readable, all the named files are mailed back to the
-    requester.  In this case the list of file names is
-    printed to the standard output, and nothing else is
-    printed.
+    A name is first looked up on the `info_map', an
+    array that can map a name.  If `info_map(name)'
+    does not exist, the name is not mapped.  If instead
+    `info_map(nam)' has the form of a list beginning
+    with the word `FORBIDDEN', then the name is put on
+    the forbidden list, and the second element of the
+    list becomes the error message explaining why the
+    name is forbidden.  Thus for a forbidden name the
+    value of `info_map(name)' should have the form:
 
-    Otherwise, if any listed name is illegal or the file
-    named is not readable or if the requesting email has
-    a non-blank body, this program mails a reply back to
-    the requester giving the reasons why the requesting
-    email is invalid.  In this case this program exits
-    with exit code 0, indicating no error, but does not
-    write anything to the standard output, indicating no
-    file was sent.
+    	FORBIDDEN {error_message}
+
+    In reply mail this will be output in the context:
+
+    	The following file names are for forbidden:
+		name: error_message
+
+    If the value of `info_map(name)' exists but does not
+    indicate the name is forbidden, the value is taken
+    as a list of names that replace the original name.
+    Thus if `info_map(giant)' had the value `fee fie fo
+    fum', a request for `giant' would be replaced by a
+    request for `fee', `fie', `fo', and `fum'.
+
+    After name mapping in this fashion, mapping is
+    applied to just the tail component of the name using
+    the `info_tail_map'.  Only the tail part of the name
+    is mapped by this map.  This map is standardly set
+    to map the tails `CVS' and `RCS' to empty lists,
+    thus eliminating them.
+
+    Next the name is checked for legallity.  If the name
+    begins with `.' or contains a `.' right after a `/'
+    it is considered to be illegal and is consigned to
+    the list of illegal names.
+
+    Then the name is checked for readablilty.  If the
+    name does not name a readable existing ordinary file
+    or directory within the in info directory, after
+    symbolic links are followed, the name is consigned
+    to the list of unreadable names.
+
+    Next, if relative to the info directory the name
+    names a directory D, the name is replaced by the
+    names relative to the info directory of the read-
+    able components of the directory D (excluding
+    as usual components whose names begin with `.').
+
+    At this point the name is known to name an ordinary
+    readable file within the info directory, and con-
+    tents of this file are returned in the reply mes-
+    sage.  If this file contains a line beginning with
+    `From ', the line is prefixed with `>' when it is
+    copied into the reply mail.
 
     If something goes very wrong, such as finding that
     the `$received_file' file is not readable, this
@@ -75,7 +114,7 @@ cd submission_directory; autoinfo
     `Subject:' field value in the `$received_file' file
     is not sufficient to cause `autodispatch' to dis-
     patch to this program: or specifically, if the
-    field value is not a list of at least 2 items the
+    field value is not a list of at least 1 items the
     first of which is `get'."
 
 # If there are any arguments, print documentation and
@@ -86,21 +125,6 @@ if { $argc != 0 } {
     exit 1
 }
 
-# Create a reply file complaining of a request error,
-# and email this reply to the requestor.  Include the
-# request email in the reply.
-#
-proc info_error_reply { args } {
-    eval reply -all \
-         {"ERROR while reading requesting email:"} \
-	 $args \
-	 {""} \
-	 {"THIS REQUEST (see below) IGNORED"} \
-	 {"YOU MUST RESUBMIT"}
-
-    exit 0
-}
-
 # Find the subject.  If bad subject call error.
 #
 set received_ch [open $received_file r]
@@ -109,11 +133,6 @@ switch [llength $message_subject] {
 
     0		{
 	error "No `Subject:' field in message"
-    }
-
-    1		{
-	error "Too short `Subject:' field in message:\n\
-	      \   Subject:$message_subject"
     }
 
     default	{
@@ -127,39 +146,90 @@ switch [llength $message_subject] {
 # If non-empty body reply with error.
 #
 if { [blank_body $received_ch] == "no" } {
-     info_error_reply "Non-blank body in message"
+    reply -all \
+          "ERROR while reading requesting email:" \
+          "    Non-blank body in message."
+	  "" \
+	  "THIS REQUEST (see below) IGNORED" \
+	  "YOU MUST RESUBMIT" 
+    exit 0
 }
 close $received_ch
 
-# Compute list of readable file names, list of unread-
-# able file names, and list of illegal file names.
+# Compute lists of OK file names, unreadable names,
+# illegal names, and forbidden names.  The items in
+# the forbidden list have the form:
 #
-set names ""
+#	{name {message}}
+#
+set ok_names ""
 set unreadables ""
 set illegals ""
+set forbiddens ""
 #
 proc info_expand { name } {
 
-    global names unreadables illegals info_directory
+    global ok_names unreadables illegals forbiddens \
+    	   info_directory info_map info_tail_map
+
+    if { [info exists info_map($name)] } {
+        set replacement $info_map($name)
+	if { [llength $replacement] >= 1 \
+	     && [lindex $replacement 0] == "FORBIDDEN" \
+	     		} {
+	    lappend forbiddens \
+	    	[lreplace $replacement 0 0 $name]
+	} else {
+	    foreach n $replacement {
+	    	info_expand $n
+	    }
+	}
+
+	return
+    }
+
+    set tail [file tail $name]
+
+    if { [info exists info_tail_map($tail)] } {
+        set replacement $info_tail_map($tail)
+	if { [llength $replacement] >= 1 \
+	     && [lindex $replacement 0] == "FORBIDDEN" \
+	     		} {
+	    lappend forbiddens \
+	    	[lreplace $replacement 0 0 $name]
+	} else {
+	    set dir [file dirname $name]
+	    if { $dir == "." } {
+	    	set prefix ""
+	    } else {
+	    	set prefix $dir/
+	    }
+	    foreach tail $replacement {
+	    	info_expand $prefix$tail
+	    }
+	}
+
+	return
+    }
+
 
     set file $info_directory/$name
 
-    if { [regexp {^\.|^\-|\/\.} $name] } {
+    if { [regexp {(^|/)\.} $name] } {
     	lappend illegals $name
+    } elseif { ! [file readable $file] } {
+        lappend unreadables $name
     } elseif { [file isdirectory $file] } {
-        if { [lsearch -exact "RCS CVS" \
-	                     [file tail $file]] \
-             < 0 } {
-	    foreach f [lsort [glob -nocomplain \
-				   $file/*]] {
-		if { [file readable $f] } {
-		    info_expand "$name/[file tail $f]"
-		}
+	foreach f [lsort [glob -nocomplain \
+			       $file/*]] {
+	    if { [file readable $f] \
+	    	 && ( [file isdirectory $f] \
+		      || [file isfile $f] ) } {
+		info_expand "$name/[file tail $f]"
 	    }
 	}
-    } elseif { [file isfile $file] \
-               && [file readable $file] } {
-        lappend names $name
+    } elseif { [file isfile $file] } {
+        lappend ok_names $name
     } else {
         lappend unreadables $name
     }
@@ -169,41 +239,83 @@ foreach n [lreplace $message_subject 0 0] {
     info_expand $n
 }
 
-set error_lines ""
+set lines ""
 
+if { $forbiddens != "" } {
+    lappend lines \
+	    "The following file names are forbidden:"
+    foreach item $forbiddens {
+	lappend lines \
+		"    [lindex $item 0]: [lindex $item 1]"
+    }
+    lappend lines ""
+} 
 if { $illegals != "" } {
-    lappend error_lines \
+    lappend lines \
 	    "Some requested file names are illegal:"
-    lappend error_lines \
-	    "    $illegals"
+    while { $illegals != "" } {
+	lappend lines \
+		"    [lrange $illegals 0 2]"
+	set illegals [lrange $illegals 3 end]
+    }
+    lappend lines ""
 } 
 if { $unreadables != "" } {
-    lappend error_lines \
+    lappend lines \
 	    "Some requested file names are unreadable:"
-    lappend error_lines \
-	    "    $unreadables"
+    while { $unreadables != "" } {
+	lappend lines \
+		"    [lrange $unreadables 0 2]"
+	set unreadables [lrange $illegals 3 end]
+    }
+    lappend lines ""
 } 
-
-if { $error_lines != "" } {
-    eval info_error_reply $error_lines
+if { $ok_names != "" } {
+    lappend lines \
+	    "The following requested files appear\
+	     below after the request message header:"
+    set fs $ok_names
+    while { $fs != "" } {
+	lappend lines "    [lrange $fs 0 2]"
+	set fs [lrange $fs 3 end]
+    }
+    lappend lines ""
+} else { 
+    lappend lines \
+            "There were no OK file names provided\
+	     in the requesting message."
+    lappend lines \
+            "The subject of the requesting message\
+	     should have the form:"
+    lappend lines \
+            "    Subject: get filename ..."
 }
 
-compose_reply "The requested files appear below\
-               following the request message header."
+eval compose_reply $lines
 
-set reply_ch [open $reply_file+ a]
+if { $ok_names != "" } {
 
-puts $reply_ch ""
+    set reply_ch [open $reply_file+ a]
 
-set dashes "---<>--<>---<>--<>---<>-----"
+    puts $reply_ch ""
 
-foreach n $names {
-    puts $reply_ch "$dashes $n:"
-    put_file $info_directory/$n $reply_ch
+    set dashes "---<>--<>---<>--<>---<>-----"
+
+    foreach file $ok_names {
+	puts $reply_ch "$dashes $file:"
+	set file_ch [open $info_directory/$file r]
+	while { "yes" } {
+	    set line [gets $file_ch]
+	    if { [eof $file_ch] } break
+	    regsub {^From } $line {>From } line
+	    puts $reply_ch $line
+	}
+	close $file_ch
+    }
+    puts $reply_ch "$dashes end of files"
+
+    close $reply_ch
 }
-puts $reply_ch "$dashes end of files"
-
-close $reply_ch
 
 send_reply
 
@@ -212,12 +324,12 @@ if { [file exists $gotten_file] } {
 }
 set gotten_ch [open $gotten_file w]
 puts $gotten_ch "Date: [clock format [clock seconds]]"
-foreach n $names {
-    puts $gotten_ch "File: $n"
+foreach file $ok_names {
+    puts $gotten_ch "File: $file"
 }
 close $gotten_ch
 
-puts $names
+puts $ok_names
 exit 0
 
 # Include common error catching code:
