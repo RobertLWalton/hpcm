@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Jan 12 03:23:01 EST 2001
+# Date:		Fri Jan 12 13:10:38 EST 2001
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/01/12 08:18:58 $
+#   $Date: 2001/01/12 18:05:31 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.3 $
+#   $Revision: 1.4 $
 
 # To make a formal contest named `foo':
 #
@@ -39,6 +39,9 @@
 #     you want (run `makejudgingdir -doc' to find the
 #     format and meaning of index specifications).
 #
+#     Be sure you edit the scoreboard_stop_time to
+#     be some time in the future.
+#
 #  4. Make a contest directory named ~/contest_foo.
 #     Symbolically link this to the name
 #	~/judging_foo_password/contest
@@ -49,11 +52,11 @@
 #     name ~/contest_foo/contestant by executing
 #     inside the contest directory:
 #	ln -s ~/hpcm/contestant contestant
-#
+
 #  6. Move the file scoreboard.1head into the ./contest
 #     directory (which is now linked to ~/contest_foo).
 #
-
+#
 #  7. Create a file named ./contest/secure/passwords
 #     that is just a list of all the contestant accounts
 #     that will be created.  You must create the
@@ -89,11 +92,11 @@
 #     name.  If you do, be sure the WHERE fields are
 #     short enough not to overrun other printout
 #     header fields.
-#
+
 # 10. Rerun `make' in the judging directory.  This is
 #     because you edited `help/this_contest' in the last
 #     step and need to install the new version.
-
+#
 # 11. One of the instructions will be to make a con-
 #     testant prototype account: see
 #
@@ -125,12 +128,12 @@
 #
 #     in prototype account, according to the directions
 #     in the documentation of SETUP_PROTOTYPE.
-#
+
 #     One prototype directory can be used for many con-
 #     tests, so you may not need to make a new prototype
 #     directory for this contest, but you will need to
 #     symbolically link ~/contest_foo/home.
-
+#
 # 12. Be sure you follow the instructions in the SETUP_
 #     PROTOTYPE documentation about editing prototype
 #     home directory files such as .cshrc to setup the
