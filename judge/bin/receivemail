@@ -1,9 +1,8 @@
 #! /bin/sh -f
 #
-# Move submissions from a mail file into a judging
-# directory.
+# Process incoming mail for judging.
 #
-# File:		receive_submissions
+# File:		receive
 # Author:	Bob Walton (walton@deas.harvard.edu)
 # Date:		Wed Aug 16 06:41:25 EDT 2000
 #
@@ -14,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: acm-cont $
-#   $Date: 2000/08/18 11:25:20 $
+#   $Date: 2000/08/18 15:00:42 $
 #   $RCSfile: receivemail,v $
-#   $Revision: 1.8 $
+#   $Revision: 1.9 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -29,8 +28,26 @@ set lib_directory "[file dirname $argv0]/../lib"
 source "$lib_directory/judging_common.tcl"
 
 set document "
-receive_submissions mail_file judging_directory
+receive [directory]
 
+    Reads mail from the standard input and processes it.
+
+    If the directory argument is given, changes to that
+    directory before reading judging parameters and
+    processing mail.  The parameter file defines the
+    mail_directory, solution_directory, and info_
+    directory.
+
+    Each mail message is stored in its own subdirectory
+    in the mail_directory.  This subdirectory has as its
+    name the `From' line beginning the message.  The
+    message is stored in the file `received.mail' in
+    this directory.  If a mail message is received for
+    a second time, as determined by its subdirectory
+    already existing, the mail message is ignored.
+
+
+    given, 
     For each submission in the mail_file builds a sub-
     directory of the judging_directory containing the
     submitted file.  The subdirectory name is the entire

@@ -1,0 +1,193 @@
+#! /bin/sh -f
+#
+# Extract submitted program from received.mail file.
+#
+# File:		extract
+# Author:	Bob Walton (walton@deas.harvard.edu)
+# Date:		Wed Aug 16 06:41:25 EDT 2000
+#
+# The authors have placed this program in the public
+# domain; they make no warranty and accept no liability
+# for this program.
+#
+# RCS Info (may not be true date or author):
+#
+#   $Author: acm-cont $
+#   $Date: 2000/08/18 15:00:41 $
+#   $RCSfile: extractmail,v $
+#   $Revision: 1.1 $
+#
+# The next line starts tcl \
+exec tcl "$0" "$@"
+
+# Use tcl rather than tclsh so that `signal' is defined.
+
+# Include common code and parameters:
+#
+set lib_directory "[file dirname $argv0]/../lib"
+source "$lib_directory/judging_common.tcl"
+
+set document "
+extract
+
+    Reads the `received.email' file in the current
+    directory.  Thus file must have a subject line of
+    the form:
+
+    	Subject: submit filename
+
+   The submitted file is extracted from the email and
+   placed in the current directory.
+
+   If a file named `filename' is not in the email in the
+   standard submission format, a `replied.email' file is
+   constructed and sent describing the failure.  Ditto
+   if `filename' is badly formatted (e.g., contains a
+   slash), of if the email contains anything in addition
+   to the file in the standard format."
+
+set received_file "received.email"
+set replied_file  "replied.email"
+
+if { $argc != 0 } {
+    puts $document
+    exit 0
+}
+
+
+if { ! [file readable $received_file] } {
+    fatal_error "Not readable:" $received_file
+}
+
+set received_ch [open $received_file r]
+
+proc extract_error_reply { $args } {
+    eval reply -include-received-email \
+         "ERROR during submission file extraction:" \
+	 $args "" \
+	 "THIS SUBMISSION IGNORED" \
+	 "YOU MUST RESUBMIT"
+}
+
+# Look for subject line.
+#
+while { yes } {
+    set line [gets $received_ch]
+    if { [eof $received_ch] } {
+        extract_error_reply \
+	    "Could not find `Subject' line."
+    } elseif { [regexp {^Subject: submit } $line } {
+    	set filename [lindex $line 2]
+	break
+    } elseif { [regexp {^Subject:} $line } {
+    	extract_error_reply \
+	    "Badly formatted subject line"
+    } elseif { [regexp $From_line_regexp $line } {
+    	# From line is ok
+    } elseif { [regexp ":" $line } {
+    	# other header lines are ok
+    } else {
+    	extract_error_reply \
+	    "Bad line in header before `Subject'\
+	         line:" \
+	    $line
+    }
+}
+
+# Check that `filename' has no `/'s.
+#
+if { [llength [filename split $file]] != 1 } {
+    extract_error_replay \
+        "Filename contains a `/': $file"
+}
+
+# If named file is readable exit without error.
+#
+if { [file readable $file] } {
+    exit 0
+}
+
+# Look for first non-header line.
+#
+while { yes } {
+    set line [gets $received_ch]
+    if { [eof $received_ch] } {
+        extract_error_reply \
+	    "Could not find message body."
+    } elseif { ! [regexp ":" $line } {
+    	break
+    }
+}
+
+# Look for BEGIN line.
+#
+while { yes } {
+    if { [regexp "^BEGIN $filename\$" $line } {
+    	break
+    } elseif { [regexp {^BEGIN} $line } {
+    	extract_error_reply \
+	    "Badly formatted BEGIN line:" $line
+    } elseif { [regexp {^[ 	]*$} $line } {
+    	# blank lines are ok
+    } else {
+    	extract_error_reply \
+	    "Bad line in body before `BEGIN'\
+	         line:" \
+	    $line
+    }
+    set line [gets $received_ch]
+    if { [eof $received_ch] } {
+        extract_error_reply \
+	    "Could not find `BEGIN' line."
+    }
+}
+
+# Open $filename for writing.
+#
+if { ! [file writable $filename] } {
+    fatal_error "Cannot write $filename"
+}
+set file_ch [open $filename w]
+
+# Look for END line copying file.
+#
+while { yes } {
+    set line [gets $received_ch]
+    if { [eof $received_ch] } {
+        close $file_ch
+	file delete -force $filename
+        extract_error_reply \
+	    "Could not find END line."
+    } elseif { [regexp {^\.\.(.*)$} $line \
+                       all real_line } {
+	puts $file_ch $real_line
+    } elseif { [regexp "^END $filename" $line } {
+    	break
+    } else {
+        close $file_ch
+	file delete -force $filename
+        extract_error_reply \
+	    "Bad line between BEGIN and END:" $line
+    }
+}
+
+close $file_ch
+
+# Look for extaneous after END line
+#
+while { yes } {
+    set line [gets $received_ch]
+    if { [eof $received_ch] } {
+	break
+    } elseif { [regexp {^[ 	]*$} $line } {
+    	# blank lines are ok
+    } else {
+	file delete -force $filename
+        extract_error_reply \
+	    "Bad line after END:" $line
+    }
+}
+
+close $received_ch
+
+exit 0
