@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: acm-cont $
-#   $Date: 2000/09/14 13:33:07 $
+#   $Date: 2000/09/14 14:05:43 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.34 $
+#   $Revision: 1.35 $
 #
 
 # Include this code in TCL program via:
@@ -339,7 +339,7 @@ proc log_error { error_output } {
 	set received_ch ""
 
 	if { $log_mode == "auto" } {
-	    set to [string trim $log_manager]
+	    set cc [string trim $log_manager]
 	}
 
         if { $log_dir == "." \
@@ -421,13 +421,14 @@ proc log_error { error_output } {
 		if { $cc != "" } {
 		    puts $mail_ch \
 			 "Please correct and resubmit,\
-		          or wait for response from\
-			  $cc."
+		          or wait for response from"
+		    puts $mail_ch "$cc."
 		} else {
 		    puts $mail_ch \
 			 "Please correct and resubmit,\
-		          or contact the person\
-			  responsible for this site."
+		          or contact the person"
+		    puts $mail_ch \
+			 "responsible for this site."
 		}
 	    }
 
