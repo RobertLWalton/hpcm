@@ -127,8 +127,10 @@
   ;; In CLISP, a peek-char is needed after reading a (...)
   ;; to get past the following line feed.
 
-  (if (/= 0 (system::line-position))
-      (peek-char nil nil nil nil)))
+
+  (do () ((= 0 (system::line-position))) (read-char nil nil nil)))
+  ;; (if (/= 0 (system::line-position))
+      ;; (peek-char nil nil nil nil)))
 
 (defun RUN (&key (IN *run-in*) (OUT *run-out*) (PAUSE *run-pause*))
   
