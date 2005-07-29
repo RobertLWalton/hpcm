@@ -1,4 +1,4 @@
-GEOMETRY EXERCISES HELP    Wed Mar 24 11:56:33 EST 2004
+GEOMETRY EXERCISES HELP    Fri Jul 29 11:55:49 EDT 2005
 
 These are programming exercises you can do to help
 strengthen your geometry problem skills.
@@ -14,10 +14,12 @@ of the path.
     between two points is their total distance minus the
     radii of any holes centered at the points.
 
-When does a point on a trajectory with rational coordi-
-nates hit a corner of a rectangle?
+Problem: When does a point on a trajectory with rational
+coordinates hit a corner of a rectangle, whose corners
+have rational coordinates?
 
-    You need a coordinate equality test of the form
+    Solution: You need a coordinate equality test of the
+    form
 
     	bool equal ( double x, double y,
 	             double accuracy )
@@ -30,11 +32,12 @@ nates hit a corner of a rectangle?
     and the question is, what is accuracy?  Often the
     following artifice will suffice.  You might use
     rational numbers to do the computation, but then
-    coordinates would have to have the form N/D, where
+    coordinates would have to have the form N/D, and
     since D would have to be an integer, by the limits
-    of the computer D <= 3 * 10**9.  So two coordinates
-    that are unequal will differ by more than 10**-10,
-    and one can take accuracy <= 1e-10.
+    of the computer D <= 3 * 10**9 if D is stored in
+    a 32-bit unsigned integer.  So two coordinates that
+    are unequal will differ by more than 10**-10, and
+    one can take accuracy <= 1e-10.
 
     Let B be a bound on the absolute size of all coor-
     dinates.  Then computation of coordinates will have
@@ -42,50 +45,51 @@ nates hit a corner of a rectangle?
     This must be noticeably less than accuracy, so you
     should take accuracy => B*1e-14.
 
-    If B*1e-14 <= 1e-10 you can take either.  Otherwise
-    you had better use B*1e-14 and pray, though you can
-    compute B dynamically from the data.
+    If B*1e-14 <= 1e-10 you can take either number as
+    the accuracy.  Otherwise you had better use B*1e-14
+    and pray, though you can compute B dynamically from
+    the data.
 
     You can always compute what accuracy should be pre-
     cisely if you go to the trouble to bound the deno-
     minators of rational coordinates to be compared
     precisely.
 
-Compute the distance between a point (x,y) and an in-
-finite line through points (x1,y1) and (x2,y2).
+Problem: Compute the distance between a point (x,y) and
+an infinite line through points (x1,y1) and (x2,y2).
 
-    Method1: Compute (dx,dy) to be the displacement
+    Solution1: Compute (dx,dy) to be the displacement
     vector from (x1,y1) to (x2,y2), rotate (dx,dy) 90
     degrees clockwise to get (dy,-dx), normalize to a
     unit vector, use this vector to compute coordinates
     in the direction perpendicular to the line of the
     points (x,y) and (x1,y1), and take the difference.
 
-    Method2: As for method1 compute a unit vector in the
-    direction of the line and another at right angles to
-    the line.  Use these to change coordinates so the
-    line is the x-axis (y = 0) and then compute the
-    distance of the point in the new coordinates to the
-    x-axis (its just the absolute value of the point's
-    new y coordinate).
+    Solution2: As for method1 compute a unit vector in
+    the direction of the line and another at right
+    angles to the line.  Use these to change coordinates
+    so the line is the x-axis (y = 0) and then compute
+    the distance of the point in the new coordinates to
+    the x-axis (its just the absolute value of the
+    point's new y coordinate).
     
-    Although Method2 seems like more work than Method1,
-    coordinate change is a unifying conceptual basis for
-    solving complex distance problems.
+    Although Solution2 seems like more work than Solu-
+    tion1, coordinate change is a unifying conceptual
+    basis for solving complex distance problems.
 
-Ditto for the finite line segment from (x1,y1) to
-(x2,y2).
+Problem: Ditto for the finite line segment from (x1,y1)
+to (x2,y2).
 
-    Method: Change coordinates so the finite line seg-
+    Solution: Change coordinates so the finite line seg-
     ment is from (0,0) to (k,0) and the point coordi-
     nates are (x',y').  Then  divide into three cases:
     x' < 0, 0 <= x' <= k, k < x'.
 
-Compute the distance between the finite line segment
-from (xa1,ya1) to (xa2,ya2) and the finite line segment
-from (xb1,yb1) to (xb1,yb2).
+Problem: Compute the distance between the finite line
+segment from (xa1,ya1) to (xa2,ya2) and the finite line
+segment from (xb1,yb1) to (xb1,yb2).
 
-    Method: Change coordinates so one finite line seg-
+    Solution: Change coordinates so one finite line seg-
     ment is from (0,0) to (k,0).  Then divide the other
     segment into three segments at the intersections of
     the lines x = 0 and x = k.  For the middle segment
@@ -96,11 +100,12 @@ from (xb1,yb1) to (xb1,yb2).
     imum of the three distances (some of which will be
     missing if their segment is missing).
 
-Compute the distance between a point (x,y,z) and an
-infinite line through points (x1,y1,z1) and (x2,y2,z2).
+Problem: Compute the distance between a point (x,y,z)
+and an infinite line through points (x1,y1,z1) and
+(x2,y2,z2).
 
-    Method1: We want to change coordinates so the infin-
-    ite line becomes the x-axis.  We will need the
+    Solution1: We want to change coordinates so the
+    infinite line becomes the x-axis.  We will need the
     cross product.
     
     Recall that the cross product of vectors is defined
@@ -132,13 +137,12 @@ infinite line through points (x1,y1,z1) and (x2,y2,z2).
 	      Y1*Z2*UX + Z1*X2*UY + X1*Y2*UZ
 	    - Z1*Y2*UX - X1*Z2*UY - Y1*X2*UZ
 
-    where the terms in Y1*Z2*UX + Z1*X2*UY + X1*Y2*UZ
+    where the + terms, Y1*Z2*UX, Z1*X2*UY, X1*Y2*UZ,
     all involve rotations of the letter ordering `XYZ',
-    while the terms in - Z1*Y2*UX - X1*Z2*UY - Y1*X2*UZ
-    involve a rotations followed by a pair switch of
-    the same letter ordering.
+    while the - terms are just the + terms with the
+    scalar factors reversed (or rotations of `YXZ').
 
-    So we want to change coordinates so the infinite
+    We want to change coordinates so that the infinite
     line becomes the x-axis.  Let U1 be the unit vector
     from (x1,y1,z1) to (x2,y2,z2).  Examine U1 x UX,
     U1 x UY, U1 x UZ and take the first of these that
@@ -153,11 +157,11 @@ infinite line through points (x1,y1,z1) and (x2,y2,z2).
     required is the 2D distance of the two projection
     points.
 
-    Method2: The cross product V x W has the following
+    Solution2: The cross product V x W has the following
     geometrical definition: project V on the plane
     perpendicular to W, rotate the projection 90 degrees
     around the W axis, and multiply the projection by
-    the length of W.  Therefore with U1 as in Method1,
+    the length of W.  Therefore with U1 as in Solution1,
     the answer is just the 3D distance between
 
     	(x1,y1,z1) x U1   and   (x,y,z) x U1
@@ -166,28 +170,28 @@ infinite line through points (x1,y1,z1) and (x2,y2,z2).
     V on the plane perpendicular to U, for any unit
     vector U.
 
-Compute the distance between a point (x,y,z) and an
-finite line from (x1,y1,z1) to (x2,y2,z2).
+Problem: Compute the distance between a point (x,y,z)
+and an finite line from (x1,y1,z1) to (x2,y2,z2).
 
-    Method: Using the method of the last exercise,
+    Solution: Using the method of the last exercise,
     change coordinates so the line is from (0,0,0)
     to (k,0,0), and the point in these coordinates
     is (x',y',z').  Then divide into three cases:
     x' < 0, 0 <= x' <= k, k < x'.
 
-Compute the distance between an infinite line through
-the points (x1,y1,z1) to (x2,y2,z2) and a finite line
-segment.
+Problem: Compute the distance between an infinite line
+through the points (x1,y1,z1) to (x2,y2,z2) and a finite
+line segment.
 
-    Method: Change coordinates so the infinite line is
+    Solution: Change coordinates so the infinite line is
     the x axis.  Then project the line segment on the
     (y,z) plane and find its distance to the origin in
     that plane.
 
-Compute the distance between two finite 3D line seg-
-ments.
+Problem: Compute the distance between two finite 3D line
+segments.
 
-    Method: Change coordinates so one segment is from
+    Solution: Change coordinates so one segment is from
     (0,0,0) to (k,0,0).  Divide the other segment into
     three parts using the intersections of that segment
     with the x = 0 and x = k planes.  Compute the dis-
@@ -195,18 +199,19 @@ ments.
     and (k,0,0) respectively and take the minimum of the
     three distances.
 
-Find the intersection of a line segment B from (x1,y1)
-to (x2,y2) with another line segment C from (x3,y3) to
-(x4,y4), with `corner cases'.
+Problem: Find the intersection of a line segment B from
+(x1,y1) to (x2,y2) with another line segment C from
+(x3,y3) to (x4,y4), with `corner cases'.
 
-    Compute (dx,dy) = (x2-x1,y2-x1) so that (dy,-dx) is
-    perpendicular and pointing to the right of the
-    directed segment from (x1,y1) to (x2,y2).  Then
-    you can compute whether any point is to the right
-    of, on, or to the left of the infinite directed
-    line extending B by comparing the dot product of
-    the point with (dy,-dx) with the dot product of
-    (x1,y1) (or equivalently (x2,y2)) with (dy,-dx).
+    Solution: Compute (dx,dy) = (x2-x1,y2-x1) so that
+    (dy,-dx) is perpendicular and pointing to the right
+    of the directed segment from (x1,y1) to (x2,y2).
+    Then you can compute whether any point is to the
+    right of, on, or to the left of the infinite
+    directed line extending B by comparing the dot
+    product of the point with (dy,-dx) with the dot
+    product of (x1,y1) (or equivalently (x2,y2)) with
+    (dy,-dx).
 
     The computation of being `on' the line requires an
     equality test.  This requires that the coordinates
@@ -237,27 +242,27 @@ to (x2,y2) with another line segment C from (x3,y3) to
     You need to take dot products with (dx,dy) and
     compare these to see if there is a segment overlap.
 
-A simple (a.k.a non-degenerate) polygon is a sequence of
-vertices in clockwise (or counterclockwise) order defin-
-ing the line segments of the boundary of the polygon,
-such that the only intersections of two segments are
-those at the endpoints of successive segments in the
-circular list of segments.  Its is possible that two
-successive segments will be parallel, hence the middle
-vertex will be unnecessary.
+Definition: A simple (a.k.a non-degenerate) polygon is a
+sequence of vertices in clockwise (or counterclockwise)
+order defining the line segments of the boundary of the
+polygon, such that the only intersections of two seg-
+ments are those at the endpoints of successive segments
+in the circular list of segments.  Its is possible that
+two successive segments will be parallel, hence the
+middle vertex will be unnecessary.
 
-Find all the intersections of a 2D line segment and a
-boundary of a simple polygon.
+Problem: Find all the intersections of a 2D line segment
+and a boundary of a simple polygon.
 
-    Method: You can find all the intersections of the
+    Solution: You can find all the intersections of the
     line segment and the polygon side segments.  The
     one odd case is where the line segment overlaps
     a parallel side segment.
 
-Determine if a 2D line segment intersects the interior
-of a simple polygon.
+Problem: Determine if a 2D line segment intersects the
+interior of a simple polygon.
 
-    Method: Find the intersections of the 2D line seg-
+    Solution: Find the intersections of the 2D line seg-
     ment and the boundary of the polygon, and investi-
     gate these intersections.
     
@@ -330,28 +335,29 @@ of a simple polygon.
     the line end points can be treated as an intersec-
     tion point and the above methods can be applied.
 
-A polygon is convex if and only if every line segment
-between two points inside or on the boundary of the
-polygon is completely inside or on the boundary of the
-polygon.
+Definition: A polygon is convex if and only if every
+line segment between two points inside or on the
+boundary of the polygon is completely inside or on the
+boundary of the polygon.
 
-The convex hull of a set of points V in a plane is a
-sequence of points of V, p(1), ..., p(N), such that for
-every i, all the points of V are on or to the right of
-the line through p(i) and p((i mod N)+1), and such that
-no point p(j) is on this line except of course p(i) and
-p((i mod N)+1).  Then the finite lines from p(i) to
-p((i mod N)+1) for i = 1, ..., N are the sides of the
-smallest convex polygon such that all the points of V
-are inside this polygon or on its boundary.
+Definition: The convex hull of a set of points V in a
+plane is a sequence of points of V, p(1), ..., p(N),
+such that for every i, all the points of V are on or to
+the right of the line through p(i) and p((i mod N)+1),
+and such that no point p(j) is on this line except of
+course p(i) and p((i mod N)+1).  Then the finite lines
+from p(i) to p((i mod N)+1) for i = 1, ..., N are the
+sides of the smallest convex polygon such that all the
+points of V are inside this polygon or on its boundary.
 
-Find the convex hull of a set of 2D points.
+Problem: Find the convex hull of a set of 2D points.
 
-    To find the convex hull, first find some point p(1)
-    on the hull, which can be done say by choosing a
-    leftmost point in V and given two leftmost points
-    choosing the lowest.  Then extend the hull recur-
-    sively from p(i) to p(i+1) by using the following.
+    Solution: To find the convex hull, first find some
+    point p(1) on the hull, which can be done say by
+    choosing a leftmost point in V and given two
+    leftmost points choosing the lowest.  Then extend
+    the hull recursively from p(i) to p(i+1) by using
+    the following.
 
     Given a point p, define a relation among points q1,
     q2 that are not equal to p as follows:
@@ -374,11 +380,12 @@ Find the convex hull of a set of 2D points.
     that begins with a sort of V and has running time
     dominated by the sort time, O(|V| log|V|).
 
-Find whether some point p is inside a convex polygon.
+Problem: Find whether some point p is inside a convex
+polygon.
 
-    Suppose we have a convex hull p(1), ..., p(N) in
-    clockwise order that defines a convex polygon.  So
-    the sides of the polygon with a clockwise orienta-
+    Solution: Suppose we have a convex hull p(1), ...,
+    p(N) in clockwise order that defines a convex poly-
+    gon.  So the polygon sides with a clockwise orienta-
     tion are the lines from p(i) to p((i mod N)+1), for
     i = 1, ..., N, and no three points lie on the same
     line.
@@ -389,14 +396,14 @@ Find whether some point p is inside a convex polygon.
     more specifically, p is to the right of the infinite
     line that extends the side.
 
-Find whether the interior of the line segment between
-points pa and pb intersects the interior of a convex
-polygon.
+Problem: Find whether the interior of the line segment
+between points pa and pb intersects the interior of a
+convex polygon.
 
-    The line segment intersects the interior of the
-    polygon if the interior of the line segment inter-
-    sects the interior of any side of the polygon.  It
-    also does if pa and pb are both inside or on the
+    Solution: The line segment intersects the interior
+    of the polygon if the interior of the line segment
+    intersects the interior of any side of the polygon.
+    It also does if pa and pb are both inside or on the
     boundary of the polygon, but are not both on the
     same single side of the polygon.
 
@@ -449,18 +456,20 @@ polygon if these are not inside some other polygon.
     line segments between members of V that do not
     contain other members of V.
 
-Intersect a horizontal infinite line with a simple poly-
-gon to produce a set of line segments.  Include any part
-of the line that runs along a side of the polygon.
+Problem: Intersect a horizontal infinite line with a
+simple polygon to produce a set of line segments.
+Include any part of the line that runs along a side of
+the polygon.
 
-    Consider a scan starting at negative infinity on the
-    line and moving along the line to positive infinity.
-    The scan is initially in the OUTSIDE state, and as
-    it moves, may transition to the INSIDE state and
-    back, where OUTSIDE means outside the polygon and
-    INSIDE means inside or on the boundary of the poly-
-    gon.  The list of transition points is the list of
-    line segment ends that needs to be computed.
+    Solution: Consider a scan starting at negative
+    infinity on the line and moving along the line to
+    positive infinity.  The scan is initially in the
+    OUTSIDE state, and as it moves, may transition to
+    the INSIDE state and back, where OUTSIDE means
+    outside the polygon and INSIDE means inside or on
+    the boundary of the polygon.  The list of transition
+    points is the list of line segment ends that needs
+    to be computed.
 
     Sort the sides of the polygon by the x coordinate
     at which they cross the horizontal infinite line.
@@ -502,15 +511,16 @@ of the line that runs along a side of the polygon.
     scan state to INSIDE if and only if -IN > OUT, and
     to OUTSIDE if -IN < OUT.
 
-Compute the intersection of two simple polygons.
+Problem: Compute the intersection of two simple
+polygons.
 
-    First compute the intersections of polygon sides,
-    one side from each polygon, and put these in a list.
-    For each intersection, compute an incoming and an
-    outgoing polygon side, which indicate the direction
-    of travel when the intersection point is used as
-    a vertex in an intersection polygon, and all poly-
-    gons are traversed clockwise.
+    Solution: First compute the intersections of polygon
+    sides, one side from each polygon, and put these in
+    a list.  For each intersection, compute an incoming
+    and an outgoing polygon side, which indicate the
+    direction of travel when the intersection point is
+    used as a vertex in an intersection polygon, and all
+    polygons are traversed clockwise.
 
     This is easy if all intersections are at the mid-
     points of sides.  Assume this for the moment.
@@ -647,10 +657,10 @@ Compute the intersection of two simple polygons.
     computed as being empty, then we know that the two
     polygons are identical.
 
-Rotate 2D coordinates.
+Problem: Rotate 2D coordinates.
 
-    A clockwise rotation R(theta) of a vector v=(vx,vy)
-    by an angle theta is
+    Solution: A clockwise rotation R(theta) of a vector
+    v=(vx,vy) by an angle theta is
 
 		   |   cos(theta)   sin(theta) | | vx |
       R(theta).v = |                           | |    |
@@ -670,10 +680,11 @@ Rotate 2D coordinates.
 
 	    R(90 degrees).v =  (vy,-vx)
 
-Rotate in 2D coordinates.
+Problem: Rotate in 3D coordinates.
 
-    The following is the rotation Rz(theta) around the
-    z-axis of a vector v=(vx,vy,vz) by an angle theta:
+    Solution: The following is the rotation Rz(theta)
+    around the z-axis of a vector v=(vx,vy,vz) by an
+    angle theta:
 
     Rz(theta).v =
 
@@ -715,15 +726,15 @@ Rotate in 2D coordinates.
     There are two choices, as the two sin(theta) com-
     ponents always have opposite signs.
 
-A robot arm is a set of line segments connected end to
-end, and at the origin of the first segment, the end of
-the last segment, and each connecting point in between,
-a servo that can rotate everything beyond the servo.
-The servo at the last endpoint can rotate a hand at the
-end of the last segment.  The hand is conceptually an
-orthonormal basis, representable by an matrix whose
-columns are the orthonormal vectors.  The line endpoints
-are conceptually just points.
+Definition: A robot arm is a set of line segments con-
+nected end to end, and at the origin of the first seg-
+ment, the end of the last segment, and each connecting
+point in between, a servo that can rotate everything
+beyond the servo.  The servo at the last endpoint can
+rotate a hand at the end of the last segment.  The hand
+is conceptually an orthonormal basis, representable by
+an matrix whose columns are the orthonormal vectors.
+The line endpoints are conceptually just points.
 
 The arm has a home position; e.g., all segments vertical
 and the hand aligned with the coordinate system (repre-
@@ -733,13 +744,14 @@ a servo can rotate clockwise or counterclockwise.  In 3D
 the servo can rotate around any of the x-, y-, or z-
 axes.
 
-Compute the locations of the endpoints and orientation
-of the hand of a robot arm given the segment lengths and
-servo settings.
+Problem: Compute the locations of the endpoints and
+orientation of the hand of a robot arm given the segment
+lengths and servo settings.
 
-    The trick is to build the robot from the hand end
-    up.  Assume the initial position of the robot is
-    vertical with hand aligned with the coordinate axes.
+    Solution: The trick is to build the robot from the
+    hand end up.  Assume the initial position of the
+    robot is vertical with hand aligned with the
+    coordinate axes.
 
     If the robot has no line segments and no servos,
     it has only an end point with a hand, and the hand
@@ -772,6 +784,6 @@ file.
 RCS Info (may not be true date or author):
 
     $Author: hc3 $
-    $Date: 2005/07/28 20:09:02 $
+    $Date: 2005/07/29 16:53:51 $
     $RCSfile: geometry_exercises,v $
-    $Revision: 1.10 $
+    $Revision: 1.11 $
