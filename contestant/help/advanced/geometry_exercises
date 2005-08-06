@@ -1,4 +1,4 @@
-GEOMETRY EXERCISES HELP    Sat Aug  6 12:08:16 EDT 2005
+GEOMETRY EXERCISES HELP    Sat Aug  6 13:47:11 EDT 2005
 
 These are programming exercises you can do to help
 strengthen your geometry problem skills.
@@ -242,7 +242,7 @@ Problem: Find the intersection of a line segment B from
     then be in the interior of the other segment, or
     must equal an end point of the other segment.
 
-Definition: A simple (a.k.a non-degenerate) polygon is a
+Definition: A simple (aka non-degenerate) polygon is a
 sequence of vertices in clockwise (or counterclockwise)
 order defining the line segments of the boundary of the
 polygon, such that the only intersections of two seg-
@@ -351,11 +351,11 @@ Definition: The convex hull of a set of points V in a
 plane is a sequence of points of V, p(1), ..., p(N),
 such that for every i, all the points of V are on or to
 the right of the line through p(i) and p((i mod N)+1),
-and such that no point p(j) is on this line except of
-course p(i) and p((i mod N)+1).  Then the finite lines
-from p(i) to p((i mod N)+1) for i = 1, ..., N are the
-sides of the smallest convex polygon such that all the
-points of V are inside this polygon or on its boundary.
+and such that no three points of the set p(1), ..., p(N)
+are on a straight line.  Then the finite lines from p(i)
+to p((i mod N)+1) for i = 1, ..., N are the sides of the
+smallest convex polygon such that all the points of V
+are inside this polygon or on its boundary.
 
 Problem: Find the convex hull of a set of 2D points.
 
@@ -369,16 +369,17 @@ Problem: Find the convex hull of a set of 2D points.
     Given a point p, define a relation among points q1,
     q2 that are not equal to p as follows:
 
-	definition:  q1 > q2 iff q2 is to the right of
-				 the line from p to q1
-				 or q2 is on this line
-				 and closer to p than
-				 q1 is.
+	definition:  q1 > q2
+		     if and only if
+		     q2 is to the right of the infinite
+		     line directed from p to q1 or q2
+		     is on this line and closer to p
+		     than q1 is.
 
     If p is a hull point, this relation is antisymmetric
-    and transitive (proof to reader).  So given the hull
-    up to p(i), choose p(i+1) to be the maximum point in
-    V according to this relation.  Stop when p(i+1) =
+    and transitive (proof to reader).  Given the hull up
+    to p(i), choose p(i+1) to be the maximum point in V
+    according to this relation.  Stop when p(i+1) =
     p(1), in which case N=i.
 
     This is not the fastest algorithm, as it has time
@@ -412,7 +413,8 @@ convex polygon.
     intersects the interior of any side of the polygon.
     It also does if pa and pb are both inside or on the
     boundary of the polygon, but are not both on the
-    same single side of the polygon.
+    same single side of the polygon, assuming no two
+    consecutive sides of the polygon are parallel.
 
     These are the only two cases where the interior of
     the line segment can intersect the interior of the
@@ -424,23 +426,6 @@ convex polygon.
     of either of the two new line segments intersect the
     interior of the polygon.
 
-    So all one has to do is take the clockwise sides of
-    the polygon and check whether the interior of the
-    line segment intersects the interior of some side,
-    and whether for each polygon side, the line segment
-    ends are both on or to the right of the infinite
-    line extending the side, and the ends are not both
-    on that line.  If the latter is true for all sides,
-    the segment is inside the polygon.  During this
-    process one checks each convex hull point to see if
-    it is in the interior of the line segment, and if it
-    is, one then divides the line segment up into two
-    segments at the hull point, and then one applies the
-    algorithm recursively to see if the interior of
-    either of these two segments intersects the interior
-    of the polygon.
-
-
 Problem: Given a set of convex polygons in a plane, and
 two points p and q outside any convex polygon, find the
 shortest path from p to q that does not go inside any
@@ -456,12 +441,14 @@ polygon if these are not inside some other polygon.
     and pb in V, there is an edge in this undirected
     graph between pa and pb iff the interior of the line
     from pa to pb does not intersect the interior of any
-    polygon.  Actually, we can make the computation
-    simpler by also deleting an edge from pa to pb if
-    the interior of the line from pa to pb contains any
-    member of V, as the shortest path can be composed of
-    line segments between members of V that do not
-    contain other members of V.
+    polygon.
+
+    Actually, we can make the computation simpler by
+    also deleting an edge from pa to pb if the interior
+    of the line from pa to pb contains any member of V,
+    as the shortest path can be composed of line seg-
+    ments between members of V that do not contain other
+    members of V.
 
 Problem: Intersect a horizontal infinite line with a
 simple polygon to produce a set of line segments.
@@ -477,7 +464,7 @@ the polygon.
     the boundary of the polygon.  The list of transition
     points is the list of line segment ends that needs
     to be computed.
-
+
     Sort the sides of the polygon by the x coordinate
     at which they cross the horizontal infinite line.
     If a side runs along the line, sort it by its
@@ -488,7 +475,7 @@ the polygon.
     interior by the infinite line, this is always a
     transition point, and the scan state flips, from
     OUTSIDE to INSIDE or vice versa.
-
+
     If the scan encounters a side intersecting at one
     of its ends, i.e., a polygon vertex, life is more
     interesting.  If the vertex is the low x vertex of
@@ -517,7 +504,7 @@ the polygon.
     line would apply), and IN != 0 (ditto).  Set the
     scan state to INSIDE if and only if -IN > OUT, and
     to OUTSIDE if -IN < OUT.
-
+
 Problem: Compute the intersection of two simple
 polygons.
 
@@ -528,7 +515,7 @@ polygons.
     direction of travel when the intersection point is
     used as a vertex in an intersection polygon, and all
     polygons are traversed clockwise.
-
+
     This is easy if all intersections are at the mid-
     points of sides.  Assume this for the moment.
 
@@ -541,7 +528,7 @@ polygons.
     sections those used as vertices in that polygon.
     Repeat this algorithm until the list of intersec-
     tions is empty.
-
+
     Pick a point from the list of intersections, and
     call it the anchor vertex of a new intersection
     polygon.  Make the outgoing side of this intersect-
@@ -565,7 +552,7 @@ polygons.
     finding intersection polygon vertices in this way
     until the anchor is removed from the list of inter-
     section points.
-
+
     The situation is more difficult when a vertex from
     one polygon can be on the boundary of the other
     polygon.  In this case, we compute intersections by
@@ -573,7 +560,7 @@ polygons.
     each polygon, and ask whether there is an intersec-
     tion with IN as the incoming side and OUT as the
     outgoing side.  There are several cases.
-
+
     If IN and OUT do not intersect at all, there is no
     intersection.  If they intersect in their interiors,
     there is an intersection.  If they are parallel,
@@ -603,12 +590,12 @@ polygons.
     range [0,2pi).  Then -IN != IN' and -OUT' != OUT,
     else the polygons would be degenerate.  Also by
     definition OUT = 0.
-
+
     A possible intersection point will be an actual
     intersection point with incoming side IN and out-
     going side OUT if and only if -IN >= -OUT' and
     -IN > IN'.
-
+
     There is a difficulty in determining when -IN =
     OUT'.  If the coordinates are all bounded by B and
     are all exact multiples of Q, let A = Q / B.
@@ -634,7 +621,7 @@ polygons.
     point and cause that to be removed from the inter-
     section list when such a vertex is output to an in-
     tersection polygon.
-
+
     Note that if -IN != -OUT' and IN' != OUT then it is
     possible the vertex will generate two intersection
     points on the intersection list, and both will be
@@ -644,7 +631,7 @@ polygons.
     because one vertex would have to reference two such
     points, and its not necessary to have the vertex
     reference any points.
-
+
     Now there is a secondary difficulty.  If both
     -IN = -OUT' and IN' = OUT as angles then the vertex
     will be recognized as an intersection point twice,
@@ -663,7 +650,7 @@ polygons.
     is true but the intersection list is initially
     computed as being empty, then we know that the two
     polygons are identical.
-
+
 Problem: Rotate 2D coordinates.
 
     Solution: A clockwise rotation R(theta) of a vector
@@ -676,7 +663,7 @@ Problem: Rotate 2D coordinates.
 		  |   vx cos(theta) + vy sin(theta) |
 		= |                                 |
 		  | - vx sin(theta) + vy cos(theta) |
-
+
     Most particularly, if theta = 90 degrees, then
 
 		    
@@ -686,7 +673,7 @@ Problem: Rotate 2D coordinates.
 
 
 	    R(90 degrees).v =  (vy,-vx)
-
+
 Problem: Rotate in 3D coordinates.
 
     Solution: The following is the rotation Rz(theta)
@@ -707,7 +694,6 @@ Problem: Rotate in 3D coordinates.
 	   |                                 |
 	   |               vz                |
 
-
     Most particularly, if theta = 90 degrees, then
 
 		
@@ -726,7 +712,7 @@ Problem: Rotate in 3D coordinates.
     the z-axis goes up, and the y-axis goes away from
     you, then a rotation with theta > 0 is clockwise
     looking down on the xy-plane.
-
+
     One can also write matrices easily for rotations
     about the x-axis or y-axis.  The only issue is
     choosing the signs of the sin(theta) components.
@@ -742,7 +728,7 @@ rotate a hand at the end of the last segment.  The hand
 is conceptually an orthonormal basis, representable by
 an matrix whose columns are the orthonormal vectors.
 The line endpoints are conceptually just points.
-
+
 The arm has a home position; e.g., all segments vertical
 and the hand aligned with the coordinate system (repre-
 sented by the unit matrix).  In this home position, each
@@ -765,7 +751,7 @@ lengths and servo settings.
     is always oriented along the coordinate axes.  Thus
     the end point is the origin and the hand orientation
     is the unit matrix.
-
+
     If we add a servo that has a rotation matrix to the
     origin of the robot, all end points in the robot are
     rotated by the servo matrix, and the hand orienta-
@@ -775,7 +761,7 @@ lengths and servo settings.
     all end points in the robot are translated vertical-
     ly by the length of the line segment, and the hand
     orientation does not change.
-
+
     By repeatedly adding servos and line segments we
     can get to the final robot arm state.
 
@@ -791,6 +777,6 @@ file.
 RCS Info (may not be true date or author):
 
     $Author: hc3 $
-    $Date: 2005/08/06 17:42:30 $
+    $Date: 2005/08/06 18:03:08 $
     $RCSfile: geometry_exercises,v $
-    $Revision: 1.14 $
+    $Revision: 1.15 $
