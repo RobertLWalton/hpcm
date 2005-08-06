@@ -1,4 +1,4 @@
-GEOMETRY EXERCISES HELP    Sat Aug  6 11:22:45 EDT 2005
+GEOMETRY EXERCISES HELP    Sat Aug  6 12:08:16 EDT 2005
 
 These are programming exercises you can do to help
 strengthen your geometry problem skills.
@@ -261,59 +261,79 @@ Problem: Determine if a 2D line segment intersects the
 interior of a simple polygon.
 
     Solution: Find the intersections of the 2D line seg-
-    ment and the boundary of the polygon, and investi-
-    gate these intersections.
+    ment L and each line segment B or vertex V in the
+    boundary of the polygon, and investigate these
+    intersections.
+
+    The easy case is where L and some B intersect at a
+    point in the interior of both L and B.  Then of
+    course L intersects the interior of the polygon.
+
+    All the other cases can be reduced to the case where
+    the intersection is both a vertex V of the polygon
+    and an end point of L.  If an end point of L is in
+    the interior of some polygon boundary line B, divide
+    B in two at that point to create an additional poly-
+    gon vertex.  If a vertex V of the polygon is an in-
+    terior point of L, divide L in two at V.  If L and a
+    boundary line B are parallel and overlap, delete
+    from L the overlap, getting two non-overlapping 2D
+    line segments each ending at a vertex of the poly-
+    gon.
     
-    One hard case is when an intersection is a vertex of
-    the polygon: the 2D line segment might pass into the
-    interior or be tangential to the polygon.
+    So all the harder cases reduce to the case where the
+    intersection is a vertex V of the polygon and an end
+    point of L.
 
-    You therefore have a vertex with up to 4 line seg-
-    ments leaving it: two polygon sides and 1 or 2 parts
-    of the 2D line segment.  So is any part of the 2D
-    line segment going into the interior of the polygon?
-
+    You therefore have a vertex with 3 line segments
+    leaving it: two polygon sides and L.  So is L going
+    into the interior of the polygon?
+
     Treating polygon sides as clockwise directed, let
     OUT be the outgoing polygon side and IN the incoming
-    polygon side.  Let LINE a 2D line segment part di-
-    rected out from the vertex.  Let -IN be the incom-
-    ing side with direction reversed.  Measure the
-    counterclockwise angles from OUT to the segments -IN
-    and LINE, and normalize these angles to the range
-    [0,2pi).  Then letting OUT, -IN, and LINE denote the
-    angles, so OUT = 0 and -IN > 0, we have that LINE
-    goes into the interior of the polygon iff
-    LINE > -IN.
-
-    You need to decide when angles are exactly equal.
-    Let point coordinates all have absolute value less
-    than B and be exact multiples of Q with Q <= B*A.
-    Then two angles that are different will differ by
-    several times A**2/10, and two that are equal will
-    differ by many times less than A**2/10, if the
-    precision of computation is many times less than
-    A**2/10.
+    polygon side.  Let LINE be L directed out from the
+    vertex.  Let -IN be the incoming polygon side with
+    direction reversed.  Measure the counterclockwise
+    angles from OUT to the segments -IN and LINE, and
+    normalize these angles to the range [0,2pi).  Then
+    letting OUT, -IN, and LINE denote the angles, so
+    OUT = 0 and -IN > 0, we have that LINE goes into the
+    interior of the polygon iff LINE > -IN.
 
-    [Proof:  tan A - tan B = sin ( A - B )
-                           / (cos A * cos B )
+    This solves the problem, except that you have to
+    decide when angles are exactly equal.
+
+    Let point coordinates all have absolute value less
+    than B and be exact multiples of Q with Q => B*A
+    for some small enough A.  Then two angles that are
+    different will differ by at least A**2, and two that
+    are equal will differ by 0, so if the accuracy of
+    computation is much better than A**2/10, we can
+    declare two angles different if and only if they
+    differ by at least A**2/10.
+
+    [Proof:  tan X - tan Y = sin ( X - Y )
+                           / (cos X * cos Y )
 
      Therefore
 
-     	     | tan A - tan B | <= | sin ( A - B ) |
+     	     | tan X - tan Y | <= | sin ( X - Y ) |
 
-     We are interested in the case where A - B is very
-     small, so that sin ( A - B ) = A - B, and
+     We are interested in the case where X - Y is very
+     small, so that | sin ( X - Y ) | <= | X - Y |, and
 
-     	     | tan A - tan B | <= | A - B |
+     	     | tan X - tan Y | <= | X - Y |
 
      Scaling coordinates by Q**-1, coordinates are all
-     integers bounded by A**-1, and the left side is
-
+     integers bounded by A**-1 >= B*(Q**-1), and the
+     left side is
+
 	    x1/y1 - x2/y2 = .../(y1*y2)
 
-     and if not zero, differs from zero by at least
-     A**-2.  Therefore A and B differ by at least
-     A**-2.]
+     where |y1| <= A**-1 and |y2| <= A**-1, so if the
+     left side is not zero, it differs from zero by at
+     least A**2.  Therefore X and Y differ by at least
+     A**2.]
 
     With this in mind, the code to normalize an angle
     X to the range [0,2pi) is
@@ -321,17 +341,6 @@ interior of a simple polygon.
 	ACC = A*A/10
     	while ( X < - ACC ) X += 2pi
     	while ( X > 2pi - ACC ) X -= 2pi
-
-    A second hard case is when an endpoint of the 2D
-    line segment lies in the interior of a polygon side.
-    This can be treated by pretending the endpoint is
-    a polygon vertex and applying the previous method
-    with OUT = IN direction-wise.
-
-    If the 2D line segment and a side are parallel and
-    overlap, one of the polynomial vertices or one of
-    the line end points can be treated as an intersec-
-    tion point and the above methods can be applied.
 
 Definition: A polygon is convex if and only if every
 line segment between two points inside or on the
@@ -782,6 +791,6 @@ file.
 RCS Info (may not be true date or author):
 
     $Author: hc3 $
-    $Date: 2005/08/06 16:03:32 $
+    $Date: 2005/08/06 17:42:30 $
     $RCSfile: geometry_exercises,v $
-    $Revision: 1.13 $
+    $Revision: 1.14 $
