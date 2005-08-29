@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Dec 12 21:19:49 EST 2004
+# Date:		Mon Aug 29 04:41:47 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2004/12/13 03:00:02 $
+#   $Date: 2005/08/29 09:02:14 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.43 $
+#   $Revision: 1.44 $
 
 # See STATUS file for description of versions.
 #
@@ -46,6 +46,10 @@ NONDIS = non_distributable
 #	and by auxiliary judges.  Like `make all' but
 #	also adds group permissions to files and
 #	directories.
+#
+# make files
+#	Make *.files files, and in particular
+#	distribution.files and cvs.files.
 #
 # make slocs
 #	Make sloc count files, source.slocs and
@@ -99,9 +103,20 @@ signatures:	HPCM_${VERSION}_MD5_Signatures
 
 cvssignatures:	HPCM_${VERSION}_CVS_MD5_Signatures
 
+files:		hpcm_${VERSION}.files \
+		hpcm_${VERSION}_solutions.files \
+		hpcm_${VERSION}_${NONDIS}.files \
+		distribution.files \
+		cvs.files
+
 # Kill all implicit rules
 #
 .SUFFIXES:
+
+# A prerequisite that is never there: used to force
+# rules to fire every time.
+#
+NO_SUCH_FILE:
 
 # The following must be done to make sure things are
 # ready to run when there are auxiliary judges.
@@ -317,7 +332,7 @@ distribution.files:	hpcm_${VERSION}.files \
 # which files are missing from the distribution.
 #
 CVSEXP = ^.*cvsroot\/hpcm\/\(.*\),v$$
-cvs.files:
+cvs.files:	NO_SUCH_FILE
 	rm -f cvs.files
 	cvs log -R | \
 	    sed -n '-e/${CVSEXP}/s//hpcm\/\1/p' | \
