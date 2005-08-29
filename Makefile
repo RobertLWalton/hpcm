@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Aug 29 04:41:47 EDT 2005
+# Date:		Mon Aug 29 05:17:57 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/08/29 09:02:14 $
+#   $Date: 2005/08/29 09:36:22 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.44 $
+#   $Revision: 1.45 $
 
 # See STATUS file for description of versions.
 #
@@ -418,6 +418,8 @@ cleantar:
 	      hpcm_${VERSION}.files \
 	      hpcm_${VERSION}_solutions.files \
 	      hpcm_${VERSION}_${NONDIS}.files \
+	      distribution.files \
+	      cvs.files \
 	      hpcm_${VERSION}${TAREXT} \
 	      hpcm_${VERSION}_solutions${TAREXT} \
 	      hpcm_${VERSION}_${NONDIS}${TAREXT}
