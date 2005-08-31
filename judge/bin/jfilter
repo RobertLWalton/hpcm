@@ -1,0 +1,324 @@
+#!/bin/sh
+#
+# Use judge's input to produce filtered input or output
+# or scoring instructions.
+#
+# File:		jfilter
+# Author:	Bob Walton (walton@deas.harvard.edu)
+# Date:		Tue Aug 30 23:14:28 EDT 2005
+#
+# The authors have placed this program in the public
+# domain; they make no warranty and accept no liability
+# for this program.
+#
+# RCS Info (may not be true date or author):
+#
+#   $Author: hc3 $
+#   $Date: 2005/08/31 12:29:49 $
+#   $RCSfile: jfilter,v $
+#   $Revision: 1.1 $
+#
+# The next line starts tcl \
+exec tcl "$0" "$@"
+
+# Use tcl rather than tclsh so that `signal' is defined.
+
+set document "
+jfilter \[options\] judging_input_file
+jfilter \[options\] judging_input_file \\
+                    filtered_input_file
+jfilter \[options\] judging_input_file \\
+                    output_file filtered_output_file
+
+    A judging_input_file (e.g., a .jin file) has scoring
+    parameter lines and marker lines, and judge's input
+    to test a submitted program.  The parameter and
+    marker lines define both scoring instructions for
+    scoring any output produced from the judge's input
+    in the file, and a means of dividing both the
+    judge's input and all output produced therefrom into
+    cases and into groups of cases.
+
+    The 1-file-name command reads the judging_input_file
+    (e.g., a .jin file) and prints scoring instructions
+    that can be passed as arguments to the scorediff
+    program.
+
+    The 2-file-name command reads the judging_input_file
+    and writes filtered version of that to the filtered_
+    input_file.  The filtered version version simply has
+    judging parameter and marker lines (defined below)
+    removed.
+
+    The 3-file-name command reads the judging_input_file
+    and the output_file (e.g., a .out, .fout, .test, or
+    .ftest file), and writes a filtered version of the
+    output_file to the filtered_output_file.  The fil-
+    tered_output_file is the same as the output_file
+    except each line is prefaced with one of the follow-
+    ing characters:
+
+    	+ Begin a group and a case.
+	| Begin a group.
+	- Begin a case.
+	. Do not begin a case or group.
+
+    The options modify these commands as follows:
+
+        -c <case-number>
+
+	    For the 2- and 3-file-name commands, these
+	    cause the commands to output just the
+	    portion of the judge's input or the portion
+	    of the output that relates to testing the
+	    given case number.  Cases are numbered 1, 2,
+	    3, ... in the files.
+
+	    If there are no groups in the files, the
+	    portion consists just of the lines in the
+	    designated case, from the case beginning
+	    line through the last line that is just
+	    before the beginning of the next group or
+	    case or the end of file.
+
+	    If there are groups in the files, the
+	    portion consists of the lines in the group
+	    containing the case, up to and including
+	    the lines in the case.
+
+	-g <case-number>
+
+	    Same as -c BUT, if there are groups in the
+	    files, include all the lines of the entire
+	    group, instead of stopping with the design-
+	    ated case.
+
+	-case-head <case-head>
+	-group-head <group-head>
+	-case-separator <case-separator>
+	-scoring <scoring-instructions>
+	-marks <marks>
+
+	    Set the default value of the designated
+	    parameter.
+
+
+    The judging_input_file begins zero or more parameter
+    definitions, each having one of the following forms:
+
+	*CASE-HEAD* <case-first-output-line-regexp>
+
+	*GROUP-HEAD* <group-first-output-line-regexp>
+
+	*CASE-SEPARATOR* <case-output-separator-regexp>
+
+	*SCORING* <scoring-instruction> ...
+
+	*MARKS* <group-mark> <case-mark>
+
+    These consist of a parameter-designator, the first
+    thing on the line (e.g., *CASE-HEAD*), followed by
+    parameters.
+
+    The regexp parameters are TCL regular expressions
+    that are matched to lines of output files.  If the
+    *CASE-HEAD* regexp matches a line, that line begins
+    a case.  If the *GROUP-HEAD* regexp matches a line,
+    that line begins a group.  Both case and group
+    regexps can match the same line.  If a *CASE-SEPARA-
+    TOR* regexp matches a line, that line is the last
+    line of a case.  You cannot give both *CASE-HEAD*
+    and *CASE-SEPARATOR* regexps.
+
+    The *SCORING* parameters are just exactly what is
+    printed on a single line by the 1-file-name command.
+
+    The *MARKS* define markers that are put before
+    groups and cases in the remainder of the judging_
+    input_file.  The group-mark says that the next
+    non-case-mark line begins a group.  The case-mark
+    says the next line begins a case.
+
+    Parameter definitions can be continued across lines
+    by writing a sequence of lines with the same para-
+    meter-designator.  Thus
+
+    	*CASE-HEAD* xxx
+    	*CASE-HEAD* yyy
+
+    is the same as
+
+    	*CASE-HEAD* xxxyyy
+
+    Note that there is no space here between the xxx and
+    yyy when they are concatenated.  This is because
+    they are regexp parameters.  If they were non-regexp
+    parameters, a single space character would be
+    inserted.  Therefore
+
+    	*SCORING* xxx
+    	*SCORING* yyy
+
+    is the same as
+
+    	*SCORING* xxx yyy
+
+    Regexps should begin with `^' if they are to match
+    just the beginning of a line.  Otherwise they will
+    match any part of a line.
+
+    Regexps are always matched with a -nocase option, so
+    letter case in a regexp makes no difference.
+
+    Whitespace is trimmed from the beginning and end of any
+    regexp in a parameter definition.  This means that if
+    the regexp is to end with a space character, it should
+    be postpended by `()', which does nothing but mark the
+    end of the regexp.  E.g.,
+
+        *CASE-HEAD* ^foo   ()
+
+
+    The defaults for all parameters are
+
+        *GROUP-HEAD*		Missing.
+	
+	    No output lines begin a group.
+
+	*CASE-HEAD*		^
+
+	    Every output line begins a case head.
+
+	*CASE-SEPARATOR*	Missing.
+
+	    No output lines are case separator lines.
+
+	*SCORING* space column
+
+	    Type and amount of whitespace within a line
+	    do not count.
+
+	*MARKS* *GROUP* *CASE*
+
+    The group and case judging input comes after any
+    parameter definitions in the judging_input_file.
+    If there are no groups, the input consists of cases
+    each of which begins with a line containing nothing
+    but a case mark (default `*CASE*').  If there are
+    groups, these cases are grouped, with each group
+    beginning with a line containing nothing but a
+    group mark (default `*GROUP*').  There may be input
+    lines at the beginning of a group before the first
+    case.
+
+    Any lines in the judging_input_file that are after
+    the parameter definitions and before any marks are
+    assumed to be 1-line cases not in any group.
+
+    Unlike most HPCM judging programs, this program does
+    not read any hpcm_judging.rc file and errors made by
+    this program are not written to log files."
+
+# Process options.
+#
+set case_head "^"
+set group_head ""
+set case_separator ""
+set scoring "space column"
+set marks "*GROUP* *CASE*"
+set case ""
+set group ""
+while { [regexp {^-} [lindex $argv 0]} } {
+{
+    switch [lindex $argv 0] {
+    set argname ""
+    -doc {
+	    puts $document
+	    exit 0
+	}
+    -case-head		{ set case_head \
+    			      [lindex $argv 1] }
+    -group-head		{ set group_head \
+    			      [lindex $argv 1] }
+    -case-separator	{ set case_separator \
+    			      [lindex $argv 1] }
+    -scoring		{ set scoring \
+    			      [lindex $argv 1] }
+    -marks		{ set marks\
+    			      [lindex $argv 1] }
+    -case		{ set case\
+    			      [lindex $argv 1] }
+    -group		{ set group\
+    			      [lindex $argv 1] }
+    default {
+    	    puts stderr "BAD option: [lindex $argv 0]"
+	    exit 1
+    	}
+    }
+
+    set argv [lrange $argv 2 end]
+}
+
+if { [llength $argv] < 1 || [llength $argv] > 3 } {
+    puts stderr "ERROR: to few arguments"
+    exit 1
+}
+
+# Set up arguments.
+#
+set jin_file [lindex $argv 0]
+set in_file ""
+set out_file ""
+set jout_file ""
+switch [llength $argv] {
+    1 {}
+    2 { set in_file [lindex $argv 1] }
+    2 { set out_file [lindex $argv 1]
+        set jout_file [lindex $argv 2] }
+}
+
+# Read and process parameter definitions.
+#
+if { [catch { set jin [open $jin_file r] }] } {
+    puts stderr "ERROR: cannot open $jin_file"
+    exit 1
+}
+set line [gets $jin]
+
+set last_designator ""
+while { ! [eof $line] } {
+    set designator ""
+    set variable ""
+    regexp {^[\ \t]*([^\ \t]+)([\ \t]|$)} $line \
+           forget designator rest
+    switch $designator {
+    *CASE-HEADER*	{ set variable case_header
+    			  set separator "" }
+    *GROUP-HEADER*	{ set variable group_header
+    			  set separator "" }
+    *CASE-SEPARATOR*	{ set variable case_separator
+    			  set separator "" }
+    *SCORING*		{ set variable scoring
+    			  set separator " " }
+    *MARKS*		{ set variable marks
+    			  set separator " " }
+    default { break }
+    }
+    set rest [string trim $rest]
+    if { $last_designator != $designator } {
+        set $variable $rest
+    } elseif { $rest != "" } {
+        set $variable "$variable$separator$rest"
+    }
+    set last_designator $designator
+    set line [gets $jin]
+}
+
+TBD
+
+exit 0
+
+# Include common error catching code:
+#
+} caught_output
+caught_error
