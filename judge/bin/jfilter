@@ -5,7 +5,7 @@
 #
 # File:		jfilter
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Aug 30 23:14:28 EDT 2005
+# Date:		Wed Aug 31 08:43:38 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/08/31 12:29:49 $
+#   $Date: 2005/08/31 14:25:44 $
 #   $RCSfile: jfilter,v $
-#   $Revision: 1.1 $
+#   $Revision: 1.2 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -270,7 +270,8 @@ set jin_file [lindex $argv 0]
 set in_file ""
 set out_file ""
 set jout_file ""
-switch [llength $argv] {
+set number_args [llength $argv]
+switch $number_args {
     1 {}
     2 { set in_file [lindex $argv 1] }
     2 { set out_file [lindex $argv 1]
@@ -314,11 +315,127 @@ while { ! [eof $line] } {
     set line [gets $jin]
 }
 
-TBD
-
-exit 0
-
-# Include common error catching code:
+# Process 1 argument case.
 #
-} caught_output
-caught_error
+if { $number_args == 1 } {
+    close $jin
+    puts $score
+    exit 0
+}
+
+# Process 2 argument case.
+#
+if { $number_args == 2 } {
+
+    set in [open $in_file w]
+
+    set group_mark [lindex $marks 0]
+    set case_mark [lindex $marks 1]
+
+    set case_count 0
+    set found_case 0
+    set found_group 0
+    set saved_group {}
+    set copy 1
+    set selective_copy 0
+    if { $case != "" || $group != "" } {
+	set selective_copy 1
+	set copy 0 }
+    }
+
+    while { ! [eof $jin] } {
+	set is_mark 0
+        if { $line == $case_mark } {
+	    set found_case 1
+	    incr case_count
+	    set is_mark 1
+	    if { $case_count == $group } {
+	        foreach s $saved_group { puts $in $s }
+		set copy 1
+	    } elseif { $case_count == $case } {
+	        set copy 1
+	    } elseif { $selective_copy } {
+	        set copy 0
+	    }
+	    if { ! $found_group } {
+	        set saved_group {}
+	    }
+	}
+        if { $line == $group_mark } {
+	    set found_group 1
+	    set saved_group {}
+	    set is_mark 1
+	    if { $selective_copy } {
+	        set copy 0
+	    }
+	}
+	if { ! $is_mark } {
+	    if { ! $found_case } {
+	        incr case_count
+		if { $case_count == $group } {
+		    set copy 1
+		} elseif { $case_count == $case } {
+		    set copy 1
+		} elseif { $selective_copy } {
+		    set copy 0
+		}
+		set saved_group {}
+	    }
+	    lappend saved_group $line
+	    if { $copy } { puts $in $line }
+	}
+    }
+    close $jin
+    close $in
+    exit 0
+}
+
+# Process 3 argument case.
+#
+if { $number_args == 3 } {
+
+    close $jin
+    set out [open $out_file r]
+    set jout [open $jout_file w]
+    set line [gets $out_file]
+    set force_case 0
+    while { ! [eof $out_file] } {
+	set g 0
+	set c $force_case
+	if {    $group_head != "" \
+	     && [regexp -nocase $group_head $line] } {
+	    set g 1
+	}
+	if {    $case_head != "" \
+	     && [regexp -nocase $case_head $line] } {
+	    set c 1
+	}
+	if {    $case_separator != "" \
+	     && [regexp -nocase $case_separator $line] \
+	   } {
+	    set force_case 1
+	} else {
+	    set force_case 0
+	}
+	if { $g && $c } {
+	    puts $jout "+$line"
+	} elseif { $g$ } {
+	    puts $jout "|$line"
+	} elseif { $c$ } {
+	    puts $jout "-$line"
+	} else {
+	    puts $jout ".$line"
+	}
+
+        set line [gets $out_file]
+    }
+    close $out
+    close $jout
+
+    exit 0
+}
+
+# Should not come here.
+#
+puts stderr "Programming error."
+exit 1
