@@ -5,7 +5,7 @@
 #
 # File:		jfilter
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Aug 31 08:43:38 EDT 2005
+# Date:		Thu Sep  1 15:10:24 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/08/31 14:25:44 $
+#   $Date: 2005/09/01 21:49:59 $
 #   $RCSfile: jfilter,v $
-#   $Revision: 1.2 $
+#   $Revision: 1.3 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -93,51 +93,87 @@ jfilter \[options\] judging_input_file \\
 	    group, instead of stopping with the design-
 	    ated case.
 
-	-case-head <case-head>
-	-group-head <group-head>
-	-case-separator <case-separator>
+	-case-head <output-case-head-regexp>
+	-group-head <output-group-head-regexp>
+	-separator <output-separator-regexp>
+	-output-case-head <output-case-head-regexp>
+	-output-group-head <output-group-head-regexp>
+	-output-separator <output-case-separator-regexp>
+	-input-case-head <input-case-head-regexp>
+	-input-group-head <input-group-head-regexp>
+	-input-separator <input-separator-regexp>
+	-case-mark <input-case-mark-regexp>
+	-group-mark <input-group-mark-regexp>
+	-separator-mark <input-separator-mark-regexp>
+	-input-case-mark <input-case-mark-regexp>
+	-input-group-mark <input-group-mark-regexp>
+	-input-separator-mark \\
+	       <input-separator-mark-regexp>
 	-scoring <scoring-instructions>
-	-marks <marks>
 
 	    Set the default value of the designated
-	    parameter.
+	    parameter.  These parameters can then be
+	    reset by parameter definitions in the
+	    judging_input_file.
 
 
     The judging_input_file begins zero or more parameter
     definitions, each having one of the following forms:
 
-	*CASE-HEAD* <case-first-output-line-regexp>
+    *CASE-HEAD* <output-case-head-regexp>
+    *GROUP-HEAD* <output-group-head-regexp>
+    *SEPARATOR* <output-separator-regexp>
 
-	*GROUP-HEAD* <group-first-output-line-regexp>
+    *OUTPUT-CASE-HEAD* <output-case-head-regexp>
+    *OUTPUT-GROUP-HEAD* <output-group-head-regexp>
+    *OUTPUT-SEPARATOR* <output-separator-regexp>
 
-	*CASE-SEPARATOR* <case-output-separator-regexp>
+    *INPUT-CASE-HEAD* <input-case-head-regexp>
+    *INPUT-GROUP-HEAD* <input-group-head-regexp>
+    *INPUT-SEPARATOR* <input-separator-regexp>
 
-	*SCORING* <scoring-instruction> ...
+    *CASE-MARK* <input-case-mark-regexp>
+    *GROUP-MARK* <input-group-mark-regexp>
+    *SEPARATOR-MARK* <input-separator-mark-regexp>
 
-	*MARKS* <group-mark> <case-mark>
+    *INPUT-CASE-MARK* <input-case-mark-regexp>
+    *INPUT-GROUP-MARK* <input-group-mark-regexp>
+    *INPUT-SEPARATOR-MARK* <input-separator-mark-regexp>
+
+    *SCORING* <scoring-instruction> ...
 
     These consist of a parameter-designator, the first
     thing on the line (e.g., *CASE-HEAD*), followed by
-    parameters.
+    parameters.  In a parameter designator, `OUTPUT-'
+    can be omitted: *CASE-HEAD* and *OUTPUT-CASE-HEAD*
+    mean the same thing.  `INPUT-' can be omitted for
+    the `MARKS': *CASE-MARK* and *INPUT-CASE-MARK* mean
+    the same thing.  It is not that common to have
+    *INPUT-...* parameters in a judging_input_file.
 
     The regexp parameters are TCL regular expressions
-    that are matched to lines of output files.  If the
-    *CASE-HEAD* regexp matches a line, that line begins
-    a case.  If the *GROUP-HEAD* regexp matches a line,
-    that line begins a group.  Both case and group
-    regexps can match the same line.  If a *CASE-SEPARA-
-    TOR* regexp matches a line, that line is the last
-    line of a case.  You cannot give both *CASE-HEAD*
-    and *CASE-SEPARATOR* regexps.
+    that are matched to lines of files.  Input regexps
+    match lines in the judging_input_file, which output
+    regexps match lines in the output_file.  A line
+    matched by a `head' regexp is called a head line,
+    and begins a group or case.  A line matched by a
+    `separator' regexp is called a separator line,
+    and is the last line of a case that is followed
+    by the first line of another case.  A line matched
+    by a `mark' is like a head line but must be deleted
+    from the filtered version of the file: this is only
+    used for the judging_input_file, to used mark lines
+    to mark the beginning of groups and cases.  And a
+    line matched by a `separator mark' is like a separa-
+    tor line, but must be deleted in the filtered ver-
+    sion of the file.
+
+    A regexp parameter set to the empty string (all
+    whitespace) is `missing', and deactivates use of
+    the parameter in line matching.
 
     The *SCORING* parameters are just exactly what is
     printed on a single line by the 1-file-name command.
-
-    The *MARKS* define markers that are put before
-    groups and cases in the remainder of the judging_
-    input_file.  The group-mark says that the next
-    non-case-mark line begins a group.  The case-mark
-    says the next line begins a case.
 
     Parameter definitions can be continued across lines
     by writing a sequence of lines with the same para-
@@ -153,8 +189,8 @@ jfilter \[options\] judging_input_file \\
     Note that there is no space here between the xxx and
     yyy when they are concatenated.  This is because
     they are regexp parameters.  If they were non-regexp
-    parameters, a single space character would be
-    inserted.  Therefore
+    parameters, i.e. scoring parameters, a single space
+    character would be inserted.  Therefore
 
     	*SCORING* xxx
     	*SCORING* yyy
@@ -181,39 +217,42 @@ jfilter \[options\] judging_input_file \\
 
     The defaults for all parameters are
 
-        *GROUP-HEAD*		Missing.
-	
-	    No output lines begin a group.
+	*CASE-HEAD* ^
+	*GROUP-HEAD*
+	*SEPARATOR*
 
-	*CASE-HEAD*		^
+	*INPUT-CASE-HEAD*
+	*INPUT-GROUP-HEAD*
+	*INPUT-SEPARATOR*
 
-	    Every output line begins a case head.
-
-	*CASE-SEPARATOR*	Missing.
-
-	    No output lines are case separator lines.
+	*CASE-MARK* ^\\*CASE*\\$
+	*GROUP-MARK* ^\\*GROUP\\*$
+	*SEPARATOR-MARK*
 
 	*SCORING* space column
 
-	    Type and amount of whitespace within a line
-	    do not count.
-
-	*MARKS* *GROUP* *CASE*
+    These mean that by default input is separated into
+    groups and cases by `*GROUP*' and `*CASE*' mark
+    lines, every line of output is a separate case, and
+    there are no output groups.  The default scoring
+    instructions say to ignore differences in the kind
+    and amount of spacing within an output_file line.
 
     The group and case judging input comes after any
     parameter definitions in the judging_input_file.
-    If there are no groups, the input consists of cases
-    each of which begins with a line containing nothing
-    but a case mark (default `*CASE*').  If there are
-    groups, these cases are grouped, with each group
-    beginning with a line containing nothing but a
-    group mark (default `*GROUP*').  There may be input
-    lines at the beginning of a group before the first
-    case.
+    If there are no groups, the input consists of just
+    a sequence of cases.  If there are groups, cases are
+    grouped.  A single line may begin both a case and
+    a group, in either input or output, or a group may
+    begin before the first case in the group.
 
     Any lines in the judging_input_file that are after
-    the parameter definitions and before any marks are
-    assumed to be 1-line cases not in any group.
+    the parameter definitions and before anything that
+    can be interpreted as a case or group beginning are
+    considered to be in error.  If there is no group
+    beginning before the first case, then any group
+    beginning in the judging_input_file is considered
+    to be in error.
 
     Unlike most HPCM judging programs, this program does
     not read any hpcm_judging.rc file and errors made by
@@ -221,13 +260,18 @@ jfilter \[options\] judging_input_file \\
 
 # Process options.
 #
-set case_head "^"
-set group_head ""
-set case_separator ""
+set output_case_head "^"
+set output_group_head ""
+set output_separator ""
+set input_case_head ""
+set input_group_head ""
+set input_separator ""
+set input_case_mark "\\*CASE\\*"
+set input_group_mark "\\*GROUP\\*"
+set input_separator_mark ""
 set scoring "space column"
-set marks "*GROUP* *CASE*"
-set case ""
-set group ""
+set c ""
+set g ""
 while { [regexp {^-} [lindex $argv 0]} } {
 {
     switch [lindex $argv 0] {
@@ -236,19 +280,36 @@ while { [regexp {^-} [lindex $argv 0]} } {
 	    puts $document
 	    exit 0
 	}
-    -case-head		{ set case_head \
+    -case-head		-
+    -output-case-head	{ set output_case_head \
     			      [lindex $argv 1] }
-    -group-head		{ set group_head \
+    -group-head		-
+    -output-group-head	{ set output_group_head \
     			      [lindex $argv 1] }
-    -case-separator	{ set case_separator \
+    -separator		
+    -output-separator	{ set output_separator \
+    			      [lindex $argv 1] }
+    -input-case-head	{ set input_case_head \
+    			      [lindex $argv 1] }
+    -input-group-head	{ set input_group_head \
+    			      [lindex $argv 1] }
+    -input-separator	{ set input_separator \
+    			      [lindex $argv 1] }
+    -case-mark		-
+    -input-case-mark	{ set input_case_mark \
+    			      [lindex $argv 1] }
+    -group-mark		-
+    -input-group-mark	{ set input_group_mark \
+    			      [lindex $argv 1] }
+    -separator-mark	-
+    -input-separator-mark \
+    			{ set input_separator_mark \
     			      [lindex $argv 1] }
     -scoring		{ set scoring \
     			      [lindex $argv 1] }
-    -marks		{ set marks\
+    -c			{ set c \
     			      [lindex $argv 1] }
-    -case		{ set case\
-    			      [lindex $argv 1] }
-    -group		{ set group\
+    -g			{ set g \
     			      [lindex $argv 1] }
     default {
     	    puts stderr "BAD option: [lindex $argv 0]"
@@ -284,25 +345,43 @@ if { [catch { set jin [open $jin_file r] }] } {
     puts stderr "ERROR: cannot open $jin_file"
     exit 1
 }
-set line [gets $jin]
+set jinline [gets $jin]
 
 set last_designator ""
-while { ! [eof $line] } {
+while { ! [eof $jinline] } {
     set designator ""
     set variable ""
-    regexp {^[\ \t]*([^\ \t]+)([\ \t]|$)} $line \
+    set separator ""
+    regexp {^[\ \t]*([^\ \t]+)([\ \t]|$)} $jinline \
            forget designator rest
     switch $designator {
-    *CASE-HEADER*	{ set variable case_header
-    			  set separator "" }
-    *GROUP-HEADER*	{ set variable group_header
-    			  set separator "" }
-    *CASE-SEPARATOR*	{ set variable case_separator
-    			  set separator "" }
-    *SCORING*		{ set variable scoring
-    			  set separator " " }
-    *MARKS*		{ set variable marks
-    			  set separator " " }
+    *CASE-HEAD*	-
+    *OUTPUT-CASE-HEAD*
+        { set variable output_case_head }
+    *GROUP-HEAD* -
+    *OUTPUT-GROUP-HEAD*
+        { set variable output_group_head }
+    *SEPARATOR* -
+    *OUTPUT-SEPARATOR*
+        { set variable output_separator }
+    *INPUT-CASE-HEAD*
+        { set variable input_case_head }
+    *INPUT-GROUP-HEAD*
+        { set variable input_group_head }
+    *INPUT-SEPARATOR*
+        { set variable input_separator }
+    *CASE-MARK*	-
+    *INPUT-CASE-MARK*
+        { set variable input_case_mark }
+    *GROUP-MARK* -
+    *INPUT-GROUP-MARK*
+        { set variable input_group_mark }
+    *SEPARATOR-MARK* -
+    *INPUT-SEPARATOR-MARK*
+        { set variable input_separator_mark }
+    *SCORING*
+        { set variable scoring
+	  set separator " " }
     default { break }
     }
     set rest [string trim $rest]
@@ -312,14 +391,14 @@ while { ! [eof $line] } {
         set $variable "$variable$separator$rest"
     }
     set last_designator $designator
-    set line [gets $jin]
+    set jinline [gets $jin]
 }
 
 # Process 1 argument case.
 #
 if { $number_args == 1 } {
     close $jin
-    puts $score
+    puts $scoring
     exit 0
 }
 
@@ -329,28 +408,39 @@ if { $number_args == 2 } {
 
     set in [open $in_file w]
 
-    set group_mark [lindex $marks 0]
-    set case_mark [lindex $marks 1]
-
-    set case_count 0
-    set found_case 0
-    set found_group 0
-    set saved_group {}
+    # Copy is either always on if there is no selective
+    # copying (i.e., no -c or -g option), or is turned
+    # on and off appropriately to indicate whether an
+    # UNMATCHED line is to be copied.
+    #
     set copy 1
     set selective_copy 0
-    if { $case != "" || $group != "" } {
+    if { $c != "" || $g != "" } {
 	set selective_copy 1
 	set copy 0 }
     }
 
+    # State.
+    #
+    set case_count 0
+    set found_case 0
+    set found_group 0
+
+    # We save lines in a group until we find the case
+    # to be selectively copied.
+    #
+    set saved_group_lines {}
+
+    TBD
+
     while { ! [eof $jin] } {
 	set is_mark 0
-        if { $line == $case_mark } {
+        if { $jinline == $case_mark } {
 	    set found_case 1
 	    incr case_count
 	    set is_mark 1
 	    if { $case_count == $group } {
-	        foreach s $saved_group { puts $in $s }
+	        foreach s $saved_group_lines { puts $in $s }
 		set copy 1
 	    } elseif { $case_count == $case } {
 	        set copy 1
@@ -358,12 +448,12 @@ if { $number_args == 2 } {
 	        set copy 0
 	    }
 	    if { ! $found_group } {
-	        set saved_group {}
+	        set saved_group_lines {}
 	    }
 	}
-        if { $line == $group_mark } {
+        if { $jinline == $group_mark } {
 	    set found_group 1
-	    set saved_group {}
+	    set saved_group_lines {}
 	    set is_mark 1
 	    if { $selective_copy } {
 	        set copy 0
@@ -379,10 +469,10 @@ if { $number_args == 2 } {
 		} elseif { $selective_copy } {
 		    set copy 0
 		}
-		set saved_group {}
+		set saved_group_lines {}
 	    }
-	    lappend saved_group $line
-	    if { $copy } { puts $in $line }
+	    lappend saved_group_lines $jinline
+	    if { $copy } { puts $in $jinline }
 	}
     }
     close $jin
