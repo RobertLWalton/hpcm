@@ -5,7 +5,7 @@
 #
 # File:		jfilter
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Sep  1 15:10:24 EDT 2005
+# Date:		Fri Sep  2 01:19:05 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/09/01 21:49:59 $
+#   $Date: 2005/09/02 05:44:04 $
 #   $RCSfile: jfilter,v $
-#   $Revision: 1.3 $
+#   $Revision: 1.4 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -345,14 +345,14 @@ if { [catch { set jin [open $jin_file r] }] } {
     puts stderr "ERROR: cannot open $jin_file"
     exit 1
 }
-set jinline [gets $jin]
+set jin_line [gets $jin]
 
 set last_designator ""
-while { ! [eof $jinline] } {
+while { ! [eof $jin_line] } {
     set designator ""
     set variable ""
     set separator ""
-    regexp {^[\ \t]*([^\ \t]+)([\ \t]|$)} $jinline \
+    regexp {^[\ \t]*([^\ \t]+)([\ \t]|$)} $jin_line \
            forget designator rest
     switch $designator {
     *CASE-HEAD*	-
@@ -391,7 +391,7 @@ while { ! [eof $jinline] } {
         set $variable "$variable$separator$rest"
     }
     set last_designator $designator
-    set jinline [gets $jin]
+    set jin_line [gets $jin]
 }
 
 # Process 1 argument case.
@@ -425,55 +425,93 @@ if { $number_args == 2 } {
     set case_count 0
     set found_case 0
     set found_group 0
+    set first_line 1
+    set last_line_was_separator \
+        [expr {    $input_separator != "" \
+	        || $input_separator_mark != "" }]
 
     # We save lines in a group until we find the case
     # to be selectively copied.
     #
     set saved_group_lines {}
 
-    TBD
-
     while { ! [eof $jin] } {
 	set is_mark 0
-        if { $jinline == $case_mark } {
+	set copy_this_line $copy
+	set begin_case $last_line_was_separator
+	set begin_group 0
+	if {    $input_group_mark != "" \
+	     && [regexp $input_group_mark $jin_line] } {
+	     set begin_group 1
+	     set is_mark 1
+	} elseif {    $input_group_head != "" \
+	           && [regexp $input_group_head \
+		              $jin_line] } {
+	     set begin_group 1
+	}
+	if {    $input_case_mark != "" \
+	     && [regexp $input_case_mark $jin_line] } {
+	     set begin_case 1
+	     set is_mark 1
+        } elseif {    $input_case_head != "" \
+	           && [regexp $input_case_head \
+		              $jin_line] } {
+	     set begin_case 1
+	}
+        if { $begin_group } {
+	    if { ! $found_group && ! $first_line } {
+		puts stderr "ERROR: start of first\
+		             group follows start of\
+			     first case:\n$jin_line"
+		exit 1
+	    }
+	    set found_group 1
+	    set saved_group_lines {}
+	    if { $selective_copy } {
+	        set copy 0
+		set copy_this_line 0
+	    }
+	}
+	if { $begin_case } {
 	    set found_case 1
 	    incr case_count
-	    set is_mark 1
-	    if { $case_count == $group } {
-	        foreach s $saved_group_lines { puts $in $s }
-		set copy 1
-	    } elseif { $case_count == $case } {
-	        set copy 1
-	    } elseif { $selective_copy } {
-	        set copy 0
-	    }
 	    if { ! $found_group } {
 	        set saved_group_lines {}
 	    }
-	}
-        if { $jinline == $group_mark } {
-	    set found_group 1
-	    set saved_group_lines {}
-	    set is_mark 1
-	    if { $selective_copy } {
+	    if { $case_count == $g } {
+	        foreach s $saved_group_lines {
+		    puts $in $s
+		}
+		set copy 1
+		set copy_this_line 1
+	    } elseif { $case_count == $c } {
+	        set copy 1
+		set copy_this_line 1
+	    } elseif { $selective_copy } {
 	        set copy 0
+		set copy_this_line 0
 	    }
+	}
+	if { ! $group_found && ! $case_found } {
+	    puts stderr "ERROR: line before start\
+	                 of any group or\
+			 case:\n$jin_line"
+	    exit 1
 	}
 	if { ! $is_mark } {
-	    if { ! $found_case } {
-	        incr case_count
-		if { $case_count == $group } {
-		    set copy 1
-		} elseif { $case_count == $case } {
-		    set copy 1
-		} elseif { $selective_copy } {
-		    set copy 0
-		}
-		set saved_group_lines {}
+	    lappend saved_group_lines $jin_line
+	    if { $copy_this_line } {
+	        puts $in $jin_line
 	    }
-	    lappend saved_group_lines $jinline
-	    if { $copy } { puts $in $jinline }
 	}
+        if {    $input_separator != "" \
+	     && [regexp $input_separator $jin_line] } {
+	     set last_line_was_separator 1
+	} else {
+	     set last_line_was_separator 0
+	}
+	set jin_line [gets $jin_line]
+	set first_line 0
     }
     close $jin
     close $in
