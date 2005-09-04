@@ -5,7 +5,7 @@
 #
 # File:		jfilter
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Sep  3 22:32:29 EDT 2005
+# Date:		Sun Sep  4 07:40:11 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/09/04 02:38:49 $
+#   $Date: 2005/09/04 11:47:50 $
 #   $RCSfile: jfilter,v $
-#   $Revision: 1.9 $
+#   $Revision: 1.10 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -118,6 +118,8 @@ jfilter \[options\] judging_input_file \\
 	-input-case-head <input-case-head-regexp>
 	-input-group-head <input-group-head-regexp>
 	-input-separator <input-separator-regexp>
+	-input-end <input-end-regexp>
+	-end <input-end-regexp>
 	-case-mark <input-case-mark-regexp>
 	-group-mark <input-group-mark-regexp>
 	-separator-mark <input-separator-mark-regexp>
@@ -148,9 +150,13 @@ jfilter \[options\] judging_input_file \\
     *INPUT-GROUP-HEAD* <input-group-head-regexp>
     *INPUT-SEPARATOR* <input-separator-regexp>
 
+    *END* <input-end-regexp>
+    *INPUT-END* <input-end-regexp>
+
     *CASE-MARK* <input-case-mark-regexp>
     *GROUP-MARK* <input-group-mark-regexp>
     *SEPARATOR-MARK* <input-separator-mark-regexp>
+
 
     *INPUT-CASE-MARK* <input-case-mark-regexp>
     *INPUT-GROUP-MARK* <input-group-mark-regexp>
@@ -183,6 +189,10 @@ jfilter \[options\] judging_input_file \\
     `separator mark' is like a separator line, but must
     be deleted in the filtered version of the file.
 
+    If the last line of the judging_input_file matches
+    the input-end-regexp, it is ALWAYS output when any
+    filtered input file is made.
+
     A regexp parameter set to the empty string (all
     whitespace) is `missing', and deactivates use of
     the parameter in line matching.
@@ -200,13 +210,13 @@ jfilter \[options\] judging_input_file \\
     is the same as
 
     	*CASE-HEAD* xxxyyy
-
+
     Note that there is no space here between the xxx and
     yyy when they are concatenated.  This is because
     they are regexp parameters.  If they were non-regexp
     parameters, i.e. scoring parameters, a single space
     character would be inserted.  Therefore
-
+
     	*SCORING* xxx
     	*SCORING* yyy
 
@@ -239,13 +249,13 @@ jfilter \[options\] judging_input_file \\
 	*INPUT-CASE-HEAD*
 	*INPUT-GROUP-HEAD*
 	*INPUT-SEPARATOR*
-
+
 	*CASE-MARK* ^\\*CASE*\\$
 	*GROUP-MARK* ^\\*GROUP\\*$
 	*SEPARATOR-MARK*
 
 	*SCORING* space column
-
+
     These mean that by default input is separated into
     groups and cases by `*GROUP*' and `*CASE*' mark
     lines, every line of output is a separate case, and
@@ -281,6 +291,7 @@ set output_separator ""
 set input_case_head ""
 set input_group_head ""
 set input_separator ""
+set input_end ""
 set input_case_mark "\\*CASE\\*"
 set input_group_mark "\\*GROUP\\*"
 set input_separator_mark ""
@@ -292,14 +303,14 @@ while { [regexp {^-} [lindex $argv 0]] } {
     -doc {
 	    puts $document
 	    exit 0
-	}
+	 }
     -case-head		-
     -output-case-head	{ set output_case_head \
     			      [lindex $argv 1] }
     -group-head		-
     -output-group-head	{ set output_group_head \
     			      [lindex $argv 1] }
-    -separator		
+    -separator		-
     -output-separator	{ set output_separator \
     			      [lindex $argv 1] }
     -input-case-head	{ set input_case_head \
@@ -307,6 +318,9 @@ while { [regexp {^-} [lindex $argv 0]] } {
     -input-group-head	{ set input_group_head \
     			      [lindex $argv 1] }
     -input-separator	{ set input_separator \
+    			      [lindex $argv 1] }
+    -end		-
+    -input-end		{ set input_end \
     			      [lindex $argv 1] }
     -case-mark		-
     -input-case-mark	{ set input_case_mark \
@@ -327,7 +341,7 @@ while { [regexp {^-} [lindex $argv 0]] } {
     default {
     	    puts stderr "BAD option: [lindex $argv 0]"
 	    exit 1
-    	}
+	    }
     }
 
     set argv [lrange $argv 2 end]
@@ -338,7 +352,7 @@ if { [llength $argv] < 1 || [llength $argv] > 3 } {
     exit 1
 }
 
-if { $c != "" && $g !- "" } {
+if { $c != "" && $g != "" } {
     puts stderr "ERROR: both -c and -g options given"
     exit 1
 }
@@ -363,7 +377,7 @@ if { [catch { set jin [open $jin_file r] }] } {
 set jin_line [gets $jin]
 
 set last_designator ""
-while { ! [eof $jin_line] } {
+while { ! [eof $jin] } {
     set designator ""
     set variable ""
     set separator ""
@@ -435,7 +449,7 @@ if { $number_args == 2 } {
     set selective_copy 0
     if { $c != "" || $g != "" } {
 	set selective_copy 1
-	set copy 0 }
+	set copy 0
     }
 
     # State.
@@ -446,6 +460,8 @@ if { $number_args == 2 } {
     set last_line_was_separator \
         [expr {    $input_separator != "" \
 	        || $input_separator_mark != "" }]
+    set last_line_was_output 1
+    set last_line ""
 
     # We save lines in a group until we find the case
     # to be selectively copied.
@@ -505,11 +521,11 @@ if { $number_args == 2 } {
 		set copy 1
 	    } elseif {    $selective_copy \
 	               && (    $g == "" \
-		            || ! $group_found ) } {
+		            || ! $found_group ) } {
 	        set copy 0
 	    }
 	}
-	if { ! $group_found && ! $case_found } {
+	if { ! $found_group && ! $found_case } {
 	    puts stderr "ERROR: line before start\
 	                 of any group or\
 			 case:\n$jin_line"
@@ -527,9 +543,19 @@ if { $number_args == 2 } {
 	    if { $copy } {
 	        puts $in $jin_line
 	    }
+	    set last_line_was_output $copy
+	} else {
+	    set last_line_was_output 0
 	}
+	set last_line $jin_line
 
-	set jin_line [gets $jin_line]
+	set jin_line [gets $jin]
+    }
+    if {    ! $last_line_was_output \
+         && $input_end != "" \
+	 && [regexp -nocase -- $input_end \
+	            $last_line] } {
+        puts $in $last_line
     }
     close $jin
     close $in
@@ -559,7 +585,7 @@ if { $number_args == 3 } {
     set selective_copy 0
     if { $c != "" || $g != "" } {
 	set selective_copy 1
-	set copy 0 }
+	set copy 0
     }
 
     # State.
@@ -609,17 +635,17 @@ if { $number_args == 3 } {
 	    if {    $case_count == $g \
 	         || $case_count == $c } {
 	        foreach s $saved_group_lines {
-		    puts $in $s
+		    puts $jout $s
 		}
 		set copy 1
 	    } elseif {    $selective_copy \
 	               && (    $g == "" \
-		            || ! $group_found ) } {
+		            || ! $found_group ) } {
 	        set copy 0
 	    }
 	}
 
-	if { ! $group_found && ! $case_found } {
+	if { ! $found_group && ! $found_case } {
 	    puts stderr "ERROR: line before start\
 	                 of any group or\
 			 case:\n$out_line"
@@ -635,9 +661,9 @@ if { $number_args == 3 } {
 	if { ! $selective_copy } {
 	    if { $group_head && $case_head } {
 		set out_line "+$out_line"
-	    } elseif { $group_head$ } {
+	    } elseif { $group_head } {
 		set out_line "|$out_line"
-	    } elseif { $case_head$ } {
+	    } elseif { $case_head } {
 		set out_line "-$out_line"
 	    } else {
 		set out_line ".$out_line"
@@ -646,9 +672,9 @@ if { $number_args == 3 } {
 
 	lappend saved_group_lines $out_line
 	if { $copy } {
-	    puts $in $out_line
+	    puts $jout $out_line
 	}
-	set out_line [gets $out_line]
+	set out_line [gets $out]
     }
     close $out
     close $jout
