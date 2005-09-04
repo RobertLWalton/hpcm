@@ -5,7 +5,7 @@
 #
 # File:		jfilter
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Sep  3 21:20:50 EDT 2005
+# Date:		Sat Sep  3 22:32:29 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/09/04 02:12:20 $
+#   $Date: 2005/09/04 02:38:49 $
 #   $RCSfile: jfilter,v $
-#   $Revision: 1.8 $
+#   $Revision: 1.9 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -334,21 +334,23 @@ while { [regexp {^-} [lindex $argv 0]] } {
 }
 
 if { [llength $argv] < 1 || [llength $argv] > 3 } {
-    puts stderr "ERROR: to few arguments"
+    puts stderr "ERROR: too few or too many arguments"
+    exit 1
+}
+
+if { $c != "" && $g !- "" } {
+    puts stderr "ERROR: both -c and -g options given"
     exit 1
 }
 
 # Set up arguments.
 #
 set jin_file [lindex $argv 0]
-set in_file ""
-set out_file ""
-set jout_file ""
 set number_args [llength $argv]
 switch $number_args {
     1 {}
     2 { set in_file [lindex $argv 1] }
-    2 { set out_file [lindex $argv 1]
+    3 { set out_file [lindex $argv 1]
         set jout_file [lindex $argv 2] }
 }
 
@@ -365,7 +367,7 @@ while { ! [eof $jin_line] } {
     set designator ""
     set variable ""
     set separator ""
-    regexp {^[\ \t]*([^\ \t]+)([\ \t]|$)} $jin_line \
+    regexp {^[\ \t]*([^\ \t]+)([\ \t].*|)$} $jin_line \
            forget designator rest
     switch $designator {
     *CASE-HEAD*	-
@@ -401,7 +403,7 @@ while { ! [eof $jin_line] } {
     if { $last_designator != $designator } {
         set $variable $rest
     } elseif { $rest != "" } {
-        set $variable "$variable$separator$rest"
+        set $variable "[set $variable]$separator$rest"
     }
     set last_designator $designator
     set jin_line [gets $jin]
@@ -419,7 +421,10 @@ if { $number_args == 1 } {
 #
 if { $number_args == 2 } {
 
-    set in [open $in_file w]
+    if { [catch { set in [open $in_file w] }] } {
+	puts stderr "ERROR: cannot open $in_file"
+	exit 1
+    }
 
     # Copy is either always on if there is no selective
     # copying (i.e., no -c or -g option), or is turned
@@ -452,20 +457,24 @@ if { $number_args == 2 } {
 	set begin_case $last_line_was_separator
 	set begin_group 0
 	if {    $input_group_mark != "" \
-	     && [regexp $input_group_mark $jin_line] } {
+	     && [regexp -nocase -- $input_group_mark \
+	                $jin_line] } {
 	     set begin_group 1
 	     set is_mark 1
 	} elseif {    $input_group_head != "" \
-	           && [regexp $input_group_head \
+	           && [regexp -nocase -- \
+		              $input_group_head \
 		              $jin_line] } {
 	     set begin_group 1
 	}
 	if {    $input_case_mark != "" \
-	     && [regexp $input_case_mark $jin_line] } {
+	     && [regexp -nocase -- $input_case_mark \
+	                $jin_line] } {
 	     set begin_case 1
 	     set is_mark 1
         } elseif {    $input_case_head != "" \
-	           && [regexp $input_case_head \
+	           && [regexp -nocase -- \
+		              $input_case_head \
 		              $jin_line] } {
 	     set begin_case 1
 	}
@@ -488,14 +497,15 @@ if { $number_args == 2 } {
 	    if { ! $found_group } {
 	        set saved_group_lines {}
 	    }
-	    if { $case_count == $g } {
+	    if {    $case_count == $g \
+	         || $case_count == $c } {
 	        foreach s $saved_group_lines {
 		    puts $in $s
 		}
 		set copy 1
-	    } elseif { $case_count == $c } {
-	        set copy 1
-	    } elseif { $selective_copy } {
+	    } elseif {    $selective_copy \
+	               && (    $g == "" \
+		            || ! $group_found ) } {
 	        set copy 0
 	    }
 	}
@@ -505,16 +515,20 @@ if { $number_args == 2 } {
 			 case:\n$jin_line"
 	    exit 1
 	}
+
+	set last_line_was_separator \
+	    [expr {    $input_separator != "" \
+	            && [regexp -nocase -- \
+		               $input_separator \
+		               $jin_line] }]
+
 	if { ! $is_mark } {
 	    lappend saved_group_lines $jin_line
 	    if { $copy } {
 	        puts $in $jin_line
 	    }
 	}
-	set last_line_was_separator \
-	    [expr {    $input_separator != "" \
-	            && [regexp $input_separator \
-		               $jin_line] }]
+
 	set jin_line [gets $jin_line]
     }
     close $jin
@@ -527,13 +541,19 @@ if { $number_args == 2 } {
 if { $number_args == 3 } {
 
     close $jin
-    set out [open $out_file r]
-    set jout [open $jout_file w]
+    if { [catch { set out [open $out_file r] }] } {
+	puts stderr "ERROR: cannot open $out_file"
+	exit 1
+    }
+    if { [catch { set jout [open $jout_file w] }] } {
+	puts stderr "ERROR: cannot open $jout_file"
+	exit 1
+    }
 
     # Copy is either always on if there is no selective
     # copying (i.e., no -c or -g option), or is turned
-    # on and off appropriately to indicate whether an
-    # UNMATCHED line is to be copied.
+    # on and off appropriately to indicate whether a
+    # line is to be copied.
     #
     set copy 1
     set selective_copy 0
@@ -548,19 +568,19 @@ if { $number_args == 3 } {
     set found_case 0
     set found_group 0
     set last_line_was_separator \
-        [expr { $outut_separator != "" }]
+        [expr { $output_separator != "" }]
 
     # We save lines in a group until we find the case
     # to be selectively copied.
     #
     set saved_group_lines {}
 
-    set out_line [gets $out_file]
+    set out_line [gets $out]
     while { ! [eof $out] } {
         set group_head 0
 	set case_head 0
 	if {    $output_group_head != "" \
-	     && [regexp $output_group_head \
+	     && [regexp -nocase -- $output_group_head \
 		        $out_line] } {
 	    if { ! $found_group && $found_case } {
 		puts stderr "ERROR: start of first\
@@ -576,7 +596,8 @@ if { $number_args == 3 } {
 	    }
 	}
         if {    (    $output_case_head != "" \
-	          && [regexp $output_case_head \
+	          && [regexp -nocase -- \
+		             $output_case_head \
 		             $out_line] ) \
 	     || $last_line_was_separator } {
 	    set found_case 1
@@ -585,23 +606,31 @@ if { $number_args == 3 } {
 	    if { ! $found_group } {
 	        set saved_group_lines {}
 	    }
-	    if { $case_count == $g } {
+	    if {    $case_count == $g \
+	         || $case_count == $c } {
 	        foreach s $saved_group_lines {
 		    puts $in $s
 		}
 		set copy 1
-	    } elseif { $case_count == $c } {
-	        set copy 1
-	    } elseif { $selective_copy } {
+	    } elseif {    $selective_copy \
+	               && (    $g == "" \
+		            || ! $group_found ) } {
 	        set copy 0
 	    }
 	}
+
 	if { ! $group_found && ! $case_found } {
 	    puts stderr "ERROR: line before start\
 	                 of any group or\
 			 case:\n$out_line"
 	    exit 1
 	}
+
+	set last_line_was_separator \
+	    [expr {    $output_separator != "" \
+	            && [regexp -nocase -- \
+		               $output_separator \
+		               $out_line] }]
 	
 	if { ! $selective_copy } {
 	    if { $group_head && $case_head } {
@@ -619,10 +648,6 @@ if { $number_args == 3 } {
 	if { $copy } {
 	    puts $in $out_line
 	}
-	set last_line_was_separator \
-	    [expr {    $output_separator != "" \
-	            && [regexp $output_separator \
-		               $out_line] }]
 	set out_line [gets $out_line]
     }
     close $out
