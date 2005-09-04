@@ -5,7 +5,7 @@
 #
 # File:		jfilter
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Sep  3 06:21:16 EDT 2005
+# Date:		Sat Sep  3 21:20:50 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/09/03 10:20:13 $
+#   $Date: 2005/09/04 02:12:20 $
 #   $RCSfile: jfilter,v $
-#   $Revision: 1.7 $
+#   $Revision: 1.8 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -31,13 +31,13 @@ jfilter \[options\] judging_input_file \\
                   output_file filtered_output_file
 
     A judging_input_file (e.g., a .jin file) has scoring
-    parameter lines and marker lines, and judge's input
-    to test a submitted program.  The parameter and
-    marker lines define both scoring instructions for
-    scoring any output produced from the judge's input
-    in the file, and a means of dividing both the
-    judge's input and all output produced therefrom into
-    cases and into groups of cases.
+    parameter definition lines and marker lines, and
+    judge's input to test a submitted program.  The
+    parameter definition and marker lines define both
+    scoring instructions for scoring any output produced
+    from the judge's input in the file, and a means of
+    dividing both the judge's input and all output pro-
+    duced therefrom into cases and into groups of cases.
 
     The 1-file-name command reads the judging_input_file
     (e.g., a .jin file) and prints scoring instructions
@@ -47,7 +47,7 @@ jfilter \[options\] judging_input_file \\
     The 2-file-name command reads the judging_input_file
     and writes filtered version of that to the filtered_
     input_file.  The filtered version version simply has
-    judging parameter and marker lines (defined below)
+    judging parameter definition and marker lines
     removed.
 
     The 3-file-name command reads the judging_input_file
@@ -55,17 +55,28 @@ jfilter \[options\] judging_input_file \\
     .ftest file), and writes a filtered version of the
     output_file to the filtered_output_file.  The fil-
     tered_output_file is the same as the output_file
-    except each line is prefaced with one of the follow-
-    ing characters:
+    except each line is normally prefaced with one of
+    the following characters:
 
     	+ Begin a group and a case.
 	| Begin a group.
 	- Begin a case.
 	. Do not begin a case or group.
+
+    The -c and -g options below cause these prefix
+    characters to be omitted from the filtered_output_
+    file.
 
-    The options modify these commands as follows:
+    Options modify the above commands as follows:
 
         -c <case-number>
+
+	    This option permits the filtered file to be
+	    just the portion of the judge's input or
+	    output file that permits testing of a parti-
+	    cular case.  The filtered file can be used
+	    as feedback for a submitter whose submission
+	    first failed on the given case.
 
 	    For the 2- and 3-file-name commands, these
 	    cause the commands to output just the
@@ -86,6 +97,11 @@ jfilter \[options\] judging_input_file \\
 	    containing the case, up to and including
 	    the lines in the case.
 
+	    If the output is the filtered_output_file,
+	    the output lines are exact copies of output_
+	    file lines, without any prefix characters
+	    indicating the group or case beginnings.
+
 	-g <case-number>
 
 	    Same as -c BUT, if there are groups in the
@@ -98,7 +114,7 @@ jfilter \[options\] judging_input_file \\
 	-separator <output-separator-regexp>
 	-output-case-head <output-case-head-regexp>
 	-output-group-head <output-group-head-regexp>
-	-output-separator <output-case-separator-regexp>
+	-output-separator <output-separator-regexp>
 	-input-case-head <input-case-head-regexp>
 	-input-group-head <input-group-head-regexp>
 	-input-separator <input-separator-regexp>
@@ -123,7 +139,7 @@ jfilter \[options\] judging_input_file \\
     *CASE-HEAD* <output-case-head-regexp>
     *GROUP-HEAD* <output-group-head-regexp>
     *SEPARATOR* <output-separator-regexp>
-
+
     *OUTPUT-CASE-HEAD* <output-case-head-regexp>
     *OUTPUT-GROUP-HEAD* <output-group-head-regexp>
     *OUTPUT-SEPARATOR* <output-separator-regexp>
@@ -150,10 +166,10 @@ jfilter \[options\] judging_input_file \\
     the `MARKS': *CASE-MARK* and *INPUT-CASE-MARK* mean
     the same thing.  It is not that common to have
     *INPUT-...* parameters in a judging_input_file.
-
+
     The regexp parameters are TCL regular expressions
     that are matched to lines of files.  Input regexps
-    match lines in the judging_input_file, which output
+    match lines in the judging_input_file, while output
     regexps match lines in the output_file.  A line
     matched by a `head' regexp is called a head line,
     and begins a group or case.  A line matched by a
@@ -162,11 +178,10 @@ jfilter \[options\] judging_input_file \\
     by the first line of another case.  A line matched
     by a `mark' is like a head line but must be deleted
     from the filtered version of the file: this is only
-    used for the judging_input_file, to used mark lines
-    to mark the beginning of groups and cases.  And a
-    line matched by a `separator mark' is like a separa-
-    tor line, but must be deleted in the filtered ver-
-    sion of the file.
+    used for the judging_input_file, to mark the begin-
+    ning of groups and cases.  And a line matched by a
+    `separator mark' is like a separator line, but must
+    be deleted in the filtered version of the file.
 
     A regexp parameter set to the empty string (all
     whitespace) is `missing', and deactivates use of
@@ -191,7 +206,7 @@ jfilter \[options\] judging_input_file \\
     they are regexp parameters.  If they were non-regexp
     parameters, i.e. scoring parameters, a single space
     character would be inserted.  Therefore
-
+
     	*SCORING* xxx
     	*SCORING* yyy
 
@@ -230,7 +245,7 @@ jfilter \[options\] judging_input_file \\
 	*SEPARATOR-MARK*
 
 	*SCORING* space column
-
+
     These mean that by default input is separated into
     groups and cases by `*GROUP*' and `*CASE*' mark
     lines, every line of output is a separate case, and
@@ -247,12 +262,12 @@ jfilter \[options\] judging_input_file \\
     begin before the first case in the group.
 
     Any lines in the judging_input_file that are after
-    the parameter definitions and before anything that
-    can be interpreted as a case or group beginning are
-    considered to be in error.  If there is no group
-    beginning before the first case, then any group
-    beginning in the judging_input_file is considered
-    to be in error.
+    the parameter definitions, and any lines in an
+    output_file, are in error if they are before the
+    beginning of the first case and the first group.  If
+    there is no group beginning before the first case,
+    then any group beginning in the judging_input_file
+    or output_file is considered to be in error.
 
     Unlike most HPCM judging programs, this program does
     not read any hpcm_judging.rc file and errors made by
