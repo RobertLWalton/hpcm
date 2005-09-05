@@ -1,13 +1,16 @@
-From walton  Sun Feb 23 10:43:42 2003
-Return-Path: <walton@walton1.walton>
+From walton@walton2.walton  Mon Sep  5 06:03:59 2005
+Return-Path: <walton@walton2.walton>
+Received: from walton2.walton (localhost.localdomain [127.0.0.1])
+	by walton2.walton (8.12.8/8.12.8) with ESMTP id j85A3xtm007589
+	for <walton@walton2.walton>; Mon, 5 Sep 2005 06:03:59 -0400
 Received: (from walton@localhost)
-	by walton1.walton (8.11.6/8.11.6) id h1NFhfL18671;
-	Sun, 23 Feb 2003 10:43:41 -0500
-Date: Sun, 23 Feb 2003 10:43:41 -0500
-From: "Robert L. Walton" <walton@walton1.walton>
-Message-Id: <200302231543.h1NFhfL18671@walton1.walton>
-To: "Robert L. Walton" <walton@walton1.walton>
-Reply-To: email_contest<walton@walton1.walton>
+	by walton2.walton (8.12.8/8.12.8/Submit) id j85A3xfO007587;
+	Mon, 5 Sep 2005 06:03:59 -0400
+Date: Mon, 5 Sep 2005 06:03:59 -0400
+From: "Robert L. Walton" <walton@walton2.walton>
+Message-Id: <200509051003.j85A3xfO007587@walton2.walton>
+To: "Robert L. Walton" <walton@walton2.walton>
+Reply-To: email_contest<walton@walton2.walton>
 Subject: RE: get demos/count
 X-HPCM-Test-Subject: get_count:
 	there should be no separate error message
@@ -17,13 +20,13 @@ The following requested files appear below after the request message header:
     demos/count/Makefile demos/count/README demos/count/count.in
     demos/count/count.rc demos/count/count.test demos/count/count.txt
     demos/count/count1.c demos/count/count1.cc demos/count/count1.java
-    demos/count/count1.lsp demos/count/count1.p
+    demos/count/count1.lsp
 
 
 ----------------------------------------------- this message replies to:
-To: email_contest<walton@walton1.walton>
-From: "Robert L. Walton" <walton@walton1.walton>
-Date: Sun, 23 Feb 2003 10:43:10 -0500
+To: email_contest<walton@walton2.walton>
+From: "Robert L. Walton" <walton@walton2.walton>
+Date: Mon, 5 Sep 2005 06:03:58 -0400
 Subject: get demos/count
 ------------------------------------------------------------------------
 
@@ -32,11 +35,11 @@ Subject: get demos/count
 # Makefile for the `count' Demonstration Problem
 #
 # File:		Makefile
-# Date:		Mon Feb 18 10:39:30 EST 2002
+# Date:		Thu Oct  7 09:43:00 EDT 2004
 #
-# Exactly ONE of the five files count.c (C), count.cc
-# (C++), count.p (Pascal), count.java (Java), or
-# count.lsp (Commonlisp) should exist.
+# Exactly ONE of the four files count.c (C), count.cc
+# (C++), count.java (Java), or count.lsp (Commonlisp)
+# should exist.
 #
 # UNIX commands supported by this Makefile:
 #
@@ -44,18 +47,18 @@ Subject: get demos/count
 #
 #	make count	Makes the binary program file
 #			`count' by running gcc on
-#			count.c, or g++ on count.cc, or
-#			p2c on count.p, or javac on
-#			count.java, or hpcm_clisp on
-#			count.lsp depending upon which
-#			of count.c, count.cc, count.p,
-#			count.java, or count.lsp exist.
-#			Also makes a shell script named
-#			`count' for count.java and
-#			count.lsp files.  Does nothing
-#			if `count' is more up to date
-#			than count.c, count.cc, count.p,
-#			count.java, or count.lsp.
+#			count.c, or g++ on count.cc,
+#			or javac on count.java,
+#			or hpcm_clisp on count.lsp,
+#			depending upon which of count.c,
+#			count.cc, count.java, or
+#			count.lsp exist.  Also makes a
+#			shell script named `count' for
+#			count.java and count.lsp files.
+#			Does nothing if `count' is more
+#			up to date than count.c,
+#			count.cc, count.java, or
+#			count.lsp.
 #
 #	make count.out	Makes `count' as above and
 #			then runs it with standard
@@ -70,18 +73,17 @@ Subject: get demos/count
 #	make submit	Makes `count.out' just to be
 #			sure that nothing crashes, and
 #			then e-mails count.c, count.cc,
-#			count.java, count.p, or
-#			count.lsp to the judges.
+#			count.java, or count.lsp to the
+#			judges.
 #
 #	make clean	Removes `count', count.out, and
 #			other intermediate files that
 #			might exist, such as `core',
-#			`count.class', `count.p2c', or
-#			count.fas.
+#			`count.class', or count.fas.
 
 
 .SUFFIXES:
-.SUFFIXES: .c .cc .java .p .lsp
+.SUFFIXES: .c .cc .java .lsp
 
 default:	count.out
 
@@ -93,13 +95,6 @@ default:	count.out
 	rm -f $* core
 	g++ -g -o $* $*.cc -lm
 
-.p:
-	rm -f $* $*.p2c core
-	p2c -o $*.p2c $*.p
-	gcc -g -o $* -x c $*.p2c -lp2c -lm
-
-# Do NOT try to use -check option for p2c as it fouls up
-# eof detection.
 #
 
 .java:
@@ -145,7 +140,7 @@ submit:		count.out
 	hpcm_submit count
 
 clean:
-	rm -f count *.class count.p2c core count.out \
+	rm -f count *.class core count.out \
 	      count.fas count.lib
 
 
@@ -158,9 +153,9 @@ clean:
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2004/10/06 12:31:17 $
+#   $Date: 2005/09/05 10:08:53 $
 #   $RCSfile: get_count.reply,v $
-#   $Revision: 1.9 $
+#   $Revision: 1.10 $
 ---<>--<>---<>--<>---<>----- demos/count/README:
 The files in this demo directory are:
 
@@ -172,7 +167,6 @@ The files in this demo directory are:
     public/count/count1.c	Solution in C.
     public/count/count1.cc	Solution in C++.
     public/count/count1.java    Solution in JAVA.
-    public/count/count1.p	Solution in PASCAL.
     public/count/count1.lsp	Solution in COMMONLISP.
 
 The Makefile is commented, as opposed to most problem
@@ -183,7 +177,7 @@ To run the demo (under UNIX), first
 
     cp count1.yy count.yy
 
-for exactly ONE of yy = c, cc, java, p, or lsp.  Then
+for exactly ONE of yy = c, cc, java, or lsp.  Then
 
 	make
 
@@ -455,9 +449,9 @@ main()
 // RCS Info (may not be true date or author):
 //
 //   $Author: hc3 $
-//   $Date: 2004/10/06 12:31:17 $
+//   $Date: 2005/09/05 10:08:53 $
 //   $RCSfile: get_count.reply,v $
-//   $Revision: 1.9 $
+//   $Revision: 1.10 $
 
 import java.io.*;
 import java.util.StringTokenizer;
@@ -592,98 +586,5 @@ public class count {
      (read-a-word line (1+ index) length (1+ count)))
     (t
      (read-rest-of-word line (1+ index) length count))))
----<>--<>---<>--<>---<>----- demos/count/count1.p:
-program count ( input, output );
-
-var
-    paragraph : integer;
-    characters : integer;
-    words : integer;
-    lines : integer;
-    c : char;
-    nonblank : boolean;
-    endline : boolean;
-    endparagraph : boolean;
-begin
-    paragraph := 1;
-
-    while not eof do
-    begin
-	characters := 0;
-	words := 0;
-	lines := 0;
-	endparagraph := false;
-
-	while not eof and not endparagraph do
-	begin
-
-	    nonblank := false;
-	    endline := false;
-
-	    while not nonblank and not endline do
-	    begin
-		if eoln then endline := true
-		else
-		    begin
-			read (c);
-			nonblank := not ( c = ' ' );
-			characters := characters + 1
-		    end
-	    end;
-	        
-
-	    if endline then
-		endparagraph := true
-	    else
-	    begin
-		lines := lines + 1;
-
-		while not endline do
-		begin
-
-		    words := words + 1;
-
-		    while not endline and nonblank do
-		    begin
-			if eoln then endline := true
-			else
-			    begin
-				read (c);
-				nonblank :=
-				    not ( c = ' ' );
-				characters :=
-				    characters + 1
-			    end
-		    end;
-
-		    while not endline and not nonblank
-			do
-		    begin
-			if eoln then endline := true
-			else
-			    begin
-				read (c);
-				nonblank :=
-				    not ( c = ' ' );
-				characters :=
-				    characters + 1
-			    end
-		    end
-		end
-	    end;
-	    readln
-	end;
-
-	if lines > 0 then
-	begin
-	    writeln ( 'Paragraph ', paragraph:0, ': ',
-		      lines:0, ' lines, ',
-		      words:0, ' words, ',
-		      characters:0, ' characters.' );
-	    paragraph := paragraph + 1
-	end
-    end;
-
-end;
 ---<>--<>---<>--<>---<>----- end of files
 
