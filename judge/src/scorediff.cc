@@ -2,7 +2,7 @@
 //
 // File:	scorediff.cc
 // Authors:	Bob Walton (walton@deas.harvard.edu)
-// Date:	Sun Nov 14 06:19:29 EST 2004
+// Date:	Wed Sep 14 04:59:31 EDT 2005
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: hc3 $
-//   $Date: 2004/11/14 12:31:22 $
+//   $Date: 2005/09/14 08:58:53 $
 //   $RCSfile: scorediff.cc,v $
-//   $Revision: 1.52 $
+//   $Revision: 1.53 $
 
 // This is version 2, a major revision of the first
 // scorediff program.  This version is more explicitly
@@ -500,8 +500,15 @@ struct file
     // when scan_token determines that some characters
     // encountered scanning a word begin a number or
     // that some characters encountered scanning a
-    // number do not begin an exponent.  Possible
-    // values are:
+    // number do not begin an exponent.
+    //
+    // An important feature of the backup is that if it
+    // is not empty at the beginning of a token scan, it
+    // will be empty at the end of the token scan, and
+    // therefore it is easier to put characters after
+    // the token into the backup, because that is empty.
+    //
+    // Possible values are:
     //
     //		+D   -D   .D   +.D  -.D
     //		eX   e+Y  e-Y  EX   E+Y   E-Y
@@ -816,8 +823,9 @@ void scan_token ( file & f )
     }
 
     // End of number token.  c is first character beyond
-    // number token, and c is followed by the backup
-    // string.
+    // number token, and if the backup string is not
+    // empty, it was set just above and c should be
+    // APPENDED to it.
 
     * tp = 0;
 
@@ -930,7 +938,9 @@ word:
 end_word:
 
     // End of word.  c is first character beyond the
-    // word, and c is followed by the backup string.
+    // word, and if the backup string is not empty,
+    // it was set just above and c should be APPENDED
+    // to it.
 
     f.type	= WORD_TOKEN;
     f.length	= tp - f.token;
