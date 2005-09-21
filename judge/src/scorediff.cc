@@ -2,7 +2,7 @@
 //
 // File:	scorediff.cc
 // Authors:	Bob Walton (walton@deas.harvard.edu)
-// Date:	Wed Sep 21 02:38:02 EDT 2005
+// Date:	Wed Sep 21 10:37:46 EDT 2005
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: hc3 $
-//   $Date: 2005/09/21 08:43:10 $
+//   $Date: 2005/09/21 14:43:05 $
 //   $RCSfile: scorediff.cc,v $
-//   $Revision: 1.54 $
+//   $Revision: 1.55 $
 
 // This is version 2, a major revision of the first
 // scorediff program.  This version is more explicitly
@@ -458,6 +458,17 @@ struct file
     int length;		// Length of token in charac-
     			// ters (not including `\0').
 			// 0 for eof.
+    int group;		// Group number of current
+    			// token.  The first group is 1.
+			// The group number is 0 before
+			// the first group begins, or
+			// if there is no -filtered
+			// option.
+    int Case;		// Ditto but case number.  Note
+    			// cases are numbered from the
+			// beginning of the file, and
+			// NOT from the beginning of
+			// a group.
     int line;		// Line number of current
     			// token.  The first line is 1.
     int column;		// Column within the line of
@@ -488,6 +499,18 @@ struct file
     bool not_before_nl;	// True if whitespace following
     			// token does not contain a new
 			// line or end of file.
+
+    // When before_nl is set, one or both of the
+    // following may be set.
+    //
+    bool before_group;	// True if whitespace following
+    			// token has any new line that
+			// begins a group, or has an end
+			// of file.
+    bool before_case;	// True if whitespace following
+    			// token has any new line that
+			// begins a case, or has an end
+			// of file.
 
     // Whitespace description.
     //
@@ -528,6 +551,8 @@ struct file
     // will be empty at the end of the token scan, and
     // therefore it is easier to put characters after
     // the token into the backup, because that is empty.
+    // As a consequence strcpy can be used to set the
+    // backup.
     //
     // Possible values are:
     //
@@ -536,12 +561,14 @@ struct file
     //
     // where D denotes any digit, X denotes any charac-
     // ter that is neither a digit nor a sign, and Y
-    // denotes any character that is not a digit.  Can
-    // also be set to a single character following a
-    // token.  Can also set set to part of the white-
-    // space following a token (by before_nl), and this
-    // whitespace can be followed by a single non-
-    // whitespace character.
+    // denotes any character that is not a digit.
+    //
+    // Can also be set to a single character following a
+    // token.
+    //
+    // Can also be set to the whitespace following a
+    // token (by before_nl), possibly followed by a
+    // single non-whitespace character.
 
     char * back;	// If pointing at `\0', there
     			// are no backed up characters
@@ -563,6 +590,7 @@ file test;
 //
 bool nonumber = false;
 bool nosign = false;
+bool filtered = false;
 
 // Open file for reading.
 //
@@ -583,6 +611,8 @@ void open ( file & f, char * filename )
     f.back		= f.backup;
 
     f.column		= -1;
+    f.group		= 0;
+    f.Case		= 0;
     f.line		= 0;
     f.type		= WORD_TOKEN;
 
@@ -602,6 +632,8 @@ inline int get_character ( file & f )
     return c;
 }
 
+// Routines to announce errors and exit program.
+//
 void whitespace_too_long ( file & f ) {
     cerr << "Whitespace too long in line "
          << f.line
@@ -610,9 +642,17 @@ void whitespace_too_long ( file & f ) {
 	 << endl;
     exit (1);
 }
-
 void token_too_long ( file & f ) {
     cerr << "Token too long in line "
+         << f.line
+	 << " of "
+         << f.filename
+	 << endl;
+    exit (1);
+}
+void bad_filtered_mark ( file & f ) {
+    cerr << "Bad filtered file line mark"
+            " beginning line "
          << f.line
 	 << " of "
          << f.filename
@@ -630,6 +670,8 @@ void scan_token ( file & f )
 
     f.before_nl		= false;
     f.not_before_nl	= false;
+    f.before_case	= false;
+    f.before_group	= false;
 
     if ( f.remainder_length != 0 )
     {
@@ -669,6 +711,18 @@ void scan_token ( file & f )
 	    column = -1;
 	    ++ f.newlines;
 	    ++ f.line;
+	    if ( filtered ) {
+	        switch ( get_character ( f ) ) {
+		case '+':	++ f.group;
+		case '-':	++ f.Case;
+				break;
+		case '|':	++ f.group;
+				break;
+		case '.':	break;
+		case EOF:	break;
+		default:	bad_filtered_mark ( f );
+		}
+	    }
 	}
 	else if ( c == '\t' )
 	    column += 7 - ( column % 8 );
@@ -999,6 +1053,8 @@ void split_word ( file & f, int n )
     f.column -= f.remainder_length;
 
     f.before_nl		= false;
+    f.before_case	= false;
+    f.before_group	= false;
     f.not_before_nl	= true;
 }
 
@@ -1014,68 +1070,90 @@ void undo_split ( file & f )
 	f.column += f.remainder_length;
 	f.remainder_length = 0;
 	f.before_nl	= false;
+	f.before_case	= false;
+	f.before_group	= false;
 	f.not_before_nl	= false;
     }
 }
 
-// Return true iff the current token is followed
-// by whitespace containing a new line or eof.
-// Also return true if token is an EOF_TOKEN.
+// Set f.before_nl, f.before_case, and f.before_group,
+// according to what comes next in the input stream.
+// Sets backup to any whitespace that comes next, plus
+// any following non-whitespace character.
+//
+// If f.before_nl or f.not_before_nl is already set,
+// nothing needs to be done.
+//
+// If f.type == EOF_TOKEN assumes EOF is next thing
+// in input string.
+//
+// Returns f.before_nl.
 //
 bool before_nl ( file & f )
 {
-    if ( f.type == EOF_TOKEN ) return true;
+    if ( f.before_nl || f.not_before_nl )
+        return f.before_nl;
+    if ( f.type == EOF_TOKEN ) 
+    {
+        f.before_nl = f.before_case = f.before_group
+	            = true;
+	return f.before_nl;
+    }
+    assert ( ! f.before_case );
+    assert ( ! f.before_group );
 
-    if ( f.before_nl ) return true;
-
-    if ( f.not_before_nl ) return false;
-
-    // Scan backup to answer question.
+    // Scan characters to answer question.  Start by
+    // scanning characters in backup, and then add to
+    // backup until we scan the first non-whitespace
+    // character.
+    //
+    // Set before_{nl,case,group} as we scan.
     //
     char * p = f.back;
-    char c;
-    while ( c = * p ++ )
+    int c;
+    bool filtered_line_beginning = false;
+    while ( true )
     {
-    	if ( ! isspace ( c ) )
-	{
-	    f.not_before_nl = true;
-	    return false;
+	// Get next character.
+	//
+        c = * p;
+	if ( c != 0 )	++ p;
+        else if ( p >= f.backup + sizeof ( f.backup ) ) {
+	    whitespace_too_long ( f );
 	}
+	else
+	{
+	    c = f.stream.get();
+	    if ( c == EOF ) break;
+	    * p ++ = c;
+	    * p = 0;
+	}
+
+	// Process character scanned.
+	//
+	if ( filtered_line_beginning )
+	{
+	    // C is mark of filtered line.
+	    //
+	    switch ( c ) {
+	    case '+':	f.before_group = true;
+	    case '-':	f.before_case = true;
+			break;
+	    case '|':	f.before_group = true;
+			break;
+	    case '.':	break;
+	    default:	bad_filtered_mark ( f );
+	    }
+	}
+    	else if ( ! isspace ( c ) ) break;
 	else if ( c == '\n' )
 	{
 	    f.before_nl = true;
-	    return true;
+	    filtered_line_beginning = filtered;
         }
     }
-    -- p;
-
-    // Add to backup to answer question.
-    //
-    while ( p < f.backup + sizeof ( f.backup ) - 1 )
-    {
-	c = f.stream.get();
-	if ( c == EOF )
-	{
-	    f.before_nl = true;
-	    * p = 0;
-	    return true;
-	}
-
-	* p ++ = c;
-	if ( ! isspace ( c ) )
-	{
-	    f.not_before_nl = true;
-	    * p = 0;
-	    return false;
-	}
-	else if ( c == '\n' )
-	{
-	    f.before_nl = true;
-	    * p = 0;
-	    return true;
-	}
-    }
-    whitespace_too_long ( f );
+    f.not_before_nl = ! f.before_nl;
+    return f.before_nl;
 }
 
 // Possible difference types.
@@ -1499,6 +1577,8 @@ int main ( int argc, char ** argv )
 	    nosign = true;
         else if ( strcmp ( "nonumber", name ) == 0 )
 	    nonumber = true;
+        else if ( strcmp ( "filtered", name ) == 0 )
+	    filtered = true;
 	else
 	{
 	    cerr << "Unrecognized option -"
