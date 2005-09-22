@@ -2,7 +2,7 @@
 //
 // File:	scorediff.cc
 // Authors:	Bob Walton (walton@deas.harvard.edu)
-// Date:	Thu Sep 22 11:59:23 EDT 2005
+// Date:	Thu Sep 22 12:33:20 EDT 2005
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: hc3 $
-//   $Date: 2005/09/22 16:24:51 $
+//   $Date: 2005/09/22 17:07:26 $
 //   $RCSfile: scorediff.cc,v $
-//   $Revision: 1.60 $
+//   $Revision: 1.61 $
 
 // This is version 2, a major revision of the first
 // scorediff program.  This version is more explicitly
@@ -153,28 +153,20 @@ char documentation [] =
 "		cognized if either following matching\n"
 "		token is a floating point number.\n"
 "\f\n"
-"    word-float     Here TYPE1-TYPE2 means a token of\n"
-"    float-word     type TYPE1 in the first file was\n"
-"    word-integer   matched to a token of type TYPE2\n"
-"    integer-word   in the second file.\n"
-"    word-boc\n"
-"    boc-word\n"
+"    word-number    Here TYPE1-TYPE2 means a token of\n"
+"    number-word    type TYPE1 in the first file was\n"
+"    word-boc       matched to a token of type TYPE2\n"
+"    boc-word       in the second file.\n"
 "    word-bog\n"
 "    bog-word\n"
 "    word-eof\n"
 "    eof-word\n"
-"    integer-boc\n"
-"    boc-integer\n"
-"    integer-bog\n"
-"    bog-integer\n"
-"    integer-eof\n"
-"    eof-integer\n"
-"    float-boc\n"
-"    boc-float\n"
-"    float-bog\n"
-"    bog-float\n"
-"    float-eof\n"
-"    eof-float\n"
+"    number-boc\n"
+"    boc-number\n"
+"    number-bog\n"
+"    bog-number\n"
+"    number-eof\n"
+"    eof-number\n"
 "    boc-bog\n"
 "    bog-boc\n"
 "    boc-eof\n"
@@ -378,10 +370,9 @@ char documentation [] =
 "                    `whitespace' | `beginspace' |\n"
 "                    `linespace' | `endspace'\n"
 "\n"
-"             where TYPE1 and TYPE2 are not the same,\n"
-"             and not both number types.\n"
+"             where TYPE1 and TYPE2 are not the same.\n"
 "\n"
-"          TYPE ::= `word' | `float' | `integer' |\n"
+"          TYPE ::= `word' | `number' |\n"
 "                   `boc' | `bog' | `eof'\n"
 "\n"
 "          absolute-difference ::=\n"
@@ -471,8 +462,8 @@ char documentation [] =
 // test case (boc) token, or an end of file (eof) token.
 //
 enum token_type {
-    NUMBER_TOKEN, WORD_TOKEN,
-    BOG_TOKEN, BOC_TOKEN, EOF_TOKEN };
+    NUMBER_TOKEN = 0, WORD_TOKEN,
+    BOC_TOKEN, BOG_TOKEN, EOF_TOKEN, MAX_TOKEN };
 
 struct file
     // Information about one of the input files (output
@@ -592,9 +583,9 @@ struct file
     // Can also be set to a single character following a
     // token.
     //
-    // Can also be set to the whitespace following a
-    // token (by before_nl), possibly followed by a
-    // single non-whitespace character.
+    // Can also be set to some of the whitespace follow-
+    // ing a token (by before_nl), possibly followed by
+    // a single non-whitespace character.
 
     char * back;	// If pointing at `\0', there
     			// are no backed up characters
@@ -653,8 +644,12 @@ inline int get_character ( file & f )
 {
     int c = * f.back;
 
-    if ( c != 0 )	++ f.back;
-    else		c = f.stream.get();
+    if ( c != 0 ) ++ f.back;
+    else do
+    {
+        c = f.stream.get();
+	if ( c != EOF ) c &= 0xFF;
+    } while ( c == 0 );
 
     return c;
 }
@@ -700,6 +695,7 @@ void scan_token ( file & f )
 	//
 	assert ( f.type == BOG_TOKEN );
         f.boc_next	= false;
+	++ f.test_case;
 	f.type		= BOC_TOKEN;
 	return;
     }
@@ -753,6 +749,7 @@ void scan_token ( file & f )
 	    if ( filtered ) {
 	        switch ( get_character ( f ) ) {
 		case '+':	++ f.test_group;
+				f.test_case = 0;
 				f.type = BOG_TOKEN;
 				f.column = column;
 				f.boc_next = true;
@@ -762,6 +759,7 @@ void scan_token ( file & f )
 				f.column = column;
 				return;
 		case '|':	++ f.test_group;
+				f.test_case = 0;
 				f.type = BOG_TOKEN;
 				f.column = column;
 				return;
@@ -1160,11 +1158,16 @@ bool before_nl ( file & f )
 	    whitespace_too_long ( f );
 	else
 	{
-	    c = f.stream.get();
+	    do {
+		c = f.stream.get();
+		if ( c != EOF ) c &= 0xFF;
+	    } while ( c == 0 );
+
 	    if ( c == EOF ) {
 		f.before_nl = true;
 		return true;
 	    }
+
 	    * p ++ = c;
 	    * p = 0;
 	}
@@ -1182,21 +1185,17 @@ bool before_nl ( file & f )
     }
 }
 
-// Possible difference types.
+// Possible difference types.  The first group
+// have indices computed by the function that
+// followed the enum definition.
 //
 enum difference_type {
-    LINEBREAK = 0,
+    LINEBREAK = MAX_TOKEN * MAX_TOKEN,
     SPACEBREAK,
     WHITESPACE,
     BEGINSPACE,
     LINESPACE,
     ENDSPACE,
-    WORD_EOF1,
-    INTEGER_EOF1,
-    FLOAT_EOF1,
-    WORD_EOF2,
-    INTEGER_EOF2,
-    FLOAT_EOF2,
     FLOAT,
     INTEGER,
     DECIMAL,
@@ -1208,6 +1207,13 @@ enum difference_type {
     WORD,
     MAX_DIFFERENCE
 };
+//
+inline difference_type type_mismatch 
+	( token_type TYPE1, token_type TYPE2 )
+{
+    return difference_type
+    		( TYPE1 * MAX_TOKEN + TYPE2 );
+}
 
 // Difference data.
 //
@@ -1241,18 +1247,37 @@ struct difference
 // Information on the various differences found.
 //
 difference differences[] = {
+    { NULL,		false, 0, 0, 0 },
+    { "number-word",	false, 0, 0, MAX_PROOF_LINES },
+    { "number-boc",	false, 0, 0, MAX_PROOF_LINES },
+    { "number-bog",	false, 0, 0, MAX_PROOF_LINES },
+    { "number-eof",	false, 0, 0, MAX_PROOF_LINES },
+    { "word-number",	false, 0, 0, MAX_PROOF_LINES },
+    { NULL,		false, 0, 0, 0 },
+    { "word-boc",	false, 0, 0, MAX_PROOF_LINES },
+    { "word-bog",	false, 0, 0, MAX_PROOF_LINES },
+    { "word-eof",	false, 0, 0, MAX_PROOF_LINES },
+    { "boc-number",	false, 0, 0, MAX_PROOF_LINES },
+    { "boc-word",	false, 0, 0, MAX_PROOF_LINES },
+    { NULL,		false, 0, 0, 0 },
+    { "boc-bog",	false, 0, 0, MAX_PROOF_LINES },
+    { "boc-eof",	false, 0, 0, MAX_PROOF_LINES },
+    { "bog-number",	false, 0, 0, MAX_PROOF_LINES },
+    { "bog-word",	false, 0, 0, MAX_PROOF_LINES },
+    { "bog-boc",	false, 0, 0, MAX_PROOF_LINES },
+    { NULL,		false, 0, 0, 0 },
+    { "bog-eof",	false, 0, 0, MAX_PROOF_LINES },
+    { "eof-number",	false, 0, 0, MAX_PROOF_LINES },
+    { "eof-word",	false, 0, 0, MAX_PROOF_LINES },
+    { "eof-boc",	false, 0, 0, MAX_PROOF_LINES },
+    { "eof-bog",	false, 0, 0, MAX_PROOF_LINES },
+    { NULL,		false, 0, 0, 0 },
     { "linebreak",	false, 0, 0, MAX_PROOF_LINES },
     { "spacebreak",	false, 0, 0, MAX_PROOF_LINES },
     { "whitespace",	false, 0, 0, MAX_PROOF_LINES },
     { "beginspace",	false, 0, 0, MAX_PROOF_LINES },
     { "linespace",	false, 0, 0, MAX_PROOF_LINES },
     { "endspace",	false, 0, 0, MAX_PROOF_LINES },
-    { "word-eof1",	false, 0, 0, MAX_PROOF_LINES },
-    { "integer-eof1",	false, 0, 0, MAX_PROOF_LINES },
-    { "float-eof1",	false, 0, 0, MAX_PROOF_LINES },
-    { "word-eof2",	false, 0, 0, MAX_PROOF_LINES },
-    { "integer-eof2",	false, 0, 0, MAX_PROOF_LINES },
-    { "float-eof2",	false, 0, 0, MAX_PROOF_LINES },
     { "float",		false, 0, 0, MAX_PROOF_LINES },
     { "integer",	false, 0, 0, MAX_PROOF_LINES },
     { "decimal",	false, 0, 0, MAX_PROOF_LINES },
@@ -1580,6 +1605,8 @@ int main ( int argc, char ** argv )
 
 	int i; for ( i = 0; i < MAX_DIFFERENCE; ++ i )
 	{
+	    if ( differences[i].name == NULL )
+	        continue;
 	    if ( strcmp ( differences[i].name, name )
 	         == 0 ) break;
 	}
@@ -1697,13 +1724,10 @@ int main ( int argc, char ** argv )
 		done = true;
 		break;
 	    case WORD_TOKEN:
-	        found_difference ( WORD_EOF1 );
-		skip_whitespace_comparison = true;
-		break;
 	    case NUMBER_TOKEN:
-		found_difference ( test.is_float ?
-				   FLOAT_EOF1 :
-				   INTEGER_EOF1 );
+	        found_difference
+		    ( type_mismatch
+		        ( EOF_TOKEN, output.type ) );
 		skip_whitespace_comparison = true;
 		break;
 	    }
@@ -1716,11 +1740,8 @@ int main ( int argc, char ** argv )
 	    if ( test.type == EOF_TOKEN )
 	    {
 		found_difference
-		    ( output.type == WORD_TOKEN ?
-		      WORD_EOF2 :
-		      output.is_float ?
-		      FLOAT_EOF2 :
-		      INTEGER_EOF2 );
+		    ( type_mismatch
+		        ( output.type, EOF_TOKEN ) );
 		skip_whitespace_comparison = true;
 		break;
 	    }
