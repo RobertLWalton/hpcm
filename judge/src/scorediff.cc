@@ -2,7 +2,7 @@
 //
 // File:	scorediff.cc
 // Authors:	Bob Walton (walton@deas.harvard.edu)
-// Date:	Wed Sep 21 10:37:46 EDT 2005
+// Date:	Thu Sep 22 07:02:58 EDT 2005
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: hc3 $
-//   $Date: 2005/09/21 14:43:05 $
+//   $Date: 2005/09/22 13:04:11 $
 //   $RCSfile: scorediff.cc,v $
-//   $Revision: 1.55 $
+//   $Revision: 1.56 $
 
 // This is version 2, a major revision of the first
 // scorediff program.  This version is more explicitly
@@ -436,11 +436,13 @@ char documentation [] =
 "    option is the effective option for that type.\n"
 ;
 
-// A token is either a number token, an end of file
-// (eof) token, or a word token.
+// A token is either a number token, a word token, a
+// beginning of test group (bog) token, a beginning of
+// test case (boc) token, or an end of file (eof) token.
 //
 enum token_type {
-    NUMBER_TOKEN, EOF_TOKEN, WORD_TOKEN };
+    NUMBER_TOKEN, WORD_TOKEN,
+    BOG_TOKEN, BOC_TOKEN, EOF_TOKEN };
 
 struct file
     // Information about one of the input files (output
@@ -458,13 +460,13 @@ struct file
     int length;		// Length of token in charac-
     			// ters (not including `\0').
 			// 0 for eof.
-    int group;		// Group number of current
+    int test_group;	// Group number of current
     			// token.  The first group is 1.
 			// The group number is 0 before
 			// the first group begins, or
 			// if there is no -filtered
 			// option.
-    int Case;		// Ditto but case number.  Note
+    int test_case;	// Ditto but case number.  Note
     			// cases are numbered from the
 			// beginning of the file, and
 			// NOT from the beginning of
@@ -475,6 +477,11 @@ struct file
     			// the last character of the
 			// the current token.  The first
 			// column is 0.
+    bool boc_next;	// The next token is a BOC_
+    			// TOKEN.  Set only when a fil-
+			// tered line begins with `+',
+			// signifying a BOG_TOKEN/BOC_
+			// TOKEN pair.
     bool remainder;	// True iff token is a remainder
     			// from a split token.
     double number;	// For a number token, the
@@ -499,18 +506,6 @@ struct file
     bool not_before_nl;	// True if whitespace following
     			// token does not contain a new
 			// line or end of file.
-
-    // When before_nl is set, one or both of the
-    // following may be set.
-    //
-    bool before_group;	// True if whitespace following
-    			// token has any new line that
-			// begins a group, or has an end
-			// of file.
-    bool before_case;	// True if whitespace following
-    			// token has any new line that
-			// begins a case, or has an end
-			// of file.
 
     // Whitespace description.
     //
@@ -611,10 +606,11 @@ void open ( file & f, char * filename )
     f.back		= f.backup;
 
     f.column		= -1;
-    f.group		= 0;
-    f.Case		= 0;
+    f.test_group	= 0;
+    f.test_case		= 0;
     f.line		= 0;
     f.type		= WORD_TOKEN;
+    f.boc_next		= false;
 
     f.remainder_length	= 0;
 }
@@ -667,11 +663,18 @@ void bad_filtered_mark ( file & f ) {
 void scan_token ( file & f )
 {
     if ( f.type == EOF_TOKEN ) return;
+    if ( f.boc_next )
+    {
+	// Current token is part of BOG/BOC pair.
+	//
+	assert ( f.type == BOG_TOKEN );
+        f.boc_next	= false;
+	f.type		= BOC_TOKEN;
+	return;
+    }
 
     f.before_nl		= false;
     f.not_before_nl	= false;
-    f.before_case	= false;
-    f.before_group	= false;
 
     if ( f.remainder_length != 0 )
     {
@@ -706,6 +709,11 @@ void scan_token ( file & f )
 
     f.newlines = 0;
 
+    // Set in case BOG/BOC/EOF_TOKEN found.
+    //
+    f.length	= 0;
+    f.token[0]	= 0;
+
     while ( isspace ( c ) ) {
         if ( c == '\n' ) {
 	    column = -1;
@@ -713,11 +721,19 @@ void scan_token ( file & f )
 	    ++ f.line;
 	    if ( filtered ) {
 	        switch ( get_character ( f ) ) {
-		case '+':	++ f.group;
-		case '-':	++ f.Case;
-				break;
-		case '|':	++ f.group;
-				break;
+		case '+':	++ f.test_group;
+				f.type = BOG_TOKEN;
+				f.column = column;
+				f.boc_next = true;
+				return;
+		case '-':	++ f.test_case;
+				f.type = BOC_TOKEN;
+				f.column = column;
+				return;
+		case '|':	++ f.test_group;
+				f.type = BOG_TOKEN;
+				f.column = column;
+				return;
 		case '.':	break;
 		case EOF:	break;
 		default:	bad_filtered_mark ( f );
@@ -750,10 +766,8 @@ void scan_token ( file & f )
     // token.
 
     if ( c == EOF ) {
-    	f.type		= EOF_TOKEN;
-	f.length	= 0;
-	f.column	= column;
-	f.token[0]	= 0;
+    	f.type = EOF_TOKEN;
+	f.column = column;
 	return;
     }
 
@@ -1053,8 +1067,6 @@ void split_word ( file & f, int n )
     f.column -= f.remainder_length;
 
     f.before_nl		= false;
-    f.before_case	= false;
-    f.before_group	= false;
     f.not_before_nl	= true;
 }
 
@@ -1070,16 +1082,14 @@ void undo_split ( file & f )
 	f.column += f.remainder_length;
 	f.remainder_length = 0;
 	f.before_nl	= false;
-	f.before_case	= false;
-	f.before_group	= false;
 	f.not_before_nl	= false;
     }
 }
 
-// Set f.before_nl, f.before_case, and f.before_group,
-// according to what comes next in the input stream.
-// Sets backup to any whitespace that comes next, plus
-// any following non-whitespace character.
+// Sets f.before_nl and f.not_before_nl according to
+// what comes next in the input stream.  Sets backup to
+// some portion of the whitespace that comes next, plus
+// possibly a following non-whitespace character.
 //
 // If f.before_nl or f.not_before_nl is already set,
 // nothing needs to be done.
@@ -1093,25 +1103,22 @@ bool before_nl ( file & f )
 {
     if ( f.before_nl || f.not_before_nl )
         return f.before_nl;
+
     if ( f.type == EOF_TOKEN ) 
     {
-        f.before_nl = f.before_case = f.before_group
-	            = true;
-	return f.before_nl;
+        f.before_nl = true;
+	return true;
     }
-    assert ( ! f.before_case );
-    assert ( ! f.before_group );
 
     // Scan characters to answer question.  Start by
     // scanning characters in backup, and then add to
     // backup until we scan the first non-whitespace
-    // character.
-    //
-    // Set before_{nl,case,group} as we scan.
+    // character or '\n' or EOF.  Set before_nl if we
+    // find an `\n' or EOF, and not_before_nl other-
+    // wise.
     //
     char * p = f.back;
     int c;
-    bool filtered_line_beginning = false;
     while ( true )
     {
 	// Get next character.
@@ -1124,36 +1131,25 @@ bool before_nl ( file & f )
 	else
 	{
 	    c = f.stream.get();
-	    if ( c == EOF ) break;
+	    if ( c == EOF ) {
+		f.before_nl = true;
+		return true;
+	    }
 	    * p ++ = c;
 	    * p = 0;
 	}
 
-	// Process character scanned.
-	//
-	if ( filtered_line_beginning )
+    	if ( ! isspace ( c ) )
 	{
-	    // C is mark of filtered line.
-	    //
-	    switch ( c ) {
-	    case '+':	f.before_group = true;
-	    case '-':	f.before_case = true;
-			break;
-	    case '|':	f.before_group = true;
-			break;
-	    case '.':	break;
-	    default:	bad_filtered_mark ( f );
-	    }
+	    f.not_before_nl = true;
+	    return false;
 	}
-    	else if ( ! isspace ( c ) ) break;
 	else if ( c == '\n' )
 	{
 	    f.before_nl = true;
-	    filtered_line_beginning = filtered;
+	    return true;
         }
     }
-    f.not_before_nl = ! f.before_nl;
-    return f.before_nl;
 }
 
 // Possible difference types.
