@@ -2,7 +2,7 @@
 //
 // File:	scorediff.cc
 // Authors:	Bob Walton (walton@deas.harvard.edu)
-// Date:	Thu Sep 22 13:47:35 EDT 2005
+// Date:	Thu Sep 22 15:10:35 EDT 2005
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: hc3 $
-//   $Date: 2005/09/22 18:53:16 $
+//   $Date: 2005/09/22 19:07:55 $
 //   $RCSfile: scorediff.cc,v $
-//   $Revision: 1.62 $
+//   $Revision: 1.63 $
 
 // This is version 2, a major revision of the first
 // scorediff program.  This version is more explicitly
@@ -1679,16 +1679,43 @@ int main ( int argc, char ** argv )
 	//
 	if ( output.type != test.type )
 	{
-	     if ( output.type < test.type )
-	     {
-	         while ( output.type < test.type )
+	    // Type differences for current tokens have
+	    // not yet been announced by calling found_
+	    // difference.
+
+	    bool announced[MAX_TOKEN];
+	    for ( int i = 0; i < MAX_TOKEN; ++ i )
+	        announced[i] = false;
+	    if ( output.type < test.type )
+	    {
+	        while ( output.type < test.type )
+		{
+		     if ( ! announced[output.type] )
+		     {
+			found_difference
+			    ( type_mismatch
+				( output.type,
+				  test.type ) );
+		        announced[output.type] = true;
+		     }
 		     scan_token ( output );
-	     }
-	     else
-	     {
-	         while ( test.type < output.type )
+		}
+	    }
+	    else
+	    {
+	        while ( test.type < output.type )
+		{
+		     if ( ! announced[test.type] )
+		     {
+			found_difference
+			    ( type_mismatch
+				( output.type,
+				  test.type ) );
+		        announced[test.type] = true;
+		     }
 		     scan_token ( test );
-	     }
+		}
+	    }
 	    skip_whitespace_comparison = true;
 	}
 	else if ( last_match_was_word_diff
@@ -1726,18 +1753,13 @@ int main ( int argc, char ** argv )
 	    scan_token ( test );
 	}
 
-	// Compare tokens.
+	// Compare tokens.  Type mismatch is handled
+	// at beginning of containing loop.
 	//
+	if ( output.type != test.type ) continue;
+
 	last_match_was_word_diff = false;
-	if ( output.type != test.type )
-	{
-	    found_difference
-		( type_mismatch
-		    ( output.type, test.type ) );
-	    skip_whitespace_comparison = true;
-	    
-	}
-        else switch ( output.type ) {
+        switch ( output.type ) {
 
 	case EOF_TOKEN:
 		done = true;
