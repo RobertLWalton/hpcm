@@ -2,7 +2,7 @@
 //
 // File:	scorediff.cc
 // Authors:	Bob Walton (walton@deas.harvard.edu)
-// Date:	Thu Sep 22 11:37:34 EDT 2005
+// Date:	Thu Sep 22 11:59:23 EDT 2005
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: hc3 $
-//   $Date: 2005/09/22 15:53:33 $
+//   $Date: 2005/09/22 16:24:51 $
 //   $RCSfile: scorediff.cc,v $
-//   $Revision: 1.59 $
+//   $Revision: 1.60 $
 
 // This is version 2, a major revision of the first
 // scorediff program.  This version is more explicitly
@@ -79,7 +79,8 @@ char documentation [] =
 "    output_file and the test_file are filtered\n"
 "    output from the jfilter program, and have marker\n"
 "    characters at the beginning of each line to\n"
-"    delimit cases and groups.  The legal marks are:\n"
+"    delimit test cases and test groups.  The legal\n"
+"    marks are:\n"
 "\n"
 "        |  begin a test group\n"
 "        -  begin a test case\n"
@@ -152,9 +153,9 @@ char documentation [] =
 "		cognized if either following matching\n"
 "		token is a floating point number.\n"
 "\f\n"
-"    word-float     Here XXX-YYY means a token of\n"
-"    float-word     type in the first file was\n"
-"    word-integer   matched to a token of type YYY\n"
+"    word-float     Here TYPE1-TYPE2 means a token of\n"
+"    float-word     type TYPE1 in the first file was\n"
+"    word-integer   matched to a token of type TYPE2\n"
 "    integer-word   in the second file.\n"
 "    word-boc\n"
 "    boc-word\n"
@@ -221,8 +222,8 @@ char documentation [] =
 "    word	Both of the two matching tokens are\n"
 "		word tokens, and it is not true that\n"
 "		they are of the same length (see\n"
-"               word splitting below) and are iden-\n"
-"               tical except for letter case.\n"
+"		word splitting below) and are iden-\n"
+"		tical except for letter case.\n"
 "\f\n"
 "    infinity	Two matching number tokens cannot be\n"
 "		compared because they are NOT identi-\n"
@@ -342,10 +343,9 @@ char documentation [] =
 "    beginning the first line of a file are reported\n"
 "    as `beginspace' differences.\n"
 "\n"
-"    When an end-of-file (eof) token is matched with\n"
-"    a non-eof token, no check is made of the white-\n"
-"    space preceding the tokens, or of any whitespace\n"
-"    that is after the non-eof token in its file.\n"
+"    When a boc, bog, or eof token is matched with\n"
+"    a token of a different type, no check is made of\n"
+"    the whitespace preceding the tokens. TBD\n"
 "\n"
 "    For each kind of difference found in the two\n"
 "    files, the scorediff program outputs a `proof'\n"
@@ -373,12 +373,16 @@ char documentation [] =
 "                              relative-difference |\n"
 "                    `float'   absolute-difference\n"
 "                              relative-difference |\n"
-"                    `word-eof1' | `integer-eof1' |\n"
-"                    `float-eof1' | `word-eof2' |\n"
-"                    `integer-eof2' | `float-eof2' |\n"
+"                    `TYPE1-TYPE2' |\n"
 "                    `linebreak' | `spacebreak' |\n"
 "                    `whitespace' | `beginspace' |\n"
 "                    `linespace' | `endspace'\n"
+"\n"
+"             where TYPE1 and TYPE2 are not the same,\n"
+"             and not both number types.\n"
+"\n"
+"          TYPE ::= `word' | `float' | `integer' |\n"
+"                   `boc' | `bog' | `eof'\n"
 "\n"
 "          absolute-difference ::=\n"
 "                    floating-point-number\n"
@@ -393,7 +397,7 @@ char documentation [] =
 "    before the first case beginning gets has case\n"
 "    number 0.  If the -filtered option is not given,\n"
 "    the group and case numbers are all 0.\n"
-"\n"
+"\f\n"
 "    Here non-floating-point numbers output as part\n"
 "    of proofs are unsigned integers.  All the proofs\n"
 "    concerning the same pair of matching tokens are\n"
@@ -405,7 +409,7 @@ char documentation [] =
 "    line-proof that begins with the line numbers of\n"
 "    the respective lines.  Each line-proof is output\n"
 "    on a line by itself.\n"
-"\f\n"
+"\n"
 "    There is a limit for each difference type to the\n"
 "    number of proofs of that type that will be out-\n"
 "    put for each group.  Specifically, if the limit\n"
@@ -432,7 +436,7 @@ char documentation [] =
 "\n"
 "    The `-float' and `-integer' program options\n"
 "    differ in that they have the forms:\n"
-"\n"
+"\f\n"
 "        -float absolute-diff relative-diff N\n"
 "        -integer absolute-diff relative-diff N\n"
 "\n"
@@ -443,7 +447,7 @@ char documentation [] =
 "    erences may be omitted if they are zero and the\n"
 "    program argument following them does NOT begin\n"
 "    with a digit or decimal point.\n"
-"\f\n"
+"\n"
 "    If no `-float' option is given, then any differ-\n"
 "    ence in the representation of equal numbers, one\n"
 "    of which is floating point, will output a\n"
@@ -486,17 +490,18 @@ struct file
     int length;		// Length of token in charac-
     			// ters (not including `\0').
 			// 0 for eof.
-    int test_group;	// Group number of current
+    int test_group;	// Test group number of current
     			// token.  The first group is 1.
 			// The group number is 0 before
-			// the first group begins, or
-			// if there is no -filtered
+			// the first test group begins,
+			// or if there is no -filtered
 			// option.
-    int test_case;	// Ditto but case number.  Note
-    			// cases are numbered from the
-			// beginning of the file, and
-			// NOT from the beginning of
-			// a group.
+    int test_case;	// Ditto but test case number.  
+    			// Test cases are numbered from
+			// the beginning of their test
+			// group.  Lines before the
+			// first test case in a group
+			// get the test case number 0.
     int line;		// Line number of current
     			// token.  The first line is 1.
     int column;		// Column within the line of
