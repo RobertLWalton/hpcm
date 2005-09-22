@@ -2,7 +2,7 @@
 //
 // File:	scorediff.cc
 // Authors:	Bob Walton (walton@deas.harvard.edu)
-// Date:	Thu Sep 22 12:33:20 EDT 2005
+// Date:	Thu Sep 22 13:47:35 EDT 2005
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: hc3 $
-//   $Date: 2005/09/22 17:07:26 $
+//   $Date: 2005/09/22 18:53:16 $
 //   $RCSfile: scorediff.cc,v $
-//   $Revision: 1.61 $
+//   $Revision: 1.62 $
 
 // This is version 2, a major revision of the first
 // scorediff program.  This version is more explicitly
@@ -457,12 +457,16 @@ char documentation [] =
 "    option is the effective option for that type.\n"
 ;
 
-// A token is either a number token, a word token, a
+// A token is either a word token, a number token, a
 // beginning of test group (bog) token, a beginning of
 // test case (boc) token, or an end of file (eof) token.
 //
+// These are given in a specific order so that if there
+// is a token type mismatch between tokens, only the
+// token with smaller type is skipped.
+//
 enum token_type {
-    NUMBER_TOKEN = 0, WORD_TOKEN,
+    WORD_TOKEN = 0, NUMBER_TOKEN,
     BOC_TOKEN, BOG_TOKEN, EOF_TOKEN, MAX_TOKEN };
 
 struct file
@@ -1248,27 +1252,27 @@ struct difference
 //
 difference differences[] = {
     { NULL,		false, 0, 0, 0 },
-    { "number-word",	false, 0, 0, MAX_PROOF_LINES },
-    { "number-boc",	false, 0, 0, MAX_PROOF_LINES },
-    { "number-bog",	false, 0, 0, MAX_PROOF_LINES },
-    { "number-eof",	false, 0, 0, MAX_PROOF_LINES },
     { "word-number",	false, 0, 0, MAX_PROOF_LINES },
-    { NULL,		false, 0, 0, 0 },
     { "word-boc",	false, 0, 0, MAX_PROOF_LINES },
     { "word-bog",	false, 0, 0, MAX_PROOF_LINES },
     { "word-eof",	false, 0, 0, MAX_PROOF_LINES },
-    { "boc-number",	false, 0, 0, MAX_PROOF_LINES },
+    { "number-word",	false, 0, 0, MAX_PROOF_LINES },
+    { NULL,		false, 0, 0, 0 },
+    { "number-boc",	false, 0, 0, MAX_PROOF_LINES },
+    { "number-bog",	false, 0, 0, MAX_PROOF_LINES },
+    { "number-eof",	false, 0, 0, MAX_PROOF_LINES },
     { "boc-word",	false, 0, 0, MAX_PROOF_LINES },
+    { "boc-number",	false, 0, 0, MAX_PROOF_LINES },
     { NULL,		false, 0, 0, 0 },
     { "boc-bog",	false, 0, 0, MAX_PROOF_LINES },
     { "boc-eof",	false, 0, 0, MAX_PROOF_LINES },
-    { "bog-number",	false, 0, 0, MAX_PROOF_LINES },
     { "bog-word",	false, 0, 0, MAX_PROOF_LINES },
+    { "bog-number",	false, 0, 0, MAX_PROOF_LINES },
     { "bog-boc",	false, 0, 0, MAX_PROOF_LINES },
     { NULL,		false, 0, 0, 0 },
     { "bog-eof",	false, 0, 0, MAX_PROOF_LINES },
-    { "eof-number",	false, 0, 0, MAX_PROOF_LINES },
     { "eof-word",	false, 0, 0, MAX_PROOF_LINES },
+    { "eof-number",	false, 0, 0, MAX_PROOF_LINES },
     { "eof-boc",	false, 0, 0, MAX_PROOF_LINES },
     { "eof-bog",	false, 0, 0, MAX_PROOF_LINES },
     { NULL,		false, 0, 0, 0 },
@@ -1666,23 +1670,36 @@ int main ( int argc, char ** argv )
     bool done		= false;
 
     bool last_match_was_word_diff	= false;
-    bool skip_whitespace_comparison	= false;
 
     while ( ! done )
     {
+	bool skip_whitespace_comparison	= false;
 
 	// Scan next tokens.
 	//
-	if ( last_match_was_word_diff
-	     && ( output.remainder != test.remainder ||
-	          output.type != test.type ||
-		  before_nl ( output )
-		      != before_nl ( test ) ) )
+	if ( output.type != test.type )
+	{
+	     if ( output.type < test.type )
+	     {
+	         while ( output.type < test.type )
+		     scan_token ( output );
+	     }
+	     else
+	     {
+	         while ( test.type < output.type )
+		     scan_token ( test );
+	     }
+	    skip_whitespace_comparison = true;
+	}
+	else if ( last_match_was_word_diff
+		  && (    output.remainder
+		          != test.remainder
+		       ||
+		       before_nl ( output )
+			   != before_nl ( test ) ) )
 	{
 	    assert (    ! output.remainder
 	    	     || ! test.remainder );
-	    assert (    ( output.type == WORD_TOKEN )
-		     || ( test.type == WORD_TOKEN ) );
 
 	    // If the last two tokens had a word diff-
 	    // erence and one is a remainder or a
@@ -1702,10 +1719,6 @@ int main ( int argc, char ** argv )
 	    else if (    ! before_nl ( test )
 	              &&   before_nl ( output ) )
 		scan_token ( test );
-	    else if ( output.type == WORD_TOKEN )
-		scan_token ( output );
-	    else if ( test.type == WORD_TOKEN )
-		scan_token ( test );
 	}
 	else
 	{
@@ -1716,41 +1729,24 @@ int main ( int argc, char ** argv )
 	// Compare tokens.
 	//
 	last_match_was_word_diff = false;
-        switch ( output.type ) {
+	if ( output.type != test.type )
+	{
+	    found_difference
+		( type_mismatch
+		    ( output.type, test.type ) );
+	    skip_whitespace_comparison = true;
+	    
+	}
+        else switch ( output.type ) {
 
 	case EOF_TOKEN:
-	    switch ( test.type ) {
-	    case EOF_TOKEN:
 		done = true;
+	case BOG_TOKEN:
+	case BOC_TOKEN:
 		break;
-	    case WORD_TOKEN:
-	    case NUMBER_TOKEN:
-	        found_difference
-		    ( type_mismatch
-		        ( EOF_TOKEN, output.type ) );
-		skip_whitespace_comparison = true;
-		break;
-	    }
-
-	    break;
 
 	case NUMBER_TOKEN:
 	case WORD_TOKEN:
-
-	    if ( test.type == EOF_TOKEN )
-	    {
-		found_difference
-		    ( type_mismatch
-		        ( output.type, EOF_TOKEN ) );
-		skip_whitespace_comparison = true;
-		break;
-	    }
-	    else if ( output.type != test.type )
-	    {
-		found_difference ( WORD );
-		last_match_was_word_diff = true;
-		break;
-	    }
 
 	    // If both tokens are words and one is
 	    // longer than the other, split the longer
@@ -1834,13 +1830,18 @@ int main ( int argc, char ** argv )
 
 	if ( skip_whitespace_comparison ) continue;
 
+	assert ( output.type == test.type );
+
 	// Compare column numbers.  This is done after
 	// token comparison so that the results of word
 	// splitting can be taken into account in token
 	// ending column numbers.  It is not done if
-	// both files have EOF_TOKENs.
+	// both files have BOC_TOKENs, BOG_TOKENS, or
+	// EOF_TOKENs.
 
 	if (    output.type != EOF_TOKEN
+	     && output.type != BOG_TOKEN
+	     && output.type != BOC_TOKEN
 	     && output.column != test.column )
 	    found_difference ( COLUMN );
 
