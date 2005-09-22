@@ -2,7 +2,7 @@
 //
 // File:	scorediff.cc
 // Authors:	Bob Walton (walton@deas.harvard.edu)
-// Date:	Thu Sep 22 11:36:21 EDT 2005
+// Date:	Thu Sep 22 11:37:34 EDT 2005
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: hc3 $
-//   $Date: 2005/09/22 15:31:17 $
+//   $Date: 2005/09/22 15:53:33 $
 //   $RCSfile: scorediff.cc,v $
-//   $Revision: 1.58 $
+//   $Revision: 1.59 $
 
 // This is version 2, a major revision of the first
 // scorediff program.  This version is more explicitly
@@ -156,30 +156,30 @@ char documentation [] =
 "    float-word     type in the first file was\n"
 "    word-integer   matched to a token of type YYY\n"
 "    integer-word   in the second file.\n"
+"    word-boc\n"
+"    boc-word\n"
+"    word-bog\n"
+"    bog-word\n"
 "    word-eof\n"
 "    eof-word\n"
-"    float-eof\n"
-"    eof-float\n"
+"    integer-boc\n"
+"    boc-integer\n"
+"    integer-bog\n"
+"    bog-integer\n"
 "    integer-eof\n"
 "    eof-integer\n"
+"    float-boc\n"
+"    boc-float\n"
+"    float-bog\n"
+"    bog-float\n"
+"    float-eof\n"
+"    eof-float\n"
+"    boc-bog\n"
+"    bog-boc\n"
 "    boc-eof\n"
 "    eof-boc\n"
 "    bog-eof\n"
 "    eof-bog\n"
-"    word-bog\n"
-"    bog-word\n"
-"    float-bog\n"
-"    bog-float\n"
-"    integer-bog\n"
-"    bog-integer\n"
-"    boc-bog\n"
-"    bog-boc\n"
-"    word-boc\n"
-"    boc-word\n"
-"    float-boc\n"
-"    boc-float\n"
-"    integer-boc\n"
-"    boc-integer\n"
 "\n"
 "    float A R	For two matching number tokens, at\n"
 "		least ONE of which is floating point,\n"
@@ -1151,9 +1151,8 @@ bool before_nl ( file & f )
 	//
         c = * p;
 	if ( c != 0 )	++ p;
-        else if ( p >= f.backup + sizeof ( f.backup ) ) {
+        else if ( p >= f.backup + sizeof ( f.backup ) )
 	    whitespace_too_long ( f );
-	}
 	else
 	{
 	    c = f.stream.get();
