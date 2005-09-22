@@ -5,7 +5,7 @@
 #
 # File:		jfilter
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Sep  4 07:57:36 EDT 2005
+# Date:		Thu Sep 22 05:43:14 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/09/04 12:00:05 $
+#   $Date: 2005/09/22 09:37:49 $
 #   $RCSfile: jfilter,v $
-#   $Revision: 1.11 $
+#   $Revision: 1.12 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -37,7 +37,8 @@ jfilter \[options\] judging_input_file \\
     scoring instructions for scoring any output produced
     from the judge's input in the file, and a means of
     dividing both the judge's input and all output pro-
-    duced therefrom into cases and into groups of cases.
+    duced therefrom into test cases and into test groups
+    of test cases.
 
     The 1-file-name command reads the judging_input_file
     (e.g., a .jin file) and prints scoring instructions
@@ -58,57 +59,88 @@ jfilter \[options\] judging_input_file \\
     except each line is normally prefaced with one of
     the following characters:
 
-    	+ Begin a group and a case.
-	| Begin a group.
-	- Begin a case.
-	. Do not begin a case or group.
+    	+ Begin a test group and a test case.
+	| Begin a test group.
+	- Begin a test case.
+	. Do not begin a test case or test group.
 
     The -c and -g options below cause these prefix
     characters to be omitted from the filtered_output_
     file.
 
+    The first line in the judging_input_file after
+    the parameter definitions must begin a test group
+    or a test case or both.  If it does not begin a
+    test group, there can be no test groups in the file.
+    Similar rules apply to the output_file.  However,
+    there may be lines in a test group before the first
+    test case in that group.
+
     Options modify the above commands as follows:
 
+        -c <group-number>:<case-number>
         -c <case-number>
 
 	    This option permits the filtered file to be
 	    just the portion of the judge's input or
 	    output file that permits testing of a parti-
-	    cular case.  The filtered file can be used
-	    as feedback for a submitter whose submission
-	    first failed on the given case.
+	    cular test case.  The filtered file can be
+	    used as feedback for a submitter whose sub-
+	    mission first failed on the given test case.
 
 	    For the 2- and 3-file-name commands, these
-	    cause the commands to output just the
-	    portion of the judge's input or the portion
-	    of the output that relates to testing the
-	    given case number.  Cases are numbered 1, 2,
-	    3, ... in the files.
+	    cause the commands to output just the por-
+	    tion of the judge's input or the portion of
+	    the output that relates to testing the
+	    designated test case.
 
-	    If there are no groups in the files, the
-	    portion consists just of the lines in the
-	    designated case, from the case beginning
-	    line through the last line that is just
-	    before the beginning of the next group or
-	    case or the end of file.
-
-	    If there are groups in the files, the
-	    portion consists of the lines in the group
-	    containing the case, up to and including
-	    the lines in the case.
+	    For test cases outside any test group, the
+	    portion output consists just of the lines in
+	    the designated test case, from the test case
+	    beginning line through the last line that is
+	    just before the beginning of the next test
+	    case or the end of file.  Thus if there are
+	    no test groups, only the designated test
+	    case is output.
+
+	    For test cases in test groups, the portion
+	    output consists of the lines in the test
+	    group containing the test case, up to and
+	    including the lines in the test case.
 
 	    If the output is the filtered_output_file,
 	    the output lines are exact copies of output_
 	    file lines, without any prefix characters
-	    indicating the group or case beginnings.
-
+	    indicating test group or test case begin-
+	    nings.
+
+	    The test case is designated by designating
+	    the test group that contains the test case
+	    and the test case within the group.  The
+	    test group is designated by <group-number>,
+	    with groups being numbered 1, 2, 3, ... .
+	    If there are no groups, the <group-number>
+	    is considered to be 0.  The test case is
+	    designated by <case-number>, with test cases
+	    being numbered 1, 2, 3, ...  within their
+	    group.  Lines before the beginning of the
+	    first case in a group are considered to be
+	    in test case 0 of that group.
+
+	    If just the <case-number> is given, and the
+	    `<group-number>:' is omitted, the <group-
+	    number> is 0.  This is useful if the file
+	    has no groups.
+
+        -g <group-number>:<case-number>
 	-g <case-number>
 
-	    Same as -c BUT, if there are groups in the
-	    files, include all the lines of the entire
-	    group, instead of stopping with the design-
-	    ated case.
-
+	    Same as -c BUT, if the test case is in a
+	    test group, include all the lines of the
+	    entire test group, instead of stopping with
+	    the designated case.  If there are no
+	    groups, include the entire file.
+
 	-case-head <output-case-head-regexp>
 	-group-head <output-group-head-regexp>
 	-separator <output-separator-regexp>
@@ -141,11 +173,11 @@ jfilter \[options\] judging_input_file \\
     *CASE-HEAD* <output-case-head-regexp>
     *GROUP-HEAD* <output-group-head-regexp>
     *SEPARATOR* <output-separator-regexp>
-
+
     *OUTPUT-CASE-HEAD* <output-case-head-regexp>
     *OUTPUT-GROUP-HEAD* <output-group-head-regexp>
     *OUTPUT-SEPARATOR* <output-separator-regexp>
-
+
     *INPUT-CASE-HEAD* <input-case-head-regexp>
     *INPUT-GROUP-HEAD* <input-group-head-regexp>
     *INPUT-SEPARATOR* <input-separator-regexp>
@@ -178,16 +210,17 @@ jfilter \[options\] judging_input_file \\
     match lines in the judging_input_file, while output
     regexps match lines in the output_file.  A line
     matched by a `head' regexp is called a head line,
-    and begins a group or case.  A line matched by a
-    `separator' regexp is called a separator line,
-    and is the last line of a case that is followed
-    by the first line of another case.  A line matched
-    by a `mark' is like a head line but must be deleted
-    from the filtered version of the file: this is only
-    used for the judging_input_file, to mark the begin-
-    ning of groups and cases.  And a line matched by a
-    `separator mark' is like a separator line, but must
-    be deleted in the filtered version of the file.
+    and begins a test group or test case.  A line mat-
+    ched by a `separator' regexp is called a separator
+    line, and is the last line of a test case that is
+    followed by the first line of another test case.
+    A line matched by a `mark' is like a head line but
+    must be deleted from the filtered version of the
+    file: this is only used for the judging_input_file,
+    to mark the beginning of test groups and test cases.
+    And a line matched by a `separator mark' is like a
+    separator line, but must be deleted in the filtered
+    version of the file.
 
     If the last line of the judging_input_file matches
     the input-end-regexp, it is ALWAYS output when any
@@ -257,27 +290,21 @@ jfilter \[options\] judging_input_file \\
 	*SCORING* space column
 
     These mean that by default input is separated into
-    groups and cases by `*GROUP*' and `*CASE*' mark
-    lines, every line of output is a separate case, and
-    there are no output groups.  The default scoring
-    instructions say to ignore differences in the kind
-    and amount of spacing within an output_file line.
+    test groups and test cases by `*GROUP*' and `*CASE*'
+    mark lines, every line of output is a separate test
+    case, and there are no output test groups.  The
+    default scoring instructions say to ignore differ-
+    ences in the kind and amount of spacing within an
+    output_file line.
 
-    The group and case judging input comes after any
-    parameter definitions in the judging_input_file.
-    If there are no groups, the input consists of just
-    a sequence of cases.  If there are groups, cases are
-    grouped.  A single line may begin both a case and
-    a group, in either input or output, or a group may
-    begin before the first case in the group.
-
-    Any lines in the judging_input_file that are after
-    the parameter definitions, and any lines in an
-    output_file, are in error if they are before the
-    beginning of the first case and the first group.  If
-    there is no group beginning before the first case,
-    then any group beginning in the judging_input_file
-    or output_file is considered to be in error.
+    The test group and test case judging input comes
+    after any parameter definitions in the judging_
+    input_file.  If there are no test groups, the input
+    consists of just a sequence of test cases.  If there
+    are test groups, test cases are grouped.  A single
+    line may begin both a test case and a test group, in
+    either input or output, or a test group may begin
+    before the first test case in the group.
 
     Unlike most HPCM judging programs, this program does
     not read any hpcm_judging.rc file and errors made by
