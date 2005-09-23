@@ -2,7 +2,7 @@
 //
 // File:	scorediff.cc
 // Authors:	Bob Walton (walton@deas.harvard.edu)
-// Date:	Thu Sep 22 20:36:15 EDT 2005
+// Date:	Fri Sep 23 04:27:45 EDT 2005
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: hc3 $
-//   $Date: 2005/09/23 01:29:16 $
+//   $Date: 2005/09/23 09:00:57 $
 //   $RCSfile: scorediff.cc,v $
-//   $Revision: 1.64 $
+//   $Revision: 1.65 $
 
 // This is version 2, a major revision of the first
 // scorediff program.  This version is more explicitly
@@ -387,14 +387,18 @@ char documentation [] =
 "\n"
 "          relative-difference ::=\n"
 "                    floating-point-number\n"
-"TBD\n"
+"\n"
 "    Here the column numbers in a line start with 0\n"
-"    and the group, case, and line numbers in a file\n"
-"    start with 1.  An proof before the first group\n"
-"    beginning has the group number 0, and a proof\n"
-"    before the first case beginning gets has case\n"
-"    number 0.  If the -filtered option is not given,\n"
-"    the group and case numbers are all 0.\n"
+"    and line numbers in a file start with 1.  The\n"
+"    test groups in a file are numbered 1, 2, 3, ...,\n"
+"    and consist of disjoint sets of lines.  Lines\n"
+"    before the first test group in the file (first\n"
+"    bog) are treated as being in group 0.  The test\n"
+"    cases within a test group are numbered 1, 2, 3,\n"
+"    ..., with lines before the first test case in a\n"
+"    group being treated as being in test case 0.\n"
+"    If the -filtered option is not given, the test\n"
+"    group and test case numbers are all 0.\n"
 "\f\n"
 "    Here non-floating-point numbers output as part\n"
 "    of proofs are unsigned integers.  All the proofs\n"
@@ -410,14 +414,14 @@ char documentation [] =
 "\n"
 "    There is a limit for each difference type to the\n"
 "    number of proofs of that type that will be out-\n"
-"    put for each group.  Specifically, if the limit\n"
-"    is N for difference type T, then after N line-\n"
-"    proofs each containing at least one proof of\n"
-"    type T have output with a particular group\n"
+"    put for each test group.  Specifically, if the\n"
+"    limit is N for difference type T, then after N\n"
+"    line-proofs each containing at least one proof\n"
+"    of type T have output with a particular group\n"
 "    number, no more proofs of type T will be output\n"
 "    with that group number.  Group number 0 is\n"
-"    treated here as a separate group, which is\n"
-"    present if the -filtered option is absent.\n"
+"    treated here as a separate group, which is the\n"
+"    only group if the -filtered option is absent.\n"
 "\n"
 "    These limits default to 10 for each difference\n"
 "    type, but the limits can be changed by program\n"
@@ -598,15 +602,19 @@ struct file
     // ing a token (by before_nl), possibly followed by
     // a single non-whitespace character.
 
-    char * back;	// If pointing at `\0', there
-    			// are no backed up characters
-			// to deliver.  Otherwise
-			// use `* back ++' to input
-			// next character.
+    char * backp;	// If >= backendp, there are no
+    			// backed up characters to de-
+			// liver.  Otherwise use
+			// `* backp ++' to input next
+			// character.
+    char * backendp;	// Points just after last backup
+    			// character.
     char backup [ 5 + MAX_SIZE + 1 ]; 
     			// Buffer of backed up char-
     			// acters into which `back'
-			// points.  Terminated by `\0'.
+			// points.  NOT terminated by
+			// `\0', as that is a legitimate
+			// input character.
 };
 
 // The two files.
@@ -635,8 +643,8 @@ void open ( file & f, char * filename )
     }
 
     f.backup[0]		= '\n';
-    f.backup[1]		= '\0';
-    f.back		= f.backup;
+    f.backp		= f.backup;
+    f.backendp		= f.backup + 1;
 
     f.column		= -1;
     f.test_group	= 0;
@@ -653,16 +661,8 @@ void open ( file & f, char * filename )
 //
 inline int get_character ( file & f )
 {
-    int c = * f.back;
-
-    if ( c != 0 ) ++ f.back;
-    else do
-    {
-        c = f.stream.get();
-	if ( c != EOF ) c &= 0xFF;
-    } while ( c == 0 );
-
-    return c;
+    if ( f.backp < f.backendp ) return * f.backp ++;
+    else return f.stream.get();
 }
 
 // Routines to announce errors and exit program.
@@ -931,10 +931,11 @@ void scan_token ( file & f )
 	if ( ! isdigit ( c ) ) {
 	    // No digit next: backup.
 
-	    assert ( * f.back == 0 );
-	    * tp = 0;
-	    strcpy ( f.backup, ep );
-	    f.back = f.backup;
+	    assert ( f.backp == f.backendp );
+	    int len = tp - ep;
+	    memcpy ( f.backup, ep, len );
+	    f.backp = f.backup;
+	    f.backendp = f.backup + len;
 	    tp = ep;
 	    column = ecolumn;
 	} else {
@@ -967,11 +968,9 @@ void scan_token ( file & f )
     // Put c into backup.
 
     if ( c != EOF ) {
-	char * p = f.back;
-	if ( * p == 0 ) p = f.back = f.backup;
-	else p = f.back + strlen ( f.back );
-	* p ++ = c;
-	* p = 0;
+	if ( f.backp == f.backendp )
+	    f.backp = f.backendp = f.backup;
+	* f.backendp ++ = c;
     }
 
     // Convert number token to floating point using
@@ -1044,10 +1043,11 @@ word:
 	    if ( isdigit ( c ) ) {
 	        // Found digit and hence number: backup.
 
-		assert ( * f.back == 0 );
-		* tp = 0;
-		strcpy ( f.backup, np );
-		f.back = f.backup;
+		assert ( f.backp == f.backendp );
+		int len = tp - np;
+		memcpy ( f.backup, np, len );
+		f.backp = f.backup;
+		f.backendp = f.backup + len;
 		tp = np;
 		column = ncolumn;
 		goto end_word;
@@ -1082,11 +1082,9 @@ end_word:
     // Put c into backup.
 
     if ( c != EOF ) {
-	char * p = f.back;
-	if ( * p == 0 ) p = f.back = f.backup;
-	else p = f.back + strlen ( f.back );
-	* p ++ = c;
-	* p = 0;
+	if ( f.backp == f.backendp )
+	    f.backp = f.backendp = f.backup;
+	* f.backendp ++ = c;
     }
 
     return;
@@ -1157,30 +1155,26 @@ bool before_nl ( file & f )
     // find an `\n' or EOF, and not_before_nl other-
     // wise.
     //
-    char * p = f.back;
+    char * p = f.backp;
     int c;
     while ( true )
     {
 	// Get next character.
 	//
-        c = * p;
-	if ( c != 0 )	++ p;
+	if ( p < f.backendp ) c = * p ++;
         else if ( p >= f.backup + sizeof ( f.backup ) )
 	    whitespace_too_long ( f );
 	else
 	{
-	    do {
-		c = f.stream.get();
-		if ( c != EOF ) c &= 0xFF;
-	    } while ( c == 0 );
+	    c = f.stream.get();
 
 	    if ( c == EOF ) {
 		f.before_nl = true;
 		return true;
 	    }
 
-	    * p ++ = c;
-	    * p = 0;
+	    * f.backendp ++ = c;
+	    p = f.backendp;
 	}
 
     	if ( ! isspace ( c ) )
