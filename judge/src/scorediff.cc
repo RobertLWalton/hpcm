@@ -2,7 +2,7 @@
 //
 // File:	scorediff.cc
 // Authors:	Bob Walton (walton@deas.harvard.edu)
-// Date:	Fri Sep 23 04:27:45 EDT 2005
+// Date:	Fri Sep 23 05:46:41 EDT 2005
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: hc3 $
-//   $Date: 2005/09/23 09:30:10 $
+//   $Date: 2005/09/23 10:00:07 $
 //   $RCSfile: scorediff.cc,v $
-//   $Revision: 1.66 $
+//   $Revision: 1.67 $
 
 // This is version 2, a major revision of the first
 // scorediff program.  This version is more explicitly
@@ -49,7 +49,7 @@ unsigned const MAX_SIZE = 10100;
 // Default maximum number of proof lines containing any
 // one type of difference.
 //
-unsigned const MAX_PROOF_LINES = 10;
+unsigned const PROOF_LIMIT = 10;
 
 char documentation [] =
 "scorediff [options] output_file test_file\n"
@@ -694,6 +694,7 @@ void bad_filtered_mark ( file & f ) {
 // Scan next token in a file.  EOF_TOKEN is
 // returned repeatedly at end of file.
 //
+void zero_proof_lines ( void );
 void scan_token ( file & f )
 {
     if ( f.type == EOF_TOKEN ) return;
@@ -757,6 +758,7 @@ void scan_token ( file & f )
 		case '+':	++ f.test_group;
 				f.test_case = 0;
 				f.type = BOG_TOKEN;
+				zero_proof_lines();
 				f.column = column;
 				f.boc_next = true;
 				return;
@@ -767,6 +769,7 @@ void scan_token ( file & f )
 		case '|':	++ f.test_group;
 				f.test_case = 0;
 				f.type = BOG_TOKEN;
+				zero_proof_lines();
 				f.column = column;
 				return;
 		case '.':	break;
@@ -1227,60 +1230,73 @@ struct difference
        // if no proof containing this difference
        // has been output.
 
+    unsigned	proof_lines;
+       // Number of proof lines containing a proof of
+       // this difference type.  Incremented conceptual-
+       // ly at the end of a line in either file if a
+       // proof for a difference of this type has been
+       // output for that line.  In actual practice, the
+       // incrementing is not done till the next differ-
+       // ence of this type is found.
+
     unsigned	proof_limit;
-       // If zero, suppresses output of proofs of this
-       // difference type.  Decremented conceptually at
-       // the end of a line in either file if a proof
-       // for a difference of this type has been output
-       // for that line.  In actual practice, the
-       // decrementing is not done till the next
-       // difference of this type is found.
+       // If not greater than proof_count, suppresses
+       // further output of proofs of this difference
+       // type.
 };
 
 // Information on the various differences found.
 //
 difference differences[] = {
-    { NULL,		false, 0, 0, 0 },
-    { "word-number",	false, 0, 0, MAX_PROOF_LINES },
-    { "word-boc",	false, 0, 0, MAX_PROOF_LINES },
-    { "word-bog",	false, 0, 0, MAX_PROOF_LINES },
-    { "word-eof",	false, 0, 0, MAX_PROOF_LINES },
-    { "number-word",	false, 0, 0, MAX_PROOF_LINES },
-    { NULL,		false, 0, 0, 0 },
-    { "number-boc",	false, 0, 0, MAX_PROOF_LINES },
-    { "number-bog",	false, 0, 0, MAX_PROOF_LINES },
-    { "number-eof",	false, 0, 0, MAX_PROOF_LINES },
-    { "boc-word",	false, 0, 0, MAX_PROOF_LINES },
-    { "boc-number",	false, 0, 0, MAX_PROOF_LINES },
-    { NULL,		false, 0, 0, 0 },
-    { "boc-bog",	false, 0, 0, MAX_PROOF_LINES },
-    { "boc-eof",	false, 0, 0, MAX_PROOF_LINES },
-    { "bog-word",	false, 0, 0, MAX_PROOF_LINES },
-    { "bog-number",	false, 0, 0, MAX_PROOF_LINES },
-    { "bog-boc",	false, 0, 0, MAX_PROOF_LINES },
-    { NULL,		false, 0, 0, 0 },
-    { "bog-eof",	false, 0, 0, MAX_PROOF_LINES },
-    { "eof-word",	false, 0, 0, MAX_PROOF_LINES },
-    { "eof-number",	false, 0, 0, MAX_PROOF_LINES },
-    { "eof-boc",	false, 0, 0, MAX_PROOF_LINES },
-    { "eof-bog",	false, 0, 0, MAX_PROOF_LINES },
-    { NULL,		false, 0, 0, 0 },
-    { "linebreak",	false, 0, 0, MAX_PROOF_LINES },
-    { "spacebreak",	false, 0, 0, MAX_PROOF_LINES },
-    { "whitespace",	false, 0, 0, MAX_PROOF_LINES },
-    { "beginspace",	false, 0, 0, MAX_PROOF_LINES },
-    { "linespace",	false, 0, 0, MAX_PROOF_LINES },
-    { "endspace",	false, 0, 0, MAX_PROOF_LINES },
-    { "float",		false, 0, 0, MAX_PROOF_LINES },
-    { "integer",	false, 0, 0, MAX_PROOF_LINES },
-    { "decimal",	false, 0, 0, MAX_PROOF_LINES },
-    { "exponent",	false, 0, 0, MAX_PROOF_LINES },
-    { "sign",		false, 0, 0, MAX_PROOF_LINES },
-    { "infinity",	false, 0, 0, MAX_PROOF_LINES },
-    { "case",		false, 0, 0, MAX_PROOF_LINES },
-    { "column",		false, 0, 0, MAX_PROOF_LINES },
-    { "word",		false, 0, 0, MAX_PROOF_LINES }
+    { NULL,		false, 0, 0, 0, 0 },
+    { "word-number",	false, 0, 0, 0, PROOF_LIMIT },
+    { "word-boc",	false, 0, 0, 0, PROOF_LIMIT },
+    { "word-bog",	false, 0, 0, 0, PROOF_LIMIT },
+    { "word-eof",	false, 0, 0, 0, PROOF_LIMIT },
+    { "number-word",	false, 0, 0, 0, PROOF_LIMIT },
+    { NULL,		false, 0, 0, 0, 0 },
+    { "number-boc",	false, 0, 0, 0, PROOF_LIMIT },
+    { "number-bog",	false, 0, 0, 0, PROOF_LIMIT },
+    { "number-eof",	false, 0, 0, 0, PROOF_LIMIT },
+    { "boc-word",	false, 0, 0, 0, PROOF_LIMIT },
+    { "boc-number",	false, 0, 0, 0, PROOF_LIMIT },
+    { NULL,		false, 0, 0, 0, 0 },
+    { "boc-bog",	false, 0, 0, 0, PROOF_LIMIT },
+    { "boc-eof",	false, 0, 0, 0, PROOF_LIMIT },
+    { "bog-word",	false, 0, 0, 0, PROOF_LIMIT },
+    { "bog-number",	false, 0, 0, 0, PROOF_LIMIT },
+    { "bog-boc",	false, 0, 0, 0, PROOF_LIMIT },
+    { NULL,		false, 0, 0, 0, 0 },
+    { "bog-eof",	false, 0, 0, 0, PROOF_LIMIT },
+    { "eof-word",	false, 0, 0, 0, PROOF_LIMIT },
+    { "eof-number",	false, 0, 0, 0, PROOF_LIMIT },
+    { "eof-boc",	false, 0, 0, 0, PROOF_LIMIT },
+    { "eof-bog",	false, 0, 0, 0, PROOF_LIMIT },
+    { NULL,		false, 0, 0, 0, 0 },
+    { "linebreak",	false, 0, 0, 0, PROOF_LIMIT },
+    { "spacebreak",	false, 0, 0, 0, PROOF_LIMIT },
+    { "whitespace",	false, 0, 0, 0, PROOF_LIMIT },
+    { "beginspace",	false, 0, 0, 0, PROOF_LIMIT },
+    { "linespace",	false, 0, 0, 0, PROOF_LIMIT },
+    { "endspace",	false, 0, 0, 0, PROOF_LIMIT },
+    { "float",		false, 0, 0, 0, PROOF_LIMIT },
+    { "integer",	false, 0, 0, 0, PROOF_LIMIT },
+    { "decimal",	false, 0, 0, 0, PROOF_LIMIT },
+    { "exponent",	false, 0, 0, 0, PROOF_LIMIT },
+    { "sign",		false, 0, 0, 0, PROOF_LIMIT },
+    { "infinity",	false, 0, 0, 0, PROOF_LIMIT },
+    { "case",		false, 0, 0, 0, PROOF_LIMIT },
+    { "column",		false, 0, 0, 0, PROOF_LIMIT },
+    { "word",		false, 0, 0, 0, PROOF_LIMIT }
 };
+
+// Function to zero difference proof_lines counts.
+//
+void zero_proof_lines ( void )
+{
+    int i; for ( i = 0; i < MAX_DIFFERENCE; ++ i )
+	differences[i].proof_lines == 0;
+}
 
 // Maximum numeric differences found so far.
 //
@@ -1414,29 +1430,28 @@ inline void found_difference
 
     d.found = true;
 
-    if ( d.proof_limit > 0
-         && (    type != FLOAT
+    if (    (    type != FLOAT
 	      || absdiff > float_absdiff_limit
 	      || reldiff > float_reldiff_limit )
          && (    type != INTEGER
 	      || absdiff > integer_absdiff_limit
 	      || reldiff > integer_reldiff_limit ) )
     {
-        // Conceptually, d.proof_limit is decremented
+        // Conceptually, d.proof_lines is incremented
 	// at the end of a proof line containing an
 	// output of a proof of the given `type'.  But
 	// in practice, to reduce coding complexity,
-	// the decrementing is deferred until the next
+	// the incrementing is deferred until the next
 	// proof of this type is discovered, and then
-	// the decrementing is done here.
+	// the incrementing is done here.
 	//
 	if ( d.last_output_line != 0
 	     && ( d.last_output_line != output.line
 	         ||
 	         d.last_test_line != test.line ) )
-	    -- d.proof_limit;
+	    ++ d.proof_lines;
 
-	if ( d.proof_limit > 0 )
+	if ( d.proof_lines < d.proof_limit )
 	    output_proof ( type, absdiff, reldiff );
     }
 }
