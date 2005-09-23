@@ -5,7 +5,7 @@
 #
 # File:		jfilter
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Sep 22 05:43:14 EDT 2005
+# Date:		Fri Sep 23 06:46:16 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/09/22 09:37:49 $
+#   $Date: 2005/09/23 11:26:10 $
 #   $RCSfile: jfilter,v $
-#   $Revision: 1.12 $
+#   $Revision: 1.13 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -68,14 +68,6 @@ jfilter \[options\] judging_input_file \\
     characters to be omitted from the filtered_output_
     file.
 
-    The first line in the judging_input_file after
-    the parameter definitions must begin a test group
-    or a test case or both.  If it does not begin a
-    test group, there can be no test groups in the file.
-    Similar rules apply to the output_file.  However,
-    there may be lines in a test group before the first
-    test case in that group.
-
     Options modify the above commands as follows:
 
         -c <group-number>:<case-number>
@@ -102,12 +94,12 @@ jfilter \[options\] judging_input_file \\
 	    case or the end of file.  Thus if there are
 	    no test groups, only the designated test
 	    case is output.
-
+
 	    For test cases in test groups, the portion
 	    output consists of the lines in the test
 	    group containing the test case, up to and
 	    including the lines in the test case.
-
+
 	    If the output is the filtered_output_file,
 	    the output lines are exact copies of output_
 	    file lines, without any prefix characters
@@ -119,13 +111,13 @@ jfilter \[options\] judging_input_file \\
 	    and the test case within the group.  The
 	    test group is designated by <group-number>,
 	    with groups being numbered 1, 2, 3, ... .
-	    If there are no groups, the <group-number>
-	    is considered to be 0.  The test case is
-	    designated by <case-number>, with test cases
-	    being numbered 1, 2, 3, ...  within their
-	    group.  Lines before the beginning of the
-	    first case in a group are considered to be
-	    in test case 0 of that group.
+	    Lines before the first group are considered
+	    to be in group 0.  The test case is designa-
+	    ted by <case-number>, with test cases being
+	    numbered 1, 2, 3, ...  within their group.
+	    Lines before the beginning of the first case
+	    in a group are considered to be in test case
+	    0 of that group.
 
 	    If just the <case-number> is given, and the
 	    `<group-number>:' is omitted, the <group-
@@ -135,11 +127,10 @@ jfilter \[options\] judging_input_file \\
         -g <group-number>:<case-number>
 	-g <case-number>
 
-	    Same as -c BUT, if the test case is in a
-	    test group, include all the lines of the
-	    entire test group, instead of stopping with
-	    the designated case.  If there are no
-	    groups, include the entire file.
+	    Same as -c, BUT if the test case is in a
+	    test group (not in group 0), include all the
+	    lines of this entire test group, instead of
+	    stopping with the designated case.
 
 	-case-head <output-case-head-regexp>
 	-group-head <output-group-head-regexp>
@@ -461,6 +452,29 @@ if { $number_args == 1 } {
     exit 0
 }
 
+# Pre-process -c and -g options.
+#
+if { $c != "" && $g != "" } {
+    puts stderr "ERROR: both -c and -g options given"
+    exit 1
+}
+set cg "$c$g"
+if { $cg != "" } {
+    set copy 0
+    set selective_copy 1
+    set selected_group 0
+    if {    ! [regexp {^([0-9]+):([0-9]+)$} $cg forget \
+                      selected_group selected_case] \
+         && ! [regexp {^([0-9]+)$} $c forget \
+	              selected_case] } {
+	puts stderr "ERROR: bad -c or -g option: $cg"
+	exit 1
+    }
+} else {
+    set copy 1
+    set selective_copy 0
+}
+
 # Process 2 argument case.
 #
 if { $number_args == 2 } {
@@ -474,29 +488,16 @@ if { $number_args == 2 } {
     # copying (i.e., no -c or -g option), or is turned
     # on and off appropriately to indicate whether an
     # non-mark line is to be copied.
-    #
-    set copy 1
-    set selective_copy 0
-    if { $c != "" || $g != "" } {
-	set selective_copy 1
-	set copy 0
-    }
 
     # State.
     #
+    set group_count 0
     set case_count 0
-    set found_case 0
-    set found_group 0
     set last_line_was_separator \
         [expr {    $input_separator != "" \
 	        || $input_separator_mark != "" }]
     set last_line_was_output 1
     set last_line ""
-
-    # We save lines in a group until we find the case
-    # to be selectively copied.
-    #
-    set saved_group_lines {}
 
     while { ! [eof $jin] } {
 	set is_mark 0
@@ -525,41 +526,24 @@ if { $number_args == 2 } {
 	     set begin_case 1
 	}
         if { $begin_group } {
-	    if { ! $found_group && $found_case } {
-		puts stderr "ERROR: start of first\
-		             group follows start of\
-			     first case:\n$jin_line"
-		exit 1
-	    }
-	    set found_group 1
-	    set saved_group_lines {}
+	    incr group_count 1
 	    if { $selective_copy } {
-	        set copy 0
+	        set copy [expr $group_count \
+		               == $selected_group]
 	    }
 	}
 	if { $begin_case } {
-	    set found_case 1
 	    incr case_count
-	    if { ! $found_group } {
-	        set saved_group_lines {}
-	    }
-	    if {    $case_count == $g \
-	         || $case_count == $c } {
-	        foreach s $saved_group_lines {
-		    puts $in $s
-		}
-		set copy 1
-	    } elseif {    $selective_copy \
-	               && (    $g == "" \
-		            || ! $found_group ) } {
+	    if {    $selective_copy \
+		 && $selected_group == 0 \
+		 && $group_count == 0 } {
+		set copy \
+		    [expr $case_count == $selected_case]
+	    } elseif {    $c != "" \
+	               &&   $case_count \
+		          > $selected_case ) } {
 	        set copy 0
 	    }
-	}
-	if { ! $found_group && ! $found_case } {
-	    puts stderr "ERROR: line before start\
-	                 of any group or\
-			 case:\n$jin_line"
-	    exit 1
 	}
 
 	set last_line_was_separator \
@@ -569,7 +553,6 @@ if { $number_args == 2 } {
 		               $jin_line] }]
 
 	if { ! $is_mark } {
-	    lappend saved_group_lines $jin_line
 	    if { $copy } {
 	        puts $in $jin_line
 	    }
