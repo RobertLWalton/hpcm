@@ -11,9 +11,9 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: hc3 $
-//   $Date: 2005/09/23 10:00:07 $
+//   $Date: 2005/09/23 13:53:54 $
 //   $RCSfile: scorediff.cc,v $
-//   $Revision: 1.67 $
+//   $Revision: 1.68 $
 
 // This is version 2, a major revision of the first
 // scorediff program.  This version is more explicitly
@@ -59,6 +59,22 @@ char documentation [] =
 "    lines that contain `proofs' of these differ-\n"
 "    ences.\n"
 "\n"
+"    The single first line that lists all the types\n"
+"    of differences found contains just `none' if no\n"
+"    differences were found.  Otherwise it includes\n"
+"    markers with the format\n"
+"\n"
+"	        <OGN>:<OCN>/<TGN>:<TCN>\n"
+"\n"
+"    where O denotes the output_file, T the test_\n"
+"    file, GN a test group number, and CN a test\n"
+"    case number; see below for the test group and\n"
+"    case numbering scheme.  Each marker indicates\n"
+"    that all differences between it and the next\n"
+"    following marker (or end of line) first occurred\n"
+"    in the designated groups and cases of the output\n"
+"    and test files.\n"
+"\n"
 "    To find differences, the files are parsed into\n"
 "    non-blank `tokens', and successive tokens of the\n"
 "    two files are matched, along with the whitespace\n"
@@ -74,7 +90,7 @@ char documentation [] =
 "    that are parts of numbers.  A number with a dec-\n"
 "    imal point or exponent is a floating point num-\n"
 "    ber, while other numbers are integers.\n"
-"\n"
+"\f\n"
 "    The -filtered option specifies that both the\n"
 "    output_file and the test_file are filtered\n"
 "    output from the jfilter program, and have marker\n"
@@ -92,7 +108,7 @@ char documentation [] =
 "    test group (bog) or beginning of test case (boc)\n"
 "    tokens.  + translates to a bog followed by a\n"
 "    boc.\n"
-"\f\n"
+"\n"
 "    The -nonumber option specifies that all number\n"
 "    characters should be treated as word characters,\n"
 "    so there are no number tokens.  The -nosign\n"
@@ -113,7 +129,7 @@ char documentation [] =
 "		empty, and one preceding whitespace\n"
 "		has a different number of new lines\n"
 "		than the other.\n"
-"\n"
+"\f\n"
 "    whitespace	For two matching tokens, the preced-\n"
 "		ing whitespaces both have no new\n"
 "		lines, and both are non-empty, but\n"
@@ -132,7 +148,7 @@ char documentation [] =
 "		match the whitespace characters pre-\n"
 "		ceding the first new line for the\n"
 "		other token.\n"
-"\f\n"
+"\n"
 "    linespace	For two matching tokens, the preced-\n"
 "		ing whitespaces have the same number\n"
 "		N >= 1 of new lines, and the white-\n"
@@ -182,7 +198,7 @@ char documentation [] =
 "		ence of the numbers is A, and the re-\n"
 "		lative difference of the numbers is\n"
 "		R.\n"
-"\f\n"
+"\n"
 "		In the line returned reporting diff-\n"
 "		erences in the two files, A and R\n"
 "		are the maximum observed A and R\n"
@@ -191,7 +207,7 @@ char documentation [] =
 "\n"
 "    integer A R    Same as `float A R', but for two\n"
 "		matching integer number tokens.\n"
-"\n"
+"\f\n"
 "    decimal	Two matching numbers have different\n"
 "		numbers of decimal places, or one has\n"
 "		a decimal point and the other does\n"
@@ -217,7 +233,7 @@ char documentation [] =
 "		they are of the same length (see\n"
 "		word splitting below) and are iden-\n"
 "		tical except for letter case.\n"
-"\f\n"
+"\n"
 "    infinity	Two matching number tokens cannot be\n"
 "		compared because they are NOT identi-\n"
 "		cal except for letter case and one or\n"
@@ -230,7 +246,7 @@ char documentation [] =
 "		contents of the output line that\n"
 "		lists differences so that line will\n"
 "		never be blank.\n"
-"\n"
+"\f\n"
 "    The files are parsed into whitespace, words,\n"
 "    numbers, beginning-of-cases (bocs), beginning-\n"
 "    of-groups (bogs), and end-of-files (eofs).  A\n"
@@ -256,7 +272,7 @@ char documentation [] =
 "    S are equal except perhaps for case.  But if S\n"
 "    and the first part of L are NOT equal except for\n"
 "    case, then L is NOT split.\n"
-"\f\n"
+"\n"
 "    Note that failure to separate correctly spelled\n"
 "    words by space will be reported as a spacebreak,\n"
 "    due to word splitting, and in other cases where\n"
@@ -266,7 +282,7 @@ char documentation [] =
 "    reported, the tokens reported to be different in\n"
 "    the word difference token-proof (see below) may\n"
 "    not be exactly those one would expect.\n"
-"\n"
+"\f\n"
 "    Normally when two tokens do not match, both are\n"
 "    skipped over to get to the next tokens which are\n"
 "    then matched with each other.  But there are\n"
@@ -294,7 +310,7 @@ char documentation [] =
 "    bers at the cost of matching words, tries to\n"
 "    match boc's at the cost of matching words or\n"
 "    numbers, etc.\n"
-"\f\n"
+"\n"
 "    The other exception occurs following two words\n"
 "    that do not match even if case is ignored.\n"
 "    If one word is a remainder of a split and the\n"
@@ -304,7 +320,7 @@ char documentation [] =
 "    new line or ending with an end of file, and the\n"
 "    other token is not so followed, only this other\n"
 "    token is skipped.\n"
-"\n"
+"\f\n"
 "    It is an error if a token longer than 10,100\n"
 "    characters is found, or if a sequence of con-\n"
 "    secutive whitespace characters longer than\n"
@@ -330,7 +346,7 @@ char documentation [] =
 "    infinity when represented as double precision\n"
 "    floating point numbers) cause an `infinity'\n"
 "    difference.\n"
-"\f\n"
+"\n"
 "    Note that if the two matching numbers have expo-\n"
 "    nents and the letter case of the `e' or `E' in\n"
 "    the two exponents does not match, then the diff-\n"
@@ -339,7 +355,7 @@ char documentation [] =
 "\n"
 "    For the purpose of computing the column of a\n"
 "    character, tabs are set every 8 columns.\n"
-"\n"
+"\f\n"
 "    To avoid whitespace comparison anomalies, a new\n"
 "    line is added in front of each file before the\n"
 "    file is parsed.  Thus differences in whitespace\n"
@@ -364,7 +380,7 @@ char documentation [] =
 "                    test-token-begin-column\n"
 "                    test-token-end-column\n"
 "                    proof proof*\n"
-"\f\n"
+"\n"
 "          proof ::= `word' | `case' | `column' |\n"
 "                    `decimal' | `exponent' |\n"
 "                    `sign' | `infinity' |\n"
@@ -378,7 +394,7 @@ char documentation [] =
 "                    `linespace' | `endspace'\n"
 "\n"
 "             where TYPE1 and TYPE2 are not the same.\n"
-"\n"
+"\f\n"
 "          TYPE ::= `word' | `number' |\n"
 "                   `boc' | `bog' | `eof'\n"
 "\n"
@@ -399,7 +415,7 @@ char documentation [] =
 "    group being treated as being in test case 0.\n"
 "    If the -filtered option is not given, the test\n"
 "    group and test case numbers are all 0.\n"
-"\f\n"
+"\n"
 "    Here non-floating-point numbers output as part\n"
 "    of proofs are unsigned integers.  All the proofs\n"
 "    concerning the same pair of matching tokens are\n"
@@ -411,7 +427,7 @@ char documentation [] =
 "    line-proof that begins with the line numbers of\n"
 "    the respective lines.  Each line-proof is output\n"
 "    on a line by itself.\n"
-"\n"
+"\f\n"
 "    There is a limit for each difference type to the\n"
 "    number of proofs of that type that will be out-\n"
 "    put for each test group.  Specifically, if the\n"
@@ -438,7 +454,7 @@ char documentation [] =
 "\n"
 "    The `-float' and `-integer' program options\n"
 "    differ in that they have the forms:\n"
-"\f\n"
+"\n"
 "        -float absolute-diff relative-diff N\n"
 "        -integer absolute-diff relative-diff N\n"
 "\n"
@@ -449,7 +465,7 @@ char documentation [] =
 "    erences may be omitted if they are zero and the\n"
 "    program argument following them does NOT begin\n"
 "    with a digit or decimal point.\n"
-"\n"
+"\f\n"
 "    If no `-float' option is given, then any differ-\n"
 "    ence in the representation of equal numbers, one\n"
 "    of which is floating point, will output a\n"
@@ -499,13 +515,13 @@ struct file
 			// character.
     int length;		// Length of token in charac-
     			// ters.  0 for boc, bog, eof.
-    int test_group;	// Test group number of current
+    int group_number;	// Test group number of current
     			// token.  The first group is 1.
 			// The group number is 0 before
 			// the first test group begins,
 			// or if there is no -filtered
 			// option.
-    int test_case;	// Ditto but test case number.  
+    int case_number;	// Ditto but test case number.  
     			// Test cases are numbered from
 			// the beginning of their test
 			// group.  Lines before the
@@ -644,8 +660,8 @@ void open ( file & f, char * filename )
     f.endbackp		= f.backup + 1;
 
     f.column		= -1;
-    f.test_group	= 0;
-    f.test_case		= 0;
+    f.group_number	= 0;
+    f.case_number	= 0;
     f.line		= 0;
     f.type		= WORD_TOKEN;
     f.boc_next		= false;
@@ -704,7 +720,7 @@ void scan_token ( file & f )
 	//
 	assert ( f.type == BOG_TOKEN );
         f.boc_next	= false;
-	++ f.test_case;
+	++ f.case_number;
 	f.type		= BOC_TOKEN;
 	return;
     }
@@ -755,19 +771,19 @@ void scan_token ( file & f )
 	    ++ f.line;
 	    if ( filtered ) {
 	        switch ( get_character ( f ) ) {
-		case '+':	++ f.test_group;
-				f.test_case = 0;
+		case '+':	++ f.group_number;
+				f.case_number = 0;
 				f.type = BOG_TOKEN;
 				zero_proof_lines();
 				f.column = column;
 				f.boc_next = true;
 				return;
-		case '-':	++ f.test_case;
+		case '-':	++ f.case_number;
 				f.type = BOC_TOKEN;
 				f.column = column;
 				return;
-		case '|':	++ f.test_group;
-				f.test_case = 0;
+		case '|':	++ f.group_number;
+				f.case_number = 0;
 				f.type = BOG_TOKEN;
 				zero_proof_lines();
 				f.column = column;
@@ -1223,6 +1239,14 @@ struct difference
         // True if difference of this type has been
 	// found.
 
+    unsigned	output_group;
+    unsigned	output_case;
+    unsigned	test_group;
+    unsigned	test_case;
+	// Number to print the marker:
+	//
+	//    <OGN>:<OCN>/<TGN>:<TCN>
+
     int		last_output_line;
     int		last_test_line;
        // Line numbers of last proof output that
@@ -1240,55 +1264,58 @@ struct difference
        // ence of this type is found.
 
     unsigned	proof_limit;
-       // If not greater than proof_count, suppresses
+       // If not greater than proof_lines, suppresses
        // further output of proofs of this difference
        // type.
 };
 
 // Information on the various differences found.
 //
+#define DIFFERENCE_FILLER \
+        false,0,0,0,0,0,0,0,PROOF_LIMIT
 difference differences[] = {
-    { NULL,		false, 0, 0, 0, 0 },
-    { "word-number",	false, 0, 0, 0, PROOF_LIMIT },
-    { "word-boc",	false, 0, 0, 0, PROOF_LIMIT },
-    { "word-bog",	false, 0, 0, 0, PROOF_LIMIT },
-    { "word-eof",	false, 0, 0, 0, PROOF_LIMIT },
-    { "number-word",	false, 0, 0, 0, PROOF_LIMIT },
-    { NULL,		false, 0, 0, 0, 0 },
-    { "number-boc",	false, 0, 0, 0, PROOF_LIMIT },
-    { "number-bog",	false, 0, 0, 0, PROOF_LIMIT },
-    { "number-eof",	false, 0, 0, 0, PROOF_LIMIT },
-    { "boc-word",	false, 0, 0, 0, PROOF_LIMIT },
-    { "boc-number",	false, 0, 0, 0, PROOF_LIMIT },
-    { NULL,		false, 0, 0, 0, 0 },
-    { "boc-bog",	false, 0, 0, 0, PROOF_LIMIT },
-    { "boc-eof",	false, 0, 0, 0, PROOF_LIMIT },
-    { "bog-word",	false, 0, 0, 0, PROOF_LIMIT },
-    { "bog-number",	false, 0, 0, 0, PROOF_LIMIT },
-    { "bog-boc",	false, 0, 0, 0, PROOF_LIMIT },
-    { NULL,		false, 0, 0, 0, 0 },
-    { "bog-eof",	false, 0, 0, 0, PROOF_LIMIT },
-    { "eof-word",	false, 0, 0, 0, PROOF_LIMIT },
-    { "eof-number",	false, 0, 0, 0, PROOF_LIMIT },
-    { "eof-boc",	false, 0, 0, 0, PROOF_LIMIT },
-    { "eof-bog",	false, 0, 0, 0, PROOF_LIMIT },
-    { NULL,		false, 0, 0, 0, 0 },
-    { "linebreak",	false, 0, 0, 0, PROOF_LIMIT },
-    { "spacebreak",	false, 0, 0, 0, PROOF_LIMIT },
-    { "whitespace",	false, 0, 0, 0, PROOF_LIMIT },
-    { "beginspace",	false, 0, 0, 0, PROOF_LIMIT },
-    { "linespace",	false, 0, 0, 0, PROOF_LIMIT },
-    { "endspace",	false, 0, 0, 0, PROOF_LIMIT },
-    { "float",		false, 0, 0, 0, PROOF_LIMIT },
-    { "integer",	false, 0, 0, 0, PROOF_LIMIT },
-    { "decimal",	false, 0, 0, 0, PROOF_LIMIT },
-    { "exponent",	false, 0, 0, 0, PROOF_LIMIT },
-    { "sign",		false, 0, 0, 0, PROOF_LIMIT },
-    { "infinity",	false, 0, 0, 0, PROOF_LIMIT },
-    { "case",		false, 0, 0, 0, PROOF_LIMIT },
-    { "column",		false, 0, 0, 0, PROOF_LIMIT },
-    { "word",		false, 0, 0, 0, PROOF_LIMIT }
+    { NULL,		DIFFERENCE_FILLER },
+    { "word-number",	DIFFERENCE_FILLER },
+    { "word-boc",	DIFFERENCE_FILLER },
+    { "word-bog",	DIFFERENCE_FILLER },
+    { "word-eof",	DIFFERENCE_FILLER },
+    { "number-word",	DIFFERENCE_FILLER },
+    { NULL,		DIFFERENCE_FILLER },
+    { "number-boc",	DIFFERENCE_FILLER },
+    { "number-bog",	DIFFERENCE_FILLER },
+    { "number-eof",	DIFFERENCE_FILLER },
+    { "boc-word",	DIFFERENCE_FILLER },
+    { "boc-number",	DIFFERENCE_FILLER },
+    { NULL,		DIFFERENCE_FILLER },
+    { "boc-bog",	DIFFERENCE_FILLER },
+    { "boc-eof",	DIFFERENCE_FILLER },
+    { "bog-word",	DIFFERENCE_FILLER },
+    { "bog-number",	DIFFERENCE_FILLER },
+    { "bog-boc",	DIFFERENCE_FILLER },
+    { NULL,		DIFFERENCE_FILLER },
+    { "bog-eof",	DIFFERENCE_FILLER },
+    { "eof-word",	DIFFERENCE_FILLER },
+    { "eof-number",	DIFFERENCE_FILLER },
+    { "eof-boc",	DIFFERENCE_FILLER },
+    { "eof-bog",	DIFFERENCE_FILLER },
+    { NULL,		DIFFERENCE_FILLER },
+    { "linebreak",	DIFFERENCE_FILLER },
+    { "spacebreak",	DIFFERENCE_FILLER },
+    { "whitespace",	DIFFERENCE_FILLER },
+    { "beginspace",	DIFFERENCE_FILLER },
+    { "linespace",	DIFFERENCE_FILLER },
+    { "endspace",	DIFFERENCE_FILLER },
+    { "float",		DIFFERENCE_FILLER },
+    { "integer",	DIFFERENCE_FILLER },
+    { "decimal",	DIFFERENCE_FILLER },
+    { "exponent",	DIFFERENCE_FILLER },
+    { "sign",		DIFFERENCE_FILLER },
+    { "infinity",	DIFFERENCE_FILLER },
+    { "case",		DIFFERENCE_FILLER },
+    { "column",		DIFFERENCE_FILLER },
+    { "word",		DIFFERENCE_FILLER }
 };
+#undef DIFFERENCE_FILLER
 
 // Function to zero difference proof_lines counts.
 //
@@ -1428,6 +1455,13 @@ inline void found_difference
 {
     difference & d = differences[type];
 
+    if ( ! d.found )
+    {
+        d.output_group = output.group_number;
+        d.output_case  = output.case_number;
+        d.test_group   = test.group_number;
+        d.test_case    = test.case_number;
+    }
     d.found = true;
 
     if (    (    type != FLOAT
@@ -1940,26 +1974,108 @@ int main ( int argc, char ** argv )
 
     // Produce first output line listing all found
     // differences, regardless of the proofs to be
-    // output.
+    // output.  As these are output, their found flags
+    // are cleared.  Differences with smaller
+    // OGN:OCN/TGN:TCN markers are printed first.
 
-    bool any = false;
-
-    for ( int i = 0; i < MAX_DIFFERENCE; ++ i )
+    bool any = false;	// True if anything printed.
+    while ( true )
     {
-        if ( differences[i].found )
+	// Find the lowest OGN,OCN,TGN,TCN 4-tuple among
+	// all differences that that remain to be
+	// printed.
+	//
+	int output_group;
+	int output_case;
+	int test_group;
+	int test_case;
+	bool found = false;
+	for ( int i = 0; i < MAX_DIFFERENCE; ++ i )
 	{
-	    if ( any ) cout << " ";
-	    cout << differences[i].name;
+	    if ( ! differences[i].found ) continue;
+
+	    if ( ! found )
+	    {
+		output_group =
+		    differences[i].output_group;
+		output_case  =
+		    differences[i].output_case;
+		test_group = differences[i].test_group;
+		test_case  = differences[i].test_case;
+		found = true;
+		continue;
+	    }
+	    else if (   differences[i].output_group
+		      > output_group )
+		continue;
+	    else if (   differences[i].output_group
+		      < output_group )
+		/* Drop through */;
+	    else if (   differences[i].output_case
+		      > output_case )
+		continue;
+	    else if (   differences[i].output_case
+		      < output_case )
+		/* Drop through */;
+	    else if (   differences[i].test_group
+		      > test_group )
+		continue;
+	    else if (   differences[i].test_group
+		      < test_group )
+		/* Drop through */;
+	    else if (   differences[i].test_case
+		      > test_case )
+		continue;
+	    else if (   differences[i].test_case
+		      < test_case )
+		/* Drop through */;
+	    else continue;
+
+	    output_group =
+		differences[i].output_group;
+	    output_case  =
+		differences[i].output_case;
+	    test_group   =
+		differences[i].test_group;
+	    test_case    =
+		differences[i].test_case;
+	}
+	if ( ! found ) break;
+
+	// Print out the OGN:OCN/TGN:TCN marker, and
+	// then all the differences for this marker,
+	// clearing the found flags of differences
+	// printed.
+	//
+	if ( any ) cout << " ";
+	any = true;
+	cout << output_group << ":" << output_case
+	     << "/"
+	     << test_group << ":" << test_case;
+	for ( int i = 0; i < MAX_DIFFERENCE; ++ i )
+	{
+	    if ( ! differences[i].found ) continue;
+
+	    if (    differences[i].output_group
+	         != output_group ) continue;
+	    if (    differences[i].output_case
+	         != output_case ) continue;
+	    if (    differences[i].test_group
+	         != test_group ) continue;
+	    if (    differences[i].test_case
+	         != test_case ) continue;
+
+	    differences[i].found = false;
+
+	    cout << " " << differences[i].name;
 	    if ( i == FLOAT )
 		cout << " " << float_absdiff_maximum
 		     << " " << float_reldiff_maximum;
 	    else if ( i == INTEGER )
 		cout << " " << integer_absdiff_maximum
 		     << " " << integer_reldiff_maximum;
-	    any = true;
 	}
     }
-
     cout << (any ? "" : "none") << endl;
 
     // Output proof lines.
