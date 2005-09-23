@@ -2,7 +2,7 @@
 //
 // File:	scorediff.cc
 // Authors:	Bob Walton (walton@deas.harvard.edu)
-// Date:	Fri Sep 23 10:25:25 EDT 2005
+// Date:	Fri Sep 23 11:33:43 EDT 2005
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: hc3 $
-//   $Date: 2005/09/23 14:28:58 $
+//   $Date: 2005/09/23 15:29:58 $
 //   $RCSfile: scorediff.cc,v $
-//   $Revision: 1.70 $
+//   $Revision: 1.71 $
 
 // This is version 2, a major revision of the first
 // scorediff program.  This version is more explicitly
@@ -457,13 +457,17 @@ char documentation [] =
 "        -float absolute-diff relative-diff N\n"
 "        -integer absolute-diff relative-diff N\n"
 "\n"
-"    and the program outputs only `float' or\n"
-"   `integer' proofs that have an absolute or rela-\n"
-"    tive difference larger than the values given in\n"
-"    the program option.  In these options the diff-\n"
-"    erences may be omitted if they are zero and the\n"
-"    program argument following them does NOT begin\n"
-"    with a digit or decimal point.\n"
+"    and the program does not report in any way\n"
+"    `float' or `integer' proofs that have an abso-\n"
+"    lute or relative difference less than the values\n"
+"    given in the program option.  In these options\n"
+"    the diff's may be `-' to denote `-1', which\n"
+"    signifies that all number proofs are to be\n"
+"    reported (this is the default); diff's may not\n"
+"    be negative numbers. The diff's may be omitted\n"
+"    if they are `-' and N is zero and the program\n"
+"    argument following does NOT begin with a digit\n"
+"    or decimal point.\n"
 "\f\n"
 "    If no `-float' option is given, then any differ-\n"
 "    ence in the representation of equal numbers, one\n"
@@ -1331,7 +1335,7 @@ double float_reldiff_maximum	= 0.0;
 double integer_absdiff_maximum	= 0.0;
 double integer_reldiff_maximum	= 0.0;
 
-// Numeric differences equal to or below these are
+// Numeric differences less than or equal to these are
 // NOT output as proofs.
 //
 double float_absdiff_limit	= -1.0;
@@ -1452,6 +1456,15 @@ inline void found_difference
 	  double absdiff = 0.0,
 	  double reldiff = 0.0 )
 {
+    if (    type == FLOAT
+	 && absdiff <= float_absdiff_limit
+	 && reldiff <= float_reldiff_limit )
+        return;
+    if (    type == INTEGER
+	 && absdiff <= integer_absdiff_limit
+	 && reldiff <= integer_reldiff_limit )
+        return;
+
     difference & d = differences[type];
 
     if ( ! d.found )
@@ -1463,30 +1476,22 @@ inline void found_difference
     }
     d.found = true;
 
-    if (    (    type != FLOAT
-	      || absdiff > float_absdiff_limit
-	      || reldiff > float_reldiff_limit )
-         && (    type != INTEGER
-	      || absdiff > integer_absdiff_limit
-	      || reldiff > integer_reldiff_limit ) )
-    {
-        // Conceptually, d.proof_lines is incremented
-	// at the end of a proof line containing an
-	// output of a proof of the given `type'.  But
-	// in practice, to reduce coding complexity,
-	// the incrementing is deferred until the next
-	// proof of this type is discovered, and then
-	// the incrementing is done here.
-	//
-	if ( d.last_output_line != 0
-	     && ( d.last_output_line != output.line
-	         ||
-	         d.last_test_line != test.line ) )
-	    ++ d.proof_lines;
+    // Conceptually, d.proof_lines is incremented
+    // at the end of a proof line containing an
+    // output of a proof of the given `type'.  But
+    // in practice, to reduce coding complexity,
+    // the incrementing is deferred until the next
+    // proof of this type is discovered, and then
+    // the incrementing is done here.
+    //
+    if ( d.last_output_line != 0
+	 && ( d.last_output_line != output.line
+	     ||
+	     d.last_test_line != test.line ) )
+	++ d.proof_lines;
 
-	if ( d.proof_lines < d.proof_limit )
-	    output_proof ( type, absdiff, reldiff );
-    }
+    if ( d.proof_lines < d.proof_limit )
+	output_proof ( type, absdiff, reldiff );
 }
 
 // Tests two numbers just scanned for the output and
@@ -1605,8 +1610,8 @@ int main ( int argc, char ** argv )
 	{
 	    // special case.
 
-	    double absdiff_limit = 0.0;
-	    double reldiff_limit = 0.0;
+	    double absdiff_limit = -1.0;
+	    double reldiff_limit = -1.0;
 
 	    if (    isdigit ( argv[2][0] )
 	         || argv[2][0] == '.' )
@@ -1615,11 +1620,21 @@ int main ( int argc, char ** argv )
 		++ argv, -- argc;
 		if ( argc < 3 ) break;
 	    }
+	    else if ( strcmp ( "-", argv[2] ) == 0 )
+	    {
+		++ argv, -- argc;
+		if ( argc < 3 ) break;
+	    }
 
 	    if (    isdigit ( argv[2][0] )
 	         || argv[2][0] == '.' )
 	    {
 		reldiff_limit = atof ( argv[2] );
+		++ argv, -- argc;
+		if ( argc < 3 ) break;
+	    }
+	    else if ( strcmp ( "-", argv[2] ) == 0 )
+	    {
 		++ argv, -- argc;
 		if ( argc < 3 ) break;
 	    }
