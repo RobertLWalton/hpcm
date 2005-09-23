@@ -2,7 +2,7 @@
 //
 // File:	scorediff.cc
 // Authors:	Bob Walton (walton@deas.harvard.edu)
-// Date:	Fri Sep 23 11:33:43 EDT 2005
+// Date:	Fri Sep 23 11:36:55 EDT 2005
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: hc3 $
-//   $Date: 2005/09/23 15:29:58 $
+//   $Date: 2005/09/23 15:32:30 $
 //   $RCSfile: scorediff.cc,v $
-//   $Revision: 1.71 $
+//   $Revision: 1.72 $
 
 // This is version 2, a major revision of the first
 // scorediff program.  This version is more explicitly
@@ -456,7 +456,7 @@ char documentation [] =
 "\n"
 "        -float absolute-diff relative-diff N\n"
 "        -integer absolute-diff relative-diff N\n"
-"\n"
+"\f\n"
 "    and the program does not report in any way\n"
 "    `float' or `integer' proofs that have an abso-\n"
 "    lute or relative difference less than the values\n"
@@ -468,7 +468,7 @@ char documentation [] =
 "    if they are `-' and N is zero and the program\n"
 "    argument following does NOT begin with a digit\n"
 "    or decimal point.\n"
-"\f\n"
+"\n"
 "    If no `-float' option is given, then any differ-\n"
 "    ence in the representation of equal numbers, one\n"
 "    of which is floating point, will output a\n"
