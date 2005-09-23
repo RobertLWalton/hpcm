@@ -2,7 +2,7 @@
 //
 // File:	scorediff.cc
 // Authors:	Bob Walton (walton@deas.harvard.edu)
-// Date:	Fri Sep 23 05:46:41 EDT 2005
+// Date:	Fri Sep 23 09:59:43 EDT 2005
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: hc3 $
-//   $Date: 2005/09/23 13:53:54 $
+//   $Date: 2005/09/23 13:55:14 $
 //   $RCSfile: scorediff.cc,v $
-//   $Revision: 1.68 $
+//   $Revision: 1.69 $
 
 // This is version 2, a major revision of the first
 // scorediff program.  This version is more explicitly
@@ -1996,14 +1996,8 @@ int main ( int argc, char ** argv )
 
 	    if ( ! found )
 	    {
-		output_group =
-		    differences[i].output_group;
-		output_case  =
-		    differences[i].output_case;
-		test_group = differences[i].test_group;
-		test_case  = differences[i].test_case;
 		found = true;
-		continue;
+		/* Drop through */
 	    }
 	    else if (   differences[i].output_group
 		      > output_group )
