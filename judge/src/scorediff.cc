@@ -11,9 +11,9 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: hc3 $
-//   $Date: 2005/09/23 09:00:57 $
+//   $Date: 2005/09/23 09:30:10 $
 //   $RCSfile: scorediff.cc,v $
-//   $Revision: 1.65 $
+//   $Revision: 1.66 $
 
 // This is version 2, a major revision of the first
 // scorediff program.  This version is more explicitly
@@ -491,11 +491,14 @@ struct file
     //
     token_type type;	// Type of token.
     char token [ MAX_SIZE + 1 ]; // The current token,
-    			// if not an end-of-file (eof).
-			// Terminated by `\0'.
+    			// if not a beginning-of-case
+			// (boc), beginning-of-group
+			// (bog), or end-of-file (eof).
+			// Not terminated by `\0', as
+			// that is a legal token
+			// character.
     int length;		// Length of token in charac-
-    			// ters (not including `\0').
-			// 0 for eof.
+    			// ters.  0 for boc, bog, eof.
     int test_group;	// Test group number of current
     			// token.  The first group is 1.
 			// The group number is 0 before
@@ -519,8 +522,8 @@ struct file
 			// tered line begins with `+',
 			// signifying a BOG_TOKEN/BOC_
 			// TOKEN pair.
-    bool remainder;	// True iff token is a remainder
-    			// from a split token.
+    bool remainder;	// True iff this token is a
+    			// remainder from a split token.
     double number;	// For a number token, the
     			// value of the number.
     int decimals;	// For a number token, the
@@ -557,18 +560,12 @@ struct file
     // If a word token is split, this information is
     // set so the next call to scan a token will return
     // the remainder of the split token.  To split a
-    // word token a `\0' is inserted at the end of the
-    // first result of the split, after recording the
-    // character being replaced in `remainder_c' below.
-    // Thus the reminder, or second result of the split,
-    // follows the first part of the split in the
-    // token[] member, except the remainder is missing
-    // its first character, which is saved in
-    // `remainder_c'.
+    // word token, reset the token length to the length
+    // of the first part and the remainder length to
+    // the length of the second part.
     //
     int remainder_length;  // Length of remainder.
-    			// 0 if no remainder.
-    char remainder_c;	// First character of remainder.
+    			   // 0 if no remainder.
 
     // Backup description.
     //
@@ -602,12 +599,12 @@ struct file
     // ing a token (by before_nl), possibly followed by
     // a single non-whitespace character.
 
-    char * backp;	// If >= backendp, there are no
+    char * backp;	// If >= endbackp, there are no
     			// backed up characters to de-
 			// liver.  Otherwise use
 			// `* backp ++' to input next
 			// character.
-    char * backendp;	// Points just after last backup
+    char * endbackp;	// Points just after last backup
     			// character.
     char backup [ 5 + MAX_SIZE + 1 ]; 
     			// Buffer of backed up char-
@@ -644,7 +641,7 @@ void open ( file & f, char * filename )
 
     f.backup[0]		= '\n';
     f.backp		= f.backup;
-    f.backendp		= f.backup + 1;
+    f.endbackp		= f.backup + 1;
 
     f.column		= -1;
     f.test_group	= 0;
@@ -661,7 +658,7 @@ void open ( file & f, char * filename )
 //
 inline int get_character ( file & f )
 {
-    if ( f.backp < f.backendp ) return * f.backp ++;
+    if ( f.backp < f.endbackp ) return * f.backp ++;
     else return f.stream.get();
 }
 
@@ -720,11 +717,10 @@ void scan_token ( file & f )
 
 	char * p = f.token + f.length;
 	char * q = f.token;
-
-	* p = f.remainder_c;
-	while ( * q ++ = * p ++ );
-
+	char * endq = q + f.remainder_length;
+	while ( q < endq ) * q ++ = * p ++;
 	f.length		= f.remainder_length;
+
 	f.column		+= f.remainder_length;
 	f.remainder_length	= 0;
 
@@ -750,7 +746,6 @@ void scan_token ( file & f )
     // Set in case BOG/BOC/EOF_TOKEN found.
     //
     f.length	= 0;
-    f.token[0]	= 0;
 
     while ( isspace ( c ) ) {
         if ( c == '\n' ) {
@@ -931,11 +926,11 @@ void scan_token ( file & f )
 	if ( ! isdigit ( c ) ) {
 	    // No digit next: backup.
 
-	    assert ( f.backp == f.backendp );
+	    assert ( f.backp == f.endbackp );
 	    int len = tp - ep;
 	    memcpy ( f.backup, ep, len );
 	    f.backp = f.backup;
-	    f.backendp = f.backup + len;
+	    f.endbackp = f.backup + len;
 	    tp = ep;
 	    column = ecolumn;
 	} else {
@@ -957,8 +952,6 @@ void scan_token ( file & f )
     // empty, it was set just above and c should be
     // APPENDED to it.
 
-    * tp = 0;
-
     f.type	= NUMBER_TOKEN;
     f.length	= tp - f.token;
     f.column	= -- column;
@@ -968,15 +961,16 @@ void scan_token ( file & f )
     // Put c into backup.
 
     if ( c != EOF ) {
-	if ( f.backp == f.backendp )
-	    f.backp = f.backendp = f.backup;
-	* f.backendp ++ = c;
+	if ( f.backp == f.endbackp )
+	    f.backp = f.endbackp = f.backup;
+	* f.endbackp ++ = c;
     }
 
     // Convert number token to floating point using
     // strtod.
 
     char * e;
+    f.token[f.length] = 0;
     f.number = strtod ( f.token, & e );
     assert ( e == tp || ! finite ( f.number ) );
     	//
@@ -1043,11 +1037,11 @@ word:
 	    if ( isdigit ( c ) ) {
 	        // Found digit and hence number: backup.
 
-		assert ( f.backp == f.backendp );
+		assert ( f.backp == f.endbackp );
 		int len = tp - np;
 		memcpy ( f.backup, np, len );
 		f.backp = f.backup;
-		f.backendp = f.backup + len;
+		f.endbackp = f.backup + len;
 		tp = np;
 		column = ncolumn;
 		goto end_word;
@@ -1077,14 +1071,12 @@ end_word:
 
     assert ( f.length  > 0 );
 
-    * tp = 0;
-
     // Put c into backup.
 
     if ( c != EOF ) {
-	if ( f.backp == f.backendp )
-	    f.backp = f.backendp = f.backup;
-	* f.backendp ++ = c;
+	if ( f.backp == f.endbackp )
+	    f.backp = f.endbackp = f.backup;
+	* f.endbackp ++ = c;
     }
 
     return;
@@ -1098,9 +1090,6 @@ void split_word ( file & f, int n )
     assert ( n < f.length );
 
     f.remainder_length = f.length - n;
-    char * p = f.token + n;
-    f.remainder_c = * p;
-    * p = 0;
     f.length = n;
     f.column -= f.remainder_length;
 
@@ -1115,7 +1104,6 @@ void undo_split ( file & f )
 {
     if ( f.remainder_length != 0 )
     {
-    	f.token[f.length] = f.remainder_c;
 	f.length += f.remainder_length;
 	f.column += f.remainder_length;
 	f.remainder_length = 0;
@@ -1161,7 +1149,7 @@ bool before_nl ( file & f )
     {
 	// Get next character.
 	//
-	if ( p < f.backendp ) c = * p ++;
+	if ( p < f.endbackp ) c = * p ++;
         else if ( p >= f.backup + sizeof ( f.backup ) )
 	    whitespace_too_long ( f );
 	else
@@ -1173,8 +1161,8 @@ bool before_nl ( file & f )
 		return true;
 	    }
 
-	    * f.backendp ++ = c;
-	    p = f.backendp;
+	    * f.endbackp ++ = c;
+	    p = f.endbackp;
 	}
 
     	if ( ! isspace ( c ) )
@@ -1789,29 +1777,27 @@ int main ( int argc, char ** argv )
 
 	    char * tp1 = output.token;
 	    char * tp2 = test.token;
-	    bool token_case = false;
+	    char * endtp2 = tp2 + test.length;
+	    bool token_match_but_for_case =
+	        ( output.length == test.length );
+	    bool token_match = token_match_but_for_case;
 
-	    while ( * tp1 )
+	    while ( tp2 < endtp2
+	            && token_match_but_for_case )
 	    {
 		if ( * tp1 != * tp2 )
 		{
-		    if ( toupper ( * tp1 )
-			 == toupper ( * tp2 ) )
-			token_case = true;
-		    else
-			break;
+		    token_match = false;
+		    token_match_but_for_case =
+			( toupper ( * tp1 )
+			  == toupper ( * tp2 ) );
 		}
 		++ tp1, ++ tp2;
 	    }
 
-	    if ( * tp1 == * tp2 )
+	    if ( token_match_but_for_case )
 	    {
-	        assert ( * tp1 == 0 );
-
-		// Tokens are equal except perhaps for
-		// case.
-
-		if ( token_case )
+		if ( ! token_match )
 		    found_difference
 		        ( output.type != NUMBER_TOKEN ?
 			      CASE :
