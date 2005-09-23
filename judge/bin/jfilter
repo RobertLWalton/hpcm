@@ -5,7 +5,7 @@
 #
 # File:		jfilter
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Sep 23 06:46:16 EDT 2005
+# Date:		Fri Sep 23 08:22:29 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/09/23 11:26:10 $
+#   $Date: 2005/09/23 12:23:29 $
 #   $RCSfile: jfilter,v $
-#   $Revision: 1.13 $
+#   $Revision: 1.14 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -527,6 +527,7 @@ if { $number_args == 2 } {
 	}
         if { $begin_group } {
 	    incr group_count 1
+	    set case_count 0
 	    if { $selective_copy } {
 	        set copy [expr $group_count \
 		               == $selected_group]
@@ -589,30 +590,12 @@ if { $number_args == 3 } {
 	exit 1
     }
 
-    # Copy is either always on if there is no selective
-    # copying (i.e., no -c or -g option), or is turned
-    # on and off appropriately to indicate whether a
-    # line is to be copied.
-    #
-    set copy 1
-    set selective_copy 0
-    if { $c != "" || $g != "" } {
-	set selective_copy 1
-	set copy 0
-    }
-
     # State.
     #
+    set group_count 0
     set case_count 0
-    set found_case 0
-    set found_group 0
     set last_line_was_separator \
         [expr { $output_separator != "" }]
-
-    # We save lines in a group until we find the case
-    # to be selectively copied.
-    #
-    set saved_group_lines {}
 
     set out_line [gets $out]
     while { ! [eof $out] } {
@@ -621,17 +604,12 @@ if { $number_args == 3 } {
 	if {    $output_group_head != "" \
 	     && [regexp -nocase -- $output_group_head \
 		        $out_line] } {
-	    if { ! $found_group && $found_case } {
-		puts stderr "ERROR: start of first\
-		             group follows start of\
-			     first case:\n$out_line"
-		exit 1
-	    }
-	    set found_group 1
+	    incr group_count
+	    set case_count 0
 	    set group_head 1
-	    set saved_group_lines {}
 	    if { $selective_copy } {
-	        set copy 0
+	        set copy [expr $group_count \
+		               == $selected_group]
 	    }
 	}
         if {    (    $output_case_head != "" \
@@ -639,30 +617,18 @@ if { $number_args == 3 } {
 		             $output_case_head \
 		             $out_line] ) \
 	     || $last_line_was_separator } {
-	    set found_case 1
-	    set case_head 1
 	    incr case_count
-	    if { ! $found_group } {
-	        set saved_group_lines {}
-	    }
-	    if {    $case_count == $g \
-	         || $case_count == $c } {
-	        foreach s $saved_group_lines {
-		    puts $jout $s
-		}
-		set copy 1
-	    } elseif {    $selective_copy \
-	               && (    $g == "" \
-		            || ! $found_group ) } {
+	    set case_head 1
+	    if {    $selective_copy \
+		 && $selected_group == 0 \
+		 && $group_count == 0 } {
+		set copy \
+		    [expr $case_count == $selected_case]
+	    } elseif {    $c != "" \
+	               &&   $case_count \
+		          > $selected_case ) } {
 	        set copy 0
 	    }
-	}
-
-	if { ! $found_group && ! $found_case } {
-	    puts stderr "ERROR: line before start\
-	                 of any group or\
-			 case:\n$out_line"
-	    exit 1
 	}
 
 	set last_line_was_separator \
@@ -671,7 +637,7 @@ if { $number_args == 3 } {
 		               $output_separator \
 		               $out_line] }]
 	
-	if { ! $selective_copy } {
+	if { $copy && ! $selective_copy } {
 	    if { $group_head && $case_head } {
 		set out_line "+$out_line"
 	    } elseif { $group_head } {
@@ -682,11 +648,10 @@ if { $number_args == 3 } {
 		set out_line ".$out_line"
 	    }
 	}
-
-	lappend saved_group_lines $out_line
 	if { $copy } {
 	    puts $jout $out_line
 	}
+
 	set out_line [gets $out]
     }
     close $out
