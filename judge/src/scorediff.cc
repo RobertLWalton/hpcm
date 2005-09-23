@@ -2,7 +2,7 @@
 //
 // File:	scorediff.cc
 // Authors:	Bob Walton (walton@deas.harvard.edu)
-// Date:	Fri Sep 23 09:59:43 EDT 2005
+// Date:	Fri Sep 23 10:25:25 EDT 2005
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: hc3 $
-//   $Date: 2005/09/23 13:55:14 $
+//   $Date: 2005/09/23 14:28:58 $
 //   $RCSfile: scorediff.cc,v $
-//   $Revision: 1.69 $
+//   $Revision: 1.70 $
 
 // This is version 2, a major revision of the first
 // scorediff program.  This version is more explicitly
@@ -64,7 +64,7 @@ char documentation [] =
 "    differences were found.  Otherwise it includes\n"
 "    markers with the format\n"
 "\n"
-"	        <OGN>:<OCN>/<TGN>:<TCN>\n"
+"	        OGN:OCN-TGN:TCN\n"
 "\n"
 "    where O denotes the output_file, T the test_\n"
 "    file, GN a test group number, and CN a test\n"
@@ -221,7 +221,7 @@ char documentation [] =
 "		or the two integers begin with dif-\n"
 "		ferent signs.\n"
 "\n"
-"    case	Two matching word tokens are NOT\n"
+"    letter-case    Two matching word tokens are NOT\n"
 "		identical, but would be identical if\n"
 "		letter case differences were ignored.\n"
 "\n"
@@ -269,9 +269,9 @@ char documentation [] =
 "    word of the same length as S and a second word\n"
 "    to be matched to the token that follows S, pro-\n"
 "    vided that the first part of L and the whole of\n"
-"    S are equal except perhaps for case.  But if S\n"
-"    and the first part of L are NOT equal except for\n"
-"    case, then L is NOT split.\n"
+"    S are equal except perhaps for letter case.  But\n"
+"    if S and the first part of L are NOT equal ex-\n"
+"    cept for letter case, then L is NOT split.\n"
 "\n"
 "    Note that failure to separate correctly spelled\n"
 "    words by space will be reported as a spacebreak,\n"
@@ -312,9 +312,9 @@ char documentation [] =
 "    numbers, etc.\n"
 "\n"
 "    The other exception occurs following two words\n"
-"    that do not match even if case is ignored.\n"
-"    If one word is a remainder of a split and the\n"
-"    other is not (it cannot be, actually), then\n"
+"    that do not match even if letter case is ignor-\n"
+"    ed.  If one word is a remainder of a split and\n"
+"    the other is not (it cannot be, actually), then\n"
 "    only the remainder is skipped.  If one of the\n"
 "    words is followed by white space containing a\n"
 "    new line or ending with an end of file, and the\n"
@@ -351,7 +351,7 @@ char documentation [] =
 "    nents and the letter case of the `e' or `E' in\n"
 "    the two exponents does not match, then the diff-\n"
 "    erence will always be reported as a `float'\n"
-"    difference and not a `case' difference.\n"
+"    difference and not a `letter-case' difference.\n"
 "\n"
 "    For the purpose of computing the column of a\n"
 "    character, tabs are set every 8 columns.\n"
@@ -368,8 +368,6 @@ char documentation [] =
 "    that have the following syntax:\n"
 "\n"
 "          line-proof ::=\n"
-"                    group-number\n"
-"                    case-number\n"
 "                    output-line-number\n"
 "                    test-line-number\n"
 "                    token-proof token-proof*\n"
@@ -381,7 +379,8 @@ char documentation [] =
 "                    test-token-end-column\n"
 "                    proof proof*\n"
 "\n"
-"          proof ::= `word' | `case' | `column' |\n"
+"          proof ::= `word' | `letter-case' |\n"
+"                    `column' |\n"
 "                    `decimal' | `exponent' |\n"
 "                    `sign' | `infinity' |\n"
 "                    `integer' absolute-difference\n"
@@ -1214,7 +1213,7 @@ enum difference_type {
     EXPONENT,
     SIGN,
     INFINITY,
-    CASE,
+    LETTER_CASE,
     COLUMN,
     WORD,
     MAX_DIFFERENCE
@@ -1245,7 +1244,7 @@ struct difference
     unsigned	test_case;
 	// Number to print the marker:
 	//
-	//    <OGN>:<OCN>/<TGN>:<TCN>
+	//    OGN:OCN-TGN:TCN
 
     int		last_output_line;
     int		last_test_line;
@@ -1311,7 +1310,7 @@ difference differences[] = {
     { "exponent",	DIFFERENCE_FILLER },
     { "sign",		DIFFERENCE_FILLER },
     { "infinity",	DIFFERENCE_FILLER },
-    { "case",		DIFFERENCE_FILLER },
+    { "letter-case",	DIFFERENCE_FILLER },
     { "column",		DIFFERENCE_FILLER },
     { "word",		DIFFERENCE_FILLER }
 };
@@ -1822,34 +1821,35 @@ int main ( int argc, char ** argv )
 	    }
 
 	    // Compare tokens for match that is either
-	    // exact or exact but for case.
+	    // exact or exact but for letter case.
 
 	    char * tp1 = output.token;
 	    char * tp2 = test.token;
 	    char * endtp2 = tp2 + test.length;
-	    bool token_match_but_for_case =
+	    bool token_match_but_for_letter_case =
 	        ( output.length == test.length );
-	    bool token_match = token_match_but_for_case;
+	    bool token_match =
+	        token_match_but_for_letter_case;
 
 	    while ( tp2 < endtp2
-	            && token_match_but_for_case )
+	            && token_match_but_for_letter_case )
 	    {
 		if ( * tp1 != * tp2 )
 		{
 		    token_match = false;
-		    token_match_but_for_case =
+		    token_match_but_for_letter_case =
 			( toupper ( * tp1 )
 			  == toupper ( * tp2 ) );
 		}
 		++ tp1, ++ tp2;
 	    }
 
-	    if ( token_match_but_for_case )
+	    if ( token_match_but_for_letter_case )
 	    {
 		if ( ! token_match )
 		    found_difference
 		        ( output.type != NUMBER_TOKEN ?
-			      CASE :
+			      LETTER_CASE :
 			  output.is_float ?
 			      FLOAT :
 			      INTEGER );
@@ -1857,7 +1857,7 @@ int main ( int argc, char ** argv )
 
 	    else if ( output.type == NUMBER_TOKEN )
 	    {
-	        // Tokens are not equal with case
+	        // Tokens are not equal with letter case
 		// ignored, but both are numbers.
 
 	        assert ( test.type == NUMBER_TOKEN );
@@ -1866,7 +1866,7 @@ int main ( int argc, char ** argv )
 
 	    else
 	    {
-	        // Tokens are not equal with case
+	        // Tokens are not equal with letter case
 		// ignored, and both are words.
 
 		assert ( test.type == WORD_TOKEN );
@@ -1976,7 +1976,7 @@ int main ( int argc, char ** argv )
     // differences, regardless of the proofs to be
     // output.  As these are output, their found flags
     // are cleared.  Differences with smaller
-    // OGN:OCN/TGN:TCN markers are printed first.
+    // OGN:OCN-TGN:TCN markers are printed first.
 
     bool any = false;	// True if anything printed.
     while ( true )
@@ -2036,7 +2036,7 @@ int main ( int argc, char ** argv )
 	}
 	if ( ! found ) break;
 
-	// Print out the OGN:OCN/TGN:TCN marker, and
+	// Print out the OGN:OCN-TGN:TCN marker, and
 	// then all the differences for this marker,
 	// clearing the found flags of differences
 	// printed.
@@ -2044,7 +2044,7 @@ int main ( int argc, char ** argv )
 	if ( any ) cout << " ";
 	any = true;
 	cout << output_group << ":" << output_case
-	     << "/"
+	     << "-"
 	     << test_group << ":" << test_case;
 	for ( int i = 0; i < MAX_DIFFERENCE; ++ i )
 	{
