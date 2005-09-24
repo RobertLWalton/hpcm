@@ -2,7 +2,7 @@
 #
 # File:		scoring_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Nov 14 07:59:53 EST 2004
+# Date:		Sat Sep 24 06:43:28 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2004/11/14 13:12:48 $
+#   $Date: 2005/09/24 12:59:06 $
 #   $RCSfile: scoring_common.tcl,v $
-#   $Revision: 1.44 $
+#   $Revision: 1.45 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -54,19 +54,30 @@
 
 # The value of `instruction_array(type)' is the part of
 # the scoring instructions related to a given type of
-# difference.  For a difference type like `case', if
-# that is present in the scoring instructions, the value
-# of `instruction_array(case)' is just `case'.  For a
-# difference type like `number', if `number 0.01 3.0' is
-# present in the scoring instructions, for example, the
-# value of `instruction_array(number)' is `number 0.01
-# 3.0'.  All elements of instruction_array correspond
-# to differences listed in the scoring instructions.
+# difference.  For a difference type like `letter-case',
+# if that is present in the scoring instructions, the
+# value of `instruction_array(letter-case)' is just
+# `letter-case'.  For a difference type like `number',
+# if `number 0.01 3.0' is present in the scoring
+# instructions, for example, the value of `instruction_
+# array(number)' is `number 0.01 3.0'.  Elements of
+# instruction_array correspond to differences listed in
+# the scoring_instructions global variable.
 #
 # `score_array' is computed from the first line of the
 # .score file in a manner strictly analogous to the way
 # `instruction_array' is computed from the scoring
 # instructions.
+#
+# However, the first line of the .score file contains
+# markers (OGN:OCN-TGN:TCN - see scorediff documenta-
+# tion) in addition to difference types.  `score_marker_
+# array' is computed when `score_array' is computed.
+# `score_marker_array(DT)' holds the marker associated
+# with the value of `score_array(DT)', when the later
+# exists.  The value of `score_marker_array(DT)' is the
+# marker turned into the TCL list `OGN OCN TGN TCN'.
+# If a marker is missing, the value is given as "".
 #
 # Note that the `number' type may appear in `instruc-
 # tion_array', but not in `score_array'.  However, if
@@ -89,9 +100,12 @@
 #
 # The `words-are-format' type may appear in `instruc-
 # tion_array' but not in `score_array'.  The presence of
-# this type just causes `word', `word-eof2', and `word-
-# eof1' differences to signal `Formatting Error' instead
-# of `Incorrect Output' or `Incomplete Output'.
+# this type just causes the following differences to
+# signal `Formatting Error' instead of `Incorrect
+# Output' or `Incomplete Output':
+#
+#	word  word-boc  word-bog  word-eof
+#	      boc-word  bog-word  eof-word
 #
 # The `nosign' and `nonumber' types may appear in
 # `instruction_array' but not in `score_array'.  These
@@ -122,8 +136,14 @@
 # sorting the proofs in the list first by output-line
 # number, then by output-column number, etc.
 #
+# The global variable difference_type_proof_limit in
+# hpcm_judging.rc is used to set the limit on the number
+# of proofs of one type computed during scoring.  It is
+# used to set the -all option to the scorediff program.
+#
 # The following global variable is the file name of the
-# of the score file used to load the proof_array.
+# of the score file used to load the proof_array.  This
+# is set when the score file loaded into proof_array.
 #
 set score_filename ""
 #
@@ -184,18 +204,19 @@ proc compute_instruction_array { } {
     }
 }
 
-# Function to compute `score_array' and `proof_array'
-# from the *.score file.  If a single argument is given,
-# it is the *.score file name.  Otherwise, the file name
-# is retrieved using `get_listed_files' and code in the
-# `display_common.tcl' function package, which must be
-# loaded in this case.  In this case there must be
-# exactly one *.score file in the list of file names
-# returned by `get_listed_files'.
+# Function to compute `score_array', `score_marker_
+# array' and `proof_array' from the *.score file.  If a
+# single argument is given, it is the *.score file name.
+# Otherwise, the file name is retrieved using `get_
+# listed_files' and code in the `display_common.tcl'
+# function package, which must be loaded in this case.
+# In this case there must be exactly one *.score file in
+# the list of file names returned by `get_listed_files'.
 #
 proc compute_score_and_proof_arrays { args } {
 
-    global proof_array score_filename score_array
+    global proof_array score_filename score_array \
+           score_marker_array
 
     switch [llength $args] {
         0 {
@@ -222,7 +243,8 @@ proc compute_score_and_proof_arrays { args } {
     set score_filename $filename
 
     compute_scoring_array score_array [gets $score_ch] \
-			  ".score file first line"
+			  ".score file first line" \
+			  score_marker_array
 
     if { [array exists proof_array] } {
         unset proof_array
@@ -319,32 +341,62 @@ proc compute_score_and_proof_arrays { args } {
 # Array is the array to compute, instructions is the
 # input line or scoring_instructions variable value,
 # and name is a description of the instructions for
-# error messages.
+# error messages.  Marker_array is the associate of
+# score_array that holds the markers from the first
+# line of a score file: if its name is given, the
+# instructions must have markers.
 #
 proc compute_scoring_array \
-	{ xxx_array instructions name } {
+	{ array_name instructions name \
+	  { marker_array_name "" } } {
 
     if { [catch {llength $instructions}] } {
-        error "scoring instructions or scorediff output\
-	       first line is not a TCL\
-	       list:\n$instructions"
+        error "$name is not a TCL list:\n$instructions"
     }
 
-    upvar $xxx_array array
+    upvar $array_name array
 
     if { [array exists array] } {
         unset array
     }
+    
+    if { $marker_array_name != "" } {
+        set has_markers 1
+	upvar $marker_array_name marker_array
+	if { [array exists marker_array] } {
+	    unset marker_array
+	}
+    } else {
+        set has_markers 0
+    }
 
     set state type
+    set marker ""
+    set marker_regexp \
+        {^([0-9]+):([0-9]+)-([0-9]+):([0-9]+)$}
     foreach item $instructions {
 	switch $state {
 	    type {
-		set array($item) $item
-		if { [lcontain {number integer float} \
-		               $item] } {
-		    set previous $item
-		    set state first
+		if {    $has_markers \
+		     && [regexp {^[0-9]} $item] } {
+		    if { ! [regexp $marker_regexp $item \
+		    		   forget \
+				   OGN OCN TGN TCN] } {
+		        error "$name has badly\
+			       formatted marker: $item"
+		    }
+		    set marker \
+		        [list $OGN $OCN $TGN $TCN]
+		} else {
+		    set array($item) $item
+		    if { $has_markers } {
+		        set marker_array($item) $marker
+		    }
+		    if { [lcontain {number integer float} \
+				   $item] } {
+			set previous $item
+			set state first
+		    }
 		}
 	    }
 	    first {
@@ -372,6 +424,10 @@ proc compute_scoring_array \
 # an optimal set of proofs.  The scorediff program is
 # called by `scorediff outfile testfile > scorefile'.
 #
+# Any negative numbers in `float' or `integer'
+# instructions are converted to `-' before they are
+# passed to scorediff.
+#
 # `compute_instruction_array' must be called before
 # this routine is called.
 #
@@ -384,14 +440,20 @@ proc compute_score_file { outfile testfile scorefile } {
 
     foreach type [array names instruction_array] {
 
-        if { [lsearch $fake_instruction_types \
-	              $type] >= 0 } continue
+        if { [lcontain $fake_instruction_types \
+	              $type] } continue
 
 	set arguments $instruction_array($type)
-	set options \
-	    [concat $options \
-	            [list -[lindex $arguments 0]] \
-	            [lrange $arguments 1 end]]
+	lappend options -[lindex $arguments 0]
+	foreach arg [lrange $arguments 1 end] {
+	    if {    ! [catch { set test \
+	                           [expr $arg < 0] }] \
+		 && $test } {
+	        set arg "-"
+	    }
+	    lappend options $arg
+	}
+	# TBD: Why the next line?
         if { [lcontain {number integer float} $type] } {
 	    lappend options $difference_type_proof_limit
 	}
@@ -415,6 +477,19 @@ proc compute_score_file { outfile testfile scorefile } {
 # `word' if that is not just a formatting error, or
 # `integer' if the limits on an integer difference
 # were exceeded.
+#
+# Additionally sets the associated variables:
+#
+#	incorrect_output_marker
+#	incomplete_output_marker
+#	formatting_error_marker
+#
+# to the smallest markers associated with any of the
+# difference types listed in the associated _types
+# variables.  Here smallest is 4-tuple comparison,
+# and the markers are lists `OGN OCN TGN TCN'.  The
+# missing marker value "" is treated as being larger
+# than any other marker value.
 #
 # Returns score, which is:
 #
@@ -454,13 +529,24 @@ proc compute_score_file { outfile testfile scorefile } {
 proc compute_score { } {
 
     global instruction_array score_array \
+           score_marker_array \
     	   incorrect_output_types \
     	   incomplete_output_types \
-    	   formatting_error_types
+    	   formatting_error_types \
+    	   incorrect_output_marker \
+    	   incomplete_output_marker \
+    	   formatting_error_marker
 
     set incorrect_output_types ""
     set incomplete_output_types ""
     set formatting_error_types ""
+    set incorrect_output_marker ""
+    set incomplete_output_marker ""
+    set formatting_error_marker ""
+
+    set waf \
+	[info exists \
+	      instruction_array(words-are-format)]
 
     foreach type [array names score_array] {
 
@@ -483,46 +569,57 @@ proc compute_score { } {
 	    } else continue
 	}
 
-	set waf \
-	    [info exists \
-	          instruction_array(words-are-format)]
+	if { $type == "none" } continue
+
 	switch -- $type {
 
 	    integer -
 	    float -
 	    infinity -
-	    integer-eof2 -
-	    float-eof2 {
-		lappend incorrect_output_types $type
+	    number-boc -
+	    number-bog -
+	    number-eof -
+	    boc-number -
+	    boc-bog -
+	    boc-eof -
+	    bog-number -
+	    bog-boc -
+	    bog-eof {
+		set kind incorrect_output
 	    }
 
-	    word-eof2 -
+	    boc-word -
+	    bog-word -
+	    word-boc -
+	    word-bog -
+	    word-eof -
 	    word {
 		if { $waf } {
-		    lappend formatting_error_types $type
+		    set kind formatting_error
 		} else {
-		    lappend incorrect_output_types $type
+		    set kind incorrect_output
 		}
 	    }
 
-	    word-eof1 {
+	    eof-word {
 		if { $waf } {
-		    lappend formatting_error_types $type
+		    set kind formatting_error
 		} else {
-		    lappend incomplete_output_types \
-		    	    $type
+		    set kind incomplete_output
 		}
 	    }
 
-	    integer-eof1 -
-	    float-eof1 {
-		lappend incomplete_output_types $type
+	    
+	    eof-boc -
+	    eof-bog -
+	    eof-number {
+		set kind incomplete_output
 	    }
 
 	    decimal -
 	    exponent -
 	    sign -
-	    case -
+	    letter-case -
 	    column -
 	    whitespace -
 	    beginspace -
@@ -530,16 +627,40 @@ proc compute_score { } {
 	    linespace -
 	    spacebreak -
 	    linebreak {
-		lappend formatting_error_types $type
+		set kind formatting_error
 	    }
 
-	    none { }
 	    default {
 		error "Unknown scorediff result: $type" 
 	    }
 	}
-    }
 
+	set ${kind}_types $type
+	set old [set ${kind}_marker]
+	set new $score_marker_array($type)
+	if { $new == "" } {
+	    continue
+	} elseif { $old == "" } {
+	    # Drop through
+	} elseif { [lindex $new 0] > [lindex $old 0] } {
+	    continue
+	} elseif { [lindex $new 0] < [lindex $old 0] } {
+	    # Drop through
+	} elseif { [lindex $new 1] > [lindex $old 1] } {
+	    continue
+	} elseif { [lindex $new 1] < [lindex $old 1] } {
+	    # Drop through
+	} elseif { [lindex $new 2] > [lindex $old 2] } {
+	    continue
+	} elseif { [lindex $new 2] < [lindex $old 2] } {
+	    # Drop through
+	} elseif { [lindex $new 3] > [lindex $old 3] } {
+	    continue
+	} elseif { [lindex $new 3] < [lindex $old 3] } {
+	    # Drop through
+	} else continue
+	set ${kind}_marker $new
+    }
 
     if { $incorrect_output_types != "" } {
     	return "Incorrect Output"
