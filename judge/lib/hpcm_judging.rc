@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Oct  7 09:09:20 EDT 2004
+# Date:		Sun Sep 25 06:14:48 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,13 +11,14 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2004/10/07 13:12:01 $
+#   $Date: 2005/09/25 15:26:31 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.148 $
+#   $Revision: 1.149 $
 
 # Table of Contents:
 #
 #	About This File
+#	Problem .rc Files
 #	Scoreboard Parameters
 #	Web Page Parameters
 #	Scoring Parameters
@@ -50,6 +51,187 @@
 #
 # This file is sourced by code in judging_common.tcl.
 # See `Inline Code' in that file.
+
+# Problem .rc Files
+# ------- --- -----
+
+# After hpcm_judging.rc is sourced, certain programs
+# source the file PPP.rc which they locate in the pro-
+# blem solution directory of a particular problem named
+# PPP.  In particular the autojudge, extract, and auto-
+# score programs do this while computing in a problem
+# submission directory.  Autojudge links any PPP.rc
+# file it finds in the problem solution directory into
+# the submission directory, and the other programs find
+# that file in the submission directory.  The file may
+# not exist, and if it does not, no attempt is made to
+# source it.
+#
+# Before a PPP.rc file is sourced the following global
+# variables are set:
+#
+#	PROBLEM		Problem name: "PPP".
+#	EXTENSION	Extension name including `.'
+#			E.g., ".cc", ".java".
+#
+# Here the `Subject:' field of the submission was
+# `submit $PROBLEM$EXTENSION'.  EXTENSION may be "".
+# If there is no submission involved, then EXTENSION
+# is set to "UNDEFINED", while PROBLEM is set to the
+# name of the problem directory.
+#
+# Some programs source the PPP.rc file from the problem
+# directory in order to do administrative work.  These
+# may source the PPP.rc file into a local environment
+# into which only the global variables the program wants
+# to use hvae been imported.  For example, the makejudg-
+# ingdir program does this to access the problem_de-
+# scription_files and problem_source_files variables.
+#
+# As a consequence of the last paragraph, PPP.rc files
+# should not read prior values of global variables set
+# in hpcm_judging.rc, UNLESS the PPP.rc file makes
+# these global before accessing them.  PPP.rc files may
+# `set' and `lappend' to hpcm_judging.rc global vari-
+# ables, as this will be harmless if the variables are
+# not actually global.  To make things easier, the
+# procedure `lprepend' is defined by HPCM.  It will
+# prepend to a list in a variable, and treat a previous-
+# ly undefined variable as if it were set to an empty
+# list.
+#
+# If procedures or temporary variables are defined in a
+# PPP.rc file, they should begin with the prefix `rc_'
+# to avoid conflicts with HPCM global variables.
+#
+# The following are global variables defined by
+# particular programs before they source PPP.rc.  These
+# may be redefined by PPP.rc, but they are not defined
+# by hpcm_judging.rc because in most cases they need to
+# know the value of $PROBLEM.  For each of these an
+# initial value is given which is set by the program
+# that sources PPP.rc before sourcing PPP.rc.
+#
+#   problem_description_files	" $PROBLEM$TTT "
+#
+#	A list of the .txt, .ps, ... files in the pro-
+#	blem directory that describe the problem to the
+#	contestant.  Here TTT is an extension found in
+#	the problem_description_extensions global
+#	variable such that the file PROBLEM.TTT exists;
+#	E.g., TTT may be ".ps" or ".pdf" or ".txt".
+#	If more than one such extension is found, more
+#	than one description file is listed.
+#
+#   problem_source_files	" Makefile "
+#
+#	A list of files that are sent to the contestant
+#	as source files.
+#
+#	If any of these files have a name of the form
+#	xxx.ISF, they will be sent to the contestant (by
+#	autoget and hpcm_extract) under the name xxx.
+#	ISF stands for `Initial Source File', and de-
+#	notes an initial version of a file the contes-
+#	tant will modify and submit.
+#
+#   problem_required_files
+#	" $PROBLEM$EXTENSION "  if EXTENSION is not ""
+#	" "			if EXTENSION is ""
+#
+#	A list of files the contestant is required to
+#	submit.  All these must be included in the sub-
+#	mission message.
+#
+#   problem_optional_files	" "
+#
+#	A list of files the contestant may optionally
+#	submit.  These are optionally included in the
+#	submission message.
+#
+#   problem_make_files
+#	" { $PROBLEM.fout
+#	    {Scoring_Filter < $PROBLEM.out 
+#			    > $PROBLEM.fout }
+#           Scoring_Filter $PROBLEM.out }
+#	  { $PROBLEM.ftest
+#	    {Scoring_Filter < $PROBLEM.test 
+#			    > $PROBLEM.ftest }
+#           Scoring_Filter $PROBLEM.test }
+#       "
+#
+#	A list of instructions the autojudge program
+#	uses to make files in the problem solution dir-
+#	ectory before linking files from that directory
+#	to the submission directory (see problem_link_
+#	files below).
+#
+#	Each instruction has the form:
+#
+#		{ OUT COMMAND IN1 IN2 ... }
+#
+#	The file OUT is to be made by executing the
+#	COMMAND, provided all the files IN1, IN2, ...
+#	exist, and either OUT does not exist or it is
+#	older than one of the files IN1, IN2, ... .
+#	All this is done by autojudge with the problem
+#	solution directory as the current directory.
+#
+#	If no files IN1, IN2, ... are listed, OUT must
+#	not exist.  If OUT is older than one of the
+#	IN1, IN2, ... files, OUT will be deleted before
+#	executing COMMAND (so it may be readonly).
+#
+#	An instruction can be abbreviated to just a file
+#       name F, which is the same as the instruction
+#       `{ F { make F } }'.
+#
+#	The COMMAND is passed to the exec_in_directory
+#	functions which executes it in sh or csh.
+#
+#	The instructions are processed by autojudge in
+#	order, so previous instructions can make inputs
+#	to later instructions.
+#
+#	The initial value will make .fout and .ftest
+#	files in the solution directory.  If a PPP.rc
+#	file executes
+#
+#	    lprepend problem_make_files Scoring_Filter
+#
+#	then Scoring_Filter will be compiled first, and
+#	subsequently will be used to make $PROBLEM.fout
+#	if $PROBLEM.out exists, and $PROBLEM.ftest
+#	assuming $PROBLEM.test exists.
+#
+#   problem_link_files
+#       " { Makefile Makefile$EXTENSION Makefile }
+#	  $PROBLEM.in
+#	  { $PROBLEM.test $PROBLEM.out $PROBLEM.test }
+#       "
+#
+#	A list of files that must be linked from the
+#	problem solution directory to the problem sub-
+#	mission directory by autojudge, after making
+#	the files in problem_make_files.
+#
+#	If just a file name F is listed, F in the
+#	solution directory must exist and will be
+#	linked to the submission directory.
+#
+#	If a list of names { F F1 F2 ... } is given, the
+#	names F1, F2, ... are checked in the solution
+#	directory, and the first that exists is linked
+#	to the name F in the submission directory.  At
+#	least one of F1, F2, ... must exist.
+#
+#   problem_optional_link_files
+#       " Scoring_Filter
+#	  { $PROBLEM.ftest $PROBLEM.fout $PROBLEM.ftest }
+#	"
+#
+#	Ditto, but if no solution file is found to link
+#	for a particular file, there is no error. 
 
 # Scoreboard Parameters
 # ---------- ----------
@@ -1398,7 +1580,7 @@ set highlight_off "\x1b\[0m"
 # Default list of problem description file extensions:
 #
 set problem_description_extensions \
-    {.txt .html .htm .ps}
+    {.txt .html .htm .ps .pdf}
 
 # List of last component names of subdirectories that
 # are NOT to be recursively copied into ./contest sub-

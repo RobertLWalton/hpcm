@@ -5,7 +5,7 @@
 #
 # File:		autojudge
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Nov 14 09:27:15 EST 2004
+# Date:		Sun Sep 25 07:40:15 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2004/11/14 14:45:32 $
+#   $Date: 2005/09/25 15:26:31 $
 #   $RCSfile: autojudge,v $
-#   $Revision: 1.89 $
+#   $Revision: 1.90 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -418,8 +418,9 @@ set my_argv $argv
 
 # Process any -manual argument.
 #
+set manual 0
 if { [lindex $my_argv 0] == "-manual" } {
-    set scoring_mode manual
+    set manual 1
     set my_argv [lrange $my_argv 1 end]
     incr my_argc -1
 }
@@ -500,346 +501,238 @@ if { ! [file isdirectory $solution_directory] } {
     subject_error "unallowed problem name `$problem' in"
 }
 
-# Function to return a list of extensions that make
-# a file name exist.
-#
-proc find_exts { name } {
-    set exts ""
-    foreach f [glob -nocomplain $name.*] {
-	if { [regexp "^$name\(\\.\[^/.\])\$" $f \
-	             forget ext] \
-	     && [file exists $name$ext] } {
-	    lappend exts $ext
-	}
-    }
-    return $exts
-}
-
-# Global variable that is list of all -LINK- or
-# -OPTIONAL-LINK- files that actually exist.
+# Global variable that is list of all files linked
+# into the submission directory by autojudge.  Various
+# output files depend on all these (must not be older
+# than any of these).
 #
 set linked_files ""
 
-# Function that links files according to the instruc-
-# tions in the `files' argument, which is a list format-
-# ted like a `$files_file' file value.
+# Function that links files according to the data that
+# has the format of a problem_link_files global variable
+# value: see hpcm_judging.rc.  Name describes the data
+# for error message purposes.  Optional is 1 if links
+# are options, 0 if they are required.  Appends files
+# linked to linked_files above.
 #
-proc execute_links { files } {
+# The global solution_directory names the problem solu-
+# tion directory.
+#
+proc execute_links { data name { optional 0 } } {
 
-    global problem extension solution_directory \
-           linked_files
+    global solution_directory linked_files
 
-    # Failure occurs if there is no source for a -LINK-
-    # target, or if a target has a .EXTENSION but no
-    # extension is given by the submitter.  If there is
-    # no source for a -LINK- target, there may or may
-    # not be a list of .EXTENSION values that would
-    # cause there to be sources for all -LINK- targets.
-
-    # True if a target has a .EXTENSION but no extension
-    # is given by the submitter.
-    #
-    set needs_extension no
-    
-    # List of -LINK- targets that will fail regardless
-    # of .EXTENSION value.
-    #
-    set hard_link_failures ""
-
-    # List of -LINK- targets that fail because
-    # .EXTENSION is wrong, and list of .EXTENSION values
-    # that would permit ALL these targets to succeed.
-    #
-    set soft_link_failures ""
-    set legal_exts not-set-yet
-
-    set mode none
-    foreach item $files {
-        switch -- $item {
-	    -LINK-		{
-	        set mode link
-	    }
-	    -OPTIONAL-LINK-	{
-	        set mode optional-link
-	    }
-	    default		{
-		if { [regexp {^-[-A-Z]*-$} $item] } {
-		    set mode none
-		} elseif { $mode != "none" } {
-		    if { [catch { llength $item }] } {
-		        error "Bad $files_file -LINK-\
-			       or -OPTIONAL-LINK- item:\
-			       $item"
-		    }
-		    if { [llength $item] == 1 } {
-		        set source_list $item
-			set target $item
-		    } else {
-		        set source_list \
-			    [lrange $item 1 end]
-			set target [lindex $item 0]
-		    }
-
-		    set source ""
-		    set exts ""
-		    set sd $solution_directory
-		    foreach name $source_list {
-		    	set root \
-			    [file rootname $name]
-			set ext \
-			    [file extension $name]
-			if { $root == "PROBLEM" } {
-			    set root $problem
-			}
-			if { $ext == ".EXTENSION" } {
-
-			    set r $sd/$root
-			    set n $r$extension
-			    if { $extension == "" \
-			         || ! [file exists $n] \
-				 	} {
-				set exts \
-				    [concat \
-				       $exts \
-				       [find_exts \
-					  $sd/$root]]
-			    }
-
-			    if { $extension == "" } {
-			        continue
-			    }
-			    set ext $extension
-			}
-			if { [file exists \
-			           $sd/$root$ext] } {
-			    set source $sd/$root$ext
-			    break
-			}
-		    }
-
-		    set root \
-			[file rootname $target]
-		    set ext \
-			[file extension $target]
-		    if { $root == "PROBLEM" } {
-			set root $problem
-		    }
-		    if { $ext == ".EXTENSION" } {
-		        if { $extension == "" } {
-			    set needs_extension yes
-			    continue
-			}
-			set ext $extension
-		    }
-		    set target $root$ext
-		    if { $target == "" \
-		         || [regexp {/} $target ] } {
-		        error "Bad $files_file -LINK-\
-			       or -OPTIONAL-LINK-\
-			       target in: $item"
-		    }
-
-		    if { [catch { \
-			   set type \
-			       [file type $target] \
-				}] } {
-			set type none
-		    } elseif { $type == "link" \
-			       && \
-			       $source != "" \
-			       && \
-			       [file readlink $target] \
-				     == $source } {
-			set type done
-		    }
-
-		    if {    $type != "link" \
-		         && $type != "none" } {
-		        lappend linked_files $target
-		    } elseif { $source == "" } {
-
-		    	# No source found.
-
-			if { $type == "link" } {
-			    puts "Deleting $target"
-			    file delete -force $target
-			}
-
-		        if { $mode == "link" } {
-
-			    if { [llength $exts] > 0 } {
-			        if { $legal_exts \
-				     == "not-set-yet" \
-				     	} {
-				    set legal_exts $exts
-				} else {
-				    set legal_exts \
-					[intersect \
-					   $legal_exts \
-					   $exts]
-				}
-				lappend \
-				    soft_link_failures \
-				    $target
-			    } else {
-				lappend \
-				    hard_link_failures \
-				    $target
-			    }
-			}
-		    } else {
-
-			if { $type == "link" } {
-			    puts "Deleting $target"
-			    file delete -force $target
-			}
-
-			set tail [file tail $source]
-			if { $tail == $target } {
-			    puts "Linking $target"
-			} else {
-			    puts "Linking $tail to\
-				  $target"
-			}
-			link_file $source $target
-		        lappend linked_files $target
-		    }
-		}
-	    }
-	}
+    if { [catch { llength $data }] } {
+	error "bad $name, not a TCL list: $data"
     }
 
-    if { [llength $hard_link_failures] > 0 } {
-	error "No source files found for -LINK-\
-	       targets: $hard_link_failures"
-    } elseif { [llength $soft_link_failures] > 0 } {
-        if { [llength $legal_exts] == 0 } {
-	    error "No source files findable for all\
-	    	   -LINK- targets: $soft_link_failures"
-	} else {
-	    subject_error \
-		"unallowed extension (which should be
-		one of $legal_exts) in"
+    foreach item $data {
+	if { [catch { set length [llength $item] }] } {
+	    error "bad $name element, not a TCL list:\
+	           $item"
 	}
-    } elseif { $needs_extension } {
-	subject_error \
-	    "missing extension where one is required in"
+	if { $length == 0 } {
+	    error "bad $name element, empty TCL list"
+	} elseif { $length == 1 } {
+	    set source_list $item
+	    set target $item
+	} else {
+	    set source_list [lrange $item 1 end]
+	    set target [lindex $item 0]
+	}
+	set source ""
+	set sd $solution_directory
+	foreach file $source_list {
+	    if { [file exists $sd/$file] } {
+		set source $sd/$file
+		break
+	    }
+	}
+	if { $target == "" || [regexp {/} $target ] } {
+	    error "Bad $name target in $item"
+	}
+
+	if { [catch { set type [file type $target] }] \
+	            } {
+	    set type none
+	} elseif { $type == "link" \
+		   && \
+		   $source != "" \
+		   && \
+		   [file readlink $target] \
+			 == $source } {
+	    set type done
+	}
+
+	if { $type == "link" } {
+	    puts "Deleting $target"
+	    file delete -force $target
+	    set type none
+	}
+
+	if { $type != "none" } {
+	    lappend linked_files $target
+	} elseif { $source == "" } {
+	    if { ! $optional } {
+	        error "no source files exist for\
+		       $item in $name"
+	    }
+	} else {
+	    set tail [file tail $source]
+	    if { $tail == $target } {
+		puts "Linking $target"
+	    } else {
+		puts "Linking $tail to\
+		      $target"
+	    }
+	    link_file $source $target
+	    lappend linked_files $target
+	}
     }
 }
 
-# Link in any PROBLEM.rc or $files_file.
+# Set initial values for global variables of interest
+# to us that might be changed by PROBLEM.rc.
 #
-execute_links "
-    -OPTIONAL-LINK-
-	{ PROBLEM.rc rc.EXTENSION PROBLEM.rc }
-	{ $files_file $files_file.EXTENSION
-		      $files_file }
-    "
+set PROBLEM $problem
+set EXTENSION $extension
+#
+set problem_required_files $PROBLEM$EXTENSION
+set problem_optional_files ""
+set problem_make_files \
+	" { $PROBLEM.fout
+	    {Scoring_Filter < $PROBLEM.out 
+			    > $PROBLEM.fout }
+	    Scoring_Filter $PROBLEM.out }
+	  { $PROBLEM.ftest
+	    {Scoring_Filter < $PROBLEM.test 
+			    > $PROBLEM.ftest }
+	    Scoring_Filter $PROBLEM.test }
+	"
+set problem_link_files \
+        " { Makefile Makefile$EXTENSION Makefile }
+	  $PROBLEM.in
+	  { $PROBLEM.test $PROBLEM.out $PROBLEM.test }
+        "
+set problem_optional_link_files \
+        " Scoring_Filter
+	  { $PROBLEM.ftest $PROBLEM.fout $PROBLEM.ftest }
+	"
 
-# Source any PROBLEM.rc file.
+# Link and source any PROBLEM.rc file.
 #
+execute_links $problem.rc \
+              "initial problem .rc file linking" 1
 if { [file exists $problem.rc] } {
     source_file $problem.rc
-} else {
-    set possibilities \
-        [find_exts $solution_directory/rc]
-    
-    if { [llength $possibilities] > 0 } {
-	subject_error \
-	    "unallowed extension (should be one of\
-	     $possibilities) in"
-    }
 }
 
-# Read $files_file.
+# Force scoring mode if there was a -manual option.
 #
-if { [file exists $files_file] } {
-    set files [read_entire_file $files_file]
-
-    if { [catch { llength $files }] } {
-	error "$files_file file is not a TCL list"
-    }
-} else {
-    set possibilities \
-        [find_exts $solution_directory/$files_file]
-    
-    if { [llength $possibilities] > 0 } {
-	subject_error \
-	    "unallowed extension (should be one of\
-	     $possibilities) in"
-    }
-
-    set files "
-        -LINK-
-	    { $make_file $make_file.EXTENSION\
-	    	$make_file }
-	    PROBLEM.in
-	    { PROBLEM.test PROBLEM.out PROBLEM.test }
-	-OPTIONAL-LINK-
-	    $scoring_filter_file
-	    { PROBLEM.ftest PROBLEM.fout PROBLEM.ftest }
-	"
+if { $manual } {
+    set scoring_mode manual
 }
 
-# Function to compute list of solution directory files
+# Make problem_make_files.  First we check to see if we
+# can prove there is nothing to do, as we do not want to
+# lock the solution directory unnecessarily.  First_
+# target is the first file that will be made if any are
 # to be made.
 #
-proc find_solution_make_files { files } {
+if { [catch {llength $problem_make_files}] } {
+    error "problem_make_files value is not a TCL list:\
+           $problem_make_files"
+}
+set first_target ""
+set sd $solution_directory
+foreach instruction $problem_make_files {
+    if { [catch {llength $instruction}] } {
+	error "problem_make_files instruction\
+	       is not a TCL list: $instruction"
+    }
 
-    global solution_directory
-
-    set solution_make_files ""
-    set solution_make no
-    foreach item $files {
-	switch -- $item {
-	    -SOLUTION-MAKE- {
-		set solution_make yes
-	    }
-	    default {
-		if { [regexp {^-[-A-Z]*-$} $item] } {
-		    set solution_make no
-		} elseif { $solution_make } {
-		    set target $solution_directory/$item
-		    if { ! [file exists $target] } {
-			lappend solution_make_files \
-				$item
-		    }
-		}
-	    }
+    set sources [lrange $instruction 2 end]
+    set non_existant_input_found 0
+    foreach source $sources {
+        if { ! [file exists $sd/$source] } {
+	    set non_existant_input_found 1
+	    break
 	}
     }
+    if { $non_existant_input_found } continue
 
-    return $solution_make_files
+    set target [lindex $instruction 0]
+    if { ! [file exists $sd/$target] } {
+        set first_target $target
+	break
+    }
+
+    set mtime [file mtime $sd/$target]
+    foreach source $sources {
+	if { [file mtime $sd/$source] > $mtime } {
+	    set first_target $target
+	    break
+	}
+    }
+    if { $first_target != "" } break
 }
 
-# Make -SOLUTION-MAKE- files.  Try repeatedly to lock
-# the solution directory, but if this fails after a
-# short while, just give up and print a comment.
+# Try repeatedly to lock the solution directory, but if
+# this fails after a short while, just give up and print
+# a comment.
 #
-set count 0
-while { "yes" } {
-    set solution_make_files \
-        [find_solution_make_files $files]
-    if { [llength $solution_make_files] == 0 } break
+if { $first_target != "" } {
+    set count 0
+    while { "yes" } {
+	if { [dispatch_lock $solution_directory] } break
+	incr count
+	if { $count >= 10 } {
+	    puts "CANNOT LOCK $solution_directory: giving\
+		  up on making $first_target"
+	    set first_target ""
+	    break
+	}
+	sleep 2
+    }
+}
+# Execute problem_make_files instructions if neccssary.
+#
+if { $first_target != "" } {
+    foreach instruction $problem_make_files {
+	if { [catch {llength $instruction}] } {
+	    error "problem_make_files instruction is\
+	           not a TCL list: $instruction"
+	}
 
-    if { [dispatch_lock $solution_directory] } {
-	puts "Executing make $solution_make_files"
+	set sources [lrange $instruction 2 end]
+	set non_existant_input_found 0
+	foreach source $sources {
+	    if { ! [file exists $sd/$source] } {
+		set non_existant_input_found 1
+		break
+	    }
+	}
+	if { $non_existant_input_found } continue
+
+	set target [lindex $instruction 0]
+	if { [file exists $sd/$target] } {
+	    set mtime [file mtime $sd/$target]
+	    set skip 1
+	    foreach source $sources {
+		if { [file mtime $sd/$source] > $mtime \
+		   } {
+		    set skip 0
+		    break
+		}
+	    }
+	    if { $skip } continue
+	}
+	set command [lindex $instruction 1]
+	puts "Making $target by executing $command"
 	exec_in_directory $solution_directory \
-		          "make $solution_make_files" \
-	     		  >&@ stdout
-	dispatch_unlock $solution_directory
-	break
+			  $command >&@ stdout
     }
-
-    incr count
-
-    if { $count >= 10 } {
-    	puts "CANNOT LOCK $solution_directory: giving\
-	      up on make $solution_make_files"
-	break
-    }
-
-    sleep 2
+    dispatch_unlock $solution_directory
 }
 
 # List of all files extracted by extractmail.
@@ -889,10 +782,13 @@ if { [catch { exec extractmail } extractout] } {
     }
 }
 
-# Process -LINK- and -OPTIONAL-LINK- instructions in
-# $files_file (or its default value).
+# Process problem_link_files and problem_optional_link_
+# files values.
 #
-execute_links $files
+execute_links $problem_link_files \
+              "problem_link_files value"
+execute_links $problem_optional_link_files \
+              "problem_optional_link_files value" 1
 
 # Function to send reply to user containing new auto
 # score.

@@ -4,7 +4,7 @@
 #
 # File:		extractmail
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Mar 19 00:45:25 EST 2003
+# Date:		Sun Sep 25 10:13:00 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2003/03/19 06:16:30 $
+#   $Date: 2005/09/25 15:26:31 $
 #   $RCSfile: extractmail,v $
-#   $Revision: 1.47 $
+#   $Revision: 1.48 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -252,10 +252,6 @@ if { $message_part_error != "" } {
     extract_error "ERROR: $message_part_error"
 }
 
-# Source any problem .rc file.
-#
-source_file $problem.rc
-
 # Extract any extension name and check it.
 #
 set extension [file extension $filename]
@@ -267,30 +263,22 @@ if { $extension != "" \
 	 $message_subject'"
 }
 
-# Compute the list of submittable files.
+# Source any problem .rc file.  First set global
+# variables we plan to reference.
 #
-if { [file exists $files_file] } {
-
-    if { [catch { set filelist \
-		      [read_entire_file $files_file] \
-	        }] } {
-        extract_error \
-	    "SYSTEM ERROR: Cannot read $file_files"
-    }
-
-    if { [catch { llength $filelist }] } {
-	extract_error \
-	    "SYSTEM ERROR: $files_file file is not a\
-	     TCL list"
-    }
-
+set PROBLEM $problem
+set EXTENSION $extension
+if { $EXTENSION == "" } {
+    set problem_required_files ""
 } else {
-    if { $extension == "" } {
-        extract_error \
-	    "ERROR: No extension in `Subject:\
-	     $message_subject'"
-    }
-    set filelist [list $filename]
+    set problem_required_files $PROBLEM$EXTENSION
+}
+set problem_optional_files ""
+source_file $problem.rc
+if { [llength $problem_required_files] == 0 } {
+    extract_error \
+	"ERROR: No extension in `Subject:\
+		$message_subject'"
 }
 
 # Filename_array has a value for every submittable
@@ -298,43 +286,11 @@ if { [file exists $files_file] } {
 #
 #	required	optional	found
 #
-set mode required
-foreach item $filelist {
-    switch -- $item {
-	-REQUIRED-	{
-	    set mode required
-	}
-	-OPTIONAL-	{
-	    set mode optional
-	}
-	default {
-	    if { [regexp {^-[-A-Z]*-$} $item] } {
-	        set mode ""
-	    } elseif { $mode != "" } {
-	        set root [file rootname $item]
-		set ext [ file extension $item]
-		if { $root == "PROBLEM" } {
-		    set root $problem
-		}
-		if { $ext == ".EXTENSION" } {
-		    if { $extension == "" } {
-			extract_error \
-			    "ERROR: No extension given\
-			     where one is required in\
-			     `Subject:\
-			     $message_subject'"
-		    }
-		    set ext $extension
-		}
-		set filename_array($root$ext) $mode
-	    }
-	}
-    }
+foreach file $problem_required_files {
+    set filename_array($file) required
 }
-
-if { [llength [array names filename_array]] < 1 } {
-    extract_error \
-    	"SYSTEM ERROR: No allowed submittable files"
+foreach file $problem_optional_files {
+    set filename_array($file) optional
 }
 
 # WS matching whitespace character and NWS matching
@@ -378,7 +334,8 @@ proc open_file { filename } {
 
     if { ! [info exists filename_array($filename)] } {
 	puts stderr \
-	    "ERROR: Bad file name: $filename"
+	    "ERROR: File is not submittable for this\
+	            problem: $filename"
 	set file_ch ""
 	return skip
     } elseif { $filename_array($filename) == "found" } {
