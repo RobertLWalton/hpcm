@@ -5,7 +5,7 @@
 #
 # File:		autojudge
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Sep 25 07:40:15 EDT 2005
+# Date:		Mon Sep 26 16:16:08 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/09/25 15:26:31 $
+#   $Date: 2005/09/26 20:50:18 $
 #   $RCSfile: autojudge,v $
-#   $Revision: 1.90 $
+#   $Revision: 1.91 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -52,7 +52,7 @@ autojudge \[-manual\] \[problem\[.extension\]\]
     If the problem name and optional extension are not
     given as an argument, they are extracted from the
 
-    	Subject: problem\[.extension\]
+    	Subject: submit problem\[.extension\] ...
 
     field of the message in the $received_file file.
     Here `problem' names the problem and the solution
@@ -77,43 +77,76 @@ autojudge \[-manual\] \[problem\[.extension\]\]
     More specifically, this program makes the following
     in order:
 
-      * `PROBLEM.rc' file, if it exists, and if it
-        exists, it is sourced
-      * `$files_file' file, if it exists
-      . any -SOLUTION-MAKE- files listed in any
-	`$files_file' file; note these files are in
-	the solution directory
-      . submitted files made by calling extractmail
-      * any -LINK- or -OPTIONAL-LINK- files listed in
-	any `$files_file' file; if there is no\
-	  	`$files_file' file,
-	the -LINK- files are by default:
-	     $make_file, PROBLEM.in, PROBLEM.test
-	and the -OPTIONAL-LINK- files are by default:
-	     PROBLEM.ftest, $scoring_filter_file
-      . the program binary file `PROBLEM' and the
-	compiler error file PROBLEM.cerr
-      . the program standard output file PROBLEM.out
+      * `PROBLEM.rc' file, if it exists.  If it exists
+        (in the problem's solution directory), it is
+        sourced, and may set some of the global varibles
+	mentioned below.  See the `Problem .rc Files'
+	section of hpcm_judging.rc for detailed specifi-
+	cation of the values of these global variables.
+
+      . Files listed in the problem_make_files global
+        variable, which gives instructions on when and
+	how to make files in the problem's solution
+	directory.  E.g., the Scoring_Filter program
+	may be compiled there if necessary.  The
+	default is to make PROBLEM.ftest if Scoring_
+	Filter and PROBLEM.test exist, and to make
+	PROBLEM.fout in the problem's solution direc-
+	tory if Scoring_Filter and PROBLEM.out exist
+	in that directory.
+
+      . Submitted files which are extracted from the
+        submitted message in the $received_file file
+        by the extractmail program.  These files must
+	all be listed in the problem_required_files or
+	problem_optional_files global variables.
+	The default is for PROBLEM.EXTENSION to be
+	the only required file if EXTENSION is not
+	empty.
+
+      * Files listed in the problem_link_files and
+        problem_optional_link_files global variables.
+	The default link files are $make_file,
+	PROBLEM.in and PROBLEM.test.  The default
+	optional link files are $scoring_filter_file
+	and PROBLEM.ftest.
+
+      . The program binary file `PROBLEM' and the
+	compiler error file PROBLEM.cerr are made by
+	executing `make PROBLEM', using the $make_file.
+
+      . The program standard output file PROBLEM.out
 	and the program standard error file PROBLEM.err
-      . the filtered output file PROBLEM.fout, if the
-	$scoring_filter_file file exists
-      . the PROBLEM.score file made by calling autoscore
-      . the $auto_score_file file made by ditto
-      . the $reply_file file, sometimes
+        are made by executing `make PROBLEM.out', using
+	the $make_file.
+
+      . The filtered output file PROBLEM.fout, if the
+	$scoring_filter_file file exists.
+
+      . The PROBLEM.score and $auto_score_file files
+        are made by executing autoscore.
+
+      . The $reply_file file is made and a reply sent
+        to the submitter, unless the scoring_mode is
+	`manual'.
 
     Here files marked with * are linked into the current
     submission directory from the problem's solution
-    directory.  This program checks any other file that
-    already exists to see if it is younger than the pre-
-    vious files upon which it depends (starting with
-    submitted files being younger than the\
-    	$received_file
-    file), and if a file is younger and hence up to
-    date, this program skips remaking the file.  Inabil-
-    ity to make a program binary or a .out file, or an
-    empty .out file, can cause $auto_score_file and\
-    	maybe
-    $reply_file to be generated early.
+    directory.
+    
+    In general, this program does not make a file that
+    already exists, unless one of the files input to
+    make the file is more recent that the file to be
+    made.  So, for example, if the $received_file file
+    is more recent than an extracted file, the files
+    will be re-extracted, whereas if extracted files
+    exist and are all as recent as the $received_file
+    file, file extraction will be skipped.
+
+    Inability to make a program binary or a .out file,
+    or an empty .out file, can cause $auto_score_file\
+        and
+    maybe $reply_file to be generated early.
 
     In general, this program may detect two kinds of
     errors: system errors and submitter errors.  A
@@ -131,94 +164,22 @@ autojudge \[-manual\] \[problem\[.extension\]\]
 
     At its beginning, this program verifies the exis-
     tence of a solution directory for the problem and
-    symbolically links the `PROBLEM.rc' and\
-    		`$files_file'
-    files from this directory into the current direc-
-    tory, if these files exist.  If the `PROBLEM.rc'
-    file exists, it is sourced.  If the\
-    		`$files_file' file
-    does not exist, it is given the default value:
-
-        -LINK-
-	    { $make_file $make_file.EXTENSION\
-	    	$make_file }
-	    PROBLEM.in
-	    { PROBLEM.test PROBLEM.out PROBLEM.test }
-	-OPTIONAL-LINK-
-	    $scoring_filter_file
-	    { PROBLEM.ftest PROBLEM.fout PROBLEM.ftest }
+    symbolically links the `PROBLEM.rc' file from this
+    directory into the current directory, if this file
+    exists.  If the `PROBLEM.rc' file exists, it is
+    sourced, but before being sourced the
 
-    The `$files_file' file is interpreted as a TCL list
-    (with list elements separated by spaces, tabs, or
-    new lines) whose elements are special symbols, file
-    names, and { } bracketed sublists.  The special
-    symbols consist of upper case letters and the `-'
-    character, and begin and end with `-'.  All list
-    items following a special symbol S but before the
-    next special symbol are governed by S.  This program
-    understands the following three special symbols:
+    	problem_make_files
+	problem_required_files
+	problem_optional_files
+	problem_link_files
+	problem_optional_link_files
 
-    	-SOLUTION-MAKE-	The list items governed by
-			-SOLUTION-MAKE- are the names of
-			files that are to be `made' in
-			the solution directory if they
-			do not exist.
-    
-    	-LINK-		The list items governed by
-			-LINK- name files that are to be
-			linked from the solution direc-
-			tory to the current directory.
-
-    	-OPTIONAL-LINK-	The list items governed by
-			-OPTIONAL-LINK- name files that
-			are to be linked from the solu-
-			tion directory to the current
-			directory if they exist in the
-			solution directory.
+    global variables are given default values as descri-
+    bed in the `Problem .rc Files' section of hpcm_
+    judging.rc.
 
-    List items governed by other special symbols are
-    ignored by this program.  There is an implied
-    `-REQUIRED-' before the beginning of the list, that
-    governs list items appearing before any special
-    symbol in the list.  The same special symbol can
-    appear multiple times in the list.  The same file
-    name can appear several times in the list: e.g.,
-    a file name can appear governed by -SOLUTION-MAKE-
-    and then again governed by -LINK-.
-
-    Each item governed by one of the three special
-    symbols listed above is either a file name or a list
-    of file names.  In any file name, the basename
-    `PROBLEM' is replaced by the problem name and the
-    extension `.EXTENSION' is replaced by the submission
-    extension.
-
-    -LINK- and -OPTIONAL-LINK- items may be a { } brac-
-    ketted list of file names.  In this case, the first
-    file name F is the file name in the current direc-
-    tory which is to be created by the link, and the
-    rest of the file names name files in the solution
-    directory that may be linked to F.  The first of
-    these solution directory files that exists is
-    chosen.  If F is an already existing link in the
-    current directory, it is relinked to the chosen
-    solution directory file, or F is deleted if there
-    is no chosen file because all solution directory
-    files in the list of files that can be linked to F
-    do not exist.  If F does not exist, it is linked to
-    the chosen file if there is one.  Otherwise nothing
-    is done, so that if F is a file proper, and not a
-    link, it will be left alone.
-
-    A -LINK- or -OPTIONAL-LINK- item that is a single
-    file name F is equivalent to the item `{ F F }'.
-
-    The only difference between -LINK- and -OPTIONAL-
-    LINK- is that for -LINK- it is an error if
-    after taking the above actions the file F being
-    created in the local directory does not exist;
-    whereas for -OPTIONAL-LINK- it is no error at all
-    in this case.
+    TBD
 
     In the above, a dangling link does not count as an
     existing file.  Thus if the solution directory con-
