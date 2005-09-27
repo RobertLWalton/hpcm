@@ -2,7 +2,7 @@
 //
 // File:	scorediff.cc
 // Authors:	Bob Walton (walton@deas.harvard.edu)
-// Date:	Sun Sep 25 20:03:28 EDT 2005
+// Date:	Tue Sep 27 02:03:22 EDT 2005
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: hc3 $
-//   $Date: 2005/09/26 00:44:53 $
+//   $Date: 2005/09/27 06:58:22 $
 //   $RCSfile: scorediff.cc,v $
-//   $Revision: 1.73 $
+//   $Revision: 1.74 $
 
 // This is version 2, a major revision of the first
 // scorediff program.  This version is more explicitly
@@ -22,6 +22,7 @@
 #include <cstdlib>
 #include <climits>
 #include <iostream>
+#include <iomanip>
 #include <fstream>
 #include <cctype>
 #include <cstring>
@@ -500,6 +501,21 @@ char documentation [] =
 "    If more than one limit setting option affects\n"
 "    the limit of a difference type, the last such\n"
 "    option is the effective option for that type.\n"
+"\n"
+"    The -debug option causes scorediff to output a\n"
+"    line describing each token it scans.  This line\n"
+"    has the format:\n"
+"\n"
+"      file-id line-number begin-column end-column\n"
+"              group-number:case-number\n"
+"              preceding-whitespace-characters/\n"
+"	       preceding-whitespace-newlines\n"
+"              token-type token\n"
+"\n"
+"    If a word token is split, a line will be output\n"
+"    first for the unsplit token, and then a line will\n"
+"    be output for the remainder after spitting.  The\n"
+"    remainder may then itself be split.\n"
 ;
 
 // A token is either a word token, a number token, a
@@ -514,12 +530,19 @@ enum token_type {
     WORD_TOKEN = 0, NUMBER_TOKEN,
     BOC_TOKEN, BOG_TOKEN, EOF_TOKEN, MAX_TOKEN };
 
+// Type names for debugging only.
+//
+const char * token_type_name[] = {
+    "word", "number", "boc", "bog", "eof" };
+
 struct file
     // Information about one of the input files (output
     // or test file).
 {
     ifstream stream;	// Input stream.
     char * filename;	// File name.
+    const char * id;	// Short name of file for
+    			// debugging: "out" or "test".
 
     // Token description.
     //
@@ -658,13 +681,15 @@ file test;
 bool nonumber = false;
 bool nosign = false;
 bool filtered = false;
+bool debug = false;
 
 // Open file for reading.
 //
-void open ( file & f, char * filename )
+void open ( file & f, char * filename, const char * id )
 {
     f.filename = new char [strlen ( filename ) + 1 ];
     strcpy ( f.filename, filename );
+    f.id = id;
 
     f.stream.open ( filename );
     if ( ! f.stream ) {
@@ -724,9 +749,44 @@ void bad_filtered_mark ( file & f ) {
     exit (1);
 }
 
+// Produce debug output for a scaned token.
+//
+void debug_output ( file & f )
+{
+    cout << f.id
+         << " " << f.line
+         << " " << f.column - f.length + 1
+         << " " << f.column
+	 << " " << f.group_number
+	 << ":" << f.case_number
+	 << " " << strlen ( f.whitespace )
+	 << "/" << f.newlines
+	 << " " << token_type_name[f.type]
+	 << " ";
+    char * endp = f.token + f.length;
+    for ( char * p = f.token; p < endp; ++ p )
+    {
+        if ( 040 <= * p && * p < 0177 )
+	    cout << * p;
+	else if ( * p < 040 )
+	    cout << "^" << * p + '@';
+	else if ( * p >= 0177 )
+	{
+	    int d0 = ( * p >> 4 ) & 0xF;
+	    int d1 = * p & 0xF;
+	    char c0 = d0 < 10 ? '0' + d0
+	                      : 'A' - 10 + d0;
+	    char c1 = d1 < 10 ? '0' + d1
+	                      : 'A' - 10 + d1;
+	    cout << "\\x" << c0 << c1;
+	}
+    }
+    cout << endl;
+}
 
-// Scan next token in a file.  EOF_TOKEN is
-// returned repeatedly at end of file.
+// Scan next token in a file.  EOF_TOKEN is returned
+// repeatedly at end of file.  -debug option output is
+// produced.
 //
 void zero_proof_lines ( void );
 void scan_token ( file & f )
@@ -740,6 +800,7 @@ void scan_token ( file & f )
         f.boc_next	= false;
 	++ f.case_number;
 	f.type		= BOC_TOKEN;
+	if ( debug ) debug_output ( f );
 	return;
     }
 
@@ -763,6 +824,7 @@ void scan_token ( file & f )
 	f.newlines		= 0;
 	f.remainder		= true;
 
+	if ( debug ) debug_output ( f );
 	return;
     }
 
@@ -795,16 +857,22 @@ void scan_token ( file & f )
 				zero_proof_lines();
 				f.column = column;
 				f.boc_next = true;
+				if ( debug )
+				    debug_output ( f );
 				return;
 		case '-':	++ f.case_number;
 				f.type = BOC_TOKEN;
 				f.column = column;
+				if ( debug )
+				    debug_output ( f );
 				return;
 		case '|':	++ f.group_number;
 				f.case_number = 0;
 				f.type = BOG_TOKEN;
 				zero_proof_lines();
 				f.column = column;
+				if ( debug )
+				    debug_output ( f );
 				return;
 		case '.':	break;
 		case EOF:	break;
@@ -840,6 +908,7 @@ void scan_token ( file & f )
     if ( c == EOF ) {
     	f.type = EOF_TOKEN;
 	f.column = column;
+	if ( debug ) debug_output ( f );
 	return;
     }
 
@@ -1016,6 +1085,7 @@ void scan_token ( file & f )
 	// the end of the number; which is probably
 	// a bug in strtod.
 
+    if ( debug ) debug_output ( f );
     return;
 
 // Come here if we have concluded that the characters
@@ -1116,6 +1186,7 @@ end_word:
 	* f.endbackp ++ = c;
     }
 
+    if ( debug ) debug_output ( f );
     return;
 }
 
@@ -1703,6 +1774,8 @@ int main ( int argc, char ** argv )
 	    nonumber = true;
         else if ( strcmp ( "filtered", name ) == 0 )
 	    filtered = true;
+        else if ( strcmp ( "debug", name ) == 0 )
+	    debug = true;
 	else
 	{
 	    cerr << "Unrecognized option -"
@@ -1728,8 +1801,8 @@ int main ( int argc, char ** argv )
 
     // Open files.
 
-    open ( output, argv[1] );
-    open ( test, argv[2] );
+    open ( output, argv[1], "out" );
+    open ( test, argv[2], "test" );
 
     // Loop that reads the two files and compares their
     // tokens, recording any differences found.

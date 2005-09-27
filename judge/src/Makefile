@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Sep 27 02:02:43 EDT 2005
+# Date:		Tue Sep 27 02:35:40 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/09/27 05:57:31 $
+#   $Date: 2005/09/27 06:58:22 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.11 $
+#   $Revision: 1.12 $
 
 # Kill all implicit rules
 #
@@ -33,7 +33,8 @@ scorediff_test1.score:	scorediff \
 			scorediff_test1.test \
 			scorediff_test1.reference
 	rm -f scorediff_test1.score
-	scorediff -column 50 \
+	scorediff -debug \
+	          -column 50 \
 	          -float 0 0 50 \
 		  -integer 0 0 50 \
 		  scorediff_test1.out \
