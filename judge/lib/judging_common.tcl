@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Oct 13 10:08:00 EDT 2004
+# Date:		Tue Sep 27 08:42:57 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2004/10/13 14:09:19 $
+#   $Date: 2005/09/27 12:38:06 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.115 $
+#   $Revision: 1.116 $
 #
 
 # Table of Contents
@@ -1706,8 +1706,8 @@ proc read_entire_file { filename } {
 }
 
 # Source a file if it exists.  Before sourcing file, run
-# a security check: insist that file not be readable by
-# `others', but only by group and owner.  The file is
+# a security check: insist that file not be accessible
+# by `others', but only by group and owner.  The file is
 # sourced in the caller's level.
 #
 proc source_file { filename } {
@@ -1719,7 +1719,7 @@ proc source_file { filename } {
 
 	set __p__ \
 	    [file attributes $filename -permissions]
-	if { $__p__ & 4 } {
+	if { $__p__ & 7 } {
 	    error "security violation: $filename is\
 		   readable by `others'\n      \
 		   you should execute chmod o-r\
