@@ -2,7 +2,7 @@
 //
 // File:	scorediff.cc
 // Authors:	Bob Walton (walton@deas.harvard.edu)
-// Date:	Tue Sep 27 02:03:22 EDT 2005
+// Date:	Tue Sep 27 04:11:07 EDT 2005
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: hc3 $
-//   $Date: 2005/09/27 06:58:22 $
+//   $Date: 2005/09/27 08:20:58 $
 //   $RCSfile: scorediff.cc,v $
-//   $Revision: 1.74 $
+//   $Revision: 1.75 $
 
 // This is version 2, a major revision of the first
 // scorediff program.  This version is more explicitly
@@ -432,16 +432,18 @@ char documentation [] =
 "    and line numbers in a file start with 1.\n"
 "\n"
 "    Non-floating-point numbers output as part of\n"
-"    proofs are unsigned integers.  All the proofs\n"
-"    concerning the same pair of matching tokens are\n"
-"    grouped together into a token-proof that begins\n"
-"    with the beginning and ending column numbers of\n"
-"    the matching tokens.  All the token-proofs whose\n"
-"    tokens are in the same lines within their re-\n"
-"    spective files are grouped together into one\n"
-"    line-proof that begins with the line numbers of\n"
-"    the respective lines.  Each line-proof is output\n"
-"    on a line by itself.\n"
+"    proofs are integers, which are all unsigned\n"
+"    except that the ending column of a boc, bog or\n"
+"    eof token may be -1 (the beginning column is 0).\n"
+"    All proofs concerning the same pair of matching\n"
+"    tokens are grouped together into a token-proof\n"
+"    that begins with the beginning and ending column\n"
+"    numbers of the matching tokens.  All the token-\n"
+"    proofs whose tokens are in the same lines within\n"
+"    their respective files are grouped together into\n"
+"    one line-proof that begins with the line numbers\n"
+"    of the respective lines.  Each line-proof is\n"
+"    output on a line by itself.\n"
 "\n"
 "    There is a limit for each difference type to the\n"
 "    number of proofs of that type that will be out-\n"
@@ -800,6 +802,8 @@ void scan_token ( file & f )
         f.boc_next	= false;
 	++ f.case_number;
 	f.type		= BOC_TOKEN;
+	f.whitespace[0]	= 0;
+	f.newlines	= 0;
 	if ( debug ) debug_output ( f );
 	return;
     }
@@ -907,7 +911,7 @@ void scan_token ( file & f )
 
     if ( c == EOF ) {
     	f.type = EOF_TOKEN;
-	f.column = column;
+	f.column = -- column;
 	if ( debug ) debug_output ( f );
 	return;
     }
