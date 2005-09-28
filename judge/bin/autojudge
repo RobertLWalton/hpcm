@@ -5,7 +5,7 @@
 #
 # File:		autojudge
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Sep 28 07:15:04 EDT 2005
+# Date:		Wed Wed Sep 28 14:43:32 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/09/28 16:17:01 $
+#   $Date: 2005/09/28 18:40:34 $
 #   $RCSfile: autojudge,v $
-#   $Revision: 1.93 $
+#   $Revision: 1.94 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -716,7 +716,11 @@ proc execute_makes { data name } {
 	    if { $skip } continue
 	}
 
-	set command [lindex $instruction 1]
+	if { [llength $instruction] == 1 } {
+	    set command "make $target"
+	} else {
+	    set command [lindex $instruction 1]
+	}
 	puts "Making $target by executing $command"
 	exec_in_directory $s_d $command >&@ stdout
     }
@@ -899,6 +903,7 @@ foreach name $input_names {
     }
     if { $scoring_filter_exists } {
 	lappend instructions \
+	    Scoring_Filter \
 	    " $name.ftest $name.fout $name.ftest "
 	if { $jin_exists } {
 	    lappend instructions \
