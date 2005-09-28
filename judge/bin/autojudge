@@ -5,7 +5,7 @@
 #
 # File:		autojudge
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Sep 26 16:16:08 EDT 2005
+# Date:		Wed Sep 28 07:12:19 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/09/26 20:50:18 $
+#   $Date: 2005/09/28 11:09:09 $
 #   $RCSfile: autojudge,v $
-#   $Revision: 1.91 $
+#   $Revision: 1.92 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -594,75 +594,96 @@ if { $manual } {
     set scoring_mode manual
 }
 
-# Make problem_make_files.  First we check to see if we
-# can prove there is nothing to do, as we do not want to
-# lock the solution directory unnecessarily.  First_
-# target is the first file that will be made if any are
-# to be made.
+# Switch that is use by execute_make to indicate that
+# the solution_directory is locked.
 #
-if { [catch {llength $problem_make_files}] } {
-    error "problem_make_files value is not a TCL list:\
-           $problem_make_files"
-}
-set first_target ""
-set sd $solution_directory
-foreach instruction $problem_make_files {
-    if { [catch {llength $instruction}] } {
-	error "problem_make_files instruction\
-	       is not a TCL list: $instruction"
-    }
+set solution_directory_is_locked 0
 
-    set sources [lrange $instruction 2 end]
-    set non_existant_input_found 0
-    foreach source $sources {
-        if { ! [file exists $sd/$source] } {
-	    set non_existant_input_found 1
-	    break
-	}
-    }
-    if { $non_existant_input_found } continue
-
-    set target [lindex $instruction 0]
-    if { ! [file exists $sd/$target] } {
-        set first_target $target
-	break
-    }
-
-    set mtime [file mtime $sd/$target]
-    foreach source $sources {
-	if { [file mtime $sd/$source] > $mtime } {
-	    set first_target $target
-	    break
-	}
-    }
-    if { $first_target != "" } break
-}
-
-# Try repeatedly to lock the solution directory, but if
-# this fails after a short while, just give up and print
-# a comment.
+# Function that makes files according to the data that
+# has the format of a problem_make_files global variable
+# value: see hpcm_judging.rc.  Name describes the data
+# for error message purposes.
 #
-if { $first_target != "" } {
-    set count 0
-    while { "yes" } {
-	if { [dispatch_lock $solution_directory] } break
-	incr count
-	if { $count >= 10 } {
-	    puts "CANNOT LOCK $solution_directory: giving\
-		  up on making $first_target"
-	    set first_target ""
-	    break
-	}
-	sleep 2
-    }
-}
-# Execute problem_make_files instructions if neccssary.
+# The global solution_directory names the problem solu-
+# tion directory.
 #
-if { $first_target != "" } {
+proc execute_make { data name } {
+
+    global solution_directory \
+           solution_directory_is_locked
+
+    if { [catch {llength $data}] } {
+	error "$name is not a TCL list: $data"
+    }
+
+    # If we need to lock the solution directory, we
+    # first check to see if we can prove there is
+    # nothing to do, as we do not want to lock the
+    # solution directory unnecessarily.  First_target is
+    # the first file that will be made if any are to be
+    # made.
+    #
+    if { ! $solution_directory_is_locked } {
+	set first_target ""
+	set sd $solution_directory
+	foreach instruction $data {
+	    if { [catch {llength $instruction}] } {
+		error "$name instruction is not a TCL\
+		       list: $instruction"
+	    }
+
+	    set sources [lrange $instruction 2 end]
+	    set non_existant_input_found 0
+	    foreach source $sources {
+		if { ! [file exists $sd/$source] } {
+		    set non_existant_input_found 1
+		    break
+		}
+	    }
+	    if { $non_existant_input_found } continue
+
+	    set target [lindex $instruction 0]
+	    if { ! [file exists $sd/$target] } {
+		set first_target $target
+		break
+	    }
+
+	    set mtime [file mtime $sd/$target]
+	    foreach source $sources {
+		if { [file mtime $sd/$source] > $mtime } {
+		    set first_target $target
+		    break
+		}
+	    }
+	    if { $first_target != "" } break
+	}
+	if { $first_target == "" } return
+
+	# Try repeatedly to lock the solution directory,
+	# but if this fails after a while, just give up
+	# and call error.
+	#
+	set count 0
+	while { "yes" } {
+	    if { [dispatch_lock $solution_directory] } \
+	    	break
+	    incr count
+	    if { $count >= 60 } {
+		error "CANNOT LOCK $solution_directory:\
+		       giving up on making\
+		       $first_target"
+	    }
+	    sleep 2
+	}
+	set solution_directory_is_locked 1
+    }
+
+    # Execute each instruction if neccssary.
+    #
     foreach instruction $problem_make_files {
 	if { [catch {llength $instruction}] } {
-	    error "problem_make_files instruction is\
-	           not a TCL list: $instruction"
+	    error "$name instruction is not a TCL list:\
+	           $instruction"
 	}
 
 	set sources [lrange $instruction 2 end]
@@ -693,7 +714,6 @@ if { $first_target != "" } {
 	exec_in_directory $solution_directory \
 			  $command >&@ stdout
     }
-    dispatch_unlock $solution_directory
 }
 
 # List of all files extracted by extractmail.
