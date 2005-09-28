@@ -5,7 +5,7 @@
 #
 # File:		autojudge
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Sep 28 07:12:19 EDT 2005
+# Date:		Wed Sep 28 07:15:04 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,14 +14,21 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/09/28 11:09:09 $
+#   $Date: 2005/09/28 16:17:01 $
 #   $RCSfile: autojudge,v $
-#   $Revision: 1.92 $
+#   $Revision: 1.93 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
 
 # Use tcl rather than tclsh so that `signal' is defined.
+
+# In this program:
+#
+#	PROBLEM is the problem name.
+#	EXTENSION is the extension from received file
+#	    Subject: submit $PROBLEM$EXTENSION ...
+#	s_d is the problem solution directory.
 
 # Include common code and parameters:
 #
@@ -84,6 +91,15 @@ autojudge \[-manual\] \[problem\[.extension\]\]
 	section of hpcm_judging.rc for detailed specifi-
 	cation of the values of these global variables.
 
+      . Submitted files which are extracted from the
+        submitted message in the $received_file file
+        by the extractmail program.  These files must
+	all be listed in the problem_required_files or
+	problem_optional_files global variables.
+	The default is for PROBLEM.EXTENSION to be
+	the only required file if EXTENSION is not
+	empty.
+
       . Files listed in the problem_make_files global
         variable, which gives instructions on when and
 	how to make files in the problem's solution
@@ -94,15 +110,6 @@ autojudge \[-manual\] \[problem\[.extension\]\]
 	PROBLEM.fout in the problem's solution direc-
 	tory if Scoring_Filter and PROBLEM.out exist
 	in that directory.
-
-      . Submitted files which are extracted from the
-        submitted message in the $received_file file
-        by the extractmail program.  These files must
-	all be listed in the problem_required_files or
-	problem_optional_files global variables.
-	The default is for PROBLEM.EXTENSION to be
-	the only required file if EXTENSION is not
-	empty.
 
       * Files listed in the problem_link_files and
         problem_optional_link_files global variables.
@@ -234,6 +241,13 @@ autojudge \[-manual\] \[problem\[.extension\]\]
     could specify which would make the submission cor-
     rect.  Otherwise the errors are system errors.
 
+    Next this program calls `extractmail' to extract the
+    submitted files from the program.  Errors in this
+    extraction are classified as system errors if ex-
+    tractmail outputs the phrase `SYSTEM ERROR' and
+    submitter errors otherwise.
+
+Moved to after extract.
     After linking any `PROBLEM.rc' and `$files_file'\
     		files
     from the solution directory, this program makes any
@@ -249,12 +263,6 @@ autojudge \[-manual\] \[problem\[.extension\]\]
     be had by having different `$files_file.EXTENSION'\
     	files
     for different extensions.
-
-    Next this program calls `extractmail' to extract the
-    submitted files from the program.  Errors in this
-    extraction are classified as system errors if ex-
-    tractmail outputs the phrase `SYSTEM ERROR' and
-    submitter errors otherwise.
  
     If the extraction has no errors, this program sym-
     bolically links solution directory files into the
@@ -435,31 +443,31 @@ if { $my_argc == 1 } {
     }
     set argument [lindex $message_subject 1]
 }
-set problem [file rootname $argument]
-set extension [file extension $argument]
+set PROBLEM [file rootname $argument]
+set EXTENSION [file extension $argument]
 
 # Check legality of problem name and optional extension.
 #
-if {    $problem == "" \
-     || [regexp {\.} $problem] \
-     || [regexp {/}  $problem] \
-     || [regexp {^-} $problem]  } {
-    subject_error "illegal problem name `$problem' in"
+if {    $PROBLEM == "" \
+     || [regexp {\.} $PROBLEM] \
+     || [regexp {/}  $PROBLEM] \
+     || [regexp {^-} $PROBLEM]  } {
+    subject_error "illegal problem name `$PROBLEM' in"
 }
-if { $extension != "" \
-     && ! [lcontain $allowed_extensions $extension] } {
-    subject_error "unallowed extension `$extension'\
+if { $EXTENSION != "" \
+     && ! [lcontain $allowed_extensions $EXTENSION] } {
+    subject_error "unallowed extension `$EXTENSION'\
       (should be one of $allowed_extensions) in"
-} elseif { [regexp {/} $extension] } {
+} elseif { [regexp {/} $EXTENSION] } {
     # should never happen
-    error "/ in extension `$extension'"
+    error "/ in extension `$EXTENSION'"
 }
 
 # Check for existence of problem solution directory.
 #
-set solution_directory $solutions_directory/$problem
-if { ! [file isdirectory $solution_directory] } {
-    subject_error "unallowed problem name `$problem' in"
+set s_d $solutions_directory/$PROBLEM
+if { ! [file isdirectory $s_d] } {
+    subject_error "unallowed problem name `$PROBLEM' in"
 }
 
 # Global variable that is list of all files linked
@@ -473,15 +481,17 @@ set linked_files ""
 # has the format of a problem_link_files global variable
 # value: see hpcm_judging.rc.  Name describes the data
 # for error message purposes.  Optional is 1 if links
-# are options, 0 if they are required.  Appends files
+# are options, 0 if they are required.  Exists is 1 if
+# linking is suppressed when the target exists (it CAN
+# be a dangling link), and 0 otherwise.  Appends files
 # linked to linked_files above.
 #
-# The global solution_directory names the problem solu-
-# tion directory.
+# The global s_d names the problem solution directory.
 #
-proc execute_links { data name { optional 0 } } {
+proc execute_links \
+	{ data name { optional 0 } { exists 0 } } {
 
-    global solution_directory linked_files
+    global s_d linked_files
 
     if { [catch { llength $data }] } {
 	error "bad $name, not a TCL list: $data"
@@ -502,10 +512,9 @@ proc execute_links { data name { optional 0 } } {
 	    set target [lindex $item 0]
 	}
 	set source ""
-	set sd $solution_directory
 	foreach file $source_list {
-	    if { [file exists $sd/$file] } {
-		set source $sd/$file
+	    if { [file exists $s_d/$file] } {
+		set source $s_d/$file
 		break
 	    }
 	}
@@ -525,14 +534,16 @@ proc execute_links { data name { optional 0 } } {
 	    set type done
 	}
 
-	if { $type == "link" } {
+	if { $type == "link" && ! $exists } {
 	    puts "Deleting $target"
 	    file delete -force $target
 	    set type none
 	}
 
 	if { $type != "none" } {
-	    lappend linked_files $target
+	    if { ! [lcontains $linked_files $target] } {
+		lappend linked_files $target
+	    }
 	} elseif { $source == "" } {
 	    if { ! $optional } {
 	        error "no source files exist for\
@@ -552,65 +563,22 @@ proc execute_links { data name { optional 0 } } {
     }
 }
 
-# Set initial values for global variables of interest
-# to us that might be changed by PROBLEM.rc.
+# Switch that is use by execute_makes to indicate that
+# the s_d is locked.  If set at the end of the sequence
+# of execute_makes calls, the directory must be unlocked.
 #
-set PROBLEM $problem
-set EXTENSION $extension
-#
-set problem_required_files $PROBLEM$EXTENSION
-set problem_optional_files ""
-set problem_make_files \
-	" { $PROBLEM.fout
-	    {Scoring_Filter < $PROBLEM.out 
-			    > $PROBLEM.fout }
-	    Scoring_Filter $PROBLEM.out }
-	  { $PROBLEM.ftest
-	    {Scoring_Filter < $PROBLEM.test 
-			    > $PROBLEM.ftest }
-	    Scoring_Filter $PROBLEM.test }
-	"
-set problem_link_files \
-        " { Makefile Makefile$EXTENSION Makefile }
-	  $PROBLEM.in
-	  { $PROBLEM.test $PROBLEM.out $PROBLEM.test }
-        "
-set problem_optional_link_files \
-        " Scoring_Filter
-	  { $PROBLEM.ftest $PROBLEM.fout $PROBLEM.ftest }
-	"
-
-# Link and source any PROBLEM.rc file.
-#
-execute_links $problem.rc \
-              "initial problem .rc file linking" 1
-if { [file exists $problem.rc] } {
-    source_file $problem.rc
-}
-
-# Force scoring mode if there was a -manual option.
-#
-if { $manual } {
-    set scoring_mode manual
-}
-
-# Switch that is use by execute_make to indicate that
-# the solution_directory is locked.
-#
-set solution_directory_is_locked 0
+set s_d_is_locked 0
 
 # Function that makes files according to the data that
 # has the format of a problem_make_files global variable
 # value: see hpcm_judging.rc.  Name describes the data
 # for error message purposes.
 #
-# The global solution_directory names the problem solu-
-# tion directory.
+# The global s_d names the problem solution directory.
 #
-proc execute_make { data name } {
+proc execute_makes { data name } {
 
-    global solution_directory \
-           solution_directory_is_locked
+    global s_d s_d_is_locked
 
     if { [catch {llength $data}] } {
 	error "$name is not a TCL list: $data"
@@ -623,73 +591,107 @@ proc execute_make { data name } {
     # the first file that will be made if any are to be
     # made.
     #
-    if { ! $solution_directory_is_locked } {
+    if { ! $s_d_is_locked } {
+
+	# Loop through all instructions.
+	#
 	set first_target ""
-	set sd $solution_directory
 	foreach instruction $data {
 	    if { [catch {llength $instruction}] } {
 		error "$name instruction is not a TCL\
 		       list: $instruction"
 	    }
 
+	    # If a source file in the instruction does
+	    # not exist, ignore instruction.
+	    #
 	    set sources [lrange $instruction 2 end]
 	    set non_existant_input_found 0
 	    foreach source $sources {
-		if { ! [file exists $sd/$source] } {
+		if { ! [file exists $s_d/$source] } {
 		    set non_existant_input_found 1
 		    break
 		}
 	    }
 	    if { $non_existant_input_found } continue
 
+	    # If target file of the instruction does
+	    # not exist, it must be made: end loop.
+	    #
 	    set target [lindex $instruction 0]
-	    if { ! [file exists $sd/$target] } {
+	    if { ! [file exists $s_d/$target] } {
 		set first_target $target
 		break
 	    }
 
-	    set mtime [file mtime $sd/$target]
+	    # If any source file is more recent than the
+	    # target, the target must be made: end loop.
+	    #
+	    set mtime [file mtime $s_d/$target]
 	    foreach source $sources {
-		if { [file mtime $sd/$source] > $mtime } {
+		if { [file mtime $s_d/$source] > $mtime } {
 		    set first_target $target
 		    break
 		}
 	    }
 	    if { $first_target != "" } break
 	}
+
+	# If there is nothing to do, exit procedure.
+	#
 	if { $first_target == "" } return
 
 	# Try repeatedly to lock the solution directory,
 	# but if this fails after a while, just give up
 	# and call error.
 	#
-	set count 0
+	set seconds 0
+	set limit 120
+	set sleep 2
+	set step 5
+	# puts's are at step * sleep second intervals
+	#
 	while { "yes" } {
-	    if { [dispatch_lock $solution_directory] } \
+	    if { [dispatch_lock $s_d] } {
 	    	break
-	    incr count
-	    if { $count >= 60 } {
-		error "CANNOT LOCK $solution_directory:\
+	    } elseif { $seconds >= $limit } {
+		error "CANNOT LOCK $s_d:\
 		       giving up on making\
 		       $first_target"
+	    } elseif { $seconds == 0 } {
+	    	# do nothing
+	    } elseif { $seconds == $step * $sleep } {
+	        puts "Waiting for $s_d lock"
+	    } elseif { $seconds \
+		       % ( $step * $sleep ) == 0 } {
+	        puts "....will wait\
+		      [expr $limit - $seconds]\
+		      more seconds"
 	    }
-	    sleep 2
+	    sleep $sleep
+	    incr seconds $sleep
 	}
-	set solution_directory_is_locked 1
+	set s_d_is_locked 1
     }
 
     # Execute each instruction if neccssary.
     #
-    foreach instruction $problem_make_files {
+    foreach instruction $data {
+
+    	# Note: we may not have done this check above.
+	#
 	if { [catch {llength $instruction}] } {
 	    error "$name instruction is not a TCL list:\
 	           $instruction"
 	}
 
+	# If a source file in the instruction does
+	# not exist, ignore instruction.
+	#
 	set sources [lrange $instruction 2 end]
 	set non_existant_input_found 0
 	foreach source $sources {
-	    if { ! [file exists $sd/$source] } {
+	    if { ! [file exists $s_d/$source] } {
 		set non_existant_input_found 1
 		break
 	    }
@@ -697,11 +699,15 @@ proc execute_make { data name } {
 	if { $non_existant_input_found } continue
 
 	set target [lindex $instruction 0]
-	if { [file exists $sd/$target] } {
-	    set mtime [file mtime $sd/$target]
+	if { [file exists $s_d/$target] } {
+
+	    # If target file exists and no source file
+	    # is more recent, skip instruction.
+	    #
+	    set mtime [file mtime $s_d/$target]
 	    set skip 1
 	    foreach source $sources {
-		if { [file mtime $sd/$source] > $mtime \
+		if { [file mtime $s_d/$source] > $mtime \
 		   } {
 		    set skip 0
 		    break
@@ -709,20 +715,35 @@ proc execute_make { data name } {
 	    }
 	    if { $skip } continue
 	}
+
 	set command [lindex $instruction 1]
 	puts "Making $target by executing $command"
-	exec_in_directory $solution_directory \
-			  $command >&@ stdout
+	exec_in_directory $s_d $command >&@ stdout
     }
+}
+
+# Source any PROBLEM.rc file.
+#
+execute_links $PROBLEM.rc \
+              "initial problem .rc file linking" 1
+if { [file exists $PROBLEM.rc] } {
+    source_file $PROBLEM.rc
+}
+
+# Force scoring mode if there was a -manual option.
+#
+if { $manual } {
+    set scoring_mode manual
 }
 
 # List of all files extracted by extractmail.
 #
 set extracted_files ""
 
-# Get submitted files.  If error, if SYSTEM ERROR call
-# `error' function and otherwise reply to submitter.
-# Compute list of extracted files in `extracted_files'.
+# Extract submitted files.  If error, if SYSTEM ERROR
+# call `error' function and otherwise reply to submit-
+# ter.  Compute list of extracted files in `extracted_
+# files'.
 #
 if { [catch { exec extractmail } extractout] } {
     if { [regexp {SYSTEM ERROR} $extractout] } {
@@ -749,8 +770,8 @@ if { [catch { exec extractmail } extractout] } {
 	      RECEIVED-BODY
 
 	puts $extractout
-	puts "Reply indicating error emailed to\
-	      submitter."
+	puts "Reply indicating error has been emailed\
+	      to submitter."
 
 	exit 0
     }
@@ -763,13 +784,136 @@ if { [catch { exec extractmail } extractout] } {
     }
 }
 
-# Process problem_link_files and problem_optional_link_
-# files values.
+# Execute problem_make_files instructions if any.
 #
-execute_links $problem_link_files \
-              "problem_link_files value"
-execute_links $problem_optional_link_files \
-              "problem_optional_link_files value" 1
+if { [info exists problem_make_files] } {
+    execute_makes $problem_make_files \
+    		  "problem_make_files value"
+}
+
+# Make list of names F such that F.in or F.jin exist.
+# Do not list duplicate names.
+# Do not list $PROBLEM.in if any other names found,
+# as it should be just a link to another .in name.
+#
+set input_names ""
+set problem_in_found 0
+foreach name [glob -nocomplain "$s_d/*"] {
+    set tail [file tail $name]
+    if { $tail == "$PROBLEM.in" } {
+        set problem_in_found 1
+	continue
+    }
+
+    set ext [file extension $tail]
+    set root [file rootname $tail]
+    if { ! [lcontain  {.in .jin} $ext] } continue
+    if { [lcontain $input_names $root] } continue
+    lappend input_names $root
+}
+if {    $problem_in_found \
+     && [llength $input_names] == 0 } {
+    lappend input_names $PROBLEM
+}
+
+# Make .in files from .jin files.
+#
+# If Scoring_Filter exists, make .fout files from .out
+# files, .ftest files from .test files, .jfout files
+# from .fout files, .jftest files from .ftest files.
+#
+# If Scoring Filter does not exist, make .jout files
+# from .out files and .jtest files from .test files>
+#
+set scoring_filter_exists \
+    [file exists $s_d/Scoring_Filter]
+set instructions ""
+foreach name $input_names {
+    lappend instructions \
+            "$name.in {jfilter $name.jin $name.in}\
+	              $name.jin"
+    if { $scoring_filter_exists } {
+	lappend instructions \
+		"$name.fout\
+		 {Scoring_Filter <$name.out\
+		                 >$name.fout}\
+	         Scoring_Filter $name.out" \
+		"$name.ftest\
+		 {Scoring_Filter <$name.test\
+		                 >$name.ftest}\
+	         Scoring_Filter $name.test" \
+		"$name.jfout\
+		 {jfilter $name.jin $name.fout\
+		          $name.jfout}\
+		 $name.jin $name.fout" \
+		"$name.jftest\
+		 {jfilter $name.jin $name.ftest\
+		          $name.jftest}\
+		 $name.jin $name.ftest"
+    } else {
+	lappend instructions \
+		"$name.jout\
+		 {jfilter $name.jin $name.out\
+		          $name.jout}\
+		 $name.jin $name.out" \
+		"$name.jtest\
+		 {jfilter $name.jin $name.test\
+		          $name.jtest}\
+		 $name.jin $name.test"
+    }
+}
+execute_makes $instructions \
+	      "autojudge generated instructions"
+
+if { $s_d_is_locked } { dispatch_unlock $s_d }
+
+# Execute problem_link_files instructions if any.
+# Otherwise execute default.
+#
+if { [info exists problem_link_files] } {
+    execute_links $problem_link_files \
+    		  "problem_link_files value"
+}
+# Execute problem_optional_link_files instructions if
+# any.
+#
+if { [info exists problem_optional_link_files] } {
+    execute_links $problem_optional_link_files \
+    		  "problem_optional_link_files value" 1
+}
+
+# Link everything that does not exist that we need.
+# These links are not optional, but should not be done
+# if target exists.
+#
+set instructions ""
+lappend instructions \
+	" Makefile Makefile$EXTENSION Makefile "
+foreach name $input_names {
+    set jin_exists [file exists $s_d/$name.jin]
+    lappend instructions \
+            $name.in \
+	    " $name.test $name.out $name.test "
+    if { $jin_exists } {
+	lappend instructions $name.jin
+    }
+    if { $scoring_filter_exists } {
+	lappend instructions \
+	    " $name.ftest $name.fout $name.ftest "
+	if { $jin_exists } {
+	    lappend instructions \
+		" $name.jftest $name.jfout\
+		                $name.jftest "
+	}
+    } elseif { $jin_exists } {
+	lappend instructions \
+	    " $name.jtest $name.jout $name.jtest "
+    }
+}
+execute_links $instructions \
+              "autojudge generated required link\
+	       instructions" \
+	      0 1
 
 # Function to send reply to user containing new auto
 # score.
@@ -779,13 +923,13 @@ proc auto_score_reply { score } {
     global needs_reply_flag_file \
 	   auto_score manual_score proposed_score \
 	   submitted_problem submitted_extension \
-	   problem extension
+	   PROBLEM EXTENSION
 
     set auto_score $score
     set manual_score None
     set proposed_score None
-    set submitted_problem $problem
-    set submitted_extension $extension
+    set submitted_problem $PROBLEM
+    set submitted_extension $EXTENSION
     set return_commands [compose_response]
 
     if { [lcontain $return_commands EDIT] } {
@@ -885,26 +1029,26 @@ proc should_be_made { args } {
 # as the score.
 #
 if { [should_be_made \
-         [list $problem $problem.cerr] \
+         [list $PROBLEM $PROBLEM.cerr] \
 	 [concat $linked_files \
 	 	 $extracted_files]] } {
 
-    puts "Making $problem"
-    catch { make_file $problem $problem.cerr }
+    puts "Making $PROBLEM"
+    catch { make_file $PROBLEM $PROBLEM.cerr }
 
     # Print any non-empty .cerr file.
     #
-    if { [file exists $problem.cerr] \
-	 && [file size $problem.cerr] > 0 } {
+    if { [file exists $PROBLEM.cerr] \
+	 && [file size $PROBLEM.cerr] > 0 } {
 	puts ""
-	if { [file executable $problem] } {
+	if { [file executable $PROBLEM] } {
 	    puts "========== COMPILER WARNINGS\
-	          ($problem.cerr) =========="
+	          ($PROBLEM.cerr) =========="
 	} else {
 	    puts "========== COMPILER ERRORS\
-	          ($problem.cerr) =========="
+	          ($PROBLEM.cerr) =========="
 	}
-	put_file $problem.cerr stdout 10
+	put_file $PROBLEM.cerr stdout 10
 	puts "============================="
 	puts ""
     }
@@ -912,9 +1056,9 @@ if { [should_be_made \
     # If no executable binary produced, record and
     # send `Syntax Error' reply.
     #
-    if { ! [file executable $problem] } {
+    if { ! [file executable $PROBLEM] } {
 
-	puts "No executable `$problem' file produced"
+	puts "No executable `$PROBLEM' file produced"
 
 	if { [file exists $auto_score_file] } {
 	    file delete -force $auto_score_file
@@ -929,14 +1073,14 @@ if { [should_be_made \
 # Make .out file if necessary.
 #
 if { [should_be_made \
-         [list $problem.out $problem.err] \
-	 [concat [list $problem] \
+         [list $PROBLEM.out $PROBLEM.err] \
+	 [concat [list $PROBLEM] \
 	 	 $linked_files \
 	 	 $extracted_files]] \
-     && [file executable $problem] } {
+     && [file executable $PROBLEM] } {
 
-    puts "Making $problem.out"
-    catch { make_file $problem.out $problem.err }
+    puts "Making $PROBLEM.out"
+    catch { make_file $PROBLEM.out $PROBLEM.err }
 
     # Remove any a+x on the current directory as a
     # `best effort' security measure in the face of
@@ -946,52 +1090,52 @@ if { [should_be_made \
 
     # Print any non-empty .err file.
     #
-    if { [file exists $problem.err] \
-	 && [file size $problem.err] > 0 } {
+    if { [file exists $PROBLEM.err] \
+	 && [file size $PROBLEM.err] > 0 } {
 	puts ""
-	puts "========== ERRORS ($problem.err)\
+	puts "========== ERRORS ($PROBLEM.err)\
 	      =========="
-	put_file $problem.err stdout 10
+	put_file $PROBLEM.err stdout 10
 	puts "============================="
 	puts ""
-    } elseif { ! [file exists $problem.out] } {
-	puts "No `$problem.out' file produced"
+    } elseif { ! [file exists $PROBLEM.out] } {
+	puts "No `$PROBLEM.out' file produced"
     }
 }
 
 # Make .fout file if appropriate.
 #
 if { [should_be_made \
-         [list $problem.fout] \
-	 [concat [list $problem.out \
+         [list $PROBLEM.fout] \
+	 [concat [list $PROBLEM.out \
 	               $scoring_filter_file] \
 	 	 $linked_files \
 	 	 $extracted_files]] \
-     && [file size $problem.out] > 0 } {
+     && [file size $PROBLEM.out] > 0 } {
 
-    puts "Making $problem.fout"
-    exec $scoring_filter_file < $problem.out \
-    			      > $problem.fout
+    puts "Making $PROBLEM.fout"
+    exec $scoring_filter_file < $PROBLEM.out \
+    			      > $PROBLEM.fout
 }
 
 # Make $auto_score_file if necessary.
 #
 if { [file exists $scoring_filter_file] } {
 
-    set file_list [list $problem.ftest]
+    set file_list [list $PROBLEM.ftest]
 
-    if { [file exists $problem.fout] } {
-	lappend file_list $problem.fout
+    if { [file exists $PROBLEM.fout] } {
+	lappend file_list $PROBLEM.fout
     }
 } else {
-    set file_list [list $problem.test]
+    set file_list [list $PROBLEM.test]
 
-    if { [file exists $problem.out] } {
-	lappend file_list $problem.out
+    if { [file exists $PROBLEM.out] } {
+	lappend file_list $PROBLEM.out
     }
 }
-if { [file exists $problem.err] } {
-    lappend file_list $problem.err
+if { [file exists $PROBLEM.err] } {
+    lappend file_list $PROBLEM.err
 }
 
 # If an attempt was made to make .out, then .err must
@@ -1002,7 +1146,7 @@ if { [llength $file_list] >= 2 \
             [list $auto_score_file] \
 	    $file_list] } {
 
-    exec autoscore $problem 2>@ stderr
+    exec autoscore $PROBLEM 2>@ stderr
 }
 
 # Make $reply_file if necessary.
