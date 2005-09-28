@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/09/28 18:26:06 $
+#   $Date: 2005/09/28 18:52:46 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.1 $
+#   $Revision: 1.2 $
 
 # The location of the hpcm directory.
 #
@@ -77,7 +77,7 @@ HPCM=${HOME}/hpcm
 INDICES=    ${HPCM}/problem_library/test/test_index, \
 		=problems/
 
-all:	setup test
+all:	setup test diff
 
 setup:
 	makejudgingdir -solutions -mail ${INDICES}
@@ -87,6 +87,16 @@ test:
 	for x in test_mail/*/Received_Mail; \
 	    do \
 	    receivemail mail <$$x | dispatchmail mail; \
+	    done
+
+diff:
+	for x in test_mail/*/Reply_Mail; \
+	    do \
+	    y=`dirname $$x`; \
+	    z=`basename $$y`; \
+	    echo mail/$$z/Reply_Mail; \
+	    diff test_mail/$$z/Reply_Mail \
+	         mail/$$z/Reply_Mail; \
 	    done
 
 dangerous_test_clean:
