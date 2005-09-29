@@ -5,7 +5,7 @@
 #
 # File:		jfilter
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Sep 23 08:22:29 EDT 2005
+# Date:		Wed Sep 28 21:03:53 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/09/23 12:23:29 $
+#   $Date: 2005/09/29 08:18:05 $
 #   $RCSfile: jfilter,v $
-#   $Revision: 1.14 $
+#   $Revision: 1.15 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -42,8 +42,7 @@ jfilter \[options\] judging_input_file \\
 
     The 1-file-name command reads the judging_input_file
     (e.g., a .jin file) and prints scoring instructions
-    that can be passed as arguments to the scorediff
-    program.
+    that can be passed to the autoscore program.
 
     The 2-file-name command reads the judging_input_file
     and writes filtered version of that to the filtered_
@@ -56,8 +55,8 @@ jfilter \[options\] judging_input_file \\
     .ftest file), and writes a filtered version of the
     output_file to the filtered_output_file.  The fil-
     tered_output_file is the same as the output_file
-    except each line is normally prefaced with one of
-    the following characters:
+    except each line is prefaced with one of the follow-
+    ing characters:
 
     	+ Begin a test group and a test case.
 	| Begin a test group.
@@ -86,7 +85,9 @@ jfilter \[options\] judging_input_file \\
 	    the output that relates to testing the
 	    designated test case.
 
-	    For test cases outside any test group, the
+	    If the *ONE-GROUP* parameter value is `no'
+	    (see below for parameter definitions), then
+	    for test cases outside any test group, the
 	    portion output consists just of the lines in
 	    the designated test case, from the test case
 	    beginning line through the last line that is
@@ -94,12 +95,16 @@ jfilter \[options\] judging_input_file \\
 	    case or the end of file.  Thus if there are
 	    no test groups, only the designated test
 	    case is output.
-
+
 	    For test cases in test groups, the portion
 	    output consists of the lines in the test
 	    group containing the test case, up to and
-	    including the lines in the test case.
-
+	    including the lines in the test case.  If
+	    the *ONE-GROUP* parmeter value is `yes',
+	    then for test cases outside any group the
+	    file is copied from its beginning through
+	    the lines in the test case.
+
 	    If the output is the filtered_output_file,
 	    the output lines are exact copies of output_
 	    file lines, without any prefix characters
@@ -126,12 +131,12 @@ jfilter \[options\] judging_input_file \\
 
         -g <group-number>:<case-number>
 	-g <case-number>
-
+
 	    Same as -c, BUT if the test case is in a
 	    test group (not in group 0), include all the
 	    lines of this entire test group, instead of
 	    stopping with the designated case.
-
+
 	-case-head <output-case-head-regexp>
 	-group-head <output-group-head-regexp>
 	-separator <output-separator-regexp>
@@ -145,11 +150,9 @@ jfilter \[options\] judging_input_file \\
 	-end <input-end-regexp>
 	-case-mark <input-case-mark-regexp>
 	-group-mark <input-group-mark-regexp>
-	-separator-mark <input-separator-mark-regexp>
 	-input-case-mark <input-case-mark-regexp>
 	-input-group-mark <input-group-mark-regexp>
-	-input-separator-mark \\
-	       <input-separator-mark-regexp>
+	-one-group <yes-or-no>
 	-scoring <scoring-instructions>
 
 	    Set the default value of the designated
@@ -164,11 +167,11 @@ jfilter \[options\] judging_input_file \\
     *CASE-HEAD* <output-case-head-regexp>
     *GROUP-HEAD* <output-group-head-regexp>
     *SEPARATOR* <output-separator-regexp>
-
+
     *OUTPUT-CASE-HEAD* <output-case-head-regexp>
     *OUTPUT-GROUP-HEAD* <output-group-head-regexp>
     *OUTPUT-SEPARATOR* <output-separator-regexp>
-
+
     *INPUT-CASE-HEAD* <input-case-head-regexp>
     *INPUT-GROUP-HEAD* <input-group-head-regexp>
     *INPUT-SEPARATOR* <input-separator-regexp>
@@ -178,12 +181,11 @@ jfilter \[options\] judging_input_file \\
 
     *CASE-MARK* <input-case-mark-regexp>
     *GROUP-MARK* <input-group-mark-regexp>
-    *SEPARATOR-MARK* <input-separator-mark-regexp>
-
 
     *INPUT-CASE-MARK* <input-case-mark-regexp>
     *INPUT-GROUP-MARK* <input-group-mark-regexp>
-    *INPUT-SEPARATOR-MARK* <input-separator-mark-regexp>
+
+    *ONE-GROUP* <yes-or-no>
 
     *SCORING* <scoring-instruction> ...
 
@@ -193,8 +195,12 @@ jfilter \[options\] judging_input_file \\
     can be omitted: *CASE-HEAD* and *OUTPUT-CASE-HEAD*
     mean the same thing.  `INPUT-' can be omitted for
     the `MARKS': *CASE-MARK* and *INPUT-CASE-MARK* mean
-    the same thing.  It is not that common to have
-    *INPUT-...* parameters in a judging_input_file.
+    the same thing.  `INPUT-' can be omitted for `END':
+    *INPUT-END* and *END* mean the same thing.  It is
+    not that common to have *INPUT-...* parameters other
+    than *END* in a judging_input_file, as typically
+    the file just uses the default *INPUT-...* parameter
+    values (see below).
 
     The regexp parameters are TCL regular expressions
     that are matched to lines of files.  Input regexps
@@ -209,9 +215,6 @@ jfilter \[options\] judging_input_file \\
     must be deleted from the filtered version of the
     file: this is only used for the judging_input_file,
     to mark the beginning of test groups and test cases.
-    And a line matched by a `separator mark' is like a
-    separator line, but must be deleted in the filtered
-    version of the file.
 
     If the last line of the judging_input_file matches
     the input-end-regexp, it is ALWAYS output when any
@@ -261,7 +264,7 @@ jfilter \[options\] judging_input_file \\
     it should be postpended by `()', which does nothing
     but mark the end of the regexp.  E.g.,
 
-        *CASE-HEAD* ^foo   ()
+        *CASE-HEAD* ^foo ()
 
 
     The defaults for all parameters are
@@ -277,6 +280,8 @@ jfilter \[options\] judging_input_file \\
 	*CASE-MARK* ^\\*CASE*\\$
 	*GROUP-MARK* ^\\*GROUP\\*$
 	*SEPARATOR-MARK*
+
+	*ONE-GROUP* no
 
 	*SCORING* space column
 
@@ -312,8 +317,8 @@ set input_separator ""
 set input_end ""
 set input_case_mark "\\*CASE\\*"
 set input_group_mark "\\*GROUP\\*"
-set input_separator_mark ""
 set scoring "space column"
+set one_group no
 set c ""
 set g ""
 while { [regexp {^-} [lindex $argv 0]] } {
@@ -346,11 +351,9 @@ while { [regexp {^-} [lindex $argv 0]] } {
     -group-mark		-
     -input-group-mark	{ set input_group_mark \
     			      [lindex $argv 1] }
-    -separator-mark	-
-    -input-separator-mark \
-    			{ set input_separator_mark \
-    			      [lindex $argv 1] }
     -scoring		{ set scoring \
+    			      [lindex $argv 1] }
+    -one-group		{ set one_group \
     			      [lindex $argv 1] }
     -c			{ set c \
     			      [lindex $argv 1] }
@@ -401,7 +404,7 @@ while { ! [eof $jin] } {
     set separator ""
     regexp {^[\ \t]*([^\ \t]+)([\ \t].*|)$} $jin_line \
            forget designator rest
-    switch $designator {
+    switch -- $designator {
     *CASE-HEAD*	-
     *OUTPUT-CASE-HEAD*
         { set variable output_case_head }
@@ -426,12 +429,11 @@ while { ! [eof $jin] } {
     *GROUP-MARK* -
     *INPUT-GROUP-MARK*
         { set variable input_group_mark }
-    *SEPARATOR-MARK* -
-    *INPUT-SEPARATOR-MARK*
-        { set variable input_separator_mark }
     *SCORING*
         { set variable scoring
 	  set separator " " }
+    *ONE-GROUP*
+        { set variable one_group }
     default { break }
     }
     set rest [string trim $rest]
@@ -465,7 +467,7 @@ if { $cg != "" } {
     set selected_group 0
     if {    ! [regexp {^([0-9]+):([0-9]+)$} $cg forget \
                       selected_group selected_case] \
-         && ! [regexp {^([0-9]+)$} $c forget \
+         && ! [regexp {^([0-9]+)$} $cg forget \
 	              selected_case] } {
 	puts stderr "ERROR: bad -c or -g option: $cg"
 	exit 1
@@ -474,6 +476,12 @@ if { $cg != "" } {
     set copy 1
     set selective_copy 0
 }
+if { $one_group != "yes" && $one_group != "no" } {
+    puts stderr \
+         "ERROR: bad *ONE-GROUP* value: $one_group"
+    exit 1
+}
+if { $one_group } { set copy 1 }
 
 # Process 2 argument case.
 #
@@ -494,8 +502,7 @@ if { $number_args == 2 } {
     set group_count 0
     set case_count 0
     set last_line_was_separator \
-        [expr {    $input_separator != "" \
-	        || $input_separator_mark != "" }]
+        [expr { $input_separator != "" }]
     set last_line_was_output 1
     set last_line ""
 
@@ -537,12 +544,12 @@ if { $number_args == 2 } {
 	    incr case_count
 	    if {    $selective_copy \
 		 && $selected_group == 0 \
-		 && $group_count == 0 } {
-		set copy \
-		    [expr $case_count == $selected_case]
+		 && $group_count == 0 \
+		 && $case_count == $selected_case } {
+		    set copy 1
 	    } elseif {    $c != "" \
 	               &&   $case_count \
-		          > $selected_case ) } {
+		          > $selected_case } {
 	        set copy 0
 	    }
 	}
@@ -553,11 +560,9 @@ if { $number_args == 2 } {
 		               $input_separator \
 		               $jin_line] }]
 
-	if { ! $is_mark } {
-	    if { $copy } {
-	        puts $in $jin_line
-	    }
-	    set last_line_was_output $copy
+	if { ! $is_mark && $copy } {
+	    puts $in $jin_line
+	    set last_line_was_output 1
 	} else {
 	    set last_line_was_output 0
 	}
@@ -621,12 +626,12 @@ if { $number_args == 3 } {
 	    set case_head 1
 	    if {    $selective_copy \
 		 && $selected_group == 0 \
-		 && $group_count == 0 } {
-		set copy \
-		    [expr $case_count == $selected_case]
+		 && $group_count == 0 \
+		 && $case_count == $selected_case } {
+		    set copy 1
 	    } elseif {    $c != "" \
 	               &&   $case_count \
-		          > $selected_case ) } {
+		          > $selected_case } {
 	        set copy 0
 	    }
 	}
