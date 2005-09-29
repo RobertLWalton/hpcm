@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Sep 29 05:04:46 EDT 2005
+# Date:		Thu Sep 29 05:13:09 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/09/29 08:59:30 $
+#   $Date: 2005/09/29 09:12:35 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.5 $
+#   $Revision: 1.6 $
 
 # The location of the hpcm directory.
 #
@@ -88,9 +88,6 @@ test:
 	@echo RECEIVING
 	@for x in test_mail/*/Received_Mail; \
 	    do \
-	    y=`dirname $$x`; \
-	    z=`basename $$y`; \
-	    echo $$z; \
 	    receivemail mail <$$x | dispatchmail mail; \
 	    done
 
