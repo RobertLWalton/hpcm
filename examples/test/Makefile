@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Sep 28 14:59:11 EDT 2005
+# Date:		Thu Sep 29 05:00:39 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/09/28 18:53:51 $
+#   $Date: 2005/09/29 08:55:27 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.3 $
+#   $Revision: 1.4 $
 
 # The location of the hpcm directory.
 #
@@ -90,13 +90,18 @@ test:
 	    done
 
 diff:
-	for x in test_mail/*/Reply_Mail; \
+	for x in test_mail/*/*; \
 	    do \
+	    f=`basename $$x`; \
+	    if test "$$f" == "CVS"; then continue; fi; \
+	    if test "$$f" == "Received_Mail"; \
+	       then continue; fi; \
 	    y=`dirname $$x`; \
 	    z=`basename $$y`; \
-	    echo mail/$$z/Reply_Mail; \
-	    diff test_mail/$$z/Reply_Mail \
-	         mail/$$z/Reply_Mail; \
+	    if test "$$z" == "CVS"; then continue; fi; \
+	    echo $$z/$$f; \
+	    diff test_mail/$$z/$$f \
+	         mail/$$z/$$f; \
 	    done
 
 dangerous_test_clean:
