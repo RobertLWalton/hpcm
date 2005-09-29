@@ -5,7 +5,7 @@
 #
 # File:		autojudge
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Wed Sep 28 14:43:32 EDT 2005
+# Date:		Thu Sep 29 08:03:37 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/09/28 18:40:34 $
+#   $Date: 2005/09/29 13:08:41 $
 #   $RCSfile: autojudge,v $
-#   $Revision: 1.94 $
+#   $Revision: 1.95 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -541,7 +541,7 @@ proc execute_links \
 	}
 
 	if { $type != "none" } {
-	    if { ! [lcontains $linked_files $target] } {
+	    if { ! [lcontain $linked_files $target] } {
 		lappend linked_files $target
 	    }
 	} elseif { $source == "" } {
@@ -671,6 +671,7 @@ proc execute_makes { data name } {
 	    sleep $sleep
 	    incr seconds $sleep
 	}
+	puts "Locked $s_d"
 	set s_d_is_locked 1
     }
 
@@ -869,7 +870,10 @@ foreach name $input_names {
 execute_makes $instructions \
 	      "autojudge generated instructions"
 
-if { $s_d_is_locked } { dispatch_unlock $s_d }
+if { $s_d_is_locked } {
+    dispatch_unlock $s_d
+    puts "Unlocked $s_d"
+}
 
 # Execute problem_link_files instructions if any.
 # Otherwise execute default.
@@ -965,8 +969,9 @@ proc auto_score_reply { score } {
 # file, and all file_list2 files exist, delete any
 # file_list1 files that exist and return `yes'.  If some
 # file_list1 file does not exist, and all file_list2
-# files exist, return `yes'.  Else return `no'.  If
-# -nodelete option given, suppress deleting of files.
+# files exist, delete any file_list1 files that do exist
+# and return `yes'.  Else return `no'.  If -nodelete
+# option given, suppress deleting of files.
 #
 #
 proc should_be_made { args } {
@@ -1075,52 +1080,93 @@ if { [should_be_made \
     }
 }
 
-# Make .out file if necessary.
+# Make .out and .fout files as necessary.
 #
-if { [should_be_made \
-         [list $PROBLEM.out $PROBLEM.err] \
-	 [concat [list $PROBLEM] \
-	 	 $linked_files \
-	 	 $extracted_files]] \
-     && [file executable $PROBLEM] } {
+foreach name $input_names {
+    if { [should_be_made \
+	     [list $name.out $name.err] \
+	     [concat [list $name] \
+		     $linked_files \
+		     $extracted_files]] \
+	 && [file executable $PROBLEM] } {
 
-    puts "Making $PROBLEM.out"
-    catch { make_file $PROBLEM.out $PROBLEM.err }
+	if { $name != $PROBLEM } {
+	    puts "Linking $name.in to $PROBLEM.in"
+	    file delete -force $name.in
+	    link_file $name.in $PROBLEM.in
+	}
+	file delete -force \
+	     $PROBLEM.out $PROBLEM.err $PROBLEM.fout
+	puts "Making $PROBLEM.out and $PROBLEM.err"
+	catch { make_file $PROBLEM.out $PROBLEM.err }
 
-    # Remove any a+x on the current directory as a
-    # `best effort' security measure in the face of
-    # the JAVA bug that requires .. to be a+x.
-    #
-    deny_access "."
+	# Remove any a+x on the current directory as a
+	# `best effort' security measure in the face of
+	# the JAVA bug that requires .. to be a+x.
+	#
+	deny_access "."
 
-    # Print any non-empty .err file.
-    #
-    if { [file exists $PROBLEM.err] \
-	 && [file size $PROBLEM.err] > 0 } {
-	puts ""
-	puts "========== ERRORS ($PROBLEM.err)\
-	      =========="
-	put_file $PROBLEM.err stdout 10
-	puts "============================="
-	puts ""
-    } elseif { ! [file exists $PROBLEM.out] } {
-	puts "No `$PROBLEM.out' file produced"
+	if { [should_be_made \
+		 [list $PROBLEM.fout] \
+		 [concat \
+		    [list $PROBLEM.out $PROBLEM.in \
+			  $scoring_filter_file] \
+		    $linked_files \
+		    $extracted_files]] \
+	     && [file size $PROBLEM.out] > 0 } {
+
+	    puts "Making $PROBLEM.fout"
+	    exec $scoring_filter_file \
+		 < $PROBLEM.out > $PROBLEM.fout
+	}
+
+	if { $name != $PROBLEM } {
+	    foreach ext {out err fout} {
+		if { [file exists $PROBLEM.$ext] } {
+		    puts "Renaming $PROBLEM.$ext to\
+			  $name.$ext"
+		    file delete -force -- $name.$ext
+		    file rename $PROBLEM.$ext $name.$ext
+		}
+	    }
+	}
+
+	# Print any non-empty .err file.
+	#
+	if {    [file exists $name.err] \
+	     && [file size $name.err] > 0 } {
+	    puts ""
+	    puts "========== ERRORS ($name.err)\
+		  =========="
+	    put_file $name.err stdout 10
+	    puts "============================="
+	    puts ""
+	} elseif { ! [file exists $name.out] } {
+	    puts "No `$name.out' file produced"
+	}
     }
 }
 
-# Make .fout file if appropriate.
+# Make .jout or .jfout files as appropriate.
 #
-if { [should_be_made \
-         [list $PROBLEM.fout] \
-	 [concat [list $PROBLEM.out \
-	               $scoring_filter_file] \
-	 	 $linked_files \
-	 	 $extracted_files]] \
-     && [file size $PROBLEM.out] > 0 } {
+foreach name $input_names {
+    if { [file exists $scoring_filter_file] } {
+	if { [should_be_made \
+		 [list $name.jfout] \
+		 [list $name.jin $name.fout]] } {
 
-    puts "Making $PROBLEM.fout"
-    exec $scoring_filter_file < $PROBLEM.out \
-    			      > $PROBLEM.fout
+	    puts "Making $name.jfout"
+	    exec jfilter $name.in $name.fout $name.jfout
+	}
+    } else {
+	if { [should_be_made \
+		 [list $name.jout] \
+		 [list $name.out $name.jin]] } {
+
+	    puts "Making $name.jout"
+	    exec jfilter $name.jin $name.out $name.jout
+	}
+    }
 }
 
 # Make $auto_score_file if necessary.
