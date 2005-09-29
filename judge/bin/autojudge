@@ -5,7 +5,7 @@
 #
 # File:		autojudge
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Sep 29 09:56:02 EDT 2005
+# Date:		Thu Sep 29 10:12:50 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/09/29 13:50:28 $
+#   $Date: 2005/09/29 18:32:49 $
 #   $RCSfile: autojudge,v $
-#   $Revision: 1.97 $
+#   $Revision: 1.98 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -931,10 +931,20 @@ execute_links $instructions \
 #
 proc auto_score_reply { score } {
 
-    global needs_reply_flag_file \
+    global auto_score_file needs_reply_flag_file \
 	   auto_score manual_score proposed_score \
 	   submitted_problem submitted_extension \
 	   PROBLEM EXTENSION
+
+    if { [file exists $auto_score_file] } {
+	file delete -force $auto_score_file
+    }
+    write_file $auto_score_file $score
+    set_flag $score_flag_file
+
+    if { [regexp {:} $score] } {
+        set score [lrange $score 1 end]
+    }
 
     set auto_score $score
     set manual_score None
@@ -1069,14 +1079,12 @@ if { [should_be_made \
     # send `Syntax Error' reply.
     #
     if { ! [file executable $PROBLEM] } {
-
 	puts "No executable `$PROBLEM' file produced"
-
-	if { [file exists $auto_score_file] } {
-	    file delete -force $auto_score_file
+	foreach name $input_names {
+	    file delete -force -- \
+	         $name.err $name.out $name.fout \
+		           $name.jout $name.fjout
 	}
-	write_file $auto_score_file "Syntax Error"
-	set_flag $score_flag_file
 	auto_score_reply "Syntax Error"
 	exit 0
     }
@@ -1108,6 +1116,55 @@ foreach name $input_names {
 	#
 	deny_access "."
 
+	# Print any non-empty .err file.
+	#
+	if {    [file exists $name.err] \
+	     && [file size $name.err] > 0 } {
+	    puts ""
+	    puts "========== ERRORS ($name.err)\
+		  =========="
+
+	    set error_fd [open $error_file r]
+	    set count 0
+	    set score ""
+	    while { "yes" } {
+		set line [gets $error_fd]
+		if { [eof $error_fd] } break
+		if { [regexp -nocase -- \
+			     $time_limit_regexp $line] } {
+		    set score "Cpu Time Limit Exceeded"
+		} elseif { [regexp -nocase -- \
+			     $output_limit_regexp $line] } {
+		    set score "Output Size Limit Exceeded"
+		}
+		if { $count < 10 } { puts $line }
+		incr count
+	    }
+	    close $error_fd
+
+	    if { $score == "" } {
+		set score "Program Crashed"
+	    }
+
+	    puts "============================="
+	    puts ""
+	    auto_score_reply "$name: $score"
+	    exit 0
+	} elseif { ! [file exists $name.out] } {
+	    puts "No `$name.out' file produced"
+	    auto_score_reply "$name: Program Crashed"
+	    exit 0
+	} elseif { [file size $name.out] == 0 } {
+	    puts "Empty `$name.out' file produced"
+	    auto_score_reply "$name: Program Crashed"
+	    exit 0
+	}
+
+	# Note that when $scoring_filter_file is called
+	# PROBLEM.in must be linked appropriately, which
+	# is why .fout is made here simultaneously with
+	# .out.
+
 	if { [should_be_made \
 		 [list $PROBLEM.fout] \
 		 [concat \
@@ -1132,22 +1189,25 @@ foreach name $input_names {
 		}
 	    }
 	}
-
-	# Print any non-empty .err file.
-	#
-	if {    [file exists $name.err] \
-	     && [file size $name.err] > 0 } {
-	    puts ""
-	    puts "========== ERRORS ($name.err)\
-		  =========="
-	    put_file $name.err stdout 10
-	    puts "============================="
-	    puts ""
-	} elseif { ! [file exists $name.out] } {
-	    puts "No `$name.out' file produced"
-	}
     }
 }
+
+# Do a system check that all .out files exist and are
+# non-empty and all .err files do not exist or are
+# empty.
+#
+foreach name $input_names {
+    if { ! [file exists $name.out] } {
+        error "File $name.out should exist"
+    }
+    if { [file size $name.out] == 0 } {
+        error "File $name.out should be non-empty"
+    }
+    if { ! [file exists $name.err] } continue
+    if { [file size $name.err] == 0 } continue
+    error "File $name.err should no exist or be empty"
+}
+
 
 # Make .jout or .jfout files as appropriate.
 #
@@ -1169,6 +1229,89 @@ foreach name $input_names {
 	    exec jfilter $name.jin $name.out $name.jout
 	}
     }
+}
+
+# Make .score files.
+#
+set incorrect_output ""
+set incomplete_output ""
+set formatting_error ""
+foreach name $input_names {
+    if { [file exists $name.jin] } {
+        set jin_instructions \
+	    [exec jfilter $name.jin]
+	set jin_instructions \
+	    [string trim $jin_instructions]
+	if { $jin_instructions == "none" } {
+	    set jin_instructions $scoring_instructions
+	    set jin_source \
+	        "scoring_instructions variable value"
+	} else {
+	    set jin_source "$name.jin file"
+	}
+    } else {
+	set jin_instructions $scoring_instructions
+	set jin_source \
+	    "scoring_instructions variable value"
+    }
+    if { [should_be_made [list $name.score] \
+            [list $name.jfout $name.jftest] } {
+	compute_instruction_array \
+	    $jin_instructions $jin_source
+	compute_score_file $name.jfout $name.jftest \
+	                   $name.score -filtered
+    } elseif { [should_be_made [list $name.score] \
+                  [list $name.fout $name.ftest] } {
+	compute_instruction_array \
+	    $scoring_instructions \
+	    "scoring_instructions variable value"
+	compute_score_file $name.fout $name.ftest \
+	                   $name.score -filtered
+    } elseif { [should_be_made [list $name.score] \
+                  [list $name.jout $name.jtest] } {
+	compute_instruction_array \
+	    $jin_instructions $jin_source
+	compute_score_file $name.jout $name.jtest \
+	                   $name.score
+    } elseif { [should_be_made [list $name.score] \
+                  [list $name.out $name.test] } {
+	compute_instruction_array \
+	    $scoring_instructions \
+	    "scoring_instructions variable value"
+	compute_score_file $name.out $name.test \
+	                   $name.score
+    } elseif { [file exists $name.jin] } {
+	compute_instruction_array \
+	    $jin_instructions $jin_source
+    } else {
+	compute_instruction_array \
+	    $scoring_instructions \
+	    "scoring_instructions variable value"
+    }
+
+    compute_score_and_proof_arrays $name.score
+    compute_score
+    foreach x {incorrect_output incompete_output\
+	       formatting_error} {
+	set marker [set $x_marker]
+	if { $marker != "" && [set $x] == "" } {
+	    set group [lindex $marker 0]
+	    set case [lindex $marker 1]
+	    set $x "$name:$group$case"
+	}
+    }
+}
+if { $incorrect_output != "" } {
+    auto_score_reply \
+        "$incorrect_output Incorrect Output"
+} elseif { $incomplete_output != "" } {
+    auto_score_reply \
+        "$incomplete_output Incomplete Output"
+} elseif { $formatting_error != "" } {
+    auto_score_reply \
+        "$formatting_error Formatting Error"
+} else {
+    auto_score_reply "Completely Correct"
 }
 
 # Make $auto_score_file if necessary.

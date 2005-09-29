@@ -2,7 +2,7 @@
 #
 # File:		scoring_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Sep 24 06:43:28 EDT 2005
+# Date:		Thu Sep 29 12:13:01 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/09/24 12:59:06 $
+#   $Date: 2005/09/29 18:32:49 $
 #   $RCSfile: scoring_common.tcl,v $
-#   $Revision: 1.45 $
+#   $Revision: 1.46 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -168,15 +168,15 @@ set option_instruction_types {
 }
 
 # Function to compute the `instruction_array' using
-# the current value of `scoring_instructions'.
+# the given instructions from the source with the
+# given name.
 #
-proc compute_instruction_array { } {
+proc compute_instruction_array { instructions name } {
 
-    global instruction_array scoring_instructions
+    global instruction_array
 
     compute_scoring_array instruction_array \
-    			  $scoring_instructions \
-			  "scoring instructions"
+    			  $instructions $name
 
     if { [info exists instruction_array(number)] } {
         set differences \
@@ -419,10 +419,15 @@ proc compute_scoring_array \
 
 # Function that computes the .score file given the .out
 # and .test files (or .fout and .ftest files).  The
-# scoring instructions and the `difference_type_proof_
-# limit' value from `hpcm_judging.rc' are used to obtain
-# an optimal set of proofs.  The scorediff program is
-# called by `scorediff outfile testfile > scorefile'.
+# scorediff program is called by
+#
+#     scorediff OPTION ... outfile testfile > scorefile
+#
+# where the scoring instructions and the `difference_
+# type_proof_limit' value from `hpcm_judging.rc' are
+# used to compute OPTIONs that obtain an optimal set of
+# proofs.  The `options' argument can be used to pass
+# additional options to scorediff.
 #
 # Any negative numbers in `float' or `integer'
 # instructions are converted to `-' before they are
@@ -431,17 +436,18 @@ proc compute_scoring_array \
 # `compute_instruction_array' must be called before
 # this routine is called.
 #
-proc compute_score_file { outfile testfile scorefile } {
+proc compute_score_file { outfile testfile scorefile \
+			  { options {} } } {
 
     global difference_type_proof_limit \
            instruction_array fake_instruction_types
 
-    set options "-all $difference_type_proof_limit"
+    lappend options -all $difference_type_proof_limit
 
     foreach type [array names instruction_array] {
 
         if { [lcontain $fake_instruction_types \
-	              $type] } continue
+	               $type] } continue
 
 	set arguments $instruction_array($type)
 	lappend options -[lindex $arguments 0]
