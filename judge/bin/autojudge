@@ -5,7 +5,7 @@
 #
 # File:		autojudge
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Sep 29 08:03:37 EDT 2005
+# Date:		Thu Sep 29 09:54:53 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/09/29 13:08:41 $
+#   $Date: 2005/09/29 13:49:14 $
 #   $RCSfile: autojudge,v $
-#   $Revision: 1.95 $
+#   $Revision: 1.96 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -1171,33 +1171,25 @@ foreach name $input_names {
 
 # Make $auto_score_file if necessary.
 #
-if { [file exists $scoring_filter_file] } {
-
-    set file_list [list $PROBLEM.ftest]
-
-    if { [file exists $PROBLEM.fout] } {
-	lappend file_list $PROBLEM.fout
+set file_list {}
+set err_exists 0
+foreach name $input_names {
+    foreach ext {err out test fout ftest \
+                 jout jtest jfout jftest} {
+	if { [file exists $name.$ext] } {
+	    lappend file_list $name.$ext
+	}
     }
-} else {
-    set file_list [list $PROBLEM.test]
-
-    if { [file exists $PROBLEM.out] } {
-	lappend file_list $PROBLEM.out
+    if { [file exists $name.err]} {
+        set err_exists 1
     }
 }
-if { [file exists $PROBLEM.err] } {
-    lappend file_list $PROBLEM.err
-}
-
-# If an attempt was made to make .out, then .err must
-# exist for file_list must have at least 2 elements.
-#
-if { [llength $file_list] >= 2 \
+if {    $err_exists \
      && [should_be_made \
             [list $auto_score_file] \
 	    $file_list] } {
 
-    exec autoscore $PROBLEM 2>@ stderr
+    exec autoscore $input_names 2>@ stderr
 }
 
 # Make $reply_file if necessary.
