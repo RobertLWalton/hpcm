@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Sep 30 08:04:30 EDT 2005
+# Date:		Fri Sep 30 11:41:20 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/09/30 13:34:36 $
+#   $Date: 2005/09/30 17:53:40 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.151 $
+#   $Revision: 1.152 $
 
 # Table of Contents:
 #
@@ -95,7 +95,9 @@
 # in hpcm_judging.rc, UNLESS the PPP.rc file makes
 # these global before accessing them.  However, PPP.rc
 # should never read the values of the variables it is
-# trying to set.
+# trying to set, as these frequently have no values
+# when PPP.rc is sourced (they are given default values
+# only if PPP.rc does not set them).
 #
 # If procedures or temporary variables are defined in a
 # PPP.rc file, they should begin with the prefix `rc_'
@@ -109,7 +111,9 @@
 #
 #   scoring_instructions
 #
-#	This variable is set in hpcm_judging.rc, see
+#	This variable controls the kinds of differences
+#	between submitted and judge's output files that
+#	are allowed.  It is set in hpcm_judging.rc, see
 #	below for documentation, and is often reset by
 #	PROBLEM.rc.
 #
@@ -139,7 +143,7 @@
 #	notes an initial version of a file the contes-
 #	tant will modify and submit.
 #
-#	The default list includes the $make_file file
+#	The default list includes the Makefile file
 #	and any file existing in the problem directory
 #	that has extension .ISF.
 #
@@ -181,16 +185,19 @@
 #	solution directory as the current directory.
 #
 #	If no files IN1, IN2, ... are listed, OUT must
-#	not exist.  If OUT is older than one of the
-#	IN1, IN2, ... files, OUT will be deleted before
-#	executing COMMAND (so it may be readonly).
+#	not exist if COMMAND is to be executed.  If OUT
+#	is older than one of the IN1, IN2, ... files,
+#	OUT will be deleted before executing COMMAND
+#	(so it may be readonly).
 #
 #	An instruction can be abbreviated to just a file
 #       name F, which is the same as the instruction
 #       `{ F { make F } }'.
 #
 #	The COMMAND is passed to the exec_in_directory
-#	functions which executes it in sh or csh.
+#	functions which executes it in sh or csh.  This
+#	COMMAND is a character string parsed by a non-
+#	TCL shell, and NOT a TCL list.
 #
 #	The instructions are processed by autojudge in
 #	order, so previous instructions can make inputs
@@ -202,25 +209,40 @@
 #	After processing problem_make_files, the auto-
 #	judge program will do more file making of this
 #	kind depending upon the files it finds in the
-#	problem solution directory.  For example, if
-#	it finds a $PROBLEM.jin file it will execute
+#	problem solution directory.  It uses the files
+#	F listed in the problem_input_names (see below)
+#	for this.  For each such F autojudge executes
 #	the instruction
 #
-#	    "$PROBLEM.in
-#	     {jfilter $PROBLEM.jin $PROBLEM.in
-#		      OPTION ...}
-#	     $PROBLEM.jin"
+#	    F.in {jfilter F.jin F.in} F.jin
 #
-#       and if it finds a Scoring_Filter file, it will
-#	execute the instruction
+#	that makes F.in from F.jin if the latter exists.
+#	Then if the Scoring_Filter file exists in the
+#	problem solution directory (after problem_make_
+#	files instructions are executed), autojudge
+#	executes the instructions
 #
-#	    "$PROBLEM.ftest
-#            {Scoring_Filter <$PROBLEM.test\
-#                            >$PROBLEM.ftest}
-#	     Scoring_Filter $PROBLEM.test"
+#	    F.fout {Scoring_Filter F.in <F.out >F.fout}
+#		   Scoring_Filter F.in F.out
 #
-#	See the autojudge program documentation for more
-#	details.
+#	    F.ftest
+#		{Scoring_Filter F.in <F.test >F.ftest}
+#		Scoring_Filter F.in F.test
+#
+#	    F.jfout {jfilter F.jin F.fout F.jfout}
+#		    F.jin F.fout
+#
+#	    F.jftest {jfilter F.jin F.ftest F.jftest}
+#		    F.jin F.ftest
+#
+#	while if there is no Scoring_Filter file auto-
+#	judge executes
+#
+#	    F.jout {jfilter F.jin F.out F.jout}
+#		    F.jin F.out
+#
+#	    F.jtest {jfilter F.jin F.test F.jtest}
+#		    F.jin F.test
 #
 #   problem_link_files
 #   problem_optional_link_files
@@ -250,16 +272,61 @@
 #	files instructions must already exist or have a
 #	link created for them, else it is an error.  But
 #	the files designated in problem_optional_link_
-#	files instructions need not exist of have the
+#	files instructions need not exist or have the
 #	instructions make a link for them.
 #
 #	The default values of these variables are empty
 #	lists.  However, after executing the link
 #	instructions in these variables, the autojudge
-#	program executes various link instructions of
-#	its own, depending upon the contents of the
-#	problem solutions directory.  See the autojudge
-#	program documentation for details.
+#	program executes the following link instructions
+#	of its own:
+#
+#	    Makefile Makefile$EXTENSION Makefile
+#
+#	    Scoring_Filter (if it exists)
+#
+#	For each name F in problem_input_names (see
+#	below):
+#
+#	    F.in
+#	    F.test F.out F.test
+#	    F.jin			[F.jin]
+#	    F.ftest F.fout F.ftest	[SF]
+#	    F.jtest F.jout F.jtest	[F.jin,
+#					 but not SF]
+#	    F.jftest F.jfout F.jftest	[F.jin and SF]
+#
+#	where the []'ed things must exist for the in-
+#	struction to be executed, and SF abbreviates
+#	Scoring_Filter.
+#
+#	Note the default link instruction for Makefile
+#	permits different Makefiles for different pro-
+#	gramming languages: e.g., Makefile.cc for .cc
+#	programs.
+#
+#   problem_input_names
+#
+#	List of file names F such that F.in is to be
+#	input to the submitted program to test it and
+#	produce F.out (and F.err).  By default this is
+#	just the list names such that the problem solu-
+#	tion directory contains either an F.in or F.jin
+#	file, except that $PROBLEM.in is ignored if
+#	there are any other files (on the grounds that
+#	it is probably a link to another F.in file in
+#	this case).
+#
+#	$PROBLEM should not be included in this list
+#	unless it is the only member, as files F.in
+#	will be linked to $PROBLEM.in during testing.
+#
+#	The order of the names in this list is the order
+#	the F.in files are used to test the submitted
+#	program.  A major use of this variable is to
+#	specify this order, as the default value usually
+#	suffices if this order does not matter.  The
+#	default list is sorted alphanumerically.
 
 # Scoreboard Parameters
 # ---------- ----------
