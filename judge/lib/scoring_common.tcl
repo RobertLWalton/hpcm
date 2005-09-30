@@ -2,7 +2,7 @@
 #
 # File:		scoring_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Sep 29 12:13:01 EDT 2005
+# Date:		Fri Sep 30 07:13:35 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/09/29 18:32:49 $
+#   $Date: 2005/09/30 11:13:43 $
 #   $RCSfile: scoring_common.tcl,v $
-#   $Revision: 1.46 $
+#   $Revision: 1.47 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -594,8 +594,10 @@ proc compute_score { } {
 		set kind incorrect_output
 	    }
 
+	    number-word -
 	    boc-word -
 	    bog-word -
+	    word-number -
 	    word-boc -
 	    word-bog -
 	    word-eof -
