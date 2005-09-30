@@ -4,7 +4,7 @@
 #
 # File:		extractmail
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Sep 25 10:13:00 EDT 2005
+# Date:		Fri Sep 30 13:28:43 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/09/25 15:26:31 $
+#   $Date: 2005/09/30 17:43:03 $
 #   $RCSfile: extractmail,v $
-#   $Revision: 1.48 $
+#   $Revision: 1.49 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -31,41 +31,41 @@ catch {
 set document "
 cd submission_directory; extractmail
 
-    Reads the `$received_file' file in the current\
-    	direc-
+    Reads the `Received_Mail' file in the current direc-
     tory.  Thus file must contain an email with a sub-
     ject line of the form:
 
-    	Subject: submit problem\[.extension\]
+    	Subject: submit PROBLEM\[.EXTENSION\]
 
-    where `problem' is the problem name and `extension',
+    where `PROBLEM' is the problem name and `EXTENSION',
     if present, tells the language of the problem sub-
-    misson.  If there is a `$files_file' file in the
-    current directory, it lists the names of all the
-    files that are supposed to be submitted, after a
-    manner described below.  Otherwise only one file may
-    be submitted, and it must have the file name
-    `problem.extension', where the extension must be
-    given in the message `Subject:' field.
+    misson.
 
-    The problem name cannot contain `.' or `/' or begin
-    with `-', and the extension name, if given, cannot
-    contain `/' and must be one of the extensions in the
-    `allowed_extensions' global variable, whose value by
-    default is:
+    The PROBLEM cannot contain `.' or `/' or begin with
+    `-', and EXTENSION, if given, cannot contain `/' and
+    must be one of the extensions in the `allowed_exten-
+    sions' global variable, whose value by default (with
+    `.'s included) is:
 
     	$allowed_extensions
 
     After the problem name is extracted but before the
-    extension name is checked, any problem .rc file is
-    sourced.
-
+    extension name is checked, any PROBLEM.rc file is
+    sourced.  This file may define the problem_required_
+    files and problem_optional_files global variables,
+    which are TCL lists of the names of files that may
+    be submitted.  The required files must be submitted,
+    while the optional files need not be.  If problem_
+    required_files is not set by the PROBLEM.rc file,
+    and if EXTENSION is given, then it is set so the
+    only required file is PROBLEM.EXTENSION.
+    
     For each file successfully extracted, this program
     writes the line `Extracted FFFF' to the standard
     output, where FFFF is the file name.  Note that this
     program may write other information lines to the
     standard output.
-
+
     For each error, this program writes an error message
     to the standard error output.  However, this program
     always exits with exit code 0, so the presence of
@@ -84,49 +84,6 @@ cd submission_directory; extractmail
     inclusion in a reply to the submitter as a descrip-
     tion of the errors.
 
-    If there is a `$files_file' file in the current\
-    			directory,
-    all submitted files must have names listed in this
-    file.  The `$files_file' file is interpreted as a\
-	TCL
-    list (with list elements separated by spaces, tabs,
-    or new lines) whose elements are special symbols,
-    file names, and { } bracketed sublists.  The special
-    symbols consist of upper case letters and the `-'
-    character, and begin and end with `-'.  All list
-    items following a special symbol S but before the
-    next special symbol are governed by S.  This program
-    understands the following two special symbols:
-
-    	-REQUIRED-	The list items governed by
-			-REQUIRED- are the names of
-			files that MUST be submitted.
-    
-    	-OPTIONAL-	The list items governed by
-			-OPTIONAL- are the names of
-			files that may optionally be
-			submitted.
-    
-    List items governed by other special symbols are
-    ignored by this program.  There is an implied
-    `-REQUIRED-' before the beginning of the list, that
-    governs list items appearing before any special
-    symbol in the list.  The same special symbol can
-    appear multiple times in the list.
-
-    If any -REQUIRED- or -OPTIONAL- file name has the
-    base name `PROBLEM' that is replaced by the problem
-    name taken from the $received_file' file `Subject:'
-    field, and if the file name has the extension
-    `.EXTENSION' that is replaced by the extension taken
-    from the same place.  If there is no `$files_file'\
-        file,
-    there is exactly one required submitted file whose
-    name is the `problem.extension' in the submission
-    `Subject:' field, as if there were a `$files_file'\
-    	file
-    with the value `PROBLEM.EXTENSION'.
-
     Submitted files may be encoded in the body of the
     message in the format:
 
@@ -135,7 +92,7 @@ cd submission_directory; extractmail
 	..<2nd line of file>
 	<more lines, each preceded by `..'>
 	HPCM_END filename
-
+
     This format MUST be used if the `format_submissions'
     global variable is defined and equal to `yes'.  If
     this format is used, there must be nothing else in
@@ -165,10 +122,10 @@ cd submission_directory; extractmail
     pieces of text in a file, or if a file does not
     specify its name in this manner and there is more
     than one possible submission file.
-
+
     If a submitted file already exists, is not a sym-
     bolic link, and has a modification time equal to or
-    later than that of the $received_file file, the sub-
+    later than that of the Received_Mail file, the sub-
     mitted file is NOT written, but is instead compared
     to the existing file.  Whether or not the comparison
     matches, the `Extracted FFFF' output line is gener-
@@ -180,13 +137,10 @@ cd submission_directory; extractmail
     rerun the autojudge program successfully.
 
     It is a system error if the `Subject:' field is bad-
-    ly formatted, if the $received_file file is unread-
-    able, if the `$files_file' file exits but is\
-    	unreadable,
-    if the `$files_file' file lists no -REQUIRED- or
-    -OPTIONAL- files, or if the current directory does
-    not permit new files to be deleted or created as
-    necessary."
+    ly formatted, if the Received_Mail file is unread-
+    able, if problem_required_files is set to the empty
+    list, or if the current directory does not permit
+    new files to be deleted or created as necessary."
 
 # If there are arguments, print documentation and exit.
 #
@@ -207,11 +161,11 @@ proc extract_error { message } {
 # Read the header.
 #
 if { [catch { set received_ch \
-		  [open $received_file r] }] } {
+		  [open Received_Mail r] }] } {
     extract_error \
-        "SYSTEM ERROR: cannot read $received_file"
+        "SYSTEM ERROR: cannot read Received_Mail"
 }
-set received_mtime [file mtime $received_file]
+set received_mtime [file mtime Received_Mail]
 read_header $received_ch
 
 # Check for legality of subject line:
@@ -227,23 +181,23 @@ if { [catch { set len [llength $message_subject] }] \
 # Extract the problem name and check it.
 #
 set filename [lindex $message_subject 1]
-set problem [file rootname $filename]
-if { $problem == "" } {
+set PROBLEM [file rootname $filename]
+if { $PROBLEM == "" } {
     extract_error \
 	"ERROR: no problem name in\
 	 `Subject: $message_subject'"
-} elseif { [regexp {\.} $problem] } {
+} elseif { [regexp {\.} $PROBLEM] } {
     extract_error \
          "ERROR: Bad problem name (contains `.'):\
-	  $problem"
+	  $PROBLEM"
 } elseif { [regexp {/} $filename] } {
     extract_error \
          "ERROR: Bad problem name or extension\
 	  (contains `/'): $filename"
-} elseif { [regexp {^-} $problem] } {
+} elseif { [regexp {^-} $PROBLEM] } {
     extract_error \
          "ERROR: Bad problem name (begins with `-'):\
-	  $problem"
+	  $PROBLEM"
 }
 
 # Read part.
@@ -254,31 +208,33 @@ if { $message_part_error != "" } {
 
 # Extract any extension name and check it.
 #
-set extension [file extension $filename]
-if { $extension != "" \
-     && ! [lcontain $allowed_extensions $extension] } {
+set EXTENSION [file extension $filename]
+if { $EXTENSION != "" \
+     && ! [lcontain $allowed_extensions $EXTENSION] } {
     extract_error \
 	"ERROR: disallowed extension (should be one of\
 	 $allowed_extensions) in `Subject:\
 	 $message_subject'"
 }
 
-# Source any problem .rc file.  First set global
-# variables we plan to reference.
+# Source any problem .rc file and compute lists of
+# required and optional submission files.
 #
-set PROBLEM $problem
-set EXTENSION $extension
-if { $EXTENSION == "" } {
-    set problem_required_files ""
-} else {
-    set problem_required_files $PROBLEM$EXTENSION
-}
-set problem_optional_files ""
-source_file $problem.rc
-if { [llength $problem_required_files] == 0 } {
+source_file $PROBLEM.rc
+if { ! [info exists problem_required_files] } {
+    if { $EXTENSION == "" } {
+	extract_error \
+	    "ERROR: No extension in `Subject:\
+		    $message_subject'"
+    }
+    lappend problem_required_files $PROBLEM$EXTENSION
+} elseif { [llength $problem_required_files] == 0 } {
     extract_error \
-	"ERROR: No extension in `Subject:\
-		$message_subject'"
+	"SYSTEM ERROR: problem_required_files set to\
+	 empty list"
+}
+if { ! [info exists problem_optional_files] } {
+    set problem_optional_files ""
 }
 
 # Filename_array has a value for every submittable
@@ -329,7 +285,7 @@ proc exit_cleanup {} {
 #
 proc open_file { filename } {
 
-    global filename_array problem received_mtime \
+    global filename_array received_mtime \
     	   file_ch cleanup_filename
 
     if { ! [info exists filename_array($filename)] } {

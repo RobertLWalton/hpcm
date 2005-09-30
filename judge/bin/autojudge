@@ -5,7 +5,7 @@
 #
 # File:		autojudge
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Sep 30 07:21:41 EDT 2005
+# Date:		Fri Sep 30 10:18:20 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/09/30 11:21:54 $
+#   $Date: 2005/09/30 17:43:03 $
 #   $RCSfile: autojudge,v $
-#   $Revision: 1.101 $
+#   $Revision: 1.102 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -43,13 +43,12 @@ autojudge \[-manual\] \[problem\[.extension\]\]
 
     Given the submission directory as the current dir-
     ectory, and given that the submission directory
-    contains the file `$received_file', this program
+    contains the file `Received_Mail', this program
     makes everything needed to compute the score file,
-    `$auto_score_file', and then automatically computes\
-    	that
+    `Auto_Score', and then automatically computes that
     file.  This program may report the score to the sub-
-    mitter by creating and sending `$reply_file' as
-    specified by the `scoring_mode' global variable.
+    mitter by creating and sending the `Reply_Mail' file
+    as specified by the `scoring_mode' global variable.
 
     If the -manual program option is given, it sets the
     scoring_mode to `manual' while this program is run-
@@ -61,25 +60,25 @@ autojudge \[-manual\] \[problem\[.extension\]\]
 
     	Subject: submit problem\[.extension\] ...
 
-    field of the message in the $received_file file.
+    field of the message in the Received_Mail file.
     Here `problem' names the problem and the solution
     binary, and is the basename of the .in, .out, .test,
-    .fout, .ftest, .cerr, .err, and .score files.  If
-    `extension' is given, it tells the language being
-    used, and must be a member of the `allowed_exten-
-    sions' global variable value, which by default is:
+    .fout, .ftest, .jout, .jtest, jfout, jftest, .cerr,
+    .err, and .score files.  If `extension' is given, it
+    tells the programming language being used, and must
+    be a member of the `allowed_extensions' global
+    variable value, which by default is:
     
     	$allowed_extensions
-
-    In this document and in the `$files_file' file\
-    	mentioned
-    below, the words `PROBLEM' and `EXTENSION' are used
-    to denote the problem name and extension as given in
-    an argument or `Subject:' field.  Also, the solution
-    directory below is the problem directory within the
-    solutions directory, i.e., the directory with name:
 
-    	\$solutions_directory/PROBLEM
+    In this document the words `PROBLEM' and `EXTENSION'
+    are used to denote the problem name and extension as
+    given in an argument or `Subject:' field.  Also, the
+    solution directory below is the problem directory
+    within the solutions directory, i.e., the directory
+    with name:
+
+    	<judging_directory>/solutions/PROBLEM
 
     More specifically, this program makes the following
     in order:
@@ -89,10 +88,11 @@ autojudge \[-manual\] \[problem\[.extension\]\]
         sourced, and may set some of the global varibles
 	mentioned below.  See the `Problem .rc Files'
 	section of hpcm_judging.rc for detailed specifi-
-	cation of the values of these global variables.
+	cation of the values of these global variables
+	and their defaults.
 
       . Submitted files which are extracted from the
-        submitted message in the $received_file file
+        submitted message in the Received_Mail file
         by the extractmail program.  These files must
 	all be listed in the problem_required_files or
 	problem_optional_files global variables.
@@ -105,38 +105,57 @@ autojudge \[-manual\] \[problem\[.extension\]\]
 	how to make files in the problem's solution
 	directory.  E.g., the Scoring_Filter program
 	may be compiled there if necessary.  The
-	default is to make PROBLEM.ftest if Scoring_
-	Filter and PROBLEM.test exist, and to make
-	PROBLEM.fout in the problem's solution direc-
-	tory if Scoring_Filter and PROBLEM.out exist
-	in that directory.
+	default is to make .in, .fout, .jout, .jfout,
+	.ftest, .jtest, and .jftest files whenever
+	their necessary inputs exist.  This if xxx.out
+	and Scoring_Filter exist, xxx.fout will be made,
+	and if xxx.jin also exists, then xxx.jfout will
+	be made.
 
       * Files listed in the problem_link_files and
-        problem_optional_link_files global variables.
-	The default link files are $make_file,
-	PROBLEM.in and PROBLEM.test.  The default
-	optional link files are $scoring_filter_file
-	and PROBLEM.ftest.
+        problem_optional_link_files global variables are
+	linked from the problem solution directory to
+	the current submission directory.  Then the
+	following are linked if they do not exist in the
+	submission directory and they do exist in the
+	solution directory: Makefile, Scoring_Filter,
+	and for each problem_input_names F, F.in,
+	F.test, F.jin, F.ftest, F.jtest, F.jftest.
 
       . The program binary file `PROBLEM' and the
 	compiler error file PROBLEM.cerr are made by
-	executing `make PROBLEM', using the $make_file.
+	executing `make PROBLEM' in the submission
+	directory, using the Makefile.  If there is
+	an error, the score is `Syntax Error', and
+	autojudge terminates.
 
-      . The program standard output file PROBLEM.out
-	and the program standard error file PROBLEM.err
-        are made by executing `make PROBLEM.out', using
-	the $make_file.
+      . For each F in problem_input_names, PROBLEM.in is
+        linked to F.in, PROBLEM.out is made by executing
+	`make PROBLEM.out' using the Makefile, the
+	standard error from make is directed to
+	PROBLEM.err, and PROBLEM.out and PROBLEM.err are
+	then renamed F.err and F.out.
 
-      . The filtered output file PROBLEM.fout, if the
-	$scoring_filter_file file exists.
+	If F.err is non-empty after this, the score is 
+	`Cpu Time Limit Exceeded', `Output Size Limit
+	Exceeded', or `Program Crashed', according to
+	the contents of F.err, and autojudge terminates.
 
-      . The PROBLEM.score and $auto_score_file files
-        are made by executing autoscore.
+	If F.out is empty or non-existent but F.err is
+	empty, then the score is `Program Crashed' and
+	autojudge terminates.
 
-      . The $reply_file file is made and a reply sent
-        to the submitter, unless the scoring_mode is
-	`manual'.
-
+      . For each F in problem_input_names, F.fout is
+        made if Scoring_Filter exists, F.jfout if in
+	addition F.jin exists, and F.jout is made if
+	F.jin exists but Scoring_Filter does not.
+
+      . The PROBLEM.score and Auto_Score files are made.
+        Whenever Auto_Score is made, the Score_Flag is
+	set, a Reply_Mail file is made, and this reply
+	is sent to the submitter if the scoring_mode is
+	not `manual'.
+
     Here files marked with * are linked into the current
     submission directory from the problem's solution
     directory.
@@ -144,16 +163,11 @@ autojudge \[-manual\] \[problem\[.extension\]\]
     In general, this program does not make a file that
     already exists, unless one of the files input to
     make the file is more recent that the file to be
-    made.  So, for example, if the $received_file file
+    made.  So, for example, if the Received_Mail file
     is more recent than an extracted file, the files
     will be re-extracted, whereas if extracted files
-    exist and are all as recent as the $received_file
+    exist and are all as recent as the Received_Mail
     file, file extraction will be skipped.
-
-    Inability to make a program binary or a .out file,
-    or an empty .out file, can cause $auto_score_file\
-        and
-    maybe $reply_file to be generated early.
 
     In general, this program may detect two kinds of
     errors: system errors and submitter errors.  A
@@ -163,165 +177,29 @@ autojudge \[-manual\] \[problem\[.extension\]\]
     program logs the error in an error log file in the
     current directory and prints information about the
     error to the standard error output.  On a submitter
-    error, this program creates a $reply_file file that
+    error, this program creates a Reply_Mail file that
     contains a description of the error and sends this
     to the submitter as the final word on the submis-
     sion.  In either case this program terminates after
     reporting the error.
 
-    At its beginning, this program verifies the exis-
-    tence of a solution directory for the problem and
-    symbolically links the `PROBLEM.rc' file from this
-    directory into the current directory, if this file
-    exists.  If the `PROBLEM.rc' file exists, it is
-    sourced, but before being sourced the
-
-    	problem_make_files
-	problem_required_files
-	problem_optional_files
-	problem_link_files
-	problem_optional_link_files
-
-    global variables are given default values as descri-
-    bed in the `Problem .rc Files' section of hpcm_
-    judging.rc.
-
-    TBD
-
-    In the above, a dangling link does not count as an
-    existing file.  Thus if the solution directory con-
-    tains a dangling link F2, i.e., a link to an non-
-    existent file, then F2 does not exist.  Also note
-    that by `link' we mean `symbolic link'.
-
-    If no extension is given to this program with the
-    problem name, any file name whose extension is
-    .`EXTENSION' is treated as naming a file that does
-    not exist and cannot be created.  It is an error to
-    try to create such a file, but it is not an error to
-    try to use such a file if it is not an error for the
-    file not to exist.
-
-    Thus in the default value of the `$files_file' file
-    given above, the file named $make_file in the cur-
-    rent directory is linked to the file named
-    `$make_file.EXTENSION' if an extension was given
-    with the problem name to this program and if the
-    indicated file exists in the solution directory.
-    Otherwise the file is linked to $make_file in the
-    solution directory, if that file exists.  Otherwise
-    there is an error, as $make_file is -LINK- and not
-    -OPTIONAL-LINK-.
-
-    In linking any `PROBLEM.rc' or `$files_file' file
-    from the solution directory, this program behaves as
-    if there were an initial `$files_file'\
-    		file value of:
-
-    	-OPTIONAL-LINK-
-	    { PROBLEM.rc rc.EXTENSION PROBLEM.rc }
-	    { $files_file $files_file.EXTENSION\
-	      $files_file }
-
-    Thus in the solution directory, rc.EXTENSION and
-    $files_file.EXTENSION are preferred over\
-    	PROBLEM.rc
-    and `$files_file'.
-
-    It is an error if the solution directory has no
-    `PROBLEM.rc' file but does have `rc.*' files none of
-    which match the extension given by the submitter;
-    or if the solution directory has no `$files_file'\
-    		file
-    but does have `$files_file.*' files, none of which
-    match the extension given by the submitter.
-
-    All errors involving linking are submitter errors if
-    there might be some extension that the submitter
-    could specify which would make the submission cor-
-    rect.  Otherwise the errors are system errors.
-
-    Next this program calls `extractmail' to extract the
-    submitted files from the program.  Errors in this
-    extraction are classified as system errors if ex-
-    tractmail outputs the phrase `SYSTEM ERROR' and
+    Errors in extraction are classified as system errors
+    if extractmail outputs the phrase `SYSTEM ERROR' and
     submitter errors otherwise.
 
-Moved to after extract.
-    After linking any `PROBLEM.rc' and `$files_file'\
-    		files
-    from the solution directory, this program makes any
-    files governed by -SOLUTION-MAKE- in the\
-    	`$files_file'
-    file.  If there is such a file F listed, and it does
-    not already exist in the solution directory, this
-    program executes `make F' in the solution directory.
-    During this process this program locks the solution
-    directory with a $dispatch_pid_file file.  Note that
-    `PROBLEM' or `EXTENSION' are not substituted for in
-    -SOLUTION-MAKE- file names; but the same effect can
-    be had by having different `$files_file.EXTENSION'\
-    	files
-    for different extensions.
+    While making files in the problem solution direc-
+    tory, program locks the solution directory with a
+    Dispatch_PID file.
  
-    If the extraction has no errors, this program sym-
-    bolically links solution directory files into the
-    current directory, according to instructions encoded
-    by the -LINK- and -OPTIONAL-LINK- special symbols in
-    the `$files_file' file or the default value given\
-    	above
-    for this file.  Note that a file may be listed as
-    both -OPTIONAL- (for extractmail) and -LINK-: if
-    submitted the submitted version will be used, and if
-    not submitted, the solution directory version will
-    be used.  Also note that a file listed as -LINK- or
-    -OPTIONAL-LINK- may be made as a consequence of a
-    -SOLUTION-MAKE- item (which may or may not directly
-    name the file to be linked).
-
-    Next this program makes the program binary by using
-    the $make_file.  Any compiler error messages are
-    captured in a .cerr file.  If no executable binary
-    is made, this program writes `Syntax Error' into the
-    $auto_score_file file, and skips to the end of this
-    program where a $reply_file file containing the auto
-    score may be created and sent to the user.
- 
-    If an executable binary file was made, this program
-    makes a .out output file by using the $make_file,
-    and captures any error output in a .err file.  If
-    the .out file exists and is non-empty, and if the
-    $scoring_filter_file file exists, this program then
-    runs
+    For purposes of computing file dependencies, all
+    non-extracted files made (not linked) by this pro-
+    gram in the submission directory are assumed to
+    depend upon all the extracted and linked files.
 
-    	$scoring_filter_file <PROBLEM.out >PROBLEM.fout
-
-    to make the .fout file.  It is a system error if the
-    $scoring_filter_file program exits with a non-zero\
-    	UNIX
-    exit code or writes the standard error output, or if
-    no .ftest file exists in this situation.
-
-    For purposes of computing file dependencies, the
-    files PROBLEM, PROBLEM.out, and PROBLEM.fout are all
-    assumed to depend upon all the extracted and linked
-    files.
-
-    Then this program runs `autoscore' to produce a
-    .score file and an automatic score in the\
-        $auto_score_file
-    file.  Any .score file will be not produced (and
-    even deleted if it exists) if the score can be
-    determined without it, i.e., if the score is deter-
-    mined by the .err file or if the .out file does not
-    exist or is empty.
-
-    Lastly, this program may create a `$reply_file' file
-    and send it as email to the submitter.  It does this
-    using instructions in the `response_instructions'
+    When this program creates a `Reply_Mail' file is
+    uses instructions in the `response_instructions'
     global variable.  This variable contains instruc-
-    tions that format the reply for a given\
-    	$auto_score_file
+    tions that format the reply for a given Auto_Score
     value and a given value of the scoring_mode global
     variable.  The format of the response instructions
     is described in hpcm_judging.rc, where a default
@@ -333,51 +211,46 @@ Moved to after extract.
     or the scoring_mode is `auto' or `auto+manual'.  If
     the mode is `auto' or the score is `Completely Cor-
     rect', the reply is final, and is stored in the
-    $reply_file file.  Otherwise the reply is not final,
+    Reply_Mail file.  Otherwise the reply is not final,
     and informs its receiver that the score is prelim-
     inary and will be manually reviewed and possibly
     changed.  When the reply is not final, this program
-    does not create a $reply_file file, even when it
+    does not create a Reply_Mail file, even when it
     sends a reply (the reply is recorded in any case in
-    the $reply_history_file file).  The absence of a
-    $reply_file file signals that the final reply has
+    the Reply_Mail_History file).  The absence of a
+    Reply_Mail file signals that the final reply has
     not been given to the submitter, and further action
     using the `manualreply' program is necessary to gen-
     erate a final reply.
 
     This program prints information about its progress.
- 
-    Unless this program creates a $reply_file file that
+ 
+    Unless this program creates a Reply_Mail file that
     is intended to be the final reply to the submitter
     (e.g., because the score is `Completely Correct' or
     the scoring mode is `auto'), this program sets the
-    `needs reply' flag (the $needs_reply_flag_file\
-    			file in
+    `needs reply' flag (the Needs_Reply_Flag file in
     the flag directory).  This signals other programs
     (e.g. tracker) that they should search for submis-
     sion directories for which the manualreply program
     should be called.
 
-    If this program (because of a `Syntax Error') or the
-    `autoscore' program writes the $auto_score_file\
-    	file,
-    the program will set the score flag (the flag direc-
-    tory $score_flag_file file), to signal that any\
-	score-
-    boards need to be recomputed.
+    If this program writes the Auto_Score file, it also
+    sets the score flag (the flag directory Score_Flag
+    file), to signal that any scoreboards need to be
+    recomputed.
 
     Problem names that contain `/' or `.' or begin with
     `-' or have no solution directory are illegal, and
     are submitter errors.  Similarly extension names
     not listed in the `allowed_extensions' global vari-
     able are unallowed and are submitter errors, as are
-    misformatted $received_file file `Subject:' fields.
-    It is a system error if the `$received_file' file is
-    not readable, if a `$files_file' file is\
-    	misformatted, or
-    if `extractmail' returns a system error.  It is a
-    system error if an existing `response_instructions'
-    global variable value is misformatted."
+    misformatted Received_Mail file `Subject:' fields.
+    It is a system error if the `Received_Mail' file is
+    not readable, of if `extractmail' returns a system
+    error.  It is a system error if an existing
+    `response_instructions' global variable value is
+    misformatted."
 
 # Do not change argc or argv so error printouts will be
 # correct.
@@ -430,7 +303,7 @@ if { $my_argc == 1 } {
 
     # Read message header.
     #
-    set received_ch [open $received_file r]
+    set received_ch [open Received_Mail r]
     read_header $received_ch
     close $received_ch
 
@@ -505,8 +378,8 @@ proc execute_links \
 	if { $length == 0 } {
 	    error "bad $name element, empty TCL list"
 	} elseif { $length == 1 } {
-	    set source_list $item
-	    set target $item
+	    set source_list [lindex $item 0]
+	    set target $source_list
 	} else {
 	    set source_list [lrange $item 1 end]
 	    set target [lindex $item 0]
@@ -798,30 +671,45 @@ if { [info exists problem_make_files] } {
     		  "problem_make_files value"
 }
 
-# Make list of names F such that F.in or F.jin exist.
-# Do not list duplicate names.
-# Do not list $PROBLEM.in if any other names found,
-# as it should be just a link to another .in name.
+# Compute list of input names from problem_input_names
+# or from existing files.
 #
-set input_names ""
-set problem_in_found 0
-foreach name [glob -nocomplain "$s_d/*"] {
-    set tail [file tail $name]
-    if { $tail == "$PROBLEM.in" } {
-        set problem_in_found 1
-	continue
-    }
+if { [info exists problem_input_names] } {
+    set input_names $problem_input_names
+} else {
 
-    set ext [file extension $tail]
-    set root [file rootname $tail]
-    if { ! [lcontain  {.in .jin} $ext] } continue
-    if { [lcontain $input_names $root] } continue
-    lappend input_names $root
+    # Make default list, which contains names F such
+    # that F.in or F.jin exist.  Eliminate duplicates.
+    # Do not list $PROBLEM.in if any other names found,
+    # as it should be just a link to another .in name
+    # in that case.
+    #
+    set input_names ""
+    set problem_in_found 0
+    foreach name [glob -nocomplain "$s_d/*"] {
+	set tail [file tail $name]
+	if { $tail == "$PROBLEM.in" } {
+	    set problem_in_found 1
+	    continue
+	}
+
+	set ext [file extension $tail]
+	set root [file rootname $tail]
+	if { ! [lcontain  {.in .jin} $ext] } continue
+	if { [lcontain $input_names $root] } continue
+	lappend input_names $root
+    }
+    if {    $problem_in_found \
+	 && [llength $input_names] == 0 } {
+	lappend input_names $PROBLEM
+    }
+    set input_names [lsort $input_names]
 }
-if {    $problem_in_found \
-     && [llength $input_names] == 0 } {
-    lappend input_names $PROBLEM
-}
+
+# Set switch for future reference.
+#
+set scoring_filter_exists \
+    [file exists $s_d/Scoring_Filter]
 
 # Make .in files from .jin files.
 #
@@ -832,8 +720,6 @@ if {    $problem_in_found \
 # If Scoring Filter does not exist, make .jout files
 # from .out files and .jtest files from .test files>
 #
-set scoring_filter_exists \
-    [file exists $s_d/Scoring_Filter]
 set instructions ""
 foreach name $input_names {
     lappend instructions \
@@ -842,13 +728,13 @@ foreach name $input_names {
     if { $scoring_filter_exists } {
 	lappend instructions \
 		"$name.fout\
-		 {Scoring_Filter <$name.out\
+		 {Scoring_Filter $name.in <$name.out\
 		                 >$name.fout}\
-	         Scoring_Filter $name.out" \
+	         Scoring_Filter $name.in $name.out" \
 		"$name.ftest\
-		 {Scoring_Filter <$name.test\
+		 {Scoring_Filter $name.in <$name.test\
 		                 >$name.ftest}\
-	         Scoring_Filter $name.test" \
+	         Scoring_Filter $name.in $name.test" \
 		"$name.jfout\
 		 {jfilter $name.jin $name.fout\
 		          $name.jfout}\
@@ -877,11 +763,6 @@ if { $s_d_is_locked } {
     puts "Unlocked $s_d"
 }
 
-# Set switch for later use.
-#
-set scoring_filter_exists \
-    [file exists $scoring_filter_file]
-
 # Execute problem_link_files instructions if any.
 # Otherwise execute default.
 #
@@ -904,6 +785,9 @@ if { [info exists problem_optional_link_files] } {
 set instructions ""
 lappend instructions \
 	" Makefile Makefile$EXTENSION Makefile "
+if { $scoring_filter_exists } {
+    lappend instructions " Scoring_Filter "
+}
 foreach name $input_names {
     set jin_exists [file exists $s_d/$name.jin]
     lappend instructions \
@@ -914,7 +798,6 @@ foreach name $input_names {
     }
     if { $scoring_filter_exists } {
 	lappend instructions \
-	    Scoring_Filter \
 	    " $name.ftest $name.fout $name.ftest "
 	if { $jin_exists } {
 	    lappend instructions \
@@ -936,18 +819,16 @@ execute_links $instructions \
 #
 proc auto_score_reply { score } {
 
-    global auto_score_file needs_reply_flag_file \
-	   score_flag_file \
-	   auto_score manual_score proposed_score \
+    global auto_score manual_score proposed_score \
 	   submitted_problem submitted_extension \
 	   PROBLEM EXTENSION
 
-    if { [file exists $auto_score_file] } {
-	puts "Deleting out-of-date $auto_score_file"
-	file delete -force $auto_score_file
+    if { [file exists Auto_Score] } {
+	puts "Deleting out-of-date Auto_Score"
+	file delete -force Auto_Score
     }
-    write_file $auto_score_file $score
-    set_flag $score_flag_file
+    write_file Auto_Score $score
+    set_flag Score_flag
 
     if { [regexp {:} $score] } {
         set score [lrange $score 1 end]
@@ -970,11 +851,11 @@ proc auto_score_reply { score } {
 	puts "Emailed final auto-score:\
 	      \    $auto_score"
     } elseif { [lcontain $return_commands NOT-FINAL] } {
-	set_flag $needs_reply_flag_file
+	set_flag Needs_Reply_Flag
 	puts "Emailed auto-score (review later):\
 	      \    $auto_score"
     } elseif { [lcontain $return_commands NO-REPLY] } {
-	set_flag $needs_reply_flag_file
+	set_flag Needs_Reply_Flag
 	puts "Auto-score (NOT emailed):\
 	      \    $auto_score"
     } else {
@@ -1097,7 +978,7 @@ if { [should_be_made \
     }
 }
 
-# Make .out and .fout files as necessary.
+# Make .out and .err files as necessary.
 #
 foreach name $input_names {
     if { [should_be_made \
@@ -1170,27 +1051,8 @@ foreach name $input_names {
 	    exit 0
 	}
 
-	# Note that when $scoring_filter_file is called
-	# PROBLEM.in must be linked appropriately, which
-	# is why .fout is made here simultaneously with
-	# .out.
-
-	if { [should_be_made \
-		 [list $PROBLEM.fout] \
-		 [concat \
-		    [list $PROBLEM.out $PROBLEM.in \
-			  $scoring_filter_file] \
-		    $linked_files \
-		    $extracted_files]] \
-	     && [file size $PROBLEM.out] > 0 } {
-
-	    puts "Making $PROBLEM.fout"
-	    exec $scoring_filter_file \
-		 < $PROBLEM.out > $PROBLEM.fout
-	}
-
 	if { $name != $PROBLEM } {
-	    foreach ext {out err fout} {
+	    foreach ext {out err} {
 		if { [file exists $PROBLEM.$ext] } {
 		    puts "Renaming $PROBLEM.$ext to\
 			  $name.$ext"
@@ -1219,10 +1081,18 @@ foreach name $input_names {
 }
 
 
-# Make .jout or .jfout files as appropriate.
+# Make .fout, .jout, or .jfout files as appropriate.
 #
 foreach name $input_names {
-    if { [file exists $scoring_filter_file] } {
+    if { $scoring_filter_exists } {
+	if { [should_be_made \
+		 [list $name.fout] \
+		 [list Scoring_Filter $name.out]] } {
+
+	    puts "Making $name.fout"
+	    exec Scoring_Filter $name.in \
+	         < $name.out > $name.fout
+	}
 	if { [should_be_made \
 		 [list $name.jfout] \
 		 [list $name.jin $name.fout]] } {
@@ -1241,7 +1111,7 @@ foreach name $input_names {
     }
 }
 
-# Make .score files and compute $auto_score_file.
+# Make .score files and compute Auto_Score.
 #
 # Do not try to be efficient in the case where not
 # everything needs to be computed, as that is an
@@ -1329,8 +1199,8 @@ foreach name $input_names {
     }
 }
 
-if {    [file exists $auto_score_file] \
-     &&    [file mtime $auto_score_file] \
+if {    [file exists Auto_Score] \
+     &&    [file mtime Auto_Score] \
         >= $score_mtime } {
     # do nothing
 } elseif { $incorrect_output != "" } {
