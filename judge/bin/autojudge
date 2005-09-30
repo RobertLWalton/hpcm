@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/09/29 18:32:49 $
+#   $Date: 2005/09/30 01:10:15 $
 #   $RCSfile: autojudge,v $
-#   $Revision: 1.98 $
+#   $Revision: 1.99 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -877,6 +877,11 @@ if { $s_d_is_locked } {
     puts "Unlocked $s_d"
 }
 
+# Set switch for later use.
+#
+set scoring_filter_exists \
+    [file exists $scoring_filter_file]
+
 # Execute problem_link_files instructions if any.
 # Otherwise execute default.
 #
@@ -1231,11 +1236,14 @@ foreach name $input_names {
     }
 }
 
-# Make .score files.
+# Make .score files and compute $auto_score_file.
+# Assume this computation is to be done, as that is the
+# normal case.
 #
 set incorrect_output ""
 set incomplete_output ""
 set formatting_error ""
+set new_score_computed 0
 foreach name $input_names {
     if { [file exists $name.jin] } {
         set jin_instructions \
@@ -1260,6 +1268,7 @@ foreach name $input_names {
 	    $jin_instructions $jin_source
 	compute_score_file $name.jfout $name.jftest \
 	                   $name.score -filtered
+	set new_score_computed 1
     } elseif { [should_be_made [list $name.score] \
                   [list $name.fout $name.ftest] } {
 	compute_instruction_array \
@@ -1267,12 +1276,14 @@ foreach name $input_names {
 	    "scoring_instructions variable value"
 	compute_score_file $name.fout $name.ftest \
 	                   $name.score -filtered
+	set new_score_computed 1
     } elseif { [should_be_made [list $name.score] \
                   [list $name.jout $name.jtest] } {
 	compute_instruction_array \
 	    $jin_instructions $jin_source
 	compute_score_file $name.jout $name.jtest \
 	                   $name.score
+	set new_score_computed 1
     } elseif { [should_be_made [list $name.score] \
                   [list $name.out $name.test] } {
 	compute_instruction_array \
@@ -1280,13 +1291,10 @@ foreach name $input_names {
 	    "scoring_instructions variable value"
 	compute_score_file $name.out $name.test \
 	                   $name.score
-    } elseif { [file exists $name.jin] } {
+	set new_score_computed 1
+    } elseif {
 	compute_instruction_array \
 	    $jin_instructions $jin_source
-    } else {
-	compute_instruction_array \
-	    $scoring_instructions \
-	    "scoring_instructions variable value"
     }
 
     compute_score_and_proof_arrays $name.score
@@ -1301,7 +1309,11 @@ foreach name $input_names {
 	}
     }
 }
-if { $incorrect_output != "" } {
+
+if {    ! $new_score_computed \
+     && [file exists $auto_score_file] } {
+    # do nothing
+} elseif { $incorrect_output != "" } {
     auto_score_reply \
         "$incorrect_output Incorrect Output"
 } elseif { $incomplete_output != "" } {
@@ -1312,39 +1324,6 @@ if { $incorrect_output != "" } {
         "$formatting_error Formatting Error"
 } else {
     auto_score_reply "Completely Correct"
-}
-
-# Make $auto_score_file if necessary.
-#
-set file_list {}
-set err_exists 0
-foreach name $input_names {
-    foreach ext {err out test fout ftest \
-                 jout jtest jfout jftest} {
-	if { [file exists $name.$ext] } {
-	    lappend file_list $name.$ext
-	}
-    }
-    if { [file exists $name.err]} {
-        set err_exists 1
-    }
-}
-if {    $err_exists \
-     && [should_be_made \
-            [list $auto_score_file] \
-	    $file_list] } {
-
-    exec autoscore $input_names 2>@ stderr
-}
-
-# Make $reply_file if necessary.
-#
-if { [should_be_made -nodelete \
-         [list $reply_file] \
-	 [concat [list $auto_score_file] \
-	 	 $linked_files]] } {
-
-    auto_score_reply [read_file $auto_score_file]
 }
 
 exit 0
