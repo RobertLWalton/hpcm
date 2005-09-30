@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Sep 25 06:14:48 EDT 2005
+# Date:		Fri Sep 30 08:04:30 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/09/27 14:08:32 $
+#   $Date: 2005/09/30 13:34:36 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.150 $
+#   $Revision: 1.151 $
 
 # Table of Contents:
 #
@@ -112,13 +112,6 @@
 #	This variable is set in hpcm_judging.rc, see
 #	below for documentation, and is often reset by
 #	PROBLEM.rc.
-#
-#   scoring_instructions_array(FFF)
-#
-#	This array element if defined provides the
-#	scoring instructions value for scoring the
-#	FFF.out file, and can be used when FFF is not
-#	the same a $PROBLEM.
 #
 #   problem_description_files
 #
@@ -943,12 +936,6 @@ set web_manager_address ""
 # ------- ----------
 
 
-# Scoring Instructions: see autoscore.  This is often
-# changed on a per-problem basis by the file PROBLEM.rc
-# in the PROBLEM directory.
-#
-set scoring_instructions "space column"
-
 # Scoring Mode:
 #
 #	auto		Automatic scoring only; auto-
@@ -987,6 +974,155 @@ set difference_type_proof_limit 100
 set time_limit_regexp {cpu time limit exceeded}
 set output_limit_regexp {file size limit exceeded}
 
+# Scoring instructions are a TCL list whose elements
+# control how the scorediff program compares the .out
+# (.fout, .jout, .jfout) file with the .test (.ftest,
+# .jtest, .jftest) file.  By default, scoring instruc-
+# tions come from the following variable:
+#
+set scoring_instructions "space column"
+#
+# This variable is often changed on a per-problem basis
+# by the file PROBLEM.rc.  Scoring instructions can also
+# be specified on a per input file basis by the
+# *SCORING* parameter in a .jin file.
+#
+# The following elements can be placed in a scoring
+# intructions TCL list:
+#
+#   whitespace
+#       Allow matching whitespace in the two files to be
+#       not exactly the same, if each whitespace is
+#	within a line and not at the beginning or end of
+#	the line.  Such mismatches are automatically
+#	allowed if either whitespace is followed by a
+#	floating point number.
+#
+#   beginspace
+#	Allow matching whitespace in the two files to be
+#	not exactly the same, if each whitespace is at
+#	the beginning of a line.  Such mismatches are
+#	automatically allowed if either whitespace is
+#	followed by a floating point number.
+#
+#   endspace
+#	Allow matching whitespace in the two files to be
+#	not exactly the same, if each whitespace is at
+#	the end of a line.
+#
+#   linespace
+#	Allow whitespace within blank lines to not
+#	match.
+#
+#   space
+#	The union of whitespace, beginspace, endspace,
+#	and linespace.
+#
+#   spacebreak
+#	Allow one file to have whitespace (including
+#	possibly a line break) where the other file has
+#	no whitespace at all.  Consider using nosign or
+#	nonumber with this.
+#
+#   linebreak
+#	Allow matching non-empty whitespaces to contain
+#	different numbers of line breaks.  Thus one file
+#	can have a line break where the other file has
+#	none.  If this happens, the whitespace at the
+#	beginnings and ends of the lines involved, and
+#	within blank lines, need not match.
+#
+#   integer A R
+#	Allow the two files to have matching integers
+#	whose absolute difference is as much as A, and
+#	whose relative difference is as much as R, where
+#	A and R are floating point values.  Numbers
+#	whose character strings match exactly are not
+#	considered different in this sense.
+#
+#	See below for the definition of relative differ-
+#	ence.
+#
+#	An integer is a number with no decimal point or
+#	exponent.
+#
+#   float A R
+#	Allow the two files to have matching numbers, at
+#	least one of which is floating point, whose
+#	absolute difference is as much as A, and whose
+#	relative difference is as much as R, where A and
+#	R are floating point values.  Numbers whose
+#	character strings match exactly but for the
+#	letter case of any exponent `e' or `E' are not
+#	considered different in this sense.
+#
+#	A floating point number is a number with a deci-
+#	mal point or exponent.
+#
+#	See below for the definition of relative differ-
+#	ence.
+#
+#   decimal
+#	Allow two files to have matching numbers that
+#	have different numbers of decimal digits, or for
+#	which only one of the matching numbers has a
+#	decimal point.
+#
+#   exponent
+#	Allow two files to have matching numbers just
+#	one of which has an exponent.
+#
+#   sign
+#	Allow two files to have matching numbers just
+#	one of which has an explicit sign, or both of
+#	which have different explicit signs.
+#
+#   number A R
+#	The union of `integer A R', `float A R',
+#	`decimal', `exponent', and `sign'.
+#
+#   letter-case
+#	Allow letters outside of numbers to match if
+#	they are the same but for letter case.
+#
+#   column
+#	Allow two files to have matching numbers or
+#	words that do not end in the same line column.
+#
+#	For the purpose of computing character line
+#	column positions, tabs are set every 8 columns.
+#
+#   words-are-format
+#	Causes differences in words (any non-numbers) to
+#	indicate a formatting error and not an incorrect
+#	or incomplete output error.  That is, if all the
+#	numbers are correct and in the correct sequence,
+#	the score will either be completely correct or
+#	formatting error.
+#
+#	This allows misspelled, omitted, or extra words
+#	to be treated as formatting errors, as long as
+#	no words are required for correctness.
+#
+#   nonumber
+#	Specifies that all number characters should be
+#	treated as word characters, so there are no num-
+#	ber tokens.
+#
+#   nosign
+#	Specifies that sign characters preceding numbers
+#	should be treated as word characters, so numbers
+#	can only include signs in their exponent parts.
+#
+#   The relative difference of two numbers x and y is
+#   defined to be:
+#
+#                      | x - y |
+#                   ----------------
+#                   max ( |x|, |y| )
+#
+#   which has a maximum value of 2.  If x = y = 0, the
+#   relative difference of x and y is defined to be 0.
 
 # Response Instructions
 # -------- ------------
