@@ -4,7 +4,7 @@
 #
 # File:		testproblems
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Sun Jan 18 23:17:15 EST 2004
+# Date:		Sat Oct  1 05:33:57 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,28 +13,16 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2004/01/19 04:20:55 $
+#   $Date: 2005/10/01 09:47:04 $
 #   $RCSfile: testproblems,v $
-#   $Revision: 1.8 $
-
-# If this is not bash and bash is available, switch to
-# using bash.  Note that `which bash` may output a
-# grubby error message and no error code if bash does
-# not exist.  Some non-bash sh'es have trouble with
-# `test -e'.
+#   $Revision: 1.9 $
 #
-bash=`which bash 2>/dev/null`
-if test "$BASH" = "" -a "$bash" != "" -a -x "$bash"
-then
-    exec bash "$0" "$@"
-fi
+# The next line starts tcl \
+exec tcl "$0" "$@"
 
-case "$1" in
-    "" | -* )
-	    echo "
+set document "
 testproblems directory ...
 
-    							
     This program runs:
 
     		make clean
@@ -51,35 +39,64 @@ testproblems directory ...
     directory with no Makefile is given, the program
     merely notes this in the output."
 
-	    exit 1
-	    ;;
-esac
+# If first argument begins with `-doc', print documen-
+# tation and exit with error.
+#
+if { [regexp {^-doc} [lindex $argv 0]] } {
+    puts $document
+    exit 1
+}
 
-tmp=/tmp/testproblems$$
+set tmp /tmp/testproblems[pid]
+file delete -force -- $tmp
 
-trap "rm -f $tmp" 0
-echo >$tmp
+signal error {HUP INT QUIT TERM}
 
-for x in "$@"
-do
-    if test \! -d $x; then
-	echo "$x is not a directory"
+catch {
+
+set wd [pwd]
+set fd [open $tmp w]
+
+foreach x $argv {
+
+    if { ! [file isdirectory $x] } {
+        puts "$x is not a directory"
 	continue
-    fi
+    }
 
-    if test \! -e $x/Makefile; then
-	echo "$x/Makefile does not exist"
+    if { ! [file exists $x/Makefile] } {
+	puts "$x/Makefile does not exist"
 	continue
-    fi
+    }
 
-    echo "========== $x:" >>$tmp
+    puts $fd "========== $x:"
+    puts -nonewline "===================="
+    puts -nonewline "===================="
+    puts -nonewline "===================="
+    puts " $x:"
 
-    (cd $x; make clean; \
-            make; \
-	    diff *.out *.test 2>&1 | tee -a $tmp; \
-	    make clean)
-done
+    cd $x
+    exec make clean >@ stdout 2>@ stderr
+    exec make >@ stdout 2>@ stderr
+    catch {
+        set diffs [exec diff [glob *.out] [glob *.test]]
+          } diffs
+    if { [string trim $diffs] != "" } {
+	puts $fd $diffs
+	puts $diffs
+    }
+    exec make clean >@ stdout 2>@ stderr
+    cd $wd
+}
+close $fd
 
-cat $tmp
-
+puts ""
+puts "***** DIFFERENCE SUMMARY *****"
+exec cat $tmp >@ stdout
+file delete $tmp
 exit 0
+
+} out
+file delete $tmp
+puts $out
+exit 1
