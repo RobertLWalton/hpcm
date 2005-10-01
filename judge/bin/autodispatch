@@ -5,7 +5,7 @@
 #
 # File:		autodispatch
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Mar 21 07:18:06 EST 2003
+# Date:		Sat Oct  1 15:24:43 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2003/03/21 12:19:27 $
+#   $Date: 2005/10/01 19:21:05 $
 #   $RCSfile: autodispatch,v $
-#   $Revision: 1.19 $
+#   $Revision: 1.20 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -57,26 +57,22 @@ autodispatch \[directory\] \[-force\]
 
     If the directory argument is given, this program
     makes that directory current before searching for
-    the `$judging_parameters_file' file or doing\
-    anything else.
+    the `hpcm_judging.rc' file or doing anything else.
 
-    After this program reads the\
-			$judging_parameters_file file,
-    this program next creates the $dispatch_pid_file\
-				    file
+    After this program reads the hpcm_judging.rc file,
+    this program next creates the Dispatch_PID file
     containing the process ID of this program's process.
     If this file already exists, this program exits
     without error or output.
 
-    When this program exits, it deletes the\
-		    $dispatch_pid_file
+    When this program exits, it deletes the Dispatch_PID
     file.
 
     This program then exits without error or output if
     any of the files:
 
-    	$reply_file
-    	$no_reply_file
+    	Reply_Mail
+    	No_Reply
 	*-<<*>>-unchecked-error
 	*-<<*>>-checked-error
 
@@ -85,12 +81,12 @@ autodispatch \[directory\] \[-force\]
 
     Otherwise, if the use_authentication global variable
     equals `yes', this program next authenticates the
-    mail in $received_file file.  If the mail is NOT
+    mail in Received_Mail file.  If the mail is NOT
     authentic, this program produces an error log file
     and exits without error code or output.
 
     Next this program inspects the `Subject' line in the
-    current directory's $received_file file and based on
+    current directory's Received_Mail file and based on
     this may call one of the following:
     
 	autojudge
@@ -115,8 +111,8 @@ autodispatch \[directory\] \[-force\]
     If no program is called and if the reply mode is NOT
     `auto', this program will NOT compose a reply, but
     will instead set the `needs reply' flag (the flag
-    directory $needs_reply_flag_file file).  This sig-
-    nals other programs (e.g. tracker) that they should
+    directory Needs_Reply_Flag file).  This signals
+    other programs (e.g. tracker) that they should
     search for submission directories for which the man-
     ualreply program should be called.
 
@@ -142,8 +138,8 @@ if { $my_argc != 0 } {
     exit 1
 }
 
-# Lock current directory with $dispatch_pid_file.  Exit
-# if directory already locked.
+# Lock current directory with Dispatch_PID.  Exit if
+# directory already locked.
 #
 if { [dispatch_lock] == "no" } {
     exit 0
@@ -158,8 +154,7 @@ proc exit_cleanup {} {
 
 # If one of several files exists, exit without error.
 #
-set patterns [list $reply_file \
-		   $no_reply_file \
+set patterns [list Reply_Mail No_Reply \
 		   *-<<*>>-unchecked-error ]
 if { $force_option == "no" } {
     lappend patterns *-<<*>>-checked-error
@@ -172,7 +167,7 @@ if { [llength [eval glob -nocomplain $patterns]] \
 
 # Read header.
 #
-set received_ch [open $received_file r]
+set received_ch [open Received_Mail r]
 read_header $received_ch
 close $received_ch
 
@@ -232,13 +227,12 @@ if {  ! [catch { set s [lindex $message_subject 0] }] \
 
 # Else if `auto+manual' or `manual' reply mode: this is
 # manual case, and another program will see there is no
-# $reply_file, no $no_reply_file, no $dispatch_pid_file,
-# etc., and that the subject is unsuitable for autodis-
-# patch, and then this other program will schedule man-
-# ual action.
+# Reply_Mail, no No_Reply, no Dispatch_PID, etc., and
+# that the subject is unsuitable for autodispatch, and
+# then this other program will schedule manual action.
 #
 } else {
-    set_flag $needs_reply_flag_file
+    set_flag Needs_Reply_Flag
 }
 
 exit_cleanup
