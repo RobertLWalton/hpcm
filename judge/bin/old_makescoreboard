@@ -4,7 +4,7 @@
 #
 # File:		makescoreboard
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Oct 23 07:57:41 EDT 2002
+# Date:		Sat Oct  1 15:52:02 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/10/23 11:56:56 $
+#   $Date: 2005/10/01 19:53:31 $
 #   $RCSfile: old_makescoreboard,v $
-#   $Revision: 1.38 $
+#   $Revision: 1.39 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -42,8 +42,7 @@ makescoreboard { start | status | stop | update } \\
 
     This program makes scoreboards by following the
     instructions stored in the `scoreboard_instructions'
-    global variable.  See the $judging_parameters_file\
-    				file
+    global variable.  See the hpcm_judging.rc file
     for a description of these instructions.
 
     When this program starts, it processes its second
@@ -56,15 +55,13 @@ makescoreboard { start | status | stop | update } \\
     This program calls
     
 	scorefinder -gotten \\
-	    > judging_directory/$scorefinder_output_file
+	    > judging_directory/Scorefinder_Output
 
-    The $scorefinder_output_file file is used as input\
-    						   by
+    The Scorefinder_Output file is used as input by
     the `scoreboard' program to produce scoreboards.
     To avoid conflicts between the `start' and `update'
     commands, this program adds a `+' to the end of the
-    name $scorefinder_output_file when running the\
-	update
+    name Scorefinder_Output when running the update
     command.
 
     This program ignores signals when computing score-
@@ -77,11 +74,10 @@ makescoreboard { start | status | stop | update } \\
 
     If called with the `start' command, this program
     executes itself as a subprocess and writes into the
-    $scoreboard_pid_file file in the judging directory\
-    					the
+    Scoreboard_PID file in the judging directory the
     process ID of the subprocess.  This subprocess pro-
     cess the scoreboard instructions at periodic inter-
-    vals.  But if the $scoreboard_pid_file file already
+    vals.  But if the Scoreboard_PID file already
     exists, AND the process ID it contains is valid,
     this program prints information about the ID'ed
     process and does nothing else.
@@ -95,29 +91,23 @@ makescoreboard { start | status | stop | update } \\
     have been changed, or any outputs have been deleted,
     and if yes, this program reruns the scoreboard in-
     structions.  The inputs checked for change include
-    the $judging_parameters_file file in the judging\
-    					directory
+    the hpcm_judging.rc file in the judging directory
     and the parameter files listed in the arguments.
-    Before checking files for change, the\
-    		$score_flag_file
+    Before checking files for change, the Score_Flag
     flag is checked, and if present, the `scorefinder'
-    program is called to remake the\
-    	$scorefinder_output_file
-    file.  This is also done if the\
-    	$scorefinder_output_file
+    program is called to remake the Scorefinder_Output
+    file.  This is also done if the Scorefinder_Output
     file no longer exists.
 
     If called with the `stop' command, this program does
     nothing but send kill signals to the process whose
-    ID is listed in the $scoreboard_pid_file file, and\
-    			then
+    ID is listed in the Scoreboard_PID file, and then
     deletes that file.  While doing this it outputs in-
     formation about its progress.
 
     If called with the `status' command, this program
     just outputs information about the status of the
-    process whose ID is stored in the\
-    	$scoreboard_pid_file
+    process whose ID is stored in the Scoreboard_PID
     file.
 
     With the `update', `status', or `stop' commands this
@@ -152,12 +142,12 @@ set space "$space$space"
 # Compute file names.
 #
 set finder_file \
-    $judging_directory/$scorefinder_output_file
+    $judging_directory/Scorefinder_Output
 if { $command == "update" } {
     set finder_file $finder_file+
 }
 set pid_file \
-    $judging_directory/$scoreboard_pid_file
+    $judging_directory/Scoreboard_PID
 
 # Compute possible parameters and save original values.
 # parameters_array(name) stores the value that
@@ -266,7 +256,7 @@ proc process_arguments { { first_time no } } {
     #
     set mtime_list ""
 
-    set pf $judging_directory/$judging_parameters_file
+    set pf $judging_directory/hpcm_judging.rc
     if { $first_time == "no" } {
         source $pf
     }
@@ -382,10 +372,10 @@ proc process_instructions {} {
     #
     if {    $file_mtime_list == "changed" \
          || ! [file readable $finder_file]
-         || [test_flag $score_flag_file] } {
+         || [test_flag Score_Flag] } {
 
 	make_signals_ignored
-	clear_flag $score_flag_file
+	clear_flag Score_Flag
 	file delete -force -- $finder_file
 	exec scorefinder -gotten > $finder_file
 	make_signals_default
