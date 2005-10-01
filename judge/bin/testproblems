@@ -4,7 +4,7 @@
 #
 # File:		testproblems
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Sat Oct  1 06:29:12 EDT 2005
+# Date:		Sat Oct  1 08:53:16 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/10/01 11:15:58 $
+#   $Date: 2005/10/01 13:10:13 $
 #   $RCSfile: testproblems,v $
-#   $Revision: 1.10 $
+#   $Revision: 1.11 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -35,7 +35,7 @@ testproblems \[-keep | -filter\] directory ...
     all the saved output at the end of this program's
     execution.
 
-    The -keep option supresses the final `make clean'.
+    The -keep option suppresses the final `make clean'.
 
     If a directory contains .jin files, then for every
     f.jin file the program runs
@@ -49,11 +49,38 @@ testproblems \[-keep | -filter\] directory ...
 		make clean
 		rm f.in problem.in
 
-    The -keep option supresses the the final `rm'.
+    The -keep option suppresses the the final `rm'.
 
     If a directory contains multiple .in files, the
     same thing is done as for .jin files, but jfilter
-    is not run and f.in is not removed.
+    is not run and f.in is not removed.  If a directory
+    contains just problem.jin, the same thing is done
+    without the linking of problem.in or the moving
+    of problem.out (here f = problem).
+
+    If the -filter option is present, then after making
+    an f.out file and diff'ing it with f.test,
+
+    		make Scoring_Filter
+
+    is executed if Scoring_Filter does not exist.  If
+    this has errors, they are ignored.  If after this
+    Scoring_Filter does not exist,
+
+    		jfilter f.jin f.out f.jout
+		rm f.jout
+
+    is execute if f.jin exists.  But if Scoring_Filter
+    does exist then
+
+    		Scoring_Filter f.in < f.out > f.fout
+		jfilter f.jin f.fout f.jfout
+		rm f.fout f.jfout
+
+    is executed, with the jfilter execution and f.jfout
+    removal suppressed if f.jin does not exist.
+
+    All `rm' commands are suppressed by -keep.
     
     If a non-directory is given the program, or if a
     directory with no Makefile is given, the program
@@ -91,12 +118,14 @@ set fd [open $tmp w]
 foreach x $argv {
 
     if { ! [file isdirectory $x] } {
-        puts "$x is not a directory"
+        puts "====================\
+	      $x is not a directory"
 	continue
     }
 
     if { ! [file exists $x/Makefile] } {
-	puts "$x/Makefile does not exist"
+	puts "====================\
+	      $x/Makefile does not exist"
 	continue
     }
 
@@ -150,6 +179,32 @@ foreach x $argv {
 		puts -nonewline $fd $diffs
 		puts -nonewline $diffs
 	    }
+	    if { $filter } {
+	        if { ! [file exists Scoring_Filter] } {
+		    catch { exec make Scoring_Filter \
+		                 >@ stdout }
+		}
+		if { [file exists Scoring_Filter] } {
+		    puts "Scoring_Filter $f.in\
+		          < $f.out > $f.fout"
+		    exec Scoring_Filter $f.in \
+		         < $f.out > $f.fout 2>@ stderr
+		    lappend made $f.fout
+		    if { [file exists $f.jin] } {
+		        puts "jfilter\
+			      $f.jin $f.fout $f.jfout"
+		        exec jfilter \
+			     $f.jin $f.fout $f.jfout \
+			     >@ stdout 2>@ stderr
+			lappend made $f.jfout
+		    }
+		} elseif { [file exists $f.jin] } {
+		    puts "jfilter $f.jin $f.out $f.fout"
+		    exec jfilter $f.jin $f.out $f.fout \
+			 >@ stdout 2>@ stderr
+		    lappend made $f.fout
+		}
+	    }
 	    if { ! $keep } {
 	        exec make clean >@ stdout 2>@ stderr
 	    }
@@ -164,7 +219,7 @@ foreach x $argv {
 close $fd
 
 puts ""
-puts "***** DIFFERENCE SUMMARY *****"
+puts "******************** DIFFERENCE SUMMARY:"
 exec cat $tmp >@ stdout
 file delete $tmp
 exit 0
