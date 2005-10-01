@@ -4,7 +4,7 @@
 #
 # File:		testproblems
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Sat Oct  1 08:53:16 EDT 2005
+# Date:		Sat Oct  1 09:31:33 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/10/01 13:10:13 $
+#   $Date: 2005/10/01 14:55:43 $
 #   $RCSfile: testproblems,v $
-#   $Revision: 1.11 $
+#   $Revision: 1.12 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -33,7 +33,8 @@ testproblems \[-keep | -filter\] directory ...
     in each directory.  It saves the diff outputs in
     addition to outputting them, and then plays back
     all the saved output at the end of this program's
-    execution.
+    execution.  Errors made during the above run are
+    also played back.
 
     The -keep option suppresses the final `make clean'.
 
@@ -136,7 +137,7 @@ foreach x $argv {
     puts " $x:"
 
     cd $x
-    catch {
+    if { [catch {
 	set problem [file tail [pwd]]
 	set type none
 	catch { set type [file type $problem.in] }
@@ -156,11 +157,11 @@ foreach x $argv {
 	    if { ! [file exists $f.in] } {
 	        puts "jfilter $f.jin $f.in"
 	        exec jfilter $f.jin $f.in \
-		     >@ stdout 2>@ stderr
+		     >@ stdout
 		lappend made $f.in
 	    }
 	    if { $f != $problem } {
-	        file link $problem.in $f.in
+	        exec ln -s $f.in $problem.in
 	    }
 	    exec make >@ stdout 2>@ stderr
 	    if { $f != $problem } {
@@ -188,21 +189,21 @@ foreach x $argv {
 		    puts "Scoring_Filter $f.in\
 		          < $f.out > $f.fout"
 		    exec Scoring_Filter $f.in \
-		         < $f.out > $f.fout 2>@ stderr
+		         < $f.out > $f.fout
 		    lappend made $f.fout
 		    if { [file exists $f.jin] } {
 		        puts "jfilter\
 			      $f.jin $f.fout $f.jfout"
 		        exec jfilter \
 			     $f.jin $f.fout $f.jfout \
-			     >@ stdout 2>@ stderr
+			     >@ stdout
 			lappend made $f.jfout
 		    }
 		} elseif { [file exists $f.jin] } {
-		    puts "jfilter $f.jin $f.out $f.fout"
-		    exec jfilter $f.jin $f.out $f.fout \
-			 >@ stdout 2>@ stderr
-		    lappend made $f.fout
+		    puts "jfilter $f.jin $f.out $f.jout"
+		    exec jfilter $f.jin $f.out $f.jout \
+			 >@ stdout
+		    lappend made $f.jout
 		}
 	    }
 	    if { ! $keep } {
@@ -213,13 +214,16 @@ foreach x $argv {
 	    puts "rm $made"
 	    eval file delete -force -- $made
 	}
+    } out] } {
+        puts $out
+	puts $fd $out
     }
     cd $wd
 }
 close $fd
 
 puts ""
-puts "******************** DIFFERENCE SUMMARY:"
+puts "******************** SUMMARY:"
 exec cat $tmp >@ stdout
 file delete $tmp
 exit 0
