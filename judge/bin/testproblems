@@ -4,7 +4,7 @@
 #
 # File:		testproblems
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Sat Oct  1 05:33:57 EDT 2005
+# Date:		Sat Oct  1 06:29:12 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,15 +13,15 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/10/01 09:47:04 $
+#   $Date: 2005/10/01 11:15:58 $
 #   $RCSfile: testproblems,v $
-#   $Revision: 1.9 $
+#   $Revision: 1.10 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
 
 set document "
-testproblems directory ...
+testproblems \[-keep | -filter\] directory ...
 
     This program runs:
 
@@ -34,22 +34,53 @@ testproblems directory ...
     addition to outputting them, and then plays back
     all the saved output at the end of this program's
     execution.
+
+    The -keep option supresses the final `make clean'.
+
+    If a directory contains .jin files, then for every
+    f.jin file the program runs
+
+    		jfilter f.jin f.in
+		ln -s f.in problem.in
+		make clean
+		make
+		mv problem.out f.out
+		diff f.out f.test
+		make clean
+		rm f.in problem.in
+
+    The -keep option supresses the the final `rm'.
+
+    If a directory contains multiple .in files, the
+    same thing is done as for .jin files, but jfilter
+    is not run and f.in is not removed.
     
     If a non-directory is given the program, or if a
     directory with no Makefile is given, the program
     merely notes this in the output."
 
-# If first argument begins with `-doc', print documen-
-# tation and exit with error.
+# Process options.
 #
-if { [regexp {^-doc} [lindex $argv 0]] } {
-    puts $document
-    exit 1
+set keep 0
+set filter 0
+while { 1 } {
+    switch -glob -- [lindex $argv 0] {
+    -doc* {
+	puts $document
+	exit 1
+    }
+    -filter { set filter 1 }
+    -keep { set keep 1 }
+    default break
+    }
+    set argv [lrange $argv 1 end]
 }
 
 set tmp /tmp/testproblems[pid]
 file delete -force -- $tmp
 
+# Arrange to always delete $tmp at end.
+#
 signal error {HUP INT QUIT TERM}
 
 catch {
@@ -69,23 +100,65 @@ foreach x $argv {
 	continue
     }
 
-    puts $fd "========== $x:"
+    puts $fd "==================== $x:"
     puts -nonewline "===================="
     puts -nonewline "===================="
     puts -nonewline "===================="
     puts " $x:"
 
     cd $x
-    exec make clean >@ stdout 2>@ stderr
-    exec make >@ stdout 2>@ stderr
     catch {
-        set diffs [exec diff [glob *.out] [glob *.test]]
-          } diffs
-    if { [string trim $diffs] != "" } {
-	puts $fd $diffs
-	puts $diffs
+	set problem [file tail [pwd]]
+	set type none
+	catch { set type [file type $problem.in] }
+	if { $type == "link" } {
+	    file delete $problem.in
+	}
+	set done ""
+	set made ""
+	foreach file [glob *.in *.jin] {
+	    set f [file rootname $file]
+	    if { [lcontain $f $done] } continue
+	    lappend done $f
+	    if { $f != $problem } {
+	        puts "========== $file:"
+	    }
+	    exec make clean >@ stdout 2>@ stderr
+	    if { ! [file exists $f.in] } {
+	        puts "jfilter $f.jin $f.in"
+	        exec jfilter $f.jin $f.in \
+		     >@ stdout 2>@ stderr
+		lappend made $f.in
+	    }
+	    if { $f != $problem } {
+	        file link $problem.in $f.in
+	    }
+	    exec make >@ stdout 2>@ stderr
+	    if { $f != $problem } {
+	        file rename $problem.out $f.out
+		lappend made $problem.out
+		file delete $problem.in
+	    }
+	    catch {
+		set diffs [exec diff $f.out $f.test]
+		  } diffs
+	    if { [string trim $diffs] != "" } {
+	        if { $f != $problem } {
+		    set diffs \
+		        "========== $f.out:\n$diffs"
+		}
+		puts -nonewline $fd $diffs
+		puts -nonewline $diffs
+	    }
+	    if { ! $keep } {
+	        exec make clean >@ stdout 2>@ stderr
+	    }
+	}
+	if { ! $keep && [llength $made] > 0 } {
+	    puts "rm $made"
+	    eval file delete -force -- $made
+	}
     }
-    exec make clean >@ stdout 2>@ stderr
     cd $wd
 }
 close $fd
