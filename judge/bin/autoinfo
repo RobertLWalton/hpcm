@@ -4,7 +4,7 @@
 #
 # File:		autoinfo
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Mar 21 07:18:57 EST 2003
+# Date:		Sat Oct  1 15:27:41 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2003/03/21 12:19:27 $
+#   $Date: 2005/10/01 19:29:15 $
 #   $RCSfile: autoinfo,v $
-#   $Revision: 1.35 $
+#   $Revision: 1.36 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -31,7 +31,7 @@ catch {
 set document "
 cd submission_directory; autoinfo
 
-    Reads the `$received_file' file in the current
+    Reads the `Received_Mail' file in the current
     directory.  This file must contain a single email
     request message with a subject line of the form:
 
@@ -141,7 +141,7 @@ cd submission_directory; autoinfo
     gotten files.
 
     This program writes the date and the names of the
-    gotten files into the `$gotten_file' file.  The\
+    gotten files into the `Gotten' file.  The\
 					    first line
     of this file has the form:
 
@@ -153,12 +153,12 @@ cd submission_directory; autoinfo
     		File: file-name
 
     If something goes very wrong, such as finding that
-    the `$received_file' file is not readable, this
+    the `Received_Mail' file is not readable, this
     program creates an error log file in the current
     directory, does not print anything on the standard
     output (but does print on the error output), and
     exits with exit code 0.  This is also done if the
-    `Subject:' field value in the `$received_file' file
+    `Subject:' field value in the `Received_Mail' file
     is not sufficient to cause `autodispatch' to dis-
     patch to this program: or specifically, if the
     field value is not a list of at least 1 items the
@@ -191,7 +191,7 @@ proc request_error { what } {
 
 # Find the subject.  If bad subject call error.
 #
-set received_ch [open $received_file r]
+set received_ch [open Received_Mail r]
 read_header $received_ch
 if { [catch { llength $message_subject }] } {
     error "Bad `Subject:' field in message:\n\
@@ -390,7 +390,7 @@ if { [llength $ok_names] > 0 } {
 	    BAR \
 	    BLANK
 
-    set reply_ch [open $reply_file+ a]
+    set reply_ch [open Reply_Mail+ a]
 
     puts $reply_ch ""
 
@@ -414,12 +414,12 @@ if { [llength $ok_names] > 0 } {
     send_reply
 }
 
-# Output up to date $gotten_file.
+# Output up to date Gotten file.
 #
-if { [file exists $gotten_file] } {
-    file delete -force $gotten_file
+if { [file exists Gotten] } {
+    file delete -force Gotten
 }
-set gotten_ch [open $gotten_file w]
+set gotten_ch [open Gotten w]
 puts $gotten_ch "Date: [clock format [clock seconds]]"
 foreach name $ok_names {
     puts $gotten_ch "File: $name"
