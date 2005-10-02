@@ -6,7 +6,7 @@
 #
 # File:		trackfinder
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Oct  2 10:58:19 EDT 2005
+# Date:		Sun Oct  2 11:31:25 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/10/02 14:58:13 $
+#   $Date: 2005/10/02 15:25:46 $
 #   $RCSfile: trackfinder,v $
-#   $Revision: 1.16 $
+#   $Revision: 1.17 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -171,6 +171,32 @@ proc get_file { file } {
     }
 }
 
+# Read problem.rc file and return list of submittable
+# files.
+#
+proc submittable_files { rc_file problem extension } {
+    global PROBLEM EXTENSION \
+           problem_required_files \
+	   problem_optional_files
+    set PROBLEM $problem
+    set EXTENSION $extension
+    catch { unset problem_required_files }
+    catch { unset problem_optional_files }
+    source_file $rc_file
+    if { ! [info exists problem_required_files] } {
+        set problem_required_files ""
+	if { $EXTENSION != "" } {
+	    lappend problem_required_files \
+	            $PROBLEM$EXTENSION
+	}
+    }
+    if { ! [info exists problem_optional_files] } {
+        set problem_optional_files ""
+    }
+    return [concat $problem_required_files \
+    		   $problem_optional_files]
+}
+
 
 # Loop through the subdirectory names.
 #
@@ -228,6 +254,8 @@ foreach dir $directories {
 	    set submitted_name [lindex $subject 1]
 	    set submitted_problem \
 	        [file rootname $submitted_name]
+	    set submitted_extension \
+	        [file extension $submitted_name]
 	}
     }
 
@@ -238,55 +266,19 @@ foreach dir $directories {
 
     if { $submitted_name != "" } {
 
-	if { ! [file exists $dir/$files_file] } {
-	    set filename $submitted_name
-	    set mtime [get_mtime $dir/$filename]
-	} else {
+	set mtime ""
+	foreach file \
+	        [submittable_files \
+		     $dir/$submitted_problem.rc \
+		     $submitted_problem \
+		     $submitted_extension] {
 
-	    # Read $files_file to find the names of
-	    # extractable files, and output the one
-	    # with the last mtime.
-
-	    if { [catch { set filelist \
-			      [read_entire_file \
-			           $dir/$files_file] \
-			}] } {
-		error "Cannot read $dir/$file_files"
-	    }
-
-	    if { [catch { llength $filelist }] } {
-		error "$dir/$files_file file is not a\
-		       TCL list"
-	    }
-
-	    set mtime ""
-	    set mode required
-	    foreach item $filelist {
-		switch -- $item {
-		    -REQUIRED-	{
-			set mode required
-		    }
-		    -OPTIONAL-	{
-			set mode optional
-		    }
-		    default {
-			if { [regexp {^-[-A-Z]*-$} \
-			             $item] } {
-			    set mode ""
-			} elseif { $mode != "" } {
-			    set fmtime \
-			        [get_mtime $dir/$item]
-			    if { $fmtime != "" \
-				 && ( $mtime == "" \
-				       || $mtime \
-				          < \
-				          $fmtime ) } {
-				set mtime $fmtime
-				set filename $item
-			    }
-			}
-		    }
-		}
+	    set fmtime [get_mtime $dir/$file]
+	    if { $fmtime != "" \
+		 && (    $mtime == "" \
+		      || $mtime < $fmtime ) } {
+		set mtime $fmtime
+		set filename $file
 	    }
 	}
 	if { $mtime != "" } {
