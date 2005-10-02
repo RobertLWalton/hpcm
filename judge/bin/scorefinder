@@ -5,7 +5,7 @@
 #
 # File:		scorefinder
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Oct 10 21:18:49 EDT 2004
+# Date:		Sun Oct  2 12:07:58 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2004/10/23 02:52:39 $
+#   $Date: 2005/10/02 16:06:51 $
 #   $RCSfile: scorefinder,v $
-#   $Revision: 1.23 $
+#   $Revision: 1.24 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -40,11 +40,11 @@ scorefinder \[-gotten\]
 
     It selects subdirectories that have a
     
-    	$reply_history_file
+    	Reply_Mail_History
 
     file, that have a
 
-    	$received_file
+    	Received_Mail
 
     file whose `Subject:' field has the form
 
@@ -52,8 +52,8 @@ scorefinder \[-gotten\]
 
     and that have one or both of the score files:
 
-    	$auto_score_file
-    	$manual_score_file
+    	Auto_Score
+    	Manual_Score
 
     For each such subdirectory, this program outputs one
     line of the form:
@@ -66,37 +66,33 @@ scorefinder \[-gotten\]
     compress function, which for some contests strips
     any `@' and following characters, and for other con-
     tests compresses what follows the `@'.  The problem
-    is taken from the $received_file file `Subject'
+    is taken from the Received_Mail file `Subject'
     field.
 
     The code is of the form ACF where
 
-    	A = a   if score is from an $auto_score_file\
-			file
-    	  = m   if score is from a $manual_score_file\
-	    		file
+    	A = a   if score is from an Auto_Score file
+    	  = m   if score is from a Manual_Score file
 
 	C = c   if score is `Completely Correct'
 	  = i   otherwise
 
-	F = f   if the $reply_file file exists
+	F = f   if the Reply_Mail file exists
 	  = n   otherwise
 
-    The $auto_score_file file is ignored if the\
-    	$manual_score_file
+    The Auto_Score file is ignored if the Manual_Score
     file exists.  The score is the actual score used to
     compute the code.  Each output line is a TCL list.
 
     If the -gotten option is present, this program also
-    selects subdirectories which contain the\
-    	`$gotten_file'
+    selects subdirectories which contain the `Gotten'
     file.  For these directories this program outputs
     one line of the form:
 
     	date submitter pppp g
 
     for each problem `pppp' such that there is at least
-    one line in the `$gotten_file' file of the form
+    one line in the `Gotten' file of the form
 
         File: problems/pppp/...
 
@@ -159,12 +155,12 @@ foreach dir [glob -nocomplain \
 	       `$subdir'"
     }
 
-    # Process any $gotten_file.
+    # Process any Gotten file.
     #
-    if { [file exists $dir/$gotten_file] } {
+    if { [file exists $dir/Gotten] } {
 
     	if { $gotten_option } {
-	    set gotten_ch [open $dir/$gotten_file r]
+	    set gotten_ch [open $dir/Gotten r]
 
 	    # Check that first line is `Date:' line.
 	    # Date should be same as from directory
@@ -174,7 +170,7 @@ foreach dir [glob -nocomplain \
 	    if { ! [eof $gotten_ch] \
 	         && ! [regexp {^Date: } $line] } {
 	        error "Bad first line in\
-		       $dir/$gotten_file:\n    $line"
+		       $dir/Gotten:\n    $line"
 	    }
 
 	    # Get problem names from `File:' lines
@@ -189,7 +185,7 @@ foreach dir [glob -nocomplain \
 		if { ! [regexp {^File: ([^\ \t]*)$} \
 			       $line forget name] } {
 		    error "Bad line in\
-			   $dir/$gotten_file:\n   \
+			   $dir/Gotten:\n   \
 			   $line"
 		}
 		if { \
@@ -205,13 +201,13 @@ foreach dir [glob -nocomplain \
 	    close $gotten_ch
 	}
 
-    } elseif {    [file exists $dir/$received_file] \
+    } elseif {    [file exists $dir/Received_Mail] \
                && [file exists \
-	                $dir/$reply_history_file] } {
+	                $dir/Reply_Mail_History] } {
 
 	# Get problem name.
 	#
-	set received_ch [open $dir/$received_file r]
+	set received_ch [open $dir/Received_Mail r]
 	read_header $received_ch
 	close $received_ch
 
@@ -232,14 +228,14 @@ foreach dir [glob -nocomplain \
 	# Get score.
 	#
 	set score ""
-	if { [file exists $dir/$manual_score_file] } {
+	if { [file exists $dir/Manual_Score] } {
 	    set score \
-		[read_file $dir/$manual_score_file]
+		[read_file $dir/Manual_Score]
 	    set code m
-	} elseif { [file exists $dir/$auto_score_file] \
+	} elseif { [file exists $dir/Auto_Score] \
 		     } {
 	    set score \
-		[read_file $dir/$auto_score_file]
+		[read_file $dir/Auto_Score]
 	    set code a
 	}
 
@@ -251,7 +247,7 @@ foreach dir [glob -nocomplain \
 	    set code ${code}i
 	}
 
-	if { [file exists $dir/$reply_file] } {
+	if { [file exists $dir/Reply_Mail] } {
 	    set code ${code}f
 	} else {
 	    set code ${code}n
