@@ -5,7 +5,7 @@
 #
 # File:		scorefinder
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Oct  2 12:07:58 EDT 2005
+# Date:		Sun Oct  2 12:13:43 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/10/02 16:06:51 $
+#   $Date: 2005/10/02 16:23:00 $
 #   $RCSfile: scorefinder,v $
-#   $Revision: 1.24 $
+#   $Revision: 1.25 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -58,7 +58,7 @@ scorefinder \[-gotten\]
     For each such subdirectory, this program outputs one
     line of the form:
 
-    	date submitter problem code score
+    	date submitter problem code score marker
 
     In this line, the date is taken literally from the
     subdirectory name.  The submitter is taken from the
@@ -69,7 +69,7 @@ scorefinder \[-gotten\]
     is taken from the Received_Mail file `Subject'
     field.
 
-    The code is of the form ACF where
+    The code is of the form ACFS where
 
     	A = a   if score is from an Auto_Score file
     	  = m   if score is from a Manual_Score file
@@ -80,9 +80,18 @@ scorefinder \[-gotten\]
 	F = f   if the Reply_Mail file exists
 	  = n   otherwise
 
+	S = i   if the submission qualifier is `in'
+	    o   if the submission qualifier is `inout'
+	    .   if the submission qualifier is omitted
+	        or some other value
+
+    An Auto_Score file value is split into a score and
+    a marker, if the marker is present in the value.
     The Auto_Score file is ignored if the Manual_Score
-    file exists.  The score is the actual score used to
-    compute the code.  Each output line is a TCL list.
+    file exists.  The score derived from these files is
+    the score used to compute the code.  Each output
+    line is a TCL list, with marker being the empty
+    string if it does not exist.
 
     If the -gotten option is present, this program also
     selects subdirectories which contain the `Gotten'
@@ -216,11 +225,13 @@ foreach dir [glob -nocomplain \
 			  [llength \
 			       $message_subject] \
 			 }] \
-	     && $sublen == 2 \
+	     && $sublen >= 2 \
+	     && $sublen <= 3 \
 	     && [lindex $message_subject 0] \
 		== "submit" } {
 	    set problem [lindex $message_subject 1]
 	    set problem [file rootname $problem]
+	    set qualifier [lindex $message_subject 2]
 	} else {
 	    continue
 	}
@@ -228,6 +239,7 @@ foreach dir [glob -nocomplain \
 	# Get score.
 	#
 	set score ""
+	set marker ""
 	if { [file exists $dir/Manual_Score] } {
 	    set score \
 		[read_file $dir/Manual_Score]
@@ -236,6 +248,11 @@ foreach dir [glob -nocomplain \
 		     } {
 	    set score \
 		[read_file $dir/Auto_Score]
+
+	    regexp \
+	      {^([^: \t]+:[^ \t]*)[ \t]+([^ \t].*)$} \
+	      $score forget marker score
+
 	    set code a
 	}
 
@@ -253,8 +270,16 @@ foreach dir [glob -nocomplain \
 	    set code ${code}n
 	}
 
+	if { $qualifier == "in" } {
+	    set code ${code}i
+	} elseif { $qualifier == "inout" } {
+	    set code ${code}o
+	} else {
+	    set code ${code}.
+	}
+
 	puts [list $date $submitter $problem $code \
-		   $score]
+		   $score $marker]
     }
 }
 
