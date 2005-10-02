@@ -4,7 +4,7 @@
 #
 # File:		startcontest
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Oct 24 21:49:34 EDT 2002
+# Date:		Sun Oct  2 13:01:55 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/10/25 03:26:57 $
+#   $Date: 2005/10/02 17:00:51 $
 #   $RCSfile: startcontest,v $
-#   $Revision: 1.4 $
+#   $Revision: 1.5 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -26,6 +26,10 @@ exec tcl "$0" "$@"
 #
 set lib_directory "[file dirname $argv0]/../lib"
 source $lib_directory/judging_common.tcl
+
+# Abbreviation for use in this file.
+#
+set c_d $judging_directory/contest
 
 # Set log mode, saving old mode.
 #
@@ -75,13 +79,13 @@ if { $argc > 1 || \
 
 # If we have nothing to do, announce this and exit.
 #
-set cproblems $contest_directory/problems
-set hproblems $contest_directory/help/problems
-if { (    ! [file isdirectory $cproblems] \
-       || [regexp {r.x} [get_access $cproblems]] ) \
+if { (    ! [file isdirectory $c_d/problems] \
+       || [regexp {r.x} [get_access $c_d/problems]] ) \
      && \
-     (    ! [file isfile $hproblems] \
-       || [regexp {r..} [get_access $hproblems]] ) } {
+     (    ! [file isfile $c_d/help/problems] \
+       || [regexp {r..} \
+                  [get_access \
+		       $c_d/help/problems]] ) } {
 
     puts "startcontest has been done previously"
     exit 0
@@ -148,11 +152,11 @@ if { ! [regexp {^(|problem|team)$} $stime] } {
 
 # Grant permissions.
 #
-if { [file isdirectory $contest_directory/problems] } {
-    grant_access $contest_directory/problems
+if { [file isdirectory $c_d/problems] } {
+    grant_access $c_d/problems
 }
-if { [file isfile $contest_directory/help/problems] } {
-    grant_access $contest_directory/help/problems
+if { [file isfile $c_d/help/problems] } {
+    grant_access $c_d/help/problems
 }
 
 # Notify user that startcontest is finished.  If we are

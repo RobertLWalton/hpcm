@@ -4,7 +4,7 @@
 #
 # File:		autoinfo
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Oct  1 15:27:41 EDT 2005
+# Date:		Sun Oct  2 13:09:12 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/10/01 19:29:15 $
+#   $Date: 2005/10/02 17:04:39 $
 #   $RCSfile: autoinfo,v $
-#   $Revision: 1.36 $
+#   $Revision: 1.37 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -235,7 +235,7 @@ set forbiddens ""
 proc info_expand { name } {
 
     global ok_names unreadables illegals forbiddens \
-    	   info_directory info_map info_tail_map
+    	   judging_directory info_map info_tail_map
 
     if { [info exists info_map($name)] } {
         set replacement $info_map($name)
@@ -278,7 +278,7 @@ proc info_expand { name } {
     }
 
 
-    set file $info_directory/$name
+    set file $judging_directory/info/$name
 
     if { [regexp {(^|/)(\.|-)} $name] } {
     	lappend illegals $name
@@ -398,7 +398,8 @@ if { [llength $ok_names] > 0 } {
 
     foreach name $ok_names {
 	puts $reply_ch "$dashes $name:"
-	set file_ch [open $info_directory/$name r]
+	set file_ch \
+	    [open $judging_directory/info/$name r]
 	while { "yes" } {
 	    set line [gets $file_ch]
 	    if { [eof $file_ch] } break
