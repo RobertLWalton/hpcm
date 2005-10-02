@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Sep 27 08:42:57 EDT 2005
+# Date:		Sun Oct  2 03:56:22 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/09/27 12:38:06 $
+#   $Date: 2005/10/02 08:01:37 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.116 $
+#   $Revision: 1.117 $
 #
 
 # Table of Contents
@@ -89,7 +89,7 @@ proc exit_cleanup {} {}
 # -------- ------- ---------
 
 
-# Lock given directory by creating $dispatch_pid_file
+# Lock given directory by creating Dispatch_PID file
 # in the directory (defaults to current directory).
 # Return `yes' if success, and `no' if failure.
 #
@@ -97,12 +97,12 @@ proc dispatch_lock { { directory . } } {
 
     global dispatch_pid_file
 
-    set lock_file $directory/$dispatch_pid_file
+    set lock_file $directory/Dispatch_PID
 
     if { [create_file $lock_file] } {
 
-	# Store the current process ID in $dispatch_
-	# pid_file.
+	# Store the current process ID in Dispatch_PID
+	# file.
 	#
 	write_file $lock_file [current_pid]
 	return yes
@@ -112,14 +112,14 @@ proc dispatch_lock { { directory . } } {
 }
 
 # Unlock given directory (defaults to current directory)
-# by deleting any existing $dispatch_pid_file in the
+# by deleting any existing Dispatch_PID file in the
 # directory.
 #
 proc dispatch_unlock { { directory . } } {
 
     global dispatch_pid_file
 
-    set lock_file $directory/$dispatch_pid_file
+    set lock_file $directory/Dispatch_PID
 
     file delete -force $lock_file
 }
@@ -395,7 +395,7 @@ proc log_error { error_output } {
 	# to be used.
 	#
 	# When done, `received_ch' is not "" iff
-	# the $received_file header was read.
+	# the Received_Mail file header was read.
 	#
 	set to		""
 	set cc		""
@@ -406,9 +406,9 @@ proc log_error { error_output } {
 	}
 
         if { $log_dir == "." \
-	     && [file exists $received_file] } {
+	     && [file exists Received_Mail] } {
 
-	    set received_ch [open $received_file r]
+	    set received_ch [open Received_Mail r]
 	    read_header $received_ch
 	    close $received_ch
 
@@ -520,7 +520,7 @@ proc log_error { error_output } {
     }
     puts stderr "------------------------------"
 
-    set_flag $needs_reply_flag_file
+    set_flag Needs_Reply_Flag
 }
 
 # Message Header Functions
@@ -1333,7 +1333,7 @@ proc header_is_authentic {} {
 #
 #	RECEIVED-HEADER
 #	    Includes the Date, To, From, Reply-To, and
-#	    Subject fields of the $received_file
+#	    Subject fields of the Received_Mail file
 #	    message.
 #
 #	RECEIVED-FULL-HEADER
@@ -1341,8 +1341,9 @@ proc header_is_authentic {} {
 #	    file message.
 #
 #	RECEIVED-BODY
-#	    Includes the body of the $received_file mes-
-#	    sage.  This command can appear at most once.
+#	    Includes the body of the Received_Mail file
+#	    message.  This command can appear at most
+#	    once.
 #
 # Options must precede commands.
 #
@@ -1360,7 +1361,7 @@ proc reply { args } {
 }
 
 # This composes the message to be sent by `reply' in
-# the file `$reply_file+'.  This reply can then be
+# the file `Reply_Mail+'.  This reply can then be
 # manually edited before sending it with `send_reply'.
 #
 proc compose_reply { args } {
@@ -1388,18 +1389,18 @@ proc compose_reply { args } {
 	set args [lrange $args 1 end]
     }
 
-    # Read $received_file header.
+    # Read Received_Mail file header.
     #
-    set received_ch [open $received_file r]
+    set received_ch [open Received_Mail r]
     read_header $received_ch
 
-    # Delete any existing $reply_file+ and open that
+    # Delete any existing Reply_Mail+ file and open that
     # file for writing.
     #
-    if { [file exists $reply_file+] } {
-    	file delete -force $reply_file+
+    if { [file exists Reply_Mail+] } {
+    	file delete -force Reply_Mail+
     }
-    set reply_ch    [open $reply_file+ w]
+    set reply_ch    [open Reply_Mail+ w]
 
     # Write header.
     #
@@ -1510,17 +1511,17 @@ proc compose_reply { args } {
     close $received_ch
 }
 
-# This function copies the `$reply_file+' file into
-# into the `$reply_history_file' file and then emails
-# the `$reply_file+' file.
+# This function copies the `Reply_Mail+' file into
+# into the `Reply_Mail_History' file and then emails
+# the `Reply_Mail+' file.
 #
 # Before doing the above, this program deletes any
-# $reply_file.
+# Reply_Mail file.
 #
 # After doing the above, this program renames
-# `$reply_file+' to `$reply_file', unless the -notfinal
+# `Reply_Mail+' to `Reply_Mail', unless the -notfinal
 # option is given, in which case this program simply
-# deletes `$reply_file+'.
+# deletes `Reply_Mail+'.
 #
 proc send_reply { args } {
 
@@ -1535,18 +1536,18 @@ proc send_reply { args } {
 	}
     }
 
-    # Delete any $reply_file.
+    # Delete any Reply_Mail file.
     #
-    if { [file exists $reply_file] } {
-	file delete -force $reply_file
+    if { [file exists Reply_Mail] } {
+	file delete -force Reply_Mail
     }
 
-    # Copy to the $reply_history_file.
+    # Copy to the Reply_Mail_History file.
     #
-    set history_ch  [open $reply_history_file a]
+    set history_ch  [open Reply_Mail_History a]
     puts $history_ch "From [account_name]@[host_name]\
 		      [clock format [clock seconds]]"
-    put_file $reply_file+ $history_ch
+    put_file Reply_Mail+ $history_ch
 
     # An empty line is needed before the next `From'
     # line so the `From' line will be recognized.
@@ -1554,21 +1555,21 @@ proc send_reply { args } {
     puts $history_ch ""
     close $history_ch
 
-    # Send the $reply_file+.  If there is a bad `To:'
-    # address, there may be an error, which will
+    # Send the Reply_Mail+ file.  If there is a bad
+    # `To:' address, there may be an error, which will
     # usually be logged by an error file in the
     # current directory.  Otherwise a bad address
     # will cause return mail from the mailer
     # daemon.
     #
-    send_mail $reply_file+
+    send_mail Reply_Mail+
 
-    # Delete or rename $reply_file+
+    # Delete or rename Reply_Mail+ file.
     #
     if { $not_final } {
-        file delete -force $reply_file+
+        file delete -force Reply_Mail+
     } else {
-	file rename -force $reply_file+ $reply_file
+	file rename -force Reply_Mail+ Reply_Mail
     }
 }
 
@@ -1864,7 +1865,7 @@ proc compile_logical_expression \
 set judging_directory ""
 foreach __d__ ". .. ../.. ../../.. ../../../.." {
     if { [file exists \
-	       $__d__/$judging_parameters_file] } {
+	       $__d__/hpcm_judging.rc] } {
 	lappend judging_directory $__d__
     }
 }
@@ -1877,14 +1878,14 @@ foreach __d__ ". .. ../.. ../../.. ../../../.." {
 #
 if { [llength $judging_directory] == 1 } {
     source_file \
-        $judging_directory/$judging_parameters_file
+        $judging_directory/hpcm_judging.rc
 } elseif { [llength $judging_directory] == 0 } {
-    error "$judging_parameters_file not found"
+    error "hpcm_judging.rc not found"
 } else {
-    set __m__ "Too many $judging_parameters_file files:"
+    set __m__ "Too many hpcm_judging.rc files:"
     foreach __d__ $judging_directory {
         set __m__ "$__m__\n\
-	          \     $__d__/$judging_parameters_file"
+	          \     $__d__/hpcm_judging.rc"
     }
     error $__m__
 }
