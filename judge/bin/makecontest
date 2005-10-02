@@ -6,7 +6,7 @@
 #
 # File:		makejudgingdir
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Oct  2 08:38:07 EDT 2005
+# Date:		Sun Oct  2 10:17:32 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/10/02 14:11:30 $
+#   $Date: 2005/10/02 14:51:58 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.97 $
+#   $Revision: 1.98 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -326,33 +326,31 @@ makejudgingdir option ... index_specification ...
 
 		  Otherwise, if the item does not have
 		  an `all' option and is a directory
-		  that has no `$files_file' file, only\
-		  	the
-		  Makefile and problem description files
-		  in the item directory will be includ-
-		  ed, with the problem description files
-		  being included always for ./info sub-
-		  directories, but only if the
-		  `-description' program option is given
-		  to the `makejudgingdir' program for
-		  ./contest subdirectories.  If instead
-		  the item directory has\
-		  	`$files_file' files,
-		  then these files list -SOURCE- files
-		  and -DESCRIPTION- files that replace
-		  the Makefile and automatically deter-
-		  mined description files (see below for
-		  details).
+		  whose PROBLEM.rc file does not define
+		  the global variables:
 
+		  	problem_source_files
+			problem_descrition_files
 
-      .XXX	  Where `.XXX' is any extension listed
-      		  in the `allowed_extensions' global
-		  variable.  Options of this form are
-		  used in conjunction with files named
-		  `$files_file.XXX' to determine the\
-		  	problem
-		  source and description files of a di-
-		  rectory: see below.
+		  then only the Makefile and problem
+		  description files in the item direc-
+		  tory will be included, with the prob-
+		  lem description files being included
+		  always for ./info subdirectories, but
+		  only if the `-description' program
+		  option is given to `makejudgingdir'
+		  for ./contest subdirectories.  But
+		  if PROBLEM.rc defines problem_source_
+		  files, that TCL list replaces
+		  Makefile, and if PROBLEM.rc defines
+		  problem_description_files, that TCL
+		  list replaces the automatically
+		  determined list of description files
+		  (see below for details).
+
+      ...	  Other options may be given that are
+      		  passed to the PROBLEM.rc file: see
+		  below for details.
 
     The `include' option is rarely encoded directly in
     the index files.  Instead options categorizing the
@@ -444,75 +442,30 @@ makejudgingdir option ... index_specification ...
     and the `all' option is not given, it is necessary
     to determine the problem (or demo) source and de-
     scription files.  In this case the directory is in-
-    spected for a file named `$files_file' and for\
-        files with
-    names of the form `$files_file.*', and the set of\
-    	options
-    is inspected for options equal to extensions listed
-    in the `allowed_extensions' variable, which defaults
-    to:
-    	$allowed_extensions
+    spected for a file named `PROBLEM.rc', and that
+    file is sourced into a local procedure (so it will
+    not define global variables).  The PROBLEM.rc file
+    may reference the variables
 
-    If the set of options that are allowed extensions is
-    not empty, then the files named `$files_file.XXX'\
-    	where
-    .XXX is an allowed extension that is an option are
-    selected to determine the source and description
-    files of the directory, and it is an error if there
-    are no such files.  If there are no allowed exten-
-    sion options, then any file named `$files_file' and\
-    	all
-    files with names of the form `$files_file.*' are\
-    	selected,
-    and if there are no such files, a default is use
-    that is equivalent to selecting a file whose value
-    is:
-
-    	-SOURCE-	Makefile
-	-DESCRIPTION-	<problem description files>
+    	PROBLEM		Name of problem.
+	EXTENSION	Equals \"UNDEFINED\"
+	OPTIONS		The options in the index item,
+			as a TCL list, after expansion.
 
-    where the problem description files are any files
-    whose base name is the base name of the directory
-    and whose extension is one of those listed in the
-    `problem_description_extensions' global variable
-    that defaults to:
+   The PROBLEM.rc file may define the following vari-
+   ables:
+
+   	problem_source_files
+	problem_description_files
+
+    The default value of problem_source_files is just
+    `Makefile'.  The default for problem_description_
+    files is just all the problem files whose exten-
+    sions are listed in the `problem_description_
+    extensions' global variable that defaults to:
+
     	$problem_description_extensions
-
-    Any selected `$files_file*' file is interpreted as\
-        a TCL
-    list (with list elements separated by spaces, tabs,
-    or new lines) whose elements are special symbols,
-    file names, and { } bracketed sublists.  The special
-    symbols consist of upper case letters and the `-'
-    character, and begin and end with `-'.  All list
-    items following a special symbol S but before the
-    next special symbol are governed by S.  This program
-    understands the following two special symbols:
-
-    	-SOURCE-	The list items governed by
-			-SOURCE- are the problem or demo
-			source file names.
-    
-    	-DESCRIPTION-	The list items governed by
-			-DESCRIPTION- are the problem or
-			demo description file names.
-
-    List items governed by other special symbols are
-    ignored by this program.  There is an implied
-    `-REQUIRED-' before the beginning of the list, that
-    governs list items appearing before any special
-    symbol in the list.  The same special symbol can
-    appear multiple times in the list.  A single file
-    name can be listed several times as -SOURCE- or
-    several times as -DESCRIPTION- but may not be both
-    -SOURCE- and -DESCRIPTION-.
 
-    If several `$files_file*' files are selected, they\
-    	are
-    concatenated before they are interpreted as just
-    indicated.  Thus a source (or description) file is
-    one listed in any selected `$files_file*' file.
-
     By convention, a problem or demo source file that
     has the extension `.ISF' is intended as the initial
     version of a writable contestant file that the con-
@@ -530,7 +483,7 @@ makejudgingdir option ... index_specification ...
     and `hpcm_extract' programs that automatically copy
     a file with a name such as `xxx.ISF' into a writable
     file named `xxx'.
-
+
     We proceed to describe the program options not di-
     rectly involved with making ./info, ./contest/help,
     ./contest/problems, or ./contest/demos.
@@ -541,7 +494,7 @@ makejudgingdir option ... index_specification ...
 	./help			directory
 	./help/index		file
 	./help/this_contest	file
-
+
     Note these are in the judging directory proper, and
     not in the ./info or ./contest subdirectories.  The
     ./help/index file is an INPUT index file that con-
@@ -566,7 +519,7 @@ makejudgingdir option ... index_specification ...
     header entry, all the help index files, `help/
     demos', `help/problems', and `help/index', are men-
     tioned at the beginning of `help/index'.
-
+
     The -mail program option causes the ./mail directory
     to be made if it does not exist.  If it is made, its
     mode is set to a+x as is the mode of its parent and
@@ -578,7 +531,7 @@ makejudgingdir option ... index_specification ...
     The -help2 program option creates the ./contest/
     help2 directory if it does not exist.  It is simply
     linked to the ./contest/help directory.
-
+
     Note that the contestant's `help' command searches
     ./contest/help1, ./contest/help2, ./contest/help3,
     and ./contest/help4 in order for help files.  Thus
@@ -603,7 +556,7 @@ makejudgingdir option ... index_specification ...
     If the ./contest/secure/hpcm_sendmail.rc file is
     made, instructions for editing it and the
     ~/.procmailrc file are written into ./TODO.
-
+
     The ./contest/secure/passwords file consists of
     lines of the form
 
@@ -618,7 +571,7 @@ makejudgingdir option ... index_specification ...
     indicate a line is not associated with an account,
     and the password `none' may be used to indicate the
     password is to be assigned by other means.
-
+
     The -secure program option also causes any existing
     ./contest/secure/passwords file to be inspected for
     lines with empty passwords.  If any are found,
@@ -641,7 +594,7 @@ makejudgingdir option ... index_specification ...
     where' file that are not in the `passwords' file.
     Lines with account name `none' in the `passwords'
     file are not copied to the `who_where' file.
-
+
     The -trashable program option creates the ./contest/
     trashable file from the ./contest/secure/passwords
     file.  The `trashable' file is just a list of the
@@ -656,7 +609,7 @@ makejudgingdir option ... index_specification ...
     `TRASH_ACCOUNT' program will not work if the account
     in which it is run is not named in the `trashable'
     file).
-
+
     The -printer program option makes the ./contest/
     printer file if that file does not exist, and writes
     a ./TODO to edit the file when it is made.  It also
@@ -679,7 +632,7 @@ makejudgingdir option ... index_specification ...
 
     If anything is made in ./contest, a+x is set for
     that directory and its parent.
-
+
     Although we have used the names `./info', `./mail',
     `./contest', and `./help' in this description, the
     actual directories are the info, mail, contest,
