@@ -2,7 +2,7 @@
 #
 # File:		display_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Feb  7 11:44:03 EST 2003
+# Date:		Sun Oct  2 03:42:03 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2003/02/07 18:27:05 $
+#   $Date: 2005/10/02 07:48:20 $
 #   $RCSfile: display_common.tcl,v $
-#   $Revision: 1.39 $
+#   $Revision: 1.40 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -297,18 +297,18 @@ proc out_check { out } {
 # Locking Functions
 # ------- ---------
 
-# Lock current directory with $dispatch_pid_file.  If
-# $dispatch_pid_file already exists, communicate with
+# Lock current directory with Dispatch_PID.  If
+# Dispatch_PID already exists, communicate with
 # the user through the window an let the user take
 # corrective action.
 #
-# After creating $dispatch_pid_file to lock the direc-
+# After creating Dispatch_PID to lock the direc-
 # tory, this function redefines the exit_cleanup func-
 # tion to delete the file and remove the lock.
 #
 proc get_lock {} {
 
-    global dispatch_pid_file window_error window_bar \
+    global window_error window_bar \
     	   window_prompt window_info_height
 
 
@@ -318,12 +318,12 @@ proc get_lock {} {
 
 	set time \
 	    [expr [clock seconds] \
-		  - [file mtime $dispatch_pid_file]]
+		  - [file mtime Dispatch_PID]]
 
 	if { ! [catch {
 		   set pid \
 		       [read_file \
-			   $dispatch_pid_file] }] } {
+			   Dispatch_PID] }] } {
 	    set tree_display \
 		[display_process_tree $pid]
 	    set tree_display \
@@ -335,17 +335,17 @@ proc get_lock {} {
 	    refresh_file_list
 	    set_file_list_display
 	    set window_error \
-		"ERROR: cannot read $dispatch_pid_file"
+		"ERROR: cannot read Dispatch_PID"
 	}
 
 	set window_info_height 8
 	set_window_info "
-$dispatch_pid_file file exists and is $time seconds old.
+Dispatch_PID file exists and is $time seconds old.
 Maybe `autodispatch' or another `manualreply' is\
 					      running.
 
 u = update above info		d = delete\
-				    $dispatch_pid_file
+				    Dispatch_PID
 k = kill -INT process tree	x = exit this program
 m = kill -KILL process tree"
 
@@ -363,7 +363,7 @@ m = kill -KILL process tree"
 		k   {   catch {
 			    signal_process_tree INT \
 				[read_file \
-				    $dispatch_pid_file]
+				    Dispatch_PID]
 			} out
 			out_check $out
 			break
@@ -371,13 +371,13 @@ m = kill -KILL process tree"
 		m   {   catch {
 			    signal_process_tree KILL \
 				[read_file \
-				    $dispatch_pid_file]
+				    Dispatch_PID]
 			} out
 			out_check $out
 			break
 		    }
 		d   {   file delete -force \
-				    $dispatch_pid_file
+				    Dispatch_PID
 			break
 		    }
 		x   {
@@ -492,11 +492,11 @@ set file_list_origin_mtime 0
 #
 # This function also computes file_list_mtime_origin
 # if it can.  This default function sets this to the
-# mtime of $received_file if that file exists.
+# mtime of Received_Mail if that file exists.
 #
 proc get_listed_files { } {
 
-    global file_list_origin_mtime received_file
+    global file_list_origin_mtime
 
     set listed_files [glob -nocomplain *]
 
@@ -523,11 +523,11 @@ proc get_listed_files { } {
 	}
     }
 
-    # Comupte mtime if $received_file exists.
+    # Comupte mtime if Received_Mail exists.
 
-    if { [lcontain $listed_files $received_file] } {
+    if { [lcontain $listed_files Received_Mail] } {
 	set file_list_origin_mtime \
-	    [file mtime $received_file]
+	    [file mtime Received_Mail]
     }
 
     return [concat $listed_files $extra_files]
@@ -719,8 +719,8 @@ proc refresh_file_list { } {
 #
 proc get_file { id } {
 
-    global file_list \
-	   last_file window_error make_file_array
+    global file_list last_file window_error \
+           make_file_array
 
     set window_error ""
 
@@ -839,26 +839,30 @@ proc read_score { score_file } {
 }
 
 
-# Read $auto_score_file
+# Read Auto_Score file.
 #
 proc read_auto_score {} {
 
-    global auto_score_file auto_score
+    global auto_score auto_score_marker
 
-    set auto_score [read_score $auto_score_file]
+    set auto_score [string trim [read_score Auto_Score]]
+    set auto_score_marker ""
+    regexp \
+      {^([^\ \t]+:[^\ \t])[\ \t]+([^\ \t].*)$} \
+      $auto_score forget auto_score_marker auto_score
 }
-set read_array($auto_score_file) read_auto_score
+set read_array(Auto_Score) read_auto_score
 set auto_score None
 
-# Read $manual_score_file
+# Read Manual_Score file.
 #
 proc read_manual_score {} {
 
-    global manual_score_file manual_score
+    global manual_score
 
-    set manual_score [read_score $manual_score_file]
+    set manual_score [read_score Manual_Score]
 }
-set read_array($manual_score_file) read_manual_score
+set read_array(Manual_Score) read_manual_score
 set manual_score None
 
 # Read the received mail header.  Set the submitted_
@@ -868,16 +872,16 @@ set manual_score None
 #
 proc read_received_file {} {
 
-    global received_file message_subject \
+    global message_subject \
 	   submitted_problem submitted_extension
 
-    if { ! [file readable $received_file] } {
+    if { ! [file readable Received_Mail] } {
 	set submitted_problem   ""
 	set submitted_extension ""
 	return
     }
 
-    set received_ch [open $received_file r]
+    set received_ch [open Received_Mail r]
     read_header $received_ch
     close $received_ch
 
@@ -899,7 +903,7 @@ proc read_received_file {} {
 	set submitted_extension ""
     }
 }
-set read_array($received_file) read_received_file
+set read_array(Received_Mail) read_received_file
 set submitted_problem   ""
 set submitted_extension ""
 
