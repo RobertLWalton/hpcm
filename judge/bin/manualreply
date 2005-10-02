@@ -5,7 +5,7 @@
 #
 # File:		manualreply
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Oct  1 20:33:12 EDT 2005
+# Date:		Sun Oct  2 08:19:16 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/10/02 07:33:41 $
+#   $Date: 2005/10/02 12:16:09 $
 #   $RCSfile: manualreply,v $
-#   $Revision: 1.66 $
+#   $Revision: 1.67 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -726,17 +726,6 @@ Makefile	Makefile to make solution binary and\
 		to solution directory.
 "
 
-set help($files_file) "
-$files_file	A list of files that are to be\
-		    submitted and of files that are
-	to be linked from the solution directory. \
-		    Optional.  A symbolic link
-	to the solution directory.  Used by autojudge,\
-		    extractmail, and
-	trackfinder.
-"
-
-
 set help(Scoring_Filter) "
 Scoring_Filter	A program that filters the .out\
 			    file to produce the
@@ -943,6 +932,8 @@ It appears that `autojudge' should be run."
 # Source any problem .rc file.
 
 if { $submitted_problem != "" } {
+    set PROBLEM $submitted_problem
+    set EXTENSION $submitted_extension
     source_file $submitted_problem.rc
 }
 
@@ -1136,15 +1127,42 @@ proc display_help { } {
 proc display_proofs {} {
 
     global last_file window_error window_prompt \
-	   proposed_score answer
+	   proposed_score answer auto_score_marker \
+	   scoring_instructions
 
     if { [catch {
+	    if { ! [regexp {^([^:]*):} \
+			   $auto_score_marker \
+			   forget score_file] } {
+	        error "No .score file"
+	    }
+	    set name [file rootname $score_file]
+	    set ext [file extension $score_file]
+	    if {    $ext == "" \
+	         || ! [file exists $score_file] } {
+	        error "No .score file"
+	    }
+	         
+	    set jin_instructions none
+	    if { [file exists $name.jin] } {
+		set jin_instructions \
+		    [string trim \
+		            [exec jfilter $name.jin]]
+	    }
+	    if { $jin_instructions == "none" } {
+		compute_instruction_array \
+		    $scoring_instructions \
+		    "scoring_instructions\
+		     variable value"
+	    } else {
+		compute_instruction_array \
+		    $jin_instructions \
+		    "$name.jin file"
+	    }
+	    compute_score_and_proof_arrays $score_file
+	    compute_score
 
-		    compute_instruction_array
-		    compute_score_and_proof_arrays
-		    compute_score
-
-		} out] } {
+	} out] } {
 	out_check $out
 	return ""
     }
