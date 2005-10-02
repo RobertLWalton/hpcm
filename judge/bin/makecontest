@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/10/02 13:20:10 $
+#   $Date: 2005/10/02 14:11:30 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.96 $
+#   $Revision: 1.97 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -1028,6 +1028,20 @@ proc recursive_file_copy { source destination } {
 
 # Main function to process an index specification.
 #
+# Subfunction to read problem.rc file.
+#
+proc read_rc_file { file problem options } {
+    global PROBLEM EXTENSION OPTIONS \
+           problem_source_files \
+	   problem_description_files
+    set PROBLEM $problem
+    set EXTENSION UNDEFINED
+    set OPTIONS $options
+    catch { unset problem_source_files }
+    catch { unset problem_description_files }
+    source_file $file
+}
+#
 proc process_index_specification {} {
 
     global index_file index_directory \
@@ -1037,7 +1051,8 @@ proc process_index_specification {} {
 	   problems_option demos_option \
 	   help_option description_option \
            j_d c_d problem_description_extensions \
-	   allowed_extensions files_file
+	   problem_source_files \
+	   problem_description_files
 
     set pdexts $problem_description_extensions
 
@@ -1201,107 +1216,47 @@ proc process_index_specification {} {
 		set all_option [lcontain $options all]
 		if { ! $all_option } {
 
-		    # Compute allowed extension options.
-		    #
-		    set exts \
-		        [intersect $allowed_extensions \
-				   $options]
-
 		    # Compute selected files.
 		    #
-		    set sff $source/$files_file
-		    set files [glob -nocomplain \
-			            $sff $sff.*]
-		    if { [llength $exts] != 0 } {
-		        set ext_files ""
-			foreach ext $exts {
-			    if { [lcontain \
-			            $files \
-				    $sff.$ext] } {
-			    	lappend ext_files \
-					$sff.$ext
-			    }
-			}
-			if { [llength $ext_files] \
-				== 0 } {
-			    error "No problem $sff.XXX \
-			    	   files for XXX in\
-				   $exts"
-			}
-			set files $ext_files
-		    }
+		    read_rc_file \
+		        $source/$targettail.rc \
+			$targettail $options
 
-		    # Compute concatenated value of
-		    # selected files.
-		    #
-		    if { [llength $files] == 0 } {
-		    	set value \
-			    "-SOURCE- Makefile\
-			     -DESCRIPTION-"
-			set base [file tail $source]
-			set sb $source/$base
-			foreach ext $pdexts {
-			    if { [file exists $sb$ext] \
-			    		} {
-				lappend value $base$ext
-			    }
-			}
+		    if { [info exists \
+		               problem_source_files] } {
+			set source_files \
+			    $problem_source_files
 		    } else {
-		        set value ""
-			foreach file $files {
-			    set file_value \
-			        [read_entire_file \
-				   $file]
-			    if { [catch { llength \
-			    		  $file_value \
-				        }] } {
-			        error "$file file is\
-				       not a TCL list"
-			    }
-			    		    
-			    lappend value -REQUIRED-
-			    set value \
-			        [concat $value \
-					$file_value]
+		        set source_files ""
+			lappend source_files Makefile
+			foreach file \
+			  [glob -nocomplain \
+			        $source/*.ISF] {
+			    lappend source_files \
+			    	    [file tail $file]
 			}
 		    }
 
-		    # Process concatenated value of
-		    # selected files.
-		    #
-		    if { [array exists source_array] } {
-		        unset source_array
-		    }
-		    if { [array exists \
-		    		description_array] } {
-		        unset description_array
-		    }
-		    set mode none
-		    foreach item $value {
-		        switch -- $item {
-			    -SOURCE- {
-			    	set mode source
-			    }
-			    -DESCRIPTION- {
-			    	set mode description
-			    }
-			    default {
-			        if { [regexp \
-				        {^-[-A-Z]*-$} \
-					$item] } {
-				    set mode none
-				} elseif { $mode != \
-					     "none" } {
-				    set ma ${mode}_array
-				    set ${ma}($item) yes
-				}
+		    if { [info exists \
+			   problem_description_files] \
+		       } {
+			set description_files \
+			    $problem_description_files
+		    } else {
+		        set description_files ""
+			foreach file \
+				[glob -nocomplain \
+				      $source/*] {
+			    set ext \
+			        [file extension $file]
+			    if { [lcontain $pdexts $ext] } {
+			        lappend \
+				  description_files \
+				  [file tail $file]
 			    }
 			}
 		    }
-		    set source_files \
-		        [array names source_array]
-		    set description_files \
-		        [array names description_array]
+
 		    set both \
 		        [intersect $source_files \
 			           $description_files]
