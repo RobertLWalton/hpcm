@@ -5,7 +5,7 @@
 #
 # File:		manualreply
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Sep 24 09:19:53 EDT 2005
+# Date:		Sat Oct  1 20:33:12 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/09/24 13:17:17 $
+#   $Date: 2005/10/02 07:33:41 $
 #   $RCSfile: manualreply,v $
-#   $Revision: 1.65 $
+#   $Revision: 1.66 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -72,24 +72,20 @@ manualreply \[directory\]
 
     If the directory argument is given, this program
     makes that directory current before searching for
-    the `$judging_parameters_file' file or doing\
-    anything else.
+    the `hpcm_judging.rc' file or doing anything else.
 
     Given a submission directory as the current direc-
     tory, this program permits a person to examine the
     contents of this directory and construct an email
-    reply, or alternatively, create a $no_reply_file\
-    		file that
-    indicates there is to be no reply.  A\
-    		$manual_score_file
+    reply, or alternatively, create a No_Reply file that
+    indicates there is to be no reply.  A Manual_Score
     file may also be written with a score that is sent
     in the reply.  Unchecked error log files may be
     inspected and checked off.
 
     While running, this program locks the current direc-
-    tory by creating a $dispatch_pid_file file.  If no
-    $auto_score_file, $reply_file, $no_reply_file, or\
-    	unchecked error
+    tory by creating a Dispatch_PID file.  If no
+    Auto_Score, Reply_Mail, No_Reply, or unchecked error
     files exist when this program is started, this
     program will suggest that `autojudge' should be run.
 
@@ -169,21 +165,21 @@ Gives help for WHAT, where WHAT can be:
 Type `? topics' for list of help topics.
 "
 
-set help($dispatch_pid_file) "
-$dispatch_pid_file	A file containing the process\
+set help(Dispatch_PID) "
+Dispatch_PID	A file containing the process\
 			    ID (pid) of a program
 		that has locked the current directory. \
 			    For example, the
 		manualreply program locks the directory\
 			    it is looking at.
 
-$gotten_file	A list of files gotten from the current\
+Gotten	A list of files gotten from the current\
 			    directory by a
 	get request.  Means the current directory is\
 			    NOT a solution
 	submission.
 "
-set help($gotten_file) $help($dispatch_pid_file)
+set help(Gotten) $help(Dispatch_PID)
 
 set help(#) "
 #			# denotes a `file\
@@ -254,10 +250,10 @@ aj
 
 Call `autojudge -manual' in the current directory.  The\
     autojudge
-program makes any missing or out of date\
-    $auto_score_file file and any missing
-or out of date files needed to make a new\
-    $auto_score_file file.  The -manual
+program makes any missing or out of date Auto_Score\
+    file and any missing
+or out of date files needed to make a new Auto_Score\
+    file.  The -manual
 option suppresses sending email to the submitter.
 "
 
@@ -290,7 +286,7 @@ List the names of all the files in the current\
 order of the file creation dates, and the time the file\
     is created is given
 to the nearest minute, relative to the creation time of\
-    the $received_file
+    the Received_Mail
 file if that is present, or of the most recent file\
     otherwise.  Here `inf'
 means a time too large to be displayed.
@@ -333,7 +329,7 @@ set help(ai) "
 ai
 
 Run the `autoinfo' program in the current\
-    directory.  If the $received_file
+    directory.  If the Received_Mail
 file has a subject of the form `get ...', the autoinfo\
     program will send
 an email response containing the files named in the\
@@ -516,7 +512,7 @@ When the shell is exited, this `manualreply' program\
 set help(ir) "
 ir
 
-Initialize (create) a reply file (named $reply_file+)\
+Initialize (create) a reply file (named Reply_Mail+)\
     and invoke an editor
 (e.g., vi) for that file.  If a reply file already\
     exists, it is overwritten.
@@ -526,7 +522,7 @@ set help(er) "
 er
 
 Edit an existing reply file (the file named\
-    $reply_file+), creating the
+    Reply_Mail+), creating the
 file first if it does not already exist.
 "
 
@@ -537,7 +533,7 @@ Send the reply file to the submitter, after first\
     displaying it and asking
 the user to be sure it should be send.  The reply file\
     is the file named
-$reply_file+ that is created by the `ir' or `er'\
+Reply_Mail+ that is created by the `ir' or `er'\
     commands.
 "
 
@@ -546,20 +542,20 @@ nr
 
 Lets the user type a line that is then written into a\
     newly created one line
-$no_reply_file file.  The presence of this file\
-    indicates to HPCM that no
+No_Reply file.  The presence of this file indicates to\
+    HPCM that no
 reply needs to be generated for the current submission\
     directory.  For example,
 the `tracker' program searches for submission\
     directories that do NOT contain
-either a $reply_file file or a $no_reply_file file.
+either a Reply_Mail file or a No_Reply file.
 
-The `lookat \"${no_reply_file}::regexp\"' program\
+The `lookat \"No_Reply::regexp\"' program\
     command searches for submission
-directories whose $no_reply_file files have contents\
-    matching the regular expression
-`regexp', so what is written into the $no_reply_file\
-    file can be used to find the
+directories whose No_Reply files have contents matching\
+    the regular expression
+`regexp', so what is written into the No_Reply file can\
+    be used to find the
 submission directory later.
 "
 
@@ -590,10 +586,10 @@ commands listed on both menus can be entered.
 set help(ss) "
 ss
 
-Composes a reply message ($reply_file+ file) containing\
+Composes a reply message (Reply_Mail+ file) containing\
     the proposed score
 and sends that message.  Sets the manual score (in the\
-    $manual_score_file file)
+    Manual_Score file)
 to this proposed score.  If anything unusual exists,\
     such as the presence of a
 previous manual score, the user is given a chance to\
@@ -639,14 +635,14 @@ are displayed, XX can be typed by itself as a command.
 "
 
 
-set help($reply_file) "
-$reply_file		The last and final reply\
+set help(Reply_Mail) "
+Reply_Mail		The last and final reply\
 			   message.  If this is present,
 			the judge has finished with\
 			  this submission.
 
-$no_reply_file		A file whose presence indicates\
-    the judge has finished
+No_Reply		A file whose presence indicates\
+    			  the judge has finished
 			with this submission but is\
 			  not going to reply.  By
 			putting a comment in this file,\
@@ -654,47 +650,46 @@ $no_reply_file		A file whose presence indicates\
 			the submission later by using\
 			  the lookat program to
 			search for submissions with a\
-			  particular $no_reply_file
+			  particular No_Reply
 			comment.
 
-See also: $received_file, $reply_file+, and\
-    $reply_history_file.
+See also: Received_Mail, Reply_Mail+, and\
+    Reply_Mail_History.
 "
-set help($no_reply_file) $help($reply_file)
+set help(No_Reply) $help(Reply_Mail)
 
 
-set help($received_file) "
-$received_file		The submission mail message. \
+set help(Received_Mail) "
+Received_Mail		The submission mail message. \
 			  The `Subject:' of this
 			message determines whether the\
 			  submission is a `get',
 			a `submit', or a query.
 
-$reply_file+		A reply from the judge to the\
+Reply_Mail+		A reply from the judge to the\
 			  submitter that is under
 			construction, and not yet\
 			  sent.  Can be editted by
 			the `er' command and sent by\
 			  the `sr' command.
 
-$reply_history_file	A copy of all the replies sent\
+Reply_Mail_History	A copy of all the replies sent\
 			  to the submitter by
 			the judge.
 
-See also: $reply_file and $no_reply_file.
+See also: Reply_Mail and No_Reply.
 "
-set help($reply_file+) $help($received_file)
-set help($reply_history_file) $help($received_file)
+set help(Reply_Mail+) $help(Received_Mail)
+set help(Reply_Mail_History) $help(Received_Mail)
 
 
-set help($auto_score_file) "
-$auto_score_file	The score produced\
-		    automatically by the autojudge\
-		    program
+set help(Auto_Score) "
+Auto_Score	The score produced automatically by the\
+                    autojudge program
 		(which calls autoscore to produce the\
 		    score).
 
-$manual_score_file	The score entered manually\
+Manual_Score	The score entered manually\
 		    by using the `manualreply' program.
 		See the `sm' and `ss' commands.
 
@@ -708,8 +703,8 @@ $manual_score_file	The score entered manually\
 		    mismatched tokens in the
 		two files.
 "
-set help($manual_score_file) $help($auto_score_file)
-set help(.score) $help($auto_score_file)
+set help(Manual_Score) $help(Auto_Score)
+set help(.score) $help(Auto_Score)
 
 
 
@@ -725,8 +720,8 @@ set help(.java) $help(.c)
 
 
 
-set help($make_file) "
-$make_file	Makefile to make solution binary and\
+set help(Makefile) "
+Makefile	Makefile to make solution binary and\
 		    .out file.  Symbolic link
 		to solution directory.
 "
@@ -742,8 +737,8 @@ $files_file	A list of files that are to be\
 "
 
 
-set help($scoring_filter_file) "
-$scoring_filter_file	A program that filters the .out\
+set help(Scoring_Filter) "
+Scoring_Filter	A program that filters the .out\
 			    file to produce the
 		.fout file, and the .test file to\
 			    produce the .ftest file.
@@ -755,15 +750,15 @@ $scoring_filter_file	A program that filters the .out\
 			    solution directory.
 
 .fout	The result of filtering the .out file through\
-			    the $scoring_filter_file
+			    the Scoring_Filter
 	program.
 
 .ftest	The result of filtering the .test file through\
-			    the $scoring_filter_file
+			    the Scoring_Filter
 	program.
 "
-set help(.fout) $help($scoring_filter_file)
-set help(.ftest) $help($scoring_filter_file)
+set help(.fout) $help(Scoring_Filter)
+set help(.ftest) $help(Scoring_Filter)
 
 
 set help(.class) "
@@ -883,13 +878,12 @@ proc compose_score_reply {} {
 #
 proc send_score_reply {} {
 
-    global manual_score_file proposed_score \
-           manual_score score_flag_file
+    global proposed_score manual_score 
 
     send_reply
 
-    write_file $manual_score_file $proposed_score
-    set_flag $score_flag_file
+    write_file Manual_Score $proposed_score
+    set_flag Score_Flag
     set manual_score $proposed_score
 }
 
@@ -918,9 +912,9 @@ refresh_file_list
 if { $readonly_mode == "no" \
      && $submitted_problem != "" \
      && [llength [glob -nocomplain \
-                       $reply_file \
-                       $no_reply_file \
-                       $auto_score_file \
+                       Reply_Mail \
+                       No_Reply \
+                       Auto_Score \
                        *-unchecked-error]] == 0 } {
 
 
@@ -938,9 +932,8 @@ It appears that `autojudge' should be run."
     	puts "Running autojudge"
 	catch { exec autojudge >&@ stdout }
 
-	if { ! [file exists $auto_score_file] } {
-	    puts "autojudge FAILED to make\
-	          $auto_score_file"
+	if { ! [file exists Auto_Score] } {
+	    puts "autojudge FAILED to make Auto_Score"
 	}
 	continue?
 	refresh_file_list
@@ -1064,7 +1057,7 @@ proc refresh_proofs_info { } {
 proc send_score { } {
 
     global proposed_score window_error last_file \
-           reply_file window_prompt last_display
+           window_prompt last_display
 
     if { [not_readonly] == "no" } {
 	# do nothing
@@ -1073,7 +1066,7 @@ proc send_score { } {
 	    proposed score before sending it"
     } elseif { [compose_score_reply] } {
 	send_score_reply
-	set last_file $reply_file
+	set last_file Reply_Mail
 	set last_display file
 	set window_error "Score sent!"
     } else {
@@ -1082,8 +1075,8 @@ proc send_score { } {
 	set window_prompt "To continue you\
 	    must edit reply.  Do you want to\
 	    continue (y or n)? "
-	set last_file $reply_file+
-	set_file_display $reply_file+
+	set last_file Reply_Mail+
+	set_file_display Reply_Mail+
 	display_window
 	if { [yes?] } {
 	    edit_file $last_file
@@ -1094,7 +1087,7 @@ proc send_score { } {
 	    display_window
 	    if { [yes?] } {
 		send_score_reply
-		set last_file $reply_file
+		set last_file Reply_Mail
 		set window_error "Score sent!"
 	    } else {
 		set window_error "Score sending\
@@ -1409,7 +1402,7 @@ while { "yes" } {
 		    RECEIVED-FULL-HEADER \
 		    BLANK \
 		    RECEIVED-BODY
-		set last_file $reply_file+
+		set last_file Reply_Mail+
 		edit_file $last_file
 		refresh_file_list
 		refresh_info
@@ -1418,7 +1411,7 @@ while { "yes" } {
 	}
 	{^er$} {
 	    if { [not_readonly] } {
-		if { ! [file exists $reply_file+] } {
+		if { ! [file exists Reply_Mail+] } {
 		    compose_reply \
 			{ LINE "EDIT YOUR REPONSE\
 			        HERE" } \
@@ -1429,7 +1422,7 @@ while { "yes" } {
 			BLANK \
 			RECEIVED-BODY
 		}
-		set last_file $reply_file+
+		set last_file Reply_Mail+
 		edit_file $last_file
 		refresh_file_list
 		refresh_info
@@ -1437,11 +1430,11 @@ while { "yes" } {
 	    }
 	}
 	{^sr$} {
-	    if { ! [file exists $reply_file+] } {
+	    if { ! [file exists Reply_Mail+] } {
 		set window_error \
 		    "ERROR: No reply composed!"
 	    } elseif { [not_readonly] } {
-		set_file_display $reply_file+
+		set_file_display Reply_Mail+
 		set window_error ""
 		set window_prompt \
 		    "Do you want to send the above\
@@ -1453,7 +1446,7 @@ while { "yes" } {
 		       "Sending..."
 		    display_window
 		    catch { send_reply } out
-		    set last_file $reply_file
+		    set last_file Reply_Mail
 		    if { $out == "" } {
 		    	set window_error "Reply sent!"
 		    } else {
@@ -1472,7 +1465,7 @@ while { "yes" } {
 	    if { [not_readonly] } {
 		set window_error \
 		    "Type line to write into\
-		     $no_reply_file file (or type ^D\
+		     No_Reply file (or type ^D\
 		     to abort):"
 		set window_prompt "> "
 		display_window
@@ -1480,12 +1473,10 @@ while { "yes" } {
 		    [string trim [gets stdin]]
 		if { [eof stdin] } {
 		    set window_error \
-			"$no_reply_file NOT WRITTEN"
+			"No_Reply NOT WRITTEN"
 		} else {
-		    write_file $no_reply_file \
-		               $no_reply_line
-		    set window_error \
-			"$no_reply_file written"
+		    write_file No_Reply $no_reply_line
+		    set window_error "No_Reply written"
 		}
 		refresh_file_list
 		refresh_info
@@ -1508,10 +1499,10 @@ while { "yes" } {
 		catch { exec autojudge -manual \
 		             >&@ stdout }
 
-		if { ! [file exists $auto_score_file] \
+		if { ! [file exists Auto_Score] \
 			} {
 		    puts "autojudge -manual FAILED to\
-		          make $auto_score_file"
+		          make Auto_Score"
 		}
 		continue?
 		refresh_file_list
@@ -1542,7 +1533,7 @@ while { "yes" } {
 	{^xq$} {
 	    if { ! [info exists message_subject] } {
 	        set window_error \
-		    "ERROR: No $received_file file."
+		    "ERROR: No Received_Mail file."
 	    } else {
 	        set ws "\[\ \t\n\]"
 	        set nws "\[^\ \t\n\]"
@@ -1552,7 +1543,7 @@ while { "yes" } {
 		set d $mail_directory/$about
 		if { $about == "" } {
 		    set window_error \
-			"ERROR: $received_file subject\
+			"ERROR: Received_Mail subject\
 				does not have the form\
 				`About DIRECTORY'."
 		} elseif { ! [file isdirectory $d] } {
