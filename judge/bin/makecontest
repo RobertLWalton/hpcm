@@ -6,7 +6,7 @@
 #
 # File:		makejudgingdir
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Feb 12 01:28:09 EST 2003
+# Date:		Sun Oct  2 08:38:07 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2003/02/12 06:27:06 $
+#   $Date: 2005/10/02 13:20:10 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.95 $
+#   $Revision: 1.96 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -32,6 +32,11 @@ set contestant_help_directory \
 source $lib_directory/judging_common.tcl
 set log_mode none
 catch {
+
+# Abbreviations used in this program to shorten lines.
+#
+set j_d $judging_directory
+set c_d $j_d/contest
 
 set document "
 makejudgingdir option ... index_specification ...
@@ -677,17 +682,15 @@ makejudgingdir option ... index_specification ...
 
     Although we have used the names `./info', `./mail',
     `./contest', and `./help' in this description, the
-    actual directory names used are the values of the
-    `info_directory', `mail_directory', `contest_
-    directory', and `help_directory' variables set by
-    hpcm_judging.rc.  The file names within these
-    directories are literally as given in this docu-
-    ment.
+    actual directories are the info, mail, contest,
+    help, etc. subdirectories of the judging_directory.
+    The file names within these directories are literal-
+    ly as given in this document.
 
     Like other HPCM programs, `makejudgingdir' can be
     run from anywhere in the judge's directory subtree
     which is rooted by the directory containing the
-    `$judging_parameters_file' file.
+    `hpcm_judging.rc' file.
 
     Unlike most HPCM judging programs, errors made by
     this program are not written to log files, but are
@@ -786,7 +789,7 @@ if { $argi < $argc \
 
 # Set up TODO
 #
-set TODO_file $judging_directory/TODO
+set TODO_file $j_d/TODO
 set TODO_ch ""
 set TODO_existed [expr { [file exists $TODO_file] \
                          && [file size $TODO_file] > 0 \
@@ -817,21 +820,18 @@ proc make_password {} {
 		   [random 256]]
 }
 
-# Universal abbreviations to shorten lines.
-#
-set c_d $contest_directory
-
 # The judging directory name relative to the home
 # directory, for use in .procmailrc.
 #
-set j_d $judging_directory
-if { ! [regexp {^/} $j_d] } {
-    set j_d "[pwd]/$j_d"
+set j_d_relative $j_d
+if { ! [regexp {^/} $j_d_relative] } {
+    set j_d_relative "[pwd]/$j_d_relative"
 }
-set j_d [scrub_filename $j_d]
+set j_d_relative [scrub_filename $j_d_relative]
 if { [info exists env(HOME)] } {
     set hd [scrub_filename $env(HOME)]
-    regexp "^$hd/(.*)\$" $j_d forget j_d
+    regexp "^$hd/(.*)\$" $j_d_relative \
+           forget j_d_relative
 }
 
 
@@ -956,9 +956,8 @@ proc make_substitutions { name } {
 #   problems_option
 #   demos_option
 #   help_option
-#   info_directory	directory names
-#   contest_directory (c_d)
-#   solutions_directory
+#   j_d			directory names
+#   c_d
 
 # Helper function called when ${targetdir}index_ch is ""
 # to compute and return the correct value of this
@@ -966,8 +965,7 @@ proc make_substitutions { name } {
 #
 proc get_index_chs { targetdir } {
 
-    global info_option help_option \
-           info_directory c_d \
+    global info_option help_option j_d c_d \
            help_index_chs problems_index_chs \
 	   demos_index_chs \
 
@@ -983,7 +981,7 @@ proc get_index_chs { targetdir } {
 	}
 	if { $info_option } {
 	    lappend chs \
-	    	    [open $info_directory+/help/$file w]
+	    	    [open $j_d/info+/help/$file w]
 	}
 	if { $help_option } {
 	    lappend chs [open $c_d/help+/$file w]
@@ -1038,8 +1036,7 @@ proc process_index_specification {} {
            info_option solutions_option \
 	   problems_option demos_option \
 	   help_option description_option \
-           info_directory solutions_directory \
-	   c_d problem_description_extensions \
+           j_d c_d problem_description_extensions \
 	   allowed_extensions files_file
 
     set pdexts $problem_description_extensions
@@ -1320,7 +1317,7 @@ proc process_index_specification {} {
 		if { $info_option } {
 
 		    set destination \
-		    	$info_directory+/$target
+		    	$j_d/info+/$target
 
 		    if { $all_option \
 			 || [file isfile $source] } {
@@ -1408,7 +1405,7 @@ proc process_index_specification {} {
 			       solutions directory but\
 			       contains a `/'"
 		    }
-		    set s_d $solutions_directory+
+		    set s_d $j_d/solutions+
 		    link_file $source $s_d/$targettail
 		}
 	    }
@@ -1460,12 +1457,12 @@ proc process_index_specification {} {
 # help+ directories.
 #
 if { $info_option } {
-    if { [file exists $info_directory+] } {
-        puts "Deleting $info_directory+"
-	file delete -force -- $info_directory+
+    if { [file exists $j_d/info+] } {
+        puts "Deleting $j_d/info+"
+	file delete -force -- $j_d/info+
     }
-    file mkdir $info_directory+
-    file mkdir $info_directory+/help
+    file mkdir $j_d/info+
+    file mkdir $j_d/info+/help
 }
 foreach dir {problems demos help} {
     if { [set ${dir}_option] } {
@@ -1480,25 +1477,25 @@ foreach dir {problems demos help} {
     }
 }
 if { $solutions_option } {
-    if { [file exists $solutions_directory+] } {
-        puts "Deleting $solutions_directory+"
-	file delete -force -- $solutions_directory+
+    if { [file exists $j_d/solutions+] } {
+        puts "Deleting $j_d/solutions+"
+	file delete -force -- $j_d/solutions+
     }
-    file mkdir $solutions_directory+
+    file mkdir $j_d/solutions+
 }
 
 # Make help directory.
 #
 if { $this_contest_option \
-      && ! [file isdirectory $help_directory] } {
-    file mkdir $help_directory
+      && ! [file isdirectory $j_d/help] } {
+    file mkdir $j_d/help
 }
 
 # Make help/index file.
 #
 if { $this_contest_option \
-      && ! [file readable $help_directory/index] } {
-    set index_ch [open $help_directory/index w]
+      && ! [file readable $j_d/help/index] } {
+    set index_ch [open $j_d/help/index w]
 
     puts $index_ch "
 To display the file listed as `help/topic' below use the
@@ -1537,8 +1534,8 @@ Introductory Information:
 #
 if { $this_contest_option \
       && ! [file readable \
-      		 $help_directory/this_contest] } {
-    set tc_ch [open $help_directory/this_contest w]
+      		 $j_d/help/this_contest] } {
+    set tc_ch [open $j_d/help/this_contest w]
 
     puts $tc_ch [format {%-28s%28s} \
     			"About This Contest" \
@@ -1564,7 +1561,7 @@ if { $this_contest_option \
 
     close $tc_ch
 
-    TODO "Edit $help_directory/this_contest." \
+    TODO "Edit $j_d/help/this_contest." \
          "Then rerun makejudgingdir to recompute\
 	       help files."
 
@@ -1572,13 +1569,13 @@ if { $this_contest_option \
     #
     if { ! [file isdirectory $c_d] } {
 	TODO "Using the contest password you edited\
-              into $help_directory/this_contest," \
+              into $j_d/help/this_contest," \
 	     "edit ~/.procmailrc to contain:" \
 	     "" \
 	     ":0" \
 	     "* ^To:.*password.*<" \
-	     "| receivemail $j_d | \\" \
-	     "  dispatchmail $j_d"
+	     "| receivemail $j_d_relative | \\" \
+	     "  dispatchmail $j_d_relative"
 	TODO "You may want to add the following to\
 	      the BEGINNING of your ~/.procmailrc" \
 	     "file if you have not ALREADY done so.\
@@ -1750,7 +1747,7 @@ proc rename_directory { directory } {
 }
 
 if { $info_option } {
-    rename_directory $info_directory
+    rename_directory $j_d/info
 }
 if { $problems_option } {
     rename_directory $c_d/problems
@@ -1762,7 +1759,7 @@ if { $demos_option } {
     rename_directory $c_d/demos
 }
 if { $solutions_option } {
-    rename_directory $solutions_directory
+    rename_directory $j_d/solutions
 }
 
 if { ( $problems_option \
@@ -1782,11 +1779,11 @@ if { ( $problems_option \
 # Make mail directory.
 #
 if { $mail_option \
-      && ! [file isdirectory $mail_directory] } {
-    file mkdir $mail_directory
-    grant_access $mail_directory x
-    grant_access $mail_directory/.. x
-    grant_access $mail_directory/../.. x
+      && ! [file isdirectory $j_d/mail] } {
+    file mkdir $j_d/mail
+    grant_access $j_d/mail x
+    grant_access $j_d/mail/.. x
+    grant_access $j_d/mail/../.. x
 }
 
 # Make $c_d/help2 directory.
@@ -1885,7 +1882,7 @@ if { $secure_option \
          "To: $to_password<[account_name]@[host_name]>"
     set key [make_password]
     puts $rc_ch "Key: $key"
-    set key_name [file tail $j_d]
+    set key_name [file tail $j_d_relative]
     regexp {^(.*)(-|_)[^-_]*$} $key_name \
 	   forget key_name forget2
     puts $rc_ch "Key-Name: $key_name"
@@ -1910,8 +1907,8 @@ if { $secure_option \
          "" \
 	 ":0" \
 	 "* ^To:.*$to_password" \
-	 "| receivemail $j_d | \\" \
-  	 "  dispatchmail $j_d"
+	 "| receivemail $j_d_relative | \\" \
+  	 "  dispatchmail $j_d_relative"
     TODO "You may want to add the following to\
 	  the BEGINNING of your ~/.procmailrc" \
 	 "file if you have not ALREADY done so.\
