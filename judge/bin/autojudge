@@ -5,7 +5,7 @@
 #
 # File:		autojudge
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Sep 30 10:18:20 EDT 2005
+# Date:		Sun Oct  2 04:33:04 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/09/30 17:43:03 $
+#   $Date: 2005/10/02 08:35:46 $
 #   $RCSfile: autojudge,v $
-#   $Revision: 1.102 $
+#   $Revision: 1.103 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -1111,14 +1111,14 @@ foreach name $input_names {
     }
 }
 
-# Make .score files and compute Auto_Score.
+# Make .*score files and compute Auto_Score.
 #
 # Do not try to be efficient in the case where not
 # everything needs to be computed, as that is an
 # exceptional case.
 #
-# Compute the mtime of the most recent .score file for
-# use in deciding whether to recompute the $auto_score_
+# Compute the mtime of the most recent .*score file for
+# use in deciding whether to recompute the Auto_Score
 # file.
 #
 set score_mtime 0
@@ -1144,49 +1144,53 @@ foreach name $input_names {
 		$jin_instructions "$name.jin file"
 	}
 	if { $scoring_filter_exists } {
-	    if { [should_be_made [list $name.score] \
+	    if { [should_be_made [list $name.jfscore] \
 		    [list $name.jfout $name.jftest]] } {
 		compute_score_file \
 		    $name.jfout $name.jftest \
-		    $name.score -filtered
+		    $name.jfscore -filtered
 	    }
+	    set score_file $name.jfscore
 	} else {
-	    if { [should_be_made [list $name.score] \
+	    if { [should_be_made [list $name.jscore] \
 		      [list $name.jout $name.jtest]] } {
 		compute_score_file \
-		    $name.jout $name.jtest $name.score \
-		    -filtered
+		    $name.jout $name.jtest \
+		    $name.jscore -filtered
 	    }
+	    set score_file $name.jscore
 	}
     } else {
 	compute_instruction_array \
 	    $scoring_instructions \
 	    "scoring_instructions variable value"
 	if { $scoring_filter_exists } {
-	    if { [should_be_made [list $name.score] \
+	    if { [should_be_made [list $name.fscore] \
 		      [list $name.fout $name.ftest]] } {
 		compute_score_file \
-		    $name.fout $name.ftest $name.score
+		    $name.fout $name.ftest $name.fscore
 	    }
+	    set score_file $name.fscore
     	} else {
 	    if { [should_be_made [list $name.score] \
 		      [list $name.out $name.test]] } {
 		compute_score_file \
 		    $name.out $name.test $name.score
 	    }
+	    set score_file $name.score
 	}
     }
-    if { ! [file exists $name.score] } {
-        error "$name.score does not exist - maybe\
+    if { ! [file exists $score_file] } {
+        error "$score_file does not exist - maybe\
 	       correspondence problem between .*test\
 	       and .*out files"
     }
-    set mtime [file mtime $name.score]
+    set mtime [file mtime $score_file]
     if { $mtime > $score_mtime } {
         set score_mtime $mtime
     }
 
-    compute_score_and_proof_arrays $name.score
+    compute_score_and_proof_arrays $score_file
     compute_score
     foreach x {incorrect_output incomplete_output\
 	       formatting_error} {
@@ -1194,7 +1198,7 @@ foreach name $input_names {
 	if { $marker != "" && [set $x] == "" } {
 	    set group [lindex $marker 0]
 	    set case [lindex $marker 1]
-	    set $x "$name:$group:$case"
+	    set $x "$score_file:$group:$case"
 	}
     }
 }
