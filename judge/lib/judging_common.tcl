@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Oct  2 03:56:22 EDT 2005
+# Date:		Sun Oct  2 04:20:05 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/10/02 08:01:37 $
+#   $Date: 2005/10/02 08:18:01 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.117 $
+#   $Revision: 1.118 $
 #
 
 # Table of Contents
@@ -271,13 +271,15 @@ proc log_error { error_output } {
 
     global argv0 argv errorCode errorInfo \
 	   default_log_directory \
-	   log_directory log_globally log_mode \
+	   judging_directory log_globally log_mode \
 	   log_error_count log_error_maximum \
 	   log_manager received_file \
 	   message_From_line message_to message_from \
 	   message_date message_subject \
 	   message_x_hpcm_test_subject \
 	   needs_reply_flag_file
+
+    set log_directory $judging_directory/log
 
     # Increment count of calls to log error and if
     # appropriate change log_mode to `none' or exit
@@ -1738,24 +1740,27 @@ proc source_file { filename } {
 # Set flag.
 #
 proc set_flag { flagfilename } {
-    global flag_directory
-    file mkdir $flag_directory
-    set file_ch [open $flag_directory/$flagfilename w]
+    global judging_directory
+    file mkdir $judging_directory/flag
+    set file_ch \
+        [open $judging_directory/flag/$flagfilename w]
     close $file_ch
 }
 
 # Test flag.
 #
 proc test_flag { flagfilename } {
-    global flag_directory
-    return [file exists $flag_directory/$flagfilename]
+    global judging_directory
+    return \
+     [file exists $judging_directory/flag/$flagfilename]
 }
 
 # clear flag.
 #
 proc clear_flag { flagfilename } {
-    global flag_directory
-    file delete -force $flag_directory/$flagfilename
+    global judging_directory
+    file delete -force \
+         $judging_directory/flag/$flagfilename
 }
 
 # Logical Expression Compilation

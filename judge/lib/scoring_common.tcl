@@ -2,7 +2,7 @@
 #
 # File:		scoring_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Oct  2 04:11:35 EDT 2005
+# Date:		Sun Oct  2 04:18:52 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/10/02 08:10:08 $
+#   $Date: 2005/10/02 08:13:29 $
 #   $RCSfile: scoring_common.tcl,v $
-#   $Revision: 1.48 $
+#   $Revision: 1.49 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -1100,7 +1100,7 @@ proc execute_response_commands \
 
     global auto_score manual_score proposed_score \
 	   submitted_problem submitted_extension \
-	   solutions_directory
+	   judging_directory
 
     set problem $submitted_problem$submitted_extension
 
@@ -1186,7 +1186,7 @@ proc execute_response_commands \
 	    	if { $length != 1 } {
 		    response_error $command
 		}
-		set sdir $solutions_directory
+		set sdir $judging_directory/solutions
 		set sdir $sdir/$submitted_problem
 	        foreach file [compute_solution_files] {
 		    set f $sdir/$file
