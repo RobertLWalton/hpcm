@@ -5,7 +5,7 @@
 #
 # File:		receivemail
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Mar 19 00:48:05 EST 2003
+# Date:		Sun Oct  2 12:56:30 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2003/03/19 06:16:31 $
+#   $Date: 2005/10/02 16:53:10 $
 #   $RCSfile: receivemail,v $
-#   $Revision: 1.31 $
+#   $Revision: 1.32 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -63,7 +63,7 @@ receivemail \[directory\]
     its reply, and any program file extracted from the
     message, binary of that program, output of that
     program, etc.  The message is copied into the
-    `$received_file' file in the subdirectory and the
+    `Received_Mail' file in the subdirectory and the
     name of the subdirectory is output.  The output can
     be piped to the `dispatchmail' program in order to
     call `autodispatch' for the subdirectory.
@@ -91,13 +91,13 @@ receivemail \[directory\]
     authentication for the message is computed using
     the X-HPCM-Signature field, and the result is
     saved in the X-HPCM-Signature-OK field of the
-    message stored in the $received_file file.  No
+    message stored in the Received_Mail file.  No
     attempt is made to ignore or reply to non-authentic
     messages.
 
     If the directory argument is given, this program
     makes that directory current before searching for
-    the `$judging_parameters_file' file.
+    the `hpcm_judging.rc' file.
 
     If there are non-blank lines before the first `From'
     line in the input, these are organized into a spec-
@@ -121,10 +121,10 @@ if { $my_argc != 0 } {
 # directory will not fail: i.e., be sure the mail
 # directory exists and is writable.
 #
-if { ! [file isdirectory $mail_directory] } {
-    error "$mail_directory is not a directory."
-} elseif { ! [file writable $mail_directory] } {
-    error "$mail_directory is not writable."
+if { ! [file isdirectory $judging_directory/mail] } {
+    error "$judging_directory/mail is not a directory."
+} elseif { ! [file writable $judging_directory/mail] } {
+    error "$judging_directory/mail is not writable."
 }
 
 # Read stdin until non-blank line found.
@@ -219,7 +219,7 @@ while { "yes" } {
 
     if { [catch \
 	  { create_directory \
-	    $mail_directory/$dirname }] } {
+	    $judging_directory/mail/$dirname }] } {
 
 	# Directory must already exist.  Skip message.
 	#
@@ -236,8 +236,8 @@ while { "yes" } {
     	# Directory did NOT exist, and was just made.
 	# Copy message.
 	#
-	set d $mail_directory/$dirname
-	set message_ch [open $d/$received_file w]
+	set d $judging_directory/mail/$dirname
+	set message_ch [open $d/Received_Mail w]
 
 	puts $message_ch $message_From_line
 	puts $message_ch $message_header
