@@ -2,7 +2,7 @@
 #
 # File:		scoring_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Sep 30 07:13:35 EDT 2005
+# Date:		Sun Oct  2 04:11:35 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/09/30 11:13:43 $
+#   $Date: 2005/10/02 08:10:08 $
 #   $RCSfile: scoring_common.tcl,v $
-#   $Revision: 1.47 $
+#   $Revision: 1.48 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -685,7 +685,7 @@ proc compute_score { } {
 # ------- ----- ---------
 
 # Function to process response instructions and produce
-# a $reply_file+ file by calling compose_reply.  Docu-
+# a Reply_Mail+ file by calling compose_reply.  Docu-
 # mentation of response instructions is found in
 # hpcm_judging.rc along with the default value of the
 # `response_instructions' global variable.
@@ -705,10 +705,10 @@ proc compute_score { } {
 #
 # This function returns a list of commands whose execu-
 # tion merely serve to specify options for disposition
-# of $reply_file+.  Specifically, any FINAL, NOT-FINAL,
+# of Reply_Mail+.  Specifically, any FINAL, NOT-FINAL,
 # NO-REPLY, or EDIT commands that are executed are
 # merely returned in this list, and have no direct
-# effect on the contents of $reply_file+.  This list
+# effect on the contents of Reply_Mail+.  This list
 # is guarenteed to have exactly one of FINAL, NOT-
 # FINAL, or NO-REPLY, and may be passed to send_
 # response.
@@ -735,14 +735,14 @@ proc compose_response { { compose_reply_options "" } } {
     # Execute second pass on action response instruc-
     # tions and return those whose action is to be per-
     # formed by our caller (i.e., are instructions for
-    # disposal of $reply_file+).
+    # disposal of Reply_Mail+).
     #
     return [execute_response_commands \
     	        $compose_reply_options $commands]
 }
 
-# Function to send a $reply_file+ produced by compose_
-# response.  Takes as input the list of commands
+# Function to send the Reply_Mail+ file produced by
+# compose_response.  Takes as input the list of commands
 # returned by compose_response.  Does the following
 #
 # If the list contains FINAL: calls send_reply.
