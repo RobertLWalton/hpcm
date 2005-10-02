@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Oct  2 04:20:05 EDT 2005
+# Date:		Sun Oct  2 09:54:23 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/10/02 08:18:01 $
+#   $Date: 2005/10/02 16:40:18 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.118 $
+#   $Revision: 1.119 $
 #
 
 # Table of Contents
@@ -1724,7 +1724,7 @@ proc source_file { filename } {
 	    [file attributes $filename -permissions]
 	if { $__p__ & 7 } {
 	    error "security violation: $filename is\
-		   readable by `others'\n      \
+		   accessible by `others'\n      \
 		   you should execute chmod o-r\
 		   $filename"
 	}

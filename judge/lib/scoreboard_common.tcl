@@ -3,7 +3,7 @@
 #
 # File:		scoreboard_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Oct 27 01:50:37 EDT 2002
+# Date:		Sun Oct  2 12:31:12 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -12,9 +12,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/10/27 05:59:10 $
+#   $Date: 2005/10/02 16:40:18 $
 #   $RCSfile: scoreboard_common.tcl,v $
-#   $Revision: 1.45 $
+#   $Revision: 1.46 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -490,7 +490,7 @@ proc prune_scoreboard_array { } {
 		lappend new_items $item
 	    }
 
-	    if { [regexp {.c.} $code] } {
+	    if { [regexp {.c..} $code] } {
 	        if {    $correct_cut != "" \
 		     && $correct_cut <= $time \
 		     && (    $final_cut == "" \
@@ -498,7 +498,7 @@ proc prune_scoreboard_array { } {
 		    set cut_array($submitter) yes
 		}
 		break
-	    } elseif { [regexp {.i.} $code] } {
+	    } elseif { [regexp {.i..} $code] } {
 	        if {    $incorrect_cut != "" \
 		     && $incorrect_cut <= $time \
 		     && (    $final_cut == "" \
@@ -635,9 +635,9 @@ proc compute_scoreboard_list {} {
     # a correct submission for the submitter or problem.
     #
     if { $scoreboard_display_incorrect } {
-        set present_regexp {.[ic].}
+        set present_regexp {.[ic]..}
     } else {
-        set present_regexp {.c.}
+        set present_regexp {.c..}
     }
 
     foreach sap [array names scoreboard_array] {
@@ -725,7 +725,7 @@ proc compute_scoreboard_list {} {
 
 		    set problem_start_time $item_time
 
-		} elseif { [regexp {.c.} $code] } {
+		} elseif { [regexp {.c..} $code] } {
 
 		    # Score is correct.
 
@@ -758,7 +758,7 @@ proc compute_scoreboard_list {} {
 		    incr problems_correct
 		    incr submissions
 
-		} elseif { [regexp {.i.} $code] } {
+		} elseif { [regexp {.i..} $code] } {
 
 		    # Score is incorrect.
 
@@ -766,7 +766,7 @@ proc compute_scoreboard_list {} {
 		    incr submissions
 		}
 
-		if { [regexp {..n} $code] } {
+		if { [regexp {..n.} $code] } {
 		    set problem_modifier n
 		    set modifier n
 		}
@@ -916,9 +916,11 @@ proc format_problem_score { time incorrect modifier } {
     } elseif { $time != "" } {
 
         set plain_score \
-	    [clock format $time -format {%d%b%y}]
+	    [string tolower \
+	       [clock format $time -format {%d%b%y}]]
         set short_score \
-	    [clock format $time -format {%d%b}]
+	    [string tolower \
+	       [clock format $time -format {%d%b}]]
 
 	incr incorrect 1
 	set long_score $plain_score/$incorrect
