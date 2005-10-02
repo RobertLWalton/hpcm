@@ -7,7 +7,7 @@
 #
 # File:		tracker
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Oct 25 08:55:21 EDT 2002
+# Date:		Sun Oct  2 11:34:31 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -16,9 +16,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/10/25 12:56:27 $
+#   $Date: 2005/10/02 15:36:43 $
 #   $RCSfile: tracker,v $
-#   $Revision: 1.33 $
+#   $Revision: 1.34 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -264,7 +264,7 @@ proc read_input { ch } {
 #
 proc read_all_sources {} {
 
-    global log_directory default_log_directory \
+    global default_log_directory \
            judging_parameters_file judging_directory \
 	   info_array rec_array ext_array bin_array \
            out_array sco_array rep_array got_array \
@@ -288,8 +288,10 @@ proc read_all_sources {} {
 
     # Read from log directory.
     #
-    if { [file isdirectory $log_directory] } {
-	set ch [open "|trackfinder $log_directory" r]
+    if { [file isdirectory $judging_directory/log] } {
+	set ch \
+	    [open \
+	       "|trackfinder $judging_directory/log" r]
 	read_input $ch
 	close $ch
     }
@@ -1024,7 +1026,7 @@ proc summary {} {
 proc display_directory_list {} {
 
     global directory_list_length \
-    	   directory_list mail_directory
+    	   directory_list judging_directory
 
     clear_list
 
@@ -1055,7 +1057,7 @@ proc display_directory_list {} {
 		if { [regexp \
 		      {^[^<>]*-<<.*>>-submission$} \
 		      $dir] } {
-		    set dir $mail_directory/$dir
+		    set dir $judging_directory/mail/$dir
 		}
 		lappend list $dir
 	    }
@@ -1131,7 +1133,7 @@ proc display_directory_list {} {
 proc call_manualreply { index } {
 
     global directory_list directory_list_length \
-	   mail_directory
+	   judging_directory
 
     if { $index < 1 \
 	 || $index > $directory_list_length } {
@@ -1142,7 +1144,7 @@ proc call_manualreply { index } {
 	[lindex $directory_list [expr { $index - 1 }]]
 
     if { [regexp {^[^<>]*-<<.*>>-submission$} $dir] } {
-	set dir $mail_directory/$dir
+	set dir $judging_directory/mail/$dir
     }
 
     exec manualreply $dir >@ stdout 2>@ stderr
