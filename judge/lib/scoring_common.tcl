@@ -2,7 +2,7 @@
 #
 # File:		scoring_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Oct  3 09:18:16 EDT 2005
+# Date:		Mon Oct  3 11:18:58 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/10/03 13:12:37 $
+#   $Date: 2005/10/03 15:16:13 $
 #   $RCSfile: scoring_common.tcl,v $
-#   $Revision: 1.52 $
+#   $Revision: 1.53 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -392,8 +392,8 @@ proc compute_scoring_array \
 # ------- ---------
 
 # Function that computes the .score file given the .out
-# and .test files (or .fout and .ftest files).  The
-# scorediff program is called by
+# and .test files (or .{jf,j,f}out and .{jf,j,f}test
+# files).  The scorediff program is called by
 #
 #     scorediff OPTION ... outfile testfile > scorefile
 #
@@ -846,8 +846,8 @@ proc eval_response_if { item } {
 #
 # The following global variables must be set:
 #
-# process_proof_file	.fout or .out file name
-# process_proof_ch	.fout or .out file channel id
+# process_proof_file	.{jf,j,f,}out file name
+# process_proof_ch	.{jf,j,f,}out file channel id
 # process_proof_number	line number of next line
 #			to be read from channel
 # process_proof_line	last line read from channel
@@ -916,6 +916,12 @@ proc process_first_or_summary_command \
 	# We need to find the difference types that
 	# support the automatically determined score.
 
+	if { ! [regexp {^(.*)score$} $score_file \
+		       forget prefix] } {
+	    error "SYSTEM ERROR: non-*score score file"
+	}
+	set process_proof_file ${prefix}out
+
 	set name [file rootname $score_file]
 	set jin_instructions none
 	if { [file exists $name.jin] } {
@@ -934,25 +940,6 @@ proc process_first_or_summary_command \
 	}
 	compute_score_and_proof_arrays $score_file
 	compute_score
-
-	if { [file exists ${submitted_problem}.jfout] } {
-	    set process_proof_file \
-	        ${submitted_problem}.jfout
-	} elseif { [file exists \
-	                 ${submitted_problem}.jout] } {
-	    set process_proof_file \
-	        ${submitted_problem}.jout
-	} elseif { [file exists \
-	                 ${submitted_problem}.fout] } {
-	    set process_proof_file \
-	        ${submitted_problem}.fout
-	} elseif { [file exists \
-	                 ${submitted_problem}.out] } {
-	    set process_proof_file \
-	        ${submitted_problem}.out
-	} else {
-	    error "No .out or .fout file available"
-	}
 
 	set first_iteration yes
 	foreach x {
@@ -1389,10 +1376,9 @@ proc get_proof { args } {
 #	compute_score
 #	compute_proof_info
 #
-# The files referenced in the proof are $basename.out
-# and $basename.test (or $basename.fout and
-# $basename.ftest) where $basename is the base of
-# $score_filename.
+# The files referenced in the proof have names identical
+# to score_filename with `score' at the end replaced by
+# `out' or `test'.
 #
 # If there is no error, window_error is set to "" and
 # `yes' is returned.  Otherwise window_error is set to
@@ -1402,9 +1388,8 @@ proc get_proof { args } {
 # without arguments and returns `no' if that call
 # returns `no'.
 #
-# This function calls compute_file_display for
-# $basename.out (or $basename.fout) and out_file_array
-# and for $basename.test (or $basename.ftest) and
+# This function calls compute_file_display for the out
+# file and out_file_array and for  the test file and
 # test_file_array.
 #
 # If there is no error, this function sets the
@@ -1457,21 +1442,12 @@ proc set_proof_display { } {
     set tmin [expr $tline - $L]
     if { $tmin < 1 } { set tmin 1 }
 
-    set basename [file rootname $score_filename]
-
-    if { [file exists $basename.jfout] } {
-        set out_file $basename.jfout
-	set test_file $basename.jftest
-    } elseif { [file exists $basename.jout] } {
-        set out_file $basename.jout
-	set test_file $basename.jtest
-    } elseif { [file exists $basename.fout] } {
-        set out_file $basename.fout
-	set test_file $basename.ftest
-    } else {
-        set out_file $basename.out
-	set test_file $basename.test
+    if { ! [regexp {^(.*)score$} $score_filename \
+    		   forget prefix] } {
+	error "SYSTEM ERROR: non-*score score file"
     }
+    set out_file ${prefix}out
+    set test_file ${prefix}test
 
     set_window_display \
         "[compute_file_display $out_file \
