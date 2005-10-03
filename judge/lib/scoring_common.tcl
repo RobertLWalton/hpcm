@@ -2,7 +2,7 @@
 #
 # File:		scoring_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Oct  3 07:31:06 EDT 2005
+# Date:		Mon Oct  3 09:18:16 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/10/03 11:56:57 $
+#   $Date: 2005/10/03 13:12:37 $
 #   $RCSfile: scoring_common.tcl,v $
-#   $Revision: 1.51 $
+#   $Revision: 1.52 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -617,7 +617,7 @@ proc compute_score { } {
 	    }
 	}
 
-	set ${kind}_types $type
+	lappend ${kind}_types $type
 	set old [set ${kind}_marker]
 	set new $score_marker_array($type)
 	if { $new == "" } {
@@ -1459,7 +1459,13 @@ proc set_proof_display { } {
 
     set basename [file rootname $score_filename]
 
-    if { [file exists $basename.fout] } {
+    if { [file exists $basename.jfout] } {
+        set out_file $basename.jfout
+	set test_file $basename.jftest
+    } elseif { [file exists $basename.jout] } {
+        set out_file $basename.jout
+	set test_file $basename.jtest
+    } elseif { [file exists $basename.fout] } {
         set out_file $basename.fout
 	set test_file $basename.ftest
     } else {
