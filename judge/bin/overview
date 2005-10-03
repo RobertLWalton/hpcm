@@ -4,7 +4,7 @@
 #
 # File:		overview
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Oct  7 08:32:45 EDT 2004
+# Date:		Mon Oct  3 05:00:57 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2004/10/07 12:36:06 $
+#   $Date: 2005/10/03 09:09:43 $
 #   $RCSfile: overview,v $
-#   $Revision: 1.77 $
+#   $Revision: 1.78 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -448,11 +448,10 @@ tories: see `Contest Definition Data: Security' below.
 Some things change if a problem directory also contains
 a file named:
 
-	$scoring_filter_file
+	Scoring_Filter
 
 In this case, both the pppp.out and pppp.test files are
-run through the program named $scoring_filter_file to\
-	pro-
+run through the program named Scoring_Filter to pro-
 duce files named pppp.fout and pppp.ftest, respectively.
 Then instead of comparing pppp.out and pppp.test to pro-
 duce a score, HPCM compares pppp.fout and pppp.ftest.
@@ -471,8 +470,7 @@ and pppp.fout might contain corresponding lines:
 where 4 is the length of the `Case 5' path.  If 4 is the
 length of the shortest path, pppp.ftest would have the
 same `Case 5' line, but of course it would not have the
-same `Case 6' line.  Note that the $scoring_filter_file\
-	pro-
+same `Case 6' line.  Note that the Scoring_Filter pro-
 gram can input pppp.in and even pppp.test.
 
 Lastly, the `make clean' command in the problem direc-
@@ -499,16 +497,16 @@ is-
 	-DESCRIPTION-
 	    PROBLEM.TTT
 	-SOURCE-
-	    $make_file
+	    Makefile
 	-REQUIRED-
 	    PROBLEM.EXTENSION
         -LINK-
-	    { $make_file $make_file.EXTENSION\
-	    	$make_file }
+	    { Makefile Makefile.EXTENSION\
+	    	Makefile }
 	    PROBLEM.in
 	    { PROBLEM.test PROBLEM.out PROBLEM.test }
 	-OPTIONAL-LINK-
-	    $scoring_filter_file
+	    Scoring_Filter
 	    { PROBLEM.ftest PROBLEM.fout PROBLEM.ftest }
 
 This value specifies the standard format of a problem as
@@ -519,7 +517,7 @@ blem, and `EXTENSION' is the programming language exten-
 sion (e.g., .c or .java) taken from the subject field of
 the submission.  The above says that the file describing
 the problem has the name PROBLEM.TTT; the file given to
-the contestant (as -SOURCE-) is $make_file; and when a
+the contestant (as -SOURCE-) is Makefile; and when a
 submission is scored by the judge a bunch of files are
 linked from the problem directory to the directory in
 which the submission is being scored.  For example, the
@@ -1585,7 +1583,7 @@ HPCM has the following security goals:
     from the two header fields just mentioned and the
     X-HPCM-Signature header field.  The recomputed
     X-HPCM-Signature-OK field is stored in the message
-    $received_file file for use by subsequent process-
+    Received_Mail file for use by subsequent process-
     ing.  Recomputation and use of X-HPCM-Signature-OK
     may be suppressed by setting the `use-authentica-
     tion' global variable to false.
@@ -1844,12 +1842,12 @@ specific to each kind of email are described in separate
 sections below.  Files that can exist in all kinds of
 submission directories are as follows:
 
-    $received_file
+    Received_Mail
 	This is a read-only file that holds the piece of
 	email sent to the judge which caused this direc-
 	tory to be created.
 
-    $reply_file
+    Reply_Mail
 	This is the FINAL reply email sent by the judge
 	concerning this directory.  Thus the presence of
 	this file indicates that the judge is done with
@@ -1858,33 +1856,32 @@ submission directories are as follows:
 	The judge can also send non-final email replies,
 	which are NOT stored in this file.
 
-    $reply_file+
+    Reply_Mail+
         Every reply is first composed in this file, and
 	then emailed.  When emailed, this file is either
-	deleted or renamed to $reply_file (if it is the
+	deleted or renamed to Reply_Mail (if it is the
 	final reply).  Thus strictly speaking this file
 	is not a `raw data' file, as it is not part of
 	the audit trail.
 
-    $no_reply_file
+    No_Reply
 	This file is created by the judge to indicate
 	the judge is done with this submission direc-
 	tory, but does not intend to send an email reply
-	to the contestant.  Typically this\
-					$no_reply_file
+	to the contestant.  Typically this No_Reply
 	file is just a one line file containing a reason
 	why the judge feels no email reply is needed.
 	The `lookat' program can revisit directories
-	containing a $no_reply_file file whose contents
+	containing a No_Reply file whose contents
 	match some given regular expression; so the
 	contents of this file can serve as a marker to
 	find this directory later.
 
 	When the judge is done with this directory,
-	either the $reply_file file or $no_reply_file
-	file must exist.
+	either the Reply_Mail file or No_Reply file
+	must exist.
 
-    $reply_history_file
+    Reply_Mail_History
 	This file is a log of ALL email replies sent by
 	the judge for this directory.
 
@@ -1977,10 +1974,9 @@ more details about many of these files):
 
    pppp.eee		The submitted file.
  * pppp.in		Judge's input.
- * $make_file		Problem Makefile.
+ * Makefile		Problem Makefile.
  * pppp.test		Judge's output.
- * $scoring_filter_file\
-   			Optional output filter program.
+ * Scoring_Filter	Optional output filter program.
  * pppp.ftest		Optional filtered .test file.
    pppp			Binary program.
    pppp.cerr		Compiler error output.
@@ -1989,9 +1985,9 @@ more details about many of these files):
    pppp.err		Solution error output.
    core			Possible core dump.
    pppp.score		Output of scorediff.
-   $auto_score_file		Autojudge score.
-   $reply_file		Possible final reply.
-   $reply_history_file	History of all replies.
+   Auto_Score		Autojudge score.
+   Reply_Mail		Possible final reply.
+   Reply_Mail_History	History of all replies.
  * pppp.rc		Problem specific parameters for
  			judging software.  TCL code
 			sourced after hpcm_judging.rc.
@@ -2011,12 +2007,12 @@ If an error happens during the process of producing
 these files, the process stops.  An error in extracting
 pppp.eee, or an error in the name of the file (pppp is
 not a problem in the solutions directory or eee is not
-a legal extension), generates a $reply_file file that is
+a legal extension), generates a Reply_Mail file that is
 the final say in the error.  Other errors generate an
-$auto_score_file file.
+Auto_Score file.
 
 The nature of any automatically generated reply to the
-submitter given that an $auto_score_file file has been
+submitter given that an Auto_Score file has been
 generated is controlled by the `response_instructions'
 global variable.  For the default, if the scoring mode
 is `auto', a final reply containing the score is sent.
@@ -2024,9 +2020,9 @@ The same is done if the score is `Completely Correct',
 regardless of the scoring mode.  Otherwise if the
 scoring mode is `auto+manual', a reply containing the
 score is sent to the contestant, but not as a final
-score, and NO $reply_file file is generated; and if the
+score, and NO Reply_Mail file is generated; and if the
 scoring mode is `manual', no reply is sent to the con-
-testant, and no $reply_file file is generated.
+testant, and no Reply_Mail file is generated.
 
 The behavior of `autojudge' is similar to the behavior
 of `make' in a contestant's problem directory (see help
@@ -2034,21 +2030,20 @@ files) or a problem library problem directory (see
 above).  The main differences are that the `autojudge'
 extracts the `pppp.eee' file, captures compiler errors
 in `pppp.cerr', captures run errors in `pppp.err', and
-scores `pppp.out' (or `pppp.fout') generating\
-	$auto_score_file
+scores `pppp.out' (or `pppp.fout') generating Auto_Score
 and possibly reply email.
 
 The section `Contest Raw Data: Data Flow' below gives
 some more details for solution submission directories.
 
 If the `autojudge' does not produce a final reply, it
-creates a $needs_reply_flag_file file in the flag dir-
+creates a Needs_Reply_Flag file in the flag dir-
 ectory to signal that this submission directory needs
 the attentions of `manualreply'.  The `manualreply'
 program must then be run to assign a manual score, which
-is stored in a `$manual_score_file' file.   Email con-
+is stored in a `Manual_Score' file.   Email con-
 taining this score is sent to the contestant as a final
-reply and is stored in the $reply_file file.
+reply and is stored in the Reply_Mail file.
 
 
 Contest Raw Data: Get Requests
@@ -2067,14 +2062,13 @@ processes get requests, for details.
 The `autoinfo' program produces the following files in
 the email's submission directory:
 
-    $reply_file		Final reply.
-    $reply_history_file	History of all replies.
-    $gotten_file		List of files\
-    				successfully
+    Reply_Mail		Final reply.
+    Reply_Mail_History	History of all replies.
+    Gotten		List of files successfully
     			gotten.
 
 The `autoinfo' program always produces a final reply
-the therefore a $reply_file file.  It may produce two
+the therefore a Reply_Mail file.  It may produce two
 email replies: one containing error messages and one
 containing files successfully gotten.  These two kinds
 of replies have different `Subject' header field formats
@@ -2096,17 +2090,16 @@ not begin with either `submit' or `get'.  Such an email
 is used to ask a question of the judge.
 
 If the `reply_mode' is `auto', the `autodispatch' pro-
-gram produces an email reply and a $reply_file file
+gram produces an email reply and a Reply_Mail file
 automatically.  If the `reply_manager' is not \"\", this
 email is CC'ed to the `reply_manager' who can respond
 from an account other than the judge's.
 
-If the `reply_mode' is not `auto', the\
-				$needs_reply_flag_file
+If the `reply_mode' is not `auto', the Needs_Reply_Flag
 file is created in the flag directory to signal that
 this directory needs the attentions of `manualreply'.
 The `manualreply' program must then be run to generate
-a $reply_file or a $no_reply_file file.
+a Reply_Mail or a No_Reply file.
 
 
 Contest Raw Data: Data Flow
@@ -2122,7 +2115,7 @@ follows:
                      |
                      v
         mail_directory/dddd-<<sssss>>-submission
-               $received_file
+               Received_Mail
                      |
                      | dispatchmail (called
                      | from ~/.procmailrc)
@@ -2133,16 +2126,16 @@ follows:
 +-----+-----+---------
 |     |     | \[Subject: not `submit ...' or `get ...']
 |     |     |
-|     |     +---> flag_directory/$needs_reply_flag_file,
+|     |     +---> flag_directory/Needs_Reply_Flag,
 |     |               if reply_mode != `auto';
-|     |           or $reply_file and $reply_history_file
+|     |           or Reply_Mail and Reply_Mail_History
 |     |               if reply_mode == `auto'
 |     |
 |     | \[Subject: `get ...']
 |     | autoinfo (called from autodispatch)
 |     |
-|     +----> $reply_file, $reply_history_file,\
-             $gotten_file
+|     +----> Reply_Mail, Reply_Mail_History,\
+             Gotten
 |
 | \[Subject: `submit: pppp.eee']
 | autojudge (called from autodispatch)
@@ -2183,8 +2176,8 @@ follows:
                |                 |
                |                 | autojudge
                v                 v
-            pppp.eee        $reply_file
-            or other        $reply_history_file
+            pppp.eee        Reply_Mail
+            or other        Reply_Mail_History
          submitted files
                |
                |
@@ -2196,10 +2189,10 @@ follows:
                |  solutions_directory/pppp)
                |
                v
-            $make_file
+            Makefile
             pppp.test 
             pppp.ftest (if any)
-            $scoring_filter_file (if any)
+            Scoring_Filter (if any)
             additional linked files\
                          (if `$files_file' file)
                |
@@ -2215,11 +2208,10 @@ follows:
                |             |
                |             | autojudge
                |             v
-               |        $auto_score_file =\
-                        `Syntax Error'
-               |        $reply_history_file
+               |        Auto_Score = `Syntax Error'
+               |        Reply_Mail_History
                |          if scoring_mode != `manual'
-               |        $reply_file
+               |        Reply_Mail
                |          if scoring_mode == `auto'
                |
                v
@@ -2240,14 +2232,14 @@ follows:
                |             |
                |             | autojudge
                |             v
-               |        $auto_score_file
-               |        $reply_history_file
+               |        Auto_Score
+               |        Reply_Mail_History
                |          if scoring_mode != `manual'
-               |        $reply_file
+               |        Reply_Mail
                |          if scoring_mode == `auto'
                |
                |
-               | \[is $scoring_filter_file or pppp.ftest
+               | \[is Scoring_Filter or pppp.ftest
                |  present, and is pppp.out non-empty]
                |
                +----------------+
@@ -2255,7 +2247,7 @@ follows:
           \[no] |                | \[yes]
                |                |
                |                |\
-                                $scoring_filter_file
+                                Scoring_Filter
                |                | (called by autojudge)
                |                v
                |             ppp.fout
@@ -2287,8 +2279,7 @@ follows:
                |  autojudge)            |
                |                        |
                v                        |
-           $auto_score_file     $auto_score_file =\
-                                 `Program Crashed'
+           Auto_Score     Auto_Score = `Program Crashed'
                |                        |
                |                        |
                |<-----------------------+
@@ -2304,8 +2295,8 @@ follows:
           \[no] |                    | \[yes]
                |                    |
                |                    v
-               |              $reply_file maybe
-               |              $reply_history_file maybe
+               |              Reply_Mail maybe
+               |              Reply_Mail_History maybe
                |
                |
                +---------------+
@@ -2314,13 +2305,13 @@ follows:
    `Completely |               |  `Completely  
     Correct']  |               |   Correct']
                |               v
-               |        $reply_history_file
+               |        Reply_Mail_History
                |          if scoring_mode != `manual'
-               |        $reply_file
+               |        Reply_Mail
                |          if scoring_mode == `auto'
                v
-           $reply_file
-       $reply_history_file
+           Reply_Mail
+       Reply_Mail_History
 
 
 If a system error occurs at any point, which can only
@@ -2355,13 +2346,13 @@ are:
 	Specifically, the following are flag files in
 	the flag directory:
 
-	    $score_flag_file
-	        Created when any $auto_score_file or
-		$manual_score_file file is written;  the
+	    Score_Flag
+	        Created when any Auto_Score or
+		Manual_Score file is written;  the
 		`makescoreboard' program sees this flag
 		and recomputes the scoreboard.
 
-	    $needs_reply_flag_file
+	    Needs_Reply_Flag
 	        Created when any action that will re-
 		quire a person to use the `manualreply'
 		program happens.  The `tracker' program
@@ -2369,7 +2360,7 @@ are:
 		the contest directories and files to see
 		where `manualreply' should be run.
 
-    judging_directory/$scoreboard_pid_file
+    judging_directory/Scoreboard_PID
         A file in the judging directory containing the
 	process ID of any `makescoreboard' program that
 	is running in background.  This file is main-
@@ -2378,7 +2369,7 @@ are:
 	option reads this file and displays the status
 	of the process identified in the file.
 
-    mail_directory/*-submission/$dispatch_pid_file
+    mail_directory/*-submission/Dispatch_PID
         This file is used as a lock to prevent more than
 	one `autojudge' or `manualreply' program from
 	running in a submission subdirectory at once.
@@ -2396,7 +2387,7 @@ are:
 	user whether to quit or kill the identified
 	process (if it is still running) and continue.
 
-    solutions_directory/pppp/$dispatch_pid_file
+    solutions_directory/pppp/Dispatch_PID
         This file is used as a lock to prevent more than
 	one `autojudge' program from making files in the
 	same problem solution directory at one time.
@@ -2411,7 +2402,7 @@ The `makescoreboard' program can run in background and
 recompute the scoreboard as necessary.  It always com-
 putes the following file:
 
-    judging_directory/$scorefinder_output_file
+    judging_directory/Scorefinder_Output
         Output of the scorefinder program, for use as
 	input to the scoreboard program.
 
@@ -2844,8 +2835,7 @@ mary of these is:
 
     proc dispatch_lock {}
     proc dispatch_unlock {}
-    	Manage the submission directory\
-		$dispatch_pid_file
+    	Manage the submission directory Dispatch_PID
 	file.
 
     proc clock_to_filename_date { clock }
@@ -2890,10 +2880,10 @@ mary of these is:
         Call compose_reply and then send_reply.
 
     proc compose_reply { args }
-        Compose a reply in $reply_file+.
+        Compose a reply in Reply_Mail+.
 
     proc send_reply { args }
-        Send the reply stored in $reply_file+.
+        Send the reply stored in Reply_Mail+.
 
     proc blank_body { ch }
         Check if received email has a blank body.
@@ -2959,10 +2949,10 @@ displays.  A brief summary of these is:
 					`continue?'.
 
     proc get_lock {}
-    	Get $dispatch_pid_file lock.
+    	Get Dispatch_PID file lock.
 
     proc clear_lock {}
-    	Clear $dispatch_pid_file lock.
+    	Clear Dispatch_PID file lock.
 
     proc get_listed_files { }
         Compute list of files to be put in file list.
