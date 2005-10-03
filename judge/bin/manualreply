@@ -5,7 +5,7 @@
 #
 # File:		manualreply
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Oct  2 13:07:19 EDT 2005
+# Date:		Mon Oct  3 07:47:51 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/10/02 17:02:34 $
+#   $Date: 2005/10/03 11:56:56 $
 #   $RCSfile: manualreply,v $
-#   $Revision: 1.68 $
+#   $Revision: 1.69 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -1131,9 +1131,10 @@ proc display_proofs {} {
 	   scoring_instructions
 
     if { [catch {
-	    if { ! [regexp {^([^:]*):} \
-			   $auto_score_marker \
-			   forget score_file] } {
+	    set score_file [lindex $auto_score_marker 0]
+	    if {    $score_file == "" \
+	         || [file extension $score_file] == "" \
+		 || ! [file exists $score_file] } {
 	        error "No .score file"
 	    }
 	    set name [file rootname $score_file]

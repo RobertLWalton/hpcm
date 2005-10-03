@@ -2,7 +2,7 @@
 #
 # File:		scoring_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Oct  3 03:31:36 EDT 2005
+# Date:		Mon Oct  3 07:31:06 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/10/03 08:34:00 $
+#   $Date: 2005/10/03 11:56:57 $
 #   $RCSfile: scoring_common.tcl,v $
-#   $Revision: 1.50 $
+#   $Revision: 1.51 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -205,45 +205,19 @@ proc compute_instruction_array { instructions name } {
 }
 
 # Function to compute `score_array', `score_marker_
-# array' and `proof_array' from the *.score file.  If a
-# single argument is given, it is the *.score file name.
-# Otherwise, the file name is retrieved using `get_
-# listed_files' and code in the `display_common.tcl'
-# function package, which must be loaded in this case.
-# In this case there must be exactly one *.score file in
-# the list of file names returned by `get_listed_files'.
+# array' and `proof_array' from the *.score file.  The
+# argument is the .score file name.
 #
-proc compute_score_and_proof_arrays { args } {
+proc compute_score_and_proof_arrays { score_file } {
 
-    global proof_array score_filename score_array \
-           score_marker_array
+    global proof_array score_array score_marker_array \
+           score_filename
 
-    switch [llength $args] {
-        0 {
-	    set items [get_file_items {.*\.score}]
-
-	    if { [llength $items] == 0 } {
-		error "No *.score files"
-	    } elseif { [llength $items] > 1 } {
-		error "Too many *.score files"
-	    }
-
-	    set filename [lindex [lindex $items 0] 2]
-	}
-	1 {
-	    set filename [lindex $args 0]
-	}
-	default {
-	    error "too many args to\
-	           compute_score_and_proof_arrays"
-	}
-    }
-
-    set score_ch [open $filename r]
-    set score_filename $filename
+    set score_filename $score_file
+    set score_ch [open $score_file r]
 
     compute_scoring_array score_array [gets $score_ch] \
-			  ".score file first line" \
+			  "$score_file first line" \
 			  score_marker_array
 
     if { [array exists proof_array] } {
@@ -922,15 +896,18 @@ proc process_first_or_summary_command \
 
     upvar $processed_commands pc
 
-    global submitted_problem proof_array \
+    global proof_array \
            process_proof_file process_proof_ch \
 	   process_proof_number \
-	   response_instructions_summary_limit
+	   response_instructions_summary_limit \
+	   scoring_instructions
 
     set limit $response_instructions_summary_limit
 
-    set sfile ${submitted_problem}.score
-    if { ! [file exists $sfile] } {
+    set score_file [lindex $auto_score_marker 0]
+    if {    $score_file == "" \
+    	 || [file extension $score_file] == "" \
+         || ! [file exists $score_file] } {
 	lappend pc [list LINE "Sorry, no more detailed\
 			       scoring information is\
 			       available."]
@@ -939,11 +916,34 @@ proc process_first_or_summary_command \
 	# We need to find the difference types that
 	# support the automatically determined score.
 
-	compute_instruction_array
-	compute_score_and_proof_arrays $sfile
+	set name [file rootname $score_file]
+	set jin_instructions none
+	if { [file exists $name.jin] } {
+	    set jin_instructions \
+		[string trim [exec jfilter $name.jin]]
+	}
+	if { $jin_instructions == "none" } {
+	    compute_instruction_array \
+		$scoring_instructions \
+		"scoring_instructions\
+		 variable value"
+	} else {
+	    compute_instruction_array \
+		$jin_instructions \
+		"$name.jin file"
+	}
+	compute_score_and_proof_arrays $score_file
 	compute_score
 
-	if { [file exists ${submitted_problem}.fout] } {
+	if { [file exists ${submitted_problem}.jfout] } {
+	    set process_proof_file \
+	        ${submitted_problem}.jfout
+	} elseif { [file exists \
+	                 ${submitted_problem}.jout] } {
+	    set process_proof_file \
+	        ${submitted_problem}.jout
+	} elseif { [file exists \
+	                 ${submitted_problem}.fout] } {
 	    set process_proof_file \
 	        ${submitted_problem}.fout
 	} elseif { [file exists \
