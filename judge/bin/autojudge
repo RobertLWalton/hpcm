@@ -5,7 +5,7 @@
 #
 # File:		autojudge
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Oct  3 04:03:09 EDT 2005
+# Date:		Mon Oct  3 04:50:44 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/10/03 08:34:00 $
+#   $Date: 2005/10/03 08:46:34 $
 #   $RCSfile: autojudge,v $
-#   $Revision: 1.104 $
+#   $Revision: 1.105 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -39,7 +39,8 @@ catch {
 
 set document "
 cd submission_directory
-autojudge \[-manual\] \[problem\[.extension\]\]
+autojudge \[-manual\] \[problem\[.extension\]\
+	  \[qualifier\]\]
 
     Given the submission directory as the current dir-
     ectory, and given that the submission directory
@@ -55,10 +56,12 @@ autojudge \[-manual\] \[problem\[.extension\]\]
     ning.  This suppresses sending email to the submit-
     ter.
 
-    If the problem name and optional extension are not
-    given as an argument, they are extracted from the
+    If the problem name, optional extension, and option-
+    al submit qualifier are not given as arguments, they
+    are extracted from the
 
-    	Subject: submit problem\[.extension\] ...
+      Subject: submit problem\[.extension\]\
+      		      \[qualifier\]
 
     field of the message in the Received_Mail file.
     Here `problem' names the problem and the solution
@@ -295,10 +298,12 @@ proc subject_error { what } {
     exit 0
 }
 
-# Compute problem name and extension.
+# Compute problem name and extension and submit
+# qualifier.
 #
-if { $my_argc == 1 } {
+if { $my_argc >= 1 } {
     set argument [lindex $my_argv 0]
+    set submit_qualifier [lindex $my_argv 1]
 } else {
 
     # Read message header.
@@ -336,6 +341,14 @@ if { $EXTENSION != "" \
 } elseif { [regexp {/} $EXTENSION] } {
     # should never happen
     error "/ in extension `$EXTENSION'"
+}
+
+# Check legality of submit qualifier.
+#
+if { ! [lcontain $allowed_qualifiers \
+                 $submit_qualifier] } {
+    subject_error \
+        "unknown submit qualifier `$submit_qualifier'"
 }
 
 # Check for existence of problem solution directory.
