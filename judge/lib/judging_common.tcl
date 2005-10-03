@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Oct  3 08:41:00 EDT 2005
+# Date:		Mon Oct  3 09:28:09 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/10/03 12:37:29 $
+#   $Date: 2005/10/03 13:50:11 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.120 $
+#   $Revision: 1.121 $
 #
 
 # Table of Contents
@@ -95,8 +95,6 @@ proc exit_cleanup {} {}
 #
 proc dispatch_lock { { directory . } } {
 
-    global dispatch_pid_file
-
     set lock_file $directory/Dispatch_PID
 
     if { [create_file $lock_file] } {
@@ -116,8 +114,6 @@ proc dispatch_lock { { directory . } } {
 # directory.
 #
 proc dispatch_unlock { { directory . } } {
-
-    global dispatch_pid_file
 
     set lock_file $directory/Dispatch_PID
 
@@ -274,11 +270,10 @@ proc log_error { error_output } {
 	   default_log_directory \
 	   judging_directory log_globally log_mode \
 	   log_error_count log_error_maximum \
-	   log_manager received_file \
+	   log_manager \
 	   message_From_line message_to message_from \
 	   message_date message_subject \
-	   message_x_hpcm_test_subject \
-	   needs_reply_flag_file
+	   message_x_hpcm_test_subject
 
     set log_directory $judging_directory/log
 
@@ -1368,8 +1363,7 @@ proc reply { args } {
 #
 proc compose_reply { args } {
 
-    global received_file reply_file \
-    	   message_header \
+    global message_header \
            message_From_line message_to \
            message_from message_date \
 	   message_reply_to message_subject \
@@ -1526,8 +1520,6 @@ proc compose_reply { args } {
 # deletes `Reply_Mail+'.
 #
 proc send_reply { args } {
-
-    global reply_file reply_history_file
 
     set not_final no
     foreach arg $args {
