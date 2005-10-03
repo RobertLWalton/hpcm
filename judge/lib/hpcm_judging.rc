@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Oct  3 09:36:51 EDT 2005
+# Date:		Mon Oct  3 10:24:47 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/10/03 13:50:11 $
+#   $Date: 2005/10/03 14:37:46 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.157 $
+#   $Revision: 1.158 $
 
 # Table of Contents:
 #
@@ -1193,23 +1193,28 @@ set scoring_instructions "space column"
 # Response Instructions
 # -------- ------------
 
-# Response mode.  One of:
+# Response mode.  Some of the following separated by
+# `+'s, but without ANY whitespace.
 #
 #   solution	Return SOLUTION if score is `Completely
-#		Correct'.
+#		Correct' and submit qualifier was
+#		`solution'.
+#
 #   first	Return location of FIRST error if score
-#		is not `Completely Correct' and is
-#		automatically determined.
-#   summary	Return SUMMARY of errors if score is not
-#		`Completely Correct' and is automatical-
-#		ly determined.
+#		is `Incorrect Output' or `Format Error',
+#		score was automatically determined, and
+#		submit qualifier was first.
+#
+#   summary	Ditto for SUMMARY of errors and
+#		`summary' submit qualifier.
+#
+#   in		Ditto for judge's test case input, IN,
+#		and `in' or `inout' submit qualifiers.
+#
+#   out		Ditto for judge's test case output, OUT,
+#		and `inout' submit qualifier.
 #
 #   ""		None of above.
-#
-#   solution+first	Combinations of above.
-#   first+solution	Combinations of above.
-#   solution+summary	Combinations of above.
-#   summary+solution	Combinations of above.
 #
 set response_mode ""
 
@@ -1285,18 +1290,41 @@ set response_instructions {
 	    { ERROR "bad scoring mode" }
 	}
 
-	if { $auto_score == "Completely Correct" } {
-	} elseif { [regexp first $response_mode] } {
-	    BLANK
-	    BAR
-	    FIRST
-	    BAR
-	} elseif { [regexp summary $response_mode] \
-			    } {
-	    BLANK
-	    BAR
-	    SUMMARY
-	    BAR
+	if {    $auto_score == "Incorrect Output" \
+	     || $auto_score == "Formatting Error" } {
+
+	    if {    $submit_qualifier == "first" \
+	         && [regexp first $response_mode] } {
+		BLANK
+		BAR
+		FIRST
+		BAR
+	    }
+
+	    if {    $submit_qualifier == "summary" \
+	         && [regexp summary $response_mode] } {
+		BLANK
+		BAR
+		SUMMARY
+		BAR
+	    }
+
+	    if {    [lcontain {in inout} \
+	                      $submit_qualifier] \
+	         && [regexp in $response_mode] } {
+		BLANK
+		BAR
+		IN
+		BAR
+	    }
+
+	    if {    $submit_qualifier == "inout" \
+	         && [regexp out $response_mode] } {
+		BLANK
+		BAR
+		OUT
+		BAR
+	    }
 	}
 
     } elseif { ! $manual && $proposed } {
@@ -1392,7 +1420,8 @@ set response_instructions {
          ( ! $proposed && ! $manual && \
            $auto_score == "Completely Correct" ) } {
 
-        if { [regexp solution $response_mode] } {
+        if {    $submit_qualifier == "solution" \
+	     && [regexp solution $response_mode] } {
 	    BLANK
 	    BAR
 	    { LINE "For comparison purposes,\
@@ -1666,7 +1695,8 @@ set allowed_extensions {.c .cc .java .lsp}
 # TCL list of allowed submit qualifiers for submitted
 # programs:
 #
-set allowed_qualifiers { "" in inout }
+set allowed_qualifiers \
+    { "" first summary in inout solution }
 
 # Submitter compress function.  Used to compress the
 # full submitter email name when displaying the sub-
