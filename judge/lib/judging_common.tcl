@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Oct  2 09:54:23 EDT 2005
+# Date:		Mon Oct  3 08:41:00 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/10/02 16:40:18 $
+#   $Date: 2005/10/03 12:37:29 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.119 $
+#   $Revision: 1.120 $
 #
 
 # Table of Contents
@@ -240,12 +240,13 @@ proc caught_error {} {
 # log_globally variable does not exist or does not equal
 # `yes' and the current directory is writable, the file
 # is written into the current directory.  Otherwise if
-# the log_directory variable exists and names a direc-
-# tory that exists or can be made and is writable once
-# it is made, then the file is written into this direc-
-# tory.  Otherwise the file is written into $default_
-# log_directory, which is defined above as an emergency
-# last resort.  The format of the file name is:
+# $judging_directory/log names a directory that exists
+# or can be made and is writable once it is made, then
+# the file is written into this directory.  Otherwise
+# the file is written into $default_log_directory, which
+# is defined above as an emergency last resort.
+#
+# The format of the file name is:
 #
 #	dddd-uuuu-<<pppp>>-unchecked-error
 #
@@ -324,8 +325,7 @@ proc log_error { error_output } {
            ||  $log_globally != "yes" ) \
 	 && [file writable "."] } {
         set log_dir "."
-    } elseif { [info exists log_directory] \
-	       && ! [catch { file mkdir \
+    } elseif {    ! [catch { file mkdir \
 	                          $log_directory } ] \
 	       && [file writable $log_directory] } {
     	set log_dir $log_directory

@@ -2,7 +2,7 @@
 #
 # File:		display_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Oct  3 03:44:34 EDT 2005
+# Date:		Mon Oct  3 08:35:37 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/10/03 08:34:00 $
+#   $Date: 2005/10/03 12:37:29 $
 #   $RCSfile: display_common.tcl,v $
-#   $Revision: 1.41 $
+#   $Revision: 1.42 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -1307,8 +1307,7 @@ proc compute_file_display \
 #
 proc send_query { header } {
 
-    global window_error window_prompt \
-    	   contest_directory
+    global window_error window_prompt
 
     set i 0
     while { "yes" } {
