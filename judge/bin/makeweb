@@ -7,7 +7,7 @@
 #
 # File:		makeweb
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Feb  9 12:21:27 EST 2003
+# Date:		Mon Oct  3 08:13:42 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -16,9 +16,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2003/02/09 17:22:25 $
+#   $Date: 2005/10/03 12:16:37 $
 #   $RCSfile: makeweb,v $
-#   $Revision: 1.9 $
+#   $Revision: 1.10 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -73,6 +73,11 @@ if { [regexp {^-doc} [lindex $argv 0]] } {
     exit 1
 }
 
+# Abbreviations to shorten lines.
+#
+set c_d $judging_directory/contest
+set w_d $judging_directory/web
+
 # Process arguments.
 #
 set LB "{"
@@ -103,8 +108,8 @@ foreach arg $argv {
 
 # Complain of web directory already exists.
 #
-if { [file exists $web_directory] } {
-    error "$web_directory already exists"
+if { [file exists $w_d] } {
+    error "$w_d already exists"
 }
 
 # Complain if no contest name.
@@ -113,20 +118,12 @@ if { $web_contest_name == "" } {
     error "web_contest_name is \"\""
 }
 
-# Universal abbreviations to shorten lines.
-#
-set c_d $contest_directory
-
 # Find problems and help directories and check
 # their usability.
 #
 foreach d {problems help} {
-    if { [file exists $info_directory/$d] } {
-	if { [file exists $c_d/$d] } {
-	    error "both $info_directory/$d and \
-		   $c_d/$d exist"
-	}
-	set dir $info_directory/$d
+    if { [file exists $judging_directory/info/$d] } {
+	set dir $judging_directory/info/$d
     } elseif { [file exists $c_d/$d] } {
 	set dir $c_d/$d
     } else {
@@ -143,7 +140,7 @@ foreach d {problems help} {
 # Be sure solutions directory exists if needed.
 #
 if { $web_solutions_password != "" } {
-    set dir $solutions_directory
+    set dir $judging_directory/solutions
     if {    ! [file isdirectory $dir] \
          || ! [file executable $dir] \
          || ! [file readable $dir] } {
@@ -153,13 +150,13 @@ if { $web_solutions_password != "" } {
 
 # Make web directory.
 #
-file mkdir $web_directory
-grant_access $web_directory
+file mkdir $w_d
+grant_access $w_d
 
 # Copy problems index.
 #
-copy_file $help_dir/problems $web_directory/problems
-grant_access $web_directory/problems
+copy_file $help_dir/problems $w_d/problems
+grant_access $w_d/problems
 
 # Make solutions subdirectory if necessary.
 #
@@ -167,7 +164,7 @@ if { $web_solutions_password != "" } {
 
     # Set abbreviations for use in rest of this program.
     #
-    set pdir $web_directory/private
+    set pdir $w_d/private
     set sdir $pdir/$web_solutions_password
 
     file mkdir $sdir
@@ -176,9 +173,9 @@ if { $web_solutions_password != "" } {
     grant_access $pdir x
 }
 
-# Output header for $web_directory/index.html
+# Output header for $w_d/index.html
 #
-set ch [open $web_directory/index.html w]
+set ch [open $w_d/index.html w]
 puts $ch "
 <HTML>
 <TITLE>$web_contest_name</TITLE>
@@ -345,8 +342,8 @@ foreach pdir \
         [lsort [glob -nocomplain $problems_dir/*]] {
 
     set problem [file tail $pdir]
-    file mkdir $web_directory/$problem
-    grant_access $web_directory/$problem
+    file mkdir $w_d/$problem
+    grant_access $w_d/$problem
     puts $ch "<TR>"
     puts $ch "<TD WIDTH=50>&nbsp;</TD>"
     puts $ch "<TD>$problem</TD>"
@@ -363,12 +360,12 @@ foreach pdir \
 	    set problem_description_found yes
 	}
 	set wfile $problem/$fname
-	copy_file $pfile $web_directory/$wfile
-	grant_access $web_directory/$wfile
+	copy_file $pfile $w_d/$wfile
+	grant_access $w_d/$wfile
 	lappend files $fname
     }
     if { $problem_description_found == "no" } {
-	set soldir $solutions_directory/$problem
+	set soldir $judging_directory/solutions/$problem
 	foreach pfile [glob -nocomplain $soldir/*] {
 	    set fname [file tail $pfile]
 	    set ext [file extension $fname]
@@ -377,8 +374,8 @@ foreach pdir \
 		      $ext] } \
 		continue
 	    set wfile $problem/$fname
-	    copy_file $pfile $web_directory/$wfile
-	    grant_access $web_directory/$wfile
+	    copy_file $pfile $w_d/$wfile
+	    grant_access $w_d/$wfile
 	    lappend files $fname
 	}
     }
@@ -408,13 +405,13 @@ web page at <TT>$address</TT>"
 }
 
 
-# Output trailer for $web_directory/index.html
+# Output trailer for $w_d/index.html
 #
 puts $ch "
 </BODY>
 <HTML>"
 close $ch
-grant_access $web_directory/index.html
+grant_access $w_d/index.html
 
 # If -solutions, output $sdir/index.html
 #
@@ -446,7 +443,7 @@ if { $web_solutions_password != "" } {
             [lsort [glob -nocomplain $problems_dir/*]] {
 
 	set problem [file tail $pdir]
-	set soldir $solutions_directory/$problem
+	set soldir $judging_directory/solutions/$problem
 	set files ""
         foreach sfile \
 	        [lsort [glob -nocomplain $soldir/*]] {
