@@ -2,7 +2,7 @@
 #
 # File:		scoring_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Oct  2 04:18:52 EDT 2005
+# Date:		Mon Oct  3 03:31:36 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/10/02 08:13:29 $
+#   $Date: 2005/10/03 08:34:00 $
 #   $RCSfile: scoring_common.tcl,v $
-#   $Revision: 1.49 $
+#   $Revision: 1.50 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -696,12 +696,20 @@ proc compute_score { } {
 # also force a -cc option to compose_reply.
 #
 # The global variables scoring_mode, auto_score,
-# manual_score, and proposed_score must be set.  The
-# latter two can be set to `None' if unused.
+# auto_score_marker, manual_score, and proposed_score
+# must be set.  The latter two can be set to `None'
+# if unused.  Auto_score_marker can be set to "" if
+# unused.
 #
 # The global variables `submitted_problem' and
 # `submitted_extension' must be set to the problem name
-# and extension.
+# and extension.  The global variable `submit_qualifier'
+# must be set (it can be "").
+#
+# The global variables problem_required_files and
+# problem_optional_files should be set as they are after
+# any problem.rc file is sourced.  They need not exist,
+# and will be set to their defaults if they do not.
 #
 # This function returns a list of commands whose execu-
 # tion merely serve to specify options for disposition
@@ -857,83 +865,6 @@ proc eval_response_if { item } {
     set manual [expr { $manual_score != "None" }]
     set proposed [expr { $proposed_score != "None" }]
     return [expr $item]
-}
-
-# Function to return a list of the -REQUIRED- and
-# -OPTIONAL- files from the `$files_file' file, or the
-# single file name `$submitted_problem$submitted_
-# extension' if there is no `$files_file' file.
-#
-proc compute_solution_files { } {
-
-    global files_file \
-           submitted_problem submitted_extension
-
-    if { $submitted_problem == "" } {
-	error "Attempt to respond to non-submit"
-    }
-
-    # Compute `$files_file' file value.
-    #
-    if { [file exists $files_file] } {
-
-	if { [catch { set files_value \
-			  [read_entire_file \
-			       $files_file] \
-		    }] } {
-	    error "Cannot read $file_files"
-	}
-
-	if { [catch { llength $files_value }] } {
-	    error "$files_file file is not a TCL list"
-	}
-
-    } else {
-	if { $submitted_extension == "" } {
-	    error "No extension in message subject"
-	}
-	set files_value \
-	    [list \
-	       $submitted_problem$submitted_extension]
-    }
-
-    # Compute list of files.
-    #
-    set files ""
-    set include yes
-    foreach item $files_value {
-	switch -- $item {
-	    -REQUIRED-	-
-	    -OPTIONAL-	{
-		set include yes
-	    }
-	    default {
-		if { [regexp {^-[-A-Z]*-$} $item] } {
-		    set include no
-		} elseif { $include } {
-		    set root [file rootname $item]
-		    set ext [file extension $item]
-		    if { $root == "PROBLEM" } {
-			set root $submitted_problem
-		    }
-		    if { $ext == ".EXTENSION" } {
-			if { $submitted_extension == \
-			     "" } {
-			    error \
-				"No message subject\
-				 extension given\
-				 where one is required\
-				 by `$files_file' file"
-			}
-			set ext $submitted_extension
-		    }
-		    lappend files $root$ext
-		}
-	    }
-	}
-    }
-
-    return $files
 }
 
 # Given a proof from proof_array, output commands
@@ -1100,7 +1031,9 @@ proc execute_response_commands \
 
     global auto_score manual_score proposed_score \
 	   submitted_problem submitted_extension \
-	   judging_directory
+	   judging_directory \
+	   problem_required_files \
+	   problem_optional_files
 
     set problem $submitted_problem$submitted_extension
 
@@ -1188,7 +1121,23 @@ proc execute_response_commands \
 		}
 		set sdir $judging_directory/solutions
 		set sdir $sdir/$submitted_problem
-	        foreach file [compute_solution_files] {
+
+		set solution_files ""
+		if { [info exists \
+		           problem_required_files] } {
+		    eval lappend solution_files \
+		         $problem_required_files
+		} elseif { $submitted_extension \
+		           != "" } {
+		    lappend solution_files $problem
+		}
+		if { [info exists \
+		           problem_optional_files] } {
+		    eval lappend solution_files \
+		         $problem_optional_files
+		}
+		    
+	        foreach file $solution_files {
 		    set f $sdir/$file
 		    if { [file exists $f] } {
 		        lappend processed_commands \

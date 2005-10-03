@@ -2,7 +2,7 @@
 #
 # File:		display_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Oct  2 03:42:03 EDT 2005
+# Date:		Mon Oct  3 03:44:34 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/10/02 07:48:20 $
+#   $Date: 2005/10/03 08:34:00 $
 #   $RCSfile: display_common.tcl,v $
-#   $Revision: 1.40 $
+#   $Revision: 1.41 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -848,8 +848,10 @@ proc read_auto_score {} {
     set auto_score [string trim [read_score Auto_Score]]
     set auto_score_marker ""
     regexp \
-      {^([^\ \t]+:[^\ \t])[\ \t]+([^\ \t].*)$} \
+      {^([^: \t]+:[^ \t]*)[ \t]+([^ \t].*)$} \
       $auto_score forget auto_score_marker auto_score
+    regsub -all {:} $auto_score_marker { } \
+           auto_score_marker
 }
 set read_array(Auto_Score) read_auto_score
 set auto_score None
@@ -873,13 +875,14 @@ set manual_score None
 proc read_received_file {} {
 
     global message_subject \
-	   submitted_problem submitted_extension
+	   submitted_problem submitted_extension \
+	   submit_qualifier
 
-    if { ! [file readable Received_Mail] } {
-	set submitted_problem   ""
-	set submitted_extension ""
-	return
-    }
+    set submitted_problem   ""
+    set submitted_extension ""
+    set submit_qualifier ""
+
+    if { ! [file readable Received_Mail] } return
 
     set received_ch [open Received_Mail r]
     read_header $received_ch
@@ -890,7 +893,8 @@ proc read_received_file {} {
     if {    ! [catch { set len \
     			   [llength \
 			       $message_subject] }] \
-         && $len == 2 \
+         && $len >= 2 \
+         && $len <= 3 \
 	 && [lindex $message_subject 0] == "submit" } {
 	set submitted_name \
 	    [lindex $message_subject 1]
@@ -898,14 +902,14 @@ proc read_received_file {} {
 	    [file rootname $submitted_name]
 	set submitted_extension \
 	    [file extension $submitted_name]
-    } else {
-	set submitted_problem   ""
-	set submitted_extension ""
+	set submit_qualifier \
+	    [lindex $message_subject 2]
     }
 }
 set read_array(Received_Mail) read_received_file
 set submitted_problem   ""
 set submitted_extension ""
+set submit_qualifier ""
 
 
 # File Creation

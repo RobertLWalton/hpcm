@@ -5,7 +5,7 @@
 #
 # File:		autojudge
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Oct  2 04:33:04 EDT 2005
+# Date:		Mon Oct  3 04:03:09 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/10/02 08:35:46 $
+#   $Date: 2005/10/03 08:34:00 $
 #   $RCSfile: autojudge,v $
-#   $Revision: 1.103 $
+#   $Revision: 1.104 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -310,11 +310,13 @@ if { $my_argc == 1 } {
     # Get problem.
     #
     if {    [catch { llength $message_subject }] \
-         || [llength $message_subject] != 2 \
+         || [llength $message_subject] < 2 \
+         || [llength $message_subject] > 3 \
 	 || [lindex $message_subject 0] != "submit" } {
 	subject_error "badly formatted"
     }
     set argument [lindex $message_subject 1]
+    set submit_qualifier [lindex $message_subject 2]
 }
 set PROBLEM [file rootname $argument]
 set EXTENSION [file extension $argument]
@@ -817,9 +819,10 @@ execute_links $instructions \
 # Function to send reply to user containing new auto
 # score.
 #
-proc auto_score_reply { score } {
+proc auto_score_reply { score { marker "" } } {
 
-    global auto_score manual_score proposed_score \
+    global auto_score auto_score_marker \
+           manual_score proposed_score \
 	   submitted_problem submitted_extension \
 	   PROBLEM EXTENSION
 
@@ -827,14 +830,16 @@ proc auto_score_reply { score } {
 	puts "Deleting out-of-date Auto_Score"
 	file delete -force Auto_Score
     }
-    write_file Auto_Score $score
+    switch { [llength $marker] } {
+        0 { set s $score }
+	1 { set s "[lindex $marker 0]: $score" }
+	default { set s "[join $marker :] $score" }
+    }
+    write_file Auto_Score $s
     set_flag Score_flag
 
-    if { [regexp {:} $score] } {
-        set score [lrange $score 1 end]
-    }
-
     set auto_score $score
+    set auto_score_marker $marker
     set manual_score None
     set proposed_score None
     set submitted_problem $PROBLEM
@@ -1039,15 +1044,17 @@ foreach name $input_names {
 
 	    puts "============================="
 	    puts ""
-	    auto_score_reply "$name: $score"
+	    auto_score_reply $score [list $name]
 	    exit 0
 	} elseif { ! [file exists $name.out] } {
 	    puts "No `$name.out' file produced"
-	    auto_score_reply "$name: Program Crashed"
+	    auto_score_reply "Program Crashed" \
+	    		     [list $name]
 	    exit 0
 	} elseif { [file size $name.out] == 0 } {
 	    puts "Empty `$name.out' file produced"
-	    auto_score_reply "$name: Program Crashed"
+	    auto_score_reply "Program Crashed" \
+	    		     [list $name]
 	    exit 0
 	}
 
@@ -1196,9 +1203,8 @@ foreach name $input_names {
 	       formatting_error} {
 	set marker [set ${x}_marker]
 	if { $marker != "" && [set $x] == "" } {
-	    set group [lindex $marker 0]
-	    set case [lindex $marker 1]
-	    set $x "$score_file:$group:$case"
+	    set $x [concat [list $score_file] \
+	    		   [lrange $marker 0 1]]
 	}
     }
 }
@@ -1209,13 +1215,13 @@ if {    [file exists Auto_Score] \
     # do nothing
 } elseif { $incorrect_output != "" } {
     auto_score_reply \
-        "$incorrect_output Incorrect Output"
+        "Incorrect Output" $incorrect_output
 } elseif { $incomplete_output != "" } {
     auto_score_reply \
-        "$incomplete_output Incomplete Output"
+        "Incomplete Output" $incomplete_output
 } elseif { $formatting_error != "" } {
     auto_score_reply \
-        "$formatting_error Formatting Error"
+        "Formatting Error" $formatting_error
 } else {
     auto_score_reply "Completely Correct"
 }

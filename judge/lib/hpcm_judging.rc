@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Oct  2 12:34:07 EDT 2005
+# Date:		Mon Oct  3 03:41:16 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/10/02 16:40:18 $
+#   $Date: 2005/10/03 08:34:00 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.153 $
+#   $Revision: 1.154 $
 
 # Table of Contents:
 #
@@ -1227,8 +1227,12 @@ set response_instructions_globals {
     response_mode
     scoring_mode
     auto_score
+    auto_score_marker
     manual_score
     proposed_score
+    submitted_problem
+    submitted_extension
+    submit_qualifier
 }
 
 # The maximum number of errors returned by the SUMMARY
@@ -1426,13 +1430,22 @@ set response_instructions {
 #   $scoring_mode
 #	The value of the scoring_mode global variable.
 #
+#   $response_mode
+#	The value of the response_mode global variable.
+#
 #   $auto_score
-#	The value of the $auto_score_file file.
+#	The value of the non-marker part of the
+#	Auto_Score file.
+#
+#   $auto_score_marker
+#	The value of the marker part of the Auto_Score
+#	file, changed to a TCL list by replacing `:'s
+#	by spaces.  "" if no marker.
 #
 #   $manual_score
-#	The value of the $manual_score_file file, or
-#	`None' if this file does not exist.  Always set
-#	to `None' in the autojudge program.
+#	The value of the Manual_Score file, or `None'
+#	if this file does not exist.  Set to `None' in
+#	the autojudge program.
 #
 #   $proposed_score
 #	The score which the person running the manual-
@@ -1447,6 +1460,16 @@ set response_instructions {
 #
 #   $proposed
 #	Equals \$proposed_score != \"None\".
+#
+#   $submitted_problem
+#	Problem name from the submit mail `Subject'
+#	field.
+#
+#   $submitted_extension
+#	Extension from the submit mail `Subject' field.
+#
+#   $submit_qualifier
+#	Qualifier from the submit mail `Subject' field.
 #
 # If-statement expressions can only use the variables
 # whose names are listed in the `response_instructions_
