@@ -2,7 +2,7 @@
 #
 # File:		scoring_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Oct  3 12:28:05 EDT 2005
+# Date:		Mon Oct  3 13:57:35 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/10/03 17:40:52 $
+#   $Date: 2005/10/03 17:56:09 $
 #   $RCSfile: scoring_common.tcl,v $
-#   $Revision: 1.54 $
+#   $Revision: 1.55 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -931,7 +931,6 @@ proc process_in_or_out_command \
 		   forget prefix] } {
 	error "SYSTEM ERROR: non-*score score file"
     }
-    set out_file ${prefix}out
     set name [file rootname $score_file]
 
     if { ! [file exists $name.jin] } {
@@ -946,12 +945,12 @@ proc process_in_or_out_command \
         lappend pc [list BAR "Judge's Input $id:"]
         lappend pc [list INPUT $id.in]
     } else {
-	if { ! [file exists $out_file] } {
-	    error "SYSTEM ERROR: no $out_file file"
+	if { ! [file exists $name.test] } {
+	    error "SYSTEM ERROR: no $name.test file"
 	}
         file delete -force -- $id.out
         exec jfilter -c $group:$case $name.jin \
-	     $out_file $id.out >@ stdout
+	     $name.test $id.out >@ stdout
         lappend pc [list BAR "Judge's Output $id:"]
         lappend pc [list INPUT $id.out]
     }
