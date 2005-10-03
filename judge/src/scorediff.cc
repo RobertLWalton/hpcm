@@ -2,7 +2,7 @@
 //
 // File:	scorediff.cc
 // Authors:	Bob Walton (walton@deas.harvard.edu)
-// Date:	Tue Sep 27 04:11:07 EDT 2005
+// Date:	Mon Oct  3 13:33:43 EDT 2005
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: hc3 $
-//   $Date: 2005/09/27 08:20:58 $
+//   $Date: 2005/10/03 17:40:52 $
 //   $RCSfile: scorediff.cc,v $
-//   $Revision: 1.75 $
+//   $Revision: 1.76 $
 
 // This is version 2, a major revision of the first
 // scorediff program.  This version is more explicitly
@@ -2190,8 +2190,8 @@ int main ( int argc, char ** argv )
 
 	// Output proofs within a proof line.
 
-	int last_output_column	= -1;
-	int last_test_column	= -1;
+	int last_output_column	= -2;
+	int last_test_column	= -2;
 
 	for ( proof * p = pline->proofs;
 	      p != NULL;

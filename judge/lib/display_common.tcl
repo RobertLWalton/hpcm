@@ -2,7 +2,7 @@
 #
 # File:		display_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Oct  3 08:35:37 EDT 2005
+# Date:		Mon Oct  3 13:12:50 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/10/03 12:37:29 $
+#   $Date: 2005/10/03 17:40:52 $
 #   $RCSfile: display_common.tcl,v $
-#   $Revision: 1.42 $
+#   $Revision: 1.43 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -1110,12 +1110,16 @@ proc set_file_display { filename } {
 # if the array is named x_array, then x_array(1) is the
 # 1'st line, x_array(2) the 2'nd line, etc.
 #
+# The first prefix characters of each line are removed
+# when the line is first read.
+#
 # Note that reading stops on an end of file even if
 # the given line number has not been reached.  In this
 # case, array elements for lines off the end of the
 # file will not exist.
 #
-proc read_file_array { filename xxx_array linenumber } {
+proc read_file_array \
+	{ filename prefix xxx_array linenumber } {
 
     upvar $xxx_array array
 
@@ -1144,6 +1148,7 @@ proc read_file_array { filename xxx_array linenumber } {
 	    set array(ch) CLOSED
 	    break
 	}
+	set line [string range $line $prefix end]
         incr lastline
 	set array($lastline) $line
     }
@@ -1208,6 +1213,10 @@ proc tab_expand { line } {
 # number 0.  The file will be read into the array with
 # the read_file_array function.
 #
+# The first `prefix' characters of each line are strip-
+# ped from the line as soon as it is read, and not
+# included in subsequent processing.
+#
 # The returned display consists of lines each ending
 # with \n.  There is NO ending bar line: the last
 # line returned is a file line.
@@ -1220,9 +1229,8 @@ proc tab_expand { line } {
 # and the remaining returned lines are blank.
 #
 proc compute_file_display \
-	{ filename xxx_array first_line_number \
-	                     last_line_number \
-			     highlights } {
+	{ filename prefix xxx_array first_line_number \
+		   last_line_number highlights } {
 
     upvar $xxx_array array
 
@@ -1232,7 +1240,8 @@ proc compute_file_display \
     set hoff $highlight_off
     set hlength [string length "$hon$hoff"]
 
-    read_file_array $filename array $last_line_number
+    read_file_array $filename $prefix array \
+    		    $last_line_number
 
     set output [bar_with_text "$filename: lines\
     		$first_line_number-$last_line_number:"]

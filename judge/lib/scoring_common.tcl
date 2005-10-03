@@ -2,7 +2,7 @@
 #
 # File:		scoring_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Oct  3 11:18:58 EDT 2005
+# Date:		Mon Oct  3 12:28:05 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/10/03 15:16:13 $
+#   $Date: 2005/10/03 17:40:52 $
 #   $RCSfile: scoring_common.tcl,v $
-#   $Revision: 1.53 $
+#   $Revision: 1.54 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -848,9 +848,13 @@ proc eval_response_if { item } {
 #
 # process_proof_file	.{jf,j,f,}out file name
 # process_proof_ch	.{jf,j,f,}out file channel id
+# process_proof_prefix	1 to remove first character
+#			of displayed line, 0 not to
 # process_proof_number	line number of next line
 #			to be read from channel
 # process_proof_line	last line read from channel
+#			without first process_proof_
+#			prefix characters
 #
 #
 proc process_proof { proof processed_commands } {
@@ -859,6 +863,7 @@ proc process_proof { proof processed_commands } {
 
     global submitted_problem \
 	   process_proof_file process_proof_ch \
+	   process_proof_prefix \
     	   process_proof_number process_proof_line
 
     set number [lindex $proof 1]
@@ -878,14 +883,79 @@ proc process_proof { proof processed_commands } {
 	    set process_proof_line \
 	        "<<---END-OF-FILE--->>"
 	}
+	set process_proof_line \
+	    [string range $process_proof_line \
+	            $process_proof_prefix end]
 	incr process_proof_number
     }
     lappend pc [list BAR "FILE $process_proof_file,\
-                           LINE NUMBER $number,\
+                           LINE $number,\
                            COLUMN $column:"]
     lappend pc [list LINE $process_proof_line]
 }
 
+
+# Helper function for execute_response_commands below.
+# Just processes IN or OUT command out-of-line to make
+# code neater.
+#
+proc process_in_or_out_command \
+	{ command processed_commands } {
+
+    upvar $processed_commands pc
+
+    global auto_score_marker
+
+    set score_file [lindex $auto_score_marker 0]
+    set group [lindex $auto_score_marker 1]
+    set case [lindex $auto_score_marker 2]
+
+    if { $command == "IN" } {
+        set kind input
+    } else {
+        set kind output
+    }
+
+    if {    $group == "" \
+    	 || $case == "" \
+         || $case == 0 } {
+	lappend pc \
+	     [list LINE "Sorry, the information needed\
+	     to locate the judge's $kind for the"] \
+	     [list LINE "failed test case is\
+	     unavaliable."]
+        return
+    }
+
+    if { ! [regexp {^(.*)score$} $score_file \
+		   forget prefix] } {
+	error "SYSTEM ERROR: non-*score score file"
+    }
+    set out_file ${prefix}out
+    set name [file rootname $score_file]
+
+    if { ! [file exists $name.jin] } {
+        error "SYSTEM ERROR: no $name.jin file"
+    }
+
+    set id $name:$group:$case
+    if { $command == "IN" } {
+        file delete -force -- $id.in
+        exec jfilter -c $group:$case $name.jin $id.in \
+	     >@ stdout
+        lappend pc [list BAR "Judge's Input $id:"]
+        lappend pc [list INPUT $id.in]
+    } else {
+	if { ! [file exists $out_file] } {
+	    error "SYSTEM ERROR: no $out_file file"
+	}
+        file delete -force -- $id.out
+        exec jfilter -c $group:$case $name.jin \
+	     $out_file $id.out >@ stdout
+        lappend pc [list BAR "Judge's Output $id:"]
+        lappend pc [list INPUT $id.out]
+    }
+}
 
 # Helper function for execute_response_commands below.
 # Just processes FIRST or SUMMARY command out-of-line to
@@ -896,9 +966,9 @@ proc process_first_or_summary_command \
 
     upvar $processed_commands pc
 
-    global proof_array \
-           process_proof_file process_proof_ch \
-	   process_proof_number \
+    global auto_score_marker proof_array \
+           process_proof_file process_proof_prefix \
+	   process_proof_ch process_proof_number \
 	   response_instructions_summary_limit \
 	   scoring_instructions
 
@@ -921,6 +991,8 @@ proc process_first_or_summary_command \
 	    error "SYSTEM ERROR: non-*score score file"
 	}
 	set process_proof_file ${prefix}out
+	set process_proof_prefix \
+	    [regexp {\.j[^.]*out$} $process_proof_file]
 
 	set name [file rootname $score_file]
 	set jin_instructions none
@@ -1141,6 +1213,15 @@ proc execute_response_commands \
 		    response_error $command
 		}
 		process_first_or_summary_command \
+		    $command processed_commands
+	    }
+
+	    IN  -
+	    OUT	{
+	    	if { $length != 1 } {
+		    response_error $command
+		}
+		process_in_or_out_command \
 		    $command processed_commands
 	    }
 
@@ -1449,13 +1530,15 @@ proc set_proof_display { } {
     set out_file ${prefix}out
     set test_file ${prefix}test
 
+    set prefix [regexp {\.j[^.]*out$} $out_file]
+
     set_window_display \
-        "[compute_file_display $out_file \
+        "[compute_file_display $out_file $prefix \
 	                       out_file_array \
 			       $omin \
 			       [expr { $oline + $L }] \
 			       $oh \
-        ][compute_file_display $test_file \
+        ][compute_file_display $test_file $prefix \
 	                       test_file_array \
 			       $tmin \
 			       [expr { $tline + $L }] \
