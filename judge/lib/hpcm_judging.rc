@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Oct  3 21:21:16 EDT 2005
+# Date:		Tue Oct  4 08:00:41 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/10/04 01:23:27 $
+#   $Date: 2005/10/04 12:35:32 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.159 $
+#   $Revision: 1.160 $
 
 # Table of Contents:
 #
@@ -334,23 +334,57 @@
 # All times are in a format that TCL `clock scan'
 # can convert.  Most date formats work.
 
+# Qaulifier scoring.
+#
+# If scoreboard_use_qualifiers is `yes', scores are
+# computed from the number of incorrect submissions as
+# follows.  A problem score is 10.0 times the factor
+# for each incorrect submission.  The total score is
+# the sum of all problem scores for all (eventually)
+# correct problems.
+#
+# If scoreboard_use_qualifiers is `no', scores are
+# computed using times (see below).
+#
+set scoreboard_use_qualifiers no
+#
+# The following is the list of factors that are used
+# only if scoreboard_user_qualifiers is `yes'.  There
+# is a different factor for each possible submit
+# qualifier value.  The maximum score for a correct
+# problem is multipled by the appropriate factor for
+# each incorrect submission prior to the first correct
+# submission.  The qualifier of the first correct
+# submission does not matter.  The order of the factors
+# in this list is:
+#
+#	in    inout    first    summary   other
+#
+set qualifier_scoreboard_factors \
+    {	0.8   0.7      0.85     0.8       0.9 }
+
 # Correct and incorrect count displays.
 #
 # If scoreboard_display_correct is `yes', the number of
 # correct problems is displayed for each submitter,
-# along with the total problem time of the submitter if
-# that is known, and submitters are sorted by number of
-# correct problems (decreasing order) in the scoreboard.
+# along with the total problem time or qualifier score
+# of the submitter if that is known, and submitters are
+# sorted by number of correct problems (decreasing
+# order) in the scoreboard.
+#
 # If scoreboard_display_correct is `no', the number of
-# correct problems and total problem time are NOT dis-
-# played for each submitter, and the scoreboard is
-# sorted alphabetically by submitter name.
+# correct problems and total problem time or qualifier
+# score are NOT displayed for each submitter, and the
+# scoreboard is sorted alphabetically by submitter name.
 #
 # If scoreboard_display_incorrect is `yes', the number
 # of submissions for each submitter and problem is
-# displayed.  If scoreboard_display_incorrect is `no',
-# this number is not displayed.  Other scoreboard
-# properties are not affected by this parameter.
+# displayed, and in the case qualifier scores are being
+# computed, the number of submissions with each kind of
+# qualifier is displayed.  If scoreboard_display_incor-
+# rect is `no', these numbers are not displayed.  Other
+# scoreboard properties are not affected by this
+# parameter.
 #
 set scoreboard_display_correct yes
 set scoreboard_display_incorrect yes
