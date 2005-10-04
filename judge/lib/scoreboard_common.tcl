@@ -3,7 +3,7 @@
 #
 # File:		scoreboard_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Oct  4 08:41:45 EDT 2005
+# Date:		Tue Oct  4 10:23:13 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -12,9 +12,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/10/04 14:17:07 $
+#   $Date: 2005/10/04 14:49:05 $
 #   $RCSfile: scoreboard_common.tcl,v $
-#   $Revision: 1.48 $
+#   $Revision: 1.49 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -542,7 +542,7 @@ proc prune_scoreboard_array { } {
 # order sorted list of items, each of the form:
 #
 #	{ sort_code number_of_submissions
-#	  problems_correct time_score modifier
+#	  problems_correct total_score modifier
 #	  submitter problem_score ... }
 #
 # Each item begins with a code to sort on, followed by
@@ -556,9 +556,9 @@ proc prune_scoreboard_array { } {
 # to these scores are in the scoreboard_problem_list
 # global variable.  This last list is sorted.
 #
-# If scoreboard_start_time is "", the time_score is "".
+# If scoreboard_start_time is "", the total_score is "".
 # If scoreboard_display_correct is `no', the problems_
-# correct and time_score will both be "".
+# correct and total_score will both be "".
 #
 # The format of the problem_scores and sort_code depend
 # upon the settings of various scoreboard parameters.
@@ -577,9 +577,10 @@ proc prune_scoreboard_array { } {
 #
 # where cccc is 10**4 - 1 - the number of correct
 # problems in four digits with leading zeros, ttttttttt
-# is the time_score, in 9 digits with leading zeros, and
-# ssss is 10**4 - 1 - the total number of submissions,
-# in 4 digits with leading zeros.
+# is the total_score, actually the total time, in 9
+# digits with leading zeros, and ssss is 10**4 - 1 - the
+# total number of submissions, in 4 digits with leading
+# zeros.
 #
 # If scoreboard_use_qualifiers is `yes', and scoreboard_
 # display_correct and scoreboard_display_incorrect are
@@ -589,9 +590,9 @@ proc prune_scoreboard_array { } {
 #
 # where cccc is 10**4 - 1 - the number of correct
 # problems in four digits with leading zeros, qqqqqqqqq
-# is 10**9 - 1 - the qualifier score, in 9 digits with
-# leading zeros, and ssss is 10**4 - 1 - the total num-
-# ber of submissions, in 4 digits with leading zeros.
+# is 10**9 - 1 - 100 * the qualifier score, in 9 digits
+# with leading zeros, and ssss is 10**4 - 1 - the total
+# number of submissions, in 4 digits with leading zeros.
 # This reflects the fact that higher time scores are
 # worse but higher qualifier scores are better.
 #
@@ -611,20 +612,20 @@ proc prune_scoreboard_array { } {
 #    
 #	SDC/SUQ/SST/SDI	    SORT_CODE
 #
-#	yes/no /yes/yes	    cccc.ttttttttt.ssss
-#			    (as in text above)
-#
-#	yes/no /yes/no	    cccc.ttttttttt
-#			    (.ssss is omitted)
-#
-#	yes/no /no /---	    cccc.submitters_name
+#	no /---/---/---	    submitters_name
 #
 #	yes/yes/---/yes     cccc.qqqqqqqqq.ssss
 #
 #	yes/yes/---/no      cccc.qqqqqqqqq
 #			    (.ssss is omitted)
 #
-#	no /---/---/---	    submitters_name
+#	yes/no /no /---	    cccc.submitters_name
+#
+#	yes/no /yes/yes	    cccc.ttttttttt.ssss
+#			    (as in text above)
+#
+#	yes/no /yes/no	    cccc.ttttttttt
+#			    (.ssss is omitted)
 #
 # Here qqqqqqqqq is the total score computed from the
 # submit qualifier, instead of from times.
@@ -647,7 +648,8 @@ proc compute_scoreboard_list {} {
            scoreboard_problem_list scoreboard_penalty \
 	   scoreboard_display_correct \
 	   scoreboard_display_incorrect \
-	   scoreboard_start_time
+	   scoreboard_start_time \
+	   scoreboard_use_qualifiers
 
     if { ! [lcontain {yes no} \
     		     $scoreboard_display_correct] } {
@@ -698,17 +700,20 @@ proc compute_scoreboard_list {} {
     # Compute scoreboard_list.
     #
     set scoreboard_list ""
-    set max_time_score 999999999
+    set max_total_score 999999999
     foreach submitter $submitters {
 
-	# Compute total time score, number of problems
+	# Compute total score, number of problems
 	# correct, modifier (f or n), total number of
-	# submissions.
+	# submissions, qualifier_score.
 	#
 	set time_score 0
+	set qualifier_score 0.0
+
 	set problems_correct 0
-	set modifier f
 	set submissions 0
+
+	set modifier f
 
 	# Compute the problem scores for the score list
 	# item in $problem_scores.
@@ -746,6 +751,15 @@ proc compute_scoreboard_list {} {
 	    set problem_incorrect	0
 	    set problem_modifier	f
 
+	    # Counts of incorrect submissions with
+	    # given submit qualifiers.
+	    #
+	    set problem_i_qualified	0
+	    set problem_o_qualified	0
+	    set problem_f_qualified	0
+	    set problem_s_qualified	0
+	    set problem_x_qualified	0
+
 	    foreach item $problem_items {
 
 		set code [lindex $item 1]
@@ -778,12 +792,12 @@ proc compute_scoreboard_list {} {
 			       + $scoreboard_penalty \
 				 * $problem_incorrect }]
 			if { [expr { \
-				$max_time_score \
+				$max_total_score \
 				- \
 				$problem_increment }] \
 			     < $time_score } {
 			    set time_score \
-			        $max_time_score
+			        $max_total_score
 			} else {
 			    incr time_score \
 				 $problem_increment
@@ -795,6 +809,14 @@ proc compute_scoreboard_list {} {
 		} elseif { [regexp {.i..} $code] } {
 
 		    # Score is incorrect.
+
+		    set qualifier [string index $code 3]
+		    if { ! [lcontain {i o f s x} \
+		    		     $qualifier] } {
+		        error "bad qualifier in\
+			       scorefinder code: $code"
+		    }
+		    incr problem_${qualifier}_qualified
 
 		    incr problem_incorrect
 		    incr submissions
@@ -813,38 +835,54 @@ proc compute_scoreboard_list {} {
 	            [format_problem_score \
 	    		 $problem_time \
 			 $problem_incorrect \
-			 $problem_modifier]
+			 $problem_modifier \
+			 qualifier_score \
+			 [list $problem_i_qualified \
+			       $problem_o_qualified \
+			       $problem_f_qualified \
+			       $problem_s_qualified \
+			       $problem_x_qualified]]
 	}
 
 	# Compute sort_code and mark problems_correct
-	# and time_score missing when appropriate.
+	# and total_score missing when appropriate.
 	#
-	if { $scoreboard_display_correct == "no" } {
+	set cccc \
+	    [format {%04d} \
+		    [expr { 9999 - $problems_correct }]]
+	set ssss \
+	    [format {%04d} \
+		    [expr { 9999 - $submissions }]]
+	if { ! $scoreboard_display_correct } {
 	    set sort_code $submitter
 	    set problems_correct ""
-	    set time_score ""
-	} else {
-	    set cccc \
-	        [format {%04d} \
-		        [expr { 9999 \
-			        - $problems_correct }]]
-	    if { $scoreboard_start_time == "" } {
-		set sort_code $cccc.$submitter
-		set time_score ""
+	    set total_score ""
+	} elseif { $scoreboard_use_qualifiers } {
+	    set qqqqqqqqq \
+		[format {%09d} \
+		        [expr { 999999999 \
+			        - round \
+				  (   100 \
+				    * $qualifier_score \
+				  ) }]]
+	    if { $scoreboard_display_incorrect } {
+		set sort_code $cccc.$qqqqqqqqq.$ssss
 	    } else {
-		set ttttttttt \
-		    [format {%09d} $time_score ]
-		if { $scoreboard_display_incorrect } {
-		    set ssss \
-		        [format {%04d} \
-			        [expr { 9999 \
-				        - $submissions \
-					}]]
-		    set sort_code $cccc.$ttttttttt.$ssss
-		} else {
-		    set sort_code $cccc.$ttttttttt
-		}
+		set sort_code $cccc.$qqqqqqqqq
 	    }
+	    set total_score $qualifer_score
+	} elseif { $scoreboard_start_time == "" } {
+		set sort_code $cccc.$submitter
+		set total_score ""
+	} else {
+	    set ttttttttt \
+		[format {%09d} $time_score ]
+	    if { $scoreboard_display_incorrect } {
+		set sort_code $cccc.$ttttttttt.$ssss
+	    } else {
+		set sort_code $cccc.$ttttttttt
+	    }
+	    set total_score $time_score
 	}
 
 	# Add score list item to score list.
@@ -852,7 +890,7 @@ proc compute_scoreboard_list {} {
 	lappend scoreboard_list \
 		[concat [list $sort_code $submissions \
 		              $problems_correct \
-			      $time_score \
+			      $total_score \
 		              $modifier $submitter ] \
 		        $problem_scores]
     }
