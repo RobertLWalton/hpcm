@@ -3,7 +3,7 @@
 #
 # File:		scoreboard_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Oct  4 05:02:42 EDT 2005
+# Date:		Tue Oct  4 08:41:45 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -12,9 +12,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/10/04 12:35:32 $
+#   $Date: 2005/10/04 14:17:07 $
 #   $RCSfile: scoreboard_common.tcl,v $
-#   $Revision: 1.47 $
+#   $Revision: 1.48 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -563,7 +563,7 @@ proc prune_scoreboard_array { } {
 # The format of the problem_scores and sort_code depend
 # upon the settings of various scoreboard parameters.
 # The problem_scores will not be more than 9 characters
-# long except in cases to rare to be given serious con-
+# long except in cases too rare to be given serious con-
 # sideration.  The scoreboard_list is sorted in the
 # order that submitters are to be displayed on the
 # scoreboard.
@@ -879,44 +879,22 @@ proc compute_scoreboard_list {} {
 # as there are at most 98 incorrect submissions, or
 # there is no `*' prefix (see below) and at most 998
 # incorrect submissions, or scoreboard_display_incorrect
-# is `no'.
+# is `no', or scoreboard_use_qualifiers is yes and there
+# are not too many kinds of qualifiers being used.
 #
-# If problem_time is the date and time, and scoreboard_
-# use_qualified is `no', the date and time is encoded as
-# a date,
+# If the problem time is "" indicating the problem is
+# not correct, the problem score is `......' if there
+# are no submissions or if scoreboard_display_incorrect
+# is `no', and is otherwise `..../N', where N is the
+# number of incorrect submissions.
 #
-#	ddmmmyy
+# Otherwise if scoreboard_use_qualifiers is `yes', the
+# the score for the problem is computed as a floating
+# point number, as accurately as possible, and is added
+# to the qualified_score whose name must be given as an
+# argument.  In this case the qualified_submissions
+# argument must be given as a list of the format
 #
-# where dd is the day of the month, mmm the month in 3
-# letters, and yy the last two digits of the year.  If
-# there would be more than 9 characters in the printable
-# score, the year is omitted.
-#
-# If problem_time is an elapsed time, and scoreboard_
-# use_qualified is `no', the elapsed time is encoded as 
-#
-#	MM:SSs		s = denotes seconds
-#	HH:MMm		m = denotes minutes
-#	DD:HHh		h = denotes hours
-#	DDDDDd		d = denotes days
-#
-# If the time is missing, `....' is used to represent
-# the missing time.
-#
-# If scoreboard_use_qualifiers is `no', the number of
-# submissions is not 0, and scoreboard_display_incorrect
-# is `yes', then the number of submissions is appended
-# to the time in the printable score.  If the score
-# contains a date or `....', a `/' is added to separate
-# the number of submissions from what precedes it.
-#
-# If scoreboard_use_qualifiers is `yes', and the time is
-# not missing, the score for the problem is computed as
-# a floating point number, as accurately as possible,
-# and is added to the qualified_score whose name must be
-# given as an argument.  In this case the qualified_
-# submissions argument must be given as a list of the
-# format
 #		I O F S X
 #
 # where I, O, F, S, X represent the following:
@@ -925,7 +903,10 @@ proc compute_scoreboard_list {} {
 #    O  number `inout' qualified incorrect submissions
 #    F  number `first' qualified incorrect submissions
 #    S  number `summary' qualified incorrect submissions
-#    X  unqualified incorrect submissions
+#    X  number unqualified incorrect submissions
+#
+# The order of the list given above matches the order
+# of scoreboard_qualifier_factors: see hpcm_judging.rc.
 #
 # If scoreboard_use_qualifiers and scoreboard_display_
 # incorrect are both `yes', the problem score has the
@@ -938,13 +919,34 @@ proc compute_scoreboard_list {} {
 # omitted (instead of 2i1o0f0s2 it is 2i1o2).
 #
 # If, however, scoreboard_display_incorrect is `no', the
-# problem score is just the floating point number that
-# is the problem score proper.
+# problem score is just the problem score proper,
+# rounded to the nearest integer.
+#
+# If scoreboard_use_qualified is `no' and scoreboard_
+# start_time is "", the problem time is the date and
+# time as per [clock seconds], and this is encoded in
+# the problem score as:
+#
+#	ddmmmyy
+#
+# where dd is the day of the month, mmm the month in 3
+# letters, and yy the last two digits of the year.  If
+# there would be more than 9 characters in the printable
+# score, the year is omitted.
+#
+# If scoreboard_use_qualified is `no' and scoreboard_
+# start_time is NOT "", the problem time an elapsed
+# time, and is encode in the problem score as:
+#
+#	MM:SSs		s = denotes seconds
+#	HH:MMm		m = denotes minutes
+#	DD:HHh		h = denotes hours
+#	DDDDDd		d = denotes days
 #
 # If the modifier is "n" and either there was a correct
-# submission or the number of submissions is being
-# displayed, "*" is prefixed to the score to indicate
-# the score is subject to change by manual review.
+# submission or the scoreboard_display_incorrect is
+# `yes', "*" is prefixed to the score to indicate the
+# score is subject to change by manual review.
 #
 proc format_problem_score { time incorrect modifier \
     { qualifier_score_name ""} \
@@ -969,6 +971,30 @@ proc format_problem_score { time incorrect modifier \
 	}
 	set short_score $long_score
     } elseif { $scoreboard_use_qualifiers } {
+        upvar $qualifier_score_name qualifier_score
+	set score 100.0
+	set long_score ""
+	set i 0
+	foreach c $qualified_submissions {
+	    set factor $scoreboard_qualifier_factors($i)
+	    set postfix [lindex {i o f s ""} $i]
+	    incr i
+	    if { $c == 0 } continue
+	    set score \
+	        [expr { $score * pow ($factor, $c) }]
+	    if { $scoreboard_display_incorrect } {
+	        set long_score \
+		    "$long_score$c$postfix"
+	    }
+	}
+	if {    ! $scoreboard_display_incorrect \
+	     || $incorrect == 0 } {
+	    set long_score [expr { round($score) }]
+	}
+	set short_score $long_score
+	set qualifier_score \
+	    [expr $qualifier_score + $score]
+
     } elseif { $scoreboard_start_time != "" } {
 
 	set MM [expr { $time / 60 }]
