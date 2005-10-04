@@ -4,7 +4,7 @@
 #
 # File:		hpcm_submit
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Thu Oct  7 08:26:45 EDT 2004
+# Date:		Tue Oct  4 11:04:49 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,17 +13,18 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2004/10/07 12:32:24 $
+#   $Date: 2005/10/04 15:51:45 $
 #   $RCSfile: hpcm_submit,v $
-#   $Revision: 1.7 $
+#   $Revision: 1.8 $
 
 extensions=".c .cc .java .lsp"
 files=""
+qualifier=""
 
 case "$1" in
-    "" | -*)
+    "" | -doc*)
 	echo "
-hpcm_submit problem[.extension] [file ...]
+hpcm_submit [-qualifier] problem[.extension] [file ...]
 
     Submits the files for the problem.
 
@@ -36,10 +37,34 @@ hpcm_submit problem[.extension] [file ...]
     
     so that the file problem.extension is readable.  It
     is an error if no suitable extensions are found or
-    more than one is found."
+    more than one is found.
+
+    Legal qualifiers are-
+
+      in	Return judge's input for first case
+		where problem had Incorrect Output or
+		a Formatting Error.
+
+      inout	Ditto but return both judge's input and
+		output.
+
+      first	Ditto but return only summary of first
+		error.
+
+      summary	Ditto but return summary of first
+		several errors.
+
+      solution  On Completely Correct submission, return
+      		judge's solution.
+
+    Qualifiers are often not legal for particular
+    contests."
 
 	exit 1
 	;;
+    -*) qualifier=" "`expr "$1" : '-\(.*\)$'`
+        shift
+        ;;
 esac
 
 problem="$1"
@@ -82,7 +107,7 @@ fi
 
 # Submit program files by email.
 #
-( echo Subject: submit $problem; \
+( echo Subject: submit $problem$qualifier; \
   for file in $files; \
   do \
       echo ""; \
