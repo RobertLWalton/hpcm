@@ -3,7 +3,7 @@
 #
 # File:		scoreboard_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Oct  4 10:23:13 EDT 2005
+# Date:		Tue Oct  4 10:55:53 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -12,9 +12,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/10/04 14:49:05 $
+#   $Date: 2005/10/04 14:55:26 $
 #   $RCSfile: scoreboard_common.tcl,v $
-#   $Revision: 1.49 $
+#   $Revision: 1.50 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -870,7 +870,8 @@ proc compute_scoreboard_list {} {
 	    } else {
 		set sort_code $cccc.$qqqqqqqqq
 	    }
-	    set total_score $qualifer_score
+	    set total_score \
+	        [format {%.2f} $qualifier_score]
 	} elseif { $scoreboard_start_time == "" } {
 		set sort_code $cccc.$submitter
 		set total_score ""
@@ -993,7 +994,7 @@ proc format_problem_score { time incorrect modifier \
     global scoreboard_start_time \
            scoreboard_display_incorrect \
 	   scoreboard_use_qualifiers \
-	   scoreboard_factors
+	   scoreboard_qualifier_factors
 
     # Compute:
     #
@@ -1014,7 +1015,9 @@ proc format_problem_score { time incorrect modifier \
 	set long_score ""
 	set i 0
 	foreach c $qualified_submissions {
-	    set factor $scoreboard_qualifier_factors($i)
+	    set factor \
+	        [lindex $scoreboard_qualifier_factors \
+		        $i]
 	    set postfix [lindex {i o f s ""} $i]
 	    incr i
 	    if { $c == 0 } continue
