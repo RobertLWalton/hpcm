@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Oct  3 10:24:47 EDT 2005
+# Date:		Mon Oct  3 21:21:16 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/10/03 14:37:46 $
+#   $Date: 2005/10/04 01:23:27 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.158 $
+#   $Revision: 1.159 $
 
 # Table of Contents:
 #
@@ -57,16 +57,16 @@
 # After hpcm_judging.rc is sourced, certain programs
 # source the file PPP.rc which they locate in the pro-
 # blem solution directory of a particular problem named
-# PPP.  In particular the autojudge, extractmail, and auto-
-# score programs do this while computing in a problem
-# submission directory.  Autojudge links any PPP.rc
+# PPP.  In particular the autojudge, extractmail, and
+# manualreply programs do this while computing in a pro-
+# blem submission directory.  Autojudge links any PPP.rc
 # file it finds in the problem solution directory into
 # the submission directory, and the other programs find
 # that file in the submission directory.  The file may
 # not exist, and if it does not, no attempt is made to
-# source it.  If the file exists, it must pass a security
-# check before it is sourced: it must not be accessible
-# by `others'.
+# source it.  If the file exists, it must pass a secur-
+# ity check before it is sourced: it must not be access-
+# ible by `others'.
 #
 # Before a PPP.rc file is sourced the following global
 # variables are set:
@@ -262,10 +262,11 @@
 #
 #	If a link instruction is a list { F F1 F2 ... }
 #	of names, the names F1, F2, ... are checked in
-#	the solution directory, and the first that exists
-#	is linked to the name F in the submission direc-
-#	tory.  If none of the files F1, F2, ... exist
-#	in the solution directory, no link will be made.
+#	the solution directory, and the first that
+#	exists is linked to the name F in the submission
+#	directory.  If none of the files F1, F2, ...
+#	exist in the solution directory, no link will be
+#	made.
 #
 #	The submission files designated in problem_link_
 #	files instructions must already exist or have a
@@ -1723,10 +1724,12 @@ proc submitter_compress { submitter } {
 			     } {
 	set long_submitter \
 	    "$short_submitter@$organization"
-    } else {
-	regexp {^([^@]*)@} $submitter forget \
-	       short_submitter
+    } elseif { [regexp {^([^@]*)@} $submitter forget \
+	               short_submitter] } {
 	set long_submitter $short_submitter
+    } else {
+        set long_submitter $submitter
+        set short_submitter $submitter
     }
 
     if { $submitter_compress_mode == "long" } {
