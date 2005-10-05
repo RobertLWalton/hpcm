@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Mar  9 06:53:10 EST 2003
+# Date:		Wed Oct  5 07:58:58 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2003/03/09 11:50:31 $
+#   $Date: 2005/10/05 11:54:54 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.25 $
+#   $Revision: 1.26 $
 
 # make
 #	Makes documentation as fprintable .txt files in
@@ -64,8 +64,8 @@ DOCS=	overview.txt \
 	contestant/javahelp.txt \
 	judge/jprint.txt \
 	judge/lookat.txt \
-	judge/lpq.txt \
-	contestant/lpq.txt \
+	judge/printer.txt \
+	contestant/printer.txt \
 	judge/makejudgingdir.txt \
 	judge/makescoreboard.txt \
 	judge/makeweb.txt \
@@ -226,9 +226,9 @@ judge/lookat.txt:	hpcm_judging.rc \
 		        ../../judge/bin/lookat
 	rm -f judge/lookat.txt
 	-../../judge/bin/lookat -doc >judge/lookat.txt
-judge/lpq.txt:	../../judge/bin/lpq
-	rm -f judge/lpq.txt
-	-../../judge/bin/lpq -doc >judge/lpq.txt
+judge/printer.txt:	../../judge/bin/printer
+	rm -f judge/printer.txt
+	-../../judge/bin/printer -doc >judge/printer.txt
 judge/remakeMakefile.txt:	hpcm_judging.rc \
 			../../judge/bin/remakeMakefile
 	rm -f judge/remakeMakefile.txt
@@ -388,10 +388,10 @@ contestant/javahelp.txt:	\
 	rm -f contestant/javahelp.txt
 	-../../contestant/bin/javahelp -doc \
 	    >contestant/javahelp.txt
-contestant/lpq.txt:	../../contestant/bin/lpq
-	rm -f contestant/lpq.txt
-	-../../contestant/bin/lpq -doc \
-	    >contestant/lpq.txt
+contestant/printer.txt:	../../contestant/bin/printer
+	rm -f contestant/printer.txt
+	-../../contestant/bin/printer -doc \
+	    >contestant/printer.txt
 contestant/print.txt:	../../contestant/bin/print
 	rm -f contestant/print.txt
 	-../../contestant/bin/print -doc \
