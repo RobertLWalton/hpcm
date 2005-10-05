@@ -2,7 +2,7 @@
 #
 # File:		scoring_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Oct  4 12:16:49 EDT 2005
+# Date:		Tue Oct  4 20:15:39 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/10/04 16:13:26 $
+#   $Date: 2005/10/05 00:17:10 $
 #   $RCSfile: scoring_common.tcl,v $
-#   $Revision: 1.57 $
+#   $Revision: 1.58 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -921,6 +921,7 @@ proc process_in_or_out_command \
     	 || $case == "" \
          || $case == 0 } {
 	lappend pc \
+	     BAR \
 	     [list LINE "Sorry, the information needed\
 	     to locate the judge's $kind for the"] \
 	     [list LINE "failed test case is\
