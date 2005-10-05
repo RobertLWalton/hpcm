@@ -2,7 +2,7 @@
 #
 # File:		scoring_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Oct  4 20:15:39 EDT 2005
+# Date:		Tue Oct  4 20:29:48 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/10/05 00:17:10 $
+#   $Date: 2005/10/05 00:26:07 $
 #   $RCSfile: scoring_common.tcl,v $
-#   $Revision: 1.58 $
+#   $Revision: 1.59 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -1203,12 +1203,10 @@ proc execute_response_commands \
 		    
 	        foreach file $solution_files {
 		    set f $sdir/$file
-		    if { [file exists $f] } {
-		        lappend processed_commands \
-			        [list BAR $file:]
-			lappend processed_commands \
-				[list INPUT $f]
-		    }
+		    lappend processed_commands \
+			    [list BAR $file:]
+		    lappend processed_commands \
+			    [list INPUT $f]
 		}
 	    }
 

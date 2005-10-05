@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Oct  3 09:28:09 EDT 2005
+# Date:		Tue Oct  4 20:27:07 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/10/03 13:50:11 $
+#   $Date: 2005/10/05 00:26:07 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.121 $
+#   $Revision: 1.122 $
 #
 
 # Table of Contents
@@ -1448,9 +1448,16 @@ proc compose_reply { args } {
 		}
 	    }
 	    INPUT {
-		puts $reply_ch \
-		     [read_entire_file \
-		          [lindex $command 1]]
+		set file [lindex $command 1]
+	        if { [file readable $file] } {
+		    puts $reply_ch \
+			 [read_entire_file \
+			      [lindex $command 1]]
+		} else {
+		    puts $reply_ch \
+		         "Sorry, file $file is not\
+			  available."
+		}
 	    }
 	    RECEIVED-HEADER {
 
