@@ -4,7 +4,7 @@
 #
 # File:		testproblems
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Tue Oct  4 21:48:01 EDT 2005
+# Date:		Tue Oct  4 23:49:35 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/10/05 03:07:02 $
+#   $Date: 2005/10/05 03:45:54 $
 #   $RCSfile: testproblems,v $
-#   $Revision: 1.13 $
+#   $Revision: 1.14 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -130,13 +130,12 @@ set wd [pwd]
 set fd [open $tmp w]
 
 proc diff { file1 file2 } {
-    global problem fd make_error
+    global problem fd
     catch {
 	set diffs [exec diff $file1 $file2]
 	  } diffs
     if { [string trim $diffs] != "" } {
-	if {    $file1 != "$problem.out" \
-	     || $make_error } {
+	if {    $file1 != "$problem.out" } {
 	    set diffs \
 		"========== $file1:\n$diffs"
 	}
@@ -186,16 +185,7 @@ foreach x $argv {
 	    if { $f != $problem } {
 	        puts "========== $file:"
 	    }
-	    set make_error \
-	        [catch { exec make clean >@ stdout } \
-		       mout]
-	    if { $make_error } {
-	        if { $f != $problem } {
-		    puts $fd "========== $file:"
-		}
-		puts -nonewline $fd $mout
-		puts -nonewline $mout
-	    }
+	    exec make clean >@ stdout 2>@ stderr
 	    if { ! [file exists $f.in] } {
 	        puts "jfilter $f.jin $f.in"
 	        exec jfilter $f.jin $f.in \
@@ -205,7 +195,18 @@ foreach x $argv {
 	    if { $f != $problem } {
 	        exec ln -s $f.in $problem.in
 	    }
-	    exec make >@ stdout 2>@ stderr
+	    set make_error \
+	        [catch { exec make >@ stdout } \
+		       mout]
+	    if { $make_error } {
+	        if { $f != $problem } {
+		    puts $fd "========== making $f.out:"
+		    file delete $problem.in
+		}
+		puts -nonewline $fd $mout
+		puts -nonewline $mout
+		continue
+	    }
 	    if { $f != $problem } {
 	        file rename $problem.out $f.out
 		lappend made $f.out
