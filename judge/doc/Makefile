@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Oct  5 07:58:58 EDT 2005
+# Date:		Wed Oct  5 08:02:01 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/10/05 11:54:54 $
+#   $Date: 2005/10/05 11:56:33 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.26 $
+#   $Revision: 1.27 $
 
 # make
 #	Makes documentation as fprintable .txt files in
@@ -35,7 +35,6 @@ DOCS=	overview.txt \
         judge/autodispatch.txt \
 	judge/autoinfo.txt \
 	judge/autojudge.txt \
-	judge/autoscore.txt \
 	judge/chkpage.txt \
 	judge/dispatchmail.txt \
 	judge/hpcm_email_passwords.txt \
@@ -149,11 +148,6 @@ judge/autojudge.txt:	hpcm_judging.rc \
 	rm -f judge/autojudge.txt
 	-../../judge/bin/autojudge -doc \
 	    >judge/autojudge.txt
-judge/autoscore.txt:	hpcm_judging.rc \
-		        ../../judge/bin/autoscore
-	rm -f judge/autoscore.txt
-	-../../judge/bin/autoscore -doc \
-	    >judge/autoscore.txt
 judge/chkpage.txt:	hpcm_judging.rc \
 			../../judge/bin/chkpage
 	rm -f judge/chkpage.txt
