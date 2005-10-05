@@ -4,7 +4,7 @@
 #
 # File:		testproblems
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Sat Oct  1 09:31:33 EDT 2005
+# Date:		Tue Oct  4 21:48:01 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,15 +13,20 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/10/01 14:55:43 $
+#   $Date: 2005/10/05 03:07:02 $
 #   $RCSfile: testproblems,v $
-#   $Revision: 1.12 $
+#   $Revision: 1.13 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
 
 set document "
 testproblems \[-keep | -filter\] directory ...
+testproblems
+
+    The command with no arguments is equivalent to
+
+    	testproblems -keep -filter .
 
     This program runs:
 
@@ -51,14 +56,14 @@ testproblems \[-keep | -filter\] directory ...
 		rm f.in problem.in
 
     The -keep option suppresses the the final `rm'.
-
+
     If a directory contains multiple .in files, the
     same thing is done as for .jin files, but jfilter
     is not run and f.in is not removed.  If a directory
     contains just problem.jin, the same thing is done
     without the linking of problem.in or the moving
     of problem.out (here f = problem).
-
+
     If the -filter option is present, then after making
     an f.out file and diff'ing it with f.test,
 
@@ -81,6 +86,11 @@ testproblems \[-keep | -filter\] directory ...
     is executed, with the jfilter execution and f.jfout
     removal suppressed if f.jin does not exist.
 
+    If f.jout (f.fout, f.jfout) is made and f.jtest
+    (f.ftest, f.jftest) exists, these two files are
+    diff'ed, and if different the differences are
+    reported.
+
     All `rm' commands are suppressed by -keep.
     
     If a non-directory is given the program, or if a
@@ -89,6 +99,9 @@ testproblems \[-keep | -filter\] directory ...
 
 # Process options.
 #
+if { [llength $argv] == 0 } {
+    set argv {-keep -filter .}
+}
 set keep 0
 set filter 0
 while { 1 } {
@@ -115,6 +128,22 @@ catch {
 
 set wd [pwd]
 set fd [open $tmp w]
+
+proc diff { file1 file2 } {
+    global problem fd make_error
+    catch {
+	set diffs [exec diff $file1 $file2]
+	  } diffs
+    if { [string trim $diffs] != "" } {
+	if {    $file1 != "$problem.out" \
+	     || $make_error } {
+	    set diffs \
+		"========== $file1:\n$diffs"
+	}
+	puts -nonewline $fd $diffs
+	puts -nonewline $diffs
+    }
+}
 
 foreach x $argv {
 
@@ -144,16 +173,29 @@ foreach x $argv {
 	if { $type == "link" } {
 	    file delete $problem.in
 	}
+	# Make sure that "problem" is the first
+	# value of f if it is a value of f.
+	#
 	set done ""
 	set made ""
-	foreach file [glob *.in *.jin] {
+	foreach file [glob $problem.in $problem.jin \
+			   *.in *.jin] {
 	    set f [file rootname $file]
 	    if { [lcontain $f $done] } continue
 	    lappend done $f
 	    if { $f != $problem } {
 	        puts "========== $file:"
 	    }
-	    exec make clean >@ stdout 2>@ stderr
+	    set make_error \
+	        [catch { exec make clean >@ stdout } \
+		       mout]
+	    if { $make_error } {
+	        if { $f != $problem } {
+		    puts $fd "========== $file:"
+		}
+		puts -nonewline $fd $mout
+		puts -nonewline $mout
+	    }
 	    if { ! [file exists $f.in] } {
 	        puts "jfilter $f.jin $f.in"
 	        exec jfilter $f.jin $f.in \
@@ -166,20 +208,10 @@ foreach x $argv {
 	    exec make >@ stdout 2>@ stderr
 	    if { $f != $problem } {
 	        file rename $problem.out $f.out
-		lappend made $problem.out
+		lappend made $f.out
 		file delete $problem.in
 	    }
-	    catch {
-		set diffs [exec diff $f.out $f.test]
-		  } diffs
-	    if { [string trim $diffs] != "" } {
-	        if { $f != $problem } {
-		    set diffs \
-		        "========== $f.out:\n$diffs"
-		}
-		puts -nonewline $fd $diffs
-		puts -nonewline $diffs
-	    }
+	    diff $f.out $f.test
 	    if { $filter } {
 	        if { ! [file exists Scoring_Filter] } {
 		    catch { exec make Scoring_Filter \
@@ -191,6 +223,9 @@ foreach x $argv {
 		    exec Scoring_Filter $f.in \
 		         < $f.out > $f.fout
 		    lappend made $f.fout
+		    if { [file exists $f.ftest] } {
+		        diff $f.fout $f.ftest
+		    }
 		    if { [file exists $f.jin] } {
 		        puts "jfilter\
 			      $f.jin $f.fout $f.jfout"
@@ -198,12 +233,18 @@ foreach x $argv {
 			     $f.jin $f.fout $f.jfout \
 			     >@ stdout
 			lappend made $f.jfout
+			if { [file exists $f.jftest] } {
+			    diff $f.jfout $f.jftest
+			}
 		    }
 		} elseif { [file exists $f.jin] } {
 		    puts "jfilter $f.jin $f.out $f.jout"
 		    exec jfilter $f.jin $f.out $f.jout \
 			 >@ stdout
 		    lappend made $f.jout
+		    if { [file exists $f.jtest] } {
+			diff $f.jout $f.jtest
+		    }
 		}
 	    }
 	    if { ! $keep } {
