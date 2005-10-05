@@ -1,7 +1,7 @@
 # Makefile for the `count' Demonstration Problem
 #
 # File:		Makefile
-# Date:		Thu Oct  7 09:43:00 EDT 2004
+# Date:		Tue Oct  4 21:27:36 EDT 2005
 #
 # Exactly ONE of the four files count.c (C), count.cc
 # (C++), count.java (Java), or count.lsp (Commonlisp)
@@ -42,12 +42,31 @@
 #			count.java, or count.lsp to the
 #			judges.
 #
+#	make in-submit	Ditto, but requests that if
+#			the score is `Incorrect Output'
+#			or `Formatting Error', the
+#			judge's input for the failed
+#			test case will be returned in
+#			e-mail to the contestant.
+#
+#	make inout-submit
+#			Ditto but requests both the
+#			judge's input and the judge's
+#			output for the test case.
+#
+#	make solution-submit
+#			Like `make submit' but requests
+#			that if the score is `Completely
+#			Correct' the judge's solution
+#			will be returned in e-mail to
+#			the contestant.
+#	
 #	make clean	Removes `count', count.out, and
 #			other intermediate files that
 #			might exist, such as `core',
 #			`count.class', or count.fas.
 
-
+#
 .SUFFIXES:
 .SUFFIXES: .c .cc .java .lsp
 
@@ -60,8 +79,6 @@ default:	count.out
 .cc:
 	rm -f $* core
 	g++ -g -o $* $*.cc -lm
-
-#
 
 .java:
 	rm -f $* *.class core
@@ -78,7 +95,7 @@ default:	count.out
 	echo >>$* "exec `hpcm_clisp -which` -I $*.fas"
 	chmod a+r $*.fas
 	chmod a+rx $*
-
+#
 # hpcm_sandbox below may execute `count' as a special
 # unprivileged user named `sandbox', so various files
 # must be `a+x' or `a+r'.  `hpcm_clisp -which' returns
@@ -101,15 +118,23 @@ count.out:	count count.in
 	@cat count.out
 	@echo "============== END OUTPUT =============="
 
-#
+
 submit:		count.out
 	hpcm_submit count
 
+in-submit:	count.out
+	hpcm_submit -in count
+
+inout-submit:	count.out
+	hpcm_submit -inout count
+
+solution-submit:	count.out
+	hpcm_submit -solution count
+
 clean:
 	rm -f count *.class core count.out \
-	      count.fas count.lib
-
-
+	      count.fas count.lib count.jout
+#
 # Author:	walton@deas.harvard.edu
 #
 # The authors have placed this file in the public
@@ -119,6 +144,6 @@ clean:
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2004/10/07 14:17:28 $
+#   $Date: 2005/10/05 02:11:10 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.25 $
+#   $Revision: 1.26 $
