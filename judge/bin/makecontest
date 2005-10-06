@@ -6,7 +6,7 @@
 #
 # File:		makejudgingdir
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Oct  3 21:33:21 EDT 2005
+# Date:		Thu Oct  6 12:27:36 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/10/04 01:27:49 $
+#   $Date: 2005/10/06 16:49:05 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.99 $
+#   $Revision: 1.100 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -42,14 +42,17 @@ set document "
 makejudgingdir option ... index_specification ...
 
   Options:
-    -email	Sets up an email contest.  Equals -info,
-    		-solutions, -mail, and -this_contest.
     -formal     Sets up a formal contest.  Equals all
     		options but -info, -trashable,
 		-description, and -printer_map.
+    -practice   Sets up a practice contest.  Equals all
+    		options but -info, -trashable, and
+		-printer_map.
     -informal   Sets up an informal contest.  Equals all
     		options but -problems, -demos,
 		-trashable, -description, and -printer.
+    -email	Sets up an email contest.  Equals -info,
+    		-solutions, -mail, and -this_contest.
     -info	Make ./info, ./info/help/index,
     		./info/help/problems, ./info/help/demos.
     -solutions  Make ./solutions
@@ -76,8 +79,8 @@ makejudgingdir option ... index_specification ...
     -secure	Make ./contest/secure/passwords,
 		     ./contest/secure/hpcm_sendmail.rc
     -who_where  Make ./contest/who_where
-    -trashable  Make ./contest/trashable
 
+    -trashable  Make ./contest/trashable
     -printer    Make ./contest/printer and
     		     ./contest/printer_jobs
     -printer_map    Make ./contest/printer_map and
@@ -673,13 +676,10 @@ set printer_option		no
 set printer_map_option		no
 set home_option			no
 #
+set contest_type		""
+#
 while { $argi < $argc } {
     switch -- [lindex $argv $argi] {
-        -email		{ set info_option 	yes
-			  set solutions_option	yes
-			  set mail_option	yes
-			  set this_contest_option \
-			  			yes }
         -formal		{ set solutions_option	yes
 			  set problems_option	yes
 			  set demos_option	yes
@@ -692,7 +692,24 @@ while { $argi < $argc } {
 			  set secure_option	yes
 			  set who_where_option	yes
 			  set printer_option	yes
-			  set home_option	yes }
+			  set home_option	yes
+			  set contest_type formal }
+        -practice	{ set solutions_option	yes
+			  set problems_option	yes
+			  set demos_option	yes
+			  set description_option \
+			  			yes
+			  set help_option	yes
+			  set help2_option	yes
+			  set this_contest_option \
+			  			yes
+			  set mail_option	yes
+			  set bin_option	yes
+			  set secure_option	yes
+			  set who_where_option	yes
+			  set printer_option	yes
+			  set home_option	yes
+			  set contest_type practice }
         -informal	{ set info_option	yes
 			  set solutions_option	yes
 			  set help_option	yes
@@ -705,7 +722,14 @@ while { $argi < $argc } {
 			  set who_where_option	yes
 			  set printer_map_option \
 			  			yes
-			  set home_option	yes }
+			  set home_option	yes
+			  set contest_type informal }
+        -email		{ set info_option 	yes
+			  set solutions_option	yes
+			  set mail_option	yes
+			  set this_contest_option \
+			  			yes
+			  set contest_type email }
         -info		{ set info_option 	yes }
         -solutions	{ set solutions_option 	yes }
         -problems	{ set problems_option 	yes }
@@ -1452,21 +1476,23 @@ if { $this_contest_option \
 			       [clock seconds]]]
     puts $tc_ch ""
 
-    # Take a guess at the type of contest and output
-    # the appropriate draft of a this_contest file.
+    # Remember contest type, in effect, in $j_d/help/
+    # this_contest_prototype.
     #
-    if { ! [file isdirectory $c_d] } {
-	set contest_type email
-    } elseif { ! [file isdirectory $c_d/problems] \
-               && $problems_option == "no" } {
-	set contest_type informal
-    } else {	# ./contest/problems will exist.
-	set contest_type formal
+    if { ! [file exists \
+                 $j_d/help/this_contest_prototype] } {
+        if { $contest_type == "" } {
+	    error "Cannot make $j_d/help/this_contest\
+	           because contest type not specified."
+	}
+	set directory \
+	    $contestant_help_directory/$contest_type
+	set file ${contest_type}_this_contest_prototype
+	link_file $directory/$file \
+	          $j_d/help/this_contest_prototype
     }
-    set directory \
-        $contestant_help_directory/$contest_type
-    set file ${contest_type}_this_contest_prototype
-    put_file $directory/$file $tc_ch
+
+    put_file $j_d/help/this_contest_prototype $tc_ch
 
     close $tc_ch
 
