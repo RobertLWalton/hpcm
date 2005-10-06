@@ -1,54 +1,124 @@
-Scoreboard Help		    Mon Sep 23 05:41:31 EDT 2002
+Scoreboard Help		    Wed Oct  5 22:02:51 EDT 2005
 
 
-Interpreting the Scoreboard
------------- --- ----------
+Ranking Submitters
+------- ----------
 
-The scoreboard tells for each submitter (contest
-account) and for each problem whether the submitter has
-submitted a correct solution to the problem and when
-this solution was submitted.  The total number of sub-
-missions by the submitter for the problem, including in-
-correct submissions before the first correct submission,
-may also be given.
+The scoreboard gives for each submitter (contest
+account) and for each problem information about the
+submissions made by the submitter for the problem.
+For each submitter the scoreboard also gives the total
+number of problems correctly solved by the submitter,
+and typically also gives a total score that distinguish-
+es submitters who have the same number of correct sub-
+missions.
 
-A submitter may be a team or an individual, depending on
-the type of contest.
+A submitter may be a team or an individual, depending
+on the type of contest.  Here we use the term `sub-
+mitter' to mean either a `team' or an `individual'.
 
-If the contest is being scored, the number of correct
-submissions by each submitter is displayed, and submit-
-ters with greater numbers of correct submissions appear
-earlier in the scoreboard.
+Some contests are completely unscored.  For these the
+submitters are listed in alphabetical order, and for
+each problem and submitter an indication is given of
+whether the submitter has solved the problem, and if
+so, the date the problem was solved.
 
-Problems may or may not be timed.  If they are not
-timed, then only the date of the first correct submis-
-sion of a problem is displayed.  If problems are timed,
-the elapsed time between the problem start time and the
-time of the first correct submission is displayed.  For
-a formal contest the start time of all problems is the
-start time of the contest.  For informal contests, and
-for email contests that are timed, the start time of a
-problem may be the time the problem was gotten by the
-submitter using hpcm_get, or the time the submitter got
-its first problem using hpcm_get.
-
-If a contest is being scored and problems are being
-timed, submitters with the same number of correct pro-
-blems are ranked according to their total time, which is
-just a sum the times the submitter needed to solve each
-problem.  The submitter with the smallest total time
-ranks highest among all submitters with the same number
-of correct problems, and appears first in the score-
-board.
+On the other hand, if the contest is being scored, sub-
+mitters with more correct solutions appear earlier in
+the scoreboard, and each problem solution is given a
+score indicated on the scoreboard.
 
-More specifically, the total time of a submitter is the
-sum of the problem elapsed times, in seconds, for all
-problems the submitter has solved.  Optionally a penalty
-may added for each incorrect submission of a problem
-before the correct submission of that problem.  Typical
-penalties, if they are being used, are 10 to 20 minutes.
-There is no penalty for incorrect submission of a pro-
-blem never submitted correctly by a submitter.
+When a contest is being scored, there needs to be some
+way of ranking submitters who have the same number of
+problems solved.  There are two different methods of
+ranking.  The classical way, used in all limited
+duration contests, is to measure the time required to
+solved each problem.  The other way that we provide,
+usable in untimed contests, is to use the number and
+kind of incorrect submissions made for each solved pro-
+blem.  In either case, each solution is assigned a num-
+erical score, these scores are added to produce a score
+for each submitter, and problems a submitter never
+solves do not count in any way toward scoring or ranking
+submitters.
+
+When a contest is of limited duration and problems are
+being timed to produce a score, each problem is assigned
+a start time, which is the time the submitter first sees
+the problem description.  For formal contests this time
+is the time the contest starts, and the submitters are
+handed problem descriptions on paper when the contest
+starts.  A solution score is just the difference between
+the time the solution was submitted and the start time
+of the problem.  The submitter's score is the sum of all
+the solution scores for the solutions submitted by the
+submitter.
+
+Most importantly note that lower time scores are better,
+higher time scores are worse.  Also note that if you
+think of problems as being solved consecutively in a
+formal contest where all problems have the same start
+time, and a submitter solves, say, three problems, the
+first in time T1, the second in time T2, and the third
+in time T3, then the submitters score is 3*T1 + 2*T2 +
+T3, so it pays to solve the easiest problems first.
+
+Solution times are computed in seconds.  Some contests
+apply a penalty of typically 20 minutes (1200 seconds)
+for each incorrect submission of a problem made before
+the first correct submission of the problem.
+
+When a scored contest is not of limited duration and
+problems are not being timed, three different kinds of
+submission may be allowed, and different penalties are
+assigned for each kind of submission when that submis-
+sion is incorrect.  The commands used to make the dif-
+ferent kinds of submission and the penalties typically
+assigned are:
+
+	make submit		10%
+	make in-submit		20%
+	make inout-submit	30%
+
+The first, `make submit', returns just the submission
+score.  The second, `make in-submit', also returns the
+judge's input for the first test case that was incor-
+rect, provided the score was `Incorrect Output' or
+`Formatting Error'.  The third, `make inout-submit',
+returns both judge's input and judge's output for this
+test case.  The score for each solution starts at
+100.00, and is multiplied by 90% for each incorrect sub-
+mission of the first kind, 80% for each incorrect sub-
+mission of the second kind, and 70% for each incorrect
+submission of the third kind.  So the penalties are
+applied to the remaining score for a problem.  Note that
+only incorrect submissions before the first correct sub-
+mission count.
+
+Informal contests derive timed scores without having
+a single contest start time or giving out paper problem
+descriptions.  In an informal contest a submitter gets
+a problem named pppp by executing
+
+	hpcm_get problems/pppp
+
+This obtains a description of the problem as a file in
+the submitter's directories.  One kind of informal
+contest assigns each problem an individual start time
+that is the time of the hpcm_get command that gets the
+problem description.  The other kind of informal contest
+is intended to closely simulate a formal contest but
+allow each submitter to start at a different time.  In
+this kind of informal contest, each submitter is assign-
+ed a start time equal to the time the submitter first
+gets a problem using hpcm_get, and then each solution of
+that submitter is given this start time.
+
+Scoreboard Contents
+---------- --------
+
+A scoreboard has an entry for each submitter and each
+problem.
 
 If there are no submissions for a problem by a submit-
 ter, `......' appears in the scoreboard for the submit-
@@ -57,17 +127,23 @@ sions, and incorrect submissions are being reported on
 the scoreboard, then `..../N' appears, where N is the
 number of incorrect submissions for the problem.
 
-If a submitter has submitted a correct solution for a
-problem, and the elapsed time between the problem start
-time and the time of the correct solution is being re-
-ported, this time may be represented as `M:SSsN', with
-decimal numbers M, SS, and N, meaning that the problem
-time is M minutes and SS seconds, and there were N sub-
-missions, including N-1 incorrect submissions before the
-first correct submission.  The `s' means the time SS is
-in seconds.  N may be omitted if incorrect submissions
-are not being reported on the scoreboard.
-
+If a contest is unscored, the entry for a problem
+solution is just the date of the solution, followed by
+`/N' if N is the total number of submissions up to and
+including the first correct submission, provided that
+incorrect submissions are being reported.
+
+If time is being used to score solutions, then the
+time score, the difference between problem start time
+and solution time, is reported for each solution.  This
+may be represented as `M:SSsN', with decimal numbers M,
+SS, and N, meaning that the problem time is M minutes
+and SS seconds, and there were N submissions, including
+N-1 incorrect submissions, before the first correct sub-
+mission.  The `s' means the time SS is in seconds.  N
+may be omitted if incorrect submissions are not being
+reported on the scoreboard.
+
 `H:MMmN' instead means the time is H hours and MM min-
 utes, rounded down to the nearest minute.  `D:HHhN'
 instead means the time is D days and HH hours, rounded
@@ -79,15 +155,35 @@ ters, including the unit character.  However the actual
 problem time used for computing a submitter's total time
 as described above is always in seconds.
 
+If instead of time the kind of incorrect submission
+are being reported to score a problem, then if incorrect
+submissions are NOT being reported, what is reported is
+just the numeric score of the solution to the nearest
+integer.  Note, however, that in computing the total
+score of a submitter, the solution to many decimal
+places is used.
+
+If on the other hand incorrect submissions are being
+reported, than the format `IIiOOoXX' is used as the
+report for each solution.  Here the upper case letters
+denote numbers and the lower case letters literally
+appear on the scoreboard.  II is the number of in-submit
+incorrect submissions, OO the number of inout-submit in-
+correct submissions, and XX the number of `submit' in-
+correct submission.  If there are no incorrect submis-
+sions, `100' is reported instead.
+
+For each submitter in a scored contest the number of
+solutions N and total score TTT of submitter are report-
+ed in the format `N/TTT'.
+
 In some contests, problems are scored first by an auto-
 judge, and then if they are not completely correct, the
 score is reviewed by a human judge.  If you see a `*'
-prefixed to any item of scoreboard information, this
-means that one or more submissions used to compute the
-item have been scored incorrect by the auto-judge, but
-are still awaiting review by the human judge.
-
-
+prefixed or suffixed to any item of scoreboard informa-
+tion, this means that one or more submissions used to
+compute the item have been scored incorrect by the auto-
+judge, but are still awaiting review by the human judge.
 
 
 File:		scoreboard
@@ -101,6 +197,6 @@ file.
 RCS Info (may not be true date or author):
 
     $Author: hc3 $
-    $Date: 2002/09/23 09:42:49 $
+    $Date: 2005/10/06 10:42:42 $
     $RCSfile: scoreboard,v $
-    $Revision: 1.8 $
+    $Revision: 1.9 $
