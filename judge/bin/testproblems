@@ -4,7 +4,7 @@
 #
 # File:		testproblems
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Wed Oct  5 07:07:53 EDT 2005
+# Date:		Thu Oct  6 21:22:07 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/10/05 11:36:16 $
+#   $Date: 2005/10/07 02:58:06 $
 #   $RCSfile: testproblems,v $
-#   $Revision: 1.15 $
+#   $Revision: 1.16 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -23,10 +23,16 @@ exec tcl "$0" "$@"
 set document "
 testproblems \[-keep | -filter\] directory ...
 testproblems
+testproblems -
 
     The command with no arguments is equivalent to
 
     	testproblems -keep -filter .
+
+    The command with just the argument `-' is equivalent
+    to
+
+    	testproblems -filter .
 
     This program runs:
 
@@ -64,6 +70,13 @@ testproblems
     without the linking of problem.in or the moving
     of problem.out (here f = problem).
 
+    If a directory contains both f.in and f.jin, then
+
+    		jfilter f.jin f.in+
+
+    is executed and f.in and f.in+ are diff'ed, instead
+    of making f.in from f.jin.
+
     If the -filter option is present, then after making
     an f.out file and diff'ing it with f.test,
 
@@ -85,7 +98,7 @@ testproblems
 
     is executed, with the jfilter execution and f.jfout
     removal suppressed if f.jin does not exist.
-
+
     If f.jout (f.fout, f.jfout) is made and f.jtest
     (f.ftest, f.jftest) exists, these two files are
     diff'ed, and if different the differences are
@@ -101,6 +114,9 @@ testproblems
 #
 if { [llength $argv] == 0 } {
     set argv {-keep -filter .}
+} elseif {    [llength $argv] == 1 \
+           && [lindex $argv 0] == "-" } {
+    set argv {-filter .}
 }
 set keep 0
 set filter 0
@@ -189,9 +205,14 @@ foreach x $argv {
 	    exec make clean >@ stdout 2>@ stderr
 	    if { ! [file exists $f.in] } {
 	        puts "jfilter $f.jin $f.in"
-	        exec jfilter $f.jin $f.in \
-		     >@ stdout
+	        exec jfilter $f.jin $f.in >@ stdout
 		lappend made $f.in
+	    } elseif { [file exists $f.jin] } {
+	        file delete -force -- $f.in+
+	        puts "jfilter $f.jin $f.in+"
+	        exec jfilter $f.jin $f.in+ >@ stdout
+		lappend made $f.in+
+		diff $f.in $f.in+
 	    }
 	    if { $f != $problem } {
 	        exec ln -s $f.in $problem.in
