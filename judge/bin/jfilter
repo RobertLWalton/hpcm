@@ -5,7 +5,7 @@
 #
 # File:		jfilter
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Oct  6 23:05:57 EDT 2005
+# Date:		Fri Oct  7 05:15:38 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/10/07 03:00:20 $
+#   $Date: 2005/10/07 09:46:15 $
 #   $RCSfile: jfilter,v $
-#   $Revision: 1.17 $
+#   $Revision: 1.18 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -146,12 +146,14 @@ jfilter \[options\] judging_input_file \\
 	-input-case-head <input-case-head-regexp>
 	-input-group-head <input-group-head-regexp>
 	-input-separator <input-separator-regexp>
-	-input-end <input-end-regexp>
-	-end <input-end-regexp>
+	-end-head <input-end-head-regexp>
+	-input-end-head <input-end-head-regexp>
 	-case-mark <input-case-mark-regexp>
 	-group-mark <input-group-mark-regexp>
+	-end-mark <input-end-mark-regexp>
 	-input-case-mark <input-case-mark-regexp>
 	-input-group-mark <input-group-mark-regexp>
+	-input-end-mark <input-end-mark-regexp>
 	-one-group <yes-or-no>
 	-scoring <scoring-instructions>
 
@@ -176,14 +178,17 @@ jfilter \[options\] judging_input_file \\
     *INPUT-GROUP-HEAD* <input-group-head-regexp>
     *INPUT-SEPARATOR* <input-separator-regexp>
 
-    *END* <input-end-regexp>
-    *INPUT-END* <input-end-regexp>
+    *END-HEAD* <input-end-head-regexp>
+    *INPUT-END-HEAD* <input-end-head-regexp>
 
     *CASE-MARK* <input-case-mark-regexp>
     *GROUP-MARK* <input-group-mark-regexp>
 
     *INPUT-CASE-MARK* <input-case-mark-regexp>
     *INPUT-GROUP-MARK* <input-group-mark-regexp>
+
+    *END-MARK* <input-end-mark-regexp>
+    *INPUT-END-MARK* <input-end-mark-regexp>
 
     *ONE-GROUP* <yes-or-no>
 
@@ -194,27 +199,35 @@ jfilter \[options\] judging_input_file \\
     parameters.  In a parameter designator, `OUTPUT-'
     can be omitted: *CASE-HEAD* and *OUTPUT-CASE-HEAD*
     mean the same thing.  `INPUT-' can be omitted for
-    the `MARKS': *CASE-MARK* and *INPUT-CASE-MARK* mean
-    the same thing.  `INPUT-' can be omitted for `END':
-    *INPUT-END* and *END* mean the same thing.  It is
-    not that common to have *INPUT-...* parameters other
-    than *END* in a judging_input_file, as typically
-    the file just uses the default *INPUT-...* parameter
-    values (see below).
+    the `MARK's: *CASE-MARK* and *INPUT-CASE-MARK* mean
+    the same thing.  `INPUT-' can be omitted for the
+    `END's: *INPUT-END-HEAD* and *END-HEAD* mean the
+    same thing.  It is not that common to have
+    *INPUT-...* parameters in a judging_input_file, as
+    typically the file just uses the default *INPUT-...*
+    parameter values (see below).
 
+    Here `END' refers to the `end case', which is a
+    special case that must always end the input, and
+    which must be tacked on to the end of any other case
+    or group that is extracted from the input.  INPUT-
+    END is just like INPUT-CASE but always includes its
+    `end case' in any filtered_input_file.
+
     The regexp parameters are TCL regular expressions
     that are matched to lines of files.  Input regexps
     match lines in the judging_input_file, while output
     regexps match lines in the output_file.  A line
     matched by a `head' regexp is called a head line,
-    and begins a test group or test case.  A line mat-
-    ched by a `separator' regexp is called a separator
-    line, and is the last line of a test case that is
-    followed by the first line of another test case.
-    A line matched by a `mark' is like a head line but
-    must be deleted from the filtered version of the
-    file: this is only used for the judging_input_file,
-    to mark the beginning of test groups and test cases.
+    and begins a test group, test case, or end case.  A
+    line matched by a `separator' regexp is called a
+    separator line, and is the last line of a test case
+    that is followed by the first line of another test
+    case.  A line matched by a `mark' is like a head
+    line but must be deleted from the filtered version
+    of the file: this is only used for the judging_
+    input_file, to mark the beginning of test groups,
+    test cases, and end cases.
 
     If the last line of the judging_input_file matches
     the input-end-regexp, it is ALWAYS output when any
@@ -233,11 +246,11 @@ jfilter \[options\] judging_input_file \\
 
     	*CASE-HEAD* xxx
     	*CASE-HEAD* yyy
-
+
     is the same as
 
     	*CASE-HEAD* xxxyyy
-
+
     Note that there is no space here between the xxx and
     yyy when they are concatenated.  This is because
     they are regexp parameters.  If they were non-regexp
@@ -272,28 +285,30 @@ jfilter \[options\] judging_input_file \\
 	*CASE-HEAD* ^
 	*GROUP-HEAD*
 	*SEPARATOR*
-
-	*END*
 
 	*INPUT-CASE-HEAD*
 	*INPUT-GROUP-HEAD*
 	*INPUT-SEPARATOR*
 
+	*END-HEAD*
+
 	*CASE-MARK* ^\\*CASE*\\$
 	*GROUP-MARK* ^\\*GROUP\\*$
 	*SEPARATOR-MARK*
+
+	*END-MARK* ^\\*END\\*$
 
 	*ONE-GROUP* no
 
 	*SCORING* space column
 
     These mean that by default input is separated into
-    test groups and test cases by `*GROUP*' and `*CASE*'
-    mark lines, every line of output is a separate test
-    case, and there are no output test groups.  The
-    default scoring instructions say to ignore differ-
-    ences in the kind and amount of spacing within an
-    output_file line.
+    test groups and test cases by `*GROUP*', `*CASE*',
+    and `*END*' mark lines, every line of output is a
+    separate test case, and there are no output test
+    groups.  The default scoring instructions say to
+    ignore differences in the kind and amount of spacing
+    within an output_file line.
 
     The test group and test case judging input comes
     after any parameter definitions in the judging_
@@ -316,9 +331,10 @@ set output_separator ""
 set input_case_head ""
 set input_group_head ""
 set input_separator ""
-set input_end ""
+set input_end_head ""
 set input_case_mark "\\*CASE\\*"
 set input_group_mark "\\*GROUP\\*"
+set input_end_mark "\\*END\\*"
 set scoring "space column"
 set one_group no
 set c ""
@@ -344,14 +360,17 @@ while { [regexp {^-} [lindex $argv 0]] } {
     			      [lindex $argv 1] }
     -input-separator	{ set input_separator \
     			      [lindex $argv 1] }
-    -end		-
-    -input-end		{ set input_end \
+    -end-head		-
+    -input-end-head	{ set input_end_head \
     			      [lindex $argv 1] }
     -case-mark		-
     -input-case-mark	{ set input_case_mark \
     			      [lindex $argv 1] }
     -group-mark		-
     -input-group-mark	{ set input_group_mark \
+    			      [lindex $argv 1] }
+    -end-mark		-
+    -input-end-mark	{ set input_end_mark \
     			      [lindex $argv 1] }
     -scoring		{ set scoring \
     			      [lindex $argv 1] }
@@ -422,15 +441,18 @@ while { ! [eof $jin] } {
         { set variable input_group_head }
     *INPUT-SEPARATOR*
         { set variable input_separator }
-    *END*	-
-    *INPUT-END*
-        { set variable input_end }
+    *END-HEAD*	-
+    *INPUT-END-HEAD*
+        { set variable input_end_head }
     *CASE-MARK*	-
     *INPUT-CASE-MARK*
         { set variable input_case_mark }
     *GROUP-MARK* -
     *INPUT-GROUP-MARK*
         { set variable input_group_mark }
+    *END-MARK*	-
+    *INPUT-END-MARK*
+        { set variable input_end_mark }
     *SCORING*
         { set variable scoring
 	  set separator " " }
@@ -512,6 +534,7 @@ if { $number_args == 2 } {
 	set is_mark 0
 	set begin_case $last_line_was_separator
 	set begin_group 0
+	set begin_end 0
 	if {    $input_group_mark != "" \
 	     && [regexp -nocase -- $input_group_mark \
 	                $jin_line] } {
@@ -534,6 +557,17 @@ if { $number_args == 2 } {
 		              $jin_line] } {
 	     set begin_case 1
 	}
+	if {    $input_end_mark != "" \
+	     && [regexp -nocase -- $input_end_mark \
+	                $jin_line] } {
+	     set begin_end 1
+	     set is_mark 1
+	} elseif {    $input_end_head != "" \
+	           && [regexp -nocase -- \
+		              $input_end_head \
+		              $jin_line] } {
+	     set begin_end 1
+	}
         if { $begin_group } {
 	    incr group_count 1
 	    set case_count 0
@@ -555,6 +589,7 @@ if { $number_args == 2 } {
 	        set copy 0
 	    }
 	}
+	if { $begin_end } { set copy 1 }
 
 	set last_line_was_separator \
 	    [expr {    $input_separator != "" \
@@ -571,12 +606,6 @@ if { $number_args == 2 } {
 	set last_line $jin_line
 
 	set jin_line [gets $jin]
-    }
-    if {    ! $last_line_was_output \
-         && $input_end != "" \
-	 && [regexp -nocase -- $input_end \
-	            $last_line] } {
-        puts $in $last_line
     }
     close $jin
     close $in
