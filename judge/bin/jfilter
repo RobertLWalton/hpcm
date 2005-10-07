@@ -5,7 +5,7 @@
 #
 # File:		jfilter
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Oct  7 05:15:38 EDT 2005
+# Date:		Fri Oct  7 05:53:01 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/10/07 09:46:15 $
+#   $Date: 2005/10/07 09:49:38 $
 #   $RCSfile: jfilter,v $
-#   $Revision: 1.18 $
+#   $Revision: 1.19 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -100,7 +100,7 @@ jfilter \[options\] judging_input_file \\
 	    output consists of the lines in the test
 	    group containing the test case, up to and
 	    including the lines in the test case.  If
-	    the *ONE-GROUP* parmeter value is `yes',
+	    the *ONE-GROUP* parameter value is `yes',
 	    then for test cases outside any group the
 	    file is copied from its beginning through
 	    the lines in the test case.
@@ -303,12 +303,12 @@ jfilter \[options\] judging_input_file \\
 	*SCORING* space column
 
     These mean that by default input is separated into
-    test groups and test cases by `*GROUP*', `*CASE*',
-    and `*END*' mark lines, every line of output is a
-    separate test case, and there are no output test
-    groups.  The default scoring instructions say to
-    ignore differences in the kind and amount of spacing
-    within an output_file line.
+    test groups, test cases, and end cases by `*GROUP*',
+    `*CASE*', and `*END*' mark lines, every line of out-
+    put is a separate test case, and there are no output
+    test groups.  The default scoring instructions say
+    to ignore differences in the kind and amount of
+    spacing within an output_file line.
 
     The test group and test case judging input comes
     after any parameter definitions in the judging_
@@ -527,7 +527,6 @@ if { $number_args == 2 } {
     set case_count 0
     set last_line_was_separator \
         [expr { $input_separator != "" }]
-    set last_line_was_output 1
     set last_line ""
 
     while { ! [eof $jin] } {
@@ -599,9 +598,6 @@ if { $number_args == 2 } {
 
 	if { ! $is_mark && $copy } {
 	    puts $in $jin_line
-	    set last_line_was_output 1
-	} else {
-	    set last_line_was_output 0
 	}
 	set last_line $jin_line
 
