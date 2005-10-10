@@ -1,16 +1,16 @@
-From walton@walton2.walton  Sun Oct  2 13:11:57 2005
-Return-Path: <walton@walton2.walton>
-Received: from walton2.walton (localhost.localdomain [127.0.0.1])
-	by walton2.walton (8.12.8/8.12.8) with ESMTP id j92HBvDV003485
-	for <walton@walton2.walton>; Sun, 2 Oct 2005 13:11:57 -0400
-Received: (from walton@localhost)
-	by walton2.walton (8.12.8/8.12.8/Submit) id j92HBuCM003483;
-	Sun, 2 Oct 2005 13:11:56 -0400
-Date: Sun, 2 Oct 2005 13:11:56 -0400
-From: "Robert L. Walton" <walton@walton2.walton>
-Message-Id: <200510021711.j92HBuCM003483@walton2.walton>
-To: "Robert L. Walton" <walton@walton2.walton>
-Reply-To: email_contest<walton@walton2.walton>
+From hc3-selection@method2.deas.harvard.edu  Mon Oct 10 11:15:35 2005
+Return-Path: <hc3-selection@method2.deas.harvard.edu>
+Received: from method2.deas.harvard.edu (localhost.localdomain [127.0.0.1])
+	by method2.deas.harvard.edu (8.13.1/8.13.1) with ESMTP id j9AFFZca027015
+	for <hc3-selection@method2.deas.harvard.edu>; Mon, 10 Oct 2005 11:15:35 -0400
+Received: (from hc3-selection@localhost)
+	by method2.deas.harvard.edu (8.13.1/8.13.1/Submit) id j9AFFZul027010;
+	Mon, 10 Oct 2005 11:15:35 -0400
+Date: Mon, 10 Oct 2005 11:15:35 -0400
+From: hc3-selection@method2.deas.harvard.edu
+Message-Id: <200510101515.j9AFFZul027010@method2.deas.harvard.edu>
+To: hc3-selection@method2.deas.harvard.edu
+Reply-To: email_contest<hc3-selection@method2.deas.harvard.edu>
 Subject: RE: get demos/count
 X-HPCM-Test-Subject: get_count:
 	there should be no separate error message
@@ -18,15 +18,15 @@ Status: R
 
 The following requested files appear below after the request message header:
     demos/count/Makefile demos/count/README demos/count/count.in
-    demos/count/count.rc demos/count/count.test demos/count/count.txt
-    demos/count/count1.c demos/count/count1.cc demos/count/count1.java
-    demos/count/count1.lsp
+    demos/count/count.jin demos/count/count.jtest demos/count/count.test
+    demos/count/count.txt demos/count/count1.c demos/count/count1.cc
+    demos/count/count1.java demos/count/count1.lsp
 
 
 ----------------------------------------------- this message replies to:
-To: email_contest<walton@walton2.walton>
-From: "Robert L. Walton" <walton@walton2.walton>
-Date: Sun, 2 Oct 2005 13:11:56 -0400
+To: email_contest<hc3-selection@method2.deas.harvard.edu>
+From: hc3-selection@method2.deas.harvard.edu
+Date: Mon, 10 Oct 2005 11:15:27 -0400
 Subject: get demos/count
 ------------------------------------------------------------------------
 
@@ -35,7 +35,7 @@ Subject: get demos/count
 # Makefile for the `count' Demonstration Problem
 #
 # File:		Makefile
-# Date:		Thu Oct  7 09:43:00 EDT 2004
+# Date:		Tue Oct  4 21:27:36 EDT 2005
 #
 # Exactly ONE of the four files count.c (C), count.cc
 # (C++), count.java (Java), or count.lsp (Commonlisp)
@@ -76,12 +76,31 @@ Subject: get demos/count
 #			count.java, or count.lsp to the
 #			judges.
 #
+#	make in-submit	Ditto, but requests that if
+#			the score is `Incorrect Output'
+#			or `Formatting Error', the
+#			judge's input for the failed
+#			test case will be returned in
+#			e-mail to the contestant.
+#
+#	make inout-submit
+#			Ditto but requests both the
+#			judge's input and the judge's
+#			output for the test case.
+#
+#	make solution-submit
+#			Like `make submit' but requests
+#			that if the score is `Completely
+#			Correct' the judge's solution
+#			will be returned in e-mail to
+#			the contestant.
+#	
 #	make clean	Removes `count', count.out, and
 #			other intermediate files that
 #			might exist, such as `core',
 #			`count.class', or count.fas.
 
-
+#
 .SUFFIXES:
 .SUFFIXES: .c .cc .java .lsp
 
@@ -94,8 +113,6 @@ default:	count.out
 .cc:
 	rm -f $* core
 	g++ -g -o $* $*.cc -lm
-
-#
 
 .java:
 	rm -f $* *.class core
@@ -112,7 +129,7 @@ default:	count.out
 	echo >>$* "exec `hpcm_clisp -which` -I $*.fas"
 	chmod a+r $*.fas
 	chmod a+rx $*
-
+#
 # hpcm_sandbox below may execute `count' as a special
 # unprivileged user named `sandbox', so various files
 # must be `a+x' or `a+r'.  `hpcm_clisp -which' returns
@@ -135,15 +152,23 @@ count.out:	count count.in
 	@cat count.out
 	@echo "============== END OUTPUT =============="
 
-#
+
 submit:		count.out
 	hpcm_submit count
 
+in-submit:	count.out
+	hpcm_submit -in count
+
+inout-submit:	count.out
+	hpcm_submit -inout count
+
+solution-submit:	count.out
+	hpcm_submit -solution count
+
 clean:
 	rm -f count *.class core count.out \
-	      count.fas count.lib
-
-
+	      count.fas count.lib count.jout
+#
 # Author:	walton@deas.harvard.edu
 #
 # The authors have placed this file in the public
@@ -153,10 +178,12 @@ clean:
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/10/02 17:11:25 $
+#   $Date: 2005/10/10 15:22:25 $
 #   $RCSfile: get_count.reply,v $
-#   $Revision: 1.11 $
+#   $Revision: 1.12 $
 ---<>--<>---<>--<>---<>----- demos/count/README:
+Count Demo README	    Fri Oct  7 08:17:56 EDT 2005
+
 The files in this demo directory are:
 
     public/count/Makefile	Commented Makefile.
@@ -168,6 +195,9 @@ The files in this demo directory are:
     public/count/count1.cc	Solution in C++.
     public/count/count1.java    Solution in JAVA.
     public/count/count1.lsp	Solution in COMMONLISP.
+
+There may be other files used exclusively by the judge,
+such as .rc, .jin, and .jtest files.
 
 The Makefile is commented, as opposed to most problem
 Makefiles.  For a non-demo problem you are only given
@@ -188,14 +218,28 @@ To check that the output is correct
 Then to submit the demo
 
 	make submit
-
+
 If you want to edit the solution you chose, you may
 first need to
 
 	chmod u+w count.yy
 
 (for the right yy), to make the file writable.
-
+
+You should try introducing an error in the file and
+resubmitting to see the response.  If you are in a
+contest that permits `in-submit' and `inout-submit',
+try
+
+	make in-submit
+
+and then
+
+	make inout-submit
+
+with a source file that has an error which makes it
+produce incorrect output.
+
 Read the Makefile for more information.
 
 If you have a non-UNIX system, you can submit the file
@@ -210,6 +254,23 @@ Although in this directory the problem description is
 in a .txt file, in other problem directories the problem
 description may be in a .html, .htm, or .ps (postscript)
 file.
+
+
+File:		README
+Authors:	walton@deas.harvard.edu
+Date:		see above
+
+
+The authors have placed this file in the public
+domain; they make no warranty and accept no liability
+for this file.
+
+RCS Info (may not be true date or author):
+
+  $Author: hc3 $
+  $Date: 2005/10/10 15:22:25 $
+  $RCSfile: get_count.reply,v $
+  $Revision: 1.12 $
 ---<>--<>---<>--<>---<>----- demos/count/count.in:
 This is a good paragraph to start with.
 
@@ -235,22 +296,41 @@ But
 
 
 Oh Well.
----<>--<>---<>--<>---<>----- demos/count/count.rc:
-# This file sets parameters for the autojudge.
-#
-# We must not return solutions for this demo, as we may
-# not have properly named files, and we do not want to
-# upset tests that depend upon replies being the same
-# for all contests, including those that do not return
-# solutions.  But the submitter already has the solu-
-# tions anyway, so returning them is senseless.
-#
-# Do not do anything if not sourced in the global
-# environment.
-#
-if { [info exists response_mode] } {
-    regsub solution $response_mode "" response_mode
-}
+---<>--<>---<>--<>---<>----- demos/count/count.jin:
+*CASE-HEAD* ^[ \t]*paragraph
+*CASE*
+This is a good paragraph to start with.
+
+*CASE*
+And to continue in a bit more
+complicated
+vein,
+this is a good paragraph.
+
+*CASE*
+But
+ the
+  ultimate
+   in
+    poetically
+     possible
+      paragraphs
+       is
+        this,
+         or
+          is
+           it!
+
+
+
+
+*CASE*
+Oh Well.
+---<>--<>---<>--<>---<>----- demos/count/count.jtest:
+-Paragraph 1: 1 lines, 8 words, 39 characters.
+-Paragraph 2: 4 lines, 14 words, 70 characters.
+-Paragraph 3: 12 lines, 12 words, 124 characters.
+-Paragraph 4: 1 lines, 2 words, 8 characters.
 ---<>--<>---<>--<>---<>----- demos/count/count.test:
 Paragraph 1: 1 lines, 8 words, 39 characters.
 Paragraph 2: 4 lines, 14 words, 70 characters.
@@ -454,9 +534,9 @@ main()
 // RCS Info (may not be true date or author):
 //
 //   $Author: hc3 $
-//   $Date: 2005/10/02 17:11:25 $
+//   $Date: 2005/10/10 15:22:25 $
 //   $RCSfile: get_count.reply,v $
-//   $Revision: 1.11 $
+//   $Revision: 1.12 $
 
 import java.io.*;
 import java.util.StringTokenizer;

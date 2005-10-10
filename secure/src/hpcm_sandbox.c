@@ -2,7 +2,7 @@
  *
  * File:	hpcm_sandbox.c
  * Authors:	Bob Walton (walton@deas.harvard.edu)
- * Date:	Wed Apr  3 08:45:48 EST 2002
+ * Date:	Mon Oct 10 10:23:44 EDT 2005
  *
  * The authors have placed this program in the public
  * domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
  * RCS Info (may not be true date or author):
  *
  *   $Author: hc3 $
- *   $Date: 2002/04/03 14:09:21 $
+ *   $Date: 2005/10/10 15:23:00 $
  *   $RCSfile: hpcm_sandbox.c,v $
- *   $Revision: 1.14 $
+ *   $Revision: 1.15 $
  */
 
 #include <stdlib.h>
@@ -389,7 +389,20 @@ int main ( int argc, char ** argv )
 	struct rlimit limit;
 
 	limit.rlim_cur = cputime;
-	limit.rlim_max = cputime;
+	limit.rlim_max = cputime + 5;
+	/* rlim_cur is when the SIGXCPU signal is sent,
+	 * and rlim_max is when the SIGKILL signal is
+	 * sent.  Cases have been observed in which
+	 * the usage.ru_{u,s}time sum as read by this
+	 * program does not quite exceed the rlim_{cur,
+	 * max} limit when the SIG{XCPU,KILL} signal is
+	 * sent.  SIGKILL is turned into SIGXCPU by code
+	 * elsewhere in this program if the usage.ru_
+	 * {u,s}time sum exceeds cputime.  To make this
+	 * work, we must be sure SIGKILL is sent well
+	 * after the sum exceeds the limit, so we add
+	 * 5 seconds to rlim_max.
+	 */
         if ( setrlimit ( RLIMIT_CPU, & limit ) < 0 )
 	    errno_exit
 	        ( "setrlimit RLIMIT_CPU" );
