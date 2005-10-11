@@ -5,7 +5,7 @@
 #
 # File:		email_diff
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Feb 12 20:47:20 EST 2004
+# Date:		Tue Oct 11 12:57:12 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2004/02/13 02:43:41 $
+#   $Date: 2005/10/11 16:52:48 $
 #   $RCSfile: email_diff,v $
-#   $Revision: 1.1 $
+#   $Revision: 1.2 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -27,19 +27,24 @@ exec tcl "$0" "$@"
 # in a judging directory tree.
 
 set document "
-email_diff file1 file2 \[-b\] header1 header2 ...
+email_diff file1 file2 header-regexp ... \\
+                       \[-body \[*\]body-regexp ...\] \\
 
     Check whether file1 and file2 differ after all
-    header lines beginning with `header1', `header2',
-    etc. have been removed.  Exits with 0 status code if
-    there are no differences; otherwise exits with
-    status code 1 and notates the first difference in
-    the standard error output, giving the lines that are
-    different.
+    header lines beginning with one of the header-
+    regexp's have been removed, and all body lines
+    beginning with one of the body-regexp's have been
+    removed.  Exits with 0 status code if there are no
+    differences; otherwise exits with status code 1 and
+    notates the first difference in the standard error
+    output, giving the lines that are different.
 
-    If the -b option is provided, the entire file is
-    treated as a header, even if it contains empty
-    lines.
+    The regexp's have an implied ^ at their beginning,
+    and so match only initial parts of lines.  If a
+    header line is matched and removed, any continuation
+    lines following it are removed.  This is not done
+    for body lines, unless the body-regexp is prefixed
+    by a `*'.
 
     Unlike most HPCM judging programs, this program does
     not read any hpcm_judging.rc file and errors made by
@@ -58,47 +63,75 @@ set file2 [lindex $argv 1]
 set ch1 [open $file1 r]
 set ch2 [open $file2 r]
 
-set b_option [expr { [lindex $argv 2] == "-b" }]
-if { $b_option } {
-    set headers [lrange $argv 3 end]
-} else {
-    set headers [lrange $argv 2 end]
+set header_regexps {}
+set body_regexps {}
+set mode header
+foreach arg [lrange $argv 2 end] {
+    if { $arg == "-body" } {
+        set mode body
+    } else {
+        lappend ${mode}_regexps $arg
+    }
 }
+
 
 # Get next line from channel.  state is the name of
 # a variable that is initialized to "header".  count
 # is the name of a line count variable initialized
 # to 0.
 #
+# state is "header" if next line is in header.
+#          "body"   if next line is in body.
+#
 proc next_line { ch state count } {
-    global headers b_option
+    global header_regexps body_regexps
 
     upvar $state s
     upvar $count c
+
+    set remove 0
 
     while { "yes" } {
 	set line [gets $ch]
 	if { [eof $ch] } { return "" }
 	incr c
-	if { $s == "body" } { return $line }
-	if { $line == "" && ! $b_option } {
+
+	# Remove continuation lines.
+	#
+	if { $remove } {
+	    if { [regexp "^\[ \t\]" $line] } {
+		continue
+	    } else {
+	        set remove 0
+	    }
+	}
+
+	# Return header/body separator.
+	#
+	if { $line == "" && $s != "body" } {
 	    set s body
 	    return $line
 	}
-	if { [regexp "^\[ \t\]" $line] } {
-	    if { $s == "skip" } {
-	    	continue
-	    } else { return $line }
-	}
-	set s header
-	foreach h $headers {
-	    if { [regexp -nocase "^$h" $line] } {
-		set s skip
+
+	set match 0
+	foreach r [set ${s}_regexps] {
+	    set remove 0
+	    if { [regexp {^\*} $r] && $s == "body" } {
+	        set r [string range $r 1 end]
+		set remove 1
+	    } elseif { $s == "header" } {
+		set remove 1
+	    }
+	    if { [regexp -nocase "^$r" $line] } {
+		set match 1
 		break
 	    }
 	}
-	if { $s == "skip" } continue
-	return $line
+	if { $match } {
+	    continue
+	} else {
+	    return $line
+	}
     }
 }
 
