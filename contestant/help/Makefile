@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Oct  7 08:26:10 EDT 2004
+# Date:		Thu Oct 13 18:28:44 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2004/10/07 12:31:04 $
+#   $Date: 2005/10/13 23:15:40 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.18 $
+#   $Revision: 1.19 $
 
 # To make web help pages, execute `make web' and copy
 # the `web' directory to you web server, where it will
@@ -36,10 +36,9 @@ ps:	help.ps demos.ps
 
 HELP_FILES = \
 	formal/formal_contest \
+	practice/practice_contest \
 	informal/informal_contest \
 	common/xterminals \
-	email/email_contest \
-	email/email_unix_tools \
 	common/solving \
 	common/input \
 	common/output \
@@ -50,10 +49,15 @@ HELP_FILES = \
 	common/c++ \
 	common/java \
 	common/advice \
-	advanced/breadth_first_search \
 	advanced/dynamic_programming \
-	advanced/2D_geometry \
+	advanced/2D_geometry
+
+OTHER_HELP_FILES = \
+	email/email_contest \
+	email/email_unix_tools \
+	advanced/breadth_first_search \
 	advanced/3D_geometry \
+	advanced/geometry_exercises \
 	advanced/network_flows \
 	advanced/optimal_matchings
 
@@ -85,13 +89,17 @@ help_index:	index
 	sed -n <index >>help_index \
 	    -e '/^#/d' \
 	    -e '/'$$A'.* all/b skip' \
+	    -e '/'$$A'email/b skip' \
 	    -e 'b accept' \
 	    -e ': skip' \
+	    -e '/^[A-Z]/b accept' \
 	    -e 's/.*//' \
 	    -e 'n' \
 	    -e '/'$$A'.* all/b skip' \
+	    -e '/'$$A'email/b skip' \
 	    -e '/'$$A'/!b skip' \
 	    -e ': accept' \
+	    -e '/^Advanced Advice/Q' \
 	    -e 's/'$$A$$D'\('$$M'\)'$$E'/\1/' \
 	    -e 'p'
 
