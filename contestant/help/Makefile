@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Oct 13 18:28:44 EDT 2005
+# Date:		Thu Oct 13 19:26:42 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/10/13 23:15:40 $
+#   $Date: 2005/10/13 23:30:33 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.19 $
+#   $Revision: 1.20 $
 
 # To make web help pages, execute `make web' and copy
 # the `web' directory to you web server, where it will
@@ -50,12 +50,12 @@ HELP_FILES = \
 	common/java \
 	common/advice \
 	advanced/dynamic_programming \
-	advanced/2D_geometry
+	advanced/2D_geometry \
+	advanced/breadth_first_search
 
 OTHER_HELP_FILES = \
 	email/email_contest \
 	email/email_unix_tools \
-	advanced/breadth_first_search \
 	advanced/3D_geometry \
 	advanced/geometry_exercises \
 	advanced/network_flows \
