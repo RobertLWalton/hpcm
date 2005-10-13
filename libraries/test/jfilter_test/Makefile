@@ -1,7 +1,7 @@
 # Makefile for JFilter Test
 #
 # File:		Makefile
-# Date:		Thu Sep 29 04:39:47 EDT 2005
+# Date:		Wed Oct  5 06:48:16 EDT 2005
 #
 # See demonstration Makefile for documentation.
 #
@@ -55,16 +55,21 @@ $P.out:	$P $P.in
 	@cat $P.out
 	@echo "============== END OUTPUT =============="
 
-$P.fout:	$P.out $P.in Scoring_Filter
-	Scoring_Filter <$P.out >$P.fout
-
 submit:		$P.out
 	hpcm_submit $P
 
-clean:
-	rm -f $P *.class core $P.out $P.fout \
-	      $P.fas $P.lib make_$P_input
+in-submit:	$P.out
+	hpcm_submit -in $P
 
+inout-submit:	$P.out
+	hpcm_submit -inout $P
+
+solution-submit:	$P.out
+	hpcm_submit -solution $P
+
+clean:
+	rm -f $P *.class core $P.out $P.fout $P.jout \
+	      $P.jfout $P.fas $P.lib make_$P_input
 
 #
 # Author:	walton@deas.harvard.edu
@@ -76,6 +81,6 @@ clean:
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/09/29 08:43:27 $
+#   $Date: 2005/10/13 08:47:04 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.1 $
+#   $Revision: 1.2 $
