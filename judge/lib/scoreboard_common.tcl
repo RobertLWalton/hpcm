@@ -3,7 +3,7 @@
 #
 # File:		scoreboard_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Oct  4 10:55:53 EDT 2005
+# Date:		Thu Oct 13 04:00:06 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -12,9 +12,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/10/04 14:55:26 $
+#   $Date: 2005/10/13 08:03:39 $
 #   $RCSfile: scoreboard_common.tcl,v $
-#   $Revision: 1.50 $
+#   $Revision: 1.51 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -1028,11 +1028,15 @@ proc format_problem_score { time incorrect modifier \
 		    "$long_score$c$postfix"
 	    }
 	}
+	set round_score [expr { round($score) }]
 	if {    ! $scoreboard_display_incorrect \
 	     || $incorrect == 0 } {
-	    set long_score [expr { round($score) }]
+	    set long_score $round_score
+	    set short_score $long_score
+	} else {
+	    set short_score $long_score
+	    set long_score "$long_score:$round_score"
 	}
-	set short_score $long_score
 	set qualifier_score \
 	    [expr $qualifier_score + $score]
 
