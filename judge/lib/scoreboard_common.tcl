@@ -3,7 +3,7 @@
 #
 # File:		scoreboard_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Oct 13 04:00:06 EDT 2005
+# Date:		Thu Oct 13 04:19:57 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -12,9 +12,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/10/13 08:03:39 $
+#   $Date: 2005/10/13 08:23:31 $
 #   $RCSfile: scoreboard_common.tcl,v $
-#   $Revision: 1.51 $
+#   $Revision: 1.52 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -858,6 +858,11 @@ proc compute_scoreboard_list {} {
 	    set problems_correct ""
 	    set total_score ""
 	} elseif { $scoreboard_use_qualifiers } {
+	    if { $problems_correct > 0 } {
+	        set qualifier_score \
+		    [expr {   $qualifier_score \
+		            / $problems_correct }]
+	    }
 	    set qqqqqqqqq \
 		[format {%09d} \
 		        [expr { 999999999 \
