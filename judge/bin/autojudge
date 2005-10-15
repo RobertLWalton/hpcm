@@ -5,7 +5,7 @@
 #
 # File:		autojudge
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Oct  7 09:51:16 EDT 2005
+# Date:		Sat Oct 15 12:48:56 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/10/07 13:51:58 $
+#   $Date: 2005/10/15 16:43:37 $
 #   $RCSfile: autojudge,v $
-#   $Revision: 1.110 $
+#   $Revision: 1.111 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -188,7 +188,11 @@ autojudge \[-manual\] \[problem\[.extension\]\
 
     Errors in extraction are classified as system errors
     if extractmail outputs the phrase `SYSTEM ERROR' and
-    submitter errors otherwise.
+    submitter errors otherwise.  SYSTEM ERRORs are log-
+    ged by extractmail, who also replies to the submit-
+    ter according to the logging mode, so autojudge just
+    prints the output and exits when a system error
+    occurs.
 
     While making files in the problem solution direc-
     tory, program locks the solution directory with a
@@ -645,10 +649,13 @@ set extracted_files ""
 # ter.  Compute list of extracted files in `extracted_
 # files'.
 #
+# For SYSTEM ERRORs merely terminate, as all logging
+# and replying is done by extractmail.
+#
 if { [catch { exec extractmail } extractout] } {
     if { [regexp {SYSTEM ERROR} $extractout] } {
-        error "System error during\
-	       extractmail:\n\n$extractout"
+	puts $extractout
+        exit 0
     } else {
 
 	# Create a reply file complaining of an extrac-
