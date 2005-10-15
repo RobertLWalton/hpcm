@@ -5,7 +5,7 @@
 #
 # File:		autojudge
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Oct 15 14:09:04 EDT 2005
+# Date:		Sat Oct 15 15:49:57 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/10/15 19:22:30 $
+#   $Date: 2005/10/15 19:51:55 $
 #   $RCSfile: autojudge,v $
-#   $Revision: 1.113 $
+#   $Revision: 1.114 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -330,12 +330,14 @@ if {    $PROBLEM == "" \
      || [regexp {\.} $PROBLEM] \
      || [regexp {/}  $PROBLEM] \
      || [regexp {^-} $PROBLEM]  } {
-    subject_error "illegal problem name `$PROBLEM' in"
+    subject_error "illegal problem name\
+                   `$PROBLEM'\n  in"
 }
 if { $EXTENSION != "" \
      && ! [lcontain $allowed_extensions $EXTENSION] } {
-    subject_error "unallowed extension `$EXTENSION'\
-      (should be one of $allowed_extensions) in"
+    subject_error "unallowed extension\
+      `$EXTENSION'\n  (should be one of\
+      $allowed_extensions)\n  in"
 } elseif { [regexp {/} $EXTENSION] } {
     # should never happen
     error "/ in extension `$EXTENSION'"
@@ -346,8 +348,9 @@ if { $EXTENSION != "" \
 if { ! [lcontain $allowed_qualifiers \
                  $submit_qualifier] } {
     subject_error \
-        "unallowed submit qualifier `$submit_qualifier'\
-         (should be one of $allowed_qualifiers) in"
+        "unallowed submit qualifier\
+	 `$submit_qualifier'\n  (should be one of\
+	 $allowed_qualifiers)\n  in"
 }
 
 # Check for existence of problem solution directory.
@@ -355,7 +358,7 @@ if { ! [lcontain $allowed_qualifiers \
 set s_d $judging_directory/solutions/$PROBLEM
 if { ! [file isdirectory $s_d] } {
     subject_error "problem `$PROBLEM' is not allowed in\
-                   this contest, in"
+                   this contest\n  in"
 }
 
 # Global variable that is list of all files linked
