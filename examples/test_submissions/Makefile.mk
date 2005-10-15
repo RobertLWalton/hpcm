@@ -2,7 +2,7 @@
 #
 # File:		Makefile.mk
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Oct 15 15:31:26 EDT 2005
+# Date:		Sat Oct 15 15:45:03 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/10/15 19:26:18 $
+#   $Date: 2005/10/15 19:39:13 $
 #   $RCSfile: Makefile.mk,v $
-#   $Revision: 1.31 $
+#   $Revision: 1.32 $
 
 extract_replies:	mbox
 	rm -rf replies
@@ -137,5 +137,4 @@ test_problem_name:	${TEST_PREREQUISITES} \
 	$S/bad_problem_name6.send \
 	$S/bad_problem_name7.send \
 	$S/bad_problem_name8.send \
-	$S/bad_problem_name9.send \
-	$S/bad_problem_name10.send
+	$S/bad_problem_name9.send
