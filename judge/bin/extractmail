@@ -4,7 +4,7 @@
 #
 # File:		extractmail
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Oct 15 12:28:27 EDT 2005
+# Date:		Sat Oct 15 12:59:26 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/10/15 16:50:15 $
+#   $Date: 2005/10/15 17:15:11 $
 #   $RCSfile: extractmail,v $
-#   $Revision: 1.52 $
+#   $Revision: 1.53 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -65,10 +65,10 @@ cd submission_directory; extractmail
     is empty.
     
     For each file successfully extracted, this program
-    writes the line `Extracted FFFF' to the standard
-    output, where FFFF is the file name.  Note that this
-    program may write other information lines to the
-    standard output.
+    writes the line `Extracted FFFF' formatted as a TCL
+    list to the standard output, where FFFF is the file
+    name.  Note that this program may write other infor-
+    mation lines to the standard output.
 
     For each error, this program writes an error message
     to the standard error output.  However, this program
@@ -251,6 +251,11 @@ foreach file $problem_required_files {
     set filename_array($file) required
 }
 foreach file $problem_optional_files {
+    if {    [info exists filename_array($file)] \
+         && $filename_array($file) == "required" } {
+        error "$file is in both problem_required_files\
+	       and problem_optional_files"
+    }
     set filename_array($file) optional
 }
 
@@ -272,16 +277,17 @@ proc exit_cleanup {} {
     }
 }
 
-# Open file for reading or writing.  Return the
-# open channel in the global variable `file_ch' and
-# return `read' or `write' if the file is opened for
-# reading or writing, and `skip' if the file name is
-# illegal and the file is to be skipped.  A file is
-# opened for reading if it exists, is not a symbolic
-# link, and has an mtime >= received_mtime; and is
-# opened for writing otherwise.  If opened for writing,
-# any existing file or link is deleted, and cleanup_
-# filename is set.
+# Open file to be extracted for reading or writing.
+# Return the open channel in the global variable
+# `file_ch' and return `read' or `write' if the file
+# is opened for reading or writing, and `skip' if the
+# file name is illegal and the file is to be skipped.
+#
+# A file is opened for reading if it exists, is not a
+# symbolic link, and has an mtime >= received_mtime;
+# and is opened for writing otherwise.  If opened for
+# writing, any existing file or link is deleted, and
+# cleanup_filename is set.
 #
 # A filename is illegal if it is not in filename_array
 # or if a file of the same name has already been
@@ -388,7 +394,10 @@ proc close_file { filename } {
 
     close $file_ch
     set cleanup_filename ""
-    puts "Extracted $filename"
+
+    # Next line must be TCL list so autojudge can read
+    # it.
+    puts [list Extracted $filename]
 }
 
 # Skip over blank lines at start of body.
