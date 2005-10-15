@@ -5,7 +5,7 @@
 #
 # File:		autojudge
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Oct 15 12:48:56 EDT 2005
+# Date:		Sat Oct 15 12:51:28 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/10/15 16:43:37 $
+#   $Date: 2005/10/15 16:48:04 $
 #   $RCSfile: autojudge,v $
-#   $Revision: 1.111 $
+#   $Revision: 1.112 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -644,13 +644,15 @@ if { $manual } {
 #
 set extracted_files ""
 
-# Extract submitted files.  If error, if SYSTEM ERROR
-# call `error' function and otherwise reply to submit-
-# ter.  Compute list of extracted files in `extracted_
-# files'.
+# Extract submitted files.
+
+# If non-SYSTEM ERROR error, reply to submitter.  If
+# SYSTEM ERROR error, merely print extractmail output
+# and exit 0, as all logging and replying is done by
+# extractmail.
 #
-# For SYSTEM ERRORs merely terminate, as all logging
-# and replying is done by extractmail.
+# Compute list of extracted files in `extracted_files'.
+#
 #
 if { [catch { exec extractmail } extractout] } {
     if { [regexp {SYSTEM ERROR} $extractout] } {

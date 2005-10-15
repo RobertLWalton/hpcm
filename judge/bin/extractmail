@@ -4,7 +4,7 @@
 #
 # File:		extractmail
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Oct 15 07:44:11 EDT 2005
+# Date:		Sat Oct 15 12:28:27 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/10/15 11:48:49 $
+#   $Date: 2005/10/15 16:50:15 $
 #   $RCSfile: extractmail,v $
-#   $Revision: 1.51 $
+#   $Revision: 1.52 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -60,8 +60,9 @@ cd submission_directory; extractmail
     problem_required_files is not set by the PROBLEM.rc
     file, and if an EXTENSION is given, then problem_
     required_files is set so the only required file is
-    PROBLEM.EXTENSION.  Otherwise it is an error if
-    problem_required_files is not set or is empty.
+    PROBLEM.EXTENSION.  Otherwise it is a SYSTEM ERROR
+    (see below) if problem_required_files is not set or
+    is empty.
     
     For each file successfully extracted, this program
     writes the line `Extracted FFFF' to the standard
@@ -81,11 +82,13 @@ cd submission_directory; extractmail
     the variable `out' and return a 0/1 value indicating
     whether there were any errors.  If there are errors
     that concern the judge, and not just the submitter,
-    the text `SYSTEM ERROR' will appear in the output
-    and thence the `out' variable.  Otherwise, if there
-    are errors,  the value of `out' will be suitable for
-    inclusion in a reply to the submitter as a descrip-
-    tion of the errors.
+    the text `SYSTEM ERROR' will appear in the standard
+    error output and thence the `out' variable.  In this
+    case, the error will be reported to the submitter by
+    error logging code according to the log_mode.
+    Otherwise, if there are non-system errors, the value
+    of `out' will be suitable for inclusion in a reply
+    to the submitter as a description of the errors.
 
     Submitted files may be encoded in the body of the
     message in the format:
@@ -166,8 +169,7 @@ proc extract_error { message } {
 #
 if { [catch { set received_ch \
 		  [open Received_Mail r] }] } {
-    extract_error \
-        "SYSTEM ERROR: cannot read Received_Mail"
+    error "cannot read Received_Mail"
 }
 set received_mtime [file mtime Received_Mail]
 read_header $received_ch
@@ -234,9 +236,7 @@ if { ! [info exists problem_required_files] } {
     }
     lappend problem_required_files $PROBLEM$EXTENSION
 } elseif { [llength $problem_required_files] == 0 } {
-    extract_error \
-	"SYSTEM ERROR: problem_required_files set to\
-	 empty list"
+    error "problem_required_files set to empty list"
 }
 if { ! [info exists problem_optional_files] } {
     set problem_optional_files ""
@@ -313,33 +313,26 @@ proc open_file { filename } {
 	    puts "Deleting $filename link"
 	    if { [catch { file delete -force \
 	    		       $filename }] } {
-	        extract_error \
-		    "SYSTEM ERROR: Cannot delete\
-		     $filename link"
+	        error "Cannot delete $filename link"
 	    }
         } elseif { [file mtime $filename] \
 	               < $received_mtime } {
 	    puts "Deleting out-of-date $filename"
 	    if { [catch { file delete -force \
 	    		       $filename }] } {
-	        extract_error \
-		    "SYSTEM ERROR: Cannot delete\
-		     $filename"
+	        error "Cannot delete $filename"
 	    }
 	} else {
 	    if { [catch { set file_ch \
 	                      [open $filename r] }] } {
-		extract_error \
-		    "SYSTEM ERROR: Cannot read\
-		     $filename"
+		error "Cannot read $filename"
 	    }
 	    return read
 	}
     }
 
     if { [catch { set file_ch [open $filename w] }] } {
-        extract_error \
-	    "SYSTEM ERROR: Cannot write $filename"
+        error "Cannot write $filename"
     }
 
     # Set cleanup for error exits.
@@ -648,4 +641,12 @@ exit 0
 # Include common error catching code:
 #
 } caught_output
+
+# We only come here if there has been a system error.
+# In this case, the system error is logged to an error
+# file and emailed to the submitter, and all we have to
+# to is write `SYSTEM ERROR' to the stderr to notify
+# the extractmail caller.
+#
+puts stderr "SYSTEM ERROR"
 caught_error
