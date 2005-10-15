@@ -5,7 +5,7 @@
 #
 # File:		autojudge
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Oct 15 12:51:28 EDT 2005
+# Date:		Sat Oct 15 14:09:04 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/10/15 16:48:04 $
+#   $Date: 2005/10/15 19:22:30 $
 #   $RCSfile: autojudge,v $
-#   $Revision: 1.112 $
+#   $Revision: 1.113 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -39,8 +39,7 @@ catch {
 
 set document "
 cd submission_directory
-autojudge \[-manual\] \[problem\[.extension\]\
-	  \[qualifier\]\]
+autojudge \[-manual\] 
 
     Given the submission directory as the current dir-
     ectory, and given that the submission directory
@@ -56,30 +55,36 @@ autojudge \[-manual\] \[problem\[.extension\]\
     ning.  This suppresses sending email to the submit-
     ter.
 
-    If the problem name, optional extension, and option-
-    al submit qualifier are not given as arguments, they
-    are extracted from the
+    The problem name, optional extension, and optional
+    submit qualifier are extracted from the
 
-      Subject: submit problem\[.extension\]\
-      		      \[qualifier\]
+      Subject: submit PROBLEM\[.EXTENSION\]\
+      		      \[QUALIFIER\]
 
     field of the message in the Received_Mail file.
-    Here `problem' names the problem and the solution
-    binary, and is the basename of the .in, .out, .test,
-    .fout, .ftest, .jout, .jtest, jfout, jftest, .cerr,
-    .err, and .score files.  If `extension' is given, it
-    tells the programming language being used, and must
-    be a member of the `allowed_extensions' global
+    Here `PROBLEM' names the problem and the solution
+    binary, and is the basename of the .in, .out, .cerr,
+    .err, and .score files.  If `EXTENSION' is given,
+    it tells the programming language being used, and
+    must be a member of the `allowed_extensions' global
     variable value, which by default is:
     
     	$allowed_extensions
 
+    The submit qualifier, QUALIFIER, becomes the value
+    of the global variable `submit_qualifier', which may
+    be used by response_instructions to tailor the re-
+    sponse to the submitter.  It must be a member of the
+    `allowed_qualifiers' global variable value, which by
+    default is:
+
+    	$allowed_qualifiers
+
     In this document the words `PROBLEM' and `EXTENSION'
     are used to denote the problem name and extension as
-    given in an argument or `Subject:' field.  Also, the
-    solution directory below is the problem directory
-    within the solutions directory, i.e., the directory
-    with name:
+    given in the `Subject:' field.  Also, the solution
+    directory below is the problem directory within the
+    solutions directory, i.e., the directory with name:
 
     	<judging_directory>/solutions/PROBLEM
 
@@ -274,11 +279,9 @@ if { [lindex $my_argv 0] == "-manual" } {
     incr my_argc -1
 }
 
-# If too many arguments or -doc argument, print docu-
-# mentation and exit.
+# If too many arguments print documentation and exit.
 #
-if {    $my_argc > 1 \
-     || [regexp {^-doc} [lindex $my_argv 0]] } {
+if { $my_argc > 0 } {
     puts $document
     exit 1
 }
@@ -297,40 +300,31 @@ proc subject_error { what } {
 	  BLANK \
 	  { BAR "this message replies to:" } \
 	  RECEIVED-HEADER
-    puts "SUBMISSION ERROR: $what in\
+    puts "SUBMISSION ERROR: $what\
           `Subject:$message_subject'"
     exit 0
 }
 
-# Compute problem name and extension and submit
-# qualifier.
+# Read Received_Mail message header.
 #
-if { $my_argc >= 1 } {
-    set argument [lindex $my_argv 0]
-    set submit_qualifier [lindex $my_argv 1]
-} else {
+set received_ch [open Received_Mail r]
+read_header $received_ch
+close $received_ch
 
-    # Read message header.
-    #
-    set received_ch [open Received_Mail r]
-    read_header $received_ch
-    close $received_ch
-
-    # Get problem.
-    #
-    if {    [catch { llength $message_subject }] \
-         || [llength $message_subject] < 2 \
-         || [llength $message_subject] > 3 \
-	 || [lindex $message_subject 0] != "submit" } {
-	subject_error "badly formatted"
-    }
-    set argument [lindex $message_subject 1]
-    set submit_qualifier [lindex $message_subject 2]
+# Get PROBLEM and EXTENSION.
+#
+if {    [catch { llength $message_subject }] \
+     || [llength $message_subject] < 2 \
+     || [llength $message_subject] > 3 \
+     || [lindex $message_subject 0] != "submit" } {
+    subject_error "badly formatted"
 }
-set PROBLEM [file rootname $argument]
-set EXTENSION [file extension $argument]
+set filename [lindex $message_subject 1]
+set submit_qualifier [lindex $message_subject 2]
+set PROBLEM [file rootname $filename]
+set EXTENSION [file extension $filename]
 
-# Check legality of problem name and optional extension.
+# Check legality of PROBLEM and EXTENSION.
 #
 if {    $PROBLEM == "" \
      || [regexp {\.} $PROBLEM] \
@@ -352,15 +346,16 @@ if { $EXTENSION != "" \
 if { ! [lcontain $allowed_qualifiers \
                  $submit_qualifier] } {
     subject_error \
-        "unknown submit qualifier `$submit_qualifier'\
-	 in"
+        "unallowed submit qualifier `$submit_qualifier'\
+         (should be one of $allowed_qualifiers) in"
 }
 
 # Check for existence of problem solution directory.
 #
 set s_d $judging_directory/solutions/$PROBLEM
 if { ! [file isdirectory $s_d] } {
-    subject_error "unallowed problem name `$PROBLEM' in"
+    subject_error "problem `$PROBLEM' is not allowed in\
+                   this contest, in"
 }
 
 # Global variable that is list of all files linked
@@ -374,15 +369,17 @@ set linked_files ""
 # has the format of a problem_link_files global variable
 # value: see hpcm_judging.rc.  Name describes the data
 # for error message purposes.  Optional is 1 if links
-# are options, 0 if they are required.  Exists is 1 if
-# linking is suppressed when the target exists (it CAN
-# be a dangling link), and 0 otherwise.  Appends files
-# linked to linked_files above.
+# are options, 0 if they are required.  Relink is 1 (the
+# default) if existing links are deleted and relinked,
+# and 0 otherwise.
+#
+# Appends files that exist or are newly linked to
+# linked_files above.
 #
 # The global s_d names the problem solution directory.
 #
 proc execute_links \
-	{ data name { optional 0 } { exists 0 } } {
+	{ data name { optional 0 } { relink 1 } } {
 
     global s_d linked_files
 
@@ -418,16 +415,12 @@ proc execute_links \
 	if { [catch { set type [file type $target] }] \
 	            } {
 	    set type none
-	} elseif { $type == "link" \
-		   && \
-		   $source != "" \
-		   && \
-		   [file readlink $target] \
-			 == $source } {
-	    set type done
 	}
 
-	if { $type == "link" && ! $exists } {
+	if {    $type == "link" && $relink \
+	     && ( $source == "" \
+		  ||    [file readlink $target] \
+		     != $source ) } {
 	    puts "Deleting $target"
 	    file delete -force $target
 	    set type none
@@ -630,9 +623,7 @@ proc execute_makes { data name } {
 #
 execute_links $PROBLEM.rc \
               "initial problem .rc file linking" 1
-if { [file exists $PROBLEM.rc] } {
-    source_file $PROBLEM.rc
-}
+source_file $PROBLEM.rc
 
 # Force scoring mode if there was a -manual option.
 #
@@ -747,7 +738,7 @@ set scoring_filter_exists \
 # from .fout files, .jftest files from .ftest files.
 #
 # If Scoring Filter does not exist, make .jout files
-# from .out files and .jtest files from .test files>
+# from .out files and .jtest files from .test files.
 #
 set instructions ""
 foreach name $input_names {
@@ -809,7 +800,7 @@ if { [info exists problem_optional_link_files] } {
 
 # Link everything that does not exist that we need.
 # These links are not optional, but should not be done
-# if target exists.
+# if target is an existing file or link.
 #
 set instructions ""
 lappend instructions \
@@ -841,7 +832,7 @@ foreach name $input_names {
 execute_links $instructions \
               "autojudge generated required link\
 	       instructions" \
-	      0 1
+	      0 0
 
 # Function to send reply to user containing new auto
 # score.
