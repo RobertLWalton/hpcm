@@ -5,7 +5,7 @@
 #
 # File:		autojudge
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Oct 15 15:49:57 EDT 2005
+# Date:		Thu Oct 20 10:22:07 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/10/15 19:51:55 $
+#   $Date: 2005/10/20 15:03:22 $
 #   $RCSfile: autojudge,v $
-#   $Revision: 1.114 $
+#   $Revision: 1.115 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -70,7 +70,7 @@ autojudge \[-manual\]
     variable value, which by default is:
     
     	$allowed_extensions
-
+
     The submit qualifier, QUALIFIER, becomes the value
     of the global variable `submit_qualifier', which may
     be used by response_instructions to tailor the re-
@@ -93,11 +93,11 @@ autojudge \[-manual\]
 
       * `PROBLEM.rc' file, if it exists.  If it exists
         (in the problem's solution directory), it is
-        sourced, and may set some of the global varibles
-	mentioned below.  See the `Problem .rc Files'
-	section of hpcm_judging.rc for detailed specifi-
-	cation of the values of these global variables
-	and their defaults.
+        sourced, and may set some of the global varia-
+	bles mentioned below.  See the `Problem .rc
+	Files' section of hpcm_judging.rc for detailed
+	specification of the values of these global
+	variables and their defaults.
 
       . Submitted files which are extracted from the
         submitted message in the Received_Mail file
@@ -107,18 +107,29 @@ autojudge \[-manual\]
 	The default is for PROBLEM.EXTENSION to be
 	the only required file if EXTENSION is not
 	empty.
+
+      . A list of input names is computed.  If the
+        global variable problem_input_names exists, its
+	value is the list of input names.  Otherwise N
+	is on the list if and only if N.in or N.jin
+	exist in the problem solution directory.  An
+	exception is PROBLEM, which is only an input
+	name if there are no other input names, on the
+	grounds that otherwise it is probably arises
+	from a link to an input file with a different
+	name.
 
       . Files listed in the problem_make_files global
         variable, which gives instructions on when and
 	how to make files in the problem's solution
 	directory.  E.g., the Scoring_Filter program
-	may be compiled there if necessary.  The
-	default is to make .in, .fout, .jout, .jfout,
-	.ftest, .jtest, and .jftest files whenever
-	their necessary inputs exist.  This if xxx.out
-	and Scoring_Filter exist, xxx.fout will be made,
-	and if xxx.jin also exists, then xxx.jfout will
-	be made.
+	may be compiled there if necessary.  The default
+	is to make for each input name N, N.in, N.fout,
+	N.jout, N.jfout, N.ftest, N.jtest, and N.jftest
+	files whenever the input files needed to make
+	them exist.  This if N.out and Scoring_Filter
+	exist, N.fout will be made, and if N.jin also
+	exists, then N.jfout will be made.
 
       * Files listed in the problem_link_files and
         problem_optional_link_files global variables are
@@ -127,42 +138,56 @@ autojudge \[-manual\]
 	following are linked if they do not exist in the
 	submission directory and they do exist in the
 	solution directory: Makefile, Scoring_Filter,
-	and for each problem_input_names F, F.in,
-	F.test, F.jin, F.ftest, F.jtest, F.jftest.
+	and for each input names N, N.in, N.test, N.jin,
+	N.ftest, N.jtest, N.jftest.
 
+	Note that if N.out exists in the problem solu-
+	tion directory, it will be linked to N.test in
+	the submission directory, in preference over
+	N.test in the solution directory.  Ditto for
+	.ftest, .jtest, .jftest.
+
       . The program binary file `PROBLEM' and the
 	compiler error file PROBLEM.cerr are made by
 	executing `make PROBLEM' in the submission
 	directory, using the Makefile.  If there is
-	an error, the score is `Syntax Error', and
-	autojudge terminates.
+	an error, the score is `Syntax Error'.  The
+	Auto_Score file is written and autojudge termi-
+	nates.
 
-      . For each F in problem_input_names, PROBLEM.in is
-        linked to F.in, PROBLEM.out is made by executing
-	`make PROBLEM.out' using the Makefile, the
-	standard error from make is directed to
-	PROBLEM.err, and PROBLEM.out and PROBLEM.err are
-	then renamed F.err and F.out.
+      . For each input name N, PROBLEM.in is linked to
+        N.in, PROBLEM.out is made by executing `make
+	PROBLEM.out' using the Makefile, the standard
+	error from make is directed to PROBLEM.err, and
+	PROBLEM.out and PROBLEM.err are then renamed
+	N.err and N.out.  If N == PROBLEM this is done
+	without the linking or renaming.
 
-	If F.err is non-empty after this, the score is 
+	If N.err is non-empty after this, the score is 
 	`Cpu Time Limit Exceeded', `Output Size Limit
 	Exceeded', or `Program Crashed', according to
-	the contents of F.err, and autojudge terminates.
+	the contents of N.err.  The Auto_Score file is
+	written and autojudge terminates.
 
-	If F.out is empty or non-existent but F.err is
+	If N.out is empty or non-existent but N.err is
 	empty, then the score is `Program Crashed' and
 	autojudge terminates.
 
-      . For each F in problem_input_names, F.fout is
-        made if Scoring_Filter exists, F.jfout if in
-	addition F.jin exists, and F.jout is made if
-	F.jin exists but Scoring_Filter does not.
+      . For each input name N, N.fout is made if
+        Scoring_Filter exists, N.jfout if in addition
+	N.jin exists, and N.jout is made if N.jin exists
+	but Scoring_Filter does not.
 
-      . The PROBLEM.score and Auto_Score files are made.
+      . For each input name N, one of N.score, N.fscore,
+        N.jscore, or N.jfscore is made, according to
+	whether or not Scoring_Filter and N.jin exist.
+	Auto_Score is computed from the resulting
+	.*score files.
+
         Whenever Auto_Score is made, the Score_Flag is
-	set, a Reply_Mail file is made, and this reply
-	is sent to the submitter if the scoring_mode is
-	not `manual'.
+	set, and a Reply_Mail file is made and sent to
+	to the submitter if the scoring_mode is not
+	`manual'.
 
     Here files marked with * are linked into the current
     submission directory from the problem's solution
@@ -196,9 +221,9 @@ autojudge \[-manual\]
     submitter errors otherwise.  SYSTEM ERRORs are log-
     ged by extractmail, who also replies to the submit-
     ter according to the logging mode, so autojudge just
-    prints the output and exits when a system error
-    occurs.
-
+    prints the output and exits when an extractmail
+    system error occurs.
+
     While making files in the problem solution direc-
     tory, program locks the solution directory with a
     Dispatch_PID file.
@@ -208,15 +233,15 @@ autojudge \[-manual\]
     gram in the submission directory are assumed to
     depend upon all the extracted and linked files.
 
-    When this program creates a `Reply_Mail' file is
+    When this program creates a `Reply_Mail' file it
     uses instructions in the `response_instructions'
     global variable.  This variable contains instruc-
     tions that format the reply for a given Auto_Score
-    value and a given value of the scoring_mode global
-    variable.  The format of the response instructions
-    is described in hpcm_judging.rc, where a default
-    value is also given for the `response_instructions'
-    variable.
+    value and a given value of the scoring_mode and
+    response_mode global variables.  The format of the
+    response instructions is described in hpcm_
+    judging.rc, where a default value is also given for
+    the `response_instructions' variable.
     
     With default response instructions, this program
     sends a reply if the score is `Completely Correct'
@@ -236,7 +261,7 @@ autojudge \[-manual\]
     erate a final reply.
 
     This program prints information about its progress.
- 
+ 
     Unless this program creates a Reply_Mail file that
     is intended to be the final reply to the submitter
     (e.g., because the score is `Completely Correct' or
@@ -260,9 +285,8 @@ autojudge \[-manual\]
     misformatted Received_Mail file `Subject:' fields.
     It is a system error if the `Received_Mail' file is
     not readable, of if `extractmail' returns a system
-    error.  It is a system error if an existing
-    `response_instructions' global variable value is
-    misformatted."
+    error.  It is a system error if an existing global
+    variable value is misformatted."
 
 # Do not change argc or argv so error printouts will be
 # correct.
@@ -701,8 +725,8 @@ if { [info exists problem_input_names] } {
     set input_names $problem_input_names
 } else {
 
-    # Make default list, which contains names F such
-    # that F.in or F.jin exist.  Eliminate duplicates.
+    # Make default list, which contains names N such
+    # that N.in or N.jin exist.  Eliminate duplicates.
     # Do not list $PROBLEM.in if any other names found,
     # as it should be just a link to another .in name
     # in that case.
@@ -835,7 +859,7 @@ foreach name $input_names {
 execute_links $instructions \
               "autojudge generated required link\
 	       instructions" \
-	      0 0
+	      0
 
 # Function to send reply to user containing new auto
 # score.
