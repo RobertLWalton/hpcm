@@ -5,7 +5,7 @@
 #
 # File:		autojudge
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Oct 20 10:22:07 EDT 2005
+# Date:		Thu Oct 20 11:10:01 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/10/20 15:03:22 $
+#   $Date: 2005/10/20 15:09:03 $
 #   $RCSfile: autojudge,v $
-#   $Revision: 1.115 $
+#   $Revision: 1.116 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -909,7 +909,8 @@ proc auto_score_reply { score { marker "" } } {
 	puts "Auto-score (NOT emailed):\
 	      \    $auto_score"
     } else {
-        error "bad compose_response return value"
+        error "bad compose_response return\
+	       value:\n   $return_commands"
     }
 }
 
@@ -1043,8 +1044,7 @@ foreach name $input_names {
 	    file delete -force $name.in
 	    link_file $name.in $PROBLEM.in
 	}
-	file delete -force \
-	     $PROBLEM.out $PROBLEM.err $PROBLEM.fout
+	file delete -force $PROBLEM.out $PROBLEM.err
 	puts "Making $PROBLEM.out and $PROBLEM.err"
 	catch { make_file $PROBLEM.out $PROBLEM.err }
 
@@ -1129,7 +1129,8 @@ foreach name $input_names {
     }
     if { ! [file exists $name.err] } continue
     if { [file size $name.err] == 0 } continue
-    error "File $name.err should no exist or be empty"
+    error "File $name.err should not exist or should\
+           be empty"
 }
 
 
@@ -1233,7 +1234,7 @@ foreach name $input_names {
 	}
     }
     if { ! [file exists $score_file] } {
-        error "$score_file does not exist - maybe\
+        error "$score_file does not exist\n   - maybe\
 	       correspondence problem between .*test\
 	       and .*out files"
     }
