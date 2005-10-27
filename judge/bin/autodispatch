@@ -5,7 +5,7 @@
 #
 # File:		autodispatch
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Oct 27 11:05:59 EDT 2005
+# Date:		Thu Oct 27 11:27:30 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/10/27 15:00:17 $
+#   $Date: 2005/10/27 15:31:12 $
 #   $RCSfile: autodispatch,v $
-#   $Revision: 1.22 $
+#   $Revision: 1.23 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -100,11 +100,6 @@ autodispatch \[directory\] \[-force\]
     element is defined.  Otherwise, no program is call-
     ed.
 
-    If a program XXX (e.g. autojudge) is called, the
-    combination of the standard output and standard
-    error from the program is written to the XXX.log
-    file.
-
     If no program is called and if the reply mode is
     `auto', this program will compose a reply.  If the
     `reply_manager' variable is NOT \"\", the reply is
@@ -125,7 +120,7 @@ autodispatch \[directory\] \[-force\]
     Finally this program exits without error.
 
     This program records what it is doing on the stand-
-    ard output."
+    ard output and in the autodispatch.log file."
 
 # Check for and consume -force option.
 #
@@ -145,11 +140,32 @@ if { $my_argc != 0 } {
     exit 1
 }
 
+# Open autodispatch.log file.
+#
+set logch [open autodispatch.log a]
+#
+proc putlog { message } {
+    global logch
+    puts $logch $message
+    puts $message
+}
+# Set exit_cleanup function (called before all exits
+# in judging common code) to close log channel.
+#
+proc exit_cleanup {} {
+    global logch
+    close $logch
+}
+#
+putlog "----------------------------------------"
+putlog "Starting autodispatch:\
+        [clock format [clock seconds]]"
+
 # Lock current directory with Dispatch_PID.  Exit if
 # directory already locked.
 #
 if { [dispatch_lock] == "no" } {
-    puts "Could not create Dispatch_PID: exiting"
+    putlog "Could not create Dispatch_PID: exiting"
     exit 0
 }
 
@@ -157,7 +173,9 @@ if { [dispatch_lock] == "no" } {
 # in judging common code) to unlock current directory.
 #
 proc exit_cleanup {} {
+    global logch
     dispatch_unlock
+    close $logch
 }
 
 # If one of several files exists, exit without error.
@@ -169,7 +187,7 @@ if { $force_option == "no" } {
 }
 if { [llength [eval glob -nocomplain $patterns]] \
      != 0 } {
-    puts "Significant files aleady exist: exiting"
+    putlog "Significant files aleady exist: exiting"
     exit_cleanup
     exit 0
 }
@@ -193,11 +211,9 @@ if {  ! [catch { set s [lindex $message_subject 0] }] \
      && [llength $message_subject] >= 1 \
      && [info exists autodispatch_map($s)] } {
     set program $autodispatch_map($s)
-    puts "Executing $program"
+    putlog "Executing $program"
     catch { exec $autodispatch_map($s) } out
-    file delete -force -- $program.log
-    write_file $program.log $out
-    puts $out
+    putlog $out
 
 # Else if special error test request call error.
 #
@@ -208,8 +224,8 @@ if {  ! [catch { set s [lindex $message_subject 0] }] \
 # Else if `auto' reply_mode, reply.
 #
 } elseif { $reply_mode == "auto" } {
-    puts "Sending reply as no program is available to\
-          call."
+    putlog "Sending reply as no program is available to\
+            call."
     if { $reply_manager != "" } {
 	reply -cc \
 	      { LINE "This message cannot be properly\
@@ -248,8 +264,8 @@ if {  ! [catch { set s [lindex $message_subject 0] }] \
 # then this other program will schedule manual action.
 #
 } else {
-    puts "Setting Needs_Reply_Flag as no program is\
-          available to call."
+    putlog "Setting Needs_Reply_Flag as no program is\
+            available to call."
     set_flag Needs_Reply_Flag
 }
 
@@ -259,4 +275,6 @@ exit 0
 # Include common error catching code:
 #
 } caught_output
+putlog "ERROR caught: exiting"
+putlog $caught_output
 caught_error
