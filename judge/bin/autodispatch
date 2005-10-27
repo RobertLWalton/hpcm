@@ -5,7 +5,7 @@
 #
 # File:		autodispatch
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Oct  1 15:24:43 EDT 2005
+# Date:		Thu Oct 27 10:23:35 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/10/01 19:21:05 $
+#   $Date: 2005/10/27 14:59:00 $
 #   $RCSfile: autodispatch,v $
-#   $Revision: 1.20 $
+#   $Revision: 1.21 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -42,6 +42,7 @@ set my_argv $argv
 if { $my_argc >= 1 \
      && ! [regexp {^-} [lindex $my_argv 0]] } {
     cd [lindex $my_argv 0]
+    puts "Changed directory to [lindex $my_argv 0]"
     set my_argv [lrange $my_argv 1 end]
     incr my_argc -1
 }
@@ -65,8 +66,8 @@ autodispatch \[directory\] \[-force\]
     If this file already exists, this program exits
     without error or output.
 
-    When this program exits, it deletes the Dispatch_PID
-    file.
+    When this program exits, it deletes any Dispatch_PID
+    file it created.
 
     This program then exits without error or output if
     any of the files:
@@ -99,6 +100,11 @@ autodispatch \[directory\] \[-force\]
     element is defined.  Otherwise, no program is call-
     ed.
 
+    If a program XXX (e.g. autojudge) is called, the
+    combination of the standard output and standard
+    error from the program is written to the XXX.log
+    file.
+
     If no program is called and if the reply mode is
     `auto', this program will compose a reply.  If the
     `reply_manager' variable is NOT \"\", the reply is
@@ -116,9 +122,10 @@ autodispatch \[directory\] \[-force\]
     search for submission directories for which the man-
     ualreply program should be called.
 
-    Finally this program exits without error or output,
-    except for output produced by autojudge or other
-    called program."
+    Finally this program exits without error.
+
+    This program records what it is doing on the stand-
+    ard output."
 
 # Check for and consume -force option.
 #
@@ -142,6 +149,7 @@ if { $my_argc != 0 } {
 # directory already locked.
 #
 if { [dispatch_lock] == "no" } {
+    puts "Could not create Dispatch_PID: exiting"
     exit 0
 }
 
@@ -161,6 +169,7 @@ if { $force_option == "no" } {
 }
 if { [llength [eval glob -nocomplain $patterns]] \
      != 0 } {
+    puts "Significant files aleady exist: exiting"
     exit_cleanup
     exit 0
 }
@@ -183,7 +192,12 @@ if { [header_is_authentic] == "no" } {
 if {  ! [catch { set s [lindex $message_subject 0] }] \
      && [llength $message_subject] >= 1 \
      && [info exists autodispatch_map($s)] } {
-    exec $autodispatch_map($s) >@ stdout 2>@ stderr
+    set program $autodispatch_map($s)
+    puts "Executing $program"
+    catch { exec $autodispatch_map($s) } out
+    file delete -force -- $program.log
+    write_file $program.log $out
+    puts $out
 
 # Else if special error test request call error.
 #
@@ -194,6 +208,8 @@ if {  ! [catch { set s [lindex $message_subject 0] }] \
 # Else if `auto' reply_mode, reply.
 #
 } elseif { $reply_mode == "auto" } {
+    puts "Sending reply as no program is available to\
+          call."
     if { $reply_manager != "" } {
 	reply -cc \
 	      { LINE "This message cannot be properly\
@@ -232,6 +248,8 @@ if {  ! [catch { set s [lindex $message_subject 0] }] \
 # then this other program will schedule manual action.
 #
 } else {
+    puts "Setting Needs_Reply_Flag as no program is\
+          available to call."
     set_flag Needs_Reply_Flag
 }
 
