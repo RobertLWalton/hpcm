@@ -5,7 +5,7 @@
 #
 # File:		autodispatch
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Oct 27 11:27:30 EDT 2005
+# Date:		Fri Oct 28 15:02:53 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/10/27 15:31:12 $
+#   $Date: 2005/10/28 19:01:58 $
 #   $RCSfile: autodispatch,v $
-#   $Revision: 1.23 $
+#   $Revision: 1.24 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -84,7 +84,7 @@ autodispatch \[directory\] \[-force\]
     equals `yes', this program next authenticates the
     mail in Received_Mail file.  If the mail is NOT
     authentic, this program produces an error log file
-    and exits without error code or output.
+    and exits.
 
     Next this program inspects the `Subject' line in the
     current directory's Received_Mail file and based on
@@ -140,6 +140,33 @@ if { $my_argc != 0 } {
     exit 1
 }
 
+# Lock current directory with Dispatch_PID.  Exit if
+# directory already locked.
+#
+if { [dispatch_lock] == "no" } {
+    exit 0
+}
+
+# Set exit_cleanup function (called before all exits
+# in judging common code) to unlock current directory.
+#
+proc exit_cleanup {} {
+    dispatch_unlock
+}
+
+# If one of several files exists, exit without error.
+#
+set patterns [list Reply_Mail No_Reply \
+		   *-<<*>>-unchecked-error ]
+if { $force_option == "no" } {
+    lappend patterns *-<<*>>-checked-error
+}
+if { [llength [eval glob -nocomplain $patterns]] \
+     != 0 } {
+    exit_cleanup
+    exit 0
+}
+
 # Open autodispatch.log file.
 #
 set logch [open autodispatch.log a]
@@ -155,42 +182,12 @@ proc putlog { message } {
 proc exit_cleanup {} {
     global logch
     close $logch
+    dispatch_unlock
 }
 #
 putlog "----------------------------------------"
 putlog "Starting autodispatch:\
         [clock format [clock seconds]]"
-
-# Lock current directory with Dispatch_PID.  Exit if
-# directory already locked.
-#
-if { [dispatch_lock] == "no" } {
-    putlog "Could not create Dispatch_PID: exiting"
-    exit 0
-}
-
-# Set exit_cleanup function (called before all exits
-# in judging common code) to unlock current directory.
-#
-proc exit_cleanup {} {
-    global logch
-    dispatch_unlock
-    close $logch
-}
-
-# If one of several files exists, exit without error.
-#
-set patterns [list Reply_Mail No_Reply \
-		   *-<<*>>-unchecked-error ]
-if { $force_option == "no" } {
-    lappend patterns *-<<*>>-checked-error
-}
-if { [llength [eval glob -nocomplain $patterns]] \
-     != 0 } {
-    putlog "Significant files aleady exist: exiting"
-    exit_cleanup
-    exit 0
-}
 
 # Read header.
 #
