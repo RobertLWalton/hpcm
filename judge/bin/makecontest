@@ -6,7 +6,7 @@
 #
 # File:		makejudgingdir
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Oct  6 12:27:36 EDT 2005
+# Date:		Sat Oct 29 10:08:12 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/10/06 16:49:05 $
+#   $Date: 2005/10/29 18:32:54 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.100 $
+#   $Revision: 1.101 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -37,6 +37,34 @@ catch {
 #
 set j_d $judging_directory
 set c_d $j_d/contest
+
+# Function to include lists in documentation with given
+# indent and maximum length of 56 columns.
+#
+proc indent_list { indent list } {
+    set column $indent
+    set out ""
+    foreach item $list {
+        set len [string length $item]
+        if {    $column != $indent \
+	     && $column + $len + 1 > 56 } {
+	    set out "$out\n"
+	    set column 0
+	    while { $column < $indent } {
+	        set out "$out "
+		incr column
+	    }
+	}
+	if { $column == $indent } {
+	    set out "$out$item"
+	} else {
+	    set out "$out $item"
+	    incr column
+	}
+	incr column $len
+    }
+    return $out
+}
 
 set document "
 makejudgingdir option ... index_specification ...
@@ -315,41 +343,19 @@ makejudgingdir option ... index_specification ...
 		  item name after substitutions begins
 		  with `demos/' or `problems/'.
 
-      all	  If the `include' item option is pre-
-      		  sent and this item names a directory,
-                  include all readable files from this
-		  item directory in ./info or ./contest.
-		  Files are included from subdirectories
-		  recursively, except that subdirector-
-		  ies whose last component name is list-
-		  ed in the `directories_not_copied'
-		  global variable (e.g., `CVS' or `RCS')
-		  are ignored when copying to ./contest
-		  subdirectories.
-
-		  Otherwise, if the item does not have
-		  an `all' option and is a directory
-		  whose PROBLEM.rc file does not define
-		  the global variables:
-
-		  	problem_source_files
-			problem_descrition_files
-
-		  then only the Makefile and problem
-		  description files in the item direc-
-		  tory will be included, with the prob-
-		  lem description files being included
-		  always for ./info subdirectories, but
-		  only if the `-description' program
-		  option is given to `makejudgingdir'
-		  for ./contest subdirectories.  But
-		  if PROBLEM.rc defines problem_source_
-		  files, that TCL list replaces
-		  Makefile, and if PROBLEM.rc defines
-		  problem_description_files, that TCL
-		  list replaces the automatically
-		  determined list of description files
-		  (see below for details).
+      all	  This changes the default definition
+      		  of the source files included into
+		  ./info or ./contest in the case where
+		  this item names a directory.  In the
+		  absence of the `all' option, the only
+		  default source file is `Makefile'.  In
+		  the presence of `all', all files in
+		  the directory and its subdirectories
+		  are source files, unless they are
+		  excluded by the excluded_source_files
+		  global variable, or unless they are
+		  description files.  See below for
+		  details.
 
       ...	  Other options may be given that are
       		  passed to the PROBLEM.rc file: see
@@ -441,14 +447,14 @@ makejudgingdir option ... index_specification ...
     substitution is NOT subject to further substitu-
     tions.
 
-    When an index item names a problem or demo directory
-    and the `all' option is not given, it is necessary
-    to determine the problem (or demo) source and de-
-    scription files.  In this case the directory is in-
-    spected for a file named `PROBLEM.rc', and that
-    file is sourced into a local procedure (so it will
-    not define global variables).  The PROBLEM.rc file
-    may reference the variables
+    When an index item names a problem or demo direc-
+    tory, it is necessary to determine the problem (or
+    demo) source and description files.  In this case
+    the directory is inspected for a file named
+    `PROBLEM.rc', and if it exists that file is sourced
+    into a local procedure (so it will not define global
+    variables).  The PROBLEM.rc file may reference the
+    variables
 
     	PROBLEM		Name of problem.
 	EXTENSION	Equals \"UNDEFINED\"
@@ -458,16 +464,35 @@ makejudgingdir option ... index_specification ...
    The PROBLEM.rc file may define the following vari-
    ables:
 
-   	problem_source_files
 	problem_description_files
+   	problem_source_files
+   	problem_excluded_files
 
-    The default value of problem_source_files is just
-    `Makefile'.  The default for problem_description_
-    files is just all the problem files whose exten-
-    sions are listed in the `problem_description_
-    extensions' global variable that defaults to:
+    The values of these variables are TCL lists of
+    regular expressions.  Default values are provided
+    for these variables by hpcm_judging.rc, and these
+    in turn default as follows:
 
-    	$problem_description_extensions
+	problem_description_files:
+	    [indent_list 12 $problem_description_files]
+   	problem_source_files:
+	    [indent_list 12 $problem_source_files]
+   	problem_excluded_files:
+	    [indent_list 12 $problem_excluded_files]
+
+    The description and source file lists are lists of
+    description or source file names relative to the
+    index item directory.  To be listed a file must have
+    a name whose LAST component matches a regular ex-
+    pression in the problem_description_files or pro-
+    blem_source_files global variable values, and NOT
+    have ANY name component that matches a regular
+    expression in problem_excluded_files.  The `all'
+    option in a index item changes the problem_source_
+    files value to {.*} which includes all files.  If
+    a file would be in both the description and file
+    lists, it is deleted from the source list, so it is
+    in only the description file list.
 
     By convention, a problem or demo source file that
     has the extension `.ISF' is intended as the initial
@@ -1010,13 +1035,85 @@ proc recursive_file_copy { source destination } {
 proc read_rc_file { file problem options } {
     global PROBLEM EXTENSION OPTIONS \
            problem_source_files \
-	   problem_description_files
+	   problem_description_files \
+	   problem_excluded_files
     set PROBLEM $problem
     set EXTENSION UNDEFINED
     set OPTIONS $options
-    catch { unset problem_source_files }
-    catch { unset problem_description_files }
     source_file $file
+}
+# Subfunction that returns true if item matches any
+# regexp in a list of regexps.
+#
+proc index_match { item regexps } {
+    foreach regexp $regexps {
+        if { [regexp "^($regexp)\$" $item] } {
+	    return 1
+	}
+    }
+    return 0
+}
+#
+# Subfunction to compute {description,source}_files.
+# Directory names end in / or are empty.
+#
+proc index_find \
+	{ dir subdir description_files_name \
+	             source_files_name } {
+
+    upvar $description_files_name description_files
+    upvar $source_files_name source_files
+
+    foreach name [glob -directory $dir$subdir \
+	               -nocomplain -- *] {
+
+	if { [index_match $name \
+	                    $problem_excluded_files] } \
+	    continue
+	    
+        if { [file isdirectory $dir$subdir$name] } {
+	    index_find $dir $subdir$name/ \
+	    		       description_files \
+			       source_files
+	} elseif { [file exists $dir$subdir$name] } {
+	    if { [index_match \
+	              $name \
+		      $problem_description_files] } {
+	        lappend description_files $subdir$name
+	    } elseif { [index_match \
+			    $name \
+			    $problem_source_files] \
+		     } {
+	        lappend source_files $subdir$name
+	    }
+	}
+    }
+}
+#
+# Subfunction to grant access to a file and the
+# subdirectories of a directory that contain it.
+#
+proc index_grant { dir file } {
+    while { $file != "" && $file != "." } {
+        grant_access $dir/$file
+	set file [file dirname $file]
+    }
+}
+#
+# Subfunction to copy list of files from a source
+# directory to a target directory, making target
+# subdirectories as necessary.
+#
+proc index_copy { source dest files link } {
+    foreach file $files {
+	mkdir [file dirname $dest/$file]
+	if { $link } {
+	    link_file $source/$file $dest/$file
+	} else {
+	    copy_file $source/$file $dest/$file
+	    index_grant $dest $file
+	}
+    }
 }
 #
 proc process_index_specification {} {
@@ -1027,11 +1124,20 @@ proc process_index_specification {} {
            info_option solutions_option \
 	   problems_option demos_option \
 	   help_option description_option \
-           j_d c_d problem_description_extensions \
+           j_d c_d \
 	   problem_source_files \
-	   problem_description_files
+	   problem_description_files \
+	   problem_excluded_files \
 
-    set pdexts $problem_description_extensions
+    # Save hpcm_judging.rc defined values of global
+    # variables reset by PROBLEM.rc file.
+    #
+    set default_source_files \
+        $problem_source_files
+    set default_description_files \
+        $problem_description_files
+    set default_excluded_files \
+        $problem_excluded_files
 
     # Be sure index directory is absolute name, else
     # symbolic links will fail.
@@ -1188,61 +1294,28 @@ proc process_index_specification {} {
 		set ${targetdir}_index_written yes
 
 		# Compute source and description files
-		# if no `all' option.
+		# if $source is a directory.
 		#
-		set all_option [lcontain $options all]
-		if { ! $all_option } {
+		if { [file isdirectory $source] } {
 
-		    # Compute selected files.
+		    # Compute needed global variables.
 		    #
+		    set problem_description_files \
+		        $default_description_files
+		    set problem_source_files \
+		        $default_source_files
+		    set problem_excluded_files \
+		        $default_excluded_files
 		    read_rc_file \
 		        $source/$targettail.rc \
 			$targettail $options
-
-		    if { [info exists \
-		               problem_source_files] } {
-			set source_files \
-			    $problem_source_files
-		    } else {
-		        set source_files ""
-			lappend source_files Makefile
-			foreach file \
-			  [glob -nocomplain \
-			        $source/*.ISF] {
-			    lappend source_files \
-			    	    [file tail $file]
-			}
+		    if { [lcontain $options all] } {
+		        set problem_source_files {.*}
 		    }
-
-		    if { [info exists \
-			   problem_description_files] \
-		       } {
-			set description_files \
-			    $problem_description_files
-		    } else {
-		        set description_files ""
-			foreach file \
-				[glob -nocomplain \
-				      $source/*] {
-			    set ext \
-			        [file extension $file]
-			    if { [lcontain $pdexts \
-			    		   $ext] } {
-			        lappend \
-				  description_files \
-				  [file tail $file]
-			    }
-			}
-		    }
-
-		    set both \
-		        [intersect $source_files \
-			           $description_files]
-		    if { [llength $both] != 0 } {
-		        error "Some files are both\
-			       source and description:\
-			       $both"
-		    }
+		    set source_files {}
+		    set description_files {}
+		    index_find $source/ "" \
+		        source_files desciption_files
 		}
 
 		# Process info option.
@@ -1252,21 +1325,19 @@ proc process_index_specification {} {
 		    set destination \
 		    	$j_d/info+/$target
 
-		    if { $all_option \
-			 || [file isfile $source] } {
+		    if { [file isfile $source] } {
 			file mkdir \
 			     [file dirname $destination]
 			link_file $source $destination
 		    } elseif { [file isdirectory \
 		    		     $source] } {
 			file mkdir $destination
-			foreach file \
-				[concat \
-				   $source_files \
-				   $description_files] {
-			    link_file $source/$file \
-				      $destination/$file
-			}
+			index_copy \
+			    $source $destination \
+			    [concat \
+			       $source_files \
+			       $description_files] \
+			    1
 		    } else {
 		        error "Source `$source' is\
 			       neither a file nor a\
@@ -1278,34 +1349,32 @@ proc process_index_specification {} {
 		#
 		if { [set ${targetdir}_option] } {
 
-		    set dest "$targetdir+/$targettail"
-		    set dest "$c_d/$dest"
+		    set dest "$c_d/$targetdir+"
+		    set dest "$dest/$targettail"
 		    if { [file isfile $source] } {
 			file mkdir \
 			     [file dirname $dest]
 			copy_file $source $dest
+			index_grant $c_d/$targetdir+ \
+				    $targettail/$file
 		    } elseif { [file isdirectory \
 		    		     $source] } {
 			file mkdir $dest
+			index_grant $c_d/$targetdir+ \
+				    $targettail
 			
-			if { $all_option } {
-			    recursive_file_copy \
-				$source $dest
-			} else {
-			    set files $source_files
-			    if { $description_option } {
-			        set \
-				  files \
-				  [concat \
-				     $files \
-				     $description_files]
-			    }
-			    foreach file $files {
-				copy_file \
-				     $source/$file \
-				     $dest/$file
-				grant_access $dest/$file
-			    }
+			set files $source_files
+			if { $description_option } {
+			    set \
+			      files \
+			      [concat \
+				 $files \
+				 $description_files]
+			}
+			foreach file $files {
+			    copy_file $source/$file \
+				      $dest/$file
+			    index_grant $dest $file
 			}
 		    } else {
 		        error "Source `$source' is\

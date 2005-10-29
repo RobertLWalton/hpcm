@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Oct  4 20:11:56 EDT 2005
+# Date:		Sat Oct 29 11:51:18 EDT 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/10/05 00:17:10 $
+#   $Date: 2005/10/29 18:32:54 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.163 $
+#   $Revision: 1.164 $
 
 # Table of Contents:
 #
@@ -27,7 +27,6 @@
 #	Logging Parameters
 #	Info Parameters
 #	Display Parameters
-#	Maintenance Parameters
 #	Functions that Call the Operating System
 
 # About This File
@@ -74,6 +73,11 @@
 #	PROBLEM		Problem name: "PPP".
 #	EXTENSION	Extension name including `.'
 #			E.g., ".cc", ".java".
+#			May be set to "UNDEFINED' when
+#			makejudgingdir is running to
+#			create a contest.
+#	OPTIONS		Set to index item options when
+#			EXTENSION is "UNDEFINED".
 #
 # Here the `Subject:' field of the submission was
 # `submit $PROBLEM$EXTENSION'.  EXTENSION may be "".
@@ -118,33 +122,47 @@
 #
 #   problem_description_files
 #
-#	A list of the .txt, .ps, ... files in the pro-
-#	blem directory that describe the problem to the
-#	contestant.
+#	A list of regular expressions, such that any
+#	file whose last name component matches ANY of
+#	these expressions is a problem description file,
+#	unless one of the name components matches SOME
+#	regular expression from problem_excluded_files.
 #
-#	By default this is set to the list of all the
-#	files that exist in the problem directory whose
-#	names have the form PROBLEM.TTT, where TTT is an
-#	extension found in the problem_description_
-#	extensions global variable.  E.g., TTT may be
-#	".ps" or ".pdf" or ".txt".
+#	Hpcm_judging.rc provides a default value for
+#	this.
 #
 #   problem_source_files
 #
-#	A list of files that are sent to the contestant
-#	as source files, NOT including the problem
-#	description files.
+#	A list of regular expressions, such that any
+#	file whose last name component matches ANY of
+#	these expressions is a problem source file,
+#	unless one of the name components matches SOME
+#	regular expression from problem_excluded_files,
+#	and unless it is a problem description file.
 #
-#	If any of these files have a name of the form
-#	xxx.ISF, they will be sent to the contestant (by
-#	autoget and hpcm_extract) under the name xxx.
-#	ISF stands for `Initial Source File', and de-
-#	notes an initial version of a file the contes-
+#	Hpcm_judging.rc provides a default value for
+#	this.
+#
+#	Note that if the `all' option is given for an
+#	index item, this is changed to {.*} so it
+#	matches all files.
+#
+#	Note that if any source file has a name of the
+#	form xxx.ISF, it will be sent to the contestant
+#	(by autoinfo and hpcm_extract) under the name
+#	xxx.  ISF stands for `Initial Source File', and
+#	denotes an initial version of a file the contes-
 #	tant will modify and submit.
 #
-#	The default list includes the Makefile file
-#	and any file existing in the problem directory
-#	that has extension .ISF.
+#   problem_excluded_files
+#
+#	A list of regular expressions, such that any
+#	file ANY of whose name components matches ANY of
+#	these expressions is NOT a problem source file
+#	or problem description file.
+#
+#	Hpcm_judging.rc provides a default value for
+#	this.
 #
 #   problem_required_files
 #
@@ -327,6 +345,18 @@
 #	specify this order, as the default value usually
 #	suffices if this order does not matter.  The
 #	default list is sorted alphanumerically.
+
+# Default values for some variables described above.
+# Note when list is scanned \'s are consumed so they
+# must be doubled.
+#
+set problem_description_files \
+    {.*\\.txt .*\\.html .*\\.htm .*\\.ps .*\\.pdf}
+set problem_source_files \
+    {Makefile .*\\.ISF}
+set problem_excluded_files \
+    {CVS RCS .*\\.rc .*\\.jin .*\\.jout .*\\.jtest
+     .*\\.fout .*\\.ftest .*\\.jfout .*\\.jftest}
 
 # Scoreboard Parameters
 # ---------- ----------
@@ -1907,24 +1937,6 @@ set dispatch_too_old 120
 #
 set highlight_on  "\x1b\[7m"
 set highlight_off "\x1b\[0m"
-
-
-# Maintenance Parameters
-# ----------- ----------
-
-# Default list of problem description file extensions:
-#
-set problem_description_extensions \
-    {.txt .html .htm .ps .pdf}
-
-# List of last component names of subdirectories that
-# are NOT to be recursively copied into ./contest sub-
-# directories by makejudgingdir given a directory item
-# `all' option.
-#
-set directories_not_copied {CVS RCS}
-
-
 
 # Functions that Call the Operating System
 # --------- ---- ---- --- --------- ------
