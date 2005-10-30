@@ -2,7 +2,7 @@
 #
 # File:		Makefile.mk
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Oct 15 15:45:03 EDT 2005
+# Date:		Sun Oct 30 12:47:33 EST 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/10/15 19:39:13 $
+#   $Date: 2005/10/30 17:50:46 $
 #   $RCSfile: Makefile.mk,v $
-#   $Revision: 1.32 $
+#   $Revision: 1.33 $
 
 extract_replies:	mbox
 	rm -rf replies
@@ -38,6 +38,8 @@ diff_replies:
 	    "*Date:" "*From:" "*To:" "*Reply-To:" \
 	    "*Cc:" "*Received:" "*Return-Path:" \
 	    "*Status:" "*Message-ID:" \
+	    "X-HPCM-Date:" "X-HPCM-Reply-To:" \
+	    "X-HPCM-Signature:" \
 	    '[ \t]*\$$Author'$$e \
 	    '[ \t]*\$$Date'$$e \
 	    '[ \t]*\$$RCSfile'$$e \
