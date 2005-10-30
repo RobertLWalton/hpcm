@@ -6,7 +6,7 @@
 #
 # File:		makejudgingdir
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Oct 30 11:25:08 EST 2005
+# Date:		Sun Oct 30 11:42:05 EST 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/10/30 16:29:25 $
+#   $Date: 2005/10/30 16:58:54 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.106 $
+#   $Revision: 1.107 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -196,17 +196,14 @@ makejudgingdir option ... index_specification ...
     ignored, as if it did not exist.
 
     When an item is included in the ./info directory,
-    a symbolic link is made to the item if it has the
-    item `all' option, or if it is a file.  If it is
-    a directory with no `all' option, a new directory
+    a symbolic link is made to the item if it is a
+    file.  If it is a directory, a new directory
     is created containing a symbolic link to any problem
     source and description files in the directory.  The
     exact definitions of problem source and description
-    files are given below, but by default, Makefile is
-    the only source file, and files such as *.txt files
-    files are description files.  Problem description
-    file links are included within the ./info directory
-    even if no -description program option is given.
+    files are given below.  Problem description file
+    links are included within the ./info directory even
+    if no -description program option is given.
 
     When an item is included in the ./contest directory
     (i.e., in ./contest/demos, ./contest/problems, or
@@ -478,25 +475,31 @@ makejudgingdir option ... index_specification ...
     pression in the problem_description_files or pro-
     blem_source_files global variable values, and NOT
     have ANY name component that matches a regular
-    expression in problem_excluded_files.  The `all'
-    option in a index item changes the problem_source_
-    files value to {.*} which includes all files.  If
-    a file would be in both the description and file
-    lists, it is deleted from the source list, so it is
-    in only the description file list.
-
+    expression in problem_excluded_files.  If a file
+    would be in both the description and file lists, it
+    is deleted from the source list, so it is in only
+    the description file list.
+    
     The difference between source and description files
     is that source files are always copied into
     ./contest/{problems,demos,help}, whereas description
     files are copied only if the -description option is
     given to makejudgingdir.
+    
+    The `all' option in an index item changes the
+    problem_source_files value to {.*} and the problem_
+    description_files value to {}.  This effectively
+    eliminates the effect these two global variables and
+    includes all files not excluded by the problem_
+    excluded_files global variable, regardless of the
+    setting of the -description option.
 
     The name `PROBLEM.rc' is something of a misnomer for
     help files.  In this case `PROBLEM' is merely the
     last component of the index item directory name.  It
     is very rare for a help file directory to need a .rc
     file.
-
+
     By convention, a problem or demo source file that
     has the extension `.ISF' is intended as the initial
     version of a writable contestant file that the con-
@@ -508,7 +511,7 @@ makejudgingdir option ... index_specification ...
     named `foo.c' that will be submitted (by the con-
     testant executing `make submit').  `.ISF' stands for
     `initial submittable file'.
-
+
     This current program does nothing special with files
     having the `.ISF' extension.  It is the `hpcm_get'
     and `hpcm_extract' programs that automatically copy
@@ -525,7 +528,7 @@ makejudgingdir option ... index_specification ...
 	./help			directory
 	./help/index		file
 	./help/this_contest	file
-
+
     Note these are in the judging directory proper, and
     not in the ./info or ./contest subdirectories.  The
     ./help/index file is an INPUT index file that con-
@@ -542,7 +545,7 @@ makejudgingdir option ... index_specification ...
     copy of the file named hpcm/contestant/help/ccc/ccc_
     this_contest_prototype, where ccc is the contest
     type (email, informal, or formal).
-
+
     If used, the ./help/index file should be the refer-
     enced by the first index specification given to this
     program.  It contains a header entry designed to
@@ -562,7 +565,7 @@ makejudgingdir option ... index_specification ...
     The -help2 program option creates the ./contest/
     help2 directory if it does not exist.  It is simply
     linked to the ./contest/help directory.
-
+
     Note that the contestant's `help' command searches
     ./contest/help1, ./contest/help2, ./contest/help3,
     and ./contest/help4 in order for help files.  Thus
@@ -579,7 +582,7 @@ makejudgingdir option ... index_specification ...
 	./contest/secure		    directory
 	./contest/secure/hpcm_sendmail.rc   file
 	./contest/secure/passwords	    file
-
+
     If any of these are made their modes are set to
     go-rw.  If the ./contest/secure/passwords file is
     made, instructions for editing it are written to
@@ -602,7 +605,7 @@ makejudgingdir option ... index_specification ...
     indicate a line is not associated with an account,
     and the password `none' may be used to indicate the
     password is to be assigned by other means.
-
+
     The -secure program option also causes any existing
     ./contest/secure/passwords file to be inspected for
     lines with empty passwords.  If any are found,
@@ -612,7 +615,7 @@ makejudgingdir option ... index_specification ...
     being generated and to prevent the hpcm_set_
     passwords program from setting the password of the
     line's account.
-
+
     The -who_where program option makes the ./contest/
     who_where file if it does not exist, or updates it
     if it does exist and the ./contest/secure/passwords
@@ -640,14 +643,14 @@ makejudgingdir option ... index_specification ...
     `TRASH_ACCOUNT' program will not work if the account
     in which it is run is not named in the `trashable'
     file).
-
+
     The -printer program option makes the ./contest/
     printer file if that file does not exist, and writes
     a ./TODO to edit the file when it is made.  It also
     makes the ./contest/printer_jobs file if that does
     not exist when ./contest/printer is made, and writes
     a ./TODO to consider deleting this file.
-
+
     The -printer_map program option is similar to the
     -printer option but makes a ./contest/printer_map
     file instead of a ./contest/printer file.  Note that
@@ -1296,6 +1299,7 @@ proc process_index_specification {} {
 			$PROBLEM $options
 		    if { [lcontain $options all] } {
 		        set problem_source_files {.*}
+		        set problem_description_files {}
 		    }
 		    set source_files {}
 		    set description_files {}
