@@ -6,7 +6,7 @@
 #
 # File:		makejudgingdir
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Oct 29 10:08:12 EDT 2005
+# Date:		Sun Oct 30 03:39:55 EST 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/10/29 18:32:54 $
+#   $Date: 2005/10/30 09:08:18 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.101 $
+#   $Revision: 1.102 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -106,8 +106,8 @@ makejudgingdir option ... index_specification ...
     -bin	Make ./contest/bin
     -secure	Make ./contest/secure/passwords,
 		     ./contest/secure/hpcm_sendmail.rc
-    -who_where  Make ./contest/who_where
 
+    -who_where  Make ./contest/who_where
     -trashable  Make ./contest/trashable
     -printer    Make ./contest/printer and
     		     ./contest/printer_jobs
@@ -343,24 +343,18 @@ makejudgingdir option ... index_specification ...
 		  item name after substitutions begins
 		  with `demos/' or `problems/'.
 
-      all	  This changes the default definition
-      		  of the source files included into
-		  ./info or ./contest in the case where
-		  this item names a directory.  In the
-		  absence of the `all' option, the only
-		  default source file is `Makefile'.  In
-		  the presence of `all', all files in
-		  the directory and its subdirectories
-		  are source files, unless they are
-		  excluded by the excluded_source_files
-		  global variable, or unless they are
-		  description files.  See below for
-		  details.
+      all	  This changes the definition of the
+      		  global variable problem_source_files
+		  to {.*}, which means that all files
+		  not excluded by the global variable
+		  problem_excluded_files will be
+		  source or description files.  See
+		  below for details.
 
       ...	  Other options may be given that are
       		  passed to the PROBLEM.rc file: see
 		  below for details.
-
+
     The `include' option is rarely encoded directly in
     the index files.  Instead options categorizing the
     entries are made up by the author of an index file
@@ -382,7 +376,7 @@ makejudgingdir option ... index_specification ...
     files, and not on options that are the result of
     substitution.  After substitutions are done, unknown
     options are ignored.
-
+
     If an item has the `include' option after option
     substitutions, the item entry is included in an out-
     put index within the ./info directory.   The indices
@@ -396,7 +390,7 @@ makejudgingdir option ... index_specification ...
 
     There is a similar inclusion for the ./contest dir-
     ectory.
-
+
     When an item entry is included in an output index,
     the header entry preceding it is included if it is
     separated from the item entry only by item entries
@@ -414,7 +408,7 @@ makejudgingdir option ... index_specification ...
     ./contest/problems, or ./contest/help directories
     from being created, but program options never affect
     the content of any output indices that are created.
-
+
     The name of an item is a modification of the name
     of the item as it appears in the input index file
     item entry.  The modification results from substitu-
@@ -434,7 +428,7 @@ makejudgingdir option ... index_specification ...
 	          public/shelf/=problems/old/
 
     then
-
+
       public/foo2	   becomes    problems/foo2
       public/shelf/foo1    becomes    problems/old/foo1
 
@@ -446,15 +440,16 @@ makejudgingdir option ... index_specification ...
     Substitutions are not recursive: the result of a
     substitution is NOT subject to further substitu-
     tions.
-
+
     When an index item names a problem or demo direc-
     tory, it is necessary to determine the problem (or
     demo) source and description files.  In this case
     the directory is inspected for a file named
     `PROBLEM.rc', and if it exists that file is sourced
     into a local procedure (so it will not define global
-    variables).  The PROBLEM.rc file may reference the
-    variables
+    variables other than those needed by makejudging-
+    dir).  The PROBLEM.rc file may reference the vari-
+    ables
 
     	PROBLEM		Name of problem.
 	EXTENSION	Equals \"UNDEFINED\"
@@ -479,7 +474,7 @@ makejudgingdir option ... index_specification ...
 	    [indent_list 12 $problem_source_files]
    	problem_excluded_files:
 	    [indent_list 12 $problem_excluded_files]
-
+
     The description and source file lists are lists of
     description or source file names relative to the
     index item directory.  To be listed a file must have
@@ -493,7 +488,7 @@ makejudgingdir option ... index_specification ...
     a file would be in both the description and file
     lists, it is deleted from the source list, so it is
     in only the description file list.
-
+
     By convention, a problem or demo source file that
     has the extension `.ISF' is intended as the initial
     version of a writable contestant file that the con-
@@ -515,14 +510,14 @@ makejudgingdir option ... index_specification ...
     We proceed to describe the program options not di-
     rectly involved with making ./info, ./contest/help,
     ./contest/problems, or ./contest/demos.
-
+
     The -this_contest program option creates the follow-
     ing if they do not exist:
 
 	./help			directory
 	./help/index		file
 	./help/this_contest	file
-
+
     Note these are in the judging directory proper, and
     not in the ./info or ./contest subdirectories.  The
     ./help/index file is an INPUT index file that con-
@@ -555,11 +550,11 @@ makejudgingdir option ... index_specification ...
     the JAVA interpreter turns relative file names into
     absolute file names, requiring `a+x' permissions
     in the path from the root to the object file.
-
+
     The -help2 program option creates the ./contest/
     help2 directory if it does not exist.  It is simply
     linked to the ./contest/help directory.
-
+
     Note that the contestant's `help' command searches
     ./contest/help1, ./contest/help2, ./contest/help3,
     and ./contest/help4 in order for help files.  Thus
@@ -589,7 +584,7 @@ makejudgingdir option ... index_specification ...
     lines of the form
 
     	account:password:who:c-email:t-email:comment
-
+
     Here `account' is a the login name of the contes-
     tant, `who' is a description of who the contestant
     is, and the `c-email' and `t-email' fields are the
@@ -599,7 +594,7 @@ makejudgingdir option ... index_specification ...
     indicate a line is not associated with an account,
     and the password `none' may be used to indicate the
     password is to be assigned by other means.
-
+
     The -secure program option also causes any existing
     ./contest/secure/passwords file to be inspected for
     lines with empty passwords.  If any are found,
@@ -622,7 +617,7 @@ makejudgingdir option ... index_specification ...
     where' file that are not in the `passwords' file.
     Lines with account name `none' in the `passwords'
     file are not copied to the `who_where' file.
-
+
     The -trashable program option creates the ./contest/
     trashable file from the ./contest/secure/passwords
     file.  The `trashable' file is just a list of the
@@ -637,7 +632,7 @@ makejudgingdir option ... index_specification ...
     `TRASH_ACCOUNT' program will not work if the account
     in which it is run is not named in the `trashable'
     file).
-
+
     The -printer program option makes the ./contest/
     printer file if that file does not exist, and writes
     a ./TODO to edit the file when it is made.  It also
@@ -660,7 +655,7 @@ makejudgingdir option ... index_specification ...
 
     If anything is made in ./contest, a+x is set for
     that directory and its parent.
-
+
     Although we have used the names `./info', `./mail',
     `./contest', and `./help' in this description, the
     actual directories are the info, mail, contest,
@@ -1061,14 +1056,19 @@ proc index_find \
 	{ dir subdir description_files_name \
 	             source_files_name } {
 
+    global problem_description_files \
+    	   problem_source_files \
+    	   problem_excluded_files
+
     upvar $description_files_name description_files
     upvar $source_files_name source_files
 
     foreach name [glob -directory $dir$subdir \
 	               -nocomplain -- *] {
 
+	set name [file tail $name]
 	if { [index_match $name \
-	                    $problem_excluded_files] } \
+	                  $problem_excluded_files] } \
 	    continue
 	    
         if { [file isdirectory $dir$subdir$name] } {
@@ -1102,7 +1102,9 @@ proc index_grant { dir file } {
 #
 # Subfunction to copy list of files from a source
 # directory to a target directory, making target
-# subdirectories as necessary.
+# subdirectories as necessary.  If link is true,
+# link instead of copy.  If copying, use index_
+# grant to grant access to copy.
 #
 proc index_copy { source dest files link } {
     foreach file $files {
@@ -1127,7 +1129,7 @@ proc process_index_specification {} {
            j_d c_d \
 	   problem_source_files \
 	   problem_description_files \
-	   problem_excluded_files \
+	   problem_excluded_files
 
     # Save hpcm_judging.rc defined values of global
     # variables reset by PROBLEM.rc file.
@@ -1315,7 +1317,7 @@ proc process_index_specification {} {
 		    set source_files {}
 		    set description_files {}
 		    index_find $source/ "" \
-		        source_files desciption_files
+		        desciption_files source_files
 		}
 
 		# Process info option.
@@ -1349,33 +1351,29 @@ proc process_index_specification {} {
 		#
 		if { [set ${targetdir}_option] } {
 
-		    set dest "$c_d/$targetdir+"
-		    set dest "$dest/$targettail"
+		    set destination "$c_d/$targetdir+"
+		    set destination \
+		        "$destination/$targettail"
 		    if { [file isfile $source] } {
 			file mkdir \
-			     [file dirname $dest]
-			copy_file $source $dest
+			     [file dirname $destination]
+			copy_file $source $destination
 			index_grant $c_d/$targetdir+ \
 				    $targettail/$file
 		    } elseif { [file isdirectory \
 		    		     $source] } {
-			file mkdir $dest
+			file mkdir $destination
 			index_grant $c_d/$targetdir+ \
 				    $targettail
 			
 			set files $source_files
 			if { $description_option } {
-			    set \
-			      files \
-			      [concat \
-				 $files \
-				 $description_files]
+			    eval lappend files \
+			         $description_files
 			}
-			foreach file $files {
-			    copy_file $source/$file \
-				      $dest/$file
-			    index_grant $dest $file
-			}
+			index_copy \
+			    $source $destination \
+			    $files 0
 		    } else {
 		        error "Source `$source' is\
 			       neither a file nor a\
@@ -1453,6 +1451,16 @@ proc process_index_specification {} {
     }
 
     close $index_ch
+
+    # Restore hpcm_judging.rc defined values of global
+    # variables reset by PROBLEM.rc file.
+    #
+    set problem_source_files \
+        $default_source_files
+    set problem_description_files \
+        $default_description_files
+    set problem_excluded_files \
+        $default_excluded_files
 }
 
 # Set up info+, solutions+, problems+, demos+, and
