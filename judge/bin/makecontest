@@ -6,7 +6,7 @@
 #
 # File:		makejudgingdir
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Oct 30 03:39:55 EST 2005
+# Date:		Sun Oct 30 06:08:16 EST 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/10/30 09:08:18 $
+#   $Date: 2005/10/30 11:08:24 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.102 $
+#   $Revision: 1.103 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -94,7 +94,8 @@ makejudgingdir option ... index_specification ...
 		is given.
     -description     Include problem description (.txt,
     		.html, .ps, etc.) files in ./contest/
-		problems or ./contest/demos. 
+		problems, ./contest/demos, or ./contest/
+		help.
     -help	Make ./contest/help,
     		     ./contest/help/index,
     		     ./contest/help/problems,
@@ -104,9 +105,9 @@ makejudgingdir option ... index_specification ...
 		          ./help/this_contest
     -mail	Make ./mail
     -bin	Make ./contest/bin
+
     -secure	Make ./contest/secure/passwords,
 		     ./contest/secure/hpcm_sendmail.rc
-
     -who_where  Make ./contest/who_where
     -trashable  Make ./contest/trashable
     -printer    Make ./contest/printer and
@@ -218,16 +219,11 @@ makejudgingdir option ... index_specification ...
 
     which are left with the mode determined by the
     umask (presumably o-rx or og-rx).  The `startcon-
-    test' program sets the mode of these to a+rx.  For a
-    directory item with no `all' option, the item's pro-
-    blem source files are copied, and the item's problem
-    description files are copied if and only if the
-    -description option is given.  For directory items
-    with the `all' option, the directory is copied re-
-    cursively, except no subdirectories whose last com-
-    ponent name is listed in the `directories_not_cop-
-    ied' global variable (e.g., `CVS' or `RCS') are
-    copied.
+    test' program sets the mode of these to a+rx.  The
+    directory items copied are determined by the
+    problem_source_files, problem_description_files,
+    and problem_excluded_files global variables and the
+    `all' option in the index.  See below for details.
 
     If we consider the directory pairs:
 
@@ -239,13 +235,12 @@ makejudgingdir option ... index_specification ...
     are identical after symbolic links are followed,
     except that if there is no -description option,
     problem description files are generally copied into
-    ./info/demos and ./info/problems subdirectories but
-    not into ./contest /demos or ./contest/problems
-    subdirectories.  But if the -description option is
-    given, the UNIX `diff -r' command should report the
-    two directories in each of the above pairs to be
+    ./info subdirectories but not into ./contest subdir-
+    ectories.  But if the -description option is given,
+    the UNIX `diff -r' command should report the two
+    directories in each of the above pairs to be
     identical.
-
+
     Directory items may also be included in the
     ./solutions directory.  In this directory the item
     name after substitutions is stripped of any direc-
@@ -257,7 +252,7 @@ makejudgingdir option ... index_specification ...
     contest must have unique single component names
     (except for items with the `nosolution' item option:
     see below).
-
+
     If this program is building a ./info directory, it
     actually builds a ./info+ directory instead.  Then
     it does a `diff -r ./info ./info+', and checks the
@@ -276,7 +271,7 @@ makejudgingdir option ... index_specification ...
     A similar stratagem is followed for ./solutions,
     ./contest/problems, ./contest/demos, and .contest/
     help.
-
+
     The item entries and header entries are in input
     index files, each of which is referenced in a sep-
     arate index specification.  The format of an index
@@ -287,7 +282,7 @@ makejudgingdir option ... index_specification ...
     indicates the next argument is either a name sub-
     stitution or an option substitution (also see
     below).
-
+
     Each input index file is associated with an index
     directory.  An unedited version of the index file is
     normally found in its index directory.  Sometimes an
@@ -309,7 +304,7 @@ makejudgingdir option ... index_specification ...
     tory is given in an index specification, the direc-
     tory that contains the index file is used as the
     index directory.
-
+
     The index file consists of two types of entries:
     header entries and item entries.  Item entries begin
     with a line that starts with `***', followed by
@@ -325,7 +320,7 @@ makejudgingdir option ... index_specification ...
     the form:
 
     	*** item_name item_option ...
-
+
     The item name is the name of the item file or direc-
     tory relative to the index directory (the directory
     normally containing the unedited index file).  The
@@ -342,7 +337,7 @@ makejudgingdir option ... index_specification ...
                   ./solutions directory, even if the
 		  item name after substitutions begins
 		  with `demos/' or `problems/'.
-
+
       all	  This changes the definition of the
       		  global variable problem_source_files
 		  to {.*}, which means that all files
@@ -364,7 +359,7 @@ makejudgingdir option ... index_specification ...
     processed.  A substitution of the form:
 
     	option1s:'option11t option12t ...'
-
+
     in the index specification replaces option1s by the
     options in the list `option11t option12t ...'.
     As a special case, if `option1s' is `ALL', the
@@ -376,7 +371,7 @@ makejudgingdir option ... index_specification ...
     files, and not on options that are the result of
     substitution.  After substitutions are done, unknown
     options are ignored.
-
+
     If an item has the `include' option after option
     substitutions, the item entry is included in an out-
     put index within the ./info directory.   The indices
@@ -402,13 +397,13 @@ makejudgingdir option ... index_specification ...
     may end up being included in several output indices
     if the item entries following it are included in
     several different output indices.
-
+
     The program options -demos, -problems, and -help can
     be used by omission to prevent the ./contest/demos,
     ./contest/problems, or ./contest/help directories
     from being created, but program options never affect
     the content of any output indices that are created.
-
+
     The name of an item is a modification of the name
     of the item as it appears in the input index file
     item entry.  The modification results from substitu-
@@ -441,15 +436,16 @@ makejudgingdir option ... index_specification ...
     substitution is NOT subject to further substitu-
     tions.
 
-    When an index item names a problem or demo direc-
-    tory, it is necessary to determine the problem (or
-    demo) source and description files.  In this case
-    the directory is inspected for a file named
-    `PROBLEM.rc', and if it exists that file is sourced
-    into a local procedure (so it will not define global
-    variables other than those needed by makejudging-
-    dir).  The PROBLEM.rc file may reference the vari-
-    ables
+    When an index item names a problem, demo, or help
+    directory, it is necessary to determine the problem,
+    demo, or help source and description files.  In this
+    case the directory is inspected for a file named
+    `PROBLEM.rc', where `PROBLEM' is the last component
+    of the directory name.  If that file exists it is
+    sourced into a local procedure (so it will not
+    define global variables other than those needed by
+    makejudgingdir).  The PROBLEM.rc file may reference
+    the variables
 
     	PROBLEM		Name of problem.
 	EXTENSION	Equals \"UNDEFINED\"
@@ -489,6 +485,18 @@ makejudgingdir option ... index_specification ...
     lists, it is deleted from the source list, so it is
     in only the description file list.
 
+    The difference between source and description files
+    is that source files are always copied into
+    ./contest/{problems,demos,help}, whereas description
+    files are copied only if the -description option is
+    given to makejudgingdir.
+
+    The name `PROBLEM.rc' is something of a misnomer for
+    help files.  In this case `PROBLEM' is merely the
+    last component of the index item directory name.  It
+    is very rare for a help file directory to need a .rc
+    file.
+
     By convention, a problem or demo source file that
     has the extension `.ISF' is intended as the initial
     version of a writable contestant file that the con-
@@ -500,7 +508,7 @@ makejudgingdir option ... index_specification ...
     named `foo.c' that will be submitted (by the con-
     testant executing `make submit').  `.ISF' stands for
     `initial submittable file'.
-    
+
     This current program does nothing special with files
     having the `.ISF' extension.  It is the `hpcm_get'
     and `hpcm_extract' programs that automatically copy
@@ -510,7 +518,7 @@ makejudgingdir option ... index_specification ...
     We proceed to describe the program options not di-
     rectly involved with making ./info, ./contest/help,
     ./contest/problems, or ./contest/demos.
-
+
     The -this_contest program option creates the follow-
     ing if they do not exist:
 
@@ -534,7 +542,7 @@ makejudgingdir option ... index_specification ...
     copy of the file named hpcm/contestant/help/ccc/ccc_
     this_contest_prototype, where ccc is the contest
     type (email, informal, or formal).
-
+
     If used, the ./help/index file should be the refer-
     enced by the first index specification given to this
     program.  It contains a header entry designed to
@@ -550,7 +558,7 @@ makejudgingdir option ... index_specification ...
     the JAVA interpreter turns relative file names into
     absolute file names, requiring `a+x' permissions
     in the path from the root to the object file.
-
+
     The -help2 program option creates the ./contest/
     help2 directory if it does not exist.  It is simply
     linked to the ./contest/help directory.
@@ -571,7 +579,7 @@ makejudgingdir option ... index_specification ...
 	./contest/secure		    directory
 	./contest/secure/hpcm_sendmail.rc   file
 	./contest/secure/passwords	    file
-
+
     If any of these are made their modes are set to
     go-rw.  If the ./contest/secure/passwords file is
     made, instructions for editing it are written to
@@ -584,7 +592,7 @@ makejudgingdir option ... index_specification ...
     lines of the form
 
     	account:password:who:c-email:t-email:comment
-
+
     Here `account' is a the login name of the contes-
     tant, `who' is a description of who the contestant
     is, and the `c-email' and `t-email' fields are the
@@ -604,7 +612,7 @@ makejudgingdir option ... index_specification ...
     being generated and to prevent the hpcm_set_
     passwords program from setting the password of the
     line's account.
-
+
     The -who_where program option makes the ./contest/
     who_where file if it does not exist, or updates it
     if it does exist and the ./contest/secure/passwords
@@ -617,7 +625,7 @@ makejudgingdir option ... index_specification ...
     where' file that are not in the `passwords' file.
     Lines with account name `none' in the `passwords'
     file are not copied to the `who_where' file.
-
+
     The -trashable program option creates the ./contest/
     trashable file from the ./contest/secure/passwords
     file.  The `trashable' file is just a list of the
@@ -639,7 +647,7 @@ makejudgingdir option ... index_specification ...
     makes the ./contest/printer_jobs file if that does
     not exist when ./contest/printer is made, and writes
     a ./TODO to consider deleting this file.
-
+
     The -printer_map program option is similar to the
     -printer option but makes a ./contest/printer_map
     file instead of a ./contest/printer file.  Note that
@@ -655,7 +663,7 @@ makejudgingdir option ... index_specification ...
 
     If anything is made in ./contest, a+x is set for
     that directory and its parent.
-
+
     Although we have used the names `./info', `./mail',
     `./contest', and `./help' in this description, the
     actual directories are the info, mail, contest,
@@ -995,32 +1003,6 @@ proc get_index_chs { targetdir } {
 	}
     }
     return $chs
-}
-
-# Helper function to copy readable files and subdirec-
-# tories recursively, omitting subdirectories listed
-# in the `directories_not_copied' global variable.
-# Copies subdirectories and readable files.
-#
-proc recursive_file_copy { source destination } {
-
-    global directories_not_copied
-
-    foreach src [glob -nocomplain -- $source/*] {
-	if { ! [file readable $src] } continue
-    	set tail [file tail $src]
-    	set des "$destination/$tail"
-	if { [file isfile $src] } {
-	    copy_file $src $des
-	} elseif { [lcontain $directories_not_copied \
-			     $tail] } {
-	    # do not copy
-	} elseif { [file isdirectory $src] } {
-	    file mkdir $des
-	    recursive_file_copy $src $des
-	}
-	grant_access $des
-    }
 }
 
 # Main function to process an index specification.
