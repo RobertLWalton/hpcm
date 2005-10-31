@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Oct 31 05:58:22 EST 2005
+# Date:		Mon Oct 31 06:39:11 EST 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/10/31 11:19:36 $
+#   $Date: 2005/10/31 12:29:44 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.168 $
+#   $Revision: 1.169 $
 
 # Table of Contents:
 #
@@ -760,7 +760,7 @@ set scoreboard_interval 60
 # Standard scoreboard instructions for an email contest.
 # These make a scoreboard in the file
 #
-#	$judging_instructions/scoreboard.mail
+#	$judging_directory/scoreboard.mail
 #
 # that has the format:
 #
@@ -770,7 +770,7 @@ set scoreboard_interval 60
 #	   <scoreboard proper>
 #   ==== ===== ===== ===== ===== ===== ===== ===== =====
 #
-#   <contents of $judging_instructions/scoreboard.notes>
+#   <contents of $judging_directory/scoreboard.notes>
 #
 #   ==== ===== ===== ===== ===== ===== ===== ===== =====
 #
@@ -804,7 +804,7 @@ set email_scoreboard_instructions {
 #
 #  NAME                                           TIME
 #
-#   <contents of $judging_instructions/contest/
+#   <contents of $judging_directory/contest/
 #			scoreboard.1head>
 #
 #   ==== ===== ===== ===== ===== ===== ===== ===== =====
@@ -824,9 +824,9 @@ set informal_scoreboard_instructions {
     BAR
 }
 
-# Standard scoreboard instructions for a formal contest
-# with scoreboard freezing.  These instructions make a
-# scoreboard page in the file:
+# Standard scoreboard instructions for a large formal
+# contest with scoreboard freezing.  These instructions
+# make a scoreboard page in the file:
 #
 #	$judging_directory/contest/scoreboard.1
 #
@@ -837,13 +837,13 @@ set informal_scoreboard_instructions {
 #
 #  NAME             Public Scoreboard             TIME
 #
-#   <contents of $judging_instructions/contest/
+#   <contents of $judging_directory/contest/
 #	scoreboard.freeze if that file exists>
 #
-#   <contents of $judging_instructions/contest/
+#   <contents of $judging_directory/contest/
 #			scoreboard.1head>
 #
-#   <contents of $judging_instructions/contest/
+#   <contents of $judging_directory/contest/
 #			scoreboard.public>
 #
 # The file
@@ -878,21 +878,30 @@ set informal_scoreboard_instructions {
 #	$judging_directory/contest/scoreboard.current
 #
 # is a current scoreboard that is made from the freeze
-# time till the stop time.  The file
+# time till several minutes after the stop time.  The
+# file
 #
 #	$judging_directory/contest/scoreboard.final
 #
 # is a printable final scoreboard that is made just
-# once, soon after the stop time.  Both these have the
-# raw scoreboard with the normal stop time followed by a
-# copy of the
+# once, several minutes after the stop time.  Both these
+# have the raw scoreboard with the normal stop time
+# followed by a copy of the
 #
 #	$judging_directory/contest/who_where
 #
 # file.  Both of these are not readable by non-judging
 # accounts.
 #
-set formal_scoreboard_instructions {
+# The final scoreboard is made several minutes after the
+# stop time so that submissions made just before the
+# stop time can finish being autojudged and can them be
+# manually judged.  If the several (e.g. 5) minute
+# period proves too short, be sure judging is finished,
+# delete the file scoreboard.final, and wait a minute
+# or two for it to be recomputed.
+#
+set formal_large_contest_scoreboard_instructions {
 
     { OUTPUT contest/scoreboard.freeze FREEZE FREEZE }
 
@@ -908,15 +917,16 @@ set formal_scoreboard_instructions {
 
     { start_time "" }
     { stop_time FREEZE }
-    { LINE "The demo problem `count' will disappear\
-            from the scoreboard once the contest" }
-    { LINE "starts.  Until the contest starts, dates of\
-            first correct submission are" }
-    { LINE "displayed (for demo problems).  After the\
-            contest starts, problem times" }
-    { LINE "(differences of first correct submission\
-            times and contest start time)" }
-    { LINE "will be displayed." }
+    { LINE "The demo problems `count' and `javaio'\
+            will disappear from the" }
+    { LINE "scoreboard once the contest starts.  Until\
+            the contest starts, dates of" }
+    { LINE "first correct submission are displayed (for\
+            demo problems).  After the" }
+    { LINE "contest starts, problem times (differences\
+            of first correct submission" }
+    { LINE "times and contest start time) will be\
+            displayed." }
     BAR
     BOARD
     BAR
@@ -925,7 +935,7 @@ set formal_scoreboard_instructions {
 
     { start_time START }
     { stop_time FREEZE }
-    { problems { ! count } }
+    { problems { ! count  & ! javaio } }
     { submitters { ! test-account } }
     BAR
     BOARD
@@ -942,7 +952,8 @@ set formal_scoreboard_instructions {
     BLANK
     { INPUT contest/scoreboard.public }
 
-    { OUTPUT contest/scoreboard.current FREEZE STOP }
+    { OUTPUT contest/scoreboard.current \
+             FREEZE STOP+300 }
 
     { LINE NAME "Current Scoreboard" TIME }
     BLANK
@@ -954,15 +965,151 @@ set formal_scoreboard_instructions {
     BAR
 
     { OUTPUT contest/scoreboard.final \
-             STOP+500 STOP+500 }
+             STOP+300 STOP+300 }
 
-    { LINE NAME "Final Results" "" STOP }
+    { LINE NAME "Final Results" STOP }
     BLANK
     BAR
     { stop_time STOP }
     BOARD
     BAR
     { INPUT contest/who_where }
+    BAR
+}
+
+
+# Standard scoreboard instructions for a small formal
+# contest without scoreboard freezing.  These instruc-
+# tions make a scoreboard page in the file:
+#
+#	$judging_directory/contest/scoreboard.1
+#
+# World read access is granted to this file, which
+# is also sent to any addresses in the scoreboard_
+# addresses global variable.  The file has the
+# format:
+#
+#  NAME        [Pre-Contest] Scoreboard          TIME
+#
+#   <contents of $judging_directory/contest/
+#			scoreboard.1head>
+#
+#   [Pre-Contest comments.]
+#
+#   ==== ===== ===== ===== ===== ===== ===== ===== =====
+#	   <scoreboard proper>
+#   ==== ===== ===== ===== ===== ===== ===== ===== =====
+#
+# Before the start time problem submission dates are
+# given along with pre-contest comments.
+#
+# Several minutes after the end of the contest the file
+#
+#   $judging_directory/contest/scoreboard.final
+#
+# is written with final results.  If judging has not
+# finished, just finish judging, delete this file, and
+# wait a few minutes for it to be rewritten.
+#
+set formal_small_contest_scoreboard_instructions {
+
+    { OUTPUT contest/scoreboard.1 "" START }
+    GRANT_ACCESS
+
+    { LINE NAME "Pre-Contest Scoreboard" TIME }
+    BLANK
+    { INPUT contest/scoreboard.1head }
+    BLANK
+    { LINE "The demo problems `count' and `javaio'\
+            will disappear from the" }
+    { LINE "scoreboard once the contest starts.  Until\
+            the contest starts, dates of" }
+    { LINE "first correct submission are displayed (for\
+            demo problems).  After the" }
+    { LINE "contest starts, problem times (differences\
+            of first correct submission" }
+    { LINE "times and contest start time) will be\
+            displayed." }
+    BLANK
+    { start_time "" }
+    { stop_time START }
+    BAR
+    BOARD
+    BAR
+
+    { OUTPUT contest/scoreboard.1 START STOP+300 }
+    GRANT_ACCESS
+
+    { LINE NAME "Scoreboard" TIME }
+    BLANK
+    { INPUT contest/scoreboard.1head }
+    BLANK
+    { start_time START }
+    { stop_time STOP }
+    { problems { ! count & ! javaio } }
+    { submitters { ! test-account } }
+    BAR
+    BOARD
+    BAR
+
+    { OUTPUT contest/scoreboard.final \
+    	     STOP+300 STOP+300 }
+
+    { LINE NAME "Final Results" "" STOP }
+    BLANK
+    BAR
+    { start_time START }
+    { stop_time STOP }
+    BOARD
+    BAR
+    { INPUT contest/who_where }
+    BAR
+}
+
+
+# Standard scoreboard instructions for a post formal
+# contest scoreboard.  These instructions make a
+# scoreboard page in the file:
+#
+#	$judging_directory/contest/scoreboard.1
+#
+# World read access is granted to this file, which
+# is also sent to any addresses in the scoreboard_
+# addresses global variable.  The file has the
+# format:
+#
+#  NAME        Post Contest Scoreboard          TIME
+#
+#   <contents of $judging_directory/contest/
+#			scoreboard.1head>
+#
+#   ==== ===== ===== ===== ===== ===== ===== ===== =====
+#	   <scoreboard proper>
+#   ==== ===== ===== ===== ===== ===== ===== ===== =====
+#
+# To use submission qualifiers in computing this score-
+# board:
+#		set scoreboard_use_qualifiers yes
+#
+# Otherwise submission dates are given.
+#
+set post_contest_scoreboard_instructions {
+
+    { OUTPUT contest/scoreboard.1 "" "" }
+    GRANT_ACCESS
+    SEND
+
+    { LINE NAME "Post Contest Scoreboard" TIME }
+    BLANK
+    { INPUT contest/scoreboard.1head }
+    BLANK
+
+    { start_time "" }
+    { stop_time "" }
+    { problems { ! count  & ! javaio } }
+    { submitters { ! test-account } }
+    BAR
+    BOARD
     BAR
 }
 
