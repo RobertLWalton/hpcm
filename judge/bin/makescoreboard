@@ -4,7 +4,7 @@
 #
 # File:		makescoreboard
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Oct  3 09:33:31 EDT 2005
+# Date:		Mon Oct 31 05:43:47 EST 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/10/03 13:50:11 $
+#   $Date: 2005/10/31 10:47:58 $
 #   $RCSfile: makescoreboard,v $
-#   $Revision: 1.41 $
+#   $Revision: 1.42 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -310,6 +310,18 @@ proc unabbreviate { value } {
 
     if { [info exists abbreviation_array($value)] } {
         return $abbreviation_array($value)
+    } elseif {    [regexp {^(.*)([+-][0-9]+)$} $value \
+    		          forget abbrev inc] \
+	       && [info exists \
+	                abbreviation_array($abbrev)] \
+	       && ! [catch {
+	       		set date \
+			    $abbreviation_array($abbrev)
+			set time \
+			    [clock scan $date]
+			   }] } {
+	incr time $inc
+	return [clock format $time]
     } else {
         return $value
     }
