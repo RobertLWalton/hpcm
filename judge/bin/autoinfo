@@ -4,7 +4,7 @@
 #
 # File:		autoinfo
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Oct  2 13:09:12 EDT 2005
+# Date:		Mon Oct 31 04:55:55 EST 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/10/02 17:04:39 $
+#   $Date: 2005/10/31 09:53:36 $
 #   $RCSfile: autoinfo,v $
-#   $Revision: 1.37 $
+#   $Revision: 1.38 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -97,13 +97,6 @@ cd submission_directory; autoinfo
     fum', a request for `giant' would be replaced by a
     request for `fee', `fie', `fo', and `fum'.
 
-    After name mapping in this fashion, mapping is
-    applied to just the tail component of the name using
-    the `info_tail_map'.  Only the tail part of the name
-    is mapped by this map.  This map is standardly set
-    to map the tails `CVS' and `RCS' to empty lists,
-    thus eliminating them.
-
     If the recursion involved in mapping gets to too
     great a depth, the system error function is called
     because the TCL stack overflows, and there is no
@@ -135,11 +128,11 @@ cd submission_directory; autoinfo
     gotten file contains a line beginning with `From ',
     the line is prefixed with `>' when it is copied into
     the reply mail.
-
+
     This program prints the names of the gotten files on
     a single line, and prints nothing if there are no
     gotten files.
-
+
     This program writes the date and the names of the
     gotten files into the `Gotten' file.  The\
 					    first line
@@ -235,7 +228,7 @@ set forbiddens ""
 proc info_expand { name } {
 
     global ok_names unreadables illegals forbiddens \
-    	   judging_directory info_map info_tail_map
+    	   judging_directory info_map
 
     if { [info exists info_map($name)] } {
         set replacement $info_map($name)
@@ -252,31 +245,6 @@ proc info_expand { name } {
 
 	return
     }
-
-    set tail [file tail $name]
-
-    if { [info exists info_tail_map($tail)] } {
-        set replacement $info_tail_map($tail)
-	if { [llength $replacement] >= 1 \
-	     && [lindex $replacement 0] == "FORBIDDEN" \
-	     		} {
-	    lappend forbiddens \
-	    	[lreplace $replacement 0 0 $name]
-	} else {
-	    set dir [file dirname $name]
-	    if { $dir == "." } {
-	    	set prefix ""
-	    } else {
-	    	set prefix $dir/
-	    }
-	    foreach tail $replacement {
-	    	info_expand $prefix$tail
-	    }
-	}
-
-	return
-    }
-
 
     set file $judging_directory/info/$name
 
