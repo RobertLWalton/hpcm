@@ -4,7 +4,7 @@
 #
 # File:		overview
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Nov 14 06:22:02 EST 2005
+# Date:		Tue Nov 15 05:47:26 EST 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/11/14 12:09:24 $
+#   $Date: 2005/11/15 15:15:33 $
 #   $RCSfile: overview,v $
-#   $Revision: 1.83 $
+#   $Revision: 1.84 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -100,7 +100,7 @@ HPCM has the following features:
 		    below) of incorrect submissions made
 		    before the first correct submission
 		    of a problem are used to score the
-		    problem.
+		    problem.  Time is not used.
 
 	unscored    Only the number of correct problems
 		    is used to rank contestants.
@@ -117,11 +117,11 @@ HPCM has the following features:
 		    for each incorrect submission.
 
          solution   The judge's solution is returned for
-	            each correct submission.
+	            each CORRECT submission.
 
     o Has an automatic judge, that can be used exclu-
       sively, or as an aid to a human judge.
-
+
     o Has a library of problems and supports easy semi-
       automated creation of new contests.
 
@@ -130,26 +130,23 @@ HPCM has the following features:
 
     o Supports running long term contests and multiple
       simultaneous contests.
-
-    o Supports contests in which problems are timed and
-      supports contests in which problems are not timed
-      and the scoreboard shows only the date a problem
-      was solved by a contestant.
 
     o Keeps a complete log of everything that happens
       during contests in the form of files that can be
       easily analyzed for different purposes.
 
-    o Is written modularly in TCL and Bourne Shell (sh)
-      so that HPCM can easily be adapted and modified.
+    o Is written modularly in TCL and Bourne Again Shell
+      (bash) so that HPCM can easily be adapted and
+      modified.
 
 
 Requirements
 ------------
 
-HPCM currently requires a UNIX system with Bourne shell
-and TCL language interpreters.  If JAVA is to be usable
-by contestants, an appropriate version of JAVA is also
+HPCM currently requires a UNIX system with the Bourne
+Again (bash) shell and TCL language interpreters.  If
+JAVA or COMMONLISP are to be usable by contestants,
+appropriate versions of JAVA or COMMONLISP are also
 required.
 
 A couple of programs require the `read -r' Bourne shell
@@ -182,9 +179,9 @@ A suitable JAVA can be obtained from
 by selecting the jdk platform and downloading jdk
 version 1.3.0 or later.
 
-If you want to use COMMON LISP as a programming langu-
+If you want to use COMMONLISP as a programming langu-
 age, HPCM is currently set up to use CLISP, a version
-of COMMON LISP obtainable at
+of COMMONLISP obtainable at
 
 	clisp.cons.org
 
@@ -221,11 +218,7 @@ Then choose the type of contest you want to create
 	hpcm/examples/<contest-type>_contest/Makefile
 
 This file also contains basic advice on how to judge
-the contest.  There is also a type of contest known as
-a `web contest' which is just an email contest in which
-the problem descriptions are placed on the web and the
-scoreboard shows the date a solution was submitted
-instead of a problem time.
+the contest.
 
 You should also read
 
@@ -245,9 +238,9 @@ mentations will also be collected within the hpcm/judge/
 doc directory.
 
 If you want to create complex problems, such as multi-
-file problems that occur in an advanced Computer Science
-course, you should read the section `Library Data:
-Complex Problems' below.
+file problems that occur in a more advanced Computer
+Science course, you should read the section `Library
+Data: Complex Problems' below.
 
 
 Data and Programs
@@ -293,9 +286,8 @@ Maintenance Programs
 Common Functions
     Functions usable by HPCM TCL programs.  These come
     in several different packages, including one general
-    package for all programs, and another package for
-    programs that interact with a user through a dis-
-    play.
+    package for all programs, and several other more
+    specialized packages.
 
 
 Library Data: Problems
@@ -333,6 +325,13 @@ directory:
 		versity, but cannot be placed on the web
 		or be made available to strangers.
 
+		Often public problems will contain an
+		html file linking to a problem descrip-
+		tion on the web, and there will be a
+		corresponding private directory for the
+		same problem containing the postscript
+		file describing the problem.
+
 The problem directories are listed in the
 
 	hpcm/problem_library/index
@@ -346,6 +345,13 @@ are in the directory
 
 	hpcm/problem_library/legal
 
+Descriptions of problems not yet in the library, most of
+which have been taken from the web, are in
+
+	hpcm/problem_library/working
+
+Neither of these last two directories is part of any
+public distribution.
 
 If a problem has name `pppp', then the problem has a
 problem directory named `pppp' within one of the
@@ -366,20 +372,25 @@ made available as a printout (to prevent contestants
 from emailing an electronic version to cohorts for
 advice).
 
-In order to be able to score a problem, three more files
+In order to be able to score a problem, two more files
 are placed in the problem directory within the program
 library:
 
     pppp.in    The judge's test input.
     pppp.test  The judge's test output.
-    pppp.rc    Optional file containing parameters that
-               control how the automatic scoring is done
-	       (e.g., what numeric tolerances are per-
-	       mitted).  This file can contain para-
-	       meters that override those set in hpcm_
-	       judging.rc, as this file is `sourced'
-	       after hpcm_judging.rc by programs that
-	       process a problem submission.
+
+Actually, there may be multiple pairs of such files, any
+names ending in .in and .test:
+
+    xxxx.in    The judge's test input.
+    xxxx.test  The judge's test output.
+
+The problem directory may contain .jin files from which
+the .in files can be computed, and may contain .ftest,
+.jtest, or .jftest files that are computed from the
+.test files.  There may also be a pppp.rc file contain-
+ing judge's parameters.  See `Judge's Parameters and
+Filters' below for a descripton of all these files.
 
 A contest has a solutions directory that contains sym-
 bolic links to the library problem directories for every
@@ -414,6 +425,8 @@ and may create other temporary files for some languages:
 
     pppp	    The executable program binary.
     pppp*.class	    JAVA class files.
+    pppp*.fas	    COMMONLISP compiled file.
+    pppp*.lib	    COMMONLISP compiled file.
 
 The solution is written to take input from the standard
 input (the terminal by default) and put output to the
@@ -470,37 +483,162 @@ advantage that contestants will then be able to read any
 *.class files in this and other library problem direc-
 tories: see `Contest Definition Data: Security' below.
 
-Some things change if a problem directory also contains
-a file named:
+Lastly, the `make clean' command in the problem direc-
+tory deletes all temporary files, including `pppp',
+`xxxx.out', `xxxx.fout', `xxxx.jout', `xxxx.jfout',
+`core', `.class', `.fas', and `.lib' files.
 
-	Scoring_Filter
+Library Data: Problems: Judge's Parameters and Filters
+------- ----- --------- ------- ---------- --- -------
 
-In this case, both the pppp.out and pppp.test files are
-run through the program named Scoring_Filter to pro-
-duce files named pppp.fout and pppp.ftest, respectively.
-Then instead of comparing pppp.out and pppp.test to pro-
-duce a score, HPCM compares pppp.fout and pppp.ftest.
-For example, if a problem asks for a shortest path
-through a graph whose nodes are labeled with upper case
-letters, pppp.out might contain the lines
+In some cases the autojudge needs no parameters or
+filters.  But in many cases at lease one parameter, the
+scoring_instructions parameter, needs to be set, and
+sometimes the submitted and judge's output cannot be
+compared directly, and must be filtered before they
+can be compared.  The following files in the problem
+directory contain parameters and filters.  All these
+files are optional.
+
+    pppp.rc    A file containing parameters that control
+    	       how the automatic scoring is done (e.g.,
+	       what numeric tolerances are permitted).
+	       The files made visible to contestants
+	       when a contest is made by makejudgingdir
+	       can also be controlled.
+	       
+	       This file contains parameters that over-
+	       ride those set in hpcm_judging.rc, or
+	       that override defaults computed when
+	       hpcm_judging.rc parameters are left
+	       unset.  This file is `sourced' after
+	       hpcm_judging.rc by programs that process
+	       a problem submission or make a contest.
+
+	       See the `Problem .rc Files' section of
+	       hpcm/judge/lib/hpcm_judging.rc for more
+	       detailed documentation.
+
+    Scoring_Filter
+    	       This executable program file filters .out
+	       and .test files to produce .fout and
+	       .ftest files which are compared by the
+	       autojudge in place of .out and .test
+	       files.  It is called by
+
+	       Scoring_Filter xxxx.in \\
+	                      <xxxx.out >xxxx.fout
+
+    xxxx.jin   This file is input to the jfilter program
+               to automatically make the xxxx.in file.
+	       The xxxx.jin file also contains scoring
+	       parameters that might otherwise be in
+	       the pppp.rc file, but can be tailored to
+	       particular input files, if there are
+	       several, by putting them instead in the
+	       .jin file.  This file also contains
+	       parameters that permit both the .in and
+	       .out (or .fout) files to be broken up
+	       into test cases, so feedback can be given
+	       to contestants consisting of the judge's
+	       input and optionally output for just the
+	       first test case for which a submission
+	       fails.  To aid this the .jin file is
+	       input to the jfilter program in order to
+	       convert .out files to .jout files, .fout
+	       files to .jfout files, .test files to
+	       .jtest files, and .ftest files to .jftest
+	       files.
+
+    xxxx.ftest  Made from .test by Scoring_Filter.
+
+    xxxx.jtest  Made from .test and .jin by jfilter.
+
+    xxxx.jftest Made from .ftest and .jin by jfilter.
+
+An example use of pppp.rc is the following.  Normally
+the scoring_instructions global variable in hpcm_
+judging.rc is set to the list { column space } which
+means that differences in amount of space and item
+end columns in the output of a submission do NOT
+matter.  If you want them to matter, you make a pppp.rc
+file containing
+
+	    set scoring_instructions { }
+
+If you do not care about spacing, but want items to end
+in the correct columns, and want numbers to be accurate
+to + or - 0.002, you may make a pppp.rc containing
+
+	    set scoring_instructions {
+		space float 0.002 3.0 }
+
+(Here the 3.0 means that relative accuracy does not
+matter: see the `Scoring Parameters' section of hpcm_
+judging.rc for details).
+
+To give an example use of a Scoring_Filter program,
+suppose a problem asks for a shortest path through a
+graph whose nodes are labeled with upper case letters,
+and xxxx.out might contain the lines
 
     Case 5: B -> D -> E -> F -> C
     Case 6: B -> F -> H -> A -> K -> M
 
-and pppp.fout might contain corresponding lines:
+Then the command
+
+	Scoring_Filter xxxx.in <xxxx.out >xxxx.fout
+
+might produce the xxxx.fout file:
 
     Case 5: 4
     Case 6: not a legal path
 
 where 4 is the length of the `Case 5' path.  If 4 is the
-length of the shortest path, pppp.ftest would have the
+length of the shortest path, xxxx.ftest would have the
 same `Case 5' line, but of course it would not have the
-same `Case 6' line.  Note that the Scoring_Filter pro-
-gram can input pppp.in and even pppp.test.
-
-Lastly, the `make clean' command in the problem direc-
-tory deletes all temporary files, including `pppp',
-`pppp.out', `pppp.fout', `core', and `.class' files.
+same `Case 6' line.
+
+As an example of a .jin file, consider the folloiwng
+initial fragment of the demos/count/count.jin file:
+
+    *CASE-HEAD* ^[ \t]*paragraph
+    *CASE*
+    This is a good paragraph to start with.
+
+    *CASE*
+    And to continue in a bit more
+    complicated
+    vein,
+    this is a good paragraph.
+
+This is essentually an annotated copy of the correspond-
+ing count.in file.  One set of annotations, the *CASE*
+lines above, divide the .in file into cases, so if
+desired the judge's input for the first test case on
+which a submission fails can be returned to the submit-
+ter.  The other annotation, the *CASE-HEAD* line, gives
+a regular expression that matches the first line of a
+case in the .out file.  The count.test file correspond-
+ing to this input is
+
+    Paragraph 1: 1 lines, 8 words, 39 characters.
+    Paragraph 2: 4 lines, 14 words, 70 characters.
+
+and from this file and the count.jin file the jfilter
+program make the following count.jtest file:
+
+    -Paragraph 1: 1 lines, 8 words, 39 characters.
+    -Paragraph 2: 4 lines, 14 words, 70 characters.
+
+The first character of each line here indicates whether
+the line begins a case (-) or continues a case (.) (but
+there are no examples of this here.
+
+Things can get somewhat more complex if cases are
+grouped, as may be necessary if one case cannot test
+properly unless previous cases in the same group have
+executed.  See the jfilter documentation for details.
 
 
 Library Data: Complex Problems
