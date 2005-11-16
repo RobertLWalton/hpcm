@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Oct 31 06:39:11 EST 2005
+# Date:		Wed Nov 16 10:43:07 EST 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/10/31 12:29:44 $
+#   $Date: 2005/11/16 20:17:08 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.169 $
+#   $Revision: 1.170 $
 
 # Table of Contents:
 #
@@ -54,71 +54,86 @@
 # ------- --- -----
 
 # After hpcm_judging.rc is sourced, certain programs
-# source the file PPP.rc which they locate in the pro-
-# blem solution directory of a particular problem named
-# PPP.  In particular the autojudge, extractmail, and
-# manualreply programs do this while computing in a pro-
-# blem submission directory.  Autojudge links any PPP.rc
-# file it finds in the problem solution directory into
-# the submission directory, and the other programs find
-# that file in the submission directory.  The file may
-# not exist, and if it does not, no attempt is made to
-# source it.  If the file exists, it must pass a secur-
-# ity check before it is sourced: it must not be access-
-# ible by `others'.
+# source the file PROBLEM.rc which they locate in the
+# problem solution directory of a particular problem
+# named `PROBLEM'.  In particular the autojudge,
+# extractmail, and manualreply programs do this while
+# computing in a problem submission directory.
+# Autojudge links any PROBLEM.rc file it finds in the
+# problem solution directory into the submission direc-
+# tory, and the other programs find that file in the
+# submission directory.  The file may not exist, and if
+# it does not, no attempt is made to source it.  If the
+# file exists, it must pass a security check before it
+# is sourced: it must not be accessible by `others'.
 #
-# Before a PPP.rc file is sourced the following global
+# Some programs source the PROBLEM.rc file from the pro-
+# blem directory in order to do administrative work.
+# These may source the PROBLEM.rc file into a local en-
+# vironment into which only the global variables the
+# program wants to use have been imported.  For example,
+# the makejudgingdir program does this to access the
+# problem_description_files and problem_source_files
+# variables described below.
+#
+# Before a PROBLEM.rc file is sourced the following global
 # variables are set:
 #
-#	PROBLEM		Problem name: "PPP".
+#	PROBLEM		Problem name: "PROBLEM".
+#
+# If the PROBLEM.rc file is being sourced in a submission
+# directory, the following is set:
+#
 #	EXTENSION	Extension name including `.'
 #			E.g., ".cc", ".java".
-#			Is set to "UNDEFINED' when
-#			makejudgingdir is running to
-#			create a contest.
-#	OPTIONS		Set to index item options when
-#			EXTENSION is "UNDEFINED".
 #
 # Here the `Subject:' field of the submission was
-# `submit $PROBLEM$EXTENSION'.  EXTENSION may be "".
-# If there is no submission involved, then EXTENSION
-# is set to "UNDEFINED", while PROBLEM is set to the
-# name of the problem directory.
+# `submit $PROBLEM$EXTENSION [qualifier]'.  EXTENSION
+# may be "".
 #
-# Some programs source the PPP.rc file from the problem
-# directory in order to do administrative work.  These
-# may source the PPP.rc file into a local environment
-# into which only the global variables the program wants
-# to use have been imported.  For example, the makejudg-
-# ingdir program does this to access the problem_de-
-# scription_files and problem_source_files variables.
+# If instead the PROBLEM.rc file is being sourced by
+# makejudgingdir in order to set up contest data, the
+# following are set:
 #
-# As a consequence of the last paragraph, PPP.rc files
-# should not read prior values of global variables set
-# in hpcm_judging.rc, UNLESS the PPP.rc file makes
-# these global before accessing them.  However, PPP.rc
-# should never read the values of the variables it is
-# trying to set, as these frequently have no values
-# when PPP.rc is sourced (they are given default values
-# only if PPP.rc does not set them).
+#	EXTENSION	Set to "UNDEFINED".
+#
+#	OPTIONS		Set to makejudgingdir index item
+#			options (see documentation of
+#			makejudgingdir).
+#
+# Because a PROBLEM.rc file may be sourced into a local
+# environment, PROBLEM.rc files should not read prior
+# values of global variables set in hpcm_judging.rc,
+# UNLESS the PROBLEM.rc file itself makes these global
+# before accessing them.  Also, some variables that
+# PROBLEM.rc files set are NOT given values by hpcm_
+# judging.rc (they are given default values only if
+# PROBLEM.rc does not set them), and these must not be
+# read by PROBLEM.rc without checking first to see if
+# they exist.
 #
 # If procedures or temporary variables are defined in a
-# PPP.rc file, they should begin with the prefix `rc_'
+# PROBLEM.rc file, they should begin with the prefix `rc_'
 # to avoid conflicts with HPCM global variables.
 #
 # The following are global variables that particular
-# programs expect PPP.rc to set.  Note that PPP.rc is
-# not required to set these, and PPP.rc usually does not
-# even exist.  The defaults given below are applied if
-# PPP.rc does NOT set the global variable.
+# programs expect PROBLEM.rc to set.  Note that
+# PROBLEM.rc is not required to set these, and
+# PROBLEM.rc usually does not even exist.  The defaults
+# given below are applied if PROBLEM.rc does NOT set the
+# global variable.  Some of these defaults are values
+# set by this hpcm_judging.rc file, and some are applied
+# only if no value is set by this file or PROBLEM.rc.
+#
+# Note that in the defaults below, \\ is read as \.
 #
 #   scoring_instructions
 #
 #	This variable controls the kinds of differences
 #	between submitted and judge's output files that
-#	are allowed.  It is set in hpcm_judging.rc, see
-#	below for documentation, and is often reset by
-#	PROBLEM.rc.
+#	are allowed.  Default:
+#
+	    set scoring_instructions "space column"
 #
 #   problem_description_files
 #
@@ -127,9 +142,11 @@
 #	expressions is a problem description file,
 #	unless one of the name components matches SOME
 #	regular expression from problem_excluded_files.
+#	Default:
 #
-#	Hpcm_judging.rc provides a default value for
-#	this.
+	    set problem_description_files \
+		{.*\\.txt .*\\.html .*\\.htm
+		 .*\\.ps .*\\.pdf}
 #
 #   problem_source_files
 #
@@ -140,8 +157,9 @@
 #	expression from problem_excluded_files, and
 #	unless it is a problem description file.
 #
-#	Hpcm_judging.rc provides a default value for
-#	this.
+#	Default:
+#
+	    set problem_source_files {Makefile .*\\.ISF}
 #
 #	Note that if the `all' option is given for an
 #	index item, this is changed to {.*} so it
@@ -159,10 +177,14 @@
 #	A list of regular expressions, such that a file
 #	ANY of whose name components matches ANY of
 #	these expressions is NOT a problem source file
-#	or problem description file.
+#	or problem description file.  Default:
 #
-#	Hpcm_judging.rc provides a default value for
-#	this.
+	    set problem_excluded_files \
+		{CVS RCS .*\\.rc
+		 .*\\.jin .*\\.jout .*\\.jtest
+		 .*\\.fout .*\\.ftest
+		 .*\\.jfout .*\\.jftest
+		 Scoring_Filter make_.*_input\\..*}
 #
 #   problem_required_files
 #
@@ -170,17 +192,18 @@
 #	submit.  All these must be included in the sub-
 #	mission message.
 #
-#	The default lists just the $PROBLEM$EXTENSION
-#	file if $EXTENSION is not "".  It is an error
-#	if $EXTENSION is "" and PROBLEM.rc does not
-#	define this global variable.
+#	The default, which is invoked only if this
+#	variable is left unset and $EXTENSION is not "",
+#	lists just the $PROBLEM$EXTENSION file.  It is
+#	an error if $EXTENSION is "" and PROBLEM.rc does
+#	not define this global variable.
 #
 #   problem_optional_files
 #
 #	A list of files the contestant may optionally
 #	submit.  These are optionally included in the
-#	submission message.  The default definition
-#	of this variable is the empty list.
+#	submission message.  If this variable is not
+#	set, it defaults to the empty list.
 #
 #   problem_make_files
 #
@@ -212,7 +235,7 @@
 #       `{ F { make F } }'.
 #
 #	The COMMAND is passed to the exec_in_directory
-#	functions which executes it in sh or csh.  This
+#	function which executes it in sh or csh.  This
 #	COMMAND is a character string parsed by a non-
 #	TCL shell, and NOT a TCL list.
 #
@@ -220,46 +243,46 @@
 #	order, so previous instructions can make inputs
 #	to later instructions.
 #
-#	The default value of this variable is the empty
-#	list.
+#	If this variable is not set, it defaults to the
+#	empty list.
 #
 #	After processing problem_make_files, the auto-
 #	judge program will do more file making of this
 #	kind depending upon the files it finds in the
-#	problem solution directory.  It uses the files
-#	F listed in the problem_input_names (see below)
-#	for this.  For each such F autojudge executes
+#	problem solution directory.  It uses the names
+#	N listed in the problem_input_names (see below)
+#	for this.  For each such N autojudge executes
 #	the instruction
 #
-#	    F.in {jfilter F.jin F.in} F.jin
+#	    N.in {jfilter N.jin N.in} N.jin
 #
-#	that makes F.in from F.jin if the latter exists.
+#	that makes N.in from N.jin if the latter exists.
 #	Then if the Scoring_Filter file exists in the
 #	problem solution directory (after problem_make_
 #	files instructions are executed), autojudge
 #	executes the instructions
 #
-#	    F.fout {Scoring_Filter F.in <F.out >F.fout}
-#		   Scoring_Filter F.in F.out
+#	    N.fout {Scoring_Filter N.in <N.out >N.fout}
+#		   Scoring_Filter N.in N.out
 #
-#	    F.ftest
-#		{Scoring_Filter F.in <F.test >F.ftest}
-#		Scoring_Filter F.in F.test
+#	    N.ftest
+#		{Scoring_Filter N.in <N.test >N.ftest}
+#		Scoring_Filter N.in N.test
 #
-#	    F.jfout {jfilter F.jin F.fout F.jfout}
-#		    F.jin F.fout
+#	    N.jfout {jfilter N.jin N.fout N.jfout}
+#		    N.jin N.fout
 #
-#	    F.jftest {jfilter F.jin F.ftest F.jftest}
-#		    F.jin F.ftest
+#	    N.jftest {jfilter N.jin N.ftest N.jftest}
+#		    N.jin N.ftest
 #
 #	while if there is no Scoring_Filter file auto-
 #	judge executes
 #
-#	    F.jout {jfilter F.jin F.out F.jout}
-#		    F.jin F.out
+#	    N.jout {jfilter N.jin N.out N.jout}
+#		    N.jin N.out
 #
-#	    F.jtest {jfilter F.jin F.test F.jtest}
-#		    F.jin F.test
+#	    N.jtest {jfilter N.jin N.test N.jtest}
+#		    N.jin N.test
 #
 #   problem_link_files
 #   problem_optional_link_files
@@ -274,8 +297,8 @@
 #	Each link instruction is itself just a file name
 #	or a list of file names.
 #
-#	If a link instruction is just a file name F, F
-#	if F exists in the solution directory it will be
+#	If a link instruction is just a file name F, and
+#	if F exists in the solution directory, F will be
 #	linked to the submission directory.
 #
 #	If a link instruction is a list { F F1 F2 ... }
@@ -286,33 +309,33 @@
 #	exist in the solution directory, no link will be
 #	made.
 #
-#	The submission files designated in problem_link_
-#	files instructions must already exist or have a
-#	link created for them, else it is an error.  But
-#	the files designated in problem_optional_link_
-#	files instructions need not exist or have the
-#	instructions make a link for them.
+#	Files designated in problem_link_files instruc-
+#	tions must already exist or have a link created
+#	for them, else it is an error.  Files designated
+#	in problem_optional_link_files instructions need
+#	not exist or have the instructions make a link
+#	for them.
 #
-#	The default values of these variables are empty
-#	lists.  However, after executing the link
-#	instructions in these variables, the autojudge
-#	program executes the following link instructions
-#	of its own:
+#	If these variables are not set, they default to
+#	the empty list.  However, after executing any
+# 	link instructions in these variables, the auto-
+#	judge program executes the following link in-
+#	structions of its own:
 #
 #	    Makefile Makefile$EXTENSION Makefile
 #
 #	    Scoring_Filter (if it exists)
 #
-#	For each name F in problem_input_names (see
+#	For each name N in problem_input_names (see
 #	below):
 #
-#	    F.in
-#	    F.test F.out F.test
-#	    F.jin			[F.jin]
-#	    F.ftest F.fout F.ftest	[SF]
-#	    F.jtest F.jout F.jtest	[F.jin,
+#	    N.in
+#	    N.test N.out N.test
+#	    N.jin			[N.jin]
+#	    N.ftest N.fout N.ftest	[SF]
+#	    N.jtest N.jout N.jtest	[N.jin,
 #					 but not SF]
-#	    F.jftest F.jfout F.jftest	[F.jin and SF]
+#	    N.jftest N.jfout N.jftest	[N.jin and SF]
 #
 #	where the []'ed things must exist for the in-
 #	struction to be executed, and SF abbreviates
@@ -325,39 +348,27 @@
 #
 #   problem_input_names
 #
-#	List of file names F such that F.in is to be
+#	List of file names N such that N.in is to be
 #	input to the submitted program to test it and
-#	produce F.out (and F.err).  By default this is
-#	just the list names such that the problem solu-
-#	tion directory contains either an F.in or F.jin
-#	file, except that $PROBLEM.in is ignored if
-#	there are any other files (on the grounds that
-#	it is probably a link to another F.in file in
-#	this case).
+#	produce N.out (and N.err).
+#
+#	If this variable is not set, it defaults to the
+#	list names such that the problem solution direc-
+#	tory contains either an N.in or N.jin file,
+#	except that $PROBLEM.in is ignored if there are
+#	any other files (on the grounds that it is pro-
+#	bably a link to another N.in file in this case).
 #
 #	$PROBLEM should not be included in this list
-#	unless it is the only member, as files F.in
+#	unless it is the only member, as files N.in
 #	will be linked to $PROBLEM.in during testing.
 #
 #	The order of the names in this list is the order
-#	the F.in files are used to test the submitted
+#	the N.in files are used to test the submitted
 #	program.  A major use of this variable is to
 #	specify this order, as the default value usually
 #	suffices if this order does not matter.  The
 #	default list is sorted alphanumerically.
-
-# Default values for some variables described above.
-# Note when list is scanned \'s are consumed so they
-# must be doubled.
-#
-set problem_description_files \
-    {.*\\.txt .*\\.html .*\\.htm .*\\.ps .*\\.pdf}
-set problem_source_files \
-    {Makefile .*\\.ISF}
-set problem_excluded_files \
-    {CVS RCS .*\\.rc .*\\.jin .*\\.jout .*\\.jtest
-     .*\\.fout .*\\.ftest .*\\.jfout .*\\.jftest
-     Scoring_Filter make_.*_input\\..*}
 
 # Scoreboard Parameters
 # ---------- ----------
@@ -1267,7 +1278,8 @@ set output_limit_regexp {file size limit exceeded}
 # .jtest, .jftest) file.  By default, scoring instruc-
 # tions come from the following variable:
 #
-set scoring_instructions "space column"
+# The following is set in `Problem .rc Files' above:
+# set scoring_instructions "space column"
 #
 # This variable is often changed on a per-problem basis
 # by the file PROBLEM.rc.  Scoring instructions can also
