@@ -4,7 +4,7 @@
 #
 # File:		overview
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Nov 16 05:09:15 EST 2005
+# Date:		Thu Nov 17 07:39:16 EST 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/11/16 11:56:39 $
+#   $Date: 2005/11/17 14:06:35 $
 #   $RCSfile: overview,v $
-#   $Revision: 1.85 $
+#   $Revision: 1.86 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -652,137 +652,162 @@ Library Data: Complex Problems
 The standard problem format described in the last sec-
 tion has many limitations.  Only one file, Makefile, is
 provided to support the contestant.  Only one file, e.g.
-pppp.c, can be submitted.  At most one file, e.g.
-pppp.txt, can be used to describe the problem.  There is
-no way to supply a contestant with an initial version of
-a file the contestant is supposed to submit.
+PROBLEM.c, can be submitted, where PROBLEM is the name
+of the problem.  At most one file, e.g.  PROBLEM.txt,
+can be used to describe the problem.  There is no way to
+supply a contestant with an initial version of a file
+the contestant is supposed to submit.
 
 All this can be changed by setting the values of certain
-global variables in the pppp.rc file of the problem
-directory.  For example, the pppp.rc file
+global variables in the PROBLEM.rc file of the problem
+directory.  The following global variables determine
+which files are delivered to the contestant:
 
+    problem_description_files
+        Determines which files are delivered to the
+	contestant in order to describe the problem
+	in an informal or email contest.
 
-	file in
-the problem directory.  The default value of this file
-is-
+    problem_source_files
+        Determines which files are delivered to the
+	contestant as source files.
 
-	-DESCRIPTION-
-	    PROBLEM.TTT
-	-SOURCE-
-	    Makefile
-	-REQUIRED-
-	    PROBLEM.EXTENSION
-        -LINK-
-	    { Makefile Makefile.EXTENSION\
-	    	Makefile }
-	    PROBLEM.in
-	    { PROBLEM.test PROBLEM.out PROBLEM.test }
-	-OPTIONAL-LINK-
-	    Scoring_Filter
-	    { PROBLEM.ftest PROBLEM.fout PROBLEM.ftest }
-
-This value specifies the standard format of a problem as
-was described above.  Here `PROBLEM' denotes the name of
-the problem, TTT denotes the extension (e.g., .ps or
-.txt) needed to name the description file of the pro-
-blem, and `EXTENSION' is the programming language exten-
-sion (e.g., .c or .java) taken from the subject field of
-the submission.  The above says that the file describing
-the problem has the name PROBLEM.TTT; the file given to
-the contestant (as -SOURCE-) is Makefile; and when a
-submission is scored by the judge a bunch of files are
-linked from the problem directory to the directory in
-which the submission is being scored.  For example, the
-PROBLEM.test file must be linked and it is linked to the
-problem directory PROBLEM.out file if that exists or to
-the problem directory PROBLEM.test file otherwise.  The
-PROBLEM.ftest file is similar, but linking it is option-
-al, in case neither PROBLEM.fout or PROBLEM.ftest exist.
+    problem_excluded_files
+        Determines which files listed in the above are
+	to be excluded from delivery to the contestant.
 
-In general the `Files' file consists of special
-symbols, like -DESCRIPTION- and -SOURCE-, each followed
-by items that are either file names or lists of file
-names.  Different special symbols are processed by dif-
-ferent HPCM programs: e.g., -DESCRIPTION- is processed
-by makejudgingdir and -LINK- by autojudge.  The follow-
-ing is a list of the recognized special symbols, the
-programs that recognize them, and a description in brief
-of their function.  See program documentation for more
-details.
-
-    Recognized by makejudgingdir:
+All three of these global variables have values that
+are lists of regular expressions, with these regular
+expressions being matched to the last component of the
+file name.  The default settings work for many pro-
+blems, for example, by delivering *.txt files as de-
+scription files, Makefile as a source file, and by
+excluding *.rc files.  The `all' option in a problem
+index passed to the makejudgingdir program sets the
+second variable to the regular expression .*, which
+delivers all files not excluded by the last variable
+to the contestant.
 
-        -DESCRIPTION-	Items name problem description
-			files given to contestants in
-			email or informal contests.
+A problem submission consists of one or more files.
+The global variables
 
-	-SOURCE-	Items name files that are given
-			to the contestant as read-only
-			files that support solution
-			development (e.g. Makefile).
+    problem_required_files
+    problem_optional_files
 
-    Recognized by extractmail:
+are lists of submittable files.  The first is a list of
+files that must be submitted, and the second a list of
+files that may be optionally submitted.  If the first
+global variable is not set, it defaults to a list of
+just the file `PROBLEM.EXTENSION', where the `Subject:'
+of the submission email has the form
 
-	-REQUIRED-	Items name files that must be
-			submitted.
+	Subject: submit PROBLEM.EXTENSION [qualifier]
 
-	-OPTIONAL-	Items name files that may op-
-			tionally be submitted.
+provided the EXTENSION is present and is an allowed
+extension (defined by the allowed_extensions global
+variable in hpcm_judging.rc).  The list of optionally
+submittable files defaults to the empty list.
 
-    Recognized by autojudge:
+When a problem submission is to be judged, the auto-
+judge needs a list of names N such that N.in will be
+input to the submission to produce N.out which will be
+compared with N.test (possibly after filtering with
+Scoring_Filter and jfilter).  The names N are called
+`input names', and can be specified by giving a value
+to the global variable
 
-	-LINK-		Items name files that must be
-			linked from the problem di-
-			rectory to the submission
-			directory.  The file name in
-			the problem directory can be
-			different from the file name
-			in the submission directory.
+	problem_input_names
 
-	-OPTIONAL-LINK-	Ditto but the files need not be
-			linked if the correct files do
-			not exist in the problem direc-
-			tory.
+which is just the ordered list of input names.  If no
+value is given this variable, the input names are just
+all N such that either N.in or N.jin exist in the pro-
+blem directory, sorted in alphabetical order, and ex-
+cluding PROBLEM.in, unless that is the only thing in the
+list.  PROBLEM.in is excluded if there are other things
+on the list because then it must be used as a link name,
+and linked to the other things on the list, as the pro-
+blem directory Makefile always makes PROBLEM.out from
+PROBLEM.in, and does not know about other .in files.
 
-	-SOLUTION-MAKE-	Items name files that are to be
-			made by `make filename' in the
-			problem directory (a.k.a. solu-
-			tion directory) before linking
-			is attempted.
-
-Sometimes the same file may be named as an item for dif-
-ferent special symbols to good effect.  A file named as
-both -OPTIONAL- and -LINK- will be supplied by linking
-if it is not supplied by the submitter, as -LINK- files
-are not linked if they are supplied by other means.  A
-file can have different versions for contestants and
-the judge, by being specified as -SOURCE- and -LINK- and
-using a different name for the judge's version in the
-problem directory. 
+The order of input names on their list controls the
+order of testing, which can be important in feedback
+scoring.  Unless this order is important, the default
+list usually suffices.
+
+When a problem submission is to be judged, some of the
+files needed from the problem directory may be derived
+from other files in that directory.  The derived files
+may not exist if they have not been needed before in
+the current installation of HPCM.  The global variable
+
+	problem_make_files
+
+is a list of instructions on how to make such files.
+A typical instruction is
+
+	{ Scoring_Filter
+	  { g++ -o Scoring_Filter Scoring_Filter.cc }
+	  Scoring_Filter.cc }
+
+which says that the Scoring_Filter binary file is to be
+made using the given g++ command if the Scoring_Filter
+file does not exist of if it is older than the Scoring_
+Filter.cc file, provide the later file exists.
+
+By default there are always instructions such as
+
+	{ N.in { jfilter N.jin N.in } N.jin }
+
+for every input name N.  This ensures that N.in is made
+from N.jin if that is necessary.
+
+When a submission is to be autojudged, files from the
+problem directory must be linked into the submission
+directory.  The global variables
+
+	problem_link_files
+	problem_optional_link_files
+
+contain instructions for doing this.  After executing
+these instructions, the autojudge program executes some
+similar instructions of its own which handle the default
+cases.  Some of these will be
+
+	{ N.test N.out N.test }
+
+for each input name (see above) N.  This instruction
+says that the file named `N.test' is to be a link in the
+submission directory to the file named `N.out' in the
+problem directory if that file exists, or to the file
+named `N.test' in the problem directory if `N.out' does
+not exist but `N.test' does.
 
 In addition to the control over problem files given by
-the `Files' file, two other HPCM features support
-complex problems.
+the global variables just mentioned, two other HPCM
+features support complex problems.
 
-First, if there is a -SOURCE- file named xxx.ISF, then
+First, if there is a source file named xxx.ISF, then
 this is an initial value for a read-write submittable
 file named xxx.  The hpcm_get and hpcm_extract programs
 support this by automatically copying xxx.ISF to xxx if
 the latter does not exist, and making xxx writable.
+The default value of problem_source_files is such that
+by default all .ISF files are source files.
 
 Second, by setting the `response_instructions' global
 variable, responses from the autojudge program can be
 configured to contain extra information about scores,
-including positions of errors or first errors in
-pppp.out and extra comment lines or copies of informa-
-tion files.  See the documentation in hpcm_judging.rc
+including the judge's input and optionally output for
+the first test case that failed for an incorrect sub-
+mission.  See the documentation in hpcm_judging.rc
 for details.
 
-Some complex problems are in the directory:
+The directory
 
-    hpcm/problem_library/symbolic_computing
-	    Problems for the text book `Introduction
-	    to Symbolic Computing' by Robert Walton.
+    hpcm/examples/test
+
+contains tests of the features described in this sec-
+tion.
 
 
 Library Data: Help Documentation
