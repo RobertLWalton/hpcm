@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Oct  5 08:02:01 EDT 2005
+# Date:		Sat Dec 10 09:15:49 EST 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/10/05 11:56:33 $
+#   $Date: 2005/12/10 18:10:37 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.27 $
+#   $Revision: 1.28 $
 
 # make
 #	Makes documentation as fprintable .txt files in
@@ -65,7 +65,7 @@ DOCS=	overview.txt \
 	judge/lookat.txt \
 	judge/printer.txt \
 	contestant/printer.txt \
-	judge/makejudgingdir.txt \
+	judge/makecontest.txt \
 	judge/makescoreboard.txt \
 	judge/makeweb.txt \
 	judge/manualreply.txt \
@@ -228,11 +228,11 @@ judge/remakeMakefile.txt:	hpcm_judging.rc \
 	rm -f judge/remakeMakefile.txt
 	-../../judge/bin/remakeMakefile -doc \
 	    >judge/remakeMakefile.txt
-judge/makejudgingdir.txt:	hpcm_judging.rc \
-			../../judge/bin/makejudgingdir
-	rm -f judge/makejudgingdir.txt
-	-../../judge/bin/makejudgingdir -doc \
-	    >judge/makejudgingdir.txt
+judge/makecontest.txt:	hpcm_judging.rc \
+			../../judge/bin/makecontest
+	rm -f judge/makecontest.txt
+	-../../judge/bin/makecontest -doc \
+	    >judge/makecontest.txt
 judge/makescoreboard.txt:	hpcm_judging.rc \
 			../../judge/bin/makescoreboard
 	rm -f judge/makescoreboard.txt

@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Sep 29 05:13:09 EDT 2005
+# Date:		Sat Dec 10 13:08:26 EST 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/09/29 09:12:35 $
+#   $Date: 2005/12/10 18:08:48 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.6 $
+#   $Revision: 1.7 $
 
 # The location of the hpcm directory.
 #
@@ -66,13 +66,12 @@ HPCM=${HOME}/hpcm
 # items already have file names beginning with `demos/'.
 #
 # Note each index file entry consists of a series of
-# arguments to makejudgingdir, all but the last of
-# which end in `,'.  The first argument is the index
-# file name and the other arguments are replacement
-# instructions, with `=' for name replacements, and `:'
-# for option replacements.  For more details, see the
-# documentation of makejudgingdir (run `makejudgingdir
-# -doc').
+# arguments to makecontest, all but the last of which
+# end in `,'.  The first argument is the index file name
+# and the other arguments are replacement instructions,
+# with `=' for name replacements, and `:' for option
+# replacements.  For more details, see the documentation
+# of makecontest (run `makecontest -doc').
 
 INDICES=    ${HPCM}/problem_library/test/test_index, \
 		=problems/
@@ -81,7 +80,7 @@ all:	setup test diff
 
 setup:
 	@echo SETUP
-	makejudgingdir -solutions -mail ${INDICES}
+	makecontest -solutions -mail ${INDICES}
 	chmod a+x . ..
 
 test:
