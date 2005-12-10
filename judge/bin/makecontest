@@ -6,7 +6,7 @@
 #
 # File:		makejudgingdir
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Oct 30 11:42:05 EST 2005
+# Date:		Sat Dec 10 08:50:29 EST 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/10/30 16:58:54 $
+#   $Date: 2005/12/10 14:05:12 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.107 $
+#   $Revision: 1.108 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -68,6 +68,10 @@ proc indent_list { indent list } {
 
 set document "
 makejudgingdir option ... index_specification ...
+
+  If no arguments are given, makejudgingdir takes its
+  arguments from the makejudgingdir_arguments global
+  variable, if that exists.
 
   Options:
     -formal     Sets up a formal contest.  Equals all
@@ -683,6 +687,16 @@ makejudgingdir option ... index_specification ...
     this program are not written to log files, but are
     announced on the standard error output."
 
+# If no arguments are given, use the value of the
+# makejudgingdir_arguments global variable if that
+# exists.
+#
+if {    $argc == 0 \
+     && [info exists makejudgingdir_arguments] } {
+    set argv $makejudgingdir_arguments
+    set argc [llength $argv]
+}
+
 # Argi is the index of the current argument, for use in
 # lindex.
 #
@@ -789,8 +803,8 @@ while { $argi < $argc } {
 # begins with `-', print documentation and exit with
 # error.
 #
-if { $argi < $argc \
-     && [regexp {^-} [lindex $argv $argi]] } {
+if { $argi >= $argc \
+     || [regexp {^-} [lindex $argv $argi]] } {
     puts $document
     exit 1
 }
