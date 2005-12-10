@@ -4,7 +4,7 @@
 #
 # File:		overview
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Nov 17 07:39:16 EST 2005
+# Date:		Sat Dec 10 09:08:45 EST 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/11/17 14:06:35 $
+#   $Date: 2005/12/10 15:41:44 $
 #   $RCSfile: overview,v $
-#   $Revision: 1.86 $
+#   $Revision: 1.87 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -338,8 +338,8 @@ The problem directories are listed in the
 
 	hpcm/problem_library/index
 
-file, which can be input to the makejudgingdir program
-to define which problems are to be used in a particular
+file, which can be input to the makecontest program to
+define which problems are to be used in a particular
 contest, and to create an index of these problems.
 
 Emails giving permission to make various problems public
@@ -506,8 +506,8 @@ files are optional.
     	       how the automatic scoring is done (e.g.,
 	       what numeric tolerances are permitted).
 	       The files delivered to contestants when a
-	       contest is made by makejudgingdir can
-	       also be controlled.
+	       contest is made by makecontest can also
+	       be controlled.
 	       
 	       This file contains parameters that over-
 	       ride those set in hpcm_judging.rc, or
@@ -516,7 +516,7 @@ files are optional.
 	       unset.  This file is `sourced' after
 	       hpcm_judging.rc by programs that process
 	       a problem submission (e.g., autojudge)
-	       or make a contest (e.g, makejudgingdir).
+	       or make a contest (e.g, makecontest).
 
 	       See the `Problem .rc Files' section of
 	       hpcm/judge/lib/hpcm_judging.rc for more
@@ -683,10 +683,10 @@ file name.  The default settings work for many pro-
 blems, for example, by delivering *.txt files as de-
 scription files, Makefile as a source file, and by
 excluding *.rc files.  The `all' option in a problem
-index passed to the makejudgingdir program sets the
-second variable to the regular expression .*, which
-delivers all files not excluded by the last variable
-to the contestant.
+index passed to the makecontest program sets the second
+variable to the regular expression .*, which delivers
+all files not excluded by the last variable to the
+contestant.
 
 A problem submission consists of one or more files.
 The global variables
@@ -819,7 +819,7 @@ tree rooted at
 	hpcm/contestant/help
 
 A help file index (in a format prescribed by the
-`makejudgingdir' program) is in
+`makecontest' program) is in
 
 	hpcm/contestant/help/index
 
@@ -1005,7 +1005,7 @@ define the contest, in addition to many components that
 belong to the raw or derived data of the contest, and
 are listed elsewhere below.  Starting from a few contest
 defining components, the other contest defining compo-
-nents can be made automatically by the `makejudgingdir'
+nents can be made automatically by the `makecontest'
 program.
 
 The contest defining components of the judging directory
@@ -1027,11 +1027,11 @@ are:
 	are usually in a special (and secure) directory
 	that has an index file listing the problems.
 	This index file is in a format suitable for the
-	`makejudgingdir' program.
+	`makecontest' program.
 
 	The solutions directory and its contents (i.e.,
 	the symbolic links) are made automatically by
-	`makejudgingdir'.
+	`makecontest'.
 
     info
         The info directory for the contest.  This only
@@ -1045,10 +1045,10 @@ are:
 	help, demos, and problems.  These in turn con-
 	tain files and subdirectories.  The files
 	proper are typically represented by symbolic
-	links: see `makejudgingdir' documentation.
+	links: see `makecontest' documentation.
 
 	The info directory and its contents are made
-	automatically by `makejudgingdir'.
+	automatically by `makecontest'.
 
     contest
         The contest directory of the contest.  Actually,
@@ -1068,31 +1068,31 @@ are:
 	directory must be made by hand.
 
 	The contents of the contest directory are made
-	automatically by `makejudgingdir', with the
-	exception of a few symbolic links to other
-	directories and a few files (see `Contest Def-
-	inition Data: The Contest Directory' below).
+	automatically by `makecontest', with the excep-
+	tion of a few symbolic links to other director-
+	ies and a few files (see `Contest Definition
+	Data: The Contest Directory' below).
 
     help
         The help directory within the judging directory.
 	This is not used during the contest proper, but
 	is merely a staging area for the `this_contest'
 	help file.  It contains the following files that
-	are created by `makejudgingdir':
+	are created by `makecontest':
 
 	    this_contest
 	        The help file particular to the contest.
 
 	    index
 	        An index file to be input to `make-
-		judgingdir' that lists all the index
+		contest' that lists all the index
 		files output by that program and also
 		lists the `this_contest' help file.
 
 	The help directory and its contents are made
-	automatically by `makejudgingdir', but then
-	the person defining the contest must edit the
-	`this_contest' file and re-run `makejudgingdir'.
+	automatically by `makecontest', but then the
+	person defining the contest must edit the
+	`this_contest' file and re-run `makecontest'.
 
     scoreboard.notes
         A file standardly appended to the scoreboard by
@@ -1105,9 +1105,9 @@ are:
 	the scoreboard can be changed.
 
     TODO
-    	When `makejudgingdir' runs, it appends instruc-
-	tions to its user to the end of this file.
-	Typical instructions are `edit ./contest/secure/
+    	When `makecontest' runs, it appends instructions
+	to its user to the end of this file.  Typical
+	instructions are `edit ./contest/secure/
 	passwords' and `put the following lines in
 	the judge's ~/.procmailrc file: ...'.
 
@@ -1118,9 +1118,9 @@ used by HPCM programs themselves.  This is:
     Makefile
         The instructions to the UNIX `make' program so
 	that running `make' in the judging directory
-	will run `makejudgingdir' to build all the
-	contest definition files.  The parameters to
-	`makejudgingdir' are complex, and need to be
+	will run `makecontest' to build all the contest
+	definition files.  The parameters to
+	`makecontest' are complex, and need to be
 	kept in a file.  The Makefile may also do
 	some of the things that this overview says
 	must be done `by hand'.
@@ -1163,7 +1163,7 @@ components that contestants can access.
 	See `Installing HPCM' (hpcm/judge/doc/instal-
 	ling_hpcm.txt).
 
-	The `makejudgingdir' program symbolically links
+	The `makecontest' program symbolically links
 	`bin' to `contestant/bin' in the contest direc-
 	tory.  See `contestant' below.
 
@@ -1178,9 +1178,9 @@ components that contestants can access.
 	read by the contestant `help' program.
 
 	This `help' directory and its contents are
-	made automatically by `makejudgingdir'.  It is
-	an exact copy of info/help (except that info/
-	help does not exist for some (formal) contests).
+	made automatically by `makecontest'.  It is an
+	exact copy of info/help (except that info/help
+	does not exist for some (formal) contests).
 
 	The following are some special help files
 	of note:
@@ -1235,8 +1235,8 @@ components that contestants can access.
 	by contestants.  See hpcm/contestant/printer_
 	pipe for details.
 
-	This file is made by `makejudgingdir' if neither
-	it or printer_map exist, and may be edited or
+	This file is made by `makecontest' if neither it
+	or printer_map exist, and may be edited or
 	removed by hand.
 
     printer_jobs
@@ -1253,8 +1253,8 @@ components that contestants can access.
 	`printer' program to print out printer status,
 	and by the judges to monitor printer activity.
 
-	This file is made by `makejudgingdir' and can
-	be removed or made o-rw by hand.
+	This file is made by `makecontest' and can be
+	removed or made o-rw by hand.
 
     problems
     	This directory contains problem directories for
@@ -1319,15 +1319,15 @@ components that contestants can access.
 	directory to a+rx.
 
 	This `problems' directory and its contents are
-	made automatically by `makejudgingdir'.  This
+	made automatically by `makecontest'.  This
 	contest/problems directory is an exact copy for
 	formal contests of what goes into info/problems
 	for informal and email contests, except that
 	contest/problems does not have problem descrip-
-	tion (e.g., .txt) files (unless the makejudging-
-	dir -description option is used), and the files
-	in contest/problems are copies, while the files
-	in info/problems are symbolic links.
+	tion (e.g., .txt) files (unless the makecontest
+	-description option is used), and the files in
+	contest/problems are copies, while the files in
+	info/problems are symbolic links.
 
 	The `demos' directory is similarly made and is
 	an exact copy of what would go into info/demos.
@@ -1369,9 +1369,9 @@ components that contestants can access.
 	setuid mechanism) to the judging account.
 
 	This directory, if it does not already exist,
-	will be made by the `makejudgingdir' program,
-	as will some of the files in the directory.
-	The files in this directory are:
+	will be made by the `makecontest' program, as
+	will some of the files in the directory.  The
+	files in this directory are:
 
 	    secure/hpcm_sendmail.rc
 	        This file contains parameters for hpcm_
@@ -1397,7 +1397,7 @@ components that contestants can access.
 		complete outsiders from `crashing the
 		party', however.
 
-		This file is made by the makejudgingdir
+		This file is made by the makecontest
 		program, which creates random passwords
 		for the email address and key.
 
@@ -1415,8 +1415,8 @@ components that contestants can access.
 		in descriptive form.
 
 		The password field can be generated by
-		the makejudgingdir program.  The rest
-		of the file must be made by hand.
+		the makecontest program.  The rest of
+		the file must be made by hand.
 
 		Only the account and password fields are
 		needed by HPCM to run a contest.  The
@@ -1458,9 +1458,9 @@ components that contestants can access.
 	the contestant account name instead.
 
 	The who_where file is made automatically from
-	the secure/passwords file by makejudgingdir,
-	and will be updated automatically by that
-	program when the secure/passwords file changes.
+	the secure/passwords file by makecontest, and
+	will be updated automatically by that program
+	when the secure/passwords file changes.
 	However, the `WHERE' field in the who_where
 	file must then be filled in by hand.
 
@@ -1475,7 +1475,7 @@ components that contestants can access.
 	Data: The Home Directory' below.
 
 	The `trashable' file is made from secure/
-	passwords by the `makejudgingdir -trashable'
+	passwords by the `makecontest -trashable'
 	command.  It is just the list of all accounts in
 	secure/passwords. It should only be made just
 	before trashing the contestant accounts, and
@@ -1703,7 +1703,7 @@ There is one file in the judging account that is shared
 among all the contests supported by the account:
 
     ~/.procmailrc
-    	When the makejudgingdir program creates the
+    	When the makecontest program creates the
 	contest/secure/hpcm_sendmail.rc file, it
 	writes into the TODO file some lines that must
 	be copied by hand to the ~/.procmailrc file.
@@ -1941,9 +1941,8 @@ Raw data is stored in the following directories:
 	The processing of that email occurs within this
 	subdirectory.
 
-	The mail_directory is created by `makejudging-
-	dir' and must exist before judge's email is
-	received.
+	The mail_directory is created by `makecontest'
+	and must exist before judge's email is received.
 
     mail_directory/dddd-<<ssssss>>-submission
 
@@ -2807,7 +2806,7 @@ Programs: Contest Making
 
 The following programs are used to make contests:
 
-    hpcm/judge/bin/makejudgingdir
+    hpcm/judge/bin/makecontest
     	Make the contest definition files starting
 	from parameters to this program (usually
 	contained in a Makefile) and hpcm_judging.rc.

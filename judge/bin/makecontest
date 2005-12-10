@@ -4,9 +4,9 @@
 # of a judging directory and its associated contest
 # directory.
 #
-# File:		makejudgingdir
+# File:		makecontest
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Dec 10 08:50:29 EST 2005
+# Date:		Sat Dec 10 09:07:22 EST 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/12/10 14:05:12 $
+#   $Date: 2005/12/10 15:41:44 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.108 $
+#   $Revision: 1.109 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -67,10 +67,10 @@ proc indent_list { indent list } {
 }
 
 set document "
-makejudgingdir option ... index_specification ...
+makecontest option ... index_specification ...
 
-  If no arguments are given, makejudgingdir takes its
-  arguments from the makejudgingdir_arguments global
+  If no arguments are given, makecontest takes its
+  arguments from the makecontest_arguments global
   variable, if that exists.
 
   Options:
@@ -445,8 +445,8 @@ makejudgingdir option ... index_specification ...
     of the directory name.  If that file exists it is
     sourced into a local procedure (so it will not
     define global variables other than those needed by
-    makejudgingdir).  The PROBLEM.rc file may reference
-    the variables
+    makecontest).  The PROBLEM.rc file may reference the
+    variables
 
     	PROBLEM		Name of problem.
 	EXTENSION	Equals \"UNDEFINED\"
@@ -488,7 +488,7 @@ makejudgingdir option ... index_specification ...
     is that source files are always copied into
     ./contest/{problems,demos,help}, whereas description
     files are copied only if the -description option is
-    given to makejudgingdir.
+    given to makecontest.
     
     The `all' option in an index item changes the
     problem_source_files value to {.*} and the problem_
@@ -542,7 +542,7 @@ makejudgingdir option ... index_specification ...
     ./help/this_contest.  The -this_contest option is
     processed before any input index files are read, so
     ./help/index may be used as an input index file in
-    the same call to `makejudgingdir' that creates the
+    the same call to `makecontest' that creates the
     ./help/index file.
 
     The ./help/this_contest file is initialized to a
@@ -678,7 +678,7 @@ makejudgingdir option ... index_specification ...
     The file names within these directories are literal-
     ly as given in this document.
 
-    Like other HPCM programs, `makejudgingdir' can be
+    Like other HPCM programs, `makecontest' can be
     run from anywhere in the judge's directory subtree
     which is rooted by the directory containing the
     `hpcm_judging.rc' file.
@@ -688,12 +688,12 @@ makejudgingdir option ... index_specification ...
     announced on the standard error output."
 
 # If no arguments are given, use the value of the
-# makejudgingdir_arguments global variable if that
+# makecontest_arguments global variable if that
 # exists.
 #
 if {    $argc == 0 \
-     && [info exists makejudgingdir_arguments] } {
-    set argv $makejudgingdir_arguments
+     && [info exists makecontest_arguments] } {
+    set argv $makecontest_arguments
     set argc [llength $argv]
 }
 
@@ -1569,8 +1569,8 @@ if { $this_contest_option \
     close $tc_ch
 
     TODO "Edit $j_d/help/this_contest." \
-         "Then rerun makejudgingdir to recompute\
-	       help files."
+         "Then rerun makecontest to recompute help\
+	  files."
 
     # For Email contest say something about .procmailrc.
     #
@@ -2201,7 +2201,7 @@ if { $home_option } {
 	      account," \
 	     "link ./contest/home to\
 	      `~prototype_account/home' directory," \
-	     "and rerun `makejudgingdir -home'." \
+	     "and rerun `makecontest -home'." \
 	     "See `SETUP_PROTOTYPE -doc' and\
 	      contest Makefile for instructions."
     }

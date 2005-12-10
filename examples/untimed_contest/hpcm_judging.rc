@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Feb  8 04:05:46 EST 2003
+# Date:		Sat Dec 10 09:26:41 EST 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,19 +11,119 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/10/01 20:32:25 $
+#   $Date: 2005/12/10 15:38:51 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.15 $
+#   $Revision: 1.16 $
 
 
-# Read standard parameters.  The filename MUST be
-# absolute and not relative.  Change the filename
-# to reflect the current location of `hpcm'.
+# Read standard parameters.
 #
-source ~/hpcm/judge/lib/hpcm_judging.rc
+source $lib_directory/hpcm_judging.rc
 
 # The following overwrites parameters set by the
 # above `source' command.
+
+# Makecontest parameters.
+
+# Set to the HPCM directory.
+#
+set hpcm_directory $env(HOME)/hpcm
+
+# Set to the prototype account (as per SETUP_PROTOTYPE)
+# if it does not have the name *[-_]proto or is not
+# unique.
+#
+# set hpcm_prototype_account TBD
+
+# Set to something to be added to the front of help/
+# this_contest_prototype to make the initial help/
+# this_contest.  Unused if only whitespace.
+# 
+set this_context_prefix "
+THIS FILE IS UNEDITED AND INACCURATE!
+"
+
+# Default arguments to makecontest.  See below for
+# documentation.
+#
+set makecontest_arguments "
+    -email \
+    $judging_directory/help/index, \
+	=help/ \
+    $hpcm_directory/contestant/help/index, \
+	common/=help/, \
+	email/=help/, \
+	advanced/=help/, \
+	    email:include, \
+	    common:include, \
+	    advanced:include \
+    $hpcm_directory/problem_library/index, \
+	public/=problems/, \
+	private/=problems/, \
+	    demo:include, \
+	    P1:include
+"
+
+# The first argument, -email, tells the type of the
+# contest.  The rest of the arguments are a series of
+# entries each concerning an index file.  For example,
+# the entry:
+#
+#	    $hpcm_directory/contestant/help/index, \
+#		common/=help/, \
+#		email/=help/, \
+#		advanced/=help/, \
+#		    email:include, \
+#		    common:include, \
+#		    advanced:include
+#
+# concerns the index file whose name (relative to this
+# directory) is $hpcm_directory/contestant/help/index.
+# You you should look at this file.  Each item in this
+# file begins with a line of the format:
+#
+#	*** name option ...
+#
+# The instruction `common/=help/' says replace the
+# initial substring `common/' with `help/' in the item
+# name to make the final file name in the `info' direc-
+# tory for email contests or `contest' directory for
+# formal or informal contests.  The instruction
+# `common:include' says replace the option `common' in
+# the index file item by the option `include'.  After
+# all replacements are made in the first line of the
+# item, the item is used if and only if it has the
+# `include' option.  And if used, the item represents a
+# file or subdirectory in one of the three contest di-
+# rectories `help/', `demos/', or `problems/'.
+#
+# Index file names must begin with $hpcm_directory,
+# $judging_directory, or ~, so the index files can be
+# located if $judging_directory or any of its descendant
+# directories is current.
+#
+# Note that in `$judging_directory/help/index' above
+# (not the same as `$hpcm_directory/contestant/help/
+# index') the items already have the `include' option.
+# `$judging_directory/help/index' is used to start the
+# contestants `help/index' file and provide a `this_
+# contest' item for the file `help/this_contest'.
+#
+# Note that in `$hpcm_directory/problem_library/index'
+# demo items already have file names beginning with
+# `demos/'.
+#
+# Each index file entry consists of a series of argu-
+# ments to makecontest, all but the last of which end in
+# `,'.  The last argument of the index file entry does
+# NOT end in `,', and the argument after that begins the
+# next entry.
+#
+# The first argument of an entry is the index file name
+# and the other arguments are replacement instructions,
+# with `=' for name replacements, and `:' for option
+# replacements.  For more details, see the documentation
+# of makecontest (run `makecontest -doc').
 
 # Set the response_mode to return solutions for
 # `Completely Correct' submissions.
