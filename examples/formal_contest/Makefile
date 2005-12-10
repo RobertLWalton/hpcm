@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Oct 24 04:32:19 EDT 2004
+# Date:		Sat Dec 10 11:13:26 EST 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2004/10/24 08:43:36 $
+#   $Date: 2005/12/10 16:20:08 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.28 $
+#   $Revision: 1.29 $
 
 # To make a formal contest named `foo':
 #
@@ -45,8 +45,7 @@
 #
 # 4. Put copies of the files in this directory into
 #    your judging directory, and edit the names in
-#    hpcm_judging.rc appropriately.  In this Makefile
-#    edit just the INDICES variable below at this time.
+#    hpcm_judging.rc appropriately.
 #
 #    Be sure you edit the scoreboard_stop_time to be
 #    some time in the future.
@@ -123,7 +122,7 @@
 #    After you follow an instruction, edit it out of
 #    the TODO file.
 #
-#    If an instruction says `rerun makejudgingdir',
+#    If an instruction says `rerun makecontest',
 #    do this by rerunning `make'.
 #
 #    Among other things you will be asked to edit
@@ -160,7 +159,7 @@
 #     Executing `make', or more specifically:
 #
 #		cd ~/judging_foo_password
-#		makejudgingdir -secure
+#		makecontest -secure
 #
 #     will add random passwords to this file for any
 #     account that lacks a password.  Giving an account
@@ -180,7 +179,7 @@
 #     cute `make', or execute more specifically:
 #
 #		cd ~/judging_foo_password
-#		makejudgingdir -who_where
+#		makecontest -who_where
 #
 #     to move the updated info into the ~/contest_foo/
 #     who_where file.  Whenever you change passwords,
@@ -454,74 +453,8 @@ R=${HPCM}/examples/test_submissions/formal_replies
 .SUFFIXES:
 .SUFFIXES:	.mail .send
 
-# INDICES below is a description of the help, problems,
-# and demos files to be available to contestants.
-# INDICES consists of a series of entries each concern-
-# ing an index file.  For example, the entry:
-#
-#	    ${HPCM}/contestant/help/index, \
-#		common/=help/, \
-#		formal/=help/, \
-#		advanced/=help/, \
-#		    formal:include, \
-#		    common:include, \
-#		    advanced:include
-#
-# concerns the index file whose name (relative to this
-# directory) is ${HPCM}/contestant/help/index.  You
-# you should look at this file.  Each item in this file
-# begins with a line of the format:
-#
-#	*** name option ...
-
-# The instruction `common/=help/' says replace the
-# initial substring `common/' with `help/' in the item
-# name to make the final file name in the `info' direc-
-# tory for email contests or `contest' directory for
-# formal or informal contests.  The instruction
-# `common:include' says replace the option `common' in
-# the index file item by the option `include'.  After
-# all replacements are made in the first line of the
-# item, the item is used if and only if it has the
-# `include' option.  And if used, the item represents a
-# file or subdirectory in one of the three contest di-
-# rectories `help/', `demos/', or `problems/'.
-#
-# Note that in `help/index' below (not the same as
-# `../contestant/help/index') the items already have the
-# `include' option.  `help/index' is used to start the
-# contestants `help/index' file and provide a `this_
-# contest' item for the file `help/this_contest'.
-#
-# Note that in `${HPCM}/problem_library/index' demo
-# items already have file names beginning with `demos/'.
-#
-# Note each index file entry consists of a series of
-# arguments to makejudgingdir, all but the last of
-# which end in `,'.  The first argument is the index
-# file name and the other arguments are replacement
-# instructions, with `=' for name replacements, and `:'
-# for option replacements.  For more details, see the
-# documentation of makejudgingdir (run `makejudgingdir
-# -doc').
-
-INDICES=    help/index, \
-		=help/ \
-	    ${HPCM}/contestant/help/index, \
-		common/=help/, \
-		formal/=help/, \
-		advanced/=help/, \
-		    formal:include, \
-		    common:include, \
-		    advanced:include \
-	    ${HPCM}/problem_library/index, \
-		public/=problems/, \
-		private/=problems/, \
-		    demo:include, \
-		    P1:include
-
 all:
-	makejudgingdir -formal ${INDICES}
+	makecontest
 	chmod a+x . ..
 
 
@@ -539,7 +472,7 @@ web:	web_do
 test:	test_all
 
 trashable:
-	makejudgingdir -trashable
+	makecontest -trashable
 
 nontrashable:
 	rm -f ./contest/trashable
