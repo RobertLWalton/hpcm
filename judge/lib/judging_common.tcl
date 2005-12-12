@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Oct  4 20:27:07 EDT 2005
+# Date:		Mon Dec 12 03:46:37 EST 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/10/05 00:26:07 $
+#   $Date: 2005/12/12 09:25:20 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.122 $
+#   $Revision: 1.123 $
 #
 
 # Table of Contents
@@ -1186,6 +1186,38 @@ proc compute_message_date {} {
     }
 }
 
+# Read the $judging_directory/contest/secure/hpcm_
+# sendmail.rc file and return a list of the form
+#
+#	{ To-value Key-value Key-Name-value }
+#
+# Missing values return as "".  If file does not exist,
+# all values return as "".
+#
+proc read_sendmail_rc { } {
+    global judging_directory
+    set dir $judging_directory/contest/secure
+    if { ! [file exists $dir/hpcm_sendmail.rc] } {
+        return [list "" "" ""]
+    }
+    set ch [open $dir/hpcm_sendmail.rc r]
+    set to ""
+    set key ""
+    set key_name ""
+    while { "yes" } {
+        set line [gets $ch]
+	if { [eof $ch] } break
+	regexp -nocase {^To:(.*)$} $line forget to
+	regexp -nocase {^Key:(.*)$} $line forget key
+	regexp -nocase {^Key-Name:(.*)$} \
+	       $line forget key_name
+    }
+    close $ch
+    return [list [string trim $to] \
+                 [string trim $key] \
+		 [string trim $key_name]]
+}
+
 # Compute whether the header just read by read_header
 # is authentic.  Return `yes' if it is, `no' if it is
 # not.  If the header does not already have the same
@@ -1193,6 +1225,11 @@ proc compute_message_date {} {
 # field, add that field with the newly computed value
 # to the end of the header stored in the message_...
 # global variables.
+#
+# If needed the required key is found in the authentica-
+# tion_keys global variable if it is there, or in the
+# $judging_directory/contest/secure/hpcm_sendmail.rc
+# file otherwise.
 #
 proc compute_authentication {} {
 
@@ -1218,15 +1255,30 @@ proc compute_authentication {} {
 	    [lindex $message_x_hpcm_signature 0]
         set signature \
 	    [lindex $message_x_hpcm_signature 1]
-	if { [catch \
-	        { set key \
-		      $authentication_keys($keyname) \
-		      }] } {
-	    # If we have no key for the keyname,
-	    # result is no.
-	    #
-	    set result no
+
+	# Find key and set result yes temporarily, or
+	# do not find key and set result no.
+	#
+	if { ! [catch \
+	          { set key \
+		        $authentication_keys($keyname) \
+		        }] } {
+	    set result yes
 	} else {
+	    set v [read_sendmail_rc]
+	    set key [lindex $v 1]
+	    if {    $keyname == [lindex $v 2] \
+	         && $key != "" } {
+		set result yes
+	    } else {
+	        set result no
+	    }
+	}
+
+	# If result set to yes above, check authentica-
+	# tion and recompute result.
+	#
+	if { $result } {
 
 	    # We can compute a signature: do so.
 	    #
