@@ -6,7 +6,7 @@
 #
 # File:		makecontest
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Dec 10 09:07:22 EST 2005
+# Date:		Mon Dec 12 10:00:58 EST 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/12/10 15:41:44 $
+#   $Date: 2005/12/12 15:44:44 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.109 $
+#   $Revision: 1.110 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -112,6 +112,7 @@ makecontest option ... index_specification ...
 
     -secure	Make ./contest/secure/passwords,
 		     ./contest/secure/hpcm_sendmail.rc
+    -procmailrc	Update ~/.procmailrc
     -who_where  Make ./contest/who_where
     -trashable  Make ./contest/trashable
     -printer    Make ./contest/printer and
@@ -591,9 +592,6 @@ makecontest option ... index_specification ...
     go-rw.  If the ./contest/secure/passwords file is
     made, instructions for editing it are written to
     ./TODO, but the file automatically made is empty.
-    If the ./contest/secure/hpcm_sendmail.rc file is
-    made, instructions for editing it and the
-    ~/.procmailrc file are written into ./TODO.
 
     The ./contest/secure/passwords file consists of
     lines of the form
@@ -619,6 +617,12 @@ makecontest option ... index_specification ...
     being generated and to prevent the hpcm_set_
     passwords program from setting the password of the
     line's account.
+
+    The -procmailrc program updates the ~/.procmailrc
+    file.  The judge's To: address is taken form the
+    ./contest/secure/hcpm_sendmail.rc file if that
+    exists, and from the autojudge_address global
+    variable otherwise.
 
     The -who_where program option makes the ./contest/
     who_where file if it does not exist, or updates it
@@ -715,6 +719,7 @@ set this_contest_option		no
 set mail_option			no
 set bin_option			no
 set secure_option		no
+set procmailrc_option		no
 set who_where_option		no
 set trashable_option		no
 set printer_option		no
@@ -735,6 +740,7 @@ while { $argi < $argc } {
 			  set mail_option	yes
 			  set bin_option	yes
 			  set secure_option	yes
+			  set procmailrc_option	yes
 			  set who_where_option	yes
 			  set printer_option	yes
 			  set home_option	yes
@@ -751,6 +757,7 @@ while { $argi < $argc } {
 			  set mail_option	yes
 			  set bin_option	yes
 			  set secure_option	yes
+			  set procmailrc_option	yes
 			  set who_where_option	yes
 			  set printer_option	yes
 			  set home_option	yes
@@ -764,6 +771,7 @@ while { $argi < $argc } {
 			  set mail_option	yes
 			  set bin_option	yes
 			  set secure_option	yes
+			  set procmailrc_option	yes
 			  set who_where_option	yes
 			  set printer_map_option \
 			  			yes
@@ -774,6 +782,7 @@ while { $argi < $argc } {
 			  set mail_option	yes
 			  set this_contest_option \
 			  			yes
+			  set procmailrc_option	yes
 			  set contest_type email }
         -info		{ set info_option 	yes }
         -solutions	{ set solutions_option 	yes }
@@ -788,6 +797,7 @@ while { $argi < $argc } {
         -mail		{ set mail_option 	yes }
         -bin		{ set bin_option 	yes }
         -secure		{ set secure_option 	yes }
+	-procmailrc	{ set procmailrc_option	yes }
         -who_where	{ set who_where_option 	yes }
         -trashable	{ set trashable_option 	yes }
         -printer	{ set printer_option 	yes }
@@ -799,12 +809,11 @@ while { $argi < $argc } {
     incr argi
 }
 
-# If no arguments left or first remaining argument
-# begins with `-', print documentation and exit with
-# error.
+# If first remaining argument begins with `-', print
+# documentation and exit with error.
 #
-if { $argi >= $argc \
-     || [regexp {^-} [lindex $argv $argi]] } {
+if {    $argi < $argc \
+     && [regexp {^-} [lindex $argv $argi]] } {
     puts $document
     exit 1
 }
@@ -1896,34 +1905,6 @@ if { $secure_option \
     close $rc_ch
     deny_access $c_d/secure/hpcm_sendmail.rc
 
-    TODO "Either edit \
-          ./contest/secure/hpcm_sendmail.rc \
-	  to remove the Key and Key-Name" \
-	 "and edit hpcm_judging.rc\
-	  authentication variables to contain:" \
-	 "    set use_authentication no" \
-	 "or edit hpcm_judging.rc\
-	  authentication variables to contain:" \
-	 "" \
-	 "    set use_authentication yes" \
-	 "    array set authentication_keys {" \
-	 "        $key_name $key" \
-	 "    }"
-
-    TODO "Edit ~/.procmailrc to contain:" \
-         "" \
-	 ":0" \
-	 "* ^To:.*$to_password" \
-	 "| receivemail $j_d_relative | \\" \
-  	 "  dispatchmail $j_d_relative"
-    TODO "You may want to add the following to\
-	  the BEGINNING of your ~/.procmailrc" \
-	 "file if you have not ALREADY done so.\
-	 \  This will capture all mail the" \
-	 "judge receives in ~/hpcm_mbox." \
-	 "" \
-	 ":0 c:" \
-	 "hpcm_mbox"
 
     # Check contest/bin/hpcm_sendmail mode.
     #
@@ -1956,6 +1937,85 @@ if { $secure_option } {
 	              [get_access \
 		           $c_d/secure/passwords]] } {
         TODO "chmod o-rwx ./contest/secure/passwords"
+    }
+}
+
+# Update ~/.procmailrc
+#
+if { $procmailrc_option } {
+    set to [lindex [read_sendmail_rc] 0]
+    if { $to == "" } {
+	set to $autojudge_address
+    }
+    set to_password ""
+    regexp {^([^<]*)<} $to forget to_password
+    set to_password [string trim $to_password]
+    if { $to_password == "" } {
+	error \
+	  "Cannot find autojudge password in\
+	   ./contest/secure/hpcm_sendmail.rc\
+	   or autojudge_address"
+    }
+
+    set add_dispatch yes
+    set add_mbox yes
+    set to ""
+    set dis {receivemail[ \t]+([^ \t]+)($|[ \t])}
+    set dis_to ""
+    set mbox {(^|[ \t])hpcm_mbox($|[ \t])}
+    if { ! [catch { set ch [open ~/.procmailrc r] }] } {
+        while { "yes" } {
+	    set line [gets $ch]
+	    if { [eof $ch] } break
+	    if { [regexp {^[ \t]*#} $line] } {
+	    	# comment line
+	    } elseif { [regexp {To:.*$} $line to] } {
+	    } elseif {    [regexp $dis $line \
+	                          forget dir] \
+		       &&    [string trim $dir] \
+		          == $j_d_relative } {
+	        set add_dispatch no
+		set dis_to $to
+	    } elseif { [regexp $mbox $line] } {
+	        set add_mbox no
+	    }
+	}
+	close $ch
+    }
+
+    if { $add_dispatch } {
+	set file [read_entire_file ~/.procmailrc]
+	if { $add_mbox } {
+	    set file ":0 c:\nhpcm_mbox\n\n$file"
+	    TODO "The following has been prepended\
+		  to ~/.procmailrc:" \
+		 "" \
+		 ":0 c:" \
+		 "hpcm_mbox"
+	}
+	set file "$file\n\n:0\n*\
+		  ^To:.*$to_password\n|\
+		  receivemail $j_d_relative | \\\n \
+		  dispatchmail $j_d_relative"
+	TODO "The following has been appended\
+	      to ~/.procmailrc:" \
+	     "" \
+	     ":0" \
+	     "* ^To:.*$to_password" \
+	     "| receivemail $j_d_relative | \\" \
+	     "  dispatchmail $j_d_relative"
+	write_file ~/.procmailrc $file
+    } else {	# ! $add_dispatch
+	set dis_password ""
+	regexp {^To:[ \t]*\.\*([^ \t]*)($|[ \t])} \
+	       $dis_to forget dis_password
+	set dis_password \
+	    [string trim $dis_password]
+	if { $dis_password != $to_password } {
+	    error "~/.procmailrc autojudge password\
+		   $dis_password does not match\
+		   desired password $to_password"
+	}
     }
 }
 
