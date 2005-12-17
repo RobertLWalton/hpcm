@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Dec 10 11:09:22 EST 2005
+# Date:		Sat Dec 17 07:18:25 EST 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,18 +11,121 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/12/10 16:20:08 $
+#   $Date: 2005/12/17 15:45:29 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.24 $
+#   $Revision: 1.25 $
 
 # Read standard parameters.
 #
 source $lib_directory/hpcm_judging.rc
 
-# The following overwrites parameters set by the
-# above `source' command.
+# The following parameters determine the type and
+# variety of contest.
 
-# Makecontest parameters.
+# Set to the HPCM directory.
+#
+set hpcm_directory $env(HOME)/hpcm
+
+# Contest name, for scoreboard etc.
+#
+set contest_name "CONTEST NAME IS TBD"
+
+# If there will be a manager on duty during the contest
+# to run the tracker program and manually check the
+# scoring, leave the following as "".  Otherwise set it
+# to the email address to be notified for errors or
+# queries, and in this case the scoring will be all
+# automatic.
+#
+set manager_address ""
+# set manager_address "someone@somecomputer"
+
+# Set the following to "yes" if the manager_address is
+# not "" AND you want all replies to contestants to be
+# CC'ed to the manager.
+#
+set cc_manager "no"
+
+# Scoring type.  One of:
+#
+#	timed		Timed from time the problems are
+#			passed out.
+#
+#	untimed		Scored according to number of
+#			incorrect, in, and inout submis-
+#			sions.
+#
+#	dated		Only date of correct submission
+#			is given.
+#
+#	timed+untimed	The contest is timed, but 12
+#			hours after the stop time the
+#			contest is converted into an
+#			untimed contest.
+#
+#	timed+dated	The contest is timed, but 12
+#			hours after the stop time the
+#			contest is converted into a
+#			dated contest.
+#
+#
+set scoring_type timed+untimed
+
+# For timed contests only, the start time and stop time
+# of the contest.
+#
+set start_time  "Jan 1 10:00:00 2050"
+set stop_time   "Jan 1 15:00:00 2050"
+#
+# If the scoreboard is to be frozen at a particular
+# time, that is the freeze time.  Otherwise set the
+# freeze time to "".
+#
+# set freeze_time   "Jan 1 14:00:00 2050"
+set freeze_time   ""
+#
+# The penalty IN SECONDS for submitting an incorrect
+# solution to a problem for which a correct solution is
+# later submitted in a timed contest.  1200 = 20 min.
+#
+set penalty 0
+# set penalty 120
+
+# The following are the beginning and ending of the
+# initial this_contest help file.  Each should begin and
+# end with a line feed, or be "".
+# 
+set this_context_prefix "
+THIS FILE IS UNEDITED AND INACCURATE!
+"
+set this_context_postfix ""
+
+# List of addresses for to email scoreboard to.  If this
+# list contains zzz<YYY>, then every time the scoreboard
+# is made it will be emailed to `zzz<YYY>', so in the
+# account YYY .procmailrc file you should put something
+# like the following to copy the scoreboard into the
+# public_html/xxx file of the YYY account:
+#
+#	:0 b:
+#	* ^To:.*zzz
+#	| cat >public_html/xxx;\
+#	  chmod a+r public_html/xxx
+#
+set scoreboard_addresses { }
+
+# List of makecontest arguments that specify the contest
+# problems.  The form is
+#
+#	INDEX-FILE-NAME,
+#	    SUBDIRECTORY=problems/,
+#	    QUALIFIER:include
+#
+set problems_arguments "
+    $hpcm_directory/problem_library/index, \
+	public/=problems/, \
+	    P1:include
+"
 
 # Set to contest directory, in case the $judging_
 # directory/contest link needs to be made.  If needed
@@ -32,23 +135,14 @@ source $lib_directory/hpcm_judging.rc
 #
 # set contest_directory $env(HOME)/contest_TBD
 
-# Set to the HPCM directory.
-#
-set hpcm_directory $env(HOME)/hpcm
-
 # Set to the prototype account (as per SETUP_PROTOTYPE)
 # if it does not have the name *[-_]proto or is not
 # unique.
 #
 # set hpcm_prototype_account TBD
 
-# Set to something to be added to the front of help/
-# this_contest_prototype to make the initial help/
-# this_contest.  Unused if only whitespace.
-# 
-set this_context_prefix "
-THIS FILE IS UNEDITED AND INACCURATE!
-"
+# The following overwrites parameters set by the
+# above `source' command.
 
 # Default arguments to makecontest.  See below for
 # documentation.
@@ -65,10 +159,8 @@ set makecontest_arguments "
 	    common:include, \
 	    advanced:include \
     $hpcm_directory/problem_library/index, \
-	public/=problems/, \
-	private/=problems/, \
 	    demo:include, \
-	    P1:include
+    $problems_arguments
 "
 
 # The first argument, -formal, tells the type of the
@@ -134,37 +226,15 @@ set makecontest_arguments "
 
 # Set the start/freeze/stop times for the contest.
 #
-set scoreboard_start_time  "Jan 1 10:00:00 2000"
-set scoreboard_freeze_time "Jan 1 14:00:00 2000"
-set scoreboard_stop_time   "Jan 1 15:00:00 2000"
-
-# Set penalty time IN SECONDS for submitting an
-# incorrect solution to a problem for which a correct
-# solution is later submitted.
-#
-set scoreboard_penalty 0
+if { [regexp {^timed} $contest_type] } {
+    set scoreboard_start_time  $start_time
+    set scoreboard_freeze_time $freeze_time
+    set scoreboard_stop_time   $stop_time
+}
 
 # Scoreboard name, i.e, the name of the contest.
 #
-set scoreboard_name ""
-
-# List of addresses for `makescoreboard' to email
-# scoreboard to.  If scoreboard_instructions includes
-# a `SEND' instruction for an OUTPUT file, and
-# scoreboard_addresses is a list containing zzz<YYY>,
-# then every time the output file is made it will be
-# emailed to `zzz<YYY>', so in the account YYY
-# .procmailrc file you should put something like:
-#
-#	:0 b:
-#	* ^To:.*zzz
-#	| cat >public_html/xxx;\
-#	  chmod a+r public_html/xxx
-#
-# See documentation for `scoreboard_instructions' for
-# more details and additional SEND features.
-#
-set scoreboard_addresses { }
+set scoreboard_name $contest_name
 
 # Scoreboard instructions for a small formal contest:
 #
