@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Dec 12 03:46:37 EST 2005
+# Date:		Sun Dec 18 07:23:08 EST 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/12/12 09:25:20 $
+#   $Date: 2005/12/18 12:26:17 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.123 $
+#   $Revision: 1.124 $
 #
 
 # Table of Contents
@@ -1350,7 +1350,7 @@ proc header_is_authentic {} {
 #
 # The reply header is automatically produced using the
 # following options.  The -cc option causes the reply to
-# be cc'ed to the `reply_manager' if that is not "".
+# be cc'ed to the `response_manager' if that is not "".
 # The -error option changes the reply subject from
 # `RE:...' to `Errors In:...'.
 #
@@ -1420,7 +1420,7 @@ proc compose_reply { args } {
            message_from message_date \
 	   message_reply_to message_subject \
 	   message_x_hpcm_test_subject \
-	   reply_manager
+	   response_manager
 
     # Remove options from the arguments and remember.
     #
@@ -1453,8 +1453,8 @@ proc compose_reply { args } {
     # Write header.
     #
     puts $reply_ch   "To:[compute_message_reply_to]"
-    if { $cc_option && $reply_manager != "" } {
-	puts $reply_ch "Cc: $reply_manager"
+    if { $cc_option && $response_manager != "" } {
+	puts $reply_ch "Cc: $response_manager"
     }
     puts $reply_ch "Reply-To:$message_to"
     if { $errors_option } {
