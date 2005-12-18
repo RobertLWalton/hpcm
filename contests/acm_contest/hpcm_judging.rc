@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/12/17 15:45:29 $
+#   $Date: 2005/12/18 02:16:07 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.25 $
+#   $Revision: 1.26 $
 
 # Read standard parameters.
 #
@@ -114,18 +114,46 @@ set this_context_postfix ""
 #
 set scoreboard_addresses { }
 
-# List of makecontest arguments that specify the contest
-# problems.  The form is
+# List of regular expressions that match the test
+# accounts which are NOT to appear on the scoreboard
+# once a timed contest starts.  They will appear in all
+# other circumstances.
+#
+set test_accounts { }
+
+# Ditto for test problems instead of accounts.  Usually
+# you need not change this.
+#
+set test_problems { count javaio }
+
+# List of makecontest arguments that specify the
+# problems.  The format is
 #
 #	INDEX-FILE-NAME,
-#	    SUBDIRECTORY=problems/,
+#	    SUBDIRECTORY/=problems/,
 #	    QUALIFIER:include
+#
+# where the problems are in the SUBDIRECTORY of the
+# directory holding the index file.
 #
 set problems_arguments "
     $hpcm_directory/problem_library/index, \
 	public/=problems/, \
 	    P1:include
 "
+# Use the following if index is in directory ~/p and
+# problems are in subdirectories of ~/p (so
+# `SUBDIRECTORY/' is the omitted).
+#
+# set problems_arguments "
+#     $env(HOME)/p/index, \
+#         =problems/, \
+#             ALL:include
+# "
+
+
+# Normally you should not have to make changes below
+# this point.
 
 # Set to contest directory, in case the $judging_
 # directory/contest link needs to be made.  If needed
@@ -135,20 +163,56 @@ set problems_arguments "
 #
 # set contest_directory $env(HOME)/contest_TBD
 
-# Set to the prototype account (as per SETUP_PROTOTYPE)
-# if it does not have the name *[-_]proto or is not
-# unique.
+# Set to the prototype account (as per SETUP_PROTOTYPE).
+# If not set, the unique account with name of the form
+# *[-_]proto and readable files home/setup.tar and home/
+# setup.ls is used, if there is such a unique account.
 #
 # set hpcm_prototype_account TBD
 
-# The following overwrites parameters set by the
-# above `source' command.
-
-# Default arguments to makecontest.  See below for
-# documentation.
+# Time in seconds after stop_time that contest is
+# converted from a timed to an untimed or dated contest.
 #
+set conversion_delay [expr 12 * 60 * 60]
+
+# Reset contest type according to whether it is post
+# contest or not.
+
+
+# You should NOT make changes beyond this point, unless
+# you want to tune the contest to be a variant of one of
+# the standards supported by this file.
+
+# Set contest type to timed, untimed, or dated according
+# to previous contest type, stop time, conversion_delay,
+# and time of day.
+#
+switch $contest_type {
+    timed { }
+    untimed { }
+    dated { }
+    timed+untimed -
+    timed+dated {
+        set c [clock scan $stop_time]
+	incr c $conversion_delay
+	if { [clock seconds] < $c } {
+	    set contest_type timed
+	} else {
+	    regexp {^timed+(.*)$} $contest_type \
+	           forget contest_type
+	}
+    }
+}
+
+# Default arguments to makecontest.
+#
+if { $contest_type == "timed" } {
+    set description ""
+} else {
+    set description "-description"
+}
 set makecontest_arguments "
-    -formal \
+    -formal $description \
     $judging_directory/help/index, \
 	=help/ \
     $hpcm_directory/contestant/help/index, \
@@ -163,70 +227,9 @@ set makecontest_arguments "
     $problems_arguments
 "
 
-# The first argument, -formal, tells the type of the
-# contest.  The rest of the arguments are a series of
-# entries each concerning an index file.  For example,
-# the entry:
-#
-#	    $hpcm_directory/contestant/help/index, \
-#		common/=help/, \
-#		formal/=help/, \
-#		advanced/=help/, \
-#		    formal:include, \
-#		    common:include, \
-#		    advanced:include
-#
-# concerns the index file whose name (relative to this
-# directory) is $hpcm_directory/contestant/help/index.
-# You you should look at this file.  Each item in this
-# file begins with a line of the format:
-#
-#	*** name option ...
-#
-# The instruction `common/=help/' says replace the
-# initial substring `common/' with `help/' in the item
-# name to make the final file name in the `info' direc-
-# tory for email contests or `contest' directory for
-# formal or informal contests.  The instruction
-# `common:include' says replace the option `common' in
-# the index file item by the option `include'.  After
-# all replacements are made in the first line of the
-# item, the item is used if and only if it has the
-# `include' option.  And if used, the item represents a
-# file or subdirectory in one of the three contest di-
-# rectories `help/', `demos/', or `problems/'.
-#
-# Index file names must begin with $hpcm_directory,
-# $judging_directory, or $env(HOME), so the index files
-# can be located if $judging_directory or any of its
-# descendant directories is current.
-#
-# Note that in `$judging_directory/help/index' above
-# (not the same as `$hpcm_directory/contestant/help/
-# index') the items already have the `include' option.
-# `$judging_directory/help/index' is used to start the
-# contestants `help/index' file and provide a `this_
-# contest' item for the file `help/this_contest'.
-#
-# Note that in `$hpcm_directory/problem_library/index'
-# demo items already have file names beginning with
-# `demos/'.
-#
-# Each index file entry consists of a series of argu-
-# ments to makecontest, all but the last of which end in
-# `,'.  The last argument of the index file entry does
-# NOT end in `,', and the argument after that begins the
-# next entry.
-#
-# The first argument of an entry is the index file name
-# and the other arguments are replacement instructions,
-# with `=' for name replacements, and `:' for option
-# replacements.  For more details, see the documentation
-# of makecontest (run `makecontest -doc').
-
 # Set the start/freeze/stop times for the contest.
 #
-if { [regexp {^timed} $contest_type] } {
+if { $contest_type == "timed" } {
     set scoreboard_start_time  $start_time
     set scoreboard_freeze_time $freeze_time
     set scoreboard_stop_time   $stop_time
@@ -236,9 +239,54 @@ if { [regexp {^timed} $contest_type] } {
 #
 set scoreboard_name $contest_name
 
-# Scoreboard instructions for a small formal contest:
+# Compute scoreboard_submitters to exclude test
+# accounts.
 #
-set small_contest_scoreboard_instructions {
+set scoreboard_submitters {}
+foreach x $test_accounts {
+    lappend scoreboard_submitters & ! $x
+}
+set scoreboard_submitters \
+    [lrange $scoreboard_submitters 1 end]
+#
+# Compute scoreboard_problems to exclude test
+# problems.
+#
+set scoreboard_problems {}
+foreach x $test_problems {
+    lappend scoreboard_problems & ! $x
+}
+set scoreboard_problems \
+    [lrange $scoreboard_problems 1 end]
+
+# Scoreboard instructions for a timed contest with no
+# freeze.  contest/scoreboard.final is produced
+# beginning at the stop time and is updated until the
+# stop time + 10 minutes.  If you need to update it
+# after that, delete it and run `makescoreboard update'.
+#
+set no_freeze_timed_scoreboard_instructions {
+
+    { OUTPUT contest/scoreboard.1 START STOP+600 }
+    GRANT_ACCESS
+
+    { LINE NAME "Scoreboard" TIME }
+    BLANK
+    { INPUT contest/scoreboard.1head }
+    BLANK
+    BAR
+    BOARD
+    BAR
+
+    { OUTPUT contest/scoreboard.final STOP STOP+600 }
+
+    { LINE NAME "Final Results" "" STOP }
+    BLANK
+    BAR
+    BOARD
+    BAR
+    { INPUT contest/who_where }
+    BAR
 
     { OUTPUT contest/scoreboard.1 "" START }
     GRANT_ACCESS
@@ -260,41 +308,69 @@ set small_contest_scoreboard_instructions {
     BLANK
     { start_time "" }
     { stop_time START }
+    { problems {} }
+    { submitters {} }
+    BAR
+    BOARD
+    BAR
+}
+
+# Scoreboard instructions for a timed contest WITH
+# freeze.  contest/scoreboard.final is produced
+# beginning at the stop time and is updated until the
+# stop time + 10 minutes.  If you need to update it
+# after that, delete it and run `makescoreboard update'.
+#
+# After scoreboard is frozen, contest/scoreboard.current
+# is updated to be the unfrozen and invisible
+# scoreboard.
+#
+set freeze_timed_scoreboard_instructions {
+
+    { OUTPUT contest/scoreboard.current FREEZE "" }
+
+    { LINE NAME "Current Scoreboard" TIME }
+    BLANK
     BAR
     BOARD
     BAR
 
-    { OUTPUT contest/scoreboard.1 START STOP }
-    GRANT_ACCESS
+    { OUTPUT contest/scoreboard.final \
+             STOP STOP+600 }
 
-    { LINE NAME "Scoreboard" TIME }
-    BLANK
-    { INPUT contest/scoreboard.1head }
-    BLANK
-    { start_time START }
-    { stop_time STOP }
-    { problems { ! count & ! javaio } }
-    { submitters { ! test-account } }
-    BAR
-    BOARD
-    BAR
-
-    { OUTPUT contest/scoreboard.final STOP STOP }
-
-    { LINE NAME "Final Results" "" STOP }
+    { LINE NAME "Final Results" STOP }
     BLANK
     BAR
-    { start_time START }
-    { stop_time STOP }
     BOARD
     BAR
     { INPUT contest/who_where }
     BAR
-}
 
-# Scoreboard instructions for a large formal contest:
-#
-set large_contest_scoreboard_instructions {
+    { OUTPUT contest/scoreboard.public START FREEZE }
+
+    BAR
+    BOARD
+    BAR
+
+    { OUTPUT contest/scoreboard.public "" START }
+
+    { LINE "The demo problems `count' and `javaio'\
+            will disappear from the" }
+    { LINE "scoreboard once the contest starts.  Until\
+            the contest starts, dates of" }
+    { LINE "first correct submission are displayed (for\
+            demo problems).  After the" }
+    { LINE "contest starts, problem times (differences\
+            of first correct submission" }
+    { LINE "times and contest start time) will be\
+            displayed." }
+    { start_time "" }
+    { stop_time START }
+    { problems {} }
+    { submitters {} }
+    BAR
+    BOARD
+    BAR
 
     { OUTPUT contest/scoreboard.freeze FREEZE FREEZE }
 
@@ -306,34 +382,6 @@ set large_contest_scoreboard_instructions {
             scoreboard after winners have been" }
     { LINE "announced at the post contest meeting." }
 
-    { OUTPUT contest/scoreboard.public "" START }
-
-    { start_time "" }
-    { stop_time FREEZE }
-    { LINE "The demo problems `count' and `javaio'\
-            will disappear from the" }
-    { LINE "scoreboard once the contest starts.  Until\
-            the contest starts, dates of" }
-    { LINE "first correct submission are displayed (for\
-            demo problems).  After the" }
-    { LINE "contest starts, problem times (differences\
-            of first correct submission" }
-    { LINE "times and contest start time) will be\
-            displayed." }
-    BAR
-    BOARD
-    BAR
-
-    { OUTPUT contest/scoreboard.public START FREEZE }
-
-    { start_time START }
-    { stop_time FREEZE }
-    { problems { ! count  & ! javaio } }
-    { submitters { ! test-account } }
-    BAR
-    BOARD
-    BAR
-
     { OUTPUT contest/scoreboard.1 }
     GRANT_ACCESS
     SEND
@@ -344,31 +392,9 @@ set large_contest_scoreboard_instructions {
     { INPUT contest/scoreboard.1head }
     BLANK
     { INPUT contest/scoreboard.public }
-
-    { OUTPUT contest/scoreboard.current \
-             FREEZE STOP+300 }
-
-    { LINE NAME "Current Scoreboard" TIME }
-    BLANK
-    BAR
-    { stop_time STOP }
-    BOARD
-    BAR
-    { INPUT contest/who_where }
-    BAR
-
-    { OUTPUT contest/scoreboard.final \
-             STOP+300 STOP+300 }
-
-    { LINE NAME "Final Results" STOP }
-    BLANK
-    BAR
-    { stop_time STOP }
-    BOARD
-    BAR
-    { INPUT contest/who_where }
-    BAR
 }
+
+TBD
 
 # Scoreboard instructions to be used after a formal
 # contest:
