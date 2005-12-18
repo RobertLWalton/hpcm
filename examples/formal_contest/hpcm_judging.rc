@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Dec 17 07:18:25 EST 2005
+# Date:		Sun Dec 18 05:22:12 EST 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/12/18 02:16:07 $
+#   $Date: 2005/12/18 10:20:55 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.26 $
+#   $Revision: 1.27 $
 
 # Read standard parameters.
 #
@@ -151,9 +151,32 @@ set problems_arguments "
 #             ALL:include
 # "
 
+# Set the following if you want to use `makeweb' to
+# make a web page.  Leave "" parameters you do not want
+# to use (e.g., if web_solutions_password is "" no
+# solutions web page will be made).
+#
+set web_contest_name $contest_name
+set web_solutions_password ""
+set web_help_URL ""
+set web_scoreboard_URL ""
+set web_manager_address ""
+
 
 # Normally you should not have to make changes below
 # this point.
+
+# Set the manualreply display to have a certain height
+# with a given number of blank lines above that.  If you
+# have a taller display, increase window_height.
+#
+# WARNING: If window_height is too large, programs such
+# as manualreply and lookat may appear to be malfunc-
+# tioning because the information they display is being
+# scrolled off the top of the screen.
+#
+set window_blank_height 16
+set window_height 24
 
 # Set to contest directory, in case the $judging_
 # directory/contest link needs to be made.  If needed
@@ -175,8 +198,10 @@ set problems_arguments "
 #
 set conversion_delay [expr 12 * 60 * 60]
 
-# Reset contest type according to whether it is post
-# contest or not.
+# Require submission email to have a formatted body
+# with HPCM_BEGIN, HPCM_END, and `..'s.
+#
+set format_submissions yes
 
 
 # You should NOT make changes beyond this point, unless
@@ -187,7 +212,9 @@ set conversion_delay [expr 12 * 60 * 60]
 # to previous contest type, stop time, conversion_delay,
 # and time of day.
 #
-switch $contest_type {
+set is_post_contest no
+set scoring_subtype $scoring_type
+switch $scoring_type {
     timed { }
     untimed { }
     dated { }
@@ -196,17 +223,21 @@ switch $contest_type {
         set c [clock scan $stop_time]
 	incr c $conversion_delay
 	if { [clock seconds] < $c } {
-	    set contest_type timed
+	    set scoring_subtype timed
 	} else {
-	    regexp {^timed+(.*)$} $contest_type \
-	           forget contest_type
+	    regexp {^timed+(.*)$} $scoring_type \
+	           forget scoring_subtype
+	    set is_post_contest yes
 	}
+    }
+    default {
+        error "Bad scoring_type" $scoring_type"
     }
 }
 
 # Default arguments to makecontest.
 #
-if { $contest_type == "timed" } {
+if { $scoring_subtype == "timed" } {
     set description ""
 } else {
     set description "-description"
@@ -229,7 +260,7 @@ set makecontest_arguments "
 
 # Set the start/freeze/stop times for the contest.
 #
-if { $contest_type == "timed" } {
+if { $scoring_subtype == "timed" } {
     set scoreboard_start_time  $start_time
     set scoreboard_freeze_time $freeze_time
     set scoreboard_stop_time   $stop_time
@@ -394,10 +425,8 @@ set freeze_timed_scoreboard_instructions {
     { INPUT contest/scoreboard.public }
 }
 
-TBD
-
-# Scoreboard instructions to be used after a formal
-# contest:
+# Scoreboard instructions to be used contest has been
+# converted from timed to untimed or dated:
 #
 set post_contest_scoreboard_instructions {
 
@@ -412,8 +441,31 @@ set post_contest_scoreboard_instructions {
 
     { start_time "" }
     { stop_time "" }
-    { problems { ! count  & ! javaio } }
-    { submitters { ! test-account } }
+    { problems {} }
+    { submitters {} }
+    BAR
+    BOARD
+    BAR
+}
+
+# Scoreboard instructions to be used contest for an
+# untimed or dated contest:
+#
+set not_timed_scoreboard_instructions {
+
+    { OUTPUT contest/scoreboard.1 "" "" }
+    GRANT_ACCESS
+    SEND
+
+    { LINE NAME "Public Scoreboard" TIME }
+    BLANK
+    { INPUT contest/scoreboard.1head }
+    BLANK
+
+    { start_time "" }
+    { stop_time "" }
+    { problems {} }
+    { submitters {} }
     BAR
     BOARD
     BAR
@@ -421,89 +473,55 @@ set post_contest_scoreboard_instructions {
 
 # Scoreboard instructions for this contest:
 #
-set scoreboard_instructions \
-    $large_contest_scoreboard_instructions
-
-# Set modes to automatically reply in so far as possible
-# and have manual review of everything in which the
-# automatic reply might not be correct.  However, system
-# errors are for manual review only.
-#
-set scoring_mode auto+manual
-set reply_mode auto+manual
-set log_mode manual
-
-# Do not use email to an outside place for errors or
-# queries.  Reply_manager is the place to send email if
-# a contestant sends a query, and log_manager is the
-# place to send email if the system makes an error.
-# If "" no email is sent.
-#
-set reply_manager ""
-set log_manager ""
-
-# Set the manualreply display to have a certain height
-# with a given number of blank lines above that.  If you
-# have a taller display, increase window_height.
-#
-# WARNING: If window_height is too large, programs such
-# as manualreply and lookat may appear to be malfunc-
-# tioning because the information they display is being
-# scrolled off the top of the screen.
-#
-set window_blank_height 16
-set window_height 24
-
-# Require submission email to have a formatted body
-# with HPCM_BEGIN, HPCM_END, and `..'s.
-#
-set format_submissions yes
-
-# Set up to use authentication.  Keyname and key must
-# match those in ./contest/secure/hpcm_sendmail.rc.
-# Edit this to match what is given in the `TODO'
-# file instruction generated when you run `make' in
-# this directory.
-#
-set use_authentication yes
-array set authentication_keys {
-    foo		ppppppppppp-be-sure-to-delete-this-line
+if { $is_post_contest } {
+    set scoreboard_instructions \
+        $post_contest_scoreboard_instructions
+} elseif { $scoring_subtype != "timed" } {
+    set scoreboard_instructions \
+        $not_timed_scoreboard_instructions
+} elseif { $freeze_time == "" } {
+    set scoreboard_instructions \
+        $no_freeze_timed_scoreboard_instructions
+    set scoring_mode auto+manual
+    set reply_mode auto+manual
+    set log_mode manual
+} else {
+    set scoreboard_instructions \
+        $freeze_timed_scoreboard_instructions
 }
 
-# The following control the makeweb program that makes a
-# web page containing problem statements and optionally
-# solutions.  For an end-of-contest web page just con-
-# taining problem descriptions, these need not be re-
-# defined.  See hpcm/judge/lib/hpcm_judging.rc for more
-# details.
-#
-set web_contest_name $scoreboard_name
-set web_autojudge_address ""
-set web_solutions_password ""
-set web_help_URL ""
-set web_scoreboard_URL ""
-set web_manager_address ""
+if { $scoring_subtype == "timed" } {
+    set response_mode ""
+    set scoreboard_use_qualifiers no
+} elseif { $scoring_subtype == "untimed" } {
+    set response_mode in+inout+solution
+    set scoreboard_use_qualifiers yes
+} else {
+    set response_mode in+inout+solution
+    set scoreboard_use_qualifiers no
+}
 
-# The following should be filled in and uncommented when
-# converting the contest, after the formal contest is
-# over, to a practice contest.
+# Set up manager for this contest.
 #
-# set reply_manager "someone@somecomputer"
-# set log_manager "someone@somecomputer"
-#
-# Set this `yes' to use qualifiers to determine practice
-# contest score, and `no' to just give date.
-# set scoreboard_use_qualifiers yes
-#
-# Set to allow different qualifiers.  Set to "" to allow
-# none.
-# set response_mode in+inout+solution
-#
-# Set to list of addresses to email scoreboard to.
-# set scoreboard_addresses { }
-#
-# set scoreboard_instructions \
-#     $post_contest_scoreboard_instructions
-# set scoring_mode auto
-# set reply_mode auto
-# set log_mode auto
+if {    $scoring_type == "timed" \
+     && $scoring_type != $scoring_subtype } {
+    set manager_address ""
+}
+if { $manager_address == "" } {
+    set scoring_mode auto+manual
+    set reply_mode auto+manual
+    set log_mode manual
+    set reply_manager ""
+    set log_manager ""
+} else {
+    set scoring_mode auto
+    set reply_mode auto
+    set log_mode auto
+    set reply_manager $manager_address
+    set log_manager $manager_address
+}
+if { $cc_manager } {
+    set response_manager $reply_manager
+} else {
+    set response_manager ""
+}
