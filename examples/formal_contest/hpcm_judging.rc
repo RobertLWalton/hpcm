@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Dec 19 10:42:43 EST 2005
+# Date:		Mon Dec 19 12:30:26 EST 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/12/19 15:41:24 $
+#   $Date: 2005/12/19 18:01:03 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.30 $
+#   $Revision: 1.31 $
 
 # Read standard parameters.
 #
@@ -76,7 +76,7 @@ set freeze_time   ""
 # solution to a problem for which a correct solution is
 # later submitted in a timed contest.  1200 = 20 min.
 #
-set penalty 120
+set penalty 1200
 # set penalty 0
 
 # If the scoring_type is "timed", "untimed", or "dated",
@@ -183,7 +183,6 @@ set web_manager_address $manager_address
 set web_solutions_password ""
 set web_help_URL ""
 set web_scoreboard_URL ""
-
 
 # Normally you should not have to make changes below
 # this point.
@@ -301,6 +300,7 @@ if { $scoring_subtype == "timed" } {
     set scoreboard_start_time  $start_time
     set scoreboard_freeze_time $freeze_time
     set scoreboard_stop_time   $stop_time
+    set scoreboard_penalth     $penalty
 }
 
 # Scoreboard name, i.e, the name of the contest.
@@ -593,6 +593,15 @@ if { $cc_manager } {
 
 # Compute this_contest.
 #
+set sqf $scoreboard_qualifier_factors
+set in_percent [expr 100 - 100 * [lindex $sqf 0]]
+set in_percent [format {%.0f} $in_percent]
+set inout_percent [expr 100 - 100 * [lindex $sqf 1]]
+set inout_percent [format {%.0f} $inout_percent]
+set ic_percent [expr 100 - 100 * [lindex $sqf 4]]
+set ic_percent [format {%.0f} $ic_percent]
+set penalty_minutes [expr $penalty / 60]
+
 set this_contest "$this_contest_prefix[
     include_if { [regexp {^timed} $scoring_type] } "
 The command `help' will display this file.  You have
@@ -641,7 +650,16 @@ The command `scoreboard' will display the scoreboard.
 The time of a problem is the time between the start
 time of the contest and the time a solution is submit-
 ted.  See `help scoreboard'.
-"][include_if { ! [regexp {^timed} $scoring_type] } "
+[include_if { $penalty == 0 } "
+There is no time penalty for an incorrect submission for
+this contest.
+"][include_if { $penalty > 0 } "
+There is a $penalty_minutes minute time penalty for an\
+    incorrect
+submission for this contest.  This is applied only to
+incorrect submissions of problems you eventually
+correctly submit.
+"]"][include_if { ! [regexp {^timed} $scoring_type] } "
 The contest managers will inform you in writing which
 account and password you will be using.
 
@@ -666,11 +684,16 @@ This contains the date of each correct submission.  See
 "][include_if { $scoring_type == "untimed" } "
 The command `scoreboard' will display the scoreboard.
 Scoring is determined by submission types (submit,
-in-submit, inout-submit) for incorrect submissions.
+in-submit, inout-submit) for incorrect submissions,
+according to the following penalties:
 
-PENALTIES TBD.
+    incorrect `submit'		$ic_percent%
+    incorrect `in-submit'	$in_percent%
+    incorrect `inout-submit'	$inout_percent%
 
-See `help scoreboard' for details.
+Penalties are applied only to incorrect submissions for
+problems you eventually correctly submit.  See `help
+scoreboard' for details.
 "]
 To send a question to the contest manager DO NOT try
 to e-mail the manager directly.  Instead edit the ques-
