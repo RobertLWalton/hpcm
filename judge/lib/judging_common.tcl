@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Dec 18 07:23:08 EST 2005
+# Date:		Mon Dec 19 10:07:54 EST 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,14 +11,15 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/12/18 12:26:17 $
+#   $Date: 2005/12/19 15:15:12 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.124 $
+#   $Revision: 1.125 $
 #
 
 # Table of Contents
 #
 #	Including this Code
+#	Documentation Functions
 #	Dispatch Locking Functions
 #	Date Functions
 #	Checked File Functions
@@ -84,6 +85,51 @@ set judging_parameters_file hpcm_judging.rc
 # redefined by program.
 #
 proc exit_cleanup {} {}
+
+# Documentation Functions
+# ------------- ---------
+
+# These functions process text, and are use primarily
+# but not exclusively for documentation.
+
+# If the condition is true in the caller's environment,
+# return the text.  Else return "".
+#
+proc include_if { condition text } {
+    if { [uplevel [list expr $condition]] } {
+        return $text
+    } else {
+        return ""
+    }
+}
+
+# Function to include lists in documentation with given
+# indent and given maximum length (defaulting to 56).
+#
+proc indent_list { indent list { maxlen 56 } } {
+    set column $indent
+    set out ""
+    foreach item $list {
+        set len [string length $item]
+        if {    $column != $indent \
+	     && $column + $len + 1 > $maxlen } {
+	    set out "$out\n"
+	    set column 0
+	    while { $column < $indent } {
+	        set out "$out "
+		incr column
+	    }
+	}
+	if { $column == $indent } {
+	    set out "$out$item"
+	} else {
+	    set out "$out $item"
+	    incr column
+	}
+	incr column $len
+    }
+    return $out
+}
 
 # Dispatch Locking Functions
 # -------- ------- ---------
