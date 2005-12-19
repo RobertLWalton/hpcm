@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Dec 18 12:52:41 EST 2005
+# Date:		Mon Dec 19 00:37:35 EST 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/12/18 17:54:39 $
+#   $Date: 2005/12/19 07:14:29 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.28 $
+#   $Revision: 1.29 $
 
 # Read standard parameters.
 #
@@ -22,29 +22,14 @@ source $lib_directory/hpcm_judging.rc
 # The following parameters determine the type and
 # variety of contest.
 
-# Set to the HPCM directory.
+# Set to the HPCM directory.  $env(HOME) is the home
+# directory of the current (judge's) account.
 #
 set hpcm_directory $env(HOME)/hpcm
 
 # Contest name, for scoreboard etc.
 #
 set contest_name "CONTEST NAME IS TBD"
-
-# If there will be a manager on duty during the contest
-# to run the tracker program and manually check the
-# scoring, leave the following as "".  Otherwise set it
-# to the email address to be notified for errors or
-# queries, and in this case the scoring will be all
-# automatic.
-#
-set manager_address ""
-# set manager_address "someone@somecomputer"
-
-# Set the following to "yes" if the manager_address is
-# not "" AND you want all replies to contestants to be
-# CC'ed to the manager when there is no manager on duty.
-#
-set cc_manager "no"
 
 # Scoring type.  One of:
 #
@@ -68,6 +53,9 @@ set cc_manager "no"
 #			contest is converted into a
 #			dated contest.
 #
+# In, inout, and solution submissions are allowed during
+# untimed or dated contests (or parts of converted
+# contests).
 #
 set scoring_type timed+untimed
 
@@ -88,17 +76,43 @@ set freeze_time   ""
 # solution to a problem for which a correct solution is
 # later submitted in a timed contest.  1200 = 20 min.
 #
-set penalty 0
-# set penalty 120
+set penalty 120
+# set penalty 0
+
+# If the scoring_type is "timed", "untimed", or "dated",
+# leave this as "" if there will be a manager on duty
+# during the contest to run the tracker program and
+# manually check the scoring.  Otherwise set it to the
+# email address to be notified for errors or queries,
+# and in this case the scoring will be all automatic.
+#
+# But if the scoring_type is timed+untimed or timed+
+# dated, set this non-"" and it will be used for the
+# automatically scored untimed/dated post contest, after
+# the timed contest is over.  The timed contest must
+# have a manager on duty during to run the tracker
+# program.
+#
+set manager_address ""
+# set manager_address "someone@somecomputer"
+
+# Set the following to "yes" if the manager_address is
+# not "" AND you want all replies to contestants to be
+# CC'ed to the manager when there is no manager on duty.
+#
+set cc_manager no
 
 # The following are the beginning and ending of the
 # initial this_contest help file.  Each should begin and
-# end with a line feed, or be "".
+# end with a line feed, or be "".  Each will then be
+# separated from other text by a blank line.
 # 
 set this_context_prefix "
 THIS FILE IS UNEDITED AND INACCURATE!
 "
-set this_context_postfix ""
+set this_context_postfix "
+Good Hunting!
+"
 
 # List of addresses for to email scoreboard to.  If this
 # list contains zzz<YYY>, then every time the scoreboard
@@ -116,8 +130,9 @@ set scoreboard_addresses { }
 
 # List of regular expressions that match the test
 # accounts which are NOT to appear on the scoreboard
-# once a timed contest starts.  They will appear in all
-# other circumstances.
+# once a timed contest starts.  They will appear before
+# a timed contest starts, and for contests of scoring_
+# type "untimed" or "dated".
 #
 set test_accounts { }
 
@@ -142,25 +157,32 @@ set problems_arguments "
 	    P1:include
 "
 # Use the following if index is in directory ~/p and
-# problems are in subdirectories of ~/p (so
-# `SUBDIRECTORY/' is the omitted).
+# problems are in subdirectories of ~/p.  Because the
+# problems are subdirectories of ~/p which contains the
+# index file, `SUBDIRECTORY/' is the omitted.
+# $env(HOME) is the home directory of the current
+# (judge's) account.  ALL means include all problems
+# listed in the index.
 #
 # set problems_arguments "
 #     $env(HOME)/p/index, \
 #         =problems/, \
 #             ALL:include
 # "
+#
+# See hpcm/judge/lib/hpcm_judging.rc for more details,
+# and `makecontest -doc' for complete details.
 
 # Set the following if you want to use `makeweb' to
-# make a web page.  Leave "" parameters you do not want
-# to use (e.g., if web_solutions_password is "" no
+# make a web page.  Leave as "" parameters you do not
+# want to use (e.g., if web_solutions_password is "" no
 # solutions web page will be made).
 #
 set web_contest_name $contest_name
+set web_manager_address $manager_address
 set web_solutions_password ""
 set web_help_URL ""
 set web_scoreboard_URL ""
-set web_manager_address ""
 
 
 # Normally you should not have to make changes below
@@ -206,23 +228,29 @@ set window_height 24
 # set hpcm_prototype_account TBD
 
 # Time in seconds after stop_time that contest is
-# converted from a timed to an untimed or dated contest.
+# converted from a timed to an untimed or dated contest
+# when the scoring_type is timed+untimed or timed+dated.
 #
 set conversion_delay [expr 12 * 60 * 60]
+
+
+# You should NOT make changes beyond this point, unless
+# you want to tune the contest to be a variant of one of
+# the standards supported by this file.  If you do want
+# to tune the contest, put changes at the very end of
+# this file, where they will override the settings of
+# this file.
 
 # Require submission email to have a formatted body
 # with HPCM_BEGIN, HPCM_END, and `..'s.
 #
 set format_submissions yes
 
-
-# You should NOT make changes beyond this point, unless
-# you want to tune the contest to be a variant of one of
-# the standards supported by this file.
-
-# Set contest type to timed, untimed, or dated according
-# to previous contest type, stop time, conversion_delay,
-# and time of day.
+# Set contest subtype to timed, untimed, or dated
+# according to the contest_type, stop_time,
+# conversion_delay, and time of day.  For a timed+xxxxx
+# contest the subtype is "timed" till conversion_delay
+# after stop_time and then it is "xxxxx".
 #
 set is_post_contest no
 set scoring_subtype $scoring_type
@@ -310,6 +338,9 @@ set scoreboard_problems \
 #
 set no_freeze_timed_scoreboard_instructions {
 
+    {# Scoreboard displayed to contestants during
+       contest. #}
+
     { OUTPUT contest/scoreboard.1 START STOP+600 }
     GRANT_ACCESS
 
@@ -321,6 +352,8 @@ set no_freeze_timed_scoreboard_instructions {
     BOARD
     BAR
 
+    {# Final scoreboard for judges. #}
+
     { OUTPUT contest/scoreboard.final STOP STOP+600 }
 
     { LINE NAME "Final Results" "" STOP }
@@ -330,6 +363,10 @@ set no_freeze_timed_scoreboard_instructions {
     BAR
     { INPUT contest/who_where }
     BAR
+
+    {# Scoreboard displayed to contestants before
+       contest starts.  Put this last because it changes
+       submitters and problems. #}
 
     { OUTPUT contest/scoreboard.1 "" START }
     GRANT_ACCESS
@@ -370,6 +407,9 @@ set no_freeze_timed_scoreboard_instructions {
 #
 set freeze_timed_scoreboard_instructions {
 
+    {# Complete scoreboard after freeze time, available
+       privately to judges. #}
+
     { OUTPUT contest/scoreboard.current FREEZE "" }
 
     { LINE NAME "Current Scoreboard" TIME }
@@ -377,6 +417,8 @@ set freeze_timed_scoreboard_instructions {
     BAR
     BOARD
     BAR
+
+    {# Final scoreboard for judges. #}
 
     { OUTPUT contest/scoreboard.final \
              STOP STOP+600 }
@@ -389,11 +431,21 @@ set freeze_timed_scoreboard_instructions {
     { INPUT contest/who_where }
     BAR
 
+    {# Displayed scoreboard is assembled below by
+       concatenating scoreboard.freeze,
+       scoreboard.1head, and scoreboard.public #}
+
+    {# scoreboard.public during contest. #}
+
     { OUTPUT contest/scoreboard.public START FREEZE }
 
     BAR
     BOARD
     BAR
+
+    {# scoreboard.public before contest starts.  Put
+       this last because it changes submitters and
+       problems. #}
 
     { OUTPUT contest/scoreboard.public "" START }
 
@@ -415,6 +467,9 @@ set freeze_timed_scoreboard_instructions {
     BOARD
     BAR
 
+    {# scoreboard.freeze, which does not exist until
+       the freeze time. #}
+
     { OUTPUT contest/scoreboard.freeze FREEZE FREEZE }
 
     BLANK
@@ -424,6 +479,9 @@ set freeze_timed_scoreboard_instructions {
     { LINE "You will be given a copy of the final\
             scoreboard after winners have been" }
     { LINE "announced at the post contest meeting." }
+
+    {# Assemble displayed scoreboard by concatenating
+       scoreboard.{freeze,1head,public}. #}
 
     { OUTPUT contest/scoreboard.1 }
     GRANT_ACCESS
@@ -476,8 +534,6 @@ set not_timed_scoreboard_instructions {
 
     { start_time "" }
     { stop_time "" }
-    { problems {} }
-    { submitters {} }
     BAR
     BOARD
     BAR
@@ -494,9 +550,6 @@ if { $is_post_contest } {
 } elseif { $freeze_time == "" } {
     set scoreboard_instructions \
         $no_freeze_timed_scoreboard_instructions
-    set scoring_mode auto+manual
-    set reply_mode auto+manual
-    set log_mode manual
 } else {
     set scoreboard_instructions \
         $freeze_timed_scoreboard_instructions
@@ -514,6 +567,9 @@ if { $scoring_subtype == "timed" } {
 }
 
 # Set up manager for this contest.
+#
+# For the timed part of a "timed+xxxxx" contest there
+# is no manager during the timed part of the contest.
 #
 if {    $scoring_type == "timed" \
      && $scoring_type != $scoring_subtype } {
@@ -537,3 +593,118 @@ if { $cc_manager } {
 } else {
     set response_manager ""
 }
+
+# Compute this_contest.
+#
+set this_contest "$this_contest_prefix
+The command `help' will display this file.
+
+This is a `formal' contest.  The command
+
+	help formal_contest
+
+displays more details about formal contests.
+[include-if { [regexp {^timed} $scoring_type } "
+The contest managers will log in for you.  You will NOT
+be given a password.  If you have an xterminal, the xcsh
+command will make more windows: see `help xterminals'.
+
+The contest managers will inform you in writing which
+account you will be using.  It is your responsibility
+to double check that the contest managers have logged
+you into the right account.
+
+The command `hpcm_get' will get a demonstration problem
+into your directory ~/demos/count (where ~ denotes your
+home directory).  Read ~/demos/count/README and ~/demos/
+count/Makefile and practice submitting the demonstra-
+tion problem.
+
+Hpcm_get will also get all the contest problems into
+your `~/problems' directory AFTER the contest official-
+ly starts.  At the contest start time, you will be given
+a printout of all the problem descriptions.  The command
+`help problems' will display a list of all the problems
+AFTER the contest starts.  Also see `help solving'.
+
+The command `scoreboard' will display the scoreboard.
+The time of a problem is the time between the start
+time of the contest and the time a solution is submit-
+ted.  See `help scoreboard'.
+"][include-if { ! [regexp {^timed} $scoring_type } "
+The contest managers will inform you in writing which
+account you will be using and what its password is.
+
+The command `hpcm_get' the problems into your directory.
+Included will be the demonstration problem ~/demos/count
+(where ~ denotes your home directory).  Read ~/demos/
+count/README and ~/demos/count/Makefile and practice
+submitting the demonstration problem.
+
+You will be given a description of the problems on the
+web or in a printout.  The command `help problems' will
+display a list of all the problems.  Also see `help
+solving'.
+
+You can print on the printer of your choice, or get
+printouts emailed to you, by making a ~/PRINTER file.
+See `help print' for details.
+"][include_if { $scoreboard_type == "dated" } "
+The command `scoreboard' will display the scoreboard.
+This contains the date of each correct submission.  See
+`help scoreboard' for more details.
+"][include_if { $scoreboard_type == "untimed" } "
+The command `scoreboard' will display the scoreboard.
+Scoring is determined by submission types (submit,
+in-submit, inout-submit) for incorrect submissions.
+
+PENALTIES TBD.
+
+See `help scoreboard' for details.
+"]
+To display a list of the help files available use the
+command `help index'.  Note that if something in the
+index has the name `help/topic' you use the command
+`help topic' to view it.
+
+To send a question to the contest manager DO NOT try
+to e-mail the manager directly.  Instead edit the ques-
+tion into a file qqq and use the command:
+
+	hpcm_sendmail < qqq
+[include-if { [regexp {^timed} $scoring_type } "
+Output of the print commands (see `help print') will
+be brought to you.  Please do NOT try to find the
+printer.  For more information see `help print'.
+
+You CANNOT use the alternative submit commands that
+make `in-submit', `inout-submit', or `solution-submit'.
+
+You CANNOT use a web browser.  The `javahelp' command
+gives on-line Java documentation: see `help java'.  You
+may use any printed matterial you like, but cannot
+communicate electronically with the world outside the
+contest.
+"] [include-if { $scoring_type == "timed+untimed" } "
+After the contest is over, it will be converted to a
+different type of contest.  You will be given your
+account name and password.  `in-submit', `inout-submit',
+and `solution-submit' will be allowed.  The judging will
+be completely automatic.  The scoreboard will use the
+submission type (`submit', `in-submit', `inout-submit')
+of incorrect submissions in place of time.  You will be
+able to print by making a ~/PRINTER file: see `help
+print'.
+"] [include-if { $scoring_type == "timed+dated" } "
+After the contest is over, it will be converted to a
+different type of contest.  You will be given your
+account name and password.  `in-submit', `inout-submit',
+and `solution-submit' will be allowed.  The judging will
+be completely automatic.  The scoreboard will merely
+record the date of correct submissions.  You will be
+able to print by making a ~/PRINTER file: see `help
+print'.
+"]
+$this_contest_postfix"
+
+# Add parameter settings here to override those above.
