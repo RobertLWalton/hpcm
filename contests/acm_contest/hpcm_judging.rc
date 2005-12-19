@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Dec 19 00:37:35 EST 2005
+# Date:		Mon Dec 19 10:42:43 EST 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/12/19 07:14:29 $
+#   $Date: 2005/12/19 15:41:24 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.29 $
+#   $Revision: 1.30 $
 
 # Read standard parameters.
 #
@@ -62,14 +62,14 @@ set scoring_type timed+untimed
 # For timed contests only, the start time and stop time
 # of the contest.
 #
-set start_time  "Jan 1 10:00:00 2050"
-set stop_time   "Jan 1 15:00:00 2050"
+set start_time  "Jan 1 10:00:00 2030"
+set stop_time   "Jan 1 15:00:00 2030"
 #
 # If the scoreboard is to be frozen at a particular
 # time, that is the freeze time.  Otherwise set the
 # freeze time to "".
 #
-# set freeze_time   "Jan 1 14:00:00 2050"
+# set freeze_time   "Jan 1 14:00:00 2030"
 set freeze_time   ""
 #
 # The penalty IN SECONDS for submitting an incorrect
@@ -107,10 +107,10 @@ set cc_manager no
 # end with a line feed, or be "".  Each will then be
 # separated from other text by a blank line.
 # 
-set this_context_prefix "
+set this_contest_prefix "
 THIS FILE IS UNEDITED AND INACCURATE!
 "
-set this_context_postfix "
+set this_contest_postfix "
 Good Hunting!
 "
 
@@ -277,13 +277,10 @@ switch $scoring_type {
 
 # Default arguments to makecontest.
 #
-if { $scoring_subtype == "timed" } {
-    set description ""
-} else {
-    set description "-description"
-}
 set makecontest_arguments "
-    -formal $description \
+    -formal \
+    [include_if { $scoring_subtype != "timed" } \
+    	        "-description"] \
     $judging_directory/help/index, \
 	=help/ \
     $hpcm_directory/contestant/help/index, \
@@ -294,7 +291,7 @@ set makecontest_arguments "
 	    common:include, \
 	    advanced:include \
     $hpcm_directory/problem_library/index, \
-	    demo:include, \
+	    demo:include \
     $problems_arguments
 "
 
@@ -596,15 +593,28 @@ if { $cc_manager } {
 
 # Compute this_contest.
 #
-set this_contest "$this_contest_prefix
-The command `help' will display this file.
-
+set this_contest "$this_contest_prefix[
+    include_if { [regexp {^timed} $scoring_type] } "
+The command `help' will display this file.  You have
+also been given a printout of the important help and
+demonstration files.
+"][include_if { ! [regexp {^timed} $scoring_type] } "
+The command `help' will display this file.  The impor-
+tant help and demonstation problem files are available
+via the contest web page, or you have been given a
+printout of these files.
+"]
 This is a `formal' contest.  The command
 
 	help formal_contest
 
 displays more details about formal contests.
-[include-if { [regexp {^timed} $scoring_type } "
+
+To display a list of the help files available use the
+command `help index'.  Note that if something in the
+index has the name `help/topic' you use the command
+`help topic' to view it.
+[include_if { [regexp {^timed} $scoring_type] } "
 The contest managers will log in for you.  You will NOT
 be given a password.  If you have an xterminal, the xcsh
 command will make more windows: see `help xterminals'.
@@ -631,15 +641,15 @@ The command `scoreboard' will display the scoreboard.
 The time of a problem is the time between the start
 time of the contest and the time a solution is submit-
 ted.  See `help scoreboard'.
-"][include-if { ! [regexp {^timed} $scoring_type } "
+"][include_if { ! [regexp {^timed} $scoring_type] } "
 The contest managers will inform you in writing which
-account you will be using and what its password is.
+account and password you will be using.
 
-The command `hpcm_get' the problems into your directory.
-Included will be the demonstration problem ~/demos/count
-(where ~ denotes your home directory).  Read ~/demos/
-count/README and ~/demos/count/Makefile and practice
-submitting the demonstration problem.
+The command `hpcm_get' will get the problems into your
+directory.  Included will be the demonstration problem
+~/demos/count (where ~ denotes your home directory).
+Read ~/demos/ count/README and ~/demos/count/Makefile
+and practice submitting the demonstration problem.
 
 You will be given a description of the problems on the
 web or in a printout.  The command `help problems' will
@@ -649,11 +659,11 @@ solving'.
 You can print on the printer of your choice, or get
 printouts emailed to you, by making a ~/PRINTER file.
 See `help print' for details.
-"][include_if { $scoreboard_type == "dated" } "
+"][include_if { $scoring_type == "dated" } "
 The command `scoreboard' will display the scoreboard.
 This contains the date of each correct submission.  See
 `help scoreboard' for more details.
-"][include_if { $scoreboard_type == "untimed" } "
+"][include_if { $scoring_type == "untimed" } "
 The command `scoreboard' will display the scoreboard.
 Scoring is determined by submission types (submit,
 in-submit, inout-submit) for incorrect submissions.
@@ -662,17 +672,12 @@ PENALTIES TBD.
 
 See `help scoreboard' for details.
 "]
-To display a list of the help files available use the
-command `help index'.  Note that if something in the
-index has the name `help/topic' you use the command
-`help topic' to view it.
-
 To send a question to the contest manager DO NOT try
 to e-mail the manager directly.  Instead edit the ques-
 tion into a file qqq and use the command:
 
 	hpcm_sendmail < qqq
-[include-if { [regexp {^timed} $scoring_type } "
+[include_if { [regexp {^timed} $scoring_type] } "
 Output of the print commands (see `help print') will
 be brought to you.  Please do NOT try to find the
 printer.  For more information see `help print'.
@@ -685,7 +690,7 @@ gives on-line Java documentation: see `help java'.  You
 may use any printed matterial you like, but cannot
 communicate electronically with the world outside the
 contest.
-"] [include-if { $scoring_type == "timed+untimed" } "
+"][include_if { $scoring_type == "timed+untimed" } "
 After the contest is over, it will be converted to a
 different type of contest.  You will be given your
 account name and password.  `in-submit', `inout-submit',
@@ -695,7 +700,7 @@ submission type (`submit', `in-submit', `inout-submit')
 of incorrect submissions in place of time.  You will be
 able to print by making a ~/PRINTER file: see `help
 print'.
-"] [include-if { $scoring_type == "timed+dated" } "
+"][include_if { $scoring_type == "timed+dated" } "
 After the contest is over, it will be converted to a
 different type of contest.  You will be given your
 account name and password.  `in-submit', `inout-submit',
