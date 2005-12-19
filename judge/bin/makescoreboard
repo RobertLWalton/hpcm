@@ -4,7 +4,7 @@
 #
 # File:		makescoreboard
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Oct 31 05:43:47 EST 2005
+# Date:		Mon Dec 19 01:20:33 EST 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/10/31 10:47:58 $
+#   $Date: 2005/12/19 06:22:53 $
 #   $RCSfile: makescoreboard,v $
-#   $Revision: 1.42 $
+#   $Revision: 1.43 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -493,6 +493,9 @@ proc process_instructions {} {
     while { "yes" } {
 
         set instruction [lindex $instructions $pc]
+	incr pc
+	if { [regexp {^#} $instruction] } continue
+
 	if { [catch { llength $instruction }] } {
 	    error "a scoreboard_instructions'\
 	           instruction is not a TCL list:\
@@ -508,7 +511,7 @@ proc process_instructions {} {
 	# process OUTPUT instruction time parameters
 	# and call pass2.
 	#
-        if { ( $pc >= $end_pc || $opcode == "OUTPUT" ) \
+        if { ( $pc > $end_pc || $opcode == "OUTPUT" ) \
 	     && $output_found } {
 
 	    # If we are before OUTPUT start time, do
@@ -530,13 +533,11 @@ proc process_instructions {} {
 
 	    # Perform second pass.
 	    #
-	    pass2 $instructions $out_pc $pc $update
+	    pass2 $instructions \
+	          $out_pc [expr $pc -1] $update
 	}
 
-	# Update pc.
-	#
-	if { $pc >= $end_pc } break
-	incr pc
+	if { $pc > $end_pc } break
 
 	# Perform first pass on instruction.
 	#
@@ -753,8 +754,9 @@ proc pass2 { instructions pc end_pc update } {
 	# Compute instruction and opcode and update pc.
 	#
 	set instruction [lindex $instructions $pc]
-	set opcode [lindex $instruction 0]
 	incr pc
+	if { [regexp {^#} $instruction] } continue
+	set opcode [lindex $instruction 0]
 
 	switch ${opcode}_$update {
 
