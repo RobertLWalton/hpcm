@@ -6,7 +6,7 @@
 #
 # File:		makecontest
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Dec 19 10:10:57 EST 2005
+# Date:		Wed Dec 21 02:58:08 EST 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/12/19 15:15:12 $
+#   $Date: 2005/12/21 07:59:35 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.111 $
+#   $Revision: 1.112 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -60,6 +60,9 @@ makecontest option ... index_specification ...
     -info	Make ./info, ./info/help/index,
     		./info/help/problems, ./info/help/demos.
     -solutions  Make ./solutions
+    -contest	Make ./contest
+    -bin	Make ./contest/bin
+    -home	Make ./contest/home
     -problems	Make ./contest/problems.  Includes
     		problem description files for non-`all'
 		directory entries only if -description
@@ -80,10 +83,12 @@ makecontest option ... index_specification ...
     -this_contest    Make ./help, ./help/index,
 		          ./help/this_contest
     -mail	Make ./mail
-    -bin	Make ./contest/bin
 
     -secure	Make ./contest/secure/passwords,
 		     ./contest/secure/hpcm_sendmail.rc
+    -ssh	Make ./contest/extra_setup.tar contain-
+    		ing .ssh/id_rsa.pub, .ssh/id_dsa.pub,
+		and .ssh/identity.pub.
     -procmailrc	Update ~/.procmailrc
     -who_where  Make ./contest/who_where
     -trashable  Make ./contest/trashable
@@ -91,7 +96,6 @@ makecontest option ... index_specification ...
     		     ./contest/printer_jobs
     -printer_map    Make ./contest/printer_map and
     		         ./contest/printer_jobs
-    -home	Make ./contest/home
 
   Index Specification:
 
@@ -102,10 +106,6 @@ makecontest option ... index_specification ...
   Pre-Existing Files and Links:
 
     ./hpcm_judging.rc	 Parameters file.
-    ./contest		 Link to contest directory.
-    ./contest/bin	 Link to hpcm/contestant/bin.
-    ./contest/home	 Link to directory owned by
-    			 prototype account.
 
 
 
@@ -117,21 +117,49 @@ makecontest option ... index_specification ...
     specifications and options.  The form of the index
     specifications and options is given above.
 
-    The `./contest' directory, if any, should be symbol-
-    ically linked to the actual contest directory before
-    this program is run.  If the `./contest' directory
-    is needed, the `./contest/bin' directory should be
-    symbolically linked to the `/..../hpcm/contestant/
-    bin' directory and the `./contest/home' directory
-    should be symbolically linked to a directory that
-    has been set up by the `SETUP_PROTOTYPE' program and
-    is owned by the prototype account, all before this
-    program is run.
-
     This program appends instructions for its user to
     edit certain files and run certain programs to the
     ./TODO file, and prints this file at the end of this
     program (unless the file is empty).
+
+    The -contest program option makes the contest direc-
+    tory and the symbolic link `./contest' to that di-
+    rectory.  This is needed only for formal and infor-
+    mal contests, but not for email contests.  If
+    `./contest' does not exist, and name of the judging
+    directory is ~/XXX/judging_YYY_PPP where PPP is a
+    password, the directory named ~/XXX/contest_YYY is
+    made and used as the contest directory.  That is,
+    the judging directory name is modified by replacing
+    `judging_' by `contest_' at its beginning, and re-
+    moving from the end any `_PPP'.  It is an error if
+    `./contest' does not exist but the contest directory
+    already exists.
+
+    If `./contest' is made, or if anything is made in
+    `./contest', a+x is set for that directory and its
+    parent.
+
+    The -bin program option makes the symbolic link
+    ./contest/bin to `\$hpcm_directory/contestant/bin',
+    where the `hpcm_directory' global variable defaults
+    to `~/hpcm'.  If this cannot be done, it is not an
+    error, but instructions to fix the situation are
+    written in the ./TODO file.
+
+    The -home program option makes the symbolic link
+    ./contest/home to ~PROTO/home, where PROTO is the
+    name of the prototype account that is set up by
+    the `SETUP_PROTOTYPE' program.  PROTO is defined
+    as the value of the global variable `hpcm_prototype_
+    account' if that variable is defined.  Otherwise
+    PROTO is the unique account name which has the form
+    `*\[_-\]proto' such that the files ~PROTO/home/
+    setup.tar, ~PROTO/home/setup.ls, and ~PROTO/home/
+    empty.ls exist and are readable, if such a unique
+    account name exists.  If the prototype account can-
+    not be found, it is not an error, but instructions
+    to fix the situation are written in the ./TODO file.
 
     The index files are read and used to generate a list
     of items to be included in the ./info and ./contest
@@ -549,10 +577,6 @@ makecontest option ... index_specification ...
     files put in ./contest/help1 will override those
     in ./contest/help that is linked to ./contest/help2.
 
-    The -bin program option checks that the ./contest/
-    bin directory exists and has a+rx permissions.  If
-    not, ./TODO's are written.
-
     The -secure program option makes the following if
     they do not exist:
 
@@ -590,11 +614,24 @@ makecontest option ... index_specification ...
     passwords program from setting the password of the
     line's account.
 
+    The -ssh program option makes the file `./contest/
+    extra_setup.tar' containing the file `.ssh/
+    authorized_keys' which is the concatenation of all
+    the files `~/.ssh/identity.pub, `~/.ssh/id_rsa.pub',
+    and `~/.ssh/id_dsa.pub' that exist.  If none of
+    these files exist, it is not an error, but instruc-
+    tions to fix the situation are written in the ./TODO
+    file.
+
     The -procmailrc program updates the ~/.procmailrc
-    file.  The judge's To: address is taken form the
-    ./contest/secure/hcpm_sendmail.rc file if that
-    exists, and from the autojudge_address global
-    variable otherwise.
+    file with one entry for each autojudge address.  If
+    `./contest/secure/hcpm_sendmail.rc' exists, one
+    autojudge address is made from its contents.  The
+    other autojudge addresses are listed in the
+    `autojudge_address' global variable.  If there are
+    no autojudge addresses, it is not an error, but
+    instructions to fix the situation are written in the
+    ./TODO file.
 
     The -who_where program option makes the ./contest/
     who_where file if it does not exist, or updates it
@@ -638,15 +675,6 @@ makecontest option ... index_specification ...
     map files exist, contestant programs ignore ./con-
     test/printer.
 
-    The -home program option just checks to see if
-    the directory ./contest/home exists and the files
-    empty.ls, setup.ls, and setup.tar exist in that
-    directory and are readable.  If not, instructions
-    are written to ./TODO.
-
-    If anything is made in ./contest, a+x is set for
-    that directory and its parent.
-
     Although we have used the names `./info', `./mail',
     `./contest', and `./help' in this description, the
     actual directories are the info, mail, contest,
@@ -682,6 +710,9 @@ set argi 0
 #
 set info_option			no
 set solutions_option		no
+set contest_option		no
+set bin_option			no
+set home_option			no
 set problems_option		no
 set demos_option 		no
 set description_option		no
@@ -689,20 +720,22 @@ set help_option			no
 set help2_option		no
 set this_contest_option		no
 set mail_option			no
-set bin_option			no
 set secure_option		no
+set ssh_option			no
 set procmailrc_option		no
 set who_where_option		no
 set trashable_option		no
 set printer_option		no
 set printer_map_option		no
-set home_option			no
 #
 set contest_type		""
 #
 while { $argi < $argc } {
     switch -- [lindex $argv $argi] {
         -formal		{ set solutions_option	yes
+			  set contest_option	yes
+			  set bin_option	yes
+			  set home_option	yes
 			  set problems_option	yes
 			  set demos_option	yes
 			  set help_option	yes
@@ -710,14 +743,15 @@ while { $argi < $argc } {
 			  set this_contest_option \
 			  			yes
 			  set mail_option	yes
-			  set bin_option	yes
 			  set secure_option	yes
 			  set procmailrc_option	yes
 			  set who_where_option	yes
 			  set printer_option	yes
-			  set home_option	yes
 			  set contest_type formal }
         -practice	{ set solutions_option	yes
+			  set contest_option	yes
+			  set bin_option	yes
+			  set home_option	yes
 			  set problems_option	yes
 			  set demos_option	yes
 			  set description_option \
@@ -727,27 +761,26 @@ while { $argi < $argc } {
 			  set this_contest_option \
 			  			yes
 			  set mail_option	yes
-			  set bin_option	yes
 			  set secure_option	yes
 			  set procmailrc_option	yes
 			  set who_where_option	yes
 			  set printer_option	yes
-			  set home_option	yes
 			  set contest_type practice }
         -informal	{ set info_option	yes
+			  set contest_option	yes
+			  set bin_option	yes
+			  set home_option	yes
 			  set solutions_option	yes
 			  set help_option	yes
 			  set help2_option	yes
 			  set this_contest_option \
 			  			yes
 			  set mail_option	yes
-			  set bin_option	yes
 			  set secure_option	yes
 			  set procmailrc_option	yes
 			  set who_where_option	yes
 			  set printer_map_option \
 			  			yes
-			  set home_option	yes
 			  set contest_type informal }
         -email		{ set info_option 	yes
 			  set solutions_option	yes
@@ -758,6 +791,9 @@ while { $argi < $argc } {
 			  set contest_type email }
         -info		{ set info_option 	yes }
         -solutions	{ set solutions_option 	yes }
+        -contest	{ set contest_option 	yes }
+        -bin		{ set bin_option 	yes }
+        -home		{ set home_option 	yes }
         -problems	{ set problems_option 	yes }
         -demos		{ set demos_option 	yes }
         -description	{ set description_option \
@@ -767,15 +803,14 @@ while { $argi < $argc } {
 	-this_contest	{ set this_contest_option \
 						yes }
         -mail		{ set mail_option 	yes }
-        -bin		{ set bin_option 	yes }
         -secure		{ set secure_option 	yes }
+        -ssh		{ set ssh_option 	yes }
 	-procmailrc	{ set procmailrc_option	yes }
         -who_where	{ set who_where_option 	yes }
         -trashable	{ set trashable_option 	yes }
         -printer	{ set printer_option 	yes }
         -printer_map	{ set printer_map_option \
 						yes }
-        -home		{ set home_option 	yes }
 	default		{ break }
     }
     incr argi
