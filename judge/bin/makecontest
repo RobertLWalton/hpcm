@@ -6,7 +6,7 @@
 #
 # File:		makecontest
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Dec 21 02:58:08 EST 2005
+# Date:		Wed Dec 21 09:52:10 EST 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/12/21 07:59:35 $
+#   $Date: 2005/12/21 18:27:42 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.112 $
+#   $Revision: 1.113 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -32,6 +32,14 @@ set contestant_help_directory \
 source $lib_directory/judging_common.tcl
 set log_mode none
 catch {
+
+# Compute true name of judging_directory, with no
+# `/.'s or `/..'s.
+#
+set wd [pwd]
+cd $judging_directory
+set judging_directory [pwd]
+cd $wd
 
 # Abbreviations used in this program to shorten lines.
 #
@@ -859,43 +867,156 @@ proc make_password {} {
 }
 
 # The judging directory name relative to the home
-# directory, for use in .procmailrc.
+# directory, for use in .procmailrc.  Note that j_d is
+# absolute with no `/.'s or `/..'s: see above.
 #
 set j_d_relative $j_d
-if { ! [regexp {^/} $j_d_relative] } {
-    set j_d_relative "[pwd]/$j_d_relative"
-}
-set j_d_relative [scrub_filename $j_d_relative]
-if { [info exists env(HOME)] } {
-    set hd [scrub_filename $env(HOME)]
-    regexp "^$hd/(.*)\$" $j_d_relative \
-           forget j_d_relative
+set hd $env(HOME)
+if { ! [regexp "^$env(HOME)/(.*)\$" $j_d_relative \
+               forget j_d_relative] } {
+    error "$j_d_relative does not begin with $hd/"
 }
 
-
-# Check for some elementary errors, such as ./contest
-# not existing if it is needed.  If ./contest is needed,
-# grant a+x access to it and its parent.
+# Make $c_d directory.
 #
-if {    $problems_option \
+if { $contest_option } {
+    if { [catch { file type $c_d }] } {
+        set dir [file dirname $j_d]
+    	# Note j_d has no /.'s or /..'s; see above.
+	set tail [file tail $j_d]
+	if { ! [regexp {^judging_(.*)$} $tail \
+		       forget tail] } {
+	    error "$j_d last component does not\
+	           begin with `judging_' and ./contest\
+		   does not exist"
+	}
+	regexp {^(.*)_[^_]+$} $tail forget tail
+	if { ! [catch { file type \
+	                     $dir/contest_$tail }] } {
+	    error "$dir/contest_$tail exists and\
+	           ./contest does not exist"
+	}
+	mkdir $dir/contest_$tail
+	link_file $dir/contest_$tail $j_d/contest
+    }
+    if { ! [file isdirectory $c_d] } {
+        error "$c_d is not a directory"
+    }
+}
+
+# Check if ./contest does not exist when it is needed.
+# If ./contest is needed, grant a+x access to it and its
+# parent.
+#
+if {    $contest_option \
+     || $bin_option \
+     || $home_option \
+     || $problems_option \
      || $demos_option \
      || $help_option \
      || $help2_option \
-     || $bin_option \
      || $secure_option \
      || $who_where_option \
      || $trashable_option \
      || $printer_option \
-     || $printer_map_option \
-     || $home_option } {
+     || $printer_map_option } {
     if {    ! [file isdirectory $c_d] \
          || ! [file executable $c_d] \
          || ! [file readable $c_d] } {
-	error "$c_d' is not a useable directory"
+	error "$c_d is not a useable directory"
     }
     puts "Granting a+x access to $c_d and its parent"
     grant_access $c_d x
     grant_access $c_d/.. x
+}
+
+# Make $c_d/bin directory.
+#
+if { $bin_option } {
+    if {    [catch { file type $c_d/bin }] \
+         && [file isdirectory \
+	          $hpcm_directory/contestant/bin] } {
+	link_file $hpcm_directory/contestant/bin \
+	          $c_d/bin
+    }
+    if { ! [file exists $c_d/bin] } {
+        TODO "$c_d/bin does not exist." \
+	     "Link ./contest/bin to\
+	      ..../hpcm/contestant/bin"
+    } elseif { ! [file isdirectory $c_d/bin] } {
+        TODO "./contest/bin is not a directory." \
+	     "Link it to ..../hpcm/contestant/bin"
+    } elseif { ! [regexp {r.x} [get_access $c_d/bin]] \
+    			} {
+        TODO "./contest/bin is not a+rx." \
+	     "Run `make' in ~/hpcm"
+    }
+}
+
+# Make $c_d/home directory.
+#
+if { $home_option } {
+    if { [catch { file type $c_d/home }] } {
+        if {    [info exists hpcm_prototype_account] \
+	     && $hpcm_prototype_account != "" } {
+	    set phd [account_home_directory \
+	               $hpcm_prototype_account]
+	} else {
+	    set hds {}
+	    foreach hd [account_home_directories \
+	    		    {[_-]proto}] {
+		if {    [file readable $hd/home] \
+		     && [file executable $hd/home] \
+		     && [file readable \
+		              $hd/home/empty.ls] \
+		     && [file readable \
+		              $hd/home/setup.ls] \
+		     && [file readable \
+		              $hd/home/setup.tar] } {
+		    lappend hds $hd
+		}
+	    }
+	    set phd ""
+	    if { [llength $hds] == 1 } {
+	        set phd [lindex $hds 0]
+	    } elseif { [llength $hds] == 0 } {
+	        set phd_error \
+		    "No suitable *\[_-\]proto account\
+		     found.\n"
+	    } else {
+	        set phd_error \
+		    "Too many prototype accounts found:\
+		     $hds.\n"
+	    }
+	}
+	if { $phd != "" } {
+	    link_file $phd/home $c_d/home
+	    set phd_error \
+		"./contest/home is improper link.\n"
+	}
+    } else {
+        set phd_error \
+	    "./contest/home is improper link.\n"
+    }
+
+    if {    ! [file readable $c_d/home] \
+         || ! [file executable $c_d/home] \
+         || ! [file readable $c_d/home/empty.ls] \
+         || ! [file readable $c_d/home/setup.ls] \
+         || ! [file readable $c_d/home/setup.tar] } {
+	TODO "$phd_error" \
+	     "Be sure an appropriate\
+	      prototype account exists:" \
+	     "See `SETUP_PROTOTYPE -doc'" \
+	     "Then symbolically link ./contest/home to\
+	      `~prototype_account/home'," \
+	     "and rerun `makecontest -home'."
+    }
+    if { [file exists $c_d/home] \
+         && ! [regexp {r.x} [get_access $c_d/home]] } {
+    	TODO "While logged into prototype account," \
+	     "chmod a+rx target-of-./contest/home"
+    }
 }
 
 # Array specifying option substitutions.  For each
@@ -1827,22 +1948,6 @@ if { $help2_option \
     link_file help $c_d/help2
 }
 
-# Check $c_d/bin directory.
-#
-if { $bin_option } {
-    if { ! [file exists $c_d/bin] } {
-        TODO "Link ./contest/bin to\
-	      ..../hpcm/contestant/bin"
-    } elseif { ! [file isdirectory $c_d/bin] } {
-        TODO "./contest/bin is not a directory; relink\
-	      it to ..../hpcm/contestant/bin"
-    } elseif { ! [regexp {r.x} [get_access $c_d/bin]] \
-    			} {
-        TODO "./contest/bin is not a+rx; run `make'\
-	     in ~/hpcm"
-    }
-}
-
 # Make secure directory.
 #
 if { $secure_option \
@@ -2252,30 +2357,6 @@ if { $printer_jobs_option \
 
     TODO "Delete ./contest/printer_jobs if you do not" \
          "want it to list all printer jobs."
-}
-
-# Check for $c_d/home directory.
-#
-if { $home_option } {
-    if {    ! [file isdirectory $c_d/home] \
-         || ! [file readable $c_d/home] \
-         || ! [file executable $c_d/home] \
-         || ! [file readable $c_d/home/empty.ls] \
-         || ! [file readable $c_d/home/setup.ls] \
-         || ! [file readable $c_d/home/setup.tar] \
-		} {
-	TODO "Run SETUP_PROTOTYPE in prototype\
-	      account," \
-	     "link ./contest/home to\
-	      `~prototype_account/home' directory," \
-	     "and rerun `makecontest -home'." \
-	     "See `SETUP_PROTOTYPE -doc' and\
-	      contest Makefile for instructions."
-    }
-    if { [file exists $c_d/home] \
-         && ! [regexp {r.x} [get_access $c_d/home]] } {
-    	TODO "chmod a+rx ./contest/home"
-    }
 }
 
 # Finish TODO
