@@ -6,7 +6,7 @@
 #
 # File:		makecontest
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Dec 21 09:52:10 EST 2005
+# Date:		Thu Dec 22 09:22:00 EST 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/12/21 18:27:42 $
+#   $Date: 2005/12/22 17:32:38 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.113 $
+#   $Revision: 1.114 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -636,7 +636,7 @@ makecontest option ... index_specification ...
     `./contest/secure/hcpm_sendmail.rc' exists, one
     autojudge address is made from its contents.  The
     other autojudge addresses are listed in the
-    `autojudge_address' global variable.  If there are
+    `autojudge_addresses' global variable.  If there are
     no autojudge addresses, it is not an error, but
     instructions to fix the situation are written in the
     ./TODO file.
@@ -898,6 +898,8 @@ if { $contest_option } {
 	}
 	mkdir $dir/contest_$tail
 	link_file $dir/contest_$tail $j_d/contest
+	puts "Made $dir/contest_$tail"
+	puts "     and linked ./contest to it"
     }
     if { ! [file isdirectory $c_d] } {
         error "$c_d is not a directory"
@@ -925,7 +927,9 @@ if {    $contest_option \
          || ! [file readable $c_d] } {
 	error "$c_d is not a useable directory"
     }
-    puts "Granting a+x access to $c_d and its parent"
+    puts "Granting a+x access"
+    puts "         to $c_d"
+    puts "         and its parent"
     grant_access $c_d x
     grant_access $c_d/.. x
 }
@@ -938,6 +942,8 @@ if { $bin_option } {
 	          $hpcm_directory/contestant/bin] } {
 	link_file $hpcm_directory/contestant/bin \
 	          $c_d/bin
+	puts "Linked ./contest/bin to"
+	puts "       $hpcm_directory/contestant/bin"
     }
     if { ! [file exists $c_d/bin] } {
         TODO "$c_d/bin does not exist." \
@@ -982,21 +988,23 @@ if { $home_option } {
 	    } elseif { [llength $hds] == 0 } {
 	        set phd_error \
 		    "No suitable *\[_-\]proto account\
-		     found.\n"
+		     found."
 	    } else {
 	        set phd_error \
 		    "Too many prototype accounts found:\
-		     $hds.\n"
+		     $hds."
 	    }
 	}
 	if { $phd != "" } {
 	    link_file $phd/home $c_d/home
+	    puts "Linked ./contest/home to" \
+	    puts "      $phd/home"
 	    set phd_error \
-		"./contest/home is improper link.\n"
+		"./contest/home is improper link."
 	}
     } else {
         set phd_error \
-	    "./contest/home is improper link.\n"
+	    "./contest/home is improper link."
     }
 
     if {    ! [file readable $c_d/home] \
@@ -1008,8 +1016,8 @@ if { $home_option } {
 	     "Be sure an appropriate\
 	      prototype account exists:" \
 	     "See `SETUP_PROTOTYPE -doc'" \
-	     "Then symbolically link ./contest/home to\
-	      `~prototype_account/home'," \
+	     "Then symbolically link ./contest/home" \
+	     "to ~prototype_account/home," \
 	     "and rerun `makecontest -home'."
     }
     if { [file exists $c_d/home] \
@@ -1863,8 +1871,9 @@ proc rename_directory { directory } {
 
     if { [diff_dirs $directory $directory+] \
          == "no" } {
-    	puts "New $directory does not differ from\
-	      previous version."
+    	puts "New $directory"
+	puts "    does not differ from previous\
+	      version."
 	file delete -force -- $directory+
 	return no
     } else {
@@ -1873,17 +1882,20 @@ proc rename_directory { directory } {
 	    file delete -force -- $directory--
 	}
 	if { [file exists $directory-] } {
-	    puts "Renaming $directory- to $directory--"
+	    puts "Renaming $directory-"
+	    puts "      to $directory--"
 	    file rename $directory- $directory--
 	    deny_access $directory--
 	}
 	if { [file exists $directory] } {
-	    puts "Renaming $directory to $directory-"
+	    puts "Renaming $directory"
+	    puts "      to $directory-"
 	    file rename $directory $directory-
 	    deny_access $directory-
 	}
 	if { [file exists $directory+] } {
-	    puts "Renaming $directory+ to $directory"
+	    puts "Renaming $directory+"
+	    puts "      to $directory"
 	    file rename $directory+ $directory
 	}
 	return yes
@@ -2055,39 +2067,84 @@ if { $secure_option } {
 # Update ~/.procmailrc
 #
 if { $procmailrc_option } {
+    set addresses $autojudge_addresses
     set to [lindex [read_sendmail_rc] 0]
-    if { $to == "" } {
-	set to $autojudge_address
+    if { $to != "" } {
+    	lappend addresses $to
     }
-    set to_password ""
-    regexp {^([^<]*)<} $to forget to_password
-    set to_password [string trim $to_password]
-    if { $to_password == "" } {
-	error \
-	  "Cannot find autojudge password in\
-	   ./contest/secure/hpcm_sendmail.rc\
-	   or autojudge_address"
+    if { [llength $addresses] == 0 } {
+        TODO "There are no autojudge addresses" \
+	     "Set the autojudge_addresses variable"
+    }
+    set passwords {}
+    foreach to $addresses {
+	set password ""
+	regexp {^([^<]*)<} $to forget password
+	set password [string trim $password]
+	if { $password == "" } {
+	    error \
+	      "Cannot find autojudge password in\
+	       address `$to'\nthat is\
+	       in ./contest/secure/hpcm_sendmail.rc\
+	       or autojudge_addresses"
+	}
+	if { ! [lcontain $passwords $password] } {
+	    lappend passwords $password
+	}
     }
 
-    set add_dispatch yes
     set add_mbox yes
-    set to ""
-    set dis {receivemail[ \t]+([^ \t]+)($|[ \t])}
-    set dis_to ""
     set mbox {(^|[ \t])hpcm_mbox($|[ \t])}
+    set password ""
+    set to_line ". . ."
+    set dis {receivemail[ \t]+([^ \t]+)($|[ \t])}
+    set original_passwords $passwords
     if { ! [catch { set ch [open ~/.procmailrc r] }] } {
         while { "yes" } {
 	    set line [gets $ch]
 	    if { [eof $ch] } break
+
 	    if { [regexp {^[ \t]*#} $line] } {
 	    	# comment line
+	    } elseif { [regexp {^:} $line] } {
+	    	# start of procmailrc entry
+	        set password ""
+		set to_line ". . ."
 	    } elseif { [regexp {To:.*$} $line to] } {
+		set password ""
+	        regexp {^To:\.\*([^<]*)(<|$)} $to \
+		       forget password
+		set password [string trim $password]
+		set to_line $line
+		puts "PASSWORD $password"
+		puts "TO_LINE $to_line"
 	    } elseif {    [regexp $dis $line \
 	                          forget dir] \
 		       &&    [string trim $dir] \
 		          == $j_d_relative } {
-	        set add_dispatch no
-		set dis_to $to
+		set i [lsearch -exact \
+			       $passwords $password]
+		if { $password == "" } {
+		    TODO "Bad entry in ~/.procmail" \
+		    	 "    $to_line" \
+			 "    $line" \
+			 "    . . ." \
+			 " Remove or fix entry."
+		} elseif {   [lsearch \
+		                -exact $password \
+				$original_passwords] \
+			   < 0 } {
+		    TODO "Extra entry in ~/.procmail" \
+		    	 "    $to_line" \
+			 "    $line" \
+			 "    . . ." \
+			 "Remove entry or add address\
+			  to autojudge_addresses\
+			  global variable."
+		} elseif { $i >= 0 } {
+		    set passwords \
+		        [lreplace $passwords $i $i]
+		}
 	    } elseif { [regexp $mbox $line] } {
 	        set add_mbox no
 	    }
@@ -2095,39 +2152,28 @@ if { $procmailrc_option } {
 	close $ch
     }
 
-    if { $add_dispatch } {
+    if { $add_mbox || [llength $passwords] > 0 } {
 	set file [read_entire_file ~/.procmailrc]
 	if { $add_mbox } {
 	    set file ":0 c:\nhpcm_mbox\n\n$file"
-	    TODO "The following has been prepended\
-		  to ~/.procmailrc:" \
-		 "" \
-		 ":0 c:" \
-		 "hpcm_mbox"
+	    puts "The following has been prepended\
+		  to ~/.procmailrc:"
+	    puts "    :0 c:"
+	    puts "    hpcm_mbox"
 	}
-	set file "$file\n\n:0\n*\
-		  ^To:.*$to_password\n|\
-		  receivemail $j_d_relative | \\\n \
-		  dispatchmail $j_d_relative"
-	TODO "The following has been appended\
-	      to ~/.procmailrc:" \
-	     "" \
-	     ":0" \
-	     "* ^To:.*$to_password" \
-	     "| receivemail $j_d_relative | \\" \
-	     "  dispatchmail $j_d_relative"
+	foreach password $passwords {
+	    set file "$file\n\n:0\n*\
+		      ^To:.*$password\n|\
+		      receivemail $j_d_relative | \\\n \
+		      dispatchmail $j_d_relative"
+	    puts "The following has been appended\
+		  to ~/.procmailrc:"
+	    puts "    :0"
+	    puts "    * ^To:.*$password"
+	    puts "    | receivemail $j_d_relative | \\"
+	    puts "      dispatchmail $j_d_relative"
+	}
 	write_file ~/.procmailrc $file
-    } else {	# ! $add_dispatch
-	set dis_password ""
-	regexp {^To:[ \t]*\.\*([^ \t]*)($|[ \t])} \
-	       $dis_to forget dis_password
-	set dis_password \
-	    [string trim $dis_password]
-	if { $dis_password != $to_password } {
-	    error "~/.procmailrc autojudge password\
-		   $dis_password does not match\
-		   desired password $to_password"
-	}
     }
 }
 
@@ -2325,8 +2371,8 @@ if { $printer_option \
 
     TODO "Wrote ./contest/printer to be `$printer';" \
          "edit ./contest/printer to change." \
-	 "You may want to use ./contest/printer_map\
-	    instead of $c_d/printer:" \
+	 "You may want to use ./contest/printer_map" \
+	 "instead of ./contest/printer:" \
 	 "see `hpcm/contestant/bin/printer_pipe -doc'."
 }
 
