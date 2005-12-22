@@ -6,7 +6,7 @@
 #
 # File:		makecontest
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Dec 22 09:22:00 EST 2005
+# Date:		Thu Dec 22 14:03:04 EST 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/12/22 17:32:38 $
+#   $Date: 2005/12/22 19:21:00 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.114 $
+#   $Revision: 1.115 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -918,6 +918,7 @@ if {    $contest_option \
      || $help_option \
      || $help2_option \
      || $secure_option \
+     || $ssh_option \
      || $who_where_option \
      || $trashable_option \
      || $printer_option \
@@ -2061,6 +2062,39 @@ if { $secure_option } {
 	              [get_access \
 		           $c_d/secure/passwords]] } {
         TODO "chmod o-rwx ./contest/secure/passwords"
+    }
+}
+
+# Make ./contest/extra_setup.tar
+#
+if {    $ssh_option \
+     && ! [file readable $c_d/extra_setup.tar] } {
+    set keys ""
+    foreach f { identity.pub id_rsa.pub id_dsa.pub } {
+	set f $env(HOME)/.ssh/$f
+        if { [file readable $f] } {
+	    set keys "$keys\n[read_entire_file $f]"
+	}
+    }
+    set keys [string range $keys 1 end]
+    if { $keys != "" } {
+        file mkdir $j_d/.ssh
+	deny_access $j_d/.ssh
+	write_file $j_d/.ssh/authorized_keys $keys
+	deny_access $j_d/.ssh/authorized_keys
+	set wd [pwd]
+	cd $j_d
+	exec tar cf ./contest/extra_setup.tar .ssh
+	cd $wd
+	grant_access $c_d/extra_setup.tar
+	puts "Wrote $c_d/extra_setup.tar"
+    } else {
+        TODO "Cannot make $c_d/extra_setup.tar" \
+	     "    because none of the files\
+	      ~/.ssh/identity.pub, ~/.ssh/id_rsa.pub" \
+	     "    or ~/.ssh/id_dsa.pub exist." \
+	     "Run ssh-keygen and then `makecontest\
+	      -ssh'."
     }
 }
 
