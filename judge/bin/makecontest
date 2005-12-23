@@ -6,7 +6,7 @@
 #
 # File:		makecontest
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Dec 23 00:56:23 EST 2005
+# Date:		Fri Dec 23 01:00:34 EST 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/12/23 05:55:17 $
+#   $Date: 2005/12/23 06:04:31 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.116 $
+#   $Revision: 1.117 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -928,11 +928,14 @@ if {    $contest_option \
          || ! [file readable $c_d] } {
 	error "$c_d is not a useable directory"
     }
-    puts "Granting a+x access"
-    puts "         to $c_d"
-    puts "         and its parent"
-    grant_access $c_d x
-    grant_access $c_d/.. x
+    if {    ! [regexp ..x [get_access $c_d]] \
+         || ! [regexp ..x [get_access $c_d/..]] } {
+	puts "Granting a+x access"
+	puts "         to $c_d"
+	puts "         and its parent"
+	grant_access $c_d x
+	grant_access $c_d/.. x
+    }
 }
 
 # Make $c_d/bin directory.
