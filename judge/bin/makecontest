@@ -6,7 +6,7 @@
 #
 # File:		makecontest
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Dec 23 01:00:34 EST 2005
+# Date:		Fri Dec 23 08:38:51 EST 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/12/23 06:04:31 $
+#   $Date: 2005/12/23 13:54:54 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.117 $
+#   $Revision: 1.118 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -55,13 +55,13 @@ makecontest option ... index_specification ...
 
   Options:
     -formal     Sets up a formal contest.  Equals all
-    		options but -info, -trashable,
+    		options but -info, -trashable, -ssh,
 		-description, and -printer_map.
     -practice   Sets up a practice contest.  Equals all
-    		options but -info, -trashable, and
+    		options but -info, -trashable, -ssh, and
 		-printer_map.
     -informal   Sets up an informal contest.  Equals all
-    		options but -problems, -demos,
+    		options but -problems, -demos, -ssh,
 		-trashable, -description, and -printer.
     -email	Sets up an email contest.  Equals -info,
     		-solutions, -mail, and -this_contest.
@@ -140,9 +140,12 @@ makecontest option ... index_specification ...
     made and used as the contest directory.  That is,
     the judging directory name is modified by replacing
     `judging_' by `contest_' at its beginning, and re-
-    moving from the end any `_PPP'.  It is an error if
-    `./contest' does not exist but the contest directory
-    already exists.
+    moving from the end any `_PPP'.  If the judging
+    directory name is ~/XXX/judging_YYY and there is no
+    `_PPP', the contest directory name ~/XXX/contest_YYY
+    is still used (YYY must not contain a `_').  It is
+    an error if `./contest' does not exist but the
+    contest directory already exists.
 
     If `./contest' is made, or if anything is made in
     `./contest', a+x is set for that directory and its
@@ -162,12 +165,14 @@ makecontest option ... index_specification ...
     as the value of the global variable `hpcm_prototype_
     account' if that variable is defined.  Otherwise
     PROTO is the unique account name which has the form
-    `*\[_-\]proto' such that the files ~PROTO/home/
-    setup.tar, ~PROTO/home/setup.ls, and ~PROTO/home/
-    empty.ls exist and are readable, if such a unique
-    account name exists.  If the prototype account can-
-    not be found, it is not an error, but instructions
-    to fix the situation are written in the ./TODO file.
+    `*\[_-\]proto' such that the directory ~PROTO/home
+    is readable and executable and the files ~PROTO/
+    home/setup.tar, ~PROTO/home/setup.ls, and ~PROTO/
+    home/empty.ls exist and are readable, if such a
+    unique account name exists.  If the prototype
+    account cannot be found, it is not an error, but
+    instructions to fix the situation are written in the
+    ./TODO file.
 
     The index files are read and used to generate a list
     of items to be included in the ./info and ./contest
@@ -631,15 +636,15 @@ makecontest option ... index_specification ...
     tions to fix the situation are written in the ./TODO
     file.
 
-    The -procmailrc program updates the ~/.procmailrc
-    file with one entry for each autojudge address.  If
-    `./contest/secure/hcpm_sendmail.rc' exists, one
-    autojudge address is made from its contents.  The
-    other autojudge addresses are listed in the
-    `autojudge_addresses' global variable.  If there are
-    no autojudge addresses, it is not an error, but
-    instructions to fix the situation are written in the
-    ./TODO file.
+    The -procmailrc program option updates the ~/
+    .procmailrc file with one entry for each autojudge
+    address.  If `./contest/secure/hcpm_sendmail.rc'
+    exists, one autojudge address is made from its
+    contents.  The other autojudge addresses are listed
+    in the `autojudge_addresses' global variable.  If
+    there are no autojudge addresses, it is not an
+    error, but instructions to fix the situation are
+    written in the ./TODO file.
 
     The -who_where program option makes the ./contest/
     who_where file if it does not exist, or updates it
@@ -872,7 +877,7 @@ proc make_password {} {
 #
 set j_d_relative $j_d
 set hd $env(HOME)
-if { ! [regexp "^$env(HOME)/(.*)\$" $j_d_relative \
+if { ! [regexp "^$hd/(.*)\$" $j_d_relative \
                forget j_d_relative] } {
     error "$j_d_relative does not begin with $hd/"
 }
@@ -2081,6 +2086,7 @@ if {    $ssh_option \
     }
     set keys [string range $keys 1 end]
     if { $keys != "" } {
+        file delete -force -- $j_d/.ssh
         file mkdir $j_d/.ssh
 	deny_access $j_d/.ssh
 	write_file $j_d/.ssh/authorized_keys $keys

@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Dec 19 10:07:54 EST 2005
+# Date:		Thu Dec 22 12:09:15 EST 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/12/19 15:15:12 $
+#   $Date: 2005/12/23 13:56:09 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.125 $
+#   $Revision: 1.126 $
 #
 
 # Table of Contents
@@ -1237,6 +1237,7 @@ proc compute_message_date {} {
 #
 #	{ To-value Key-value Key-Name-value }
 #
+# All values have whitespace trimmed from their ends.
 # Missing values return as "".  If file does not exist,
 # all values return as "".
 #
