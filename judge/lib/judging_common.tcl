@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Dec 22 12:09:15 EST 2005
+# Date:		Fri Dec 23 12:52:01 EST 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/12/23 13:56:09 $
+#   $Date: 2005/12/23 17:54:47 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.126 $
+#   $Revision: 1.127 $
 #
 
 # Table of Contents
@@ -75,10 +75,6 @@
 # cannot find judging parameters.
 #
 set default_log_directory $env(HOME)/HPCM_Error_Log
-
-# Judging parameters file name:
-#
-set judging_parameters_file hpcm_judging.rc
 
 # Exit cleanup.  Called to do special cleanup before
 # exit.  Default does nothing.  This proc may be
