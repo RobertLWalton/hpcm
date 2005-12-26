@@ -4,7 +4,7 @@
 #
 # File:		makescoreboard
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Dec 26 14:09:57 EST 2005
+# Date:		Mon Dec 26 14:30:32 EST 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/12/26 19:09:02 $
+#   $Date: 2005/12/26 19:29:26 $
 #   $RCSfile: old_makescoreboard,v $
-#   $Revision: 1.47 $
+#   $Revision: 1.48 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -652,16 +652,23 @@ proc process_instructions {} {
 		}
 
 		# Set out_mtime to the output file mtime
-		# or "" if no output file exist, and
-		# set `update' to no if the output file
-		# exists and yes otherwise.
+		# or "" if no output file exist, set
+		# `update' to no if the output file
+		# exists and yes otherwise, and add
+		# { out FILENAME } or { none FILENAME }
+		# to the mtime_list according to whether
+		# the file exists are not.
 		#
 		if { [file exists $out_file] } {
 		    set update no
 		    set out_mtime [file mtime $out_file]
+		    lappend mtime_list \
+		            [list out $out_file]
 		} else {
 		    set update yes
 		    set out_mtime ""
+		    lappend mtime_list \
+		            [list none $out_file]
 		}
 
 	        # If scoreboard_instructions might have
@@ -678,10 +685,6 @@ proc process_instructions {} {
 	        set out_pc $pc
 		incr out_pc -1
 		set output_found yes
-
-		# Remember output file in mtime_list.
-		#
-		lappend mtime_list [list out $out_file]
 	    }
 
 	    yes_SEND {}
