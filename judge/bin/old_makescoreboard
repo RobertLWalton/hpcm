@@ -4,7 +4,7 @@
 #
 # File:		makescoreboard
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Dec 26 15:04:34 EST 2005
+# Date:		Mon Dec 26 17:57:02 EST 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/12/26 20:04:46 $
+#   $Date: 2005/12/26 23:03:04 $
 #   $RCSfile: old_makescoreboard,v $
-#   $Revision: 1.50 $
+#   $Revision: 1.51 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -562,6 +562,7 @@ proc process_instructions {} {
     set pc 0
     set end_pc [llength $instructions]
     set output_found no
+    set board_found no
 
     while { "yes" } {
 
@@ -608,6 +609,12 @@ proc process_instructions {} {
 	    #
 	    pass2 $instructions \
 	          $out_pc [expr $pc -1] $update
+
+	    # Add updated output file to mtime_list.
+	    #
+	    if { $update } {
+		lappend mtime_list [list out $out_file]
+	    }
 	}
 
 	if { $pc > $end_pc } break
@@ -653,23 +660,16 @@ proc process_instructions {} {
 		}
 
 		# Set out_mtime to the output file mtime
-		# or "" if no output file exist, set
+		# or "" if no output file exist, and set
 		# `update' to no if the output file
-		# exists and yes otherwise, and add
-		# { out FILENAME } or { none FILENAME }
-		# to the mtime_list according to whether
-		# the file exists are not.
+		# exists and yes otherwise.
 		#
 		if { [file exists $out_file] } {
 		    set update no
 		    set out_mtime [file mtime $out_file]
-		    lappend mtime_list \
-		            [list out $out_file]
 		} else {
 		    set update yes
 		    set out_mtime ""
-		    lappend mtime_list \
-		            [list none $out_file]
 		}
 
 	        # If scoreboard_instructions might have
@@ -741,9 +741,13 @@ proc process_instructions {} {
 		     && $finder_mtime > $out_mtime } {
 		    set update yes
 		}
-		lappend mtime_list \
-			[list $finder_mtime \
-			      $finder_file]
+
+		if { board_found == "no" } {
+		    set board_found yes
+		    lappend mtime_list \
+			    [list $finder_mtime \
+				  $finder_file]
+		}
 	    }
 
 	    no_SEND -
