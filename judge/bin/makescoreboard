@@ -4,7 +4,7 @@
 #
 # File:		makescoreboard
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Dec 23 12:53:24 EST 2005
+# Date:		Mon Dec 26 03:47:20 EST 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/12/23 17:54:25 $
+#   $Date: 2005/12/26 14:47:22 $
 #   $RCSfile: makescoreboard,v $
-#   $Revision: 1.45 $
+#   $Revision: 1.46 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -149,21 +149,6 @@ if { $command == "update" } {
 set pid_file \
     $judging_directory/Scoreboard_PID
 
-# Compute possible parameters and save original values.
-# parameters_array(name) stores the value that
-# scoreboard_name should have at the beginning of
-# processing the scoreboard instructions.  Note that
-# `name' is not allowed to be `instructions', and
-# arrays are not allowed either.
-#
-foreach name [info globals scoreboard_*] {
-    regexp {^scoreboard_(.*)$} $name forget pname
-    if { $pname != "instructions" \
-         && ! [array exists $name] } {
-	set parameters_array($pname) [set $name]
-    }
-}
-
 # Return `yes' if a file in the mtime_list has changed.
 # Otherwise return `no'.
 #
@@ -209,94 +194,176 @@ proc file_changed { mtime_list } {
     return no
 }
 
+# The names of global variables that must be imported
+# to the process_arguments function below must be
+# so that they will not be accidentally used by the
+# sourced parameters files.  So we make them of the
+# form makescoreboard_xxx.
+
+# makescoreboard_parameters(xxx) stores the value
+# that scoreboard_xxx should have at the beginning of
+# processing the scoreboard instructions.  xxx is
+# called a scoreboard parameter.  `instructions' is
+# excluded, and is not a scoreboard parameter, as is
+# any xxx for which scoreboard_xxx is an array.
+
+# Execute `global scoreboard_xxx' for all scoreboard
+# parameter names xxx.
+#
+proc make_scoreboard_parameters_global { } {
+    global makescoreboard_parameters
+    foreach name \
+            [array names makescoreboard_parameters] {
+        uplevel [list global scoreboard_$name]
+    }
+}
+
+# Save scoreboard parameter values in makescoreboard_
+# parameters.
+#
+proc save_scoreboard_parameters { } {
+    global makescoreboard_parameters
+    foreach name \
+            [array names makescoreboard_parameters] {
+        global scoreboard_$name
+	set makescoreboard_parameters($name) \
+	    [set scoreboard_$name]
+    }
+}
+
+# Restore scoreboard parameter values from
+# makescoreboard_parameters.
+#
+proc restore_scoreboard_parameters { } {
+    global makescoreboard_parameters
+    foreach name \
+            [array names makescoreboard_parameters] {
+        global scoreboard_$name
+	set scoreboard_$name \
+	    $makescoreboard_parameters($name)
+    }
+}
+
+# Compute scoreboard parameter names.  `instructions' is
+# excluded, as are arrays.
+#
+foreach name [info globals scoreboard_*] {
+    regexp {^scoreboard_(.*)$} $name forget pname
+    if {    $pname != "instructions" \
+         && ! [array exists $name] } {
+	set makescoreboard_parameters($pname) 1
+    }
+}
+save_scoreboard_parameters
+
 # Mtime-list for parameter files.
 #
-set parameter_mtime_list changed
+set makescoreboard_parameter_mtime_list changed
 
 # Mtime of latest of all the parameter files.
 #
-set parameter_mtime ""
+set makescoreboard_parameter_mtime ""
 
-# Process arguments.  If parameter files (including
-# the hpcm_judging.rc file) have not changed,  just
-# restore values of scoreboard_xxx variables listed in
-# parameters_array.  Otherwise reprocess the arguments
-# and set resulting values of scoreboard_xxx variables
-# in parameters_array.
+# Process arguments and set the values of the global
+# scoreboard_xxx variables listed in the parameters_
+# array.  Save these new values in the parameters_
+# array.
 #
-proc process_arguments { { first_time no } } {
+# If parameter files (including # the hpcm_judging.rc
+# file) have not changed, just restore values of
+# scoreboard_xxx variables listed in makescoreboard_
+# parameters_array, without processing arguments.
+#
+proc process_arguments { } {
 
-    global judging_directory lib_directory \
-           parameter_mtime_list parameters_array \
-	   parameter_mtime scoreboard_instructions argv
-    foreach name [array names parameters_array] {
-	global scoreboard_$name
+    global makescoreboard_parameter_mtime_list \
+	   makescoreboard_parameter_mtime
+
+    # Import standard globals, e.g. tclvars.
+    #
+    global env errorCode errorInfo argv argc
+    foreach x [info globals tcl_*] {
+        global $x
     }
+    global judging_directory lib_directory
 
-    if { [file_changed $parameter_mtime_list] \
+    make_scoreboard_parameters_global
+
+    # If no file changes, restore variables and exit.
+    #
+    if { [file_changed \
+            $makescoreboard_parameter_mtime_list] \
          == "no" } {
 
-        foreach name [array names parameters_array] {
-	    set scoreboard_$name \
-	    	$parameters_array($name)
-	}
+	restore_scoreboard_parameters
 	return
     }
 
-    # Set parameter_mtime_list so that if there is an
-    # error reading parameters, and we are recalled to
-    # try again, the parameters will be reread.  Errors
-    # may occur due to files changing dynamically while
-    # makescoreboard runs asynchronously.
+    # Set makescoreboard_parameter_mtime_list so that if
+    # there is an error reading parameters, and we are
+    # recalled to try again, the parameters will be
+    # reread.  Errors may occur due to files changing
+    # dynamically while makescoreboard runs asynchron-
+    # ously.
     #
-    set parameter_mtime_list changed
+    set makescoreboard_parameter_mtime_list changed
 
-    # Accumulate new parameter_mtime_list value in this
-    # local variable until we have succeeded.
+    # Accumulate new makescoreboard_parameter_mtime_list
+    # and parameter_mtime values in local variables
+    # whose names will not likely be used by files being
+    # sourced.
     #
-    set mtime_list ""
+    set pfile $judging_directory/hpcm_judging.rc
+    set mtime [file mtime $pfile]
+    set makescoreboard_mtime_list \
+        [list [list $mtime $pfile]]
+    set makescoreboard_mtime $mtime
 
-    set pf $judging_directory/hpcm_judging.rc
-    if { $first_time == "no" } {
-        source $pf
-    }
-    set mtime [file mtime $pf]
-    lappend mtime_list [list $mtime $pf]
-    set parameter_mtime $mtime
+    # Source hpcm_judging.rc.
+    #
+    source $pfile
 
-    set LB "{"
-    # } to balance left bracket in last line
+    # Process all the arguments, sourcing files as
+    # necessary.
     #
     foreach arg [lrange $argv 1 end] {
+	set LB "{"
+	# "}" to balance left bracket in last line so
+	# TCL will read this procedure code properly.
+	#
 	if { [regexp "^${LB}" $arg] } {
 	    if { [catch { set scoreboard_instructions \
-	                      [lindex $arg 0] }] } {
+	                      [lindex $arg 0]
+			  llength \
+			      $scoreboard_instructions \
+			}] } {
 	        error "scoreboard instructions\
 		       argument is not a TCL list:\
 		       $arg"
 	    }
 	} else {
+	    set makescoreboard_arg $arg
 	    source $arg
+	    set arg $makescoreboard_arg
 	    set mtime [file mtime $arg]
-	    lappend mtime_list [list $mtime $arg]
-	    if { $mtime > $parameter_mtime } {
-	        set parameter_mtime $mtime
+	    lappend \
+	        makescoreboard_mtime_list \
+	        [list $mtime $arg]
+	    if { $mtime > $makescoreboard_mtime } {
+	        set makescoreboard_mtime $mtime
 	    }
-
 	}
     }
 
-    foreach name [array names parameters_array] {
-        set parameters_array($name) \
-	    [set scoreboard_$name]
-    }
+    save_scoreboard_parameters
 
-    set parameter_mtime_list $mtime_list
+    set parameter_mtime_list $makescoreboard_mtime_list
+    set parameter_mtime $makescoreboard_mtime
 }
 
 # Process arguments for the first time.
 #
-process_arguments yes
+process_arguments
 
 
 # Given a value that may be an abbreviation defined
@@ -327,6 +394,26 @@ proc unabbreviate { value } {
     }
 }
 
+# Process parameter setting instruction.
+#
+proc set_parameter { instruction } {
+
+    global makescoreboard_parameters
+
+    set name  [lindex $instruction 0]
+    set value [lindex $instruction 1]
+
+    if { ! [info exists \
+	         makescoreboard_parameters($name)] } {
+	error "$name is not a parameter name"
+    }
+
+    set value [unabbreviate $value]
+    global scoreboard_$name
+    set scoreboard_$name $value
+}
+
+# Data for processing scoreboard instructions.
 
 # Mtime-list for scoreboard instructions INPUT and
 # OUTPUT files.
@@ -337,27 +424,11 @@ set file_mtime_list changed
 #
 set earliest_future_time ""
 
-# Last value of parameter_mtime.
+# Last time scoreboard instructions were executed, or ""
+# in order to force execution of scoreboard instruc-
+# tions.
 #
-set last_parameter_mtime ""
-
-# Process parameter setting instruction.
-#
-proc set_parameter { instruction } {
-
-    global parameters_array
-
-    set name  [lindex $instruction 0]
-    set value [lindex $instruction 1]
-
-    if { ! [info exists parameters_array($name)] } {
-	error "$name is not a parameter name"
-    }
-
-    set value [unabbreviate $value]
-    global scoreboard_$name
-    set scoreboard_$name $value
-}
+set last_time ""
 
 # Process scoreboard instructions.
 #
@@ -365,12 +436,9 @@ proc process_instructions {} {
 
     global scoreboard_instructions abbreviation_array \
            file_mtime_list earliest_future_time \
-	   last_parameter_mtime parameter_mtime \
-	   finder_file judging_directory \
-	   parameters_array
-    foreach name [array names parameters_array] {
-	global scoreboard_$name
-    }
+	   last_time makescoreboard_parameter_mtime \
+	   finder_file judging_directory
+    make_scoreboard_parameters_global
 
     # Use a single `run time' in computations.
     #
@@ -379,11 +447,13 @@ proc process_instructions {} {
     # Reinstall initial parameter values.
     #
     process_arguments
+    set parameter_mtime $makescoreboard_parameter_mtime
 
     # Recompute $finder_file if necessary.
     #
-    if {    $file_mtime_list == "changed" \
-         || ! [file readable $finder_file]
+    if {    $last_time == "" \
+         || $last_time < $parameter_mtime \
+         || ! [file readable $finder_file] \
          || [test_flag Score_Flag] } {
 
 	make_signals_ignored
@@ -391,6 +461,7 @@ proc process_instructions {} {
 	file delete -force -- $finder_file
 	exec scorefinder -gotten > $finder_file
 	make_signals_default
+	set last_time ""
     }
 
     # Save $finder_file mtime for use below.
@@ -400,9 +471,8 @@ proc process_instructions {} {
     # If we have no reason to rerun scoreboard instruc-
     # tions, return.
     #
-    if {    [file_changed $file_mtime_list] == "no"
-         && $last_parameter_mtime \
-               >= $parameter_mtime \
+    if {    $last_time != ""
+         && $last_time >= $parameter_mtime \
 	 && ( $earliest_future_time == "" \
 	      || $time < $earliest_future_time ) } {
 
@@ -452,13 +522,13 @@ proc process_instructions {} {
     make_signals_ignored
 
 
-    # Set file_mtime_list so that if there is an error
-    # processing instructions, and we are recalled to
-    # try again, the instructions will be reprocessed.
+    # Set last_time so that if there is an error pro-
+    # cessing instructions, and we are recalled to try
+    # again, the instructions will be reprocessed.
     # Errors may occur due to files changing dynamically
     # while makescoreboard runs asynchronously.
     #
-    set file_mtime_list changed
+    set last_time ""
 
     # Accumulate new file_mtime_list value in this local
     # variable until we have succeeded.
@@ -595,8 +665,8 @@ proc process_instructions {} {
 	        # If scoreboard_instructions might have
 		# changed force update.
 		#
-	    	if { $last_parameter_mtime == ""
-	    	     || $last_parameter_mtime \
+	    	if {    $last_time == ""
+	    	     ||   $last_time \
 		        < $parameter_mtime } {
 		    set update yes
 		}
@@ -700,7 +770,7 @@ proc process_instructions {} {
     # of just finished actions and reenable interrupts.
     #
     set earliest_future_time $eft
-    set last_parameter_mtime $parameter_mtime
+    set last_time $time
     set file_mtime_list $mtime_list
     make_signals_default
 }
@@ -712,11 +782,10 @@ proc process_instructions {} {
 #
 proc pass2 { instructions pc end_pc update } {
 
-    global parameters_array judging_directory \
-    	   finder_file space errorInfo errorCode
-    foreach name [array names parameters_array] {
-	global scoreboard_$name
-    }
+    global makescoreboard_parameters \
+           judging_directory finder_file space \
+	   errorInfo errorCode
+    make_scoreboard_parameters_global
 
     # Compute output file and step past OUTPUT instruc-
     # tion.
@@ -993,7 +1062,8 @@ proc pass2 { instructions pc end_pc update } {
 		#
 	        set parameters ""
 		foreach name \
-		        [array names parameters_array] {
+		        [array names \
+		           makescoreboard_parameters] {
 		    lappend parameters \
 		        [list $name \
 			      [set scoreboard_$name]]
