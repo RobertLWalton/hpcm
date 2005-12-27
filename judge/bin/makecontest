@@ -6,7 +6,7 @@
 #
 # File:		makecontest
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Dec 23 11:27:04 EST 2005
+# Date:		Tue Dec 27 07:37:09 EST 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/12/23 16:31:04 $
+#   $Date: 2005/12/27 13:21:24 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.119 $
+#   $Revision: 1.120 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -89,7 +89,9 @@ makecontest option ... index_specification ...
     		     ./contest/help/demos
     -help2	Make ./help2
     -this_contest    Make ./help, ./help/index,
-		          ./help/this_contest
+		          ./help/this_contest,
+		          ./help/this_contest_parameter,
+		          ./help/this_contest_original
     -mail	Make ./mail
 
     -secure	Make ./contest/secure/passwords,
@@ -543,34 +545,48 @@ makecontest option ... index_specification ...
     The -this_contest program option creates the follow-
     ing if they do not exist:
 
-	./help			directory
-	./help/index		file
-	./help/this_contest	file
+	./help				directory
+	./help/index			file
+	./help/this_contest		file
+	./help/this_contest_parameter	file
+	./help/this_contest_original	file
 
     Note these are in the judging directory proper, and
     not in the ./info or ./contest subdirectories.  The
     ./help/index file is an INPUT index file that con-
     tains an entry for ./help/this_contest.  The latter
-    file is information about the current contest.  If
-    the file is created, a ./TODO is written to edit
-    ./help/this_contest.  The -this_contest option is
-    processed before any input index files are read, so
-    ./help/index may be used as an input index file in
-    the same call to `makecontest' that creates the
-    ./help/index file.
-
-    The ./help/this_contest file is initialized to a
-    copy of the file named hpcm/contestant/help/ccc/ccc_
-    this_contest_prototype, where ccc is the contest
-    type (email, informal, or formal).
+    file is information about the current contest.  The
+    -this_contest option is processed before any input
+    index files are read, so ./help/index may be used as
+    an input index file in the same call to
+    `makecontest' that creates the ./help/index file.
 
     If used, the ./help/index file should be the refer-
-    enced by the first index specification given to this
-    program.  It contains a header entry designed to
-    start the output index `help/index', and with this
-    header entry, all the help index files, `help/
-    demos', `help/problems', and `help/index', are men-
-    tioned at the beginning of `help/index'.
+    enced by the first help file index specification
+    given to this program.  It contains a header entry
+    designed to start the output index `help/index', and
+    with this header entry, all the help index files,
+    `help/demos', `help/problems', and `help/index', are
+    mentioned at the beginning of `help/index'.
+
+    The ./help/this_contest* files are written to be a
+    copy of the `this_contest' global variable.  The
+    ./help/this_contest_original is written only if it
+    does not exist.  The ./help/this_contest_parameter
+    file is written if it does not exist or if it exists
+    but is not equal to the value of the `this_contest'
+    global variable.  The ./help/this_contest files is
+    written only if it does not exist, or if it equals
+    ./help/this_contest_parameter and the latter is to
+    be written.
+
+    Thus initially all the ./help/this_contest* files
+    are equal to the `this_contest' global variable
+    value.  You can then either update that value, or
+    you can edit the ./help/this_contest file.
+
+    When a ./help/* file is written, a ./TODO note is
+    written indicating what has been done.
 
     The -mail program option causes the ./mail directory
     to be made if it does not exist.  If it is made, its
@@ -1643,108 +1659,120 @@ if { $solutions_option } {
     file mkdir $j_d/solutions+
 }
 
-# Make help directory.
+# Process -this_contest.
 #
-if { $this_contest_option \
-      && ! [file isdirectory $j_d/help] } {
-    file mkdir $j_d/help
-}
+if { $this_contest_option } {
+    set TODO_lines {}
 
-# Make help/index file.
-#
-if { $this_contest_option \
-      && ! [file readable $j_d/help/index] } {
-    set index_ch [open $j_d/help/index w]
-
-    puts $index_ch "
-To display the file listed as `help/topic' below use the
-command:
-                      help topic
-
-E.g., `help index' displays this file.
-
-
-Indices:
---------
-
-    help/index
-        This file.
-
-    help/demos
-        Index of contest demonstration problems.
-
-    help/problems
-        Index of contest problems.
-
-
-
-Introductory Information:
--------------------------
-
-
-*** this_contest include
-        Information about this contest.
-"
-
-    close $index_ch
-}
-
-# Make help/this_contest file.
-#
-if { $this_contest_option \
-      && ! [file readable \
-      		 $j_d/help/this_contest] } {
-    set tc_ch [open $j_d/help/this_contest w]
-
-    puts $tc_ch [format {%-28s%28s} \
-    			"About This Contest" \
-		        [clock format \
-			       [clock seconds]]]
-    puts $tc_ch ""
-
-    # Remember contest type, in effect, in $j_d/help/
-    # this_contest_prototype.
+    # Make help directory.
     #
-    if { ! [file exists \
-                 $j_d/help/this_contest_prototype] } {
-        if { $contest_type == "" } {
-	    error "Cannot make $j_d/help/this_contest\
-	           because contest type not specified."
-	}
-	set directory \
-	    $contestant_help_directory/$contest_type
-	set file ${contest_type}_this_contest_prototype
-	link_file $directory/$file \
-	          $j_d/help/this_contest_prototype
+    if { ! [file isdirectory $j_d/help] } {
+	file mkdir $j_d/help
+	puts "Made $j_d/help"
     }
 
-    put_file $j_d/help/this_contest_prototype $tc_ch
-
-    close $tc_ch
-
-    TODO "Edit $j_d/help/this_contest." \
-         "Then rerun makecontest to recompute help\
-	  files."
-
-    # For Email contest say something about .procmailrc.
+    # Make help/index file.
     #
-    if { ! [file isdirectory $c_d] } {
-	TODO "Using the contest password you edited\
-              into $j_d/help/this_contest," \
-	     "edit ~/.procmailrc to contain:" \
-	     "" \
-	     ":0" \
-	     "* ^To:.*password.*<" \
-	     "| receivemail $j_d_relative | \\" \
-	     "  dispatchmail $j_d_relative"
-	TODO "You may want to add the following to\
-	      the BEGINNING of your ~/.procmailrc" \
-	     "file if you have not ALREADY done so.\
-	     \  This will capture all mail the" \
-	     "judge receives in ~/hpcm_mbox." \
-	     "" \
-	     ":0 c:" \
-	     "hpcm_mbox"
+    if { ! [file readable $j_d/help/index] } {
+	write_file $j_d/help/index "\
+\   To display the file listed as `help/topic' below use the
+    command:
+			  help topic
+
+    E.g., `help index' displays this file.
+
+
+    Indices:
+    --------
+
+	help/index
+	    This file.
+
+	help/demos
+	    Index of contest demonstration problems.
+
+	help/problems
+	    Index of contest problems.
+
+
+
+    Introductory Information:
+    -------------------------
+
+
+    *** this_contest include
+	    Information about this contest.
+"
+        lappend TODO_lines "  ./help/index"
+	puts "Wrote $j_d/help/index"
+    }
+
+    # Compute header for help_this_contest* files.
+    #
+    set header \
+        [format "%-28s%28s\n" \
+		"About This Contest" \
+		[clock format [clock seconds]]]
+
+    # Make help/this_contest_original file.
+    #
+    if { ! [file readable \
+      	         $j_d/help/this_contest_original] } {
+	write_file $j_d/help/this_contest_original \
+		   "$header$this_contest"
+        lappend TODO_lines \
+	        "  ./help/this_contest_original"
+	puts "Wrote $j_d/help/this_contest_original"
+    }
+
+    # Save help/this_contest_parameter file.
+    #
+    set tcpexists \
+        [file readable $j_d/help/this_contest_parameter]
+    if { $tcpexists } {
+        set tcpcontent \
+	    [read_entire_file \
+	         $j_d/help/this_contest_parameter]
+	regexp {^About This Contest[^\n]*\n(.*)$} \
+	       $tcpcontent forget tcpcontent
+	puts "TCPCONTENT\n$tcpcontent"
+    }
+
+    # Make help/this_contest_parameter file.
+    #
+    if {    ! $tcpexists \
+	 || $this_contest != $tcpcontent } {
+	write_file $j_d/help/this_contest_parameter \
+		   "$header$this_contest"
+        lappend TODO_lines \
+	        "  ./help/this_contest_parameter"
+	puts "Wrote $j_d/help/this_contest_parameter"
+    }
+
+    # Save help/this_contest file.
+    #
+    set tcexists \
+        [file readable $j_d/help/this_contest]
+    if { $tcexists } {
+        set tccontent \
+	    [read_entire_file $j_d/help/this_contest]
+	regexp {^About This Contest[^\n]*\n(.*)$} \
+	       $tccontent forget tccontent
+    }
+
+    # Make help/this_contest file.
+    #
+    if {    ! $tcexists
+	 || (    $tcpexists \
+	      && $tcpcontent == $tccontent \
+	      && $this_contest != $tccontent ) } {
+	write_file $j_d/help/this_contest \
+		   "$header$this_contest"
+        lappend TODO_lines "  ./help/this_contest"
+	eval TODO Made $TODO_lines \
+	     {"You may want to edit\
+	       ./help/this_contest"}
+	puts "Wrote $j_d/help/this_contest"
     }
 }
 
