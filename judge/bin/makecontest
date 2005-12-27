@@ -6,7 +6,7 @@
 #
 # File:		makecontest
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Dec 27 07:37:09 EST 2005
+# Date:		Tue Dec 27 11:38:14 EST 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/12/27 13:21:24 $
+#   $Date: 2005/12/27 19:14:10 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.120 $
+#   $Revision: 1.121 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -585,7 +585,7 @@ makecontest option ... index_specification ...
     value.  You can then either update that value, or
     you can edit the ./help/this_contest file.
 
-    When a ./help/* file is written, a ./TODO note is
+    If ./help/this_contest is written, a ./TODO note is
     written indicating what has been done.
 
     The -mail program option causes the ./mail directory
@@ -1674,52 +1674,56 @@ if { $this_contest_option } {
     # Make help/index file.
     #
     if { ! [file readable $j_d/help/index] } {
-	write_file $j_d/help/index "\
-\   To display the file listed as `help/topic' below use the
-    command:
-			  help topic
+	write_file $j_d/help/index [string trim "
+To display the file listed as `help/topic' below use the
+command:
+		      help topic
 
-    E.g., `help index' displays this file.
-
-
-    Indices:
-    --------
-
-	help/index
-	    This file.
-
-	help/demos
-	    Index of contest demonstration problems.
-
-	help/problems
-	    Index of contest problems.
+E.g., `help index' displays this file.
 
 
+Indices:
+--------
 
-    Introductory Information:
-    -------------------------
+    help/index
+	This file.
+
+    help/demos
+	Index of contest demonstration problems.
+
+    help/problems
+	Index of contest problems.
 
 
-    *** this_contest include
-	    Information about this contest.
-"
+
+Introductory Information:
+-------------------------
+
+
+*** this_contest include
+	Information about this contest.
+"]
         lappend TODO_lines "  ./help/index"
 	puts "Wrote $j_d/help/index"
     }
 
-    # Compute header for help_this_contest* files.
+    # Compute header for help/this_contest* files.
     #
     set header \
-        [format "%-28s%28s\n" \
+        [format "%-28s%28s\n\n" \
 		"About This Contest" \
 		[clock format [clock seconds]]]
+
+    # Compute content for help/this_contest* files.
+    #
+    set content [string trim $this_contest]
 
     # Make help/this_contest_original file.
     #
     if { ! [file readable \
       	         $j_d/help/this_contest_original] } {
 	write_file $j_d/help/this_contest_original \
-		   "$header$this_contest"
+		   "$header$content"
         lappend TODO_lines \
 	        "  ./help/this_contest_original"
 	puts "Wrote $j_d/help/this_contest_original"
@@ -1733,7 +1737,7 @@ if { $this_contest_option } {
         set tcpcontent \
 	    [read_entire_file \
 	         $j_d/help/this_contest_parameter]
-	regexp {^About This Contest[^\n]*\n(.*)$} \
+	regexp {^About This Contest[^\n]*\n\n(.*)$} \
 	       $tcpcontent forget tcpcontent
 	puts "TCPCONTENT\n$tcpcontent"
     }
@@ -1741,9 +1745,9 @@ if { $this_contest_option } {
     # Make help/this_contest_parameter file.
     #
     if {    ! $tcpexists \
-	 || $this_contest != $tcpcontent } {
+	 || $content != $tcpcontent } {
 	write_file $j_d/help/this_contest_parameter \
-		   "$header$this_contest"
+		   "$header$content"
         lappend TODO_lines \
 	        "  ./help/this_contest_parameter"
 	puts "Wrote $j_d/help/this_contest_parameter"
@@ -1756,7 +1760,7 @@ if { $this_contest_option } {
     if { $tcexists } {
         set tccontent \
 	    [read_entire_file $j_d/help/this_contest]
-	regexp {^About This Contest[^\n]*\n(.*)$} \
+	regexp {^About This Contest[^\n]*\n\n(.*)$} \
 	       $tccontent forget tccontent
     }
 
@@ -1765,9 +1769,9 @@ if { $this_contest_option } {
     if {    ! $tcexists
 	 || (    $tcpexists \
 	      && $tcpcontent == $tccontent \
-	      && $this_contest != $tccontent ) } {
+	      && $content != $tccontent ) } {
 	write_file $j_d/help/this_contest \
-		   "$header$this_contest"
+		   "$header$content"
         lappend TODO_lines "  ./help/this_contest"
 	eval TODO Made $TODO_lines \
 	     {"You may want to edit\
