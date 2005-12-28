@@ -6,7 +6,7 @@
 #
 # File:		makecontest
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Dec 28 00:24:50 EST 2005
+# Date:		Wed Dec 28 00:43:07 EST 2005
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/12/28 05:30:32 $
+#   $Date: 2005/12/28 06:19:19 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.122 $
+#   $Revision: 1.123 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -1946,9 +1946,16 @@ if { $info_option } {
     rename_directory $j_d/info
 }
 if { $problems_option } {
+    if { [regexp {r.x} [get_access $c_d/problems]] } {
+    	grant_access $c_d/problems+
+    }
     rename_directory $c_d/problems
 }
 if { $help_option } {
+    if { [regexp {r..} \
+    		 [get_access $c_d/help/problems]] } {
+    	grant_access $c_d/help+/problems
+    }
     rename_directory $c_d/help
 }
 if { $demos_option } {
