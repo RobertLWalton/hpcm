@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/01/02 19:49:12 $
+#   $Date: 2006/01/03 02:36:44 $
 #   $RCSfile: startcontest,v $
-#   $Revision: 1.7 $
+#   $Revision: 1.8 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -40,10 +40,10 @@ set log_mode none
 catch {
 
 set document "
-startcontest \[delay\]
+startcontest { start | status | stop }
 
-    This program merely sets a+rx permissions on the
-    directory 
+    With the `start' option, this program sets a+rx
+    permissions on the directory 
 
     	<judging_directory>/contest/problems
 	
@@ -55,24 +55,32 @@ startcontest \[delay\]
 
     However, if the current time is before any absolute
     time value of the scoreboard_start_time global var-
-    iable, it is an error if the program is run without
-    the `delay' option.  But if the `delay' option is
-    given, this program spawns a child that waits until
-    the scoreboard_start_time and then sets permissions
-    as above and emails the judge that the contest has
-    started.
+    iable, this program spawns a background child
+    process that waits until the scoreboard_start_time
+    and then sets permissions as above and emails the
+    judge that the contest has started.
 
-    If this program spawns a child with the `delay'
-    option, it writes the process ID of the child into
-    the Startcontest_PID file in the judging directory.
-    If there already is such a file and the process it
-    identifies is still running, this program will not
-    spawn a child and will do nothing but print out
-    information about the ID'ed process.
+    If this program spawns a child, it writes the
+    process ID of the child into the Startcontest_PID
+    file in the judging directory.  If there already is
+    such a file and the process it identifies is still
+    running, this program will not spawn a child and
+    will do nothing but print out information about the
+    ID'ed process.
+
+    If run with the `status' option this program will
+    print status telling whether startcontest has
+    already been executed and whether it is already
+    running in background.
+
+    If run with the `stop' option this program will
+    stop any startcontest running in background.
     
     Unlike most HPCM judging programs, errors made by
     this program are not written to log files, but are
-    written to the standard error output instead."
+    written to the standard error output instead.
+    However, errors made by any background child are
+    logged to log files."
 
 
 # If there are any illegal arguments print documentation
@@ -80,12 +88,114 @@ startcontest \[delay\]
 #
 set arg [lindex $argv 0]
 if { $argc > 1 || \
-     ! [lcontain {{} delay -WAIT-} $arg] } {
+     ! [lcontain {start status stop -start-} $arg] } {
     puts $document
     exit 1
 }
 
 set pid_file $judging_directory/Startcontest_PID
+
+# Handle the status argument.
+#
+if { $arg == "status" } {
+    set startcontest_needed yes
+    if { [file exists $pid_file] } {
+	set pid [read_file $pid_file]
+	set display [display_process_tree $pid]
+	if { [process_found $display] } {
+	    puts "Previous startcontest still running:"
+	    puts $display
+	    set startcontest_needed no
+	} else {
+	    puts "Previous startcontest has died."
+	    puts $display
+	    puts ""
+	    puts "Run `tracker' to find error logs, or\
+	          look in"
+	    puts "$judging_directory/log for unchecked\
+	          errors."
+	}
+    }
+    if {    [file isdirectory $c_d/problems] \
+         && [regexp {r.x} [get_access $c_d/problems]] \
+         && [file isfile $c_d/help/problems] \
+         && [regexp {r..} \
+                    [get_access $c_d/help/problems]] } {
+	puts "startcontest has already been run\
+	      successfully"
+    } elseif {    [file isdirectory $c_d/problems] \
+               && [file isfile $c_d/help/problems] } {
+	if { $startcontest_needed } { 
+	    puts "You need to run: startcontest start"
+	}
+    } else {
+        if { ! [file isdirectory $c_d/problems] } {
+            puts "$c_d/problems needs to be created"
+	}
+	if { ! [file isfile $c_d/help/problems] } {
+	    puts "$c_d/help/problems needs to be\
+	          created"
+	}
+    }
+    exit 0
+}
+
+# Handle the stop argument.
+#
+if { $arg == "stop" } {
+    if { [file exists $pid_file] } {
+	 set pid [read_file $pid_file]
+	 set display [display_process_tree $pid]
+	 if { [process_found $display] } {
+	     puts "Killing previous startcontest:"
+	     puts $display
+
+	     # Try to kill up to 30 times, checking
+	     # after each attempt for death.  The
+	     # first 20 times are with HUP, the next
+	     # 10 times are with KILL.
+	     #
+	     set count 0
+	     while { "true" } {
+		 incr count 1
+		 if { $count <= 20 } {
+		     catch { signal_process_tree \
+			     HUP $pid } out
+		     puts $out
+		 } elseif { $count <= 30 } {
+		     catch { signal_process_tree \
+			     KILL $pid } out
+		     puts $out
+		 } else {
+		     puts "ERROR: Giving Up!"
+		     exit 1
+		 }
+		 sleep 1
+		 set display \
+		     [display_process_tree $pid]
+		 if { ! [process_found $display] } {
+		     break
+		 }
+	     }
+	 } else {
+	    puts "Previous startcontest has died."
+	    puts $display
+	    puts ""
+	    puts "Run `tracker' to find error logs, or\
+	          look in"
+	    puts "$judging_directory/log for unchecked\
+	          errors."
+	 }
+	 file delete -force $pid_file
+    } else {
+	puts "No previous startcontest running."
+    }
+    exit 0
+}
+
+# From this point on we are handling the start or
+# -start- argument.
+
 set wrote_pid_file no
 
 # If we have nothing to do, announce this and exit.
@@ -113,22 +223,10 @@ if { ! [regexp {^(|problem|team)$} $stime] } {
 	       $scoreboard_start_time"
     }
     switch -- $arg {
-    "" {
 
-        # If no argument, just announce error if it is
-	# too early, and fall through to grant permis-
-	# sions.
-	#
-    	if { [clock seconds] < $stime } {
-	    puts "Not yet at scoreboard_start_time:\
-	          $scoreboard_start_time"
-	    puts "so startcontest did nothing."
-	    exit 1
-	}
-    }
-    delay {
+    start {
 
-        # If delay argument, start subprocess and exit
+        # If "start" argument, start subprocess and exit
 	# if it is too early, or fall through to grant
 	# permissions otherwise.
 	#
@@ -151,7 +249,7 @@ if { ! [regexp {^(|problem|team)$} $stime] } {
 
 	    # Run startcontest as a subprocess.
 	    #
-	    exec startcontest -WAIT- &
+	    exec startcontest -start- &
 
 	    # Wait for any output from first run.
 	    #
@@ -160,7 +258,7 @@ if { ! [regexp {^(|problem|team)$} $stime] } {
 		sleep 1
 		incr count
 		if { $count > 120 } {
-		    error "startcontest -WAIT- did not\
+		    error "startcontest -start- did not\
 			   write $pid_file in a timely\
 			   manner"
 		}
@@ -172,10 +270,10 @@ if { ! [regexp {^(|problem|team)$} $stime] } {
 	    exit 0
 	}
     }
-    -WAIT- {
+    -start- {
 
         # Come here if subprocess (indicated by special
-	# -WAIT- argument).
+	# -start- argument).
 
 	# Restore log mode and disable standard output
 	# and error.
@@ -216,7 +314,7 @@ if { $wrote_pid_file } {
 # Notify user that startcontest is finished.  If we are
 # subprocess, this is done via hpcm_sendmail.
 #
-if { $arg == "-WAIT-" } {
+if { $arg == "-start-" } {
     exec hpcm_sendmail << "startcontest done"
 } else {
     puts "startcontest done"
