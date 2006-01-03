@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Jan  2 13:50:32 EST 2006
+# Date:		Tue Jan  3 16:09:28 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/01/02 18:48:54 $
+#   $Date: 2006/01/03 21:08:52 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.31 $
+#   $Revision: 1.32 $
 
 # To make a formal contest named `foo':
 #
@@ -529,4 +529,5 @@ dangerous_clean:
 	       `readlink contest` \
 	       contest \
 	       Scorefinder* \
-	       Scoreboard_PID
+	       Scoreboard_PID \
+	       Startcontest_PID
