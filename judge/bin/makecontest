@@ -6,7 +6,7 @@
 #
 # File:		makecontest
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Jan  2 13:43:38 EST 2006
+# Date:		Mon Jan  2 21:01:10 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/01/02 18:47:42 $
+#   $Date: 2006/01/03 02:02:32 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.124 $
+#   $Revision: 1.125 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -56,15 +56,17 @@ makecontest option ... index_specification ...
   Options:
     -formal     Sets up a formal contest.  Equals all
     		options but -info, -trashable, -ssh,
-		-description, and -printer_map.
+		-description, -printer_map, and
+		-startcontest.
     -practice   Sets up a practice contest.  Equals all
-    		options but -info, -trashable, -ssh, and
-		-printer_map.
+    		options but -info, -trashable, -ssh,
+		-printer_map, and -startcontest.
     -informal   Sets up an informal contest.  Equals all
     		options but -problems, -demos, -ssh,
-		-trashable, -description, and -printer.
+		-trashable, -description, -printer.
     -email	Sets up an email contest.  Equals -info,
-    		-solutions, -mail, and -this_contest.
+    		-solutions, -mail, -this_contest, and
+		-startcontest.
     -info	Make ./info, ./info/help/index,
     		./info/help/problems, ./info/help/demos.
     -solutions  Make ./solutions
@@ -106,6 +108,8 @@ makecontest option ... index_specification ...
     		     ./contest/printer_jobs
     -printer_map    Make ./contest/printer_map and
     		         ./contest/printer_jobs
+    -startcontest   Run the startcontest program if
+    		    necessary.
 
   Index Specification:
 
@@ -756,6 +760,7 @@ set who_where_option		no
 set trashable_option		no
 set printer_option		no
 set printer_map_option		no
+set startcontest_option		no
 #
 set contest_type		""
 #
@@ -810,6 +815,8 @@ while { $argi < $argc } {
 			  set who_where_option	yes
 			  set printer_map_option \
 			  			yes
+			  set startcontest_option \
+			  			yes
 			  set contest_type informal }
         -email		{ set info_option 	yes
 			  set solutions_option	yes
@@ -817,6 +824,8 @@ while { $argi < $argc } {
 			  set this_contest_option \
 			  			yes
 			  set procmailrc_option	yes
+			  set startcontest_option \
+			  			yes
 			  set contest_type email }
         -info		{ set info_option 	yes }
         -solutions	{ set solutions_option 	yes }
@@ -839,6 +848,8 @@ while { $argi < $argc } {
         -trashable	{ set trashable_option 	yes }
         -printer	{ set printer_option 	yes }
         -printer_map	{ set printer_map_option \
+						yes }
+        -startcontest	{ set startcontest_option \
 						yes }
 	default		{ break }
     }
@@ -943,7 +954,8 @@ if {    $contest_option \
      || $who_where_option \
      || $trashable_option \
      || $printer_option \
-     || $printer_map_option } {
+     || $printer_map_option \
+     || $startcontest_option } {
     if {    ! [file isdirectory $c_d] \
          || ! [file executable $c_d] \
          || ! [file readable $c_d] } {
@@ -1971,20 +1983,6 @@ if { $solutions_option } {
     rename_directory $j_d/solutions
 }
 
-if { ( $problems_option \
-       && ! [regexp {r.x} \
-       		    [get_access $c_d/problems]] ) \
-     || \
-     ( $help_option \
-       && ! [regexp {r..} [get_access \
-       			      $c_d/help/problems]] ) } {
-    TODO "Run `startcontest' when contest starts" \
-         "to chmod a+rx ./contest/problems" \
-	 "and/or ./contest/help/problems." \
-	 "Or run `startcontest delay' before contest\
-	  starts."
-}
-
 # Make mail directory.
 #
 if { $mail_option \
@@ -2488,6 +2486,34 @@ if { $printer_jobs_option \
 
     TODO "Delete ./contest/printer_jobs if you do not" \
          "want it to list all printer jobs."
+}
+
+# Start contest if necessary.
+#
+if {    $startcontest_option \
+     && [file exists $c_d/problems] \
+     && [file exists $c_d/help/problems] \
+     && (    ! [regexp {r.x} \
+     		       [get_access $c_d/problems]] \
+	  || ! [regexp {r..} \
+       		       [get_access \
+			    $c_d/help/problems]] ) } {
+
+    # Check Startcontest_PID and delete it if its
+    # process is no longer running.
+    # 
+    if { [file exists $j_d/Startcontest_PID] } {
+	 set pid [read_file $j_d/Startcontest_PID]
+	 set display [display_process_tree $pid]
+	 if { ! [process_found $display] } {
+	     file delete -force $j_d/Startcontest_PID
+	}
+    }
+
+    if { ! [file exists $j_d/Startcontest_PID] } {
+	puts "Executing: startcontest delay"
+        exec startcontest delay
+    }
 }
 
 # Finish TODO
