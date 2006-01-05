@@ -6,7 +6,7 @@
 #
 # File:		makecontest
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Jan  2 21:40:51 EST 2006
+# Date:		Wed Jan  4 18:51:14 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/01/03 02:40:31 $
+#   $Date: 2006/01/05 00:48:59 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.127 $
+#   $Revision: 1.128 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -56,14 +56,16 @@ makecontest option ... index_specification ...
   Options:
     -formal     Sets up a formal contest.  Equals all
     		options but -info, -trashable, -ssh,
-		-description, -printer_map, and
-		-startcontest.
+		-description, -printer_map, 
+		-startcontest, and -scoreboard.
     -practice   Sets up a practice contest.  Equals all
     		options but -info, -trashable, -ssh,
-		-printer_map, and -startcontest.
+		-printer_map, -startcontest, and
+		-scoreboard.
     -informal   Sets up an informal contest.  Equals all
     		options but -problems, -demos, -ssh,
-		-trashable, -description, -printer.
+		-trashable, -description, -printer, and
+		-scoreboard.
     -email	Sets up an email contest.  Equals -info,
     		-solutions, -mail, -this_contest, and
 		-startcontest.
@@ -109,6 +111,8 @@ makecontest option ... index_specification ...
     -printer_map    Make ./contest/printer_map and
     		         ./contest/printer_jobs
     -startcontest   Run the startcontest program if
+    		    necessary.
+    -scoreboard     Run the makescoreboard program if
     		    necessary.
 
   Index Specification:
@@ -708,6 +712,16 @@ makecontest option ... index_specification ...
     map files exist, contestant programs ignore ./con-
     test/printer.
 
+    The -startcontest program option executes the
+    `startcontest start' command unless this has already
+    been done, or if it has been done but a background
+    process waiting to start the contest has died.
+
+    The -scoreboard program option executes the
+    `makescoreboard start' command unless this has
+    already been done, or if the background process that
+    maintains the scoreboard has died.
+
     Although we have used the names `./info', `./mail',
     `./contest', and `./help' in this description, the
     actual directories are the info, mail, contest,
@@ -761,6 +775,7 @@ set trashable_option		no
 set printer_option		no
 set printer_map_option		no
 set startcontest_option		no
+set scoreboard_option		no
 #
 set contest_type		""
 #
@@ -850,6 +865,8 @@ while { $argi < $argc } {
         -printer_map	{ set printer_map_option \
 						yes }
         -startcontest	{ set startcontest_option \
+						yes }
+        -scoreboard	{ set scoreboard_option \
 						yes }
 	default		{ break }
     }
@@ -2513,6 +2530,27 @@ if {    $startcontest_option \
     if { ! [file exists $j_d/Startcontest_PID] } {
 	puts "Executing: startcontest start"
         exec startcontest start >@ stdout
+    }
+}
+
+# Makescoreboard if necessary.
+#
+if { $scoreboard_option } {
+
+    # Check Scoreboard_PID and delete it if its
+    # process is no longer running.
+    # 
+    if { [file exists $j_d/Scoreboard_PID] } {
+	 set pid [read_file $j_d/Scoreboard_PID]
+	 set display [display_process_tree $pid]
+	 if { ! [process_found $display] } {
+	     file delete -force $j_d/Scoreboard_PID
+	}
+    }
+
+    if { ! [file exists $j_d/Scoreboard_PID] } {
+	puts "Executing: makescoreboard start"
+        exec makescoreboard start >@ stdout
     }
 }
 
