@@ -6,7 +6,7 @@
 #
 # File:		makecontest
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Jan  4 18:51:14 EST 2006
+# Date:		Thu Jan  5 09:36:31 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/01/05 00:48:59 $
+#   $Date: 2006/01/05 14:34:58 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.128 $
+#   $Revision: 1.129 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -2040,10 +2040,13 @@ if { $secure_option \
 #
 if { $secure_option } {
     if { ! [file readable $c_d/secure/passwords] } {
-	close [open $c_d/secure/passwords w]
-	deny_access $c_d/secure/passwords
 	set apw account:password:who
     	set ctc coaches-email:team-email:comment
+	set ch [open $c_d/secure/passwords w]
+	puts $ch "# $apw:$ctc"
+	puts $ch "#"
+	close $ch
+	deny_access $c_d/secure/passwords
 	TODO "Edit ./contest/secure/passwords;" \
 	     "each of its lines has the format:" \
 	     "`$apw:$ctc'."
@@ -2054,8 +2057,9 @@ if { $secure_option } {
 	while { "yes" } {
 	    set line [gets $passwords_ch]
 	    if { [eof $passwords_ch] } break
-	    if { [regexp {^([^:]+)(|:|::.*)$} $line \
-			 forget account forget2] } {
+	    if {    ! [regexp {^[ \t]*(#|$)} $line] \
+	         && [regexp {^([^:]+)(|:|::.*)$} $line \
+			    forget account forget2] } {
 		set password [make_password]
 		set rest ""
 		regexp {^[^:]+:(:.*)$} $line \
@@ -2289,6 +2293,8 @@ if { $who_where_option } {
 	while { "yes" } {
 	    set line [gets $passwords_ch]
 	    if { [eof $passwords_ch] } break
+	    if { [regexp {^[ \t]*(#|$)} $line] } \
+	    	continue
 	    regexp {^([^:]*):} $line forget account
 	    set rest ""
 	    regexp {^[^:]*:[^:]*:(.*)$} $line \
@@ -2321,6 +2327,8 @@ if { $who_where_option } {
 	while { "yes" } {
 	    set line [gets $passwords_ch]
 	    if { [eof $passwords_ch] } break
+	    if { [regexp {^[ \t]*(#|$)} $line] } \
+	    	continue
 	    regexp {^([^:]*)(:|$)} $line \
 	           forget account forget2
 	    set rest ""
@@ -2434,6 +2442,8 @@ if { $trashable_option } {
 	while { "yes" } {
 	    set line [gets $passwords_ch]
 	    if { [eof $passwords_ch] } break
+	    if { [regexp {^[ \t]*(#|$)} $line] } \
+	    	continue
 	    regexp {^([^:]*)(:|$)} $line \
 	    	   forget account forget2
 	    if { $account != "none" } {
