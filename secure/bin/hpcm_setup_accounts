@@ -1,0 +1,194 @@
+#! /bin/sh
+#
+# Setup User Accounts (to be executed by root)
+#
+# File:		hpcm_setup_accounts
+# Author:	Bob Walton <walton@deas.harvard.edu>
+# Date:		Fri Jan  6 10:01:53 EST 2006
+#
+# The authors have placed this program in the public
+# domain; they make no warranty and accept no liability
+# for this program.
+#
+# RCS Info (may not be true date or author):
+#
+#   $Author: hc3 $
+#   $Date: 2006/01/06 17:05:32 $
+#   $RCSfile: hpcm_setup_accounts,v $
+#   $Revision: 1.1 $
+
+all=no
+force=no
+while test x = x
+do
+    case "$1" in
+    -all )	all=yes ;;
+    -force )	force=yes ;;
+    * )		break ;;
+    esac
+    shift
+done
+
+case "$1" in
+
+"" | -doc )
+    echo "
+hpcm_setup_accounts [-all|-force] contest-directory-name
+
+    The contest-directory-name must be absolute.
+
+    Make all the accounts listed in contest-directory-
+    name/secure/passwords, except for accounts that
+    already exist.  If an account name is \`none',
+    it is ignored.
+
+    For each account made, the password listed in
+    contest-directory-name/secure/passwords is assigned
+    to the account, unless the password is \`none' or
+    \`'.  Then hpcm/contestant/bin/TRASH_ACCOUNT is run
+    for the account if the account is name listed as a
+    separate line in contest-directory-name/trashable
+    and either the account has no .hpcm_contest link
+    or the -force option is given.
+
+    If the -all option is given, passwords are set and
+    accounts trashed even if the account already
+    exists."
+
+    exit 1
+    ;;
+esac
+
+# Be sure we are run as `root'.
+#
+if test `id -un` != root; then
+    echo current uid is not root
+    exit 1
+fi
+
+# Be sure contest directory has an absolute path name.
+#
+case "$1" in
+    /* )
+    	;;
+    *)
+    	echo $1 is NOT an absolute pathname
+	exit 1
+    	;;
+esac
+
+# Be sure the files we require are readable.
+#
+if test ! -r $1/secure/passwords; then
+	echo cannot read $1/secure/passwords
+	exit 1
+elif test ! -r $1/home/setup.tar
+then
+	echo cannot read $1/home/setup.tar
+	exit 1
+elif test ! -r $1/home/empty.ls
+then
+	echo cannot read $1/home/empty.ls
+	exit 1
+elif test ! -r $1/home/setup.ls
+then
+	echo cannot read $1/home/setup.ls
+	exit 1
+elif test ! -r $1/trashable
+then
+	echo cannot read $1/trashable
+	exit 1
+fi
+
+exec 3<$1/secure/passwords
+while read <&3
+do
+    # Read contest-directory-name/secure/passwords lines
+    # and extract user and password, while ignoring
+    # comment and blank lines.
+    #
+    if expr "$REPLY" : '[ 	]*#' >/dev/null
+    then
+	continue
+    fi
+    if expr "$REPLY" : '[ 	]*$' >/dev/null
+    then
+	continue
+    fi
+    if test -z "$REPLY"
+    then
+	continue
+    fi
+    user=`echo "$REPLY" | cut -d: -f1`
+    password=`echo "$REPLY" | cut -d: -f2`
+
+    # Skip the `none' user and if no -all option also
+    # users whose accounts exist.  Create accounts of
+    # users not skipped whose accounts do not exists.
+    # 
+    if test "$user" = "none"
+    then
+    	continue
+    elif test ! -d /home/$user
+    then
+	echo "useradd $user"
+	useradd $user
+    elif test $all = "no"
+    then
+	echo "$user already exists and no -all" \
+	     "option: nothing done"
+	continue
+    fi
+
+    # Check that home directory of user exists.
+    #
+    if test ! -d /home/$user
+    then
+    	echo "creating $user failed to make" \
+	     "home directory:"
+	echo "    nothing more done for $user"
+	continue
+    fi
+
+    # Set password of user account.
+    #
+    if test "$password" = "none"
+    then do_nothing=
+    	echo "Password for $user is \`none':" \
+	     "user password not set"
+    elif test "$password" = ""
+    then
+    	echo "Password of $user is empty:" \
+	     "user password not set"
+    else
+	echo "$user" "$password"
+	(sleep 2; echo "$password"; \
+	 sleep 2; echo "$password") \
+		| passwd "$user"
+    fi
+
+
+    # Check that our account name is listed in the trash-
+    # able file, and if yes, trash account.
+    #
+    grep "^`id -un`\$" $contest/trashable >/dev/null
+    if test $? -ne 0
+    then
+	echo "$user is not listed in" \
+	     "$1/trashable: user not trashed"
+    elif test $force = "yes"
+    	echo su $user -c "$1/bin/TRASH_ACCOUNT $1"
+    	su $user -c "$1/bin/TRASH_ACCOUNT $1"
+    elif test -d /home/$user/.hpcm_contest
+	echo "$user has previously been" \
+	     "trashed and no -force option:" \
+	     "user not trashed"
+    else
+    	echo su $user -c "$1/bin/TRASH_ACCOUNT $1"
+    	su $user -c "$1/bin/TRASH_ACCOUNT $1"
+    fi
+
+done
+exec 3<&-
+
+exit 0
