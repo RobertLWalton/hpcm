@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Jan  7 05:36:13 EST 2006
+# Date:		Sat Jan  7 05:51:55 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/01/07 10:34:41 $
+#   $Date: 2006/01/07 10:56:25 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.180 $
+#   $Revision: 1.181 $
 
 # Table of Contents:
 #
@@ -2280,6 +2280,23 @@ if { [catch { exec which mewdecode }] } {
     proc translate_base64 { text } {
 	return [exec -keepnewline mewdecode << $text]
     }
+}
+
+# Function to return the absolute true name of a direc-
+# tory, which is defined as the `pwd' value when the
+# directory is the current directory (thus there are no
+# symbolic links).  It is an error if the argument does
+# not name a directory.
+#
+proc truename { directory } {
+    if { ! [file isdirectory $directory] } {
+        error "$directory is not a directory"
+    }
+    set wd [pwd]
+    cd $directory
+    set name [pwd]
+    cd $wd
+    return $name
 }
 
 # Function to create a file.  Returns `yes' if the file
