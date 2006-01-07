@@ -6,7 +6,7 @@
 #
 # File:		makecontest
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Jan  7 09:55:02 EST 2006
+# Date:		Sat Jan  7 10:15:58 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/01/07 15:09:01 $
+#   $Date: 2006/01/07 15:15:22 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.131 $
+#   $Revision: 1.132 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -649,7 +649,9 @@ makecontest option ... index_specification ...
     be used in a line to prevent a random password from
     being generated and to prevent the hpcm_set_
     passwords program from setting the password of the
-    line's account.
+    line's account.  If a new password is generated for
+    an existing account, a TODO is written telling how
+    to reset the account's password.
 
     The -ssh program option makes the file `./contest/
     extra_setup.tar' containing the file `.ssh/
@@ -699,7 +701,7 @@ makecontest option ... index_specification ...
     feature is intended to prevent accidental reini-
     tializing of accounts.
 
-    If -trashable is given when all accounts exists, the
+    If -trashable is given when all accounts exist, the
     `trashable' file is deleted.
 
     If the `trashable' file is changed to something non-
@@ -2073,6 +2075,7 @@ if { $secure_option } {
         set passwords_ch [open $c_d/secure/passwords r]
 	set lines ""
 	set changed no
+	set account_exists no
 	while { "yes" } {
 	    set line [gets $passwords_ch]
 	    if { [eof $passwords_ch] } break
@@ -2085,6 +2088,10 @@ if { $secure_option } {
 		       forget rest
 	        set line "$account:$password$rest"
 		set changed yes
+		if { [account_home_directory \
+		          $account] != "" } {
+		    set account_exists_yes
+		}
 	    }
 	    lappend lines $line
 	}
@@ -2098,20 +2105,23 @@ if { $secure_option } {
 	    close $passwords_ch
 	    puts "Wrote $c_d/secure/passwords"
 
-	    set tc_d [truename $c_d]
-	    set ts_d \
-	        "[truename $hpcm_directory]/secure/bin"
-	    TODO "Passwords have been added to\
-	          $c_d/secure/passwords." \
-		 "You should inspect this file and\
-		  then execute:" \
-		 "" \
-		 "    su root" \
-		 "    $ts_d/hpcm_set_passwords $tc_d" \
-		 "    exit" \
-		 "" \
-		 "to reset the passwords for all\
-		  accounts."
+	    if { $account_exists } {
+		set tc_d [truename $c_d]
+		set ts_d [truename $hpcm_directory]
+		set ts_d "$ts_d/secure/bin"
+		TODO "Passwords have been added to\
+		      $c_d/secure/passwords." \
+		     "You should inspect this file and\
+		      then execute:" \
+		     "" \
+		     "    su root" \
+		     "    $ts_d/hpcm_set_passwords\
+		          $tc_d" \
+		     "    exit" \
+		     "" \
+		     "to reset the passwords for all\
+		      accounts."
+	    }
 	}
     }
 }
