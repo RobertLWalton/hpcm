@@ -6,7 +6,7 @@
 #
 # File:		makecontest
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Jan  7 10:35:59 EST 2006
+# Date:		Sat Jan  7 11:27:57 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/01/07 15:48:30 $
+#   $Date: 2006/01/07 16:34:31 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.134 $
+#   $Revision: 1.135 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -730,7 +730,10 @@ makecontest option ... index_specification ...
     The -scoreboard program option executes the
     `makescoreboard start' command unless this has
     already been done, or if the background process that
-    maintains the scoreboard has died.
+    maintains the scoreboard has died.  This option also
+    moves any scoreboard.1head file from the judging
+    directory to the contest directory if the contest
+    directory exists and does not have this file.
 
     Although we have used the names `./info', `./mail',
     `./contest', and `./help' in this description, the
@@ -1013,7 +1016,7 @@ if { $bin_option } {
 	link_file $hpcm_directory/contestant/bin \
 	          $c_d/bin
 	puts "Linked ./contest/bin"
-	puts "       to $hpcm_directory/contestant/bin"
+	puts "    to $hpcm_directory/contestant/bin"
     }
     if { ! [file exists $c_d/bin] } {
         TODO "$c_d/bin does not exist." \
@@ -1074,7 +1077,7 @@ if { $home_option } {
 	if { $phd != "" } {
 	    link_file $phd/home $c_d/home
 	    puts "Linked ./contest/home"
-	    puts "      to $phd/home"
+	    puts "    to $phd/home"
 	    set phd_error \
 		"./contest/home is improper link."
 	}
@@ -2047,7 +2050,7 @@ if { $help2_option \
     }
     link_file help $c_d/help2
     puts "Linked $c_d/help2"
-    puts "       to $c_d/help"
+    puts "    to $c_d/help"
 }
 
 # Make secure directory.
@@ -2664,7 +2667,19 @@ if {    $startcontest_option \
     }
 }
 
-# Makescoreboard if necessary.
+# Move scoreboard.1head if necessary.
+#
+if {    $scoreboard_option \
+     && [file exists $j_d/scoreboard.1head] \
+     && [file isdirectory $j_d/contest] \
+     && ! [file exists $c_d/scoreboard.1head] } {
+    file rename -force -- $j_d/scoreboard.1head \
+    			  $c_d/scoreboard.1head
+    puts "Moved $j_d/scoreboard.1head"
+    puts "   to $c_d/scoreboard.1head"
+}
+
+# Execute makescoreboard if necessary.
 #
 if { $scoreboard_option } {
 
