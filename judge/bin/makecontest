@@ -6,7 +6,7 @@
 #
 # File:		makecontest
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Jan  5 09:38:35 EST 2006
+# Date:		Sat Jan  7 09:55:02 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/01/05 14:37:02 $
+#   $Date: 2006/01/07 15:09:01 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.130 $
+#   $Revision: 1.131 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -36,10 +36,7 @@ catch {
 # Compute true name of judging_directory, with no
 # `/.'s or `/..'s.
 #
-set wd [pwd]
-cd $judging_directory
-set judging_directory [pwd]
-cd $wd
+set judging_directory [truename $judging_directory]
 
 # Abbreviations used in this program to shorten lines.
 #
@@ -55,17 +52,17 @@ makecontest option ... index_specification ...
 
   Options:
     -formal     Sets up a formal contest.  Equals all
-    		options but -info, -trashable, -ssh,
-		-description, -printer_map, 
-		-startcontest, and -scoreboard.
+    		options but -info, -ssh, -description,
+		-printer_map, -startcontest,
+		-scoreboard, and -trashall.
     -practice   Sets up a practice contest.  Equals all
-    		options but -info, -trashable, -ssh,
-		-printer_map, -startcontest, and
-		-scoreboard.
+    		options but -info, -ssh, -printer_map,
+		-startcontest, -scoreboard, and
+		-trashall.
     -informal   Sets up an informal contest.  Equals all
     		options but -problems, -demos, -ssh,
-		-trashable, -description, -printer, and
-		-scoreboard.
+		-description, -printer, -scoreboard, and
+		-trashall.
     -email	Sets up an email contest.  Equals -info,
     		-solutions, -mail, -this_contest, and
 		-startcontest.
@@ -105,7 +102,10 @@ makecontest option ... index_specification ...
 		and .ssh/identity.pub.
     -procmailrc	Update ~/.procmailrc
     -who_where  Make ./contest/who_where
-    -trashable  Make ./contest/trashable
+    -trashable  Make ./contest/trashable with non-
+    		existing accounts
+    -trashall   Make ./contest/trashable with all
+    		accounts
     -printer    Make ./contest/printer and
     		     ./contest/printer_jobs
     -printer_map    Make ./contest/printer_map and
@@ -687,16 +687,24 @@ makecontest option ... index_specification ...
     trashable file from the ./contest/secure/passwords
     file.  The `trashable' file is just a list of the
     accounts in the `passwords' file, not including the
-    account name `none'.  The `trashable' file is up-
-    dated by the -trashable option whenever the
-    `passwords' file is newer than the `trashable' file.
-    Whenever a `trashable' file is created, a ./TODO
-    is written to delete the file as soon as all the
-    accounts that should be trashed are trashed, in
-    order to prevent further account trashing (the
-    `TRASH_ACCOUNT' program will not work if the account
-    in which it is run is not named in the `trashable'
-    file).
+    account name `none', and not including the names of
+    any accounts that already exist.  The -trashall
+    option is like the -trashable option but includes
+    all accounts other than `none', whether or not the
+    account already exists.
+
+    An account needs to be listed in the `trashable'
+    file in order for the `TRASH_ACCOUNT' program be
+    able to initialize the files in the account.  This
+    feature is intended to prevent accidental reini-
+    tializing of accounts.
+
+    If -trashable is given when all accounts exists, the
+    `trashable' file is deleted.
+
+    If the `trashable' file is changed to something non-
+    empty, a TODO is written on how to set up the
+    accounts.
 
     The -printer program option makes the ./contest/
     printer file if that file does not exist, and writes
@@ -772,6 +780,7 @@ set ssh_option			no
 set procmailrc_option		no
 set who_where_option		no
 set trashable_option		no
+set trashall_option		no
 set printer_option		no
 set printer_map_option		no
 set startcontest_option		no
@@ -795,6 +804,7 @@ while { $argi < $argc } {
 			  set secure_option	yes
 			  set procmailrc_option	yes
 			  set who_where_option	yes
+			  set trashable_option	yes
 			  set printer_option	yes
 			  set contest_type formal }
         -practice	{ set solutions_option	yes
@@ -813,6 +823,7 @@ while { $argi < $argc } {
 			  set secure_option	yes
 			  set procmailrc_option	yes
 			  set who_where_option	yes
+			  set trashable_option	yes
 			  set printer_option	yes
 			  set contest_type practice }
         -informal	{ set info_option	yes
@@ -828,6 +839,7 @@ while { $argi < $argc } {
 			  set secure_option	yes
 			  set procmailrc_option	yes
 			  set who_where_option	yes
+			  set trashable_option	yes
 			  set printer_map_option \
 			  			yes
 			  set startcontest_option \
@@ -861,6 +873,7 @@ while { $argi < $argc } {
 	-procmailrc	{ set procmailrc_option	yes }
         -who_where	{ set who_where_option 	yes }
         -trashable	{ set trashable_option 	yes }
+        -trashall	{ set trashall_option 	yes }
         -printer	{ set printer_option 	yes }
         -printer_map	{ set printer_map_option \
 						yes }
@@ -970,6 +983,7 @@ if {    $contest_option \
      || $ssh_option \
      || $who_where_option \
      || $trashable_option \
+     || $trashall_option \
      || $printer_option \
      || $printer_map_option \
      || $startcontest_option } {
@@ -2005,9 +2019,11 @@ if { $solutions_option } {
 if { $mail_option \
       && ! [file isdirectory $j_d/mail] } {
     file mkdir $j_d/mail
+    puts "Made $j_d/mail"
     grant_access $j_d/mail x
-    grant_access $j_d/mail/.. x
-    grant_access $j_d/mail/../.. x
+    grant_access $j_d x
+    grant_access $j_d/.. x
+    puts "Set x permission for $j_d and $j_d/.."
 }
 
 # Make $c_d/help2 directory.
@@ -2026,6 +2042,7 @@ if { $help2_option \
 	}
     }
     link_file help $c_d/help2
+    puts "Linked $c_d/help2 to $c_d/help"
 }
 
 # Make secure directory.
@@ -2034,6 +2051,7 @@ if { $secure_option \
      && ! [file isdirectory $c_d/secure] } {
     file mkdir $c_d/secure
     deny_access $c_d/secure
+    puts "Made directory $c_d/secure"
 }
 
 # Make or edit secure/passwords file.
@@ -2047,6 +2065,7 @@ if { $secure_option } {
 	puts $ch ""
 	close $ch
 	deny_access $c_d/secure/passwords
+	puts "Wrote $c_d/secure/passwords"
 	TODO "Edit ./contest/secure/passwords;" \
 	     "each of its lines has the format:" \
 	     "`$apw:$ctc'."
@@ -2077,8 +2096,22 @@ if { $secure_option } {
 	        puts $passwords_ch $line
 	    }
 	    close $passwords_ch
-	    TODO "Inspect ./contest/secure/passwords" \
-		 "to which passwords have been added."
+	    puts "Wrote $c_d/secure/passwords"
+
+	    set tc_d [truename $c_d]
+	    set ts_d \
+	        "[truename $hpcm_directory]/secure/bin"
+	    TODO "Passwords have been added to\
+	          $c_d/secure/passwords." \
+		 "You should inspect this file and\
+		  then execute:" \
+		 "" \
+		 "    su root" \
+		 "    $ts_d/hpcm_set_passwords $tc_d" \
+		 "    exit" \
+		 "" \
+		 "to reset the passwords for all\
+		  accounts."
 	}
     }
 }
@@ -2100,6 +2133,7 @@ if { $secure_option \
     puts $rc_ch "Key-Name: $key_name"
     close $rc_ch
     deny_access $c_d/secure/hpcm_sendmail.rc
+    puts "Wrote $c_d/secure/hpcm_sendmail.rc"
 
 
     # Check contest/bin/hpcm_sendmail mode.
@@ -2307,6 +2341,7 @@ if { $who_where_option } {
 	close $passwords_ch
 	close $who_where_ch
 	grant_access $c_d/who_where
+	puts "Wrote $c_d/who_where"
 
 	TODO "Edit ./contest/who_where to specify\
 				location" \
@@ -2412,6 +2447,7 @@ if { $who_where_option } {
 	    }
 	    close $who_where_ch
 	    grant_access $c_d/who_where
+	    puts "Wrote $c_d/who_where"
 
 	    TODO "Edit ./contest/who_where to specify\
 					location" \
@@ -2426,36 +2462,93 @@ if { $who_where_option } {
 
 # Make $c_d/trashable
 #
-if { $trashable_option } {
+if { $trashable_option || $trashall_option } {
     if { ! [file readable $c_d/secure/passwords] } {
         error "$c_d/secure/passwords does not exist\
-	       for -trashable option"
-    } elseif { ! [file readable $c_d/trashable] \
-	       || [file mtime $c_d/trashable] \
-	          < [file mtime $c_d/secure/passwords] \
-		  	} {
-	if { [file exists $c_d/trashable] } {
-	    file delete -force -- $c_d/trashable
+	       for -trashable or -trashall options"
+    }
+    set trashable {}
+    set passwords_ch [open $c_d/secure/passwords r]
+    while { "yes" } {
+	set line [gets $passwords_ch]
+	if { [eof $passwords_ch] } break
+	if { [regexp {^[ \t]*(#|$)} $line] } \
+	    continue
+	regexp {^([^:]*)(:|$)} $line \
+	       forget account forget2
+	if { $account == "" } {
+	    error "Empty account name in\
+	           $c_d/secure/passwords"
 	}
-	set trashable_ch [open $c_d/trashable w]
-	set passwords_ch [open $c_d/secure/passwords r]
-	while { "yes" } {
-	    set line [gets $passwords_ch]
-	    if { [eof $passwords_ch] } break
-	    if { [regexp {^[ \t]*(#|$)} $line] } \
-	    	continue
-	    regexp {^([^:]*)(:|$)} $line \
-	    	   forget account forget2
-	    if { $account != "none" } {
-		puts $trashable_ch $account
-	    }
+	if {    $account != "none" \
+	     && ( $trashall_option \
+	          || [account_home_directory \
+		          $account] == "" ) } {
+	    lappend trashable $account
 	}
-	close $passwords_ch
-	close $trashable_ch
-	grant_access $c_d/trashable
+    }
+    close $passwords_ch
 
-	TODO "Remember to delete ./contest/trashable" \
-	     "when your are done trashing accounts."
+    if { [llength $trashable] == 0 } {
+	if { [file exists $c_d/trashable] } {
+	    puts "Deleted $c_d/trashable"
+	    file delete -force $c_d/trashable
+	}
+    } else {
+        if { [file readable $c_d/trashable] {
+	    set old_trashable \
+	        [read_entire_file $c_d/trashable]
+	    if { [catch { llength $old_trashable }] } {
+	        error "$c_d/trashable badly formatted"
+	    }
+	} else {
+	    set old_trashable {}
+	}
+
+	if {    [lsort $old_trashable] \
+	     != [lsort $trashable] } {
+	    file delete -force $c_d/trashable
+	    set trashable_ch [open $c_d/trashable w]
+	    foreach account $trashable {
+	        puts $trashable_ch $account
+	    }
+	    close $trashable_ch
+	    grant_access $c_d/trashable
+	    puts "Wrote $c_d/trashable"
+
+	    set tc_d [truename $c_d]
+	    set ts_d \
+	        "[truename $hpcm_directory]/secure/bin"
+
+	    if { $trashall_option } {
+		TODO "$c_d/trashable has been\
+		      re-written to contain all\
+		      accounts." \
+		     "You should edit it to contain\
+		      only the accounts you want to" \
+		     "trash, and then you should\
+		      execute:" \
+		     "" \
+		     "    su root" \
+		     "    $ts_d/hpcm_TRASH_ACCOUNTS\
+		          $tc_d" \
+		     "    exit" \
+		     "    makecontest -trashable" \
+		     "" \
+		     "to trash the desired accounts."
+	    } else {
+		TODO "$c_d/trashable has been written\
+		      with new contents." \
+		     "You should execute:" \
+		     "" \
+		     "    su root" \
+		     "    $ts_d/hpcm_setup_accounts\
+		          $tc_d" \
+		     "    exit" \
+		     "    makecontest -trashable" \
+		     "" \
+		     "to setup new accounts."
+	    }
     }
 }
 
@@ -2478,6 +2571,7 @@ if { $printer_option \
 
     write_file $c_d/printer $printer
     grant_access $c_d/printer
+    puts "Wrote $c_d/printer"
 
     TODO "Wrote ./contest/printer to be `$printer';" \
          "edit ./contest/printer to change." \
@@ -2495,6 +2589,7 @@ if { $printer_map_option \
 
     write_file $c_d/printer_map {.* !~/PRINTER}
     grant_access $c_d/printer_map
+    puts "Wrote $c_d/printer_map"
 
     TODO "Wrote ./contest/printer_map to be\
     		`.* !~/PRINTER';" \
@@ -2510,6 +2605,7 @@ if { $printer_jobs_option \
      && ! [file readable $c_d/printer_jobs] } {
     close [open $c_d/printer_jobs w]
     grant_access $c_d/printer_jobs rw
+    puts "Wrote $c_d/printer_jobs"
 
     TODO "Delete ./contest/printer_jobs if you do not" \
          "want it to list all printer jobs."
