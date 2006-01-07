@@ -6,7 +6,7 @@
 #
 # File:		makecontest
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Jan  7 10:15:58 EST 2006
+# Date:		Sat Jan  7 10:35:59 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/01/07 15:31:46 $
+#   $Date: 2006/01/07 15:48:30 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.133 $
+#   $Revision: 1.134 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -1012,8 +1012,8 @@ if { $bin_option } {
 	          $hpcm_directory/contestant/bin] } {
 	link_file $hpcm_directory/contestant/bin \
 	          $c_d/bin
-	puts "Linked ./contest/bin to"
-	puts "       $hpcm_directory/contestant/bin"
+	puts "Linked ./contest/bin"
+	puts "       to $hpcm_directory/contestant/bin"
     }
     if { ! [file exists $c_d/bin] } {
         TODO "$c_d/bin does not exist." \
@@ -1073,8 +1073,8 @@ if { $home_option } {
 	}
 	if { $phd != "" } {
 	    link_file $phd/home $c_d/home
-	    puts "Linked ./contest/home to"
-	    puts "      $phd/home"
+	    puts "Linked ./contest/home"
+	    puts "      to $phd/home"
 	    set phd_error \
 		"./contest/home is improper link."
 	}
@@ -2025,7 +2025,9 @@ if { $mail_option \
     grant_access $j_d/mail x
     grant_access $j_d x
     grant_access $j_d/.. x
-    puts "Set x permission for $j_d and $j_d/.."
+    puts "Granting a+x access"
+    puts "         to $j_d"
+    puts "         and its parent"
 }
 
 # Make $c_d/help2 directory.
@@ -2044,7 +2046,8 @@ if { $help2_option \
 	}
     }
     link_file help $c_d/help2
-    puts "Linked $c_d/help2 to $c_d/help"
+    puts "Linked $c_d/help2"
+    puts "       to $c_d/help"
 }
 
 # Make secure directory.
@@ -2109,14 +2112,14 @@ if { $secure_option } {
 		set tc_d [truename $c_d]
 		set ts_d [truename $hpcm_directory]
 		set ts_d "$ts_d/secure/bin"
-		TODO "Passwords have been added to\
+		TODO "Passwords have been added to" \
 		      $c_d/secure/passwords." \
 		     "You should inspect this file and\
 		      then execute:" \
 		     "" \
 		     "    su root" \
-		     "    $ts_d/hpcm_set_passwords\
-		          $tc_d" \
+		     "    $ts_d/hpcm_set_passwords \\" \
+		     "        $tc_d" \
 		     "    exit" \
 		     "" \
 		     "to reset the passwords for all\
@@ -2334,6 +2337,7 @@ if { $who_where_option } {
     } elseif { ! [file readable $c_d/who_where] } {
 	set who_where_ch [open $c_d/who_where w]
 	set passwords_ch [open $c_d/secure/passwords r]
+	set empty yes
 	while { "yes" } {
 	    set line [gets $passwords_ch]
 	    if { [eof $passwords_ch] } break
@@ -2346,18 +2350,26 @@ if { $who_where_option } {
 	    if { $account != "none" } {
 		puts $who_where_ch \
 		     "$account:WHERE:$rest"
+		set empty no
 	    }
 	}
 	close $passwords_ch
 	close $who_where_ch
-	grant_access $c_d/who_where
-	puts "Wrote $c_d/who_where"
 
-	TODO "Edit ./contest/who_where to specify\
-				location" \
-	     "of teams, by replacing `WHERE' for each" \
-	     "account with a SHORT description of the" \
-	     "team's location."
+	if { $empty } {
+	    file delete -force -- $c_d/who_where
+	} else {
+	    grant_access $c_d/who_where
+	    puts "Wrote $c_d/who_where"
+
+	    TODO "Edit ./contest/who_where to specify\
+		  location" \
+		 "of teams, by replacing `WHERE' for\
+		  each" \
+		 "account with a SHORT description of\
+		  the" \
+		 "team's location."
+	}
     } elseif { [file mtime $c_d/who_where] \
 	       < [file mtime $c_d/secure/passwords] } {
 
@@ -2531,9 +2543,9 @@ if { $trashable_option || $trashall_option } {
 	        "[truename $hpcm_directory]/secure/bin"
 
 	    if { $trashall_option } {
-		TODO "$c_d/trashable has been\
-		      re-written to contain all\
-		      accounts." \
+		TODO "$c_d/trashable" \
+		     "has been re-written to contain\
+		      all accounts." \
 		     "You should edit it to contain\
 		      only the accounts you want to" \
 		     "trash, and then you should\
@@ -2541,19 +2553,21 @@ if { $trashable_option || $trashall_option } {
 		     "" \
 		     "    su root" \
 		     "    $ts_d/hpcm_TRASH_ACCOUNTS\
-		          $tc_d" \
+		          \\" \
+		     "        $tc_d" \
 		     "    exit" \
 		     "    makecontest -trashable" \
 		     "" \
 		     "to trash the desired accounts."
 	    } else {
-		TODO "$c_d/trashable has been written\
-		      with new contents." \
-		     "You should execute:" \
+		TODO "$c_d/trashable" \
+		     "has been written with new\
+		      contents.  You should execute:" \
 		     "" \
 		     "    su root" \
 		     "    $ts_d/hpcm_setup_accounts\
-		          $tc_d" \
+		          \\" \
+		     "        $tc_d" \
 		     "    exit" \
 		     "    makecontest -trashable" \
 		     "" \
