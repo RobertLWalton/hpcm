@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Dec 22 09:56:35 EST 2005
+# Date:		Sat Jan  7 05:36:13 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/12/23 13:56:09 $
+#   $Date: 2006/01/07 10:34:41 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.179 $
+#   $Revision: 1.180 $
 
 # Table of Contents:
 #
@@ -2610,10 +2610,16 @@ proc host_name {} {
     return [id host]
 }
 
-# Function to return home directory of account.
+# Function to return home directory of account.  Returns
+# "" if the account or directory does not exist.
 #
 proc account_home_directory { account } {
-    return /home/$account
+    set dir /home/$account
+    if { [file isdirectory $dir] } {
+        return $dir
+    } else {
+        return ""
+    }
 }
 
 # Function to return home directories of all accounts
