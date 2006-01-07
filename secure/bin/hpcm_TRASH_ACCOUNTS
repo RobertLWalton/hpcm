@@ -5,7 +5,7 @@
 #
 # File:		hpcm_TRASH_ACCOUNTS
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Thu Jan  5 09:41:14 EST 2006
+# Date:		Sat Jan  7 11:41:21 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/01/05 14:49:48 $
+#   $Date: 2006/01/07 16:40:14 $
 #   $RCSfile: hpcm_TRASH_ACCOUNTS,v $
-#   $Revision: 1.7 $
+#   $Revision: 1.8 $
 
 case "$1" in
 
@@ -25,8 +25,9 @@ case "$1" in
 hpcm_TRASH_ACCOUNTS contest-directory-name
 
     Execute TRASH_ACCOUNTS in all the accounts listed
-    in contest-directory-name/secure/passwords.  If
-    an account name is \`none' it is ignored."
+    in contest-directory-name/secure/passwords and
+    contest-directory/trashable.  If an account name
+    is \`none' it is ignored."
 	exit 1
 	;;
 
@@ -47,6 +48,11 @@ if test ! -r $1/secure/passwords; then
     exit 1
 fi
 
+if test ! -r $1/trashable; then
+    echo cannot read $1/trashable
+    exit 1
+fi
+
 if test `id -un` != root; then
     echo current uid is not root
     exit 1
@@ -56,11 +62,25 @@ for user in ` sed <$1/secure/passwords \
 		  -e '/^[ \t]*#/d' \
                   -e 's/^\([^:]*\):.*$/\1/' `
 do
+    # Skip user `none' and users with no home directory.
+    #
     if test "$user" = "none"
-    then do_nothing=
+    then
+        continue
     elif test ! -d /home/$user
     then
     	echo $user has no home directory
+	continue
+    fi
+
+    # Check that our account name is listed in the
+    # trashable file, and if yes, trash account.
+    #
+    grep "^`id -un`\$" $1/trashable >/dev/null
+    if test $? -ne 0
+    then
+	echo "$user is not listed in" \
+	     "$1/trashable: user not trashed"
     else
     	echo su $user -c "$1/bin/TRASH_ACCOUNT $1"
     	su $user -c "$1/bin/TRASH_ACCOUNT $1"
