@@ -4,7 +4,7 @@
 #
 # File:		hpcm_setup_accounts
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Sat Jan  7 11:43:11 EST 2006
+# Date:		Sun Jan  8 08:35:00 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/01/07 16:41:25 $
+#   $Date: 2006/01/08 13:38:53 $
 #   $RCSfile: hpcm_setup_accounts,v $
-#   $Revision: 1.3 $
+#   $Revision: 1.4 $
 
 all=no
 force=no
@@ -46,14 +46,18 @@ hpcm_setup_accounts [-all|-force] contest-directory-name
     contest-directory-name/secure/passwords is assigned
     to the account, unless the password is \`none' or
     \`'.  Then hpcm/contestant/bin/TRASH_ACCOUNT is run
-    for the account if the account is name listed as a
-    separate line in contest-directory-name/trashable
-    and either the account has no .hpcm_contest link
-    or the -force option is given.
+    for the account if the account name is listed as a
+    separate line in the contest-directory-name/
+    trashable file and either the account has no
+    .hpcm_contest link or the -force option is given.
 
     If the -all option is given, passwords are set and
     accounts trashed even if the account already
-    exists."
+    exists.  However, it is recommended that instead
+    of the -all option you use one of the programs:
+    
+    	hpcm_set_passwords
+	hpcm_TRASH_ACCOUNTS"
 
     exit 1
     ;;
@@ -72,7 +76,7 @@ case "$1" in
     /* )
     	;;
     *)
-    	echo $1 is NOT an absolute pathname
+    	echo "$1" is NOT an absolute pathname
 	exit 1
     	;;
 esac
@@ -136,7 +140,7 @@ do
     elif test $all = "no"
     then
 	echo "$user already exists and no -all" \
-	     "option: nothing done"
+	     "option: nothing done for $user"
 	continue
     fi
 
@@ -153,15 +157,15 @@ do
     # Set password of user account.
     #
     if test "$password" = "none"
-    then do_nothing=
+    then
     	echo "Password for $user is \`none':" \
-	     "user password not set"
+	     "$user password not set"
     elif test "$password" = ""
     then
     	echo "Password of $user is empty:" \
-	     "user password not set"
+	     "$user password not set"
     else
-	echo "$user" "$password"
+	echo "$user password set to $password"
 	(sleep 2; echo "$password"; \
 	 sleep 2; echo "$password") \
 		| passwd "$user"
@@ -175,14 +179,14 @@ do
     if test $? -ne 0
     then
 	echo "$user is not listed in" \
-	     "$1/trashable: user not trashed"
+	     "$1/trashable: $user not trashed"
     elif test $force = "yes"
     	echo su $user -c "$1/bin/TRASH_ACCOUNT $1"
     	su $user -c "$1/bin/TRASH_ACCOUNT $1"
     elif test -d /home/$user/.hpcm_contest
 	echo "$user has previously been" \
 	     "trashed and no -force option:" \
-	     "user not trashed"
+	     "$user not trashed"
     else
     	echo su $user -c "$1/bin/TRASH_ACCOUNT $1"
     	su $user -c "$1/bin/TRASH_ACCOUNT $1"

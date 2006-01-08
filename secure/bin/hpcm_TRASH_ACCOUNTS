@@ -5,7 +5,7 @@
 #
 # File:		hpcm_TRASH_ACCOUNTS
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Sat Jan  7 11:41:21 EST 2006
+# Date:		Sun Jan  8 08:41:13 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,15 +14,17 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/01/07 16:40:14 $
+#   $Date: 2006/01/08 13:40:44 $
 #   $RCSfile: hpcm_TRASH_ACCOUNTS,v $
-#   $Revision: 1.8 $
+#   $Revision: 1.9 $
 
 case "$1" in
 
     "" | -* )
 	echo "
 hpcm_TRASH_ACCOUNTS contest-directory-name
+
+    The contest-directory-name must be absolute.
 
     Execute TRASH_ACCOUNTS in all the accounts listed
     in contest-directory-name/secure/passwords and
@@ -69,7 +71,8 @@ do
         continue
     elif test ! -d /home/$user
     then
-    	echo $user has no home directory
+    	echo "$user has no home directory:" \
+	     "$user not trashed"
 	continue
     fi
 
@@ -80,7 +83,7 @@ do
     if test $? -ne 0
     then
 	echo "$user is not listed in" \
-	     "$1/trashable: user not trashed"
+	     "$1/trashable: $user not trashed"
     else
     	echo su $user -c "$1/bin/TRASH_ACCOUNT $1"
     	su $user -c "$1/bin/TRASH_ACCOUNT $1"
