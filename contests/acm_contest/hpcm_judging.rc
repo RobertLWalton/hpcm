@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Dec 23 11:45:28 EST 2005
+# Date:		Sun Jan  8 09:18:00 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/12/23 16:47:11 $
+#   $Date: 2006/01/08 14:18:19 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.35 $
+#   $Revision: 1.36 $
 
 # Read standard parameters.
 #
@@ -120,6 +120,34 @@ THIS FILE IS UNEDITED AND INACCURATE!
 set this_contest_postfix "
 Good Hunting!
 "
+
+# The following is the printer map for any timed
+# contest.  Entries are lines of the format
+#
+#	REGEXP	PRINTER
+#
+# where REGEXP is an expr(1) (not TCL) regular expres-
+# sion that matches the account name and PRINTER is the
+# printer.  Comment lines begin with #, and blank lines
+# are ignored.  Backslashes in regular expressions must
+# be doubled.  Must end with a line feed.
+#
+# If the PRINTER contains an @, it is an email address
+# to which postscript is mailed.  If PRINTER begins with
+# an @, the beginning @ is removed and the rest is
+# treated as an email address to which the postscript
+# is mailed as an attachment.
+#
+# The catch is just in case $env(PRINTER) is undefined
+# and this variable is not needed.
+#
+catch { set timed_printer_map "
+# Do not edit.  This is copied from the
+# timed_printer_map global variable in the
+# hpcm_judging.rc file in the judging directory.
+#
+.* $env(PRINTER)
+" }
 
 # List of addresses for to email scoreboard to.  If this
 # list contains zzz<YYY>, then every time the scoreboard
@@ -245,6 +273,31 @@ set window_height 24
 #
 set conversion_delay [expr 12 * 60 * 60]
 
+# Set to "no" if you do not want makecontest to run
+# `makescoreboard start' when necessary.
+#
+set makescoreboard yes
+
+# Set to "no" if you do not want makecontest to run
+# `startcontest start' when necessary.
+#
+set startcontest yes
+
+# The following is the printer map for an untimed or
+# dated contest.  It lets each contestant determine
+# his/her own printer by placing its name in the
+# ~/PRINTER file of the contestant's account.  See
+# timed_printer_map above and `hpcm/contestant/bin/
+# printer_pipe -doc' for more documentation.
+#
+set untimed_printer_map "
+# Do not edit.  This is copied from the
+# untimed_printer_map global variable in the
+# hpcm_judging.rc file in the judging directory.
+#
+.* !~/PRINTER
+"
+
 
 # You should NOT make changes beyond this point, unless
 # you want to tune the contest to be a variant of one of
@@ -294,6 +347,10 @@ set makecontest_arguments "
     [include_if { $scoring_subtype != "timed" } \
     	        "-description"] \
     [include_if { $ssh_enable == "yes" } "-ssh"] \
+    [include_if { $makescoreboard == "yes" } \
+    		"-scoreboard"] \
+    [include_if { $startcontest == "yes" } \
+    		"-startcontest"] \
     $judging_directory/help/index, \
 	=help/ \
     $hpcm_directory/contestant/help/index, \
