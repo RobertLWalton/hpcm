@@ -1,4 +1,4 @@
-#!/bin/sh
+!/bin/sh
 #
 # Make the subdirectories, symbolic links, and indices
 # of a judging directory and its associated contest
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/01/07 16:34:31 $
+#   $Date: 2006/01/08 15:21:38 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.135 $
+#   $Revision: 1.136 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -53,16 +53,16 @@ makecontest option ... index_specification ...
   Options:
     -formal     Sets up a formal contest.  Equals all
     		options but -info, -ssh, -description,
-		-printer_map, -startcontest,
+		-printer, -printer_map, -startcontest,
 		-scoreboard, and -trashall.
     -practice   Sets up a practice contest.  Equals all
     		options but -info, -ssh, -printer_map,
-		-startcontest, -scoreboard, and
-		-trashall.
+		-printer, -startcontest, -scoreboard,
+		and -trashall.
     -informal   Sets up an informal contest.  Equals all
     		options but -problems, -demos, -ssh,
-		-description, -printer, -scoreboard, and
-		-trashall.
+		-description, -printer, -printer_map,
+		-scoreboard, and -trashall.
     -email	Sets up an email contest.  Equals -info,
     		-solutions, -mail, -this_contest, and
 		-startcontest.
@@ -709,18 +709,31 @@ makecontest option ... index_specification ...
     accounts.
 
     The -printer program option makes the ./contest/
-    printer file if that file does not exist, and writes
-    a ./TODO to edit the file when it is made.  It also
-    makes the ./contest/printer_jobs file if that does
-    not exist when ./contest/printer is made, and writes
-    a ./TODO to consider deleting this file.
+    printer file if that file does not exist.  This file
+    is the name of the printer, which is the value of
+    the `printer' global variable if that exists, else
+    is the value of the `PRINTER' environment variable
+    if that exists, else is the value `UNKNOWN' which
+    means the file needs to be edited.  If the `printer'
+    global variable does not exist, a TODO is written
+    to suggest editing the .contest/printer file just
+    made.
 
     The -printer_map program option is similar to the
     -printer option but makes a ./contest/printer_map
-    file instead of a ./contest/printer file.  Note that
-    if both the ./contest/printer and ./contest/printer_
-    map files exist, contestant programs ignore ./con-
-    test/printer.
+    file instead of a ./contest/printer file and always
+    uses the value the `printer_map' global variable.
+    The file is written if it does not exist or if it
+    does not equal the `printer_map' variable value.
+
+    Note that if both the ./contest/printer and
+    ./contest/printer_map files exist, contestant
+    programs ignore ./contest/printer.
+
+    If either the ./contest/printer or ./contest/
+    printer_map files are written, the ./contest/
+    printer_jobs file is also made if it does not
+    exist.
 
     The -startcontest program option executes the
     `startcontest start' command unless this has already
@@ -810,7 +823,6 @@ while { $argi < $argc } {
 			  set procmailrc_option	yes
 			  set who_where_option	yes
 			  set trashable_option	yes
-			  set printer_option	yes
 			  set contest_type formal }
         -practice	{ set solutions_option	yes
 			  set contest_option	yes
@@ -829,7 +841,6 @@ while { $argi < $argc } {
 			  set procmailrc_option	yes
 			  set who_where_option	yes
 			  set trashable_option	yes
-			  set printer_option	yes
 			  set contest_type practice }
         -informal	{ set info_option	yes
 			  set contest_option	yes
@@ -845,8 +856,6 @@ while { $argi < $argc } {
 			  set procmailrc_option	yes
 			  set who_where_option	yes
 			  set trashable_option	yes
-			  set printer_map_option \
-			  			yes
 			  set startcontest_option \
 			  			yes
 			  set contest_type informal }
@@ -2591,40 +2600,44 @@ if { $printer_option \
 
     set printer_jobs_option yes
 
-    if { [info exists env(PRINTER)] } {
+    if { [info exists printer] } {
+        set todo no
+    } elseif { [info exists env(PRINTER)] } {
 	set printer $env(PRINTER)
+        set todo yes
     } else {
 	set printer UNKNOWN
+        set todo yes
     }
 
     write_file $c_d/printer $printer
     grant_access $c_d/printer
     puts "Wrote $c_d/printer"
 
-    TODO "Wrote ./contest/printer to be `$printer';" \
-         "edit ./contest/printer to change." \
-	 "You may want to use ./contest/printer_map" \
-	 "instead of ./contest/printer:" \
-	 "see `hpcm/contestant/bin/printer_pipe -doc'."
+    if { $todo } {
+	TODO "Wrote ./contest/printer to be\
+	      `$printer';" \
+	     "edit ./contest/printer to change." \
+	     "You may want to use\
+	      ./contest/printer_map" \
+	     "instead of ./contest/printer:" \
+	     "see `hpcm/contestant/bin/printer_pipe\
+	      -doc'."
+    }
 }
 
 # Make $c_d/printer_map
 #
 if { $printer_map_option \
-     && ! [file exists $c_d/printer_map] } {
+     &&  (    ! [file exists $c_d/printer_map] \
+           ||    [read_entire_file $c_d/printer_map] \
+	      != $printer_map ) } {
 
     set printer_jobs_option yes
 
-    write_file $c_d/printer_map {.* !~/PRINTER}
+    write_file $c_d/printer_map $printer_map
     grant_access $c_d/printer_map
     puts "Wrote $c_d/printer_map"
-
-    TODO "Wrote ./contest/printer_map to be\
-    		`.* !~/PRINTER';" \
-         "edit ./contest/printer_map to change." \
-	 "You may want to use ./contest/printer\
-	    instead of $c_d/printer_map:" \
-	 "see `hpcm/contestant/bin/printer_pipe -doc'."
 }
 
 # Make $c_d/printer_jobs
@@ -2634,9 +2647,6 @@ if { $printer_jobs_option \
     close [open $c_d/printer_jobs w]
     grant_access $c_d/printer_jobs rw
     puts "Wrote $c_d/printer_jobs"
-
-    TODO "Delete ./contest/printer_jobs if you do not" \
-         "want it to list all printer jobs."
 }
 
 # Start contest if necessary.
