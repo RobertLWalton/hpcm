@@ -6,7 +6,7 @@
 #
 # File:		makecontest
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Jan 10 00:20:42 EST 2006
+# Date:		Tue Jan 10 00:46:34 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/01/10 05:20:05 $
+#   $Date: 2006/01/10 05:45:18 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.139 $
+#   $Revision: 1.140 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -1839,7 +1839,8 @@ Introductory Information:
         lappend TODO_lines "  ./help/this_contest"
 	eval TODO Made $TODO_lines \
 	     {"You may want to edit\
-	       ./help/this_contest"}
+	       ./help/this_contest" \
+	      "and rerun `makecontest -help'"}
 	puts "Wrote $j_d/help/this_contest"
     }
 }
@@ -2087,7 +2088,8 @@ if { $secure_option } {
 	puts "Wrote $c_d/secure/passwords"
 	TODO "Edit ./contest/secure/passwords;" \
 	     "each of its lines has the format:" \
-	     "`$apw:$ctc'."
+	     "`$apw:$ctc'." \
+	     "Then rerun `makecontest'"
     } else {
         set passwords_ch [open $c_d/secure/passwords r]
 	set lines ""
@@ -2241,7 +2243,8 @@ if { $procmailrc_option } {
     }
     if { [llength $addresses] == 0 } {
         TODO "There are no autojudge addresses" \
-	     "Set the autojudge_addresses variable"
+	     "Set the autojudge_addresses variable" \
+	     "and run `makecontest -procmailrc'"
     }
     set passwords {}
     foreach to $addresses {
@@ -2634,13 +2637,13 @@ if { $printer_map_option } {
     if { ! [info exists printer_map] } {
 
         TODO "Set the printer_map global variable" \
-	     "in hpcm_judging.rc and rerun:" \
-	     "    makecontest -printer_map"
+	     "in hpcm_judging.rc and run\
+	      `makecontest -printer_map'"
 
     } elseif {    ! [file exists $c_d/printer_map] \
                ||    [read_entire_file \
 	       		  $c_d/printer_map] \
-	          != $printer_map ) } {
+	          != $printer_map } {
 
 	set printer_jobs_option yes
 
