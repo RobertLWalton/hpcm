@@ -4,7 +4,7 @@
 #
 # File:		hpcm_setup_accounts
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Sun Jan  8 08:35:00 EST 2006
+# Date:		Tue Jan 10 08:58:26 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/01/08 13:38:53 $
+#   $Date: 2006/01/10 14:29:39 $
 #   $RCSfile: hpcm_setup_accounts,v $
-#   $Revision: 1.4 $
+#   $Revision: 1.5 $
 
 all=no
 force=no
@@ -165,7 +165,7 @@ do
     	echo "Password of $user is empty:" \
 	     "$user password not set"
     else
-	echo "$user password set to $password"
+	echo "$user password being set to $password"
 	(sleep 2; echo "$password"; \
 	 sleep 2; echo "$password") \
 		| passwd "$user"
@@ -175,15 +175,17 @@ do
     # Check that our account name is listed in the
     # trashable file, and if yes, trash account.
     #
-    grep "^`id -un`\$" $1/trashable >/dev/null
+    grep "^$user\$" $1/trashable >/dev/null
     if test $? -ne 0
     then
 	echo "$user is not listed in" \
 	     "$1/trashable: $user not trashed"
     elif test $force = "yes"
+    then
     	echo su $user -c "$1/bin/TRASH_ACCOUNT $1"
     	su $user -c "$1/bin/TRASH_ACCOUNT $1"
     elif test -d /home/$user/.hpcm_contest
+    then
 	echo "$user has previously been" \
 	     "trashed and no -force option:" \
 	     "$user not trashed"
