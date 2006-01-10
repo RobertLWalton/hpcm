@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Jan  8 09:18:00 EST 2006
+# Date:		Tue Jan 10 00:05:57 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/01/08 14:18:19 $
+#   $Date: 2006/01/10 05:04:31 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.36 $
+#   $Revision: 1.37 $
 
 # Read standard parameters.
 #
@@ -338,6 +338,15 @@ switch $scoring_type {
     default {
         error "Bad scoring_type" $scoring_type"
     }
+}
+
+# Set printer_map according to contest subtype.  Catch
+# errors in case printer_maps are undefined.
+#
+if { $scoring_subtype == "timed" } {
+    catch { set printer_map $timed_printer_map }
+} else {
+    catch { set printer_map $untimed_printer_map }
 }
 
 # Default arguments to makecontest.
