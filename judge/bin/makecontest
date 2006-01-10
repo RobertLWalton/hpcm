@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/01/08 15:23:39 $
+#   $Date: 2006/01/10 05:15:54 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.137 $
+#   $Revision: 1.138 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -724,7 +724,9 @@ makecontest option ... index_specification ...
     file instead of a ./contest/printer file and always
     uses the value of the `printer_map' global variable.
     The file is written if it does not exist or if it
-    does not equal the `printer_map' variable value.
+    does not equal the `printer_map' variable value.  If
+    the `printer_map' variable is not set, the file is
+    not written but a TODO is written.
 
     Note that if both the ./contest/printer and
     ./contest/printer_map files exist, contestant
@@ -2628,16 +2630,24 @@ if { $printer_option \
 
 # Make $c_d/printer_map
 #
-if { $printer_map_option \
-     &&  (    ! [file exists $c_d/printer_map] \
-           ||    [read_entire_file $c_d/printer_map] \
-	      != $printer_map ) } {
+if { $printer_map_option } {
+    if { ! [info exists printer_map] } {
 
-    set printer_jobs_option yes
+        TODO "Set the printer_map global variable" \
+	     "in hpcm_judging.rc and rerun:" \
+	     "    makecontest -printer_map"
 
-    write_file $c_d/printer_map $printer_map
-    grant_access $c_d/printer_map
-    puts "Wrote $c_d/printer_map"
+    } elseif {    ! [file exists $c_d/printer_map] \
+               ||    [read_entire_file \
+	       		  $c_d/printer_map] \
+	          != $printer_map ) } {
+
+	set printer_jobs_option yes
+
+	write_file $c_d/printer_map $printer_map
+	grant_access $c_d/printer_map
+	puts "Wrote $c_d/printer_map"
+    }
 }
 
 # Make $c_d/printer_jobs
