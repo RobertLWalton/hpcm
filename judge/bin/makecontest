@@ -6,7 +6,7 @@
 #
 # File:		makecontest
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Jan 10 00:46:34 EST 2006
+# Date:		Sat Jan 14 08:44:26 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/01/10 05:45:18 $
+#   $Date: 2006/01/14 14:27:44 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.140 $
+#   $Revision: 1.141 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -483,6 +483,7 @@ makecontest option ... index_specification ...
 	problem_description_files
    	problem_source_files
    	problem_excluded_files
+	problem_print_files
 
     The values of these variables are TCL lists of
     regular expressions.  Default values are provided
@@ -495,6 +496,8 @@ makecontest option ... index_specification ...
 	    [indent_list 12 $problem_source_files]
    	problem_excluded_files:
 	    [indent_list 12 $problem_excluded_files]
+   	problem_print_files:
+	    Undefined.
 
     The description and source file lists are lists of
     description or source file names relative to the
@@ -521,6 +524,13 @@ makecontest option ... index_specification ...
     includes all files not excluded by the problem_
     excluded_files global variable, regardless of the
     setting of the -description option.
+
+    The print files are a list of all the files to be
+    printed and given to contestants.  This is a list of
+    file names relative to the index item directory.  It
+    is the value of the problem_print_files global vari-
+    able if that is defined, and is otherwise the sorted
+    list of description files.
 
     The name `PROBLEM.rc' is something of a misnomer for
     help files.  In this case `PROBLEM' is merely the
@@ -1265,7 +1275,8 @@ proc read_rc_file { file problem options } {
     global PROBLEM EXTENSION OPTIONS \
            problem_source_files \
 	   problem_description_files \
-	   problem_excluded_files
+	   problem_excluded_files \
+	   problem_print_files
     set PROBLEM $problem
     set EXTENSION UNDEFINED
     set OPTIONS $options
@@ -1357,13 +1368,16 @@ proc process_index_specification {} {
     global index_file index_directory \
            help_index_chs problems_index_chs \
 	   demos_index_chs \
+	   help_print_files problems_print_files \
+	   demos_print_files \
            info_option solutions_option \
 	   problems_option demos_option \
 	   help_option description_option \
            j_d c_d \
 	   problem_source_files \
 	   problem_description_files \
-	   problem_excluded_files
+	   problem_excluded_files \
+	   problem_print_files
 
     # Save hpcm_judging.rc defined values of global
     # variables reset by PROBLEM.rc file.
@@ -1542,6 +1556,7 @@ proc process_index_specification {} {
 		        $default_source_files
 		    set problem_excluded_files \
 		        $default_excluded_files
+		    catch { unset problem_print_files }
 		    set PROBLEM [file tail $source]
 		    read_rc_file \
 		        $source/$PROBLEM.rc \
@@ -1554,6 +1569,14 @@ proc process_index_specification {} {
 		    set description_files {}
 		    index_find $source/ "" \
 		        description_files source_files
+		    if { [info exists \
+			       problem_print_files] } {
+		        set print_files \
+			    $problem_print_files
+		    } else {
+		        set print_files \
+			    [lsort $description_files]
+		    }
 		}
 
 		# Process info option.
@@ -1619,7 +1642,7 @@ proc process_index_specification {} {
 
 		# Process solutions option.
 		#
-		if { $solutions_option \
+		if {    $solutions_option \
 		     && [lcontain {problems demos} \
 				  $targetdir] \
 		     && ! [lcontain $options \
@@ -1637,6 +1660,47 @@ proc process_index_specification {} {
 		    }
 		    set s_d $j_d/solutions+
 		    link_file $source $s_d/$targettail
+		}
+
+		# Add to print file lists.
+		#
+		if { $solutions_option } {
+		    set s $j_d/solutions+/$targettail
+		} else {
+		    set s $j_d/solutions/$targettail
+		}
+		if { $info_option } {
+		    set i $j_d/info+/$target
+		} else {
+		    set i $j_d/info/$target
+		}
+		if { [set ${targetdir}_option] } {
+		    set t $j_d/contest
+		    set t $t/$targetdir+/$targettail
+		} else {
+		    set t $j_d/contest/$target
+		}
+		if {    [lcontain {problems demos} \
+				  $targetdir] \
+		     && [file exists $s] } {
+		    set print_target \
+		    	solutions/$targettail
+		} elseif { [file exists $i] } {
+		    set print_target info/$target
+		} elseif { [file exists $t] } {
+		    set print_target contest/$target
+		} else {
+		    set print_target UNKNOWN/$target
+		}
+		if { [file isdirectory $source] } {
+		    foreach f $print_files {
+			lappend \
+			    ${targetdir}_print_files \
+			    $print_target/$f
+		    }
+		} else {
+		    lappend ${targetdir}_print_files \
+			    $print_target
 		}
 	    }
 
@@ -1845,6 +1909,12 @@ Introductory Information:
     }
 }
 
+# Set up print file lists.
+#
+set help_print_files ""
+set problems_print_files ""
+set demos_print_files ""
+
 # Set up channel lists.
 #
 set help_index_chs	""
@@ -1977,9 +2047,6 @@ proc rename_directory { directory } {
 
     if { [diff_dirs $directory $directory+] \
          == "no" } {
-    	puts "New $directory"
-	puts "    does not differ from previous\
-	      version."
 	file delete -force -- $directory+
 	return no
     } else {
@@ -2029,6 +2096,41 @@ if { $demos_option } {
 }
 if { $solutions_option } {
     rename_directory $j_d/solutions
+}
+
+# Output print files if necessary
+#
+if { [file isdirectory $j_d/info/help] } {
+    set target info/help
+} elseif { [file isdirectory $j_d/contest/help] } {
+    set target contest/help
+} else {
+    set target ""
+}
+if { $target != "" } {
+    foreach dir {problems demos help} {
+	set output $target/$dir
+	foreach f [set ${dir}_print_files] {
+	    set output "$output\n$f"
+	}
+	set f $j_d/${dir}_print_files
+	if {    ! [file readable $f] \
+	     || [read_entire_file $f] != $output } {
+	    file delete -force -- $f--
+	    if { [file exists $f-] } {
+		puts "Renaming $f-"
+		puts "      to $f--"
+		file rename $f- $f--
+	    }
+	    if { [file exists $f] } {
+		puts "Renaming $f"
+		puts "      to $f-"
+		file rename $f $f-
+	    }
+	    write_file $f $output
+	    puts "Wrote $f"
+	}
+    }
 }
 
 # Make mail directory.
