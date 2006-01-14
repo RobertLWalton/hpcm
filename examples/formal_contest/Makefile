@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Jan 14 09:51:21 EST 2006
+# Date:		Sat Jan 14 11:11:15 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/01/14 14:49:24 $
+#   $Date: 2006/01/14 16:09:39 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.35 $
+#   $Revision: 1.36 $
 
 # To make a formal contest named `foo':
 #
@@ -113,79 +113,44 @@
 #     test_submissions/Makefile.mk.
 
 # 10. You may want to print out handouts.  Here are
-#     some ways to print everything but the problems,
-#     where THIS_CONTEST denotes either
+#     some ways to make printouts, where THIS_CONTEST
+#     denotes either
 #
 #	 ~/judging_foo_password/help/this_contest
 #     or
 #	 ~/contest_foo/help/this_contest
 #
-#     which are the same file.
+#     which are the same file.  The .ps files are post-
+#     script files ready to print or put on the web.
 #
-#     A. Execute:
+#     A. To make help and demos printouts applicable to
+#	 all contests
 #
-#	     cd ~/hpcm/contestant/
+#	     cd ~/hpcm/contestant/help
 #	     make ps
 #	     lpr help.ps demos.ps
-#	     fprint THIS_CONTEST
 #
-#	 This makes a generic help printout good for all
-#        contests, a generic demos printout, and a small
-#        contest specific this_contest printout.
+#     B. To make a help printout that begins with
+#        THIS_CONTEST
 #
-#     B.  Execute:
+#	      cd ~/hpcm/contestant/help
+#	      make EXTRAS=THIS_CONTEST help+.ps
+#	      lpr help+.ps
 #
-#	      cd ~/hpcm/contestant/
-#	      make EXTRAS=THIS_CONTEST help+.ps demos.ps
-#	      lpr help+.ps demos.ps
-#
-#	 This makes a contest specific help printout
-#	 consisting of the this_contest file followed by
-#	 the same generic help files as in help.ps
-#	 above, and also makes a generic demos printout.
-
-#      C. Execute
+#     C. To make help, problems, or demos printouts
+#	 specific to this contest
 #
 #	       cd ~/judging_foo_password
-#	       make print_help
+#	       make help+.ps
+#	       make problem.ps
+#	       make demos.ps
 #
-#         remove the `demos' and `problems' pages, and
-#	  reorder the other pages so `index' is first
-#	  and the other help file pages are in order
-#	  they are listed in the index.  This produces
-#	  a `help handout' specific to the contest.
-#	  Unlike the help handouts above, this handout
-#	  does not contain help for contest types that
-#	  differ from the current contest (e.g., no
-#	  email contest help for a formal contest),
+#        This help+.ps will have THIS_CONTEST at its
+#	 beginning.
 #
-#         Then execute
+#     D. To make a 1 sheet printout of THIS_CONTEST
 #
-#	       cd ~/judging_foo_password
-#	       make print_demos
-#
-#         and make a `demos handout' that consists of
-#	  these pages, in the order given in the `demos'
-#	  help page, preceded by that `demos' help page
-#	  (which was printed by `make print_help').
-#
-#     To make the problem set handout, execute
-#
-#	       cd ~/judging_foo_password
-#	       make print_problems
-#
-#     and make a `problems handout' that consists of
-#     these pages, in the order given in the `problems'
-#     help page, preceded by that `problems' help page.
-#     Discard any demonstration .txt files printed.
-
-#     The help and demos handout can be given out before
-#     the contest starts, along with any extra sheets
-#     on such topics as where teams are located and
-#     when and where the food will be (or this info can
-#     be put into this_contest).  The problems handout
-#     is given out at the very start of the contest
-#     proper.
+#	       make this_contest.ps
 #
 # 11. A web page containing non-contest-specific help
 #     and demos files can be made according to instruc-
@@ -272,22 +237,28 @@ stop_scoreboard:
 update_scoreboard:
 	makescoreboard update
 
-print_help:
-	fprint contest/help/*
+help+.ps:	help_print_files
+	rm -f help+.ps
+	fprint -o `cat help_print_files` > help+.ps
 
-print_demos:
-	fprint contest/demos/*/*
+demos.ps:	demos_print_files
+	rm -f demos.ps
 
-print_problems:
-	fprint contest/help/problems
-	@for x in solutions/*/*; \
-	    do case "$$x" in \
-	    *.txt) echo fprint $$x; fprint $$x;; \
-	    *.ps)  echo lpr $$x; lpr $$x;; \
-	    *.html | *.htm) \
-	           echo YOU MUST use a browser \
-			to print $$x by hand;; \
-	    esac; done
+problems.ps:	problems_print_files
+	rm -f problems.ps
+	fprint -o `cat problems_print_files` \
+	       > problems.ps
+
+this_contest.ps: help/this_contest
+	rm -f this_contest.ps
+	fprint -o help/this_contest >this_contest.ps
+
+help_print_files problems_print_files \
+    demos_print_files:	help/this_contest
+	makecontest -print_files
+
+help/this_contest:
+	makecontest -this_contest
 
 # Tests
 
@@ -305,7 +276,7 @@ dangerous_test_clean:
 
 dangerous_clean:
 	rm -rf mail help flag log web web.tar \
-	       solutions* TODO replies mbox \
+	       solutions* TODO replies mbox *.ps \
 	       `readlink contest` \
 	       contest \
 	       help_print_files* \
