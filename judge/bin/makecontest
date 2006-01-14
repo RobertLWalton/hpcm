@@ -6,7 +6,7 @@
 #
 # File:		makecontest
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Jan 14 10:00:11 EST 2006
+# Date:		Sat Jan 14 10:02:12 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/01/14 14:58:51 $
+#   $Date: 2006/01/14 15:22:47 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.142 $
+#   $Revision: 1.143 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -64,8 +64,8 @@ makecontest option ... index_specification ...
 		-description, -printer, -printer_map,
 		-scoreboard, and -trashall.
     -email	Sets up an email contest.  Equals -info,
-    		-solutions, -mail, -this_contest, and
-		-startcontest.
+    		-solutions, -print_files, -mail,
+		-this_contest, and -startcontest.
     -info	Make ./info, ./info/help/index,
     		./info/help/problems, ./info/help/demos.
     -solutions  Make ./solutions
@@ -94,6 +94,9 @@ makecontest option ... index_specification ...
 		          ./help/this_contest_parameter,
 		          ./help/this_contest_original
     -mail	Make ./mail
+    -print_files  Make ./help_print_files,
+    		       ./problems_print_files,
+		       ./demos_print_files.
 
     -secure	Make ./contest/secure/passwords,
 		     ./contest/secure/hpcm_sendmail.rc
@@ -624,6 +627,16 @@ makecontest option ... index_specification ...
     files put in ./contest/help1 will override those
     in ./contest/help that is linked to ./contest/help2.
 
+    The -print_files program option makes the ./help_
+    print_files, ./problem_print_files, and ./demos_
+    print_files files which each list files that can be
+    fprint'ed.  These lists begin with the help/index,
+    help/problems, and help/demos index files respec-
+    tively, and then list all the files listed in those
+    indices.  However, if help/this_contest is listed in
+    help_print_files, it is moved to the front of the
+    help_print_files list.
+
     The -secure program option makes the following if
     they do not exist:
 
@@ -805,6 +818,7 @@ set help_option			no
 set help2_option		no
 set this_contest_option		no
 set mail_option			no
+set print_files_option		no
 set secure_option		no
 set ssh_option			no
 set procmailrc_option		no
@@ -831,6 +845,8 @@ while { $argi < $argc } {
 			  set this_contest_option \
 			  			yes
 			  set mail_option	yes
+			  set print_files_option \
+			  			yes
 			  set secure_option	yes
 			  set procmailrc_option	yes
 			  set who_where_option	yes
@@ -849,6 +865,8 @@ while { $argi < $argc } {
 			  set this_contest_option \
 			  			yes
 			  set mail_option	yes
+			  set print_files_option \
+			  			yes
 			  set secure_option	yes
 			  set procmailrc_option	yes
 			  set who_where_option	yes
@@ -864,6 +882,8 @@ while { $argi < $argc } {
 			  set this_contest_option \
 			  			yes
 			  set mail_option	yes
+			  set print_files_option \
+			  			yes
 			  set secure_option	yes
 			  set procmailrc_option	yes
 			  set who_where_option	yes
@@ -874,6 +894,8 @@ while { $argi < $argc } {
         -email		{ set info_option 	yes
 			  set solutions_option	yes
 			  set mail_option	yes
+			  set print_files_option \
+			  			yes
 			  set this_contest_option \
 			  			yes
 			  set procmailrc_option	yes
@@ -894,6 +916,8 @@ while { $argi < $argc } {
 	-this_contest	{ set this_contest_option \
 						yes }
         -mail		{ set mail_option 	yes }
+        -print_files	{ set print_files_option \
+						yes }
         -secure		{ set secure_option 	yes }
         -ssh		{ set ssh_option 	yes }
 	-procmailrc	{ set procmailrc_option	yes }
@@ -2100,17 +2124,17 @@ if { $solutions_option } {
 
 # Output print files if necessary
 #
-if { [file isdirectory $j_d/info/help] } {
-    set target info/help
-} elseif { [file isdirectory $j_d/contest/help] } {
-    set target contest/help
-} else {
-    set target ""
-}
-if { $target != "" } {
+if { $print_files_option } {
+    if { [file isdirectory $j_d/info/help] } {
+	set target info/help
+    } elseif { [file isdirectory $j_d/contest/help] } {
+	set target contest/help
+    } else {
+	set target UNKNOWN/help
+    }
     foreach dir {problems demos help} {
-	set output $target/$dir
 	if { $dir == "help" } {
+	    set output $target/index
 
 	    # Move this_contest to front of help list.
 	    #
@@ -2122,6 +2146,8 @@ if { $target != "" } {
 		set help_print_files \
 		    [lreplace $help_print_files $i $i]
 	    }
+	} else {
+	    set output $target/$dir
 	}
 	foreach f [set ${dir}_print_files] {
 	    set output "$output\n$f"
