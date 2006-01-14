@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Jan 14 09:30:10 EST 2006
+# Date:		Sat Jan 14 09:51:21 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/01/14 14:29:28 $
+#   $Date: 2006/01/14 14:49:24 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.34 $
+#   $Revision: 1.35 $
 
 # To make a formal contest named `foo':
 #
@@ -308,9 +308,9 @@ dangerous_clean:
 	       solutions* TODO replies mbox \
 	       `readlink contest` \
 	       contest \
-	       help_print_files \
-	       problems_print_files \
-	       demos_print_files \
+	       help_print_files* \
+	       problems_print_files* \
+	       demos_print_files* \
 	       Scorefinder* \
 	       Scoreboard_PID \
 	       Startcontest_PID
