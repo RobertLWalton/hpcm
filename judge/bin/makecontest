@@ -6,7 +6,7 @@
 #
 # File:		makecontest
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Jan 14 08:44:26 EST 2006
+# Date:		Sat Jan 14 10:00:11 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/01/14 14:27:44 $
+#   $Date: 2006/01/14 14:58:51 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.141 $
+#   $Revision: 1.142 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -2110,6 +2110,19 @@ if { [file isdirectory $j_d/info/help] } {
 if { $target != "" } {
     foreach dir {problems demos help} {
 	set output $target/$dir
+	if { $dir == "help" } {
+
+	    # Move this_contest to front of help list.
+	    #
+	    set i [lsearch -regexp $help_print_files \
+	    			   {/this_contest$}]
+	    if { $i >= 0 } {
+		set tc [lindex $help_print_files $i]
+	        set output "$tc\n$output"
+		set help_print_files \
+		    [lreplace $help_print_files $i $i]
+	    }
+	}
 	foreach f [set ${dir}_print_files] {
 	    set output "$output\n$f"
 	}
