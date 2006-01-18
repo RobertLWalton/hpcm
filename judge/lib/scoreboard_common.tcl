@@ -3,7 +3,7 @@
 #
 # File:		scoreboard_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Oct 13 04:19:57 EDT 2005
+# Date:		Wed Jan 18 10:21:08 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -12,9 +12,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/10/13 08:23:31 $
+#   $Date: 2006/01/18 15:25:15 $
 #   $RCSfile: scoreboard_common.tcl,v $
-#   $Revision: 1.52 $
+#   $Revision: 1.53 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -542,7 +542,7 @@ proc prune_scoreboard_array { } {
 # order sorted list of items, each of the form:
 #
 #	{ sort_code number_of_submissions
-#	  problems_correct total_score modifier
+#	  problems_correct rank_score modifier
 #	  submitter problem_score ... }
 #
 # Each item begins with a code to sort on, followed by
@@ -556,9 +556,9 @@ proc prune_scoreboard_array { } {
 # to these scores are in the scoreboard_problem_list
 # global variable.  This last list is sorted.
 #
-# If scoreboard_start_time is "", the total_score is "".
+# If scoreboard_start_time is "", the rank_score is "".
 # If scoreboard_display_correct is `no', the problems_
-# correct and total_score will both be "".
+# correct and rank_score will both be "".
 #
 # The format of the problem_scores and sort_code depend
 # upon the settings of various scoreboard parameters.
@@ -577,7 +577,7 @@ proc prune_scoreboard_array { } {
 #
 # where cccc is 10**4 - 1 - the number of correct
 # problems in four digits with leading zeros, ttttttttt
-# is the total_score, actually the total time, in 9
+# is the rank_score, actually the total time, in 9
 # digits with leading zeros, and ssss is 10**4 - 1 - the
 # total number of submissions, in 4 digits with leading
 # zeros.
@@ -700,7 +700,7 @@ proc compute_scoreboard_list {} {
     # Compute scoreboard_list.
     #
     set scoreboard_list ""
-    set max_total_score 999999999
+    set max_rank_score 999999999
     foreach submitter $submitters {
 
 	# Compute total score, number of problems
@@ -792,12 +792,12 @@ proc compute_scoreboard_list {} {
 			       + $scoreboard_penalty \
 				 * $problem_incorrect }]
 			if { [expr { \
-				$max_total_score \
+				$max_rank_score \
 				- \
 				$problem_increment }] \
 			     < $time_score } {
 			    set time_score \
-			        $max_total_score
+			        $max_rank_score
 			} else {
 			    incr time_score \
 				 $problem_increment
@@ -845,7 +845,7 @@ proc compute_scoreboard_list {} {
 	}
 
 	# Compute sort_code and mark problems_correct
-	# and total_score missing when appropriate.
+	# and rank_score missing when appropriate.
 	#
 	set cccc \
 	    [format {%04d} \
@@ -856,7 +856,7 @@ proc compute_scoreboard_list {} {
 	if { ! $scoreboard_display_correct } {
 	    set sort_code $submitter
 	    set problems_correct ""
-	    set total_score ""
+	    set rank_score ""
 	} elseif { $scoreboard_use_qualifiers } {
 	    if { $problems_correct > 0 } {
 	        set qualifier_score \
@@ -875,11 +875,11 @@ proc compute_scoreboard_list {} {
 	    } else {
 		set sort_code $cccc.$qqqqqqqqq
 	    }
-	    set total_score \
+	    set rank_score \
 	        [format {%.2f} $qualifier_score]
 	} elseif { $scoreboard_start_time == "" } {
 		set sort_code $cccc.$submitter
-		set total_score ""
+		set rank_score ""
 	} else {
 	    set ttttttttt \
 		[format {%09d} $time_score ]
@@ -888,7 +888,7 @@ proc compute_scoreboard_list {} {
 	    } else {
 		set sort_code $cccc.$ttttttttt
 	    }
-	    set total_score $time_score
+	    set rank_score $time_score
 	}
 
 	# Add score list item to score list.
@@ -896,7 +896,7 @@ proc compute_scoreboard_list {} {
 	lappend scoreboard_list \
 		[concat [list $sort_code $submissions \
 		              $problems_correct \
-			      $total_score \
+			      $rank_score \
 		              $modifier $submitter ] \
 		        $problem_scores]
     }
