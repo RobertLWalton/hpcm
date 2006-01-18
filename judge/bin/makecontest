@@ -6,7 +6,7 @@
 #
 # File:		makecontest
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Jan 14 10:02:12 EST 2006
+# Date:		Wed Jan 18 10:05:46 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/01/14 15:22:47 $
+#   $Date: 2006/01/18 15:17:25 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.143 $
+#   $Revision: 1.144 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -140,8 +140,9 @@ makecontest option ... index_specification ...
 
     This program appends instructions for its user to
     edit certain files and run certain programs to the
-    ./TODO file, and prints this file at the end of this
-    program (unless the file is empty).
+    ./TODO file, and prints an announcement at the end
+    of the program if this file is not empty.  Informa-
+    tion items in the ./TODO file are call `TODO's.
 
     The -contest program option makes the contest direc-
     tory and the symbolic link `./contest' to that di-
@@ -168,8 +169,7 @@ makecontest option ... index_specification ...
     ./contest/bin to `\$hpcm_directory/contestant/bin',
     where the `hpcm_directory' global variable defaults
     to `~/hpcm'.  If this cannot be done, it is not an
-    error, but instructions to fix the situation are
-    written in the ./TODO file.
+    error, but a TODO to fix the situation is written.
 
     The -home program option makes the symbolic link
     ./contest/home to ~PROTO/home, where PROTO is the
@@ -184,8 +184,7 @@ makecontest option ... index_specification ...
     home/empty.ls exist and are readable, if such a
     unique account name exists.  If the prototype
     account cannot be found, it is not an error, but
-    instructions to fix the situation are written in the
-    ./TODO file.
+    a TODO to fix the situation is written.
 
     The index files are read and used to generate a list
     of items to be included in the ./info and ./contest
@@ -606,8 +605,8 @@ makecontest option ... index_specification ...
     value.  You can then either update that value, or
     you can edit the ./help/this_contest file.
 
-    If ./help/this_contest is written, a ./TODO note is
-    written indicating what has been done.
+    If ./help/this_contest is written, a TODO is written
+    indicating what has been done.
 
     The -mail program option causes the ./mail directory
     to be made if it does not exist.  If it is made, its
@@ -646,8 +645,8 @@ makecontest option ... index_specification ...
 
     If any of these are made their modes are set to
     go-rw.  If the ./contest/secure/passwords file is
-    made, instructions for editing it are written to
-    ./TODO, but the file automatically made is empty.
+    made, a TODO for editing it is written, but the
+    file automatically made is empty.
 
     The ./contest/secure/passwords file consists of
     lines of the form
@@ -681,9 +680,8 @@ makecontest option ... index_specification ...
     authorized_keys' which is the concatenation of all
     the files `~/.ssh/identity.pub, `~/.ssh/id_rsa.pub',
     and `~/.ssh/id_dsa.pub' that exist.  If none of
-    these files exist, it is not an error, but instruc-
-    tions to fix the situation are written in the ./TODO
-    file.
+    these files exist, it is not an error, but a TODO
+    to fix the situation is written.
 
     The -procmailrc program option updates the ~/
     .procmailrc file with one entry for each autojudge
@@ -692,8 +690,7 @@ makecontest option ... index_specification ...
     contents.  The other autojudge addresses are listed
     in the `autojudge_addresses' global variable.  If
     there are no autojudge addresses, it is not an
-    error, but instructions to fix the situation are
-    written in the ./TODO file.
+    error, but a TODO to fix the situation is written.
 
     The -who_where program option makes the ./contest/
     who_where file if it does not exist, or updates it
@@ -702,7 +699,7 @@ makecontest option ... index_specification ...
     copy of the ./contest/secure/passwords file with the
     passwords replaced by where values.  If any new
     places to insert a `where' value are made in the
-    ./contest/who_where file, a ./TODO to edit the file
+    ./contest/who_where file, a TODO to edit the file
     is written.  There may be accounts in the `who_
     where' file that are not in the `passwords' file.
     Lines with account name `none' in the `passwords'
@@ -2866,28 +2863,19 @@ if { $scoreboard_option } {
 
 # Finish TODO
 #
-set TODO_written [expr { $TODO_ch != "" }]
-if { $TODO_written || $TODO_existed } {
-    if { $TODO_written } {
-	close $TODO_ch
-    }
-    set TODO_ch [open $TODO_file r]
-    if { $TODO_existed } {
-        if { $TODO_written } {
-	    puts "==================== old+new TODO:"
-	} else {
-	    puts "==================== old TODO:"
-	}
-    } else {
-	puts "==================== new TODO:"
-    }
-    while { "yes" } {
-    	set line [gets $TODO_ch]
-	if { [eof $TODO_ch] } break
-	puts $line
-    }
-    puts "==================== end of TODO"
+if { $TODO_ch != "" } {
     close $TODO_ch
+    if { $TODO_existed } {
+        puts "IMPORTANT: The ./TODO file has both old\
+	      and new instructions for you in it."
+    } else {
+        puts "IMPORTANT: The ./TODO file has\
+	      new instructions for you in it."
+    }
+} elseif { $TODO_existed } {
+    puts "IMPORTANT: The ./TODO file has\
+	  old instructions for you in it."
+    puts "           There a no new instructions."
 }
 
 exit 0
