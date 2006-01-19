@@ -3,7 +3,7 @@
 #
 # File:		scoreboard_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Jan 19 06:09:10 EST 2006
+# Date:		Thu Jan 19 06:32:51 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -12,9 +12,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/01/19 11:11:34 $
+#   $Date: 2006/01/19 11:41:26 $
 #   $RCSfile: scoreboard_common.tcl,v $
-#   $Revision: 1.55 $
+#   $Revision: 1.56 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -79,15 +79,21 @@
 # where all the times have 15 digits exactly, so they
 # can be sorted.  The items of scoreboard_array(
 # submitter/problem) are sorted (during pruning),
-# except `s' start time code items are always first
-# (they are added during pruning).
+# except for first element, which always has the `s'
+# code.
 #
 # After the scoreboard_array is `pruned' (see below),
 # an item is added at the beginning of each array ele-
 # ment with code `s' that contains the start time of
-# the problem.  If the start time is unknown, because
-# the scoreboard_start_time parameter is "", the time
-# in the code `s' item will be "".
+# the problem.  This start time is computed as follows:
+#
+#    scoreboard_start_time	start time value
+#
+#	""			""
+#	problem			time problem gotten
+#	team			time submitter got
+#				first problem
+#	<DATE-AND-TIME>		<DATE-AND-TIME>
 #
 # An array element may not exist, in which case it
 # should be treated as equal to the empty list.
@@ -119,7 +125,7 @@
 #
 #    5. If the scoreboard_start_time is a date and time,
 #	any array element is deleted if its earliest
-#	item is before the start time.
+#	item is before this contest start time.
 #
 #    6. All "g" code items are deleted.
 
