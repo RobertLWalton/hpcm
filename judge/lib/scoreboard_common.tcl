@@ -3,7 +3,7 @@
 #
 # File:		scoreboard_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Jan 19 07:49:26 EST 2006
+# Date:		Thu Jan 19 07:53:14 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -12,9 +12,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/01/19 12:50:28 $
+#   $Date: 2006/01/19 12:59:37 $
 #   $RCSfile: scoreboard_common.tcl,v $
-#   $Revision: 1.57 $
+#   $Revision: 1.58 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -658,17 +658,17 @@ proc compute_scoreboard_list {} {
 	   scoreboard_display_incorrect \
 	   scoreboard_start_time \
 	   scoreboard_use_qualifiers \
-	   scoreboard_average \
+	   scoreboard_use_average \
 	   scoreboard_limit
 
-    if { [info exists scoreboard_average] } {
-        set average $scoreboard_average
+    if { [info exists scoreboard_use_average] } {
+        set use_average $scoreboard_use_average
     } elseif {    $scoreboard_use_qualifiers \
     	       || $scoreboard_start_time == "problem" \
 	     } {
-        set average yes
+        set use_average yes
     } else {
-        set average no
+        set use_average no
     }
 
     if { [info exists scoreboard_limit] } {
@@ -863,7 +863,8 @@ proc compute_scoreboard_list {} {
 	    set problems_correct ""
 	    set ranking_score ""
 	} elseif { $scoreboard_use_qualifiers } {
-	    if { $average && $problems_correct > 0 } {
+	    if {    $use_average \
+	         && $problems_correct > 0 } {
 	        set qualifier_score \
 		    [expr {   $qualifier_score \
 		            / $problems_correct }]
@@ -886,7 +887,7 @@ proc compute_scoreboard_list {} {
 		set sort_code $cccc.$submitter
 		set ranking_score ""
 	} else {
-	    if { $average } {
+	    if { $use_average } {
 		set time_score \
 		    [expr { double ($time_score) }]
 	        if { $problems_correct > 0 } {
@@ -896,8 +897,8 @@ proc compute_scoreboard_list {} {
 		}
 		set ttttttttt \
 		    [format {%09d} \
-		            [expr {   100 \
-			    	    * $time_score }] ]
+		            [expr { round \
+			      ( 100 * $time_score ) }]]
 		set ranking_score \
 		    [format {%.2f} $time_score]
 	    } else {
