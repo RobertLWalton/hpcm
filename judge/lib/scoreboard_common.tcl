@@ -3,7 +3,7 @@
 #
 # File:		scoreboard_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Jan 19 07:53:14 EST 2006
+# Date:		Thu Jan 19 08:24:06 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -12,9 +12,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/01/19 12:59:37 $
+#   $Date: 2006/01/19 13:28:27 $
 #   $RCSfile: scoreboard_common.tcl,v $
-#   $Revision: 1.58 $
+#   $Revision: 1.59 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -659,7 +659,7 @@ proc compute_scoreboard_list {} {
 	   scoreboard_start_time \
 	   scoreboard_use_qualifiers \
 	   scoreboard_use_average \
-	   scoreboard_limit
+	   scoreboard_problem_limit
 
     if { [info exists scoreboard_use_average] } {
         set use_average $scoreboard_use_average
@@ -671,12 +671,12 @@ proc compute_scoreboard_list {} {
         set use_average no
     }
 
-    if { [info exists scoreboard_limit] } {
-        set limit $scoreboard_limit
+    if { [info exists scoreboard_problem_limit] } {
+        set problem_limit $scoreboard_problem_limit
     } elseif { $scoreboard_use_qualifiers } {
-        set limit 999999999
+        set problem_limit 0
     } else {
-        set limit 0
+        set problem_limit 999999999
     }
 
     # Compute lists of submitters and problems.
@@ -839,6 +839,7 @@ proc compute_scoreboard_list {} {
 	            [format_problem_score \
 			 time_score \
 			 qualifier_score \
+			 $problem_limit \
 	    		 $problem_time \
 			 $problem_incorrect \
 			 $problem_modifier \
@@ -1026,8 +1027,14 @@ proc compute_scoreboard_list {} {
 # scoreboard_start_time is not "", then the problem
 # score is added to the time_score.
 #
+# If time > limit, then time is set to limit for the
+# purpose of computing the problem score.  If the
+# qualified problem score is < limit, then that is set
+# to limit for the purpose of computing the problem
+# score.
+#
 proc format_problem_score \
-    { time_score_name qualifier_score_name \
+    { time_score_name qualifier_score_name limit \
       time incorrect modifier \
       qualified_submissions } {
 
@@ -1069,6 +1076,9 @@ proc format_problem_score \
 		    "$long_score$c$postfix"
 	    }
 	}
+	if { $score < $limit } {
+	    set score $limit
+	}
 	set round_score [expr { round($score) }]
 	if {    ! $scoreboard_display_incorrect \
 	     || $incorrect == 0 } {
@@ -1083,6 +1093,10 @@ proc format_problem_score \
 
     } elseif { $scoreboard_start_time != "" } {
         upvar $time_score_name time_score
+
+	if { $time > $limit } {
+	    set time $limit
+	}
 
 	set max_ranking_score 999999999
 	set problem_increment \
