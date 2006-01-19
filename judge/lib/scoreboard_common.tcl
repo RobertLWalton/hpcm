@@ -3,7 +3,7 @@
 #
 # File:		scoreboard_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Jan 18 10:29:58 EST 2006
+# Date:		Thu Jan 19 06:09:10 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -12,9 +12,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/01/18 15:29:03 $
+#   $Date: 2006/01/19 11:11:34 $
 #   $RCSfile: scoreboard_common.tcl,v $
-#   $Revision: 1.54 $
+#   $Revision: 1.55 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -700,7 +700,6 @@ proc compute_scoreboard_list {} {
     # Compute scoreboard_list.
     #
     set scoreboard_list ""
-    set max_ranking_score 999999999
     foreach submitter $submitters {
 
 	# Compute total score, number of problems
@@ -785,23 +784,6 @@ proc compute_scoreboard_list {} {
 			      { $item_time \
 				- \
 				$problem_start_time }]
-
-			set problem_increment \
-			    [expr { \
-			       $problem_time \
-			       + $scoreboard_penalty \
-				 * $problem_incorrect }]
-			if { [expr { \
-				$max_ranking_score \
-				- \
-				$problem_increment }] \
-			     < $time_score } {
-			    set time_score \
-			        $max_ranking_score
-			} else {
-			    incr time_score \
-				 $problem_increment
-			}
 		    }
 		    incr problems_correct
 		    incr submissions
@@ -829,14 +811,16 @@ proc compute_scoreboard_list {} {
 	    }
 
 	    # Append problem score to problem_scores
-	    # list.
+	    # list and update time_score and qualifier
+	    # score.
 	    #
 	    lappend problem_scores \
 	            [format_problem_score \
+			 time_score \
+			 qualifier_score \
 	    		 $problem_time \
 			 $problem_incorrect \
 			 $problem_modifier \
-			 qualifier_score \
 			 [list $problem_i_qualified \
 			       $problem_o_qualified \
 			       $problem_f_qualified \
@@ -919,6 +903,9 @@ proc compute_scoreboard_list {} {
 # the correct submission.  The arguments involving
 # qualified submissions are explained below.
 #
+# The problem score is also added to the time_score or
+# qualified_score if the problem was solved.
+#
 # The value returned has 9 or fewer characters as long
 # as there are at most 98 incorrect submissions, or
 # there is no `*' prefix (see below) and at most 998
@@ -992,11 +979,22 @@ proc compute_scoreboard_list {} {
 # `yes', "*" is prefixed to the score to indicate the
 # score is subject to change by manual review.
 #
-proc format_problem_score { time incorrect modifier \
-    { qualifier_score_name ""} \
-    { qualified_submissions "" } } {
+# If time is not "" indicating the problem was solved,
+# and if scoreboard_use_qualifiers is "yes", then the
+# problem score is added to the qualified_score.
+#
+# If time is not "" indicating the problem was solved,
+# if scoreboard_use_qualifiers is "no", and if
+# scoreboard_start_time is not "", then the problem
+# score is added to the time_score.
+#
+proc format_problem_score \
+    { time_score_name qualifier_score_name \
+      time incorrect modifier \
+      qualified_submissions } {
 
     global scoreboard_start_time \
+    	   scoreboard_penalty \
            scoreboard_display_incorrect \
 	   scoreboard_use_qualifiers \
 	   scoreboard_qualifier_factors
@@ -1046,6 +1044,19 @@ proc format_problem_score { time incorrect modifier \
 	    [expr $qualifier_score + $score]
 
     } elseif { $scoreboard_start_time != "" } {
+        upvar $time_score_name time_score
+
+	set max_ranking_score 999999999
+	set problem_increment \
+	    [expr { $time + $scoreboard_penalty \
+	    		  * $incorrect }]
+	if {   [expr { $max_ranking_score \
+		       - $problem_increment }] \
+	     < $time_score } {
+	    set time_score $max_ranking_score
+	} else {
+	    incr time_score $problem_increment
+	}
 
 	set MM [expr { $time / 60 }]
 	set SS [expr { $time - 60 * $MM } ] 
