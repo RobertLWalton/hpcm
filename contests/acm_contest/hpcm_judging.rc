@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Jan 20 03:17:52 EST 2006
+# Date:		Sat Jan 21 04:50:59 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,19 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/01/20 08:48:49 $
+#   $Date: 2006/01/21 10:28:58 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.41 $
+#   $Revision: 1.42 $
+
+# Table of Contents
+#
+#	Parameters to be Modified
+#	Parameters Not Usually Modified
+#	Computed Parameters (Do Not Modify)
+#	Parameter Overrides
+
+# Parameters to be Modified
+# ---------- -- -- --------
 
 # Read standard parameters.
 #
@@ -72,19 +82,19 @@ set scoring_type timed+feedback
 set start_time  "Jan 1 10:00:00 2030"
 set stop_time   "Jan 1 15:00:00 2030"
 #
-# If the scoreboard is to be frozen at a particular
-# time, that is the freeze time.  Otherwise set the
-# freeze time to "".
+# If the public scoreboard is to be frozen at a parti-
+# cular time, to increase suspense, that time is the
+# freeze time.  Otherwise set the freeze time to "".
 #
 # set freeze_time   "Jan 1 14:00:00 2030"
 set freeze_time   ""
 #
-# The penalty IN SECONDS for submitting an incorrect
+# The penalty in minutes for submitting an incorrect
 # solution to a problem for which a correct solution is
-# later submitted in a timed contest.  1200 = 20 min.
+# later submitted in a timed contest.
 #
-set penalty 1200
-# set penalty 0
+set penalty_minutes 20
+# set penalty_minutes 0
 
 # If the scoring_type is "timed", "feedback", or
 # "dated", leave this as "" if there will be a manager
@@ -97,9 +107,11 @@ set penalty 1200
 # But if the scoring_type is timed+feedback or timed+
 # dated, set this non-"" and it will be used for the
 # automatically scored feedback/dated post contest,
-# after the timed contest is over.  The timed contest
-# must have a manager on duty during to run the tracker
-# program.
+# after the timed contest is over.  In these cases where
+# a timed contest is converted to an untimed post
+# contest, the timed contest must have a manager on duty
+# to run the tracker program, and only the post contest
+# is automatically scored.
 #
 set manager_address ""
 # set manager_address "someone@somecomputer"
@@ -114,6 +126,15 @@ set cc_manager no
 # initial this_contest help file.  Each should begin and
 # end with a line feed, or be "".  Each will then be
 # separated from other text by a blank line.
+#
+# If you want to modify this_contest further, you should
+# edit the ./help/this_contest file directly after it
+# has been initially made.  The version of the file that
+# is made by this hpcm_judging.rc file will be mantained
+# in ./help/this_contest_parameter for reference pur-
+# poses, while ./help/this_contest will be left untouch-
+# ed after it has been edited to be different from
+# ./help/this_contest_parameter.
 # 
 set this_contest_prefix "
 THIS FILE IS UNEDITED AND INACCURATE!
@@ -150,9 +171,9 @@ catch { set timed_printer_map "
 .* $env(PRINTER)
 " }
 
-# List of addresses to email scoreboard to.  If this
+# TCL list of addresses to email scoreboard to.  If this
 # list contains zzz<YYY>, then every time the scoreboard
-# is made it will be emailed to `zzz<YYY>', so in the
+# is updated it will be emailed to `zzz<YYY>', so in the
 # account YYY .procmailrc file you should put something
 # like the following to copy the scoreboard into the
 # public_html/xxx file of the YYY account:
@@ -162,13 +183,20 @@ catch { set timed_printer_map "
 #	| cat >public_html/xxx;\
 #	  chmod a+r public_html/xxx
 #
+# If there are spaces or quotes in zzz<YYY>, it should
+# be enclosed in {} braces in the address list.
+#
 set scoreboard_addresses { }
+# set scoreboard_addresses {
+#	{"some thing"<someaccount@somecomputer>}
+# }
 
-# List of regular expressions that match the test
-# accounts which are NOT to appear on the scoreboard
-# once a timed contest starts.  They will appear before
-# a timed contest starts, and for contests of scoring_
-# type "feedback" or "dated".
+# TCL list of TCL regular expressions that match the
+# test accounts which are NOT to appear on the score-
+# board once a timed contest starts.  They will appear
+# before a timed contest starts, and for contests of
+# scoring_type "feedback" or "dated", but not for
+# the post contests of "timed+xxxx" contests.
 #
 set test_accounts { }
 
@@ -192,16 +220,16 @@ set problems_arguments "
 	public/=problems/, \
 	    P1:include
 "
-# Use the following if index is in directory ~/p and
-# problems are in subdirectories of ~/p.  Because the
-# problems are subdirectories of ~/p which contains the
+# Use the following if index is the file ~/ppp/iii and
+# problems are in subdirectories of ~/ppp.  Because the
+# problems are subdirectories of ~/ppp which contains the
 # index file, `SUBDIRECTORY/' is the omitted.
 # $env(HOME) is the home directory of the current
 # (judge's) account.  ALL means include all problems
 # listed in the index.
 #
 # set problems_arguments "
-#     $env(HOME)/p/index, \
+#     $env(HOME)/ppp/iii, \
 #         =problems/, \
 #             ALL:include
 # "
@@ -234,6 +262,9 @@ set web_solutions_password ""
 set web_help_URL ""
 set web_scoreboard_URL ""
 
+# Parameters Not Usually Modified
+# ---------- --- ------- --------
+
 # Normally you should not have to make changes below
 # this point.
 
@@ -278,13 +309,14 @@ set window_height 24
 
 # Set to the prototype account (as per SETUP_PROTOTYPE).
 # If not set, the unique account with name of the form
-# *[-_]proto and readable files home/setup.tar and home/
-# setup.ls is used, if there is such a unique account.
+# *[-_]proto and readable files home/setup.tar, home/
+# empty.ls, and home/setup.ls is used, if there is such
+# a unique account.
 #
 # set hpcm_prototype_account TBD
 
 # Time in seconds after stop_time that contest is
-# converted from a timed to an feedback or dated contest
+# converted from a timed to a feedback or dated contest
 # when the scoring_type is timed+feedback or
 # timed+dated.
 #
@@ -300,7 +332,7 @@ set makescoreboard yes
 #
 set startcontest yes
 
-# The following is the printer map for an feedback or
+# The following is the printer map for a feedback or
 # dated contest.  It lets each contestant determine
 # his/her own printer by placing its name in the
 # ~/PRINTER file of the contestant's account.  See
@@ -316,6 +348,9 @@ set feedback_printer_map "
 "
 
 
+# Computed Parameters (Do Not Modify)
+# -------- ---------- ---------------
+
 # You should NOT make changes beyond this point, unless
 # you want to tune the contest to be a variant of one of
 # the standards supported by this file.  If you do want
@@ -340,6 +375,10 @@ if { $allow_email_submissions } {
 # subtype is "timed" till conversion_delay after stop_
 # time and then it is "xxxxx".
 #
+# For a convertible contest, at the time of conversion
+# makecontest is run and its output is put in the
+# file $judging_directory/post_contest_reconfiguration.
+#
 set is_post_contest no
 set scoring_subtype $scoring_type
 switch $scoring_type {
@@ -357,11 +396,11 @@ switch $scoring_type {
 	           forget scoring_subtype
 	    set is_post_contest yes
 	    set f $judging_directory
-	    set f $f/post_contest_reconfigured
+	    set f $f/post_contest_reconfiguration
 	    if { ! [file exists $f] } {
-	        write_file $f done
-		exec makecontest \
-		     -printer_map -scoreboard
+	        write_file $f [exec makecontest \
+		     -printer_map -scoreboard \
+		     -problems -description]
 	    }
 	}
     }
@@ -410,7 +449,12 @@ if { $scoring_subtype == "timed" } {
     set scoreboard_start_time  $start_time
     set scoreboard_freeze_time $freeze_time
     set scoreboard_stop_time   $stop_time
-    set scoreboard_penalty     $penalty
+    set scoreboard_penalty     \
+        [expr 60 * $penalty_minutes]
+} else {
+    set scoreboard_start_time  ""
+    set scoreboard_freeze_time ""
+    set scoreboard_stop_time   ""
 }
 
 # Scoreboard name, i.e, the name of the contest.
@@ -438,10 +482,12 @@ set scoreboard_problems \
     [lrange $scoreboard_problems 1 end]
 
 # Scoreboard instructions for a timed contest with no
-# freeze.  contest/scoreboard.final is produced
-# beginning at the stop time and is updated until the
-# stop time + 10 minutes.  If you need to update it
-# after that, delete it and run `makescoreboard update'.
+# freeze.  $judging_directory/contest/scoreboard.final
+# is produced beginning at the stop time and is updated
+# until the stop time + 10 minutes.  If you need to
+# update it after that, delete it and wait for it to be
+# updated automatically (which will happen within 60
+# seconds).
 #
 set no_freeze_timed_scoreboard_instructions {
 
@@ -505,14 +551,16 @@ set no_freeze_timed_scoreboard_instructions {
 }
 
 # Scoreboard instructions for a timed contest WITH
-# freeze.  contest/scoreboard.final is produced
-# beginning at the stop time and is updated until the
-# stop time + 10 minutes.  If you need to update it
-# after that, delete it and run `makescoreboard update'.
+# freeze.  $judging_directory/contest/scoreboard.final
+# is produced beginning at the stop time and is updated
+# until the stop time + 10 minutes.  If you need to
+# update it after that, delete it and wait for it to be
+# updated automatically (which will happen within 60
+# seconds).
 #
-# After scoreboard is frozen, contest/scoreboard.current
-# is updated to be the unfrozen and invisible
-# scoreboard.
+# After scoreboard is frozen, $judging_directory/
+# contest/scoreboard.current is updated to be the
+# unfrozen and non-public scoreboard.
 #
 set freeze_timed_scoreboard_instructions {
 
@@ -661,8 +709,8 @@ set post_contest_scoreboard_instructions(dated) {
     BAR
 }
 
-# Scoreboard instructions to be used contest for an
-# feedback or dated contest:
+# Scoreboard instructions to be used for a feedback or
+# dated contest:
 #
 set not_timed_scoreboard_instructions {
 
@@ -715,7 +763,7 @@ if { $scoring_subtype == "timed" } {
 # For the timed part of a "timed+xxxxx" contest there
 # is no manager during the timed part of the contest.
 #
-if {    $scoring_type == "timed" \
+if {    $scoring_subtype == "timed" \
      && $scoring_type != $scoring_subtype } {
     set manager_address ""
 }
@@ -747,7 +795,6 @@ set inout_percent [expr 100 - 100 * [lindex $sqf 1]]
 set inout_percent [format {%.0f} $inout_percent]
 set ic_percent [expr 100 - 100 * [lindex $sqf 4]]
 set ic_percent [format {%.0f} $ic_percent]
-set penalty_minutes [expr $penalty / 60]
 
 set this_contest "$this_contest_prefix[
     include_if { [regexp {^timed} $scoring_type] } "
@@ -788,7 +835,7 @@ tion problem.
 
 Hpcm_get will also get all the contest problems into
 your `~/problems' directory AFTER the contest official-
-ly starts.  At the contest start time, you will be given
+ly starts.  At the contest start time you will be given
 a printout of all the problem descriptions.  The command
 `help problems' will display a list of all the problems
 AFTER the contest starts.  Also see `help solving'.
@@ -797,10 +844,10 @@ The command `scoreboard' will display the scoreboard.
 The time of a problem is the time between the start
 time of the contest and the time a solution is submit-
 ted.  See `help scoreboard'.
-[include_if { $penalty == 0 } "
+[include_if { $penalty_minutes == 0 } "
 There is no time penalty for an incorrect submission for
 this contest.
-"][include_if { $penalty > 0 } "
+"][include_if { $penalty_minutes > 0 } "
 There is a $penalty_minutes minute time penalty for an\
     incorrect
 submission for this contest.  This is applied only to
@@ -813,7 +860,7 @@ account and password you will be using.
 The command `hpcm_get' will get the problems into your
 directory.  Included will be the demonstration problem
 ~/demos/count (where ~ denotes your home directory).
-Read ~/demos/ count/README and ~/demos/count/Makefile
+Read ~/demos/count/README and ~/demos/count/Makefile
 and practice submitting the demonstration problem.
 
 You will be given a description of the problems on the
@@ -831,8 +878,11 @@ This contains the date of each correct submission.  See
 "][include_if { $scoring_type == "feedback" } "
 The command `scoreboard' will display the scoreboard.
 Scoring is determined by submission types (submit,
-in-submit, inout-submit) for incorrect submissions,
-according to the following penalties:
+in-submit, inout-submit) for incorrect submissions.
+A correct submission with no previous incorrect submis-
+sions will have a score of 100.0, and the penalties for
+incorrect submissions depend on submission type as
+follows:
 
     incorrect `submit'		$ic_percent%
     incorrect `in-submit'	$in_percent%
@@ -840,7 +890,7 @@ according to the following penalties:
 
 Penalties are applied only to incorrect submissions for
 problems you eventually submit correctly.  See `help
-scoreboard' for details.
+scoreboard', feedback contests, for details.
 "]
 To send a question to the contest manager DO NOT try
 to e-mail the manager directly.  Instead edit the ques-
@@ -876,7 +926,7 @@ submissions depend on submission type as follows:
     incorrect `in-submit'	$in_percent%
     incorrect `inout-submit'	$inout_percent%
 
-See `help scoreboard', feedback scoring, for details.
+See `help scoreboard', feedback contests, for details.
 
 You will be able to print by making a ~/PRINTER file:
 see `help print'.
@@ -891,5 +941,8 @@ will be able to print by making a ~/PRINTER file: see
 `help print'.
 "]$this_contest_postfix"
 
+# Parameter Overrides
+# --------- ---------
+
 # Add parameter settings here to override parameters
 # that are normally not changed above.
