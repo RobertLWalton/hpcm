@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/01/23 13:25:19 $
+#   $Date: 2006/01/23 13:28:24 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.41 $
+#   $Revision: 1.42 $
 #
 # To make a formal contest named `foo':
 #
@@ -230,12 +230,12 @@ all:
 
 # Web Page Rules:
 
-# Web_do merely causes `make web' to remake the
+# Web_do_nothing merely causes `make web' to remake the
 # web directory even if it exists.
 #
-web_do:
+web_do_nothing:
 
-web:	web_do
+web:	web_do_nothing
 	rm -rf web web.tar
 	makeweb
 	cd web; tar cf ../web.tar *
@@ -263,11 +263,18 @@ this_contest.ps: help/this_contest
 	rm -f this_contest.ps
 	fprint -o help/this_contest >this_contest.ps
 
+
+# Print_files_do_nothing merely causes the print files
+# to be remade whenever required regardless of pre-
+# requisits.
+#
+print_files_do_nothing:
+
 help_print_files problems_print_files \
-    demos_print_files:	help/this_contest
+    demos_print_files:	print_files_do_nothing
 	makecontest -print_files
 
-help/this_contest:
+help/this_contest: print_files_do_nothing
 	makecontest -this_contest
 
 # Test Rules:
