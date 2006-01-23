@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Jan 14 10:41:48 EST 2006
+# Date:		Mon Jan 23 07:25:04 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,35 +11,42 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/01/14 15:49:58 $
+#   $Date: 2006/01/23 12:38:00 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.21 $
+#   $Revision: 1.22 $
 
-# `make help.ps' and `make demos.ps' make printouts of
+# `make help.pdf' and `make demos.pdf' make printouts of
 # all the help and demos files respectively.  Note that
-# there is no `help/this_contest' file in help.ps.
+# there is no `help/this_contest' file in help.pdf.
 #
-# Execute `make EXTRAS="filename ..." help+.ps' to
-# make a .ps file with 'filename ...' followed by the
+# Execute `make EXTRAS="filename ..." help+.pdf' to
+# make a .pdf file with 'filename ...' followed by the
 # help index and the help files.  Typically filename
 # is a version of this_contest.
+#
+# You can also make help.ps, help+.ps, and demos.ps,
+# which are just the .ps versions of the .pdf files.
 #
 # To make web help pages, execute `make web' and copy
 # the `web' directory to you web server, where it will
 # become a directory containing an `index.html' file.
 # The web.tar file contains the contents of the `web'
 # directory, to make copying easy.  The web page
-# contains help.ps and demos.ps, as well individual
+# contains help.pdf and demos.pdf, as well individual
 # copies of all the help and demos files and indices
 # for these.
 
 all:	emailsh
 
+pdf:	help.pdf demos.pdf
 ps:	help.ps demos.ps
 
-# Kill all implicit rules
+# Kill all implicit rules and make new rule:
 #
 .SUFFIXES:
+.SUFFIXES: .ps .pdf
+.ps.pdf:
+	ps2pdf $*.ps $*.pdf
 
 HELP_FILES = \
 	formal/formal_contest \
@@ -164,10 +171,14 @@ email/sh/hpcm_clisp.lsp:
 #
 web_do:
 
-web:	all help.ps demos.ps web_do
+web:	all help.pdf demos.pdf web_do
 	rm -rf web.tar web
 	mkdir web
-	cp -rpL `ls|grep -v '^web$$'` web
+	cp -rpL `ls | grep -v '^web$$' | \
+	              grep -v '^help.ps$$' | \
+	              grep -v '^help+.ps$$' | \
+	              grep -v '^demos.ps$$' ` \
+	   web
 	cp -rpL ../../problem_library/demos web/demos
 	rm -f `find web -name '*.rc' -print`
 	rm -rf `find web -name CVS -print`
@@ -186,4 +197,5 @@ clean:
 	       email/sh/hpcm_clisp.lsp \
 	       web web.tar \
 	       help_index demos_index \
-	       help.ps demos.ps
+	       help.ps help+.ps demos.ps \
+	       help.pdf help+.pdf demos.pdf
