@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Jan 21 05:17:16 EST 2006
+# Date:		Mon Jan 23 08:11:45 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/01/21 10:15:14 $
+#   $Date: 2006/01/23 13:25:19 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.40 $
+#   $Revision: 1.41 $
 #
 # To make a formal contest named `foo':
 #
@@ -67,12 +67,21 @@
 #     reply'.
 #
 # 8.  Test the contest by using the test contestant
-#     account.  Try submitting the demos/count solution.
+#     account.  Try submitting several demos/count
+#     solutions.
 #
 # 9.  You can also test the contest by executing
 #     `make test'.  Then read each email reply and
 #     compare its X-HPCM-Test-Subject field with the
 #     results in the body of the reply.
+#
+#     Note that serveral of the test submissions time
+#     out, and for those submissions the autojudge will
+#     take over a minute to reply.
+#
+#     You can run subsets of the tests by using `make
+#     test_xxx' for various `xxx;: see hpcm/examples/
+#     test_submissions/Makefile.mk.
 #
 #     You can read and analyze the email replies auto-
 #     matically by placing them in an `mbox' file in the
@@ -101,14 +110,6 @@
 #     submissions.  See the hpcm/examples/test_
 #     submissions/Makefile file.
 #
-#     Note that serveral of the test submissions time
-#     out, and for those submissions the autojudge will
-#     take over a minute to reply.
-#
-#     You can run subsets of the tests by using `make
-#     test_xxx' for various `xxx;: see hpcm/examples/
-#     test_submissions/Makefile.mk.
-#
 # 10. A web page containing problem descriptions, and
 #     optionally solutions, can be made by defining the
 #     web page parameters in hpcm_judging.rc and execut-
@@ -133,37 +134,36 @@
 #     or
 #	 ~/contest_foo/help/this_contest
 #
-#     which are the same file.  The .ps files are post-
-#     script files ready to print or put on the web.
+#     which have the same contents.  The .pdf files are
+#     ready to print or put on the web.  You can also
+#     make .ps files instead of .pdf files.
 #
 #     A. To make help, problems, or demos printouts
 #	 specific to this contest
 #
 #	       cd ~/judging_foo_password
-#	       make help+.ps
-#	       make problem.ps
-#	       make demos.ps
+#	       make help+.pdf
+#	       make problem.pdf
+#	       make demos.pdf
 #
-#        This help+.ps will have THIS_CONTEST at its
-#	 beginning.
+#        help+.pdf will have THIS_CONTEST at its begin-
+#	 ning.
 #
 #     B. To make help and demos printouts applicable to
 #	 all contests
 #
 #	     cd ~/hpcm/contestant/help
-#	     make ps
-#	     lpr help.ps demos.ps
+#	     make help.pdf demos.pdf
 #
 #     C. To make a help printout that begins with
 #        THIS_CONTEST
 #
 #	      cd ~/hpcm/contestant/help
-#	      make EXTRAS=THIS_CONTEST help+.ps
-#	      lpr help+.ps
+#	      make EXTRAS=THIS_CONTEST help+.pdf
 #
 #     D. To make a 1 sheet printout of THIS_CONTEST
 #
-#	       make this_contest.ps
+#	       make this_contest.pdf
 #
 # 12. At the end of the contest, the procedure for
 #     finishing is typically the following.  A final
@@ -172,7 +172,7 @@
 #     of the contest until 10 minutes after this stop
 #     time.  During these 10 minutes you should finish
 #     manual review of all submissions made before the
-#     stop time, and if you succeed, the last versoin
+#     stop time, and if you succeed, the last version
 #     of scoreboard.final written will have the final
 #     scores.  Otherwise this last version automatically
 #     written will have asterisks.  In this case,
@@ -193,7 +193,8 @@
 #     and in the absence of special problems, rerunning
 #     `make' should be all that is necessary.
 #
-#     You can get status, stop, and start processe by
+#     You can get status, stop, and start these proces-
+#     ses by
 #
 #		startcontest status
 #		startcontest stop
@@ -212,20 +213,22 @@
 # The location of the hpcm directory.
 #
 HPCM=${HOME}/hpcm
-
-# Parameters for running tests
+#
+# Locations of test data.
 #
 S=${HPCM}/examples/test_submissions
 R=${HPCM}/examples/test_submissions/formal_replies
 
-# Kill all implicit rules
+# Kill all implicit rules:
 #
 .SUFFIXES:
-.SUFFIXES:	.mail .send
+
+# Contest Making Rules:
 
 all:
 	makecontest
 
+# Web Page Rules:
 
 # Web_do merely causes `make web' to remake the
 # web directory even if it exists.
@@ -237,29 +240,11 @@ web:	web_do
 	makeweb
 	cd web; tar cf ../web.tar *
 
+# Printout Rules:
 
-test:	test_all
-
-trashable:
-	makecontest -trashable
-
-nontrashable:
-	rm -f ./contest/trashable
-#
-scoreboard:
-	scorefinder | scoreboard
-
-start_scoreboard:
-	makescoreboard start
-
-check_scoreboard:
-	makescoreboard status
-
-stop_scoreboard:
-	makescoreboard stop
-
-update_scoreboard:
-	makescoreboard update
+.SUFFIXES: .ps .pdf
+.ps.pdf:
+	ps2pdf $*.ps $*.pdf
 
 help+.ps:	help_print_files
 	rm -f help+.ps
@@ -284,24 +269,28 @@ help_print_files problems_print_files \
 
 help/this_contest:
 	makecontest -this_contest
-#
-# Tests
+
+# Test Rules:
+
+test:	test_formal
+
+.SUFFIXES: .mail .send
 
 .mail.send:
 	hpcm_sendmail <$*.mail
 	sleep 2
 
-test_all:	test_formal
-
 TEST_PREREQUISITES= ./mail
 include ${HPCM}/examples/test_submissions/Makefile.mk
+
+# Cleanup Rules:
 
 dangerous_test_clean:
 	rm -rf mail/* flag log replies mbox
 
 dangerous_clean:
 	rm -rf mail help flag log web web.tar \
-	       solutions* TODO replies mbox *.ps \
+	       solutions* TODO replies mbox *.ps *.pdf \
 	       `readlink contest` \
 	       contest \
 	       help_print_files* \
