@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Jan 21 04:50:59 EST 2006
+# Date:		Mon Jan 23 06:24:52 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/01/21 10:28:58 $
+#   $Date: 2006/01/23 11:33:10 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.42 $
+#   $Revision: 1.43 $
 
 # Table of Contents
 #
@@ -213,7 +213,8 @@ set test_problems { count javaio }
 #	    QUALIFIER:include
 #
 # where the problems are in the SUBDIRECTORY of the
-# directory holding the index file.
+# directory holding the index file.  See below for
+# examples.
 #
 set problems_arguments "
     $hpcm_directory/problem_library/index, \
@@ -222,8 +223,8 @@ set problems_arguments "
 "
 # Use the following if index is the file ~/ppp/iii and
 # problems are in subdirectories of ~/ppp.  Because the
-# problems are subdirectories of ~/ppp which contains the
-# index file, `SUBDIRECTORY/' is the omitted.
+# problems are subdirectories of ~/ppp which contains
+# the index file, `SUBDIRECTORY/' is the omitted.
 # $env(HOME) is the home directory of the current
 # (judge's) account.  ALL means include all problems
 # listed in the index.
@@ -397,7 +398,7 @@ switch $scoring_type {
 	    set is_post_contest yes
 	    set f $judging_directory
 	    set f $f/post_contest_reconfiguration
-	    if { ! [file exists $f] } {
+	    if { [create_file $f] } {
 	        write_file $f [exec makecontest \
 		     -printer_map -scoreboard \
 		     -problems -description]
@@ -911,34 +912,36 @@ may use any printed matterial you like, but cannot
 communicate electronically with the world outside the
 contest.
 "][include_if { $scoring_type == "timed+feedback" } "
-After the contest is over, it will be converted to a
-different type of contest.  You will be given your
-account name and password.  `in-submit', `inout-submit',
-and `solution-submit' will be allowed.  The judging will
-be completely automatic.  The scoreboard will use the
-submission type (`submit', `in-submit', `inout-submit')
-of incorrect submissions in place of time.  A correct
-submission with no previous incorrect submissions will
-have a score of 100.0, and the penalties for incorrect
-submissions depend on submission type as follows:
+The day after the contest proper, the contest will be
+converted to a different type of contest.  You will then
+be given your account name and password, and can log in
+and in a sense continue the contest.  `in-submit',
+`inout-submit', and `solution-submit' will be allowed.
+The judging will be completely automatic.  You will be
+able to print by making a ~/PRINTER file: see `help
+print'.  The scoreboard will use the submission type
+(`submit', `in-submit', `inout-submit') of incorrect
+submissions in place of time.  A correct submission with
+no previous incorrect submissions will have a score of
+100.0, and the penalties for incorrect submissions
+depend on submission type as follows:
 
     incorrect `submit'		$ic_percent%
     incorrect `in-submit'	$in_percent%
     incorrect `inout-submit'	$inout_percent%
 
 See `help scoreboard', feedback contests, for details.
-
-You will be able to print by making a ~/PRINTER file:
-see `help print'.
 "][include_if { $scoring_type == "timed+dated" } "
-After the contest is over, it will be converted to a
-different type of contest.  You will be given your
-account name and password.  `in-submit', `inout-submit',
-and `solution-submit' will be allowed.  The judging will
-be completely automatic.  The scoreboard will merely
-record the number and date of correct submissions.  You
-will be able to print by making a ~/PRINTER file: see
-`help print'.
+The day after the contest proper, the contest will be
+converted to a different type of contest.  You will then
+be given your account name and password, and can log in
+and in a sense continue the contest.  `in-submit',
+`inout-submit', and `solution-submit' will be allowed.
+The judging will be completely automatic.  You will be
+able to print by making a ~/PRINTER file: see `help
+print'.  The scoreboard will merely record the number of
+correct submissions and the date of each correct sub-
+mission.
 "]$this_contest_postfix"
 
 # Parameter Overrides
