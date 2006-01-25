@@ -4,7 +4,7 @@
 #
 # File:		overview
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Jan 25 08:36:08 EST 2006
+# Date:		Wed Jan 25 10:09:18 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/01/25 14:34:16 $
+#   $Date: 2006/01/25 15:32:33 $
 #   $RCSfile: overview,v $
-#   $Revision: 1.92 $
+#   $Revision: 1.93 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -43,7 +43,8 @@ puts "
 		      Basic Problem Description
 	Library Data: Problems:
 		      Judge's Parameters and Filters
-	Library Data: Complex Problems
+	Library Data: Problems:
+		      Complex Problems
 	Library Data: Help Documentation
 	Library Data: Example Contests
 	Library Data: System Maintenance
@@ -252,7 +253,7 @@ doc directory.
 If you want to create complex problems, such as multi-
 file problems that occur in a more advanced Computer
 Science course, you should read the section `Library
-Data: Complex Problems' below.
+Data: Problems: Complex Problems' below.
 
 
 Data and Programs
@@ -542,7 +543,7 @@ files are optional.
 	       See the `Problem .rc Files' section of
 	       hpcm/judge/lib/hpcm_judging.rc for more
 	       detailed documentation.
-
+
     Scoring_Filter
     	       This executable program file filters .out
 	       and .test files to produce .fout and
@@ -581,7 +582,7 @@ files are optional.
     xxxx.jtest  Made from .test and .jin by jfilter.
 
     xxxx.jftest Made from .ftest and .jin by jfilter.
-
+
 An example use of pppp.rc is the following.  Normally
 the scoring_instructions global variable in hpcm_
 judging.rc is set to the list { column space } which
@@ -619,7 +620,7 @@ might produce the xxxx.fout file:
 
     Case 5: 4
     Case 6: not a legal path
-
+
 where 4 is the length of the `Case 5' path.  If 4 is the
 length of the shortest path, xxxx.ftest would have the
 same `Case 5' line, but of course it would not have the
@@ -656,19 +657,19 @@ program make the following count.jtest file:
 
     -Paragraph 1: 1 lines, 8 words, 39 characters.
     -Paragraph 2: 4 lines, 14 words, 70 characters.
-
+
 The first character of each line here indicates whether
 the line begins a case (-) or continues a case (.) (but
-there are no examples of this here.
+there are no examples of case continuation here).
 
 Things can get somewhat more complex if cases are
 grouped, as may be necessary if one case cannot test
 properly unless previous cases in the same group have
 executed.  See the jfilter documentation for details.
 
-
-Library Data: Complex Problems
-------- ----- ------- --------
+
+Library Data: Problems: Complex Problems
+------- ----- --------- ------- --------
 
 The standard problem format described in the last sec-
 tion has many limitations.  Only one file, Makefile, is
@@ -686,8 +687,7 @@ which files are delivered to the contestant:
 
     problem_description_files
         Determines which files are delivered to the
-	contestant in order to describe the problem
-	in an informal or email contest.
+	contestant in order to describe the problem.
 
     problem_source_files
         Determines which files are delivered to the
@@ -697,18 +697,17 @@ which files are delivered to the contestant:
         Determines which files listed in the above are
 	to be excluded from delivery to the contestant.
 
-All three of these global variables have values that
-are lists of regular expressions, with these regular
-expressions being matched to the last component of the
-file name.  The default settings work for many pro-
-blems, for example, by delivering *.txt files as de-
-scription files, Makefile as a source file, and by
-excluding *.rc files.  The `all' option in a problem
-index passed to the makecontest program sets the second
-variable to the regular expression .*, which delivers
-all files not excluded by the last variable to the
-contestant.
-
+All three these global variables have values that are
+lists of regular expressions, with these regular expres-
+sions being matched to the last component of the file
+name.  The default settings work for many problems, for
+example, by delivering *.txt files as description files,
+Makefile as a source file, and by excluding *.rc files.
+The `all' option in a problem index passed to the make-
+contest program sets the second variable to the regular
+expression .*, which delivers all files not excluded by
+the last variable to the contestant.
+
 A problem submission consists of one or more files.
 The global variables
 
@@ -729,31 +728,30 @@ extension (defined by the allowed_extensions global
 variable in hpcm_judging.rc).  The list of optionally
 submittable files defaults to the empty list.
 
-When a problem submission is to be judged, the auto-
-judge needs a list of names N such that N.in will be
-input to the submission to produce N.out which will be
-compared with N.test (possibly after filtering with
-Scoring_Filter and jfilter).  The names N are called
-`input names', and can be specified by giving a value
-to the global variable
+When the autojudge judges a problem submission it needs
+a list of names N such that N.in will be input to the
+submission to produce N.out, which will be compared with
+N.test (possibly after filtering with Scoring_Filter and
+jfilter).  The names N, called `input names', can be
+specified by giving a value to the global variable
 
 	problem_input_names
 
 which is just the ordered list of input names.  If no
 value is given this variable, the input names are just
 all N such that either N.in or N.jin exist in the pro-
-blem directory, sorted in alphabetical order, and ex-
-cluding PROBLEM.in, unless that is the only thing in the
-list.  PROBLEM.in is excluded if there are other things
-on the list because then it must be used as a link name,
-and linked to the other things on the list, as the pro-
-blem directory Makefile always makes PROBLEM.out from
-PROBLEM.in, and does not know about other .in files.
-
+blem directory, sorted in alphabetical order.  However,
+PROBLEM.in is excluded unless that is the only thing in
+the list, as when there are other things, PROBLEM.in
+must be used as a link name, and linked to the other
+things on the list, because the problem directory
+Makefile always makes PROBLEM.out from PROBLEM.in, and
+does not know about other .in files.
+
 The order of input names on their list controls the
 order of testing, which can be important in feedback
 scoring.  Unless this order is important, the default
-list usually suffices.
+list should suffice.
 
 When a problem submission is to be judged, some of the
 files needed from the problem directory may be derived
@@ -772,7 +770,7 @@ A typical instruction is
 
 which says that the Scoring_Filter binary file is to be
 made using the given g++ command if the Scoring_Filter
-file does not exist of if it is older than the Scoring_
+file does not exist or if it is older than the Scoring_
 Filter.cc file, provide the later file exists.
 
 By default there are always instructions such as
@@ -788,7 +786,7 @@ directory.  The global variables
 
 	problem_link_files
 	problem_optional_link_files
-
+
 contain instructions for doing this.  After executing
 these instructions, the autojudge program executes some
 similar instructions of its own which handle the default
@@ -815,17 +813,14 @@ the latter does not exist, and making xxx writable.
 The default value of problem_source_files is such that
 by default all .ISF files are source files.
 
-Second, by setting the `response_instructions' global
-variable, responses from the autojudge program can be
-configured to contain extra information about scores,
-including the judge's input and optionally output for
-the first test case that failed for an incorrect sub-
-mission.  See the documentation in hpcm_judging.rc
-for details.
+Second, the `response_instructions' global variable con-
+figures the autojudge so its responses can optionally
+contain extra information about scores, including the
+judge's input and optionally output for the first test
+case that failed for an incorrect submission.  See the
+documentation in hpcm_judging.rc for details.
 
-The directory
-
-    hpcm/examples/test
+The directory:		hpcm/examples/test
 
 contains tests of the features described in this sec-
 tion.
@@ -1308,12 +1303,12 @@ components that contestants can access.
 	be in the problem directory, as judge's input
 	and output and solutions in different program-
 	ming languages are often provided.  For complex
-	problems (see `Library Data: Complex Problems'
-	above) a+r copies of -SOURCE- files are are in-
-	cluded in place of `Makefile' and a+r copies of
-	-DESCRIPTION- files can be included to describe
-	the problem, if desired, though this is not
-	usually done for formal contests.
+	problems (see `Library Data: Problems: Complex
+	Problems' above) a+r copies of -SOURCE- files
+	are included in place of `Makefile' and a+r
+	copies of -DESCRIPTION- files can be included to
+	describe the problem, if desired, though this is
+	not usually done for formal contests.
 
 	For a formal contest, the contestant's hpcm_get
 	program creates a problem directory ppp in the
@@ -2222,7 +2217,7 @@ solution directory.  But if a `Files' file is
 linked, files different from pppp.eee can be submitted,
 and additional files can be linked from the problem
 solution directory, as indicated in the section `Library
-Data: Complex Problems' above.
+Data: Problems: Complex Problems' above.
 
 If an error happens during the process of producing
 these files, the process stops.  An error in extracting
