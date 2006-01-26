@@ -4,7 +4,7 @@
 #
 # File:		makescoreboard
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Dec 26 18:05:37 EST 2005
+# Date:		Thu Jan 26 06:38:22 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/12/26 23:24:03 $
+#   $Date: 2006/01/26 11:41:09 $
 #   $RCSfile: old_makescoreboard,v $
-#   $Revision: 1.52 $
+#   $Revision: 1.53 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -542,23 +542,19 @@ proc process_instructions {} {
     #
     set eft ""
 
-    # Loop to process instructions for first pass.
+    # Process if statements.
     #
-    # Instructions are converted to a list to make com-
-    # putation faster.  Lrange will do this, but concat
-    # will NOT.
+    set instructions {}
+    parse_block $scoreboard_instructions instructions \
+    	        [info globals scoreboard_*]
+
+    # Loop to process instructions for first pass.
     #
     # Pass2 is called for every sequence of instructions
     # beginning with an OUTPUT instruction and ending
     # with the instruction before the next OUTPUT in-
     # struction or end of all instructions.
 
-    if { [catch { set instructions \
-                      [lrange $scoreboard_instructions \
-		              0 end] }] } {
-        error "scoreboard_instructions is not a TCL\
-	       list: $scoreboard_instructions"
-    }
     set pc 0
     set end_pc [llength $instructions]
     set output_found no
