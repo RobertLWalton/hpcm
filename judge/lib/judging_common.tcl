@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Dec 23 12:52:01 EST 2005
+# Date:		Thu Jan 26 03:18:59 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/12/23 17:54:47 $
+#   $Date: 2006/01/26 09:22:23 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.127 $
+#   $Revision: 1.128 $
 #
 
 # Table of Contents
@@ -29,6 +29,7 @@
 #	File Functions
 #	Flag Functions
 #	Logical Expression Compilation
+#	Parse Functions
 #	Inline Code
 
 
@@ -1951,6 +1952,141 @@ proc compile_logical_expression \
     }
 
     return $logical_expression
+}
+
+# Parse Functions
+# ----- ---------
+
+# These functions take blocks of code containing `if',
+# `elseif', and `else' constructs and the `EXIT'
+# statement and return a block of code with these
+# statements processed and removed.
+
+# Function to execute the if-statements in a block and
+# add to the list of commands.  Stop at end of block or
+# at EXIT.  Return `yes' if EXIT found, `no' otherwise.
+#
+# Globals is a list of all the global variables that
+# can be used in if-statements.
+#
+# Extras is a list of items of the form
+#
+#	{ variable-name	value-expression }
+#
+# each causing
+#
+#	set variable-name [expr value-expression]
+#
+# to be executed before an if-statement expression is
+# evaluated.  The value-expression may refer to the
+# globals in the globals list.
+#
+proc parse_block \
+	{ block command_list_name globals \
+	  { extras {} } } {
+
+    if { [catch { llength $block }] } {
+	error "instructions element is not a TCL\
+	       list:\n    $block"
+    }
+
+    upvar $command_list_name c
+
+    set mode none
+    foreach item $block {
+        switch $mode {
+	    if_expression {
+	        set if_value \
+		    [expr { ! $if_done \
+		            && \
+		            [parse_block_eval_if \
+			          $item $globals \
+				  $extras] }]
+		set mode if_block
+	    }
+	    if_block {
+	        if { $if_value } {
+		    if { [parse_block \
+		              $item c $globals \
+			      $extras] } {
+		        return yes
+		    }
+		    set if_done 1
+		}
+		set mode after_if_block
+	    }
+	    after_if_block {
+	        switch -- $item {
+		    elseif {
+			set mode if_expression
+		    }
+		    else {
+			set mode else_block
+		    }
+		    default {
+		        set mode none
+		    }
+		}
+	    }
+	    else_block {
+	        if { ! $if_done } {
+		    if { [parse_block \
+		              $item c $globals \
+			      $extras] } {
+		        return yes
+		    }
+		}
+		set mode after_else_block
+	    }
+	    after_else_block {
+	        set mode none
+	    }
+	}
+
+	if { $mode == "none" } {
+	    switch -- $item {
+		EXIT {
+		    return yes
+		}
+		if {
+		    set mode if_expression
+		    set if_done 0
+		}
+		else -
+		elseif {
+		    error "else or elseif not preceded\
+		           by `if' in\
+			   instructions:\n    $item"
+		}
+		default {
+		    lappend c $item
+		}
+	    }
+	}
+    }
+    return no
+}
+
+# Function to evaluate if-statement expression given a
+# list of globals the expression may access.  The
+# extra list has items of the form:
+#
+#	{ variable-name	value-expression }
+#
+# causing `set variable-name [expr value-expression]'
+# to be excuted before the if-statement expression is
+# evaluated.
+#
+proc parse_block_eval_if \
+	{ _expression_ _globals_ _extras_ } {
+    foreach _g_ $_globals_ {
+        global $_g_
+    }
+    foreach _item_ $_extras_ {
+        set [lindex $_item_ 0] \
+	    [expr [lindex $_item_ 1]]
+    }
+    return [expr $_expression_]
 }
 
 # Inline Code

@@ -2,7 +2,7 @@
 #
 # File:		scoring_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Oct  4 20:29:48 EDT 2005
+# Date:		Thu Jan 26 03:46:18 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/10/05 00:26:07 $
+#   $Date: 2006/01/26 09:22:23 $
 #   $RCSfile: scoring_common.tcl,v $
-#   $Revision: 1.59 $
+#   $Revision: 1.60 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -698,7 +698,8 @@ proc compute_score { } {
 #
 proc compose_response { { compose_reply_options "" } } {
 
-    global response_instructions
+    global response_instructions \
+           response_instructions_globals
 
     if { [catch { llength $response_instructions }] } {
 	error "response_instructions value is\
@@ -713,7 +714,12 @@ proc compose_response { { compose_reply_options "" } } {
     # response instructions. 
     #
     set commands ""
-    parse_block $response_instructions commands
+    parse_block $response_instructions commands \
+   		$response_instructions_globals \
+		{ { manual \
+		      { $manual_score != "None" }} \
+		  { proposed \
+		      { $proposed_score != "None" }} }
 
     # Execute second pass on action response instruc-
     # tions and return those whose action is to be per-
@@ -752,94 +758,6 @@ proc send_response { commands } {
     } elseif { [lcontain $commands NO-REPLY] } {
     	return
     }
-}
-
-# Function to execute the if-statements in a block and
-# add to the list of commands.  Stop at end of block or
-# at EXIT.  Return `yes' if EXIT found, `no' otherwise.
-#
-proc parse_block { block commands } {
-
-    if { [catch { llength $block }] } {
-	error "`response_instructions' value part is\
-	       not a TCL list:\n    $block"
-    }
-
-    upvar $commands c
-
-    set mode none
-    foreach item $block {
-        switch $mode {
-	    if_expression {
-	        set if_value \
-		    [expr { ! $if_done \
-		            && \
-		            [eval_response_if $item] }]
-		set mode if_block
-	    }
-	    if_block {
-	        if { $if_value } {
-		    if { [parse_block $item c] } {
-		        return yes
-		    }
-		    set if_done 1
-		}
-		set mode after_if_block
-	    }
-	    after_if_block {
-	        switch -- $item {
-		    elseif {
-			set mode if_expression
-		    }
-		    else {
-			set mode else_block
-		    }
-		    default {
-		        set mode none
-		    }
-		}
-	    }
-	    else_block {
-	        if { ! $if_done } {
-		    if { [parse_block $item c] } {
-		        return yes
-		    }
-		}
-		set mode after_else_block
-	    }
-	    after_else_block {
-	        set mode none
-	    }
-	}
-
-	if { $mode == "none" } {
-	    switch -- $item {
-		EXIT {
-		    return yes
-		}
-		if {
-		    set mode if_expression
-		    set if_done 0
-		}
-		default {
-		    lappend c $item
-		}
-	    }
-	}
-    }
-    return no
-}
-
-# Function to evaluate if-statement expression.
-#
-proc eval_response_if { item } {
-    global response_instructions_globals
-    foreach g $response_instructions_globals {
-    	global $g
-    }
-    set manual [expr { $manual_score != "None" }]
-    set proposed [expr { $proposed_score != "None" }]
-    return [expr $item]
 }
 
 # Given a proof from proof_array, output commands
