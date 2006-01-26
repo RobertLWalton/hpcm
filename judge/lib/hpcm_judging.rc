@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Jan 19 09:10:39 EST 2006
+# Date:		Thu Jan 26 06:37:06 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/01/19 14:13:27 $
+#   $Date: 2006/01/26 11:35:12 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.183 $
+#   $Revision: 1.184 $
 
 # Table of Contents:
 #
@@ -805,7 +805,19 @@ set scoreboard_interval 60
 # and how it will compute them.  The syntax is:
 #
 #	scoreboard_instructions ::=
-#	    { scoreboard_instruction* }
+#	    scoreboard_block
+#
+#	scoreboard_block ::= scoreboard_subblock*
+#
+#	scoreboard_subblock ::=
+#	      scoreboard_instruction
+#	    | scoreboard_if_statement
+#
+#	scoreboard_if_statement ::=
+#	      if <expression> <scoreboard_block>
+#	      { elseif <expression>
+#		       <scoreboard_block> }*
+#	      [ else <scoreboard_block> ]
 #
 #	scoreboard_instruction ::=
 #	      { OUTPUT filename [start [stop]] }
@@ -829,6 +841,12 @@ set scoreboard_interval 60
 #	    <any XXX such that `scoreboard_XXX' is a
 #	     global variable after judging directory
 #	     hpcm_judging.rc is read>
+#
+# If_statement expressions may reference any global
+# variable beginning with `scoreboard_'.  The if state-
+# ments are evaluated before anything else is done,
+# and should not set any global variables or write
+# files.
 #
 # The scoreboard instructions do the following:
 #
