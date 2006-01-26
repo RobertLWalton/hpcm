@@ -4,7 +4,7 @@
 #
 # File:		overview
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Jan 25 11:11:11 EST 2006
+# Date:		Wed Jan 25 19:09:25 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/01/25 16:23:43 $
+#   $Date: 2006/01/26 14:34:07 $
 #   $RCSfile: overview,v $
-#   $Revision: 1.94 $
+#   $Revision: 1.95 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -1019,10 +1019,10 @@ one judging account can have many judging directories,
 each the root of a disjoint subtree of directories.
 Therefore one judging account can judge many contests.
 
-An HPCM program can therefore execute anywhere in the
-directory tree rooted at a judging directory, and the
-program will find the judging directory and its hpcm_
-judging.rc file.
+An HPCM program run by the judge can therefore execute
+anywhere in the directory tree rooted at a judging dir-
+ectory, and the program will find the judging directory
+and its hpcm_judging.rc file.
 
 The judging directory contains several components that
 define the contest, in addition to many components that
@@ -1089,13 +1089,13 @@ are:
 
 	The contest directory itself and the symbolic
 	link from the judging directory to the contest
-	directory must be made by hand.
+	directory can be made automatically by `make-
+	contest', or they can be made by hand.
 
 	The contents of the contest directory are made
-	automatically by `makecontest', with the excep-
-	tion of a few symbolic links to other director-
-	ies and a few files (see `Contest Definition
-	Data: The Contest Directory' below).
+	automatically by `makecontest', though some of
+	these contents can alternatively be made by
+	hand.
 
     help
         The help directory within the judging directory.
@@ -1113,43 +1113,56 @@ are:
 		files output by that program and also
 		lists the `this_contest' help file.
 
+	    this_contest_parameters
+	    	A copy of the `this_contest' global
+		variable when `makecontest' was last
+		run, plus a header line.  This equals
+		the `this_contest' file unless the
+		latter was edited by hand.
+
+	    this_contest_original
+	        The initial value of the `this_contest_
+		parameters' file.  Kept for comparison
+		purposes.
+
 	The help directory and its contents are made
 	automatically by `makecontest', but then the
-	person defining the contest must edit the
-	`this_contest' file and re-run `makecontest'.
+	person defining the contest must define the
+	`this_contest' global variable and run `make-
+	contest' to make the `this_contest' file.  After
+	doing this, the `this_contest' file can be
+	edited by hand.
 
-    scoreboard.notes
+    scoreboard.head
+        A file standardly prepended to the scoreboard by
+	the `makescoreboard' program.  This file need
+	not exist.
+
+    scoreboard.tail
         A file standardly appended to the scoreboard by
-	the `makescoreboard' program when it emails the
-	scoreboard to other locations (e.g., for display
-	on the web).  This is normally used only for
-	email contests.  By changing the scoreboard in-
-	structions in hpcm_judging.rc, different files
-	can be used for this purpose, and the layout of
-	the scoreboard can be changed.
+	the `makescoreboard' program.  This file need
+	not exist.
 
     TODO
     	When `makecontest' runs, it appends instructions
 	to its user to the end of this file.  Typical
 	instructions are `edit ./contest/secure/
-	passwords' and `put the following lines in
-	the judge's ~/.procmailrc file: ...'.
+	passwords' or read and possibly edit `./help/
+	this_contest'.
 
 In addition to these files which are used by HPCM
 programs, there is typically one other file that is not
 used by HPCM programs themselves.  This is:
 
     Makefile
-        The instructions to the UNIX `make' program so
-	that running `make' in the judging directory
-	will run `makecontest' to build all the contest
-	definition files.  The parameters to
-	`makecontest' are complex, and need to be
-	kept in a file.  The Makefile may also do
-	some of the things that this overview says
-	must be done `by hand'.
-
-	See hpcm/examples/*/Makefile for examples.
+	Contains documentation on how to set up and run
+	the contest.  Also contains instructions to the
+	UNIX `make' program so that running `make' in
+	the judging directory will run `makecontest' to
+	build all the contest definition files.  Also
+	implements `make web' to make a web page and
+	`make probelms.ps', `make this_contest.ps', etc
+	to make documentation.
 
 
 Contest Definition Data: The Contest Directory
