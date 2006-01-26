@@ -4,7 +4,7 @@
 #
 # File:		overview
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Jan 25 19:09:25 EST 2006
+# Date:		Thu Jan 26 11:15:11 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/01/26 14:34:07 $
+#   $Date: 2006/01/26 16:17:00 $
 #   $RCSfile: overview,v $
-#   $Revision: 1.95 $
+#   $Revision: 1.96 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -1027,35 +1027,66 @@ and its hpcm_judging.rc file.
 The judging directory contains several components that
 define the contest, in addition to many components that
 belong to the raw or derived data of the contest, and
-are listed elsewhere below.  Starting from a few contest
-defining components, the other contest defining compo-
-nents can be made automatically by the `makecontest'
-program.
+are listed elsewhere below.  The following are the
+initial components of the judging directory, from which
+all other components are made by `makecontest'.
 
-The contest defining components of the judging directory
-are:
+Starting from the hpcm_judging.rc file, the other con-
+test defining components are made automatically by the
+`makecontest' program.
 
     hpcm_judging.rc
         The contest parameters file.  This is edited
-	by hand to define the contest.
+	by hand to define the contest.  It begins
+	by sourcing `hpcm/judge/lib/hpcm_judging.rc'
+	and then redefines some of the parameters in
+	that file.
+
+    Makefile
+	Contains documentation on how to set up and run
+	the contest.  Also contains instructions to the
+	UNIX `make' program so that running `make' in
+	the judging directory will run `makecontest' to
+	build all the contest definition files.  Also
+	implements `make web' to make a web page and
+	`make probelms.ps', `make this_contest.ps', etc
+	to make documentation.
+
+    scoreboard.1head
+        Initial value of the ./contest/scoreboard.1head
+	file for formal or informal contests.  See
+	`Contest Definition Data: The Contest Direc-
+	tory' below.  The `makecontest' program moves
+	this file into the ./contest directory.  After
+	the contest starts the file in the ./contest
+	directory is typically edited by hand.
+
+    scoreboard.notes
+        A file standardly appended to the scoreboard by
+	the `makescoreboard' program for an email
+	contest.  This file has an initial value, and
+	may be edited by hand as the contest progresses.
+
+The contest defining components of the judging directory
+that are created by `makecontest' are:
 
     solutions
         The solutions directory for the contest.  Each
 	component of the solutions directory is a sym-
 	bolic link to a problem directory.  Often these
 	problem directories are in the problem library.
-
-	But for formal contests problems are often used
-	that have not yet been entered into the problem
-	library, and the problem directories for these
-	are usually in a special (and secure) directory
-	that has an index file listing the problems.
-	This index file is in a format suitable for the
-	`makecontest' program.
 
 	The solutions directory and its contents (i.e.,
 	the symbolic links) are made automatically by
-	`makecontest'.
+	`makecontest -solutions'.
+
+	For formal contests problems are often used that
+	have not yet been entered into the problem lib-
+	rary, and the problem directories for these are
+	usually in a special (and secure) directory that
+	has an index file listing the problems.  This
+	index file is in a format suitable for the
+	`makecontest' program.
 
     info
         The info directory for the contest.  This only
@@ -1072,7 +1103,7 @@ are:
 	links: see `makecontest' documentation.
 
 	The info directory and its contents are made
-	automatically by `makecontest'.
+	automatically by `makecontest -info'.
 
     contest
         The contest directory of the contest.  Actually,
@@ -1083,36 +1114,44 @@ are:
 	ory must be accessible by the contestants, who
 	must not know the full name of the judging di-
 	rectory.
-
+
 	Only informal and formal contests have a contest
 	directory.  Email contests do not.
-
+
 	The contest directory itself and the symbolic
 	link from the judging directory to the contest
 	directory can be made automatically by `make-
-	contest', or they can be made by hand.
+	contest -contest', or they can be made by hand.
 
 	The contents of the contest directory are made
 	automatically by `makecontest', though some of
 	these contents can alternatively be made by
-	hand.
+	hand.  These contents are described in `Contest
+	Definition Data: The Contest Directory' below.
 
     help
         The help directory within the judging directory.
 	This is not used during the contest proper, but
 	is merely a staging area for the `this_contest'
 	help file.  It contains the following files that
-	are created by `makecontest':
+	are created by `makecontest -this_contest':
 
 	    this_contest
 	        The help file particular to the contest.
+		The initial version of this file equals
+		the `this_contest' global variable
+		value with a header line prepended.
+		After this file is created, it can be
+		edited by hand, or it can be changed by
+		changing the value of the `this_contest'
+		global variable.
 
 	    index
 	        An index file to be input to `make-
 		contest' that lists all the index
 		files output by that program and also
 		lists the `this_contest' help file.
-
+
 	    this_contest_parameters
 	    	A copy of the `this_contest' global
 		variable when `makecontest' was last
@@ -1125,45 +1164,33 @@ are:
 		parameters' file.  Kept for comparison
 		purposes.
 
-	The help directory and its contents are made
-	automatically by `makecontest', but then the
-	person defining the contest must define the
-	`this_contest' global variable and run `make-
-	contest' to make the `this_contest' file.  After
-	doing this, the `this_contest' file can be
-	edited by hand.
-
-    scoreboard.head
-        A file standardly prepended to the scoreboard by
-	the `makescoreboard' program.  This file need
-	not exist.
+    help_print_files
+    demos_print_files
+    problems_print_files
+        Lists of files to be printed.  The help, demos,
+	and problem description files are given in sep-
+	arate lists, each begining with an index file,
+	except that the help file list begins with this_
+	contest followed by an index file.  These list
+	files are made by `makecontest -print_files'.
 
-    scoreboard.tail
-        A file standardly appended to the scoreboard by
-	the `makescoreboard' program.  This file need
-	not exist.
+    mail
+    	A directory made by `makecontest -mail' that
+	holds submissions subdirectories.
 
     TODO
     	When `makecontest' runs, it appends instructions
 	to its user to the end of this file.  Typical
 	instructions are `edit ./contest/secure/
 	passwords' or read and possibly edit `./help/
-	this_contest'.
+	this_contest'.  When the user decided she has
+	satisfied an instruction, the user typically
+	edits the instruction out of the TODO file.
 
-In addition to these files which are used by HPCM
-programs, there is typically one other file that is not
-used by HPCM programs themselves.  This is:
-
-    Makefile
-	Contains documentation on how to set up and run
-	the contest.  Also contains instructions to the
-	UNIX `make' program so that running `make' in
-	the judging directory will run `makecontest' to
-	build all the contest definition files.  Also
-	implements `make web' to make a web page and
-	`make probelms.ps', `make this_contest.ps', etc
-	to make documentation.
-
+There are a few other components of the judging directory
+that are made during the contest, but are not made by
+`makecontest'.  These are listed below in the `Contest
+Derived Data' sections.
 
 Contest Definition Data: The Contest Directory
 ------- ---------- ----- --- ------- ---------
