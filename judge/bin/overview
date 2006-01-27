@@ -4,7 +4,7 @@
 #
 # File:		overview
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Jan 26 11:19:37 EST 2006
+# Date:		Thu Jan 26 13:48:45 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/01/26 16:22:05 $
+#   $Date: 2006/01/27 13:18:37 $
 #   $RCSfile: overview,v $
-#   $Revision: 1.97 $
+#   $Revision: 1.98 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -1189,10 +1189,10 @@ that are created by `makecontest' are:
 	satisfied an instruction, the user typically
 	edits the instruction out of the TODO file.
 
-There are a few other components of the judging directory
-that are made during the contest, but are not made by
-`makecontest'.  These are listed below in the `Contest
-Derived Data' sections.
+There are a few other components of the judging direc-
+tory that are made during the contest, but are not made
+by `makecontest'.  These are listed below in the
+`Contest Derived Data' sections.
 
 Contest Definition Data: The Contest Directory
 ------- ---------- ----- --- ------- ---------
@@ -1213,30 +1213,27 @@ components that contestants can access.
 	part of the program search path for each contes-
 	tant account.
 
-	The name `bin' in the contest directory must be
-	symbolically linked by hand to
+	The name `bin' in the contest directory is
+	linked symbolically by `makecontest -bin' to
 	
-	    ~/hpcm/contestant/bin
+	    \$hpcm_directory/contestant/bin
 
-	in the judging directory.  Note that this means
-	that ~, ~/hpcm and ~/hpcm/contestant must have
-	a+x permissions, ~/hpcm/contestant/bin must
-	have a+rx permissions, and appropriate programs
-	in the ~/hpcm/contestant/bin must have a+x or
-	a+rx permissions.  Running `make' inside the
-	~/hpcm directory, a part of the installation
-	procedure of HPCM, sets these permissions.
-	See `Installing HPCM' (hpcm/judge/doc/instal-
-	ling_hpcm.txt).
-
-	The `makecontest' program symbolically links
-	`bin' to `contestant/bin' in the contest direc-
-	tory.  See `contestant' below.
+	where \$hpcm_directory is a global variable that
+	defaults to `~/hpcm'.  Note that this means that
+	~, ~/hpcm and ~/hpcm/contestant must have a+x
+	permissions, ~/hpcm/contestant/bin must have
+	a+rx permissions, and appropriate programs in
+	the ~/hpcm/contestant/bin must have a+x or a+rx
+	permissions.  Running `make' inside the ~/hpcm
+	directory, a part of the installation procedure
+	of HPCM, sets these permissions.  See `Instal-
+	ling HPCM' (hpcm/judge/doc/installing_hpcm.txt).
 
     demos
         This is a directory that contains demonstration
 	problems.  It is strictly analogous to the
-	`problems' directory, see below.
+	`problems' directory, see below, and is made by
+	`makecontest -demos'.
 
     help
     	This directory contains a+r copies of all the
@@ -1244,9 +1241,10 @@ components that contestants can access.
 	read by the contestant `help' program.
 
 	This `help' directory and its contents are
-	made automatically by `makecontest'.  It is an
-	exact copy of info/help (except that info/help
-	does not exist for some (formal) contests).
+	made automatically by `makecontest -help'.  It
+	is an exact copy of info/help for informal
+	contests, which are the only contests for which
+	both directories exist.
 
 	The following are some special help files
 	of note:
@@ -1273,20 +1271,30 @@ components that contestants can access.
 
     home
     	This is a symbolic link to a directory that is
-	informally called the `contest/home' directory
+	informally called the `contest home' directory
 	and that contains files shared among all con-
 	testant accounts.  For example, in a contestant
 	account the `.cshrc' name is symbolically linked
 	to `.hpcm_contest/home/.cshrc', and thence to
-	the `.cshrc' file in the contest/home directory.
+	the `.cshrc' file in the contest home directory.
 	Therefore editing the `.cshrc' file within the
-	contest/home directory changes that file in ALL
+	contest home directory changes that file in ALL
 	contestant accounts.
 
-	The contest/home directory is set up by the
-	SETUP_PROTOTYPE program: see `Contest Definition
-	Data: The Home Directory' below for more
-	details.
+	The contest home directory is the ~PPP/home dir-
+	ectory in the `prototype account', PPP, which is
+	set up by the SETUP_PROTOTYPE program: see `Con-
+	test Definition Data: The Home Directory' below
+	for more details.
+
+	The link from ./contest/home to ~PPP/home can be
+	be made automatically by `makecontest -home'.
+	By default this locates the prototype account by
+	searching all accounts named `*\[-_\]proto' for
+	one with a ~/home subdirectory containing suit-
+	able files.  Alternatively the prototype account
+	can be defined by setting the hpcm_prototype_
+	account global variable.
 
     printer_map
         This file contains a map from contestant names,
@@ -1294,16 +1302,21 @@ components that contestants can access.
 	names.  See hpcm/contestant/printer_pipe for
 	details.
 
+	This file may be defined as the contents of the
+	`printer_map' global variable, which is copied
+	into the file by the `makecontest -printer_map'
+	command.
+
     printer
     	This file contains nothing but the name of the
 	printer to be used by the contestants.  This
 	file is used only if printer_map is not readable
 	by contestants.  See hpcm/contestant/printer_
 	pipe for details.
-
-	This file is made by `makecontest' if neither it
-	or printer_map exist, and may be edited or
-	removed by hand.
+
+	This file is made by `makecontest -printer' if
+	it does not exist, and may be edited or made
+	a-rw by hand.
 
     printer_jobs
         If this file exists and is a+w, each use of the
@@ -1315,12 +1328,13 @@ components that contestants can access.
 	The location is taken from the who_where file
 	(see below) `WHERE' field, if available.
 
-	This file can be used by the contestant
-	`printer' program to print out printer status,
+	This file is used by the contestant `printer'
+	program if it is a+r to output printer status,
 	and by the judges to monitor printer activity.
 
-	This file is made by `makecontest' and can be
-	removed or made o-rw by hand.
+	This file is made by `makecontest -printer' and
+	`makecontest -printer_map' if it does not exist,
+	and can be made a-rw by hand.
 
     problems
     	This directory contains problem directories for
@@ -1329,8 +1343,8 @@ components that contestants can access.
 	demonstration problems.  These directories only
 	exist for formal contests; for email and infor-
 	mal contests, the same information (plus problem
-	description (.txt, .html, etc.) files), see
-	below) is put in info/problems and info/demos.
+	description files), see below) is put in info/
+	problems and info/demos.
 
 	Each non-demonstration problem directory in the
 	contest directory is a subdirectory of this
@@ -1346,7 +1360,7 @@ components that contestants can access.
 	ly an a+r copy of the `Makefile' of the problem.
 	It is also possible to include an a+r copy of a
 	file describing the problem, but this is NOT
-	usually done for formal contests, as for these
+	done for timed formal contests, as for these
 	only paper printouts of these files are normally
 	given to the contestants.  For demonstration
 	problems (in `demos') many a+r file copies may
@@ -1354,11 +1368,10 @@ components that contestants can access.
 	and output and solutions in different program-
 	ming languages are often provided.  For complex
 	problems (see `Library Data: Problems: Complex
-	Problems' above) a+r copies of -SOURCE- files
-	are included in place of `Makefile' and a+r
-	copies of -DESCRIPTION- files can be included to
-	describe the problem, if desired, though this is
-	not usually done for formal contests.
+	Problems' above) a+r copies of some source files
+	are included in addition to `Makefile', and a+r
+	copies of description files can be included to
+	describe the problem, if desired.
 
 	For a formal contest, the contestant's hpcm_get
 	program creates a problem directory ppp in the
@@ -1374,7 +1387,8 @@ components that contestants can access.
 	testant account.  If a one of the files made
 	available in a contestant's directory by hpcm_
 	get has the name xxx.ISF, then hpcm_get makes a
-	writable copy named xxx of that file.
+	writable copy named xxx of that file.  Here ISF
+	stands for `Initial Source File'.
 
 	This `contest/problems' directory (unlike the
 	`contest/demos' directory) does not have a+rx
@@ -1385,20 +1399,23 @@ components that contestants can access.
 	directory to a+rx.
 
 	This `problems' directory and its contents are
-	made automatically by `makecontest'.  This
-	contest/problems directory is an exact copy for
-	formal contests of what goes into info/problems
-	for informal and email contests, except that
-	contest/problems does not have problem descrip-
-	tion (e.g., .txt) files (unless the makecontest
-	-description option is used), and the files in
-	contest/problems are copies, while the files in
-	info/problems are symbolic links.
+	made automatically by `makecontest -problems'.
+	This contest/problems directory is an exact copy
+	for formal contests of what goes into info/
+	problems for informal and email contests, except
+	that contest/problems does not have problem de-
+	scription (e.g., .txt) files (unless the make-
+	contest -description option is used), and the
+	files in contest/problems are copies, because
+	they must be readable by contestants, while the
+	files in info/problems are symbolic links, which
+	are only readable by the judging account.
 
 	The `demos' directory is similarly made and is
 	an exact copy of what would go into info/demos.
 
     scoreboard.1head
+    scoreboard.1
     scoreboard.2
     scoreboard.3
     scoreboard.4
@@ -1407,24 +1424,31 @@ components that contestants can access.
 	four pages, which are stored in the a+r files
 	scoreboard.1 through scoreboard.4.  The first of
 	these files is standardly made automatically by
-	the `makescoreboard' program, which concatenates
-	the scoreboard.1head file to the computed score-
-	board.  The scoreboard.1head, scoreboard.2,
-	scoreboard.3, and scoreboard.4 files must be ed-
-	ited by hand.  If non-standard scoreboard in-
-	structions are included in hpcm_judging.rc, and
-	if a scoreboard_map is provided, other files can
-	be used for these purposes, multiple scoreboards
-	may be implemented, and scoreboard layout may be
-	changed.  See hpcm_judging.rc and the documenta-
-	tion of `makescoreboard' and `hpcm/contestant/
-	bin/scoreboard' for details.
+	the `makescoreboard' program, which normally
+	concatenates the scoreboard.1head file to the
+	computed scoreboard.  The scoreboard.1head,
+	scoreboard.2, scoreboard.3, and scoreboard.4
+	files are normally edited by hand.  If non-
+	standard scoreboard instructions are included in
+	hpcm_judging.rc, and if a scoreboard_map is
+	provided, other files can be used for these
+	purposes, multiple scoreboards may be implement-
+	ed, and scoreboard layout may be changed.  See
+	hpcm_judging.rc and the documentation of
+	`makescoreboard' and `hpcm/contestant/bin/
+	scoreboard' for details.
+
+	The `makecontest -scoreboard' command will move
+	./scoreboard.1head to ./contest/scoreboard.1head
+	if the first file exists and the second does
+	not.
 
     scoreboard_map
         This file can optionally be provided to map
 	names of contestant accounts and contests onto
 	scoreboard page files.  See `hpcm/contestant/
-	bin/scoreboard' for details.
+	bin/scoreboard' for details.  This file must be
+	made by hand if it is to be used.
 
     secure
     	This directory contains files that cannot be
@@ -1435,7 +1459,7 @@ components that contestants can access.
 	setuid mechanism) to the judging account.
 
 	This directory, if it does not already exist,
-	will be made by the `makecontest' program, as
+	will be made by `makecontest -secure', as
 	will some of the files in the directory.  The
 	files in this directory are:
 
