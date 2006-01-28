@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Jan 25 19:53:43 EST 2006
+# Date:		Sat Jan 28 04:46:09 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/01/26 00:55:51 $
+#   $Date: 2006/01/28 10:03:42 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.44 $
+#   $Revision: 1.45 $
 
 # Table of Contents
 #
@@ -36,6 +36,16 @@ source $lib_directory/hpcm_judging.rc
 # directory of the current (judge's) account.
 #
 set hpcm_directory $env(HOME)/hpcm
+
+# Browser to use for javahelp.
+#
+set browser lynx
+
+# Location of JAVA API index for browser to use to
+# implement javahelp.
+#
+set java_api_index \
+    /usr/local/jdk/docs/api/overview-tree.html
 
 # Set "yes" if contestant accounts are to be enabled
 # for login by ssh using any of the public keys
@@ -359,6 +369,19 @@ set feedback_printer_map "
 # this file, where they will override the settings of
 # this file.
 
+if {    $java_api_index != "" \
+     && [regexp {r..} [get_access $java_api_index]] } {
+
+    set javahelp "
+# Do not edit.  This file is generated from information
+# provided by the `browser' and `java_api_index' global
+# variables in the hpcm_judging.rc file in the judging
+# directory.
+#
+$browser '$browser $java_api_index'
+"
+}
+
 # Require submission email to have a formatted body
 # with HPCM_BEGIN, HPCM_END, and `..'s.
 #
@@ -423,7 +446,7 @@ if { $scoring_subtype == "timed" } {
 # Default arguments to makecontest.
 #
 set makecontest_arguments "
-    -formal -printer_map \
+    -formal -printer_map -javahelp \
     [include_if { $scoring_subtype != "timed" } \
     	        "-description"] \
     [include_if { $ssh_enable == "yes" } "-ssh"] \
