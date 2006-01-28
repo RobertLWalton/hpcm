@@ -4,7 +4,7 @@
 #
 # File:		startcontest
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Jan  3 16:07:01 EST 2006
+# Date:		Sat Jan 28 04:21:50 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/01/03 21:06:16 $
+#   $Date: 2006/01/28 09:36:45 $
 #   $RCSfile: startcontest,v $
-#   $Revision: 1.10 $
+#   $Revision: 1.11 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -58,7 +58,10 @@ startcontest { start | status | stop }
     iable, this program spawns a background child
     process that waits until the scoreboard_start_time
     and then sets permissions as above and emails the
-    judge that the contest has started.
+    judge that the contest has started.  The child will
+    re-read the <judging-directory>/hpcm_judging.rc file
+    if that file changes, in order to permit the start
+    time to change.
 
     If this program spawns a child, it writes the
     process ID of the child into the Startcontest_PID
@@ -91,6 +94,38 @@ if { $argc > 1 || \
      ! [lcontain {start status stop -start-} $arg] } {
     puts $document
     exit 1
+}
+
+# Function to re-read hpcm_judging.rc if necessary.
+#
+# If the file is changing an error may occur, and
+# nothing is done.  The file will be re-read after
+# the next delay timeout.
+#
+set hpcm_judging_rc_mtime \
+    [file mtime $judging_directory/hpcm_judging.rc]
+proc re_read_rc { } {
+
+    # Import standard globals, e.g. tclvars.
+    #
+    global env errorCode errorInfo argv argc
+    foreach x [info globals tcl_*] {
+        global $x
+    }
+    global judging_directory lib_directory
+
+    global scoreboard_start_time \
+           hpcm_judging_rc_mtime
+
+    catch {
+    	set mtime \
+	    [file mtime \
+	          $judging_directory/hpcm_judging.rc]
+	if { $mtime > $hpcm_judging_rc_mtime } {
+	    source $judging_directory/hpcm_judging.rc
+	    set hpcm_judging_rc_mtime $mtime
+	}
+    }
 }
 
 set pid_file $judging_directory/Startcontest_PID
@@ -287,9 +322,15 @@ if { ! [regexp {^(|problem|team)$} $stime] } {
 	set wrote_pid_file yes
 
 	# Wait for start time and then fall through to
-	# grant permissions.
+	# grant permissions.  Re-read hpcm_juding.rc
+	# as necessary to get start time changes.
 	#
-    	while { [clock seconds] < $stime } {
+	while { "yes" } {
+	    re_read_rc
+	    set stime $scoreboard_start_time
+	    if { $stime == "" } break
+	    set stime [clock scan $stime]
+    	    if { [clock seconds] >= $stime } break
 	    sleep 60
 	}
     }
