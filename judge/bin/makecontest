@@ -6,7 +6,7 @@
 #
 # File:		makecontest
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Jan 27 06:07:59 EST 2006
+# Date:		Sat Jan 28 04:02:04 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/01/27 11:08:01 $
+#   $Date: 2006/01/28 09:10:59 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.145 $
+#   $Revision: 1.146 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -113,6 +113,7 @@ makecontest option ... index_specification ...
     		     ./contest/printer_jobs
     -printer_map    Make ./contest/printer_map and
     		         ./contest/printer_jobs
+    -javahelp	Make ./contest/javahelp
     -startcontest   Run the startcontest program if
     		    necessary.
     -scoreboard     Run the makescoreboard program if
@@ -757,6 +758,14 @@ makecontest option ... index_specification ...
     printer_jobs file is also made if it does not
     exist.
 
+    The -javahelp program option writes the ./contest/
+    javahelp file, making the file equal to the value
+    of the `javahelp' global variable.  The file is
+    written if it does not exist or if it does not equal
+    the `javahelp' variable value.  If the `javahelp'
+    variable is not set, the file is not written but a
+    TODO is written.
+
     The -startcontest program option executes the
     `startcontest start' command unless this has already
     been done, or if it has been done but a background
@@ -824,6 +833,7 @@ set trashable_option		no
 set trashall_option		no
 set printer_option		no
 set printer_map_option		no
+set javahelp_option		no
 set startcontest_option		no
 set scoreboard_option		no
 #
@@ -924,6 +934,7 @@ while { $argi < $argc } {
         -printer	{ set printer_option 	yes }
         -printer_map	{ set printer_map_option \
 						yes }
+        -javahelp	{ set javahelp_option	yes }
         -startcontest	{ set startcontest_option \
 						yes }
         -scoreboard	{ set scoreboard_option \
@@ -1033,6 +1044,7 @@ if {    $contest_option \
      || $trashall_option \
      || $printer_option \
      || $printer_map_option \
+     || $javahelp_option \
      || $startcontest_option } {
     if {    ! [file isdirectory $c_d] \
          || ! [file executable $c_d] \
@@ -2761,7 +2773,7 @@ if { $printer_option \
 	TODO "Wrote ./contest/printer to be\
 	      `$printer';" \
 	     "Edit ./contest/printer to change." \
-	     "Execute `chmod a-rw ./contest/printer\
+	     "Execute `chmod a-rw ./contest/printer'\
 	      to disable." \
 	     "You may want to use\
 	      ./contest/printer_map" \
@@ -2796,10 +2808,29 @@ if { $printer_map_option } {
 # Make $c_d/printer_jobs
 #
 if { $printer_jobs_option \
-     && ! [file readable $c_d/printer_jobs] } {
+     && ! [file exists $c_d/printer_jobs] } {
     close [open $c_d/printer_jobs w]
     grant_access $c_d/printer_jobs rw
     puts "Wrote $c_d/printer_jobs"
+}
+
+# Make $c_d/javahelp
+#
+if { $javahelp_option } {
+    if { ! [info exists javahelp] } {
+
+        TODO "Set the javahelp global variable" \
+	     "in hpcm_judging.rc and run\
+	      `makecontest -javahelp'"
+
+    } elseif {    ! [file exists $c_d/javahelp] \
+               ||    [read_entire_file \
+	       		  $c_d/javahelp] \
+	          != $javahelp } {
+	write_file $c_d/javahelp $javahelp
+	grant_access $c_d/javahelp
+	puts "Wrote $c_d/javahelp"
+    }
 }
 
 # Start contest if necessary.
