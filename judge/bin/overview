@@ -4,7 +4,7 @@
 #
 # File:		overview
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Jan 29 01:27:14 EST 2006
+# Date:		Sun Jan 29 04:41:04 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/01/29 06:49:40 $
+#   $Date: 2006/01/29 09:56:43 $
 #   $RCSfile: overview,v $
-#   $Revision: 1.104 $
+#   $Revision: 1.105 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -1679,7 +1679,7 @@ a contest home directory.
 If the contest directory is named ~JJJ/contest_cccc,
 where JJJ is the judge's account, then to make the
 prototype account one creates an account with a name
-of the form `*[-_]proto', edits some files in that
+of the form `*\[-_\]proto', edits some files in that
 account (see below), and executes in that account
 
 	~JJJ/hpcm/contestant/bin/SETUP_PROTOTYPE
@@ -1783,9 +1783,9 @@ SETUP_PROTOTYPE is run.
 
         This file must be included in the prototype home
 	directory setup.tar file as it cannot be symbol-
-	ically linked due to security considerations.  It
-	must be included in the prototype account before
-	SETUP_PROTOTYPE is run.
+	ically linked due to security considerations.
+	It must be included in the prototype account
+	before SETUP_PROTOTYPE is run.
 
         For an informal contest, this must include stuff
 	to extract files from responses to hpcm_get.
@@ -1850,8 +1850,8 @@ among all the contests supported by the account:
     ~/.procmailrc
 	The `makecontest -procmailrc' command adds to
 	this file an entry with information matching
-	that in the contest/secure/hpcm_sendmail.rc file,
-	if that file exists and the entry does not
+	that in the contest/secure/hpcm_sendmail.rc
+	file, if that file exists and the entry does not
 	already exist.  Ditto for elements of the
 	`autojudge_addresses' global variable.  If other
 	entries for the contest exist in ~/.procmailrc,
@@ -2013,14 +2013,14 @@ HPCM has the following security goals:
    input, since that is provided to the program during
    judging.
 
-   However, any contestant program that sends informa-
-   tion to the outside world will itself be captured
-   and held in the judging account, serving as damning
-   evidence if the foul nature of the program is dis-
-   covered.  Thus any contestant who wrote such a pro-
-   gram would be risking discovery for a very long time,
-   up until the judge's decide to discard information
-   collected during the contest.
+   However, the code of any contestant program that
+   sends information to the outside world will itself be
+   captured and held in the judging account, serving as
+   damning evidence if the foul nature of the program is
+   discovered.  Thus any contestant who wrote such a
+   program would be risking discovery for a very long
+   time, up until the judge's decide to discard informa-
+   tion collected during the contest.
 
 4. Prevent one contestant from executing another contes-
    tants solution.  This goal is achieved with a defect.
@@ -2053,7 +2053,7 @@ HPCM has the following security goals:
    is small.
 
    As for 3 above, any contestant program that tries
-   this stunt leaves itself behind as damning evidence
+   this stunt leaves its code behind as damning evidence
    for a very long time.
 
 Contest Raw Data: Directories
@@ -2063,14 +2063,14 @@ The raw data of the contest consists of submissions and
 the results of processing these.  Each submission is an
 email message containing a problem solution, a request
 to get files, or a query.  This email is placed in a
-separate directory by itself.  The system then works in
-that directory to develop information, such as the
-binary program created by compiling a solution submis-
-sion, the output of running this program on the judge's
-input data, the score automatically assigned to the
-submission, and any score later manually assigned to
-the submission.  All of this information is considered
-to be `raw data'.
+separate directory by itself, called the `submission
+directory'.  The system then works in the submission
+directory to develop information, such as the binary
+program created by compiling a solution submission, the
+output of running this program on judge's input data,
+the score automatically assigned to the submission, and
+any score later manually assigned to the submission.
+All of this information is considered to be `raw data'.
 
 In general, contest raw data is only created and never
 destroyed.  Thus it provides both information about the
@@ -2079,23 +2079,23 @@ happened during the contest.
 
 Raw data is stored in the following directories:
 
-    mail_directory
+    <judging-directory>/mail
 
-        Normally the `mail' subdirectory of the judging
-	directory.
+	The mail subdirectory of the judging directory
+	contains a separate subdirectory for each piece
+	of email sent to the judge.  The processing of
+	that email occurs within this subdirectory,
+	which is called the `submission directory' of
+	the email.
 
-	The mail_directory contains a separate subdirec-
-	tory for each piece of email sent to the judge.
-	The processing of that email occurs within this
-	subdirectory.
-
-	The mail_directory is created by `makecontest'
-	and must exist before judge's email is received.
+	The mail directory is created by `makecontest
+	-mail' and must exist before judge's email is
+	received.
 
-    mail_directory/dddd-<<ssssss>>-submission
+    <judging-directory>/mail/dddd-<<ssssss>>-submission
 
         This is a submission directory, which is a sub-
-	directory of the mail_directory created to pro-
+	directory of the mail directory created to pro-
 	cess one email message sent to the judge by the
 	submitter ssssss at a time indicated by the date
 	dddd.  A specific example of the last component
@@ -2138,23 +2138,21 @@ Raw data is stored in the following directories:
 	More details about the files in this directory
 	are given in following sections.
 
-    log_directory
-        Normally the `log' subdirectory of the judging
-	directory.
-
+    <judging_directory>/log
         Errors that are not particular to one submission
 	and therefore cannot be placed in a submission
-	directory are placed here, each in their own
-	file with the same name structure (including
-	`checking') as errors put in submission direc-
-	tories (see below).
+	directory are placed here, in this `log direc-
+	tory'.  Each error is described in a file with
+	the same file name structure (including `check-
+	ing') as errors put in submission directories
+	(see below).
 
-	The log_directory is created automatically when
+	The log directory is created automatically when
 	it is first needed.
 
     ~/HPCM_Error_Log
-        This is an emergency error log directory for
-	use only if the log_directory cannot be found,
+        This is the `emergency error log directory' for
+	use only if the log directory cannot be found,
 	cannot be created, or is not writable.
 
 	This directory is created automatically when it
@@ -2172,10 +2170,10 @@ contestant, which is called a `get request', and email
 asking a question, which is called a `query'.
 
 Each email sent to the judge is placed in a separate
-subdirectory of the mail_directory.  This subdirectory
+subdirectory of the mail directory.  This subdirectory
 has a name of the form:
 
-    mail_directory/dddd-<<ssssss>>-submission
+    <judging-directory>/mail/dddd-<<ssssss>>-submission
 
 and is called the `submission directory' for the piece
 of email stored in it.  See above for details concerning
@@ -2245,7 +2243,7 @@ submission directories are as follows:
 
 	If an error occurs in an HPCM program that is
 	NOT processing a submission directory, this
-	error log file is put in the log_directory (see
+	error log file is put in the log directory (see
 	above), instead of in a submission directory.
 
     dddd-rrrr-<<ppppp>>-checked-error
@@ -2463,7 +2461,7 @@ follows:
                      | from ~/.procmailrc)
                      |
                      v
-        mail_directory/dddd-<<sssss>>-submission
+      mail/dddd-<<sssss>>-submission
                Received_Mail
                      |
                      | dispatchmail (called
@@ -2665,7 +2663,7 @@ happen if HPCM has a bug, then processing stops and
 an unchecked error log file is created.  If processing
 is within a submission directory, the log file is
 created within this directory; otherwise the log file
-is created within the log_directory.
+is created within the log directory.
 
 
 Contest Derived Data: Processing Status Files
@@ -2715,7 +2713,7 @@ are:
 	option reads this file and displays the status
 	of the process identified in the file.
 
-    mail_directory/*-submission/Dispatch_PID
+    mail/*-submission/Dispatch_PID
         This file is used as a lock to prevent more than
 	one `autojudge' or `manualreply' program from
 	running in a submission subdirectory at once.
