@@ -4,7 +4,7 @@
 #
 # File:		overview
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Jan 29 04:41:04 EST 2006
+# Date:		Sun Jan 29 08:04:55 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/01/29 09:56:43 $
+#   $Date: 2006/01/29 15:09:22 $
 #   $RCSfile: overview,v $
-#   $Revision: 1.105 $
+#   $Revision: 1.106 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -2176,8 +2176,8 @@ has a name of the form:
     <judging-directory>/mail/dddd-<<ssssss>>-submission
 
 and is called the `submission directory' for the piece
-of email stored in it.  See above for details concerning
-dddd and ssssss.
+of email stored in it.  See `Contest Raw Data: Director-
+ies' above for details concerning dddd and ssssss.
 
 Files in the email's submission directory that are
 specific to each kind of email are described in separate
@@ -2225,7 +2225,8 @@ submission directories are as follows:
 
     Reply_Mail_History
 	This file is a log of ALL email replies sent by
-	the judge for this directory.
+	the judge for this directory.  It has the for-
+	mat of a UNIX mailbox file.
 
     dddd-rrrr-<<ppppp>>-unchecked-error
 	This `error log' file describes a system error
@@ -2266,25 +2267,33 @@ submission directories are as follows:
 	email message.  This file is `checked' when its
 	associated error log file is `checked'.
 
-
+    autodispatch.log
+    	This is the standard output from the autodis-
+	patch program and the programs it runs, such as
+	autoinfo and autojudge, to process the sub-
+	mission.
+
 The section `Contest Raw Data: Data Flow' below outlines
 the creation of raw data files in a submission direc-
 tory.
-
+
+
+
 Contest Raw Data: Solution Submissions
 ------- --- ----- -------- -----------
 
 A solution submission is an email with a subject of the
-form `submit pppp.eee', where pppp is the problem name
-and .eee is the extension that identifies the program-
-ming language used in the submission.  Standardly
-pppp.eee is also the name of the single submitted file
-that is contained in the body of the submission email.
-But is it possible (given a Files file in the\
-	solu-
-tion directory), for .eee to be omitted, and/or for
-multiple files of various names to be submitted in the
-body of the submission email.
+form `submit pppp.eee \[qqq\]', where pppp is the pro-
+blem name, .eee is the extension that identifies the
+programming language used in the submission, and qqq is
+the optional qualifier (`in', `inout', etc.).  Standard-
+ly pppp.eee is also the name of the single submitted
+file that is contained in the body of the submission
+email.  But is it possible, given a pppp.rc file in the
+solution directory with the right global variable set-
+tings, for .eee to be omitted, and/or for multiple
+files of various names to be submitted in the body of
+the submission email.
 
 A file being submitted may appear in the body of the
 email in either of two ways.  It may be `formatted' or
@@ -2314,44 +2323,78 @@ is being submitted, this program produces the following
 files in order (see `Library Data: Problems' above for
 more details about many of these files):
 
+ * pppp.rc		Optional.  Problem specific
+ 			parameters.  TCL code sourced
+			after hpcm_judging.rc.
    pppp.eee		The submitted file.
- * pppp.in		Judge's input.
- * Makefile		Problem Makefile.
- * pppp.test		Judge's output.
  * Scoring_Filter	Optional output filter program.
- * pppp.ftest		Optional filtered .test file.
+ * xxxx.jin		Judge's input plus parameters.
+ 			Optional.
+ * xxxx.in		Judge's input or jfiltered .jin
+ 			file.
+ * Makefile		Problem Makefile.
+ * xxxx.test		Judge's output.
+ * xxxx.ftest		Optional Scoring_Filtered .test
+ 			file.
+ * xxxx.jtest		Optional jfiltered .test file.
+ * xxxx.jftest		Optional jfiltered .ftest file.
    pppp			Binary program.
    pppp.cerr		Compiler error output.
-   pppp.out		Solution standard output.
-   pppp.fout		Optional filtered .out file.
-   pppp.err		Solution error output.
+   xxxx.err		Solution error output.
    core			Possible core dump.
-   pppp.score		Output of scorediff.
+   xxxx.out		Solution standard output.
+   xxxx.fout		Optional Scoring_Filtered .out
+   			file.
+   xxxx.jout		Optional jfiltered .out file.
+   xxxx.jfout		Optional jfiltered .fout file.
+   xxxx.score		Optional output of scorediff of
+   			.out and .test.
+   xxxx.fscore		Optional output of scorediff of
+   			.fout and .ftest.
+   xxxx.jscore		Optional output of scorediff of
+   			.jout and .jtest.
+   xxxx.jfscore		Optional output of scorediff of
+   			.jfout and .jftest.
    Auto_Score		Autojudge score.
    Reply_Mail		Possible final reply.
    Reply_Mail_History	History of all replies.
- * pppp.rc		Problem specific parameters for
- 			judging software.  TCL code
-			sourced after hpcm_judging.rc.
+
+Here xxxx is any name such that either a xxxx.jin or an
+xxxx.in file exists in the problem solution directory
+(the problem subdirectory in the solutions subdirectory
+of the judging directory).  If a .jin file exists, the
+.in file is made from it by the jfilter program.  All
+the xxxx names are called `input names'.  If there is
+only one, it generally equals pppp, the problem name.
 
 The files marked with a * are linked into the submission
-directory from the problem solution directory (the pro-
-blem's subdirectory in the solutions subdirectory of the
-judging directory).  The above is the standard behavior
-when no `Files' file is linked from the problem
-solution directory.  But if a `Files' file is
-linked, files different from pppp.eee can be submitted,
-and additional files can be linked from the problem
-solution directory, as indicated in the section `Library
-Data: Problems: Complex Problems' above.
+directory from the problem solution directory.
+
+Some of the files in the problem solution directory may
+have to be made from other files in that directory.
+This is done automatically as required.  In particular,
+if xxxx.jin exists but xxxx.in does not, the jfilter
+program is run automatically with xxxx.jin as input to
+make xxxx.in in the solutions directory.
+
+The above is the standard behavior when no `pppp.rc'
+file is linked from the problem solution directory, or
+when this file only contains scoring instructions.  But
+if a `pppp.rc' file exists and has the right global var-
+iables set, files different from pppp.eee can be sub-
+mitted, and additional files can be linked from the pro-
+blem solution directory, as indicated in the section
+`Library Data: Problems: Complex Problems' above.
 
 If an error happens during the process of producing
-these files, the process stops.  An error in extracting
-pppp.eee, or an error in the name of the file (pppp is
-not a problem in the solutions directory or eee is not
-a legal extension), generates a Reply_Mail file that is
-the final say in the error.  Other errors generate an
-Auto_Score file.
+these files, other than an error during the execution
+of the submission program, the process stops.  An error
+in extracting pppp.eee, or an error in the name of the
+file (pppp is not a problem in the solutions directory
+or eee is not a legal extension), generates a Reply_Mail
+file that is the final say in the error.  Compile errors
+and errors during execution of the submission program
+generate an Auto_Score file.
 
 The nature of any automatically generated reply to the
 submitter given that an Auto_Score file has been
@@ -2362,7 +2405,7 @@ The same is done if the score is `Completely Correct',
 regardless of the scoring mode.  Otherwise if the
 scoring mode is `auto+manual', a reply containing the
 score is sent to the contestant, but not as a final
-score, and NO Reply_Mail file is generated; and if the
+score, and NO Reply_Mail file is generated.  If the
 scoring mode is `manual', no reply is sent to the con-
 testant, and no Reply_Mail file is generated.
 
@@ -2375,22 +2418,35 @@ The behavior of `autojudge' is similar to the behavior
 of `make' in a contestant's problem directory (see help
 files) or a problem library problem directory (see
 above).  The main differences are that the `autojudge'
-extracts the `pppp.eee' file, captures compiler errors
-in `pppp.cerr', captures run errors in `pppp.err', and
-scores `pppp.out' (or `pppp.fout') generating Auto_Score
-and possibly reply email.
+extracts the `pppp.eee' file, links files from the
+problem solution directory, captures compiler errors
+in `pppp.cerr', captures run errors in `xxxx.err', and
+scores `xxxx.out' (or `xxxx.fout') generating Auto_Score
+and possibly reply email.  `autojudge' can also make
+files that are otherwise missing in the problem solution
+directory.
 
 The section `Contest Raw Data: Data Flow' below gives
 some more details for solution submission directories.
 
 If the `autojudge' does not produce a final reply, it
-creates a Needs_Reply_Flag file in the flag dir-
-ectory to signal that this submission directory needs
-the attentions of `manualreply'.  The `manualreply'
-program must then be run to assign a manual score, which
-is stored in a `Manual_Score' file.   Email con-
-taining this score is sent to the contestant as a final
-reply and is stored in the Reply_Mail file.
+creates a Needs_Reply_Flag file in the flag subdir-
+ectory of the judging directory to signal that this
+submission directory needs the attentions of `manual-
+reply'.  This flag tells the `tracker' program to
+re-compute its list of submissions for which the
+`manualreply' program must be run.
+
+When the `manualreply' program assigns a manual score,
+that is stored in a `Manual_Score' file.   Email
+containing this score is sent to the contestant as a
+final reply and is stored in the Reply_Mail file.
+
+If the `autojudge' creates or modifies the `Auto_Score'
+file or `manualreply' creates or modifies the `Manual_
+Score' file, the Score_Flag file in the flag subdirec-
+tory of the judging directory is created to tell the
+`makescoreboard' program to recompute the scoreboard.
 
 
 Contest Raw Data: Get Requests
