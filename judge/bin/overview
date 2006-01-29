@@ -4,7 +4,7 @@
 #
 # File:		overview
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Jan 29 08:04:55 EST 2006
+# Date:		Sun Jan 29 14:50:33 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/01/29 15:09:22 $
+#   $Date: 2006/01/29 19:50:53 $
 #   $RCSfile: overview,v $
-#   $Revision: 1.106 $
+#   $Revision: 1.107 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -2309,14 +2309,14 @@ If unformatted the file is just the body of the email
 message, verbatim.  If there are multiple unformatted
 files in a message, each file must contain `File:
 filename' in its first block of non-blank lines.
-
+
 Only formatted submissions are usually allowed in in-
 formal and formal contests.  Such submissions are gener-
 ated by the hpcm_submit program, which performs the
 required formatting.  Unformatted submissions are
 typically allowed in email contests so that contestants
 who do not have hpcm_submit can submit easily.
-
+
 A solution submission directory is processed by the
 `autojudge' program.  If a single file named pppp.eee
 is being submitted, this program produces the following
@@ -2326,36 +2326,40 @@ more details about many of these files):
  * pppp.rc		Optional.  Problem specific
  			parameters.  TCL code sourced
 			after hpcm_judging.rc.
+
    pppp.eee		The submitted file.
+
  * Scoring_Filter	Optional output filter program.
+
  * xxxx.jin		Judge's input plus parameters.
  			Optional.
  * xxxx.in		Judge's input or jfiltered .jin
  			file.
+
  * Makefile		Problem Makefile.
+
  * xxxx.test		Judge's output.
  * xxxx.ftest		Optional Scoring_Filtered .test
  			file.
  * xxxx.jtest		Optional jfiltered .test file.
  * xxxx.jftest		Optional jfiltered .ftest file.
+
    pppp			Binary program.
    pppp.cerr		Compiler error output.
+
+   xxxx.out		Solution standard output.
    xxxx.err		Solution error output.
    core			Possible core dump.
-   xxxx.out		Solution standard output.
    xxxx.fout		Optional Scoring_Filtered .out
    			file.
    xxxx.jout		Optional jfiltered .out file.
    xxxx.jfout		Optional jfiltered .fout file.
-   xxxx.score		Optional output of scorediff of
-   			.out and .test.
-   xxxx.fscore		Optional output of scorediff of
-   			.fout and .ftest.
-   xxxx.jscore		Optional output of scorediff of
-   			.jout and .jtest.
-   xxxx.jfscore		Optional output of scorediff of
-   			.jfout and .jftest.
+
+   xxxx.yyscore		Output of scorediff of .yyout
+   			and .yytest for exactly one of:
+			yy = { \"\", f, j, jf }
    Auto_Score		Autojudge score.
+
    Reply_Mail		Possible final reply.
    Reply_Mail_History	History of all replies.
 
@@ -2366,6 +2370,9 @@ of the judging directory).  If a .jin file exists, the
 .in file is made from it by the jfilter program.  All
 the xxxx names are called `input names'.  If there is
 only one, it generally equals pppp, the problem name.
+See `Library Data: Problems: Judge's Parameters and
+Filters' above for a description of the Scoring_Filter
+and jfilter programs.
 
 The files marked with a * are linked into the submission
 directory from the problem solution directory.
@@ -2376,25 +2383,27 @@ This is done automatically as required.  In particular,
 if xxxx.jin exists but xxxx.in does not, the jfilter
 program is run automatically with xxxx.jin as input to
 make xxxx.in in the solutions directory.
-
+
 The above is the standard behavior when no `pppp.rc'
 file is linked from the problem solution directory, or
 when this file only contains scoring instructions.  But
 if a `pppp.rc' file exists and has the right global var-
 iables set, files different from pppp.eee can be sub-
-mitted, and additional files can be linked from the pro-
-blem solution directory, as indicated in the section
-`Library Data: Problems: Complex Problems' above.
-
+mitted, and additional files can be made in and linked
+from the problem solution directory, as indicated in the
+section `Library Data: Problems: Complex Problems'
+above.
+
 If an error happens during the process of producing
 these files, other than an error during the execution
 of the submission program, the process stops.  An error
-in extracting pppp.eee, or an error in the name of the
+in extracting pppp.eee or an error in the name of the
 file (pppp is not a problem in the solutions directory
-or eee is not a legal extension), generates a Reply_Mail
+or eee is not a legal extension) generates a Reply_Mail
 file that is the final say in the error.  Compile errors
 and errors during execution of the submission program
-generate an Auto_Score file.
+generate an Auto_Score file.  Any solution submission
+without errors generates an Auto_Score file.
 
 The nature of any automatically generated reply to the
 submitter given that an Auto_Score file has been
@@ -2413,7 +2422,7 @@ Also for the default `response_instructions' any re-
 sponse sent to the submitter is CC'ed to the email
 address value of the `response_manager' global variable
 if that value is not \"\".
-
+
 The behavior of `autojudge' is similar to the behavior
 of `make' in a contestant's problem directory (see help
 files) or a problem library problem directory (see
@@ -2421,14 +2430,11 @@ above).  The main differences are that the `autojudge'
 extracts the `pppp.eee' file, links files from the
 problem solution directory, captures compiler errors
 in `pppp.cerr', captures run errors in `xxxx.err', and
-scores `xxxx.out' (or `xxxx.fout') generating Auto_Score
-and possibly reply email.  `autojudge' can also make
-files that are otherwise missing in the problem solution
-directory.
+scores `xxxx.out' (or `xxxx.fout') generating a *.*score
+file and Auto_Score and possibly reply email.  `autoj-
+udge' can also make files that are otherwise missing in
+the problem solution directory.
 
-The section `Contest Raw Data: Data Flow' below gives
-some more details for solution submission directories.
-
 If the `autojudge' does not produce a final reply, it
 creates a Needs_Reply_Flag file in the flag subdir-
 ectory of the judging directory to signal that this
@@ -2448,7 +2454,10 @@ Score' file, the Score_Flag file in the flag subdirec-
 tory of the judging directory is created to tell the
 `makescoreboard' program to recompute the scoreboard.
 
+The section `Contest Raw Data: Data Flow' below gives
+some more details for solution submission directories.
 
+
 Contest Raw Data: Get Requests
 ------- --- ----- --- --------
 
@@ -2456,11 +2465,11 @@ A get request submission is an email with a subject of
 the form `get filename ...'.  The filenames are relative
 to the judging directory's `info' subdirectory, and name
 files in that directory to be `gotten', i.e., returned
-in reply mail to the contestant.  A directory can also
-be named, in which case all the files and the subdirec-
-tories in the directory will be gotten, recursively.
-See the documentation of the `autoinfo' program, which
-processes get requests, for details.
+in reply mail to the contestant.  A subdirectory can
+also be named, in which case all the files and the sub-
+directories in the subdirectory will be gotten, recur-
+sively.  See the documentation of the `autoinfo' pro-
+gram, which processes get requests, for details.
 
 The `autoinfo' program produces the following files in
 the email's submission directory:
@@ -2469,7 +2478,7 @@ the email's submission directory:
     Reply_Mail_History	History of all replies.
     Gotten		List of files successfully
     			gotten.
-
+
 The `autoinfo' program always produces a final reply
 the therefore a Reply_Mail file.  It may produce two
 email replies: one containing error messages and one
@@ -2477,14 +2486,15 @@ containing files successfully gotten.  These two kinds
 of replies have different `Subject' header field formats
 so they can be distinguished by automatic mail routers
 such as `procmail', and replies containing files can be
-sent to hpcm_extract, while replies containing error
-messages can avoid hpcm_extract.
+sent to hpcm_extract which extracts the files and stores
+them, while replies containing error messages can avoid
+hpcm_extract.
 
 Processing of get requests is completely automatic;
 there is never any need for manual reply (barring a sys-
 tem error, of course).
 
-
+
 Contest Raw Data: Queries
 ------- --- ----- -------
 
@@ -2496,7 +2506,10 @@ If the `reply_mode' is `auto', the `autodispatch' pro-
 gram produces an email reply and a Reply_Mail file
 automatically.  If the `reply_manager' is not \"\", this
 email is CC'ed to the `reply_manager' who can respond
-from an account other than the judge's.
+from an account other than the judge's, and the automa-
+tically generated reply will suggest that this will be
+done.  Otherwise the automatically generated reply will
+apologize that there is no one to mind the store.
 
 If the `reply_mode' is not `auto', the Needs_Reply_Flag
 file is created in the flag directory to signal that
@@ -2509,27 +2522,27 @@ Contest Raw Data: Data Flow
 ------- --- ----- ---- ----
 
 The flow of raw data through the HPCM system is as
-follows:
+follows (not all details of each step are given):
 
                 email to judge
                      |
                      | receivemail (called
                      | from ~/.procmailrc)
-                     |
                      v
       mail/dddd-<<sssss>>-submission
                Received_Mail
                      |
                      | dispatchmail (called
                      | from ~/.procmailrc)
+                     |
                      | autodispatch (called
                      | by dispatchmail)
-                     |
-                     v \[Test `Subject:'\]
-+-----+-----+---------
+                     v
++-----+-----+--------+ \[Test `Subject:'\]
+|     |     |
 |     |     | \[Subject: not `submit ...' or `get ...'\]
 |     |     |
-|     |     +---> flag_directory/Needs_Reply_Flag,
+|     |     +---> flag/Needs_Reply_Flag,
 |     |               if reply_mode != `auto';
 |     |           or Reply_Mail and Reply_Mail_History
 |     |               if reply_mode == `auto'
@@ -2539,50 +2552,47 @@ follows:
 |     |
 |     +----> Reply_Mail, Reply_Mail_History, Gotten
 |
-| \[Subject: `submit: pppp.eee'\]
+| \[Subject: `submit: pppp.eee \[qqq\]'\]
 | autojudge (called from autodispatch)
 +--------------+
-               |
+               | autojudge (linking pppp.rc if present)
                v
 
                |
-               | autojudge
                v
             pppp.rc file (if any)
-            Files (if any)
-               |
-               | \[is `Files' file present and\
-                                       does
-               |  it list -SOLUTION-MAKE- files\]
-               |
-               +-------------+
-               |             |
-          \[no\] |             | \[yes\]
-               |             |
-               |             |  make filename ...
-               |             |  (called in
-               |             |   solutions_directory/ppp
-               |             |   by autojudge)
-               |             |
-               |      files made in
-               |  solutions_directory/ppp
-               |             |
-               |             |
-               |<------------+
                |
                | extractmail (called from autojudge)
                v
                +-----------------+
                |                 |
     \[no error\] |                 | \[non-system\
-    					   error\]
+                                           error\]
                |                 |
                |                 | autojudge
                v                 v
             pppp.eee        Reply_Mail
-            or other        Reply_Mail_History
+          and/or other      Reply_Mail_History
          submitted files
                |
+               v
+               |
+               | \[does `pppp.rc' file define
+               |  problem_make_files?\]
+               |
+               +------------+
+               |            |
+          \[no\] |            | \[yes\]
+               |            |
+               |            |  make filename ...
+               |            |  (called in
+               |            |   solutions_directory/pppp
+               |            |   by autojudge)
+               |            |
+               |      files made in
+               |  solutions_directory/ppp
+               |            |
+               |<-----------+
                |
                v
 
@@ -2593,11 +2603,14 @@ follows:
                |
                v
             Makefile
-            pppp.test 
-            pppp.ftest (if any)
             Scoring_Filter (if any)
-            additional linked files\
-                         (if `Files' file)
+            xxxx.test 
+            xxxx.ftest (if any)
+            xxxx.jtest (if any)
+            xxxx.fjtest (if any)
+            additional linked files (if `pppp.rc'
+               |   defines problem_link_files
+               |   or problem_optional_link_files)
                |
                | make pppp (called from autojudge)
                |
@@ -2607,8 +2620,9 @@ follows:
                |
                +-------------+
                |             |
- \[pppp exists\] |             | \[pppp does not exist\]
-               |             |
+ \[pppp exists  |             | \[pppp does not exist
+  and is       |             |  or is not executable\]
+  executable\]  |             |
                |             | autojudge
                |             v
                |        Auto_Score = `Syntax Error'
@@ -2616,79 +2630,75 @@ follows:
                |          if scoring_mode != `manual'
                |        Reply_Mail
                |          if scoring_mode == `auto'
-               |
                v
 
                |
-               | make pppp.out (called from autojudge)
+               | run pppp to make xxxx.out
+               | (called from autojudge)
                |
                v
-            pppp.out (standard output)
-            pppp.err (standard error output)
+            xxxx.out (standard output)
+            xxxx.err (standard error output)
             core (if program crashes)
                |
-               | \[is pppp.err empty\]
-               |
-               +-------------+
-               |             |
-         \[yes\] |             | \[no\]
-               |             |
-               |             | autojudge
-               |             v
-               |        Auto_Score
-               |        Reply_Mail_History
-               |          if scoring_mode != `manual'
-               |        Reply_Mail
-               |          if scoring_mode == `auto'
-               |
-               |
-               | \[is Scoring_Filter or pppp.ftest
-               |  present, and is pppp.out non-empty\]
+               | \[is Scoring_Filter present?\]
                |
                +----------------+
                |                |
           \[no\] |                | \[yes\]
                |                |
-               |                |\
-                                Scoring_Filter
+               |                | Scoring_Filter
                |                | (called by autojudge)
                |                v
-               |             ppp.fout
+               |             xxxx.fout
                |                |
+               |<---------------+
+               |
+               v
+               | \[is xxxx.jin present?\]
+               |
+               +----------------+
+               |                |
+          \[no\] |                | \[yes\]
+               |                |
+               |                | jfilter
+               |                | (called by autojudge)
+               |                v
+               |             xxxx.jout
+               |                or
+               |             xxxx.jfout
                |                |
                |<---------------+
                |
                v
 
                |
-               | autojudge
+               | scorediff (called from autojudge)
+               v
+         Exactly One of:
+            xxxx.score
+            xxxx.fscore
+            xxxx.jscore
+            xxxx.jfscore
                |
+               | \[is xxxx.err non-empty
+               |  or xxxx.out empty?\]
                |
                +------------------------+
                |                        |
-    \[non-empty |                        | \[empty or
-     .out or   |                        |   missing
-     .fout\]    |                        |   .out or
-               |                        |   .fout\]
-               | scorediff (called      |
-               | from autojudge)        |
+         \[no\]  |                        | \[yes\]
                |                        |
-               v                        |
-            pppp.score                  |
-               |                        |
-               | autojudge              |
+               | autojudge              | autojudge
                |                        |
                v                        |
            Auto_Score     Auto_Score = `Program Crashed'
                |                        |
-               |                        |
                |<-----------------------+
-               |
                |
                v
 
                |
-               | \[non-default response_instructions\]
+               | \[non-default response_instructions?\]
                |
                +--------------------+
                |                    |
@@ -2698,20 +2708,22 @@ follows:
                |              Reply_Mail maybe
                |              Reply_Mail_History maybe
                |
-               |
-               +---------------+
-               |               |
-  \[score ==    |               | \[score !=
-   `Completely |               |  `Completely  
-    Correct'\]  |               |   Correct'\]
-               |               v
-               |        Reply_Mail_History
-               |          if scoring_mode != `manual'
-               |        Reply_Mail
-               |          if scoring_mode == `auto'
                v
-           Reply_Mail
-       Reply_Mail_History
+
+               |
+               +--+------------+
+                  |            |
+  \[Auto_Score ==  |            | \[Auto_Score !=
+   `Completely    |            |  `Completely  
+    Correct'\]     |            |   Correct'\]
+                  |            v
+                  |     Reply_Mail_History
+                  |       if scoring_mode != `manual'
+                  |     Reply_Mail
+                  |       if scoring_mode == `auto'
+                  v
+              Reply_Mail
+          Reply_Mail_History
 
 
 If a system error occurs at any point, which can only
