@@ -1,0 +1,55 @@
+#!/bin/sh
+#
+# Display java api information for judge.
+#
+# File:		javahelp
+# Author:	Bob Walton <walton@deas.harvard.edu>
+# Date:		Mon Jan 30 07:56:57 EST 2006
+#
+# The authors have placed this program in the public
+# domain; they make no warranty and accept no liability
+# for this program.
+#
+# RCS Info (may not be true date or author):
+#
+#   $Author: hc3 $
+#   $Date: 2006/01/30 13:10:08 $
+#   $RCSfile: javahelp,v $
+#   $Revision: 1.1 $
+
+case "$1" in
+     ?* )
+     		echo "
+javahelp
+
+    Call hcpm_helper with <judging-directory>/contest/
+    javahelp as argument."
+
+    		exit 1
+		;;
+esac
+
+contest=""
+for jd in . .. ../.. ../../.. ../../../..
+do
+    if test -r $jd/hpcm_judging.rc
+    then
+        contest=$jd/contest
+	break
+    fi
+done
+
+if test "$contest" = ""
+then
+    echo ERROR: Cannot find hpcm_judging.rc.
+    exit 1
+fi
+
+if test ! -x $contest
+then
+    echo ERROR: Cannot access $contest
+    exit 1
+fi
+
+exec hpcm_helper $contest/javahelp \
+		 "java API documentation displayer"

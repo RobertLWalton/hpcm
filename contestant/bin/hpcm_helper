@@ -4,7 +4,7 @@
 #
 # File:		hpcm_helper
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Fri Nov  1 01:30:33 EST 2002
+# Date:		Mon Jan 30 08:03:26 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/11/01 06:54:55 $
+#   $Date: 2006/01/30 13:08:48 $
 #   $RCSfile: hpcm_helper,v $
-#   $Revision: 1.1 $
+#   $Revision: 1.2 $
 
 # If this is not bash and bash is available, switch to
 # using bash.  Note that `which bash` may output a
@@ -32,13 +32,13 @@ fi
 case "$1" in
      -doc* | "" )
      		echo "
-hpcm_helper filename command_type
+hpcm_helper command_file command_type
 
     Helper program for javahelp and similar programs.
 
     Invokes an approved \`command_type' program.  The
-    list of such is read from the contest/filename file,
-    which consists of lines of the format:
+    list of such is read from the command_file, which
+    consists of lines of the format:
 
     	name "command ..."
 
@@ -48,11 +48,10 @@ hpcm_helper filename command_type
     If there is only one line, that is selected.  If
     there are more than one, the user is given the
     option of which one to choose.  If there is no
-    readable contest/filename file, the user is
-    notified.
+    readable command_file, the user is notified.
 
-    Lines beginning with \`#' in the contest/filename
-    file are ignored, as are blank lines.
+    Lines beginning with \`#' in the command_file are
+    ignored, as are blank lines.
 
     The command_type is used in the messages:
 
@@ -68,15 +67,15 @@ hpcm_helper filename command_type
 		;;
 esac
 
-filename="$1"
+command_file="$1"
 command_type="$2"
 
-if test -r "${HOME}/.hpcm_contest/$filename"
+if test -r "$command_file"
 then
 
     # Open command file.
     #
-    exec 3<"${HOME}/.hpcm_contest/$filename"
+    exec 3<"$command_file"
 
     # Read command file lines and accumulate commands.
     # N is command number, name_N is name, command_N is
