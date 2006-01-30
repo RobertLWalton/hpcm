@@ -4,7 +4,7 @@
 #
 # File:		overview
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Jan 29 14:50:33 EST 2006
+# Date:		Mon Jan 30 02:16:09 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/01/29 19:50:53 $
+#   $Date: 2006/01/30 07:25:09 $
 #   $RCSfile: overview,v $
-#   $Revision: 1.107 $
+#   $Revision: 1.108 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -2743,14 +2743,11 @@ the status of data processing and program processes.
 These files and one of their containing directories
 are:
 
-    flag_directory
-        Normally the `flag' subdirectory of the judging
-	directory.
-
+    <judging-directory>/flag
         Flag files in this directory are created just
 	after information is written into other files
 	that may need to be read by certain programs
-	(makescoreboard or tacker).   The programs that
+	(makescoreboard or tracker).   The programs that
 	read these other files, when they see that a
 	flag file exists, delete the flag file first,
 	and then read the other files to see what to do.
@@ -2772,7 +2769,7 @@ are:
 		the contest directories and files to see
 		where `manualreply' should be run.
 
-    judging_directory/Scoreboard_PID
+    <judging-directory>/Scoreboard_PID
         A file in the judging directory containing the
 	process ID of any `makescoreboard' program that
 	is running in background.  This file is main-
@@ -2781,7 +2778,11 @@ are:
 	option reads this file and displays the status
 	of the process identified in the file.
 
-    mail/*-submission/Dispatch_PID
+    <judging-directory>/Startcontest_PID
+        Ditto but for the `startcontest' program instead
+	of the `makescoreboard' program.
+
+    <jugding-directory>mail/*-submission/Dispatch_PID
         This file is used as a lock to prevent more than
 	one `autojudge' or `manualreply' program from
 	running in a submission subdirectory at once.
@@ -2799,12 +2800,13 @@ are:
 	user whether to quit or kill the identified
 	process (if it is still running) and continue.
 
-    solutions_directory/pppp/Dispatch_PID
+    <judging-directory>/solutions/pppp/Dispatch_PID
         This file is used as a lock to prevent more than
 	one `autojudge' program from making files in the
 	same problem solution directory at one time.
-	See the -SOLUTION-MAKE- feature of the autojudge
-	program.
+	See the problem_make_files global variable
+	documentation in hpcm/judge/lib/hpcm_judging.rc
+	and the `autojudge' documentation for details.
 
 
 Contest Derived Data: Scoreboard Files
@@ -2814,9 +2816,13 @@ The `makescoreboard' program can run in background and
 recompute the scoreboard as necessary.  It always com-
 putes the following file:
 
-    judging_directory/Scorefinder_Output
+    <judging-directory>/Scorefinder_Output
+    <judging-directory>/Scorefinder_Output+
         Output of the scorefinder program, for use as
-	input to the scoreboard program.
+	input to the scoreboard program.  The + file
+	is used by `makescoreboard update' and the non-+
+	file by the background process started by
+	`makescoreboard start'.
 
 The other scoreboard files depend upon the scoreboard
 instructions in hpcm_judging.rc.  The standard instruc-
@@ -2826,14 +2832,14 @@ different files):
 
   For email contests:
 
-    judging_directory/scoreboard.mail
+    <judging-directory>/scoreboard.mail
         A copy of the scoreboard emailed to an address
 	by `makescoreboard'.  Concatenation of an actual
 	scoreboard with scoreboard.notes
 
   For informal contests:
 
-    contest_directory/scoreboard.1
+    <judging-directory>/contest/scoreboard.1
         The first of four scoreboard pages visible to
 	the contestant `scoreboard' display program.
 	Concatenation of scoreboard.1head with the
@@ -2841,25 +2847,26 @@ different files):
 
   For formal contests:
 
-    contest_directory/scoreboard.public
+    <judging-directory>/contest/scoreboard.public
         The scoreboard proper containing submissions
 	up until the freeze time.
 
-    contest_directory/scoreboard.freeze
+    <judging-directory>/contest/scoreboard.freeze
         A special freeze announcement created at the
 	freeze time.
 
-    contest_directory/scoreboard.1
+    <judging-directory>/contest/scoreboard.1
         The first of four scoreboard pages visible to
 	the contestant `scoreboard' display program.
 	Concatenation of scoreboard.1head, scoreboard.
 	freeze (if that exists), and scoreboard.public.
 
-    contest_directory/scoreboard.current
-        The current scoreboard.  Only readable by
+    <judging-directory>/contest/scoreboard.current
+        The current scoreboard, made after the freeze
+	time and kept up do date.  Only readable by
 	judges.
 
-    contest_directory/scoreboard.final
+    <judging-directory>/contest/scoreboard.final
         The final scoreboard suitable for printing,
 	and containing a copy of the who_where file.
 	Only readable by judges.
