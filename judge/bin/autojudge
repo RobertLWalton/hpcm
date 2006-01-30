@@ -5,7 +5,7 @@
 #
 # File:		autojudge
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Oct 20 11:10:01 EDT 2005
+# Date:		Mon Jan 30 09:07:45 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/10/20 15:09:03 $
+#   $Date: 2006/01/30 14:15:30 $
 #   $RCSfile: autojudge,v $
-#   $Revision: 1.116 $
+#   $Revision: 1.117 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -163,16 +163,6 @@ autojudge \[-manual\]
 	N.err and N.out.  If N == PROBLEM this is done
 	without the linking or renaming.
 
-	If N.err is non-empty after this, the score is 
-	`Cpu Time Limit Exceeded', `Output Size Limit
-	Exceeded', or `Program Crashed', according to
-	the contents of N.err.  The Auto_Score file is
-	written and autojudge terminates.
-
-	If N.out is empty or non-existent but N.err is
-	empty, then the score is `Program Crashed' and
-	autojudge terminates.
-
       . For each input name N, N.fout is made if
         Scoring_Filter exists, N.jfout if in addition
 	N.jin exists, and N.jout is made if N.jin exists
@@ -181,14 +171,21 @@ autojudge \[-manual\]
       . For each input name N, one of N.score, N.fscore,
         N.jscore, or N.jfscore is made, according to
 	whether or not Scoring_Filter and N.jin exist.
-	Auto_Score is computed from the resulting
-	.*score files.
-
-        Whenever Auto_Score is made, the Score_Flag is
-	set, and a Reply_Mail file is made and sent to
-	to the submitter if the scoring_mode is not
-	`manual'.
 
+      . Auto_Score is computed from the resulting
+	.*score files.  Whenever Auto_Score is made, the
+	Score_Flag is set, and a Reply_Mail file is made
+	and sent to to the submitter if the scoring_mode
+	is not `manual'.
+
+	If any N.err is non-empty, the score is `Cpu
+	Time Limit Exceeded', `Output Size Limit
+	Exceeded', or `Program Crashed', according to
+	the contents of N.err.
+
+	If any N.out is empty and N.err is empty, then
+	the score is `Program Crashed'.
+
     Here files marked with * are linked into the current
     submission directory from the problem's solution
     directory.
@@ -223,11 +220,11 @@ autojudge \[-manual\]
     ter according to the logging mode, so autojudge just
     prints the output and exits when an extractmail
     system error occurs.
-
+
     While making files in the problem solution direc-
     tory, program locks the solution directory with a
     Dispatch_PID file.
- 
+ 
     For purposes of computing file dependencies, all
     non-extracted files made (not linked) by this pro-
     gram in the submission directory are assumed to
