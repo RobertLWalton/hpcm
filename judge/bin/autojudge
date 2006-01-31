@@ -5,7 +5,7 @@
 #
 # File:		autojudge
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Jan 31 09:07:03 EST 2006
+# Date:		Tue Jan 31 11:07:18 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/01/31 14:34:45 $
+#   $Date: 2006/01/31 16:05:38 $
 #   $RCSfile: autojudge,v $
-#   $Revision: 1.118 $
+#   $Revision: 1.119 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -59,7 +59,7 @@ autojudge \[-manual\]
     of the following forms:
 
      Completely Correct
-     <problem-name>: Syntax Error
+     Syntax Error
      <file>:<group>:<case>: Incorrect Output
      <file>:<group>:<case>: Cpu Time Limit Exceeded
      <file>:<group>:<case>: Output Size Limit Exceeded
@@ -912,10 +912,10 @@ proc auto_score_reply { score { marker "" } } {
 	puts "Deleting out-of-date Auto_Score"
 	file delete -force Auto_Score
     }
-    switch [llength $marker] {
-        0 { set s $score }
-	1 { set s "[lindex $marker 0]: $score" }
-	default { set s "[join $marker :] $score" }
+    if { $marker == "" } {
+	set s $score
+    } else {
+	set s "[join $marker :] $score"
     }
     write_file Auto_Score $s
     set_flag Score_Flag
@@ -1091,55 +1091,8 @@ foreach name $input_names {
 	#
 	deny_access "."
 
-	# Print any non-empty .err file.
+	# Rename .out and .err files if necessary.
 	#
-	if {    [file exists $name.err] \
-	     && [file size $name.err] > 0 } {
-	    puts ""
-	    puts "========== ERRORS ($name.err)\
-		  =========="
-
-	    set error_fd [open $name.err r]
-	    set count 0
-	    set score ""
-	    while { "yes" } {
-		set line [gets $error_fd]
-		if { [eof $error_fd] } break
-		if { [regexp -nocase -- \
-			     $time_limit_regexp \
-			     $line] } {
-		    set score "Cpu Time Limit Exceeded"
-		} elseif { [regexp -nocase -- \
-			     $output_limit_regexp \
-			     $line] } {
-		    set score \
-		        "Output Size Limit Exceeded"
-		}
-		if { $count < 10 } { puts $line }
-		incr count
-	    }
-	    close $error_fd
-
-	    if { $score == "" } {
-		set score "Program Crashed"
-	    }
-
-	    puts "============================="
-	    puts ""
-	    auto_score_reply $score [list $name]
-	    exit 0
-	} elseif { ! [file exists $name.out] } {
-	    puts "No `$name.out' file produced"
-	    auto_score_reply "Program Crashed" \
-	    		     [list $name]
-	    exit 0
-	} elseif { [file size $name.out] == 0 } {
-	    puts "Empty `$name.out' file produced"
-	    auto_score_reply "Program Crashed" \
-	    		     [list $name]
-	    exit 0
-	}
-
 	if { $name != $PROBLEM } {
 	    foreach ext {out err} {
 		if { [file exists $PROBLEM.$ext] } {
@@ -1150,26 +1103,14 @@ foreach name $input_names {
 		}
 	    }
 	}
+
+	# The .out file should exist but may be empty.
+	#
+	if { ! [file exists $name.out] } {
+	    error "File $name.out should exist"
+	}
     }
 }
-
-# Do a system check that all .out files exist and are
-# non-empty and all .err files do not exist or are
-# empty.
-#
-foreach name $input_names {
-    if { ! [file exists $name.out] } {
-        error "File $name.out should exist"
-    }
-    if { [file size $name.out] == 0 } {
-        error "File $name.out should be non-empty"
-    }
-    if { ! [file exists $name.err] } continue
-    if { [file size $name.err] == 0 } continue
-    error "File $name.err should not exist or should\
-           be empty"
-}
-
 
 # Make .fout, .jout, or .jfout files as appropriate.
 #
@@ -1201,7 +1142,7 @@ foreach name $input_names {
     }
 }
 
-# Make .*score files and compute Auto_Score.
+# Make .*score files.
 #
 # Do not try to be efficient in the case where not
 # everything needs to be computed, as that is an
@@ -1211,14 +1152,12 @@ foreach name $input_names {
 # use in deciding whether to recompute the Auto_Score
 # file.
 #
+# For each input name, add {name fix} to the score_fixes
+# list, where a fix is "", f, j, or jf so the score file
+# is ${name}.${fix}score.
+#
+set score_fixes {}
 set score_mtime 0
-#
-# The following variables hold the first marker found
-# for the indicated score.
-#
-set incorrect_output ""
-set incomplete_output ""
-set formatting_error ""
 #
 foreach name $input_names {
     if { [file exists $name.jin] } {
@@ -1240,7 +1179,7 @@ foreach name $input_names {
 		    $name.jfout $name.jftest \
 		    $name.jfscore -filtered
 	    }
-	    set score_file $name.jfscore
+	    set fix jf
 	} else {
 	    if { [should_be_made [list $name.jscore] \
 		      [list $name.jout $name.jtest]] } {
@@ -1248,7 +1187,7 @@ foreach name $input_names {
 		    $name.jout $name.jtest \
 		    $name.jscore -filtered
 	    }
-	    set score_file $name.jscore
+	    set fix j
 	}
     } else {
 	compute_instruction_array \
@@ -1260,16 +1199,17 @@ foreach name $input_names {
 		compute_score_file \
 		    $name.fout $name.ftest $name.fscore
 	    }
-	    set score_file $name.fscore
+	    set fix f
     	} else {
 	    if { [should_be_made [list $name.score] \
 		      [list $name.out $name.test]] } {
 		compute_score_file \
 		    $name.out $name.test $name.score
 	    }
-	    set score_file $name.score
+	    set fix ""
 	}
     }
+    set score_file ${name}.${fix}score
     if { ! [file exists $score_file] } {
         error "$score_file does not exist\n   - maybe\
 	       correspondence problem between .*test\
@@ -1280,54 +1220,135 @@ foreach name $input_names {
         set score_mtime $mtime
     }
 
-    compute_score_and_proof_arrays $score_file
+    lappend score_fixes [list $name $fix]
+}
+
+# If .*score files have not changed since Auto_Score
+# file changed, exit.
+#
+if {    [file exists Auto_Score] \
+     &&    [file mtime Auto_Score] \
+        >= $score_mtime } {
+    exit 0
+}
+
+# Compute Auto_Score from .*score, .*out, and *.err
+# files.
+#
+# The following variables hold the first marker found
+# for the indicated score.  If the marker is for incom-
+# plete output, the incomplete_score variable holds
+# one of "Cpu Time Limit Exceeded", ..., "Incomplete
+# Output" to tell the exact score involved.
+#
+# In these variables a marker has the form
+#
+#	{ scoring-file-name group-number case-number }
+#
+set incorrect_output ""
+set incomplete_output ""
+set formatting_error ""
+set incomplete_score ""
+#
+foreach item $score_fixes {
+    set name [lindex $item 0]
+    set fix [lindex $item 1]
+
+    # Update markers.
+    #
+    compute_score_and_proof_arrays "${name}.${fix}score"
     compute_score
     foreach x {incorrect_output incomplete_output\
 	       formatting_error} {
+
 	set marker [set ${x}_marker]
+
 	if { $marker != "" && [set $x] == "" } {
 
 	    # Marker is {OG OC TG TC}
-	    # For incorrect_output and incomplete_output
-	    # chose the smaller of {OG GC} and {TG TC}.
-	    # For incomplete_output chose the larger.
 	    #
-	    switch $x[eval {
-	          [lindex $marker 0] \
-		> [lindex $marker 2] \
-		|| (    [lindex $marker 0] \
-		     == [lindex $marker 2] \
-		     && \
-		        [lindex $marker 1] \
-		     >  [lindex $marker 3] ) }] {
-
-	        incorrect_output0 -
-		incomplete_output1 -
-		formatting_error0 {
-			set marker [lrange $marker 0 1]
-		}
-
-	        incorrect_output1 -
-		incomplete_output0 -
-		formatting_error1 {
-			set marker [lrange $marker 2 3]
-		}
+            # For incorrect_output and incomplete_output
+            # chose the smaller of {OG GC} and {TG TC}.
+            # For incomplete_output chose the larger.
+            #
+	    set choose_first [expr { \
+                  [lindex $marker 0] \
+                < [lindex $marker 2] \
+                || (    [lindex $marker 0] \
+                     == [lindex $marker 2] \
+                     && \
+                        [lindex $marker 1] \
+                     <  [lindex $marker 3] ) }]
+	    if { $x == "incomplete_output" } {
+	        set choose_first [expr { ! $choose_first }]
 	    }
-	    set $x [concat [list $score_file] $marker]
+	    if { $choose_first } {
+		set marker [lrange $marker 0 1]
+	    } else {
+		set marker [lrange $marker 2 3]
+	    }
+	    set $x [concat [list ${name}.${fix}score] \
+	    		   $marker]
+	}
+    }
+
+    # If first incomplete_output marker found, determine
+    # incomplete_score.
+    #
+    if {    $incomplete_output != "" \
+         && $incomplete_score == "" } {
+
+	# Print any non-empty .err file and look for
+	# lines indicating the type of program crash.
+	#
+	if {    [file exists $name.err] \
+	     && [file size $name.err] > 0 } {
+	    puts ""
+	    puts "========== ERRORS ($name.err)\
+		  =========="
+
+	    set error_fd [open $name.err r]
+	    set count 0
+	    while { "yes" } {
+		set line [gets $error_fd]
+		if { [eof $error_fd] } break
+		if { [regexp -nocase -- \
+			     $time_limit_regexp \
+			     $line] } {
+		    set incomplete_score \
+		        "Cpu Time Limit Exceeded"
+		} elseif { [regexp -nocase -- \
+			     $output_limit_regexp \
+			     $line] } {
+		    set incomplete_score \
+		        "Output Size Limit Exceeded"
+		}
+		if { $count < 10 } { puts $line }
+		incr count
+	    }
+	    close $error_fd
+
+	    if { $incomplete_score == "" } {
+		set incomplete_score "Program Crashed"
+	    }
+
+	    puts "============================="
+	    puts ""
+	} elseif { [file size $name.out] == 0 } {
+	    puts "Empty `$name.out' file produced"
+	    set incomplete_score "Program Crashed"
+	} else {
+	    set incomplete_score "Incomplete Output"
 	}
     }
 }
 
-if {    [file exists Auto_Score] \
-     &&    [file mtime Auto_Score] \
-        >= $score_mtime } {
-    # do nothing
-} elseif { $incorrect_output != "" } {
+if { $incorrect_output != "" } {
     auto_score_reply \
         "Incorrect Output" $incorrect_output
 } elseif { $incomplete_output != "" } {
     auto_score_reply \
-        "Incomplete Output" $incomplete_output
+        $incomplete_score $incomplete_output
 } elseif { $formatting_error != "" } {
     auto_score_reply \
         "Formatting Error" $formatting_error
