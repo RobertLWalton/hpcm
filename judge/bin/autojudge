@@ -5,7 +5,7 @@
 #
 # File:		autojudge
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Jan 30 09:07:45 EST 2006
+# Date:		Tue Jan 31 09:07:03 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/01/30 14:15:30 $
+#   $Date: 2006/01/31 14:34:45 $
 #   $RCSfile: autojudge,v $
-#   $Revision: 1.117 $
+#   $Revision: 1.118 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -55,12 +55,60 @@ autojudge \[-manual\]
     ning.  This suppresses sending email to the submit-
     ter.
 
+    The `Auto_Score' file consists of one line with one
+    of the following forms:
+
+     Completely Correct
+     <problem-name>: Syntax Error
+     <file>:<group>:<case>: Incorrect Output
+     <file>:<group>:<case>: Cpu Time Limit Exceeded
+     <file>:<group>:<case>: Output Size Limit Exceeded
+     <file>:<group>:<case>: Program Crashed
+     <file>:<group>:<case>: Incomplete Output
+     <file>:<group>:<case>: Formatting Error
+
+    Here <file> is the name of the .*score file (e.g., 
+    count.jscore), and <group> and <case> are the group
+    number and case number to be given to jfilter to
+    locate the associated judge's input and output.
+    Here `<group>:<case>:' may be omitted if they cannot
+    be computed because there is no .jin file to define
+    groups and cases.
+
+    The first error to occur determines the score,
+    except in the case of Formatting Error, which is
+    ignored if there is some other error.  The .*score
+    file reports a <group> and <case> for both the
+    .*out and .*test files that are being compared, so
+    there are two possible values of <group> and <case>
+    that could be reported.  The smaller is reported for
+    `Incorrect Output' and `Formatting Error', and the
+    larger for the other errors.
+    
+    The `Cpu Time Limit Exceeded', `Output Size Limit
+    Exceeded', and `Program Crashed' scores are reported
+    only if the .*out file is incomplete, as for `Incom-
+    plete Output', and there is no incorrect output
+    (which would preceded the detection of incomplete
+    output and therefore be `first').  If the .*out file
+    is incomplete, `Cpu Time Limit Exceeded' is reported
+    if the `time_limit_regexp' global variable value
+    matches (ignoring case) some part of some line in
+    the associated .err file.  Similarly `Output Size
+    Limit Exceeded' is reported if the `output_limit_
+    regexp' global variable value matches (ignoring
+    case) some part of some line in the associated .err
+    file.  Otherwise `Program Crashed' is reported if
+    the .*out file is empty or the associated .err file
+    is not empty.  Otherwise `Incomplete Output' is re-
+    ported.
+
     The problem name, optional extension, and optional
     submit qualifier are extracted from the
 
       Subject: submit PROBLEM\[.EXTENSION\]\
       		      \[QUALIFIER\]
-
+
     field of the message in the Received_Mail file.
     Here `PROBLEM' names the problem and the solution
     binary, and is the basename of the .in, .out, .cerr,
@@ -70,7 +118,7 @@ autojudge \[-manual\]
     variable value, which by default is:
     
     	$allowed_extensions
-
+
     The submit qualifier, QUALIFIER, becomes the value
     of the global variable `submit_qualifier', which may
     be used by response_instructions to tailor the re-
@@ -98,7 +146,7 @@ autojudge \[-manual\]
 	Files' section of hpcm_judging.rc for detailed
 	specification of the values of these global
 	variables and their defaults.
-
+
       . Submitted files which are extracted from the
         submitted message in the Received_Mail file
         by the extractmail program.  These files must
@@ -107,7 +155,7 @@ autojudge \[-manual\]
 	The default is for PROBLEM.EXTENSION to be
 	the only required file if EXTENSION is not
 	empty.
-
+
       . A list of input names is computed.  If the
         global variable problem_input_names exists, its
 	value is the list of input names.  Otherwise N
@@ -130,7 +178,7 @@ autojudge \[-manual\]
 	them exist.  This if N.out and Scoring_Filter
 	exist, N.fout will be made, and if N.jin also
 	exists, then N.jfout will be made.
-
+
       * Files listed in the problem_link_files and
         problem_optional_link_files global variables are
 	linked from the problem solution directory to
@@ -146,7 +194,7 @@ autojudge \[-manual\]
 	the submission directory, in preference over
 	N.test in the solution directory.  Ditto for
 	.ftest, .jtest, .jftest.
-
+
       . The program binary file `PROBLEM' and the
 	compiler error file PROBLEM.cerr are made by
 	executing `make PROBLEM' in the submission
@@ -167,7 +215,7 @@ autojudge \[-manual\]
         Scoring_Filter exists, N.jfout if in addition
 	N.jin exists, and N.jout is made if N.jin exists
 	but Scoring_Filter does not.
-
+
       . For each input name N, one of N.score, N.fscore,
         N.jscore, or N.jfscore is made, according to
 	whether or not Scoring_Filter and N.jin exist.
@@ -178,14 +226,6 @@ autojudge \[-manual\]
 	and sent to to the submitter if the scoring_mode
 	is not `manual'.
 
-	If any N.err is non-empty, the score is `Cpu
-	Time Limit Exceeded', `Output Size Limit
-	Exceeded', or `Program Crashed', according to
-	the contents of N.err.
-
-	If any N.out is empty and N.err is empty, then
-	the score is `Program Crashed'.
-
     Here files marked with * are linked into the current
     submission directory from the problem's solution
     directory.
@@ -212,7 +252,7 @@ autojudge \[-manual\]
     to the submitter as the final word on the submis-
     sion.  In either case this program terminates after
     reporting the error.
-
+
     Errors in extraction are classified as system errors
     if extractmail outputs the phrase `SYSTEM ERROR' and
     submitter errors otherwise.  SYSTEM ERRORs are log-
@@ -224,7 +264,7 @@ autojudge \[-manual\]
     While making files in the problem solution direc-
     tory, program locks the solution directory with a
     Dispatch_PID file.
- 
+ 
     For purposes of computing file dependencies, all
     non-extracted files made (not linked) by this pro-
     gram in the submission directory are assumed to
@@ -239,7 +279,7 @@ autojudge \[-manual\]
     response instructions is described in hpcm_
     judging.rc, where a default value is also given for
     the `response_instructions' variable.
-    
+
     With default response instructions, this program
     sends a reply if the score is `Completely Correct'
     or the scoring_mode is `auto' or `auto+manual'.  If
@@ -258,7 +298,7 @@ autojudge \[-manual\]
     erate a final reply.
 
     This program prints information about its progress.
- 
+ 
     Unless this program creates a Reply_Mail file that
     is intended to be the final reply to the submitter
     (e.g., because the score is `Completely Correct' or
@@ -273,7 +313,7 @@ autojudge \[-manual\]
     sets the score flag (the flag directory Score_Flag
     file), to signal that any scoreboards need to be
     recomputed.
-
+
     Problem names that contain `/' or `.' or begin with
     `-' or have no solution directory are illegal, and
     are submitter errors.  Similarly extension names
@@ -1246,8 +1286,34 @@ foreach name $input_names {
 	       formatting_error} {
 	set marker [set ${x}_marker]
 	if { $marker != "" && [set $x] == "" } {
-	    set $x [concat [list $score_file] \
-	    		   [lrange $marker 0 1]]
+
+	    # Marker is {OG OC TG TC}
+	    # For incorrect_output and incomplete_output
+	    # chose the smaller of {OG GC} and {TG TC}.
+	    # For incomplete_output chose the larger.
+	    #
+	    switch $x[eval {
+	          [lindex $marker 0] \
+		> [lindex $marker 2] \
+		|| (    [lindex $marker 0] \
+		     == [lindex $marker 2] \
+		     && \
+		        [lindex $marker 1] \
+		     >  [lindex $marker 3] ) }] {
+
+	        incorrect_output0 -
+		incomplete_output1 -
+		formatting_error0 {
+			set marker [lrange $marker 0 1]
+		}
+
+	        incorrect_output1 -
+		incomplete_output0 -
+		formatting_error1 {
+			set marker [lrange $marker 2 3]
+		}
+	    }
+	    set $x [concat [list $score_file] $marker]
 	}
     }
 }
