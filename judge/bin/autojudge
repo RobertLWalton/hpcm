@@ -5,7 +5,7 @@
 #
 # File:		autojudge
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Jan 31 11:07:18 EST 2006
+# Date:		Tue Jan 31 17:43:06 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/01/31 16:05:38 $
+#   $Date: 2006/01/31 23:15:03 $
 #   $RCSfile: autojudge,v $
-#   $Revision: 1.119 $
+#   $Revision: 1.120 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -88,20 +88,21 @@ autojudge \[-manual\]
     The `Cpu Time Limit Exceeded', `Output Size Limit
     Exceeded', and `Program Crashed' scores are reported
     only if the .*out file is incomplete, as for `Incom-
-    plete Output', and there is no incorrect output
-    (which would preceded the detection of incomplete
-    output and therefore be `first').  If the .*out file
-    is incomplete, `Cpu Time Limit Exceeded' is reported
-    if the `time_limit_regexp' global variable value
-    matches (ignoring case) some part of some line in
-    the associated .err file.  Similarly `Output Size
-    Limit Exceeded' is reported if the `output_limit_
-    regexp' global variable value matches (ignoring
-    case) some part of some line in the associated .err
-    file.  Otherwise `Program Crashed' is reported if
-    the .*out file is empty or the associated .err file
-    is not empty.  Otherwise `Incomplete Output' is re-
-    ported.
+    plete Output', or the .err file is not empty, and
+    there is no incorrect output (which would preceded
+    the detection of incomplete output and therefore be
+    `first').  In these cases `Cpu Time Limit Exceeded'
+    is reported if the `time_limit_regexp' global vari-
+    able value matches (ignoring case) some part of some
+    line in the associated .err file.  Similarly `Output
+    Size Limit Exceeded' is reported if the `output_
+    limit_regexp' global variable value matches (ignor-
+    ing case) some part of some line in the associated
+    .err file.  Otherwise `Program Crashed' is reported
+    if the .out file is empty or the associated .err
+    file is not empty.  Otherwise `Incomplete Output' is
+    reported (if the .out file is non-empty but incom-
+    plete and the .err file is empty).
 
     The problem name, optional extension, and optional
     submit qualifier are extracted from the
@@ -1235,35 +1236,33 @@ if {    [file exists Auto_Score] \
 # Compute Auto_Score from .*score, .*out, and *.err
 # files.
 #
-# The following variables hold the first marker found
-# for the indicated score.  If the marker is for incom-
-# plete output, the incomplete_score variable holds
-# one of "Cpu Time Limit Exceeded", ..., "Incomplete
-# Output" to tell the exact score involved.
+# The first error found sets the score and marker
+# variable, EXCEPT, if a Formatting Error is found, it
+# just sets the fmarker variable to the formatting error
+# marker.  Markers have the form
 #
 # In these variables a marker has the form
 #
 #	{ scoring-file-name group-number case-number }
 #
-set incorrect_output ""
-set incomplete_output ""
-set formatting_error ""
-set incomplete_score ""
+set score ""
+set marker ""
+set fmarker ""
 #
 foreach item $score_fixes {
     set name [lindex $item 0]
     set fix [lindex $item 1]
 
-    # Update markers.
+    # Compute markers.
     #
     compute_score_and_proof_arrays "${name}.${fix}score"
     compute_score
     foreach x {incorrect_output incomplete_output\
 	       formatting_error} {
 
-	set marker [set ${x}_marker]
+	set m [set ${x}_marker]
 
-	if { $marker != "" && [set $x] == "" } {
+	if { $m != "" } {
 
 	    # Marker is {OG OC TG TC}
 	    #
@@ -1272,86 +1271,92 @@ foreach item $score_fixes {
             # For incomplete_output chose the larger.
             #
 	    set choose_first [expr { \
-                  [lindex $marker 0] \
-                < [lindex $marker 2] \
-                || (    [lindex $marker 0] \
-                     == [lindex $marker 2] \
+                  [lindex $m 0] \
+                < [lindex $m 2] \
+                || (    [lindex $m 0] \
+                     == [lindex $m 2] \
                      && \
-                        [lindex $marker 1] \
-                     <  [lindex $marker 3] ) }]
+                        [lindex $m 1] \
+                     <  [lindex $m 3] ) }]
 	    if { $x == "incomplete_output" } {
 	        set choose_first [expr { ! $choose_first }]
 	    }
 	    if { $choose_first } {
-		set marker [lrange $marker 0 1]
+		set m [lrange $m 0 1]
 	    } else {
-		set marker [lrange $marker 2 3]
+		set m [lrange $m 2 3]
 	    }
-	    set $x [concat [list ${name}.${fix}score] \
-	    		   $marker]
+	    set m [concat [list ${name}.${fix}score] $m]
+
+	    switch $x {
+	    incorrect_output {
+		set score "Incorrect Output"
+		set marker $m
+		break
+	    }
+	    incomplete_output {
+		set score "Incomplete Output"
+		set marker $m
+	    }
+	    formatting_error {
+		if { $formatting_error_marker == "" } {
+		    set formatting_error_marker $m
+		}
+	    }
+	    }
 	}
     }
 
-    # If first incomplete_output marker found, determine
-    # incomplete_score.
+    # Print any non-empty .err file, look for
+    # lines indicating the type of program crash,
+    # and adjust score.
     #
-    if {    $incomplete_output != "" \
-         && $incomplete_score == "" } {
+    if {    $score != "Incorrect Output" \
+         && [file exists $name.err] \
+	 && [file size $name.err] > 0 } {
 
-	# Print any non-empty .err file and look for
-	# lines indicating the type of program crash.
-	#
-	if {    [file exists $name.err] \
-	     && [file size $name.err] > 0 } {
-	    puts ""
-	    puts "========== ERRORS ($name.err)\
-		  =========="
+	puts ""
+	puts "========== ERRORS ($name.err)\
+	      =========="
 
-	    set error_fd [open $name.err r]
-	    set count 0
-	    while { "yes" } {
-		set line [gets $error_fd]
-		if { [eof $error_fd] } break
-		if { [regexp -nocase -- \
-			     $time_limit_regexp \
-			     $line] } {
-		    set incomplete_score \
-		        "Cpu Time Limit Exceeded"
-		} elseif { [regexp -nocase -- \
-			     $output_limit_regexp \
-			     $line] } {
-		    set incomplete_score \
-		        "Output Size Limit Exceeded"
-		}
-		if { $count < 10 } { puts $line }
-		incr count
+	set error_fd [open $name.err r]
+	set count 0
+	set score "Program Crashed"
+	while { "yes" } {
+	    set line [gets $error_fd]
+	    if { [eof $error_fd] } break
+	    if { [regexp -nocase -- \
+			 $time_limit_regexp \
+			 $line] } {
+		set score \
+		    "Cpu Time Limit Exceeded"
+	    } elseif { [regexp -nocase -- \
+			 $output_limit_regexp \
+			 $line] } {
+		set score \
+		    "Output Size Limit Exceeded"
 	    }
-	    close $error_fd
-
-	    if { $incomplete_score == "" } {
-		set incomplete_score "Program Crashed"
-	    }
-
-	    puts "============================="
-	    puts ""
-	} elseif { [file size $name.out] == 0 } {
-	    puts "Empty `$name.out' file produced"
-	    set incomplete_score "Program Crashed"
-	} else {
-	    set incomplete_score "Incomplete Output"
+	    if { $count < 10 } { puts $line }
+	    incr count
 	}
+	close $error_fd
+	puts "============================="
+	puts ""
+	break
+    } elseif { [file size $name.out] == 0 } {
+	puts "Empty `$name.out' file produced"
+	set score "Program Crashed"
+	break
+    } elseif { $score != "" } {
+        break
     }
 }
 
-if { $incorrect_output != "" } {
+if { $score != "" } {
+    auto_score_reply $score $marker
+} elseif { $formatting_error_marker != "" } {
     auto_score_reply \
-        "Incorrect Output" $incorrect_output
-} elseif { $incomplete_output != "" } {
-    auto_score_reply \
-        $incomplete_score $incomplete_output
-} elseif { $formatting_error != "" } {
-    auto_score_reply \
-        "Formatting Error" $formatting_error
+        "Formatting Error" $formatting_error_marker
 } else {
     auto_score_reply "Completely Correct"
 }
