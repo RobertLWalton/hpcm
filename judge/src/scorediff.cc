@@ -2,7 +2,7 @@
 //
 // File:	scorediff.cc
 // Authors:	Bob Walton (walton@deas.harvard.edu)
-// Date:	Mon Oct  3 13:33:43 EDT 2005
+// Date:	Wed Feb  1 07:00:40 EST 2006
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: hc3 $
-//   $Date: 2005/10/03 17:40:52 $
+//   $Date: 2006/02/01 12:13:15 $
 //   $RCSfile: scorediff.cc,v $
-//   $Revision: 1.76 $
+//   $Revision: 1.77 $
 
 // This is version 2, a major revision of the first
 // scorediff program.  This version is more explicitly
@@ -61,9 +61,11 @@ char documentation [] =
 "    ences.\n"
 "\n"
 "    The single first line that lists all the types\n"
-"    of differences found contains just `none' if no\n"
-"    differences were found.  Otherwise it includes\n"
-"    markers with the format\n"
+"    of differences found always contains `eof-eof',\n"
+"    even if no differences were found.  `eof-eof' is\n"
+"    a fake difference that is located at the matched\n"
+"    ends of the output and test files.  The first\n"
+"    line also includes markers with the format\n"
 "\n"
 "	        OGN:OCN-TGN:TCN\n"
 "\n"
@@ -266,11 +268,11 @@ char documentation [] =
 "		be represented as a finite double\n"
 "		precision floating point number.\n"
 "\n"
-"    none	There are no differences in the files\n"
-"		at all.  This is returned as the sole\n"
-"		contents of the output line that\n"
-"		lists differences so that line will\n"
-"		never be blank.\n"
+"    eof-eof	A fake difference that occurs when\n"
+"		both the output and test files are\n"
+"		at their ends.  Always returned in\n"
+"		the first line scorediff outputs, so\n"
+"		that line is never blank.\n"
 "\f\n"
 "    The files are parsed into whitespace, words,\n"
 "    numbers, beginning-of-cases (bocs), beginning-\n"
