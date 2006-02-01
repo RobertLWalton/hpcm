@@ -5,7 +5,7 @@
 #
 # File:		autojudge
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Feb  1 08:15:11 EST 2006
+# Date:		Wed Feb  1 09:08:42 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/02/01 13:59:43 $
+#   $Date: 2006/02/01 14:06:54 $
 #   $RCSfile: autojudge,v $
-#   $Revision: 1.122 $
+#   $Revision: 1.123 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -1243,14 +1243,8 @@ if {    [file exists Auto_Score] \
 #	{ scoring-file-name group-number case-number }
 #
 set score ""
-set marker [concat [list ${name}.${fix}score] \
-                   [lrange $end_marker 0 1]]
+set marker ""
 set fmarker ""
-#
-# Note, the marker set above is only used if there is
-# nothing but formatting errors in the output, but the
-# .err file is non-empty (or the pathological case
-# where .out and .test are BOTH empty).
 #
 foreach item $score_fixes {
     set name [lindex $item 0]
@@ -1260,6 +1254,15 @@ foreach item $score_fixes {
     #
     compute_score_and_proof_arrays "${name}.${fix}score"
     compute_score
+
+    # Set the marker that will be used if there is noth-
+    # ing but formatting errors in the output, but the
+    # .err file is non-empty (or the pathological case
+    # where .out and .test are BOTH empty).
+    #
+    set marker [concat [list ${name}.${fix}score] \
+		       [lrange $end_marker 0 1]]
+
     foreach x {incorrect_output incomplete_output\
 	       formatting_error} {
 
