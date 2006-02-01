@@ -5,7 +5,7 @@
 #
 # File:		autojudge
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Feb  1 09:08:42 EST 2006
+# Date:		Wed Feb  1 10:27:26 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/02/01 14:06:54 $
+#   $Date: 2006/02/01 15:29:11 $
 #   $RCSfile: autojudge,v $
-#   $Revision: 1.123 $
+#   $Revision: 1.124 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -87,7 +87,7 @@ autojudge \[-manual\]
     
     The `Cpu Time Limit Exceeded', `Output Size Limit
     Exceeded', and `Program Crashed' scores are reported
-    only if a .out file is empty or an .err file is non-
+    only if a .out file is empty or a .err file is non-
     empty.  `Cpu Time Limit Exceeded' is reported if the
     `time_limit_regexp' global variable value matches
     (ignoring case) some part of some line in a .err
@@ -97,7 +97,7 @@ autojudge \[-manual\]
     in a .err file.  Otherwise `Program Crashed' is re-
     ported if a .err file is non-empty.  `Program
     Crashed' is also reported if a .out file is empty.
-    `Incomplete Output' is reported only if an .out file
+    `Incomplete Output' is reported only if a .out file
     is non-empty but incomplete and the associated .err
     file is empty.
 
@@ -260,8 +260,8 @@ autojudge \[-manual\]
     system error occurs.
 
     While making files in the problem solution direc-
-    tory, program locks the solution directory with a
-    Dispatch_PID file.
+    tory, this program locks the solution directory with
+    a Dispatch_PID file.
  
     For purposes of computing file dependencies, all
     non-extracted files made (not linked) by this pro-
@@ -1142,10 +1142,6 @@ foreach name $input_names {
 
 # Make .*score files.
 #
-# Do not try to be efficient in the case where not
-# everything needs to be computed, as that is an
-# exceptional case.
-#
 # Compute the mtime of the most recent .*score file for
 # use in deciding whether to recompute the Auto_Score
 # file.
@@ -1238,9 +1234,10 @@ if {    [file exists Auto_Score] \
 # just sets the fmarker variable to the formatting error
 # marker.  Markers have the form
 #
-# In these variables a marker has the form
-#
 #	{ scoring-file-name group-number case-number }
+#
+# The `marker' variable value is not meaningful unless
+# `score' is not "".
 #
 set score ""
 set marker ""
@@ -1306,8 +1303,8 @@ foreach item $score_fixes {
 		set marker $m
 	    }
 	    formatting_error {
-		if { $formatting_error_marker == "" } {
-		    set formatting_error_marker $m
+		if { $fmarker == "" } {
+		    set fmarker $m
 		}
 	    }
 	    }
@@ -1361,9 +1358,8 @@ foreach item $score_fixes {
 
 if { $score != "" } {
     auto_score_reply $score $marker
-} elseif { $formatting_error_marker != "" } {
-    auto_score_reply \
-        "Formatting Error" $formatting_error_marker
+} elseif { $fmarker != "" } {
+    auto_score_reply "Formatting Error" $fmarker
 } else {
     auto_score_reply "Completely Correct"
 }
