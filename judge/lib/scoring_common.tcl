@@ -2,7 +2,7 @@
 #
 # File:		scoring_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Jan 26 03:46:18 EST 2006
+# Date:		Wed Feb  1 07:59:30 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/01/26 09:22:23 $
+#   $Date: 2006/02/01 13:12:15 $
 #   $RCSfile: scoring_common.tcl,v $
-#   $Revision: 1.60 $
+#   $Revision: 1.61 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -472,6 +472,12 @@ proc compute_score_file { outfile testfile scorefile \
 # missing marker value "" is treated as being larger
 # than any other marker value.
 #
+# Also sets
+#
+#	end_marker
+#
+# to the marker associated with eof-eof.
+#
 # Returns score, which is:
 #
 #    Incorrect Output	if any incorrect output
@@ -516,14 +522,19 @@ proc compute_score { } {
     	   formatting_error_types \
     	   incorrect_output_marker \
     	   incomplete_output_marker \
-    	   formatting_error_marker
+    	   formatting_error_marker \
+	   end_marker
+
+    # Note end_types is not global.
 
     set incorrect_output_types ""
     set incomplete_output_types ""
     set formatting_error_types ""
+    set end_types ""
     set incorrect_output_marker ""
     set incomplete_output_marker ""
     set formatting_error_marker ""
+    set end_marker ""
 
     set waf \
 	[info exists \
@@ -549,8 +560,6 @@ proc compute_score { } {
 		}
 	    } else continue
 	}
-
-	if { $type == "none" } continue
 
 	switch -- $type {
 
@@ -611,6 +620,10 @@ proc compute_score { } {
 	    spacebreak -
 	    linebreak {
 		set kind formatting_error
+	    }
+
+	    eof-eof {
+	        set kind end
 	    }
 
 	    default {
