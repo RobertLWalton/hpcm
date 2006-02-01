@@ -2,7 +2,7 @@
 //
 // File:	scorediff.cc
 // Authors:	Bob Walton (walton@deas.harvard.edu)
-// Date:	Wed Feb  1 07:00:40 EST 2006
+// Date:	Wed Feb  1 07:18:08 EST 2006
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: hc3 $
-//   $Date: 2006/02/01 12:13:15 $
+//   $Date: 2006/02/01 12:32:53 $
 //   $RCSfile: scorediff.cc,v $
-//   $Revision: 1.77 $
+//   $Revision: 1.78 $
 
 // This is version 2, a major revision of the first
 // scorediff program.  This version is more explicitly
@@ -1393,7 +1393,7 @@ difference differences[] = {
     { "eof-number",	DIFFERENCE_FILLER },
     { "eof-boc",	DIFFERENCE_FILLER },
     { "eof-bog",	DIFFERENCE_FILLER },
-    { NULL,		DIFFERENCE_FILLER },
+    { "eof-eof",	DIFFERENCE_FILLER },
     { "linebreak",	DIFFERENCE_FILLER },
     { "spacebreak",	DIFFERENCE_FILLER },
     { "whitespace",	DIFFERENCE_FILLER },
@@ -2078,8 +2078,17 @@ int main ( int argc, char ** argv )
 	}
     }
 
-    // The file reading loop is done, and differences
-    // are now recorded in memory, ready for outputting.
+    // The file reading loop is done because we have
+    // found matched EOF_TOKENS.  Output fake eof-eof
+    // difference.
+    //
+    assert ( output.type == EOF_TOKEN );
+    assert ( test.type == EOF_TOKEN );
+    found_difference
+	( type_mismatch ( EOF_TOKEN, EOF_TOKEN ) );
+
+    // Differences are now recorded in memory, ready for
+    // outputting.
 
     // Produce first output line listing all found
     // differences, regardless of the proofs to be
@@ -2179,7 +2188,8 @@ int main ( int argc, char ** argv )
 		     << " " << integer_reldiff_maximum;
 	}
     }
-    cout << (any ? "" : "none") << endl;
+
+    cout << endl;
 
     // Output proof lines.
 
