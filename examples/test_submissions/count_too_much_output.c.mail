@@ -9,9 +9,18 @@ HPCM_BEGIN count.c
 ..{
 ..    int paragraph = 1;
 ..
-..    /* Test infinite output loop. */
+..    /* To get a very big file without breaking      */
+..    /* the limits of scorediff, we have to output   */
+..    /* 10000 whitespace characters in place of      */
+..    /* every space character.  It must be white-    */
+..    /* space or else the score will be Incorrect    */
+..    /* Output.                                      */
 ..
-..    while ( 1 ) printf ( "HI\n" );
+..    char space[10001];
+..    int k;
+..    for ( k = 0; k < 10000; ++ k ) space[k] = ' ';
+..    for ( k = 0; k < 10000; k += 50 ) space[k] = '\n';
+..    space[10000] = 0;
 ..
 ..    while ( 1 )
 ..    {
@@ -52,9 +61,13 @@ HPCM_BEGIN count.c
 ..
 ..	if ( lines > 0  )
 ..	{
-..	    printf ( "Paragraph %d: %d lines, %d words,"
-..	             " %d characters.\n", paragraph,
-..		     lines, words, characters );
+..	    printf ( "Paragraph%s%d:%s%d%slines,"
+..	             "%s%d%swords,"
+..	             "%s%d%scharacters.\n", space,
+..                   paragraph, space,
+..		     lines, space, space,
+..		     words, space, space,
+..		     characters, space );
 ..
 ..	    ++ paragraph;
 ..	}
