@@ -6,7 +6,7 @@
 #
 # File:		makecontest
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Jan 28 10:09:56 EST 2006
+# Date:		Wed Feb  1 14:10:17 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/01/28 15:10:29 $
+#   $Date: 2006/02/01 19:20:20 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.147 $
+#   $Revision: 1.148 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -400,6 +400,16 @@ makecontest option ... index_specification ...
     files, and not on options that are the result of
     substitution.  After substitutions are done, unknown
     options are ignored.
+
+    In mapping item options, the item_name is also
+    mapped like an option and the result treated as
+    options.  This permits substitutions like
+
+    	item_name:include
+
+    to include an item by name.  Thus an item_name is
+    used twice, once as the name of the item  (more on
+    this below), and once as an item_option.
 
     If an item has the `include' option after option
     substitutions, the item entry is included in an out-
@@ -1485,7 +1495,7 @@ proc process_index_specification {} {
 
 	    set name [lindex $line 1]
 	    set options \
-	        [expand_options [lrange $line 2 end]]
+	        [expand_options [lrange $line 1 end]]
 	    set source $index_directory/$name
 
 	    # Check name for legality.
