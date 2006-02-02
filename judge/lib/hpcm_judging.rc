@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Jan 26 06:37:06 EST 2006
+# Date:		Thu Feb  2 04:04:32 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/01/26 11:35:12 $
+#   $Date: 2006/02/02 09:02:11 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.184 $
+#   $Revision: 1.186 $
 
 # Table of Contents:
 #
@@ -1606,23 +1606,28 @@ set output_limit_regexp {file size limit exceeded}
 # Response mode.  Some of the following separated by
 # `+'s, but without ANY whitespace.
 #
+#   cerr	Return CERR (the .cerr file) if score is
+#		`Syntax Error', regardless of submit
+#		qualifier or how score is determined.
+#
 #   solution	Return SOLUTION if score is `Completely
 #		Correct' and submit qualifier was
-#		`solution'.
+#		`solution', regardless of how score is
+#		determined.
 #
 #   first	Return location of FIRST error if score
-#		is `Incorrect Output' or `Format Error',
-#		score was automatically determined, and
-#		submit qualifier was first.
+#		is not `Completely Correct', score was
+#		automatically determined, and submit
+#		qualifier was `first'.
 #
 #   summary	Ditto for SUMMARY of errors and
 #		`summary' submit qualifier.
 #
-#   in		Ditto for judge's test case input, IN,
-#		and `in' or `inout' submit qualifiers.
+#   in		Ditto for judge's test case INput and
+#		`in' or `inout' submit qualifiers.
 #
-#   out		Ditto for judge's test case output, OUT,
-#		and `inout' submit qualifier.
+#   out		Ditto for judge's test case OUTput and
+#		`inout' submit qualifier.
 #
 #   ""		None of above.
 #
@@ -1711,8 +1716,9 @@ set response_instructions {
 	}
 
 	if { $submit_qualifier == "" } {
-	} elseif { ! [regexp $submit_qualifier \
-	                     $response_mode] } {
+	} elseif { ! [lcontain \
+	                [split $response_mode +] \
+			$submit_qualifier] } {
 	    BLANK
 	    { LINE "The submit qualifier\
 	           `-SUBMIT-QUALIFIER-' is not\
@@ -1720,9 +1726,8 @@ set response_instructions {
 	    { LINE "by this contest and is being\
 		    ignored." }
 
-	} elseif { [lcontain { "Incorrect Output" \
-			       "Formatting Error" } \
-			     $auto_score] \
+	} elseif {       $auto_score \
+		      != "Completely Correct" \
 		   && [lcontain \
 		         {first summary in inout} \
 			 $submit_qualifier] } {
@@ -1826,6 +1831,22 @@ set response_instructions {
     } else {
 	{ ERROR "manual score exists but no proposed\
 	         score exists" }
+    }
+
+    if { $proposed_score == "Syntax Error" || \
+         ( ! $proposed && \
+           $manual_score == "Syntax Error" ) || \
+         ( ! $proposed && ! $manual && \
+           $auto_score == "Syntax Error" ) } {
+
+        if { [regexp cerr $response_mode] } {
+	    BLANK
+	    { LINE "The compiler error output\
+		    follows." }
+	    BAR
+	    CERR
+	    BAR
+	}
     }
 
     BLANK
@@ -2007,6 +2028,17 @@ set response_instructions {
 #	  the header and the body of an email is NOT
 #	  included in RECEIVED-HEADER, RECEIVED-FULL-
 #	  HEADER, or RECEIVED-BODY.
+#
+#     CERR
+#	  Include the .cerr file in the reply.
+#
+#     IN
+#	  Include judge's input (.in) files, each pre-
+#	  ceeded by a BAR line containing the input name
+#	  of the file.
+#
+#     OUT
+#	  Ditto for judge's output (.test) files.
 #
 #     SOLUTION
 #	  Include the solution files in the reply.  Each
