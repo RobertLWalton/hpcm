@@ -2,7 +2,7 @@
 #
 # File:		scoring_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Feb  1 07:59:30 EST 2006
+# Date:		Thu Feb  2 03:28:03 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/02/01 13:12:15 $
+#   $Date: 2006/02/02 08:29:16 $
 #   $RCSfile: scoring_common.tcl,v $
-#   $Revision: 1.61 $
+#   $Revision: 1.62 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -1108,6 +1108,17 @@ proc execute_response_commands \
 		    lappend new_command $string
 		}
 		lappend processed_commands $new_command
+	    }
+
+	    CERR	{
+	    	if { $length != 1 } {
+		    response_error $command
+		}
+		set file $submitted_problem.cerr
+		lappend processed_commands \
+			[list BAR $file:]
+		lappend processed_commands \
+			[list INPUT $file]
 	    }
 
 	    SOLUTION	{
