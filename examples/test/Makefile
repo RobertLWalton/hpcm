@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Feb  2 05:11:14 EST 2006
+# Date:		Thu Feb  2 05:54:20 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,15 +11,37 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/02/02 10:09:06 $
+#   $Date: 2006/02/02 10:52:02 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.8 $
+#   $Revision: 1.9 $
 
+TESTLIB=${HOME}/hpcm/problem_library/test
+CLEAN_FILES = \
+    ${TESTLIB}/scoring_filter_test/Scoring_Filter
+
 # Kill all implicit rules
 #
 .SUFFIXES:
 
 all:	setup test diff
+
+list:
+	@for x in test_mail/*/Received_Mail; \
+	    do \
+	    y=`dirname $$x`; \
+	    z=`basename $$y`; \
+	    echo $$z; \
+	    sed <$$x -n \
+	        -e '/^X-HPCM-Test-Subject:/b print' \
+	        -e 'b' \
+	        -e ': print' \
+	        -e 'p' \
+	        -e 's/.*//' \
+		-e 'n' \
+		-e '/^[ \t]/b print' \
+		-e 'q'; \
+	    done
+	
 
 setup:
 	@echo SETUP
@@ -56,3 +78,4 @@ dangerous_clean:
 	       flag log \
 	       scoreboard.mail Scorefinder_Output \
 	       Scoeboard_PID replies mbox web web.tar
+	rm -f ${CLEAN_FILES}
