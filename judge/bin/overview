@@ -4,7 +4,7 @@
 #
 # File:		overview
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Jan 30 07:16:54 EST 2006
+# Date:		Fri Feb  3 09:04:19 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/01/30 12:49:06 $
+#   $Date: 2006/02/03 14:57:55 $
 #   $RCSfile: overview,v $
-#   $Revision: 1.111 $
+#   $Revision: 1.112 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -408,7 +408,7 @@ the .in files can be computed, and may contain .ftest,
 .jtest, or .jftest files that are computed from the
 .test files.  There may also be a pppp.rc file contain-
 ing judge's parameters.  See `Judge's Parameters and
-Filters' below for a descripton of all these files.
+Filters' below for a description of all these files.
 
 A contest has a solutions directory that contains sym-
 bolic links to the library problem directories for every
@@ -639,7 +639,7 @@ initial fragment of the demos/count/count.jin file:
     vein,
     this is a good paragraph.
 
-This is essentually an annotated copy of the correspond-
+This is essentially an annotated copy of the correspond-
 ing count.in file.  One set of annotations, the *CASE*
 lines above, divide the .in file into cases, so if
 desired the judge's input for the first test case on
@@ -919,14 +919,18 @@ type of contest.  Some of these subdirectories are:
 			tenance below).
 
     test		A directory for testing Complex
-    			Problem submission features.
-
+    			Problem submission features
+			by making submissions without
+			using hpcm_sendmail and checking
+			the results in the judge's sub-
+			mission directories.
+
 Each of these subdirectories contains a Makefile that
 contains documentation on how to use the files in the
 subdirectory.  For the
 
 	hpcm/examples/<contest-type>_contest
-
+
 directories this documentation tells how to create a
 contest by making a judging directory, copying the files
 in the `hpcm/examples' subdirectory into the new judging
@@ -1049,7 +1053,7 @@ test defining components are made automatically by the
 	the judging directory will run `makecontest' to
 	build all the contest definition files.  Also
 	implements `make web' to make a web page and
-	`make probelms.ps', `make this_contest.ps', etc
+	`make problems.ps', `make this_contest.ps', etc
 	to make documentation.
 
     scoreboard.1head
@@ -1171,7 +1175,7 @@ that are created by `makecontest' are:
     problems_print_files
         Lists of files to be printed.  The help, demos,
 	and problem description files are given in sep-
-	arate lists, each begining with an index file,
+	arate lists, each beginning with an index file,
 	except that the help file list begins with this_
 	contest followed by an index file.  These list
 	files are made by `makecontest -print_files'.
@@ -1633,7 +1637,7 @@ are listed in alphabetical order).
 	make the new accounts listed in the `trashable'
 	file, and then `makecontest -trashable' can be
 	re-run to make delete the `trashable' file, as
-	there will no longer be any non-existant ac-
+	there will no longer be any non-existent ac-
 	counts in secure/passwords.
 
 
@@ -2431,8 +2435,8 @@ extracts the `pppp.eee' file, links files from the
 problem solution directory, captures compiler errors
 in `pppp.cerr', captures run errors in `xxxx.err', and
 scores `xxxx.out' (or `xxxx.fout') generating a *.*score
-file and Auto_Score and possibly reply email.  `autoj-
-udge' can also make files that are otherwise missing in
+file and Auto_Score and possibly reply email.  `auto-
+judge' can also make files that are otherwise missing in
 the problem solution directory.
 
 If the `autojudge' does not produce a final reply, it
@@ -2782,7 +2786,7 @@ are:
         Ditto but for the `startcontest' program instead
 	of the `makescoreboard' program.
 
-    <jugding-directory>mail/*-submission/Dispatch_PID
+    <judging-directory>mail/*-submission/Dispatch_PID
         This file is used as a lock to prevent more than
 	one `autojudge' or `manualreply' program from
 	running in a submission subdirectory at once.
@@ -3015,8 +3019,8 @@ the contest follows:
     hpcm_clisp.lsp	Code for hpcm_clisp.
 
     scorediff		Compare the .yyout and .yytest
-    			files (for yy = "", f, j, or jf)
-			and report differences in a
+    			files (for yy = \"\", f, j, or
+			jf) and report differences in a
 			.yyscore file.
 
     startcontest	Change the mode of contest/pro-
@@ -3081,86 +3085,116 @@ Programs: Contest Making
 
 The following programs are used to make contests:
 
-    hpcm/judge/bin/makecontest
-    	Make the contest definition files starting
-	from parameters to this program (usually
-	contained in a Makefile) and hpcm_judging.rc.
+In hpcm/judge/bin:
 
-    hpcm/judge/bin/makeweb
-    	Make a web page set containing problem state-
-	ments and optionally problem solutions.
-    	
-    hpcm/judge/bin/fprint
-    	Print 56 column line files, 2 file pages per
-	print page.
+    jfilter		Make .in files from .jin files,
+    			.jout files from .out files,
+			.jfout files from .fout files,
+			and extract scoring_instructions
+			from .jin files.
 
-    hpcm/judge/bin/hpcm_print_passwords
-    	Print contestant account names and passwords
-	each on a separate page with contest specific
-	instructions.
+    makecontest		Make the contest definition
+    			files starting from parameters
+			hpcm_judging.rc (that can be
+			overridden by giving parameters
+			directly to the program).
+    makeweb		Make a web page set containing
+    			problem statements and optional-
+			ly problem solutions, using
+			parameters in hpcm_judging.rc.
 
-    hpcm/judge/bin/hpcm_email_passwords
-    	Email contestant account names and passwords
-	to team coaches, each with extra information
-	containing contest specific instructions.
+    fprint		Print 56 column wide files,
+    			2 file pages per print page.
 
-    hpcm/contestant/bin/SETUP_PROTOTYPE
-    	Setup the prototype account and the files needed
-	by TRASH_ACCOUNT.
+    hpcm_print_passwords  Linked to hpcm/secure/bin/
+    			  hpcm_print_passwords.  See
+			  below.
+    hpcm_email_passwords  Linked to hpcm/secure/bin/
+    			  hpcm_email_passwords.  See
+			  below.
 
-    hpcm/contestant/bin/TRASH_ACCOUNT
-        Initialize (or reinitialize) the files and dir-
-	ectories of a contestant account.
+In hpcm/contestant/bin:
 
-    hpcm/secure/bin/hpcm_make_accounts
-	Create all the contestant accounts.
+    SETUP_PROTOTYPE	Setup the prototype account and
+    			files needed by TRASH_ACCOUNT.
+    TRASH_ACCOUNT	Initialize (or reinitialize) the
+    			files and directories of a sin-
+			gle contestant account.
 
-    hpcm/secure/bin/hpcm_set_passwords
-	Set passwords for all the contestant accounts.
+In hpcm/secure/bin:
 
-    hpcm/secure/bin/hpcm_TRASH_ACCOUNTS
-	Run TRASH_ACCOUNT in each contestant account.
+    hpcm_print_passwords  Print contestant account names
+    			and passwords each on a separate
+			page with contest specific in-
+			structions.
+    hpcm_email_passwords  Email contestant account names
+    			and passwords to team coaches,
+			each with extra information con-
+			taining contest specific in-
+			structions.
+
+    hpcm_setup_accounts  Runs the equivalent of the
+    			following 3 programs, without
+			redoing what has already been
+			done.
+    hpcm_make_accounts	Create all contestant accounts.
+    hpcm_set_passwords	Set passwords for all contest-
+    			ant accounts.
+    hpcm_TRASH_ACCOUNTS	Run TRASH_ACCOUNT in each con-
+    			testant account.
 
 
 Programs: Maintenance
 --------- -----------
 
-The following programs in hpcm/judge/bin are used for
-maintenance.
+The following programs are used for maintenance.
+
+In hpcm/judge/bin:
 
     overview		Print this document.
     installing_hpcm	Print the `Installing HPCM'
     			document.
     judging		Print the `HPCM Judging' docu-
     			ment on how to judge contests.
-    makeMakefile	Make problem Makefiles from an-
-    			other problem Makefile that acts
-			as a template.
+
+    remakeMakefile	Make or remake problem Makefiles
+    			from another problem Makefile
+			that acts as a template.
     testproblems	Test many problems at once.
+
     fcheck		Check that a file has 56 column
     			lines and 40 line pages.
     fcheckc		Check that a file has 56 column
     			lines (but unlimited length
 			pages, for code).
     chkpage		Helper for fcheck{,c}.
-    filtered_diff	Diff filtered files.
+
+    hpcm_extract_test_replies  Linked to hpcm/
+    			contestant/bin/hpcm_extract_
+			test_replies.  See below.
+    filtered_diff	Linked to hpcm/contestant/bin/
+    			filtered_diff.  See below.
+    email_diff		Linked to hpcm/contestant/bin/
+    			email_diff.  See below.
+
     file_list		Make lists of HPCM files from
     			logical expressions involving
 			keywords.
-
-    count_slocs		Count SLOCs (source lines of
+    sloc_counts		Count SLOCs (source lines of
     			code in HPCM program files).
-
-In addition the following program in hpcm/contestant/bin
-is used for maintenance.
+
+In hpcm/contestant/bin:
 
     hpcm_extract_test_replies
     			Extract messages in a mailbox
-			that have an X-HPCM-Test-Subject
-			field beginning with a test
-			name.
+			(mbox file) that have an
+			X-HPCM-Test-Subject field begin-
+			ning with a test name.
 
+    filtered_diff	Diff filtered files.
+    email_diff		Diff filtered email files.
 
+
 Programs: Common Functions
 --------- ------ ---------
 
