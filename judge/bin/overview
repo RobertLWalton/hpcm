@@ -4,7 +4,7 @@
 #
 # File:		overview
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Feb  5 00:55:32 EST 2006
+# Date:		Sun Feb  5 01:46:58 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/02/05 06:15:10 $
+#   $Date: 2006/02/05 07:18:57 $
 #   $RCSfile: overview,v $
-#   $Revision: 1.113 $
+#   $Revision: 1.114 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -3346,10 +3346,19 @@ mary of these is:
     	Called on every exit; can be redefined to per-
 	form cleanup actions.
 
-    proc dispatch_lock {}
-    proc dispatch_unlock {}
-    	Manage the submission directory Dispatch_PID
-	file.
+    include_if { condition textexpr }
+	Evaluate condition and if true evaluate text-
+	expr as if it were in \" quotes and return its
+	value, else return \"\".
+
+    indent_list { indent list { maxlen 56 } }
+        Return the list as text for display with the
+	given indent and maximum line length.
+
+    proc dispatch_lock { { directory . } }
+    proc dispatch_unlock { { directory . } }
+	Lock/unlock a directory by creating a Dispatch_
+	PID file in it.
 
     proc clock_to_filename_date { clock }
     proc filename_date_to_clock { date }
@@ -3362,14 +3371,15 @@ mary of these is:
     proc make_unchecked { filename }
         Manages the `checked' flag in an error log file
 	name.
-
+
     proc caught_error {}
-        Catch an error occurring in an HPCM TCL program.
+        Process an error caught during an HPCM TCL
+	program.
 
     proc log_error { error_output }
         Log an error to an error log file, to the stand-
 	ard error output, or to an email.
-
+
     proc read_header { ch { first_line \"\" }
 			  { omit_fields \"\" } }
 	Read the header of received email.
@@ -3389,6 +3399,10 @@ mary of these is:
     proc header_is_authentic {}
         Test whether message is authentic.
 
+    proc read_sendmail_rc {}
+        Read the ./contest/secure/hpcm_sendmail.rc file
+	and return the parameters it contains.
+
     proc reply { args }
         Call compose_reply and then send_reply.
 
@@ -3397,19 +3411,16 @@ mary of these is:
 
     proc send_reply { args }
         Send the reply stored in Reply_Mail+.
-
+
     proc blank_body { ch }
         Check if received email has a blank body.
-
-    proc scrub_filename { filename }
-        Remove noise like '/foo/../' from a filename.
 
     proc put_file { filename
 		   { ch stdout }
 		   { line_count 1000000000 } }
-	Write an entire file of the first so many lines
+	Write an entire file or the first so many lines
 	of a file to a channel.
-
+
     proc read_file { filename }
         Read and return the first line of a file.
 
@@ -3431,6 +3442,12 @@ mary of these is:
                                       abbreviations
 				      atoms values }
 	Compile a logical expression.
+
+    proc parse_block { block command_list_name
+    			     globals { extras {} } }
+	Parse a block and process if/elseif/else
+	statements in it, returning the block with
+	these removed.
 
 Common Functions: Display
 ------ ---------- -------

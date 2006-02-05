@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Jan 26 03:18:59 EST 2006
+# Date:		Sun Feb  5 01:57:44 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/01/26 09:22:23 $
+#   $Date: 2006/02/05 07:16:13 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.128 $
+#   $Revision: 1.129 $
 #
 
 # Table of Contents
@@ -90,11 +90,13 @@ proc exit_cleanup {} {}
 # but not exclusively for documentation.
 
 # If the condition is true in the caller's environment,
-# return the text.  Else return "".
+# evaluate the text expression in the caller's environ-
+# ment, as if it were enclosed in " quotes, and return
+# its value.  Else return "".
 #
-proc include_if { condition text } {
+proc include_if { condition textexpr } {
     if { [uplevel [list expr $condition]] } {
-        return $text
+        return [uplevel "concat \"$textexpr\""]
     } else {
         return ""
     }
@@ -1229,39 +1231,6 @@ proc compute_message_date {} {
     }
 }
 
-# Read the $judging_directory/contest/secure/hpcm_
-# sendmail.rc file and return a list of the form
-#
-#	{ To-value Key-value Key-Name-value }
-#
-# All values have whitespace trimmed from their ends.
-# Missing values return as "".  If file does not exist,
-# all values return as "".
-#
-proc read_sendmail_rc { } {
-    global judging_directory
-    set dir $judging_directory/contest/secure
-    if { ! [file exists $dir/hpcm_sendmail.rc] } {
-        return [list "" "" ""]
-    }
-    set ch [open $dir/hpcm_sendmail.rc r]
-    set to ""
-    set key ""
-    set key_name ""
-    while { "yes" } {
-        set line [gets $ch]
-	if { [eof $ch] } break
-	regexp -nocase {^To:(.*)$} $line forget to
-	regexp -nocase {^Key:(.*)$} $line forget key
-	regexp -nocase {^Key-Name:(.*)$} \
-	       $line forget key_name
-    }
-    close $ch
-    return [list [string trim $to] \
-                 [string trim $key] \
-		 [string trim $key_name]]
-}
-
 # Compute whether the header just read by read_header
 # is authentic.  Return `yes' if it is, `no' if it is
 # not.  If the header does not already have the same
@@ -1384,10 +1353,42 @@ proc header_is_authentic {} {
 
     return [compute_authentication]
 }
+
+# Read the $judging_directory/contest/secure/hpcm_
+# sendmail.rc file and return a list of the form
+#
+#	{ To-value Key-value Key-Name-value }
+#
+# All values have whitespace trimmed from their ends.
+# Missing values return as "".  If file does not exist,
+# all values return as "".
+#
+proc read_sendmail_rc { } {
+    global judging_directory
+    set dir $judging_directory/contest/secure
+    if { ! [file exists $dir/hpcm_sendmail.rc] } {
+        return [list "" "" ""]
+    }
+    set ch [open $dir/hpcm_sendmail.rc r]
+    set to ""
+    set key ""
+    set key_name ""
+    while { "yes" } {
+        set line [gets $ch]
+	if { [eof $ch] } break
+	regexp -nocase {^To:(.*)$} $line forget to
+	regexp -nocase {^Key:(.*)$} $line forget key
+	regexp -nocase {^Key-Name:(.*)$} \
+	       $line forget key_name
+    }
+    close $ch
+    return [list [string trim $to] \
+                 [string trim $key] \
+		 [string trim $key_name]]
+}
 
 # Reply Functions
 # ----- ---------
-
 
 # Construct a mail reply file and send it to the sender
 # of any received mail file.
@@ -1691,45 +1692,6 @@ proc blank_body { ch } {
 
 # File Functions
 # ---- ---------
-
-
-# Remove noise from a file name.  Specifically remove
-#    empty components, "." components, and "foo/.."
-#    component pairs where possible.
-#
-proc scrub_filename { name } {
-    set inlist [split $name /]
-    set outlist {}
-    set abs ""
-    if { [lindex $inlist 0] == "" } {
-    	set abs "/"
-    }
-    foreach component $inlist {
-        if { $component == "" || $component == "." } {
-	    continue
-	} elseif { $component == ".." } {
-	    set len [llength $outlist]
-	    if {    $len >= 1 \
-	         && [lindex $outlist end] != ".." } {
-	        set outlist [lrange $outlist 0 end-1]
-	    } else {
-	        lappend outlist $component
-	    }
-	} else {
-	    lappend outlist $component
-	}
-    }
-
-    # Warning: join has a bug: [join [list ""] /] == "".
-
-    set value "$abs[join $outlist /]"
-    if { $value == "" } {
-        return "."
-    } else {
-	return $value
-    }
-}
-
 
 # Write entire file to channel.  If number of lines in
 # file is greater than third argument, do not write
