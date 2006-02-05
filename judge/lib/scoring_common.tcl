@@ -2,7 +2,7 @@
 #
 # File:		scoring_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Feb  2 03:53:20 EST 2006
+# Date:		Sun Feb  5 07:21:20 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/02/02 08:58:17 $
+#   $Date: 2006/02/05 12:19:05 $
 #   $RCSfile: scoring_common.tcl,v $
-#   $Revision: 1.63 $
+#   $Revision: 1.64 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -773,6 +773,9 @@ proc send_response { commands } {
     }
 }
 
+# Helper function for (helper functions of) execute_
+# response_commands below.
+#
 # Given a proof from proof_array, output commands
 # describing it to processed commands.
 #
@@ -1014,8 +1017,9 @@ proc process_first_or_summary_command \
     }
 }
 
-# Function to execute response instruction commands
-# after if-statement processing.
+# Helper function for compose_response above.  Executes
+# response instruction commands after if-statement
+# processing.
 #
 proc execute_response_commands \
 	{ compose_reply_options commands } {
@@ -1192,6 +1196,9 @@ proc execute_response_commands \
     }
     return $return_commands
 }
+
+# Helper function for execute_response_commands above.
+#
 proc response_error { command } {
     error "In `response_instructions' value,\
            badly formatted command: $command."
