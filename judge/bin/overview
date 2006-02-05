@@ -4,7 +4,7 @@
 #
 # File:		overview
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Feb  3 09:04:19 EST 2006
+# Date:		Sun Feb  5 00:55:32 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/02/03 14:57:55 $
+#   $Date: 2006/02/05 06:15:10 $
 #   $RCSfile: overview,v $
-#   $Revision: 1.112 $
+#   $Revision: 1.113 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -67,12 +67,12 @@ puts "
 	Programs: Judging
 	Programs: Contest Making
 	Programs: Maintenance
-	Programs: Common Functions
-	Programs: System/User Interface Common Functions
-	Programs: General Common Functions
-	Programs: Display Common Functions
-	Programs: Scoring Common Functions
-	Programs: Scoreboard Common Functions
+	Common Functions
+	Common Functions: System/User Interface
+	Common Functions: General
+	Common Functions: Display
+	Common Functions: Scoring
+	Common Functions: Scoreboard
 
 Features
 --------
@@ -3195,17 +3195,18 @@ In hpcm/contestant/bin:
     email_diff		Diff filtered email files.
 
 
-Programs: Common Functions
---------- ------ ---------
+Common Functions
+------ ---------
 
-There are four packages of functions that can be import-
+There are five packages of functions that can be import-
 ed by HPCM TCL programs:
 
     hpcm/judge/lib/hpcm_judging.rc
-    	Parameters and system/user interface functions.
+    	System/user interface functions.  Also includes
+	system parameters.  Always imported.
 
     hpcm/judge/lib/judging_common.tcl
-    	General functions.
+    	General functions.  Always imported.
 
     hpcm/judge/lib/display_common.tcl
     	Display functions.
@@ -3216,8 +3217,8 @@ ed by HPCM TCL programs:
     hpcm/judge/lib/scoreboard_common.tcl
     	Scoreboard functions.
 
-Programs: System/User Interface Common Functions
---------  ----------- --------- ------ ---------
+Common Functions: System/User Interface
+------ ---------- ----------- ---------
 
 The file hpcm/judge/lib/hpcm_judging.rc contains func-
 tions usable by any HPCM TCL program that are simple
@@ -3242,19 +3243,25 @@ functions.  A brief summary of these functions is:
     proc translate_base64 { text }
         Translate base64 MIME encoded text.
 
-    proc create_file { filename }
-    proc create_directory { dirname }
-        Create a file or directory, unless the file or
-	directory already exists, and return an indica-
-	tion of whether a new file or directory was
-	created.  Used for locking.
+    proc truename { dirname }
+        Return absolute name of a directory that would
+	be given by `pwd' if the directory were current.
 
+    proc create_file { filename }
+        Create a file unless the file already exists,
+	and return an indication of whether a new file
+	was created.  Used for locking.
+
+    proc create_directory { dirname }
+        Create a directory unless the directory already
+	exists.
+
     proc link_file { source { target . } }
         Symbolically link source to target.
 
     proc copy_file { source target }
-        Copy a file.
-
+        Copy a file preserving protection mode settings.
+
     proc grant_access { filename { allow rx } }
     	Add a+x, a+r, or a+w permissions to file or
 	directory.
@@ -3263,8 +3270,9 @@ functions.  A brief summary of these functions is:
         Discover `a' permissions of file.
 
     proc deny_access { filename }
-        Deny all permissions for a file or directory
-	except to owner.
+        Deny all permissions for a file or directory ex-
+	cept to owner or group, and deny write permis-
+	sions to group.
 
     proc view_file { filename }
         Look at a file (e.g., with an editor).
@@ -3287,16 +3295,16 @@ functions.  A brief summary of these functions is:
 
     proc call_shell {}
         Invoke your favorite shell for interactive use.
-
+
     proc exec_in_directory { directory command args }
         Execute a command in a particular directory.
 
     proc current_pid {}
         Return the current process' ID.
-
+
     proc display_process_tree { root_pid }
-        Display the processes in the process tree rooted
-	at a given process ID.
+        Return a display of the processes in the process
+	tree rooted at a given process ID.
 
     proc process_found { display }
         Returns true iff root process existed when
@@ -3320,10 +3328,15 @@ functions.  A brief summary of these functions is:
     proc host_name {}
     	Return the account name or host network name.
 
+    proc account_home_directory { account }
+        Return the home directory of an account.
 
+    proc account_home_directories { glob }
+        Return the home directories of all accounts
+	whose names match the glob expression.
 
-Programs: General Common Functions
---------  ------- ------ ---------
+Common Functions: General
+------ ---------- -------
 
 The file hpcm/judge/lib/judging_common.tcl contains
 functions usable by any HPCM TCL program.  A brief sum-
@@ -3419,8 +3432,8 @@ mary of these is:
 				      atoms values }
 	Compile a logical expression.
 
-Programs: Display Common Functions
---------  ------- ------ ---------
+Common Functions: Display
+------ ---------- -------
 
 The file hpcm/judge/lib/display_common.tcl contains
 functions usable by any HPCM TCL program for menu driven
@@ -3508,8 +3521,8 @@ displays.  A brief summary of these is:
     	Create an email a query to the judge.
 
 
-Programs: Scoring Common Functions
---------  ------- ------ ---------
+Common Functions: Scoring
+------ ---------- -------
 
 The file hpcm/judge/lib/scoring_common.tcl contains
 functions usable by any HPCM TCL program to compute
@@ -3552,8 +3565,8 @@ scores.  A brief summary of these is:
 
 
 
-Programs: Scoreboard Common Functions
---------  ---------- ------ ---------
+Common Functions: Scoreboard
+------ ---------- ----------
 
 The file hpcm/judge/lib/scoreboard_common.tcl contains
 functions usable by any HPCM TCL program to produce a
