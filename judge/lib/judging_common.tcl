@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Feb  5 01:57:44 EST 2006
+# Date:		Sun Feb 12 00:18:57 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/02/05 07:16:13 $
+#   $Date: 2006/02/12 06:15:23 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.129 $
+#   $Revision: 1.130 $
 #
 
 # Table of Contents
@@ -96,7 +96,7 @@ proc exit_cleanup {} {}
 #
 proc include_if { condition textexpr } {
     if { [uplevel [list expr $condition]] } {
-        return [uplevel "concat \"$textexpr\""]
+        return [uplevel "join \[list \"$textexpr\"\]"]
     } else {
         return ""
     }
