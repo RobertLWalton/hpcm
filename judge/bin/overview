@@ -4,7 +4,7 @@
 #
 # File:		overview
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Feb  5 06:45:42 EST 2006
+# Date:		Fri Feb 24 10:36:08 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/02/05 12:21:02 $
+#   $Date: 2006/02/24 17:08:56 $
 #   $RCSfile: overview,v $
-#   $Revision: 1.116 $
+#   $Revision: 1.117 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -107,7 +107,7 @@ HPCM has the following features:
 		    of a problem are used to score the
 		    problem.  Time is not used.
 
-	unscored    Only the number of correct problems
+	unranked    Only the number of correct problems
 		    is used to score contestants.
 
     o Can provide different types of feedback from the
@@ -216,11 +216,11 @@ Creating a Contest
 
 To create a contest, first read the help files in
 
-	hpcm/contestant/help/common/
+    hpcm/contestant/help/common/
 
 to get a good idea of what you are creating.  The file
 
-	hpcm/contestant/help/index
+    hpcm/contestant/help/index
 
 explains what each of these files contains and suggests
 an order in which these files may be read.
@@ -228,13 +228,13 @@ an order in which these files may be read.
 Then choose the type of contest you want to create
 (email, informal, formal) and read
 
-	hpcm/contestant/help/<contest-type>
-	hpcm/examples/<contest-type>/Makefile
-	hpcm/examples/<contest-type>/hpcm_judging.rc
+    hpcm/contestant/help/<contest-type>/<contest-type>
+    hpcm/examples/<contest-type>/Makefile
+    hpcm/examples/<contest-type>/hpcm_judging.rc
 
 You should also read
 
-	hpcm/judge/lib/hpcm_judging.rc
+    hpcm/judge/lib/hpcm_judging.rc
 
 and try to understand the parameters in that file as
 best you can.  You need not read this last file very
@@ -246,8 +246,8 @@ the individual program documentation for some of the
 programs used to set up or judge contests.  Each prog-
 ram produces its own documentation when it is executed
 with the `-doc' option.  After installing HPCM and run-
-`make' in the hpcm directory, all these program docu-
-mentations will also be collected within the hpcm/judge/
+ing `make' in the hpcm directory, all these program
+documents will also be collected within the hpcm/judge/
 doc directory.
 
 If you want to create complex problems, such as multi-
@@ -259,7 +259,7 @@ Data: Problems: Complex Problems' below.
 Data and Programs
 ---- --- --------
 
-HPCM handles different categories of data:
+HPCM uses different categories of data:
 
 Library Data
     Problem descriptions, help documentation files,
@@ -294,8 +294,8 @@ Contest Making Programs
     Programs run to make a contest.
 
 Maintenance Programs
-    Programs run to maintain the library, produce doc-
-    umentation, or test the HPCM system.
+    Programs run to maintain the library and test and
+    distribute the HPCM system.
 
 Common Functions
     Functions usable by HPCM TCL programs.  These come
@@ -375,10 +375,11 @@ problem directory named `pppp' within one of the
 directories just mentioned, and the following files
 within this problem directory:
 
-    pppp.txt, pppp.html, pppp.htm, pppp.ps, pdf, etc.
+    pppp.txt, pppp.html, pppp.htm, pppp.ps, pppp.pdf,
+    	      etc.
     		Problem description file in ASCII (txt),
 		HTML (html or htm), POSTSCRIPT (ps),
-		PDF, etc.
+		PDF (pdf), etc.
 
     Makefile	Gives instructions for compiling and
                 running the problem solution.
@@ -397,8 +398,8 @@ library:
     pppp.in    The judge's test input.
     pppp.test  The judge's test output.
 
-Actually, there may be multiple pairs of such files, any
-names ending in .in and .test:
+Actually, there may be multiple pairs of such files,
+with any names ending in .in and .test:
 
     xxxx.in    The judge's test input.
     xxxx.test  The judge's test output.
@@ -428,8 +429,8 @@ possibilities are:
     pppp.lsp	COMMONLISP language solution.
 
 The programming languages allowed may vary; but every
-solution language must be explicitly supported by the
-problem Makefile.
+solution language allowed in a contest must be expli-
+citly supported by the problem Makefile.
 
 It is possible to compile and run the solution within
 the library problem directory in the same manner as
@@ -502,13 +503,14 @@ Another fix is to do a
 
 in the library problem directory; but this has the dis-
 advantage that contestants will then be able to read any
-*.class files in this and other library problem direc-
-tories: see `Contest Definition Data: Security' below.
+*.class files in this and maybe other library problem
+directories: see `Contest Definition Data: Security'
+below.
 
 Lastly, the `make clean' command in the problem direc-
 tory deletes all temporary files, including `pppp',
-`xxxx.out', `xxxx.fout', `xxxx.jout', `xxxx.jfout',
-`core', `.class', `.fas', and `.lib' files.
+`*.out', `*.fout', `*.jout', `*.jfout', `core',
+`core.\[0-9\]*', `*.class', `*.fas', and `*.lib' files.
 
 
 
@@ -520,16 +522,28 @@ filters.  But in many cases at least one parameter, the
 scoring_instructions parameter, needs to be set, and
 sometimes the submitted and judge's output cannot be
 compared directly, and must be filtered before they
-can be compared.  The following files in the problem
-directory contain parameters and filters.  All these
-files are optional.
+can be compared.  In addition, the features that permit
+the judge's input and output for the first failed test
+case to be returned to the submitter require that input
+and output files be separated into test cases, and this
+uses parameters located in *.jin files.
+
+The following files in the problem directory contain
+parameters, filters, and filtered test output.  All
+these files are optional.
 
     pppp.rc    A file containing parameters that control
     	       how the automatic scoring is done (e.g.,
-	       what numeric tolerances are permitted).
-	       The files delivered to contestants when a
-	       contest is made by makecontest can also
-	       be controlled.
+	       what numeric tolerances are permitted),
+	       which files are delivered electronically
+	       to contestants, which files are printed
+	       for contestants, which files contestants
+	       must or can submit, which files in the
+	       solution directory are needed for judg-
+	       ing, how to make such files in the solu-
+	       tion directory if they do not already
+	       exist, and the order that input files are
+	       used in testing.
 	       
 	       This file contains parameters that over-
 	       ride those set in hpcm_judging.rc, or
@@ -539,11 +553,11 @@ files are optional.
 	       hpcm_judging.rc by programs that process
 	       a problem submission (e.g., autojudge)
 	       or make a contest (e.g, makecontest).
-
+
 	       See the `Problem .rc Files' section of
 	       hpcm/judge/lib/hpcm_judging.rc for more
 	       detailed documentation.
-
+
     Scoring_Filter
     	       This executable program file filters .out
 	       and .test files to produce .fout and
@@ -576,13 +590,13 @@ files are optional.
 	       files to .jfout files, .test files to
 	       .jtest files, and .ftest files to .jftest
 	       files.
-
+
     xxxx.ftest  Made from .test by Scoring_Filter.
 
     xxxx.jtest  Made from .test and .jin by jfilter.
 
     xxxx.jftest Made from .ftest and .jin by jfilter.
-
+
 An example use of pppp.rc is the following.  Normally
 the scoring_instructions global variable in hpcm_
 judging.rc is set to the list { column space } which
@@ -615,12 +629,12 @@ and xxxx.out might contain the lines
 Then the command
 
 	Scoring_Filter xxxx.in <xxxx.out >xxxx.fout
-
+
 might produce the xxxx.fout file:
 
     Case 5: 4
     Case 6: not a legal path
-
+
 where 4 is the length of the `Case 5' path.  If 4 is the
 length of the shortest path, xxxx.ftest would have the
 same `Case 5' line, but of course it would not have the
@@ -654,13 +668,13 @@ ing to this input is
 
 and from this file and the count.jin file the jfilter
 program make the following count.jtest file:
-
+
     -Paragraph 1: 1 lines, 8 words, 39 characters.
     -Paragraph 2: 4 lines, 14 words, 70 characters.
-
+
 The first character of each line here indicates whether
 the line begins a case (-) or continues a case (.) (but
-there are no examples of case continuation here).
+there are no examples of case continuation line here).
 
 Things can get somewhat more complex if cases are
 grouped, as may be necessary if one case cannot test
