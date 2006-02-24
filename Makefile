@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Aug 29 05:17:57 EDT 2005
+# Date:		Fri Feb 24 13:14:54 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/08/29 09:36:22 $
+#   $Date: 2006/02/24 18:18:20 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.45 $
+#   $Revision: 1.46 $
 
 # See STATUS file for description of versions.
 #
@@ -49,7 +49,13 @@ NONDIS = non_distributable
 #
 # make files
 #	Make *.files files, and in particular
-#	distribution.files and cvs.files.
+#	file_list.files and cvs.files.
+#
+#	file_list.files are all files listed in
+#	the File_List file.  cvs.files are all files
+#	in the CVS repository (determined by cvs log).
+#	These lists can be directly diff'ed to see
+#	the differences between these two lists.
 #
 # make slocs
 #	Make sloc count files, source.slocs and
@@ -106,8 +112,7 @@ cvssignatures:	HPCM_${VERSION}_CVS_MD5_Signatures
 files:		hpcm_${VERSION}.files \
 		hpcm_${VERSION}_solutions.files \
 		hpcm_${VERSION}_${NONDIS}.files \
-		distribution.files \
-		cvs.files
+		file_list.files cvs.files
 
 # Kill all implicit rules
 #
@@ -318,17 +323,17 @@ hpcm_${VERSION}_${NONDIS}.files:	File_List
 
 # Make a sorted list of all files in a distribution.
 #
-distribution.files:	hpcm_${VERSION}.files \
+file_list.files:	hpcm_${VERSION}.files \
 		hpcm_${VERSION}_solutions.files \
 		hpcm_${VERSION}_${NONDIS}.files
-	rm -f distribution.files
+	rm -f file_list.files
 	cat hpcm_${VERSION}.files \
 	    hpcm_${VERSION}_solutions.files \
 	    hpcm_${VERSION}_${NONDIS}.files | \
-	    sort > distribution.files
+	    sort > file_list.files
 
 # Make a sorted list of all files checked into cvs.
-# This can be diff'ed with distribution.files to see
+# This can be diff'ed with file_list.files to see
 # which files are missing from the distribution.
 #
 CVSEXP = ^.*cvsroot\/hpcm\/\(.*\),v$$
@@ -418,8 +423,7 @@ cleantar:
 	      hpcm_${VERSION}.files \
 	      hpcm_${VERSION}_solutions.files \
 	      hpcm_${VERSION}_${NONDIS}.files \
-	      distribution.files \
-	      cvs.files \
+	      file_list.files cvs.files \
 	      hpcm_${VERSION}${TAREXT} \
 	      hpcm_${VERSION}_solutions${TAREXT} \
 	      hpcm_${VERSION}_${NONDIS}${TAREXT}
