@@ -4,7 +4,7 @@
 #
 # File:		overview
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Feb 25 06:02:27 EST 2006
+# Date:		Sat Feb 25 08:03:16 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/02/25 12:51:11 $
+#   $Date: 2006/02/25 14:04:38 $
 #   $RCSfile: overview,v $
-#   $Revision: 1.122 $
+#   $Revision: 1.123 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -1757,20 +1757,23 @@ are
     ~/hpcm/contestant/help/web
         Made by `make web' in the ~/hpcm/contestant/help
 	directory, this web page set contains all the
-	help and demo files.
+	help and demo files and is independent of the
+	contest or contest type.
 
     ~/judging_cccc_ppppppppppp/web
-        Made by `make web' in the judging directory
+        Made by `makeweb' in the judging directory
 	~/judging_cccc_ppppppppppp, this set of web
 	pages contains the problem statements and
-	optionally the problem solutions.
+	optionally a problem solution subpage with
+	a URL that acts like a password.  Web page
+	parameters in hpcm_judging.rc control the
+	content of these pages.
 
 	For some contests this set of web pages is
 	posted after the contest is over.
 
 	The `make web' command in the judging directory
-	invokes the makeweb program whose parameters are
-	the web page parameters in hpcm_judging.rc.
+	invokes the makeweb program.
 
 When one of the `web' directories is made, an associated
 `web.tar' file is also made that contains the contents
@@ -1786,47 +1789,64 @@ set up appropriately.  This is done with the help of
 a prototype account, a prototype home directory, and
 a contest home directory.
 
-If the contest directory is named ~JJJ/contest_cccc,
-where JJJ is the judge's account, then to make the
-prototype account one creates an account with a name
-of the form `*\[-_\]proto', edits some files in that
-account (see below), and executes in that account
+To make a prototype account one creates an account with
+a name of the form `*\[-_\]proto', edits some files in
+that account (see below), and executes in that account
 
 	~JJJ/hpcm/contestant/bin/SETUP_PROTOTYPE
 
-This makes the prototype home directory.
+where JJJ is the judge's account.  This makes the direc-
+tory ~PPP/home, where PPP is the name of the prototype
+account.  The ~PPP/home directory, which is called the
+`prototype home' directory, contains files, like
+`.cshrc', that should be in the home directory of a con-
+testant account.  In addition ~PPP/home contains a
+setup.tar file that is used to initialize a contestant
+account.
 
-After doing this and running `makecontest' to make other
-contest definition files (in particular see the `trash-
-able' file in Contest Definition Data: The Contest Di-
-rectory' above), one then executes
+After making a prototype home directory and running
+`makecontest',
+
+    ~JJJ/judging_cccc_ppppppppppp/contest
+
+is symbolically linked to
+
+    ~JJJ/contest_cccc        [contest directory]
+
+and
+
+    ~JJJ/contest_cccc/home   [contest home directory]
+
+is symbolically linked to
+
+   ~PPP/home		     [prototype home directory]
+
+Then you edit
+
+    ~JJJ/contest_cccc/secure/passwords
+
+to define the contestant accounts, run `makecontest
+-secure' if necessary to define contestant passwords,
+and run `makecontest -trashable' to make the ~JJJ/
+contest_cccc/trashable file: see the `trashable' file in
+Contest Definition Data: The Contest Directory' above).
+You then execute:
 
 	su root
 	~JJJ/hpcm/secure/bin/hpcm_setup_accounts \\
-	    ~JJJ/contest/ccc
+	    ~JJJ/contest_cccc
 	exit
 
 to create the contestant accounts, set their passwords,
 and initialize the contents of their home directories.
 
-The prototype account of a contest provides files, like
-`.cshrc', that contest accounts use to customize their
-behavior.  These files are collected into the `home'
-subdirectory of the prototype account by the SETUP_
-PROTOTYPE program.  This subdirectory is called the
-`prototype home' of the contest.
-
-The `home' subdirectory of the contest directory of a
-contest is called the `contest home' directory of the
-contest, and is symbolically linked to the prototype
-home directory of the contest.
-
 In each contestant account `~/.hpcm_contest' is symbol-
-ically linked to the contest directory of the contest,
-and therefore `~/.hpcm_contest/home' is linked to the
-contest home directory and therefore to the prototype
-home directory.
-
+ically linked to the contest directory of the contest
+(~JJJ/contest_cccc), and therefore `~/.hpcm_contest/
+home' is linked to the contest home directory (~JJJ/
+contest_cccc/home) and therefore to the prototype home
+directory (~PPP/home).
+
 Each contestant account must be initialized identically
 before the start of a contest.  This is done by running
 the TRASH_ACCOUNT program in each contestant account.
@@ -1849,29 +1869,35 @@ or subdirectory for all the contestant accounts at once.
 Of course the real file or subdirectory must have a+r
 and maybe a+x permissions, and cannot be writable by its
 users, the contestants.
-
+
 For example, in a contestant account the `.cshrc' file
 is symbolically linked to `.hpcm_contest/home/.cshrc',
 and thence to the `.cshrc' file in the prototype home
 directory.  Therefore editing the `.cshrc' file within
 the prototype home directory changes that file in ALL
 contestant accounts.
-
+
 There are a few files and subdirectories which, for
-security reasons, cannot be shared among contestants,
-because the programs that use them insist they be owned
-by the account running the program.  Examples are the
-`.procmailrc' file which is used to automatically ex-
-tract files from the responses to hpcm_get in an infor-
-mal contest, and the `.ssh' subdirectory which can op-
-tionally be used to make it easy for the judge to log
-into any contestant account.
+security reasons, cannot be shared among contestants by
+symbolic linking, because the programs that use them
+insist they be owned by the account running the program.
+Examples are the `.procmailrc' file which is used to
+automatically extract files from the responses to
+hpcm_get in an informal contest, and the `.ssh' subdi-
+rectory which can optionally be used to make it easy for
+the judge to log into any contestant account.  For these
+files setup.tar does not contain symbolic links, but
+instead the files themselves are put into setup.tar
+(e.g., .procmailrc) or extra_setup.tar (e.g., .ssh).
 
-Most of the files and subdirectories that are in proto-
-type home directory are just those provided by the UNIX
-operating system to every newly created account.  How-
-ever the following files need special attention before
-SETUP_PROTOTYPE is run.
+SETUP_PROTOTYPE takes files and subdirectories that are
+initially in the prototype account, ~PPP, when that ac-
+count is created, and moves these files and directories
+into the prototype home directory, ~PPP/home.  Most of
+these files and directories are just those provided by
+the UNIX operating system to every newly created ac-
+count.  However the following files need special
+attention before SETUP_PROTOTYPE is run.
 
     .cshrc and initialization files for other shells
 
@@ -1906,29 +1932,35 @@ SETUP_PROTOTYPE is run.
 	details.
 
 The following files in the prototype home directory are
-made automatically by SETUP_PROTOTYPE.
+made automatically by SETUP_PROTOTYPE, but are not
+linked into contestant accounts.
 
     setup.tar
-        The tar file that contains all the files and
+
+        The tar file that contains most the files and
 	symbolic links which are to be in a contestant
-	account after TRASH_ACCOUNT is run (except for
-	.hpcm_contest: see below).  It is made by
-	SETUP_PROTOTYPE by tar'ing all the files and
-	symbolic links in the prototype account.
+	account after TRASH_ACCOUNT is run (the excep-
+	tions are .hpcm_contest and files and direc-
+	tories in extra_setup.tar: see below).  This
+	file is made by SETUP_PROTOTYPE by tar'ing
+	files, directories, and symbolic links in the
+	prototype account.
 
     setup.ls
+
         The output of `ls -aR' run just after files have
 	been restored from setup.tar.  Used to check for
 	a valid restoration.  This is made by SETUP_
 	PROTOTYPE.
-
+
     empty.ls
+
        The output of `ls -a' run just after all files
        have been deleted by TRASH_ACCOUNT, and before
        restoring files from setup.tar.  Used to check
        for valid file removal.  This is made by SETUP_
        PROTOTYPE.
-
+
 There is one symbolic link that TRASH_ACCOUNT does not
 set using setup.tar or extra_setup.tar.  This is the
 .hpcm_contest symbolic link to the contest directory.
