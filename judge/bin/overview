@@ -4,7 +4,7 @@
 #
 # File:		overview
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Feb 25 08:03:16 EST 2006
+# Date:		Sat Feb 25 09:44:08 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/02/25 14:04:38 $
+#   $Date: 2006/02/25 14:56:04 $
 #   $RCSfile: overview,v $
-#   $Revision: 1.123 $
+#   $Revision: 1.124 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -1986,8 +1986,8 @@ for more details.
 Contest Definition Data: Auxiliary Files
 ------- ---------- ----- --------- -----
 
-There is one file in the judging account that is shared
-among all the contests supported by the account:
+There are two files in the judging account that are
+shared among all the contests supported by the account:
 
     ~/.procmailrc
 	The `makecontest -procmailrc' command adds to
@@ -2015,6 +2015,22 @@ among all the contests supported by the account:
 	where ~/judging_cccc_ppppppppppp is the judg-
 	ing directory for the contest in the judging
 	account JJJ.
+
+	`makecontest -procmailrc' also ensures that
+	the following entry is in ~/.procmailrc:
+
+		:0 c:
+		hpcm_mbox
+
+	See ~/hpcm_mbox below.
+
+    ~/hpcm_mbox
+    	This file saves a copy of all email received by
+	the judging account, using an entry in
+	~/.procmailrc to accomplish this (see above).
+	This file can be `played back' into the
+	`receivemail' program if things go very wrong
+	and some submissions have to be recreated.
 
 
 Contest Definition Data: Security
@@ -2072,7 +2088,7 @@ HPCM has the following security goals:
     X-HPCM-Signature-OK field is stored in the message
     Received_Mail file for use by subsequent process-
     ing.  Recomputation and use of X-HPCM-Signature-OK
-    may be suppressed by setting the `use-authentica-
+    may be suppressed by setting the `use_authentica-
     tion' global variable to false.
 
     The reason that only the X-HPCM-Data and X-HPCM-
@@ -2116,7 +2132,7 @@ HPCM has the following security goals:
    is run by the `sandbox' account.  The .class files
    themselves must have a+r permissions.
 
-   However, this last difficulty does not permit contes-
+   However, this last difficulty does not allow contes-
    tant code to write any files or directories in the
    judging account.
 
@@ -2161,11 +2177,12 @@ HPCM has the following security goals:
    damning evidence if the foul nature of the program is
    discovered.  Thus any contestant who wrote such a
    program would be risking discovery for a very long
-   time, up until the judge's decide to discard informa-
-   tion collected during the contest.
+   time, likely many months, up until the judges decide
+   to discard information collected during the contest.
 
 4. Prevent one contestant from executing another contes-
-   tants solution.  This goal is achieved with a defect.
+   tant's solution.  This goal is achieved with a
+   defect.
 
    This may sound like a ridiculous goal, because any
    security system should achieve it without trying, but
