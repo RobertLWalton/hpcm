@@ -4,7 +4,7 @@
 #
 # File:		overview
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Feb 24 13:29:34 EST 2006
+# Date:		Sat Feb 25 06:02:27 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/02/24 18:26:39 $
+#   $Date: 2006/02/25 11:21:31 $
 #   $RCSfile: overview,v $
-#   $Revision: 1.120 $
+#   $Revision: 1.121 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -1150,8 +1150,8 @@ test defining components are made automatically by the
 	the judging directory will run `makecontest' to
 	build all the contest definition files.  Also
 	implements `make web' to make a web page and
-	`make problems.ps', `make this_contest.ps', etc
-	to make documentation.
+	`make problems.pdf', `make this_contest.pdf',
+	etc. to make documentation.
 
     scoreboard.1head
         Initial value of the ./contest/scoreboard.1head
@@ -1202,7 +1202,8 @@ that are created by `makecontest' are:
 	help, demos, and problems.  These in turn con-
 	tain files and subdirectories.  The files
 	proper are typically represented by symbolic
-	links: see `makecontest' documentation.
+	links to files in problem solution directories:
+	see `makecontest' documentation.
 
 	The info directory and its contents are made
 	automatically by `makecontest -info'.
@@ -1293,14 +1294,14 @@ that are created by `makecontest' are:
 	to its user to the end of this file.  Typical
 	instructions are `edit ./contest/secure/
 	passwords' or read and possibly edit `./help/
-	this_contest'.  When the user decided she has
+	this_contest'.  When the user decides she has
 	satisfied an instruction, the user typically
 	edits the instruction out of the TODO file.
 
 There are a few other components of the judging direc-
 tory that are made during the contest, but are not made
 by `makecontest'.  These are listed below in the
-`Contest Derived Data' sections.
+`Contest Raw Data' and `Contest Derived Data' sections.
 
 Contest Definition Data: The Contest Directory
 ------- ---------- ----- --- ------- ---------
@@ -1347,16 +1348,16 @@ are listed in alphabetical order).
     extra_setup.tar
     	This tar file contains files and symbolic links
 	that are loaded into a contestant account when
-	that account is `trashed'.  This file supple-
-	ments the contest/home/setup.tar file, which
-	also contains files and links loaded into con-
-	testant accounts.  See the `trashable' file
-	below.
+	that account is `trashed' (i.e., initialized:
+	see the `trashable' file below).  This file
+	supplements the contest/home/setup.tar file,
+	which also contains files and links loaded into
+	contestant accounts.
 
 	The `makecontest -ssh' command makes this file
 	giving it as contents an `.ssh/authorized_keys'
-	file that permits the judge to log into a
-	contestants account using ssh an no password.
+	file that permits the judge to log into a con-
+	testant's account using ssh without a password.
 
     help
     	This directory contains a+r copies of all the
@@ -1429,7 +1430,8 @@ are listed in alphabetical order).
 	one with a ~/home subdirectory containing suit-
 	able files.  Alternatively the prototype account
 	used by a contest can be defined by setting the
-	`hpcm_prototype_account' global variable.
+	`hpcm_prototype_account' global variable, or
+	manually creating the symbolic link.
 
     javahelp
     	This file is made by `makecontest -javahelp'
@@ -1453,7 +1455,8 @@ are listed in alphabetical order).
 	This file may be defined as the contents of the
 	`printer_map' global variable, which is copied
 	into the file by the `makecontest -printer_map'
-	command.
+	command.  The file may be disabled by manually
+	changing its mode to a-rw.
 
     printer
     	This file contains nothing but the name of the
@@ -1463,8 +1466,9 @@ are listed in alphabetical order).
 	pipe for details.
 
 	This file is made by `makecontest -printer' if
-	it does not exist, and may be edited or made
-	a-rw by hand.
+	it does not exist, and may be edited by hand.
+	This file may be disabled by manually changing
+	its mode to a-rw.
 
     printer_jobs
         If this file exists and is a+w, each use of the
