@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Jan 23 08:11:45 EST 2006
+# Date:		Sat Feb 25 05:44:15 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/01/23 13:28:24 $
+#   $Date: 2006/02/25 10:43:00 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.42 $
+#   $Revision: 1.43 $
 #
 # To make a formal contest named `foo':
 #
@@ -128,22 +128,29 @@
 #
 # 11. You may want to print out handouts.  Here are
 #     some ways to make printouts, where THIS_CONTEST
-#     denotes either
+#     denotes any of
 #
 #	 ~/judging_foo_password/help/this_contest
 #     or
 #	 ~/contest_foo/help/this_contest
+#     or
+#	 ~/judging_foo_password/info/help/this_contest
 #
-#     which have the same contents.  The .pdf files are
-#     ready to print or put on the web.  You can also
-#     make .ps files instead of .pdf files.
+#     which have the same contents (at most one of the
+#     latter two files exist).  The .pdf files made
+#     by the commands below are ready to print or put on
+#     the web.
+#
+#     You can also make .ps files instead of .pdf files
+#     simply by changing .pdf to .ps in all the commands
+#     below.
 #
 #     A. To make help, problems, or demos printouts
 #	 specific to this contest
 #
 #	       cd ~/judging_foo_password
 #	       make help+.pdf
-#	       make problem.pdf
+#	       make problems.pdf
 #	       make demos.pdf
 #
 #        help+.pdf will have THIS_CONTEST at its begin-
@@ -155,15 +162,26 @@
 #	     cd ~/hpcm/contestant/help
 #	     make help.pdf demos.pdf
 #
-#     C. To make a help printout that begins with
-#        THIS_CONTEST
+#	 These can then be used with either
+#
+#	       cd ~/judging_foo_password
+#	       make problems.pdf
+#	       make this_contest.pdf
+#
+#	 which makes separate printouts for problems
+#	 and for THIS_CONTEST, or with
+#
+#	       cd ~/judging_foo_password
+#	       make problems+.pdf
+#
+#	 which makes a single printout containing
+#	 THIS_CONTEST followed by the problems.
+#
+#     C. To make a printout of all help files that
+#	 begins with THIS_CONTEST
 #
 #	      cd ~/hpcm/contestant/help
 #	      make EXTRAS=THIS_CONTEST help+.pdf
-#
-#     D. To make a 1 sheet printout of THIS_CONTEST
-#
-#	       make this_contest.pdf
 #
 # 12. At the end of the contest, the procedure for
 #     finishing is typically the following.  A final
@@ -258,6 +276,12 @@ problems.ps:	problems_print_files
 	rm -f problems.ps
 	fprint -o `cat problems_print_files` \
 	       > problems.ps
+
+problems+.ps:	help/this_contest problems_print_files
+	rm -f problems+.ps
+	fprint -o help/this_contest \
+	       `cat problems_print_files` \
+	       > problems+.ps
 
 this_contest.ps: help/this_contest
 	rm -f this_contest.ps
