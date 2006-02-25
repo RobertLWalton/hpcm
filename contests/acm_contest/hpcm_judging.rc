@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Feb  5 01:44:46 EST 2006
+# Date:		Sat Feb 25 07:41:20 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/02/05 06:42:20 $
+#   $Date: 2006/02/25 12:45:49 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.46 $
+#   $Revision: 1.47 $
 
 # Table of Contents
 #
@@ -681,10 +681,14 @@ set freeze_timed_scoreboard_instructions {
 }
 
 # Scoreboard instructions to be used after contest has
-# been converted from timed to feedback:
+# been converted from timed to feedback.
 #
-catch { unset post_contest_scoreboard_instructions }
-set post_contest_scoreboard_instructions(feedback) {
+# scoreboard_subtype must be set to "feedback" or
+# "dated" when this is used, as only scoreboard_
+# global variables are visible to `if' statements in
+# scoreboard instructions.
+#
+set post_contest_scoreboard_instructions {
 
     { OUTPUT contest/scoreboard.1 "" "" }
     GRANT_ACCESS
@@ -692,36 +696,13 @@ set post_contest_scoreboard_instructions(feedback) {
 
     { LINE NAME "Post Contest Scoreboard" TIME }
     BLANK
-    {LINE "The scoreboard has been re-constituted\
-           post-contest with feedback scoring." }
-    {LINE "The order of contestants will differ\
-           from that of the actual contest." }
-    {LINE "Execute `help scoreboard' to interpret\
-           the scoreboard." }
-    BLANK
-    { INPUT contest/scoreboard.1head }
-    BLANK
-
-    { start_time "" }
-    { stop_time "" }
-    BAR
-    BOARD
-    BAR
-}
-
-# Scoreboard instructions to be used after contest has
-# been converted from timed to dated:
-#
-set post_contest_scoreboard_instructions(dated) {
-
-    { OUTPUT contest/scoreboard.1 "" "" }
-    GRANT_ACCESS
-    SEND
-
-    { LINE NAME "Post Contest Scoreboard" TIME }
-    BLANK
-    {LINE "The scoreboard has been re-constituted\
-           post-contest with unranked scoring." }
+    if { $scoreboard_subtype == "feedback" } {
+	{LINE "The scoreboard has been re-constituted\
+	       post-contest with feedback scoring." }
+    } else {
+	{LINE "The scoreboard has been re-constituted\
+	       post-contest with unranked scoring." }
+    }
     {LINE "The order of contestants will differ\
            from that of the actual contest." }
     {LINE "Execute `help scoreboard' to interpret\
@@ -762,8 +743,9 @@ set not_timed_scoreboard_instructions {
 #
 if { $is_post_contest } {
     set t $scoring_subtype
+    set scoreboard_subtype $scoring_subtype
     set scoreboard_instructions \
-        $post_contest_scoreboard_instructions($t)
+        $post_contest_scoreboard_instructions
 } elseif { $scoring_subtype != "timed" } {
     set scoreboard_instructions \
         $not_timed_scoreboard_instructions
