@@ -3,7 +3,7 @@
 #
 # File:		scoreboard_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Jan 19 09:16:04 EST 2006
+# Date:		Fri Mar  3 10:07:09 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -12,13 +12,13 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/01/19 14:14:28 $
+#   $Date: 2006/03/03 15:07:37 $
 #   $RCSfile: scoreboard_common.tcl,v $
-#   $Revision: 1.60 $
+#   $Revision: 1.61 $
 #
 #
 # Note: An earlier version of this code used to be in
-# scoreboard.
+# scoretable.
 
 # Table of Contents
 #
