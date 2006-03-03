@@ -4,7 +4,7 @@
 #
 # File:		help
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Sun Nov 12 06:40:45 EST 2000
+# Date:		Fri Mar  3 06:23:43 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,14 +13,16 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2000/11/13 15:14:41 $
+#   $Date: 2006/03/03 11:38:54 $
 #   $RCSfile: help,v $
-#   $Revision: 1.7 $
+#   $Revision: 1.8 $
+
+contest=$HOME/.hpcm_contest
 
 case "$1" in
      -doc* )
      		echo "
-help [topic]
+help [-contest contest-directory] [topic]
 
     Displays the help information for the given topic.
     If the topic is not given, it defaults to \`this_
@@ -28,9 +30,21 @@ help [topic]
 
     This program actually displays a readable file named
     ~/.hpcm_contest/helpN/topic, where N is the first of
-    1, 2, 3, or 4 for which the named file is readable."
+    1, 2, 3, or 4 for which the named file is readable.
+
+    The contest directory defaults to ~/.hpcm_contest,
+    which is the correct directory for a contestant to
+    use."
     		exit 1
 		;;
+    -contest )
+    		contest="$2"
+		shift
+		shift
+		;;
+esac
+
+case "$1" in
      "")
      		item=this_contest
     		;;
@@ -41,14 +55,14 @@ esac
 
 for i in 1 2 3 4
 do
-    if test -r ${HOME}/.hpcm_contest/help$i/$item
+    if test -r $contest/help$i/$item
     then
-	less ${HOME}/.hpcm_contest/help$i/$item
+	less $contest/help$i/$item
     	exit 0
     fi
 done
 
 echo cannot read \
-     '${HOME}/.hpcm_contest/help[1234]'/$item
+     $contest/help'[1234]'/$item
 
 exit 1
