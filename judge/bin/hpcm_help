@@ -1,0 +1,66 @@
+#! /bin/sh
+#
+# Call contestant/bin/help with `-contest
+# <judging_directory>/contest' as argument.
+#
+# File:		hpcm_help
+# Author:	Bob Walton <walton@deas.harvard.edu>
+# Date:		Fri Mar  3 06:45:32 EST 2006
+#
+# The authors have placed this program in the public
+# domain; they make no warranty and accept no liability
+# for this program.
+#
+# RCS Info (may not be true date or author):
+#
+#   $Author: hc3 $
+#   $Date: 2006/03/03 11:59:15 $
+#   $RCSfile: hpcm_help,v $
+#   $Revision: 1.1 $
+
+case "$1" in
+   "")  ;;
+   * )
+   	echo "
+hpcm_help [topic]
+
+    Call contestant/bin/help with \`-contest
+    <judging_directory>/contest [topic]' as arguments.
+
+    If judging_directory cannot be found, looks for
+    ~/.hpcm_contest."
+
+    	exit 1
+	;;
+esac
+
+contest=""
+for jd in . .. ../.. ../../.. ../../../..
+do
+    if test -r $jd/hpcm_judging.rc
+    then
+        contest=$jd/contest
+	break
+    fi
+done
+
+if test "$contest" = ""
+then
+    if test -x ${HOME}/.hpcm_contest
+    then
+        contest=${HOME}/.hpcm_contest
+    else
+	echo ERROR: Cannot find hpcm_judging.rc \
+		    or '~/.hpcm_contest'
+	exit 1
+    fi
+fi
+
+if test ! -x $contest
+then
+    echo ERROR: Cannot access $contest
+    exit 1
+fi
+
+help=../../contestant/bin/help
+exec `dirname "$0"`/$help -contest $contest "$1"
