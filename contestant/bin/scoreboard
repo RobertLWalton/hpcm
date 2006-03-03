@@ -4,7 +4,7 @@
 #
 # File:		scoreboard
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Fri Feb 13 10:35:12 EST 2004
+# Date:		Fri Mar  3 07:32:28 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,65 +13,68 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2004/02/13 15:37:25 $
+#   $Date: 2006/03/03 13:15:46 $
 #   $RCSfile: scoreboard,v $
-#   $Revision: 1.10 $
+#   $Revision: 1.11 $
 
 # Time between refreshes.
 #
-time=30
+R=30
 debug=no
+cd=${HOME}/.hpcm_contest
 
-case "$1" in
-    -debug)
-        debug=yes
-	shift
-	;;
-esac
-
-# Save contest argument if any and shift it away.
-# Also print documentation on -doc* argument.
+# Handle all arguments up to but not including the page
+# number argument.
 #
-case "$1" in
+while test x = x;
+do case "$1" in
     -doc*)
     	echo "
-scoreboard [-debug] [contest] [page-number] [user]
+scoreboard [-debug] [-contest contest-directory] \\
+           [-refresh R] [contest] [page-number] [user]
 
-    Displays each page of the scoreboard for $time sec-
-    conds and then repeats, if no page-number is given.
-    Otherwise just displays the given page, and re-
-    freshes the display every $time seconds.  Pages are
-    numbered 1, 2, 3, ..., 8, 9.
-
-    An optional contest can be given for a user that is
-    entered in multiple contests.  The user defaults
-    to the current account name, and is normally not
-    given as a program argument.
+    Displays each page of the scoreboard for R seconds,
+    and then repeats, if no page-number is given.
+    Otherwise just displays the given page, and refresh-
+    es the display every R seconds.  Pages are numbered
+    1, 2, 3, ..., 8, 9.
     
-    Each page is just a file.  If ~/.hpcm_contest/
+    R defaults to 30 seconds.
+
+    An optional \`contest' can be given for a user that
+    is entered in multiple contests.  The \`user' de-
+    faults to the current account name, and is normally
+    not given as a program argument.
+ 
+    If the contest name is not given, or is given as
+    \"\", it defaults to \`NONE'.  A contest name cannot
+    be a single digit, and similarly a user name cannot
+    be a single digit.  If the a user name is given and
+    no contest name is to be given, use \"\" for the
+    contest name.
+
+    Contest-directory defaults to ~/.hpcm_contest, which
+    is correct for contestant accounts.
+    
+    Each page is just a file.  If <contest-directory>/
     scoreboard_map is readable, it consists of lines of
     the form
 
     	user-regular-expression \\
 	    contest-regular-expression \\
 	        filename ...
-
+
     where the list of filenames gives the files contain-
     ing page 1, page 2, etc. of the scoreboard.  The
     first line whose regular expressions match the
     user and contest names is selected and its list of
     filenames is used.  The user and contest names can
     be given as optional arguments, with the user name
-    defaulting to the current account name.  If the
-    contest name is not given, it defaults to \`NONE'.
-    A contest name cannot be a single digit or have the
-    form -doc*.  A user name cannot be a single digit.
-    If the a user name is given and no contest name is
-    to be given, use NONE for the contest name.
+    defaulting to the current account name.
 
-    It is an error if ~/.hpcm_contest/scoreboard_map is
-    readable and none of its lines match.
-
+    It is an error if <contest-directory>/scoreboard_map
+    is readable and none of its lines match.
+
     The \\ backslash character can be used in the
     scoreboard_map file to continue lines.  If a back-
     slash is to be included in the regular expression,
@@ -83,14 +86,14 @@ scoreboard [-debug] [contest] [page-number] [user]
     before the (, |, or ).  Thus one must use
     \`\\\\(a\\\\|b\\\\)'.
 
-    If ~/.hpcm_contest/scoreboard_map is not readable,
-    the filename list defaults to:
+    If <contest-directory>/scoreboard_map is not read-
+    able, the filename list defaults to:
 
         scoreboard.1 scoreboard.2 scoreboard.3 \\
 		     scoreboard.4
 
     File names that do not begin with / are interpreted
-    relative to ~/.hpcm_contest.
+    relative to <contest-directory>.
 
     The file for page 1 must always be readable, as must
     the file for any page specifically requested.  If
@@ -102,8 +105,26 @@ scoreboard [-debug] [contest] [page-number] [user]
     	exit 1
 	;;
 
+    -debug)
+	debug=yes
+	shift
+	;;
+
+    -contest)
+        cd="$2"
+	shift
+	shift
+	;;
+
+    -refresh)
+        R="$2"
+	shift
+	shift
+	;;
+
     [1-9] )
     	contest=NONE
+	break
     	;;
     "" )
     	contest=NONE
@@ -111,11 +132,14 @@ scoreboard [-debug] [contest] [page-number] [user]
 	then
 		shift
 	fi
+	break
 	;;
     *) 	contest="$1"
     	shift
+	break
 	;;
 esac
+done
 
 # Save and shift away any page number argument.
 #
@@ -135,12 +159,12 @@ esac
 
 # Compute pages as list of pages.
 #
-if test -r "${HOME}/.hpcm_contest/scoreboard_map"
+if test -r "$cd/scoreboard_map"
 then
 
     # Open scoreboard map.
     #
-    exec 3<"${HOME}/.hpcm_contest/scoreboard_map"
+    exec 3<"$cd/scoreboard_map"
 
     # Read scoreboard map lines until match found.
     #
@@ -202,7 +226,7 @@ case "$pn" in
 		exit 1
 		;;
 	    /*)	;;
-	    *)	page=~/.hpcm_contest/$page
+	    *)	page=$cd/$page
 	esac
 	if test ! -r "$page"
 	then
@@ -214,7 +238,7 @@ case "$pn" in
 	do
 	    clear
 	    cat "$page"
-	    sleep $time
+	    sleep $R
 	done
 	;;
     "" )
@@ -233,14 +257,14 @@ case "$pn" in
 		case "$page" in
 		    "")	break ;;
 		    /*)	;;
-		    *)	page=~/.hpcm_contest/$page
+		    *)	page=$cd/$page
 		esac
 
 		if test -r "$page"
 		then
 		    clear
 		    cat "$page"
-		    sleep $time
+		    sleep $R
 		elif test $n -eq 1
 		then
 		    echo cannot read "$page"
