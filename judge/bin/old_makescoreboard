@@ -4,7 +4,7 @@
 #
 # File:		makescoreboard
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Jan 26 06:38:22 EST 2006
+# Date:		Fri Mar  3 09:40:17 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/01/26 11:41:09 $
+#   $Date: 2006/03/03 14:48:14 $
 #   $RCSfile: old_makescoreboard,v $
-#   $Revision: 1.53 $
+#   $Revision: 1.54 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -58,7 +58,8 @@ makescoreboard { start | status | stop | update } \\
 	    > judging_directory/Scorefinder_Output
 
     The Scorefinder_Output file is used as input by
-    the `scoreboard' program to produce scoreboards.
+    the `scoretable' program to produce a scoreboard
+    table (i.e., the `tabular' part of the scoreboard).
     To avoid conflicts between the `start' and `update'
     commands, this program adds a `+' to the end of the
     name Scorefinder_Output when running the update
@@ -1076,26 +1077,26 @@ proc pass2 { instructions pc end_pc update } {
 		}
 
 		# Call the scoreboard program to compute
-		# the board.
+		# the board table.
 		#
-		set scoreboard \
-		    [exec scoreboard "{ $parameters }" \
+		set scoretable \
+		    [exec scoretable "{ $parameters }" \
 				     < $finder_file]
 
-		# If the scoreboard is empty, say so
-		# explicitly.
+		# If the scoreboard table is empty, say
+		# so explicitly.
 		#
-		if { $scoreboard == "" } {
-		    set scoreboard \
+		if { $scoretable == "" } {
+		    set scoretable \
 		        "The scoreboard is currently\
 			 EMPTY!  Nothing must have\
 			 happened yet."
 		}
 
-		# Add the scoreboard to the output file
-		# contents.
+		# Add the scoreboard table to the output
+		# file contents.
 		#
-	        set contents "$contents$scoreboard\n"
+	        set contents "$contents$scoretable\n"
 	    }
 
 	    SEND_no -
