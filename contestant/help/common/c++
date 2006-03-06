@@ -1,4 +1,4 @@
-C++ Help		    Fri Mar  3 12:58:14 EST 2006
+C++ Help		    Mon Mar  6 06:34:23 EST 2006
 
 Include Files
 ------- -----
@@ -29,20 +29,36 @@ as the following:
 	using std::cin;
 	using std::cout;
 	using std::endl;
-	using std::ws;
-	using std::setprecision;
-	using std::ios;
+
+Debugging
+---------
 
+The following code is useful for debugging.
+
+	bool debug;	// Put before all functions.
+
+	. . . data and functions . . .
+
+	int main
+
+	
 
 
-Detecting End of File
---------- --- -- ----
+Program Structure
+------- ---------
 
 Typical program structure including end of file detect-
-ion is:
+ion and debugging is:
 
-	int main ( )
+	#include ...
+	. . .
+
+	bool debug;
+	#define dout if ( debug ) cout
+
+	int main ( int argc )
 	{
+	    debug = ( argc > 1 );
 	    . . . .
 	    while ( true )
 	    {
@@ -50,12 +66,17 @@ ion is:
 		cin >> x >> y >> z;
 		if ( cin.eof() ) break;
 		. . . . .
+		dout << . . .
+		. . . . .
 	    }
 	}
 
 After reading with `cin >> ...', cin.eof() is true
 if and only if an end of file has occurred on cin.
-No other error indication is given.
+No other error indication is given.  Note that
+`cin.eof()' is normally false after successfully
+reading some value, as the input is still before
+the end of the line containing the value.
 
 Many problems require you to detect certain input
 values as end of data markers, instead of looking for
@@ -65,9 +86,21 @@ replace the above `if' statement by
 
 	if ( x == 0 && y == 0 && z == 0 ) break;
 
+Above `dout' behaves just like `cout' except no output
+is produced unless your program is called with an
+argument.  One must be careful, however, to remember
+that `dout' contains an `if' statement and cannot be
+followed directly by an `else if'; i.e., the following
+will NOT work:
+
+	if (...) dout << ...;
+	else if ...
+
+Put {} brackets around `dout << ...;' in this situation.
+
 
-Numeric Constants and Rounding
-------- --------- --- --------
+Numeric Constants
+------- ---------
 
 The following code imports useful constants, which are
 the minimum and maximum values of various number types,
@@ -119,9 +152,29 @@ number is output.  They can be reset to defaults by
    cout << resetiosflags ( ios::showpoint | ios::fixed);
    cout << setprecision (6);
 
+Sometimes you are asked to use `0' as a high order fill
+character, instead of ` ', or to output in hexadecimal
+or octal instead of decimal.  This can be done with
+
+   cout << setfill ('0');     // Set fill character.
+   cout << setfill (' ');     // Reset fill character.
+   cout << hex;               // Set base to 16.
+   cout << dec;               // Set base to 10.
+   cout << oct;               // Set base to 8.
+
 To use setw etc. you need to:
 
     #include <iomanip.h>
+
+Character Input
+--------- -----
+
+You can use the following for character input:
+
+	int c = cin.get();
+	int c = cin.peek();
+
+These return EOF on end of file.
 
 
 Inputting Lines
@@ -139,7 +192,25 @@ place of `getline': its behavior is similar but it does
 NOT skip over the new line in the input stream, and
 therefore after reading the first line it reads empty
 lines forever.
-
+
+A special problem using `getline' is that if just before
+you used non-line oriented code, you will need to skip
+to a carriage return BEFORE calling `getline'.  Typical
+code is
+
+	int x;
+	cin >> x;	// Does not skip line end.
+	...
+	while ( cin.get() != '\n' );
+	cin.getline ( ... );
+
+Without the `while' `getline' would the rest of the line
+after the integer x, and this would likely be an empty
+line.
+
+Parsing Lines
+------- -----
+
 You can parse a line after it is input by code such as
 
 	#include <sstream>
@@ -147,23 +218,90 @@ You can parse a line after it is input by code such as
 
 	istringstream in ( buffer );
 
+Now `in' is an input stream whose input is taken from
+the buffer.
+
 Here in.eof() will be true at the end of the string.
 This is likely to be a problem because immediately after
 reading a number at the end of the buffer in.eof() will
 be true.  To compensate, check for eof BEFORE reading
-the next value by first executing in >> ws, then testing
-in.eof(), and only then reading the next value.
+the next value by first executing `in >> ws' to skip
+past whitespace, then testing in.eof(), and only then
+reading the next value.
 
 
-Character Input
---------- -----
+Writing Strings
+------- -------
 
-You can use the following for character input:
+Strings can be written using:
 
-	int c = cin.get();
-	int c = cin.peek();
+	#include <sstream>
+	using std::ostringstream;
 
-These return EOF on end of file.
+	ostringstream out;
+	. . . out << . . .
+	cout << ends;
+	const char * s = out.str().data();
+	cout << s;
+
+Here `out' is an output stream whose output is written
+into an INTERNAL buffer (you CANNOT make a stream that
+writes into your buffer).  You can get the starting
+address of the internal buffer as `out.str().data()'.
+Use `out << ends' to write a NUL in the buffer.
+
+You can also use `cout << out.str()' to write the
+internal buffer to `cout' directly, but do NOT use
+`out << ends' in this case, as the NUL will be written
+to `cout' if you do.
+
+Writing Your Own << And >> Operators
+------- ---- --- -- --- -- ---------
+
+It is often convenient to define your own << operator
+to output something.  Some examples are:
+
+    using std::ostream;
+    ostream & operator <<
+	    ( ostream & out, mytype value )
+    {
+	. . .
+	out << . . .
+	. . .
+	return out;
+    }
+
+Suppose you want to output integers in a distinctive
+format.  A simple way is
+
+    struct myformat {
+        int value;
+	myformat ( int value ) : value ( value ) {}
+    };
+    ostream & operator <<
+	    ( ostream & out, myformat s )
+    {
+    	out << ( ... s.value ... );
+	. . .
+	return out;
+    }
+
+Here we have invented a typed structure to emcapsulate
+the value when it is to be printed.
+
+Input operators can be define by:
+
+    using std::istream;
+    istream & operator >>
+	    ( istream & in, mytype & value )
+    {
+	. . .
+	in >> . . .
+	. . .
+	return in;
+    }
+
+
 
 File:		c++
 Author:		Bob Walton <walton@deas.harvard.edu>
@@ -176,6 +314,6 @@ file.
 RCS Info (may not be true date or author):
 
     $Author: hc3 $
-    $Date: 2006/03/03 18:05:55 $
+    $Date: 2006/03/06 19:37:59 $
     $RCSfile: c++,v $
-    $Revision: 1.8 $
+    $Revision: 1.9 $
