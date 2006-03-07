@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Dec 10 09:15:49 EST 2005
+# Date:		Tue Mar  7 03:44:39 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/12/10 18:10:37 $
+#   $Date: 2006/03/07 08:48:34 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.28 $
+#   $Revision: 1.29 $
 
 # make
 #	Makes documentation as fprintable .txt files in
@@ -37,7 +37,6 @@ DOCS=	overview.txt \
 	judge/autojudge.txt \
 	judge/chkpage.txt \
 	judge/dispatchmail.txt \
-	judge/hpcm_email_passwords.txt \
 	judge/extractmail.txt \
 	judge/fcheck.txt \
 	judge/fcheckc.txt \
@@ -47,9 +46,11 @@ DOCS=	overview.txt \
 	contestant/fprint.txt \
 	contestant/help.txt \
 	contestant/hpcm_clisp.txt \
+	judge/hpcm_email_passwords.txt \
 	contestant/hpcm_extract.txt \
 	contestant/hpcm_extract_test_replies.txt \
 	contestant/hpcm_get.txt \
+	judge/hpcm_help.txt \
 	contestant/hpcm_helper.txt \
 	secure/hpcm_make_accounts.txt \
 	judge/hpcm_print_passwords.txt \
@@ -61,6 +62,7 @@ DOCS=	overview.txt \
 	contestant/hpcm_submit.txt \
 	secure/hpcm_TRASH_ACCOUNTS.txt \
 	contestant/javahelp.txt \
+	judge/jfilter.txt \
 	judge/jprint.txt \
 	judge/lookat.txt \
 	judge/printer.txt \
@@ -79,6 +81,7 @@ DOCS=	overview.txt \
 	judge/scoreboard.txt \
 	judge/scorediff.txt \
 	judge/scorefinder.txt \
+	judge/scoretable.txt \
 	contestant/SETUP_PROTOTYPE.txt \
 	judge/sloc_counts.txt \
 	judge/startcontest.txt \
@@ -158,11 +161,6 @@ judge/dispatchmail.txt:	hpcm_judging.rc \
 	rm -f judge/dispatchmail.txt
 	-../../judge/bin/dispatchmail -doc \
 	    >judge/dispatchmail.txt
-judge/hpcm_email_passwords.txt:	hpcm_judging.rc \
-		../../judge/bin/hpcm_email_passwords
-	rm -f judge/hpcm_email_passwords.txt
-	-../../judge/bin/hpcm_email_passwords -doc \
-	    >judge/hpcm_email_passwords.txt
 judge/extractmail.txt:	hpcm_judging.rc \
 			../../judge/bin/extractmail
 	rm -f judge/extractmail.txt
@@ -188,6 +186,16 @@ judge/fprint.txt:	hpcm_judging.rc \
 	rm -f judge/fprint.txt
 	-../../judge/bin/fprint -doc \
 	    >judge/fprint.txt
+judge/hpcm_email_passwords.txt:	hpcm_judging.rc \
+		../../judge/bin/hpcm_email_passwords
+	rm -f judge/hpcm_email_passwords.txt
+	-../../judge/bin/hpcm_email_passwords -doc \
+	    >judge/hpcm_email_passwords.txt
+judge/hpcm_help.txt:	hpcm_judging.rc \
+		../../judge/bin/hpcm_help
+	rm -f judge/hpcm_help.txt
+	-../../judge/bin/hpcm_help -doc \
+	    >judge/hpcm_help.txt
 judge/hpcm_print_passwords.txt:	hpcm_judging.rc \
 		../../judge/bin/hpcm_print_passwords
 	rm -f judge/hpcm_print_passwords.txt
@@ -212,6 +220,10 @@ judging.txt:	hpcm_judging.rc \
 			../../judge/bin/judging
 	rm -f judging.txt
 	-../../judge/bin/judging -doc >judging.txt
+judge/jfilter.txt:	hpcm_judging.rc \
+		        ../../judge/bin/jfilter
+	rm -f judge/jfilter.txt
+	-../../judge/bin/jfilter -doc >judge/jfilter.txt
 judge/jprint.txt:	hpcm_judging.rc \
 		        ../../judge/bin/jprint
 	rm -f judge/jprint.txt
@@ -277,6 +289,11 @@ judge/scorefinder.txt:	hpcm_judging.rc \
 	rm -f judge/scorefinder.txt
 	-../../judge/bin/scorefinder -doc \
 	    >judge/scorefinder.txt
+judge/scoretable.txt:	hpcm_judging.rc \
+			../../judge/bin/scoretable
+	rm -f judge/scoretable.txt
+	-../../judge/bin/scoretable -doc \
+	    >judge/scoretable.txt
 judge/sloc_counts.txt:	hpcm_judging.rc \
 			../../judge/bin/sloc_counts
 	rm -f judge/sloc_counts.txt
