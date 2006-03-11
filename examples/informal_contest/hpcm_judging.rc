@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Mar  4 11:54:17 EST 2006
+# Date:		Sat Mar 11 07:05:55 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/03/04 17:47:10 $
+#   $Date: 2006/03/11 12:41:20 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.18 $
+#   $Revision: 1.19 $
 
 # Table of Contents
 #
@@ -122,11 +122,11 @@ set penalty_minutes 20
 set cc_manager no
 
 # The following are the beginning and ending of the
-# initial this_contest help file.  Each should begin and
-# end with a line feed, or be "".  Each will then be
-# separated from other text by a blank line.
+# initial version of the ./help/this_contest file.  Each
+# should begin and end with a line feed, or be "".  Each
+# will then be separated from other text by a blank line.
 #
-# If you want to modify this_contest further, you should
+# If you want to modify this_contest further, you may
 # edit the ./help/this_contest file directly after it
 # has been initially made.  The version of the file that
 # is made by this hpcm_judging.rc file will be mantained
@@ -194,7 +194,7 @@ set problems_arguments "
 # problems are subdirectories of ~/ppp which contains
 # the index file, `SUBDIRECTORY/' is the omitted.
 # $env(HOME) is the home directory of the current
-# (judge's) account.  ALL means include all problems
+# (judge's) account.  `ALL' means include all problems
 # listed in the index.
 #
 # set problems_arguments "
@@ -285,20 +285,20 @@ set window_height 24
 # set hpcm_prototype_account TBD
 
 # Set to "no" if you do not want makecontest to run
-# `makescoreboard start' when necessary.
+# `makescoreboard start'.
 #
 set makescoreboard yes
 
-# The following is the printer map.  It lets each
-# contestant determine his/her own printer by placing
-# its name in the ~/PRINTER file of the contestant's
+# The following is the printer map.  It lets each con-
+# testant determine his/her own printer by placing the
+# printer name in the ~/PRINTER file of the contestant's
 # account.  See `hpcm/contestant/bin/ printer_pipe -doc'
 # for more documentation.
 #
 set printer_map "
-# Do not edit.  This is copied from the
-# feedback_printer_map global variable in the
-# hpcm_judging.rc file in the judging directory.
+# Do not edit.  This is copied from the printer_map
+# global variable in the hpcm_judging.rc file in the
+# judging directory.
 #
 .* !~/PRINTER
 "
@@ -327,15 +327,18 @@ $browser '$browser $java_api_index'
 "
 }
 
-# Require submission email to have a formatted body
-# with HPCM_BEGIN, HPCM_END, and `..'s.
+# Require or do not require submission email to have a
+# formatted body with HPCM_BEGIN, HPCM_END, and `..'s.
 #
-if { $allow_email_submissions } {
+if { $allow_email_submissions == "no" } {
+    set use_authentication yes
+    set format_submissions yes
+} elseif { $allow_email_submissions == "yes" } {
     set use_authentication no
     set format_submissions no
 } else {
-    set use_authentication yes
-    set format_submissions yes
+    error "Bad allow_email_submissions value:\
+           $allow_email_submissions"
 }
 
 # Default arguments to makecontest.
@@ -361,7 +364,7 @@ set makecontest_arguments "
     $problems_arguments
 "
 
-# Set the start/freeze/stop times for the contest.
+# Set the scoreboard timing for the contest.
 #
 set scoreboard_start_time  $scoring_type
 set scoreboard_penalty [expr 60 * $penalty_minutes]
@@ -469,15 +472,15 @@ hpcm_get'ting a problem UNTIL you are READY to swiftly
 solve it, as the time between when you hpcm_get the pro-
 blem and when you first submit a correct solution for
 the problem is the problem time on the scoreboard.
-"][include_if { $scoring_type == "team" } \
+"][include_if { $scoring_type == "team" } "
 In order to get good scores on problems, you must AVOID
-hpcm_get'ting ANY problem UNTIL you are READY to swiftly
-solve ALL problems, as the time you hpcm_get your first
-problem is the start time of the contest for you.  For
-each problem, the difference between this contest start
-time and the time when you first submit a correct solu-
-tion for the problem is the problem time on the score-
-board.
+hpcm_get'ting ANY non-demonstration problem UNTIL you
+are READY to swiftly solve ALL problems, as the time you
+hpcm_get your first problem is the start time of the
+contest for you.  For each problem, the difference be-
+tween this contest start time and the time when you
+first submit a correct solution for the problem is the
+problem time on the scoreboard.
 "]
 The command `scoreboard' will display the scoreboard.
 See `help scoreboard'.  See `help solving' for details
@@ -489,17 +492,16 @@ Problem descriptions are available on the web."][
  include_if { [regexp get $description_type] } "
 Problem descriptions are available in files in the prob-
 lem directory gotten by hpcm_get.  These files have one
-of the extensions .txt, .html, .htm, .ps, etc.  The
-print commands only print .txt files (use fprint), but
-you can email other files to your home computer where
-they can be displayed."]
+of the extensions .txt, .html, .htm, .ps, .pdf, etc.
+The print commands only print plain text files, but you
+can email other files to your home computer where they
+can be displayed."]
 
 To send a question to the contest manager DO NOT try
 to e-mail the manager directly.  Instead edit the ques-
 tion into a file qqq and use the command:
 
 	hpcm_sendmail < qqq
-
 [include-if { [llength $response_list] == 0 } "
 You CANNOT use the alternative submit commands that
 make `in-submit', `inout-submit', or\
