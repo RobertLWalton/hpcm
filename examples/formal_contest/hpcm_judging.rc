@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Feb 25 07:41:20 EST 2006
+# Date:		Sat Mar 11 07:07:46 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/02/25 12:45:49 $
+#   $Date: 2006/03/11 12:17:54 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.47 $
+#   $Revision: 1.48 $
 
 # Table of Contents
 #
@@ -133,11 +133,11 @@ set manager_address ""
 set cc_manager no
 
 # The following are the beginning and ending of the
-# initial this_contest help file.  Each should begin and
-# end with a line feed, or be "".  Each will then be
-# separated from other text by a blank line.
+# initial version of the ./help/this_contest file.  Each
+# should begin and end with a line feed, or be "".  Each
+# will then be separated from other text by a blank line.
 #
-# If you want to modify this_contest further, you should
+# If you want to modify this_contest further, you may
 # edit the ./help/this_contest file directly after it
 # has been initially made.  The version of the file that
 # is made by this hpcm_judging.rc file will be mantained
@@ -236,7 +236,7 @@ set problems_arguments "
 # problems are subdirectories of ~/ppp which contains
 # the index file, `SUBDIRECTORY/' is the omitted.
 # $env(HOME) is the home directory of the current
-# (judge's) account.  ALL means include all problems
+# (judge's) account.  `ALL' means include all problems
 # listed in the index.
 #
 # set problems_arguments "
@@ -334,18 +334,18 @@ set window_height 24
 set conversion_delay [expr 12 * 60 * 60]
 
 # Set to "no" if you do not want makecontest to run
-# `makescoreboard start' when necessary.
+# `makescoreboard start'.
 #
 set makescoreboard yes
 
 # Set to "no" if you do not want makecontest to run
-# `startcontest start' when necessary.
+# `startcontest start'.
 #
 set startcontest yes
 
 # The following is the printer map for a feedback or
 # dated contest.  It lets each contestant determine
-# his/her own printer by placing its name in the
+# his/her own printer by placing the printer name in the
 # ~/PRINTER file of the contestant's account.  See
 # timed_printer_map above and `hpcm/contestant/bin/
 # printer_pipe -doc' for more documentation.
@@ -382,15 +382,18 @@ $browser '$browser $java_api_index'
 "
 }
 
-# Require submission email to have a formatted body
-# with HPCM_BEGIN, HPCM_END, and `..'s.
+# Require or do not require submission email to have a
+# formatted body with HPCM_BEGIN, HPCM_END, and `..'s.
 #
-if { $allow_email_submissions } {
+if { $allow_email_submissions == "no" } {
+    set use_authentication yes
+    set format_submissions yes
+} elseif { $allow_email_submissions == "yes" } {
     set use_authentication no
     set format_submissions no
 } else {
-    set use_authentication yes
-    set format_submissions yes
+    error "Bad allow_email_submissions value:\
+           $allow_email_submissions"
 }
 
 # Set scoring subtype to timed, feedback, or dated
