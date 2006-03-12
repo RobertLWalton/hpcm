@@ -1,4 +1,4 @@
-C++ Help		    Mon Mar  6 06:34:23 EST 2006
+C++ Help		    Sun Mar 12 00:36:24 EST 2006
 
 Include Files
 ------- -----
@@ -29,23 +29,10 @@ as the following:
 	using std::cin;
 	using std::cout;
 	using std::endl;
-
-Debugging
----------
-
-The following code is useful for debugging.
-
-	bool debug;	// Put before all functions.
-
-	. . . data and functions . . .
-
-	int main
-
-	
 
 
-Program Structure
-------- ---------
+Program Structure and Debugging
+------- --------- --- ---------
 
 Typical program structure including end of file detect-
 ion and debugging is:
@@ -77,7 +64,7 @@ No other error indication is given.  Note that
 `cin.eof()' is normally false after successfully
 reading some value, as the input is still before
 the end of the line containing the value.
-
+
 Many problems require you to detect certain input
 values as end of data markers, instead of looking for
 eof.  E.g., the problem might specify that x, y, and z
@@ -97,6 +84,15 @@ will NOT work:
 	else if ...
 
 Put {} brackets around `dout << ...;' in this situation.
+
+Debugging is best done with information printed by
+`dout', and not with a debugger like `gdb'.  The excep-
+tion is debugging programs that crash or go into an
+infinite loop, which is best done with a debugger.
+
+It is also a good idea to use `assert' statements
+to check that assumptions you have made are valid during
+actual program execution.
 
 
 Numeric Constants
@@ -142,15 +138,15 @@ outputting each N column number.  The width of 0 means
 To output a right adjusted floating point number F in N
 columns with P decimal places use:
 
-    cout << setiosflags ( ios::showpoint | ios::fixed);
+    cout << setiosflags ( ios::showpoint | ios::fixed );
     cout << setprecision (P);
     cout << setw (N) << F;
 
 The precision P and flags do not get reset after the
 number is output.  They can be reset to defaults by
 
-   cout << resetiosflags ( ios::showpoint | ios::fixed);
-   cout << setprecision (6);
+  cout << resetiosflags ( ios::showpoint | ios::fixed );
+  cout << setprecision (6);
 
 Sometimes you are asked to use `0' as a high order fill
 character, instead of ` ', or to output in hexadecimal
@@ -166,15 +162,32 @@ To use setw etc. you need to:
 
     #include <iomanip.h>
 
+You may also need
+
+    using std::setw;
+    using std::hex;
+    using std::dec;
+    using std::setprecision;
+    using std::ios;
+
+etc.  However, somewhat counter intuitively
+
+    using std::setiosflags;
+    using std::resetiosflags;
+
+do not work and are not needed.
+
+
 Character Input
 --------- -----
 
 You can use the following for character input:
 
-	int c = cin.get();
-	int c = cin.peek();
+    int c = cin.get();	// Get next character.
+    int c = cin.peek();	// Return next character
+    			// without skipping over it.
 
-These return EOF on end of file.
+These return EOF for end of file.
 
 
 Inputting Lines
@@ -192,21 +205,19 @@ place of `getline': its behavior is similar but it does
 NOT skip over the new line in the input stream, and
 therefore after reading the first line it reads empty
 lines forever.
-
-A special problem using `getline' is that if just before
-you used non-line oriented code, you will need to skip
-to a carriage return BEFORE calling `getline'.  Typical
-code is
+
+If you use non-line-oriented code to input a value V,
+you CANNOT then use `getline' to get a following line,
+unless you first skip by the end of line after V.
+Failing to do this causes `getline' to read an empty
+line, consisting of just the line feed after V.  Typical
+correct code is:
 
 	int x;
 	cin >> x;	// Does not skip line end.
-	...
 	while ( cin.get() != '\n' );
 	cin.getline ( ... );
 
-Without the `while' `getline' would the rest of the line
-after the integer x, and this would likely be an empty
-line.
 
 Parsing Lines
 ------- -----
@@ -219,16 +230,22 @@ You can parse a line after it is input by code such as
 	istringstream in ( buffer );
 
 Now `in' is an input stream whose input is taken from
-the buffer.
+the buffer (actually, the input is copied from the
+buffer into another buffer internal to the instring-
+stream when the latter is created).
 
 Here in.eof() will be true at the end of the string.
 This is likely to be a problem because immediately after
 reading a number at the end of the buffer in.eof() will
 be true.  To compensate, check for eof BEFORE reading
-the next value by first executing `in >> ws' to skip
-past whitespace, then testing in.eof(), and only then
-reading the next value.
+each value by first executing `in >> ws' to skip past
+whitespace, then testing in.eof(), and only then reading
+the value.  Typical code is:
 
+	in >> ws;
+	if ( in.eof() ) break;
+	in >> x;
+
 
 Writing Strings
 ------- -------
@@ -247,14 +264,16 @@ Strings can be written using:
 Here `out' is an output stream whose output is written
 into an INTERNAL buffer (you CANNOT make a stream that
 writes into your buffer).  You can get the starting
-address of the internal buffer as `out.str().data()'.
-Use `out << ends' to write a NUL in the buffer.
+address of a string that contains the contents of the
+internal buffer with `out.str().data()'.  Before doing
+this, use `out << ends' to write a NUL into the buffer.
 
 You can also use `cout << out.str()' to write the
 internal buffer to `cout' directly, but do NOT use
 `out << ends' in this case, as the NUL will be written
 to `cout' if you do.
 
+
 Writing Your Own << And >> Operators
 ------- ---- --- -- --- -- ---------
 
@@ -263,7 +282,7 @@ to output something.  Some examples are:
 
     using std::ostream;
     ostream & operator <<
-	    ( ostream & out, mytype value )
+	    ( ostream & out, mytype & value )
     {
 	. . .
 	out << . . .
@@ -285,10 +304,15 @@ format.  A simple way is
 	. . .
 	return out;
     }
+    . . .
+    cout << myformat ( 99 );
 
-Here we have invented a typed structure to emcapsulate
-the value when it is to be printed.
-
+Here we have invented a typed structure to encapsulate
+the value when it is to be printed.  Note the argument
+to << may NOT be `myformat & s' because that is not
+constant, and in use the `myformat' value is a temporary
+that must be a constant.
+
 Input operators can be define by:
 
     using std::istream;
@@ -314,6 +338,6 @@ file.
 RCS Info (may not be true date or author):
 
     $Author: hc3 $
-    $Date: 2006/03/06 19:37:59 $
+    $Date: 2006/03/12 05:57:37 $
     $RCSfile: c++,v $
-    $Revision: 1.9 $
+    $Revision: 1.10 $
