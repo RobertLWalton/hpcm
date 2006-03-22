@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Mar  9 23:58:14 EST 2006
+# Date:		Tue Mar 21 21:53:50 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/03/10 04:54:55 $
+#   $Date: 2006/03/22 02:50:56 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.41 $
+#   $Revision: 1.42 $
 #
 # To make an informal contest named `foo':
 #
@@ -164,10 +164,10 @@
 #	      cd ~/hpcm/contestant/help
 #	      make EXTRAS=THIS_CONTEST help+.pdf
 #
-# 12. There is one background processes whose status
-#     you may want to monitor: the `makescoreboard'
-#     process that remakes the scoreboard if necessary
-#     every minute.
+# 12. There is one background process whose status you
+#     may want to monitor: the `makescoreboard' process
+#     that remakes the scoreboard if necessary every
+#     minute.
 #
 #     This process is started and managed by `make',
 #     and in the absence of special problems, rerunning
