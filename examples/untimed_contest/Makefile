@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Mar  9 23:34:15 EST 2006
+# Date:		Sun Apr  2 10:09:29 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/03/10 04:55:59 $
+#   $Date: 2006/04/02 19:27:17 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.60 $
+#   $Revision: 1.61 $
 #
 # To make an email contest named `foo':
 #
@@ -68,12 +68,10 @@
 #     subject) or `submit javaio.java'.  See the
 #     info/help/email_contests file for more details.
 #
-# 9.  You can also test the contest by putting the
-#     judge's contest email address in the Contest_
-#     Address file and then executing `make test'.  Then
-#     read each email reply and compare its X-HPCM-Test-
-#     Subject field with the results in the body of the
-#     reply.
+# 9.  You can also test the contest by executing
+#     `make test'.  Then read each email reply and
+#     compare its X-HPCM-Test-Subject field with the
+#     results in the body of the reply.
 #
 #     Note that serveral of the test submissions time
 #     out, and for those submissions the autojudge will
@@ -172,10 +170,10 @@
 #	      cd ~/hpcm/contestant/help
 #	      make EXTRAS=THIS_CONTEST help+.pdf
 #
-# 12. There is one background processes whose status
-#     you may want to monitor: the `makescoreboard'
-#     process that remakes the scoreboard if necessary
-#     every minute.
+# 12. There is one background process whose status you
+#     may want to monitor: the `makescoreboard' process
+#     that remakes the scoreboard if necessary every
+#     minute.
 #
 #     This process is started and managed by `make',
 #     and in the absence of special problems, rerunning
@@ -277,14 +275,6 @@ help/this_contest: print_files_do_nothing
 test:	test_email
 
 .SUFFIXES: .mail .send
-
-Contest_Address:
-	@echo "ERROR: put the contest address in the" \
-	      "file Contest_Address"
-	@echo "The address should be" \
-	      '`'password'<'`id -un`@`hostname`">'"
-	@echo "where \`password' is as in ~/.procmailrc"
-	exit 1
 
 .mail.send:
 	( echo To: `cat Contest_Address`; cat $*.mail) \
