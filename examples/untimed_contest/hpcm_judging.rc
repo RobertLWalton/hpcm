@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Apr  2 22:23:37 EDT 2006
+# Date:		Mon Apr  3 12:47:06 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/04/03 12:47:19 $
+#   $Date: 2006/04/03 18:53:30 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.20 $
+#   $Revision: 1.21 $
 
 # Table of Contents
 #
@@ -278,12 +278,19 @@ if {    ! [file exists \
      ||    [read_file \
                 $judging_directory/Contest_Address] \
         != $autojudge_address } {
-    put_file $judging_directory/Contest_Address \
-	     $autojudge_address
+    write_file $judging_directory/Contest_Address \
+	       $autojudge_address
 }
 
 # Always return .cerr file on syntax error.
 #
+set response_list {}
+foreach response [split $response_mode +] {
+    if {    [lcontain {in inout solution} $response] \
+         && ! [lcontain $response_list $response] } {
+        lappend response_list $response
+    }
+}
 set response_mode "$response_mode+cerr"
 
 # Do not require submission email to have a formatted
@@ -391,11 +398,6 @@ if { $cc_manager } {
 
 # Compute this_contest.
 #
-set response_list {}
-foreach qualifier [split $response_mode +] {
-    lappend response_list $qualifier-submit
-}
-#
 set this_contest "$this_contest_prefix
 The important help and demonstration problem files
 are available via the contest web page.
@@ -459,19 +461,33 @@ you first submit a correct solution for the problem is
 the problem time on the scoreboard.
 "]
 The scoreboard is posted on the web.  See the `score-
-board' help file for details.  See the `solving' help
-file for details on how to solve a problem.
-
-[include_if { [llength $response_list] == 0 } "
-You CANNOT use the alternative submit commands that
-make `in-submit', `inout-submit', or\
-	`solution-submit'."][
- include_if { [llength $response_list] > 0 } "
-You can use commands that `make' any of the following:
-
-    submit $response_list
-
-but ONLY these submit commands.
+board' help file for details.  See the `email_solving'
+help file for details on how to solve a problem (note
+that this is different from the `solving' help file).
+[include_if { [llength $response_list] > 0 } "
+For this contest you can use alternative submission
+emails with subjects of any one of the forms:
+"][include_if { [lcontain $response_list in] } "
+    Subject: submit ppp.ext in"][
+   include_if { [lcontain $response_list inout] } "
+    Subject: submit ppp.ext inout"][
+   include_if { [lcontain $response_list solution] } "
+    Subject: submit ppp.ext solution"][
+   include_if { [llength $response_list] == 3 } "
+"][include_if {    0 < [llength $response_list] \
+		&&     [llength $response_list] < 3 } "
+But you CANNOT use the alternative submission emails
+with subjects of any one of the forms:
+"][include_if { [llength $response_list] == 0 } "
+For this contest you CANNOT use the alternative submis-
+sion emails with subjects of any one of the forms:
+"][include_if { ! [lcontain $response_list in] } "
+    Subject: submit ppp.ext in"][
+   include_if { ! [lcontain $response_list inout] } "
+    Subject: submit ppp.ext inout"][
+   include_if { ! [lcontain $response_list solution] } "
+    Subject: submit ppp.ext solution"][
+   include_if { [llength $response_list] < 0 } "
 "]$this_contest_postfix"
 
 # Parameter Overrides
