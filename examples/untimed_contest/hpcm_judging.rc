@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Apr  2 12:01:43 EDT 2006
+# Date:		Sun Apr  2 22:23:37 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/04/02 19:27:17 $
+#   $Date: 2006/04/03 02:32:07 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.18 $
+#   $Revision: 1.19 $
 
 # Table of Contents
 #
@@ -316,8 +316,14 @@ set makecontest_arguments "
 #
 if { [lcontain {team problem} $scoring_type] } {
     set scoreboard_start_time $scoring_type
-} else {
+} elseif { $scoring_type == "feedback" } {
     set scoreboard_start_time ""
+} elseif { $scoring_type == "dated" } {
+    set scoreboard_start_time ""
+    set scoreboard_display_correct no
+    set scoreboard_display_incorrect no
+} else {
+    error "bad scoring_type: $scoring_type"
 }
 set scoreboard_penalty [expr 60 * $penalty_minutes]
 
@@ -411,12 +417,29 @@ To test this with a demonstration problem, get the
 file named `count1.c' from the web pages, rename it
 `count.c', and submit it.  Other solutions to demonstra-
 tion problems are on the web pages and can be submitted.
+[include_if { [lcontain {problem team} \
+                        $scoring_type] } "
+Because this is a timed contest, problem descriptions
+are NOT on the web.  Instead, you get the description
+of a problem named PPP by sending an email message whose
+`To:' field is
+
+	To: $autojudge_address
+
+and whose `Subject:' field is
+
+	Subject: get PPP
+
+The reply will contain a file that describes the pro-
+blem.  The extension of this file tells its type: .txt
+for plain text, .html or .htm for HTML, .ps for post-
+script, .pdf for PDF.  Several files may be returned
+separated by lines containing a special pattern unlikely
+to be included in the files.
 
 TBD
-should correct and incorrect be displayed for dated
-contest?
 
-[include_if { $scoring_type == "problem" } "
+"][include_if { $scoring_type == "problem" } "
 In order to get good scores on problems, you must AVOID
 hpcm_get'ting a problem UNTIL you are READY to swiftly
 solve it, as the time between when you hpcm_get the pro-
