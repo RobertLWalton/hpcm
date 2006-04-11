@@ -11,18 +11,27 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: hc3 $
-//   $Date: 2002/11/01 11:38:21 $
+//   $Date: 2006/04/11 14:24:44 $
 //   $RCSfile: count1.java,v $
-//   $Revision: 1.4 $
+//   $Revision: 1.5 $
 
 import java.io.*;
 import java.util.StringTokenizer;
 
 public class count {
 
+    public static boolean debug;
+
+    public static void dprintln ( String s )
+    {
+        if ( debug ) System.out.println ( s );
+    }
+
     public static void main (String[] args)
 	    throws IOException
     {
+
+        debug = ( args.length > 0 );
 
 	BufferedReader reader
 	   = new BufferedReader
@@ -71,6 +80,11 @@ public class count {
 		// Count characters in line.
 		//
 		characters += line.length();
+
+		dprintln ( "+ " + line );
+		dprintln ( ". " + characters +
+		           " " + words +
+			   " " + lines );
 	    }
 
 	    // Ignore blank `paragraphs'.

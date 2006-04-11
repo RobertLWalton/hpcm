@@ -1,7 +1,7 @@
 # Makefile for the `count' Demonstration Problem
 #
 # File:		Makefile
-# Date:		Tue Apr 11 07:56:42 EDT 2006
+# Date:		Tue Apr 11 10:21:48 EDT 2006
 #
 # Exactly ONE of the four files count.c (C), count.cc
 # (C++), count.java (Java), or count.lsp (Commonlisp)
@@ -93,7 +93,7 @@ default:	count.out
 	rm -f $* *.class core
 	javac -g $*.java
 	echo >$* '#!/bin/sh'
-	echo >>$* "exec `which java` $*"
+	echo >>$* "exec `which java` $* \$$*"
 	chmod a+r *.class
 	chmod a+rx $*
 
@@ -101,7 +101,8 @@ default:	count.out
 	rm -f $* $*.fas $*.lib core
 	hpcm_clisp -c $*.lsp
 	echo >$* '#!/bin/sh'
-	echo >>$* "exec `hpcm_clisp -which` -I $*.fas"
+	echo >>$* \
+	    "exec `hpcm_clisp -which` -I $*.fas \$$*"
 	chmod a+r $*.fas
 	chmod a+rx $*
 #
@@ -172,6 +173,6 @@ clean:
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/04/11 12:07:31 $
+#   $Date: 2006/04/11 14:24:44 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.27 $
+#   $Revision: 1.28 $
