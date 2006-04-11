@@ -1,4 +1,10 @@
-(defun main () (read-a-paragraph 1))
+(defvar debug)
+(defun dformat (&rest r)
+    (if debug (apply #'format t r)))
+
+(defun main (&rest r)
+  (setq debug r)
+  (read-a-paragraph 1))
 
 ;; Counts are expressed as a triple:
 ;;
@@ -16,6 +22,7 @@
        (read-rest-of-paragraph counts paragraph)))))
 
 (defun read-rest-of-paragraph (counts paragraph)
+  (apply #'dformat ". ~A ~A ~A~%" (reverse counts))
   (let ( (line-counts (read-a-line)))
     (cond ((or (equal line-counts blank-line)
 	       (equal line-counts end-of-file))
@@ -36,8 +43,10 @@
   (let ( (line (read-line t nil 'eof)) )
     (cond
       ((eq line 'eof) '(0 0 0))
-      (t `(1 ,(read-a-word line 0 (length line) 0)
-	     ,(length line))))))
+      (t (if (/= (length line) 0)
+             (dformat "+ ~A~%" line))
+         `(1 ,(read-a-word line 0 (length line) 0)
+             ,(length line))))))
 
 (defun read-a-word (line index length count)
   (cond
