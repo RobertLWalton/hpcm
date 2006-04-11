@@ -1,7 +1,7 @@
 # Makefile for the `count' Demonstration Problem
 #
 # File:		Makefile
-# Date:		Tue Oct  4 21:27:36 EDT 2005
+# Date:		Tue Apr 11 07:56:42 EDT 2006
 #
 # Exactly ONE of the four files count.c (C), count.cc
 # (C++), count.java (Java), or count.lsp (Commonlisp)
@@ -27,15 +27,24 @@
 #			count.lsp.
 #
 #	make count.out	Makes `count' as above and
-#			then runs it with standard
-#			input coming from the file
-#			count.in.  Puts the standard
-#			output in the file count.out,
-#			and then copies that to the
-#			screen.  Does nothing, however,
-#			if count.out is more recent
-#			than both count.in and count.
-#			
+#			then runs it with no arguments
+#			and with the standard input
+#			coming from the file count.in.
+#			Puts the standard output in the
+#			file count.out, and then copies
+#			that to the screen.  Does noth-
+#			ing, however, if count.out is
+#			more recent than both count.in
+#			and count.
+#
+#	make count.debug  Ditto but runs `count debug'
+#			(with the one argument `debug')
+#			instead of `count' and puts the
+#			output in count.debug instead
+#			of count.out.
+#
+#	make debug	Same as `make count.debug'.
+#			
 #	make submit	Makes `count.out' just to be
 #			sure that nothing crashes, and
 #			then e-mails count.c, count.cc,
@@ -118,6 +127,24 @@ count.out:	count count.in
 	@cat count.out
 	@echo "============== END OUTPUT =============="
 
+count.debug:	count count.in
+	rm -f count.debug core
+	chmod a+x . count
+	hpcm_sandbox -cputime 60 \
+	             -datasize 4m \
+		     -stacksize 4m \
+		     -filesize 50k \
+		     -watch \
+		     count debug \
+	    <count.in >count.debug
+	@echo ""
+	@echo "====== DEBUG OUTPUT (count.debug)" \
+	      "======"
+	@cat count.debug
+	@echo "=========== END DEBUG OUTPUT ==========="
+
+#
+debug:	count.debug
 
 submit:		count.out
 	hpcm_submit count
@@ -132,9 +159,10 @@ solution-submit:	count.out
 	hpcm_submit -solution count
 
 clean:
-	rm -f count *.class core count.out \
+	rm -f count *.class core count.out count.debug \
 	      count.fas count.lib count.jout
-#
+
+
 # Author:	walton@deas.harvard.edu
 #
 # The authors have placed this file in the public
@@ -144,6 +172,6 @@ clean:
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/10/05 02:11:10 $
+#   $Date: 2006/04/11 12:07:31 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.26 $
+#   $Revision: 1.27 $

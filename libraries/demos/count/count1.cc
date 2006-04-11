@@ -1,8 +1,13 @@
 #include <iostream>
 using namespace std;
 
-main()
+#define dout if ( debug ) cout
+bool debug;
+
+main( int argc )
 {
+    debug = ( argc > 1 );
+
     int paragraph = 1;
 
     while ( ! cin.eof() )
@@ -32,6 +37,10 @@ main()
 	    } while ( * cp );
 
 	    characters += ( cp - buffer );
+	    dout << "+ " << buffer << endl;
+	    dout << ". " << characters
+	         << " " << words
+		 << " " << lines << endl;
 	}
 
 	if ( lines > 0  )
