@@ -1,7 +1,12 @@
 #include <stdio.h>
 
-main()
+#define dprintf if ( debug ) printf
+int debug;
+
+main ( int argc )
 {
+    debug = ( argc > 1 );
+
     int paragraph = 1;
 
     while ( 1 )
@@ -37,6 +42,9 @@ main()
 	    } while ( * cp != 0 && * cp != '\n' );
 
 	    characters += ( cp - buffer );
+	    dprintf ( "+ %s", buffer );
+	    dprintf ( ". %d %d %d\n",
+	              characters, words, lines );
 	}
 
 	if ( at_end_of_file ) break;
