@@ -14,9 +14,8 @@ P = scoring_filter_test
 
 default:	$P.out
 
-Scoring_Filter:	$P.cc
-	g++ -g -o Scoring_Filter \
-	    -DSCORING_FILTER $P.cc -lm
+Scoring_Filter:	Scoring_Filter.cc $P.cc
+	g++ -g -o Scoring_Filter Scoring_Filter.cc -lm
 
 .c:
 	rm -f $* core
@@ -86,6 +85,6 @@ clean:
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/10/13 08:45:12 $
+#   $Date: 2006/04/14 10:49:46 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.2 $
+#   $Revision: 1.3 $

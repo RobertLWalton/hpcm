@@ -2,7 +2,7 @@
 //
 // File:	scoring_filter_test.cc
 // Authors:	Bob Walton (walton@deas.harvard.edu)
-// Date:	Wed Sep 28 13:13:12 EDT 2005
+// Date:	Fri Apr 14 06:46:57 EDT 2006
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: hc3 $
-//   $Date: 2005/09/28 18:24:15 $
+//   $Date: 2006/04/14 10:49:46 $
 //   $RCSfile: scoring_filter_test.cc,v $
-//   $Revision: 1.1 $
+//   $Revision: 1.2 $
 
 // Compile with -DSCORING_FILTER to obtain Scoring_
 // Filter program that takes a .out file as stdin,
@@ -27,7 +27,7 @@ using std::endl;
 const unsigned MAX_LINE = 300;
 
 
-#ifndef SCORING_FILTER
+#ifndef Scoring_Filter
 
 int main ( int argc )
 {
@@ -44,22 +44,3 @@ int main ( int argc )
 }
 
 #endif
-
-#ifdef SCORING_FILTER
-
-int main ( int argc )
-{
-    char line [MAX_LINE+1];
-
-    while ( true )
-    {
-        cin.getline ( line, MAX_LINE );
-	if ( cin.eof() ) break;
-	cout << "FILTERED: " << line << endl;
-    }
-
-    return 0;
-}
-
-#endif
-
