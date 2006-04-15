@@ -1,7 +1,7 @@
 # Prototype Makefile
 #
 # File:		Makefile
-# Date:		Fri Feb 24 10:57:08 EST 2006
+# Date:		Sat Apr 15 06:33:31 EDT 2006
 #
 # See demonstration Makefile for documentation.
 #
@@ -26,7 +26,7 @@ default:	$P.out
 	rm -f $* *.class core core.[0-9]*
 	javac -g $*.java
 	echo >$* '#!/bin/sh'
-	echo >>$* "exec `which java` $*"
+	echo >>$* "exec `which java` $* \$$*"
 	chmod a+r *.class
 	chmod a+rx $*
 
@@ -35,7 +35,8 @@ default:	$P.out
 	rm -f $* $*.fas $*.lib core core.[0-9]*
 	hpcm_clisp -c $*.lsp
 	echo >$* '#!/bin/sh'
-	echo >>$* "exec `hpcm_clisp -which` -I $*.fas"
+	echo >>$* \
+	    "exec `hpcm_clisp -which` -I $*.fas \$$*"
 	chmod a+r $*.fas
 	chmod a+rx $*
 
@@ -55,6 +56,24 @@ $P.out:	$P $P.in
 	@cat $P.out
 	@echo "============== END OUTPUT =============="
 
+$P.debug:	$P $P.in
+	rm -f $P.debug core core.[0-9]*
+	chmod a+x . $P
+	hpcm_sandbox -cputime 60 \
+	             -datasize 4m \
+		     -stacksize 4m \
+		     -filesize 50k \
+		     -watch \
+		     $P debug \
+	    <$P.in >$P.debug
+	@echo ""
+	@echo "====== DEBUG OUTPUT ($P.debug)" \
+	      "======"
+	@cat $P.out
+	@echo "=========== END DEBUG OUTPUT ==========="
+
+debug:		$P.debug
+
 submit:		$P.out
 	hpcm_submit $P
 
@@ -69,7 +88,7 @@ solution-submit:	$P.out
 
 clean:
 	rm -f $P *.class core core.[0-9]* \
-	      $P.out $P.fout $P.jout $P.jfout \
+	      $P.out $P.debug $P.fout $P.jout $P.jfout \
 	      $P.fas $P.lib make_$P_input
 
 #
@@ -82,6 +101,6 @@ clean:
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/02/24 15:57:58 $
+#   $Date: 2006/04/15 10:42:04 $
 #   $RCSfile: Makefile1,v $
-#   $Revision: 1.10 $
+#   $Revision: 1.11 $
