@@ -1,7 +1,7 @@
 # Makefile for the `count' Demonstration Problem
 #
 # File:		Makefile
-# Date:		Tue Apr 11 10:21:48 EDT 2006
+# Date:		Sat Apr 15 06:35:52 EDT 2006
 #
 # Exactly ONE of the four files count.c (C), count.cc
 # (C++), count.java (Java), or count.lsp (Commonlisp)
@@ -82,15 +82,15 @@
 default:	count.out
 
 .c:
-	rm -f $* core
+	rm -f $* core core.[0-9]*
 	gcc -g -o $* $*.c -lm
 
 .cc:
-	rm -f $* core
+	rm -f $* core core.[0-9]*
 	g++ -g -o $* $*.cc -lm
 
 .java:
-	rm -f $* *.class core
+	rm -f $* *.class core core.[0-9]*
 	javac -g $*.java
 	echo >$* '#!/bin/sh'
 	echo >>$* "exec `which java` $* \$$*"
@@ -98,7 +98,7 @@ default:	count.out
 	chmod a+rx $*
 
 .lsp:
-	rm -f $* $*.fas $*.lib core
+	rm -f $* $*.fas $*.lib core core.[0-9]*
 	hpcm_clisp -c $*.lsp
 	echo >$* '#!/bin/sh'
 	echo >>$* \
@@ -113,7 +113,7 @@ default:	count.out
 # hpcm_clisp program that can be run in the sandbox.
 
 count.out:	count count.in
-	rm -f count.out core
+	rm -f count.out core core.[0-9]*
 	chmod a+x . count
 	hpcm_sandbox -cputime 60 \
 	             -datasize 4m \
@@ -129,7 +129,7 @@ count.out:	count count.in
 	@echo "============== END OUTPUT =============="
 
 count.debug:	count count.in
-	rm -f count.debug core
+	rm -f count.debug core core.[0-9]*
 	chmod a+x . count
 	hpcm_sandbox -cputime 60 \
 	             -datasize 4m \
@@ -160,8 +160,9 @@ solution-submit:	count.out
 	hpcm_submit -solution count
 
 clean:
-	rm -f count *.class core count.out count.debug \
-	      count.fas count.lib count.jout
+	rm -f count *.class core core.[0-9]* \
+	      count.out count.debug count.jout \
+	      count.fas count.lib
 
 
 # Author:	walton@deas.harvard.edu
@@ -173,6 +174,6 @@ clean:
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/04/11 14:24:44 $
+#   $Date: 2006/04/15 11:18:54 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.28 $
+#   $Revision: 1.29 $
