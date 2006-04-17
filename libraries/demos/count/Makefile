@@ -1,7 +1,7 @@
 # Makefile for the `count' Demonstration Problem
 #
 # File:		Makefile
-# Date:		Sat Apr 15 06:35:52 EDT 2006
+# Date:		Sun Apr 16 21:05:13 EDT 2006
 #
 # Exactly ONE of the four files count.c (C), count.cc
 # (C++), count.java (Java), or count.lsp (Commonlisp)
@@ -121,12 +121,8 @@ count.out:	count count.in
 		     -filesize 50k \
 		     -watch \
 		     count \
-	    <count.in >count.out
-	@echo ""
-	@echo "========== OUTPUT (count.out)" \
-	      "=========="
-	@cat count.out
-	@echo "============== END OUTPUT =============="
+	    <count.in | \
+	    tee count.out
 
 count.debug:	count count.in
 	rm -f count.debug core core.[0-9]*
@@ -137,12 +133,8 @@ count.debug:	count count.in
 		     -filesize 50k \
 		     -watch \
 		     count debug \
-	    <count.in >count.debug
-	@echo ""
-	@echo "====== DEBUG OUTPUT (count.debug)" \
-	      "======"
-	@cat count.debug
-	@echo "=========== END DEBUG OUTPUT ==========="
+	    <count.in | \
+	    tee count.debug
 
 #
 debug:	count.debug
@@ -174,6 +166,6 @@ clean:
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/04/15 11:18:54 $
+#   $Date: 2006/04/17 01:07:06 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.29 $
+#   $Revision: 1.30 $
