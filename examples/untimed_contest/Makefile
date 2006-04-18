@@ -1,8 +1,8 @@
-# Makefile for an Email Contest
+# Makefile for an Untimes Contest
 #
 # File:		Makefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Apr  2 10:09:29 EDT 2006
+# Date:		Mon Apr 17 19:31:57 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,11 +11,11 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/04/02 19:27:17 $
+#   $Date: 2006/04/18 00:34:40 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.61 $
+#   $Revision: 1.62 $
 #
-# To make an email contest named `foo':
+# To make an untimed contest named `foo':
 #
 # 1. Create a judging account (see `Judging', hpcm/
 #    judging/bin/judging) and import the HPCM system
