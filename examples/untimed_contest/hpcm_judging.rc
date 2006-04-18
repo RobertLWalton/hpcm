@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Apr 17 20:20:03 EDT 2006
+# Date:		Tue Apr 18 06:46:40 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/04/18 00:34:40 $
+#   $Date: 2006/04/18 10:54:11 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.22 $
+#   $Revision: 1.23 $
 
 # Table of Contents
 #
@@ -32,20 +32,7 @@ source $lib_directory/hpcm_judging.rc
 # The following parameters determine the type and
 # variety of contest.
 
-# Set to the HPCM directory.  $env(HOME) is the home
-# directory of the current (judge's) account.
-#
-set hpcm_directory $env(HOME)/hpcm
-
-# Autojudge's email address.
-#
-set autojudge_address "someone@somecomputer"
-
-# Contest name, for scoreboard etc.
-#
-set contest_name "CONTEST NAME IS TBD"
-
-# Account type.  One of:
+# Contestant account type.  One of:
 #
 #	email		Contestants provide their own
 #			contest accounts and send sub-
@@ -88,7 +75,7 @@ set scoring_type feedback
 #	web+paper	Combination of the above.
 #	paper+web
 #
-set description_type web+get
+set description_type web
 
 # Set to allow different types of submit:
 #
@@ -105,6 +92,16 @@ set description_type web+get
 #
 set response_mode solution
 # set response_mode in+inout+solution
+
+# Autojudge's email address, or "" if this is to be
+# automatically determined.
+#
+set autojudge_address ""
+# set autojudge_address "somename<someone@somecomputer>"
+
+# Contest name, for scoreboard etc.
+#
+set contest_name "CONTEST NAME IS TBD"
 
 # The email address to be notified for errors or
 # queries.
@@ -168,6 +165,11 @@ set test_accounts { }
 # you need not change this.
 #
 set test_problems { count javaio }
+
+# Set to the HPCM directory.  $env(HOME) is the home
+# directory of the current (judge's) account.
+#
+set hpcm_directory $env(HOME)/hpcm
 
 # List of makecontest arguments that specify the
 # problems.  The format is
@@ -237,8 +239,11 @@ set web_scoreboard_URL ""
 # name (e.g. `harvard') or "short" to not include the @
 # or anything after that.
 #
-set submitter_compress_mode long
-# set submitter_compress_mode short
+if { [regexp email $account_type] } {
+    set submitter_compress_mode long
+else {
+    set submitter_compress_mode short
+}
 
 # Set "yes" to use GMT for dates in file and directory
 # names.  Otherwise the local time zone is used.
@@ -312,11 +317,16 @@ foreach response [split $response_mode +] {
 }
 set response_mode "$response_mode+cerr"
 
-# Do not require submission email to have a formatted
-# body with HPCM_BEGIN, HPCM_END, and `..'s.
+# If only local accounts, require submissions to have
+# HPCM_BEGIN/HPCM_END lines etc and authentication.
 #
-set use_authentication no
-set format_submissions no
+if { $account_type == "local" } {
+    set use_authentication yes
+    set format_submissions yes
+} else {
+    set use_authentication no
+    set format_submissions no
+}
 
 # Default arguments to makecontest.
 #
