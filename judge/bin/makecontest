@@ -6,7 +6,7 @@
 #
 # File:		makecontest
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Apr 15 06:09:47 EDT 2006
+# Date:		Tue Apr 18 07:33:36 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/04/15 10:10:19 $
+#   $Date: 2006/04/18 11:36:56 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.152 $
+#   $Revision: 1.153 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -111,6 +111,7 @@ makecontest option ... index_specification ...
     -printer_map    Make ./contest/printer_map and
     		         ./contest/printer_jobs
     -javahelp	Make ./contest/javahelp
+    -stlhelp	Make ./contest/stlhelp
     -startcontest   Run the startcontest program if
     		    necessary.
     -scoreboard     Run the makescoreboard program if
@@ -786,6 +787,10 @@ makecontest option ... index_specification ...
     variable is not set, the file is not written but a
     TODO is written.
 
+    The -stlhelp program option is just like -javahelp
+    but writes the ./contest/stlhelp file from the
+    `stlhelp' global variable.
+
     The -startcontest program option executes the
     `startcontest start' command unless this has already
     been done, or if it has been done but a background
@@ -854,6 +859,7 @@ set trashall_option		no
 set printer_option		no
 set printer_map_option		no
 set javahelp_option		no
+set stlhelp_option		no
 set startcontest_option		no
 set scoreboard_option		no
 #
@@ -930,6 +936,7 @@ while { $argi < $argc } {
         -printer_map	{ set printer_map_option \
 						yes }
         -javahelp	{ set javahelp_option	yes }
+        -stlhelp	{ set stlhelp_option	yes }
         -startcontest	{ set startcontest_option \
 						yes }
         -scoreboard	{ set scoreboard_option \
@@ -1040,6 +1047,7 @@ if {    $contest_option \
      || $printer_option \
      || $printer_map_option \
      || $javahelp_option \
+     || $stlhelp_option \
      || $startcontest_option } {
     if {    ! [file isdirectory $c_d] \
          || ! [file executable $c_d] \
@@ -2825,6 +2833,25 @@ if { $javahelp_option } {
 	write_file $c_d/javahelp $javahelp
 	grant_access $c_d/javahelp
 	puts "Wrote $c_d/javahelp"
+    }
+}
+
+# Make $c_d/stlhelp
+#
+if { $stlhelp_option } {
+    if { ! [info exists stlhelp] } {
+
+        TODO "Set the stlhelp global variable" \
+	     "in hpcm_judging.rc and run\
+	      `makecontest -stlhelp'"
+
+    } elseif {    ! [file exists $c_d/stlhelp] \
+               ||    [read_entire_file \
+	       		  $c_d/stlhelp] \
+	          != $stlhelp } {
+	write_file $c_d/stlhelp $stlhelp
+	grant_access $c_d/stlhelp
+	puts "Wrote $c_d/stlhelp"
     }
 }
 
