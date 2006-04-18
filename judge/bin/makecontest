@@ -6,7 +6,7 @@
 #
 # File:		makecontest
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Apr 18 08:07:31 EDT 2006
+# Date:		Tue Apr 18 09:05:19 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/04/18 12:34:40 $
+#   $Date: 2006/04/18 13:05:39 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.154 $
+#   $Revision: 1.155 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -656,6 +656,11 @@ makecontest option ... index_specification ...
     go-rw.  If the ./contest/secure/passwords file is
     made, a TODO for editing it is written, but the
     file automatically made is empty.
+
+    The `To' address in hpcm_sendmail.rc is the first
+    address in the `autojudge_addresses' global varia-
+    ble, if that variable is non-empty, and is otherwise
+    made automatically and using a random number.
 
     The ./contest/secure/passwords file consists of
     lines of the form
@@ -2294,9 +2299,13 @@ if { $secure_option \
      && ! [file readable \
      		$c_d/secure/hpcm_sendmail.rc] } {
     set rc_ch [open $c_d/secure/hpcm_sendmail.rc w]
-    set to_password [make_password]
-    puts $rc_ch \
-         "To: $to_password<[account_name]@[host_name]>"
+    if { [llength $autojudge_addresses] > 0 } {
+        set to [lindex $autojudge_addresses 0]
+    } else {
+	set to \
+	  "[make_password]<[account_name]@[host_name]>"
+    }
+    puts $rc_ch "To: $to"
     set key [make_password]
     puts $rc_ch "Key: $key"
     set key_name [file tail $j_d_relative]
