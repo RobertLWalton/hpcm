@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Apr 18 06:46:40 EDT 2006
+# Date:		Wed Apr 19 07:49:46 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,26 +11,30 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/04/18 10:54:11 $
+#   $Date: 2006/04/19 12:54:22 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.23 $
+#   $Revision: 1.24 $
 
 # Table of Contents
 #
-#	Parameters to be Modified
-#	Parameters Not Usually Modified
+#	Parameters: General Parameters
+#	Parameters: Local Account Parameters
+#	Parameters: Web Page Parameters
+#	Parameters: Usually Not Modified
 #	Computed Parameters (Do Not Modify)
 #	Parameter Overrides
 
-# Parameters to be Modified
-# ---------- -- -- --------
+# Parameters: General Parameters
+# ----------- ------- ----------
 
 # Read standard parameters.
 #
 source $lib_directory/hpcm_judging.rc
 
-# The following parameters determine the type and
-# variety of contest.
+# Set to the HPCM directory.  $env(HOME) is the home
+# directory of the current (judge's) account.
+#
+set hpcm_directory $env(HOME)/hpcm
 
 # Contestant account type.  One of:
 #
@@ -53,12 +57,16 @@ set account_type email
 #			incorrect, in, and inout submis-
 #			sions.
 #
-#	dated		Only date of correct submission
+#	unranked	Only date of correct submission
 #			is given, and contestants are
 #			ordered by number of correct
-#			problems.
+#			problems only.  Contestants with
+#			the same number of correct
+#			submissions are not ranked with
+#			respect to each other, but are
+#			listed alphabetically.
 #
-#	unordered	Only date of correct submission
+#	unscored	Only date of correct submission
 #			is given, and contestants are
 #			listed alphabetically.
 #
@@ -135,26 +143,6 @@ set this_contest_postfix "
 Good Hunting!
 "
 
-# TCL list of addresses to email scoreboard to.  If this
-# list contains zzz<YYY>, then every time the scoreboard
-# is updated it will be emailed to `zzz<YYY>', so in the
-# account YYY .procmailrc file you should put something
-# like the following to copy the scoreboard into the
-# public_html/xxx file of the YYY account:
-#
-#	:0 b:
-#	* ^To:.*zzz
-#	| cat >public_html/xxx;\
-#	  chmod a+r public_html/xxx
-#
-# If there are spaces or quotes in zzz<YYY>, it should
-# be enclosed in {} braces in the address list.
-#
-set scoreboard_addresses { }
-# set scoreboard_addresses {
-#	{"some thing"<someaccount@somecomputer>}
-# }
-
 # TCL list of TCL regular expressions that match the
 # test accounts which are NOT to appear on the score-
 # board.
@@ -165,11 +153,6 @@ set test_accounts { }
 # you need not change this.
 #
 set test_problems { count javaio }
-
-# Set to the HPCM directory.  $env(HOME) is the home
-# directory of the current (judge's) account.
-#
-set hpcm_directory $env(HOME)/hpcm
 
 # List of makecontest arguments that specify the
 # problems.  The format is
@@ -205,6 +188,43 @@ set problems_arguments "
 # arguments' for more details, and `makecontest -doc'
 # for complete details.
 
+
+# Parameters: Local Account Parameters
+# ----------- ----- ------- ----------
+
+# Parameters to be set if there are local contestant
+# accounts:
+#
+
+# Browser to use for javahelp and/or stlhelp.
+#
+set browser lynx
+
+# Location of JAVA API index for browser to use to
+# implement javahelp.
+#
+set java_api_index \
+    /usr/local/jdk/docs/api/overview-tree.html
+
+# Location of STL API index for browser to use to
+# implement stlhelp.
+#
+set stl_api_index /usr/local/STL_doc/index.html
+
+# Set "yes" if contestant accounts are to be enabled
+# for login by ssh using any of the public keys
+# ~/.ssh/{identity,id_rsa,id_dsa}.pub that exist.
+#
+set ssh_enable yes
+# set ssh_enable no
+
+
+# Parameters: Web Page Parameters
+# ----------- --- ---- ----------
+
+# Parameters to be set if the contest is to have
+# web pages or a scoreboard on the web.
+
 # Set the following if you want to use `makeweb' to
 # make a web page.  Leave as "" parameters you do not
 # want to use (e.g., if web_solutions_password is "" no
@@ -228,9 +248,29 @@ set web_manager_address $manager_address
 set web_solutions_password ""
 set web_help_URL ""
 set web_scoreboard_URL ""
+
+# TCL list of addresses to email scoreboard to.  If this
+# list contains zzz<YYY>, then every time the scoreboard
+# is updated it will be emailed to `zzz<YYY>', so in the
+# account YYY .procmailrc file you should put something
+# like the following to copy the scoreboard into the
+# public_html/xxx file of the YYY account:
+#
+#	:0 b:
+#	* ^To:.*zzz
+#	| cat >public_html/xxx;\
+#	  chmod a+r public_html/xxx
+#
+# If there are spaces or quotes in zzz<YYY>, it should
+# be enclosed in {} braces in the address list.
+#
+set scoreboard_addresses { }
+# set scoreboard_addresses {
+#	{"some thing"<someaccount@somecomputer>}
+# }
 
-# Parameters Not Usually Modified
-# ---------- --- ------- --------
+# Parameters: Usually Not Modified
+# ----------- ------- --- --------
 
 # Normally you should not have to make changes below
 # this point.
