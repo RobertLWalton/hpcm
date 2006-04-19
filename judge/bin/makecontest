@@ -6,7 +6,7 @@
 #
 # File:		makecontest
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Apr 18 09:05:19 EDT 2006
+# Date:		Wed Apr 19 07:26:32 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/04/18 13:05:39 $
+#   $Date: 2006/04/19 11:33:32 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.155 $
+#   $Revision: 1.156 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -51,19 +51,26 @@ makecontest option ... index_specification ...
   variable, if that exists.
 
   Options:
-    -formal     Sets up a formal contest.  Equals all
-    		options but -info, -ssh, -description,
-		-printer, -printer_map, -startcontest,
-		-scoreboard, -trashall, -javahelp, and
-		-stlhelp.
-    -informal   Sets up an informal contest.  Equals all
-    		options but -problems, -demos, -ssh,
-		-description, -printer, -printer_map,
-		-scoreboard, -trashall, -javahelp, and
-		-stlhelp.
+    -local	Equals all options needed to have local
+    		contestant accounts; specifically, the
+		following: -contest, -bin, -home, -help,
+		-help2, -this_contest, -solutions,
+		-mail, -print_files, -secure,
+		-procmailrc, -who_where, -trashable.
+    -email	Equals all options needed to have email
+    		contestant accounts; specifically, the
+		following: -info, -solutions, -mail,
+		-this_contest, -procmailrc, -print_
+		files.
+    -formal     Same as local plus -problems and -demos.
+    -informal   Same as local plus -startcontest and
+    		-info.
+
     -info	Make ./info, ./info/help/index,
     		./info/help/problems, ./info/help/demos.
+
     -solutions  Make ./solutions
+
     -contest	Make ./contest
     -bin	Make ./contest/bin
     -home	Make ./contest/home
@@ -84,33 +91,39 @@ makecontest option ... index_specification ...
     		     ./contest/help/problems,
     		     ./contest/help/demos
     -help2	Make ./help2
-    -this_contest    Make ./help, ./help/index,
-		          ./help/this_contest,
-		          ./help/this_contest_parameter,
-		          ./help/this_contest_original
-    -mail	Make ./mail
-    -print_files  Make ./help_print_files,
-    		       ./problems_print_files,
-		       ./demos_print_files.
-
+
     -secure	Make ./contest/secure/passwords,
 		     ./contest/secure/hpcm_sendmail.rc
     -ssh	Make ./contest/extra_setup.tar contain-
     		ing a .ssh/authorized_keys file that
 		contains .ssh/id_rsa.pub, .ssh/id_
 		dsa.pub, and .ssh/identity.pub.
+
+    -this_contest    Make ./help, ./help/index,
+		          ./help/this_contest,
+		          ./help/this_contest_parameter,
+		          ./help/this_contest_original
+    -print_files  Make ./help_print_files,
+    		       ./problems_print_files,
+		       ./demos_print_files.
+
+    -mail	Make ./mail
     -procmailrc	Update ~/.procmailrc
+
     -who_where  Make ./contest/who_where
     -trashable  Make ./contest/trashable with non-
     		existing accounts
     -trashall   Make ./contest/trashable with all
     		accounts
+
     -printer    Make ./contest/printer and
     		     ./contest/printer_jobs
     -printer_map    Make ./contest/printer_map and
     		         ./contest/printer_jobs
+
     -javahelp	Make ./contest/javahelp
     -stlhelp	Make ./contest/stlhelp
+
     -startcontest   Run the startcontest program if
     		    necessary.
     -scoreboard     Run the makescoreboard program if
@@ -135,7 +148,7 @@ makecontest option ... index_specification ...
     directory, according to instructions in the index
     specifications and options.  The form of the index
     specifications and options is given above.
-
+
     This program appends instructions for its user to
     edit certain files and run certain programs to the
     ./TODO file, and prints an announcement at the end
@@ -144,9 +157,8 @@ makecontest option ... index_specification ...
 
     The -contest program option makes the contest direc-
     tory and the symbolic link `./contest' to that di-
-    rectory.  This is needed for formal and informal
-    contests and untimed contests with local contestant
-    accounts, but not for contests with only email
+    rectory.  This is needed contests with local contes-
+    tant accounts, but not for contests with only email
     accounts.  If `./contest' does not exist, and name
     of the judging directory is ~/XXX/judging_YYY_PPP
     where PPP is a password, the directory named
@@ -205,7 +217,7 @@ makecontest option ... index_specification ...
     `help/', the `help/problems' file if the item name
     begins with `problems/', or the `help/demos' file
     if the item name begins with `demos/'.
-
+
     When an item entry is copied to an output index,
     the `***' in the first line of the entry is replace
     by 3 space characters, the item name is replaced by
@@ -242,7 +254,7 @@ makecontest option ... index_specification ...
     
     		./contest/problems 
     		./contest/help/problems
-
+
     which are left with the mode determined by the
     umask (presumably o-rx or og-rx).  The `startcon-
     test' program sets the mode of these to a+rx.  The
@@ -278,7 +290,7 @@ makecontest option ... index_specification ...
     contest must have unique single component names
     (except for items with the `nosolution' item option:
     see below).
-
+
     If this program is building a ./info directory, it
     actually builds a ./info+ directory instead.  Then
     it does a `diff -r ./info ./info+', and checks the
@@ -308,7 +320,7 @@ makecontest option ... index_specification ...
     indicates the next argument is either a name sub-
     stitution or an option substitution (also see
     below).
-
+
     Each input index file is associated with an index
     directory.  An unedited version of the index file is
     normally found in its index directory.  Sometimes an
@@ -346,7 +358,7 @@ makecontest option ... index_specification ...
     the form:
 
     	*** item_name item_option ...
-
+
     The item name is the name of the item file or direc-
     tory relative to the index directory (the directory
     normally containing the unedited index file).  The
@@ -385,7 +397,7 @@ makecontest option ... index_specification ...
     processed.  A substitution of the form:
 
     	option1s:'option11t option12t ...'
-
+
     in the index specification replaces option1s by the
     options in the list `option11t option12t ...'.
     As a special case, if `option1s' is `ALL', the
@@ -433,7 +445,7 @@ makecontest option ... index_specification ...
     may end up being included in several output indices
     if the item entries following it are included in
     several different output indices.
-
+
     The program options -demos, -problems, and -help can
     be used by omission to prevent the ./contest/demos,
     ./contest/problems, or ./contest/help directories
@@ -471,7 +483,7 @@ makecontest option ... index_specification ...
     Substitutions are not recursive: the result of a
     substitution is NOT subject to further substitu-
     tions.
-
+
     When an index item names a problem, demo, or help
     directory, it is necessary to determine the problem,
     demo, or help source and description files.  In this
@@ -509,7 +521,7 @@ makecontest option ... index_specification ...
 	    [indent_list 12 $problem_excluded_files]
    	problem_print_files:
 	    Undefined.
-
+
     The description and source file lists are lists of
     description or source file names relative to the
     index item directory.  To be listed a file must have
@@ -548,7 +560,7 @@ makecontest option ... index_specification ...
     last component of the index item directory name.  It
     is very rare for a help file directory to need a .rc
     file.
-
+
     By convention, a problem or demo source file that
     has the extension `.ISF' is intended as the initial
     version of a writable contestant file that the con-
@@ -579,7 +591,7 @@ makecontest option ... index_specification ...
 	./help/this_contest		file
 	./help/this_contest_parameter	file
 	./help/this_contest_original	file
-
+
     Note these are in the judging directory proper, and
     not in the ./info or ./contest subdirectories.  The
     ./help/index file is an INPUT index file that con-
@@ -628,7 +640,7 @@ makecontest option ... index_specification ...
     The -help2 program option creates the ./contest/
     help2 directory if it does not exist.  It is simply
     linked to the ./contest/help directory.
-
+
     Note that the contestant's `help' command searches
     ./contest/help1, ./contest/help2, ./contest/help3,
     and ./contest/help4 in order for help files.  Thus
@@ -676,7 +688,7 @@ makecontest option ... index_specification ...
     indicate a line is not associated with an account,
     and the password `none' may be used to indicate the
     password is to be assigned by other means.
-
+
     The -secure program option also causes any existing
     ./contest/secure/passwords file to be inspected for
     lines with empty passwords.  If any are found,
@@ -754,7 +766,7 @@ makecontest option ... index_specification ...
     If the `trashable' file is changed to something non-
     empty, a TODO is written on how to set up the
     accounts.
-
+
     The -printer program option makes the ./contest/
     printer file if that file does not exist.  This file
     is the name of the printer, which is the value of
@@ -870,12 +882,10 @@ set scoreboard_option		no
 #
 while { $argi < $argc } {
     switch -- [lindex $argv $argi] {
-        -formal		{ set solutions_option	yes
-			  set contest_option	yes
+        -local		{ set contest_option	yes
 			  set bin_option	yes
 			  set home_option	yes
-			  set problems_option	yes
-			  set demos_option	yes
+			  set solutions_option	yes
 			  set help_option	yes
 			  set help2_option	yes
 			  set this_contest_option \
@@ -887,8 +897,15 @@ while { $argi < $argc } {
 			  set procmailrc_option	yes
 			  set who_where_option	yes
 			  set trashable_option	yes }
-        -informal	{ set info_option	yes
-			  set contest_option	yes
+        -email		{ set info_option	yes
+			  set solutions_option	yes
+			  set this_contest_option \
+			  			yes
+			  set mail_option	yes
+			  set print_files_option \
+			  			yes
+			  set procmailrc_option	yes }
+        -formal		{ set contest_option	yes
 			  set bin_option	yes
 			  set home_option	yes
 			  set solutions_option	yes
@@ -903,6 +920,24 @@ while { $argi < $argc } {
 			  set procmailrc_option	yes
 			  set who_where_option	yes
 			  set trashable_option	yes
+			  set problems_option	yes
+			  set demos_option	yes }
+        -informal	{ set contest_option	yes
+			  set bin_option	yes
+			  set home_option	yes
+			  set solutions_option	yes
+			  set help_option	yes
+			  set help2_option	yes
+			  set this_contest_option \
+			  			yes
+			  set mail_option	yes
+			  set print_files_option \
+			  			yes
+			  set secure_option	yes
+			  set procmailrc_option	yes
+			  set who_where_option	yes
+			  set trashable_option	yes
+			  set info_option	yes
 			  set startcontest_option \
 			  			yes }
         -info		{ set info_option 	yes }
