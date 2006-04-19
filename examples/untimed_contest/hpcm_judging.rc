@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Apr 19 07:49:46 EDT 2006
+# Date:		Wed Apr 19 10:01:06 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/04/19 12:54:22 $
+#   $Date: 2006/04/19 14:50:48 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.24 $
+#   $Revision: 1.25 $
 
 # Table of Contents
 #
@@ -80,8 +80,12 @@ set scoring_type feedback
 #	paper		Problem descriptions have been
 #			given out on paper.
 #
+#	get		Problem descriptions are
+#			delivered by hpcm_get.
+#
 #	web+paper	Combination of the above.
 #	paper+web
+#	web+get, etc.
 #
 set description_type web
 
@@ -334,44 +338,81 @@ set makescoreboard yes
 # this file, where they will override the settings of
 # this file.
 
-# Set addresses of autojudge and update Contest_Address.
+set is_makecontest \
+    [expr { [file tail $argv0] == "makecontest" }]
+
+# Set addresses of autojudge.
 #
 set autojudge_addresses [list $autojudge_address]
-if {    ! [file exists \
-                $judging_directory/Contest_Adress] \
-     ||    [read_file \
-                $judging_directory/Contest_Address] \
-        != $autojudge_address } {
+
+# Update Contest_Address.
+if {    $is_makecontest
+     && (    ! [file exists \
+                  $judging_directory/Contest_Adress] \
+          ||    [read_file \
+                   $judging_directory/Contest_Address] \
+             != $autojudge_address ) } {
     write_file $judging_directory/Contest_Address \
 	       $autojudge_address
 }
 
 # Always return .cerr file on syntax error.
 #
-set response_list {}
-foreach response [split $response_mode +] {
-    if {    [lcontain {in inout solution} $response] \
-         && ! [lcontain $response_list $response] } {
-        lappend response_list $response
-    }
-}
 set response_mode "$response_mode+cerr"
 
-# If only local accounts, require submissions to have
+# If email accounts, do NOT require submissions to have
 # HPCM_BEGIN/HPCM_END lines etc and authentication.
 #
-if { $account_type == "local" } {
-    set use_authentication yes
-    set format_submissions yes
-} else {
+if { [regexp email $account_type] } {
     set use_authentication no
     set format_submissions no
+} else {
+    set use_authentication yes
+    set format_submissions yes
+}
+
+# Set javahelp and stlhelp global variables if
+# appropriate.
+
+if { $is_makecontest } {
+    if {    $java_api_index != "" \
+	 && [regexp {r..} \
+	            [get_access $java_api_index]] } {
+
+	set javahelp "
+# Do not edit.  This file is generated from information
+# provided by the `browser' and `java_api_index' global
+# variables in the hpcm_judging.rc file in the judging
+# directory.
+#
+$browser '$browser $java_api_index'
+"
+    }
+    if {    $stl_api_index != "" \
+	 && [regexp {r..} \
+	            [get_access $stl_api_index]] } {
+
+	set stlhelp "
+# Do not edit.  This file is generated from information
+# provided by the `browser' and `stl_api_index' global
+# variables in the hpcm_judging.rc file in the judging
+# directory.
+#
+$browser '$browser $stl_api_index'
+"
+    }
 }
 
 # Default arguments to makecontest.
 #
 set makecontest_arguments "
-    -email -startcontest -description \
+    [include_if { [regexp email $account_type] } \
+                -email] \
+    [include_if { [regexp local $account_type] } \
+                {-local -problems -demos}] \
+    -startcontest \
+    [include_if { [regexp get $description_type] } \
+                -description] \
     [include_if { $makescoreboard == "yes" } \
     		"-scoreboard"] \
     $judging_directory/help/index, \
@@ -380,7 +421,12 @@ set makecontest_arguments "
 	common/=help/, \
 	email/=help/, \
 	advanced/=help/, \
-	    email:include, \
+	    [include_if { [regexp email \
+	                          $account_type] } \
+		        email:include,] \
+	    [include_if { [regexp local \
+	                          $account_type] } \
+		        informal:include,] \
 	    common:include, \
 	    advanced:include \
     $hpcm_directory/problem_library/index, \
@@ -388,20 +434,23 @@ set makecontest_arguments "
     $problems_arguments
 "
 
-# Set the scoreboard timing for the contest.
+# Setup the scoreboard.
 #
-if { [lcontain {team problem} $scoring_type] } {
-    set scoreboard_start_time $scoring_type
-} elseif { $scoring_type == "feedback" } {
-    set scoreboard_start_time ""
-} elseif { $scoring_type == "dated" } {
-    set scoreboard_start_time ""
+set scoreboard_start_time ""
+set scoreboard_stop_time ""
+set scoreboard_use_qualifiers no
+set scoreboard_display_correct yes
+set scoreboard_display_incorrect yes
+if { $scoring_type == "feedback" } {
+    set scoreboard_use_qualifiers yes
+} elseif { $scoring_type == "unranked" } {
+} elseif { $scoring_type == "unordered" } {
     set scoreboard_display_correct no
     set scoreboard_display_incorrect no
 } else {
-    error "bad scoring_type: $scoring_type"
+    error "in hpcm_judging.rc: Bad scoring_type:\
+           $scoring_type"
 }
-set scoreboard_penalty [expr 60 * $penalty_minutes]
 
 # Scoreboard name, i.e, the name of the contest.
 #
@@ -427,8 +476,7 @@ foreach x $test_problems {
 set scoreboard_problems \
     [lrange $scoreboard_problems 1 end]
 
-
-# Scoreboard instructions for an email contest.
+# Scoreboard instructions for an untimed contest.
 #
 set scoreboard_instructions {
 
@@ -449,11 +497,6 @@ set scoreboard_instructions {
     { INPUT scoreboard.1tail }
 }
 
-if { $scoring_type == "feedback" } {
-    set scoreboard_use_qualifiers yes
-} else {
-    set scoreboard_use_qualifiers no
-}
 set scoring_mode auto
 set reply_mode auto
 set log_mode auto
@@ -465,6 +508,18 @@ if { $cc_manager } {
     set response_manager ""
 }
 
+# Compute response_list equal to subset of {in inout
+# solution} in response mode, in order to compute
+# this_contest.
+#
+set response_list {}
+foreach response [split $response_mode +] {
+    if {    [lcontain {in inout solution} $response] \
+         && ! [lcontain $response_list $response] } {
+        lappend response_list $response
+    }
+}
+
 # Compute this_contest.
 #
 set this_contest "$this_contest_prefix
