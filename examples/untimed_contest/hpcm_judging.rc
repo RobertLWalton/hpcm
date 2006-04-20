@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Apr 19 10:01:06 EDT 2006
+# Date:		Thu Apr 20 04:04:02 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/04/19 14:50:48 $
+#   $Date: 2006/04/20 09:29:50 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.25 $
+#   $Revision: 1.26 $
 
 # Table of Contents
 #
@@ -50,6 +50,22 @@ set hpcm_directory $env(HOME)/hpcm
 #
 set account_type email
 # set account_type local
+
+# If local accounts are provided, the following is the
+# person to apply to in order to obtain an account.
+#
+set local_account_manager "someone@somecomputer"
+# set local_account_manager "someone somephonenumber"
+
+# If local accounts are provided, the following are the
+# conditions under which someone may get a contest
+# account.  If not "", this should begin and end with
+# a newline, and should not be more than 56 columns.
+#
+set local_account_conditions "
+You may get an account if BLAH BLAH BLAH
+"
+set local_account_conditions ""
 
 # Scoring type.  One of:
 #
@@ -130,6 +146,7 @@ set cc_manager no
 # initial version of the ./help/this_contest file.  Each
 # should begin and end with a line feed, or be "".  Each
 # will then be separated from other text by a blank line.
+# The text in each should be restricted to 56 columns.
 #
 # If you want to modify this_contest further, you may
 # edit the ./help/this_contest file directly after it
@@ -226,13 +243,21 @@ set ssh_enable yes
 # Parameters: Web Page Parameters
 # ----------- --- ---- ----------
 
-# Parameters to be set if the contest is to have
-# web pages or a scoreboard on the web.
+# URL of contest web page, or "" if there is no contest
+# web page.
+#
+set web_page_URL ""
+# set web_page_URL "www.somewhere.edu/~xxx/yyy"
 
-# Set the following if you want to use `makeweb' to
-# make a web page.  Leave as "" parameters you do not
-# want to use (e.g., if web_solutions_password is "" no
-# solutions web page will be made).
+# URL of contest help and demo files page, or "" if
+# none.
+#
+set web_help_and_demos_URL ""
+
+# The following are passed to `makeweb' to make the web
+# page.  Leave as "" parameters you do not want to use
+# (e.g., if web_solutions_password is "" no solutions
+# web page will be made).
 #
 # The web_manager_address will be listed as a contact
 # on the web page.  The web_solutions_password PPP will
@@ -245,10 +270,9 @@ set ssh_enable yes
 # relative to the contest web page.  The web_scoreboard_
 # URL is the URL of the scoreboard relative to the web
 # page; usually this is posted by using scoreboard_
-# addresses (see above).
+# addresses (see above).  Problems will be put on the
+# web page if "web" is in `description_type'.
 #
-set web_contest_name $contest_name
-set web_manager_address $manager_address
 set web_solutions_password ""
 set web_help_URL ""
 set web_scoreboard_URL ""
@@ -415,6 +439,7 @@ set makecontest_arguments "
                 -description] \
     [include_if { $makescoreboard == "yes" } \
     		"-scoreboard"] \
+    [include_if { $web_page_URL != "" } "-web"] \
     $judging_directory/help/index, \
 	=help/ \
     $hpcm_directory/contestant/help/index, \
@@ -508,9 +533,9 @@ if { $cc_manager } {
     set response_manager ""
 }
 
-# Compute response_list equal to subset of {in inout
-# solution} in response mode, in order to compute
-# this_contest.
+# Compute response_list equal to the SORTED subset of
+# {in inout solution} in response_mode, in order to
+# compute this_contest.
 #
 set response_list {}
 foreach response [split $response_mode +] {
@@ -519,18 +544,48 @@ foreach response [split $response_mode +] {
         lappend response_list $response
     }
 }
+set response_list [lsort $response_list]
+
+# Compute account_list equal to the SORTED subset of
+# {web paper get} in account_type, in order to compute
+# this_contest.
+#
+set account_list {}
+foreach account [split $account_type +] {
+    if {    [lcontain {get paper web} $account] \
+         && ! [lcontain $account_list $account] } {
+        lappend account_list $account
+    }
+}
+set account_list [lsort $account_list]
+
+# Compute description_list equal to the SORTED subset of
+# {web paper get} in description_type, in order to
+# compute this_contest.
+#
+set description_list {}
+foreach description [split $description_type +] {
+    if {    [lcontain {get paper web} $description] \
+         && ! [lcontain $description_list \
+	 		$description] } {
+        lappend description_list $description
+    }
+}
+set description_list [lsort $description_list]
 
 # Compute this_contest.
 #
 set this_contest "$this_contest_prefix
+[include_if { $web_help_and_demos_URL != "" } "
 The important help and demonstration problem files
-are available via the contest web page.
+are available at
 
-This is an `email' contest.  The `email_contest' help
-file displays more details about email contests.
-
-To submit a problem solution file named FFF.F, send
-an email whose `To:' field is
+    $web_help_and_demos_URL
+"][include_if { [lcontain $account_list email] } {
+You may use your own private accounts to solve problems
+and submit solutions via email.  To submit a problem
+solution file named FFF.F, send an email whose `To:'
+field is
 
 	To: $autojudge_address
 
@@ -543,6 +598,21 @@ To test this with a demonstration problem, get the
 file named `count1.c' from the web pages, rename it
 `count.c', and submit it.  Other solutions to demonstra-
 tion problems are on the web pages and can be submitted.
+
+See the `email_solving' help file for more details.
+"][include_if { $account_list == "email local" }] } "
+Or alternatively you may get a contest account by
+applying to
+
+    $local_account_manager
+$local_account_conditions"][
+ include_if { $account_list == "local" }] } "
+You may get a contest account please by applying to
+
+    $local_account_manager
+$local_account_conditions"]
+
+TBD
 [include_if { [lcontain {problem team} \
                         $scoring_type] } "
 Because this is a timed contest, problem descriptions
@@ -613,6 +683,16 @@ sion emails with subjects of any one of the forms:
     Subject: submit ppp.ext solution"][
    include_if { [llength $response_list] < 0 } "
 "]$this_contest_postfix"
+
+# Computed web page parameters.
+#
+set web_contest_name $contest_name
+set web_manager_address $manager_address
+if { [regexp web $description_type] } {
+    set web_problems yes
+} else {
+    set web_problems no
+}
 
 # Parameter Overrides
 # --------- ---------
