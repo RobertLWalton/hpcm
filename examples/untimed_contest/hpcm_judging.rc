@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Apr 20 04:04:02 EDT 2006
+# Date:		Fri Apr 21 05:33:38 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/04/20 09:29:50 $
+#   $Date: 2006/04/21 09:33:11 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.26 $
+#   $Revision: 1.27 $
 
 # Table of Contents
 #
@@ -584,89 +584,37 @@ are available at
 "][include_if { [lcontain $account_list email] } {
 You may use your own private accounts to solve problems
 and submit solutions via email.  To submit a problem
-solution file named FFF.F, send an email whose `To:'
+solution file named pppp.ext, send an email whose `To:'
 field is
 
 	To: $autojudge_address
 
 whose `Subject:' field is
 
-	Subject: submit FFF.F
+	Subject: submit pppp.ext
 
-and whose body contains nothing but the file itself.
+and whose body contains nothing but the file itself.[
+ include_if { [regexp web $description_type] } "
 To test this with a demonstration problem, get the
 file named `count1.c' from the web pages, rename it
 `count.c', and submit it.  Other solutions to demonstra-
 tion problems are on the web pages and can be submitted.
-
-See the `email_solving' help file for more details.
-"][include_if { $account_list == "email local" }] } "
-Or alternatively you may get a contest account by
-applying to
-
-    $local_account_manager
-$local_account_conditions"][
- include_if { $account_list == "local" }] } "
-You may get a contest account please by applying to
-
-    $local_account_manager
-$local_account_conditions"]
-
-TBD
-[include_if { [lcontain {problem team} \
-                        $scoring_type] } "
-Because this is a timed contest, problem descriptions
-are NOT on the web.  Instead, you get the description
-of a problem named PPP by sending an email message whose
-`To:' field is
-
-	To: $autojudge_address
-
-and whose `Subject:' field is
-
-	Subject: get PPP
-
-The reply will contain a file that describes the pro-
-blem.  The extension of this file tells its type: .txt
-for plain text, .html or .htm for HTML, .ps for post-
-script.  Several files may be returned separated by
-lines containing a special pattern unlikely to be
-included in the files.  You may practice on the demon-
-stration problems by sending email with `Subject: get
-count', though this will deliver a large number of
-files besides the problem descriptions, whereas a real
-problem usually delievers only the description file and
-a single other `Makefile'.
-"][include_if { $scoring_type == "problem" } "
-In order to get good scores on problems, you must AVOID
-getting a problem description UNTIL you are READY to
-swiftly solve the problem, as the time between when you
-get the problem description and when you first submit a
-correct solution for the problem is the problem time on
-the scoreboard.
-"][include_if { $scoring_type == "team" } "
-In order to get good scores on problems, you must AVOID
-getting ANY non-demonstration problem descriptions UNTIL
-you are READY to swiftly solve ALL problems, as the time
-you get your first problem description is the start time
-of the contest for you.  For each problem, the differ-
-ence between this contest start time and the time when
-you first submit a correct solution for the problem is
-the problem time on the scoreboard.
-"]
-The scoreboard is posted on the web.  See the `score-
-board' help file for details.  See the `email_solving'
-help file for details on how to solve a problem (note
-that this is different from the `solving' help file).
-[include_if { [llength $response_list] > 0 } "
-For this contest you can use alternative submission
+"][include_if {    ! [regexp web $description_type] \
+                && [regexp get $description_type] } "
+To test this with a demonstration problem, get the
+`count' demonstration file, rename the file named
+`count1.c' to `count.c', and submit it.  Other solutions
+to demonstration problems are available and can be sub-
+mitted.
+"][include_if { [llength $response_list] > 0 } "
+For this contest you can also use alternative submission
 emails with subjects of any one of the forms:
 "][include_if { [lcontain $response_list in] } "
-    Subject: submit ppp.ext in"][
+    Subject: submit pppp.ext in"][
    include_if { [lcontain $response_list inout] } "
-    Subject: submit ppp.ext inout"][
+    Subject: submit pppp.ext inout"][
    include_if { [lcontain $response_list solution] } "
-    Subject: submit ppp.ext solution"][
+    Subject: submit pppp.ext solution"][
    include_if { [llength $response_list] == 3 } "
 "][include_if {    0 < [llength $response_list] \
 		&&     [llength $response_list] < 3 } "
@@ -676,13 +624,39 @@ with subjects of any one of the forms:
 For this contest you CANNOT use the alternative submis-
 sion emails with subjects of any one of the forms:
 "][include_if { ! [lcontain $response_list in] } "
-    Subject: submit ppp.ext in"][
+    Subject: submit pppp.ext in"][
    include_if { ! [lcontain $response_list inout] } "
-    Subject: submit ppp.ext inout"][
+    Subject: submit pppp.ext inout"][
    include_if { ! [lcontain $response_list solution] } "
-    Subject: submit ppp.ext solution"][
+    Subject: submit pppp.ext solution"][
    include_if { [llength $response_list] < 0 } "
-"]$this_contest_postfix"
+"]
+
+See the `email_solving' help file for more details.
+"][include_if { $account_list == "email local" }] } "
+Alternatively you may get a contest account by applying
+to
+
+    $local_account_manager
+$local_account_conditions
+Once you have an account, you can get all the demonstra-
+tion and contest problems into that account by executing
+the command `hpcm_get'.
+"]include_if { $account_list == "local" }] } "
+You may get a contest account by applying to
+
+    $local_account_manager
+$local_account_conditions
+Once you have an account, you can get all the demonstra-
+tion and contest problems into that account by executing
+the command `hpcm_get'.
+"]
+
+The scoreboard is posted on the web.  See the `score-
+board' help file for details.  See the `email_solving'
+help file for details on how to solve a problem (note
+that this is different from the `solving' help file).
+$this_contest_postfix"
 
 # Computed web page parameters.
 #
