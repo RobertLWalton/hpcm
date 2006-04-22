@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Apr 21 05:33:38 EDT 2006
+# Date:		Sat Apr 22 09:23:58 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/04/21 09:33:11 $
+#   $Date: 2006/04/22 13:30:22 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.27 $
+#   $Revision: 1.28 $
 
 # Table of Contents
 #
@@ -243,16 +243,9 @@ set ssh_enable yes
 # Parameters: Web Page Parameters
 # ----------- --- ---- ----------
 
-# URL of contest web page, or "" if there is no contest
-# web page.
+# URL of contest web page.
 #
-set web_page_URL ""
-# set web_page_URL "www.somewhere.edu/~xxx/yyy"
-
-# URL of contest help and demo files page, or "" if
-# none.
-#
-set web_help_and_demos_URL ""
+set web_page_URL "www.somewhere.edu/~xxx/yyy"
 
 # The following are passed to `makeweb' to make the web
 # page.  Leave as "" parameters you do not want to use
@@ -309,7 +302,7 @@ set scoreboard_addresses { }
 #
 if { [regexp email $account_type] } {
     set submitter_compress_mode long
-else {
+} else {
     set submitter_compress_mode short
 }
 
@@ -576,12 +569,11 @@ set description_list [lsort $description_list]
 # Compute this_contest.
 #
 set this_contest "$this_contest_prefix
-[include_if { $web_help_and_demos_URL != "" } "
 The important help and demonstration problem files
 are available at
 
-    $web_help_and_demos_URL
-"][include_if { [lcontain $account_list email] } {
+    $web_page_URL
+[include_if { [lcontain $account_list email] } "
 You may use your own private accounts to solve problems
 and submit solutions via email.  To submit a problem
 solution file named pppp.ext, send an email whose `To:'
@@ -593,20 +585,12 @@ whose `Subject:' field is
 
 	Subject: submit pppp.ext
 
-and whose body contains nothing but the file itself.[
- include_if { [regexp web $description_type] } "
+and whose body contains nothing but the file itself.
 To test this with a demonstration problem, get the
 file named `count1.c' from the web pages, rename it
 `count.c', and submit it.  Other solutions to demonstra-
 tion problems are on the web pages and can be submitted.
-"][include_if {    ! [regexp web $description_type] \
-                && [regexp get $description_type] } "
-To test this with a demonstration problem, get the
-`count' demonstration file, rename the file named
-`count1.c' to `count.c', and submit it.  Other solutions
-to demonstration problems are available and can be sub-
-mitted.
-"][include_if { [llength $response_list] > 0 } "
+[include_if { [llength $response_list] > 0 } "
 For this contest you can also use alternative submission
 emails with subjects of any one of the forms:
 "][include_if { [lcontain $response_list in] } "
@@ -629,34 +613,29 @@ sion emails with subjects of any one of the forms:
     Subject: submit pppp.ext inout"][
    include_if { ! [lcontain $response_list solution] } "
     Subject: submit pppp.ext solution"][
-   include_if { [llength $response_list] < 0 } "
+   include_if { [llength $response_list] == 0 } "
 "]
 
 See the `email_solving' help file for more details.
-"][include_if { $account_list == "email local" }] } "
+"][include_if { $account_list == "email local" } "
 Alternatively you may get a contest account by applying
 to
-
-    $local_account_manager
-$local_account_conditions
-Once you have an account, you can get all the demonstra-
-tion and contest problems into that account by executing
-the command `hpcm_get'.
-"]include_if { $account_list == "local" }] } "
+"][include_if { $account_list == "local" } "
 You may get a contest account by applying to
-
+"][include_if { [lcontain $account_list local] } "
     $local_account_manager
 $local_account_conditions
 Once you have an account, you can get all the demonstra-
 tion and contest problems into that account by executing
-the command `hpcm_get'.
-"]
-
-The scoreboard is posted on the web.  See the `score-
-board' help file for details.  See the `email_solving'
-help file for details on how to solve a problem (note
-that this is different from the `solving' help file).
-$this_contest_postfix"
+the command `hpcm_get'.  Read the `solving' help file
+for details on how to solve and submit a problem using
+this account.  You can direct print commands in this
+account to email you postscript files by making a
+`~/PRINTER' file in this account: see the `print' help
+file for details.  You can use the `help' and
+`scoreboard' commands in this account: see the `score-
+board' help file for details.
+"]$this_contest_postfix"
 
 # Computed web page parameters.
 #
