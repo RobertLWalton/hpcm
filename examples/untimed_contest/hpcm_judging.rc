@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Apr 22 09:23:58 EDT 2006
+# Date:		Sat Apr 22 11:13:08 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/04/22 13:30:22 $
+#   $Date: 2006/04/22 15:12:39 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.28 $
+#   $Revision: 1.29 $
 
 # Table of Contents
 #
@@ -627,14 +627,38 @@ You may get a contest account by applying to
 $local_account_conditions
 Once you have an account, you can get all the demonstra-
 tion and contest problems into that account by executing
-the command `hpcm_get'.  Read the `solving' help file
-for details on how to solve and submit a problem using
-this account.  You can direct print commands in this
-account to email you postscript files by making a
-`~/PRINTER' file in this account: see the `print' help
+the command `hpcm_get'.  You can direct print commands
+in this account to email you postscript files by making
+a `~/PRINTER' file in this account: see the `print' help
 file for details.  You can use the `help' and
 `scoreboard' commands in this account: see the `score-
 board' help file for details.
+[include_if { [llength $response_list] > 0 } "
+In this account you can also use alternative submission
+commands:
+"][include_if { [lcontain $response_list in] } "
+    make in-submit"][
+   include_if { [lcontain $response_list inout] } "
+    make inout-submit"][
+   include_if { [lcontain $response_list solution] } "
+    make solution-submit"][
+   include_if { [llength $response_list] == 3 } "
+"][include_if {    0 < [llength $response_list] \
+		&&     [llength $response_list] < 3 } "
+But you CANNOT use the alternative submission commands:
+"][include_if { [llength $response_list] == 0 } "
+In this account you CANNOT use the alternative submis-
+sion commands:
+"][include_if { ! [lcontain $response_list in] } "
+    make in-submit"][
+   include_if { ! [lcontain $response_list inout] } "
+    make inout-submit"][
+   include_if { ! [lcontain $response_list solution] } "
+    make solution-submit"][
+   include_if { [llength $response_list] == 0 } "
+"]
+Read the `solving' help file for more details on how to
+solve and submit a problem using this account.
 "]$this_contest_postfix"
 
 # Computed web page parameters.
