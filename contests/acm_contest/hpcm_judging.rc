@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Mar 11 07:07:46 EST 2006
+# Date:		Sun Apr 23 03:25:34 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,13 +11,15 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/03/11 12:17:54 $
+#   $Date: 2006/04/23 07:27:54 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.48 $
+#   $Revision: 1.49 $
 
 # Table of Contents
 #
 #	Parameters to be Modified
+#	Parameters: Local Account Parameters
+#	Parameters: Web Page Parameters
 #	Parameters Not Usually Modified
 #	Computed Parameters (Do Not Modify)
 #	Parameter Overrides
@@ -36,23 +38,6 @@ source $lib_directory/hpcm_judging.rc
 # directory of the current (judge's) account.
 #
 set hpcm_directory $env(HOME)/hpcm
-
-# Browser to use for javahelp.
-#
-set browser lynx
-
-# Location of JAVA API index for browser to use to
-# implement javahelp.
-#
-set java_api_index \
-    /usr/local/jdk/docs/api/overview-tree.html
-
-# Set "yes" if contestant accounts are to be enabled
-# for login by ssh using any of the public keys
-# ~/.ssh/{identity,id_rsa,id_dsa}.pub that exist.
-#
-set ssh_enable yes
-# set ssh_enable no
 
 # Contest name, for scoreboard etc.
 #
@@ -181,26 +166,6 @@ catch { set timed_printer_map "
 .* $env(PRINTER)
 " }
 
-# TCL list of addresses to email scoreboard to.  If this
-# list contains zzz<YYY>, then every time the scoreboard
-# is updated it will be emailed to `zzz<YYY>', so in the
-# account YYY .procmailrc file you should put something
-# like the following to copy the scoreboard into the
-# public_html/xxx file of the YYY account:
-#
-#	:0 b:
-#	* ^To:.*zzz
-#	| cat >public_html/xxx;\
-#	  chmod a+r public_html/xxx
-#
-# If there are spaces or quotes in zzz<YYY>, it should
-# be enclosed in {} braces in the address list.
-#
-set scoreboard_addresses { }
-# set scoreboard_addresses {
-#	{"some thing"<someaccount@somecomputer>}
-# }
-
 # TCL list of TCL regular expressions that match the
 # test accounts which are NOT to appear on the score-
 # board once a timed contest starts.  They will appear
@@ -248,11 +213,48 @@ set problems_arguments "
 # See hpcm/judge/lib/hpcm_judging.rc `makecontest_
 # arguments' for more details, and `makecontest -doc'
 # for complete details.
+
+# Parameters: Local Account Parameters
+# ----------- ----- ------- ----------
 
-# Set the following if you want to use `makeweb' to
-# make a web page.  Leave as "" parameters you do not
-# want to use (e.g., if web_solutions_password is "" no
-# solutions web page will be made).
+# Parameters to be set if there are local contestant
+# accounts:
+#
+
+# Browser to use for javahelp and/or stlhelp.
+#
+set browser lynx
+
+# Location of JAVA API index for browser to use to
+# implement javahelp.
+#
+set java_api_index \
+    /usr/local/jdk/docs/api/overview-tree.html
+
+# Location of STL API index for browser to use to
+# implement stlhelp.
+#
+set stl_api_index /usr/local/STL_doc/index.html
+
+# Set "yes" if contestant accounts are to be enabled
+# for login by ssh using any of the public keys
+# ~/.ssh/{identity,id_rsa,id_dsa}.pub that exist.
+#
+set ssh_enable yes
+# set ssh_enable no
+
+
+# Parameters: Web Page Parameters
+# ----------- --- ---- ----------
+
+# URL of contest web page.
+#
+set web_page_URL "www.somewhere.edu/~xxx/yyy"
+
+# The following are passed to `makeweb' to make the web
+# page.  Leave as "" parameters you do not want to use
+# (e.g., if web_solutions_password is "" no solutions
+# web page will be made).
 #
 # The web_manager_address will be listed as a contact
 # on the web page.  The web_solutions_password PPP will
@@ -265,13 +267,32 @@ set problems_arguments "
 # relative to the contest web page.  The web_scoreboard_
 # URL is the URL of the scoreboard relative to the web
 # page; usually this is posted by using scoreboard_
-# addresses (see above).
+# addresses (see above).  Problems will be put on the
+# web page if "web" is in `description_type'.
 #
-set web_contest_name $contest_name
-set web_manager_address $manager_address
 set web_solutions_password ""
 set web_help_URL ""
 set web_scoreboard_URL ""
+
+# TCL list of addresses to email scoreboard to.  If this
+# list contains zzz<YYY>, then every time the scoreboard
+# is updated it will be emailed to `zzz<YYY>', so in the
+# account YYY .procmailrc file you should put something
+# like the following to copy the scoreboard into the
+# public_html/xxx file of the YYY account:
+#
+#	:0 b:
+#	* ^To:.*zzz
+#	| cat >public_html/xxx;\
+#	  chmod a+r public_html/xxx
+#
+# If there are spaces or quotes in zzz<YYY>, it should
+# be enclosed in {} braces in the address list.
+#
+set scoreboard_addresses { }
+# set scoreboard_addresses {
+#	{"some thing"<someaccount@somecomputer>}
+# }
 
 # Parameters Not Usually Modified
 # ---------- --- ------- --------
@@ -955,6 +976,12 @@ print'.  The scoreboard will merely record the number of
 correct submissions and the date of each correct sub-
 mission.
 "]$this_contest_postfix"
+
+# Computed web page parameters.
+#
+set web_contest_name $contest_name
+set web_manager_address $manager_address
+## TBD: set web_problems yes
 
 # Parameter Overrides
 # --------- ---------
