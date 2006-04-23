@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Jan 23 07:25:04 EST 2006
+# Date:		Sun Apr 23 03:09:02 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/01/23 12:38:00 $
+#   $Date: 2006/04/23 07:09:29 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.22 $
+#   $Revision: 1.23 $
 
 # `make help.pdf' and `make demos.pdf' make printouts of
 # all the help and demos files respectively.  Note that
@@ -175,6 +175,7 @@ web:	all help.pdf demos.pdf web_do
 	rm -rf web.tar web
 	mkdir web
 	cp -rpL `ls | grep -v '^web$$' | \
+	              grep -v '^private$$' | \
 	              grep -v '^help.ps$$' | \
 	              grep -v '^help+.ps$$' | \
 	              grep -v '^demos.ps$$' ` \
