@@ -7,7 +7,7 @@
 #
 # File:		makeweb
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Apr 24 04:02:56 EDT 2006
+# Date:		Mon Apr 24 10:34:30 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -16,9 +16,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/04/24 09:15:50 $
+#   $Date: 2006/04/24 15:06:23 $
 #   $RCSfile: makeweb,v $
-#   $Revision: 1.12 $
+#   $Revision: 1.13 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -110,6 +110,7 @@ foreach arg $argv {
 
 # Abbreviations to shorten lines.
 #
+set j_d $judging_directory
 set c_d $judging_directory/contest
 set w_d $web_directory
 
@@ -126,32 +127,47 @@ if { $web_contest_name == "" } {
 }
 
 # Find problems and help directories and check
-# their usability.
+# their usability, and also check problems_print_files
+# readability.
 #
-foreach d {problems help} {
-    if { [file exists $judging_directory/info/$d] } {
-	set dir $judging_directory/info/$d
+if { $web_problems } {
+    set f $j_d/problems_print_files
+    if { ! [file readable $f] } {
+        error "$f is not readable"
+    }
+    set required_dirs { problems help }
+} else {
+    set required_dirs { help }
+}
+foreach d $required_dirs {
+    if { [file exists $j_d/info/$d] } {
+	set dir $j_d/info/$d
     } elseif { [file exists $c_d/$d] } {
 	set dir $c_d/$d
     } else {
-        error "cannot find `$d' directory"
+	error "cannot find `$d' directory"
     }
     if {    ! [file isdirectory $dir] \
-         || ! [file executable $dir] \
-         || ! [file readable $dir] } {
+	 || ! [file executable $dir] \
+	 || ! [file readable $dir] } {
 	error "`$dir' is not a useable directory"
     }
     set ${d}_dir $dir
 }
 
-# Be sure solutions directory exists if needed.
+# Be sure solutions directory and solution_files
+# exists if needed.
 #
 if { $web_solutions_password != "" } {
-    set dir $judging_directory/solutions
+    set dir $j_d/solutions
     if {    ! [file isdirectory $dir] \
          || ! [file executable $dir] \
          || ! [file readable $dir] } {
 	error "`$dir' is not a useable directory"
+    }
+    set f $j_d/solution_files
+    if { ! [file readable $f] } {
+        error "$f is not readable"
     }
 }
 
@@ -202,13 +218,13 @@ puts $ch "
 <UL>
 "
 
-# Output this_contest reference.
+# Output this_contest link.
 #
 puts $ch "
 <LI> <A HREF=\"this_contest\">Contest Details</A>.
 "
 
-# Output help information.
+# Output help link.
 #
 if { $web_help_URL != "" } {
     puts $ch "
@@ -216,7 +232,7 @@ if { $web_help_URL != "" } {
 "
 }
 
-# Output scoreboard information.
+# Output scoreboard link.
 #
 if { $web_scoreboard_URL != "" } {
     puts $ch "
@@ -250,6 +266,16 @@ runs solutions.
 
     # Process problems.
     #
+    set problems_print_files \
+        [read_entire_file $j_d/problems_print_files]
+    set print_files {}
+    foreach f $problems_print_files {
+	set fname [file tail $f]
+	set problem [file tail [file dir $f]]
+	if { "$problem/$fname" == "help/problems" } \
+	    continue
+	lappend print_files $problem/$fname
+    }
     foreach pdir \
 	    [lsort [glob -nocomplain $problems_dir/*]] {
 
@@ -262,40 +288,35 @@ runs solutions.
 	puts $ch "<TD WIDTH=50>&nbsp;</TD>"
 	puts $ch "<TD>"
 
-	set problem_description_found no
-	set files ""
+	set source_files {}
+	set description_files {}
 	foreach pfile [glob -nocomplain $pdir/*] {
 	    set fname [file tail $pfile]
-	    foreach pattern $problem_description_files {
-	        if { [regexp $pattern $fname] } {
-		    set problem_description_found yes
-		    break
-		}
+	    if { [lcontain $print_files \
+	    		   $problem/$fname] } {
+		lappend description_files $fname
+	    } else {
+		lappend source_files $fname
 	    }
 	    set wfile $problem/$fname
 	    copy_file $pfile $w_d/$wfile
 	    grant_access $w_d/$wfile
-	    lappend files $fname
 	}
-	if { $problem_description_found == "no" } {
-	    set soldir $judging_directory/solutions/$problem
-	    foreach pfile [glob -nocomplain $soldir/*] {
-		set fname [file tail $pfile]
-		set fname_is_not_description yes
-		foreach pattern $problem_description_files {
-		    if { [regexp $pattern $fname] } {
-			set fname_is_not_description no
-			break
-		    }
-		}
-		if { $fname_is_not_description } continue
-		set wfile $problem/$fname
-		copy_file $pfile $w_d/$wfile
-		grant_access $w_d/$wfile
-		lappend files $fname
-	    }
+	foreach pfile $print_files {
+	    set p [file dirname $pfile]
+	    if { $p != $problem } continue
+	    set fname [file tail $pfile]
+	    if { [lcontain $description_files $fname] } \
+	        continue
+	    set wfile $problem/$fname
+	    copy_file $j_d/solutions/$pfile $w_d/$wfile
+	    grant_access $w_d/$wfile
+	    lappend description_files $fname
 	}
-	foreach fname [lsort $files] {
+
+	foreach fname \
+	        [concat [lsort $description_files] \
+		        [lsort $source_files]] {
 	    set wfile $problem/$fname
 	    puts $ch "<A HREF=\"$wfile\">$fname</A>"
 	}
@@ -376,25 +397,22 @@ if { $web_solutions_password != "" } {
 
     # Process problems.
     #
+    set solution_files \
+        [read_entire_file $j_d/solution_files]
     foreach pdir \
             [lsort [glob -nocomplain $problems_dir/*]] {
 
 	set problem [file tail $pdir]
-	set soldir $judging_directory/solutions/$problem
-	set files ""
-        foreach sfile \
-	        [lsort [glob -nocomplain $soldir/*]] {
-	    set file [file tail $sfile]
-	    foreach pattern $web_solutions_files {
-	        if { [regexp "^($pattern)\$" $file] } {
-		    lappend files $file
-		    break;
-		}
-	    }
+	set soldir $j_d/solutions/$problem
+	set files {}
+	foreach sfile $solution_files {
+	    set d [file dirname $sfile]
+	    if { $d != "solutions/$problem" } continue
+	    set fname [file tail $sfile]
+	    lappend files $fname
 	}
-	if { $files == "" } {
-	    puts "NOTE: No solution files for $problem"
-	    continue
+	if { [llength $files] == 0 } {
+	    error "No solution files for $problem"
 	}
 
 	file mkdir $sdir/$problem
@@ -406,7 +424,7 @@ if { $web_solutions_password != "" } {
 	puts $ch "<TD WIDTH=50>&nbsp;</TD>"
 	puts $ch "<TD>"
 
-	foreach file $files {
+	foreach file [lsort $files] {
 	    copy_file $soldir/$file $sdir/$problem/$file
 	    grant_access $sdir/$problem/$file
 	    puts $ch \
@@ -426,8 +444,6 @@ if { $web_solutions_password != "" } {
     close $ch
     grant_access $sdir/index.html
 }
-
-
 
 exit 0
 
