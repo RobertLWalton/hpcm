@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Apr 22 11:13:08 EDT 2006
+# Date:		Mon Apr 24 02:25:49 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/04/22 15:12:39 $
+#   $Date: 2006/04/24 07:20:09 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.29 $
+#   $Revision: 1.30 $
 
 # Table of Contents
 #
@@ -540,12 +540,12 @@ foreach response [split $response_mode +] {
 set response_list [lsort $response_list]
 
 # Compute account_list equal to the SORTED subset of
-# {web paper get} in account_type, in order to compute
+# {email local} in account_type, in order to compute
 # this_contest.
 #
 set account_list {}
 foreach account [split $account_type +] {
-    if {    [lcontain {get paper web} $account] \
+    if {    [lcontain {email local} $account] \
          && ! [lcontain $account_list $account] } {
         lappend account_list $account
     }
@@ -553,7 +553,7 @@ foreach account [split $account_type +] {
 set account_list [lsort $account_list]
 
 # Compute description_list equal to the SORTED subset of
-# {web paper get} in description_type, in order to
+# {get paper web} in description_type, in order to
 # compute this_contest.
 #
 set description_list {}
@@ -565,6 +565,9 @@ foreach description [split $description_type +] {
     }
 }
 set description_list [lsort $description_list]
+set get_descriptions_only \
+    [expr {      [lcontain $description_list get] \
+            && ! [lcontain $description_list web] }]
 
 # Compute this_contest.
 #
@@ -573,37 +576,54 @@ The important help and demonstration problem files
 are available at
 
     $web_page_URL
-[include_if { [lcontain $account_list email] } "
+[include_if { [lcontain $description_list web] } "
+Contest problem descriptions are also on this web page.
+"][include_if { [lcontain $account_list email] } "
 You may use your own private accounts to solve problems
-and submit solutions via email.  To submit a problem
-solution file named pppp.ext, send an email whose `To:'
-field is
+and submit solutions via email.  To send submissions and
+requests to the autojudge, send email
 
 	To: $autojudge_address
+[include_if { $get_descriptions_only } "
+To get problem descriptions, send an email whose
+`Subject:' field is
 
-whose `Subject:' field is
+	Subject: get problems
+"]
+To submit a problem solution file named pppp.ext, send
+an email whose `Subject:' field is
 
 	Subject: submit pppp.ext
 
 and whose body contains nothing but the file itself.
 To test this with a demonstration problem, get the
-file named `count1.c' from the web pages, rename it
-`count.c', and submit it.  Other solutions to demonstra-
-tion problems are on the web pages and can be submitted.
-[include_if { [llength $response_list] > 0 } "
+file named `demos/count/count1.c' from the web pages,
+rename it `count.c', and submit it with
+
+	Subject: submit count.c
+	
+Other solutions to demonstration problems are on the web
+pages and can be submitted.
+[include_if { [llength $response_list] > 1 } "
 For this contest you can also use alternative submission
 emails with subjects of any one of the forms:
+"][include_if { [llength $response_list] == 1 } "
+For this contest you can also use alternative submission
+emails with subject of the form:
 "][include_if { [lcontain $response_list in] } "
     Subject: submit pppp.ext in"][
    include_if { [lcontain $response_list inout] } "
     Subject: submit pppp.ext inout"][
    include_if { [lcontain $response_list solution] } "
     Subject: submit pppp.ext solution"][
-   include_if { [llength $response_list] == 3 } "
+   include_if { [llength $response_list] > 0 } "
 "][include_if {    0 < [llength $response_list] \
-		&&     [llength $response_list] < 3 } "
+		&&     [llength $response_list] < 2 } "
 But you CANNOT use the alternative submission emails
 with subjects of any one of the forms:
+"][include_if { [llength $response_list] == 2 } "
+But you CANNOT use the alternative submission emails
+with subject of the form:
 "][include_if { [llength $response_list] == 0 } "
 For this contest you CANNOT use the alternative submis-
 sion emails with subjects of any one of the forms:
@@ -616,7 +636,12 @@ sion emails with subjects of any one of the forms:
    include_if { [llength $response_list] == 0 } "
 "]
 
-See the `email_solving' help file for more details.
+The scoreboard is on the contest web page.  See the
+`scoreboard' help file for details about interpreting
+the scoreboard.
+
+See the `email_solving' help file for more details about
+solving problems using your own personal account.
 "][include_if { $account_list == "email local" } "
 Alternatively you may get a contest account by applying
 to
@@ -626,26 +651,39 @@ You may get a contest account by applying to
     $local_account_manager
 $local_account_conditions
 Once you have an account, you can get all the demonstra-
-tion and contest problems into that account by executing
+tion and contest problems into that account by\
+	executing[
+ include_if { $get_descriptions_only } "
+the command `hpcm_get'.  This will also get the problem
+descriptions into the problem directories: see the
+directory `~/problems/pppp' for the description of
+the problem named pppp.  You can direct print commands
+"][include_if { ! $get_descriptions_only } "
 the command `hpcm_get'.  You can direct print commands
-in this account to email you postscript files by making
-a `~/PRINTER' file in this account: see the `print' help
-file for details.  You can use the `help' and
-`scoreboard' commands in this account: see the `score-
-board' help file for details.
-[include_if { [llength $response_list] > 0 } "
+"]in this account to email you postscript files by\
+	making
+a `~/PRINTER' file in this account: execute `help print'
+for details.  You can use the `scoreboard' command in
+this account to see the scoreboard: execute `help
+scores' and `help scoreboard' for details.
+[include_if { [llength $response_list] > 1 } "
 In this account you can also use alternative submission
 commands:
+"][include_if { [llength $response_list] == 1 } "
+In this account you can also use alternative submission
+command:
 "][include_if { [lcontain $response_list in] } "
     make in-submit"][
    include_if { [lcontain $response_list inout] } "
     make inout-submit"][
    include_if { [lcontain $response_list solution] } "
     make solution-submit"][
-   include_if { [llength $response_list] == 3 } "
+   include_if { [llength $response_list] > 0 } "
 "][include_if {    0 < [llength $response_list] \
-		&&     [llength $response_list] < 3 } "
+		&&     [llength $response_list] < 2 } "
 But you CANNOT use the alternative submission commands:
+"][include_if { [llength $response_list] == 2 } "
+But you CANNOT use the alternative submission command:
 "][include_if { [llength $response_list] == 0 } "
 In this account you CANNOT use the alternative submis-
 sion commands:
@@ -655,7 +693,7 @@ sion commands:
     make inout-submit"][
    include_if { ! [lcontain $response_list solution] } "
     make solution-submit"][
-   include_if { [llength $response_list] == 0 } "
+   include_if { [llength $response_list] < 3 } "
 "]
 Read the `solving' help file for more details on how to
 solve and submit a problem using this account.
@@ -663,6 +701,17 @@ solve and submit a problem using this account.
 
 # Computed web page parameters.
 #
+if { $web_page_URL == "" } {
+    error "web_page_URL must be non-empty"
+} elseif { [lcontain $account_type email] \
+           && $web_help_URL == "" } {
+    error "web_help_URL is empty for\
+           email contest"
+} elseif { [lcontain $account_type email] \
+           && $web_scoreboard_URL == "" } {
+    error "web_scoreboard_URL is empty for\
+           email contest"
+}
 set web_contest_name $contest_name
 set web_manager_address $manager_address
 if { [regexp web $description_type] } {
