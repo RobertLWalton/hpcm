@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Apr 24 02:25:49 EDT 2006
+# Date:		Mon Apr 24 05:17:36 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/04/24 07:20:09 $
+#   $Date: 2006/04/24 09:17:02 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.30 $
+#   $Revision: 1.31 $
 
 # Table of Contents
 #
@@ -356,11 +356,14 @@ set makescoreboard yes
 # this file.
 
 set is_makecontest \
-    [expr { [file tail $argv0] == "makecontest" }]
+    [expr {    [info exists argv0] \
+            && [file tail $argv0] == "makecontest" }]
 
 # Set addresses of autojudge.
 #
-set autojudge_addresses [list $autojudge_address]
+if { $autojudge_address != "" } {
+    set autojudge_addresses [list $autojudge_address]
+}
 
 # Update Contest_Address.
 if {    $is_makecontest
@@ -432,7 +435,7 @@ set makecontest_arguments "
                 -description] \
     [include_if { $makescoreboard == "yes" } \
     		"-scoreboard"] \
-    [include_if { $web_page_URL != "" } "-web"] \
+    [include_if { $web_page_URL != "" && 0 } "-web"] \
     $judging_directory/help/index, \
 	=help/ \
     $hpcm_directory/contestant/help/index, \
@@ -442,9 +445,6 @@ set makecontest_arguments "
 	    [include_if { [regexp email \
 	                          $account_type] } \
 		        email:include,] \
-	    [include_if { [regexp local \
-	                          $account_type] } \
-		        informal:include,] \
 	    common:include, \
 	    advanced:include \
     $hpcm_directory/problem_library/index, \

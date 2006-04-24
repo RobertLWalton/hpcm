@@ -7,7 +7,7 @@
 #
 # File:		makeweb
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Oct  6 13:28:44 EDT 2005
+# Date:		Mon Apr 24 04:02:56 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -16,9 +16,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/10/06 17:24:02 $
+#   $Date: 2006/04/24 09:15:50 $
 #   $RCSfile: makeweb,v $
-#   $Revision: 1.11 $
+#   $Revision: 1.12 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -73,10 +73,12 @@ if { [regexp {^-doc} [lindex $argv 0]] } {
     exit 1
 }
 
-# Abbreviations to shorten lines.
+# Set default web_directory.
 #
-set c_d $judging_directory/contest
-set w_d $judging_directory/web
+if {    ! [info exists web_directory] \
+     || $web_directory == "" } {
+    set web_directory $judging_directory/web
+}
 
 # Process arguments.
 #
@@ -105,6 +107,11 @@ foreach arg $argv {
 	source $arg
     }
 }
+
+# Abbreviations to shorten lines.
+#
+set c_d $judging_directory/contest
+set w_d $web_directory
 
 # Complain of web directory already exists.
 #
@@ -160,8 +167,10 @@ grant_access $w_d/this_contest
 
 # Copy problems index.
 #
-copy_file $help_dir/problems $w_d/problems
-grant_access $w_d/problems
+if { $web_problems } {
+    copy_file $help_dir/problems $w_d/problems
+    grant_access $w_d/problems
+}
 
 # Make solutions subdirectory if necessary.
 #
@@ -188,85 +197,22 @@ puts $ch "
 <H1 ALIGN=\"CENTER\">
 <FONT COLOR=\"red\">$web_contest_name</FONT></H1>"
 
+# Output List Start.
+puts $ch "
+<UL>
+"
+
 # Output this_contest reference.
 #
 puts $ch "
-<P>
-A more detailed description of this contest is
-<A HREF=\"this_contest\">here</A>.
+<LI> <A HREF=\"this_contest\">Contest Details</A>.
 "
-
-# Output email information.
-#
-if { $web_autojudge_address != "" } {
-    set address $web_autojudge_address
-    regsub -all {>} $address {\&gt;} address
-    regsub -all {<} $address {\&lt;} address
-    puts $ch "
-<P>
-You can submit solutions to the problems below to an
-autojudge by sending email 
-<P ALIGN=\"CENTER\">
-<TT>To: $address</TT>
-<P>
-with
-<P ALIGN=\"CENTER\">
-<TT>Subject: submit </TT> <I>problem.ext</I>
-<P>
-where
-<I>problem</I> is the name of the
-problem below and <I>.ext</I> is an extension that
-denotes the programming language you used as follows:
-<P ALIGN=\"CENTER\">
-<TT>         </TT><TABLE>
-<TR>
-<TD WIDTH=200>&nbsp;</TD>
-<TD><TT>.c</TT></TD>
-<TD WIDTH=50>&nbsp;</TD>
-<TD>C</TD>
-</TR>
-<TR>
-<TD WIDTH=200>&nbsp;</TD>
-<TD><TT>.cc</TT></TD>
-<TD WIDTH=50>&nbsp;</TD>
-<TD>C++</TD>
-</TR>
-<TR>
-<TD WIDTH=200>&nbsp;</TD>
-<TD><TT>.java</TT></TD>
-<TD WIDTH=50>&nbsp;</TD>
-<TD>JAVA</TD>
-</TR>
-<TR>
-<TD WIDTH=200>&nbsp;</TD>
-<TD><TT>.lsp</TT></TD>
-<TD WIDTH=50>&nbsp;</TD>
-<TD>COMMONLISP</TD>
-</TR>
-</TABLE>
-<P>
-The body of the email message should be just a single
-file containing source code for the solution program.
-This program should read from the standard input and
-write to the standard output; it should <EM>not</EM>
-open any files.
-<P>
-The autojudge will score your solutions by running
-input through them, comparing your output with
-known correct output, and emailing back a score.
-It is usually not able to tell you how your
-output is incorrect if your output does not
-match the correct output.
-"
-}
 
 # Output help information.
 #
 if { $web_help_URL != "" } {
     puts $ch "
-<P>
-Help files and demos are available
-<A HREF=\"$web_help_URL\">here</A>.
+<LI> <A HREF=\"$web_help_URL\">Help and Demos Files</A>.
 "
 }
 
@@ -274,70 +220,23 @@ Help files and demos are available
 #
 if { $web_scoreboard_URL != "" } {
     puts $ch "
-<P>
-A scoreboard telling which submitters have correctly
-solved which problems is
-<A HREF=\"$web_scoreboard_URL\">here</A>.
-"
-}
-
-
-# Output solutions information.
-#
-if { $web_solutions_password != "" } {
-    puts $ch "
-<P>
-Solutions are available at the URL made by adding
-<P ALIGN=\"CENTER\">
-private/<EM>pppp</EM>
-<P>
-to the directory portion of the URL used to access this
-page.  Here <EM>pppp</EM> is a password that you must
-get from the managers of this web page.
-"
-}
-
-
-# Output response information.
-#
-if { [regexp solution $web_response_mode] } {
-    puts $ch "
-<P>
-The autojudge's response to a `Completely Correct'
-submission will include the judge's solution, so you may
-compare it to your own solution.  Please do NOT make any
-solution available to the public.
-"
-}
-if { [regexp first $web_response_mode] } {
-    puts $ch "
-<P>
-The autojudge's response to an incorrect submission will
-include the location in the output file of the first
-error.
-"
-}
-if { [regexp summary $web_response_mode] } {
-    puts $ch "
-<P>
-The autojudge's response to an incorrect submission will
-include a summary of error locations in the output file.
+<LI> <A HREF=\"$web_scoreboard_URL\">Scoreboard</A>.
 "
 }
 
 # Output problem info.
 #
+if { $web_problems } {
     puts $ch "
-<P>
-An annotated index of the problems is
-<A HREF=\"problems\">here</A>.
-<P>
+<LI><A HREF=\"problems\">Annotated Index of Problems</A>.
+<LI>
 The problems and their files are as follows.  Note that
 files with extensions
 <TT>.txt</TT>,
 <TT>.html</TT>,
-<TT>.htm</TT>, or
-<TT>.ps</TT> contain problem descriptions, while
+<TT>.htm</TT>,
+<TT>.ps</TT>,
+<TT>.pdf</TT> contain problem descriptions, while
 <TT>Makefile</TT> files describe how the autojudge
 runs solutions.
 <P>
@@ -349,61 +248,86 @@ runs solutions.
 <TH ALIGN=\"left\">Files</TH>
 </TR>"
 
-# Process problems.
-#
-foreach pdir \
-        [lsort [glob -nocomplain $problems_dir/*]] {
+    # Process problems.
+    #
+    foreach pdir \
+	    [lsort [glob -nocomplain $problems_dir/*]] {
 
-    set problem [file tail $pdir]
-    file mkdir $w_d/$problem
-    grant_access $w_d/$problem
-    puts $ch "<TR>"
-    puts $ch "<TD WIDTH=50>&nbsp;</TD>"
-    puts $ch "<TD>$problem</TD>"
-    puts $ch "<TD WIDTH=50>&nbsp;</TD>"
-    puts $ch "<TD>"
+	set problem [file tail $pdir]
+	file mkdir $w_d/$problem
+	grant_access $w_d/$problem
+	puts $ch "<TR>"
+	puts $ch "<TD WIDTH=50>&nbsp;</TD>"
+	puts $ch "<TD>$problem</TD>"
+	puts $ch "<TD WIDTH=50>&nbsp;</TD>"
+	puts $ch "<TD>"
 
-    set problem_description_found no
-    set files ""
-    foreach pfile [glob -nocomplain $pdir/*] {
-        set fname [file tail $pfile]
-	set ext [file extension $fname]
-	if { [lcontain $problem_description_extensions \
-	               $ext] } {
-	    set problem_description_found yes
-	}
-	set wfile $problem/$fname
-	copy_file $pfile $w_d/$wfile
-	grant_access $w_d/$wfile
-	lappend files $fname
-    }
-    if { $problem_description_found == "no" } {
-	set soldir $judging_directory/solutions/$problem
-	foreach pfile [glob -nocomplain $soldir/*] {
+	set problem_description_found no
+	set files ""
+	foreach pfile [glob -nocomplain $pdir/*] {
 	    set fname [file tail $pfile]
-	    set ext [file extension $fname]
-	    if { ! [lcontain \
-	              $problem_description_extensions \
-		      $ext] } \
-		continue
+	    foreach pattern $problem_description_files {
+	        if { [regexp $pattern $fname] } {
+		    set problem_description_found yes
+		    break
+		}
+	    }
 	    set wfile $problem/$fname
 	    copy_file $pfile $w_d/$wfile
 	    grant_access $w_d/$wfile
 	    lappend files $fname
 	}
+	if { $problem_description_found == "no" } {
+	    set soldir $judging_directory/solutions/$problem
+	    foreach pfile [glob -nocomplain $soldir/*] {
+		set fname [file tail $pfile]
+		set fname_is_not_description yes
+		foreach pattern $problem_description_files {
+		    if { [regexp $pattern $fname] } {
+			set fname_is_not_description no
+			break
+		    }
+		}
+		if { $fname_is_not_description } continue
+		set wfile $problem/$fname
+		copy_file $pfile $w_d/$wfile
+		grant_access $w_d/$wfile
+		lappend files $fname
+	    }
+	}
+	foreach fname [lsort $files] {
+	    set wfile $problem/$fname
+	    puts $ch "<A HREF=\"$wfile\">$fname</A>"
+	}
+	puts $ch "</TD>"
+	puts $ch "</TR>"
     }
-    foreach fname [lsort $files] {
-        set wfile $problem/$fname
-	puts $ch "<A HREF=\"$wfile\">$fname</A>"
-    }
-    puts $ch "</TD>"
-    puts $ch "</TR>"
+
+    # Output trailer for problems.
+    #
+    puts $ch "
+</TABLE>"
 }
 
-# Output trailer for problems.
+# Output solutions information.
 #
+if { $web_solutions_password != "" } {
+    puts $ch "
+<LI>
+Solutions are available at the URL made by adding
+<P ALIGN=\"CENTER\">
+private/<EM>pppp</EM>
+<P>
+to the directory portion of the URL used to access this
+page.  Here <EM>pppp</EM> is a password that you must
+get from the managers of this web page.
+"
+}
+
+# Output List End.
 puts $ch "
-</TABLE>"
+</UL>
+"
 
 # Output web page manager contact information.
 #
