@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Apr 17 19:31:57 EDT 2006
+# Date:		Mon Apr 24 08:43:49 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/04/18 00:34:40 $
+#   $Date: 2006/04/24 12:46:52 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.62 $
+#   $Revision: 1.63 $
 #
 # To make an untimed contest named `foo':
 #
@@ -290,13 +290,16 @@ dangerous_test_clean:
 	rm -rf mail/* flag log replies mbox
 
 dangerous_clean:
-	rm -rf mail help flag log web web.tar \
+	rm -rf mail help flag log web* \
 	       info* solutions* \
 	       TODO replies mbox *.ps *.pdf \
+	       `readlink contest` \
+	       contest \
 	       Contest_Address \
 	       help_print_files* \
 	       problems_print_files* \
 	       demos_print_files* \
+	       solution_files* \
 	       Scorefinder* \
 	       Scoreboard_PID \
-	       scoreboard.mail
+	       scoreboard.email
