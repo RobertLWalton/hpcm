@@ -6,7 +6,7 @@
 #
 # File:		makecontest
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Apr 19 07:26:32 EDT 2006
+# Date:		Mon Apr 24 06:33:43 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/04/19 11:33:32 $
+#   $Date: 2006/04/24 10:33:50 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.156 $
+#   $Revision: 1.157 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -123,6 +123,8 @@ makecontest option ... index_specification ...
 
     -javahelp	Make ./contest/javahelp
     -stlhelp	Make ./contest/stlhelp
+
+    -web	Make ./web
 
     -startcontest   Run the startcontest program if
     		    necessary.
@@ -808,6 +810,12 @@ makecontest option ... index_specification ...
     but writes the ./contest/stlhelp file from the
     `stlhelp' global variable.
 
+    The -web program option invokes the makeweb program
+    to make the ./web directory.  More specifically,
+    ./web+ is made, compared with ./web, and if not the
+    same, then ./web- is renamed to ./web--, ./web to
+    ./web-, and ./web+ to ./web.
+
     The -startcontest program option executes the
     `startcontest start' command unless this has already
     been done, or if it has been done but a background
@@ -877,6 +885,7 @@ set printer_option		no
 set printer_map_option		no
 set javahelp_option		no
 set stlhelp_option		no
+set web_option			no
 set startcontest_option		no
 set scoreboard_option		no
 #
@@ -967,6 +976,7 @@ while { $argi < $argc } {
 						yes }
         -javahelp	{ set javahelp_option	yes }
         -stlhelp	{ set stlhelp_option	yes }
+        -web		{ set web_option	yes }
         -startcontest	{ set startcontest_option \
 						yes }
         -scoreboard	{ set scoreboard_option \
@@ -2887,6 +2897,13 @@ if { $stlhelp_option } {
 	grant_access $c_d/stlhelp
 	puts "Wrote $c_d/stlhelp"
     }
+}
+
+# Call makeweb if necessary.
+#
+if { $web_option } {
+    exec makeweb "{{directory $j_d/web+}}"
+    rename_directory $j_d/web
 }
 
 # Start contest if necessary.
