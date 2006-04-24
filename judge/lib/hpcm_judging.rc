@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Apr 13 06:27:28 EDT 2006
+# Date:		Mon Apr 24 06:35:01 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/04/13 10:27:30 $
+#   $Date: 2006/04/24 10:56:12 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.190 $
+#   $Revision: 1.191 $
 
 # Table of Contents:
 #
@@ -290,6 +290,22 @@ set makecontest_arguments "
 #
 	    set problem_source_files {Makefile .*\\.ISF}
 #
+#   problem_solution_files
+#
+#	A list of regular expressions, such that a file
+#	whose last name component matches ANY of these
+#	expressions is a problem solution file, unless
+#	one of the name components matches SOME regular
+#	expression from problem_excluded_files.  Solu-
+#	tion files are sometimes put on the web after a
+#	contest.
+#
+#	Default:
+#
+	    set problem_solution_files \
+		{.*\\.c .*\\.cc .*\\.java .*\\.lsp
+		 .*\\.in .*\\.test}
+#
 #	Note that if the `all' option is given for an
 #	index item, this is changed to {.*} so it
 #	matches all files.
@@ -314,7 +330,8 @@ set makecontest_arguments "
 		 .*\\.fout .*\\.ftest
 		 .*\\.jfout .*\\.jftest
 		 .*\\.jdebug
-		 Scoring_Filter make_.*_input\\..*}
+		 Scoring_Filter Scoring_Filter\\..*
+		 make_.*_input\\..*}
 #
 #   problem_print_files
 #
@@ -1336,7 +1353,7 @@ set scoreboard_mode_array(manual+auto) \
 
 # These parameters control the makeweb program that
 # makes a web page containing problem statements and
-# optionally solutions.  Makeweb makes a `web' directory
+# optionally solutions.  Makeweb makes a web directory
 # for the current contest (after the other contest
 # directories have been made).  The web directory
 # contains an index.html file and other files and
@@ -1344,16 +1361,20 @@ set scoreboard_mode_array(manual+auto) \
 # relative URLs.  The web directory is typically copied
 # to another place to be put on the WWW.
 
+# Name of web directory.  If set to "", defaults to 
+# $judging_directory/web.
+#
+set web_directory ""
+
 # Header and title for the web page (the index.html
 # file).  If "", no web page should be made.
 #
 set web_contest_name ""
 
-# If not "", include in index.html a description of how
-# to submit a problem via email, and give this as the
-# address to which submissions are to be sent.
+# Set the following to "yes" to include problem
+# descriptions on the web page.  Or "no" otherwise.
 #
-set web_autojudge_address ""
+set web_problems yes
 
 # If not "", include solutions in a private/pppp sub-
 # directory of the web directory, where pppp is the
@@ -1365,22 +1386,6 @@ set web_autojudge_address ""
 # the password is not included.
 #
 set web_solutions_password ""
-
-# A list of TCL regular expressions such that a file in
-# a problem solutions subdirectory is placed in the
-# problem's web solutions subdirectory (of private/pppp
-# above) if and only if the name of the file in its
-# entirety matches one of the regular expressions in
-# this list.
-#
-set web_solutions_files {
-    {.*\.c}
-    {.*\.cc}
-    {.*\.java}
-    {.*\.lsp}
-    {.*\.in}
-    {.*\.test}
-}
 
 # If not "", include in index.html a reference to help
 # and demo files.  This parameter is the URL of the
@@ -1396,12 +1401,6 @@ set web_help_URL ""
 # board and may be relative to the web directory.
 #
 set web_scoreboard_URL ""
-
-# Normally a copy of the `response_mode' variable, this
-# includes a description of what will be returned to
-# the submitter is it is not "".
-#
-set web_response_mode ""
 
 # If not "", at the end of index.html place contact
 # information for the web page manager at the given
