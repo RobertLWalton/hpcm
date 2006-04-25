@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Apr 25 11:25:12 EDT 2006
+# Date:		Tue Apr 25 11:33:15 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/04/25 15:28:37 $
+#   $Date: 2006/04/25 15:33:11 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.24 $
+#   $Revision: 1.25 $
 
 # `make help.pdf' and `make demos.pdf' make printouts of
 # all the help and demos files respectively.  Note that
@@ -54,6 +54,7 @@ HELP_FILES = \
 	contest/untimed_contest \
 	common/xterminals \
 	common/solving \
+	email/email_solving \
 	common/input \
 	common/output \
 	common/print \
@@ -68,7 +69,6 @@ HELP_FILES = \
 	advanced/breadth_first_search
 
 OTHER_HELP_FILES = \
-	email/email_solving \
 	email/email_unix_tools \
 	advanced/3D_geometry \
 	advanced/geometry_exercises \
