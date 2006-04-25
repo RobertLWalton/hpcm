@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Apr 23 03:09:02 EDT 2006
+# Date:		Tue Apr 25 11:25:12 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/04/23 07:09:29 $
+#   $Date: 2006/04/25 15:28:37 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.23 $
+#   $Revision: 1.24 $
 
 # `make help.pdf' and `make demos.pdf' make printouts of
 # all the help and demos files respectively.  Note that
@@ -49,9 +49,9 @@ ps:	help.ps demos.ps
 	ps2pdf $*.ps $*.pdf
 
 HELP_FILES = \
-	formal/formal_contest \
-	practice/practice_contest \
-	informal/informal_contest \
+	contest/formal_contest \
+	contest/informal_contest \
+	contest/untimed_contest \
 	common/xterminals \
 	common/solving \
 	common/input \
@@ -68,7 +68,7 @@ HELP_FILES = \
 	advanced/breadth_first_search
 
 OTHER_HELP_FILES = \
-	email/email_contest \
+	email/email_solving \
 	email/email_unix_tools \
 	advanced/3D_geometry \
 	advanced/geometry_exercises \
@@ -101,19 +101,17 @@ help_index:	index
 	M='[^[:space:]\/]*'; \
 	E='[[:space:]].*'; \
 	sed -n <index >>help_index \
+	    -e ': start' \
+	    -e '/^#[[:space:]]*end_help_index/Q' \
+	    -e '/'$$A'.* not_help_index/b skip' \
 	    -e '/^#/d' \
-	    -e '/'$$A'.* all/b skip' \
-	    -e '/'$$A'email/b skip' \
 	    -e 'b accept' \
 	    -e ': skip' \
-	    -e '/^[A-Z]/b accept' \
+	    -e '/^[A-Z]/b start' \
 	    -e 's/.*//' \
 	    -e 'n' \
-	    -e '/'$$A'.* all/b skip' \
-	    -e '/'$$A'email/b skip' \
-	    -e '/'$$A'/!b skip' \
+	    -e 'b skip' \
 	    -e ': accept' \
-	    -e '/^Advanced Advice/Q' \
 	    -e 's/'$$A$$D'\('$$M'\)'$$E'/\1/' \
 	    -e 'p'
 
