@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Apr 24 08:48:45 EDT 2006
+# Date:		Wed Apr 26 06:18:07 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/04/24 15:31:57 $
+#   $Date: 2006/04/26 10:47:28 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.33 $
+#   $Revision: 1.34 $
 
 # Table of Contents
 #
@@ -461,7 +461,7 @@ set scoreboard_display_incorrect yes
 if { $scoring_type == "feedback" } {
     set scoreboard_use_qualifiers yes
 } elseif { $scoring_type == "unranked" } {
-} elseif { $scoring_type == "unordered" } {
+} elseif { $scoring_type == "unscored" } {
     set scoreboard_display_correct no
     set scoreboard_display_incorrect no
 } else {
@@ -567,6 +567,25 @@ set description_list [lsort $description_list]
 set get_descriptions_only \
     [expr {      [lcontain $description_list get] \
             && ! [lcontain $description_list web] }]
+
+# Compute feedback scoring data.
+#
+set sqf $scoreboard_qualifier_factors
+set in_percent [expr 100 - 100 * [lindex $sqf 0]]
+set in_percent [format {%.0f} $in_percent]
+set inout_percent [expr 100 - 100 * [lindex $sqf 1]]
+set inout_percent [format {%.0f} $inout_percent]
+set ic_percent [expr 100 - 100 * [lindex $sqf 4]]
+set ic_percent [format {%.0f} $ic_percent]
+
+# Check that autojudge_address is set for email
+# contest.
+#
+if {    [lcontain $account_list email] \
+     && $autojudge_address == "" } {
+    error "autojudge_address must be non-empty for\
+           email accounts"
+}
 
 # Compute this_contest.
 #
@@ -696,6 +715,38 @@ sion commands:
 "]
 Read the `solving' help file for more details on how to
 solve and submit a problem using this account.
+"][include_if { $scoring_type == "unscored" } "
+The scoreboard contains the date of each correct sub-
+mission.  Contestants appear alphabetically on the
+scoreboard, regardless of the number of problems they
+have correct.
+"][include_if { $scoring_type == "unranked" } "
+The scoreboard contains the date of each correct sub-
+mission.  Contestants with the most correct problems
+appear first on the scoreboard.  Among those with the
+same number of correct problems, contestants appear
+alphabetically.  See the `scoreboard' help file for
+more details.
+"][include_if { $scoring_type == "feedback" } "
+Contestants with the most correct problems appear first
+on the scoreboard.  Among those with the same number of
+correct problems, a ranking score is computed from the
+submission types (no-feedback, in, inout) for incorrect
+submissions.  A correct submission with no previous in-
+correct submissions will have a score of 100.0, and the
+penalties for incorrect submissions depend on submission
+type as follows:
+
+    incorrect no-feedback submit    $ic_percent%[
+ include_if { [lcontain $response_list in] } "
+    incorrect `in' submit           $in_percent%"][
+ include_if { [lcontain $response_list inout] } "
+    incorrect `inout' submit        $inout_percent%"]
+
+Penalties are applied only to incorrect submissions for
+problems you eventually submit correctly.  See the
+`scoreboard' help file, `Feedback Contests', for de-
+tails.
 "]$this_contest_postfix"
 
 # Computed web page parameters.
