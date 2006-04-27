@@ -5,7 +5,7 @@
 #
 # File:		jfilter
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Oct  7 07:04:41 EDT 2005
+# Date:		Thu Apr 27 09:47:56 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/10/07 10:59:34 $
+#   $Date: 2006/04/27 14:07:02 $
 #   $RCSfile: jfilter,v $
-#   $Revision: 1.20 $
+#   $Revision: 1.21 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -526,19 +526,24 @@ if { $number_args == 2 } {
     #
     set group_count 0
     set case_count 0
-    set last_line_was_separator \
+    set last_was_group_mark 0
+    set last_was_case_mark \
         [expr { $input_separator != "" }]
+    set last_was_end_mark 0
     set last_line ""
 
     while { ! [eof $jin] } {
+	set begin_group $last_was_group_mark
+	set begin_case $last_was_case_mark
+	set begin_end $last_was_end_mark
 	set is_mark 0
-	set begin_case $last_line_was_separator
-	set begin_group 0
-	set begin_end 0
+	set last_was_group_mark 0
+	set last_was_case_mark 0
+	set last_was_end_mark 0
 	if {    $input_group_mark != "" \
 	     && [regexp -nocase -- $input_group_mark \
 	                $jin_line] } {
-	     set begin_group 1
+	     set last_was_group_mark 1
 	     set is_mark 1
 	} elseif {    $input_group_head != "" \
 	           && [regexp -nocase -- \
@@ -549,18 +554,23 @@ if { $number_args == 2 } {
 	if {    $input_case_mark != "" \
 	     && [regexp -nocase -- $input_case_mark \
 	                $jin_line] } {
-	     set begin_case 1
+	     set last_was_case_mark 1
 	     set is_mark 1
         } elseif {    $input_case_head != "" \
 	           && [regexp -nocase -- \
 		              $input_case_head \
 		              $jin_line] } {
 	     set begin_case 1
+	} elseif {    $input_separator != "" \
+	           && [regexp -nocase -- \
+		              $input_separator \
+		              $jin_line] } {
+	     set last_was_case_mark 1
 	}
 	if {    $input_end_mark != "" \
 	     && [regexp -nocase -- $input_end_mark \
 	                $jin_line] } {
-	     set begin_end 1
+	     set last_was_end_mark 1
 	     set is_mark 1
 	} elseif {    $input_end_head != "" \
 	           && [regexp -nocase -- \
@@ -568,6 +578,7 @@ if { $number_args == 2 } {
 		              $jin_line] } {
 	     set begin_end 1
 	}
+
         if { $begin_group } {
 	    incr group_count 1
 	    set case_count 0
@@ -590,12 +601,6 @@ if { $number_args == 2 } {
 	    }
 	}
 	if { $begin_end } { set copy 1 }
-
-	set last_line_was_separator \
-	    [expr {    $input_separator != "" \
-	            && [regexp -nocase -- \
-		               $input_separator \
-		               $jin_line] }]
 
 	if { ! $is_mark && $copy } {
 	    puts $in $jin_line
