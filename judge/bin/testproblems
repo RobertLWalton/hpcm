@@ -4,7 +4,7 @@
 #
 # File:		testproblems
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Thu Oct  6 21:22:07 EDT 2005
+# Date:		Thu Apr 27 05:51:44 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/10/07 02:58:06 $
+#   $Date: 2006/04/27 13:29:38 $
 #   $RCSfile: testproblems,v $
-#   $Revision: 1.16 $
+#   $Revision: 1.17 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -49,20 +49,24 @@ testproblems -
 
     The -keep option suppresses the final `make clean'.
 
-    If a directory contains .jin files, then for every
-    f.jin file the program runs
+    If a directory contains .jin files, then the pro-
+    gram runs
 
+    		make clean
+
+    once followed by
+
     		jfilter f.jin f.in
 		ln -s f.in problem.in
-		make clean
 		make
 		mv problem.out f.out
 		diff f.out f.test
 		make clean
 		rm f.in problem.in
 
-    The -keep option suppresses the the final `rm'.
-
+    for each f.jin file.  The -keep option suppresses
+    the final `make clean' and `rm'.
+
     If a directory contains multiple .in files, the
     same thing is done as for .jin files, but jfilter
     is not run and f.in is not removed.  If a directory
@@ -91,20 +95,22 @@ testproblems -
 
     is execute if f.jin exists.  But if Scoring_Filter
     does exist then
-
+
     		Scoring_Filter f.in < f.out > f.fout
 		jfilter f.jin f.fout f.jfout
 		rm f.fout f.jfout
 
     is executed, with the jfilter execution and f.jfout
     removal suppressed if f.jin does not exist.
-
+
     If f.jout (f.fout, f.jfout) is made and f.jtest
     (f.ftest, f.jftest) exists, these two files are
     diff'ed, and if different the differences are
     reported.
 
-    All `rm' commands are suppressed by -keep.
+    All `rm' commands are suppressed by -keep.  All
+    `make clean' commands except the initial one in
+    each directory are suppressed by -keep.
     
     If a non-directory is given the program, or if a
     directory with no Makefile is given, the program
@@ -156,8 +162,8 @@ proc diff { file1 file2 } {
 	    set diffs \
 		"========== $file1:\n$diffs"
 	}
-	puts -nonewline $fd $diffs
-	puts -nonewline $diffs
+	puts $fd $diffs
+	puts $diffs
     }
 }
 
@@ -189,6 +195,7 @@ foreach x $argv {
 	if { $type == "link" } {
 	    file delete $problem.in
 	}
+	exec make clean >@ stdout 2>@ stderr
 	# Make sure that "problem" is the first
 	# value of f if it is a value of f.
 	#
@@ -202,7 +209,6 @@ foreach x $argv {
 	    if { $f != $problem } {
 	        puts "========== $file:"
 	    }
-	    exec make clean >@ stdout 2>@ stderr
 	    if { ! [file exists $f.in] } {
 	        puts "jfilter $f.jin $f.in"
 	        exec jfilter $f.jin $f.in >@ stdout
@@ -225,8 +231,8 @@ foreach x $argv {
 		    puts $fd "========== making $f.out:"
 		    file delete $problem.in
 		}
-		puts -nonewline $fd $mout
-		puts -nonewline $mout
+		puts $fd $mout
+		puts $mout
 		continue
 	    }
 	    if { $f != $problem } {
