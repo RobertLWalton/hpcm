@@ -6,7 +6,7 @@
 #
 # File:		makecontest
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Apr 24 07:58:30 EDT 2006
+# Date:		Tue May  2 10:46:25 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/04/24 12:38:11 $
+#   $Date: 2006/05/02 15:16:34 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.158 $
+#   $Revision: 1.159 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -127,6 +127,10 @@ makecontest option ... index_specification ...
     -stlhelp	Make ./contest/stlhelp
 
     -web	Make ./web
+
+    -scoreboard_ssh  Make ./scoreboard_identity,
+    			  ./scoreboard_identity.pub,
+    			  ./scoreboard_authorized_keys.
 
     -startcontest   Run the startcontest program if
     		    necessary.
@@ -833,6 +837,16 @@ makecontest option ... index_specification ...
     been done, or if it has been done but a background
     process waiting to start the contest has died.
 
+    The -scoreboard_ssh program option makes files that
+    are needed if the `makescoreboard' program is to
+    copy the scoreboard to remote accounts using ssh
+    (see scoreboard_addresses in hpcm/judge/lib/hpcm_
+    judging.rc).  ssh-keygen is used to make a private
+    key in ./scoreboard_identity, a public key in
+    ./scoreboard_identity.pub, and an entry for the
+    ~/.ssh/authorized_keys file of the remote accounts
+    in ./scoreboard_authorized_keys.
+
     The -scoreboard program option executes the
     `makescoreboard start' command unless this has
     already been done, or if the background process that
@@ -899,6 +913,7 @@ set printer_map_option		no
 set javahelp_option		no
 set stlhelp_option		no
 set web_option			no
+set scoreboard_ssh_option	no
 set startcontest_option		no
 set scoreboard_option		no
 #
@@ -1000,6 +1015,8 @@ while { $argi < $argc } {
         -javahelp	{ set javahelp_option	yes }
         -stlhelp	{ set stlhelp_option	yes }
         -web		{ set web_option	yes }
+        -scoreboard_ssh	{ set scoreboard_ssh_option \
+						yes }
         -startcontest	{ set startcontest_option \
 						yes }
         -scoreboard	{ set scoreboard_option \
@@ -3013,6 +3030,48 @@ if {    $startcontest_option \
     if { ! [file exists $j_d/Startcontest_PID] } {
 	puts "Executing: startcontest start"
         exec startcontest start >@ stdout
+    }
+}
+
+# Execute scoreboard ssh file if desired.
+#
+if { $scoreboard_ssh_option } {
+
+    if {    ! [file exists $j_d/scoreboard_identity] \
+         || ! [file exists \
+	            $j_d/scoreboard_identity.pub] } {
+	file delete -force $j_d/scoreboard_identity
+	file delete -force $j_d/scoreboard_identity.pub
+	exec ssh-keygen -t rsa -N "" \
+	                -f $j_d/scoreboard_identity
+	puts "Made $j_d/scoreboard_identity"
+	puts "Made $j_d/scoreboard_identity.pub"
+    }
+    if {    ! [file exists \
+                    $j_d/scoreboard_authorized_keys] \
+         ||   [file mtime \
+	            $j_d/scoreboard_identity.pub]
+            > [file mtime \
+	            $j_d/scoreboard_authorized_keys] } {
+	if { [file exists \
+	           $j_d/scoreboard_authorized_keys] } {
+	    file delete -force \
+	         $j_d/scoreboard_authorized_keys
+	    puts "Deleted old\
+	          $j_d/scoreboard_authorized_keys"
+	}
+	set pub [read_file $j_d/scoreboard_identity.pub]
+	write_file $j_d/scoreboard_authorized_keys \
+	    "command=\"head -1000 >public_html/FFFF;\
+		       chmod 644 public_html/FFFF\" $pub"
+	puts "Made $j_d/scoreboard_authorized_keys"
+	TODO "Add the line in\
+	      ./scoreboard_authorized_keys to the" \
+	     "~/.ssh/authorized_keys files of the\
+	      accounts to which the" \
+	     "scoreboard is to be sent via\
+	      ssh, and replace each FFFF in" \
+	     "each added line by the correct file name."
     }
 }
 
