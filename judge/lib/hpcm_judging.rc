@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon May  1 04:54:12 EDT 2006
+# Date:		Tue May  2 12:40:06 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/05/01 09:43:07 $
+#   $Date: 2006/05/02 16:48:42 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.192 $
+#   $Revision: 1.193 $
 
 # Table of Contents:
 #
@@ -799,18 +799,31 @@ set scoreboard_markers "|$!#^%@<>"
 # a `SEND' instruction for an OUTPUT file, and
 # scoreboard_addresses is a list containing zzz<YYY>,
 # then every time the output file is made it will be
-# emailed to `zzz<YYY>', so in the account YYY
-# .procmailrc file you should put something like:
+# emailed to `zzz<YYY>'.
 #
-#	:0 b:
-#	* ^To:.*zzz
-#	| cat >public_html/xxx;\
-#	  chmod a+r public_html/xxx
+# As an alternative, an address can be of the form
+# `!zzz<YYY>', in which case the output file is sent
+# to the account YYY using `ssh -i zzz_identity YYY'.
 #
 # See documentation for `scoreboard_instructions' for
 # more details and additional SEND features.
 #
 set scoreboard_addresses { }
+
+# Makecontest -scoreboard_ssh makes the zzz_identity and
+# zzz_authorized_keys files for every zzz in the follow-
+# ing list.  The later file is to be added to the
+# ~/.ssh/authorized_keys files of accounts receiving the
+# scoreboard via ssh.
+#
+set scoreboard_ssh { scoreboard }
+
+# Makecontest -scoreboard_procmailrc makes the zzz_
+# procmailrc file for every zzz in the following list.
+# The later file is to be added to the ~/.procmailrc
+# files of accounts receiving the scoreboard by email.
+#
+set scoreboard_procmailrc { scoreboard }
 
 # Interval in seconds between times when the `make-
 # scoreboard' program looks at flags and file modi-
