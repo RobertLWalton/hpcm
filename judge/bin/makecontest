@@ -6,7 +6,7 @@
 #
 # File:		makecontest
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed May  3 04:41:25 EDT 2006
+# Date:		Wed May  3 05:16:01 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/05/03 09:02:02 $
+#   $Date: 2006/05/03 09:17:26 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.163 $
+#   $Revision: 1.164 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -3072,7 +3072,7 @@ if {    $startcontest_option \
     }
 }
 
-# Execute scoreboard ssh file if desired.
+# Make scoreboard_ssh files if desired.
 #
 if { $scoreboard_ssh_option } {
 
@@ -3124,6 +3124,40 @@ if { $scoreboard_ssh_option } {
 	     "The file zzz_authorized_keys is to be\
 	      used for accounts YYY" \
 	     "if `!zzz<YYY>' appears in the\
+	      scoreboard_addresses global variable" \
+	     "or a similar global variable."
+    }
+}
+
+# Make scoreboard_procmailrc files if desired.
+#
+if { $scoreboard_procmailrc_option } {
+
+    set file_list {}
+    foreach zzz $scoreboard_procmailrc {
+	if { ! [file exists $j_d/${zzz}_procmailrc] } {
+	    write_file $j_d/${zzz}_procmailrc "
+:0 b:
+* ^To:.*${zzz}
+| cat >public_html/DDDD/${zzz}; \\
+  chmod a+r public_html/DDDD/${zzz}"
+	    puts "Made ./${zzz}_procmailrc"
+	    lappend file_list ./${zzz}_procmailrc
+	}
+    }
+    if { [llength $file_list] > 0 } {
+	TODO "Append the following files to the\
+	      ~/.procmailrc files of the" \
+	     "accounts to which the scoreboard is to\
+	      be sent via email, and replace" \
+	     "each public_html/DDDD/* in each addition\
+	      by the correct file name:" \
+	     "" \
+	     "    [indent_list 4 $file_list]" \
+	     "" \
+	     "The file zzz_procmailrc is to be\
+	      used for accounts YYY" \
+	     "if `zzz<YYY>' appears in the\
 	      scoreboard_addresses global variable" \
 	     "or a similar global variable."
     }
