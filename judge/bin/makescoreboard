@@ -4,7 +4,7 @@
 #
 # File:		makescoreboard
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed May  3 15:35:02 EDT 2006
+# Date:		Wed May  3 15:40:09 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/05/03 19:36:16 $
+#   $Date: 2006/05/03 19:40:18 $
 #   $RCSfile: makescoreboard,v $
-#   $Revision: 1.60 $
+#   $Revision: 1.61 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -1144,8 +1144,6 @@ proc pass2 { instructions pc end_pc update } {
 		if { $send } {
 		    foreach to $send_addresses {
 			set to [string trim $to]
-			set error_data \
-			    "\nSending to $to\n"
 		        if { [regexp {^!} $to] } {
 			    set m {^!([^<]*)<([^>]*)>$}
 			    if { ! [regexp $m $to \
@@ -1158,9 +1156,17 @@ proc pass2 { instructions pc end_pc update } {
 			    }
 			    set f $judging_directory
 			    set f $f/${zzz}_identity
+			    set error_data \
+				"\nDuring\
+				 ssh_copy_message\
+				 $f $account ...\n"
 			    ssh_copy_message \
 			        $f $account $contents
 			} else {
+			    set error_data \
+				"\nDuring\
+				 send_message\
+				 \"To: $to..\"\n"
 			    send_message \
 			       "To: $to\n\n$contents"
 			}
