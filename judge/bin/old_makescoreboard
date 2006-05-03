@@ -4,7 +4,7 @@
 #
 # File:		makescoreboard
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed May  3 09:58:48 EDT 2006
+# Date:		Wed May  3 14:40:13 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/05/03 14:19:43 $
+#   $Date: 2006/05/03 18:46:37 $
 #   $RCSfile: old_makescoreboard,v $
-#   $Revision: 1.56 $
+#   $Revision: 1.57 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -1199,8 +1199,8 @@ switch -- $command {
 
 	# Run makescoreboard as a subprocess.
 	#
-        eval exec makescoreboard -start- \
-	     [lrange $argv 1 end] &
+        set pid [eval exec makescoreboard -start- \
+	              [lrange $argv 1 end] &]
 
 	# Wait for any output from first run.
 	#
@@ -1208,7 +1208,11 @@ switch -- $command {
 	while { ! [file exists $pid_file] } {
 	    sleep 1
 	    incr count
-	    if { $count > 120 } {
+	    set display [display_process_tree $pid]
+	    if { ! [process_found $display] } {
+		error "makescoreboard -start- process\
+		       died"
+	    } elseif { $count > 60 } {
 	        error "makescoreboard -start- did not\
 		       write $pid_file in a timely\
 		       manner"
