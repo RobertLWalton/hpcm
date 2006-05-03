@@ -6,7 +6,7 @@
 #
 # File:		makecontest
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed May  3 09:18:07 EDT 2006
+# Date:		Wed May  3 13:19:11 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/05/03 13:58:36 $
+#   $Date: 2006/05/03 17:20:14 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.165 $
+#   $Revision: 1.166 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -111,6 +111,7 @@ makecontest option ... index_specification ...
 
     -mail	Make ./mail
     -procmailrc	Update ~/.procmailrc
+		and ./Contest_Address
 
     -who_where  Make ./contest/who_where
     -trashable  Make ./contest/trashable with non-
@@ -740,9 +741,11 @@ makecontest option ... index_specification ...
     address.  If `./contest/secure/hcpm_sendmail.rc'
     exists, one autojudge address is made from its
     contents.  The other autojudge addresses are listed
-    in the `autojudge_addresses' global variable.  If
-    there are no autojudge addresses, it is not an
-    error, but a TODO to fix the situation is written.
+    in the `autojudge_addresses' global variable.  The
+    first autojudge address is written to the ./Contest_
+    Address file.  If there are no autojudge addresses,
+    it is not an error, but a TODO to fix the situation
+    is written.
 
     The -procmailrc program option also ensures that
     the entry
@@ -2573,11 +2576,26 @@ if { $procmailrc_option } {
     set to [lindex [read_sendmail_rc] 0]
     if { $to != "" } {
     	lappend addresses $to
+    } else {
+        set to [lindex $addresses 0]
     }
+       
     if { [llength $addresses] == 0 } {
         TODO "There are no autojudge addresses" \
 	     "Set the autojudge_addresses variable" \
 	     "and run `makecontest -procmailrc'"
+    }
+    set to [string trim $to]
+    if {    $to != "" \
+         && (    ! [file exists $j_d/Contest_Address] \
+              ||    [read_file $j_d/Contest_Address] \
+	         != $to ) } {
+        if { [file exists $j_d/Contest_Address] } {
+	    puts "Deleted ./Contest_Address"
+	    file delete -force $j_d/Contest_Address
+	}
+	write_file $j_d/Contest_Address $to
+	puts "Wrote ./Contest_Address"
     }
     set passwords {}
     foreach to $addresses {
