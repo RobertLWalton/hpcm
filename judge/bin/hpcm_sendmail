@@ -5,7 +5,7 @@
 #
 # File:		hpcm_sendmail
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Mon Mar 25 05:36:36 EST 2002
+# Date:		Wed May  3 13:28:56 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/03/25 10:36:01 $
+#   $Date: 2006/05/03 17:45:40 $
 #   $RCSfile: hpcm_sendmail,v $
-#   $Revision: 1.2 $
+#   $Revision: 1.3 $
 
 case "$1" in
    "")  ;;
@@ -25,33 +25,61 @@ case "$1" in
 hpcm_sendmail
 
     Call contestant/bin/hpcm_sendmail with
-    <judging_directory>/contest as argument."
+    <judging_directory>/contest as argument,
+    if that directory exists.  Otherwise send
+    mail in the normal way to the address in
+    <judging_directory>/Contest_Address, if that
+    file exists."
 
     	exit 1
 	;;
 esac
 
-contest=""
+found=""
 for jd in . .. ../.. ../../.. ../../../..
 do
     if test -r $jd/hpcm_judging.rc
     then
-        contest=$jd/contest
+        found=$jd
 	break
     fi
 done
 
-if test "$contest" = ""
+if test "$found" = ""
 then
     echo ERROR: Cannot find hpcm_judging.rc.
     exit 1
-fi
-
-if test ! -x $contest
+elif test -x $found/contest
 then
-    echo ERROR: Cannot access $contest
+    sendmail=../../contestant/bin/hpcm_sendmail
+    exec `dirname "$0"`/$sendmail $found/contest
+elif test -r $found/Contest_Address
+then
+    exec 3< $found/Contest_Address
+    read <&3
+    to="$REPLY"
+    exec 3<&-
+
+    if test -x /usr/bin/sendmail
+    then
+	sendmail=/usr/bin/sendmail
+    elif test -x /bin/sendmail
+    then
+	sendmail=/bin/sendmail
+    elif test -x /usr/sbin/sendmail
+    then
+	sendmail=/usr/sbin/sendmail
+    elif test -x /sbin/sendmail
+    then
+	sendmail=/sbin/sendmail
+    else
+	echo >&2 ERROR: cannot find sendmail
+	exit 1
+    fi
+
+    exec $sendmail -oi $to
+else
+    echo ERROR: Cannot access $found/contest or \
+    	        $found/Contest_Address
     exit 1
 fi
-
-sendmail=../../contestant/bin/hpcm_sendmail
-exec `dirname "$0"`/$sendmail $contest
