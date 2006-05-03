@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue May  2 08:34:33 EDT 2006
+# Date:		Wed May  3 10:41:54 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/05/02 12:38:07 $
+#   $Date: 2006/05/03 15:09:58 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.38 $
+#   $Revision: 1.39 $
 
 # Table of Contents
 #
@@ -285,24 +285,23 @@ set web_postfix ""
 set web_solutions_header ""
 set web_solutions_prefix ""
 
-# TCL list of addresses to email scoreboard to.  If this
-# list contains zzz<YYY>, then every time the scoreboard
-# is updated it will be emailed to `zzz<YYY>', so in the
-# account YYY .procmailrc file you should put something
-# like the following to copy the scoreboard into the
-# public_html/xxx file of the YYY account:
-#
-#	:0 b:
-#	* ^To:.*zzz
-#	| cat >public_html/xxx;\
-#	  chmod a+r public_html/xxx
-#
-# If there are spaces or quotes in zzz<YYY>, it should
-# be enclosed in {} braces in the address list.
+# TCL list of addresses to email or ssh scoreboard to.
+# If this list contains zzz<YYY>, then every time the
+# scoreboard is updated it will be emailed to
+# `zzz<YYY>', and you should append the ./zzz_procmailrc
+# file to the ~/.procmailrc file of the account YYY.
+# If this list contains !zzz<YYY>, then every time the
+# scoreboard is updated it will be ssh'ed to `zzz<YYY>',
+# and you should append the ./zzz_authorized_keys file
+# to the ~/.ssh/authorized_keys file of the account YYY.
+# In either case edit what you append to change the
+# name of the score file from public_html/DDDD/zzz to
+# whatever is appropriate.  There should be NO spaces
+# in zzz or YYY.
 #
 set scoreboard_addresses { }
 # set scoreboard_addresses {
-#	{"some thing"<someaccount@somecomputer>}
+#	zzz<YYY>
 # }
 
 # Parameters: Usually Not Modified
@@ -437,6 +436,24 @@ $browser '$browser $stl_api_index'
     }
 }
 
+# Compute files for makecontest -scoreboard_ssh
+# and -scoreboard_procmailrc to make that are related to
+# scoreboard_addresses.
+#
+set scoreboard_ssh {}
+set scoreboard_procmailrc {}
+foreach to $scoreboard_addresses {
+    if { ! [regexp {^([^<]*)<([^>]*)>$} \
+                   forget zzz account] } {
+        error "bad address in scoreboard_addresses: $to"
+    }
+    if { [regexp {^!(.*)$} $zzz forget zzz] } {
+        lappend scoreboard_ssh $zzz
+    } else {
+        lappend scoreboard_procmailrc $zzz
+    }
+}
+
 # Default arguments to makecontest.
 #
 set makecontest_arguments "
@@ -450,6 +467,7 @@ set makecontest_arguments "
     [include_if { $makescoreboard == "yes" } \
     		"-scoreboard"] \
     [include_if { $web_page_URL != "" } "-web"] \
+    -scoreboard_ssh -scoreboard_procmailrc \
     $judging_directory/help/index, \
 	=help/ \
     $hpcm_directory/contestant/help/index, \
