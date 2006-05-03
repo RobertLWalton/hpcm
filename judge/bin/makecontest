@@ -6,7 +6,7 @@
 #
 # File:		makecontest
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed May  3 04:33:31 EDT 2006
+# Date:		Wed May  3 04:41:25 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/05/03 08:40:36 $
+#   $Date: 2006/05/03 09:02:02 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.162 $
+#   $Revision: 1.163 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -1132,7 +1132,7 @@ if { $contest_option } {
 	puts "     and linked ./contest to it"
     }
     if { ! [file isdirectory $c_d] } {
-        error "$c_d is not a directory"
+        error "./contest is not a directory"
     }
 }
 
@@ -1160,12 +1160,12 @@ if {    $contest_option \
     if {    ! [file isdirectory $c_d] \
          || ! [file executable $c_d] \
          || ! [file readable $c_d] } {
-	error "$c_d is not a useable directory"
+	error "./contest is not a useable directory"
     }
     if {    ! [regexp ..x [get_access $c_d]] \
          || ! [regexp ..x [get_access $c_d/..]] } {
 	puts "Granting a+x access"
-	puts "         to $c_d"
+	puts "         to ./contest"
 	puts "         and its parent"
 	grant_access $c_d x
 	grant_access $c_d/.. x
@@ -1937,7 +1937,7 @@ proc process_index_specification {} {
 #
 if { $info_option } {
     if { [file exists $j_d/info+] } {
-        puts "Deleting $j_d/info+"
+        puts "Deleting ./info+"
 	file delete -force -- $j_d/info+
     }
     file mkdir $j_d/info+
@@ -1946,7 +1946,7 @@ if { $info_option } {
 foreach dir {problems demos help} {
     if { [set ${dir}_option] } {
 	if { [file exists $c_d/$dir+] } {
-	    puts "Deleting out-of-date $c_d/$dir+"
+	    puts "Deleting out-of-date ./contest/$dir+"
 	    file delete -force -- $c_d/$dir+
 	}
 	file mkdir $c_d/$dir+
@@ -1957,7 +1957,7 @@ foreach dir {problems demos help} {
 }
 if { $solutions_option } {
     if { [file exists $j_d/solutions+] } {
-        puts "Deleting $j_d/solutions+"
+        puts "Deleting ./solutions+"
 	file delete -force -- $j_d/solutions+
     }
     file mkdir $j_d/solutions+
@@ -1972,7 +1972,7 @@ if { $this_contest_option } {
     #
     if { ! [file isdirectory $j_d/help] } {
 	file mkdir $j_d/help
-	puts "Made $j_d/help"
+	puts "Made ./help"
     }
 
     # Make help/index file.
@@ -2008,7 +2008,7 @@ Introductory Information:
 	Information about this contest.
 "]
         lappend TODO_lines "  ./help/index"
-	puts "Wrote $j_d/help/index"
+	puts "Wrote ./help/index"
     }
 
     # Compute header for help/this_contest* files.
@@ -2030,7 +2030,7 @@ Introductory Information:
 		   "$header$content"
         lappend TODO_lines \
 	        "  ./help/this_contest_original"
-	puts "Wrote $j_d/help/this_contest_original"
+	puts "Wrote ./help/this_contest_original"
     }
 
     # Save help/this_contest_parameter file.
@@ -2053,7 +2053,7 @@ Introductory Information:
 		   "$header$content"
         lappend TODO_lines \
 	        "  ./help/this_contest_parameter"
-	puts "Wrote $j_d/help/this_contest_parameter"
+	puts "Wrote ./help/this_contest_parameter"
     }
 
     # Save help/this_contest file.
@@ -2080,7 +2080,7 @@ Introductory Information:
 	     {"You may want to edit\
 	       ./help/this_contest" \
 	      "and rerun `makecontest -help'"}
-	puts "Wrote $j_d/help/this_contest"
+	puts "Wrote ./help/this_contest"
     }
 }
 
@@ -2221,6 +2221,15 @@ proc diff_dirs { dir1 dir2 } {
 #
 proc rename_directory { directory } {
 
+    global j_d
+    set dname $directory
+    set len [string length $j_d]
+    incr len
+    if { [string compare -length $len \
+                 $j_d/ $directory] } {
+        set dname ./[string range $directory $len end]
+    }
+
     if { [diff_dirs $directory $directory+] \
          == "no" } {
 	file delete -force -- $directory+
@@ -2231,20 +2240,20 @@ proc rename_directory { directory } {
 	    file delete -force -- $directory--
 	}
 	if { [file exists $directory-] } {
-	    puts "Renaming $directory-"
-	    puts "      to $directory--"
+	    puts "Renaming $dname-"
+	    puts "      to $dname--"
 	    file rename $directory- $directory--
 	    deny_access $directory--
 	}
 	if { [file exists $directory] } {
-	    puts "Renaming $directory"
-	    puts "      to $directory-"
+	    puts "Renaming $dname"
+	    puts "      to $dname-"
 	    file rename $directory $directory-
 	    deny_access $directory-
 	}
 	if { [file exists $directory+] } {
-	    puts "Renaming $directory+"
-	    puts "      to $directory"
+	    puts "Renaming $dname+"
+	    puts "      to $dname"
 	    file rename $directory+ $directory
 	}
 	return yes
@@ -2309,17 +2318,17 @@ if { $print_files_option } {
 	     || [read_entire_file $f] != $output } {
 	    file delete -force -- $f--
 	    if { [file exists $f-] } {
-		puts "Renaming $f-"
-		puts "      to $f--"
+		puts "Renaming ./${dir}_print_files-"
+		puts "      to ./${dir}_print_files--"
 		file rename $f- $f--
 	    }
 	    if { [file exists $f] } {
-		puts "Renaming $f"
-		puts "      to $f-"
+		puts "Renaming ./${dir}_print_files"
+		puts "      to ./${dir}_print_files-"
 		file rename $f $f-
 	    }
 	    write_file $f $output
-	    puts "Wrote $f"
+	    puts "Wrote ./${dir}_print_files"
 	}
     }
 }
@@ -2337,17 +2346,17 @@ if { $solution_files_option } {
 	 || [read_entire_file $f] != $output } {
 	file delete -force -- $f--
 	if { [file exists $f-] } {
-	    puts "Renaming $f-"
-	    puts "      to $f--"
+	    puts "Renaming ./solution_files-"
+	    puts "      to ./solution_files--"
 	    file rename $f- $f--
 	}
 	if { [file exists $f] } {
-	    puts "Renaming $f"
-	    puts "      to $f-"
+	    puts "Renaming ./solution_files"
+	    puts "      to ./solution_files-"
 	    file rename $f $f-
 	}
 	write_file $f $output
-	puts "Wrote $f"
+	puts "Wrote ./solution_files"
     }
 }
 
@@ -2356,7 +2365,7 @@ if { $solution_files_option } {
 if { $mail_option \
       && ! [file isdirectory $j_d/mail] } {
     file mkdir $j_d/mail
-    puts "Made $j_d/mail"
+    puts "Made ./mail"
     grant_access $j_d/mail x
     grant_access $j_d x
     grant_access $j_d/.. x
@@ -2373,16 +2382,16 @@ if { $help2_option \
 	      set help2_type \
 		  [file type $c_d/help2] }] } {
 	if { $help2_type == "link" } {
-	    puts "Deleting $c_d/help2"
+	    puts "Deleting ./contest/help2"
 	    file delete -force -- $c_d/help2
 	} else {
-	    error "$c_d/help2 exists but is not a\
+	    error "./contest/help2 exists but is not a\
 	           directory"
 	}
     }
     link_file help $c_d/help2
-    puts "Linked $c_d/help2"
-    puts "    to $c_d/help"
+    puts "Linked ./contest/help2"
+    puts "    to ./contest/help"
 }
 
 # Make secure directory.
@@ -2391,7 +2400,7 @@ if { $secure_option \
      && ! [file isdirectory $c_d/secure] } {
     file mkdir $c_d/secure
     deny_access $c_d/secure
-    puts "Made directory $c_d/secure"
+    puts "Made directory ./contest/secure"
 }
 
 # Make or edit secure/passwords file.
@@ -2405,7 +2414,7 @@ if { $secure_option } {
 	puts $ch ""
 	close $ch
 	deny_access $c_d/secure/passwords
-	puts "Wrote $c_d/secure/passwords"
+	puts "Wrote ./contest/secure/passwords"
 	TODO "Edit ./contest/secure/passwords;" \
 	     "each of its lines has the format:" \
 	     "`$apw:$ctc'." \
@@ -2442,7 +2451,7 @@ if { $secure_option } {
 	        puts $passwords_ch $line
 	    }
 	    close $passwords_ch
-	    puts "Wrote $c_d/secure/passwords"
+	    puts "Wrote ./contest/secure/passwords"
 
 	    if { $account_exists } {
 		set tc_d [truename $c_d]
@@ -2486,7 +2495,7 @@ if { $secure_option \
     puts $rc_ch "Key-Name: $key_name"
     close $rc_ch
     deny_access $c_d/secure/hpcm_sendmail.rc
-    puts "Wrote $c_d/secure/hpcm_sendmail.rc"
+    puts "Wrote ./contest/secure/hpcm_sendmail.rc"
 
 
     # Check contest/bin/hpcm_sendmail mode.
@@ -2546,7 +2555,7 @@ if {    $ssh_option \
 	exec tar cf ./contest/extra_setup.tar .ssh
 	cd $wd
 	grant_access $c_d/extra_setup.tar
-	puts "Wrote $c_d/extra_setup.tar"
+	puts "Wrote ./contest/extra_setup.tar"
     } else {
         TODO "Cannot make ./contest/extra_setup.tar" \
 	     "    because none of the files\
@@ -2673,8 +2682,8 @@ if { $procmailrc_option } {
 #
 if { $who_where_option } {
     if { ! [file readable $c_d/secure/passwords] } {
-        error "$c_d/secure/passwords does not exist\
-	       for -who_where option"
+        error "./contest/secure/passwords does not\
+	       exist for -who_where option"
     } elseif { ! [file readable $c_d/who_where] } {
 	set who_where_ch [open $c_d/who_where w]
 	set passwords_ch [open $c_d/secure/passwords r]
@@ -2701,7 +2710,7 @@ if { $who_where_option } {
 	    file delete -force -- $c_d/who_where
 	} else {
 	    grant_access $c_d/who_where
-	    puts "Wrote $c_d/who_where"
+	    puts "Wrote ./contest/who_where"
 
 	    TODO "Edit ./contest/who_where to specify\
 		  location" \
@@ -2810,7 +2819,7 @@ if { $who_where_option } {
 	    }
 	    close $who_where_ch
 	    grant_access $c_d/who_where
-	    puts "Wrote $c_d/who_where"
+	    puts "Wrote ./contest/who_where"
 
 	    TODO "Edit ./contest/who_where to specify\
 					location" \
@@ -2827,8 +2836,9 @@ if { $who_where_option } {
 #
 if { $trashable_option || $trashall_option } {
     if { ! [file readable $c_d/secure/passwords] } {
-        error "$c_d/secure/passwords does not exist\
-	       for -trashable or -trashall options"
+        error "./contest/secure/passwords does not\
+	       exist for -trashable or -trashall\
+	       options"
     }
     set trashable {}
     set passwords_ch [open $c_d/secure/passwords r]
@@ -2841,7 +2851,7 @@ if { $trashable_option || $trashall_option } {
 	       forget account forget2
 	if { $account == "" } {
 	    error "Empty account name in\
-	           $c_d/secure/passwords"
+	           ./contest/secure/passwords"
 	}
 	if {    $account != "none" \
 	     && ( $trashall_option \
@@ -2854,7 +2864,7 @@ if { $trashable_option || $trashall_option } {
 
     if { [llength $trashable] == 0 } {
 	if { [file exists $c_d/trashable] } {
-	    puts "Deleted $c_d/trashable"
+	    puts "Deleted ./contest/trashable"
 	    file delete -force $c_d/trashable
 	}
     } else {
@@ -2862,7 +2872,8 @@ if { $trashable_option || $trashall_option } {
 	    set old_trashable \
 	        [read_entire_file $c_d/trashable]
 	    if { [catch { llength $old_trashable }] } {
-	        error "$c_d/trashable badly formatted"
+	        error "./contest/trashable badly\
+		       formatted"
 	    }
 	} else {
 	    set old_trashable {}
@@ -2877,7 +2888,7 @@ if { $trashable_option || $trashall_option } {
 	    }
 	    close $trashable_ch
 	    grant_access $c_d/trashable
-	    puts "Wrote $c_d/trashable"
+	    puts "Wrote ./contest/trashable"
 
 	    set tc_d [truename $c_d]
 	    set ts_d \
@@ -2941,7 +2952,7 @@ if { $printer_option \
 
     write_file $c_d/printer $printer
     grant_access $c_d/printer
-    puts "Wrote $c_d/printer"
+    puts "Wrote ./contest/printer"
 
     if { $todo } {
 	TODO "Wrote ./contest/printer to be\
@@ -2975,7 +2986,7 @@ if { $printer_map_option } {
 
 	write_file $c_d/printer_map $printer_map
 	grant_access $c_d/printer_map
-	puts "Wrote $c_d/printer_map"
+	puts "Wrote ./contest/printer_map"
     }
 }
 
@@ -2985,7 +2996,7 @@ if { $printer_jobs_option \
      && ! [file exists $c_d/printer_jobs] } {
     close [open $c_d/printer_jobs w]
     grant_access $c_d/printer_jobs rw
-    puts "Wrote $c_d/printer_jobs"
+    puts "Wrote ./contest/printer_jobs"
 }
 
 # Make $c_d/javahelp
@@ -3003,7 +3014,7 @@ if { $javahelp_option } {
 	          != $javahelp } {
 	write_file $c_d/javahelp $javahelp
 	grant_access $c_d/javahelp
-	puts "Wrote $c_d/javahelp"
+	puts "Wrote ./contest/javahelp"
     }
 }
 
@@ -3022,7 +3033,7 @@ if { $stlhelp_option } {
 	          != $stlhelp } {
 	write_file $c_d/stlhelp $stlhelp
 	grant_access $c_d/stlhelp
-	puts "Wrote $c_d/stlhelp"
+	puts "Wrote ./contest/stlhelp"
     }
 }
 
@@ -3074,8 +3085,8 @@ if { $scoreboard_ssh_option } {
 	    file delete -force $j_d/${zzz}_identity.pub
 	    exec ssh-keygen -t rsa -N "" \
 			    -f $j_d/${zzz}_identity
-	    puts "Made $j_d/${zzz}_identity"
-	    puts "Made $j_d/${zzz}_identity.pub"
+	    puts "Made ./${zzz}_identity"
+	    puts "Made ./${zzz}_identity.pub"
 	}
 	if {    ! [file exists \
 			$j_d/${zzz}_authorized_keys] \
@@ -3088,7 +3099,7 @@ if { $scoreboard_ssh_option } {
 		file delete -force \
 		     $j_d/${zzz}_authorized_keys
 		puts "Deleted old\
-		      $j_d/${zzz}_authorized_keys"
+		      ./${zzz}_authorized_keys"
 	    }
 	    set pub [read_file $j_d/${zzz}_identity.pub]
 	    write_file $j_d/${zzz}_authorized_keys \
@@ -3096,7 +3107,7 @@ if { $scoreboard_ssh_option } {
 		           >public_html/DDDD/$zzz;\
 			   chmod 644\
 			   public_html/DDDD/$zzz\" $pub"
-	    puts "Made $j_d/${zzz}_authorized_keys"
+	    puts "Made ./${zzz}_authorized_keys"
 	    lappend file_list ./${zzz}_authorized_keys
 	}
     }
@@ -3126,8 +3137,8 @@ if {    $scoreboard_option \
      && ! [file exists $c_d/scoreboard.1head] } {
     file rename -force -- $j_d/scoreboard.1head \
     			  $c_d/scoreboard.1head
-    puts "Moved $j_d/scoreboard.1head"
-    puts "   to $c_d/scoreboard.1head"
+    puts "Moved ./scoreboard.1head"
+    puts "   to ./contest/scoreboard.1head"
 }
 
 # Execute makescoreboard if necessary.
