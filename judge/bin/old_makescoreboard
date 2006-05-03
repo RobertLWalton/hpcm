@@ -4,7 +4,7 @@
 #
 # File:		makescoreboard
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed May  3 15:10:33 EDT 2006
+# Date:		Wed May  3 15:25:20 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/05/03 19:11:03 $
+#   $Date: 2006/05/03 19:29:43 $
 #   $RCSfile: old_makescoreboard,v $
-#   $Revision: 1.58 $
+#   $Revision: 1.59 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -1121,11 +1121,14 @@ proc pass2 { instructions pc end_pc update } {
     if { $update } {
 
 	# Write output file.  If error, delete file and
-	# mail judge.  sent_output_error($out_file) is
-	# set if an error for $output_file has been
-	# hpcm_sendmail'ed to the judge since the last
-	# successful sending of $out_file.
+	# hpcm_sendmail the judge.
 	#
+	# pass2_sent_error($out_file) is set if an error
+	# for $out_file has been hpcm_sendmail'ed to the
+	# judge since the last successful processing of
+	# $out_file.
+	#
+	global pass2_sent_error
 	if { [catch {
 
 		set ch [open $out_file w]
@@ -1161,7 +1164,7 @@ proc pass2 { instructions pc end_pc update } {
 		    }
 		}
 		catch {
-		    unset sent_output_error($out_file)
+		    unset pass2_sent_error($out_file)
 		}
 	    } error_message] } {
 
@@ -1178,7 +1181,7 @@ proc pass2 { instructions pc end_pc update } {
 		file delete -force -- $out_file
 	    }
 	    if { ! [info exists \
-	                 sent_output_error($out_file)] \
+	                 pass2_sent_error($out_file)] \
 			 	} {
 	        set message \
 		    "Subject: makescoreboard error\
@@ -1190,7 +1193,7 @@ proc pass2 { instructions pc end_pc update } {
 		set message \
 		    "$message\nerrorInfo:\n$errorInfo\n"
 	        exec hpcm_sendmail << $message
-		set sent_output_error($out_file) 1
+		set pass2_sent_error($out_file) 1
 	    }
 	}
     }
