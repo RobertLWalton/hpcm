@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue May  2 12:40:06 EDT 2006
+# Date:		Wed May  3 09:11:35 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/05/02 16:48:42 $
+#   $Date: 2006/05/03 13:32:58 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.193 $
+#   $Revision: 1.194 $
 
 # Table of Contents:
 #
@@ -794,9 +794,9 @@ set scoreboard_width 80
 #
 set scoreboard_markers "|$!#^%@<>"
 
-# List of addresses for `makescoreboard' to email
-# scoreboard to.  If scoreboard_instructions includes
-# a `SEND' instruction for an OUTPUT file, and
+# List of addresses for `makescoreboard' to email or ssh
+# the scoreboard to.  If scoreboard_instructions in-
+# cludes a `SEND' instruction for an OUTPUT file, and
 # scoreboard_addresses is a list containing zzz<YYY>,
 # then every time the output file is made it will be
 # emailed to `zzz<YYY>'.
@@ -812,7 +812,7 @@ set scoreboard_addresses { }
 
 # Makecontest -scoreboard_ssh makes the zzz_identity and
 # zzz_authorized_keys files for every zzz in the follow-
-# ing list.  The later file is to be added to the
+# ing list.  The latter file is to be added to the
 # ~/.ssh/authorized_keys files of accounts receiving the
 # scoreboard via ssh.
 #
@@ -853,7 +853,7 @@ set scoreboard_interval 60
 #
 #	scoreboard_instruction ::=
 #	      { OUTPUT filename [start [stop]] }
-#	    | { SEND [qualifier [parameter_name]] }
+#	    | { SEND [parameter_name] }
 #	    | SEND
 #	    | GRANT_ACCESS
 #	    | BLANK
@@ -886,19 +886,17 @@ set scoreboard_interval 60
 #		Set the output file name. See below for
 #		start and stop.
 #
-#     { SEND [qualifier [parameter_name]] }
+#     { SEND [parameter_name] }
 #		Whenever the output file is written,
-#		email the file to each address ADR in
-#		the list of addresses in the global var-
-#		iable `scoreboard_PN', where PN is the
-#		parameter_name.  If the qualifier is not
-#		empty, the email address actually used
-#		is `qualifier<ADR>' when ADR contains
-#		no `<', and `qualifier-ADR' when ADR
-#		contains a `<'.  If `scoreboard_PN' is
-#		empty or does not exist, nothing is
-#		done.  PN defaults to `addresses'.
-#		Qualifier defaults to "".
+#		email or ssh the file to each address
+#		ADR in the list of addresses in the
+#		global variable `scoreboard_PN', where
+#		PN is the parameter_name.  If
+#		`scoreboard_PN' is empty or does not
+#		exist, nothing is done.  PN defaults
+#		to `addresses'; see the `scoreboard_
+#		addresses' global variable for some
+#		more details.
 #
 #     GRANT_ACCESS
 #		Whenever the output file is written,
@@ -2386,6 +2384,35 @@ proc send_mail { message_file } {
 #
 proc send_message { message } {
     exec /usr/sbin/sendmail -oi -t << $message
+}
+
+# Function to call ssh-keygen to generate a private key
+# in `file' and a public key in `file.pub'.
+#
+proc ssh_keygen { file } {
+    exec ssh-keygen -t rsa -N "" -f $file
+}
+
+# Function to call `ssh -i identity_file account < file'
+# to copy file to account.  Account must be set up in
+# advance with a ~/.ssh/authorized_keys entry containing
+# a line equal to identity_file.pub prefixed with
+#
+#	command="COMMAND"
+#
+# where COMMAND is what would be used in
+#
+#	ssh -i identity_file account COMMAND < file
+#
+# to receive the file (escape "'s in COMMAND with \'s).
+#
+# Note: It is necessary to suppress SSH_AUTH_SOCK while
+# executing the above, or else some other ~/.ssh/
+# authorized_keys entry may intercept the connection.
+#
+proc ssh_copy { identity_file account file } {
+    exec sh -c "unset SSH_AUTH_SOCK;\
+                ssh -i $identity_file $account" < $file
 }
 
 # Function to compute the md5sum of a value.
