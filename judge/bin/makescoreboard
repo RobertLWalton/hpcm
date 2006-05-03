@@ -4,7 +4,7 @@
 #
 # File:		makescoreboard
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed May  3 15:25:20 EDT 2006
+# Date:		Wed May  3 15:35:02 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/05/03 19:29:43 $
+#   $Date: 2006/05/03 19:36:16 $
 #   $RCSfile: makescoreboard,v $
-#   $Revision: 1.59 $
+#   $Revision: 1.60 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -1131,6 +1131,7 @@ proc pass2 { instructions pc end_pc update } {
 	global pass2_sent_error
 	if { [catch {
 
+		set error_data "\nWriting $out_file\n"
 		set ch [open $out_file w]
 		puts -nonewline $ch $contents
 		close $ch
@@ -1143,6 +1144,8 @@ proc pass2 { instructions pc end_pc update } {
 		if { $send } {
 		    foreach to $send_addresses {
 			set to [string trim $to]
+			set error_data \
+			    "\nSending to $to\n"
 		        if { [regexp {^!} $to] } {
 			    set m {^!([^<]*)<([^>]*)>$}
 			    if { ! [regexp $m $to \
@@ -1186,6 +1189,7 @@ proc pass2 { instructions pc end_pc update } {
 	        set message \
 		    "Subject: makescoreboard error\
 		     outputting $out_file\n"
+		set message "$message$error_data"
 		set message \
 		    "$message\n$error_message\n"
 		set message \
