@@ -4,7 +4,7 @@
 #
 # File:		makescoreboard
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Apr 24 11:29:27 EDT 2006
+# Date:		Wed May  3 09:58:48 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/04/24 15:29:37 $
+#   $Date: 2006/05/03 14:19:43 $
 #   $RCSfile: makescoreboard,v $
-#   $Revision: 1.55 $
+#   $Revision: 1.56 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -838,21 +838,18 @@ proc pass2 { instructions pc end_pc update } {
 
 	    SEND_yes {
 
-	        # Compute send_qualifier and send_
-		# addresses for use when output done.
+	        # Compute send_addresses and send_name
+		# for use when output done.
 		#
-		set send_qualifier \
-		    [lindex $instruction 1]
-		set name [lindex $instruction 2]
+		set name [lindex $instruction 1]
 		if { $name == "" } {
 		    set name addresses
 		}
-		if { ! [info exists scoreboard_$name] \
-						} {
+		set send_name scoreboard_$name
+		if { ! [info exists $send_name] } {
 		   set send_addresses ""
 		} else {
-		   set send_addresses \
-		       [set scoreboard_$name]
+		   set send_addresses [set $send_name]
 		}
 
 		# Set switch to indicate SEND happened.
@@ -1137,17 +1134,26 @@ proc pass2 { instructions pc end_pc update } {
 		# Send email.
 		#
 		if { $send } {
-		    set sq $send_qualifier
 		    foreach to $send_addresses {
-			if { $sq != "" } {
-			    if { [regexp {<} $to] } {
-				set to "$sq-$to"
-			    } else {
-				set to "$sq<$to>"
+			set to [string trim $to]
+		        if { [regexp {^!} $to] } {
+			    set m {^!([^<]*)<([^>]*)>$}
+			    if { ! [regexp $m $to \
+			                   forget \
+					   zzz \
+					   account] } {
+				error "Badly formatted\
+				       address in\
+				       $send_name: $to"
 			    }
+			    set f $judging_directory
+			    set f $f/${zzz}_identity
+			    ssh_copy_message \
+			        $f $account $contents
+			} else {
+			    send_message \
+			       "To: $to\n\n$contents"
 			}
-			send_message \
-			   "To: $to\n\n$contents"
 		    }
 		}
 	    } error_message] } {

@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed May  3 09:11:35 EDT 2006
+# Date:		Wed May  3 10:15:32 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/05/03 13:32:58 $
+#   $Date: 2006/05/03 14:16:06 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.194 $
+#   $Revision: 1.195 $
 
 # Table of Contents:
 #
@@ -2393,8 +2393,13 @@ proc ssh_keygen { file } {
     exec ssh-keygen -t rsa -N "" -f $file
 }
 
-# Function to call `ssh -i identity_file account < file'
-# to copy file to account.  Account must be set up in
+# Function to call
+#
+#	ssh -i identity_file account << message
+#
+# to copy the message to account.  Note that what is
+# sent is the value of the message argument, NOT the
+# contents of some file.  Account must be set up in
 # advance with a ~/.ssh/authorized_keys entry containing
 # a line equal to identity_file.pub prefixed with
 #
@@ -2402,17 +2407,20 @@ proc ssh_keygen { file } {
 #
 # where COMMAND is what would be used in
 #
-#	ssh -i identity_file account COMMAND < file
+#	ssh -i identity_file account COMMAND << message
 #
-# to receive the file (escape "'s in COMMAND with \'s).
+# to receive the message (escape "'s in COMMAND with
+# \'s).
 #
 # Note: It is necessary to suppress SSH_AUTH_SOCK while
 # executing the above, or else some other ~/.ssh/
 # authorized_keys entry may intercept the connection.
 #
-proc ssh_copy { identity_file account file } {
+proc ssh_copy_message \
+	{ identity_file account message } {
     exec sh -c "unset SSH_AUTH_SOCK;\
-                ssh -i $identity_file $account" < $file
+                ssh -i $identity_file $account" \
+	 << $message
 }
 
 # Function to compute the md5sum of a value.
