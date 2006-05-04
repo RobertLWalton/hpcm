@@ -1,6 +1,6 @@
 // Count Demo Program: JAVA Version
 //
-// File:     count1.java
+// File:     count1.java [Rename to count.java]
 // Author:   Bob Walton <walton@deas.harvard.edu>
 // Date:     Fri Nov  1 06:37:28 EST 2002
 //
@@ -11,9 +11,9 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: hc3 $
-//   $Date: 2006/04/11 14:24:44 $
+//   $Date: 2006/05/04 13:53:54 $
 //   $RCSfile: count1.java,v $
-//   $Revision: 1.5 $
+//   $Revision: 1.6 $
 
 import java.io.*;
 import java.util.StringTokenizer;
