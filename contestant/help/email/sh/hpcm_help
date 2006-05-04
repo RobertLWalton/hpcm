@@ -1,0 +1,73 @@
+#!/bin/sh
+#
+# Display help information.
+#
+# File:		hpcm_help
+# Author:	Bob Walton <walton@deas.harvard.edu>
+# Date:		Thu May  4 10:53:20 EDT 2006
+#
+# The authors have placed this program in the public
+# domain; they make no warranty and accept no liability
+# for this program.
+#
+# RCS Info (may not be true date or author):
+#
+#   $Author: hc3 $
+#   $Date: 2006/05/04 15:01:48 $
+#   $RCSfile: hpcm_help,v $
+#   $Revision: 1.1 $
+
+case "$1" in
+     -doc* )
+     		echo "
+help [topic]
+
+    Displays the help information for the given topic.
+    If the topic is not given, it defaults to \`this_
+    contest'.
+
+    This program actually displays a readable file named
+    help/topic in the contest directory, where the
+    contest directory is the current directory or the
+    first ancestor of the current directory that has the
+    HPCM_ADDRESS file."
+    		exit 1
+		;;
+esac
+
+case "$1" in
+     "")
+     		item=this_contest
+    		;;
+     *)
+		item=$1
+		;;
+esac
+
+# Look for HPCM_ADDRESS file to fine home.
+#
+if test -r HPCM_ADDRESS
+then
+    home=.
+elif test -r ../HPCM_ADDRESS
+then
+    home=..
+elif test -r ../../HPCM_ADDRESS
+then
+    home=../..
+elif test -r ../../../HPCM_ADDRESS
+then
+    home=../../..
+else
+    echo "ERROR: Cannot find HPCM_ADDRESS file"
+    exit 1
+fi
+
+if test -r $home/help/$item
+then
+    less $home/help/$item
+    exit 0
+else
+    echo cannot read $home/help/$item
+    exit 1
+fi
