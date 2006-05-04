@@ -4,7 +4,7 @@
 #
 # File:		hpcm_get
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Sat Mar  9 16:57:43 EST 2002
+# Date:		Thu May  4 07:39:05 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/03/09 21:59:03 $
+#   $Date: 2006/05/04 13:47:15 $
 #   $RCSfile: hpcm_get,v $
-#   $Revision: 1.10 $
+#   $Revision: 1.11 $
 
 # If this is not bash and bash is available, switch to
 # using bash.  Note that `which bash` may output a
@@ -42,23 +42,28 @@ case "$1" in
 	    echo "
 hpcm_get [-force] [name ...]
 
-    When used without a name, gets all help and demos
-    files.
+    When used without a name, gets all help, demos, and
+    problems files.
 
     When used with a name, gets the named files or
     directories.  Getting a directory recursively gets
     the contents of that directory.
 
-    Everything gotten is installed in the \`contest
-    home' directory.  This directory is found by sear-
-    ching the current directory and its ancestors for
-    the first directory to contain a readable HPCM_
-    ADDRESS file.
+    Everything gotten should be installed in the
+    \`contest home' directory which contains the HPCM_
+    ADDRESS file.  This is done automatically if you
+    have included help/sh/procmailrc in your
+    ~/.procmailrc file (see the email_unix_tools help
+    file), and your mailer uses procmail to deliver
+    mail.  Otherwise you need to copy the return
+    message into a file and input that file to hpcm_
+    extract while the current directory is the contest
+    home directory or one of its descendants.
 
     So for example,
     			hpcm_get demos
 
-    gets files named \`demos/...' and puts them in the
+    gets files named \`demos/...' to be put in the
     directory ../../demos if ../.. is the contest home
     directory because it contains a readable HPCM_
     ADDRESS file while . and .. do not.
@@ -67,17 +72,7 @@ hpcm_get [-force] [name ...]
     get things that seem to be already gotten.  With
     -force, it will get them anyway, which is useful
     if the version gotten is more recent or more
-    complete than what was previously gotten.
-
-    Files are gotten by sending email requests and get-
-    ting email replies.  If the hpcm_extract program is
-    called automatically for the replies (say because
-    it is invoked by .procmailrc), the gotten files are
-    automatically installed within the contest home
-    directory.  Otherwise the files in the reply mail
-    must be manually extracted, and hpcm_get assumes
-    these files will be extracted into the contest home
-    directory."
+    complete than what was previously gotten."
 
     	    exit 1
 	    ;;
@@ -107,7 +102,7 @@ fi
 #
 if test "${*:+yes}" = ""
 then
-    names="help demos"
+    names="help demos problems"
 else
     names="$*"
 fi
