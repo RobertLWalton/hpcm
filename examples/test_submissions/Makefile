@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Aug  1 01:05:52 EDT 2002
+# Date:		Thu May  4 08:52:44 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/08/01 05:14:30 $
+#   $Date: 2006/05/04 13:12:00 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.5 $
+#   $Revision: 1.6 $
 
 # This Makefile is to be used to test HPCM from a
 # contestant account.  Instructions are:
@@ -28,10 +28,13 @@
 #    of:
 #
 #	make test_email
+#	make test_untimed
 #	make test_informal
 #	make test_formal
 #
-#    according to the type of contest.
+#    Use test_email for if you have your own personal
+#    account, and otherwise use the test corresponding
+#    to the type of contest.
 #
 # 3. Wait for the autojudge to return a reply to all
 #    the submissions caused by the last step.  Wait
@@ -59,9 +62,11 @@
 all:
 	@echo "Use one of:"
 	@echo "    make test_email"
+	@echo "    make test_untimed"
 	@echo "    make test_informal"
 	@echo "    make test_formal"
-	@echo "according to the contest type."
+	@echo "according to account type" \
+	      "and the contest type."
 
 .SUFFIXES:
 .SUFFIXES:	.mail .send

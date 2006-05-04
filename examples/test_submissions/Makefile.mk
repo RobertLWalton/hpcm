@@ -2,7 +2,7 @@
 #
 # File:		Makefile.mk
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Oct 30 12:47:33 EST 2005
+# Date:		Thu May  4 09:13:10 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/10/30 17:50:46 $
+#   $Date: 2006/05/04 13:13:00 $
 #   $RCSfile: Makefile.mk,v $
-#   $Revision: 1.33 $
+#   $Revision: 1.34 $
 
 extract_replies:	mbox
 	rm -rf replies
@@ -80,6 +80,8 @@ test_formal:	test_count_correct \
 		test_system_error \
 		test_query \
 		test_problem_name
+
+test_untimed:	test_formal
 
 test_count_correct:	${TEST_PREREQUISITES} \
 	$S/count_correct.c.send \
