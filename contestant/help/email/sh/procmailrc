@@ -2,7 +2,7 @@
 #
 # File:		procmailrc
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Thu Oct 31 06:17:27 EST 2002
+# Date:		Fri May  5 14:51:21 EDT 2006
 #
 # The authors have placed this file in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 # 
 #     $Author: hc3 $
-#     $Date: 2002/10/31 11:17:47 $
+#     $Date: 2006/05/05 18:59:57 $
 #     $RCSfile: procmailrc,v $
-#     $Revision: 1.10 $
+#     $Revision: 1.11 $
 
 # You should edit this file by first setting the
 # following parameters properly, and then editing
@@ -23,27 +23,23 @@
 # Additions to your path that you need to run:
 #
 #    The files in ONE of your contest home directory's	
-#    `help/sh' or `help/tcl' subdirectories.
+#    `help/sh' subdirectories.
 #
-#    The `bash' or `tclsh' programs, if necessary.
+#    The `bash' program, if necessary.
 #
 # Include a `:' after EACH added path directory.
 #
 # Note: If you get this PATH wrong, hpcm_extract will
 # fail without any any error messages.
 #
-# Your path needs only to run hpcm_extract, so you
-# do not need both `help/sh' and `help/tcl' HERE.
-#
 # Note: Don't assume the example values given below
 # will work for you.
-
-HPCM_PATH="$HOME/hpcm/practice/help/sh:"
-HPCM_PATH="/deas/arch/gnu/bin/:$HPCM_PATH"
+#
+HPCM_PATH="$HOME/bospre-facility/help/sh:"
 
 # End of editable parameters.  Proceed to `CONTINUE
 # EDITING' below.
-
+#
 # Be sure we are using a valid shell.
 #
 SHELL=/bin/sh
@@ -85,30 +81,12 @@ SHELL=/bin/sh
   # will work for you.
 
   :0 B
-  * $${BEFORE}practice${AFTER}
+  * $${BEFORE}bospre-facility${AFTER}
   {
-      HPCM_HOME=$HOME/hpcm/practice
+      HPCM_HOME=$HOME/bospre-facility
   }
 
-  :0 B
-  * $${BEFORE}maze${AFTER}
-  {
-      HPCM_HOME=$HOME/hpcm/maze
-  }
-
-  :0 B
-  * $${BEFORE}dynamic${AFTER}
-  {
-      HPCM_HOME=$HOME/hpcm/dynamic
-  }
-
-  :0 B
-  * $${BEFORE}geometry${AFTER}
-  {
-      HPCM_HOME=$HOME/hpcm/geometry
-  }
-
-  # End of CONTINUE EDITING.  Your are now done editing
+  # End of CONTINUE EDITING.  You are now done editing
   # this file.
 
   # Pipe the reply through hpcm_extract and send the
@@ -118,9 +96,9 @@ SHELL=/bin/sh
   # `which hpcm_extract' and `which bash'.
   #
   :0 c: $HPCM_HOME/get_mbox$LOCKEXT
-  | PATH="$HPCM_PATH:$PATH" \
+  | PATH="$HPCM_PATH$PATH" \
 	hpcm_extract $HPCM_HOME 2>&1 \
-	    | procmail -m .procmailrc
+	    | $SENDMAIL $SENDMAILFLAGS -t
 
   # Save the same reply in $HPCM_HOME/get_mbox.  Its
   # rare to want to see the reply itself, but this saves
