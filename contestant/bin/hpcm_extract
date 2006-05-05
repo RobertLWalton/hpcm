@@ -4,7 +4,7 @@
 #
 # File:		hpcm_extract
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Tue Apr  1 05:31:46 EST 2003
+# Date:		Fri May  5 14:07:59 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2003/04/01 10:30:07 $
+#   $Date: 2006/05/05 19:35:12 $
 #   $RCSfile: hpcm_extract,v $
-#   $Revision: 1.17 $
+#   $Revision: 1.18 $
 
 # If this is not bash and bash is available, switch
 # to using bash.  Note that `which bash` may output
@@ -215,8 +215,6 @@ REPLY="---<>--<>---<>--<>---<>----- end of files"
 	    # message containing the output of hpcm_
 	    # extract.
 	    #
-	    if test "$From" != ""
-	    then echo "$From"; fi
 	    if test "$from" != ""
 	    then echo "$from"; fi
 	    if test "$date" != ""
@@ -225,6 +223,11 @@ REPLY="---<>--<>---<>--<>---<>----- end of files"
 	    then echo "$subject"; fi
 	    echo "X-HPCM-Subject:" \
 		 "output of hpcm_extract"
+	    echo ""
+	    echo "Output of: hpcm_extract $home"
+	    if test "$From" != ""
+	    then echo "Input $From"; fi
+	    echo "In directory $home"
 	    echo ""
 	    mode=look
 	    has_errors=no
@@ -302,8 +305,7 @@ REPLY="---<>--<>---<>--<>---<>----- end of files"
 		echo ""
 		has_errors=yes
 	    else
-		echo "\`$file' matched existing" \
-	             "\`$home/$file'."
+		echo "\`$file' matched existing file."
 	    fi
 	    mode=look
 	    ;;
@@ -413,11 +415,11 @@ REPLY="---<>--<>---<>--<>---<>----- end of files"
 		then do_nothing=
 		elif mkdir "$home/$dir"
 		then
-		    echo "\`$home/$dir' made" \
+		    echo "\`$dir' made" \
 		         "successfully."
 		else
 		    echo "ERROR: could not make" \
-		         "\`$home/$dir'."
+		         "\`$dir'."
 		    has_errors=yes
 		    break
 		fi
@@ -431,7 +433,7 @@ REPLY="---<>--<>---<>--<>---<>----- end of files"
 		    diff=no
 		else
 		    echo "ERROR: could not read" \
-		         "\`$home/$file'."
+		         "\`$file'."
 		    has_errors=yes
 		    mode=skip
 		fi
@@ -442,13 +444,13 @@ REPLY="---<>--<>---<>--<>---<>----- end of files"
 		    mode=extract
 		else
 		    echo "ERROR: could not write" \
-		         "\`$home/$file'."
+		         "\`$file'."
 		    has_errors=yes
 		    mode=skip
 		fi
 	    else
 		echo "ERROR: unreadable" \
-		     "\`$home/$file' already exists."
+		     "\`$file' already exists."
 		mode=skip
 		has_errors=yes
 	    fi
