@@ -2,7 +2,7 @@
  *
  * File:	hpcm_sandbox.c
  * Authors:	Bob Walton (walton@deas.harvard.edu)
- * Date:	Mon Oct 10 10:23:44 EDT 2005
+ * Date:	Fri May  5 13:01:12 EDT 2006
  *
  * The authors have placed this program in the public
  * domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
  * RCS Info (may not be true date or author):
  *
  *   $Author: hc3 $
- *   $Date: 2005/10/10 15:23:00 $
+ *   $Date: 2006/05/05 17:10:53 $
  *   $RCSfile: hpcm_sandbox.c,v $
- *   $Revision: 1.15 $
+ *   $Revision: 1.16 $
  */
 
 #include <stdlib.h>
@@ -38,6 +38,8 @@ char documentation [] =
 "    options that set resource limits:\n"
 "\n"
 "      -cputime N     Cpu Time in Seconds (600)\n"
+"      -space N       Virtual Address Space Size,\n"
+"                     in Bytes (8m)\n"
 "      -datasize N    Data Area Size in Bytes (4m)\n"
 "      -stacksize N   Stack Size in Bytes (4m)\n"
 "      -filesize N    Output File Size in Bytes (4m)\n"
@@ -115,6 +117,7 @@ int main ( int argc, char ** argv )
     /* Options with default values. */
 
     int cputime = 600;
+    int space = 8 * 1024 * 1024;
     int datasize = 4 * 1024 * 1024;
     int stacksize = 4 * 1024 * 1024;
     int filesize = 4 * 1024 * 1024;
@@ -150,6 +153,9 @@ int main ( int argc, char ** argv )
         else if ( strcmp ( argv[index], "-cputime" )
 	     == 0 )
 	    option = & cputime;
+        else if ( strcmp ( argv[index], "-space" )
+	     == 0 )
+	    option = & space;
         else if ( strcmp ( argv[index], "-datasize" )
 	     == 0 )
 	    option = & datasize;
@@ -406,6 +412,14 @@ int main ( int argc, char ** argv )
         if ( setrlimit ( RLIMIT_CPU, & limit ) < 0 )
 	    errno_exit
 	        ( "setrlimit RLIMIT_CPU" );
+
+#	ifdef RLIMIT_AS
+	limit.rlim_cur = space;
+	limit.rlim_max = space;
+        if ( setrlimit ( RLIMIT_AS, & limit ) < 0 )
+	    errno_exit
+	        ( "setrlimit RLIMIT_AS" );
+#	endif
 
 	limit.rlim_cur = datasize;
 	limit.rlim_max = datasize;
