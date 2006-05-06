@@ -2,7 +2,7 @@
  *
  * File:	hpcm_sandbox.c
  * Authors:	Bob Walton (walton@deas.harvard.edu)
- * Date:	Fri May  5 13:01:12 EDT 2006
+ * Date:	Fri May  5 23:28:35 EDT 2006
  *
  * The authors have placed this program in the public
  * domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
  * RCS Info (may not be true date or author):
  *
  *   $Author: hc3 $
- *   $Date: 2006/05/05 17:10:53 $
+ *   $Date: 2006/05/06 03:45:07 $
  *   $RCSfile: hpcm_sandbox.c,v $
- *   $Revision: 1.16 $
+ *   $Revision: 1.17 $
  */
 
 #include <stdlib.h>
@@ -52,29 +52,47 @@ char documentation [] =
 "    to multiply it by 1024 * 1024.  The values above\n"
 "    in parentheses are the default values.\n"
 "\n"
-"    There is also another possible option:\n"
+"    There are also two other options.  First, with\n"
+"    the\n"
 "\n"
 "      -watch\n"
 "\n"
-"    With this option, this program forks with the\n"
-"    parent waiting for the child to complete the\n"
-"    the rest of this program's action.  If the\n"
-"    child terminates with a signal, the parent\n"
-"    prints an error message identifying the signal.\n"
-"    It does this using strsignal(3) after changing\n"
-"    SIGKILL with measured CPU time over the limit to\n"
-"    SIGXCPU.  The parent returns a 0 exit code if\n"
-"    the child does not terminate with a signal, and\n"
-"    returns 128 + the possibly changed signal number\n"
-"    as an exit code if the child does terminate with\n"
-"    a signal.\n"
+"    option, this program forks and the parent waits\n"
+"    for the child to complete the rest of this pro-\n"
+"    gram's action.  If the child terminates with a\n"
+"    signal, the parent prints an error message iden-\n"
+"    tifying the signal.  It uses strsignal(3) to do\n"
+"    this after changing SIGKILL with measured CPU\n"
+"    time over the limit to SIGXCPU.  The parent re-\n"
+"    turns a 0 exit code if the child does not termi-\n"
+"    nate with a signal, and returns 128 + the pos-\n"
+"    sibly changed signal number as an exit code if\n"
+"    the child does terminate with a signal.\n"
+"\f\n"
+"    Alternatively, with the\n"
 "\n"
-"    Next, if this program's effective user ID is\n"
+"      -tee FILE\n"
+"\n"
+"    option, the program does the same thing as with\n"
+"    the -watch option, but in addition pipes the\n"
+"    standard output of the child back through the\n"
+"    parent, where it is copied into the FILE and\n"
+"    also copied to the standard output, just like\n"
+"    the UNIX tee(1) command.  However, unlike\n"
+"    tee(1), if the filesize is exceeded for the\n"
+"    standard output, a SIGXFSZ signal is sent to\n"
+"    the child.\n"
+"\n"
+"    The rest of this program, which runs as the\n"
+"    child with a -watch or -tee option, or as the\n"
+"    program proper otherwise, does the following.\n"
+"\n"
+"    First, if this program's effective user ID is\n"
 "    `root', this program eliminates any supplemen-\n"
 "    tary groups that the process might have, and\n"
 "    changes the effective user and group IDs to\n"
 "    those of `sandbox', as looked up in /etc/passwd.\n"
-"\f\n"
+"\n"
 "    Then this program sets the real user and group\n"
 "    IDs to the effective user and group IDs, sets\n"
 "    the resource limits determined by the options\n"
@@ -90,7 +108,7 @@ char documentation [] =
 "    space, tab, new line, form feed, vertical tab,\n"
 "    and backslash, respectively.  `\\ ', which de-\n"
 "    notes a single space, does not separate strings.\n"
-"\n"
+"\f\n"
 "    Normally the `sandbox' user is not allowed to\n"
 "    log in and owns no useful files or directories.\n"
 "\n"
