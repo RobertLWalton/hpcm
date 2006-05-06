@@ -2,7 +2,7 @@
  *
  * File:	hpcm_sandbox.c
  * Authors:	Bob Walton (walton@deas.harvard.edu)
- * Date:	Fri May  5 23:46:22 EDT 2006
+ * Date:	Sat May  6 01:14:37 EDT 2006
  *
  * The authors have placed this program in the public
  * domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
  * RCS Info (may not be true date or author):
  *
  *   $Author: hc3 $
- *   $Date: 2006/05/06 05:07:38 $
+ *   $Date: 2006/05/06 05:36:47 $
  *   $RCSfile: hpcm_sandbox.c,v $
- *   $Revision: 1.18 $
+ *   $Revision: 1.19 $
  */
 
 #include <stdlib.h>
@@ -40,7 +40,7 @@ char documentation [] =
 "\n"
 "      -cputime N     Cpu Time in Seconds (600)\n"
 "      -space N       Virtual Address Space Size,\n"
-"                     in Bytes (8m)\n"
+"                     in Bytes (512m)\n"
 "      -datasize N    Data Area Size in Bytes (4m)\n"
 "      -stacksize N   Stack Size in Bytes (4m)\n"
 "      -filesize N    Output File Size in Bytes (4m)\n"
@@ -136,7 +136,7 @@ int main ( int argc, char ** argv )
     /* Options with default values. */
 
     int cputime = 600;
-    int space = 8 * 1024 * 1024;
+    int space = 512 * 1024 * 1024;
     int datasize = 4 * 1024 * 1024;
     int stacksize = 4 * 1024 * 1024;
     int filesize = 4 * 1024 * 1024;
