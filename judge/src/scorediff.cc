@@ -2,7 +2,7 @@
 //
 // File:	scorediff.cc
 // Authors:	Bob Walton (walton@deas.harvard.edu)
-// Date:	Sat May  6 12:47:35 EDT 2006
+// Date:	Sat May  6 12:58:58 EDT 2006
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: hc3 $
-//   $Date: 2006/05/06 16:47:43 $
+//   $Date: 2006/05/06 16:58:13 $
 //   $RCSfile: scorediff.cc,v $
-//   $Revision: 1.80 $
+//   $Revision: 1.81 $
 
 // This is version 2, a major revision of the first
 // scorediff program.  This version is more explicitly
@@ -854,7 +854,6 @@ void scan_token ( file & f )
 
 	if ( wp >= endwp ) whitespace_too_long ( f );
 	* wp ++ = c;
-	* wp = 0;
 
         if ( c == '\n' ) {
 	    column = -1;
@@ -868,12 +867,14 @@ void scan_token ( file & f )
 				zero_proof_lines();
 				f.column = column;
 				f.boc_next = true;
+				* wp = 0;
 				if ( debug )
 				    debug_output ( f );
 				return;
 		case '-':	++ f.case_number;
 				f.type = BOC_TOKEN;
 				f.column = column;
+				* wp = 0;
 				if ( debug )
 				    debug_output ( f );
 				return;
@@ -882,6 +883,7 @@ void scan_token ( file & f )
 				f.type = BOG_TOKEN;
 				zero_proof_lines();
 				f.column = column;
+				* wp = 0;
 				if ( debug )
 				    debug_output ( f );
 				return;
@@ -909,6 +911,8 @@ void scan_token ( file & f )
 
     // Come here then c is the first character of the
     // token.
+
+    * wp = 0;
 
     if ( c == EOF ) {
     	f.type = EOF_TOKEN;
