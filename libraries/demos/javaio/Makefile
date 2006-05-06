@@ -1,7 +1,7 @@
 # Makefile for JAVA IO Demo
 #
 # File:		Makefile
-# Date:		Thu Apr 27 05:28:27 EDT 2006
+# Date:		Sat May  6 01:27:00 EDT 2006
 #
 # See demonstration Makefile for documentation.
 #
@@ -47,10 +47,9 @@ $P.out:	$P $P.in
 	             -datasize 4m \
 		     -stacksize 4m \
 		     -filesize 50k \
-		     -watch \
+		     -tee $P.out \
 		     $P \
-	    <$P.in | \
-	    tee $P.out
+	    <$P.in
 
 $P.debug:	$P $P.in
 	rm -f $P.debug core core.[0-9]*
@@ -58,11 +57,10 @@ $P.debug:	$P $P.in
 	hpcm_sandbox -cputime 60 \
 	             -datasize 4m \
 		     -stacksize 4m \
-		     -filesize 50k \
-		     -watch \
+		     -filesize 4m \
+		     -tee $P.debug \
 		     $P debug \
-	    <$P.in | \
-	    tee $P.debug
+	    <$P.in
 
 debug:		$P.debug
 
@@ -93,6 +91,6 @@ clean:
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/05/06 05:24:27 $
+#   $Date: 2006/05/06 05:28:40 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.2 $
+#   $Revision: 1.3 $
