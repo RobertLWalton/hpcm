@@ -2,7 +2,7 @@
  *
  * File:	hpcm_sandbox.c
  * Authors:	Bob Walton (walton@deas.harvard.edu)
- * Date:	Fri May  5 23:28:35 EDT 2006
+ * Date:	Fri May  5 23:46:22 EDT 2006
  *
  * The authors have placed this program in the public
  * domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
  * RCS Info (may not be true date or author):
  *
  *   $Author: hc3 $
- *   $Date: 2006/05/06 03:45:07 $
+ *   $Date: 2006/05/06 05:07:38 $
  *   $RCSfile: hpcm_sandbox.c,v $
- *   $Revision: 1.17 $
+ *   $Revision: 1.18 $
  */
 
 #include <stdlib.h>
@@ -28,6 +28,7 @@
 #include <sys/wait.h>
 #include <sys/param.h>
 #include <sys/signal.h>
+#include <fcntl.h>
 #include <errno.h>
 #include <pwd.h>
 
@@ -143,7 +144,8 @@ int main ( int argc, char ** argv )
     int openfiles = 30;
     int processes = 50;
     int watch = 0;
-
+    int tee = 0;
+    const char * file = NULL;
 
     /* Effective IDs of this process after change
        from `root' to `sandbox' */
@@ -166,6 +168,21 @@ int main ( int argc, char ** argv )
 	{
 	    watch = 1;
 	    ++ index;
+	    continue;
+	}
+        else if ( strcmp ( argv[index], "-tee" )
+	     == 0 )
+	{
+	    tee = 1;
+	    ++ index;
+	    if ( index >= argc )
+	    {
+		fprintf ( stderr,
+			  "hpcm_sandbox: Too few"
+			  " arguments\n" );
+		exit (1);
+	    }
+	    file = argv[index++];
 	    continue;
 	}
         else if ( strcmp ( argv[index], "-cputime" )
@@ -279,20 +296,106 @@ int main ( int argc, char ** argv )
 	exit ( 1 );
     }
 
-    /* If -watch, start child and watch it. */
+    /* If -watch or -tee, start child and watch it. */
 
-    if ( watch )
+    if ( watch || tee )
     {
-	pid_t child = fork ();
+	pid_t child;	    /* child ID */
+	int out_pipe[2];    /* stdout pipe */
+        int tee_fd;	    /* Tee file descriptor. */
+
+        if ( tee )
+	{
+	    tee_fd =
+	        open ( file, O_WRONLY|O_CREAT|O_TRUNC,
+			     0666 );
+	    if ( tee_fd < 0 )
+	        errno_exit ( "opening -tee file" );
+	    if ( pipe ( out_pipe ) < 0 )
+	        errno_exit ( "pipe" );
+	}
+	child = fork ();
 
 	if ( child < 0 )
 	    errno_exit ( "fork" );
 
-	if ( child != 0 )
+	if ( child == 0 )
+	{
+	    /* Child executes this. */
+
+	    if ( tee )
+	    {
+	        if ( close ( out_pipe[0] ) < 0 )
+		    errno_exit
+		        ( "out pipe child close" );
+		if ( dup2 ( out_pipe[1], 1 ) < 0 )
+		    errno_exit
+		        ( "out child dup2" );
+		{
+		    int fd;
+		    int max_fd = getdtablesize ();
+
+		    if ( max_fd < 0 ) max_fd = 256;
+
+		    for ( fd = 3; fd < max_fd; ++ fd )
+			close ( fd );
+		}
+	    }
+
+	    /* Child now falls through to code that
+	       executes with or without -watch or -tee.
+	    */
+	}
+	else
 	{
 	    /* Parent executes this. */
 
 	    int status;
+
+	    if ( tee )
+	    {
+		int outsize = 0;
+		int sigxfsz_sent = 0;
+
+	        if ( close ( out_pipe[1] ) < 0 )
+		    errno_exit
+		        ( "out pipe parent close" );
+
+		while ( 1 )
+		{
+		    char buffer[256];
+		    int c = read ( out_pipe[0],
+			           buffer, 256 );
+		    if ( c < 0 && errno == EINTR )
+		        continue;
+		    else if ( c <= 0 ) break;
+
+		    outsize += c;
+		    if ( outsize > filesize )
+		        c -= ( outsize - filesize );
+		    if ( c > 0 )
+		    {
+			if (   write ( 1, buffer, c )
+			     < 0 )
+			    errno_exit
+				( "parent stdout"
+				  " write" );
+			if (   write ( tee_fd,
+			               buffer, c )
+			     < 0 )
+			    errno_exit
+				( "parent tee file"
+				  " write" );
+		    }
+		    if (    outsize > filesize
+		         && ! sigxfsz_sent )
+		    {
+			sigxfsz_sent = 1;
+			kill ( child, SIGXFSZ );
+		    }
+		}
+		close ( tee_fd );
+	    }
 
 	    if ( wait ( & status ) < 0 )
 		errno_exit ( "wait" );
