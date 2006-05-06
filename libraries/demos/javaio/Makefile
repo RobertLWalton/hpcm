@@ -1,7 +1,7 @@
 # Makefile for JAVA IO Demo
 #
 # File:		Makefile
-# Date:		Fri Nov  1 02:34:42 EST 2002
+# Date:		Thu Apr 27 05:28:27 EDT 2006
 #
 # See demonstration Makefile for documentation.
 #
@@ -10,42 +10,38 @@
 P = javaio
 
 .SUFFIXES:
-.SUFFIXES: .c .cc .java .p .lsp
+.SUFFIXES: .c .cc .java .lsp
 
 default:	$P.out
 
 .c:
-	rm -f $* core
+	rm -f $* core core.[0-9]*
 	gcc -g -o $* $*.c -lm
 
 .cc:
-	rm -f $* core
+	rm -f $* core core.[0-9]*
 	g++ -g -o $* $*.cc -lm
 
-.p:
-	rm -f $* $*.p2c core
-	p2c -o $*.p2c $*.p
-	gcc -g -o $* -x c $*.p2c -lp2c -lm
-
 .java:
-	rm -f $* *.class core
+	rm -f $* *.class core core.[0-9]*
 	javac -g $*.java
 	echo >$* '#!/bin/sh'
-	echo >>$* "exec `which java` $*"
+	echo >>$* "exec `which java` $* \$$*"
 	chmod a+r *.class
 	chmod a+rx $*
 
 #
 .lsp:
-	rm -f $* $*.fas $*.lib core
+	rm -f $* $*.fas $*.lib core core.[0-9]*
 	hpcm_clisp -c $*.lsp
 	echo >$* '#!/bin/sh'
-	echo >>$* "exec `hpcm_clisp -which` -I $*.fas"
+	echo >>$* \
+	    "exec `hpcm_clisp -which` -I $*.fas \$$*"
 	chmod a+r $*.fas
 	chmod a+rx $*
 
 $P.out:	$P $P.in
-	rm -f $P.out core
+	rm -f $P.out core core.[0-9]*
 	chmod a+x . $P
 	hpcm_sandbox -cputime 60 \
 	             -datasize 4m \
@@ -53,20 +49,39 @@ $P.out:	$P $P.in
 		     -filesize 50k \
 		     -watch \
 		     $P \
-	    <$P.in >$P.out
-	@echo ""
-	@echo "========== OUTPUT ($P.out)" \
-	      "=========="
-	@cat $P.out
-	@echo "============== END OUTPUT =============="
+	    <$P.in | \
+	    tee $P.out
+
+$P.debug:	$P $P.in
+	rm -f $P.debug core core.[0-9]*
+	chmod a+x . $P
+	hpcm_sandbox -cputime 60 \
+	             -datasize 4m \
+		     -stacksize 4m \
+		     -filesize 50k \
+		     -watch \
+		     $P debug \
+	    <$P.in | \
+	    tee $P.debug
+
+debug:		$P.debug
 
 submit:		$P.out
 	hpcm_submit $P
 
-clean:
-	rm -f $P *.class $P.p2c core $P.out \
-	      $P.fas $P.lib
+in-submit:	$P.out
+	hpcm_submit -in $P
 
+inout-submit:	$P.out
+	hpcm_submit -inout $P
+
+solution-submit:	$P.out
+	hpcm_submit -solution $P
+
+clean:
+	rm -f $P *.class core core.[0-9]* \
+	      *.out *.debug *.fout *.jout *.jfout \
+	      $P.fas $P.lib make_$P_*input
 
 #
 # Author:	walton@deas.harvard.edu
@@ -78,6 +93,6 @@ clean:
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2002/11/01 09:12:45 $
+#   $Date: 2006/05/06 05:24:27 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.1 $
+#   $Revision: 1.2 $
