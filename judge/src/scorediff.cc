@@ -2,7 +2,7 @@
 //
 // File:	scorediff.cc
 // Authors:	Bob Walton (walton@deas.harvard.edu)
-// Date:	Sat May  6 10:45:49 EDT 2006
+// Date:	Sat May  6 12:47:35 EDT 2006
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: hc3 $
-//   $Date: 2006/05/06 14:47:51 $
+//   $Date: 2006/05/06 16:47:43 $
 //   $RCSfile: scorediff.cc,v $
-//   $Revision: 1.79 $
+//   $Revision: 1.80 $
 
 // This is version 2, a major revision of the first
 // scorediff program.  This version is more explicitly
@@ -852,8 +852,9 @@ void scan_token ( file & f )
 
     while ( isspace ( c ) ) {
 
-	if ( wp < endwp ) * wp ++ = c;
-	else whitespace_too_long ( f );
+	if ( wp >= endwp ) whitespace_too_long ( f );
+	* wp ++ = c;
+	* wp = 0;
 
         if ( c == '\n' ) {
 	    column = -1;
@@ -905,8 +906,6 @@ void scan_token ( file & f )
 	c = get_character ( f );
 	++ column;
     }
-
-    * wp = 0;
 
     // Come here then c is the first character of the
     // token.
