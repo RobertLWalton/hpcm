@@ -1,16 +1,16 @@
-From walton@walton2.walton  Sun Oct 30 12:28:10 2005
-Return-Path: <walton@walton2.walton>
-Received: from walton2.walton (localhost.localdomain [127.0.0.1])
-	by walton2.walton (8.12.8/8.12.8) with ESMTP id j9UHSAHK023802
-	for <walton@walton2.walton>; Sun, 30 Oct 2005 12:28:10 -0500
-Received: (from walton@localhost)
-	by walton2.walton (8.12.8/8.12.8/Submit) id j9UHSARv023800;
-	Sun, 30 Oct 2005 12:28:10 -0500
-Date: Sun, 30 Oct 2005 12:28:10 -0500
-From: "Robert L. Walton" <walton@walton2.walton>
-Message-Id: <200510301728.j9UHSARv023800@walton2.walton>
-To: "Robert L. Walton" <walton@walton2.walton>
-Reply-To: email_contest<walton@walton2.walton>
+From hc3-autojudge@method1.deas.harvard.edu  Sat May  6 11:07:02 2006
+Return-Path: <hc3-autojudge@method1.deas.harvard.edu>
+Received: from method1.deas.harvard.edu (localhost.localdomain [127.0.0.1])
+	by method1.deas.harvard.edu (8.13.1/8.13.1) with ESMTP id k46F72H1012529
+	for <hc3-autojudge@method1.deas.harvard.edu>; Sat, 6 May 2006 11:07:02 -0400
+Received: (from hc3-autojudge@localhost)
+	by method1.deas.harvard.edu (8.13.1/8.13.1/Submit) id k46F72ml012502;
+	Sat, 6 May 2006 11:07:02 -0400
+Date: Sat, 6 May 2006 11:07:02 -0400
+From: hc3-autojudge@method1.deas.harvard.edu
+Message-Id: <200605061507.k46F72ml012502@method1.deas.harvard.edu>
+To: hc3-autojudge@method1.deas.harvard.edu
+Reply-To: bospre-facility<hc3-autojudge@method1.deas.harvard.edu>
 Subject: RE: get demos/count
 X-HPCM-Test-Subject: get_count:
 	there should be no separate error message
@@ -23,9 +23,9 @@ The following requested files appear below after the request message header:
 
 
 ----------------------------------------------- this message replies to:
-To: email_contest<walton@walton2.walton>
-From: "Robert L. Walton" <walton@walton2.walton>
-Date: Sun, 30 Oct 2005 12:28:09 -0500
+To: bospre-facility<hc3-autojudge@method1.deas.harvard.edu>
+From: hc3-autojudge@method1.deas.harvard.edu
+Date: Sat, 6 May 2006 11:06:52 -0400
 Subject: get demos/count
 ------------------------------------------------------------------------
 
@@ -34,7 +34,7 @@ Subject: get demos/count
 # Makefile for the `count' Demonstration Problem
 #
 # File:		Makefile
-# Date:		Tue Oct  4 21:27:36 EDT 2005
+# Date:		Sat May  6 01:19:58 EDT 2006
 #
 # Exactly ONE of the four files count.c (C), count.cc
 # (C++), count.java (Java), or count.lsp (Commonlisp)
@@ -60,15 +60,24 @@ Subject: get demos/count
 #			count.lsp.
 #
 #	make count.out	Makes `count' as above and
-#			then runs it with standard
-#			input coming from the file
-#			count.in.  Puts the standard
-#			output in the file count.out,
-#			and then copies that to the
-#			screen.  Does nothing, however,
-#			if count.out is more recent
-#			than both count.in and count.
-#			
+#			then runs it with no arguments
+#			and with the standard input
+#			coming from the file count.in.
+#			Puts the standard output in the
+#			file count.out, and then copies
+#			that to the screen.  Does noth-
+#			ing, however, if count.out is
+#			more recent than both count.in
+#			and count.
+#
+#	make count.debug  Ditto but runs `count debug'
+#			(with the one argument `debug')
+#			instead of `count' and puts the
+#			output in count.debug instead
+#			of count.out.
+#
+#	make debug	Same as `make count.debug'.
+#			
 #	make submit	Makes `count.out' just to be
 #			sure that nothing crashes, and
 #			then e-mails count.c, count.cc,
@@ -106,26 +115,27 @@ Subject: get demos/count
 default:	count.out
 
 .c:
-	rm -f $* core
+	rm -f $* core core.[0-9]*
 	gcc -g -o $* $*.c -lm
 
 .cc:
-	rm -f $* core
+	rm -f $* core core.[0-9]*
 	g++ -g -o $* $*.cc -lm
 
 .java:
-	rm -f $* *.class core
+	rm -f $* *.class core core.[0-9]*
 	javac -g $*.java
 	echo >$* '#!/bin/sh'
-	echo >>$* "exec `which java` $*"
+	echo >>$* "exec `which java` $* \$$*"
 	chmod a+r *.class
 	chmod a+rx $*
 
 .lsp:
-	rm -f $* $*.fas $*.lib core
+	rm -f $* $*.fas $*.lib core core.[0-9]*
 	hpcm_clisp -c $*.lsp
 	echo >$* '#!/bin/sh'
-	echo >>$* "exec `hpcm_clisp -which` -I $*.fas"
+	echo >>$* \
+	    "exec `hpcm_clisp -which` -I $*.fas \$$*"
 	chmod a+r $*.fas
 	chmod a+rx $*
 #
@@ -136,21 +146,29 @@ default:	count.out
 # hpcm_clisp program that can be run in the sandbox.
 
 count.out:	count count.in
-	rm -f count.out core
+	rm -f count.out core core.[0-9]*
 	chmod a+x . count
 	hpcm_sandbox -cputime 60 \
 	             -datasize 4m \
 		     -stacksize 4m \
 		     -filesize 50k \
-		     -watch \
+		     -tee count.out \
 		     count \
-	    <count.in >count.out
-	@echo ""
-	@echo "========== OUTPUT (count.out)" \
-	      "=========="
-	@cat count.out
-	@echo "============== END OUTPUT =============="
+	    <count.in
 
+count.debug:	count count.in
+	rm -f count.debug core core.[0-9]*
+	chmod a+x . count
+	hpcm_sandbox -cputime 60 \
+	             -datasize 4m \
+		     -stacksize 4m \
+		     -filesize 4m \
+		     -tee count.debug \
+		     count debug \
+	    <count.in 
+
+#
+debug:	count.debug
 
 submit:		count.out
 	hpcm_submit count
@@ -165,9 +183,11 @@ solution-submit:	count.out
 	hpcm_submit -solution count
 
 clean:
-	rm -f count *.class core count.out \
-	      count.fas count.lib count.jout
-#
+	rm -f count *.class core core.[0-9]* \
+	      count.out count.debug count.jout \
+	      count.fas count.lib
+
+
 # Author:	walton@deas.harvard.edu
 #
 # The authors have placed this file in the public
@@ -177,11 +197,11 @@ clean:
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2005/10/30 17:50:46 $
+#   $Date: 2006/05/06 15:15:53 $
 #   $RCSfile: get_count.reply,v $
-#   $Revision: 1.14 $
+#   $Revision: 1.15 $
 ---<>--<>---<>--<>---<>----- demos/count/README:
-Count Demo README	    Fri Oct  7 08:17:56 EDT 2005
+Count Demo README	    Fri Apr 14 10:28:05 EDT 2006
 
 The files in this demo directory are:
 
@@ -218,6 +238,10 @@ Then to submit the demo
 
 	make submit
 
+To see what debugging print commands might look like,
+try
+	make debug
+
 If you want to edit the solution you chose, you may
 first need to
 
@@ -253,7 +277,6 @@ Although in this directory the problem description is
 in a .txt file, in other problem directories the problem
 description may be in a .html, .htm, or .ps (postscript)
 file.
-
 
 File:		README
 Authors:	walton@deas.harvard.edu
@@ -267,9 +290,9 @@ for this file.
 RCS Info (may not be true date or author):
 
   $Author: hc3 $
-  $Date: 2005/10/30 17:50:46 $
+  $Date: 2006/05/06 15:15:53 $
   $RCSfile: get_count.reply,v $
-  $Revision: 1.14 $
+  $Revision: 1.15 $
 ---<>--<>---<>--<>---<>----- demos/count/count.in:
 This is a good paragraph to start with.
 
@@ -373,8 +396,13 @@ Paragraph 4: 1 lines, 2 words, 8 characters.
 ---<>--<>---<>--<>---<>----- demos/count/count1.c:
 #include <stdio.h>
 
-main()
+#define dprintf if ( debug ) printf
+int debug;
+
+main ( int argc )
 {
+    debug = ( argc > 1 );
+
     int paragraph = 1;
 
     while ( 1 )
@@ -410,6 +438,9 @@ main()
 	    } while ( * cp != 0 && * cp != '\n' );
 
 	    characters += ( cp - buffer );
+	    dprintf ( "+ %s", buffer );
+	    dprintf ( ". %d %d %d\n",
+	              characters, words, lines );
 	}
 
 	if ( at_end_of_file ) break;
@@ -434,8 +465,13 @@ main()
 #include <iostream>
 using namespace std;
 
-main()
+#define dout if ( debug ) cout
+bool debug;
+
+main( int argc )
 {
+    debug = ( argc > 1 );
+
     int paragraph = 1;
 
     while ( ! cin.eof() )
@@ -465,6 +501,10 @@ main()
 	    } while ( * cp );
 
 	    characters += ( cp - buffer );
+	    dout << "+ " << buffer << endl;
+	    dout << ". " << characters
+	         << " " << words
+		 << " " << lines << endl;
 	}
 
 	if ( lines > 0  )
@@ -487,9 +527,10 @@ main()
 ---<>--<>---<>--<>---<>----- demos/count/count1.java:
 // Count Demo Program: JAVA Version
 //
-// File:     count1.java
-// Author:   Bob Walton <walton@deas.harvard.edu>
-// Date:     Fri Nov  1 06:37:28 EST 2002
+// File:	count.java [After renaming]
+// Actual-File:	count1.java [Before renaming]
+// Author:	Bob Walton <walton@deas.harvard.edu>
+// Date:	Thu May  4 10:07:11 EDT 2006
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -498,18 +539,27 @@ main()
 // RCS Info (may not be true date or author):
 //
 //   $Author: hc3 $
-//   $Date: 2005/10/30 17:50:46 $
+//   $Date: 2006/05/06 15:15:53 $
 //   $RCSfile: get_count.reply,v $
-//   $Revision: 1.14 $
+//   $Revision: 1.15 $
 
 import java.io.*;
 import java.util.StringTokenizer;
 
 public class count {
 
+    public static boolean debug;
+
+    public static void dprintln ( String s )
+    {
+        if ( debug ) System.out.println ( s );
+    }
+
     public static void main (String[] args)
 	    throws IOException
     {
+
+        debug = ( args.length > 0 );
 
 	BufferedReader reader
 	   = new BufferedReader
@@ -558,6 +608,11 @@ public class count {
 		// Count characters in line.
 		//
 		characters += line.length();
+
+		dprintln ( "+ " + line );
+		dprintln ( ". " + characters +
+		           " " + words +
+			   " " + lines );
 	    }
 
 	    // Ignore blank `paragraphs'.
@@ -579,7 +634,13 @@ public class count {
     }
 }
 ---<>--<>---<>--<>---<>----- demos/count/count1.lsp:
-(defun main () (read-a-paragraph 1))
+(defvar debug)
+(defun dformat (&rest r)
+    (if debug (apply #'format t r)))
+
+(defun main (&rest r)
+  (setq debug r)
+  (read-a-paragraph 1))
 
 ;; Counts are expressed as a triple:
 ;;
@@ -597,6 +658,7 @@ public class count {
        (read-rest-of-paragraph counts paragraph)))))
 
 (defun read-rest-of-paragraph (counts paragraph)
+  (apply #'dformat ". ~A ~A ~A~%" (reverse counts))
   (let ( (line-counts (read-a-line)))
     (cond ((or (equal line-counts blank-line)
 	       (equal line-counts end-of-file))
@@ -617,8 +679,10 @@ public class count {
   (let ( (line (read-line t nil 'eof)) )
     (cond
       ((eq line 'eof) '(0 0 0))
-      (t `(1 ,(read-a-word line 0 (length line) 0)
-	     ,(length line))))))
+      (t (if (/= (length line) 0)
+             (dformat "+ ~A~%" line))
+         `(1 ,(read-a-word line 0 (length line) 0)
+             ,(length line))))))
 
 (defun read-a-word (line index length count)
   (cond
