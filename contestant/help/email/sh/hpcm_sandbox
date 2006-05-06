@@ -4,7 +4,7 @@
 #
 # File:		hpcm_sandbox
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Mon Oct 15 07:35:17 EDT 2001
+# Date:		Sat May  6 06:45:15 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2001/10/15 11:36:17 $
+#   $Date: 2006/05/06 11:05:21 $
 #   $RCSfile: hpcm_sandbox,v $
-#   $Revision: 1.14 $
+#   $Revision: 1.15 $
 
 # This works as-is for LINUX systems.  See comments
 # below for SUN UNIX operating systems.  For other UNIX
@@ -26,6 +26,7 @@
 # Set defaults for resource limits.
 #
 cputime=600
+space=`expr 512 \* 1024 \* 1024`
 datasize=`expr 4 \* 1024 \* 1024`
 filesize=`expr 4 \* 1024 \* 1024`
 stacksize=`expr 4 \* 1024 \* 1024`
@@ -41,6 +42,8 @@ processes=50
 #
 operation=""
 watch=""
+tee=""
+file=""
 program=""
 
 for arg in "$@"; do
@@ -49,9 +52,9 @@ for arg in "$@"; do
     	program="$program '$arg'"
 
     else case "$arg" in
-	-cputime | -datasize | -filesize \
+	-cputime | -space | -datasize | -filesize \
 	         | -stacksize | -openfiles \
-		 | -processes | -core )
+		 | -processes | -core | -tee )
 	    if test -z "$operation"; then
 		operation=$arg
 	    else
@@ -83,6 +86,9 @@ for arg in "$@"; do
 	    case $operation in
 		-cputime )
 		    cputime=$number
+		    ;;
+		-space )
+		    space=$number
 		    ;;
 		-datasize )
 		    datasize=$number
@@ -123,6 +129,10 @@ for arg in "$@"; do
 	* )
 	    if test -z "$operation"; then
 		program="'$arg'"
+	    elif test "$operation" = "-tee"; then
+	        tee=yes
+		file="$arg"
+		operation=""
 	    else
 	        echo "ERROR: misplaced argument: $arg"
 		exit 1
@@ -131,6 +141,11 @@ for arg in "$@"; do
     esac; fi
 
 done
+
+if test "$operation" != ""; then
+    echo "ERROR: too few arguments to hpcm_sandbox"
+    exit 1
+fi
 
 case "$program" in
 
@@ -142,6 +157,8 @@ hpcm_sandbox [options] program arguments
     that set resource limits:
 
       -cputime N     Cpu Time in Seconds (600)
+      -space N       Virtual Address Space Size
+      		     in Bytes (512m)
       -datasize N    Data Area Size in Bytes (4m)
       -stacksize N   Stack Size in Bytes (4m)
       -filesize N    Output File Size in Bytes (4m)
@@ -179,27 +196,17 @@ hpcm_sandbox [options] program arguments
 esac
 
 # Set the resource limits.  Ignore errors; but all
-# these in fact work in linux.
+# these in fact work in linux.  If something does
+# not work, comment it out.
 #
 ulimit -t $cputime
+ulimit -v `expr $space / 1024`
 ulimit -d `expr $datasize / 1024`
 ulimit -f `expr $filesize / 1024`
 ulimit -s `expr $stacksize / 1024`
 ulimit -c `expr $core / 1024`
-#
-# Do not execute the next two ulimits if you are running
-# a SUN OS.  -u is not recognized by SUN ulimit, and -n
-# causes problems for java somehow.
-#
-# Humpf: there are some shells (DEC) on which the
-# following if statement blows up the program, so this
-# is commented completely out.
-#
-# if ulimit -u >/dev/null 2>&1
-# then
-#     ulimit -u $processes
-#     ulimit -n $openfiles
-# fi
+ulimit -u $processes
+ulimit -n $openfiles
 
 # Execute the program.  If -watch given, look to see if
 # the program returned with a signal, and if yes, print
@@ -208,7 +215,10 @@ ulimit -c `expr $core / 1024`
 # Otherwise exit with code 0 (so contestants do not have
 # to control their exit code).
 #
-if test ! -z "$watch"; then
+if test ! -z "$watch" -o ! -z "$tee"; then
+    if test ! -z "$tee"; then
+        program="$program '|' 'tee' '$file'
+    fi
     eval $program
     status=$?
     if test $status -ge 128; then
