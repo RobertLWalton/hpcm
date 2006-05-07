@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Apr 24 08:43:49 EDT 2006
+# Date:		Sun May  7 04:49:28 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/04/24 12:46:52 $
+#   $Date: 2006/05/07 09:37:51 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.63 $
+#   $Revision: 1.64 $
 #
 # To make an untimed contest named `foo':
 #
@@ -214,17 +214,11 @@ SENDMAIL = /usr/sbin/sendmail -oi -t
 
 all:
 	makecontest
+	@if test -x web; then \
+	    make --no-print-directory web.tar; fi
 
-# Web Page Rules:
-
-# Web_do_nothing merely causes `make web' to remake the
-# web directory even if it exists.
-#
-web_do_nothing:
-
-web:	web_do_nothing
-	rm -rf web web.tar
-	makeweb
+web.tar:	web
+	rm -rf web.tar
 	cd web; tar cf ../web.tar *
 
 # Printout Rules:
