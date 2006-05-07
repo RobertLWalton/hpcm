@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun May  7 04:49:28 EDT 2006
+# Date:		Sun May  7 05:43:02 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/05/07 09:37:51 $
+#   $Date: 2006/05/07 09:43:09 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.64 $
+#   $Revision: 1.65 $
 #
 # To make an untimed contest named `foo':
 #
@@ -296,4 +296,8 @@ dangerous_clean:
 	       solution_files* \
 	       Scorefinder* \
 	       Scoreboard_PID \
-	       scoreboard.email
+	       scoreboard.web \
+	       *_authorized_keys \
+	       *_identity \
+	       *_identity.pub \
+	       *_procmailrc
