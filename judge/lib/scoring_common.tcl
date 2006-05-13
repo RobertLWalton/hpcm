@@ -2,7 +2,7 @@
 #
 # File:		scoring_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat May 13 15:10:43 EDT 2006
+# Date:		Sat May 13 15:18:21 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/05/13 19:15:08 $
+#   $Date: 2006/05/13 19:18:28 $
 #   $RCSfile: scoring_common.tcl,v $
-#   $Revision: 1.65 $
+#   $Revision: 1.66 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -863,7 +863,7 @@ proc process_in_or_out_command \
     }
 
     if {    $score_file == "" \
-         || (    ! $jin_exists && \
+         || (    ! $jin_exists \
 	      && [llength $problem_input_names] < 2 ) \
 	 || (    $jin_exists \
 	      && (    $group == "" \
