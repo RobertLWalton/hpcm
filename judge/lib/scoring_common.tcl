@@ -2,7 +2,7 @@
 #
 # File:		scoring_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Feb  5 07:21:20 EST 2006
+# Date:		Sat May 13 15:10:43 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/02/05 12:19:05 $
+#   $Date: 2006/05/13 19:15:08 $
 #   $RCSfile: scoring_common.tcl,v $
-#   $Revision: 1.64 $
+#   $Revision: 1.65 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -699,6 +699,12 @@ proc compute_score { } {
 # any problem.rc file is sourced.  They need not exist,
 # and will be set to their defaults if they do not.
 #
+# The global variable problem_input_names must exist and
+# already be set either to its problem.rc given value or
+# to its default (the list of names N such that N.in or
+# N.jin exist, excluding the problem name itself if
+# there are other names).
+#
 # This function returns a list of commands whose execu-
 # tion merely serve to specify options for disposition
 # of Reply_Mail+.  Specifically, any FINAL, NOT-FINAL,
@@ -839,7 +845,7 @@ proc process_in_or_out_command \
 
     upvar $processed_commands pc
 
-    global auto_score_marker
+    global auto_score_marker problem_input_names
 
     set score_file [lindex $auto_score_marker 0]
     set group [lindex $auto_score_marker 1]
@@ -851,9 +857,18 @@ proc process_in_or_out_command \
         set kind output
     }
 
-    if {    $group == "" \
-    	 || $case == "" \
-         || $case == 0 } {
+    if { $score_file != "" } {
+	set name [file rootname $score_file]
+	set jin_exists [file exists $name.jin]
+    }
+
+    if {    $score_file == "" \
+         || (    ! $jin_exists && \
+	      && [llength $problem_input_names] < 2 ) \
+	 || (    $jin_exists \
+	      && (    $group == "" \
+    	           || $case == "" \
+                   || $case == 0 ) ) } {
 	lappend pc \
 	     BAR \
 	     [list LINE "Sorry, the information needed\
@@ -863,32 +878,40 @@ proc process_in_or_out_command \
         return
     }
 
-    if { ! [regexp {^(.*)score$} $score_file \
-		   forget prefix] } {
+    if { ! [regexp {^(.*)score$} $score_file] } {
 	error "SYSTEM ERROR: non-*score score file"
     }
-    set name [file rootname $score_file]
 
-    if { ! [file exists $name.jin] } {
-        error "SYSTEM ERROR: no $name.jin file"
-    }
-
-    set id $name:$group:$case
-    if { $command == "IN" } {
-        file delete -force -- $id.in
-        exec jfilter -c $group:$case $name.jin $id.in \
-	     >@ stdout
-        lappend pc [list BAR "Judge's Input $id:"]
-        lappend pc [list INPUT $id.in]
-    } else {
-	if { ! [file exists $name.test] } {
-	    error "SYSTEM ERROR: no $name.test file"
+    if { $jin_exists } {
+	set id $name:$group:$case
+	if { $command == "IN" } {
+	    file delete -force -- $id.in
+	    exec jfilter -c $group:$case $name.jin \
+	         $id.in >@ stdout
+	    lappend pc [list BAR "Judge's Input $id:"]
+	    lappend pc [list INPUT $id.in]
+	} else {
+	    if { ! [file exists $name.test] } {
+		error "SYSTEM ERROR: no $name.test file"
+	    }
+	    file delete -force -- $id.test
+	    exec jfilter -c $group:$case $name.jin \
+		 $name.test $id.test >@ stdout
+	    lappend pc [list BAR "Judge's Output $id:"]
+	    lappend pc [list INPUT $id.test]
 	}
-        file delete -force -- $id.out
-        exec jfilter -c $group:$case $name.jin \
-	     $name.test $id.out >@ stdout
-        lappend pc [list BAR "Judge's Output $id:"]
-        lappend pc [list INPUT $id.out]
+    } else {
+	if { $command == "IN" } {
+	    lappend pc [list BAR "Judge's Input $name:"]
+	    lappend pc [list INPUT $name.in]
+	} else {
+	    if { ! [file exists $name.test] } {
+		error "SYSTEM ERROR: no $name.test file"
+	    }
+	    lappend pc \
+	            [list BAR "Judge's Output $name:"]
+	    lappend pc [list INPUT $name.test]
+	}
     }
 }
 
