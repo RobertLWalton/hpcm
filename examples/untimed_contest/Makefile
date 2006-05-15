@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon May 15 08:43:11 EDT 2006
+# Date:		Mon May 15 09:28:59 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/05/15 12:43:19 $
+#   $Date: 2006/05/15 14:58:00 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.66 $
+#   $Revision: 1.67 $
 #
 # To make an untimed contest named `foo':
 #
@@ -214,12 +214,6 @@ SENDMAIL = /usr/sbin/sendmail -oi -t
 
 all:
 	makecontest
-	@if test -x web; then \
-	    make --no-print-directory web.tar; fi
-
-web.tar:	web
-	rm -rf web.tar
-	cd web; tar cf ../web.tar *
 
 # Printout Rules:
 
