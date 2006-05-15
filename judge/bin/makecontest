@@ -6,7 +6,7 @@
 #
 # File:		makecontest
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon May 15 09:22:27 EDT 2006
+# Date:		Mon May 15 09:50:43 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/05/15 13:48:35 $
+#   $Date: 2006/05/15 13:51:08 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.169 $
+#   $Revision: 1.170 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -839,8 +839,8 @@ makecontest option ... index_specification ...
     to make the ./web directory.  More specifically,
     ./web+ is made, compared with ./web, and if not the
     same, then ./web- is renamed to ./web--, ./web to
-    ./web-, and ./web+ to ./web.  Whenever a new ./web
-    is created by this process, a new ./web.tar is made
+    ./web-, and ./web+ to ./web.  Whenever ./web becomes
+    more recent than ./web.tar, a new ./web.tar is made
     and a TODO is written to move ./web to the appro-
     priate remote host.
 
@@ -3066,6 +3066,10 @@ if { $web_option } {
     if {    ! [file exists $j_d/web.tar] \
          ||   [file mtime $j_d/web.tar]
 	    < [file mtime $j_d/web] } {
+        if { [file exists $j_d/web.tar] } {
+	    file delete -force $j_d/web.tar
+	    puts "Deleted ./web.tar"
+	}
         archive_directory $j_d/web
 	puts "Wrote ./web.tar"
 	TODO "Copy ./web (which is archived as\
