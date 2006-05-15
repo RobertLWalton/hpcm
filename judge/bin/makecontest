@@ -6,7 +6,7 @@
 #
 # File:		makecontest
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon May 15 08:54:10 EDT 2006
+# Date:		Mon May 15 09:22:27 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/05/15 12:54:23 $
+#   $Date: 2006/05/15 13:48:35 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.168 $
+#   $Revision: 1.169 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -127,7 +127,7 @@ makecontest option ... index_specification ...
     -javahelp	Make ./contest/javahelp
     -stlhelp	Make ./contest/stlhelp
 
-    -web	Make ./web
+    -web	Make ./web and ./web.tar
 
     -scoreboard_ssh
     		For each zzz in the scoreboard_ssh
@@ -839,7 +839,10 @@ makecontest option ... index_specification ...
     to make the ./web directory.  More specifically,
     ./web+ is made, compared with ./web, and if not the
     same, then ./web- is renamed to ./web--, ./web to
-    ./web-, and ./web+ to ./web.
+    ./web-, and ./web+ to ./web.  Whenever a new ./web
+    is created by this process, a new ./web.tar is made
+    and a TODO is written to move ./web to the appro-
+    priate remote host.
 
     The -startcontest program option executes the
     `startcontest start' command unless this has already
@@ -3060,6 +3063,15 @@ if { $stlhelp_option } {
 if { $web_option } {
     exec makeweb "{{directory $j_d/web+}}"
     rename_directory $j_d/web
+    if {    ! [file exists $j_d/web.tar] \
+         ||   [file mtime $j_d/web.tar]
+	    < [file mtime $j_d/web] } {
+        archive_directory $j_d/web
+	puts "Wrote ./web.tar"
+	TODO "Copy ./web (which is archived as\
+	      ./web.tar) to the appropriate" \
+	     "location."
+    }
 }
 
 # Start contest if necessary.
