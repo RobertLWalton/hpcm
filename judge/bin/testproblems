@@ -4,7 +4,7 @@
 #
 # File:		testproblems
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Thu Apr 27 05:51:44 EDT 2006
+# Date:		Thu May 18 03:56:17 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/04/27 13:29:38 $
+#   $Date: 2006/05/18 08:16:51 $
 #   $RCSfile: testproblems,v $
-#   $Revision: 1.17 $
+#   $Revision: 1.18 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -56,13 +56,13 @@ testproblems -
 
     once followed by
 
-    		jfilter f.jin f.in
+    		jfilter -v f.jin f.in >& f.in#
 		ln -s f.in problem.in
 		make
 		mv problem.out f.out
 		diff f.out f.test
 		make clean
-		rm f.in problem.in
+		rm f.in f.in# problem.in
 
     for each f.jin file.  The -keep option suppresses
     the final `make clean' and `rm'.
@@ -76,7 +76,7 @@ testproblems -
 
     If a directory contains both f.in and f.jin, then
 
-    		jfilter f.jin f.in+
+    		jfilter -v f.jin f.in+ >& f.in#
 
     is executed and f.in and f.in+ are diff'ed, instead
     of making f.in from f.jin.
@@ -90,15 +90,15 @@ testproblems -
     this has errors, they are ignored.  If after this
     Scoring_Filter does not exist,
 
-    		jfilter f.jin f.out f.jout
-		rm f.jout
+	jfilter -v f.jin f.out f.jout >& f.jout#
+	rm f.jout f.jout#
 
     is execute if f.jin exists.  But if Scoring_Filter
     does exist then
 
-    		Scoring_Filter f.in < f.out > f.fout
-		jfilter f.jin f.fout f.jfout
-		rm f.fout f.jfout
+	Scoring_Filter f.in < f.out > f.fout
+	jfilter -v f.jin f.fout f.jfout >& f.jfout#
+	rm f.fout f.jfout f.jfout#
 
     is executed, with the jfilter execution and f.jfout
     removal suppressed if f.jin does not exist.
@@ -106,7 +106,8 @@ testproblems -
     If f.jout (f.fout, f.jfout) is made and f.jtest
     (f.ftest, f.jftest) exists, these two files are
     diff'ed, and if different the differences are
-    reported.
+    reported.  If f.jout# or f.jfout# are made, they
+    are similarly diff'ed with f.jin#.
 
     All `rm' commands are suppressed by -keep.  All
     `make clean' commands except the initial one in
@@ -209,15 +210,17 @@ foreach x $argv {
 	    if { $f != $problem } {
 	        puts "========== $file:"
 	    }
+	    file delete -force -- $f.in#
 	    if { ! [file exists $f.in] } {
-	        puts "jfilter $f.jin $f.in"
-	        exec jfilter $f.jin $f.in >@ stdout
-		lappend made $f.in
+	        puts "jfilter -v $f.jin $f.in >& $f.in#"
+	        exec jfilter -v $f.jin $f.in >& $f.in#
+		lappend made $f.in $f.in#
 	    } elseif { [file exists $f.jin] } {
 	        file delete -force -- $f.in+
-	        puts "jfilter $f.jin $f.in+"
-	        exec jfilter $f.jin $f.in+ >@ stdout
-		lappend made $f.in+
+	        puts "jfilter -v $f.jin $f.in+\
+		      >& $f.in#"
+	        exec jfilter -v $f.jin $f.in+ >& $f.in#
+		lappend made $f.in+ $f.in#
 		diff $f.in $f.in+
 	    }
 	    if { $f != $problem } {
@@ -260,24 +263,30 @@ foreach x $argv {
 		        diff $f.fout $f.ftest
 		    }
 		    if { [file exists $f.jin] } {
-		        puts "jfilter\
-			      $f.jin $f.fout $f.jfout"
-		        exec jfilter \
+			file delete -force -- $f.jfout#
+		        puts "jfilter -v\
+			      $f.jin $f.fout $f.jfout\
+			      >& $f.jfout#"
+		        exec jfilter -v \
 			     $f.jin $f.fout $f.jfout \
-			     >@ stdout
-			lappend made $f.jfout
+			     >& $f.jfout#
+			lappend made $f.jfout $f.jfout#
 			if { [file exists $f.jftest] } {
 			    diff $f.jfout $f.jftest
 			}
+			diff $f.in# $f.jfout#
 		    }
 		} elseif { [file exists $f.jin] } {
-		    puts "jfilter $f.jin $f.out $f.jout"
-		    exec jfilter $f.jin $f.out $f.jout \
-			 >@ stdout
-		    lappend made $f.jout
+		    file delete -force -- $f.jout#
+		    puts "jfilter -v $f.jin $f.out\
+		                  $f.jout >& $f.jout#"
+		    exec jfilter -v $f.jin $f.out \
+		         $f.jout >& $f.jout#
+		    lappend made $f.jout $f.jout#
 		    if { [file exists $f.jtest] } {
 			diff $f.jout $f.jtest
 		    }
+		    diff $f.in# $f.jout#
 		}
 	    }
 	    if { ! $keep } {
