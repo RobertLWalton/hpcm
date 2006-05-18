@@ -5,7 +5,7 @@
 #
 # File:		jfilter
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu May 18 02:46:07 EDT 2006
+# Date:		Thu May 18 04:35:02 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/05/18 07:00:46 $
+#   $Date: 2006/05/18 08:52:41 $
 #   $RCSfile: jfilter,v $
-#   $Revision: 1.22 $
+#   $Revision: 1.23 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -237,11 +237,17 @@ jfilter \[options\] judging_input_file \\
     of the file: this is only used for the judging_
     input_file, to mark the beginning of test groups,
     test cases, and end cases.
+
+    If a line can be recognized as both a head and a
+    mark, it is recognized as a mark.  If a line can
+    is recognized as an end head or mark, that line and
+    all subsequent lines will not be recognized as a
+    case or group head or mark.
 
     If the last line of the judging_input_file matches
     the input-end-regexp, it is ALWAYS output when any
     filtered input file is made.
-
+
     A regexp parameter set to the empty string (all
     whitespace) is `missing', and deactivates use of
     the parameter in line matching.
@@ -270,7 +276,7 @@ jfilter \[options\] judging_input_file \\
     	*SCORING* yyy
 
     is the same as
-
+
     	*SCORING* xxx yyy
 
     Regexps should begin with `^' if they are to match
@@ -279,7 +285,7 @@ jfilter \[options\] judging_input_file \\
 
     Regexps are always matched with a -nocase option, so
     letter case in a regexp makes no difference.
-
+
     Whitespace is trimmed from the beginning and end of
     any regexp in a parameter definition.  This means
     that if the regexp is to end with a space character,
@@ -310,7 +316,7 @@ jfilter \[options\] judging_input_file \\
 	*ONE-GROUP* no
 
 	*SCORING* none
-
+
     These mean that by default input is separated into
     test groups, test cases, and end cases by `*GROUP*',
     `*CASE*', and `*END*' mark lines, every line of out-
@@ -319,7 +325,7 @@ jfilter \[options\] judging_input_file \\
     of `none' specifies that the scoring_instructions
     global variable set in hpcm_judging.rc and any prob-
     lem .rc file should be used.
-
+
     The test group and test case judging input comes
     after any parameter definitions in the judging_
     input_file.  If there are no test groups, the input
@@ -544,6 +550,7 @@ if { $number_args == 2 } {
         [expr { $input_separator != "" }]
     set last_was_end_mark 0
     set last_line ""
+    set in_end 0
 
     while { ! [eof $jin] } {
 	set begin_group $last_was_group_mark
@@ -553,7 +560,8 @@ if { $number_args == 2 } {
 	set last_was_group_mark 0
 	set last_was_case_mark 0
 	set last_was_end_mark 0
-	if {    $input_group_mark != "" \
+	if { $in_end } {
+	} elseif {    $input_group_mark != "" \
 	     && [regexp -nocase -- $input_group_mark \
 	                $jin_line] } {
 	     set last_was_group_mark 1
@@ -564,7 +572,20 @@ if { $number_args == 2 } {
 		              $jin_line] } {
 	     set begin_group 1
 	}
-	if {    $input_case_mark != "" \
+	if { $in_end } {
+	} elseif {    $input_end_mark != "" \
+	     && [regexp -nocase -- $input_end_mark \
+	                $jin_line] } {
+	     set last_was_end_mark 1
+	     set is_mark 1
+	     set in_end 1
+	} elseif {    $input_end_head != "" \
+	           && [regexp -nocase -- \
+		              $input_end_head \
+		              $jin_line] } {
+	     set begin_end 1
+	     set in_end 1
+	} elseif {    $input_case_mark != "" \
 	     && [regexp -nocase -- $input_case_mark \
 	                $jin_line] } {
 	     set last_was_case_mark 1
@@ -574,22 +595,13 @@ if { $number_args == 2 } {
 		              $input_case_head \
 		              $jin_line] } {
 	     set begin_case 1
-	} elseif {    $input_separator != "" \
-	           && [regexp -nocase -- \
-		              $input_separator \
-		              $jin_line] } {
-	     set last_was_case_mark 1
 	}
-	if {    $input_end_mark != "" \
-	     && [regexp -nocase -- $input_end_mark \
-	                $jin_line] } {
-	     set last_was_end_mark 1
-	     set is_mark 1
-	} elseif {    $input_end_head != "" \
-	           && [regexp -nocase -- \
-		              $input_end_head \
-		              $jin_line] } {
-	     set begin_end 1
+
+	if {    $input_separator != "" \
+	     && [regexp -nocase -- \
+			$input_separator \
+			$jin_line] } {
+	     set last_was_case_mark 1
 	}
 
         if { $begin_group } {
