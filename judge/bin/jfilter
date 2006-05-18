@@ -5,7 +5,7 @@
 #
 # File:		jfilter
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Apr 27 09:47:56 EDT 2006
+# Date:		Thu May 18 02:46:07 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/04/27 14:07:02 $
+#   $Date: 2006/05/18 07:00:46 $
 #   $RCSfile: jfilter,v $
-#   $Revision: 1.21 $
+#   $Revision: 1.22 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -69,6 +69,15 @@ jfilter \[options\] judging_input_file \\
 
     Options modify the above commands as follows:
 
+        -v For the 2- and 3-file-name commands, when a
+	   new group starts, print the group number on
+	   a line by itself, and when a new case starts,
+	   print the group number, a space, and then the
+	   case number on a line by itself.  If the
+	   judging output and input files correspond,
+	   the jfilter -v standard output for the 2- and
+	   3-file-name commands should match exactly.
+
         -c <group-number>:<case-number>
         -c <case-number>
 
@@ -84,7 +93,7 @@ jfilter \[options\] judging_input_file \\
 	    tion of the judge's input or the portion of
 	    the output that relates to testing the
 	    designated test case.
-
+
 	    If the *ONE-GROUP* parameter value is `no'
 	    (see below for parameter definitions), then
 	    for test cases outside any test group, the
@@ -95,7 +104,7 @@ jfilter \[options\] judging_input_file \\
 	    case or the end of file.  Thus if there are
 	    no test groups, only the designated test
 	    case is output.
-
+
 	    For test cases in test groups, the portion
 	    output consists of the lines in the test
 	    group containing the test case, up to and
@@ -123,7 +132,7 @@ jfilter \[options\] judging_input_file \\
 	    Lines before the beginning of the first case
 	    in a group are considered to be in test case
 	    0 of that group.
-
+
 	    If just the <case-number> is given, and the
 	    `<group-number>:' is omitted, the <group-
 	    number> is 0.  This is useful if the file
@@ -131,7 +140,7 @@ jfilter \[options\] judging_input_file \\
 
         -g <group-number>:<case-number>
 	-g <case-number>
-
+
 	    Same as -c, BUT if the test case is in a
 	    test group (not in group 0), include all the
 	    lines of this entire test group, instead of
@@ -162,14 +171,14 @@ jfilter \[options\] judging_input_file \\
 	    reset by parameter definitions in the
 	    judging_input_file.
 
-
+
     The judging_input_file begins zero or more parameter
     definitions, each having one of the following forms:
 
     *CASE-HEAD* <output-case-head-regexp>
     *GROUP-HEAD* <output-group-head-regexp>
     *SEPARATOR* <output-separator-regexp>
-
+
     *OUTPUT-CASE-HEAD* <output-case-head-regexp>
     *OUTPUT-GROUP-HEAD* <output-group-head-regexp>
     *OUTPUT-SEPARATOR* <output-separator-regexp>
@@ -193,7 +202,7 @@ jfilter \[options\] judging_input_file \\
     *ONE-GROUP* <yes-or-no>
 
     *SCORING* <scoring-instruction> ...
-
+
     These consist of a parameter-designator, the first
     thing on the line (e.g., *CASE-HEAD*), followed by
     parameters.  In a parameter designator, `OUTPUT-'
@@ -206,7 +215,7 @@ jfilter \[options\] judging_input_file \\
     *INPUT-...* parameters in a judging_input_file, as
     typically the file just uses the default *INPUT-...*
     parameter values (see below).
-
+
     Here `END' refers to the `end case', which is a
     special case that must always end the input, and
     which must be tacked on to the end of any other case
@@ -232,7 +241,7 @@ jfilter \[options\] judging_input_file \\
     If the last line of the judging_input_file matches
     the input-end-regexp, it is ALWAYS output when any
     filtered input file is made.
-
+
     A regexp parameter set to the empty string (all
     whitespace) is `missing', and deactivates use of
     the parameter in line matching.
@@ -246,7 +255,7 @@ jfilter \[options\] judging_input_file \\
 
     	*CASE-HEAD* xxx
     	*CASE-HEAD* yyy
-
+
     is the same as
 
     	*CASE-HEAD* xxxyyy
@@ -270,7 +279,7 @@ jfilter \[options\] judging_input_file \\
 
     Regexps are always matched with a -nocase option, so
     letter case in a regexp makes no difference.
-
+
     Whitespace is trimmed from the beginning and end of
     any regexp in a parameter definition.  This means
     that if the regexp is to end with a space character,
@@ -285,7 +294,7 @@ jfilter \[options\] judging_input_file \\
 	*CASE-HEAD* ^
 	*GROUP-HEAD*
 	*SEPARATOR*
-
+
 	*INPUT-CASE-HEAD*
 	*INPUT-GROUP-HEAD*
 	*INPUT-SEPARATOR*
@@ -310,7 +319,7 @@ jfilter \[options\] judging_input_file \\
     of `none' specifies that the scoring_instructions
     global variable set in hpcm_judging.rc and any prob-
     lem .rc file should be used.
-
+
     The test group and test case judging input comes
     after any parameter definitions in the judging_
     input_file.  If there are no test groups, the input
@@ -340,7 +349,9 @@ set scoring "none"
 set one_group no
 set c ""
 set g ""
+set v no
 while { [regexp {^-} [lindex $argv 0]] } {
+    set skip 2
     switch -- [lindex $argv 0] {
     -doc {
 	    puts $document
@@ -381,13 +392,15 @@ while { [regexp {^-} [lindex $argv 0]] } {
     			      [lindex $argv 1] }
     -g			{ set g \
     			      [lindex $argv 1] }
+    -v			{ set v yes
+    			  set skip 1 }
     default {
     	    puts stderr "BAD option: [lindex $argv 0]"
 	    exit 1
 	    }
     }
 
-    set argv [lrange $argv 2 end]
+    set argv [lrange $argv $skip end]
 }
 
 if { [llength $argv] < 1 || [llength $argv] > 3 } {
@@ -586,6 +599,9 @@ if { $number_args == 2 } {
 	        set copy [expr $group_count \
 		               == $selected_group]
 	    }
+	    if { $v } {
+	        puts $group_count
+	    }
 	}
 	if { $begin_case } {
 	    incr case_count
@@ -598,6 +614,9 @@ if { $number_args == 2 } {
 	               &&   $case_count \
 		          > $selected_case } {
 	        set copy 0
+	    }
+	    if { $v } {
+	        puts "$group_count $case_count"
 	    }
 	}
 	if { $begin_end } { set copy 1 }
@@ -649,6 +668,9 @@ if { $number_args == 3 } {
 	        set copy [expr $group_count \
 		               == $selected_group]
 	    }
+	    if { $v } {
+	        puts $group_count
+	    }
 	}
         if {    (    $output_case_head != "" \
 	          && [regexp -nocase -- \
@@ -666,6 +688,9 @@ if { $number_args == 3 } {
 	               &&   $case_count \
 		          > $selected_case } {
 	        set copy 0
+	    }
+	    if { $v } {
+	        puts "$group_count $case_count"
 	    }
 	}
 
