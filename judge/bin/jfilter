@@ -5,7 +5,7 @@
 #
 # File:		jfilter
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu May 18 04:35:02 EDT 2006
+# Date:		Thu May 18 09:17:41 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/05/18 08:52:41 $
+#   $Date: 2006/05/18 13:37:25 $
 #   $RCSfile: jfilter,v $
-#   $Revision: 1.23 $
+#   $Revision: 1.24 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -63,9 +63,8 @@ jfilter \[options\] judging_input_file \\
 	- Begin a test case.
 	. Do not begin a test case or test group.
 
-    The -c and -g options below cause these prefix
-    characters to be omitted from the filtered_output_
-    file.
+    The -c and -g options below cause these prefix char-
+    acters to be omitted from the filtered_output_file.
 
     Options modify the above commands as follows:
 
@@ -81,19 +80,15 @@ jfilter \[options\] judging_input_file \\
         -c <group-number>:<case-number>
         -c <case-number>
 
-	    This option permits the filtered file to be
-	    just the portion of the judge's input or
-	    output file that permits testing of a parti-
-	    cular test case.  The filtered file can be
-	    used as feedback for a submitter whose sub-
-	    mission first failed on the given test case.
-
 	    For the 2- and 3-file-name commands, these
 	    cause the commands to output just the por-
 	    tion of the judge's input or the portion of
 	    the output that relates to testing the
-	    designated test case.
-
+	    designated test case.  The filtered file can
+	    be used as feedback for a submitter whose
+	    submission first failed on the given test
+	    case.
+
 	    If the *ONE-GROUP* parameter value is `no'
 	    (see below for parameter definitions), then
 	    for test cases outside any test group, the
@@ -104,7 +99,7 @@ jfilter \[options\] judging_input_file \\
 	    case or the end of file.  Thus if there are
 	    no test groups, only the designated test
 	    case is output.
-
+
 	    For test cases in test groups, the portion
 	    output consists of the lines in the test
 	    group containing the test case, up to and
@@ -132,12 +127,12 @@ jfilter \[options\] judging_input_file \\
 	    Lines before the beginning of the first case
 	    in a group are considered to be in test case
 	    0 of that group.
-
+
 	    If just the <case-number> is given, and the
 	    `<group-number>:' is omitted, the <group-
 	    number> is 0.  This is useful if the file
 	    has no groups.
-
+
         -g <group-number>:<case-number>
 	-g <case-number>
 
@@ -149,12 +144,15 @@ jfilter \[options\] judging_input_file \\
 	-case-head <output-case-head-regexp>
 	-group-head <output-group-head-regexp>
 	-separator <output-separator-regexp>
+	-terminator <output-terminator-regexp>
 	-output-case-head <output-case-head-regexp>
 	-output-group-head <output-group-head-regexp>
 	-output-separator <output-separator-regexp>
+	-output-terminator <output-terminator-regexp>
 	-input-case-head <input-case-head-regexp>
 	-input-group-head <input-group-head-regexp>
 	-input-separator <input-separator-regexp>
+	-input-terminator <input-terminator-regexp>
 	-end-head <input-end-head-regexp>
 	-input-end-head <input-end-head-regexp>
 	-case-mark <input-case-mark-regexp>
@@ -178,14 +176,17 @@ jfilter \[options\] judging_input_file \\
     *CASE-HEAD* <output-case-head-regexp>
     *GROUP-HEAD* <output-group-head-regexp>
     *SEPARATOR* <output-separator-regexp>
+    *TERMINATOR* <output-terminator-regexp>
 
     *OUTPUT-CASE-HEAD* <output-case-head-regexp>
     *OUTPUT-GROUP-HEAD* <output-group-head-regexp>
     *OUTPUT-SEPARATOR* <output-separator-regexp>
+    *OUTPUT-TERMINATOR* <output-terminator-regexp>
 
     *INPUT-CASE-HEAD* <input-case-head-regexp>
     *INPUT-GROUP-HEAD* <input-group-head-regexp>
     *INPUT-SEPARATOR* <input-separator-regexp>
+    *INPUT-TERMINATOR* <input-terminator-regexp>
 
     *END-HEAD* <input-end-head-regexp>
     *INPUT-END-HEAD* <input-end-head-regexp>
@@ -220,7 +221,7 @@ jfilter \[options\] judging_input_file \\
     special case that must always end the input, and
     which must be tacked on to the end of any other case
     or group that is extracted from the input.  INPUT-
-    END is just like INPUT-CASE but always includes its
+    END is like INPUT-CASE but always includes its
     `end case' in any filtered_input_file.
 
     The regexp parameters are TCL regular expressions
@@ -230,19 +231,31 @@ jfilter \[options\] judging_input_file \\
     matched by a `head' regexp is called a head line,
     and begins a test group, test case, or end case.  A
     line matched by a `separator' regexp is called a
-    separator line, and is the last line of a test case
-    that is followed by the first line of another test
-    case.  A line matched by a `mark' is like a head
-    line but must be deleted from the filtered version
-    of the file: this is only used for the judging_
-    input_file, to mark the beginning of test groups,
-    test cases, and end cases.
+    separator line, and a line matched by a `terminator'
+    regexp is called a terminator line.  Both separator
+    and terminator lines are the last line of a test
+    case and are followed by the first line of another
+    test case or by the end of file.  A line matched by
+    a `mark' is like a head line but must be deleted
+    from the filtered version of the file: marks are
+    only used for the judging_input_file, to mark the
+    beginning of test groups, test cases, and end cases.
 
+    The only difference between a separator line and a
+    terminator line is that if the output would other-
+    wise end with a separator line, that line is sup-
+    pressed and NOT included in the output, but if the
+    last line of output would be a terminator line,
+    that line IS included in the output.  One cannot use
+    both separators and terminators in input, and simi-
+    larly one cannot use both in output.
+
     If a line can be recognized as both a head and a
     mark, it is recognized as a mark.  If a line can
     is recognized as an end head or mark, that line and
     all subsequent lines will not be recognized as a
-    case or group head or mark.
+    case or group head or mark, or as a separator or
+    terminator.
 
     If the last line of the judging_input_file matches
     the input-end-regexp, it is ALWAYS output when any
@@ -250,7 +263,10 @@ jfilter \[options\] judging_input_file \\
 
     A regexp parameter set to the empty string (all
     whitespace) is `missing', and deactivates use of
-    the parameter in line matching.
+    the parameter in line matching.  It is an error if
+    both the *INPUT-SEPARATOR* and *INPUT-TERMIATOR* are
+    active, or if both the *OUTPUT-SEPARATOR* and
+    *OUTPUT-TERMINATOR* are active.
 
     The *SCORING* parameters are just exactly what is
     printed on a single line by the 1-file-name command.
@@ -263,7 +279,7 @@ jfilter \[options\] judging_input_file \\
     	*CASE-HEAD* yyy
 
     is the same as
-
+
     	*CASE-HEAD* xxxyyy
 
     Note that there is no space here between the xxx and
@@ -276,7 +292,7 @@ jfilter \[options\] judging_input_file \\
     	*SCORING* yyy
 
     is the same as
-
+
     	*SCORING* xxx yyy
 
     Regexps should begin with `^' if they are to match
@@ -300,23 +316,24 @@ jfilter \[options\] judging_input_file \\
 	*CASE-HEAD* ^
 	*GROUP-HEAD*
 	*SEPARATOR*
-
+	*TERMINATOR*
+
 	*INPUT-CASE-HEAD*
 	*INPUT-GROUP-HEAD*
 	*INPUT-SEPARATOR*
+	*INPUT-TERMINATOR*
 
 	*END-HEAD*
 
 	*CASE-MARK* ^\\*CASE*\\$
 	*GROUP-MARK* ^\\*GROUP\\*$
-	*SEPARATOR-MARK*
 
 	*END-MARK* ^\\*END\\*$
 
 	*ONE-GROUP* no
 
 	*SCORING* none
-
+
     These mean that by default input is separated into
     test groups, test cases, and end cases by `*GROUP*',
     `*CASE*', and `*END*' mark lines, every line of out-
