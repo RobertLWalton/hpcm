@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/05/18 15:42:41 $
+#   $Date: 2006/05/18 15:50:23 $
 #   $RCSfile: jfilter,v $
-#   $Revision: 1.26 $
+#   $Revision: 1.27 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -367,6 +367,7 @@ jfilter \[options\] judging_input_file \\
 
 # Process options.
 #
+set comment "^\[ \\t\]*\\*\\*\\*\\*"
 set output_case_head "^"
 set output_group_head ""
 set output_separator ""
@@ -391,6 +392,7 @@ while { [regexp {^-} [lindex $argv 0]] } {
 	    puts $document
 	    exit 0
 	 }
+    -comment		{ set comment [lindex $argv 1] }
     -case-head		-
     -output-case-head	{ set output_case_head \
     			      [lindex $argv 1] }
@@ -473,12 +475,21 @@ set jin_line [gets $jin]
 
 set last_designator ""
 while { ! [eof $jin] } {
+
+    if {    $comment != "" \
+         && [regexp $comment $jin_line] } {
+	set jin_line [gets $jin]
+        continue
+    }
+
     set designator ""
     set variable ""
     set separator ""
     regexp {^[\ \t]*([^\ \t]+)([\ \t].*|)$} $jin_line \
            forget designator rest
     switch -- $designator {
+    *COMMENT*
+        { set variable comment }
     *CASE-HEAD*	-
     *OUTPUT-CASE-HEAD*
         { set variable output_case_head }
@@ -617,6 +628,13 @@ if { $number_args == 2 } {
     set delay 0
 
     while { ! [eof $jin] } {
+
+	if {    $comment != "" \
+	     && [regexp $comment $jin_line] } {
+	    set jin_line [gets $jin]
+	    continue
+	}
+
 	set begin_group $last_was_group_mark
 	set begin_case $last_was_case_mark
 	set begin_end $last_was_end_mark
