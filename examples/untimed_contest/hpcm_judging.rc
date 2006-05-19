@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon May 15 10:22:12 EDT 2006
+# Date:		Fri May 19 11:20:21 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: hc3 $
-#   $Date: 2006/05/15 14:23:22 $
+#   $Date: 2006/05/19 15:22:01 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.44 $
+#   $Revision: 1.45 $
 
 # Table of Contents
 #
@@ -459,8 +459,7 @@ set makecontest_arguments "
                 -description] \
     [include_if { $makescoreboard == "yes" } \
     		"-scoreboard"] \
-    [include_if { $web_page_URL != "" } "-web"] \
-    -scoreboard_ssh -scoreboard_procmailrc \
+    -web -scoreboard_ssh -scoreboard_procmailrc \
     $judging_directory/help/index, \
 	=help/ \
     $hpcm_directory/contestant/help/index, \
@@ -521,10 +520,10 @@ set scoreboard_problems \
 
 # Scoreboard instructions for an untimed contest.
 #
+set scoreboard_account_type $account_type
 set scoreboard_instructions {
 
     { OUTPUT scoreboard.web "" "" }
-    GRANT_ACCESS
     SEND
 
     { LINE NAME "" TIME }
@@ -538,6 +537,12 @@ set scoreboard_instructions {
 
     BLANK
     { INPUT scoreboard.tail }
+
+    if { [regexp local $scoreboard_account_type] } {
+	{ OUTPUT contest/scoreboard.1 "" "" }
+	GRANT_ACCESS
+	{ INPUT scoreboard.web }
+    }
 }
 
 set scoring_mode auto
