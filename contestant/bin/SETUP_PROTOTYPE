@@ -4,7 +4,7 @@
 #
 # File:		SETUP_PROTOTYPE
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Wed Oct 22 07:53:01 EDT 2003
+# Date:		Mon Aug 21 09:34:25 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -12,17 +12,17 @@
 #
 # RCS Info (may not be true date or author):
 #
-#   $Author: hc3 $
-#   $Date: 2003/10/22 12:17:52 $
+#   $Author: walton $
+#   $Date: 2006/08/21 13:53:15 $
 #   $RCSfile: SETUP_PROTOTYPE,v $
-#   $Revision: 1.20 $
+#   $Revision: 1.21 $
 
 # List of files always added implicitly to .hpcm_keep
 # and .hpcm_exclude.  Note each line feed is to be
 # followed by a tab for -doc printing purposes.
 #
-always='home bin .hpcm_contest
-	.hpcm_keep .hpcm_exclude .snapshot'
+always='home bin .hpcm_contest .snapshot
+	.hpcm_keep .hpcm_exclude .hpcm_moveonly'
 
 # List of files and directories to exclude from tar
 # and that are NOT to be moved to home.
@@ -33,6 +33,12 @@ exclude=".Xauthority .history"
 # to be moved to home but are to be included in tar.
 #
 keep=".ssh .procmailrc"
+
+# Default list of files and directories that are to
+# be moved to home but not linked from ~ and therefore
+# not included in tar.
+#
+moveonly="RCS"
 
 # Process first argument.
 #
@@ -223,6 +229,11 @@ SETUP_PROTOTYPE
 	$exclude
 	$always
 
+    In addition, no link from ~ is made for some of
+    the moved files, which normally are:
+
+    	$moveonly
+
     After moving files and directories, SETUP_PROTOTYPE
     makes the following files in ~/home/:
 
@@ -241,30 +252,38 @@ SETUP_PROTOTYPE
     reinitialize the home directories of contestant
     accounts.
 
-    The following files in ~ are normally NOT included
-    in setup.tar (and not moved to ~/home):
+    By default the following files in ~ are moved to
+    ~/home but are not linked from ~ to ~/home and are
+    not included in setup.tar:
+
+        $moveonly
+
+    This list of files will be changed to the contents
+    of the file ~/.hpcm_moveonly if this file exists.
+
+    By default the following files in ~ are NOT included
+    in setup.tar and not moved to ~/home:
 
         $exclude
 	$always
-
-    It is possible to change this list of files not in-
-    cluded in setup.tar or moved to ~/home.  If the file
-    ~/.hpcm_exclude is present, its contents replace
-    the list of files just given, except that the files
+
+    This list of files will be changed to the contents
+    of the file ~/.hpcm_exclude if this file exists,
+    except that the files
 
     	$always
 
     are always implicitly added to the contents of
     ~/.hpcm_exclude.
 
-    By default, the files
+    By default, the following files in ~ are not moved
+    to ~/home, but if not listed in ~/.hpcm_exclude,
+    will be included in setup.tar:
 
     	$keep
 
-    are not moved to ~/home, but if not listed in
-    ~/.hpcm_exclude, will be included in setup.tar.  But
-    if the file ~/.hpcm_keep exists, the contents of
-    this file replace this default list of files.
+    This list of files will be changed to the contents
+    of the file ~/.hpcm_keep if this file exists.
 
     SETUP_PROTOTYPE also manages permissions of ~/home
     and the things it contains.  It sets the permission
@@ -336,7 +355,7 @@ else
 fi
 
 
-# Read ~/.hpcm_keep and ~/.hpcm_exclude if they exist.
+# Read ~/.hpcm_{keep,exclude,moveonly} if they exist.
 #
 if test -f .hpcm_keep
 then
@@ -346,6 +365,10 @@ if test -f .hpcm_exclude
 then
 	exclude=`cat .hpcm_exclude`
 fi
+if test -f .hpcm_moveonly
+then
+	moveonly=`cat .hpcm_moveonly`
+fi
 
 # List of files to be tarred:
 #
@@ -354,10 +377,41 @@ files=
 # Move everything in the home directory that is not a
 # symbolic link already, except things listed in `keep',
 # `exclude', or `always'.  Add everything to tar list
-# that is not in `exclude' or `always'.
+# that is not in `exclude' or `always' or `moveonly'.
+#
+# Just move but do not link anything in `moveonly.
 #
 for i in .[^.]* *
 do
+	found=no
+	for j in $moveonly
+	do
+		if test "$i" = "$j"
+		then
+			found=yes
+			break
+		fi
+	done
+
+	if test $found = yes
+	then
+
+		if test ! -d "$i" -a ! -f "$i"
+		then
+			continue
+		fi
+
+		if mv "$i" ~/home
+		then
+			echo "moved $i to ~/home"
+		else
+			echo ERROR in mv "$i" ~/home
+			exit 1
+		fi
+
+		continue
+	fi
+
 	found=no
 	for j in $exclude $always
 	do
