@@ -4,7 +4,7 @@
 #
 # File:		overview
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Mar 21 11:27:07 EST 2006
+# Date:		Sat Sep  2 14:59:10 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -12,10 +12,10 @@
 #
 # RCS Info (may not be true date or author):
 #
-#   $Author: hc3 $
-#   $Date: 2006/03/21 16:33:04 $
+#   $Author: walton $
+#   $Date: 2006/09/02 19:32:42 $
 #   $RCSfile: overview,v $
-#   $Revision: 1.128 $
+#   $Revision: 1.129 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -83,17 +83,34 @@ HPCM has the following features:
 
 	formal	    Contestants are given accounts and
 		    are given problem descriptions all
-		    at once on paper or on the web.
+		    at once on paper.  Problems are
+		    timed from when descriptions are
+		    given out to when solutions are
+		    submitted, and timing counts in the
+		    scoring.
 
 	informal    Contestants are given accounts and
 		    may get problem descriptions one at
-		    a time using the accounts.
+		    a time using the accounts.  Problems
+		    are timed from when a particular
+		    problem's description is gotten to
+		    when that problem's solution is sub-
+		    mitted, and timing counts in the
+		    scoring.
 
-    	email	    Contestants supply their own ac-
+    	untimed	    Contestants may supply their own ac-
 		    counts and communicate with the
-		    judge by email to get problems and
-		    submit solutions.
-
+		    autojudge by email, or contestants
+		    may be given an account.  Problem
+		    descriptions may be put on the web,
+		    passed out on paper, or made avail-
+		    able through the accounts.  Problems
+		    are NOT timed, but feedback may be
+		    given for incorrect submissions, and
+		    the number of incorrect submissions
+		    and quantity of feedback may count
+		    in the scoring.
+
     o Supports different kinds of scoring:
 
     	timed	    The time between when the problem
@@ -109,9 +126,9 @@ HPCM has the following features:
 
 	unranked    Only the number of correct problems
 		    is used to score contestants.
-
-    o Can provide different types of feedback from the
-      judge to the contestant:
+
+    o Can provide different types of automated feedback
+      from the judge to the contestant:
 
          in	    The judge's input for the first
 	 	    failed test case is returned for
@@ -132,7 +149,7 @@ HPCM has the following features:
 
     o Supports complex multi-file problems, such as
       those found in advanced Computer Science courses.
-
+
     o Supports running long term contests and multiple
       simultaneous contests.
 
@@ -144,7 +161,8 @@ HPCM has the following features:
       (bash) so that HPCM can easily be adapted and
       modified.
 
-
+
+
 Requirements
 ------------
 
@@ -167,7 +185,7 @@ shell difficulties like those just mentioned test
 whether they are running bash and, if not, use `which
 bash' to find bash if they can, and run it instead of sh
 if they find it.
-
+
 Programs that are run only by the judge in the judging
 account are mostly written in TCL, whereas programs that
 may be run sometimes outside the judging account are
@@ -180,7 +198,7 @@ TCL can be obtained at:	 	www.scriptics.com
 
 You may need TCL version 8.0 or later.  You will need
 a version of TCL that includes Extended TCL.
-
+
 Bash can be obtained at:
 
 	www.gnu.org/software/bash/bash.html
@@ -192,14 +210,19 @@ A suitable JAVA can be obtained from
 by selecting the jdk platform and downloading jdk
 version 1.3.0 or later.
 
+C++ Standard Templates Library (STL) documentation,
+which is needed to make the stlhelp command work for
+contestants, is available from Silicon Graphics at:
+
+	http://www.sgi.com/tech/stl/
+
 If you want to use COMMONLISP as a programming langu-
 age, HPCM is currently set up to use CLISP, a version
 of COMMONLISP obtainable at
 
 	clisp.cons.org
 
-
-
+
 Installing HPCM
 ---------- ----
 
@@ -207,10 +230,12 @@ There is a separate document, `Installing HPCM' (hpcm/
 judge/bin/installing_hpcm), that describes how to obtain
 and install HPCM.  HPCM can be obtained from
 
-	www.deas.harvard.edu/~hc3/hpcm
+	www.deas.harvard.edu/hc3/hpcm
+
+or
+	www.deas.harvard.edu/~walton/hpcm
 
 
-
 Creating a Contest
 -------- - -------
 
@@ -226,13 +251,13 @@ explains what each of these files contains and suggests
 an order in which these files may be read.
 
 Then choose the type of contest you want to create
-(email, informal, formal) and read
+(untimed, informal, formal) and read
 
-    hpcm/contestant/help/<contest-type>/<contest-type>
+    hpcm/contestant/help/contest/<contest-type>_contest
     hpcm/examples/<contest-type>/Makefile
     hpcm/examples/<contest-type>/hpcm_judging.rc
-
-You should also read
+
+You may also want to try skimming
 
     hpcm/judge/lib/hpcm_judging.rc
 
@@ -249,13 +274,13 @@ with the `-doc' option.  After installing HPCM and run-
 ing `make' in the hpcm directory, all these program
 documents will also be collected within the hpcm/judge/
 doc directory.
-
+
 If you want to create complex problems, such as multi-
 file problems that occur in a more advanced Computer
 Science course, you should read the section `Library
 Data: Problems: Complex Problems' below.
 
-
+
 Data and Programs
 ---- --- --------
 
