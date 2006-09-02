@@ -10,14 +10,14 @@
 #
 # RCS Info (may not be true date or author):
 #
-#   $Author: hc3 $
-#   $Date: 2006/02/24 18:18:20 $
+#   $Author: walton $
+#   $Date: 2006/09/02 19:47:52 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.46 $
+#   $Revision: 1.47 $
 
 # See STATUS file for description of versions.
 #
-VERSION=01_001
+VERSION=02_001
 
 # Tar extension, zip option, and unzip option.
 # Can be set to use zipped or unzipped tar files.
