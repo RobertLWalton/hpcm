@@ -4,7 +4,7 @@
 #
 # File:		overview
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Sep  2 14:59:10 EDT 2006
+# Date:		Tue Sep  5 03:19:12 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/09/02 19:32:42 $
+#   $Date: 2006/09/05 07:55:40 $
 #   $RCSfile: overview,v $
-#   $Revision: 1.129 $
+#   $Revision: 1.130 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -369,7 +369,11 @@ directory:
 		tion on the web, and there will be a
 		corresponding private directory for the
 		same problem containing the postscript
-		file describing the problem.
+		file describing the problem.  For such
+		problems the problem description cannot
+		be redistributed to the public, but the
+		problem test data and solutions are
+		usually redistributable.
 
 The problem directories are listed in the
 
@@ -462,7 +466,9 @@ the library problem directory in the same manner as
 a problem is compiled and run by contestants and by the
 judge.  Doing this results in making temporary files
 that can be removed by the `make clean' command in the
-problem directory.
+problem directory.  If you do very much of this, look at
+the `testproblems' program which automates testing pro-
+blems.
 
 Compilation creates a temporary binary file named `pppp'
 and may create other temporary files for some languages:
@@ -499,6 +505,16 @@ than the solution source file, and then makes the
 pppp.out file if that does not exist or it is older than
 the binary file or the .in file.
 
+Normally `pppp' is invoked with no arguments.  By con-
+vention, if `pppp' is invoked with one or more arguments
+it may produce debugging output.  The `make debug' com-
+mand in the problem directory is like `make' except
+that it executes `pppp debug', with the single argument
+`debug', to make the file:
+
+    pppp.debug	Solution output with extra debugging
+    		information included.
+
 If a problem directory symbolically linked into a con-
 test solutions directory has a pppp.out file, this file
 will be treated as the judge's output in PREFERENCE to
@@ -525,7 +541,7 @@ currently is to run the programs manually by
 Another fix is to do a
 
 	chmod a+x .. ../.. ../../.. ../../../..
-
+
 in the library problem directory; but this has the dis-
 advantage that contestants will then be able to read any
 *.class files in this and maybe other library problem
@@ -534,8 +550,9 @@ below.
 
 Lastly, the `make clean' command in the problem direc-
 tory deletes all temporary files, including `pppp',
-`*.out', `*.fout', `*.jout', `*.jfout', `core',
-`core.\[0-9\]*', `*.class', `*.fas', and `*.lib' files.
+`*.out', `*.fout', `*.jout', `*.jfout', `*.debug',
+`core', `core.\[0-9\]*', `*.class', `*.fas', and `*.lib'
+files.
 
 
 
@@ -567,9 +584,11 @@ these files are optional.
 	       solution directory are needed for judg-
 	       ing, how to make such files in the solu-
 	       tion directory if they do not already
-	       exist, and the order that input files are
-	       used in testing.
-	       
+	       exist, the order that input files are
+	       used in testing, and which files are part
+	       of the solution that might be given to
+	       contestants after the contest.
+
 	       This file contains parameters that over-
 	       ride those set in hpcm_judging.rc, or
 	       that override defaults computed when
@@ -578,7 +597,7 @@ these files are optional.
 	       hpcm_judging.rc by programs that process
 	       a problem submission (e.g., autojudge)
 	       or make a contest (e.g, makecontest).
-
+
 	       See the `Problem .rc Files' section of
 	       hpcm/judge/lib/hpcm_judging.rc for more
 	       detailed documentation.
@@ -594,7 +613,7 @@ these files are optional.
 	                      <xxxx.out >xxxx.fout
 	       Scoring_Filter xxxx.in \\
 	                      <xxxx.test >xxxx.ftest
-
+
     xxxx.jin   This file is input to the jfilter program
                to automatically make the xxxx.in file.
 	       The xxxx.jin file also contains scoring
@@ -614,8 +633,9 @@ these files are optional.
 	       convert .out files to .jout files, .fout
 	       files to .jfout files, .test files to
 	       .jtest files, and .ftest files to .jftest
-	       files.
-
+	       files.  See the jfilter program for more
+	       detailed documentation.
+
     xxxx.ftest  Made from .test by Scoring_Filter.
 
     xxxx.jtest  Made from .test and .jin by jfilter.
@@ -631,7 +651,7 @@ matter.  If you want them to matter, you make a pppp.rc
 file containing
 
 	    set scoring_instructions { }
-
+
 If you do not care about spacing, but want items to end
 in the correct columns, and want numbers to be accurate
 to + or - 0.002, you make a pppp.rc file containing
@@ -654,17 +674,19 @@ and xxxx.out might contain the lines
 Then the command
 
 	Scoring_Filter xxxx.in <xxxx.out >xxxx.fout
-
+
 might produce the xxxx.fout file:
 
     Case 5: 4
     Case 6: not a legal path
 
-where 4 is the length of the `Case 5' path.  If 4 is the
+where 4 is the length of the `Case 5' path.  Here the
+Scoring_Filter program tests whether a path is legal,
+and if yes, outputs the length of the path.  If 4 is the
 length of the shortest path, xxxx.ftest would have the
 same `Case 5' line, but of course it would not have the
 same `Case 6' line.
-
+
 As an example of a .jin file, consider the following
 initial fragment of the demos/count/count.jin file:
 
@@ -692,14 +714,24 @@ ing to this input is
     Paragraph 2: 4 lines, 14 words, 70 characters.
 
 and from this file and the count.jin file the jfilter
-program make the following count.jtest file:
-
+program makes the following count.jtest file:
+
     -Paragraph 1: 1 lines, 8 words, 39 characters.
     -Paragraph 2: 4 lines, 14 words, 70 characters.
 
 The first character of each line here indicates whether
 the line begins a case (-) or continues a case (.) (but
 there are no examples of case continuation line here).
+
+During scoring the .out file will be similarly jfiltered
+to produce the .jout file that will be compared to the
+.jtest file, instead of comparing .out and .test.
+
+If a Scoring_Filter is used to produce an .ftest file,
+then it is this .ftest file that is jfilter'ed to pro-
+duce a .jftest file, rather than jfilter'ing the .test
+file to produce a .jtest file.  Similarly during scoring
+.jfout is produced by jfilter'ing .fout.
 
 Things can get somewhat more complex if cases are
 grouped, as may be necessary if one case cannot test
