@@ -4,7 +4,7 @@
 #
 # File:		overview
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Sep  5 03:19:12 EDT 2006
+# Date:		Tue Sep  5 07:42:32 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/09/05 07:55:40 $
+#   $Date: 2006/09/05 11:49:00 $
 #   $RCSfile: overview,v $
-#   $Revision: 1.130 $
+#   $Revision: 1.131 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -764,10 +764,15 @@ which files are delivered to the contestant:
         Determines which files are delivered to the
 	contestant as source files.
 
+    problem_solution_files
+        Determines which files are delivered to contes-
+	tants as solution files after the contest is
+	over.
+
     problem_excluded_files
         Determines which files listed in the above are
 	to be excluded from delivery to the contestant.
-
+
 All three these global variables have values that are
 lists of regular expressions, with these regular expres-
 sions being matched to the last component of the file
@@ -778,7 +783,14 @@ The `all' option in a problem index passed to the make-
 contest program sets the second variable to the regular
 expression .*, which delivers all files not excluded by
 the last variable to the contestant.
-
+
+The following global variable lists exact file names,
+and not regular expressions
+
+    problem_print_files
+    	Determines which files are to be printed in
+	order to describe the problem.
+
 A problem submission consists of one or more files.
 The global variables
 
@@ -798,7 +810,7 @@ provided the EXTENSION is present and is an allowed
 extension (defined by the allowed_extensions global
 variable in hpcm_judging.rc).  The list of optionally
 submittable files defaults to the empty list.
-
+
 When the autojudge judges a problem submission it needs
 a list of names N such that N.in will be input to the
 submission to produce N.out, which will be compared with
@@ -818,7 +830,7 @@ must be used as a link name, and linked to the other
 things on the list, because the problem directory
 Makefile always makes PROBLEM.out from PROBLEM.in, and
 does not know about other .in files.
-
+
 The order of input names on their list controls the
 order of testing, which can be important in feedback
 scoring.  Unless this order is important, the default
@@ -838,7 +850,7 @@ A typical instruction is
 	{ Scoring_Filter
 	  { g++ -o Scoring_Filter Scoring_Filter.cc }
 	  Scoring_Filter.cc }
-
+
 which says that the Scoring_Filter binary file is to be
 made using the given g++ command if the Scoring_Filter
 file does not exist or if it is older than the Scoring_
@@ -857,7 +869,7 @@ directory.  The global variables
 
 	problem_link_files
 	problem_optional_link_files
-
+
 contain instructions for doing this.  After executing
 these instructions, the autojudge program executes some
 similar instructions of its own which handle the default
@@ -875,7 +887,7 @@ not exist but `N.test' does.
 In addition to the control over problem files given by
 the global variables just mentioned, two other HPCM
 features support complex problems.
-
+
 First, if there is a source file named xxx.ISF, then
 this is an initial value for a read-write submittable
 file named xxx.  The hpcm_get and hpcm_extract programs
@@ -926,38 +938,78 @@ The subdirectories of `hpcm/contestant/help' are
 as follows:
 
     common	Help files used for all kinds of con-
-    		tests (email, informal, and formal).
+    		tests (untimed, informal, and formal).
 
-    email	Help files used for email contests only.
+    contest	Help files used for only one kind of
+    		contest.  E.g., contest/untimed_contest.
+
+    email	Help files used by contestants that pro-
+    		vide their own account and communicate
+		with the autojudge by email.
 
     email/sh	Programs (e.g., hpcm_get, hpcm_extract,
     		hpcm_sandbox, hpcm_submit, hpcm_send-
 		mail) written in the Bourne Shell (sh)
-    		language that can be used by contestants
-		of an email contest on their own com-
-		puters.  Actually, only the GNU Bourne
-		Again Shell (bash) will run some of
-		these programs correctly.
+    		language that can be used by email con-
+		testants on their own computers.  Actu-
+		ally, only the GNU Bourne Again Shell
+		(bash) will run some of these programs
+		correctly.
 
     email/tclsh	Code written in the TCL Shell (tclsh)
-    		language that can be used by contestants
-		of an email contest on their own com-
-		puters, instead of the Bourne shell code
-		just mentioned.  Only programs whose
-		Bourne Shell version requires the GNU
-		bash shell are currently available in
-		tclsh (e.g., hpcm_extract).
-
-    informal	Help files used for informal contests
-    		only.
-
-    formal	Help files used for formal contests
-    		only.
+    		language that can be used by email con-
+		testants on their own computers, instead
+		of the Bourne shell code just mentioned.
+		Only programs whose Bourne Shell version
+		requires the GNU bash shell are current-
+		ly available in tclsh (e.g., hpcm_ex-
+		tract).
 
     advanced	Help files that describe algorithms a
     		contestant should know or learn in
 		order to be more competitive.
 
+    private	Non-distributable documentation, such as
+    		the STL_doc.tar.gz file of STL documenta-
+		tion from SGI for the stlhelp program.
+
+
+Other files in the hpcm/contestant/help directory are:
+
+    Makefile	Implements commands that can make the
+    		files described below.
+
+    index.html	HTML file for the web directory below.
+
+
+The following files and directories can be made, as in
+`make web':
+
+    help.ps	Postscript or pdf file containing all
+    help.pdf	the help files.
+
+    help+.ps	Ditto but begins with a file supplied by
+    help+.pdf	the maker of help+.{ps,pdf}, usually a
+    		this_contest file for a particular con-
+		test.
+
+    demos.ps	Postscript or pdf file containing all
+    		the demonstration files from hpcm/pro-
+		blem_library/demos.
+
+    web		A directory that can be put on the web
+		(it has an index.html file) and that
+		contains all the help and demos files.
+    (web.tar)	When the web directory is made, a tar of
+    		this directory, web.tar, is also made.
+
+The following files are made when making help*.{ps,pdf}
+and demos.{ps,pdf} for incorporation as indices into
+these:
+
+    help_index	Index for help*.{ps,pdf} contents.
+
+    demos_index	Index for demos.{ps,pdf} contents.
 
 Library Data: Example Contests and Tests
 ------- ----- ------- -------- --- -----
