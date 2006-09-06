@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Feb 24 13:14:54 EST 2006
+# Date:		Wed Sep  6 11:53:55 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/09/02 19:47:52 $
+#   $Date: 2006/09/06 15:55:16 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.47 $
+#   $Revision: 1.48 $
 
 # See STATUS file for description of versions.
 #
@@ -69,10 +69,27 @@ NONDIS = non_distributable
 #		hpcm_${VERSION}_solutions${TAREXT}
 #       	hpcm_${VERSION}_${NONDIS}${TAREXT}
 #
+#	Before these files are made, you must make
+#	by hand the file
+#
+#		hpcm_${VERSION}_cvs.tgz
+#
+#	which can be any tar of the HPCM cvs director-
+#	ies.  This might be made, for example, by
+#
+#	    cd HPCM-CVSROOT-DIRECTORY
+#	    tar zcf hpcm_${VERSION}_cvs.tgz CVSROOT hpcm
+#
+#	Also, before these files are made you must de-
+#	fine the HPCM_COPYRIGHT environment variable to
+#	be the copyright notice to be put into the Sig-
+#	natures files (see below).
+#
 # make signatures
 #	Make HPCM_${VERSION}_MD5_Signatures file, a
 #	copyrighted file with signatures of all tar'able
-#	files.
+#	files.  HPCM_COPYRIGHT must be defined (see
+#	above).
 #
 # make md5check
 #	Check the signatures in HPCM_${VERSION}_MD5_
@@ -85,6 +102,7 @@ NONDIS = non_distributable
 #	containing the CVS root for HPCM.  The
 #	signatures file is a copyrighted file with
 #	signatures of all files in the cvs tar file.
+#	HPCM_COPYRIGHT must be defined (see above).
 #
 # make cvsmd5check
 #	Check the signatures in HPCM_${VERSION}_CVS_MD5_
@@ -93,7 +111,25 @@ NONDIS = non_distributable
 # make web
 #	Make web directory containing public files, and
 #	hpcm_${VERSION}_web${TAREXT} which is a tar of
-#	that directory.
+#	that directory.  In order to do this you need
+#	to set the following environment variables:
+#
+#	    HPCM_COPYRIGHT
+#		This is the copyright notice to be put
+#		in the Signatures files.
+#
+#	    HPCM_WEB_CONTACT
+#		Email address of contact to be listed on
+#		the web page.
+#
+#	    HPCM_WEB_PASSWORD
+#		If this is defined, solutions are put in
+#		the web subpage named
+#
+#		    private/${HPCM_WEB_PASSWORD}
+#
+#		where the private directory is not read-
+#		able except by its owner.
 #
 # make clean
 #	Clean everything in this directory.
@@ -204,7 +240,8 @@ md5check:
 
 # Make cvsroot, a directory that holds the cvs files
 # to be MD5 summed.  You must make hpcm_cvs_
-# ${VERSION}${TAREXT} by hand.
+# ${VERSION}${TAREXT} by hand: see `make tar' at the
+# beginning of this file.
 #
 cvsroot:	hpcm_${VERSION}_cvs${TAREXT}
 	rm -rf cvsroot
@@ -336,7 +373,7 @@ file_list.files:	hpcm_${VERSION}.files \
 # This can be diff'ed with file_list.files to see
 # which files are missing from the distribution.
 #
-CVSEXP = ^.*cvsroot\/hpcm\/\(.*\),v$$
+CVSEXP = ^.*cvsroot[^\/]*\/hpcm\/\(.*\),v$$
 cvs.files:	NO_SUCH_FILE
 	rm -f cvs.files
 	cvs log -R | \
