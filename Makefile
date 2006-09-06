@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Sep  6 11:53:55 EDT 2006
+# Date:		Wed Sep  6 12:48:14 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/09/06 15:55:16 $
+#   $Date: 2006/09/06 16:57:03 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.48 $
+#   $Revision: 1.49 $
 
 # See STATUS file for description of versions.
 #
@@ -180,10 +180,15 @@ submakes:
 
 # Make SLOC count files.
 #
-slocs:
-	rm -f source.slocs solution.slocs
+slocs:	source.slocs solution.slocs
+
+source.slocs:
+	rm -f source.slocs
 	sloc_counts -s `file_list 'src | lib | bin' ` \
 		    > source.slocs
+
+solution.slocs:
+	rm -f solution.slocs
 	sloc_counts -s `file_list 'solution' ` \
 		    > solution.slocs
 

@@ -4,7 +4,7 @@
 #
 # File:		overview
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Sep  5 07:42:32 EDT 2006
+# Date:		Wed Sep  6 06:38:36 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/09/05 11:49:00 $
+#   $Date: 2006/09/06 16:57:03 $
 #   $RCSfile: overview,v $
-#   $Revision: 1.131 $
+#   $Revision: 1.132 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -1021,7 +1021,7 @@ Subdirectories of
 contain parameter files necessary to set up a specific
 type of contest.  Some of these subdirectories are:
 
-    email_contest	Example email contest.
+    untimed_contest	Example untimed contest.
 
     informal_contest	Example informal contest.
 
@@ -1084,16 +1084,19 @@ There are a few files in the system root directory
 		previous distribution.
 
     File_List	This file lists all the files that can
-    		be distributed.
+    		be distributed, and tells which files
+		are solution files, which are data files
+		for testing, which are private and non-
+		distributable, etc.
 
     signatures_header
-    hpcm_VVV_VV_cvs.tgz		(gzipped tar file)
+    hpcm_VV_VVV_cvs.tgz		(gzipped tar file)
     web_index.html
     web_solutions_index.html
     		Files used to make a distribution and
 		put it on the web.  See documentation in
-		`Makefile'.  VVV_VV is the current HPCM
-		version and hpcm_VVV_VV_cvs.tgz is a
+		`Makefile'.  VV_VVV is the current HPCM
+		version and hpcm_VV_VVV_cvs.tgz is a
 		tar of the current cvs hpcm repository
 		(that is used to make a signatures file
 		for the repositiory).
@@ -1106,53 +1109,61 @@ system root (hpcm) directory effects is
 in which `make' stores copies of all per-program docu-
 mentation.
 
-When a distribution is made, the following files and
-directories made in the system root directory (hpcm):
+A distribution web page can be made by executing `make
+web' in the system root (hpcm) directory.  This makes
+the following files in this directory:
 
     cvsroot	A directory containing the files in
     		hpcm_VV_VVV_cvs.tgz.
 
-    HPCM_VVV_VV_CVS_MD5_Signatures
+    HPCM_VV_VVV_CVS_MD5_Signatures
     		A copyrighted file containing the MD5
 		signatures of all files in cvsroot.
 
-    hpcm_VVV_VV.files
+    hpcm_VV_VVV.files
     		A list of all files other than the
 		HPCM*_Signatures files that are included
 		in the non-solution part of the public
 		distribution.
 
-    hpcm_VVV_VV_solutions.files
+    hpcm_VV_VVV_solutions.files
     		List of all files included in the solu-
 		tions public distribution.
 
-    hpcm_VVV_VV_non_distributable.files
+    hpcm_VV_VVV_non_distributable.files
     		List of all files that are not included
 		in any part of the distribution.
 
-    HPCM_VVV_VV_MD5_Signatures
+    HPCM_VV_VVV_MD5_Signatures
     		A copyrighted file containing the MD5
 		signatures of all distributed and non-
 		distributed files.
 
-    hpcm_VVV_VV.tgz
+    hpcm_VV_VVV.tgz
     		A gzipped tar file that is the non-solu-
 		tion public distribution.
 
-    hpcm_VVV_VV_solutions.tgz
+    hpcm_VV_VVV_solutions.tgz
     		A gzipped tar file that is the solutions
-		public distribution.
+		public distribution if the HPCM_WEB_
+		PASSWORD environment variable is de-
+		fined.
 
     web		A directory containing a web page (an
     		index.html file) and related files
-		(including hpcm_VVV_VV.tgz), designed to
+		(including hpcm_VV_VVV.tgz), designed to
 		be put on the web.  If solutions are
 		included, there is a solutions subpage
 		that is protected by a URL (subdirectory
-		name) containing a password.
+		name) containing a password defined by
+		the HPCM_WEB_PASSWORD environment vari-
+		able.
 
-    hpcm_VVV_VV_web.tgz
+    hpcm_VV_VVV_web.tgz
     		Gzipped tar file of the web directory.
+
+These files can also be made without making them all by
+`make FILENAME' commands.
 
 Some other files that can be made in the system root
 (hpcm) directory are:
@@ -1160,9 +1171,9 @@ Some other files that can be made in the system root
     file_list.files
     		Sorted list of all the files listed in
 		File_List, which is the list of files
-		whose signatures are in HPCM_VVV_VV_MD5_
+		whose signatures are in HPCM_VV_VVV_MD5_
 		Signatures.
-
+
     cvs.files
     		Sorted list of all files currently in
 		the cvs repository, made by `cvs log',
@@ -1172,7 +1183,7 @@ Some other files that can be made in the system root
 		file_list.files to determine differences
 		between the list of files in File_List
 		and the files in the repository.
-
+
     source.slocs
     solution.slocs
     		Files that contain the SLOC (Source
@@ -1180,9 +1191,12 @@ Some other files that can be made in the system root
 		source files and for distributable
 		solution files, respectively.
 
-    hpcm_VVV_VV_non_distributable.tgz
+    hpcm_VV_VVV_non_distributable.tgz
     		Gzipped tar file of all non-distributa-
 		ble files.
+
+Lastly the MD5 sums in the Signatures files can be
+checked by `make md5check' and `make cvsmd5check'.
 
 Contest Definition Data: The Judging Directory
 ------- ---------- ----- --- ------- ---------
