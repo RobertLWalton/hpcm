@@ -4,7 +4,7 @@
 #
 # File:		overview
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Sep  6 06:38:36 EDT 2006
+# Date:		Fri Sep  8 11:12:56 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/09/06 16:57:03 $
+#   $Date: 2006/09/08 19:57:20 $
 #   $RCSfile: overview,v $
-#   $Revision: 1.132 $
+#   $Revision: 1.133 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -1255,10 +1255,6 @@ are listed elsewhere below.  The following are the
 initial components of the judging directory, from which
 all other components are made by `makecontest'.
 
-Starting from the hpcm_judging.rc file, the other con-
-test defining components are made automatically by the
-`makecontest' program.
-
     hpcm_judging.rc
         The contest parameters file.  This is edited
 	by hand to define the contest.  It begins
@@ -1272,9 +1268,10 @@ test defining components are made automatically by the
 	UNIX `make' program so that running `make' in
 	the judging directory will run `makecontest' to
 	build all the contest definition files.  Also
-	implements `make web' to make a web page and
-	`make problems.pdf', `make this_contest.pdf',
-	etc. to make documentation.
+	implements `make web' to make a web page, `make
+	problems.pdf', `make this_contest.pdf', etc. to
+	make documentation, and `make test' to test
+	the contest.
 
     scoreboard.1head
         Initial value of the ./contest/scoreboard.1head
@@ -1286,14 +1283,28 @@ test defining components are made automatically by the
 	After the contest starts the file in the
 	./contest directory is typically edited by hand.
 
-    scoreboard.notes
-        A file standardly appended to the scoreboard by
-	the `makescoreboard' program for an email
-	contest.  This file has an initial value, and
-	may be edited by hand as the contest progresses.
+    scoreboard.head
+    scoreboard.tail
+        Files standardly prepended (.head) and appended
+	(.tail) to the scoreboard by the `makescore-
+	board' program for an untimed contest.  The
+	.head file typically has an initial value that
+	may be edited by hand as the contest progres-
+	ses, whereas the .tail file typically does not
+	exist (if these files do not exist, it is as if
+	they were empty).
 
-The contest defining components of the judging directory
-that are created by `makecontest' are:
+The exact files used to create the scoreboard are de-
+fined by the scoreboard_instructions global variable in
+hpcm_judging.rc.  The files listed above are defined by
+the versions of hpcm_judging.rc in the hpcm/examples/
+*_contest directories, but redefining this global
+variable changes how the scoreboard is created.
+
+The following are contest defining components of the
+judging directory that are created by the `make' com-
+mand, which simply invokes `makecontest', which uses
+data from hpcm_judging.rc.
 
     solutions
         The solutions directory for the contest.  Each
@@ -1315,18 +1326,27 @@ that are created by `makecontest' are:
 
     info
         The info directory for the contest.  This only
-	exists for email and informal contests, and it
-	is the root of a subdirectory tree that holds
-	the files that can be obtained by contestants
-	via email (the contestants often use hpcm_get
-	which for email and informal contests uses email
-	under the hood).  Thus the contents of the info
-	directory proper are just three subdirectories:
-	help, demos, and problems.  These in turn con-
-	tain files and subdirectories.  The files
-	proper are typically represented by symbolic
-	links to files in problem solution directories:
-	see `makecontest' documentation.
+	exists for informal contests and untimed con-
+	tests that permit contestants to submit by
+	email, and it is the root of a subdirectory tree
+	that holds the files that can be obtained by
+	contestants via email.  Contestants use hpcm_
+	get for informal contests, which for uses email
+	under the hood, and contestants using their own
+	accounts and communicating with the autojudge
+	by email may be able to get and run hpcm_get
+	in their own account.
+	
+	The contents of the info directory proper are
+	just three subdirectories: help, demos, and
+	problems, which are copies of the directories
+	of the same names in the contest directory (see
+	below), if the contest directory exists.  These
+	directories in turn contain files and subdirec-
+	tories.  The files proper are typically repre-
+	sented by symbolic links to files in problem
+	solution directories: see `makecontest' documen-
+	tation.
 
 	The info directory and its contents are made
 	automatically by `makecontest -info'.
