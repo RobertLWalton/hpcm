@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon May 15 09:28:59 EDT 2006
+# Date:		Fri Sep  8 11:44:38 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -10,10 +10,10 @@
 #
 # RCS Info (may not be true date or author):
 #
-#   $Author: hc3 $
-#   $Date: 2006/05/15 14:58:00 $
+#   $Author: walton $
+#   $Date: 2006/09/08 15:46:03 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.67 $
+#   $Revision: 1.68 $
 #
 # To make an untimed contest named `foo':
 #
@@ -98,9 +98,8 @@
 #     hpcm/examples/test_submissions/Makefile file.
 #
 # 10. A web page containing problem descriptions, and
-#     optionally solutions, can be made by defining the
-#     web page parameters in hpcm_judging.rc and execut-
-#     ing `make web'.
+#     optionally solutions, is made using the web page
+#     parameters in hpcm_judging.rc.
 #
 #     A directory named ./web containing this web page
 #     and associated files is created, and a tar file
