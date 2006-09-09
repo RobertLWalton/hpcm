@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Mar 21 21:53:50 EST 2006
+# Date:		Sat Sep  9 08:42:45 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -10,10 +10,10 @@
 #
 # RCS Info (may not be true date or author):
 #
-#   $Author: hc3 $
-#   $Date: 2006/03/22 02:50:56 $
+#   $Author: walton $
+#   $Date: 2006/09/09 12:42:01 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.42 $
+#   $Revision: 1.43 $
 #
 # To make an informal contest named `foo':
 #
@@ -213,9 +213,7 @@ all:
 web_do_nothing:
 
 web:	web_do_nothing
-	rm -rf web web.tar
-	makeweb
-	cd web; tar cf ../web.tar *
+	makecontest -web
 
 # Printout Rules:
 
