@@ -4,7 +4,7 @@
 #
 # File:		overview
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Sep  8 11:12:56 EDT 2006
+# Date:		Sat Sep  9 14:41:52 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/09/08 19:57:20 $
+#   $Date: 2006/09/09 18:45:36 $
 #   $RCSfile: overview,v $
-#   $Revision: 1.133 $
+#   $Revision: 1.134 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -970,8 +970,8 @@ as follows:
 		order to be more competitive.
 
     private	Non-distributable documentation, such as
-    		the STL_doc.tar.gz file of STL documenta-
-		tion from SGI for the stlhelp program.
+    		the STL_doc.tar.gz file of STL documen-
+		tation from SGI for the stlhelp program.
 
 
 Other files in the hpcm/contestant/help directory are:
@@ -1099,7 +1099,7 @@ There are a few files in the system root directory
 		version and hpcm_VV_VVV_cvs.tgz is a
 		tar of the current cvs hpcm repository
 		(that is used to make a signatures file
-		for the repositiory).
+		for the repository).
 
 One of the subdirectories that typing `make' in the
 system root (hpcm) directory effects is
@@ -1300,11 +1300,15 @@ hpcm_judging.rc.  The files listed above are defined by
 the versions of hpcm_judging.rc in the hpcm/examples/
 *_contest directories, but redefining this global
 variable changes how the scoreboard is created.
-
-The following are contest defining components of the
-judging directory that are created by the `make' com-
-mand, which simply invokes `makecontest', which uses
-data from hpcm_judging.rc.
+
+Contests are made by making ~/judging_cccc_ppppppppppp,
+making the above files by copying them from hpcm/
+examples/*_contest and editing hpcm_judging.rc, and then
+executing the `make' command which calls `makecontest'
+to create the following files if they are appropriate to
+the type of contest.  There are also some manual steps
+required to make a contest, but `make' produces a `TODO'
+file that gives instructions on how to do each of these.
 
     solutions
         The solutions directory for the contest.  Each
@@ -1315,7 +1319,7 @@ data from hpcm_judging.rc.
 	The solutions directory and its contents (i.e.,
 	the symbolic links) are made automatically by
 	`makecontest -solutions'.
-
+
 	For formal contests problems are often used that
 	have not yet been entered into the problem lib-
 	rary, and the problem directories for these are
@@ -1323,8 +1327,11 @@ data from hpcm_judging.rc.
 	has an index file listing the problems.  This
 	index file is in a format suitable for the
 	`makecontest' program.
-
+
     info
+    info+
+    info-
+    info--
         The info directory for the contest.  This only
 	exists for informal contests and untimed con-
 	tests that permit contestants to submit by
@@ -1349,8 +1356,14 @@ data from hpcm_judging.rc.
 	tation.
 
 	The info directory and its contents are made
-	automatically by `makecontest -info'.
-
+	automatically by `makecontest -info'.  The
+	info+ directory is the info directory made by
+	this command and then renamed to info if it
+	does not already equal info.  The info- and
+	info-- directories are the two previous versions
+	of the info directory: they can be compared by
+	`diff -r info- info', etc.
+
     contest
         The contest directory of the contest.  Actually,
 	this is not a subdirectory proper of the judging
@@ -1361,9 +1374,11 @@ data from hpcm_judging.rc.
 	must not know the full name of the judging di-
 	rectory.
 
-	Only informal and formal contests have a contest
-	directory.  Email contests do not.
-
+	Only contests that give contestants accounts
+	have a contest directory.  This includes formal
+	and informal contests, and untimed contests that
+	have contestant accounts.
+
 	The contest directory itself and the symbolic
 	link from the judging directory to the contest
 	directory can be made automatically by `make-
@@ -1381,7 +1396,7 @@ data from hpcm_judging.rc.
 	is merely a staging area for the `this_contest'
 	help file.  It contains the following files that
 	are created by `makecontest -this_contest':
-
+
 	    this_contest
 	        The help file particular to the contest.
 		The initial version of this file equals
@@ -1398,7 +1413,7 @@ data from hpcm_judging.rc.
 		contest' that lists all the index
 		files output by that program and also
 		lists the `this_contest' help file.
-
+
 	    this_contest_parameters
 	    	A header line followed by the value of
 		the `this_contest' global variable when
@@ -1420,6 +1435,30 @@ data from hpcm_judging.rc.
 	except that the help file list begins with this_
 	contest followed by an index file.  These list
 	files are made by `makecontest -print_files'.
+
+    solution_files
+        List of solution files that `make web' will put
+	into a private solutions web page.  Made by
+	`makecontest -solution_files'.
+
+    web
+    web+
+    web-
+    web--
+    web.tar
+    	The web directory and its tar file, web.tar, are
+	made by `makecontest -web' and hold the contest
+	web page that includes problem descriptions and
+	may optionally include problem solutions.  For
+	formal and informal contests these are made by
+	`make web', usually at the end of the contest.
+	For untimed contests these are made by `make'
+	for use when the contest starts.  The web+ dir-
+	ectory is the web directory made by makecontest
+	and then renamed to web if it does not already
+	equal web.  The web- and web-- directories are
+	the two previous versions of the web directory:
+	they can be compared by `diff -r web- web', etc.
 
     mail
     	A directory made by `makecontest -mail' that
@@ -1432,6 +1471,46 @@ data from hpcm_judging.rc.
 	setup.tar in `Contest Definition Data: The Con-
 	test Directory' below.
 
+    zzz_authorized_keys
+    zzz_identity
+    zzz_identity.pub
+        Files made by `makecontest -scoreboard_ssh' that
+	are used to copy the scoreboard automatically to
+	remote accounts when the scoreboard is to be
+	displayed on the web page of a remote account.
+	Here zzz names in some manner the remote ac-
+	count, and is an element of the scoreboard_ssh
+	variable automatically computed from the score-
+	board_addresses variable by the hpcm/examples/
+	*_contest/hpcm_judging.rc files.  The *_author-
+	ized_keys file is to be added to the .ssh/
+	authorized_keys file of the zzz remote account,
+	and the other files are the keys used and are
+	generated by the ssh_keygen function defined in
+	hpcm/judge/lib/hpcm_judging.rc.  Copying is done
+	using ssh and the *_authorized_keys entry is
+	set up so that it can be used ONLY to copy a
+	scoreboard file of limited size to a specific
+	place in the remote account.
+
+    zzz_procmailrc
+	Made by `makecontest -scoreboard_procmailrc' and
+	similar to the zzz_authorized_keys files, except
+	the scoreboard is sent to the remote account by
+	email, and a zzz_procmailrc file is be added to
+	the .procmailrc file of the remote account named
+	by zzz.  Here zzz is an element of the score-
+	board_procmailrc global variable automatically
+	computed from the scoreboard_addresses variable
+	by hpcm/examples/*_contest/hpcm_judging.rc.
+
+    Contest_Address
+        Made by `makecontest -procmailrc', this file
+	contains an email address that can be used to
+	submit solutions to the autojudge.  The file is
+	used by `make test' to send solutions used to
+	test the contest.
+
     TODO
     	When `makecontest' runs, it appends instructions
 	to its user to the end of this file.  Typical
@@ -1441,10 +1520,43 @@ data from hpcm_judging.rc.
 	satisfied an instruction, the user typically
 	edits the instruction out of the TODO file.
 
+After `make' is run to make a contest, `make test' may
+be run to test the contest.  Then the following are made
+as indicated:
+
+    mbox
+        `make test' produces email replies in the
+	judge's ordinary email box.  These must be
+	copied by hand into this `mbox' file.
+
+    replies
+        `make extract_replies' makes this subdirectory
+	and then extracts test replies from the mbox
+	file and puts them in this subdirectory.  An
+	email is known to be a test reply if it has an
+	X-HPCM-Test-Subject header field.  After doing
+	this, `make diff_replies' can be used to compare
+	the `replies' directory replies against expected
+	results in one of the hpcm/examples/test_submis-
+	sions/*_replies directories.
+
 There are a few other components of the judging direc-
 tory that are made during the contest, but are not made
-by `makecontest'.  These are listed below in the
-`Contest Raw Data' and `Contest Derived Data' sections.
+by `make', `make test', or `make web'.  These are:
+
+    log
+	See `Contest Raw Data: Directories'.
+
+    flag
+    Scoreboard_PID
+    Startcontest_PID
+	See `Contest Derived Data: Processing Status
+	Files'.
+
+    Scorefinder_Output
+    Scorefinder_Output+
+    scoreboard.web
+	See `Contest Derived Data: Scoreboard Files'.
 
 Contest Definition Data: The Contest Directory
 ------- ---------- ----- --- ------- ---------
@@ -3135,7 +3247,7 @@ different files):
 
   For email contests:
 
-    <judging-directory>/scoreboard.mail
+    <judging-directory>/scoreboard.web
         A copy of the scoreboard emailed to an address
 	by `makescoreboard'.  Contains copies of the
 	scoreboard.notes file and scoreboard table.
