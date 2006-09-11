@@ -4,7 +4,7 @@
 #
 # File:		overview
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Sep  9 14:59:00 EDT 2006
+# Date:		Mon Sep 11 07:16:32 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/09/09 18:58:53 $
+#   $Date: 2006/09/11 15:19:47 $
 #   $RCSfile: overview,v $
-#   $Revision: 1.135 $
+#   $Revision: 1.136 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -1311,6 +1311,9 @@ required to make a contest, but `make' produces a `TODO'
 file that gives instructions on how to do each of these.
 
     solutions
+    solutions+
+    solutions-
+    solutions--
         The solutions directory for the contest.  Each
 	component of the solutions directory is a sym-
 	bolic link to a problem directory.  Often these
@@ -1327,6 +1330,15 @@ file that gives instructions on how to do each of these.
 	has an index file listing the problems.  This
 	index file is in a format suitable for the
 	`makecontest' program.
+
+	The `solutions+' directory is the `solutions'
+	directory made by `makecontest -solutions' and
+	then renamed to `solutions' if its contents do
+	not already equal the contents of `solutions'.
+	The `solutions-' and `solutions--' directories
+	are the two previous versions of the `solutions'
+	directory: they can be compared by `diff -r
+	solutions- solutions', etc.
 
     info
     info+
@@ -1358,11 +1370,12 @@ file that gives instructions on how to do each of these.
 	The info directory and its contents are made
 	automatically by `makecontest -info'.  The
 	info+ directory is the info directory made by
-	this command and then renamed to info if it
-	does not already equal info.  The info- and
-	info-- directories are the two previous versions
-	of the info directory: they can be compared by
-	`diff -r info- info', etc.
+	this command and then renamed to info if its
+	contents do not already equal the contents of
+	info.  The info- and info-- directories are the
+	two previous versions of the info directory:
+	they can be compared by `diff -r info- info',
+	etc.
 
     contest
         The contest directory of the contest.  Actually,
@@ -1455,10 +1468,11 @@ file that gives instructions on how to do each of these.
 	For untimed contests these are made by `make'
 	for use when the contest starts.  The web+ dir-
 	ectory is the web directory made by makecontest
-	and then renamed to web if it does not already
-	equal web.  The web- and web-- directories are
-	the two previous versions of the web directory:
-	they can be compared by `diff -r web- web', etc.
+	and then renamed to web if its contents do not
+	already equal the contents of web.  The web- and
+	web-- directories are the two previous versions
+	of the web directory: they can be compared by
+	`diff -r web- web', etc.
 
     mail
     	A directory made by `makecontest -mail' that
@@ -1561,16 +1575,17 @@ by `make', `make test', or `make web'.  These are:
 Contest Definition Data: The Contest Directory
 ------- ---------- ----- --- ------- ---------
 
-Formal and informal contests have a contest directory
-containing files that can be accessed by contestants.
-Email contests do not have this directory.
+Contests that give accounts to contestants have a con-
+test directory containing files that can be accessed by
+contestant accounts.  All formal and informal contests
+have such a contest directory.  Untimed contests have
+this directory only if they give contestants accounts.
 
-Each contestant in a formal or informal contest has
-an account in which `~/.hpcm_contest' is symbolically
-linked to the contest directory.  The contest directory
-itself has a+x permissions and contains the following
-components that contestants can access (these components
-are listed in alphabetical order).
+In each contestant account `~/.hpcm_contest' is symbol-
+ically linked to the contest directory.  The contest
+directory itself has a+x permissions and contains the
+following components that contestants can access (these
+components are listed here in alphabetical order).
 
     bin
     	A directory containing programs the contestants
@@ -1595,6 +1610,9 @@ are listed in alphabetical order).
 	ling HPCM' (hpcm/judge/doc/installing_hpcm.txt).
 
     demos
+    demos+
+    demos-
+    demos--
         This is a directory that contains demonstration
 	problems.  It is strictly analogous to the
 	`problems' directory, see below, and is made by
@@ -1615,23 +1633,27 @@ are listed in alphabetical order).
 	testant's account using ssh without a password.
 
     help
-    	This directory contains a+r copies of all the
-	help files for the contestants.  These can be
-	read by the contestant `help' program.
+    help+
+    help-
+    help--
+    	The `help' directory contains a+r copies of all
+	the help files for the contestants.  These can
+	be read by the contestant `help' program.
 
-	This `help' directory and its contents are
-	made automatically by `makecontest -help'.  It
-	is an exact copy of info/help for informal
-	contests, which are the only contests for which
-	both directories exist.
-
+	The `help' directory and its contents are made
+	automatically by `makecontest -help'.  This dir-
+	ectory is an exact copy of info/help if that
+	directory exists (which it does for informal
+	contests and untimed contests in which contes-
+	tants can submit by email).
+
 	The following are some special help files
 	of note:
 
 	    this_contest
 	    	Information specific to the current
 		contest.
-
+
 	    index
 	    	Index of all help files.
 
@@ -1645,9 +1667,20 @@ are listed in alphabetical order).
 	have a+r permissions when it is made, so that
 	contestants in a formal contest cannot find
 	out about the problems before the contest
-	starts.  The `startcontest' program sets the
-	permissions on this file to a+r.
+	starts.  The `makecontest -start' command uses
+	the `startcontest' program to set permissions
+	on this file to a+r.  For a formal contest, the
+	`startcontest' program waits until the starting
+	time of the contest to set these permissions.
 
+	`makecontest -help' first makes the `help+' di-
+	rectory and then renames it to `help' if its
+	contents do not already equal the contents of
+	`help'.  The `help-' and `help--' directories
+	are the two previous versions of the `help'
+	directory: they can be compared by `diff -r
+	help- help', etc.
+
     help1
     help2
     help3
@@ -1662,7 +1695,7 @@ are listed in alphabetical order).
 	any help2/tttt file can be hidden.  This permits
 	an altered version of a help file to be readily
 	used for a single contest.
-
+
     home
 	This directory is called the `contest home'
 	directory.  It is symbolically linked to a di-
@@ -1687,7 +1720,7 @@ are listed in alphabetical order).
 	used by a contest can be defined by setting the
 	`hpcm_prototype_account' global variable, or
 	manually creating the symbolic link.
-
+
     javahelp
     	This file is made by `makecontest -javahelp'
 	from the `javahelp' global variable.  The file
@@ -1695,12 +1728,6 @@ are listed in alphabetical order).
 	that can be run by contestants onto a browser
 	command that displays the JAVA API.
 
-    mail
-    	This directory is made by `makecontest -mail'.
-	It holds submissions, one per subdirectory,
-	that are made during the contest.  See `Contest
-	Raw Data: Submissions' below.
-
     printer_map
         This file contains a map from contestant names,
 	specified by regular expressions, to printer
@@ -1724,7 +1751,7 @@ are listed in alphabetical order).
 	it does not exist, and may be edited by hand.
 	This file may be disabled by manually changing
 	its mode to a-rw.
-
+
     printer_jobs
         If this file exists and is a+w, each use of the
 	printer by one of the print commands in the
@@ -1738,90 +1765,103 @@ are listed in alphabetical order).
 	This file is used by the contestant `printer'
 	program if it is a+r to output printer status,
 	and by the judges to monitor printer activity.
-
+
 	This file is made by `makecontest -printer' and
 	`makecontest -printer_map' if it does not exist,
-	and can be made a-rw by hand.
+	and can be disabled by manually changing its
+	mode to a-rw.
 
     problems
-    	This directory contains problem directories for
-	each of the contest problems.  The strictly
+    problems+
+    problems-
+    problems--
+    	The `problems' directory contains subdirectories
+	for each of the contest problems.  The strictly
 	analogous `demos' directory (see above) contains
-	demonstration problems.  These directories only
-	exist for formal contests; for email and infor-
-	mal contests, the same information (plus problem
-	description files), see below) is put in info/
-	problems and info/demos.
+	subdirectories for each demonstration problem.
 
-	Each non-demonstration problem directory in the
-	contest directory is a subdirectory of this
-	`problems' directory that has as its name the
-	name of the problem.  Thus a problem named
+	These directories are almost exact copies of the
+	info/problems or info/demos directories, when
+	the latter exist.  However contest/problems does
+	not have problem description (e.g., .txt) files
+	(unless the make- contest -description option
+	mentioned below is used), and the files in
+	contest/problems and contest/demos are copies,
+	because they must be readable by contestants,
+	while the files in info/problems and info/demos
+	are symbolic links, which are only readable by
+	the judging account.
+
+	The subdirectory for a problem has as its name
+	the name of the problem.  Thus a problem named
 	`pppp' would have `problems/pppp' as the name of
-	its problem directory within the contest direc-
-	tory.  Demonstration problems are similar but
+	its problem subdirectory within the contest di-
+	rectory.  Demonstration problems are similar but
 	are in the `demos' directory instead of the
 	`problems' directory.
-
-	Within each problem directory there is standard-
-	ly an a+r copy of the `Makefile' of the problem.
-	It is also possible to include an a+r copy of a
-	file describing the problem, but this is NOT
-	done for timed formal contests, as for these
-	only paper printouts of these files are normally
-	given to the contestants.  For demonstration
-	problems (in `demos') many a+r file copies may
-	be in the problem directory, as judge's input
-	and output and solutions in different program-
-	ming languages are often provided.  For complex
-	problems (see `Library Data: Problems: Complex
-	Problems' above) a+r copies of some source files
-	are included in addition to `Makefile'.  A+r
-	copies of problem description files can be
-	included if desired by adding the `-description'
-	option to the makecontest arguments, as in
-	`makecontest -problems -description'.
 
-	For a formal contest, the contestant's hpcm_get
-	program creates a problem directory ppp in the
-	contestant's account, and symbolically links
-	into that directory all files in the contest/
-	problems/ppp directory in the judge's account,
-	by using the fact that this directory can be
-	accessed by the name .hpcm_contest/problems/ppp
-	in the contestant account.  For an informal
-	contest hpcm_get obtains the same information
-	from the `info/problems' directory by email and
-	makes read-only copies of the files in the con-
-	testant account.  If a one of the files made
-	available in a contestant's directory by hpcm_
-	get has the name xxx.ISF, then hpcm_get makes a
-	writable copy named xxx of that file.  Here ISF
-	stands for `Initial Source File'.
+	The `problems' directory is made by `makecontest
+	-problems', which first makes the `problems+'
+	directory and then renames it to `problems' if
+	its contents do not already equal those of `pro-
+	blems'.  The `problems-' and `problems--' direc-
+	tories are the two previous versions of the
+	`problems' directory: they can be compared by
+	`diff -r problems- problems', etc.
+
+	Within each problem subdirectory there is stan-
+	dardly an a+r copy of the `Makefile' of the pro-
+	blem.  It is also possible to include a+r copies
+	of files describing the problem, but this is NOT
+	done for timed contests, as for these problem
+	descriptions are either given out on paper or
+	for informal contests are delivered from info/
+	problems subdirectories by hpcm_get.
+
+	For demonstration problems (in `demos') many a+r
+	file copies may be in the problem subdirectory,
+	as judge's input and output and solutions in
+	different programming languages are often pro-
+	vided.  For complex problems (see `Library Data:
+	Problems: Complex Problems' above) a+r copies of
+	some source files are included in addition to
+	`Makefile'.  A+r copies of problem description
+	files can be included in problem subdirectories
+	if desired by adding the `-description' option
+	to the makecontest arguments.
 
+	If a contestant has an account and the contest
+	is NOT an informal contest, the contestant's
+	hpcm_get program creates a problem directory ppp
+	in the contestant's account, and symbolically
+	links into that directory all files in the
+	contest/problems/ppp directory in the judge's
+	account, by using the fact that this directory
+	can be accessed by the name .hpcm_contest/
+	problems/ppp in the contestant account.
+
 	This `contest/problems' directory (unlike the
 	`contest/demos' directory) does not have a+rx
 	permissions when it is made, so that contestants
 	in a formal contest cannot find out about the
-	problems before the contest starts.  The `start-
-	contest' program sets the permissions on this
-	directory to a+rx.
-
-	This `problems' directory and its contents are
-	made automatically by `makecontest -problems'.
-	This contest/problems directory is an exact copy
-	for formal contests of what goes into info/
-	problems for informal and email contests, except
-	that contest/problems does not have problem de-
-	scription (e.g., .txt) files (unless the make-
-	contest -description option is used), and the
-	files in contest/problems are copies, because
-	they must be readable by contestants, while the
-	files in info/problems are symbolic links, which
-	are only readable by the judging account.
-
-	The `demos' directory is similarly made and is
-	an exact copy of what would go into info/demos.
+	problems before the contest starts.  The `make
+	-start' command invokes the `startcontest' pro-
+	gram to set the permissions on this directory to
+	a+rx.  For a formal contest, the `startcontest'
+	program waits until the starting time of the
+	contest to set these permissions.
+	
+	For an informal contest hpcm_get obtains the
+	same information from the `info/problems' di-
+	rectory by email and makes read-only copies of
+	the files in the contestant account.
+	
+	If a one of the files made available in a con-
+	testant's directory by hpcm_get (either by
+	symbolic link or by email) has the name xxx.ISF,
+	then hpcm_get makes a writable copy named xxx of
+	that file.  Here ISF stands for `Initial Source
+	File'.
 
     scoreboard.1head
     scoreboard.1
@@ -1895,10 +1935,11 @@ are listed in alphabetical order).
 		sends to the judge.  It does prevent
 		complete outsiders from `crashing the
 		party', however.
-
-		The key, however, is not visible to the
-		contestant.
 
+		The key, however, is not visible to the
+		contestant.  See `Contest Definition
+		Data: Security' below more details.
+
 		This file is made by `makecontest
 		-secure', which creates random passwords
 		for the email address and key.
@@ -1932,11 +1973,11 @@ are listed in alphabetical order).
 		if everything is working.  However, you
 		should NOT include the prototype account
 		in which SETUP_PROTOTYPE is run.
-
+
 		This file can contain comment lines
 		whose first non-space non-tab character
 		is `#'.  Blanks lines are also ignored.
-
+
 	    secure/passwords_header
 	        This is a file used by hpcm_print_pass-
 		words or hpcm_email_passwords.  Hpcm_
@@ -1951,6 +1992,14 @@ are listed in alphabetical order).
 		the results to the coaches instead of
 		printing.
 
+    stlhelp
+    	This file is made by `makecontest -stlhelp' from
+	the `stlhelp' global variable.  The file maps
+	the hpcm/contestant/bin/stlhelp program that can
+	be run by contestants onto a browser command
+	that displays the C++ Standard Templates Library
+	(STL) API.  Similar to `javahelp' above.
+
     who_where
         This file is a copy of the secure/passwords file
 	but with the password field value replaced by
@@ -1962,25 +2011,28 @@ are listed in alphabetical order).
 	missing, not a+r, or the `WHERE' field has not
 	been filled in by hand, the print programs use
 	the contestant account name instead.
-
+
 	The who_where file is made automatically from
 	the secure/passwords file by `makecontest -who_
 	where' and updated automatically by that command
 	when the secure/passwords file changes.  How-
 	ever, the `WHERE' field in the who_where file
 	must then be filled in by hand.
-
+
     trashable
-        This file lists all contestant accounts that
-	can be `trashed'.  To `trash' an account is
-	to remove all its files and then reload its
-	files from ~/.hpcm_contest/home/setup.tar, which
-	is just the files in the prototype contestant
-	account.  Files from ~/.hpcm_contest/extra_
-	setup.tar are also loaded into the account if
-	that file exists.  See the documentation of the
-	SETUP_PROTOTYPE program and see `Contest Defini-
-	tion Data: Home Directories' below.
+        This file lists all contestant accounts that can
+	be `trashed'.  To `trash' an account is to re-
+	move all its files and then reload its files
+	from the home/setup.tar and extra_setup.tar
+	files in the contest directory.  The word
+	`trash' is used instead of `reinitialize' to be
+	sure accounts are not trashed by mistake.  As
+	additional protection, to be trashed an account
+	must be listed in the `trashable' file, which
+	only exists briefly during contest setup.  See
+	documentation of the SETUP_PROTOTYPE and TRASH_
+	ACCOUNT programs and see `Contest Definition
+	Data: Home Directories' below.
 
 	The `trashable' file is made from `secure/pass-
 	words' by the `makecontest -trashable' command.
@@ -1993,13 +2045,21 @@ are listed in alphabetical order).
 	    ~JJJ/hpcm/secure/bin/hpcm_setup_accounts \\
 		~JJJ/contest_cccc
 	    exit
-
+
 	(where JJJ is the judge's account) can be run to
 	make and initialize the new accounts listed in
 	the `trashable' file, and then `makecontest
-	-trashable' can be re-run to make delete the
-	`trashable' file, as there will no longer be any
-	non-existent accounts in secure/passwords.
+	-trashable' can be re-run to delete the `trash-
+	able' file, as there will no longer be any non-
+	existent accounts in secure/passwords.
+
+	To handle the case where some existing accounts
+	need to be reinitialized, use the `makecontest
+	-trashall' command and manually edit the `trash-
+	able' file to include the names of only those
+	accounts that are to be reinitialized.  You can
+	then use the hpcm_TRASH_ACCOUNTS program in
+	place of hpcm_setup_accounts above.
 
 
 Contest Definition Data: Web Pages
