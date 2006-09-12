@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Sep  9 09:15:26 EDT 2006
+# Date:		Tue Sep 12 03:12:43 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/09/09 13:14:36 $
+#   $Date: 2006/09/12 07:16:42 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.22 $
+#   $Revision: 1.23 $
 
 # Table of Contents
 #
@@ -185,13 +185,15 @@ set problems_arguments "
 set browser lynx
 
 # Location of JAVA API index for browser to use to
-# implement javahelp.
+# implement javahelp.  If not set, the javahelp contes-
+# tant command is not enabled.
 #
 set java_api_index \
     /usr/local/jdk/docs/api/overview-tree.html
 
 # Location of STL API index for browser to use to
-# implement stlhelp.
+# implement stlhelp.  If not set, the stlhelp contestant
+# command is not enabled.
 #
 set stl_api_index /usr/local/STL_doc/index.html
 
@@ -345,7 +347,8 @@ if { [regexp web $description_type] } {
 # this file, where they will override the settings of
 # this file.
 
-if {    $java_api_index != "" \
+set javaok [info exists java_api_index]
+if {    $javaok \
      && [regexp {r..} [get_access $java_api_index]] } {
 
     set javahelp "
@@ -355,6 +358,20 @@ if {    $java_api_index != "" \
 # directory.
 #
 $browser '$browser $java_api_index'
+"
+}
+
+set stlok [info exists stl_api_index]
+if {    $stlok \
+     && [regexp {r..} [get_access $stl_api_index]] } {
+
+    set stlhelp "
+# Do not edit.  This file is generated from information
+# provided by the `browser' and `stl_api_index' global
+# variables in the hpcm_judging.rc file in the judging
+# directory.
+#
+$browser '$browser $stl_api_index'
 "
 }
 
@@ -375,7 +392,9 @@ if { $allow_email_submissions == "no" } {
 # Default arguments to makecontest.
 #
 set makecontest_arguments "
-    -informal -printer_map -javahelp -startcontest \
+    -informal -printer_map -startcontest \
+    [include_if { $javaok } "-javahelp"] \
+    [include_if { $stlok } "-stlhelp"] \
     [include_if { [regexp get $description_type] } \
     	        "-description"] \
     [include_if { $ssh_enable == "yes" } "-ssh"] \
@@ -543,6 +562,16 @@ You can use commands that `make' any of the following:
     submit $response_list
 
 but ONLY these submit commands.
+"][include_if { $javaok && $stlok } "
+The `javahelp' and `stlhelp' commands give access to
+on-line Java and C++ STL documentation: see `help java'
+and `help c++'.
+"][include_if { $javaok && ! $stlok } "
+The `javahelp' command gives access to on-line Java doc-
+umenation: see `help java'.
+"][include_if { ! $javaok && $stlok } "
+The `stlhelp' command gives access to on-line C++ STL
+documenation: see `help c++'.
 "]$this_contest_postfix"
 
 # Parameter Overrides
