@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Sep  9 09:14:18 EDT 2006
+# Date:		Tue Sep 12 02:41:20 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/09/09 13:14:05 $
+#   $Date: 2006/09/12 07:03:47 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.50 $
+#   $Revision: 1.51 $
 
 # Table of Contents
 #
@@ -226,15 +226,23 @@ set problems_arguments "
 set browser lynx
 
 # Location of JAVA API index for browser to use to
-# implement javahelp.
+# implement javahelp.  If not set, the javahelp contes-
+# tant command is not enabled.
 #
 set java_api_index \
     /usr/local/jdk/docs/api/overview-tree.html
 
 # Location of STL API index for browser to use to
-# implement stlhelp.
+# implement stlhelp.  If not set, the stlhelp contestant
+# command is not enabled.
 #
 set stl_api_index /usr/local/STL_doc/index.html
+
+# If "yes" contestants can use the browser.  If "no",
+# contestants cannot use the browser directly, but must
+# use javahelp or stlhelp if they are enabled.
+#
+set browser_ok no
 
 # Set "yes" if contestant accounts are to be enabled
 # for login by ssh using any of the public keys
@@ -390,7 +398,8 @@ set feedback_printer_map "
 # this file, where they will override the settings of
 # this file.
 
-if {    $java_api_index != "" \
+set javaok [info exists java_api_index]
+if {    $javaok \
      && [regexp {r..} [get_access $java_api_index]] } {
 
     set javahelp "
@@ -400,6 +409,21 @@ if {    $java_api_index != "" \
 # directory.
 #
 $browser '$browser $java_api_index'
+"
+}
+
+
+set stlok [info exists stl_api_index]
+if {    $stlok \
+     && [regexp {r..} [get_access $stl_api_index]] } {
+
+    set stlhelp "
+# Do not edit.  This file is generated from information
+# provided by the `browser' and `stl_api_index' global
+# variables in the hpcm_judging.rc file in the judging
+# directory.
+#
+$browser '$browser $stl_api_index'
 "
 }
 
@@ -473,7 +497,9 @@ if { $scoring_subtype == "timed" } {
 # Default arguments to makecontest.
 #
 set makecontest_arguments "
-    -formal -printer_map -javahelp \
+    -formal -printer_map \
+    [include_if { $javaok } "-javahelp"] \
+    [include_if { $stlok } "-stlhelp"] \
     [include_if { $scoring_subtype != "timed" } \
     	        "-description"] \
     [include_if { $ssh_enable == "yes" } "-ssh"] \
@@ -938,12 +964,20 @@ printer.  For more information see `help print'.
 
 You CANNOT use the alternative submit commands that
 make `in-submit', `inout-submit', or `solution-submit'.
-
-You CANNOT use a web browser.  The `javahelp' command
-gives on-line Java documentation: see `help java'.  You
-may use any printed matterial you like, but cannot
-communicate electronically with the world outside the
-contest.
+"][include_if { $browser_ok == "no" } "
+You CANNOT use a web browser.  You may use any printed
+matterial you like, but cannot communicate electroni-
+cally with the world outside the contest.
+"][include_if { $javaok && $stlok } "
+The `javahelp' and `stlhelp' commands give access to
+on-line Java and C++ STL documentation: see `help java'
+and `help c++'.
+"][include_if { $javaok && ! $stlok } "
+The `javahelp' command gives access to on-line Java doc-
+umenation: see `help java'.
+"][include_if { ! $javaok && $stlok } "
+The `stlhelp' command gives access to on-line C++ STL
+documenation: see `help c++'.
 "][include_if { $scoring_type == "timed+feedback" } "
 The day after the contest proper, the contest will be
 converted to a different type of contest.  You will then
