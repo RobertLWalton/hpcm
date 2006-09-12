@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Sep  9 09:17:22 EDT 2006
+# Date:		Tue Sep 12 03:18:11 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/09/09 13:16:27 $
+#   $Date: 2006/09/12 07:33:15 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.48 $
+#   $Revision: 1.49 $
 
 # Table of Contents
 #
@@ -236,13 +236,15 @@ set problems_arguments "
 set browser lynx
 
 # Location of JAVA API index for browser to use to
-# implement javahelp.
+# implement javahelp.  If not set, the javahelp contes-
+# tant command is not enabled.
 #
 set java_api_index \
     /usr/local/jdk/docs/api/overview-tree.html
 
 # Location of STL API index for browser to use to
-# implement stlhelp.
+# implement stlhelp.  If not set, the stlhelp contestant
+# command is not enabled.
 #
 set stl_api_index /usr/local/STL_doc/index.html
 
@@ -415,12 +417,13 @@ if { [regexp email $account_type] } {
 # Set javahelp and stlhelp global variables if
 # appropriate.
 
-if { $is_makecontest } {
-    if {    $java_api_index != "" \
-	 && [regexp {r..} \
-	            [get_access $java_api_index]] } {
+set javaok [info exists java_api_index]
 
-	set javahelp "
+if {    $is_makecontest \
+     && $javaok \
+     && [regexp {r..} [get_access $java_api_index]] } {
+
+    set javahelp "
 # Do not edit.  This file is generated from information
 # provided by the `browser' and `java_api_index' global
 # variables in the hpcm_judging.rc file in the judging
@@ -428,12 +431,14 @@ if { $is_makecontest } {
 #
 $browser '$browser $java_api_index'
 "
-    }
-    if {    $stl_api_index != "" \
-	 && [regexp {r..} \
-	            [get_access $stl_api_index]] } {
+}
 
-	set stlhelp "
+set stlok [info exists stl_api_index]
+if {    $is_makecontest \
+     && $stlok \
+     && [regexp {r..} [get_access $stl_api_index]] } {
+
+    set stlhelp "
 # Do not edit.  This file is generated from information
 # provided by the `browser' and `stl_api_index' global
 # variables in the hpcm_judging.rc file in the judging
@@ -441,7 +446,6 @@ $browser '$browser $java_api_index'
 #
 $browser '$browser $stl_api_index'
 "
-    }
 }
 
 # Compute files for makecontest -scoreboard_ssh
@@ -470,6 +474,8 @@ set makecontest_arguments "
     [include_if { [regexp local $account_type] } \
                 {-local -problems -demos
 		        -startcontest -printer_map}] \
+    [include_if { $javaok } "-javahelp"] \
+    [include_if { $stlok } "-stlhelp"] \
     [include_if { [regexp get $description_type] } \
                 -description] \
     [include_if { $makescoreboard == "yes" } \
@@ -764,6 +770,16 @@ sion commands:
 "]
 Read the `solving' help file for more details on how to
 solve and submit a problem using this account.
+"][include_if { $javaok && $stlok } "
+In this account the `javahelp' and `stlhelp' commands
+give access to on-line Java and C++ STL documentation:
+see `help java' and `help c++'.
+"][include_if { $javaok && ! $stlok } "
+In this account the `javahelp' command gives access to
+on-line Java documenation: see `help java'.
+"][include_if { ! $javaok && $stlok } "
+In this account the `stlhelp' command gives access to
+on-line C++ STL documenation: see `help c++'.
 "][include_if { $scoring_type == "unscored" } "
 The scoreboard contains the date of each correct sub-
 mission.  Contestants appear alphabetically on the
