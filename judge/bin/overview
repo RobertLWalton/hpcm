@@ -4,7 +4,7 @@
 #
 # File:		overview
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Sep 12 05:37:01 EDT 2006
+# Date:		Wed Sep 13 07:23:54 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/09/12 10:00:16 $
+#   $Date: 2006/09/13 11:53:52 $
 #   $RCSfile: overview,v $
-#   $Revision: 1.138 $
+#   $Revision: 1.139 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -2222,7 +2222,7 @@ Then you edit
 to define the contestant accounts, run `makecontest
 -secure' if necessary to define contestant passwords,
 and run `makecontest -trashable' to make the ~JJJ/
-contest_cccc/trashable file: see the `trashable' file in
+contest_cccc/trashable file (see the `trashable' file in
 Contest Definition Data: The Contest Directory' above).
 You then execute:
 
@@ -2302,8 +2302,9 @@ attention before SETUP_PROTOTYPE is run.
 	can also be edited before SETUP_PROTOTYPE is
 	run.
 
-    	The `path' must be modified to include
-	`.hpcm_contest/bin'.  If special compilers or
+    	The `path' must be modified to include .hpcm_
+	contest/bin, which is symbolically linked to
+	hpcm/contestant/bin.  If special compilers or
 	interpreters are being used, the path should
 	also include these.  Other changes are likely to
 	be useful: see SETUP_PROTOTYPE documentation for
@@ -2359,7 +2360,7 @@ There is one symbolic link that TRASH_ACCOUNT does not
 set using setup.tar or extra_setup.tar.  This is the
 .hpcm_contest symbolic link to the contest directory.
 As a consequence, the .hpcm_contest of a contestant
-account may not the same as the .hpcm_contest of the
+account is NOT the same as the .hpcm_contest of the
 prototype account, and one prototype home directory may
 be used by many different contests.
 
@@ -2432,18 +2433,18 @@ Contest Definition Data: Security
 
 HPCM has the following security goals:
 
-1. Prevent a foreign account from pretending to be
-   a contestant account.  This is only achievable
-   for informal and formal contests (but not for
-   email contests).
+1. Prevent a foreign account from pretending to be a
+   contestant account.  This is only achievable when
+   accounts are provided for contestants, and not when
+   contestants can submit by email from their own
+   accounts.
 
-   This is done in a formal and informal contest by
-   having the hpcm_sendmail program which is used by
-   the contestants to send mail to the judge be a
-   privileged program with access to information not
-   available to contestants, and by having that
-   program add information and a signature for that
-   information to the email sent.
+   This is done for contestant accounts by having the
+   hpcm_sendmail program used by the contestants to send
+   mail to the judge be a privileged program with access
+   to information not available to contestants, and by
+   having that program add information and a signature
+   for that information to the email sent.
 
    Specifically, hpcm_sendmail is a UNIX set-user-id
    program that sets the ID to the judging account,
@@ -2483,7 +2484,7 @@ HPCM has the following security goals:
     Received_Mail file for use by subsequent process-
     ing.  Recomputation and use of X-HPCM-Signature-OK
     may be suppressed by setting the `use_authentica-
-    tion' global variable to false.
+    tion' global variable to \"no\".
 
     The reason that only the X-HPCM-Data and X-HPCM-
     Reply-To fields need to be signed is that if there
@@ -2539,9 +2540,9 @@ HPCM has the following security goals:
    contestant programs to write information to the
    outside world.  A contestant can merely open a
    file in the contestant's account's home directory,
-   after leaving that directory a+w, for example.
-   Or the contestant can exploit /tmp, or open a
-   network connection.
+   after the contestant sets that directory a+w, for
+   example.  Or the contestant can exploit /tmp, open
+   a network connection, or send email.
 
    The `sandbox' previously described prevents
    contestant programs from being able to read most
@@ -2608,6 +2609,24 @@ HPCM has the following security goals:
    As for 3 above, any contestant program that tries
    this stunt leaves its code behind as damning evidence
    for a very long time.
+
+Contest Raw Data
+------- --- ----
+
+Submissions are processed automatically to produce sub-
+mission directories containing files called `Raw Data'
+files.  The human judge runs the `tracker' program to
+locate submission directories that need human inspec-
+tion.  The judge can also run the `lookat' program to
+find arbitrary submission directories based on their
+names and contents.  Both `tracker' and `lookat' present
+a list of submission directories to the judge, and at
+the judge's command run the `manualreply' program on a
+submission directory selected by the judge from this
+list.  The `manualreply' program gives the judge an
+interactive interface which permits the judge to inspect
+and take actions on a submission.
+
 
 Contest Raw Data: Directories
 ------- --- ----- -----------
@@ -2935,7 +2954,10 @@ have to be made from other files in that directory.
 This is done automatically as required.  In particular,
 if xxxx.jin exists but xxxx.in does not, the jfilter
 program is run automatically with xxxx.jin as input to
-make xxxx.in in the solutions directory.
+make xxxx.in in the solutions directory.  See the
+`problem_make_files' global variable in `Library Data:
+Problems: Complex Problems' and `autojudge' program doc-
+umentation.
 
 The above is the standard behavior when no `pppp.rc'
 file is linked from the problem solution directory, or
@@ -2956,7 +2978,8 @@ or eee is not a legal extension) generates a Reply_Mail
 file that is the final say in the error.  Compile errors
 and errors during execution of the submission program
 generate an Auto_Score file.  Any solution submission
-without errors generates an Auto_Score file.
+without errors (other than those of the submitted pro-
+gram) generates an Auto_Score file.
 
 The nature of any automatically generated reply to the
 submitter given that an Auto_Score file has been
@@ -2994,7 +3017,7 @@ ectory of the judging directory to signal that this
 submission directory needs the attentions of `manual-
 reply'.  This flag tells the `tracker' program to
 re-compute its list of submissions for which the
-`manualreply' program must be run.
+`manualreply' program should be run.
 
 When the `manualreply' program assigns a manual score,
 that is stored in a `Manual_Score' file.   Email
@@ -3065,10 +3088,11 @@ done.  Otherwise the automatically generated reply will
 apologize that there is no one to mind the store.
 
 If the `reply_mode' is not `auto', the Needs_Reply_Flag
-file is created in the flag directory to signal that
-this directory needs the attentions of `manualreply'.
-The `manualreply' program must then be run to generate
-a Reply_Mail or a No_Reply file.
+file is created in the flag directory to signal the
+`tracker' program that this submission directory should
+be added to its list of directories for which `manual-
+reply' should be run.  The `manualreply' program then
+generates a Reply_Mail or a No_Reply file.
 
 
 Contest Raw Data: Data Flow
