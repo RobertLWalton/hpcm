@@ -4,7 +4,7 @@
 #
 # File:		overview
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Sep 13 07:23:54 EDT 2006
+# Date:		Sun Sep 17 06:44:40 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/09/13 11:53:52 $
+#   $Date: 2006/09/17 11:06:52 $
 #   $RCSfile: overview,v $
-#   $Revision: 1.139 $
+#   $Revision: 1.140 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -2148,9 +2148,9 @@ are
 
 	    pppp
 	        Directory for the problem named pppp.
-		This directory contains desription files
-		(e.g., pppp.ps or pppp.txt) and a Make-
-		file.
+		This directory contains description
+		files (e.g., pppp.ps or pppp.txt) and a
+		Makefile.
 
 	    private/PPPPPP
 	    private/PPPPPP/index.html
@@ -3153,21 +3153,24 @@ follows (not all details of each step are given):
          submitted files
                |
                v
-               |
                | \[does `pppp.rc' file define
-               |  problem_make_files?\]
+               |  problem_make_files, or are there
+               |  implicit make instructions\]
                |
                +------------+
                |            |
           \[no\] |            | \[yes\]
                |            |
                |            |  make filename ...
+               |            |  jfilter xxx.jin ...
                |            |  (called in
                |            |   solutions_directory/pppp
                |            |   by autojudge)
                |            |
                |      files made in
                |  solutions_directory/ppp
+               |   e.g., Scoring_Filter,
+               |    xxx.in from xxx.jin
                |            |
                |<-----------+
                |
@@ -3181,10 +3184,12 @@ follows (not all details of each step are given):
                v
             Makefile
             Scoring_Filter (if any)
+            xxxx.jin       (if any)
+            xxxx.in 
             xxxx.test 
-            xxxx.ftest (if any)
-            xxxx.jtest (if any)
-            xxxx.fjtest (if any)
+            xxxx.ftest     (if any)
+            xxxx.jtest     (if any)
+            xxxx.fjtest    (if any)
             additional linked files (if `pppp.rc'
                |   defines problem_link_files
                |   or problem_optional_link_files)
@@ -3273,7 +3278,6 @@ follows (not all details of each step are given):
                |<-----------------------+
                |
                v
-
                |
                | \[non-default response_instructions?\]
                |
@@ -3309,6 +3313,14 @@ an unchecked error log file is created.  If processing
 is within a submission directory, the log file is
 created within this directory; otherwise the log file
 is created within the log directory.
+
+Note that if the submitted program crashes, as indicated
+by the existence of a non-empty xxxx.err or by an empty
+xxxx.out, an xxxx.*score file is made, in case the crash
+occurred after the first test case in xxxx.in.  This
+permits the test case causing the crash to be identi-
+fied, which is necessary if judge's input and output is
+being returned to the submitter.
 
 
 Contest Derived Data: Processing Status Files
@@ -3407,13 +3419,19 @@ tions for different types of contests compute the fol-
 lowing files (non-standard instructions may compute
 different files):
 
-  For email contests:
+  For untimed contests:
 
     <judging-directory>/scoreboard.web
-        A copy of the scoreboard emailed to an address
-	by `makescoreboard'.  Contains copies of the
-	scoreboard.notes file and scoreboard table.
+        A copy of the scoreboard emailed or ssh'ed to
+	some address or account by `makescoreboard'.
+	Contains copies of the scoreboard.head and
+	scoreboard.tail files, if they exists, and
+	a scoreboard table.
 
+    <judging-directory>/contest/scoreboard.1
+        Copy of above made if there are contestant
+	accounts.
+
   For informal contests:
 
     <judging-directory>/contest/scoreboard.1
@@ -3421,7 +3439,7 @@ different files):
 	the contestant `scoreboard' display program.
 	Contains copies of the scoreboard.1head file
 	and the scoreboard table.
-
+
   For formal contests:
 
     <judging-directory>/contest/scoreboard.public
