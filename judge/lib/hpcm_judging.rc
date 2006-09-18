@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon May 15 09:46:42 EDT 2006
+# Date:		Mon Sep 18 08:18:12 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -10,10 +10,10 @@
 #
 # RCS Info (may not be true date or author):
 #
-#   $Author: hc3 $
-#   $Date: 2006/05/15 13:46:52 $
+#   $Author: walton $
+#   $Date: 2006/09/18 12:31:01 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.204 $
+#   $Revision: 1.205 $
 
 # Table of Contents:
 #
@@ -79,9 +79,9 @@ set hpcm_directory $env(HOME)/hpcm
 set autojudge_addresses {}
 
 # Value of help/this_contest.  Copied into help/this_
-# contest and help/this_contest.param whenever these
-# files do not exist, or when they do exists, are
-# equal, and do not equal the value of this variable.
+# contest and help/this_contest_parameter whenever these
+# files do not exist, or when they do exists, are equal,
+# and do not equal the value of this variable.
 #
 # Must begin with a blank line and end with a complete
 # line, including line feed.
@@ -243,7 +243,8 @@ set makecontest_arguments "
 #
 # If procedures or temporary variables are defined in a
 # PROBLEM.rc file, they should begin with the prefix
-# `rc_' to avoid conflicts with HPCM global variables.
+# `rc_' to avoid conflicts with HPCM global procedures
+# or variables.
 #
 # The following are global variables that particular
 # programs expect PROBLEM.rc to set.  Note that
@@ -252,7 +253,8 @@ set makecontest_arguments "
 # given below are applied if PROBLEM.rc does NOT set the
 # global variable.  Some of these defaults are values
 # set by this hpcm_judging.rc file, and some are applied
-# only if no value is set by this file or PROBLEM.rc.
+# only if no value is set by hpcm_judging.rc or
+# PROBLEM.rc.
 #
 # Note that in the defaults below, \\ is read as \.
 #
@@ -260,7 +262,8 @@ set makecontest_arguments "
 #
 #	This variable controls the kinds of differences
 #	between submitted and judge's output files that
-#	are allowed.  Default:
+#	are allowed.  See `Scoring Parameters'.
+#	Default:
 #
 	    set scoring_instructions "space column"
 #
@@ -290,6 +293,17 @@ set makecontest_arguments "
 #
 	    set problem_source_files {Makefile .*\\.ISF}
 #
+#	Note that if the `all' option is given for an
+#	index item, this is changed to {.*} so it
+#	matches all files.
+#
+#	Note that if any source file has a name of the
+#	form xxx.ISF, it will be sent to the contestant
+#	(by autoinfo and hpcm_extract) under the name
+#	xxx.  ISF stands for `Initial Source File', and
+#	denotes an initial version of a file the contes-
+#	tant will modify and submit.
+#
 #   problem_solution_files
 #
 #	A list of regular expressions, such that a file
@@ -306,23 +320,13 @@ set makecontest_arguments "
 		{.*\\.c .*\\.cc .*\\.java .*\\.lsp
 		 .*\\.in .*\\.test}
 #
-#	Note that if the `all' option is given for an
-#	index item, this is changed to {.*} so it
-#	matches all files.
-#
-#	Note that if any source file has a name of the
-#	form xxx.ISF, it will be sent to the contestant
-#	(by autoinfo and hpcm_extract) under the name
-#	xxx.  ISF stands for `Initial Source File', and
-#	denotes an initial version of a file the contes-
-#	tant will modify and submit.
-#
 #   problem_excluded_files
 #
 #	A list of regular expressions, such that a file
 #	ANY of whose name components matches ANY of
-#	these expressions is NOT a problem source file
-#	or problem description file.  Default:
+#	these expressions is NOT a problem source file,
+#	problem description file, or problem solution
+#	file.  Default:
 #
 	    set problem_excluded_files \
 		{CVS RCS .*\\.rc
