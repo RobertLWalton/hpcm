@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/09/18 12:51:19 $
+#   $Date: 2006/09/18 14:01:17 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.206 $
+#   $Revision: 1.207 $
 
 # Table of Contents:
 #
@@ -542,27 +542,28 @@ set makecontest_arguments "
 # All times are in a format that TCL `clock scan'
 # can convert.  Most date formats work.
 
-# Qaulifier scoring.
+# Feedback scoring.
 #
-# If scoreboard_use_feedback is `yes', scores are
-# computed from the number of incorrect submissions as
-# follows.  A problem score is 100.0 times the factor
-# for each incorrect submission.  The total score is
-# the sum of all problem scores for all (eventually)
-# correct problems.
+# If scoreboard_use_feedback is `yes', ranking scores
+# are computed from the number of incorrect submissions
+# as follows.  A problem score is 100.0 times the factor
+# for each incorrect submission.  The factor is deter-
+# mined by the qualifier (none, in, inout) used for the
+# incorrect submission: see scoreboard_qualifier_factors
+# below.
 #
-# If scoreboard_use_feedback is `no', scores are
+# If scoreboard_use_feedback is `no', ranking scores are
 # computed using times (see below).
 #
 set scoreboard_use_feedback no
 #
 # The following is the list of factors that are used
-# only if scoreboard_user_qualifiers is `yes'.  There
+# only if scoreboard_use_feedback is `yes'.  There
 # is a different factor for each possible submit
 # qualifier value.  The maximum score for a correct
-# problem is multipled by the appropriate factor for
-# each incorrect submission prior to the first correct
-# submission.  The qualifier of the first correct
+# problem, 100.0, is multipled by the appropriate factor
+# for each incorrect submission prior to the first cor-
+# rect submission.  The qualifier of the first correct
 # submission does not matter.  The order of the factors
 # in this list is:
 #
@@ -570,29 +571,30 @@ set scoreboard_use_feedback no
 #
 set scoreboard_qualifier_factors \
     {	0.8   0.7      0.85     0.8       0.9 }
+#
+# Note: `first' and `summary' are deprecated.
 
 # Correct and incorrect count displays.
 #
 # If scoreboard_display_correct is `yes', the number of
 # correct problems is displayed for each submitter,
-# along with the total problem time or qualifier score
-# of the submitter if that is known, and submitters are
-# sorted by number of correct problems (decreasing
-# order) in the scoreboard.
+# along with the ranking score of the submitter if that
+# is known, and submitters are sorted by number of cor-
+# rect problems (decreasing order) in the scoreboard.
 #
 # If scoreboard_display_correct is `no', the number of
-# correct problems and total problem time or qualifier
-# score are NOT displayed for each submitter, and the
-# scoreboard is sorted alphabetically by submitter name.
+# correct problems and ranking score are NOT displayed
+# for each submitter, and the scoreboard is sorted
+# alphabetically by submitter name.
 #
 # If scoreboard_display_incorrect is `yes', the number
 # of submissions for each submitter and problem is
-# displayed, and in the case qualifier scores are being
-# computed, the number of submissions with each kind of
-# qualifier is displayed.  If scoreboard_display_incor-
-# rect is `no', these numbers are not displayed.  Other
-# scoreboard properties are not affected by this
-# parameter.
+# displayed, and in the case feedback ranking scores are
+# being computed, the number of submissions with each
+# kind of qualifier is displayed.  If scoreboard_dis-
+# play_incorrect is `no', these numbers are not display-
+# ed.  Other scoreboard properties are not affected by
+# this parameter.
 #
 set scoreboard_display_correct yes
 set scoreboard_display_incorrect yes
@@ -600,15 +602,15 @@ set scoreboard_display_incorrect yes
 # Set the following to "no" is the ranking score is to
 # be the sum of problem scores, and to "yes" if it is
 # to be the average.  Leave unset if the ranking score
-# is to be the average for qualifier scores and and
+# is to be the average for feedback ranking scores and
 # the sum otherwise.
 #
 # set scoreboard_use_average yes
 
-# Set the following to the upper bound on problem time
-# scores, measured in seconds, or the lower bound for
-# problem qualifier scores.  Leave unset if there are
-# to be no bounds.
+# Set the following to the upper bound on a problem time
+# ranking score, measured in seconds, or the lower bound
+# for a problem feedback ranking score.  Leave unset if
+# there are to be no bounds.
 #
 # set scoreboard_problem_bound
 
@@ -625,11 +627,12 @@ set scoreboard_display_incorrect yes
 # time is ignored.
 #
 # If the start time is "", the start time of a problem
-# is unknown.  Instead of printing problem times, the
-# scoreboard will print dates of submission.  Instead
-# of sorting submitters with the same number of correct
-# problems by decreasing total problem time, the sub-
-# mitters will be sorted by name alphabetically.
+# is unknown.  If scoreboard_use_feedback is "no", then
+# instead of printing problem times, the scoreboard will
+# print dates of submission, and there will be no rank-
+# ing scores, so that instead of sorting submitters with
+# the same number of correct problems by ranking score,
+# submitters will be sorted by name alphabetically.
 #
 # If the start time is "problem", the time a problem is
 # gotten is used as the start time for that problem.  If
@@ -743,7 +746,7 @@ set scoreboard_penalty 0
 # `|' in highest precedence first order, denoting `not',
 # `and', `exclusive-or', and `inclusive-or'.  Operators
 # and parentheses MUST be surrounded by whitespace.
- 
+# 
 # The atoms `0' and `1' represent `false' and `true'.
 # All other atoms are regular expressions that are
 # matched to the ENTIRE problem name or submitter name,
@@ -843,7 +846,7 @@ set scoreboard_interval 60
 #	scoreboard_instructions ::=
 #	    scoreboard_block
 #
-#	scoreboard_block ::= scoreboard_subblock*
+#	scoreboard_block ::= { scoreboard_subblock* }
 #
 #	scoreboard_subblock ::=
 #	      scoreboard_instruction
@@ -879,23 +882,25 @@ set scoreboard_interval 60
 #	     hpcm_judging.rc is read>
 #
 # If_statement expressions may reference any global
-# variable beginning with `scoreboard_'.  The if state-
-# ments are evaluated before anything else is done,
-# and should not set any global variables or write
+# variable beginning with `scoreboard_'.  If statement
+# expressions are evaluated before anything else is
+# done, and should not set any global variables or write
 # files.
 #
-# The scoreboard instructions do the following:
+# The scoreboard instructions are executed in order and
+# do the following:
 #
 #     { OUTPUT filename [start [stop]] }
-#		Set the output file name. See below for
-#		start and stop.
+#		Starts an output file.  Other commands
+#		effect the current output file.  See
+#		below for start and stop.
 #
 #     { SEND [parameter_name] }
-#		Whenever the output file is written,
-#		email or ssh the file to each address
-#		ADR in the list of addresses in the
-#		global variable `scoreboard_PN', where
-#		PN is the parameter_name.  If
+#		Whenever the current output file is
+#		written, email or ssh the file to each
+#		address ADR in the list of addresses in
+#		the global variable `scoreboard_PN',
+#		where PN is the parameter_name.  If
 #		`scoreboard_PN' is empty or does not
 #		exist, nothing is done.  PN defaults
 #		to `addresses'; see the `scoreboard_
@@ -903,8 +908,9 @@ set scoreboard_interval 60
 #		more details.
 #
 #     GRANT_ACCESS
-#		Whenever the output file is written,
-#		it is made readable by everyone.
+#		Whenever the current output file is
+#		written, it is made readable by every-
+#		one.
 #
 #     BLANK	Include a blank line.
 #
@@ -2197,6 +2203,8 @@ set allowed_extensions {.c .cc .java .lsp}
 #
 set allowed_qualifiers \
     { "" first summary in inout solution }
+#
+# Note: `first' and `summary' are deprecated.
 
 # Submitter compress function.  Used to compress the
 # full submitter email name when displaying the sub-
