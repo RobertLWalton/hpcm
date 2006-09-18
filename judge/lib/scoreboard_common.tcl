@@ -3,7 +3,7 @@
 #
 # File:		scoreboard_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Sep 18 08:47:10 EDT 2006
+# Date:		Mon Sep 18 09:14:46 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -12,9 +12,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/09/18 12:51:19 $
+#   $Date: 2006/09/18 13:13:53 $
 #   $RCSfile: scoreboard_common.tcl,v $
-#   $Revision: 1.62 $
+#   $Revision: 1.63 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -617,11 +617,11 @@ proc prune_scoreboard_array { } {
 # three scoreboard parameters as follows:
 #
 #    SDC = $scoreboard_display_correct
-#    SUQ = $scoreboard_uses_qualifier
+#    SUF = $scoreboard_use_feedback
 #    SST = $scoreboard_start_time != ""
 #    SDI = $scoreboad_display_incorrect
 #    
-#	SDC/SUQ/SST/SDI	    SORT_CODE
+#	SDC/SUF/SST/SDI	    SORT_CODE
 #
 #	no /---/---/---	    submitters_name
 #
@@ -992,7 +992,7 @@ proc compute_scoreboard_list {} {
 # problem score is just the problem score proper,
 # rounded to the nearest integer.
 #
-# If scoreboard_use_qualified is `no' and scoreboard_
+# If scoreboard_use_feedback is `no' and scoreboard_
 # start_time is "", the problem time is the date and
 # time as per [clock seconds], and this is encoded in
 # the problem score as:
@@ -1004,7 +1004,7 @@ proc compute_scoreboard_list {} {
 # there would be more than 9 characters in the printable
 # score, the year is omitted.
 #
-# If scoreboard_use_qualified is `no' and scoreboard_
+# If scoreboard_use_feedback is `no' and scoreboard_
 # start_time is NOT "", the problem time an elapsed
 # time, and is encode in the problem score as:
 #
