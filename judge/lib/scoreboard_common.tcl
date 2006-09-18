@@ -3,7 +3,7 @@
 #
 # File:		scoreboard_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Mar  3 10:07:09 EST 2006
+# Date:		Mon Sep 18 08:47:10 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,10 +11,10 @@
 #
 # RCS Info (may not be true date or author):
 #
-#   $Author: hc3 $
-#   $Date: 2006/03/03 15:07:37 $
+#   $Author: walton $
+#   $Date: 2006/09/18 12:51:19 $
 #   $RCSfile: scoreboard_common.tcl,v $
-#   $Revision: 1.61 $
+#   $Revision: 1.62 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -576,7 +576,7 @@ proc prune_scoreboard_array { } {
 # order that submitters are to be displayed on the
 # scoreboard.
 #
-# If scoreboard_use_qualifiers is `no', scoreboard_
+# If scoreboard_use_feedback is `no', scoreboard_
 # display_correct and scoreboard_display_incorrect are
 # both `yes', and scoreboard_start_time is NOT "", the
 # sort code is
@@ -590,7 +590,7 @@ proc prune_scoreboard_array { } {
 # total number of submissions, in 4 digits with leading
 # zeros.
 #
-# If scoreboard_use_qualifiers is `yes', and scoreboard_
+# If scoreboard_use_feedback is `yes', and scoreboard_
 # display_correct and scoreboard_display_incorrect are
 # both `yes', the sort code is
 #
@@ -657,13 +657,13 @@ proc compute_scoreboard_list {} {
 	   scoreboard_display_correct \
 	   scoreboard_display_incorrect \
 	   scoreboard_start_time \
-	   scoreboard_use_qualifiers \
+	   scoreboard_use_feedback \
 	   scoreboard_use_average \
 	   scoreboard_problem_bound
 
     if { [info exists scoreboard_use_average] } {
         set use_average $scoreboard_use_average
-    } elseif {    $scoreboard_use_qualifiers \
+    } elseif {    $scoreboard_use_feedback \
     	       || $scoreboard_start_time == "problem" \
 	     } {
         set use_average yes
@@ -673,7 +673,7 @@ proc compute_scoreboard_list {} {
 
     if { [info exists scoreboard_problem_bound] } {
         set problem_bound $scoreboard_problem_bound
-    } elseif { $scoreboard_use_qualifiers } {
+    } elseif { $scoreboard_use_feedback } {
         set problem_bound 0
     } else {
         set problem_bound 999999999
@@ -863,7 +863,7 @@ proc compute_scoreboard_list {} {
 	    set sort_code $submitter
 	    set problems_correct ""
 	    set ranking_score ""
-	} elseif { $scoreboard_use_qualifiers } {
+	} elseif { $scoreboard_use_feedback } {
 	    if {    $use_average \
 	         && $problems_correct > 0 } {
 	        set qualifier_score \
@@ -949,7 +949,7 @@ proc compute_scoreboard_list {} {
 # as there are at most 98 incorrect submissions, or
 # there is no `*' prefix (see below) and at most 998
 # incorrect submissions, or scoreboard_display_incorrect
-# is `no', or scoreboard_use_qualifiers is yes and there
+# is `no', or scoreboard_use_feedback is yes and there
 # are not too many kinds of qualifiers being used.
 #
 # If the problem time is "" indicating the problem is
@@ -958,7 +958,7 @@ proc compute_scoreboard_list {} {
 # is `no', and is otherwise `..../N', where N is the
 # number of incorrect submissions.
 #
-# Otherwise if scoreboard_use_qualifiers is `yes', the
+# Otherwise if scoreboard_use_feedback is `yes', the
 # the score for the problem is computed as a floating
 # point number, as accurately as possible, and is added
 # to the qualified_score whose name must be given as an
@@ -978,7 +978,7 @@ proc compute_scoreboard_list {} {
 # The order of the list given above matches the order
 # of scoreboard_qualifier_factors: see hpcm_judging.rc.
 #
-# If scoreboard_use_qualifiers and scoreboard_display_
+# If scoreboard_use_feedback and scoreboard_display_
 # incorrect are both `yes', the problem score has the
 # form
 #
@@ -1019,11 +1019,11 @@ proc compute_scoreboard_list {} {
 # score is subject to change by manual review.
 #
 # If time is not "" indicating the problem was solved,
-# and if scoreboard_use_qualifiers is "yes", then the
+# and if scoreboard_use_feedback is "yes", then the
 # problem score is added to the qualified_score.
 #
 # If time is not "" indicating the problem was solved,
-# if scoreboard_use_qualifiers is "no", and if
+# if scoreboard_use_feedback is "no", and if
 # scoreboard_start_time is not "", then the problem
 # score is added to the time_score.
 #
@@ -1041,7 +1041,7 @@ proc format_problem_score \
     global scoreboard_start_time \
     	   scoreboard_penalty \
            scoreboard_display_incorrect \
-	   scoreboard_use_qualifiers \
+	   scoreboard_use_feedback \
 	   scoreboard_qualifier_factors
 
     # Compute:
@@ -1057,7 +1057,7 @@ proc format_problem_score \
 	    set long_score ......
 	}
 	set short_score $long_score
-    } elseif { $scoreboard_use_qualifiers } {
+    } elseif { $scoreboard_use_feedback } {
         upvar $qualifier_score_name qualifier_score
 	set score 100.0
 	set long_score ""
