@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Sep 18 08:46:12 EDT 2006
+# Date:		Tue Sep 19 11:09:17 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/09/18 12:50:03 $
+#   $Date: 2006/09/19 15:23:53 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.52 $
+#   $Revision: 1.53 $
 
 # Table of Contents
 #
@@ -559,13 +559,40 @@ foreach x $test_problems {
 set scoreboard_problems \
     [lrange $scoreboard_problems 1 end]
 
-# Scoreboard instructions for a timed contest with no
-# freeze.  $judging_directory/contest/scoreboard.final
-# is produced beginning at the stop time and is updated
-# until the stop time + 10 minutes.  If you need to
-# update it after that, delete it and wait for it to be
-# updated automatically (which will happen within 60
-# seconds).
+# Scoreboard instructions without scoreboard freezing.
+# These instructions make a scoreboard page in the file:
+#
+#	JD/contest/scoreboard.1
+#
+# where JD is the $judging_directory.  World read access
+# is granted to this file, which is also sent to any
+# addresses in the scoreboard_addresses global variable.
+# The file has the format:
+#
+#  NAME        [Pre-Contest] Scoreboard          TIME
+#
+#        <contents of JD/contest/scoreboard.1head>
+#
+#   [<pre-contest comments>]
+#
+#   ==== ===== ===== ===== ===== ===== ===== ===== =====
+#	   <scoreboard table>
+#   ==== ===== ===== ===== ===== ===== ===== ===== =====
+#
+# Before the start time problem submission dates are
+# given along with pre-contest comments.
+#
+# From the stop time of the contest until 10 minutes
+# after the stop time, the file
+#
+#		JD/contest/scoreboard.final
+#
+# is written with final scoreboard table and the con-
+# tents of the JD/contest/who_where file.  If judging
+# has not finished within 10 minutes of the end of the
+# contest, just finish judging, delete this file, and
+# wait for it to be updated automatically (which will
+# happen within 60 seconds).
 #
 set no_freeze_timed_scoreboard_instructions {
 
@@ -588,7 +615,7 @@ set no_freeze_timed_scoreboard_instructions {
 
     { OUTPUT contest/scoreboard.final STOP STOP+600 }
 
-    { LINE NAME "Final Results" "" STOP }
+    { LINE NAME "Final Results" STOP }
     BLANK
     BAR
     BOARD

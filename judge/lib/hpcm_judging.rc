@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Sep 18 08:47:23 EDT 2006
+# Date:		Tue Sep 19 10:27:08 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/09/18 14:01:17 $
+#   $Date: 2006/09/19 15:25:07 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.207 $
+#   $Revision: 1.208 $
 
 # Table of Contents:
 #
@@ -851,6 +851,9 @@ set scoreboard_interval 60
 #	scoreboard_subblock ::=
 #	      scoreboard_instruction
 #	    | scoreboard_if_statement
+#	    | scoreboard_comment
+#
+#	scoreboard_comment ::= {#<any-text>#}
 #
 #	scoreboard_if_statement ::=
 #	      if <expression> <scoreboard_block>
@@ -983,369 +986,12 @@ set scoreboard_interval 60
 # executed even if the last OUTPUT instruction is not
 # active for some reason (start or stop time or output
 # being already more recent than inputs).
-
-
-# Standard scoreboard instructions for an email contest.
-# These make a scoreboard in the file
 #
-#	$judging_directory/scoreboard.mail
+# For sample scoreboard_instructions value see
 #
-# that has the format:
-#
-#   See notes below.           NAME               TIME
-#
-#   ==== ===== ===== ===== ===== ===== ===== ===== =====
-#	   <scoreboard proper>
-#   ==== ===== ===== ===== ===== ===== ===== ===== =====
-#
-#   <contents of $judging_directory/scoreboard.notes>
-#
-#   ==== ===== ===== ===== ===== ===== ===== ===== =====
-#
-# This file is then emailed to the addresses in the
-# scoreboard_addresses global variable.
-#
-set email_scoreboard_instructions {
-    { OUTPUT scoreboard.mail }
-    SEND
-    { LINE "See notes below." NAME TIME }
-    BLANK
-    BAR
-    BOARD
-    BAR
-    BLANK
-    { INPUT scoreboard.notes }
-    BLANK
-    BAR
-}
-
-# Standard scoreboard instructions for an informal
-# contest.  These instructions make a scoreboard
-# page in the file:
-#
-#	$judging_directory/contest/scoreboard.1
-#
-# World read access is granted to this file, which
-# is also sent to any addresses in the scoreboard_
-# addresses global variable.  The file has the
-# format:
-#
-#  NAME                                           TIME
-#
-#   <contents of $judging_directory/contest/
-#			scoreboard.1head>
-#
-#   ==== ===== ===== ===== ===== ===== ===== ===== =====
-#	   <scoreboard proper>
-#   ==== ===== ===== ===== ===== ===== ===== ===== =====
-#
-set informal_scoreboard_instructions {
-    { OUTPUT contest/scoreboard.1 }
-    GRANT_ACCESS
-    SEND
-    { LINE NAME "" TIME }
-    BLANK
-    { INPUT contest/scoreboard.1head }
-    BLANK
-    BAR
-    BOARD
-    BAR
-}
-
-# Standard scoreboard instructions for a large formal
-# contest with scoreboard freezing.  These instructions
-# make a scoreboard page in the file:
-#
-#	$judging_directory/contest/scoreboard.1
-#
-# World read access is granted to this file, which
-# is also sent to any addresses in the scoreboard_
-# addresses global variable.  The file has the
-# format:
-#
-#  NAME             Public Scoreboard             TIME
-#
-#   <contents of $judging_directory/contest/
-#	scoreboard.freeze if that file exists>
-#
-#   <contents of $judging_directory/contest/
-#			scoreboard.1head>
-#
-#   <contents of $judging_directory/contest/
-#			scoreboard.public>
-#
-# The file
-#
-#	$judging_directory/contest/scoreboard.public
-#
-# has two versions, one computed before the contest
-# start time, and one computed between the contest start
-# time and the contest freeze time.  Before the contest
-# start time it is a plain scoreboard computed with ""
-# start time, so dates and not problem times are
-# displayed, that includes demo problems and test
-# accounts, with the plain scoreboard being prefixed by
-# a comment that after the start time problem times will
-# be displayed and demos will not be.  After the contest
-# start time it is just a plain scoreboard with the
-# freeze time as stop time, no demos, and no test
-# accounts.
-#
-# The file
-#
-#	$judging_directory/contest/scoreboard.freeze
-#
-# is a notice that the scoreboard is frozen.  This file
-# is created at the freeze time, and does not exist
-# before then.
-#
-# All this makes the publicly available scoreboard.
-# In addition there are two other scoreboards that are
-# only visible to judges.  The file
-#
-#	$judging_directory/contest/scoreboard.current
-#
-# is a current scoreboard that is made from the freeze
-# time till several minutes after the stop time.  The
-# file
-#
-#	$judging_directory/contest/scoreboard.final
-#
-# is a printable final scoreboard that is made just
-# once, several minutes after the stop time.  Both these
-# have the raw scoreboard with the normal stop time
-# followed by a copy of the
-#
-#	$judging_directory/contest/who_where
-#
-# file.  Both of these are not readable by non-judging
-# accounts.
-#
-# The final scoreboard is made several minutes after the
-# stop time so that submissions made just before the
-# stop time can finish being autojudged and can them be
-# manually judged.  If the several (e.g. 5) minute
-# period proves too short, be sure judging is finished,
-# delete the file scoreboard.final, and wait a minute
-# or two for it to be recomputed.
-#
-set formal_large_contest_scoreboard_instructions {
-
-    { OUTPUT contest/scoreboard.freeze FREEZE FREEZE }
-
-    BLANK
-    { LINE "To heighten suspense, scoreboard updating\
-            has been stopped as of:" }
-    { LINE "" FREEZE "" }
-    { LINE "You will be given a copy of the final\
-            scoreboard after winners have been" }
-    { LINE "announced at the post contest meeting." }
-
-    { OUTPUT contest/scoreboard.public "" START }
-
-    { start_time "" }
-    { stop_time FREEZE }
-    { LINE "The demo problems `count' and `javaio'\
-            will disappear from the" }
-    { LINE "scoreboard once the contest starts.  Until\
-            the contest starts, dates of" }
-    { LINE "first correct submission are displayed (for\
-            demo problems).  After the" }
-    { LINE "contest starts, problem times (differences\
-            of first correct submission" }
-    { LINE "times and contest start time) will be\
-            displayed." }
-    BAR
-    BOARD
-    BAR
-
-    { OUTPUT contest/scoreboard.public START FREEZE }
-
-    { start_time START }
-    { stop_time FREEZE }
-    { problems { ! count  & ! javaio } }
-    { submitters { ! test-account } }
-    BAR
-    BOARD
-    BAR
-
-    { OUTPUT contest/scoreboard.1 }
-    GRANT_ACCESS
-    SEND
-
-    { LINE NAME "Public Scoreboard" TIME }
-    { INPUT contest/scoreboard.freeze }
-    BLANK
-    { INPUT contest/scoreboard.1head }
-    BLANK
-    { INPUT contest/scoreboard.public }
-
-    { OUTPUT contest/scoreboard.current \
-             FREEZE STOP+300 }
-
-    { LINE NAME "Current Scoreboard" TIME }
-    BLANK
-    BAR
-    { stop_time STOP }
-    BOARD
-    BAR
-    { INPUT contest/who_where }
-    BAR
-
-    { OUTPUT contest/scoreboard.final \
-             STOP+300 STOP+300 }
-
-    { LINE NAME "Final Results" STOP }
-    BLANK
-    BAR
-    { stop_time STOP }
-    BOARD
-    BAR
-    { INPUT contest/who_where }
-    BAR
-}
-
-
-# Standard scoreboard instructions for a small formal
-# contest without scoreboard freezing.  These instruc-
-# tions make a scoreboard page in the file:
-#
-#	$judging_directory/contest/scoreboard.1
-#
-# World read access is granted to this file, which
-# is also sent to any addresses in the scoreboard_
-# addresses global variable.  The file has the
-# format:
-#
-#  NAME        [Pre-Contest] Scoreboard          TIME
-#
-#   <contents of $judging_directory/contest/
-#			scoreboard.1head>
-#
-#   [Pre-Contest comments.]
-#
-#   ==== ===== ===== ===== ===== ===== ===== ===== =====
-#	   <scoreboard proper>
-#   ==== ===== ===== ===== ===== ===== ===== ===== =====
-#
-# Before the start time problem submission dates are
-# given along with pre-contest comments.
-#
-# Several minutes after the end of the contest the file
-#
-#   $judging_directory/contest/scoreboard.final
-#
-# is written with final results.  If judging has not
-# finished, just finish judging, delete this file, and
-# wait a few minutes for it to be rewritten.
-#
-set formal_small_contest_scoreboard_instructions {
-
-    { OUTPUT contest/scoreboard.1 "" START }
-    GRANT_ACCESS
-
-    { LINE NAME "Pre-Contest Scoreboard" TIME }
-    BLANK
-    { INPUT contest/scoreboard.1head }
-    BLANK
-    { LINE "The demo problems `count' and `javaio'\
-            will disappear from the" }
-    { LINE "scoreboard once the contest starts.  Until\
-            the contest starts, dates of" }
-    { LINE "first correct submission are displayed (for\
-            demo problems).  After the" }
-    { LINE "contest starts, problem times (differences\
-            of first correct submission" }
-    { LINE "times and contest start time) will be\
-            displayed." }
-    BLANK
-    { start_time "" }
-    { stop_time START }
-    BAR
-    BOARD
-    BAR
-
-    { OUTPUT contest/scoreboard.1 START STOP+300 }
-    GRANT_ACCESS
-
-    { LINE NAME "Scoreboard" TIME }
-    BLANK
-    { INPUT contest/scoreboard.1head }
-    BLANK
-    { start_time START }
-    { stop_time STOP }
-    { problems { ! count & ! javaio } }
-    { submitters { ! test-account } }
-    BAR
-    BOARD
-    BAR
-
-    { OUTPUT contest/scoreboard.final \
-    	     STOP+300 STOP+300 }
-
-    { LINE NAME "Final Results" "" STOP }
-    BLANK
-    BAR
-    { start_time START }
-    { stop_time STOP }
-    BOARD
-    BAR
-    { INPUT contest/who_where }
-    BAR
-}
-
-
-# Standard scoreboard instructions for a post formal
-# contest scoreboard.  These instructions make a
-# scoreboard page in the file:
-#
-#	$judging_directory/contest/scoreboard.1
-#
-# World read access is granted to this file, which
-# is also sent to any addresses in the scoreboard_
-# addresses global variable.  The file has the
-# format:
-#
-#  NAME        Post Contest Scoreboard          TIME
-#
-#   <contents of $judging_directory/contest/
-#			scoreboard.1head>
-#
-#   ==== ===== ===== ===== ===== ===== ===== ===== =====
-#	   <scoreboard proper>
-#   ==== ===== ===== ===== ===== ===== ===== ===== =====
-#
-# To use submission qualifiers in computing this score-
-# board:
-#		set scoreboard_use_feedback yes
-#
-# Otherwise submission dates are given.
-#
-set post_contest_scoreboard_instructions {
-
-    { OUTPUT contest/scoreboard.1 "" "" }
-    GRANT_ACCESS
-    SEND
-
-    { LINE NAME "Post Contest Scoreboard" TIME }
-    BLANK
-    { INPUT contest/scoreboard.1head }
-    BLANK
-
-    { start_time "" }
-    { stop_time "" }
-    { problems { ! count  & ! javaio } }
-    { submitters { ! test-account } }
-    BAR
-    BOARD
-    BAR
-}
-
-# Set default scoreboard instructions to those for
-# the email contest.
-#
-set scoreboard_instructions \
-    $email_scoreboard_instructions
+#   hpcm/examples/untimed_contest/hpcm_judging.rc
+#   hpcm/examples/formal_contest/hpcm_judging.rc
+#   hpcm/examples/informal_contest/hpcm_judging.rc
 
 # Scoreboard_mode_array is a map from the scoring_mode
 # (see `Scoring Parameters') to a regular expression
