@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Sep 19 11:09:17 EDT 2006
+# Date:		Wed Sep 20 04:22:49 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/09/19 15:23:53 $
+#   $Date: 2006/09/20 08:57:24 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.53 $
+#   $Revision: 1.54 $
 
 # Table of Contents
 #
@@ -120,7 +120,8 @@ set cc_manager no
 # The following are the beginning and ending of the
 # initial version of the ./help/this_contest file.  Each
 # should begin and end with a line feed, or be "".  Each
-# will then be separated from other text by a blank line.
+# will then be separated from other text by a blank
+# line.
 #
 # If you want to modify this_contest further, you may
 # edit the ./help/this_contest file directly after it
@@ -656,16 +657,76 @@ set no_freeze_timed_scoreboard_instructions {
 }
 
 # Scoreboard instructions for a timed contest WITH
-# freeze.  $judging_directory/contest/scoreboard.final
-# is produced beginning at the stop time and is updated
-# until the stop time + 10 minutes.  If you need to
-# update it after that, delete it and wait for it to be
-# updated automatically (which will happen within 60
-# seconds).
+# freeze.  These instructions make a scoreboard page in
+# the file:
 #
-# After scoreboard is frozen, $judging_directory/
-# contest/scoreboard.current is updated to be the
-# unfrozen and non-public scoreboard.
+#		JD/contest/scoreboard.1
+#
+# where JD is the $judging_directory.  World read access
+# is granted to this file, which is also sent to any
+# addresses in the scoreboard_addresses global variable.
+# The file has the format:
+#
+#  NAME             Public Scoreboard             TIME
+#
+#       <contents of JD/contest/scoreboard.freeze>
+#
+#       <contents of JD/contest/scoreboard.1head>
+#
+#       <contents of JD/contest/scoreboard.public>
+#
+# The file
+#
+#		JD/contest/scoreboard.public
+#
+# has two versions, one computed before the contest
+# start time, and one computed between the contest start
+# time and the contest freeze time.  Before the contest
+# start time it is a scoreboard table computed with ""
+# start time, so dates and not problem times are
+# displayed, that includes demo problems and test
+# accounts, with the scoreboard table being prefixed by
+# a comment that after the start time problem times will
+# be displayed and demos will not be.  After the contest
+# start time it is just a scoreboard table with the
+# freeze time as stop time, no demos, and no test
+# accounts.
+#
+# The file
+#
+#		JD/contest/scoreboard.freeze
+#
+# is a notice that the scoreboard is frozen.  This file
+# is created at the freeze time, and does not exist
+# before then.
+#
+# All this makes the publicly available scoreboard.
+# In addition there are two other scoreboards that are
+# only visible to judges.  The file
+#
+#		JD/contest/scoreboard.current
+#
+# is a scoreboard table with the contest stop time that
+# is made at freeze time and kept up-to-date indefin-
+# itely thereafter.  The file
+#
+#		JD/contest/scoreboard.final
+#
+# is a printable final scoreboard that is made from the
+# stop time until 10 minutes after the stop time, and
+# includes a scoreboard table with the contest stop time
+# followed by a copy of the
+#
+#		JD/contest/who_where
+#
+# file.  Both the .current and .final files are not
+# readable by non-judging accounts.
+#
+# If you need to update the scoreboard.final file after
+# it is no longer being made (more than 10 minutes after
+# the contest stop time), delete it and wait for it to
+# be updated automatically (which will happen within 60
+# seconds).
 #
 set freeze_timed_scoreboard_instructions {
 
