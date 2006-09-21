@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Feb 12 00:18:57 EST 2006
+# Date:		Thu Sep 21 09:21:21 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -10,10 +10,10 @@
 #
 # RCS Info (may not be true date or author):
 #
-#   $Author: hc3 $
-#   $Date: 2006/02/12 06:15:23 $
+#   $Author: walton $
+#   $Date: 2006/09/21 13:20:34 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.130 $
+#   $Revision: 1.131 $
 #
 
 # Table of Contents
@@ -1920,13 +1920,15 @@ proc compile_logical_expression \
 # ----- ---------
 
 # These functions take blocks of code containing `if',
-# `elseif', and `else' constructs and the `EXIT'
-# statement and return a block of code with these
-# statements processed and removed.
+# `elseif', and `else' constructs, the `#' comment
+# statement ( as in {# ... #}), and the `EXIT' state-
+# ment, and return a block of code with these state-
+# ments processed and removed.
 
 # Function to execute the if-statements in a block and
 # add to the list of commands.  Stop at end of block or
-# at EXIT.  Return `yes' if EXIT found, `no' otherwise.
+# at EXIT.  Remove #-comment statement.  Return `yes' if
+# EXIT found, `no' otherwise.
 #
 # Globals is a list of all the global variables that
 # can be used in if-statements.
@@ -2021,7 +2023,9 @@ proc parse_block \
 			   instructions:\n    $item"
 		}
 		default {
-		    lappend c $item
+		    if { ! [regexp {^[ \t]*#} $item] } {
+			lappend c $item
+		    }
 		}
 	    }
 	}
