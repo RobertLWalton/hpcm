@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Sep 20 06:46:37 EDT 2006
+# Date:		Thu Sep 21 09:09:33 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/09/20 10:47:17 $
+#   $Date: 2006/09/21 13:33:35 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.209 $
+#   $Revision: 1.210 $
 
 # Table of Contents:
 #
@@ -1382,6 +1382,11 @@ set response_instructions_summary_limit 5
 set response_instructions {
 
     if { ! $manual && ! $proposed } {
+
+        {# Come here if autojudge running. #}
+
+	{# Output the score from the autojudge. #}
+
 	if { $scoring_mode == "manual" } {
 	    NO-REPLY
 	    EXIT
@@ -1414,6 +1419,9 @@ set response_instructions {
 	} else {
 	    { ERROR "bad scoring mode" }
 	}
+
+	{# Output in, inout, first, summary info
+	   from the autojudge. #}
 
 	if { $submit_qualifier == "" } {
 	} elseif { ! [lcontain \
@@ -1453,6 +1461,10 @@ set response_instructions {
 	}
 
     } elseif { ! $manual && $proposed } {
+
+        {# Come here if manualreply is being used to
+	   set the manual score = proposed score. #}
+
 	FINAL
 	if { $scoring_mode == "manual" } {
 	    { LINE "For -PROBLEM- your final score\
@@ -1506,6 +1518,12 @@ set response_instructions {
 	}
     } elseif { $manual && $proposed } {
 
+        {# Come here if manualreply is being used to
+	   override a previous manual score, using
+	   proposed score as the new score, or
+	   manualreply is being used to verify the
+	   previous score (we EDIT in either case). #}
+
 	FINAL
 	EDIT
 	{ LINE "For -PROBLEM- your PREVIOUS FINAL\
@@ -1533,6 +1551,9 @@ set response_instructions {
 	         score exists" }
     }
 
+    {# Add compiler error output if score is to be
+       `Syntax Error' and cerr is in response_mode. #}
+
     if { $proposed_score == "Syntax Error" || \
          ( ! $proposed && \
            $manual_score == "Syntax Error" ) || \
@@ -1554,6 +1575,10 @@ set response_instructions {
     BLANK
     { BAR "this message replies to:" }
     RECEIVED-HEADER
+
+    {# Add solution if score is to be `Completely
+       Correct' and solution is qualifier and also
+       in response_mode. #}
 
     if { $proposed_score == "Completely Correct" || \
          ( ! $proposed && \
