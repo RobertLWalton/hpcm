@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Sep 21 23:39:00 EDT 2006
+# Date:		Fri Sep 22 07:18:15 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/09/22 03:42:31 $
+#   $Date: 2006/09/22 11:49:03 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.213 $
+#   $Revision: 1.214 $
 
 # Table of Contents:
 #
@@ -2082,6 +2082,28 @@ set dispatch_too_old 120
 ### no such calls are in the rest of the HPCM TCL code.
 ### Its difficult to enforce this rule in practice.
 
+# These functions use the following UNIX environment
+# variables.  Here $X denotes the value of environment
+# variable X (actually $env(X) in TCL).  There are
+# defaults if the variables are not set.
+#
+#    HPCM_VIEW		A TCL list such that
+#			    $HPCM_VIEW filename
+#			is executed to edit a file
+#			in read-only mode.  Default:
+#			"view".
+#
+#    HPCM_EDIT		A TCL list such that
+#			    $HPCM_EDIT filename
+#			is executed to edit a file.
+#			Default: "vi".
+#
+#    HPCM_EDIT		A TCL list such that
+#			    $HPCM_SHELL
+#			is executed to execute a shell
+#			in the current directory.
+#			Default: "csh".
+
 # Function to send mail, as does UNIX `sendmail'.  Takes
 # mail message file with correctly set `To:' field and
 # sends the message to the addresses listed there.  If
@@ -2230,7 +2252,7 @@ proc copy_file { source target } {
 }
 
 # Make an archive (e.g. tar) of a directory.  Given
-# directory D, make D.tar (or D.xxx).
+# a directory whose truename is D, make D.tar.
 #
 proc archive_directory { dirname } {
     set dirname [truename $dirname]
@@ -2319,6 +2341,12 @@ proc deny_access { filename } {
     chmod o-rwx,g-w $filename
 }
 
+# Deny rwx permissions to everyone but owner.
+#
+proc deny_group_access { filename } {
+    chmod o-rwx,g-rwx $filename
+}
+
 # Function to view a file.  Change to your favorite
 # editor or display program.
 #
@@ -2363,6 +2391,27 @@ proc edit_file { filename } {
          [list $filename >@ stdout 2>@ stderr]
 }
 
+# Function to call shell.  Change to your favorite
+# shell.
+#
+# This version checks the environment variable
+# HPCM_SHELL for a shell.  HPCM_SHELL may be a TCL
+# list with a shell name and parameters.  If this
+# global variable is not defined, the shell
+# defaults to `csh'.
+#
+proc call_shell {} {
+
+    global env
+
+    if { [info exists env(HPCM_SHELL)] } {
+        set shell $env(HPCM_SHELL)
+    } else {
+        set shell csh
+    }
+    eval exec $shell [list >@ stdout 2>@ stderr]
+}
+
 # Function to invoke the `make' program for a given
 # `name' on a Makefile in the current directory.
 #
@@ -2383,7 +2432,7 @@ proc diff_directories { directory1 directory2 } {
     return [exec diff -r $directory1 $directory2]
 }
 
-# Diff two files.  Write all output, including error
+# Diff two files.  Append all output, including error
 # output, to a third file, with a header line in that
 # file saying what was done.  Errors are ignored as
 # far as TCL is concerned (they produce error messages
@@ -2403,16 +2452,10 @@ proc diff_files { file1 file2 output { options "" } } {
                  [list $file1 $file2 >>& $output] }
 }
 
-# Function to call shell.  Change to your favorite
-# shell.
-#
-proc call_shell {} {
-    exec csh >@ stdout 2>@ stderr
-}
-
 # Function to execute a command in another directory.
-# Additional arguments are arguments to TCL exec that
-# can reroute IO: e.g., >&@ stdout
+# The command is a string passed to csh.  Additional
+# arguments are arguments to TCL exec that can reroute
+# IO: e.g., >&@ stdout
 #
 proc exec_in_directory { directory command args } {
     eval exec csh -c "{cd $directory; $command}" $args

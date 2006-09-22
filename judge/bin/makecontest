@@ -6,7 +6,7 @@
 #
 # File:		makecontest
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Sep  9 14:58:29 EDT 2006
+# Date:		Fri Sep 22 07:52:42 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/09/09 18:58:53 $
+#   $Date: 2006/09/22 11:53:37 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.171 $
+#   $Revision: 1.172 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -2405,7 +2405,7 @@ if { $help2_option \
 if { $secure_option \
      && ! [file isdirectory $c_d/secure] } {
     file mkdir $c_d/secure
-    deny_access $c_d/secure
+    deny_group_access $c_d/secure
     puts "Made directory ./contest/secure"
 }
 
@@ -2419,7 +2419,7 @@ if { $secure_option } {
 	puts $ch "# $apw:$ctc"
 	puts $ch ""
 	close $ch
-	deny_access $c_d/secure/passwords
+	deny_group_access $c_d/secure/passwords
 	puts "Wrote ./contest/secure/passwords"
 	TODO "Edit ./contest/secure/passwords;" \
 	     "each of its lines has the format:" \
@@ -2500,7 +2500,7 @@ if { $secure_option \
 	   forget key_name forget2
     puts $rc_ch "Key-Name: $key_name"
     close $rc_ch
-    deny_access $c_d/secure/hpcm_sendmail.rc
+    deny_group_access $c_d/secure/hpcm_sendmail.rc
     puts "Wrote ./contest/secure/hpcm_sendmail.rc"
 
 
@@ -2553,9 +2553,9 @@ if {    $ssh_option \
     if { $keys != "" } {
         file delete -force -- $j_d/.ssh
         file mkdir $j_d/.ssh
-	deny_access $j_d/.ssh
+	deny_group_access $j_d/.ssh
 	write_file $j_d/.ssh/authorized_keys $keys
-	deny_access $j_d/.ssh/authorized_keys
+	deny_group_access $j_d/.ssh/authorized_keys
 	set wd [pwd]
 	cd $j_d
 	exec tar cf ./contest/extra_setup.tar .ssh
