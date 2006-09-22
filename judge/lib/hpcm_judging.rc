@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Sep 21 09:09:33 EDT 2006
+# Date:		Thu Sep 21 19:37:37 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/09/21 13:33:35 $
+#   $Date: 2006/09/22 00:11:29 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.210 $
+#   $Revision: 1.211 $
 
 # Table of Contents:
 #
@@ -1306,30 +1306,37 @@ set output_limit_regexp {file size limit exceeded}
 # Response mode.  Some of the following separated by
 # `+'s, but without ANY whitespace.
 #
-#   cerr	Return CERR (the .cerr file) if score is
-#		`Syntax Error', regardless of submit
-#		qualifier or how score is determined.
+#   cerr	Return the compiler error file, i.e.,
+#		the .cerr file, if the score is `Syntax
+#		Error', regardless of submit qualifier
+#		or how the score is determined.
 #
-#   solution	Return SOLUTION if score is `Completely
-#		Correct' and submit qualifier was
-#		`solution', regardless of how score is
-#		determined.
+#   solution	Return the judge's solution files, if
+#		score is `Completely Correct' and the
+#		submit qualifier was `solution', regard-
+#		less of how the score is determined.
 #
-#   first	Return location of FIRST error if score
-#		is not `Completely Correct', score was
-#		automatically determined, and submit
-#		qualifier was `first'.
+#   in		Return the test case input for the first
+#		judge test case on which the submission
+#		failed, if the score is automatically
+#		determined, is not `Completely Correct',
+#		and the submit qualifier is `in'.
 #
-#   summary	Ditto for SUMMARY of errors and
-#		`summary' submit qualifier.
+#   inout	Ditto for test case input and output and
+#		the `inout' submit qualifier.
 #
-#   in		Ditto for judge's test case INput and
-#		`in' or `inout' submit qualifiers.
+#   first	Ditto for the location of first error
+#		and the `first' submit qualifier.
 #
-#   out		Ditto for judge's test case OUTput and
-#		`inout' submit qualifier.
+#   summary	Ditto for a summary of errors and
+#		the `summary' submit qualifier.
 #
 #   ""		None of above.
+#
+# Except for `cerr', these just enable the submission
+# qualifiers with the same name.  E.g., a response mode
+# of `in+inout+solution' enables the submission quali-
+# fiers `in', `inout', and `solution'.
 #
 set response_mode ""
 
@@ -1650,10 +1657,10 @@ set response_instructions {
 #	to `None' in the manualreply program.
 #
 #   $manual
-#	Equals \$manual_score != \"None\".
+#	Equals $manual_score != "None".
 #
 #   $proposed
-#	Equals \$proposed_score != \"None\".
+#	Equals $proposed_score != "None".
 #
 #   $submitted_problem
 #	Problem name from the submit mail `Subject'
@@ -1727,21 +1734,22 @@ set response_instructions {
 #
 #     BAR
 #	  Inserts a 72 character ----- bar line.
-#	  Special substrings are substituted for as
-#	  for LINE.
 #
 #     { BAR "string" }
 #	  Inserts ----- bar line that ends with a space
 #	  followed by the string.  The total number of
-#	  characters in the line is 72.
+#	  characters in the line is 72.  Special sub-
+#	  strings are substituted for as for LINE.
 #
 #     { INPUT filename }
 #	  Include a copy of the file in the reply.
 #
 #     RECEIVED-HEADER
 #	  Include a copy of the Date, To, From, Reply-
-#	  To, and Subject header lines of the
-#	  Received_Mail file in the reply.
+#	  To, and Subject header lines of the Received_
+#	  Mail file in the reply.  Note the X-HPCM-
+#	  Reply-To and X-HPCM-Date lines are NOT used
+#	  to compute these.
 #
 #     RECEIVED-FULL-HEADER
 #	  Include a copy of the ENTIRE Received_Mail
@@ -1755,12 +1763,19 @@ set response_instructions {
 #	  HEADER, or RECEIVED-BODY.
 #
 #     CERR
-#	  Include the .cerr file in the reply.
+#	  Include the compiler error .cerr file in the
+#	  reply.
 #
 #     IN
-#	  Include judge's input (.in) files, each pre-
-#	  ceeded by a BAR line containing the input name
-#	  of the file.
+#	  If the first judge's test case that failed
+#	  comes from input derived from the xxxx.jin
+#	  file, include the input for this test case
+#	  preceded by a BAR line containing xxxx and
+#	  the group and case numbers of the failed test
+#	  case.  If the input was not derived from an
+#	  .jin file, include the entire xxxx.in file
+#	  that provided the input, preceded by a BAR
+#	  line naming the xxxx.in file.
 #
 #     OUT
 #	  Ditto for judge's output (.test) files.
@@ -1777,13 +1792,13 @@ set response_instructions {
 #     FIRST
 #	  Include lines describing the type and position
 #	  of the first automatic score determining error
-#	  in the reply.
+#	  in the reply.  Deprecated.
 #
 #     SUMMARY
 #	  Include lines summarizing all automatic score
 #	  determining errors in the reply.  See the
 #	  variable response_instructions_summary_limit
-#	  above.
+#	  above.  Deprecated.
 #
 # Response instructions are used by the autojudge and
 # manualreply program, which compose score based replies
