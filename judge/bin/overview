@@ -4,7 +4,7 @@
 #
 # File:		overview
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Sep 17 08:17:29 EDT 2006
+# Date:		Sat Sep 23 11:13:20 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/09/17 13:18:46 $
+#   $Date: 2006/09/23 15:23:20 $
 #   $RCSfile: overview,v $
-#   $Revision: 1.142 $
+#   $Revision: 1.143 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -3845,6 +3845,14 @@ functions.  A brief summary of these functions is:
     proc send_message { message }
     	Send a file or variable value as email.
 
+    proc ssh_keygen { file }
+        Generate a private and public key.
+
+    proc ssh_copy_message \\
+            { identity_file account message }
+	Copy the message to the account using ssh and
+	the identity_file.
+
     proc compute_signature { value }
         Compute the MD5 signature of a value.
 
@@ -3854,7 +3862,7 @@ functions.  A brief summary of these functions is:
     proc truename { dirname }
         Return absolute name of a directory that would
 	be given by `pwd' if the directory were current.
-
+
     proc create_file { filename }
         Create a file unless the file already exists,
 	and return an indication of whether a new file
@@ -3863,12 +3871,15 @@ functions.  A brief summary of these functions is:
     proc create_directory { dirname }
         Create a directory unless the directory already
 	exists.
-
+
     proc link_file { source { target . } }
         Symbolically link source to target.
 
     proc copy_file { source target }
         Copy a file preserving protection mode settings.
+
+    proc archive_directory { dirname }
+        Make .tar file from directory.
 
     proc grant_access { filename { allow rx } }
     	Add a+x, a+r, or a+w permissions to file or
@@ -3882,11 +3893,18 @@ functions.  A brief summary of these functions is:
 	cept to owner or group, and deny write permis-
 	sions to group.
 
+    proc deny_group_access { filename }
+        Deny all permissions for a file or directory ex-
+	cept owner permissions.
+
     proc view_file { filename }
         Look at a file (e.g., with an editor).
 
     proc edit_file { filename }
         Edit a file with your favorite editor.
+
+    proc call_shell {}
+        Invoke your favorite shell for interactive use.
 
     proc make_file { name err_file }
         Make the `name' by using the `make' program on
@@ -3899,11 +3917,8 @@ functions.  A brief summary of these functions is:
              { file1 file2 output { options \"\" } }
 	Diff two files as per UNIX `diff' and write a
 	complete description of the result, including
-	error messages, into an output file.
+	error messages, into an output channel.
 
-    proc call_shell {}
-        Invoke your favorite shell for interactive use.
-
     proc exec_in_directory { directory command args }
         Execute a command in a particular directory.
 
@@ -3921,7 +3936,7 @@ functions.  A brief summary of these functions is:
     proc signal_process_tree { signal root_pid }
         Send a KILL or INT signal to all the processes
 	in a process tree rooted at a given process ID.
-
+
     proc make_signals_errors {}
     proc make_signals_ignored {}
     proc make_signals_default {}
