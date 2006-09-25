@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Sep 25 14:38:26 EDT 2006
+# Date:		Mon Sep 25 15:16:34 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/09/25 19:08:23 $
+#   $Date: 2006/09/25 19:15:26 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.133 $
+#   $Revision: 1.134 $
 #
 
 # Table of Contents
@@ -1495,9 +1495,10 @@ proc read_sendmail_rc { } {
 #
 #	RECEIVED-BODY
 #	    Includes the body of the Received_Mail file
-#	    message part (read by read_part_line after
-#	    read_part_header).  This command can appear
-#	    at most once.
+#	    message.  This is the entire body, including
+#	    part delimiters (because these may be in
+#	    error).  This command can appear at most
+#	    once.
 #
 # Options must precede commands.
 #
@@ -1649,12 +1650,9 @@ proc compose_reply { args } {
 	    }
 	    RECEIVED-BODY {
 
-		read_part_header $received_ch
 		while { "yes" } {
-		    set line \
-		        [read_part_line $received_ch \
-			                eof_found]
-		    if { $eof_found } {
+		    set line [gets $received_ch]
+		    if { [eof $received_ch] } {
 			break
 		    } else {
 			puts $reply_ch "$line"
