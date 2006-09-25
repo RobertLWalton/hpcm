@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Sep 25 09:47:28 EDT 2006
+# Date:		Mon Sep 25 14:38:26 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/09/25 15:04:24 $
+#   $Date: 2006/09/25 19:08:23 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.132 $
+#   $Revision: 1.133 $
 #
 
 # Table of Contents
@@ -590,6 +590,18 @@ proc log_error { error_output } {
 # Message Header Functions
 # ------- ------ ---------
 
+# To read an email message, open the email file for
+# reading on a channel, and apply the functions:
+#
+#	read_header $ch ...
+#	read_part_header $ch
+#	read_part_line $ch eof_found
+#	read_part_line $ch eof_found
+#	. . . . .
+#	read_part_line $ch eof_found
+#
+# If only the email header is needed, only read_header
+# is needed.
 
 # Read an email message header from the channel. If the
 # first_line argument is given, it is the first line of
@@ -628,7 +640,7 @@ proc log_error { error_output } {
 #				`X-HPCM-Test-Subject:'
 #				field value.
 #
-# All the values have the final \n stripped off.  All
+# ALL these values have the final \n stripped off.  All
 # the field values have the `field-name:' stripped off.
 # Field values may be multi-line, but if there are two
 # copies of a field, only the last is recorded.  If
@@ -773,12 +785,13 @@ proc read_header { ch { first_line "" }
 # NON-EMPTY part that has an acceptable Content-Type and
 # Content-Transfer-Encoding, as determined by the
 # content_type_values and content_transfer_encoding_
-# values global variables.  A non-multipart message is
-# treated as if its body were the one and only part of
-# the message.  It is an error if a multipart message
-# has no parts, empty or not.  However, if there is an
-# empty part, it is not an error, and the part as read
-# by read_part_line is merely empty.
+# values global variables (see hpcm_judging.rc).  A non-
+# multipart message is treated as if its body were the
+# one and only part of the message.  It is an error if a
+# multipart message has no parts, empty or not.  How-
+# ever, if there are only empty parts, there is no
+# error, and the body as read by read_part_line is
+# merely empty.
 #
 # By empty part we mean a part with no non-whitespace
 # characters in its body.
@@ -817,7 +830,11 @@ proc read_header { ch { first_line "" }
 # Field values may be multi-line, but if there are two
 # copies of a field, only the last is recorded.
 #
-# The global message_terminator is used: see hpcm_
+# The global message_terminator is used.  This is a
+# regular expression that may match a line in a message
+# body to signal that the line and the rest of the body
+# are to be ignored (the ignored lines may contain a
+# signature or a Yahoo advertisement).  See hpcm_
 # judging.rc.
 #
 # The message_translated_... global variables are set
@@ -879,7 +896,7 @@ proc read_part_header { ch } {
 	} else {
 
 	    set mct $message_content_type
-	    set message__part_error \
+	    set message_part_error \
 		"No boundary parameter\
 		in:\nContent-Type:$mct"
 	    return
@@ -1054,6 +1071,7 @@ proc read_part_header { ch } {
 		    regsub -all {=09} $line "\t" line
 		    regsub -all {=0C} $line "\f" line
 		    regsub -all {=20} $line "\ " line
+		    regsub -all "\r" $line "" line
 
 		    # This must be LAST!
 
@@ -1186,6 +1204,25 @@ proc read_part_line { ch end_of_file } {
     } else {
 	set eof yes
 	return ""
+    }
+}
+
+# Read message body lines using read_part_line.  Return
+# `yes' if no non-blank line encounted before eof.
+# Return `no' otherwise.
+#
+proc blank_body { ch } {
+
+    while { "yes" } {
+	set line [read_part_line $ch eof]
+	if { $eof } {
+	    return yes
+	} elseif { [regexp "^\[\ \t\r\n\f\]*\$" \
+			   $line] } {
+	    # blank lines are ok
+	} else {
+	    return no
+	}
     }
 }
 
@@ -1458,8 +1495,9 @@ proc read_sendmail_rc { } {
 #
 #	RECEIVED-BODY
 #	    Includes the body of the Received_Mail file
-#	    message.  This command can appear at most
-#	    once.
+#	    message part (read by read_part_line after
+#	    read_part_header).  This command can appear
+#	    at most once.
 #
 # Options must precede commands.
 #
@@ -1533,7 +1571,7 @@ proc compose_reply { args } {
     }
     if { $message_x_hpcm_test_subject != "" } {
         set mts $message_x_hpcm_test_subject
-	puts $reply_ch   "X-HPCM-Test-Subject:$mts"
+	puts $reply_ch "X-HPCM-Test-Subject:$mts"
     }
     puts $reply_ch   ""
 
@@ -1611,9 +1649,12 @@ proc compose_reply { args } {
 	    }
 	    RECEIVED-BODY {
 
+		read_part_header $received_ch
 		while { "yes" } {
-		    set line [gets $received_ch]
-		    if { [eof $received_ch] } {
+		    set line \
+		        [read_part_line $received_ch \
+			                eof_found]
+		    if { $eof_found } {
 			break
 		    } else {
 			puts $reply_ch "$line"
@@ -1690,25 +1731,6 @@ proc send_reply { args } {
         file delete -force Reply_Mail+
     } else {
 	file rename -force Reply_Mail+ Reply_Mail
-    }
-}
-
-# Read message body lines using read_part_line.  Return
-# `yes' if no non-blank line encounted before eof.
-# Return `no' otherwise.
-#
-proc blank_body { ch } {
-
-    while { "yes" } {
-	set line [read_part_line $ch eof]
-	if { $eof } {
-	    return yes
-	} elseif { [regexp "^\[\ \t\r\n\f\]*\$" \
-			   $line] } {
-	    # blank lines are ok
-	} else {
-	    return no
-	}
     }
 }
 
