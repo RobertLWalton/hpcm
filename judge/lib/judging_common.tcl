@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Sep 21 09:21:21 EDT 2006
+# Date:		Mon Sep 25 09:47:28 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/09/21 13:20:34 $
+#   $Date: 2006/09/25 15:04:24 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.131 $
+#   $Revision: 1.132 $
 #
 
 # Table of Contents
@@ -271,10 +271,14 @@ proc caught_error {} {
 # may want to continue.  The error is printed on the
 # standard error output.  Unless `log_mode' is `none',
 # the error is also written to a file.  If `log_mode'
-# is `auto' or `auto+manual', the error is also emailed
-# to any submitter/requester identified in the $receiv-
-# ed_mail file, and if the `log_mode' is `auto', this
-# mail is cc'ed to any log manager.
+# is `auto' or `auto+manual', the first error of a pro-
+# gram is also emailed to any submitter/requester iden-
+# tified in the Received_Mail file, and if the `log_
+# mode' is `auto', this mail is cc'ed to any log mana-
+# ger.  This mail will contain a copy of any X-HPCM-
+# Test-Subject field that is in any Received_Mail file
+# if the error is being logged in the current direc-
+# tory (see below).
 #
 # When the error information is written to a file, a
 # separate file is created for each error.  If the
@@ -303,9 +307,12 @@ proc caught_error {} {
 # is as just given but with the `.mail' extension.
 #
 # Recording an error in a log file always sets the
-# `needs reply' flag.
+# Needs_Reply_Flag.
 
 # Number of calls to log_error during this program.
+#
+# If log_error_count > log_error_maximum then
+# log_mode is reset to `none'.
 #
 set log_error_count 0
 #
@@ -399,7 +406,7 @@ proc log_error { error_output } {
 	    # Desperation move.  Should never happen.
 	    #
 	    set e LOGGING-FILENAME-GENERATION
-	    set e ${e}-unchecked_error
+	    set e ${e}-unchecked-error
 	    set log_file $log_dir/$e
 	    break
 	}
@@ -490,10 +497,11 @@ proc log_error { error_output } {
 		puts $mail_ch "To: $cc"
 	    }
 
-	    # Write reply-to field equal to $received_
-	    # mail `To' field, if that exists.
+	    # Write reply-to field equal to Received_
+	    # Mail `To' field, if that exists.
 	    #
-	    if { [info exists message_to]
+	    if {    $received_ch != "" \
+	         && [info exists message_to] \
 	         && $message_to != "" } {
 		puts $mail_ch "Reply-To:$message_to"
 	    }
@@ -534,20 +542,34 @@ proc log_error { error_output } {
 	    # mitter, tell them what to do.
 	    #
 	    if { $to != "" } {
-		puts $mail_ch \
-		     "System is automatic without\
-                      normal human monitoring."
-		if { $cc != "" } {
+		if { [regexp {manual} $log_mode] } {
 		    puts $mail_ch \
-			 "Please correct and resubmit,\
-		          or wait for"
-		    puts $mail_ch "a response from $cc."
+			 "The judge will look at this\
+			  and give you further\
+			  instructions as necessary,"
+		    puts $mail_ch \
+			  "but you might be able to\
+			   correct the problem yourself\
+			   and resubmit."
 		} else {
 		    puts $mail_ch \
-			 "Please correct and resubmit,\
-		          or contact the person"
-		    puts $mail_ch \
-			 "responsible for this site."
+			 "System is automatic without\
+			  immediate human monitoring."
+		    if { $cc != "" } {
+			puts $mail_ch \
+			     "Please correct and\
+			      resubmit, or wait for"
+			puts $mail_ch "a response from\
+			               $cc."
+		    } else {
+			puts $mail_ch \
+			     "Please correct and\
+			      resubmit, or contact\
+			      the person"
+			puts $mail_ch \
+			     "responsible for this\
+			      site."
+		    }
 		}
 	    }
 
@@ -1431,8 +1453,8 @@ proc read_sendmail_rc { } {
 #	    message.
 #
 #	RECEIVED-FULL-HEADER
-#	    Includes the ENTIRE header of the $received_
-#	    file message.
+#	    Includes the ENTIRE header of the Received_
+#	    Mail file message.
 #
 #	RECEIVED-BODY
 #	    Includes the body of the Received_Mail file
