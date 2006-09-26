@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Sep 25 15:16:34 EDT 2006
+# Date:		Tue Sep 26 04:42:49 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/09/25 19:15:26 $
+#   $Date: 2006/09/26 09:40:26 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.134 $
+#   $Revision: 1.135 $
 #
 
 # Table of Contents
@@ -1824,7 +1824,7 @@ proc source_file { filename } {
 	if { $__p__ & 7 } {
 	    error "security violation: $filename is\
 		   accessible by `others'\n      \
-		   you should execute chmod o-r\
+		   you should execute chmod o-rwx\
 		   $filename"
 	}
 
@@ -1872,6 +1872,40 @@ proc clear_flag { flagfilename } {
 # logical expression is returned.  The n'th atom in the
 # original expression is stored in `A(n)', where A is
 # the value of the `atoms' parameter to this function.
+# The `values' and `atoms' parameters are names of
+# arrays.  These arrays are output (set by) this func-
+# tion.  For each N, V(N) is initialized to 0 by this
+# function.
+#
+# Thus to use this function execute:
+#
+#	array set abbrev_array { ... }
+#	set logical_expression ...
+#	set compiled_expression \
+#	    [compile_logical_expression \
+#		 $logical_expression \
+#		 abbreviation_array \
+#		 atom_array \
+#		 value_array]
+#	foreach n [array names atom_array] {
+#	    set value_array($n) \
+#	        ... some function of $atom_array($n) ...
+#	}
+#	set result [expr $compiled_expression]
+#
+# If $logical_expression were "x & ( y | 1 )" then
+# "$value_array(0) & ($value_array(1) | 1)" would be
+# returned as the compiled_expression and $atom_array(0)
+# would be set to "x" while $atom_array(1) would be set
+# to "y".
+#
+# The tokens `0', `1', `(', `)', `|', `&', `^', and `!'
+# are non-atoms.  All other tokens are atoms.
+#
+# Parentheses and other non-atoms must be surrounded by
+# whitespace in order to avoid being treated as parts
+# of atoms.  E.g., "x & (y | 1)" would treat "(y" and
+# "1)" as atoms.
 #
 # The logical expression is a list whose elements are
 # tokens.  Before any token is processed, it is looked
@@ -1882,10 +1916,9 @@ proc clear_flag { flagfilename } {
 # T is a token in the logical expression (an element of
 # the logical expression viewed as a list), then the
 # value of `AB(T)' replaces T in the logical expression.
-# This rule is NOT recursive.
-#
-# The tokens `0', `1', `(', `)', `|', `&', `^', and `!'
-# are non-atoms.  All other tokens are atoms.
+# This rule is NOT recursive.  T and AB(T) may be any
+# tokens, e.g., one may set AB("OR") to "|" and
+# AB("TRUE") to "1".
 #
 # Note that the compiled expression must be evaluated
 # in an environment in which the `values' array is
@@ -1903,6 +1936,9 @@ proc compile_logical_expression \
     upvar $abbreviations abbreviation
     upvar $atoms atom
     upvar $values value
+
+    catch { unset atom }
+    catch { unset value }
 
     set n 0
     set depth 0
@@ -1961,19 +1997,29 @@ proc compile_logical_expression \
 # Parse Functions
 # ----- ---------
 
-# These functions take blocks of code containing `if',
-# `elseif', and `else' constructs, the `#' comment
-# statement ( as in {# ... #}), and the `EXIT' state-
-# ment, and return a block of code with these state-
-# ments processed and removed.
-
-# Function to execute the if-statements in a block and
-# add to the list of commands.  Stop at end of block or
-# at EXIT.  Remove #-comment statement.  Return `yes' if
-# EXIT found, `no' otherwise.
+# The parse_block function takes a block of code con-
+# taining `if', `elseif', and `else' constructs, the `#'
+# comment statement ( as in {# ... #}), and the `EXIT'
+# statement, and outputs a list of instructions with
+# these statements processed and removed.
 #
+# `if' and `elseif' expressions are evaluated by this
+# function and used to delete statements that are not
+# to be executed.  Statements that are to be executed
+# are appended to the command list.  If EXIT is to be
+# executed, it is not appended, and this function stops
+# and returns `yes'.  Otherwise if there is no EXIT to
+# be executed, this function returns `no'.
+#
+# If a `#' comment statement is to be executed, it is
+# NOT appended to the command list, and is thus deleted.
+#
+# It is the caller's responsibility to initialize the
+# command list to the empty list, if the caller intends
+# the list to be initially empty.
+# 
 # Globals is a list of all the global variables that
-# can be used in if-statements.
+# can be used in `if' and `elseif' expressions.
 #
 # Extras is a list of items of the form
 #
@@ -1983,9 +2029,12 @@ proc compile_logical_expression \
 #
 #	set variable-name [expr value-expression]
 #
-# to be executed before an if-statement expression is
-# evaluated.  The value-expression may refer to the
+# to be executed just before an if-statement expression
+# is evaluated.  The value-expression may refer to the
 # globals in the globals list.
+#
+# `if' and `elseif' expressions should not change global
+# variable values or call functions that do.
 #
 proc parse_block \
 	{ block command_list_name globals \
@@ -1997,6 +2046,33 @@ proc parse_block \
     }
 
     upvar $command_list_name c
+
+    # In the following:
+    #
+    #   mode says what occurred immediately before, but
+    #	     is often phrased according to what is
+    #	     expected next.
+    #
+    #	     mode value:       what occurred before:
+    #
+    #	     if_expression     `if' or `elseif'
+    #	     if_block	       `if EXP' or `elseif EXP'
+    #	     after_if_block    `if EXP BLOCK' or
+    #			       `elseif EXP BLOCK'
+    #	     else_block	       `else'
+    #	     after_else_block  `else BLOCK'
+    #	     none	       none of the above
+    #
+    #	if_done means that some `if' or `elseif' expres-
+    #           sion in a `if ... elseif ... elseif ...'
+    #	        sequence has evaluated to true, and
+    #		therefore subsequent `elseif's and the
+    #		`else' should not execute.
+    #
+    #   if_value is the value of the last `if' or
+    #		 `elseif' expression, or is false if
+    #		 if_done was true when the expression
+    #		 was to be evaluated.
 
     set mode none
     foreach item $block {
@@ -2075,9 +2151,9 @@ proc parse_block \
     return no
 }
 
-# Function to evaluate if-statement expression given a
-# list of globals the expression may access.  The
-# extra list has items of the form:
+# Helper function to evaluate if-statement expression
+# given a list of globals the expression may access.
+# The extra list has items of the form:
 #
 #	{ variable-name	value-expression }
 #
