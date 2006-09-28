@@ -1,122 +1,91 @@
 DYNAMIC PROGRAMMING PROBLEM HELP
-			    Tue Aug  6 07:50:17 EDT 2002
+			    Thu Sep 28 09:22:33 EDT 2006
 
 A dynamic programming algorithm is an algorithm with two
 characteristics:
 
-A.  A problem P is parameterized in such a way that
-    the parametric set of subproblems can be solved
-    recursively.  For example, the original problem
-    P might be parameterized as P(i,j,M) for some
-    integers 0 <= i < N, 0 <= j < N, 2**M >= N with
-    N > 0.  And each problem P(i,j,m) for 0 <= i < N,
-    0 <= j < N, 0 < m <= M might be solvable fairly
-    quickly (say in time proportional to N) from the
-    solutions to all the problems P(i,j,m-1) for
-    0 <= i < N, 0 <= j < N, while the problems P(i,j,0)
-    are readily solvable.
+A.  A problem P is parameterized in such a way that the
+    parametric set of subproblems can be solved recur-
+    sively.  For example, the original problem P might
+    be parameterized as P(i,M) for some integers 0 <= i
+    < N, 0 <= M <= N.  And each problem P(i,m) for 0 <=
+    i < N, 0 < m <= M might be solvable fairly quickly
+    (say in time proportional to N) from the solutions
+    to all the problems P(i,m-1) for 0 <= i < N,  while 
+    the problems P(i,0) are readily solvable.
 
+    An example is the problem of finding the length of
+    the shortest path from node 0 to node N-1 in an un-
+    directed graph with nodes 0, 1, ..., N-1 and edges
+    each of which have some length > 0.  Then let P(i,m)
+    be the problem of finding the length of the shortest
+    path from node 0 to node i that has no more than m
+    edges.  Treat two nodes that are NOT connected as if
+    they were connected by an edge whose length was in-
+    finity (or some number much larger than any possible
+    shortest path).  Then P(0,0) == 0 and P(i,0) = in-
+    finity for 0 < i < N.  And for m > 0, P(i,m) is the
+    minimum of P(k,m-1)+edge_length(k,i) for all nodes
+    0 <= k < i.
+
+    Note that if the length of every present edge is 1,
+    this problem is just the breadth first search
+    problem with N-1 as the only goal node.  It can be
+    modified to have a set of goal nodes, and is easier
+    to program than breadth first search.  But dynamic
+    programming does not generally work as well was
+    breadth first search if the nodes cannot be organ-
+    ized into a simple vector.
+
 B.  The solution to one of the parameterized problems
-    (e.g. P(i,j,m)) is typically used very many times in
+    (e.g. P(i,m)) is typically used very many times in
     computing the solution to the final problem recur-
     sively, so it is important to remember this solution
     as a table entry and not recompute it every time it
     is needed.
+
+    Indeed, in our example P(k,m-1) is used to compute
+    P(i,m) for every i, therefore it is used N times.
 
 
 The word `programming' in `dynamic programming' refers
 to describing the table of subproblem solutions and
 the order in which the table will be computed.
 
-For example, suppose we have an undirected graph with
-vertices connected by edges that have lengths.  Suppose
-there a N vertices, numbered from 0 through N-1.  Then
-the problem is to find the length of a shortest path
-between two given vertices, i and j.
-
-Let P(i,j,m) denote the length of the shortest path
-between vertices i and j such that the path does not
-have more than 2**m edges.  Then P(i,j,0) is easily
-computed: it is just the length of the edge from vertex
-i to vertex j, or infinity if there is no such edge, or
-0 if i = j.  Also, if m > 0, then P(i,j,m) can be com-
-puted from the solutions to P(i,k,m-1) and P(k,j,m-1)
-for all 0 <= k < N: it is just 
-
-    min { P(i,k,m-1) + P(k,j,m-1) : 0 <= k < N }
-
-Going a little deeper into this, the values of P(i,j,m)
-for all i and j with m fixed form an NxN matrix, which
-we might call M(m).  Then M(0) is just the original
-graph with edges expressed as lengths, infinities where
-there are no edges, and zeros down the diagonal.  And
-for m > 0, M(m) is just the `matrix product' of M(m-1)
-with itself, where instead of using * and + as in the
-normal matrix product, we use + and `min'.  Thus M(m)
-can be computed from M(m-1) in roughly N**3 operations,
-and the original problem can be solved in N**3 * (log
-base 2 of N) time.
-
-Notice that one does not need to store M(m) for every
-value of m at one time.  One only needs space for
-M(m-1) and M(m) to compute M(m).  Also, instead of using
-infinity as a matrix element value, one can use any
-number known to be larger than the solution path length.
-
 Dynamic programming can also be used to compute an
 actual shortest path, and not just the length of such a
-path.  Note that the shortest path algorithm above will
-work even if edges have negative lengths, as long as
-no loop in the graph has a negative length (if a loop 
-had a negative length the algorithm could not stop after
-log base 2 of N iterations).  We will assume here that
-the length of each loop is not equal to zero.  One can
-always make this true by replacing each path length L
-in the original problem by L*N+e, where e is the number
-of edges in the path.
+path.  There are two ways of doing this:
 
-Then we extend the value of P(i,j,m) to include the
-second vertex on a shortest path from i to j that does
-not have more than 2**m edges.  After the computation is
-done, a path from i to j can be constructed by going
-from i to the computed second vertex on a best path from
-i to j, and iterating until one gets to j.  This works
-because if one best path goes from i to k to j then
-replacing the part of this path from k to j by any best
-path from k to j also gives a best path, and also
-because best paths cannot have loops as the length of
-every loop is > 0.
+C. For each P(i,m) record in P_previous(j,m) the last
+   node j that is just before i on some shortest path
+   from node 0 to node i.  This can be computed recur-
+   sively when computing P(i,m):
 
+	when setting P(i,m) = P(k,m-1)
+	                    + edge_length(k,i)
+	     also set P_previous(i,m) = k
+
+D. After computing P(i,m) for all i and m, backtrack
+   to build an end segment of the path as follows:
+
+   	initially the end segment is just the node N-1
+	while 0 is not the first node in the end
+	      segment:
+	    let i be the first node in the end segment
+	    find a k such that
+	    	P(i,m) = P(k,m-1) + edge_length(k,i)
+	        and add k to the beginning of the end
+		segment
+
 The first step in solving any dynamic programming
 problem is to parameterize the problem.  But notice
 that in our example, the parameter m is not even hinted
 at by the original problem statement, which is just to
-find the distance between i and j.  We say that m is a
+find the distance between 0 and N-1.  We say that m is a
 `hidden parameter'.  The essence of solving a dynamic
 programming problem is to find the hidden parameter
 (or parameters) that are needed to make a fast recursive
 algorithm.
-
-Dynamic programming solutions are often easier to code
-than other solutions to a problem.  One possible use of
-this is as an alternative to breadth first search for
-finding a shortest path, in the sense of a path having
-a minimum number of edges, between two vertices of a
-graph.  Note, however, that breadth first search takes
-O(|E|) time, where |E| is the number of graph edges,
-whereas the dynamic programming algorithm we have pre-
-sented takes O(|V|**3 log |V|) time, where |V| is the
-number of vertices.  But it is not necessary to find the
-shortest path between any two pairs of vertices to solve
-the breadth first search problem.  You can use dynamic
-programming to find the set of vertices that can be
-reached from a given starting point by a path with at
-most m edges by recursion on m.  This gives the same
-answer as breadth first search with less bookkeeping
-but in O(|S||E|) time, where |S| is the length of the
-shortest path being sought.
-
-
 
 
 File:		dynamic_programming
@@ -129,7 +98,7 @@ file.
 
 RCS Info (may not be true date or author):
 
-    $Author: hc3 $
-    $Date: 2002/08/06 11:55:24 $
+    $Author: walton $
+    $Date: 2006/09/28 13:45:05 $
     $RCSfile: dynamic_programming,v $
-    $Revision: 1.7 $
+    $Revision: 1.8 $
