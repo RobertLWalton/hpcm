@@ -1,5 +1,5 @@
 BREADTH FIRST SEARCH PROBLEM HELP
-			    Wed Aug  7 12:12:15 EDT 2002
+			    Thu Sep 28 08:10:04 EDT 2006
 
 Breadth first search is most commonly used in maze
 problems, but can be used in other problems.  The idea
@@ -20,78 +20,79 @@ list, and bumps the pointer to the next node on the
 visited list.  One stops when one gets to a goal node,
 or fails if one runs out of nodes to examine.
 
-The key to programming breadth first search is to
-understand how you are going to represent the following
-data structures:
+(Depth first search is similar, except that the children
+are added to the visited list immediately after the node
+that is their parent, the node currently being examined
+for children.  Depth first search with a visited list is
+almost unheard of in programming contests, but recursive
+exhaustive search which visits nodes in depth first
+order is common.)
 
-A. The `visited list' of all the nodes that have been
-   visited by the search.
+There are three approaches to making a visited list:
 
-B. An `allocated list' of all nodes.  This is needed to
-   free memory allocated to the nodes when the algorithm
-   is finished.  Sometimes this can be the same as the
-   visited list A.
-
-C. For each node, a list of the node's children.
-
-D. For each node, a bit indicating whether the node is
-   on the visited list A.  Of course this is just an
-   efficiency matter, but it is important except for
-   very small problems.
+A. If the set of possible nodes is small and can be
+   organized into an array, don't do breadth first
+   search, but instead use dynamic programming.  See
+   the help file on dynamic programming.
 
-E. For each node, a `parent pointer' to the parent node
-   which caused the node to be put on the visited list
-   A.  This pointer is used to construct the shortest
-   path list F.
+B. If the size of a node description is fixed and not
+   large, and the maximum number of nodes that might
+   be visited is not large, make a large fixed size
+   vector of nodes and two pointers: one to the next
+   empty element and one to the first element whose
+   children have not been examined.
 
-F. For each node on the shortest path from the start
-   node to a goal, a `shortest path pointer' to the next
-   node on the shortest path.  This pointer can be
-   computed by traversing the shortest path in reverse
-   order from goal to start node using the `parent
-   pointer' E.
+C. Otherwise allocate each node as it is visited.  You
+   will need a pointer in each node to the next node
+   (or NULL if there is none), a pointer to the first
+   node, a pointer to the last node, and a pointer to
+   the first node whose children have not yet been
+   examined.  When an input test case is complete, you
+   will need to deallocate all the nodes starting with
+   the first node.
 
-The various items above can be encoded in a `node' data
-structure.  The members of this data structure can be:
+Given your choice of visited list data structure, you
+need the following functions:
 
-0. Information naming the node.
+1. A function which given the parameters describing a
+   node, determines whether the node is already in the
+   visited list.  This can be done by a linear search
+   of the list.  In some cases this is not fast enough,
+   and a hash table is needed: see below.
 
-A. A next_visited pointer that points at the next node
-   in the visited list A.
+2. A function which given the parameters describing a
+   node creates a new node and adds it to the end of
+   the visited list.
 
-B. A previous_allocated pointer that points at the
-   previous node on the node list B.  This is needed
-   only if nodes must be allocated before each search
-   begins and freed after each search ends.
+3. A function which given a node generates for each
+   child of the node a call to function 1 to see if the
+   child is on the visited list already, and if not,
+   a call to function 2 to add the child to the list.
 
-C. A children pointer at a list of cons cells that list
-   all the children of this node.  This is needed only
-   if the list of children of a node cannot easily be
-   generated on the fly from some simpler data struc-
-   ture; e.g., if the list is read from input.
+4. A function which checks a node to see if it is a
+   goal node.
 
-D. A `visited' flag if nodes are allocated before the
-   search and the list of children C exists.  Otherwise,
-   some way is needed of quickly looking up a node name
-   to see if the node is already on the visited list.  
-   It may be necessary to employ a hash table, putting
-   nodes in a hash bin and having a next_hashed pointer
-   from each node to the next node in its hash bin.
+Given these it is easy to code the algorithm in a few
+lines.
 
-E. A `parent' pointer to the parent node which caused
-   this node to be put on the visited list A.
+In order to construct the shortest path to the goal
+node, each node that is visited needs to record its
+parent.  Then starting from the goal node and working
+backward a shortest path can be constructed.
 
-F. A `next_shortest' pointer to the next node on the
-   shortest path.
-
-Note that there are a number of variants to basic
-breadth first search.  Sometimes the starting node
-can also be a goal, sometimes there are many goal
-nodes, etc.
-
-Given the right definition of a node structure, breadth
-first search is easy enough to code.
-   
+If a linear search of all the visited nodes is not fast
+enough, a hash table can be used.  The hash table H is
+a length N vector of pointers to nodes.  H[i] is the
+head of a list of nodes whose hash value is i.  Each
+node must have a pointer to the next node on its hash
+list.  There must be a hash function that given the
+parameters describing a node, produces the node's hash
+value i.  Then the function to find a node in the
+visited list computes the node's hash value i and
+linearly searches just list H[i].  The function to put
+a node on the end of the visited list must computed
+the node's hash value i and add the node to the H[i]
+list.
 
 
 
@@ -105,7 +106,7 @@ file.
 
 RCS Info (may not be true date or author):
 
-    $Author: hc3 $
-    $Date: 2002/08/07 16:24:55 $
+    $Author: walton $
+    $Date: 2006/09/28 13:20:39 $
     $RCSfile: breadth_first_search,v $
-    $Revision: 1.3 $
+    $Revision: 1.4 $
