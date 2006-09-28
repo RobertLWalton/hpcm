@@ -10,10 +10,10 @@
 #
 # RCS Info (may not be true date or author):
 #
-#   $Author: hc3 $
-#   $Date: 2006/04/25 15:33:11 $
+#   $Author: walton $
+#   $Date: 2006/09/28 21:03:47 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.25 $
+#   $Revision: 1.26 $
 
 # `make help.pdf' and `make demos.pdf' make printouts of
 # all the help and demos files respectively.  Note that
@@ -53,6 +53,7 @@ HELP_FILES = \
 	contest/informal_contest \
 	contest/untimed_contest \
 	common/xterminals \
+	email/email_unix_tools \
 	common/solving \
 	email/email_solving \
 	common/input \
