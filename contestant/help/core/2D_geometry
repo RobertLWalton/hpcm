@@ -1,4 +1,4 @@
-2D GEOMETRY PROBLEM HELP    Sun Aug  4 09:36:13 EDT 2002
+2D GEOMETRY PROBLEM HELP    Thu Sep 28 07:07:01 EDT 2006
 
 For some reason many young computer scientists think
 that geometry problems are hard, and avoid them.  The
@@ -6,6 +6,7 @@ purpose of this short discussion is to demonstrate that
 geometry problems are fairly easy after all.
 
 We will restrict ourselves here to 2D geometry.
+
 
 Basics
 ------
@@ -15,7 +16,7 @@ Let
 	
 be points in the plane.  The difference
 
-	v = (vx,vy) = p - q = (px-qx,py-qy)
+	v = (vx,vy) = q - p = (qx-px,qy-py)
 	
 is the vector from p to q.  Its length is
 
@@ -37,9 +38,9 @@ Note that
 
 	|v| = sqrt (v.v)
 
-Note that u.v = 0 iff u and v are orthogonal (at right
-angles) to each other, i.e., if theta = + or - 90
-degrees and cos(theta) = 0.
+Note that u.v = 0 if and only if u and v are orthogonal
+(at right angles) to each other, i.e., if theta = + or
+- 90 degrees and cos(theta) = 0.
 
 A `unit' vector v is a vector of length 1 ( |v| = 1 ).
 If u and v are unit vectors at right angles to each
@@ -64,92 +65,101 @@ so u and v are the rows of the 2x2 matrix which by left
 multiplication translates from old xy coordinates to new
 uv coordinates.
 
-If u is a unit vector and v is any vector, we call
-(u.v)u the projection of v onto u.  Taking vectors as
-denoting points (the ends of the vectors if all have the
-same origin), then the projection of v onto u is the
-point on the infinite line going through the origin and
-u that is closest to the point v.  That is, u.v is the
-number K which minimizes | v - Ku |.  You can check this
-with a little algebra.
-
-A clockwise rotation R(theta) of a vector v=(vx,vy) by
-an angle theta is
+A counterclockwise rotation R(theta) of a vector
+v=(vx,vy) by an angle theta is
 
-	         |   cos(theta)   sin(theta) | | vx |
+	         | cos(theta)   - sin(theta) | | vx |
     R(theta).v = |                           | |    |
-	         | - sin(theta)   cos(theta) | | vy |
+	         | sin(theta)     cos(theta) | | vy |
 
-	      |   vx cos(theta) + vy sin(theta) |
-	    = |                                 |
-	      | - vx sin(theta) + vy cos(theta) |
-
+	      | vx cos(theta) - vy sin(theta) |
+	    = |                               |
+	      | vx sin(theta) + vy cos(theta) |
+
 Most particularly, if theta = 90 degrees, then
 
 		
-	                |  0   1 |
+	                | 0   -1 |
 	R(90 degrees) = |        |
-	                | -1   0 |
+	                | 1    0 |
 
 
-        R(90 degrees).v =  (vy,-vx)
+        R(90 degrees).v =  (-vy,vx)
 
-These are all the basics you need to know.  However,
-you need to know these basics very well.
+Given two points p and q, it is common to want to change
+coordinates so these points are on the x-axis.  Let v =
+q - p be the vector from p to q.  Let w = R(90 deg).v,
+so w is orthogonal to v and |w| = |v|.  Scalar products
+by v measure distance in the v direction, and scalar
+products by w measure distance in the w direction.  w.q
+= w.p; to check this we see that w.p = w.q + w.(p-q) and
+w.(p-q) = w.v = (R(90 deg)v).v = 0.  Let f = w.q = w.p.
+Then for any point r use the new coordinates (rx',ry') =
+(v.r,w.r-f).  We have (px',py') = (v.p,0) and (qx',qy')
+= (v.q,0) because w.p-f = 0 = w.q - f.  Because v and w
+are orthogonal and both have the same length |v| = |w| =
+|R(90 deg)v|, distances between points in the new coor-
+dinates are just |v| times distances in the old coordin-
+ates.  For example, the distance between p and q in the
+new coordinate system is |v.q - v.p| = |v.v| = |v|**2
+which is |v| times the distance between p and q in the
+old coordinate system.
+
+Since (wx,wy) = (-vy,vx) we have
+
+	f = w.p = - vy * px + vx * py
+	w.r = - vy * rx + vx * ry
+        ry' = - vy * rx + vx * ry - f
+
+So the summary of the part of the computation that you
+need to remember is
+
+    vx = qx - px
+    vy = qy - py
+    f = - vy * px + vx * py = -vy * qx + vx * qy
+    for r = (rx,ry) the new coordinates are
+	    rx' = - vy * rx + vx * ry - f
+	    ry' = - vy * rx + vx * ry - f
+    distances between points in new coordinates are
+	|v| = sqrt ( vx*vx + vy*vy )
+    times distances between points in old coordinates
+
+Note that if all coordinates in the old coordinate sys-
+tem are integers, all coordinates in the new coordinate
+system are integers.  This is a big advantage if exact
+arithmetic is needed, as when one must determine if a
+point lies exactly on a line.
+
+The last coordinate change is basic to much elementary
+computational geometry, and you should learn it very
+well.
 
 
 Lines Dividing Planes
 ----- -------- ------
 
-The line through points p and q, oriented in the
-direction from p to q (p != q is assumed), divides the
-plane into three parts: points to the right of the
-line (facing in the direction from p to q), points to
-the left of the line, and points on the line.  How do
-we find out whether a point r is to the right, left,
-or on the line?
+The line through points p and q, oriented in the direc-
+tion from p to q (p != q is assumed), divides the plane
+into three parts: points to the right of the line (fac-
+ing in the direction from p to q), points to the left of
+the line, and points on the line.  How do we find out
+whether a point r is to the right, left, or on the line?
 
-Simply compute:
+If we change coordinates as indicate in the last section
+then for r
 
-    v = R(90 degrees).(q-p) = (qy-py,-qx+px)
+    vx = qx - px
+    vy = qy - py
+    f = - vy * px + vy * py = - vy * qx + vy * qy
+    ry' = - vy * rx + vx * ry - f
 
-    Note: then v.q = v.p.
+    ry' > 0	if r is to the left of the line;
+    ry' == 0	if r is on the line;
+    ry' < 0	if r is to the right of the line;
 
-    if v.r > v.p then r is to the right of the line;
-    if v.r < v.p then r is to the left of the line;
-    if v.r = v.p then r is on the line.
-
-v is the vector from p to q rotated 90 degrees clock-
-wise, so it points to the right of the line through p
-and q.  Then
-
-	 q - p                   v
-	-------		and	---
-	|q - p|                 |v|
-
-are a pair of unit length vectors at right angles to
-each other and form a coordinate system.  Therefore
-
-	v.r
-	---
-	|v|
-
-is the coordinate in this coordinate system in the
-direction perpendicular to the line through p and q, and
-this is >, =, or < to v.p/|v| according to whether r is
-to the right, on, or to the left of this line.
-
-Note that if p, q, and r have integer coordinates, then
-v.r and v.p are integers and are exact, and the clas-
-sification of r as to the right, on, or to the left of
-the line is exact, with no chance of roundoff error.
-
-Sometimes the distance from r to the line from p to q
-is desired.  This is just the absolute value of
-
-	    v.r 
-	    ---
-	    |v|
+The distance from r to the infinite line through p and q
+is |ry'| in the new coordinates or |ry'|/|v| in the ori-
+ginal coordinates.
 
 
 The Distance of a Point to a Finite Line
@@ -158,83 +168,157 @@ The Distance of a Point to a Finite Line
 We just indicated how to find the distance between a
 point r and an infinite line that runs through two
 points p and q.  What if the line is finite with ends p
-and q.
+and q?
 
-This can be readily solved if the line is parallel to
-the x-axis.  Suppose it is and the x coordinates of p
-and q are px < qx, and the x coordinate of r is rx.
-Then if rx <= px, the distance from r to the line is the
-distance from r to p.  Similarly if rx >= qx then the
-distance from r to the line is the distance from r to q.
-But if px < rx < qx, then distance from r to the line is
-the distance from r to the point on the line with the
-same x coordinate as r.  This is just the absolute value
-of ry - py (note py = qy).
+Again shift to the new coordinates so that:
 
-In order to find the distance when the line is not
-parallel to the x-axis, we introduce new coordinates in
-which the line will be parallel to the x-axis.  To do
-this we find orthogonal unit vectors u and v such that
-u is parallel to the line.  Then the new x coordinates
-are u.r, u.p, u.q and the new y coordinates are v.r and
-v.p = v.q.
-
+    vx = qx - px
+    vy = qy - py
+    f = - vy * px + vy * py = - vy * qx + vy * qy
+    rx' =   vx * rx + vy * ry
+    ry' = - vy * rx + vx * ry - f
+    px' =   vx * px + vy * py
+    py' =   0
+    qx' =   vx * qx + vy * qy
+    qy' =   0
 
+So p and q are now on the x'-axis and the problem is
+fairly easy.  There are two cases:
+
+    if rx' <= px' and rx' <= qx'
+    or rx' >= px' and rx' >= qx'
+       then r is off the end of the line from p to q
+       and the distance is the minimum of |r-p| and
+       |r-q|
+
+    if px' < rx' < qx'
+    or qx' < rx' < px'
+       then r is over the line segment and the distance
+       is |ry'|/|v|, the same as the distance from r
+       to the infinite line through p and q
+
+
 Intersection
 ------------
 
 Suppose we are given four points, p1, p2, q1, q2.
+
 Question: Does the interior of the finite line from p1
 to p2 intersect the interior of the finite line from q1
 to q2.  By the interior of a line we mean the part of
-the line that excludes its end points.  Also, we do NOT
-count as intersections parallel lines that overlap.
+the line that excludes its end points.  Also, we DO NOT
+COUNT as intersections parallel lines that overlap,
+which we will treat as a special case below.
 
-Answer: It does iff the infinite line through p1 and p2
-splits q1 and q2, and the infinite line through q1 and
-q2 splits p1 and p2, where for an infinite line to split
-two points means that one point must be to the right of
-the line and the other point must be to the left of the
-line.  Note that we can assume p1 != p2 and q1 != q2, as
-otherwise at least one of the two finite lines would
-have no interior.
-
-Suppose instead we wanted to know whether the finite
-lines including end points intersect.  Then we change
-the definition of split so that an infinite line splits
-two points iff one point is on or to the right of the
-line and the other point is on or to the left.  Also
-we can mix our two definitions of `split' to test
-whether one finite line, including its end points,
-intersects the interior of another finite line.
-
+Answer: The interiors of the lines intersect if and only
+if the infinite line through p1 and p2 splits q1 and q2,
+and the infinite line through q1 and q2 splits p1 and
+p2, where for an infinite line to split two points means
+that one point must be to the right of the line and the
+other point must be to the left of the line.  Note that
+we assume p1 != p2 and q1 != q2, as otherwise at least
+one of the two finite lines would have no interior.
 
-Convex Hull
------- ----
+So to tell if the infinite line through p1 and p2 splits
+q1 and q2, compute:
 
-The convex hull of a set of points V in a plane is a
-sequence of points of V, p1, p2, p3, ..., p(N), such
-that for every i, all the points of V are on or to the
-right of the line through p(i) and p((i mod N)+1), and
-such that no point p(j) is on this line except of course
-p(i) and p((i mod N)+1).  Then the finite lines from
-p(i) to p((i mode N)+1) for i = 1, ..., N are the sides
-of the smallest convex polygon such that all the points
-of V are inside this polygon or on its boundary.
+    v = p2 - p1
+    vx = p2x - p1x
+    vy = p2y - p1y
+    f = - vy * p1x + vx * p1y = - vy * p2x + vx * p2y
+    q1y' = - vy * q1x + vx * q1y - f
+    q2y' = - vy * q2x + vx * q2y - f
 
-To find the convex hull, first find some point p1 on the
-hull, which can be done say by choosing a leftmost point
-in V and given two leftmost points choosing the highest.
-Then extend the hull recursively from p(i) to p(i+1)
-by using the following.
+    then the line through p1 and p2 splits q1 and
+	 q2 if
+		    q1y' > 0 and q2y' < 0
+		 or q1y' < 0 and q2y' > 0
+
+	 or equivalently:  q1y' * q2y' < 0
+
+If we wanted to know whether the finite lines including
+end points intersect, we change the definition of split
+so that an infinite line splits two points if and only
+if one point is on or to the right of the
+line and the other point is on or to the left.  That
+is, if and only if q1y' * q2y' <= 0.  Also we can mix
+our two definitions of `split' to test whether one
+finite line, including its end points, intersects the
+interior of another finite line.
+
+In all the above we have NOT considered the case where
+p1, p2, q1, and q2 are ALL on the same straight line;
+i.e., where the finite lines might be parallel and
+overlap.  This is just the case where p1y' = p2y' = q1y'
+= q2y' = 0.  Then compute p1x', p2x', q1x', q2x'.  There
+is overlap (endpoints included) if and only if at least
+one of the following is true:
+
+	p1x' <= q1x' <= p2x'
+	p2x' <= q1x' <= p1x'
+	q1x' <= p1x' <= q2x'
+	q2x' <= p1x' <= q1x'
+
+
+Convex Hulls and Polygons
+------ ----- --- --------
+
+The clockwise convex hull of a set of points V in a
+plane is a sequence of points of V, p1, p2, p3, ...,
+p(N), such that for every i, all the points of V are on
+or to the right of the line through p(i) and
+p((i mod N)+1), and such that no point p(j) is on this
+line except of course p(i) and p((i mod N)+1).  Then the
+finite lines from p(i) to p((i mode N)+1) for i = 1,
+..., N are the sides of the smallest convex polygon such
+that all the points of V are inside this polygon or on
+its boundary.
+
+To specify a polygon we give its boundary, which for a
+convex polygon is either its clockwise or counterclock-
+wise convex hull.  The counterclockwise hull has the
+same property as the clockwise hull with `left' replac-
+ing `right' in the above definition.
+
+
+Inside Convex Polygons
+------ ------ --------
+
+Suppose we have a clockwise convex hull p1, ..., p(N)
+that defines a convex polygon.  So the sides of the
+polygon with a clockwise orientation are the lines from
+p(i) to p((i mod N)+1), for i = 1, ..., N, and no three
+of the points p1, ..., p(N) lie on the same line.
+
+Then a point r is inside the convex polygon but not on
+the boundary of the polygon if and only if r is to the
+right of each clockwise oriented side of the polygon.
+Or more specifically, r is to the right of the infinite
+line that extends the side.
+
+A point r is inside or on the boundary of a polygon
+if and only if r is to the right of or on each clockwise
+oriented side of the polygon.
+
+
+Finding the Convex Hull
+------- --- ------ ----
+
+To find the convex hull of a finite set of points V,
+first find some point p1 on the hull, which can be done
+say by choosing a leftmost point in V and given two
+leftmost points choosing the highest.  Then extend the
+hull recursively from p(i) to p(i+1) by using the
+following.
 
 Given a point p, define a relation among points q1, q2
 that are not equal to p as follows:
 
-    definition:  q1 > q2 iff q2 is to the right of
-			     the line from p to q1
-			     or q2 is on this line and
-			     closer to p that q1 is.
+    definition:  q1 > q2 if and only if
+                         q2 is to the right of the line
+			    from p to q1,
+		         or q2 is on this line and
+			    closer to p that q1 is.
 
 If p is a hull point, this relation is antisymmetric and
 transitive (proof to reader).  So given the hull up to
@@ -246,31 +330,44 @@ This is not the fastest algorithm, as it has time
 O(|V|**2) where |V| is the number of points in V.  The
 fastest algorithm is the Gram-Schmidt algorithm that
 begins with a sort of V and has running time dominated
-by the sort time, O(|V| log|V|).
-
+by the sort time, O(|V| log|V|).  Usually the extra
+speed is unnecessary, but just in case, the Gram-Schmidt
+algorithm is:
 
-Inside Convex Polygons
------- ------ --------
+    S = V
+    compute p1 as above and remove it from S
+    let j = 1
+    while S is not empty:
+        let p(j+1) be any leftmost point in S and remove
+	    it from S
+	while j >= 2 and p(j+1) is to the left of the
+	      directed infinite line from p(j-1) to pj:
+	    set pj = p(j+1)
+	    set j = j - 1
+	if j < 2 or if p(j+1) is NOT on the directed in-
+	   finite line from p(j-1) to pj, set j = j + 1
+	else if p(j-1) is closer to pj than to p(j+1),
+	     set pj = p(j+1)
 
-Suppose we have a convex hull p1, ..., p(N) in clockwise
-order that defines a convex polygon.  So the sides of
-the polygon with a clockwise orientation are the lines
-from p(i) to p((i mod N)+1), for i = 1, ..., N.  We
-assume no three of these points lie on the same line.
 
-Then a point r is inside the convex polygon but not on
-the boundary of the polygon iff r is to the right of
-each clockwise oriented side of the polygon.  Or more
-specifically, r is to the right of the infinite line
-that extends the side.
+When this algorithm stops only half the hull has been
+found.  To find the other half, reset S to V minus all
+the points on the hull, and continue the algorithm with
+`leftmost' replaced by `rightmost'.
+
+
+Lines Intersecting Polygons
+----- ------------ --------
 
 So when does the interior of a line from r1 to r2 inter-
 sect the inside of a convex polygon?  It does if the
 interior of the line from r1 to r2 intersects the inter-
-ior of any side of the polygon.  It also does if r1 and
-r2 are both inside or on the boundary of the polygon,
-but are not both on the same single side of the polygon.
-
+ior of any side of the polygon, but r1 and r2 are not
+both on the infinite line extending this side.  It also
+does if r1 and r2 are both inside or on the boundary of
+the polygon, but are not both on the same single side of
+the polygon.
+
 These are the only two cases where the interior of the
 line from r1 to r2 can intersect the interior of the
 polygon, UNLESS some of the convex hull points p1, ...,
@@ -279,20 +376,20 @@ this last case, use a convex hull point in the interior
 of the line to divide the line in two, and recursively
 ask if the interiors of either of the two new line seg-
 ments intersect the interior of the polygon.
-
-So all one has to do is take the clockwise sides of the
-polygon and check that the interior of the finite line
-from r1 and r2 intersects the interior of some side, or
-that for each polygon side, r1 and r2 are both on or to
-the right of the infinite line extending the side, and
-r1 and r2 are not both on that line.  During this pro-
-cess one checks each convex hull point p to see if it is
-in the interior of the line from r1 to r2, and if it is,
-one then divides the line from r1 to r2 up into two
-segments, one from r1 to p and one from p to r2, and
-then one applies the algorithm recursively to see if the
-interior of either of these two segments intersects the
-interior of the polygon.
+
+So all one has to do is take each clockwise side of the
+polygon and check that r1 and r2 are not both on that
+side and either the interior of the finite line from r1
+and r2 intersects the interior of the side, or r1 and r2
+are both on or to the right of the infinite line exten-
+ding the side.  During this process one checks each
+convex hull point p to see if it is in the interior of
+the line from r1 to r2, and if it is, one then divides
+the line from r1 to r2 up into two segments, one from r1
+to p and one from p to r2, and then one applies the
+algorithm recursively to see if the interior of either
+of these two segments intersects the interior of the
+polygon.
 
 
 Polygon Maze
@@ -303,32 +400,40 @@ two points p and q outside any convex polygon, find the
 shortest path from p to q that does not go inside any
 convex polygon.  Paths may travel on the edges of a
 polygon if these are not inside some other polygon.
-
+
 Solution: Let V be the set of vertices of the polygons
 plus the two points p and q.  Then the path to be found
 can be represented as a sequence of straight line
 segments with vertices in V (proof to reader).  So it
 is a shortest path in an undirected graph whose vertices
 are V such that given points r1 and r2 in V, there is
-an edge in this undirected graph between r1 and r2 iff
-the interior of the line from r1 to r2 does not inter-
-sect the interior of any polygon.  Actually, we can make
-the computation simpler by also deleting an edge from r1
-to r2 if the interior of the line from r1 to r2 contains
-any member of V, as the shortest path can be composed of
-line segments between members of V that do not contain
-other members of V.
+an edge in this undirected graph between r1 and r2 if
+and only if the interior of the line from r1 to r2 does
+not intersect the interior of any polygon.  Actually, we
+can make the computation simpler by also deleting an
+edge from r1 to r2 if the interior of the line from r1
+to r2 contains any member of V, as the shortest path can
+be composed of line segments between members of V that
+do not contain other members of V.
 
-
+
 Circular Anti-Maze
 -------- ---------
 
 Find the shortest path between two points in a plane
-that has circular holes in it.  The part of a path
-that transverses a hole does NOT count toward the
-length of the path.
+that has circular holes in it.  The part of a path that
+transverses a hole does NOT count toward the length of
+the path.
 
+Solution: let V be the set consisting of the two points
+and the centers of the holes.  Then the path consists of
+straight line segments with end points in V.   The
+length of each segment is the distance between its ends
+minus the radius of any hole centered at one end, or is
+0 if this length is negative.  The reader should try to
+prove that his works, even when holes overlap.
 
+
 Robot Arms
 ----- ----
 
@@ -347,23 +452,30 @@ ments and the angular settings of the servos.  A servo
 is typically set to have 0 angle if the segment follow-
 ing it continues in the same direction as the segment
 preceding it.  We will assume that a positive angle
-means the arm following the servo is rotated clockwise
-by that angle.  Particular robot arms may use other
-conventions for servo angles.  We will also assume that
-the first pivot point is at the origin, and that the
-setting of 0 degrees for the first servo points the
+means the arm following the servo is rotated counter-
+clockwise by that angle.  Particular robot arms may use
+other conventions for servo angles.  We will also assume
+that the first pivot point is at the origin, and that
+the setting of 0 degrees for the first servo points the
 first segment along the positive x-axis.
-
+
 The position of the pivot points of such an arm can be
 computed recursively by induction on the number of
 segments in the arm.  If there are 0 segments, there is
 only one pivot point (the hand's), and it is at the
-origin.  Otherwise assume for the moment that the first
-segment is such that its end (not its beginning) is at
-the origin and its orientation is in the direction of
-the positive x-axis, so its server setting is 0 degrees.
+origin.  The setting of the server at that pivot point
+is irrelevant to the position of the pivot points.
+
+If there are more than 0 segments, assume for the
+moment that the first segment is such that its end (not
+its beginning) is at the origin and its orientation is
+in the direction of the positive x-axis, so its server
+setting is 0 degrees.
+
 Next compute the positions of the pivot points at the
-ends of the other segments by induction.
+ends of the other segments by a recursive call, pretend-
+ing that the first segment does not exist, so the arm
+has one fewer segments than it actually has.
 
 Now translate the origin to the beginning of the first
 segment by adding the length of this segment to the
@@ -389,7 +501,7 @@ file.
 
 RCS Info (may not be true date or author):
 
-    $Author: hc3 $
-    $Date: 2002/08/04 15:10:13 $
+    $Author: walton $
+    $Date: 2006/09/28 11:11:46 $
     $RCSfile: 2D_geometry,v $
-    $Revision: 1.12 $
+    $Revision: 1.13 $
