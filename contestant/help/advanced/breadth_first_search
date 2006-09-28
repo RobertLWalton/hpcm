@@ -1,5 +1,5 @@
-BREADTH FIRST SEARCH PROBLEM HELP
-			    Thu Sep 28 08:10:04 EDT 2006
+Breadth First Search        Thu Sep 28 19:45:47 EDT 2006
+Problem Help
 
 Breadth first search is most commonly used in maze
 problems, but can be used in other problems.  The idea
@@ -25,7 +25,7 @@ are added to the visited list immediately after the node
 that is their parent, the node currently being examined
 for children.  Depth first search with a visited list is
 almost unheard of in programming contests, but recursive
-exhaustive search which visits nodes in depth first
+exhaustive search which visits ALL nodes in depth first
 order is common.)
 
 There are three approaches to making a visited list:
@@ -40,7 +40,7 @@ B. If the size of a node description is fixed and not
    be visited is not large, make a large fixed size
    vector of nodes and two pointers: one to the next
    empty element and one to the first element whose
-   children have not been examined.
+   children have not yet been examined.
 
 C. Otherwise allocate each node as it is visited.  You
    will need a pointer in each node to the next node
@@ -64,17 +64,19 @@ need the following functions:
    node creates a new node and adds it to the end of
    the visited list.
 
-3. A function which given a node generates for each
-   child of the node a call to function 1 to see if the
-   child is on the visited list already, and if not,
-   a call to function 2 to add the child to the list.
-
-4. A function which checks a node to see if it is a
+3. A function which checks a node to see if it is a
    goal node.
 
+4. A function which given a node generates for each
+   child of the node a call to function 1 to see if the
+   child is on the visited list already, and if not,
+   a call to function 2 to add the child to the list
+   and then a call to function 3 to see if the added
+   child is a goal.
+
 Given these it is easy to code the algorithm in a few
 lines.
-
+
 In order to construct the shortest path to the goal
 node, each node that is visited needs to record its
 parent.  Then starting from the goal node and working
@@ -82,17 +84,16 @@ backward a shortest path can be constructed.
 
 If a linear search of all the visited nodes is not fast
 enough, a hash table can be used.  The hash table H is
-a length N vector of pointers to nodes.  H[i] is the
-head of a list of nodes whose hash value is i.  Each
-node must have a pointer to the next node on its hash
-list.  There must be a hash function that given the
-parameters describing a node, produces the node's hash
-value i.  Then the function to find a node in the
-visited list computes the node's hash value i and
-linearly searches just list H[i].  The function to put
-a node on the end of the visited list must computed
-the node's hash value i and add the node to the H[i]
-list.
+a vector of pointers to nodes.  H[i] is the head of a
+`hash list' of nodes whose hash value is i.  Each node
+must have a pointer to the next node on its hash list.
+There must be a hash function that given the parameters
+describing a node, produces the node's hash value i.
+Then the function to find a node in the visited list
+computes the node's hash value i and linearly searches
+just list H[i].  The function to put a node on the end
+of the visited list must computed the node's hash value
+i and add the node to the H[i] list.
 
 
 
@@ -107,6 +108,6 @@ file.
 RCS Info (may not be true date or author):
 
     $Author: walton $
-    $Date: 2006/09/28 13:20:39 $
+    $Date: 2006/09/28 23:51:36 $
     $RCSfile: breadth_first_search,v $
-    $Revision: 1.4 $
+    $Revision: 1.5 $
