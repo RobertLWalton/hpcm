@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Apr 25 11:33:15 EDT 2006
+# Date:		Thu Sep 28 17:04:18 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/09/28 21:03:47 $
+#   $Date: 2006/09/28 21:04:35 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.26 $
+#   $Revision: 1.27 $
 
 # `make help.pdf' and `make demos.pdf' make printouts of
 # all the help and demos files respectively.  Note that
