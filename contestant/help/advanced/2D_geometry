@@ -1,4 +1,4 @@
-2D GEOMETRY PROBLEM HELP    Thu Sep 28 07:07:01 EDT 2006
+2D GEOMETRY PROBLEM HELP    Thu Sep 28 17:15:55 EDT 2006
 
 For some reason many young computer scientists think
 that geometry problems are hard, and avoid them.  The
@@ -93,12 +93,12 @@ so w is orthogonal to v and |w| = |v|.  Scalar products
 by v measure distance in the v direction, and scalar
 products by w measure distance in the w direction.  w.q
 = w.p; to check this we see that w.p = w.q + w.(p-q) and
-w.(p-q) = w.v = (R(90 deg)v).v = 0.  Let f = w.q = w.p.
+w.(p-q) = w.v = (R(90 deg).v).v = 0.  Let f = w.q = w.p.
 Then for any point r use the new coordinates (rx',ry') =
 (v.r,w.r-f).  We have (px',py') = (v.p,0) and (qx',qy')
 = (v.q,0) because w.p-f = 0 = w.q - f.  Because v and w
 are orthogonal and both have the same length |v| = |w| =
-|R(90 deg)v|, distances between points in the new coor-
+|R(90 deg).v|, distances between points in the new coor-
 dinates are just |v| times distances in the old coordin-
 ates.  For example, the distance between p and q in the
 new coordinate system is |v.q - v.p| = |v.v| = |v|**2
@@ -108,6 +108,7 @@ old coordinate system.
 Since (wx,wy) = (-vy,vx) we have
 
 	f = w.p = - vy * px + vx * py
+	  = w.q = - vy * qx + vx * qy
 	w.r = - vy * rx + vx * ry
         ry' = - vy * rx + vx * ry - f
 
@@ -185,80 +186,51 @@ Again shift to the new coordinates so that:
 So p and q are now on the x'-axis and the problem is
 fairly easy.  There are two cases:
 
-    if rx' <= px' and rx' <= qx'
-    or rx' >= px' and rx' >= qx'
+    if rx' < px' and rx' < qx'
+    or rx' > px' and rx' > qx'
        then r is off the end of the line from p to q
        and the distance is the minimum of |r-p| and
        |r-q|
 
-    if px' < rx' < qx'
-    or qx' < rx' < px'
+    if px' <= rx' <= qx'
+    or qx' <= rx' <= px'
        then r is over the line segment and the distance
        is |ry'|/|v|, the same as the distance from r
        to the infinite line through p and q
 
 
-Intersection
-------------
+Intersection of a Finite Line and an Infinite Line
+------------ -- - ------ ---- --- -- -------- ----
 
-Suppose we are given four points, p1, p2, q1, q2.
-
-Question: Does the interior of the finite line from p1
-to p2 intersect the interior of the finite line from q1
-to q2.  By the interior of a line we mean the part of
-the line that excludes its end points.  Also, we DO NOT
-COUNT as intersections parallel lines that overlap,
-which we will treat as a special case below.
-
-Answer: The interiors of the lines intersect if and only
-if the infinite line through p1 and p2 splits q1 and q2,
-and the infinite line through q1 and q2 splits p1 and
-p2, where for an infinite line to split two points means
-that one point must be to the right of the line and the
-other point must be to the left of the line.  Note that
-we assume p1 != p2 and q1 != q2, as otherwise at least
-one of the two finite lines would have no interior.
+When does the infinite line through p1 and p2 intersect
+the interior of the finite line from q1 to q2?  By
+interior we mean the part of the line that excludes the
+endpoints.  Answer: when q1 is on one side of the infi-
+nite line and q2 is on the other side, if we ignore the
+special case where q1 and q2 are BOTH on the infinite
+line.
 
-So to tell if the infinite line through p1 and p2 splits
-q1 and q2, compute:
+So we can compute:
 
-    v = p2 - p1
     vx = p2x - p1x
     vy = p2y - p1y
     f = - vy * p1x + vx * p1y = - vy * p2x + vx * p2y
     q1y' = - vy * q1x + vx * q1y - f
     q2y' = - vy * q2x + vx * q2y - f
 
-    then the line through p1 and p2 splits q1 and
-	 q2 if
+    then q1 and q2 are on opposite sides of the infinite
+         line through p1 and p2 if and only if:
+
 		    q1y' > 0 and q2y' < 0
 		 or q1y' < 0 and q2y' > 0
 
 	 or equivalently:  q1y' * q2y' < 0
 
-If we wanted to know whether the finite lines including
-end points intersect, we change the definition of split
-so that an infinite line splits two points if and only
-if one point is on or to the right of the
-line and the other point is on or to the left.  That
-is, if and only if q1y' * q2y' <= 0.  Also we can mix
-our two definitions of `split' to test whether one
-finite line, including its end points, intersects the
-interior of another finite line.
+When does the infinite line through p1 and p2 intersect
+the finite line from q1 to q2, including the possibility
+of intersecting at an end point, i.e., at q1 or q2.
+Answer: if and only if q1y' * q2y' <= 0.
 
-In all the above we have NOT considered the case where
-p1, p2, q1, and q2 are ALL on the same straight line;
-i.e., where the finite lines might be parallel and
-overlap.  This is just the case where p1y' = p2y' = q1y'
-= q2y' = 0.  Then compute p1x', p2x', q1x', q2x'.  There
-is overlap (endpoints included) if and only if at least
-one of the following is true:
-
-	p1x' <= q1x' <= p2x'
-	p2x' <= q1x' <= p1x'
-	q1x' <= p1x' <= q2x'
-	q2x' <= p1x' <= q1x'
-
 
 Convex Hulls and Polygons
 ------ ----- --- --------
@@ -266,14 +238,13 @@ Convex Hulls and Polygons
 The clockwise convex hull of a set of points V in a
 plane is a sequence of points of V, p1, p2, p3, ...,
 p(N), such that for every i, all the points of V are on
-or to the right of the line through p(i) and
-p((i mod N)+1), and such that no point p(j) is on this
-line except of course p(i) and p((i mod N)+1).  Then the
-finite lines from p(i) to p((i mode N)+1) for i = 1,
-..., N are the sides of the smallest convex polygon such
-that all the points of V are inside this polygon or on
-its boundary.
-
+or to the right of the line from p(i) to p((i mod N)+1),
+and such that no point p(j) is on this line except of
+course p(i) and p((i mod N)+1).  Then the finite lines
+from p(i) to p((i mode N)+1) for i = 1, ..., N are the
+sides of the smallest convex polygon such that all the
+points of V are inside this polygon or on its boundary.
+
 To specify a polygon we give its boundary, which for a
 convex polygon is either its clockwise or counterclock-
 wise convex hull.  The counterclockwise hull has the
@@ -295,9 +266,9 @@ the boundary of the polygon if and only if r is to the
 right of each clockwise oriented side of the polygon.
 Or more specifically, r is to the right of the infinite
 line that extends the side.
-
-A point r is inside or on the boundary of a polygon
-if and only if r is to the right of or on each clockwise
+
+A point r is inside OR ON the boundary of a polygon
+if and only if r is to the right of OR ON each clockwise
 oriented side of the polygon.
 
 
@@ -310,7 +281,7 @@ say by choosing a leftmost point in V and given two
 leftmost points choosing the highest.  Then extend the
 hull recursively from p(i) to p(i+1) by using the
 following.
-
+
 Given a point p, define a relation among points q1, q2
 that are not equal to p as follows:
 
@@ -333,7 +304,7 @@ begins with a sort of V and has running time dominated
 by the sort time, O(|V| log|V|).  Usually the extra
 speed is unnecessary, but just in case, the Gram-Schmidt
 algorithm is:
-
+
     S = V
     compute p1 as above and remove it from S
     let j = 1
@@ -349,11 +320,49 @@ algorithm is:
 	else if p(j-1) is closer to pj than to p(j+1),
 	     set pj = p(j+1)
 
-
+
 When this algorithm stops only half the hull has been
 found.  To find the other half, reset S to V minus all
 the points on the hull, and continue the algorithm with
 `leftmost' replaced by `rightmost'.
+
+
+Intersection of Two Finite Lines
+------------ -- --- ------ -----
+
+Suppose we are given four points, p1, p2, q1, q2.
+
+Question: Does the interior of the finite line from p1
+to p2 intersect the interior of the finite line from q1
+to q2.  By the interior of a line we mean the part of
+the line that excludes its end points.  Also, we DO NOT
+COUNT as intersections parallel lines that overlap,
+which we will treat as a special case below.
+
+Answer: The interiors of the lines intersect if and only
+if the infinite line through p1 and p2 intersects the
+interior of the line from q1 to q2, and the infinite
+line through q1 and q2 intersects the interior of the
+line from p1 to p2.
+
+If we wanted to know whether the finite lines including
+end points intersect, we ask whether the infinite lines
+intersect the finite lines, endpoints included.  Thus
+we use the test q1y' * q2y' <= 0 and similarly with the
+p's and q's exchanged.  Again there is a special case
+where p1, p2, q1, and q2 are all on the same straight
+line, and the finite lines may or may not intersect.
+
+What if p1, p2, q1, and q2 are ALL on the same straight
+line.  Then p1y' = p2y' = q1y' = q2y' = 0.  We compute
+p1x', p2x', q1x', q2x'.  There is overlap (endpoints in-
+cluded) if and only if at least one of the following is
+true:
+
+	p1x' <= q1x' <= p2x'
+	p2x' <= q1x' <= p1x'
+	q1x' <= p1x' <= q2x'
+	q2x' <= p1x' <= q1x'
 
 
 Lines Intersecting Polygons
@@ -367,7 +376,7 @@ both on the infinite line extending this side.  It also
 does if r1 and r2 are both inside or on the boundary of
 the polygon, but are not both on the same single side of
 the polygon.
-
+
 These are the only two cases where the interior of the
 line from r1 to r2 can intersect the interior of the
 polygon, UNLESS some of the convex hull points p1, ...,
@@ -376,7 +385,7 @@ this last case, use a convex hull point in the interior
 of the line to divide the line in two, and recursively
 ask if the interiors of either of the two new line seg-
 ments intersect the interior of the polygon.
-
+
 So all one has to do is take each clockwise side of the
 polygon and check that r1 and r2 are not both on that
 side and either the interior of the finite line from r1
@@ -400,12 +409,12 @@ two points p and q outside any convex polygon, find the
 shortest path from p to q that does not go inside any
 convex polygon.  Paths may travel on the edges of a
 polygon if these are not inside some other polygon.
-
-Solution: Let V be the set of vertices of the polygons
+
+Solution: Let V be the set of vertexes of the polygons
 plus the two points p and q.  Then the path to be found
 can be represented as a sequence of straight line
-segments with vertices in V (proof to reader).  So it
-is a shortest path in an undirected graph whose vertices
+segments with vertexes in V (proof to reader).  So it
+is a shortest path in an undirected graph whose vertexes
 are V such that given points r1 and r2 in V, there is
 an edge in this undirected graph between r1 and r2 if
 and only if the interior of the line from r1 to r2 does
@@ -416,7 +425,7 @@ to r2 contains any member of V, as the shortest path can
 be composed of line segments between members of V that
 do not contain other members of V.
 
-
+
 Circular Anti-Maze
 -------- ---------
 
@@ -433,7 +442,7 @@ minus the radius of any hole centered at one end, or is
 0 if this length is negative.  The reader should try to
 prove that his works, even when holes overlap.
 
-
+
 Robot Arms
 ----- ----
 
@@ -446,7 +455,7 @@ next segment, or to the robot hand if the segment is the
 last segment of the arm.  We will define the end of the
 last segment to also be a pivot point: it could have a
 servo to rotate the hand.
-
+
 The parameters of the arm are the lengths of the seg-
 ments and the angular settings of the servos.  A servo
 is typically set to have 0 angle if the segment follow-
@@ -471,7 +480,7 @@ moment that the first segment is such that its end (not
 its beginning) is at the origin and its orientation is
 in the direction of the positive x-axis, so its server
 setting is 0 degrees.
-
+
 Next compute the positions of the pivot points at the
 ends of the other segments by a recursive call, pretend-
 ing that the first segment does not exist, so the arm
@@ -486,7 +495,7 @@ first servo is still 0 degrees.
 Now rotate all the pivot points about the origin by the
 amount indicated by the setting of the first servo.
 This finishes the computation.
-
+
 This computation is easy because we use induction to
 build the arm from its end, and not from its beginning.
 
@@ -502,6 +511,6 @@ file.
 RCS Info (may not be true date or author):
 
     $Author: walton $
-    $Date: 2006/09/28 11:11:46 $
+    $Date: 2006/09/28 21:39:06 $
     $RCSfile: 2D_geometry,v $
-    $Revision: 1.13 $
+    $Revision: 1.14 $
