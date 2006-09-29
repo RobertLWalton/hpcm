@@ -1,4 +1,4 @@
-Breadth First Search        Thu Sep 28 19:45:47 EDT 2006
+Breadth First Search        Fri Sep 29 07:57:17 EDT 2006
 Problem Help
 
 Breadth first search is most commonly used in maze
@@ -37,7 +37,7 @@ A. If the set of possible nodes is small and can be
 
 B. If the size of a node description is fixed and not
    large, and the maximum number of nodes that might
-   be visited is not large, make a large fixed size
+   be visited is not too large, make a large fixed size
    vector of nodes and two pointers: one to the next
    empty element and one to the first element whose
    children have not yet been examined.
@@ -83,20 +83,31 @@ parent.  Then starting from the goal node and working
 backward a shortest path can be constructed.
 
 If a linear search of all the visited nodes is not fast
-enough, a hash table can be used.  The hash table H is
-a vector of pointers to nodes.  H[i] is the head of a
-`hash list' of nodes whose hash value is i.  Each node
-must have a pointer to the next node on its hash list.
-There must be a hash function that given the parameters
-describing a node, produces the node's hash value i.
+enough, a hash table can be used.  The idea of a hash
+table is that instead of having one long lookup list, we
+have many short lookup lists.  Suppose we want M lookup
+lists.  We write a hash function that takes the para-
+meters describing a node and returns an integer i, the
+hash value of the node, where 0 <= i < M.  The node's
+hash value i names the lookup list on which the node
+will be placed.  The hash table is a vector H such that
+H[i] is the head of lookup list i.  Each node is now on
+two lists, a lookup list and the list of all visited
+nodes.
+
 Then the function to find a node in the visited list
 computes the node's hash value i and linearly searches
 just list H[i].  The function to put a node on the end
 of the visited list must computed the node's hash value
-i and add the node to the H[i] list.
+i and add the node to the H[i] list.  All this works
+well if for typical sets of actual nodes the hash
+function generates its M possible values about equally
+often.  Then the expected length of each lookup list
+will be N/M, where N is the total number of nodes and M
+is the number of lookup lists.
 
 
-
+
 File:		breadth_first_search
 Author:		Bob Walton <walton@deas.harvard.edu>
 Date:		See top of file.
@@ -108,6 +119,6 @@ file.
 RCS Info (may not be true date or author):
 
     $Author: walton $
-    $Date: 2006/09/28 23:51:36 $
+    $Date: 2006/09/29 12:33:13 $
     $RCSfile: breadth_first_search,v $
-    $Revision: 1.5 $
+    $Revision: 1.6 $
