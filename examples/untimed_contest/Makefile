@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Sep  8 11:44:38 EDT 2006
+# Date:		Fri Sep 29 13:20:48 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/09/08 15:46:03 $
+#   $Date: 2006/09/29 17:19:26 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.68 $
+#   $Revision: 1.69 $
 #
 # To make an untimed contest named `foo':
 #
@@ -252,7 +252,7 @@ print_files_do_nothing:
 
 help_print_files problems_print_files \
     demos_print_files:	print_files_do_nothing
-	makecontest -print_files
+	makecontest
 
 help/this_contest: print_files_do_nothing
 	makecontest -this_contest

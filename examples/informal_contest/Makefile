@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Sep  9 08:42:45 EDT 2006
+# Date:		Fri Sep 29 13:19:36 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/09/09 12:42:01 $
+#   $Date: 2006/09/29 17:18:05 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.43 $
+#   $Revision: 1.44 $
 #
 # To make an informal contest named `foo':
 #
@@ -253,7 +253,7 @@ print_files_do_nothing:
 
 help_print_files problems_print_files \
     demos_print_files:	print_files_do_nothing
-	makecontest -print_files
+	makecontest
 
 help/this_contest: print_files_do_nothing
 	makecontest -this_contest
