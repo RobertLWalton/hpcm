@@ -1,18 +1,18 @@
-Dynamic Programming         Thu Sep 28 19:42:22 EDT 2006
+Dynamic Programming         Fri Sep 29 05:18:49 EDT 2006
 Problem Help
 
 A dynamic programming algorithm is an algorithm with two
 characteristics:
 
-A.  A problem P is parameterized in such a way that the
+A.  A problem P is parameterized in such a way that some
     parametric set of subproblems can be solved recur-
     sively.  For example, the original problem P might
-    be parameterized as P(i,M) for some integers 0 <= i
-    < N, 0 <= M <= N.  And each problem P(i,m) for 0 <=
-    i < N, 0 < m <= M might be solvable fairly quickly
-    (say in time proportional to N) from the solutions
-    to all the problems P(i,m-1) for 0 <= i < N,  while 
-    the problems P(i,0) are readily solvable.
+    be parameterized as P(i,m) for some integers 0 <= i
+    < N, 0 <= m < N.  And each problem P(i,m) for 0 < m
+    might be solvable fairly quickly (say in time pro-
+    portional to N) from the solutions to all the pro-
+    blems P(i,m-1) for 0 <= i < N,  while the problems
+    P(i,0) are readily solvable.
 
     An example is the problem of finding the length of
     the shortest path from node 0 to node N-1 in an un-
@@ -20,23 +20,28 @@ A.  A problem P is parameterized in such a way that the
     each of which have some length > 0.  Then let P(i,m)
     be the problem of finding the length of the shortest
     path from node 0 to node i that has no more than m
-    edges.  Treat two nodes that are NOT connected as if
-    they were connected by an edge whose length was in-
-    finity (or some number much larger than any possible
-    shortest path).  Then P(0,0) == 0 and P(i,0) = in-
-    finity for 0 < i < N.  And for m > 0, P(i,m) is the
-    minimum of P(k,m-1)+edge_length(k,i) for all nodes
-    0 <= k < N.
-
+    edges.  Then we want to solve P(N-1,N-1), because
+    any path with more than N-1 edges would have a cycle
+    that could be removed to make the path shorter.
+    
+    Treat two nodes that are NOT connected as if they
+    were connected by an edge whose length is infinity
+    (or some number much larger than any possible short-
+    est path).  Then P(0,0) == 0 and P(i,0) = infinity
+    for 0 < i < N.  And for m > 0, P(i,m) is the minimum
+    of P(k,m-1)+edge_length(k,i) for all nodes 0 <= k
+    < N.
+
     Note that if the length of every present edge is 1,
     this problem is just the breadth first search
-    problem with N-1 as the only goal node.  It can be
-    modified to have a set of goal nodes, and is easier
-    to program than breadth first search.  But dynamic
-    programming does not generally work as well was
-    breadth first search if the nodes cannot be organ-
-    ized into a simple array.
-
+    problem with N-1 as the only goal node (see the help
+    file on breadth_first_search).  It can be modified
+    to have a set of goal nodes, and is easier to pro-
+    gram than breadth first search.  But dynamic pro-
+    gramming does not generally work as well was breadth
+    first search if the nodes cannot be organized into a
+    simple array.
+
 B.  The solution to one of the parameterized problems
     (e.g. P(i,m)) is typically used very many times in
     computing the solution to the final problem recur-
@@ -57,18 +62,19 @@ actual shortest path, and not just the length of such a
 path.  There are two ways of doing this:
 
 C. For each P(i,m) record in P_previous(i,m) the last
-   node j that is just before i on some shortest path
-   from node 0 to node i.  This can be computed recur-
-   sively when computing P(i,m):
+   node k that is just before i on some shortest path
+   from node 0 to node i.  This can be computed when
+   computing P(i,m):
 
 	when setting P(i,m) = P(k,m-1)
 	                    + edge_length(k,i)
 	     also set P_previous(i,m) = k
-
+
 D. After computing P(i,m) for all i and m, backtrack
    to build an end segment of the path as follows:
 
    	initially the end segment is just the node N-1
+	          and m = N-1
 	while 0 is not the first node in the end
 	      segment:
 	    let i be the first node in the end segment
@@ -76,7 +82,8 @@ D. After computing P(i,m) for all i and m, backtrack
 	    	P(i,m) = P(k,m-1) + edge_length(k,i)
 	        and add k to the beginning of the end
 		segment
-
+	    set m = m-1
+
 The first step in solving any dynamic programming
 problem is to parameterize the problem.  But notice
 that in our example, the parameter m is not even hinted
@@ -86,6 +93,23 @@ find the distance between 0 and N-1.  We say that m is a
 programming problem is to find the hidden parameter
 (or parameters) that are needed to make a fast recursive
 algorithm.
+
+The Traveling Salesman Problem
+--- --------- -------- -------
+
+Some `intractable' problems have good dynamic program-
+ming solutions WHEN THE PROBLEM PARAMETERS ARE SMALL
+ENOUGH.  An example is the traveling salesman problem:
+find the shortest path from node 0 to node N-1 that
+visits all the nodes just once.  The subproblem for this
+is P(i,S): find the shortest path from node 0 to node i
+that visits every node in the set S of nodes just once.
+Then P(i,{0,1,...,N-1}) is the answer.
+
+However to compute the answer one needs to solve the
+subproblem for 2**N values of S, and there are on the
+order of N*(2**N) subproblems overall.  For N <= 15 this
+is doable.
 
 
 File:		dynamic_programming
@@ -99,6 +123,6 @@ file.
 RCS Info (may not be true date or author):
 
     $Author: walton $
-    $Date: 2006/09/28 23:44:27 $
+    $Date: 2006/09/29 09:45:52 $
     $RCSfile: dynamic_programming,v $
-    $Revision: 1.9 $
+    $Revision: 1.10 $
