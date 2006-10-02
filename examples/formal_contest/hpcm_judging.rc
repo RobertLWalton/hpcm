@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Sep 20 04:59:09 EDT 2006
+# Date:		Mon Oct  2 10:15:58 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/09/20 09:31:51 $
+#   $Date: 2006/10/02 14:16:31 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.55 $
+#   $Revision: 1.56 $
 
 # Table of Contents
 #
@@ -470,7 +470,9 @@ switch $scoring_type {
 	    set is_post_contest yes
 	    set f $judging_directory
 	    set f $f/post_contest_reconfiguration
-	    if { [create_file $f] } {
+	    # Aux judges cannot write $f or .
+	    if {    [file writable .] \
+	         && [create_file $f] } {
 	        if { ! [file isdirectory contest] } {
 		    error "stop_time is too soon"
 		}
