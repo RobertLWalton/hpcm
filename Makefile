@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Oct  2 11:02:39 EDT 2006
+# Date:		Mon Oct  2 11:24:37 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/10/02 15:03:31 $
+#   $Date: 2006/10/02 15:30:24 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.50 $
+#   $Revision: 1.51 $
 
 # See STATUS file for description of versions.
 #
@@ -166,9 +166,13 @@ aux auxiliary:	submakes
 	@echo Setting Group Permissions
 	find ~ -type l -or \
 	       -perm +g+r -or \
+	       -name secure -not -path ~/hpcm/secure \
+	             -prune -or \
 	       -perm +u+r -print -exec chmod g+r {} \;
 	find ~ -type l -or \
 	       -perm +g+x -or \
+	       -name secure -not -path ~/hpcm/secure \
+	             -prune -or \
 	       -perm +u+x -print -exec chmod g+x {} \;
 
 # The following must be done to make sure things
