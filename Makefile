@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Sep  6 12:48:14 EDT 2006
+# Date:		Mon Oct  2 11:02:39 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/09/06 16:57:03 $
+#   $Date: 2006/10/02 15:03:31 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.49 $
+#   $Revision: 1.50 $
 
 # See STATUS file for description of versions.
 #
@@ -164,9 +164,11 @@ NO_SUCH_FILE:
 #
 aux auxiliary:	submakes
 	@echo Setting Group Permissions
-	find ~ -perm +g+r -or \
+	find ~ -type l -or \
+	       -perm +g+r -or \
 	       -perm +u+r -print -exec chmod g+r {} \;
-	find ~ -perm +g+x -or \
+	find ~ -type l -or \
+	       -perm +g+x -or \
 	       -perm +u+x -print -exec chmod g+x {} \;
 
 # The following must be done to make sure things
