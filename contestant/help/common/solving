@@ -1,4 +1,4 @@
-Solving Problems Help	    Thu Sep 28 19:00:43 EDT 2006
+Solving Problems Help	    Sun Oct  8 13:18:48 EDT 2006
 
 This help file is for contestants who have been given an
 account, or for contestants using their own accounts
@@ -125,7 +125,7 @@ means using functions such as `gets', `scanf', and
 You should NOT, repeat NOT, write output to the standard
 error output, `stderr', `cerr', `System.err', or
 `*standard-error*'.  Such output will result in a
-`Program Crashed' score.
+`Program Crashed' or `Cpu Time Limit Exceeded' score.
 
 You should NOT under any circumstances open a file in
 your code.  In the judge's program execution environ-
@@ -134,14 +134,17 @@ to protect the judge's software from wayward submis-
 sions.  Since you will likely not be checking for output
 failures in your code, your code will mysteriously pro-
 duce no output in the judge's environment if you open an
-output file, and will be scored `Program Crashed'.
+output file, and will be scored `Program Crashed' if
+your program terminates, or `Cpu Time Limit Exceeded' if
+your program fails to terminate because all your input
+instructions have become no-operations.
 
 When the autojudge executes your program, it will be
 called with NO program arguments.  You can use this fact
 to write out debugging information to the standard out-
 put IF your program is called with one or more program
 arguments.
-
+
 If you edit an input file named `pppp.in' in the problem
 directory, then the following UNIX commands can be exe-
 cuted in the problem directory.  You can try them out
@@ -152,7 +155,7 @@ of course it will not count.  See the README file in
 this directory for more instructions.
 
     make	Same as `make pppp.out' (see below).
-
+
     make pppp	Makes the binary program file `pppp' by
                 running gcc on pppp.c, or g++ on
 		pppp.cc, javac on pppp.java, or a
@@ -178,7 +181,7 @@ this directory for more instructions.
 		output from pppp.out.  Does nothing,
 		however, if pppp.out is more recent than
 		both pppp.in and pppp.
-
+
     make pppp.debug
     		Ditto but runs `pppp debug' instead of
 		`pppp' and puts the standard output in
@@ -189,7 +192,7 @@ this directory for more instructions.
 		given any arguments.
 
     make debug	Same as `make pppp.debug'.
-
+
     make submit
 		Makes `pppp.out' just to be sure that
 		nothing crashes, and then e-mails
@@ -212,7 +215,7 @@ It is this file that causes `pppp.in' to be presented
 to your program as if it were input from a terminal,
 and causes output your program writes to a terminal to
 be stored in `pppp.out' instead.
-
+
 The `Makefile' file contains some oddities resulting
 from the fact that judges, who use the same `Makefile'
 as contestants, run solutions in a sandbox account that
@@ -221,18 +224,27 @@ file, directory, or program that must be accessed from
 the sandbox account may need permissions making it
 accessible to everyone.
 
-
+
 Common Mistakes
 ------ --------
 
-If you get a `Program Crashed' score, check that you DO
-NOT OPEN any files.  You should just read the standard
-input and write the standard output.  If you open .in
-and .out files, it will work for you, but not for the
-judge.  The judge runs your program in a protected mode
-in which opening an output file crashes your program.
-Also, if you write the standard error, you will get a
-`Program Crashed' score.
+If you get a `Program Crashed' or `Cpu Time Limit Ex-
+ceeded' score, check that you DO NOT OPEN any files.
+You should just read the standard input and write the
+standard output.  If you open .in and .out files, it
+will work for you, but not for the judge.  The judge
+runs your program in a protected mode in which opening
+a file fails because you do not have permissions.
+
+Assuming you do not check for opening or input/output
+errors, all your input and output operations may turn
+into no-operations.  If because input operations are
+no-operations you loop infinitely, you will get the
+score `Cpu Time Limit Exceeded'.  Otherwise you will
+get the score `Program Crashed', either because your
+program wrote no output since output operations are
+no-ops, or because JAVA checks for errors automatically
+and you get an uncaught input/output exception.
 
 If `make submit' tells you it cannot make a .in file,
 that is because you must edit a pppp.in file in order to
@@ -240,7 +252,7 @@ keep `make submit' happy.  The pppp.in file can be the
 minimum needed to keep your program from crashing (often
 pppp.in can be empty).
 
-
+
 Submission Alternatives
 ---------- ------------
 
@@ -257,7 +269,7 @@ mitting a problem:
     make inout-submit	Ditto but returns both judge's
     			input and judge's output for the
 			first failed test case.
-
+
     make solution-submit  Returns score, and if the
     			score is `Completely Correct',
 			also returns the judge's solu-
@@ -280,7 +292,7 @@ saying they are not allowed).
 If you have already submitted a correct solution, you
 can resubmit with a `solution' qualifier to get the
 judge's solution, without any affect on your score.
-
+
 Timed contests and some other contests disallow most
 submission qualifiers, in which case the submissions
 with disallowed qualifiers behave as if they had no
@@ -297,7 +309,7 @@ limits which constrain your problem.  Memory limits
 are typically several megabytes and time limits are
 typically 10 to 60 seconds.  Harder problems require
 care to be sure you stay within these limits.
-
+
 Most problems are such that solutions in C or C++ will
 run in a few seconds.  If you have long running times,
 you may have chosen an algorithm too inefficient to
@@ -314,7 +326,7 @@ code might look like:
 
 int debug;
 #define dprintf if ( debug ) printf
-
+
 int main ( int argc )
 {
     debug = ( argc > 1 );	// # arguments = argc-1.
@@ -327,7 +339,7 @@ ging in other languages.
 
 The `make debug' command (see above) calls your program
 with one argument and puts the output in `pppp.debug'.
-
+
 For program crashes and infinite loops, it is quickest
 to use a debugger, if you have minimal familiarity with
 one of the available debuggers.  A typical usage is
@@ -352,7 +364,7 @@ not be applied if you do not use pppp.in and `make'.
 The contest staff will answer questions about debuggers
 and editors as best they can.
 
-
+
 Other Issues
 ----- ------
 
@@ -364,7 +376,7 @@ The following help commands may be useful for:
 
     Understanding the scoreboard:	help scoreboard
 
-
+
 File:		solving
 Author:		Bob Walton <walton@deas.harvard.edu>
 Date:		See top of file.
@@ -376,6 +388,6 @@ file.
 RCS Info (may not be true date or author):
 
     $Author: walton $
-    $Date: 2006/09/28 23:20:59 $
+    $Date: 2006/10/08 17:36:23 $
     $RCSfile: solving,v $
-    $Revision: 1.18 $
+    $Revision: 1.19 $
