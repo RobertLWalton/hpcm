@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Oct  2 22:22:57 EDT 2006
+# Date:		Thu Oct 12 10:26:49 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/10/03 02:25:25 $
+#   $Date: 2006/10/12 14:27:22 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.52 $
+#   $Revision: 1.53 $
 
 # See STATUS file for description of versions.
 #
@@ -168,12 +168,14 @@ aux auxiliary:	submakes
 	       -perm +g+r -or \
 	       -name secure -not -path ~/hpcm/secure \
 	             -prune -or \
+	       -name .ssh -prune -or \
 	       -path ~/judging_'*'_identity -or \
 	       -perm +u+r -print -exec chmod g+r {} \;
 	find ~ -type l -or \
 	       -perm +g+x -or \
 	       -name secure -not -path ~/hpcm/secure \
 	             -prune -or \
+	       -name .ssh -prune -or \
 	       -perm +u+x -print -exec chmod g+x {} \;
 
 # The following must be done to make sure things
