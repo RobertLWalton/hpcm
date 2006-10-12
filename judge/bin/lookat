@@ -6,7 +6,7 @@
 #
 # File:		lookat
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Oct  5 08:10:49 EDT 2005
+# Date:		Thu Oct 12 08:51:37 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,10 +14,10 @@
 #
 # RCS Info (may not be true date or author):
 #
-#   $Author: hc3 $
-#   $Date: 2005/10/05 12:10:11 $
+#   $Author: walton $
+#   $Date: 2006/10/12 14:06:56 $
 #   $RCSfile: lookat,v $
-#   $Revision: 1.24 $
+#   $Revision: 1.25 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -237,6 +237,18 @@ proc set_expression { expression } {
     	   abbreviations atom value filename_regexp \
 	   line_regexp
 
+    if { ! [info exists abbreviations($expression)] \
+         && \
+	 ! [catch { set len [llength $expression] }] \
+	 && \
+	 $len == 1 \
+	 && \
+	 ! [regexp :: $expression] } {
+        set expression \
+	    [list $expression \
+	          & ( AUTO | SUBJECT | MANUAL )]
+    }
+
     set logical_expression $expression
 
     if { [array exists atom] } { unset atom }
@@ -397,6 +409,65 @@ proc compute_directory_list {} {
     }
 }
 
+# Format the list of {filename line} elements of a
+# manualdirs entry for the display_directories proce-
+# dure.  Given a list of such elements, return a list
+# of lines.
+#
+proc format_matches { matches } {
+    set lines {}
+    set subject ""
+    set auto ""
+    set manual ""
+    set other {}
+    foreach match $matches {
+        set line "    [lindex $match 0]:\
+		      [lindex $match 1]"
+        lappend lines $line
+
+	switch [lindex $match 0] {
+	Received_Mail {
+	    if {    $subject != "" \
+	         || ! [regexp -nocase \
+	                      {^Subject:[ \t]*(.*)$} \
+			      [lindex $match 1] \
+			      forget subject] } {
+		lappend other $line
+	    }
+	}
+	Auto_Score {
+	    if { $auto == "" } {
+		set auto [lindex $match 1]
+	    } else {
+		lappend other $line
+	    }
+	}
+	Manual_Score {
+	    if { $manual == "" } {
+		set manual [lindex $match 1]
+	    } else {
+		lappend other $line
+	    }
+	}
+	default {
+	    lappend other $line
+	}
+	  
+	}
+    }
+    if {    $subject != "" \
+         && ( $auto != "" || $manual != "" ) } {
+        set line "    $subject/$auto"
+	if { $manual != "" } {
+	    set line "$line/$manual"
+	}
+	set lines {}
+	lappend lines $line
+	eval lappend lines $other
+    }
+    return $lines
+}
+
 # List directories and their matching files and lines.
 # Output at most `lines'.  Start with the start'th
 # directory (1 is first) and return the index (1 is
@@ -420,6 +491,7 @@ proc display_directories { lines start } {
         set entry [lindex $manualdirs $start]
 	set dir [file tail [lindex $entry 0]]
 	set matches [lrange $entry 1 end]
+	set matches [format_matches $matches]
 
 	set omitted_matches 0
 	set lines \
@@ -441,10 +513,7 @@ proc display_directories { lines start } {
 	} else {
 	    puts "$start.  $dir"
 	}
-	foreach match $matches {
-	    set line \
-	        "    [lindex $match 0]:\
-		     [lindex $match 1]"
+	foreach line $matches {
 	    if { [string length $line] > 80 } {
 	        set line \
 		    "[string range $line 0 76] ..."
