@@ -6,7 +6,7 @@
 #
 # File:		lookat
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Oct 12 08:51:37 EDT 2006
+# Date:		Thu Oct 12 10:07:44 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/10/12 14:06:56 $
+#   $Date: 2006/10/12 14:19:27 $
 #   $RCSfile: lookat,v $
-#   $Revision: 1.25 $
+#   $Revision: 1.26 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -72,12 +72,23 @@ proc abbreviations_doc { } {
 }
 
 set document "
+lookat 'regular-expression'
 lookat 'logical-expression'
 
     This program executes `manualreply' on each subdi-
     rectory of the mail directory that matches the log-
-    ical-expression.  Each atom of the logical expres-
-    sion has the form
+    ical-expression.  `lookat 'regular-expression''
+    is a special case and matches all mail directories
+    whose submitter matches the regular expression.  It
+    is equivalent to
+
+        lookat 'regular-expression & \\
+	        ( SUBJECT | AUTO | MANUAL )'
+
+    which involves abbreviations SUBJECT, AUTO, and
+    MANUAL as is explained in what follows.
+    
+    Each atom of the logical expression has the form
 
     	filename-regexp::line-regexp
 
@@ -94,7 +105,7 @@ lookat 'logical-expression'
 
     The atoms `0' and `1' are also specially treated:
     they represent `false' and `true'.
-
+
     The allowed operators of the logical-expression are
     `!', `&', `^', and `|' in highest precedence first
     order, denoting `not', `and', `exclusive-or', and
@@ -107,7 +118,7 @@ lookat 'logical-expression'
     a file name or file line.  A `^' matches the
     beginning of the name or line, and a `\$' matches
     the end of the name or line.
-
+
     The logical-expression argument is parsed into a TCL
     list before parts of its atoms are interpreted as
     regular expressions.  This means that in order to
@@ -116,11 +127,12 @@ lookat 'logical-expression'
     or `\\}' into the logical-expression argument.
     However, if atoms contain whitespace, they can be
     quoted with \"'s or {}'s.
-
+
     There are some abbreviations of atoms that are re-
     cognized, namely the following:
 
 [abbreviations_doc]
+
     If a file is larger than $size_limit bytes, at most
     the first $size_limit bytes of the file are read.
 
@@ -133,7 +145,7 @@ lookat 'logical-expression'
     ing its number within the list of the subdirector-
     ies.  Upon return from manualreply, the list is re-
     displayed, but it is NOT recomputed.
-
+
     Unlike most HPCM judging programs, errors made by
     this program are not written to log files, but are
     written to the standard error output.
@@ -154,7 +166,7 @@ lookat 'logical-expression'
 
 	d	Move down in the subdirectory list.
 	n	Ditto (move to next).
-
+
 	x	Exit.
 
 	control-D
@@ -163,7 +175,8 @@ lookat 'logical-expression'
 	?	Print help documentation.
 
 	a	Print abbreviations.
-
+
+
     Some examples:
 
     	lookat '^foo@fee'
