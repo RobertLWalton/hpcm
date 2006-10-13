@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat May  6 13:05:55 EDT 2006
+# Date:		Fri Oct 13 01:32:50 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -10,10 +10,10 @@
 #
 # RCS Info (may not be true date or author):
 #
-#   $Author: hc3 $
-#   $Date: 2006/05/06 17:06:55 $
+#   $Author: walton $
+#   $Date: 2006/10/13 05:51:56 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.10 $
+#   $Revision: 1.11 $
 
 # Kill all implicit rules
 #
@@ -21,7 +21,7 @@
 
 SECURE_BIN=/sbin
 
-all: hpcm_sandbox hpcm_sendmail
+all: hpcm_sandbox hpcm_sendmail hpcm_wrapper
 
 root_install:	${SECURE_BIN}/hpcm_sandbox
 root_uninstall:	${SECURE_BIN}_uninstall
@@ -76,5 +76,8 @@ hpcm_sandbox:	hpcm_sandbox.c
 hpcm_sendmail:	hpcm_sendmail.c
 	gcc -o hpcm_sendmail hpcm_sendmail.c
 
+hpcm_wrapper:	hpcm_wrapper.c
+	gcc -o hpcm_wrapper hpcm_wrapper.c
+
 clean:
-	rm -f hpcm_sandbox hpcm_sendmail
+	rm -f hpcm_sandbox hpcm_sendmail hpcm_wrapper
