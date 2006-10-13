@@ -5,7 +5,7 @@
 #
 # File:		printer_pipe
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Tue Jan 10 00:31:57 EST 2006
+# Date:		Thu Oct 12 21:21:09 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,10 +13,10 @@
 #
 # RCS Info (may not be true date or author):
 #
-#   $Author: hc3 $
-#   $Date: 2006/01/10 05:35:40 $
+#   $Author: walton $
+#   $Date: 2006/10/13 01:32:56 $
 #   $RCSfile: printer_pipe,v $
-#   $Revision: 1.14 $
+#   $Revision: 1.15 $
 
 Pswitch=0
 
@@ -64,11 +64,11 @@ printer_pipe -P
     Blank lines and comment lines whose first non-blank
     character is \`#' are ignored.  However, comment
     lines should not end in a single \.
-
+
     The \`printer' file contents just name the printer.
     Note that if \`printer_map' is readable, \`printer'
     is NEVER used.
-
+
     If the printer name begins with a \`!', the rest of
     the name is taken to be the name of a file that con-
     tains the printer name.  It is an error if this file
@@ -91,20 +91,23 @@ printer_pipe -P
     postscript file, but can be ASCII with form feeds.
 
     If the printer name contains an \`@' the standard
-    input is emailed to the printer name.  Otherwise
-    the standard input is piped to \`lpr -Pprinter'.
+    input is emailed to the printer name.  If the
+    printer name begins with \`|', the standard input
+    is piped to the program command that is just the
+    printer name with the \`|' removed.  Otherwise the
+    standard input is piped to \`lpr -Pprinter'.
 
     If the printer name begins with an \`@', the email
     has the standard input as an attachment, and the
     initial \`@' is stripped from the name before it is
     used as an email address.  Otherwise the standard
     input becomes the body of the email message.
-
+
     If ~/.hpcm_contest/printer_jobs is writable, a line
     is written to that file giving the date, the prin-
     ter, the \`where' argument, and the \`filename'
     argument.
-
+
     The \`where' and \`filename' arguments are used
     purely for informative purposes in the email subject
     and in ~/.hpcm_contest/printer_jobs.
@@ -137,7 +140,7 @@ printer_pipe -P
 	* ^To:[ 	]+fee<fi
 	| formail -i \"To: ppp<b@c>\" \\
 	    | \$SENDMAIL \"ppp<b@c>\"
-
+
     This forwards the email on to \`ppp<b@c>' where the
     real printer is.  Here \`ppp' is a password to be 
     kept secret from contestants.  If outsiders cannot
@@ -254,6 +257,11 @@ fi
 # Send the print job to the printer.
 
 case "$printer" in
+    \|*)
+	c=` expr "$printer" : '|\(.*\)$' `
+	cat | $c
+	exit 0
+	;;
     @*)
 	t=/tmp/printer_pipe$$
 	trap "rm -f $t" 0
