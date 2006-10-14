@@ -4,7 +4,7 @@
 #
 # File:		printer_broadcast
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Fri Oct 13 09:15:12 EDT 2006
+# Date:		Fri Oct 13 21:35:22 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/10/13 13:15:59 $
+#   $Date: 2006/10/14 01:47:51 $
 #   $RCSfile: printer_broadcast,v $
-#   $Revision: 1.12 $
+#   $Revision: 1.13 $
 
 Pswitch=0
 
@@ -180,18 +180,27 @@ do
 	    cat $tmpfile | eval "$c"
 	    ;;
 	@*)
-	    a=` expr "$printer" : '@\(.*\)$' `
+	    address=` expr "$printer" : '@\(.*\)$' `
 	    if ( head -1 $tmpfile | \
 	         grep '^%!PS' >/dev/null 2>&1 )
 	    then
-		m=application/postscript
-		D="$filename postscript"
+		ct=application/postscript
 	    else
-		m=text/plain
-		D="$filename"
+		ct=text/plain
 	    fi
-	    metasend -b -s "$filename JUDGE" -t "$a" \
-		     -e base64 -m $m -D "$D" -f $tmpfile
+	    ( echo "To: $address"; \
+	      echo "Subject: $filename"; \
+	      echo "Content-type: multipart/mixed;" \
+	       "boundary=\"=-s81nn0vOWcIHsyzN7sbU\""; \
+	      echo ""; \
+	      echo "--=-s81nn0vOWcIHsyzN7sbU"; \
+	      echo "Content-Disposition: attachment"; \
+	      echo "Content-Type: $ct"; \
+	      echo "Content-Transfer-Encoding: 7bit"; \
+	      echo ""; \
+	      cat $tmpfile; \
+	      echo "--=-s81nn0vOWcIHsyzN7sbU" ) \
+		  | /usr/sbin/sendmail -t
 	    ;;
 	*@*)
 	    ( echo "To: $printer"; \
