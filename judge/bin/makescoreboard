@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/10/19 16:41:22 $
+#   $Date: 2006/10/19 19:46:22 $
 #   $RCSfile: makescoreboard,v $
-#   $Revision: 1.64 $
+#   $Revision: 1.65 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -177,20 +177,22 @@ set makescoreboard_future_time ""
 #
 set makescoreboard_force yes
 
-# Return `yes' if a file in the makescoreboard_mtime_
-# list has changed.  Otherwise return `no'.
-#
-# A file changes if it appears or disappears or now has
-# a larger mtime than that recorded for the file in
-# makescoreboard_mtime_list.
-#
-# Also output `yes' if any existing file has an mtime
-# that is larger than makescoreboard_last_time, and
-# set makescoreboard_force `yes' in this case.
+# Return `yes' if any existing file has an mtime that
+# is larger than makescoreboard_last_time, and set
+# makescoreboard_force `yes' in this case.
 #
 # If makescoreboard_mtime_list has the special value
 # `changed', this function always returns `yes', and
 # set makescoreboard_force `yes' in this case.
+#
+# If makescoreboard_force is `yes', this funciton
+# returns `yes'.
+#
+# Otherwise, return `yes' if a file in the makescore-
+# board_mtime_list has changed.  A file changes if it
+# appears or disappears or now has a larger mtime than
+# that recorded for the file in makescoreboard_mtime_
+# list.
 #	
 proc update_required { } {
 
@@ -200,6 +202,8 @@ proc update_required { } {
 
     if { $makescoreboard_mtime_list == "changed" } {
 	set makescoreboard_force yes
+        return yes
+    } elseif { $makescoreboard_force } {
         return yes
     }
 
@@ -221,7 +225,7 @@ proc update_required { } {
 	        set result yes;
 	    } elseif { [file mtime $name] > $mtime } {
 	        set result yes;
-	    } else if {   $makescoreboard_last_time \
+	    } elseif {   $makescoreboard_last_time \
 	                < $mtime } {
 		set makescoreboard_force yes
 		set result yes
@@ -240,14 +244,13 @@ proc update_scoreboard { } {
     global makescoreboard_mtime_list \
            makescoreboard_last_time \
            makescoreboard_future_time \
-           makescoreboard_force \
+           makescoreboard_force
 
     set last_time [clock seconds]
 
     # If we have no reason to rerun scoreboard instruc-
     # tions, return.
     #
-    set makescoreboard_force no
     if {    [update_required] == "no" \
          && ! [test_flag Score_Flag] } {
 	 && ( $makescoreboard_future_time == "" \
@@ -324,6 +327,7 @@ switch -- $command {
 
 	# Update scoreboard for the first time.
 	#
+	set makescoreboard_force yes
 	update_scoreboard
 
 	# Set pid file.
@@ -343,6 +347,7 @@ switch -- $command {
 	    # We do this because changes to files during
 	    # a run may cause spurious errors.
 	    #
+	    set makescoreboard_force no
 	    while { "yes" } {
 	        incr c
 		if { $c < 5 } {
@@ -351,6 +356,7 @@ switch -- $command {
 			      }] \
 			          } break
 		    sleep 10
+		    set makescoreboard_force yes
 		} else {
 		    update_scoreboard
 		}
@@ -480,13 +486,10 @@ set makescoreboard_future_time ""
 	    source $arg
 	    set arg $makescoreboard_arg
 	    set mtime [file mtime $arg]
-	    lappend \
-	        makescoreboard_mtime_list \
-	        [list $mtime $arg]
-	    }
+	    lappend makescoreboard_mtime_list \
+	            [list $mtime $arg]
 	}
     }
-
 
 # Given a value that may be an abbreviation defined
 # in the abbreviation_array, return the value it
@@ -524,15 +527,17 @@ proc set_parameter { instruction } {
 
     set name  [lindex $instruction 0]
     set value [lindex $instruction 1]
+    set value [unabbreviate $value]
+    global scoreboard_$name
 
-    if { ! [info exists \
-	         makescoreboard_parameters($name)] } {
+    if { [array exists scoreboard_$name] } {
+	array set scoreboard_$name $value
+    } elseif { [info exists scoreboard_$name] } {
+	set scoreboard_$name $value
+    } else {
 	error "$name is not a parameter name"
     }
 
-    set value [unabbreviate $value]
-    global scoreboard_$name
-    set scoreboard_$name $value
 }
 
 # Data for processing scoreboard instructions.
@@ -595,14 +600,6 @@ set last_time ""
     #
     make_signals_ignored
 
-
-    # Set last_time so that if there is an error pro-
-    # cessing instructions, and we are recalled to try
-    # again, the instructions will be reprocessed.
-    # Errors may occur due to files changing dynamically
-    # while makescoreboard runs asynchronously.
-    #
-    set last_time ""
 
     # Accumulate new earliest_future_time value in eft.
     #
@@ -1274,6 +1271,10 @@ proc pass2 { instructions pc end_pc update } {
     }
 }
 
+if { $command == "-update-" } {
+    puts [list $makescoreboard_future_time \
+               $makescoreboard_mtime_list]
+}
 
 exit 0
 
