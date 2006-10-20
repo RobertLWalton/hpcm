@@ -4,7 +4,7 @@
 #
 # File:		makescoreboard
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Oct 19 12:20:19 EDT 2006
+# Date:		Fri Oct 20 07:07:32 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/10/19 19:46:22 $
+#   $Date: 2006/10/20 13:20:49 $
 #   $RCSfile: makescoreboard,v $
-#   $Revision: 1.65 $
+#   $Revision: 1.66 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -87,18 +87,17 @@ makescoreboard { start | status | stop | update } \\
     scoreboard instructions, it does so just like the
     `update' command.  Then this program resumes at
     intervals determined by the `scoreboard_interval'
-    global variable.  After every interval, this
-    program checks to see if any inputs to the last run
-    have been changed, or any outputs have been deleted,
-    and if yes, this program reruns the scoreboard in-
-    structions.  The inputs checked for change include
-    the hpcm_judging.rc file in the judging directory
-    and the parameter files listed in the arguments.
-    Before checking files for change, the Score_Flag
-    flag is checked, and if present, the `scorefinder'
-    program is called to remake the Scorefinder_Output
-    file.  This is also done if the Scorefinder_Output
-    file no longer exists.
+    global variable (at the time `makescoreboard start'
+    is executed).  After every interval, this program
+    checks to see if any inputs to the last run have
+    been changed, or any outputs have been deleted, or
+    if the Score_Flag flag exists, and if yes, this
+    program reprecesses the scoreboard instructions just
+    like `update'.  The inputs checked for change in-
+    clude the hpcm_judging.rc file in the judging direc-
+    tory, the parameter files listed in the arguments,
+    and any INPUT files from the last processing of the
+    scoreboard instructions.
 
     If called with the `stop' command, this program does
     nothing but send kill signals to the process whose
@@ -125,8 +124,8 @@ makescoreboard { start | status | stop | update } \\
 # argument.
 #
 set command [lindex $argv 0]
-if { ! [regexp {^(update|start|status|stop|-start-)$} \
-               $command] } {
+if { ! [lcontain {update start status stop \
+                         -start- -update-} $command] } {
     puts $document
     exit 1
 }
@@ -150,65 +149,77 @@ if { $command == "update" } {
 set pid_file \
     $judging_directory/Scoreboard_PID
 
-# Mtime list for parameter files.  This is a list of
-# items each of the format:
+# List of scoreboard parameter names.  Only used to
+# determine parameters to pass to scoretable.
+#
+scoreboard_parameters [info globals scoreboard_*]
+
+# Mtime list for parameter, INPUT, and OUTPUT files.
+# This is a list of items each of the format:
 #
 #	{ file-mtime file-name }
 #
-# The file-mtime can be a `clock seconds' value, or
-# `none' if the file did not exist, or `out' if the
-# file was output.
+# The file-mtime can be a `clock seconds' value that
+# is the modification time of an existing parameter or
+# INPUT file, or `none' for an INPUT the file did not
+# exist, or `out' for an OUTPUT file.
 #
-# The mtime list has the special value `changed'
-# to force the assumption that files have changed.
-#
-set makescoreboard_mtime_list changed
+set mtime_list {}
 
 # Last time the scoreboard update was started.
 #
-set makescoreboard_last_time ""
+set last_time ""
 
-# Earliest time in an OUTPUT instruction that is after
-# makescoreboard_last_time.  Or "" if none.
+# Earliest start or stop time in an OUTPUT instruction
+# that is after last_time.  Or "" if none.
 #
-set makescoreboard_future_time ""
+set future_time ""
 
-# `yes' to force update of output files, `no' not to.
+# List of output files for which error messages have
+# been sent to the judge since they were last
+# successfully output.
 #
-set makescoreboard_force yes
+set sent_errors {}
 
+# Process all the arguments, sourcing files as
+# necessary.  Add parameter files to mtime_list.
+#
+foreach arg [lrange $argv 1 end] {
+    set LB "{"
+    # "}" to balance left bracket in last line so
+    # TCL will read this procedure code properly.
+    #
+    if { [regexp "^${LB}" $arg] } {
+	if { [catch { set scoreboard_instructions \
+			  [lindex $arg 0]
+		      llength \
+			  $scoreboard_instructions \
+		    }] } {
+	    error "scoreboard instructions\
+		   argument is not a TCL list:\
+		   $arg"
+	}
+    } else {
+	set mtime [file mtime $arg]
+	lappend mtime_list [list $mtime $arg]
+	source_file $arg
+    }
+}
+
+# Look at the mtime_list and see if the scoreboard
+# should be remade.
+#
 # Return `yes' if any existing file has an mtime that
-# is larger than makescoreboard_last_time, and set
-# makescoreboard_force `yes' in this case.
-#
-# If makescoreboard_mtime_list has the special value
-# `changed', this function always returns `yes', and
-# set makescoreboard_force `yes' in this case.
-#
-# If makescoreboard_force is `yes', this funciton
-# returns `yes'.
-#
-# Otherwise, return `yes' if a file in the makescore-
-# board_mtime_list has changed.  A file changes if it
-# appears or disappears or now has a larger mtime than
-# that recorded for the file in makescoreboard_mtime_
-# list.
+# is larger than last_time, or if a parameter or INPUT
+# file that existed has changed, or if an OUTPUT file
+# that existed has been deleted.
 #	
 proc update_required { } {
 
-    global makescoreboard_mtime_list \
-           makescoreboard_last_time \
-	   makescoreboard_force
-
-    if { $makescoreboard_mtime_list == "changed" } {
-	set makescoreboard_force yes
-        return yes
-    } elseif { $makescoreboard_force } {
-        return yes
-    }
+    global mtime_list last_time
 
     set result no
-    foreach item $makescoreboard_mtime_list {
+    foreach item $mtime_list {
         set mtime [lindex $item 0]
         set name  [lindex $item 1]
 
@@ -225,9 +236,7 @@ proc update_required { } {
 	        set result yes;
 	    } elseif { [file mtime $name] > $mtime } {
 	        set result yes;
-	    } elseif {   $makescoreboard_last_time \
-	                < $mtime } {
-		set makescoreboard_force yes
+	    } elseif {   $last_time < $mtime } {
 		set result yes
 	    } 
         }
@@ -236,43 +245,40 @@ proc update_required { } {
 }
 
 # Execute makescoreboard -update- to update the score-
-# board and set makescoreboard_mtime_list, makescore-
-# board_last_time, and makescoreboard_future_time.
+# board and set mtime_list, last_time, and future_time.
 #
-proc update_scoreboard { } {
+proc update_scoreboard { { force no } } {
 
-    global makescoreboard_mtime_list \
-           makescoreboard_last_time \
-           makescoreboard_future_time \
-           makescoreboard_force
+    global mtime_list last_time future_time sent_errors
 
     set last_time [clock seconds]
 
     # If we have no reason to rerun scoreboard instruc-
     # tions, return.
     #
-    if {    [update_required] == "no" \
+    if {    $force == "no" \
+         && [update_required] == "no" \
          && ! [test_flag Score_Flag] } {
-	 && ( $makescoreboard_future_time == "" \
-	      ||   $last_time \
-	         < $makescoreboard_future_time ) } {
+	 && (    $future_time == "" \
+	      || $last_time < $future_time ) } {
 
         return
     }
 
+    # Initialize mtime_list with hpcm_judging.rc mtime.
+    #
     set pfile $judging_directory/hpcm_judging.rc
     set mtime [file mtime $pfile]
     set mtime_list [list [list $mtime $pfile]]
 
-    set list =\
+    set list \
 	[eval exec makescoreboard -update- \
-		   [list $last_time \
-		         $makescoreboard_force] \
+		   [list $last_time $sent_errors] \
 		   [lrange $argv 1 end]]
 
-    set makescoreboard_mtime_list [lindex $list 1]
-    set makescoreboard_last_time $last_time
-    set makescoreboard_future_time [lindex $list 0]
+    eval lappend mtime_list [lindex $list 0]
+    set future_time [lindex $list 1]
+    set sent_errors [lindex $list 2]
 }
 
 # Process command.
@@ -317,18 +323,14 @@ switch -- $command {
 		       manner"
 	    }
 	}
+        exit 0
     }
 
     -start- {
 
-	# Save interval before updating scoreboard.
-	#
-	set interval $scoreboard_interval
-
 	# Update scoreboard for the first time.
 	#
-	set makescoreboard_force yes
-	update_scoreboard
+	update_scoreboard yes
 
 	# Set pid file.
 	#
@@ -337,7 +339,7 @@ switch -- $command {
 	# Resume a periodic intervals.
 	#
 	while { "yes" } {
-	    sleep $interval
+	    sleep $scoreboard_interval
 	    set c 0
 
 	    # Run up to 4 times ignoring errors.
@@ -347,21 +349,22 @@ switch -- $command {
 	    # We do this because changes to files during
 	    # a run may cause spurious errors.
 	    #
-	    set makescoreboard_force no
+	    set force no
 	    while { "yes" } {
 	        incr c
 		if { $c < 5 } {
 		    if { ! [catch {
-		              update_scoreboard
+		              update_scoreboard $force
 			      }] \
 			          } break
 		    sleep 10
-		    set makescoreboard_force yes
+		    set force yes
 		} else {
-		    update_scoreboard
+		    update_scoreboard $force
 		}
 	    }
 	}
+	error "-start- loop failed"
     }
 
     status {
@@ -385,6 +388,7 @@ switch -- $command {
 	    puts "All previous makescoreboards have\
 	          been stopped."
 	}
+        exit 0
     }
 
     stop {
@@ -427,15 +431,17 @@ switch -- $command {
 	} else {
 	    puts "No previous makescoreboard running."
 	}
+        exit 0
     }
 
     update {
+	set last_time [clock seconds]
     }
 
     -update- {
     
-	set makescoreboard_last_time [lindex $argv 0]
-	set makescoreboard_force [lindex $argv 1]
+	set last_time [lindex $argv 0]
+	set sent_errors [lindex $argv 1]
 	set argv [lrange $argv 2 end]
 
 	# Restore log mode and disable standard output
@@ -452,8 +458,8 @@ switch -- $command {
 
 }
 
-set makescoreboard_mtime_list {}
-set makescoreboard_future_time ""
+set mtime_list {}
+set future_time ""
 
     # Recompute $finder_file.
     #
@@ -462,34 +468,6 @@ set makescoreboard_future_time ""
     file delete -force -- $finder_file
     exec scorefinder -gotten > $finder_file
     make_signals_default
-
-    # Process all the arguments, sourcing files as
-    # necessary.
-    #
-    foreach arg [lrange $argv 1 end] {
-	set LB "{"
-	# "}" to balance left bracket in last line so
-	# TCL will read this procedure code properly.
-	#
-	if { [regexp "^${LB}" $arg] } {
-	    if { [catch { set scoreboard_instructions \
-	                      [lindex $arg 0]
-			  llength \
-			      $scoreboard_instructions \
-			}] } {
-	        error "scoreboard instructions\
-		       argument is not a TCL list:\
-		       $arg"
-	    }
-	} else {
-	    set makescoreboard_arg $arg
-	    source $arg
-	    set arg $makescoreboard_arg
-	    set mtime [file mtime $arg]
-	    lappend makescoreboard_mtime_list \
-	            [list $mtime $arg]
-	}
-    }
 
 # Given a value that may be an abbreviation defined
 # in the abbreviation_array, return the value it
@@ -535,28 +513,11 @@ proc set_parameter { instruction } {
     } elseif { [info exists scoreboard_$name] } {
 	set scoreboard_$name $value
     } else {
-	error "$name is not a parameter name"
+	error "$name is not a scoreboard parameter name"
     }
 
 }
 
-# Data for processing scoreboard instructions.
-
-# Last time scoreboard instructions were executed, or ""
-# in order to force execution of scoreboard instruc-
-# tions.
-#
-set last_time ""
-
-
-    # Use a single `run time' in computations.
-    #
-    set time [clock seconds]
-
-    # Reinstall initial parameter values.
-    #
-    process_arguments
-    set parameter_mtime $makescoreboard_parameter_mtime
 
     # Save abbreviations.  If possible, replace relative
     # stop and freeze times by normally formatted times
@@ -594,16 +555,11 @@ set last_time ""
     set abbreviation_array(NAME)   \
         $scoreboard_name
     set abbreviation_array(TIME)   \
-        [clock format $time]
+        [clock format $last_time]
 
     # Ignore signals while processing instructions.
     #
     make_signals_ignored
-
-
-    # Accumulate new earliest_future_time value in eft.
-    #
-    set eft ""
 
     # Process if statements.
     #
@@ -618,230 +574,6 @@ set last_time ""
     # with the instruction before the next OUTPUT in-
     # struction or end of all instructions.
 
-    set pc 0
-    set end_pc [llength $instructions]
-    set output_found no
-    set board_found no
-
-    while { "yes" } {
-
-        set instruction [lindex $instructions $pc]
-	incr pc
-
-	if { [catch { llength $instruction }] } {
-	    error "a scoreboard_instructions'\
-	           instruction is not a TCL list:\
-		   $instruction"
-	    
-	}
-	set opcode [lindex $instruction 0]
-
-	# If we are at the end of a sequence of
-	# instructions that begins with an OUTPUT
-	# instruction and ends just before the next
-	# OUTPUT instruction or end of all instructions,
-	# process OUTPUT instruction time parameters
-	# and call pass2.
-	#
-        if { ( $pc > $end_pc || $opcode == "OUTPUT" ) \
-	     && $output_found } {
-
-	    # If we are before OUTPUT start time, do
-	    # NOT update.
-	    #
-	    if { $out_start != "" \
-	         && $time < $out_start } {
-	        set update no
-	    }
-
-	    # If output file exists and has an mtime >=
-	    # the OUTPUT stop time, do NOT update.
-	    #
-	    if {    $out_mtime != "" \
-	         && $out_stop != "" \
-	         && $out_mtime >= $out_stop } {
-	        set update no
-	    }
-
-	    # Perform second pass.
-	    #
-	    pass2 $instructions \
-	          $out_pc [expr $pc -1] $update
-
-	    # Add updated output file to makescoreboard_
-	    # mtime_list.
-	    #
-	    if { $update } {
-		lappend makescoreboard_mtime_list \
-		        [list out $out_file]
-	    }
-	}
-
-	if { $pc > $end_pc } break
-
-	# Perform first pass on instruction.
-	#
-	switch ${output_found}_$opcode {
-
-	    no_OUTPUT -
-	    yes_OUTPUT {
-
-	        # Compute output file.
-		#
-		set out_file  [lindex $instruction 1]
-		set out_file \
-		   [file join $judging_directory \
-		              $out_file]
-
-		# Compute start and stop times and
-		# update eft.
-		#
-		set out_start [lindex $instruction 2]
-		set out_start [unabbreviate $out_start]
-		if { $out_start != "" } {
-		    set out_start \
-		        [clock scan $out_start]
-		    if { $out_start > $time \
-		         && (    $eft == "" \
-			      || $eft > $out_start ) } {
-		        set eft $out_start
-		    }
-		}
-		set out_stop  [lindex $instruction 3]
-		set out_stop [unabbreviate $out_stop]
-		if { $out_stop != "" } {
-		    set out_stop \
-		        [clock scan $out_stop]
-		    if { $out_stop > $time \
-		         && (    $eft == "" \
-			      || $eft > $out_stop ) } {
-		        set eft $out_stop
-		    }
-		}
-
-		# Set out_mtime to the output file mtime
-		# or "" if no output file exist, and set
-		# `update' to no if the output file
-		# exists and yes otherwise.
-		#
-		if { [file exists $out_file] } {
-		    set update no
-		    set out_mtime [file mtime $out_file]
-		} else {
-		    set update yes
-		    set out_mtime ""
-		}
-
-	        # If scoreboard_instructions might have
-		# changed force update.
-		#
-	    	if { $makescoreboard_force } {
-		}
-
-		# Set output variables.
-		#
-	        set out_pc $pc
-		incr out_pc -1
-		set output_found yes
-	    }
-
-	    yes_SEND {}
-	    yes_GRANT_ACCESS {}
-
-	    yes_BLANK {}
-
-	    yes_BAR {}
-	    yes_LINE {}
-
-	    yes_INPUT {
-
-	        # Loop through input files until an
-		# existing one is found.
-		#
-		foreach in_file \
-		        [lrange $instruction 1 end] {
-
-		    set in_file \
-		        [file join $judging_directory \
-			           $in_file]
-
-		    # Add input file to makescoreboard_
-		    # mtime_list.
-		    #
-		    if { [file exists $in_file] } {
-			set mtime [file mtime $in_file]
-
-			# If existing input file is
-			# later than output file, force
-			# update.
-			#
-			if {    $out_mtime != "" \
-			     && $mtime > $out_mtime } {
-			    set update yes
-			}
-
-			lappend \
-			    makescoreboard_mtime_list \
-			    [list $mtime $in_file]
-			break;
-		    } else {
-			lappend \
-			    makescoreboard_mtime_list \
-			    [list none $in_file]
-		    }
-		}
-	    }
-
-	    yes_BOARD {
-
-		# Process finder_file mtime stored in
-		# finder_mtime above.
-		#
-		if {    $out_mtime != "" \
-		     && $finder_mtime > $out_mtime } {
-		    set update yes
-		}
-
-		if { $board_found == "no" } {
-		    set board_found yes
-		    lappend makescoreboard_mtime_list \
-			    [list $finder_mtime \
-				  $finder_file]
-		}
-	    }
-
-	    no_SEND -
-	    no_GRANT_ACCESS -
-	    no_BLANK -
-	    no_BAR -
-	    no_LINE -
-	    no_INPUT -
-	    no_BOARD {
-	        error "`$instruction' appears before\
-		       OUTPUT instruction"
-	    }
-
-	    default {
-
-	        # Parameter setting instructions are
-		# executed in the first pass only if
-		# they are before all OUTPUT instruc-
-		# tions.  Otherwise they are executed
-		# in pass2.
-		#
-	        if { $output_found == "no" } {
-		    set_parameter $instruction
-		}
-	    }
-	}
-    }
-
-    # End of instruction processing loop.  Store record
-    # of just finished actions and reenable interrupts.
-    #
-    set makescoreboard_future_time $eft
-    make_signals_default
-
 # Execute scoreboard instructions during second pass.
 # Instruction at pc is an OUTPUT instruction, and
 # instruction at endpc is the next OUTPUT instruction
@@ -849,10 +581,9 @@ set last_time ""
 #
 proc pass2 { instructions pc end_pc update } {
 
-    global makescoreboard_parameters \
-           judging_directory finder_file space \
-	   errorInfo errorCode
-    make_scoreboard_parameters_global
+    global judging_directory finder_file space \
+	   errorInfo errorCode scoreboard_parameters \
+	   sent_errors
 
     # Compute output file and step past OUTPUT instruc-
     # tion.
@@ -1124,12 +855,19 @@ proc pass2 { instructions pc end_pc update } {
 		# the scoreboard program.
 		#
 	        set parameters ""
-		foreach name \
-		        [array names \
-		           makescoreboard_parameters] {
+		foreach name $scoreboard_paramaters {
+		    global $name
+		    if { [array exists $name] } {
+		        continue
+		    }
+		    if { ! [info exists $name] } {
+		        continue
+		    }
+		    set value [set $name]
+		    regexp {^scoreboard_(.*)$} $name \
+		           forget name
 		    lappend parameters \
-		        [list $name \
-			      [set scoreboard_$name]]
+		            [list $name $value]
 		}
 
 		# Call the scoreboard program to compute
@@ -1182,12 +920,11 @@ proc pass2 { instructions pc end_pc update } {
 	# Write output file.  If error, delete file and
 	# hpcm_sendmail the judge.
 	#
-	# pass2_sent_error($out_file) is set if an error
-	# for $out_file has been hpcm_sendmail'ed to the
+	# $out_file is in sent_errors if an error for
+	# $out_file has been hpcm_sendmail'ed to the
 	# judge since the last successful processing of
 	# $out_file.
 	#
-	global pass2_sent_error
 	if { [catch {
 
 		set error_data "\nWriting $out_file\n"
@@ -1231,9 +968,7 @@ proc pass2 { instructions pc end_pc update } {
 			}
 		    }
 		}
-		catch {
-		    unset pass2_sent_error($out_file)
-		}
+		lsub sent_errors $out_file
 	    } error_message] } {
 
 	    # On error, delete output file and rethrow
@@ -1248,9 +983,7 @@ proc pass2 { instructions pc end_pc update } {
 
 		file delete -force -- $out_file
 	    }
-	    if { ! [info exists \
-	                 pass2_sent_error($out_file)] \
-			 	} {
+	    if { ! [lcontain $sent_errors $out_file] } {
 	        set message \
 		    "Subject: makescoreboard error\
 		     outputting $out_file\n"
@@ -1265,15 +998,209 @@ proc pass2 { instructions pc end_pc update } {
 		set message \
 		    "$message\nerrorInfo:\n$errorInfo\n"
 	        exec hpcm_sendmail << $message
-		set pass2_sent_error($out_file) 1
+		ladd sent_errors $out_file
 	    }
 	}
     }
 }
 
+    set pc 0
+    set end_pc [llength $instructions]
+    set output_found no
+
+    while { "yes" } {
+
+        set instruction [lindex $instructions $pc]
+	incr pc
+
+	if { [catch { llength $instruction }] } {
+	    error "a scoreboard_instructions'\
+	           instruction is not a TCL list:\
+		   $instruction"
+	    
+	}
+	set opcode [lindex $instruction 0]
+
+	# If we are at the end of a sequence of
+	# instructions that begins with an OUTPUT
+	# instruction and ends just before the next
+	# OUTPUT instruction or end of all instructions,
+	# process OUTPUT instruction time parameters
+	# and call pass2.
+	#
+        if { ( $pc > $end_pc || $opcode == "OUTPUT" ) \
+	     && $output_found } {
+
+	    set update yes
+
+	    # If we are before OUTPUT start time, do
+	    # NOT update.
+	    #
+	    if { $out_start != "" \
+	         && $last_time < $out_start } {
+	        set update no
+	    }
+
+	    # If output file exists and has an mtime >=
+	    # the OUTPUT stop time, do NOT update.
+	    #
+	    if {    $out_mtime != "" \
+	         && $out_stop != "" \
+	         && $out_mtime >= $out_stop } {
+	        set update no
+	    }
+
+	    # Perform second pass.
+	    #
+	    pass2 $instructions \
+	          $out_pc [expr $pc -1] $update
+
+	    # Add updated output file to mtime_list.
+	    #
+	    if { $update } {
+		lappend mtime_list [list out $out_file]
+	    }
+	}
+
+	if { $pc > $end_pc } break
+
+	# Perform first pass on instruction.
+	#
+	switch ${output_found}_$opcode {
+
+	    no_OUTPUT -
+	    yes_OUTPUT {
+
+	        # Compute output file.
+		#
+		set out_file [lindex $instruction 1]
+		set out_file \
+		   [file join $judging_directory \
+		              $out_file]
+
+		# Compute start and stop times and
+		# update future_time.
+		#
+		set out_start [lindex $instruction 2]
+		set out_start [unabbreviate $out_start]
+		if { $out_start != "" } {
+		    if { [catch {
+			    set out_start \
+				[clock scan $out_start]
+				}] } {
+			error "bad start time in\
+			       $instruction"
+		    }
+		    if { $out_start > $last_time \
+		         && (    $future_time == "" \
+			      ||   $future_time \
+			         > $out_start ) } {
+		        set future_time $out_start
+		    }
+		}
+		set out_stop [lindex $instruction 3]
+		set out_stop [unabbreviate $out_stop]
+		if { $out_stop != "" } {
+		    if { [catch {
+			    set out_stop \
+				[clock scan $out_stop]
+				}] } {
+			error "bad stop time in\
+			       $instruction"
+		    }
+		    if { $out_stop > $last_time \
+		         && (    $future_time == "" \
+			      ||   $future_time \
+			         > $out_stop ) } {
+		        set future_time $out_stop
+		    }
+		}
+
+		# Set out_mtime to the output file mtime
+		# or "" if no output file exist/
+		#
+		if { [file exists $out_file] } {
+		    set out_mtime [file mtime $out_file]
+		} else {
+		    set out_mtime ""
+		}
+
+		# Set output variables.
+		#
+	        set out_pc $pc
+		incr out_pc -1
+		set output_found yes
+	    }
+
+	    yes_SEND {}
+	    yes_GRANT_ACCESS {}
+
+	    yes_BLANK {}
+
+	    yes_BAR {}
+	    yes_LINE {}
+
+	    yes_INPUT {
+
+	        # Loop through input files until an
+		# existing one is found.
+		#
+		foreach in_file \
+		        [lrange $instruction 1 end] {
+
+		    set in_file \
+		        [file join $judging_directory \
+			           $in_file]
+
+		    # Add input file to mtime_list.
+		    #
+		    if { [file exists $in_file] } {
+			set mtime [file mtime $in_file]
+
+			lappend mtime_list \
+			        [list $mtime $in_file]
+			break;
+		    } else {
+			lappend mtime_list \
+			        [list none $in_file]
+		    }
+		}
+	    }
+
+	    yes_BOARD -
+	    no_SEND -
+	    no_GRANT_ACCESS -
+	    no_BLANK -
+	    no_BAR -
+	    no_LINE -
+	    no_INPUT -
+	    no_BOARD {
+	        error "`$instruction' appears before\
+		       OUTPUT instruction"
+	    }
+
+	    default {
+
+	        # Parameter setting instructions are
+		# executed in the first pass only if
+		# they are before all OUTPUT instruc-
+		# tions.  Otherwise they are executed
+		# in pass2.
+		#
+	        if { $output_found == "no" } {
+		    set_parameter $instruction
+		}
+	    }
+	}
+    }
+
+    # End of instruction processing loop.  Store record
+    # of just finished actions and reenable interrupts.
+    #
+    make_signals_default
+
 if { $command == "-update-" } {
-    puts [list $makescoreboard_future_time \
-               $makescoreboard_mtime_list]
+    puts [list $mtime_list $future_time $sent_errors]
 }
 
 exit 0
