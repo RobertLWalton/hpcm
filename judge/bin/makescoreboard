@@ -4,7 +4,7 @@
 #
 # File:		makescoreboard
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Oct 20 12:11:15 EDT 2006
+# Date:		Fri Oct 20 13:16:46 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/10/20 17:07:32 $
+#   $Date: 2006/10/20 17:14:51 $
 #   $RCSfile: makescoreboard,v $
-#   $Revision: 1.67 $
+#   $Revision: 1.68 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -483,13 +483,13 @@ switch -- $command {
 set mtime_list {}
 set future_time ""
 
-    # Recompute $finder_file.
-    #
-    make_signals_ignored
-    clear_flag Score_Flag
-    file delete -force -- $finder_file
-    exec scorefinder -gotten > $finder_file
-    make_signals_default
+# Recompute $finder_file.
+#
+make_signals_ignored
+clear_flag Score_Flag
+file delete -force -- $finder_file
+exec scorefinder -gotten > $finder_file
+make_signals_default
 
 # Given a value that may be an abbreviation defined
 # in the abbreviation_array, return the value it
@@ -538,66 +538,63 @@ proc set_parameter { instruction } {
 
 }
 
+# Save abbreviations.  If possible, replace relative
+# stop and freeze times by normally formatted times
+# so if they appear in LINE's they will look OK.
+#
+set start_time $scoreboard_start_time
+set abbreviation_array(START) $start_time
 
-    # Save abbreviations.  If possible, replace relative
-    # stop and freeze times by normally formatted times
-    # so if they appear in LINE's they will look OK.
-    #
-    set start_time $scoreboard_start_time
-    set abbreviation_array(START) $start_time
-
-    if { ! [regexp {^(|problem|team)$} $start_time] } {
-        if { [catch { set st [clock scan $start_time] \
-	            }] } {
-	    error "badly formatted \
-	           scoreboard_start_time: $start_time"
-	}
-    } else {
-        set st ""
+if { ! [regexp {^(|problem|team)$} $start_time] } {
+    if { [catch { set st [clock scan $start_time] \
+		}] } {
+	error "badly formatted \
+	       scoreboard_start_time: $start_time"
     }
+} else {
+    set st ""
+}
 
-    set stop_time $scoreboard_stop_time
-    if {    [regexp {^(|\+)[0-9]+$} $stop_time] \
-         && $st != "" } {
-        set stop_time \
-	    [clock format [expr { $st + $stop_time }]]
-    }
-    set abbreviation_array(STOP) $stop_time
+set stop_time $scoreboard_stop_time
+if {    [regexp {^(|\+)[0-9]+$} $stop_time] \
+     && $st != "" } {
+    set stop_time \
+	[clock format [expr { $st + $stop_time }]]
+}
+set abbreviation_array(STOP) $stop_time
 
-    set freeze_time $scoreboard_freeze_time
-    if {    [regexp {^(|\+)[0-9]+$} $freeze_time] \
-         && $st != "" } {
-        set freeze_time \
-	    [clock format [expr { $st + $freeze_time }]]
-    }
-    set abbreviation_array(FREEZE) $freeze_time
+set freeze_time $scoreboard_freeze_time
+if {    [regexp {^(|\+)[0-9]+$} $freeze_time] \
+     && $st != "" } {
+    set freeze_time \
+	[clock format [expr { $st + $freeze_time }]]
+}
+set abbreviation_array(FREEZE) $freeze_time
 
-    set abbreviation_array(NAME)   \
-        $scoreboard_name
-    set abbreviation_array(TIME)   \
-        [clock format $last_time]
+set abbreviation_array(NAME)   \
+    $scoreboard_name
+set abbreviation_array(TIME)   \
+    [clock format $last_time]
 
-    # Ignore signals while processing instructions.
-    #
-    make_signals_ignored
+# Ignore signals while processing instructions.
+#
+make_signals_ignored
 
-    # Process if statements.
-    #
-    set instructions {}
-    parse_block $scoreboard_instructions instructions \
-    	        [info globals scoreboard_*]
+# Process if statements.
+#
+set instructions {}
+parse_block $scoreboard_instructions instructions \
+	    [info globals scoreboard_*]
 
-    # Loop to process instructions for first pass.
-    #
-    # Pass2 is called for every sequence of instructions
-    # beginning with an OUTPUT instruction and ending
-    # with the instruction before the next OUTPUT in-
-    # struction or end of all instructions.
-
-# Execute scoreboard instructions during second pass.
-# Instruction at pc is an OUTPUT instruction, and
-# instruction at endpc is the next OUTPUT instruction
-# or is just beyond the end of all instructions.
+# The loop to process instructions runs in two passes.
+# Pass1 is below, and calles pass2 for every sequence of
+# instructions beginning with an OUTPUT instruction and
+# ending with the instruction before the next OUTPUT in-
+# struction or end of all instructions.  Pass2 executes
+# the scoreboard instructions.  The instruction at pc is
+# an OUTPUT instruction, and the instruction at endpc is
+# the next OUTPUT instruction or is just beyond the end
+# of all instructions.
 #
 proc pass2 { instructions pc end_pc update } {
 
@@ -1024,200 +1021,203 @@ proc pass2 { instructions pc end_pc update } {
     }
 }
 
-    set pc 0
-    set end_pc [llength $instructions]
-    set output_found no
+# The following is pass1, the first pass to execute the
+# scoreboard instructions.
 
-    while { "yes" } {
+set pc 0
+set end_pc [llength $instructions]
+set output_found no
 
-        set instruction [lindex $instructions $pc]
-	incr pc
+while { "yes" } {
 
-	if { [catch { llength $instruction }] } {
-	    error "a scoreboard_instructions'\
-	           instruction is not a TCL list:\
-		   $instruction"
-	    
-	}
-	set opcode [lindex $instruction 0]
+    set instruction [lindex $instructions $pc]
+    incr pc
 
-	# If we are at the end of a sequence of
-	# instructions that begins with an OUTPUT
-	# instruction and ends just before the next
-	# OUTPUT instruction or end of all instructions,
-	# process OUTPUT instruction time parameters
-	# and call pass2.
+    if { [catch { llength $instruction }] } {
+	error "a scoreboard_instructions'\
+	       instruction is not a TCL list:\
+	       $instruction"
+	
+    }
+    set opcode [lindex $instruction 0]
+
+    # If we are at the end of a sequence of
+    # instructions that begins with an OUTPUT
+    # instruction and ends just before the next
+    # OUTPUT instruction or end of all instructions,
+    # process OUTPUT instruction time parameters
+    # and call pass2.
+    #
+    if { ( $pc > $end_pc || $opcode == "OUTPUT" ) \
+	 && $output_found } {
+
+	set update yes
+
+	# If we are before OUTPUT start time, do
+	# NOT update.
 	#
-        if { ( $pc > $end_pc || $opcode == "OUTPUT" ) \
-	     && $output_found } {
-
-	    set update yes
-
-	    # If we are before OUTPUT start time, do
-	    # NOT update.
-	    #
-	    if { $out_start != "" \
-	         && $last_time < $out_start } {
-	        set update no
-	    }
-
-	    # If output file exists and has an mtime >=
-	    # the OUTPUT stop time, do NOT update.
-	    #
-	    if {    $out_mtime != "" \
-	         && $out_stop != "" \
-	         && $out_mtime >= $out_stop } {
-	        set update no
-	    }
-
-	    # Perform second pass.
-	    #
-	    pass2 $instructions \
-	          $out_pc [expr $pc -1] $update
-
-	    # Add updated output file to mtime_list.
-	    #
-	    if { $update } {
-		lappend mtime_list [list out $out_file]
-	    }
+	if { $out_start != "" \
+	     && $last_time < $out_start } {
+	    set update no
 	}
 
-	if { $pc > $end_pc } break
-
-	# Perform first pass on instruction.
+	# If output file exists and has an mtime >=
+	# the OUTPUT stop time, do NOT update.
 	#
-	switch ${output_found}_$opcode {
+	if {    $out_mtime != "" \
+	     && $out_stop != "" \
+	     && $out_mtime >= $out_stop } {
+	    set update no
+	}
 
-	    no_OUTPUT -
-	    yes_OUTPUT {
+	# Perform second pass.
+	#
+	pass2 $instructions \
+	      $out_pc [expr $pc -1] $update
 
-	        # Compute output file.
-		#
-		set out_file [lindex $instruction 1]
-		set out_file \
-		   [file join $judging_directory \
-		              $out_file]
-
-		# Compute start and stop times and
-		# update future_time.
-		#
-		set out_start [lindex $instruction 2]
-		set out_start [unabbreviate $out_start]
-		if { $out_start != "" } {
-		    if { [catch {
-			    set out_start \
-				[clock scan $out_start]
-				}] } {
-			error "bad start time in\
-			       $instruction"
-		    }
-		    if { $out_start > $last_time \
-		         && (    $future_time == "" \
-			      ||   $future_time \
-			         > $out_start ) } {
-		        set future_time $out_start
-		    }
-		}
-		set out_stop [lindex $instruction 3]
-		set out_stop [unabbreviate $out_stop]
-		if { $out_stop != "" } {
-		    if { [catch {
-			    set out_stop \
-				[clock scan $out_stop]
-				}] } {
-			error "bad stop time in\
-			       $instruction"
-		    }
-		    if { $out_stop > $last_time \
-		         && (    $future_time == "" \
-			      ||   $future_time \
-			         > $out_stop ) } {
-		        set future_time $out_stop
-		    }
-		}
-
-		# Set out_mtime to the output file mtime
-		# or "" if no output file exist/
-		#
-		if { [file exists $out_file] } {
-		    set out_mtime [file mtime $out_file]
-		} else {
-		    set out_mtime ""
-		}
-
-		# Set output variables.
-		#
-	        set out_pc $pc
-		incr out_pc -1
-		set output_found yes
-	    }
-
-	    yes_SEND {}
-	    yes_GRANT_ACCESS {}
-
-	    yes_BLANK {}
-
-	    yes_BAR {}
-	    yes_LINE {}
-
-	    yes_INPUT {
-
-	        # Loop through input files until an
-		# existing one is found.
-		#
-		foreach in_file \
-		        [lrange $instruction 1 end] {
-
-		    set in_file \
-		        [file join $judging_directory \
-			           $in_file]
-
-		    # Add input file to mtime_list.
-		    #
-		    if { [file exists $in_file] } {
-			set mtime [file mtime $in_file]
-
-			lappend mtime_list \
-			        [list $mtime $in_file]
-			break;
-		    } else {
-			lappend mtime_list \
-			        [list none $in_file]
-		    }
-		}
-	    }
-
-	    yes_BOARD -
-	    no_SEND -
-	    no_GRANT_ACCESS -
-	    no_BLANK -
-	    no_BAR -
-	    no_LINE -
-	    no_INPUT -
-	    no_BOARD {
-	        error "`$instruction' appears before\
-		       OUTPUT instruction"
-	    }
-
-	    default {
-
-	        # Parameter setting instructions are
-		# executed in the first pass only if
-		# they are before all OUTPUT instruc-
-		# tions.  Otherwise they are executed
-		# in pass2.
-		#
-	        if { $output_found == "no" } {
-		    set_parameter $instruction
-		}
-	    }
+	# Add updated output file to mtime_list.
+	#
+	if { $update } {
+	    lappend mtime_list [list out $out_file]
 	}
     }
 
-    # End of instruction processing loop.  Reenable
-    # interrupts.
+    if { $pc > $end_pc } break
+
+    # Perform first pass on instruction.
     #
-    make_signals_default
+    switch ${output_found}_$opcode {
+
+	no_OUTPUT -
+	yes_OUTPUT {
+
+	    # Compute output file.
+	    #
+	    set out_file [lindex $instruction 1]
+	    set out_file \
+	       [file join $judging_directory \
+			  $out_file]
+
+	    # Compute start and stop times and
+	    # update future_time.
+	    #
+	    set out_start [lindex $instruction 2]
+	    set out_start [unabbreviate $out_start]
+	    if { $out_start != "" } {
+		if { [catch {
+			set out_start \
+			    [clock scan $out_start]
+			    }] } {
+		    error "bad start time in\
+			   $instruction"
+		}
+		if { $out_start > $last_time \
+		     && (    $future_time == "" \
+			  ||   $future_time \
+			     > $out_start ) } {
+		    set future_time $out_start
+		}
+	    }
+	    set out_stop [lindex $instruction 3]
+	    set out_stop [unabbreviate $out_stop]
+	    if { $out_stop != "" } {
+		if { [catch {
+			set out_stop \
+			    [clock scan $out_stop]
+			    }] } {
+		    error "bad stop time in\
+			   $instruction"
+		}
+		if { $out_stop > $last_time \
+		     && (    $future_time == "" \
+			  ||   $future_time \
+			     > $out_stop ) } {
+		    set future_time $out_stop
+		}
+	    }
+
+	    # Set out_mtime to the output file mtime
+	    # or "" if no output file exist/
+	    #
+	    if { [file exists $out_file] } {
+		set out_mtime [file mtime $out_file]
+	    } else {
+		set out_mtime ""
+	    }
+
+	    # Set output variables.
+	    #
+	    set out_pc $pc
+	    incr out_pc -1
+	    set output_found yes
+	}
+
+	yes_SEND {}
+	yes_GRANT_ACCESS {}
+
+	yes_BLANK {}
+
+	yes_BAR {}
+	yes_LINE {}
+
+	yes_INPUT {
+
+	    # Loop through input files until an
+	    # existing one is found.
+	    #
+	    foreach in_file \
+		    [lrange $instruction 1 end] {
+
+		set in_file \
+		    [file join $judging_directory \
+			       $in_file]
+
+		# Add input file to mtime_list.
+		#
+		if { [file exists $in_file] } {
+		    set mtime [file mtime $in_file]
+
+		    lappend mtime_list \
+			    [list $mtime $in_file]
+		    break;
+		} else {
+		    lappend mtime_list \
+			    [list none $in_file]
+		}
+	    }
+	}
+
+	yes_BOARD -
+	no_SEND -
+	no_GRANT_ACCESS -
+	no_BLANK -
+	no_BAR -
+	no_LINE -
+	no_INPUT -
+	no_BOARD {
+	    error "`$instruction' appears before\
+		   OUTPUT instruction"
+	}
+
+	default {
+
+	    # Parameter setting instructions are
+	    # executed in the first pass only if
+	    # they are before all OUTPUT instruc-
+	    # tions.  Otherwise they are executed
+	    # in pass2.
+	    #
+	    if { $output_found == "no" } {
+		set_parameter $instruction
+	    }
+	}
+    }
+}
+
+# End of instruction processing loop.  Reenable
+# interrupts.
+#
+make_signals_default
 
 if { $command == "-update-" } {
     puts [list $mtime_list $future_time $sent_errors]
