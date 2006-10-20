@@ -4,7 +4,7 @@
 #
 # File:		makescoreboard
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Oct 20 07:07:32 EDT 2006
+# Date:		Fri Oct 20 12:11:15 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/10/20 13:20:49 $
+#   $Date: 2006/10/20 17:07:32 $
 #   $RCSfile: makescoreboard,v $
-#   $Revision: 1.66 $
+#   $Revision: 1.67 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -120,6 +120,22 @@ makescoreboard { start | status | stop | update } \\
 
 # } to balance extra left bracket in documentation.
 
+#	makescoreboard start parameter ...
+#
+# calls
+#
+#	makescoreboard -start- parameter ...
+#
+# which calls
+#
+#	makescoreboard -update- \
+#		       $last_time $sent_errors \
+#		       parameter ...
+#
+# which outputs
+#
+#	[list $mtime_list $future_time $sent_errors]
+
 # Print documentation if illegal (or -doc) first
 # argument.
 #
@@ -184,7 +200,11 @@ set sent_errors {}
 # Process all the arguments, sourcing files as
 # necessary.  Add parameter files to mtime_list.
 #
-foreach arg [lrange $argv 1 end] {
+switch $command {
+    -update-	{ set parameters [lrange 3 end] }
+    default	{ set parameters [lrange 1 end] }
+}
+foreach arg $parameters {
     set LB "{"
     # "}" to balance left bracket in last line so
     # TCL will read this procedure code properly.
@@ -245,13 +265,14 @@ proc update_required { } {
 }
 
 # Execute makescoreboard -update- to update the score-
-# board and set mtime_list, last_time, and future_time.
+# board and set mtime_list, last_time, future_time, and
+# sent_errors.
 #
 proc update_scoreboard { { force no } } {
 
     global mtime_list last_time future_time sent_errors
 
-    set last_time [clock seconds]
+    set time [clock seconds]
 
     # If we have no reason to rerun scoreboard instruc-
     # tions, return.
@@ -260,10 +281,12 @@ proc update_scoreboard { { force no } } {
          && [update_required] == "no" \
          && ! [test_flag Score_Flag] } {
 	 && (    $future_time == "" \
-	      || $last_time < $future_time ) } {
+	      || $time < $future_time ) } {
 
         return
     }
+
+    set last_time $time
 
     # Initialize mtime_list with hpcm_judging.rc mtime.
     #
@@ -399,10 +422,10 @@ switch -- $command {
 		 puts "Killing previous makescoreboard:"
 		 puts $display
 
-		 # Try to kill up to 30 times, checking
-		 # after each attempt for death.  The
-		 # first 20 times are with HUP, the next
-		 # 10 times are with KILL.
+		 # Try to kill for up to 30 seconds,
+		 # checking after each attempt for
+		 # death.  The first 20 seconds are with
+		 # HUP, the next 10 are with KILL.
 		 #
 		 set count 0
 		 while { "true" } {
@@ -440,9 +463,8 @@ switch -- $command {
 
     -update- {
     
-	set last_time [lindex $argv 0]
-	set sent_errors [lindex $argv 1]
-	set argv [lrange $argv 2 end]
+	set last_time [lindex $argv 1]
+	set sent_errors [lindex $argv 2]
 
 	# Restore log mode and disable standard output
 	# and error.
@@ -500,8 +522,6 @@ proc unabbreviate { value } {
 # Process parameter setting instruction.
 #
 proc set_parameter { instruction } {
-
-    global makescoreboard_parameters
 
     set name  [lindex $instruction 0]
     set value [lindex $instruction 1]
@@ -855,7 +875,7 @@ proc pass2 { instructions pc end_pc update } {
 		# the scoreboard program.
 		#
 	        set parameters ""
-		foreach name $scoreboard_paramaters {
+		foreach name $scoreboard_parameters {
 		    global $name
 		    if { [array exists $name] } {
 		        continue
@@ -1194,8 +1214,8 @@ proc pass2 { instructions pc end_pc update } {
 	}
     }
 
-    # End of instruction processing loop.  Store record
-    # of just finished actions and reenable interrupts.
+    # End of instruction processing loop.  Reenable
+    # interrupts.
     #
     make_signals_default
 
