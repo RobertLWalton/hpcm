@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Sep 26 04:42:49 EDT 2006
+# Date:		Fri Oct 20 09:17:22 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,14 +11,15 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/09/26 09:40:26 $
+#   $Date: 2006/10/20 13:15:45 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.135 $
+#   $Revision: 1.136 $
 #
 
 # Table of Contents
 #
 #	Including this Code
+#	List Functions
 #	Documentation Functions
 #	Dispatch Locking Functions
 #	Date Functions
@@ -82,6 +83,31 @@ set default_log_directory $env(HOME)/HPCM_Error_Log
 # redefined by program.
 #
 proc exit_cleanup {} {}
+
+# List Functions
+# ---- ---------
+
+# Append an element to a list if the element is NOT
+# already in the list.
+#
+proc ladd { listname element } {
+    upvar $listname list
+    if { [lsearch -exact $list $element] < 0 } {
+        lappend list $element
+    }
+}
+
+# Remove an element from a list if the element is in the
+# list.  Assumes the element is in the list at most
+# once.
+#
+proc lsub { listname element } {
+    upvar $listname list
+    set i [lsearch -exact $list $element]
+    if { $i >= 0 } {
+        set list [lreplace $list $i $i]
+    }
+}
 
 # Documentation Functions
 # ------------- ---------
