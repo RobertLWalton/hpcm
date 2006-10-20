@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Oct 20 09:17:22 EDT 2006
+# Date:		Fri Oct 20 12:34:21 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/10/20 13:15:45 $
+#   $Date: 2006/10/20 16:47:50 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.136 $
+#   $Revision: 1.137 $
 #
 
 # Table of Contents
@@ -369,26 +369,29 @@ proc log_error { error_output } {
     	set log_mode none
     }
 
+    # If `log_mode' is `none', do not write to file, but
+    # print errorCode and errorInfo to standard error
+    # output and return.  Do this before writing error,
+    # so that error will be visible at end of printout.
+    #
+    if { $log_mode == "none" } {
+	puts stderr "------------------------------"
+	puts stderr "ERROR during $argv0 $argv"
+	puts stderr "errorCode: $errorCode"
+	puts stderr "errorInfo follows:"
+	puts stderr "--------------------"
+	puts stderr $errorInfo
+    }
+
     # Write error to standard error output.
     #
     puts stderr "------------------------------"
     puts stderr "ERROR during $argv0 $argv"
-    puts stderr "-----"
+    puts stderr "--------------------"
     puts stderr $error_output
+    puts stderr "------------------------------"
 
-    # If `log_mode' is `none', do not write to file, but
-    # print errorCode and errorInfo to standard error
-    # output and return.
-    #
-    if { $log_mode == "none" } {
-	puts stderr "-----"
-	puts stderr "errorCode: $errorCode"
-	puts stderr "errorInfo follows:"
-	puts stderr "-----"
-	puts stderr $errorInfo
-	puts stderr "------------------------------"
-	return
-    }
+    if { $log_mode == "none" } return
 
     # Compute $log_dir, the logging directory to be
     # used.  Make it if necessary.  Be sure it is
