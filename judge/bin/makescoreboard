@@ -4,7 +4,7 @@
 #
 # File:		makescoreboard
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Oct 21 03:55:24 EDT 2006
+# Date:		Sat Oct 21 04:05:38 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/10/21 08:05:19 $
+#   $Date: 2006/10/21 08:28:52 $
 #   $RCSfile: makescoreboard,v $
-#   $Revision: 1.72 $
+#   $Revision: 1.73 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -281,7 +281,8 @@ proc update_required { } {
 #
 proc update_scoreboard { { force no } } {
 
-    global mtime_list last_time future_time sent_errors
+    global mtime_list last_time future_time \
+           sent_errors judging_directory argv
 
     set time [clock seconds]
 
@@ -290,7 +291,7 @@ proc update_scoreboard { { force no } } {
     #
     if {    $force == "no" \
          && [update_required] == "no" \
-         && ! [test_flag Score_Flag] } {
+         && ! [test_flag Score_Flag] \
 	 && (    $future_time == "" \
 	      || $time < $future_time ) } {
 
@@ -370,7 +371,7 @@ switch -- $command {
 	# and error.
 	#
 	set log_mode $saved_log_mode
-	disable_outputs
+	disable_stderr
 
 	# Set pid file.
 	#
@@ -487,7 +488,7 @@ switch -- $command {
 	# and error.
 	#
 	set log_mode $saved_log_mode
-	disable_outputs
+	disable_stderr
 
     }
 
