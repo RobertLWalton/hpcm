@@ -4,7 +4,7 @@
 #
 # File:		makescoreboard
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Oct 20 13:47:04 EDT 2006
+# Date:		Sat Oct 21 03:18:49 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/10/20 17:44:57 $
+#   $Date: 2006/10/21 07:47:38 $
 #   $RCSfile: makescoreboard,v $
-#   $Revision: 1.70 $
+#   $Revision: 1.71 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -146,15 +146,6 @@ if { ! [lcontain {update start status stop \
     exit 1
 }
 
-# Constant equal to 256 spaces.
-#
-set space "        "
-set space "$space$space"
-set space "$space$space"
-set space "$space$space"
-set space "$space$space"
-set space "$space$space"
-
 # Compute file names.
 #
 set finder_file \
@@ -224,6 +215,26 @@ foreach arg $parameters {
 	lappend mtime_list [list $mtime $arg]
 	source_file $arg
     }
+}
+
+# Constant equal to 256 spaces.
+#
+set space "        "
+set space "$space$space"
+set space "$space$space"
+set space "$space$space"
+set space "$space$space"
+set space "$space$space"
+
+# Compute BAR.
+#
+set bar ""
+set solid_bar =====
+set w [expr { $scoreboard_width / 5 } ]
+while { $w > 0 } {
+    set bar "$bar== =="
+    set solid_bar $solid_bar=====
+    incr w -1
 }
 
 # Look at the mtime_list and see if the scoreboard
@@ -592,353 +603,41 @@ set instructions {}
 parse_block $scoreboard_instructions instructions \
 	    [info globals scoreboard_*]
 
-# The loop to process instructions runs in two passes.
-# Pass1 is below, and calles pass2 for every sequence of
-# instructions beginning with an OUTPUT instruction and
-# ending with the instruction before the next OUTPUT in-
-# struction or end of all instructions.  Pass2 executes
-# the scoreboard instructions.  The instruction at pc is
-# an OUTPUT instruction, and the instruction at endpc is
-# the next OUTPUT instruction or is just beyond the end
-# of all instructions.
+# Loop through scoreboard instructions.
 #
-proc pass2 { instructions pc end_pc update } {
+# Update is `yes' if OUTPUT instruction has been
+# processed and current OUTPUT file is to be updat-
+# ed, `no' if OUTPUT instruction has been processed
+# and current OUTPUT file is NOT to be updated, and
+# `none' if no OUTPUT instruction has been proces-
+# sed.
+# 
+set update none
+set pc 0
+set end_pc [llength $instructions]
+#
+while { "yes" } {
 
-    global judging_directory finder_file space \
-	   errorInfo errorCode scoreboard_parameters \
-	   sent_errors scoreboard_width scoreboard_name
-
-    # Compute output file and step past OUTPUT instruc-
-    # tion.
-    #
     set instruction [lindex $instructions $pc]
-    set out_file [lindex $instruction 1]
-    if { $out_file == "" } {
-        error "Bad OUTPUT instruction: $instruction"
-    }
-    set out_file \
-        [file join $judging_directory $out_file]
     incr pc
 
-    # Compute output file in `contents' variable.
-    #
-    set contents ""
-    set send no
-    set grant_access no
-
-    # Compute BAR.
-    #
-    set bar ""
-    set solid_bar =====
-    set w [expr { $scoreboard_width / 5 } ]
-    while { $w > 0 } {
-	set bar "$bar== =="
-	set solid_bar $solid_bar=====
-	incr w -1
+    if { [catch { llength $instruction }] } {
+	error "a scoreboard_instructions'\
+	       instruction is not a TCL list:\
+	       $instruction"
+	
     }
+    set opcode [lindex $instruction 0]
 
-    # Loop through remaining instructions.
+    # If we are at the end of a sequence of
+    # instructions that begins with an OUTPUT
+    # instruction and ends just before the next
+    # OUTPUT instruction or end of all instructions,
+    # and if OUTPUT file is being updated, write
+    # out file and send it if necessary.
     #
-    while { $pc < $end_pc } {
-
-	# Compute instruction and opcode and update pc.
-	#
-	set instruction [lindex $instructions $pc]
-	incr pc
-	set opcode [lindex $instruction 0]
-
-	switch ${opcode}_$update {
-
-	    SEND_yes {
-
-	        # Compute send_addresses and send_name
-		# for use when output done.
-		#
-		set name [lindex $instruction 1]
-		if { $name == "" } {
-		    set name addresses
-		}
-		set send_name scoreboard_$name
-		if { ! [info exists $send_name] } {
-		   set send_addresses ""
-		} else {
-		   set send_addresses [set $send_name]
-		}
-
-		# Set switch to indicate SEND happened.
-		#
-		set send yes
-	    }
-
-	    GRANT_ACCESS_yes {
-		set grant_access yes
-	    }
-
-	    BLANK_yes {
-		set contents "$contents\n"
-	    }
-
-	    BAR_yes {
-	        set text [lindex $instruction 1]
-		if { $text == "" } {
-		    set contents "$contents$bar\n"
-		} else {
-		    set text [unabbreviate $text]
-		    set sw $scoreboard_width
-		    set len [string length $text]
-		    incr len 2
-		    if { $len + 4 > $sw} {
-		        error "scoreboard_width not\
-			       wide enough for\
-			       `$instruction'"
-		    }
-		    set left \
-		        [expr { ( $sw - $len ) / 2 }]
-		    set right \
-		        [expr { $sw - $len - $left }]
-		    incr left -1
-		    incr right -1
-		    set left \
-		        [string range $solid_bar \
-			        0 $left]
-		    set right \
-		        [string range $solid_bar \
-			        0 $right]
-		    set contents \
-		        "$contents$left $text $right\n"
-		}
-	    }
-
-	    LINE_yes {
-
-		# Make sure `space is long enough'.
-		#
-		if { $scoreboard_width > 256 } {
-		    error "scoreboard width > 256"
-		}
-
-		# Compute left, center, and right
-		# text.
-		#
-		set left   [lindex $instruction 1]
-		set center [lindex $instruction 2]
-		set right  [lindex $instruction 3]
-
-		set left   [unabbreviate $left]
-		set center [unabbreviate $center]
-		set right  [unabbreviate $right]
-
-		# Compute columns of beginning and/or
-		# end for each of the three texts.
-		# Columns are numbered 0, 1, ...
-		#
-		set left_end [string length $left]
-		incr left_end -1
-		set right_begin \
-		    [expr { $scoreboard_width - \
-			    [string length $right] }]
-		set center_length \
-		    [string length $center]
-		set center_begin  \
-		    [expr { ( $scoreboard_width \
-			      - $center_length + 1 ) \
-			    / 2 }]
-		set center_end \
-		    [expr { $center_begin \
-			    + $center_length - 1 }]
-
-		# Make sure texts are short enough so
-		# that their ends are within limits.
-		#
-		if { $left_end >= $scoreboard_width } {
-		    error "LINE left text too wide:\
-		           $left"
-		} elseif { $right_begin < 0 } {
-		    error "LINE right text too wide:\
-		           $right"
-		} elseif {    $center_begin < 0 \
-		           || $center_end \
-			      >= $scoreboard_width } {
-		    error "LINE center text too wide:\
-		           $center"
-		}
-
-		# Compute line.  Start with left text.
-		#
-		set line $left
-
-		set center_done no
-		set right_done  no
-
-		# If center is non-empty and has a 2
-		# space gap between it and any other
-		# non-empty text, add the center to the
-		# line.
-		#
-		if {    $center != "" \
-		     && ( $left == "" \
-		          || $left_end + 2 \
-			     < $center_begin ) \
-		     && ( $right == "" \
-		          || $center_end + 2 \
-			     < $right_begin ) } {
-		    incr left_end 1
-		    incr center_begin -1
-		    set line \
-			"$line[string \
-				  range $space \
-				  $left_end \
-				  $center_begin]"
-		    set line "$line$center"
-		    set center_done yes
-		    set left_end $center_end
-		}
-
-		# If right text is non-empty and has a 2
-		# space gap with the part of the line
-		# to its left, add it to line.
-		#
-		if {    $right != ""
-		     && ( $left_end == -1 \
-		          || $left_end + 2 \
-			     < $right_begin ) } {
-		    incr left_end 1
-		    incr right_begin -1
-		    set line \
-			"$line[string \
-				  range $space \
-				  $left_end \
-				  $right_begin]"
-		    set line "$line$right"
-		    set right_done yes
-		}
-
-		# If center text did not get added to
-		# first line, put it on a line by it-
-		# self.
-		#
-		if { $center != "" && \
-		     $center_done == "no" } {
-		    incr center_begin -1
-		    set line \
-			"$line\n[string \
-				    range $space \
-				    0 $center_begin]"
-		    set line "$line$center"
-		}
-
-		# If right text did not get added to
-		# first line, put it on a line by it-
-		# self.
-		#
-		if { $right != "" \
-		     && $right_done == "no" } {
-		    incr right_begin -1
-		    set line \
-			"$line\n[string \
-				    range $space \
-				    0 $right_begin]"
-		    set line "$line$right"
-		}
-
-		# Add line(s) to contents of output.
-		#
-		set contents "$contents$line\n"
-	    }
-
-	    INPUT_yes {
-
-	        # Loop through input files.
-		#
-		foreach in_file \
-		        [lrange $instruction 1 end] {
-
-		    set in_file \
-		        [file join $judging_directory \
-			           $in_file]
-
-		    # Add first existing input file to
-		    # the output contents.
-		    #
-		    if { [file exists $in_file] } {
-			if { [file size $in_file] > 0 \
-					} {
-			    set c [read_entire_file \
-			    		$in_file]
-			    set contents "$contents$c\n"
-			}
-			break;
-		    }
-		}
-	    }
-
-	    BOARD_yes {
-
-	        # Compute parameters to be passed to
-		# the scoreboard program.
-		#
-	        set parameters ""
-		foreach name $scoreboard_parameters {
-		    global $name
-		    if { [array exists $name] } {
-		        continue
-		    }
-		    if { ! [info exists $name] } {
-		        continue
-		    }
-		    set value [set $name]
-		    regexp {^scoreboard_(.*)$} $name \
-		           forget name
-		    lappend parameters \
-		            [list $name $value]
-		}
-
-		# Call the scoreboard program to compute
-		# the board table.
-		#
-		set scoretable \
-		    [exec scoretable "{ $parameters }" \
-				     < $finder_file]
-
-		# If the scoreboard table is empty, say
-		# so explicitly.
-		#
-		if { $scoretable == "" } {
-		    set scoretable \
-		        "The scoreboard is currently\
-			 EMPTY!  Nothing must have\
-			 happened yet."
-		}
-
-		# Add the scoreboard table to the output
-		# file contents.
-		#
-	        set contents "$contents$scoretable\n"
-	    }
-
-	    SEND_no -
-	    GRANT_ACCESS_no -
-	    BLANK_no -
-	    BAR_no -
-	    LINE_no -
-	    INPUT_no -
-	    BOARD_no {
-
-		# If update is `no' most instructions do
-		# nothing.
-		#
-	    }
-
-	    default {
-	        # Execute parameter setting instruction
-		# regardless of update value.
-		#
-		set_parameter $instruction
-	    }
-	}
-    }
-
-    if { $update } {
+    if { ( $pc > $end_pc || $opcode == "OUTPUT" ) \
+	 && $update == "yes" } {
 
 	# Write output file.  If error, delete file and
 	# hpcm_sendmail the judge.
@@ -1024,76 +723,19 @@ proc pass2 { instructions pc end_pc update } {
 		ladd sent_errors $out_file
 	    }
 	}
-    }
-}
-
-# The following is pass1, the first pass to execute the
-# scoreboard instructions.
-
-set pc 0
-set end_pc [llength $instructions]
-set output_found no
-
-while { "yes" } {
-
-    set instruction [lindex $instructions $pc]
-    incr pc
-
-    if { [catch { llength $instruction }] } {
-	error "a scoreboard_instructions'\
-	       instruction is not a TCL list:\
-	       $instruction"
-	
-    }
-    set opcode [lindex $instruction 0]
-
-    # If we are at the end of a sequence of
-    # instructions that begins with an OUTPUT
-    # instruction and ends just before the next
-    # OUTPUT instruction or end of all instructions,
-    # process OUTPUT instruction time parameters
-    # and call pass2.
-    #
-    if { ( $pc > $end_pc || $opcode == "OUTPUT" ) \
-	 && $output_found } {
-
-	set update yes
-
-	# If we are before OUTPUT start time, do
-	# NOT update.
-	#
-	if { $out_start != "" \
-	     && $last_time < $out_start } {
-	    set update no
-	}
-
-	# If output file exists and has an mtime >=
-	# the OUTPUT stop time, do NOT update.
-	#
-	if {    $out_mtime != "" \
-	     && $out_stop != "" \
-	     && $out_mtime >= $out_stop } {
-	    set update no
-	}
-
-	# Perform second pass.
-	#
-	pass2 $instructions \
-	      $out_pc [expr $pc -1] $update
 
 	# Add updated output file to mtime_list.
 	#
-	if { $update } {
-	    lappend mtime_list [list out $out_file]
-	}
+	lappend mtime_list [list out $out_file]
     }
 
     if { $pc > $end_pc } break
 
-    # Perform first pass on instruction.
+    # Execute instrution.
     #
-    switch ${output_found}_$opcode {
+    switch ${update}_$opcode {
 
+	none_OUTPUT -
 	no_OUTPUT -
 	yes_OUTPUT {
 
@@ -1151,20 +793,232 @@ while { "yes" } {
 		set out_mtime ""
 	    }
 
+	    # Compute update == `yes' if OUTPUT file is
+	    # to be updated, and `no' otherwise.
+	    #
+	    set update yes
+
+	    # If we are before OUTPUT start time, do
+	    # NOT update.
+	    #
+	    if { $out_start != "" \
+		 && $last_time < $out_start } {
+		set update no
+	    }
+
+	    # If output file exists and has an mtime >=
+	    # the OUTPUT stop time, do NOT update.
+	    #
+	    if {    $out_mtime != "" \
+		 && $out_stop != "" \
+		 && $out_mtime >= $out_stop } {
+		set update no
+	    }
+
 	    # Set output variables.
 	    #
-	    set out_pc $pc
-	    incr out_pc -1
 	    set output_found yes
+	    set contents ""
+	    set send no
+	    set grant_access no
 	}
 
-	yes_SEND {}
-	yes_GRANT_ACCESS {}
+	yes_SEND {
 
-	yes_BLANK {}
+	    # Compute send_addresses and send_name
+	    # for use when output done.
+	    #
+	    set name [lindex $instruction 1]
+	    if { $name == "" } {
+		set name addresses
+	    }
+	    set send_name scoreboard_$name
+	    if { ! [info exists $send_name] } {
+	       set send_addresses ""
+	    } else {
+	       set send_addresses [set $send_name]
+	    }
 
-	yes_BAR {}
-	yes_LINE {}
+	    # Set switch to indicate SEND happened.
+	    #
+	    set send yes
+	}
+
+	yes_GRANT_ACCESS {
+	    set grant_access yes
+	}
+
+	yes_BLANK {
+	    set contents "$contents\n"
+	}
+
+	yes_BAR {
+	    set text [lindex $instruction 1]
+	    if { $text == "" } {
+		set contents "$contents$bar\n"
+	    } else {
+		set text [unabbreviate $text]
+		set sw $scoreboard_width
+		set len [string length $text]
+		incr len 2
+		if { $len + 4 > $sw} {
+		    error "scoreboard_width not\
+			   wide enough for\
+			   `$instruction'"
+		}
+		set left \
+		    [expr { ( $sw - $len ) / 2 }]
+		set right \
+		    [expr { $sw - $len - $left }]
+		incr left -1
+		incr right -1
+		set left \
+		    [string range $solid_bar \
+			    0 $left]
+		set right \
+		    [string range $solid_bar \
+			    0 $right]
+		set contents \
+		    "$contents$left $text $right\n"
+	    }
+	}
+
+	yes_LINE {
+
+	    # Make sure `space is long enough'.
+	    #
+	    if { $scoreboard_width > 256 } {
+		error "scoreboard width > 256"
+	    }
+
+	    # Compute left, center, and right
+	    # text.
+	    #
+	    set left   [lindex $instruction 1]
+	    set center [lindex $instruction 2]
+	    set right  [lindex $instruction 3]
+
+	    set left   [unabbreviate $left]
+	    set center [unabbreviate $center]
+	    set right  [unabbreviate $right]
+
+	    # Compute columns of beginning and/or
+	    # end for each of the three texts.
+	    # Columns are numbered 0, 1, ...
+	    #
+	    set left_end [string length $left]
+	    incr left_end -1
+	    set right_begin \
+		[expr { $scoreboard_width - \
+			[string length $right] }]
+	    set center_length \
+		[string length $center]
+	    set center_begin  \
+		[expr { ( $scoreboard_width \
+			  - $center_length + 1 ) \
+			/ 2 }]
+	    set center_end \
+		[expr { $center_begin \
+			+ $center_length - 1 }]
+
+	    # Make sure texts are short enough so
+	    # that their ends are within limits.
+	    #
+	    if { $left_end >= $scoreboard_width } {
+		error "LINE left text too wide:\
+		       $left"
+	    } elseif { $right_begin < 0 } {
+		error "LINE right text too wide:\
+		       $right"
+	    } elseif {    $center_begin < 0 \
+		       || $center_end \
+			  >= $scoreboard_width } {
+		error "LINE center text too wide:\
+		       $center"
+	    }
+
+	    # Compute line.  Start with left text.
+	    #
+	    set line $left
+
+	    set center_done no
+	    set right_done  no
+
+	    # If center is non-empty and has a 2
+	    # space gap between it and any other
+	    # non-empty text, add the center to the
+	    # line.
+	    #
+	    if {    $center != "" \
+		 && ( $left == "" \
+		      || $left_end + 2 \
+			 < $center_begin ) \
+		 && ( $right == "" \
+		      || $center_end + 2 \
+			 < $right_begin ) } {
+		incr left_end 1
+		incr center_begin -1
+		set line \
+		    "$line[string \
+			      range $space \
+			      $left_end \
+			      $center_begin]"
+		set line "$line$center"
+		set center_done yes
+		set left_end $center_end
+	    }
+
+	    # If right text is non-empty and has a 2
+	    # space gap with the part of the line
+	    # to its left, add it to line.
+	    #
+	    if {    $right != ""
+		 && ( $left_end == -1 \
+		      || $left_end + 2 \
+			 < $right_begin ) } {
+		incr left_end 1
+		incr right_begin -1
+		set line \
+		    "$line[string \
+			      range $space \
+			      $left_end \
+			      $right_begin]"
+		set line "$line$right"
+		set right_done yes
+	    }
+
+	    # If center text did not get added to
+	    # first line, put it on a line by it-
+	    # self.
+	    #
+	    if { $center != "" && \
+		 $center_done == "no" } {
+		incr center_begin -1
+		set line \
+		    "$line\n[string \
+				range $space \
+				0 $center_begin]"
+		set line "$line$center"
+	    }
+
+	    # If right text did not get added to
+	    # first line, put it on a line by it-
+	    # self.
+	    #
+	    if { $right != "" \
+		 && $right_done == "no" } {
+		incr right_begin -1
+		set line \
+		    "$line\n[string \
+				range $space \
+				0 $right_begin]"
+		set line "$line$right"
+	    }
+
+	    # Add line(s) to contents of output.
+	    #
+	    set contents "$contents$line\n"
+	}
 
 	yes_INPUT {
 
@@ -1178,13 +1032,22 @@ while { "yes" } {
 		    [file join $judging_directory \
 			       $in_file]
 
-		# Add input file to mtime_list.
+		# Add input file to mtime_list and first
+		# existing file to output contents.
 		#
 		if { [file exists $in_file] } {
-		    set mtime [file mtime $in_file]
 
+		    set mtime [file mtime $in_file]
 		    lappend mtime_list \
 			    [list $mtime $in_file]
+
+		    if { [file size $in_file] > 0 \
+				    } {
+			set c [read_entire_file \
+				    $in_file]
+			set contents "$contents$c\n"
+		    }
+
 		    break;
 		} else {
 		    lappend mtime_list \
@@ -1193,7 +1056,48 @@ while { "yes" } {
 	    }
 	}
 
-	yes_BOARD {}
+	yes_BOARD {
+
+	    # Compute parameters to be passed to
+	    # the scoreboard program.
+	    #
+	    set parameters ""
+	    foreach name $scoreboard_parameters {
+		if { [array exists $name] } {
+		    continue
+		}
+		if { ! [info exists $name] } {
+		    continue
+		}
+		set value [set $name]
+		regexp {^scoreboard_(.*)$} $name \
+		       forget name
+		lappend parameters \
+			[list $name $value]
+	    }
+
+	    # Call the scoreboard program to compute
+	    # the board table.
+	    #
+	    set scoretable \
+		[exec scoretable "{ $parameters }" \
+				 < $finder_file]
+
+	    # If the scoreboard table is empty, say
+	    # so explicitly.
+	    #
+	    if { $scoretable == "" } {
+		set scoretable \
+		    "The scoreboard is currently\
+		     EMPTY!  Nothing must have\
+		     happened yet."
+	    }
+
+	    # Add the scoreboard table to the output
+	    # file contents.
+	    #
+	    set contents "$contents$scoretable\n"
+	}
 
 	no_SEND -
 	no_GRANT_ACCESS -
@@ -1202,22 +1106,24 @@ while { "yes" } {
 	no_LINE -
 	no_INPUT -
 	no_BOARD {
+
+	    # If update is `no' most instructions do
+	    # nothing.
+	    #
+	}
+
+	none_SEND -
+	none_GRANT_ACCESS -
+	none_BLANK -
+	none_BAR -
+	none_LINE -
+	none_INPUT -
+	none_BOARD {
 	    error "`$instruction' appears before\
 		   OUTPUT instruction"
 	}
 
-	default {
-
-	    # Parameter setting instructions are
-	    # executed in the first pass only if
-	    # they are before all OUTPUT instruc-
-	    # tions.  Otherwise they are executed
-	    # in pass2.
-	    #
-	    if { $output_found == "no" } {
-		set_parameter $instruction
-	    }
-	}
+	default { set_parameter $instruction }
     }
 }
 
