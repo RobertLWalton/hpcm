@@ -4,7 +4,7 @@
 #
 # File:		makescoreboard
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Oct 21 03:18:49 EDT 2006
+# Date:		Sat Oct 21 03:55:24 EDT 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/10/21 07:47:38 $
+#   $Date: 2006/10/21 08:05:19 $
 #   $RCSfile: makescoreboard,v $
-#   $Revision: 1.71 $
+#   $Revision: 1.72 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -723,10 +723,6 @@ while { "yes" } {
 		ladd sent_errors $out_file
 	    }
 	}
-
-	# Add updated output file to mtime_list.
-	#
-	lappend mtime_list [list out $out_file]
     }
 
     if { $pc > $end_pc } break
@@ -794,18 +790,22 @@ while { "yes" } {
 	    }
 
 	    # Compute update == `yes' if OUTPUT file is
-	    # to be updated, and `no' otherwise.
+	    # to be updated, and `no' otherwise.  Add
+	    # output file to mtime_list if we are NOT
+	    # before file start time.
 	    #
 	    set update yes
-
+	    #
 	    # If we are before OUTPUT start time, do
 	    # NOT update.
 	    #
 	    if { $out_start != "" \
 		 && $last_time < $out_start } {
 		set update no
+	    } else {
+		lappend mtime_list [list out $out_file]
 	    }
-
+	    #
 	    # If output file exists and has an mtime >=
 	    # the OUTPUT stop time, do NOT update.
 	    #
