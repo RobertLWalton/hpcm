@@ -4,7 +4,7 @@
 #
 # File:		makescoreboard
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Oct 21 04:32:42 EDT 2006
+# Date:		Sun Oct 29 08:12:45 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/10/21 08:33:52 $
+#   $Date: 2006/10/29 13:13:09 $
 #   $RCSfile: makescoreboard,v $
-#   $Revision: 1.74 $
+#   $Revision: 1.75 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -124,24 +124,18 @@ makescoreboard { start | status | stop | update } \\
 #
 # calls
 #
-#	makescoreboard -start- parameter ...
+#	makescoreboard -start- N parameter ...
 #
-# which calls
-#
-#	makescoreboard -update- \
-#		       $last_time $sent_errors \
-#		       parameter ...
-#
-# which outputs
-#
-#	[list $mtime_list $future_time $sent_errors]
+# where N is the number of retries because of errors,
+# or is just 1 to indicate we should retry because
+# parameters have changed.
 
 # Print documentation if illegal (or -doc) first
 # argument.
 #
 set command [lindex $argv 0]
-if { ! [lcontain {update start status stop \
-                         -start- -update-} $command] } {
+if { ! [lcontain {update start status stop -start-} \
+                 $command] } {
     puts $document
     exit 1
 }
@@ -161,7 +155,7 @@ set pid_file \
 #
 set scoreboard_parameters [info globals scoreboard_*]
 
-# Mtime list for parameter, INPUT, and OUTPUT files.
+# Mtime list for INPUT, and OUTPUT files.
 # This is a list of items each of the format:
 #
 #	{ file-mtime file-name }
@@ -171,7 +165,18 @@ set scoreboard_parameters [info globals scoreboard_*]
 # INPUT file, or `none' for an INPUT the file did not
 # exist, or `out' for an OUTPUT file.
 #
-set mtime_list {}
+set inout_mtime_list {}
+
+# Mtime list for parameter files.  This is just a list
+# of items each of the format:
+#
+#	{ file-mtime file-name }
+#
+# where file-mtime is in `clock seconds'.
+#
+set pfile $judging_directory/hpcm_judging.rc
+set mtime [file mtime $pfile]
+set parameter_mtime_list [list [list $mtime $pfile]]
 
 # Last time the scoreboard update was started.
 #
@@ -188,11 +193,11 @@ set future_time ""
 #
 set sent_errors {}
 
-# Process all the arguments, sourcing files as
-# necessary.  Add parameter files to mtime_list.
+# Process all the arguments, sourcing files as neces-
+# sary.  Add parameter files to parameter_mtime_list.
 #
 switch -- $command {
-    -update-	{ set parameters [lrange $argv 3 end] }
+    -start-	{ set parameters [lrange $argv 2 end] }
     default	{ set parameters [lrange $argv 1 end] }
 }
 foreach arg $parameters {
@@ -212,7 +217,7 @@ foreach arg $parameters {
 	}
     } else {
 	set mtime [file mtime $arg]
-	lappend mtime_list [list $mtime $arg]
+	lappend parameter_mtime_list [list $mtime $arg]
 	source_file $arg
     }
 }
@@ -245,9 +250,9 @@ while { $w > 0 } {
 # file that existed has changed, or if an OUTPUT file
 # that existed has been deleted.
 #	
-proc update_required { } {
+proc update_required { mtime_list } {
 
-    global mtime_list last_time
+    global last_time
 
     set result no
     foreach item $mtime_list {
@@ -275,14 +280,63 @@ proc update_required { } {
     return $result
 }
 
-# Execute makescoreboard -update- to update the score-
-# board and set mtime_list, last_time, future_time, and
-# sent_errors.
+# Given a value that may be an abbreviation defined in
+# the abbreviation_array, return the value it abbrevi-
+# ates, or return the original value if it is not an
+# abbreviation.
+#
+proc unabbreviate { value } {
+
+    global abbreviation_array
+
+    if { [info exists abbreviation_array($value)] } {
+	return $abbreviation_array($value)
+    } elseif {    [regexp {^(.*)([+-][0-9]+)$} $value \
+			  forget abbrev inc] \
+	       && [info exists \
+			abbreviation_array($abbrev)] \
+	       && ! [catch {
+			set date \
+			    $abbreviation_array($abbrev)
+			set time \
+			    [clock scan $date]
+			   }] } {
+	incr time $inc
+	return [clock format $time]
+    } else {
+	return $value
+    }
+}
+
+# Process parameter setting instruction.
+#
+proc set_parameter { instruction } {
+
+    set name  [lindex $instruction 0]
+    set value [lindex $instruction 1]
+    set value [unabbreviate $value]
+    global scoreboard_$name
+
+    if { [array exists scoreboard_$name] } {
+	array set scoreboard_$name $value
+    } elseif { [info exists scoreboard_$name] } {
+	set scoreboard_$name $value
+    } else {
+	error "$name is not a scoreboard parameter name"
+    }
+
+}
+
+
+# Process scoreboard instructions and set inout_mtime_list,
+# last_time, future_time, and sent_errors.
 #
 proc update_scoreboard { { force no } } {
 
-    global mtime_list last_time future_time \
-           sent_errors judging_directory argv
+    global inout_mtime_list last_time future_time \
+           sent_errors judging_directory argv \
+           finder_file errorCode errorInfo \
+	   abbreviation_array bar solid_bar space
 
     set time [clock seconds]
 
@@ -290,7 +344,7 @@ proc update_scoreboard { { force no } } {
     # tions, return.
     #
     if {    $force == "no" \
-         && [update_required] == "no" \
+         && [update_required $inout_mtime_list] == "no" \
          && ! [test_flag Score_Flag] \
 	 && (    $future_time == "" \
 	      || $time < $future_time ) } {
@@ -298,22 +352,595 @@ proc update_scoreboard { { force no } } {
         return
     }
 
+    eval global [info globals scoreboard_*]
+
     set last_time $time
+    set future_time ""
 
-    # Initialize mtime_list with hpcm_judging.rc mtime.
+    # Recompute $finder_file.
     #
-    set pfile $judging_directory/hpcm_judging.rc
-    set mtime [file mtime $pfile]
-    set mtime_list [list [list $mtime $pfile]]
+    make_signals_ignored
+    clear_flag Score_Flag
+    file delete -force -- $finder_file
+    exec scorefinder -gotten > $finder_file
+    make_signals_default
 
-    set list \
-	[eval exec makescoreboard -update- \
-		   [list $last_time $sent_errors] \
-		   [lrange $argv 1 end]]
+    # Save abbreviations.  If possible, replace relative
+    # stop and freeze times by normally formatted times
+    # so if they appear in LINE's they will look OK.
+    #
+    set start_time $scoreboard_start_time
+    set abbreviation_array(START) $start_time
 
-    eval lappend mtime_list [lindex $list 0]
-    set future_time [lindex $list 1]
-    set sent_errors [lindex $list 2]
+    if { ! [regexp {^(|problem|team)$} $start_time] } {
+	if { [catch { set st [clock scan $start_time] \
+		    }] } {
+	    error "badly formatted \
+		   scoreboard_start_time: $start_time"
+	}
+    } else {
+	set st ""
+    }
+
+    set stop_time $scoreboard_stop_time
+    if {    [regexp {^(|\+)[0-9]+$} $stop_time] \
+	 && $st != "" } {
+	set stop_time \
+	    [clock format [expr { $st + $stop_time }]]
+    }
+    set abbreviation_array(STOP) $stop_time
+
+    set freeze_time $scoreboard_freeze_time
+    if {    [regexp {^(|\+)[0-9]+$} $freeze_time] \
+	 && $st != "" } {
+	set freeze_time \
+	    [clock format [expr { $st + $freeze_time }]]
+    }
+    set abbreviation_array(FREEZE) $freeze_time
+
+    set abbreviation_array(NAME)   \
+	$scoreboard_name
+    set abbreviation_array(TIME)   \
+	[clock format $last_time]
+
+    # Ignore signals while processing instructions.
+    #
+    make_signals_ignored
+
+    # Process if statements.
+    #
+    set instructions {}
+    parse_block $scoreboard_instructions instructions \
+		[info globals scoreboard_*]
+
+    # Loop through scoreboard instructions.
+    #
+    # Update is `yes' if OUTPUT instruction has been
+    # processed and current OUTPUT file is to be updat-
+    # ed, `no' if OUTPUT instruction has been processed
+    # and current OUTPUT file is NOT to be updated, and
+    # `none' if no OUTPUT instruction has been proces-
+    # sed.
+    # 
+    set update none
+    set pc 0
+    set end_pc [llength $instructions]
+    #
+    while { "yes" } {
+
+	set instruction [lindex $instructions $pc]
+	incr pc
+
+	if { [catch { llength $instruction }] } {
+	    error "a scoreboard_instructions'\
+		   instruction is not a TCL list:\
+		   $instruction"
+	    
+	}
+	set opcode [lindex $instruction 0]
+
+	# If we are at the end of a sequence of
+	# instructions that begins with an OUTPUT
+	# instruction and ends just before the next
+	# OUTPUT instruction or end of all instructions,
+	# and if OUTPUT file is being updated, write
+	# out file and send it if necessary.
+	#
+	if { ( $pc > $end_pc || $opcode == "OUTPUT" ) \
+	     && $update == "yes" } {
+
+	    # Write output file.  If error, delete file and
+	    # hpcm_sendmail the judge.
+	    #
+	    # $out_file is in sent_errors if an error for
+	    # $out_file has been hpcm_sendmail'ed to the
+	    # judge since the last successful processing of
+	    # $out_file.
+	    #
+	    if { [catch {
+
+		    set error_data "\nWriting $out_file\n"
+		    set ch [open $out_file w]
+		    puts -nonewline $ch $contents
+		    close $ch
+		    if { $grant_access } {
+			grant_access $out_file
+		    }
+
+		    # Send email.
+		    #
+		    if { $send } {
+			foreach to $send_addresses {
+			    set to [string trim $to]
+			    if { [regexp {^!} $to] } {
+				set m {^!([^<]*)<([^>]*)>$}
+				if { ! [regexp $m $to \
+					       forget \
+					       zzz \
+					       account] } {
+				    error "Badly formatted\
+					   address in\
+					   $send_name: $to"
+				}
+				set f $judging_directory
+				set f $f/${zzz}_identity
+				set error_data \
+				    "\nError was during\
+				     ssh_copy_message\
+				     $f $account ...\n"
+				ssh_copy_message \
+				    $f $account $contents
+			    } else {
+				set error_data \
+				    "\nError was during\
+				     send_message\
+				     \"To: $to..\"\n"
+				send_message \
+				   "To: $to\n\n$contents"
+			    }
+			}
+		    }
+		    lsub sent_errors $out_file
+		} error_message] } {
+
+		# On error, delete output file and rethrow
+		# the error.  When we are rerun, the output
+		# file will be recomputed and remailed.
+		#
+		if { [file isfile $out_file] } {
+
+		    # Its possible if instructions are
+		    # miswritten to have out_file name a
+		    # directory.
+
+		    file delete -force -- $out_file
+		}
+		if { ! [lcontain $sent_errors $out_file] } {
+		    set message \
+			"Subject: makescoreboard error\
+			 outputting $out_file\n"
+		    set message "$message\nNOTE:\
+				 the file $out_file has\
+				 been DELETED!\n"
+		    set message "$message$error_data"
+		    set message \
+			"$message\n$error_message\n"
+		    set message \
+			"$message\nerrorCode:\n$errorCode\n"
+		    set message \
+			"$message\nerrorInfo:\n$errorInfo\n"
+		    exec hpcm_sendmail << $message
+		    ladd sent_errors $out_file
+		}
+	    }
+	}
+
+	if { $pc > $end_pc } break
+
+	# Execute instrution.
+	#
+	switch ${update}_$opcode {
+
+	    none_OUTPUT -
+	    no_OUTPUT -
+	    yes_OUTPUT {
+
+		# Compute output file.
+		#
+		set out_file [lindex $instruction 1]
+		set out_file \
+		   [file join $judging_directory \
+			      $out_file]
+
+		# Compute start and stop times and
+		# update future_time.
+		#
+		set out_start [lindex $instruction 2]
+		set out_start [unabbreviate $out_start]
+		if { $out_start != "" } {
+		    if { [catch {
+			    set out_start \
+				[clock scan $out_start]
+				}] } {
+			error "bad start time in\
+			       $instruction"
+		    }
+		    if { $out_start > $last_time \
+			 && (    $future_time == "" \
+			      ||   $future_time \
+				 > $out_start ) } {
+			set future_time $out_start
+		    }
+		}
+		set out_stop [lindex $instruction 3]
+		set out_stop [unabbreviate $out_stop]
+		if { $out_stop != "" } {
+		    if { [catch {
+			    set out_stop \
+				[clock scan $out_stop]
+				}] } {
+			error "bad stop time in\
+			       $instruction"
+		    }
+		    if { $out_stop > $last_time \
+			 && (    $future_time == "" \
+			      ||   $future_time \
+				 > $out_stop ) } {
+			set future_time $out_stop
+		    }
+		}
+
+		# Set out_mtime to the output file mtime
+		# or "" if no output file exist/
+		#
+		if { [file exists $out_file] } {
+		    set out_mtime [file mtime $out_file]
+		} else {
+		    set out_mtime ""
+		}
+
+		# Compute update == `yes' if OUTPUT file is
+		# to be updated, and `no' otherwise.  Add
+		# output file to inout_mtime_list if we are NOT
+		# before file start time.
+		#
+		set update yes
+		#
+		# If we are before OUTPUT start time, do
+		# NOT update.
+		#
+		if { $out_start != "" \
+		     && $last_time < $out_start } {
+		    set update no
+		} else {
+		    lappend inout_mtime_list [list out $out_file]
+		}
+		#
+		# If output file exists and has an mtime >=
+		# the OUTPUT stop time, do NOT update.
+		#
+		if {    $out_mtime != "" \
+		     && $out_stop != "" \
+		     && $out_mtime >= $out_stop } {
+		    set update no
+		}
+
+		# Set output variables.
+		#
+		set output_found yes
+		set contents ""
+		set send no
+		set grant_access no
+	    }
+
+	    yes_SEND {
+
+		# Compute send_addresses and send_name
+		# for use when output done.
+		#
+		set name [lindex $instruction 1]
+		if { $name == "" } {
+		    set name addresses
+		}
+		set send_name scoreboard_$name
+		if { ! [info exists $send_name] } {
+		   set send_addresses ""
+		} else {
+		   set send_addresses [set $send_name]
+		}
+
+		# Set switch to indicate SEND happened.
+		#
+		set send yes
+	    }
+
+	    yes_GRANT_ACCESS {
+		set grant_access yes
+	    }
+
+	    yes_BLANK {
+		set contents "$contents\n"
+	    }
+
+	    yes_BAR {
+		set text [lindex $instruction 1]
+		if { $text == "" } {
+		    set contents "$contents$bar\n"
+		} else {
+		    set text [unabbreviate $text]
+		    set sw $scoreboard_width
+		    set len [string length $text]
+		    incr len 2
+		    if { $len + 4 > $sw} {
+			error "scoreboard_width not\
+			       wide enough for\
+			       `$instruction'"
+		    }
+		    set left \
+			[expr { ( $sw - $len ) / 2 }]
+		    set right \
+			[expr { $sw - $len - $left }]
+		    incr left -1
+		    incr right -1
+		    set left \
+			[string range $solid_bar \
+				0 $left]
+		    set right \
+			[string range $solid_bar \
+				0 $right]
+		    set contents \
+			"$contents$left $text $right\n"
+		}
+	    }
+
+	    yes_LINE {
+
+		# Make sure `space is long enough'.
+		#
+		if { $scoreboard_width > 256 } {
+		    error "scoreboard width > 256"
+		}
+
+		# Compute left, center, and right
+		# text.
+		#
+		set left   [lindex $instruction 1]
+		set center [lindex $instruction 2]
+		set right  [lindex $instruction 3]
+
+		set left   [unabbreviate $left]
+		set center [unabbreviate $center]
+		set right  [unabbreviate $right]
+
+		# Compute columns of beginning and/or
+		# end for each of the three texts.
+		# Columns are numbered 0, 1, ...
+		#
+		set left_end [string length $left]
+		incr left_end -1
+		set right_begin \
+		    [expr { $scoreboard_width - \
+			    [string length $right] }]
+		set center_length \
+		    [string length $center]
+		set center_begin  \
+		    [expr { ( $scoreboard_width \
+			      - $center_length + 1 ) \
+			    / 2 }]
+		set center_end \
+		    [expr { $center_begin \
+			    + $center_length - 1 }]
+
+		# Make sure texts are short enough so
+		# that their ends are within limits.
+		#
+		if { $left_end >= $scoreboard_width } {
+		    error "LINE left text too wide:\
+			   $left"
+		} elseif { $right_begin < 0 } {
+		    error "LINE right text too wide:\
+			   $right"
+		} elseif {    $center_begin < 0 \
+			   || $center_end \
+			      >= $scoreboard_width } {
+		    error "LINE center text too wide:\
+			   $center"
+		}
+
+		# Compute line.  Start with left text.
+		#
+		set line $left
+
+		set center_done no
+		set right_done  no
+
+		# If center is non-empty and has a 2
+		# space gap between it and any other
+		# non-empty text, add the center to the
+		# line.
+		#
+		if {    $center != "" \
+		     && ( $left == "" \
+			  || $left_end + 2 \
+			     < $center_begin ) \
+		     && ( $right == "" \
+			  || $center_end + 2 \
+			     < $right_begin ) } {
+		    incr left_end 1
+		    incr center_begin -1
+		    set line \
+			"$line[string \
+				  range $space \
+				  $left_end \
+				  $center_begin]"
+		    set line "$line$center"
+		    set center_done yes
+		    set left_end $center_end
+		}
+
+		# If right text is non-empty and has a 2
+		# space gap with the part of the line
+		# to its left, add it to line.
+		#
+		if {    $right != ""
+		     && ( $left_end == -1 \
+			  || $left_end + 2 \
+			     < $right_begin ) } {
+		    incr left_end 1
+		    incr right_begin -1
+		    set line \
+			"$line[string \
+				  range $space \
+				  $left_end \
+				  $right_begin]"
+		    set line "$line$right"
+		    set right_done yes
+		}
+
+		# If center text did not get added to
+		# first line, put it on a line by it-
+		# self.
+		#
+		if { $center != "" && \
+		     $center_done == "no" } {
+		    incr center_begin -1
+		    set line \
+			"$line\n[string \
+				    range $space \
+				    0 $center_begin]"
+		    set line "$line$center"
+		}
+
+		# If right text did not get added to
+		# first line, put it on a line by it-
+		# self.
+		#
+		if { $right != "" \
+		     && $right_done == "no" } {
+		    incr right_begin -1
+		    set line \
+			"$line\n[string \
+				    range $space \
+				    0 $right_begin]"
+		    set line "$line$right"
+		}
+
+		# Add line(s) to contents of output.
+		#
+		set contents "$contents$line\n"
+	    }
+
+	    yes_INPUT {
+
+		# Loop through input files until an
+		# existing one is found.
+		#
+		foreach in_file \
+			[lrange $instruction 1 end] {
+
+		    set in_file \
+			[file join $judging_directory \
+				   $in_file]
+
+		    # Add input file to inout_mtime_list and first
+		    # existing file to output contents.
+		    #
+		    if { [file exists $in_file] } {
+
+			set mtime [file mtime $in_file]
+			lappend inout_mtime_list \
+				[list $mtime $in_file]
+
+			if { [file size $in_file] > 0 \
+					} {
+			    set c [read_entire_file \
+					$in_file]
+			    set contents "$contents$c\n"
+			}
+
+			break;
+		    } else {
+			lappend inout_mtime_list \
+				[list none $in_file]
+		    }
+		}
+	    }
+
+	    yes_BOARD {
+
+		# Compute parameters to be passed to
+		# the scoreboard program.
+		#
+		set parameters ""
+		foreach name $scoreboard_parameters {
+		    if { [array exists $name] } {
+			continue
+		    }
+		    if { ! [info exists $name] } {
+			continue
+		    }
+		    set value [set $name]
+		    regexp {^scoreboard_(.*)$} $name \
+			   forget name
+		    lappend parameters \
+			    [list $name $value]
+		}
+
+		# Call the scoreboard program to compute
+		# the board table.
+		#
+		set scoretable \
+		    [exec scoretable "{ $parameters }" \
+				     < $finder_file]
+
+		# If the scoreboard table is empty, say
+		# so explicitly.
+		#
+		if { $scoretable == "" } {
+		    set scoretable \
+			"The scoreboard is currently\
+			 EMPTY!  Nothing must have\
+			 happened yet."
+		}
+
+		# Add the scoreboard table to the output
+		# file contents.
+		#
+		set contents "$contents$scoretable\n"
+	    }
+
+	    no_SEND -
+	    no_GRANT_ACCESS -
+	    no_BLANK -
+	    no_BAR -
+	    no_LINE -
+	    no_INPUT -
+	    no_BOARD {
+
+		# If update is `no' most instructions do
+		# nothing.
+		#
+	    }
+
+	    none_SEND -
+	    none_GRANT_ACCESS -
+	    none_BLANK -
+	    none_BAR -
+	    none_LINE -
+	    none_INPUT -
+	    none_BOARD {
+		error "`$instruction' appears before\
+		       OUTPUT instruction"
+	    }
+
+	    default { set_parameter $instruction }
+	}
+    }
+
+    # End of instruction processing loop.  Reenable
+    # interrupts.
+    #
+    make_signals_default
 }
 
 # Process command.
@@ -339,7 +966,7 @@ switch -- $command {
 
 	# Run makescoreboard as a subprocess.
 	#
-        set pid [eval exec makescoreboard -start- \
+        set pid [eval exec makescoreboard -start- 0 \
 	              [lrange $argv 1 end] &]
 
 	# Wait for any output from first run.
@@ -363,9 +990,14 @@ switch -- $command {
 
     -start- {
 
-	# Update scoreboard for the first time.
+	set start_errors [lindex $argv 1]
+
+	# Update scoreboard for the first time if no
+	# errors.
 	#
-	update_scoreboard yes
+	if { $start_errors == 0 } {
+	    update_scoreboard yes
+	}
 
 	# Restore log mode and disable standard output
 	# and error.
@@ -377,35 +1009,46 @@ switch -- $command {
 	#
 	write_file $pid_file [current_pid]
 
-	# Resume a periodic intervals.
+	# Resume a periodic intervals until we need
+	# to reexecute `makescoreboard -start- ...'.
 	#
 	while { "yes" } {
-	    sleep $scoreboard_interval
-	    set c 0
 
-	    # Run up to 4 times ignoring errors.
-	    # Then if there are 4 erroneous runs, try
-	    # a run in which errors stop the program.
-	    #
-	    # We do this because changes to files during
-	    # a run may cause spurious errors.
-	    #
-	    set force no
-	    while { "yes" } {
-	        incr c
-		if { $c < 5 } {
-		    if { ! [catch {
-		              update_scoreboard $force
-			      }] \
-			          } break
-		    sleep 10
-		    set force yes
-		} else {
-		    update_scoreboard $force
+	    if { $start_errors == 0 } {
+		set force no
+		sleep $scoreboard_interval
+		if { [update_required \
+			  $parameter_mtime_list] } {
+		    set start_errors 1
+		    break
 		}
+	    } else {
+		set force yes
 	    }
+
+	    # If too many errors, do not catch error
+	    # but let it create log and exit.
+	    #
+	    if { $start_errors >= 4 } {
+	        update_scoreboard yes
+	    } elseif { [catch { update_scoreboard \
+	                            $force }] } {
+		incr start_errors
+		break
+	    }
+	    set start_errors 0
 	}
-	error "-start- loop failed"
+
+	# Delete Scoreboard_PID file, execute
+	# `makescoreboard -start- $start_errors ...',
+	# and exit.
+	#
+	file delete -force $pid_file
+	eval exec makescoreboard -start- \
+		  $start_errors \
+		  [lrange $argv 2 end] &
+	exit 0
+	
     }
 
     status {
@@ -476,665 +1119,13 @@ switch -- $command {
     }
 
     update {
-	set last_time [clock seconds]
-    }
-
-    -update- {
-    
-	set last_time [lindex $argv 1]
-	set sent_errors [lindex $argv 2]
-
-	# Restore log mode and disable standard output
-	# and error.
-	#
-	set log_mode $saved_log_mode
-	disable_stderr
-
+	update_scoreboard yes
     }
 
     default {
     	error "Bad command: $command"
     }
 
-}
-
-set mtime_list {}
-set future_time ""
-
-# Recompute $finder_file.
-#
-make_signals_ignored
-clear_flag Score_Flag
-file delete -force -- $finder_file
-exec scorefinder -gotten > $finder_file
-make_signals_default
-
-# Given a value that may be an abbreviation defined
-# in the abbreviation_array, return the value it
-# abbreviates, or return the original value if it is not
-# an abbreviation.
-#
-proc unabbreviate { value } {
-
-    global abbreviation_array
-
-    if { [info exists abbreviation_array($value)] } {
-        return $abbreviation_array($value)
-    } elseif {    [regexp {^(.*)([+-][0-9]+)$} $value \
-    		          forget abbrev inc] \
-	       && [info exists \
-	                abbreviation_array($abbrev)] \
-	       && ! [catch {
-	       		set date \
-			    $abbreviation_array($abbrev)
-			set time \
-			    [clock scan $date]
-			   }] } {
-	incr time $inc
-	return [clock format $time]
-    } else {
-        return $value
-    }
-}
-
-# Process parameter setting instruction.
-#
-proc set_parameter { instruction } {
-
-    set name  [lindex $instruction 0]
-    set value [lindex $instruction 1]
-    set value [unabbreviate $value]
-    global scoreboard_$name
-
-    if { [array exists scoreboard_$name] } {
-	array set scoreboard_$name $value
-    } elseif { [info exists scoreboard_$name] } {
-	set scoreboard_$name $value
-    } else {
-	error "$name is not a scoreboard parameter name"
-    }
-
-}
-
-# Save abbreviations.  If possible, replace relative
-# stop and freeze times by normally formatted times
-# so if they appear in LINE's they will look OK.
-#
-set start_time $scoreboard_start_time
-set abbreviation_array(START) $start_time
-
-if { ! [regexp {^(|problem|team)$} $start_time] } {
-    if { [catch { set st [clock scan $start_time] \
-		}] } {
-	error "badly formatted \
-	       scoreboard_start_time: $start_time"
-    }
-} else {
-    set st ""
-}
-
-set stop_time $scoreboard_stop_time
-if {    [regexp {^(|\+)[0-9]+$} $stop_time] \
-     && $st != "" } {
-    set stop_time \
-	[clock format [expr { $st + $stop_time }]]
-}
-set abbreviation_array(STOP) $stop_time
-
-set freeze_time $scoreboard_freeze_time
-if {    [regexp {^(|\+)[0-9]+$} $freeze_time] \
-     && $st != "" } {
-    set freeze_time \
-	[clock format [expr { $st + $freeze_time }]]
-}
-set abbreviation_array(FREEZE) $freeze_time
-
-set abbreviation_array(NAME)   \
-    $scoreboard_name
-set abbreviation_array(TIME)   \
-    [clock format $last_time]
-
-# Ignore signals while processing instructions.
-#
-make_signals_ignored
-
-# Process if statements.
-#
-set instructions {}
-parse_block $scoreboard_instructions instructions \
-	    [info globals scoreboard_*]
-
-# Loop through scoreboard instructions.
-#
-# Update is `yes' if OUTPUT instruction has been
-# processed and current OUTPUT file is to be updat-
-# ed, `no' if OUTPUT instruction has been processed
-# and current OUTPUT file is NOT to be updated, and
-# `none' if no OUTPUT instruction has been proces-
-# sed.
-# 
-set update none
-set pc 0
-set end_pc [llength $instructions]
-#
-while { "yes" } {
-
-    set instruction [lindex $instructions $pc]
-    incr pc
-
-    if { [catch { llength $instruction }] } {
-	error "a scoreboard_instructions'\
-	       instruction is not a TCL list:\
-	       $instruction"
-	
-    }
-    set opcode [lindex $instruction 0]
-
-    # If we are at the end of a sequence of
-    # instructions that begins with an OUTPUT
-    # instruction and ends just before the next
-    # OUTPUT instruction or end of all instructions,
-    # and if OUTPUT file is being updated, write
-    # out file and send it if necessary.
-    #
-    if { ( $pc > $end_pc || $opcode == "OUTPUT" ) \
-	 && $update == "yes" } {
-
-	# Write output file.  If error, delete file and
-	# hpcm_sendmail the judge.
-	#
-	# $out_file is in sent_errors if an error for
-	# $out_file has been hpcm_sendmail'ed to the
-	# judge since the last successful processing of
-	# $out_file.
-	#
-	if { [catch {
-
-		set error_data "\nWriting $out_file\n"
-		set ch [open $out_file w]
-		puts -nonewline $ch $contents
-		close $ch
-		if { $grant_access } {
-		    grant_access $out_file
-		}
-
-		# Send email.
-		#
-		if { $send } {
-		    foreach to $send_addresses {
-			set to [string trim $to]
-		        if { [regexp {^!} $to] } {
-			    set m {^!([^<]*)<([^>]*)>$}
-			    if { ! [regexp $m $to \
-			                   forget \
-					   zzz \
-					   account] } {
-				error "Badly formatted\
-				       address in\
-				       $send_name: $to"
-			    }
-			    set f $judging_directory
-			    set f $f/${zzz}_identity
-			    set error_data \
-				"\nError was during\
-				 ssh_copy_message\
-				 $f $account ...\n"
-			    ssh_copy_message \
-			        $f $account $contents
-			} else {
-			    set error_data \
-				"\nError was during\
-				 send_message\
-				 \"To: $to..\"\n"
-			    send_message \
-			       "To: $to\n\n$contents"
-			}
-		    }
-		}
-		lsub sent_errors $out_file
-	    } error_message] } {
-
-	    # On error, delete output file and rethrow
-	    # the error.  When we are rerun, the output
-	    # file will be recomputed and remailed.
-	    #
-	    if { [file isfile $out_file] } {
-
-		# Its possible if instructions are
-		# miswritten to have out_file name a
-		# directory.
-
-		file delete -force -- $out_file
-	    }
-	    if { ! [lcontain $sent_errors $out_file] } {
-	        set message \
-		    "Subject: makescoreboard error\
-		     outputting $out_file\n"
-		set message "$message\nNOTE:\
-		             the file $out_file has\
-			     been DELETED!\n"
-		set message "$message$error_data"
-		set message \
-		    "$message\n$error_message\n"
-		set message \
-		    "$message\nerrorCode:\n$errorCode\n"
-		set message \
-		    "$message\nerrorInfo:\n$errorInfo\n"
-	        exec hpcm_sendmail << $message
-		ladd sent_errors $out_file
-	    }
-	}
-    }
-
-    if { $pc > $end_pc } break
-
-    # Execute instrution.
-    #
-    switch ${update}_$opcode {
-
-	none_OUTPUT -
-	no_OUTPUT -
-	yes_OUTPUT {
-
-	    # Compute output file.
-	    #
-	    set out_file [lindex $instruction 1]
-	    set out_file \
-	       [file join $judging_directory \
-			  $out_file]
-
-	    # Compute start and stop times and
-	    # update future_time.
-	    #
-	    set out_start [lindex $instruction 2]
-	    set out_start [unabbreviate $out_start]
-	    if { $out_start != "" } {
-		if { [catch {
-			set out_start \
-			    [clock scan $out_start]
-			    }] } {
-		    error "bad start time in\
-			   $instruction"
-		}
-		if { $out_start > $last_time \
-		     && (    $future_time == "" \
-			  ||   $future_time \
-			     > $out_start ) } {
-		    set future_time $out_start
-		}
-	    }
-	    set out_stop [lindex $instruction 3]
-	    set out_stop [unabbreviate $out_stop]
-	    if { $out_stop != "" } {
-		if { [catch {
-			set out_stop \
-			    [clock scan $out_stop]
-			    }] } {
-		    error "bad stop time in\
-			   $instruction"
-		}
-		if { $out_stop > $last_time \
-		     && (    $future_time == "" \
-			  ||   $future_time \
-			     > $out_stop ) } {
-		    set future_time $out_stop
-		}
-	    }
-
-	    # Set out_mtime to the output file mtime
-	    # or "" if no output file exist/
-	    #
-	    if { [file exists $out_file] } {
-		set out_mtime [file mtime $out_file]
-	    } else {
-		set out_mtime ""
-	    }
-
-	    # Compute update == `yes' if OUTPUT file is
-	    # to be updated, and `no' otherwise.  Add
-	    # output file to mtime_list if we are NOT
-	    # before file start time.
-	    #
-	    set update yes
-	    #
-	    # If we are before OUTPUT start time, do
-	    # NOT update.
-	    #
-	    if { $out_start != "" \
-		 && $last_time < $out_start } {
-		set update no
-	    } else {
-		lappend mtime_list [list out $out_file]
-	    }
-	    #
-	    # If output file exists and has an mtime >=
-	    # the OUTPUT stop time, do NOT update.
-	    #
-	    if {    $out_mtime != "" \
-		 && $out_stop != "" \
-		 && $out_mtime >= $out_stop } {
-		set update no
-	    }
-
-	    # Set output variables.
-	    #
-	    set output_found yes
-	    set contents ""
-	    set send no
-	    set grant_access no
-	}
-
-	yes_SEND {
-
-	    # Compute send_addresses and send_name
-	    # for use when output done.
-	    #
-	    set name [lindex $instruction 1]
-	    if { $name == "" } {
-		set name addresses
-	    }
-	    set send_name scoreboard_$name
-	    if { ! [info exists $send_name] } {
-	       set send_addresses ""
-	    } else {
-	       set send_addresses [set $send_name]
-	    }
-
-	    # Set switch to indicate SEND happened.
-	    #
-	    set send yes
-	}
-
-	yes_GRANT_ACCESS {
-	    set grant_access yes
-	}
-
-	yes_BLANK {
-	    set contents "$contents\n"
-	}
-
-	yes_BAR {
-	    set text [lindex $instruction 1]
-	    if { $text == "" } {
-		set contents "$contents$bar\n"
-	    } else {
-		set text [unabbreviate $text]
-		set sw $scoreboard_width
-		set len [string length $text]
-		incr len 2
-		if { $len + 4 > $sw} {
-		    error "scoreboard_width not\
-			   wide enough for\
-			   `$instruction'"
-		}
-		set left \
-		    [expr { ( $sw - $len ) / 2 }]
-		set right \
-		    [expr { $sw - $len - $left }]
-		incr left -1
-		incr right -1
-		set left \
-		    [string range $solid_bar \
-			    0 $left]
-		set right \
-		    [string range $solid_bar \
-			    0 $right]
-		set contents \
-		    "$contents$left $text $right\n"
-	    }
-	}
-
-	yes_LINE {
-
-	    # Make sure `space is long enough'.
-	    #
-	    if { $scoreboard_width > 256 } {
-		error "scoreboard width > 256"
-	    }
-
-	    # Compute left, center, and right
-	    # text.
-	    #
-	    set left   [lindex $instruction 1]
-	    set center [lindex $instruction 2]
-	    set right  [lindex $instruction 3]
-
-	    set left   [unabbreviate $left]
-	    set center [unabbreviate $center]
-	    set right  [unabbreviate $right]
-
-	    # Compute columns of beginning and/or
-	    # end for each of the three texts.
-	    # Columns are numbered 0, 1, ...
-	    #
-	    set left_end [string length $left]
-	    incr left_end -1
-	    set right_begin \
-		[expr { $scoreboard_width - \
-			[string length $right] }]
-	    set center_length \
-		[string length $center]
-	    set center_begin  \
-		[expr { ( $scoreboard_width \
-			  - $center_length + 1 ) \
-			/ 2 }]
-	    set center_end \
-		[expr { $center_begin \
-			+ $center_length - 1 }]
-
-	    # Make sure texts are short enough so
-	    # that their ends are within limits.
-	    #
-	    if { $left_end >= $scoreboard_width } {
-		error "LINE left text too wide:\
-		       $left"
-	    } elseif { $right_begin < 0 } {
-		error "LINE right text too wide:\
-		       $right"
-	    } elseif {    $center_begin < 0 \
-		       || $center_end \
-			  >= $scoreboard_width } {
-		error "LINE center text too wide:\
-		       $center"
-	    }
-
-	    # Compute line.  Start with left text.
-	    #
-	    set line $left
-
-	    set center_done no
-	    set right_done  no
-
-	    # If center is non-empty and has a 2
-	    # space gap between it and any other
-	    # non-empty text, add the center to the
-	    # line.
-	    #
-	    if {    $center != "" \
-		 && ( $left == "" \
-		      || $left_end + 2 \
-			 < $center_begin ) \
-		 && ( $right == "" \
-		      || $center_end + 2 \
-			 < $right_begin ) } {
-		incr left_end 1
-		incr center_begin -1
-		set line \
-		    "$line[string \
-			      range $space \
-			      $left_end \
-			      $center_begin]"
-		set line "$line$center"
-		set center_done yes
-		set left_end $center_end
-	    }
-
-	    # If right text is non-empty and has a 2
-	    # space gap with the part of the line
-	    # to its left, add it to line.
-	    #
-	    if {    $right != ""
-		 && ( $left_end == -1 \
-		      || $left_end + 2 \
-			 < $right_begin ) } {
-		incr left_end 1
-		incr right_begin -1
-		set line \
-		    "$line[string \
-			      range $space \
-			      $left_end \
-			      $right_begin]"
-		set line "$line$right"
-		set right_done yes
-	    }
-
-	    # If center text did not get added to
-	    # first line, put it on a line by it-
-	    # self.
-	    #
-	    if { $center != "" && \
-		 $center_done == "no" } {
-		incr center_begin -1
-		set line \
-		    "$line\n[string \
-				range $space \
-				0 $center_begin]"
-		set line "$line$center"
-	    }
-
-	    # If right text did not get added to
-	    # first line, put it on a line by it-
-	    # self.
-	    #
-	    if { $right != "" \
-		 && $right_done == "no" } {
-		incr right_begin -1
-		set line \
-		    "$line\n[string \
-				range $space \
-				0 $right_begin]"
-		set line "$line$right"
-	    }
-
-	    # Add line(s) to contents of output.
-	    #
-	    set contents "$contents$line\n"
-	}
-
-	yes_INPUT {
-
-	    # Loop through input files until an
-	    # existing one is found.
-	    #
-	    foreach in_file \
-		    [lrange $instruction 1 end] {
-
-		set in_file \
-		    [file join $judging_directory \
-			       $in_file]
-
-		# Add input file to mtime_list and first
-		# existing file to output contents.
-		#
-		if { [file exists $in_file] } {
-
-		    set mtime [file mtime $in_file]
-		    lappend mtime_list \
-			    [list $mtime $in_file]
-
-		    if { [file size $in_file] > 0 \
-				    } {
-			set c [read_entire_file \
-				    $in_file]
-			set contents "$contents$c\n"
-		    }
-
-		    break;
-		} else {
-		    lappend mtime_list \
-			    [list none $in_file]
-		}
-	    }
-	}
-
-	yes_BOARD {
-
-	    # Compute parameters to be passed to
-	    # the scoreboard program.
-	    #
-	    set parameters ""
-	    foreach name $scoreboard_parameters {
-		if { [array exists $name] } {
-		    continue
-		}
-		if { ! [info exists $name] } {
-		    continue
-		}
-		set value [set $name]
-		regexp {^scoreboard_(.*)$} $name \
-		       forget name
-		lappend parameters \
-			[list $name $value]
-	    }
-
-	    # Call the scoreboard program to compute
-	    # the board table.
-	    #
-	    set scoretable \
-		[exec scoretable "{ $parameters }" \
-				 < $finder_file]
-
-	    # If the scoreboard table is empty, say
-	    # so explicitly.
-	    #
-	    if { $scoretable == "" } {
-		set scoretable \
-		    "The scoreboard is currently\
-		     EMPTY!  Nothing must have\
-		     happened yet."
-	    }
-
-	    # Add the scoreboard table to the output
-	    # file contents.
-	    #
-	    set contents "$contents$scoretable\n"
-	}
-
-	no_SEND -
-	no_GRANT_ACCESS -
-	no_BLANK -
-	no_BAR -
-	no_LINE -
-	no_INPUT -
-	no_BOARD {
-
-	    # If update is `no' most instructions do
-	    # nothing.
-	    #
-	}
-
-	none_SEND -
-	none_GRANT_ACCESS -
-	none_BLANK -
-	none_BAR -
-	none_LINE -
-	none_INPUT -
-	none_BOARD {
-	    error "`$instruction' appears before\
-		   OUTPUT instruction"
-	}
-
-	default { set_parameter $instruction }
-    }
-}
-
-# End of instruction processing loop.  Reenable
-# interrupts.
-#
-make_signals_default
-
-if { $command == "-update-" } {
-    puts [list $mtime_list $future_time $sent_errors]
 }
 
 exit 0
