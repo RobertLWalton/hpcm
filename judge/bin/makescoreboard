@@ -4,7 +4,7 @@
 #
 # File:		makescoreboard
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Oct 29 08:33:10 EST 2006
+# Date:		Sun Oct 29 11:07:14 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/10/29 15:48:35 $
+#   $Date: 2006/10/29 16:05:40 $
 #   $RCSfile: makescoreboard,v $
-#   $Revision: 1.78 $
+#   $Revision: 1.79 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -154,15 +154,6 @@ if { $command == "update" } {
 set pid_file \
     $judging_directory/Scoreboard_PID
 
-# Shutdown time, or "" if none.
-#
-if { $scoreboard_shutdown_time != "" } {
-    set shutdown_time \
-        [clock scan $scoreboard_shutdown_time]
-} else {
-    set shutdown_time ""
-}
-
 # List of scoreboard parameter names.  Only used to
 # determine parameters to pass to scoretable.
 #
@@ -200,11 +191,20 @@ set last_time ""
 #
 set future_time ""
 
+# Shutdown time in [clock seconds] format, or "" if none.
+#
+set shutdown_time ""
+
 # List of output files for which error messages have
 # been sent to the judge since they were last
 # successfully output.
 #
 set sent_errors {}
+
+# Parameter_save(V) is save of value of global
+# parameter V, for V a scoreboard_* global.  If V is
+# an array, it is the [array get V] value.  Otherwise
+# it is the ordinary value.
 
 # Process all the arguments, sourcing files as neces-
 # sary.  Add parameter files to parameter_mtime_list.
@@ -233,6 +233,40 @@ foreach arg $parameters {
 	lappend parameter_mtime_list [list $mtime $arg]
 	source_file $arg
     }
+}
+
+# Save parameter values in parameter_save.
+#
+foreach v [info globals scoreboard_*] {
+    if { [array exists $v] } {
+	set parameter_save($v) [array get $v]
+    } elseif { [info exists $v] } {
+	set parameter_save($v) [set $v]
+    }
+}
+
+# Procedure to restore parameter values.
+#
+proc restore_parameters {} {
+    global parameter_save
+    foreach v [info globals scoreboard_*] {
+        global $v
+	if { ! [info exists parameter_save($v)] } {
+	    catch { unset $v }
+	} elseif { [array exists $v] } {
+	    array set $v $parameter_save($v)
+	} elseif { [info exists $v] } {
+	    set $v $parameter_save($v)
+	}
+    }
+}
+
+
+# Set shutdown time if present.
+#
+if { $scoreboard_shutdown_time != "" } {
+    set shutdown_time \
+        [clock scan $scoreboard_shutdown_time]
 }
 
 # Constant equal to 256 spaces.
@@ -374,6 +408,7 @@ proc update_scoreboard { { force no } } {
     }
 
     eval global [info globals scoreboard_*]
+    restore_parameters
 
     set last_time $time
     set future_time ""
