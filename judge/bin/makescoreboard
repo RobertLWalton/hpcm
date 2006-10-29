@@ -4,7 +4,7 @@
 #
 # File:		makescoreboard
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Oct 29 08:16:06 EST 2006
+# Date:		Sun Oct 29 08:33:10 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/10/29 13:20:53 $
+#   $Date: 2006/10/29 14:09:22 $
 #   $RCSfile: makescoreboard,v $
-#   $Revision: 1.76 $
+#   $Revision: 1.77 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -87,8 +87,7 @@ makescoreboard { start | status | stop | update } \\
     scoreboard instructions, it does so just like the
     `update' command.  Then this program resumes at
     intervals determined by the `scoreboard_interval'
-    global variable (at the time `makescoreboard start'
-    is executed).  After every interval, this program
+    global variable.  After every interval, this program
     checks to see if any inputs to the last run have
     been changed, or any outputs have been deleted, or
     if the Score_Flag flag exists, and if yes, this
@@ -97,7 +96,12 @@ makescoreboard { start | status | stop | update } \\
     clude the hpcm_judging.rc file in the judging direc-
     tory, the parameter files listed in the arguments,
     and any INPUT files from the last processing of the
-    scoreboard instructions.
+    scoreboard instructions.  In addition, if the score-
+    board_shutdown_time global variable is not \"\",\
+    	then
+    when this time arrives, the program deletes Score-
+    board_PID, executes the scoreboard_shutdown proce-
+    dure, and exits.
 
     If called with the `stop' command, this program does
     nothing but send kill signals to the process whose
@@ -149,6 +153,15 @@ if { $command == "update" } {
 }
 set pid_file \
     $judging_directory/Scoreboard_PID
+
+# Shutdown time, or "" if none.
+#
+if { $scoreboard_shutdown_time != "" } {
+    set shutdown_time \
+        [clock scan $scoreboard_shutdown_time]
+} else {
+    set shutdown_time ""
+}
 
 # List of scoreboard parameter names.  Only used to
 # determine parameters to pass to scoretable.
@@ -334,11 +347,18 @@ proc set_parameter { instruction } {
 proc update_scoreboard { { force no } } {
 
     global inout_mtime_list last_time future_time \
-           sent_errors judging_directory argv \
+           shutdown_time sent_errors \
+	   judging_directory pid_file argv \
            finder_file errorCode errorInfo \
 	   abbreviation_array bar solid_bar space
 
     set time [clock seconds]
+    if {    $shutdown_time != "" \
+         && $shutdown_time <= $time } {
+        file delete -force $pid_file
+	uplevel #0 scoreboard_shutdown
+	exit 0
+    }
 
     # If we have no reason to rerun scoreboard instruc-
     # tions, return.
