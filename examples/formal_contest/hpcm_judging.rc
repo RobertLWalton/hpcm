@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Oct 21 05:20:44 EDT 2006
+# Date:		Sun Oct 29 09:12:13 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/10/21 09:19:34 $
+#   $Date: 2006/10/29 14:27:55 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.59 $
+#   $Revision: 1.60 $
 
 # Table of Contents
 #
@@ -460,28 +460,35 @@ switch $scoring_type {
     dated { }
     timed+feedback -
     timed+dated {
-        set c [clock scan $stop_time]
-	incr c $conversion_delay
-	if { [clock seconds] < $c } {
+	set f $judging_directory
+	set f $f/post_contest_reconfiguration
+	if { ! [file exists $f] } {
+	    set c [clock scan $stop_time]
+	    incr c $conversion_delay
+	    set c [clock format $c]
+	    set scoreboard_shutdown_time $c
+	    proc scoreboard_shutdown {} {
+		global judging_directory
+		set f $judging_directory
+		set f $f/post_contest_reconfiguration
+		#
+		# Create $f before executing
+		# makecontest so we will not execute
+		# makecontest twice.
+		#
+		if { [create_file $f] } {
+		    write_file $f \
+			[eval exec makecontest \
+			 -printer_map -scoreboard \
+			 -problems -description \
+			 $problems_arguments]
+		}
+	    }
 	    set scoring_subtype timed
 	} else {
 	    regexp {^timed\+(.*)$} $scoring_type \
 	           forget scoring_subtype
 	    set is_post_contest yes
-	    set f $judging_directory
-	    set f $f/post_contest_reconfiguration
-	    # Aux judges cannot write $f or .
-	    if {    [file writable .] \
-	         && [create_file $f] } {
-	        if { ! [file isdirectory contest] } {
-		    error "stop_time is too soon"
-		}
-		exec makescoreboard stop
-	        write_file $f [eval exec makecontest \
-		     -printer_map -scoreboard \
-		     -problems -description \
-		     $problems_arguments]
-	    }
 	}
     }
     default {
