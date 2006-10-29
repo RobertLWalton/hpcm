@@ -4,7 +4,7 @@
 #
 # File:		makescoreboard
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Oct 29 08:12:45 EST 2006
+# Date:		Sun Oct 29 08:16:06 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/10/29 13:13:09 $
+#   $Date: 2006/10/29 13:20:53 $
 #   $RCSfile: makescoreboard,v $
-#   $Revision: 1.75 $
+#   $Revision: 1.76 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -328,8 +328,8 @@ proc set_parameter { instruction } {
 }
 
 
-# Process scoreboard instructions and set inout_mtime_list,
-# last_time, future_time, and sent_errors.
+# Process scoreboard instructions and set inout_mtime_
+# list, last_time, future_time, and sent_errors.
 #
 proc update_scoreboard { { force no } } {
 
@@ -344,7 +344,8 @@ proc update_scoreboard { { force no } } {
     # tions, return.
     #
     if {    $force == "no" \
-         && [update_required $inout_mtime_list] == "no" \
+         &&    [update_required $inout_mtime_list] \
+	    == "no" \
          && ! [test_flag Score_Flag] \
 	 && (    $future_time == "" \
 	      || $time < $future_time ) } {
@@ -449,17 +450,18 @@ proc update_scoreboard { { force no } } {
 	if { ( $pc > $end_pc || $opcode == "OUTPUT" ) \
 	     && $update == "yes" } {
 
-	    # Write output file.  If error, delete file and
-	    # hpcm_sendmail the judge.
+	    # Write output file.  If error, delete file
+	    # and hpcm_sendmail the judge.
 	    #
-	    # $out_file is in sent_errors if an error for
-	    # $out_file has been hpcm_sendmail'ed to the
-	    # judge since the last successful processing of
-	    # $out_file.
+	    # $out_file is in sent_errors if an error
+	    # for $out_file has been hpcm_sendmail'ed to
+	    # the judge since the last successful pro-
+	    # cessing of $out_file.
 	    #
 	    if { [catch {
 
-		    set error_data "\nWriting $out_file\n"
+		    set error_data \
+		        "\nWriting $out_file\n"
 		    set ch [open $out_file w]
 		    puts -nonewline $ch $contents
 		    close $ch
@@ -473,14 +475,17 @@ proc update_scoreboard { { force no } } {
 			foreach to $send_addresses {
 			    set to [string trim $to]
 			    if { [regexp {^!} $to] } {
-				set m {^!([^<]*)<([^>]*)>$}
-				if { ! [regexp $m $to \
-					       forget \
-					       zzz \
-					       account] } {
-				    error "Badly formatted\
+				set m \
+				  {^!([^<]*)<([^>]*)>$}
+				if { ! [regexp \
+				          $m $to \
+					  forget zzz \
+					  account] } {
+				    error "Badly\
+				           formatted\
 					   address in\
-					   $send_name: $to"
+					   $send_name:\
+					   $to"
 				}
 				set f $judging_directory
 				set f $f/${zzz}_identity
@@ -489,23 +494,26 @@ proc update_scoreboard { { force no } } {
 				     ssh_copy_message\
 				     $f $account ...\n"
 				ssh_copy_message \
-				    $f $account $contents
+				    $f $account \
+				    $contents
 			    } else {
 				set error_data \
 				    "\nError was during\
 				     send_message\
 				     \"To: $to..\"\n"
 				send_message \
-				   "To: $to\n\n$contents"
+				   "To:\
+				    $to\n\n$contents"
 			    }
 			}
 		    }
 		    lsub sent_errors $out_file
 		} error_message] } {
 
-		# On error, delete output file and rethrow
-		# the error.  When we are rerun, the output
-		# file will be recomputed and remailed.
+		# On error, delete output file and
+		# rethrow the error.  When we are rerun,
+		# the output file will be recomputed and
+		# remailed.
 		#
 		if { [file isfile $out_file] } {
 
@@ -515,7 +523,8 @@ proc update_scoreboard { { force no } } {
 
 		    file delete -force -- $out_file
 		}
-		if { ! [lcontain $sent_errors $out_file] } {
+		if { ! [lcontain $sent_errors \
+		                 $out_file] } {
 		    set message \
 			"Subject: makescoreboard error\
 			 outputting $out_file\n"
@@ -526,9 +535,13 @@ proc update_scoreboard { { force no } } {
 		    set message \
 			"$message\n$error_message\n"
 		    set message \
-			"$message\nerrorCode:\n$errorCode\n"
+			"$message\nerrorCode:"
 		    set message \
-			"$message\nerrorInfo:\n$errorInfo\n"
+			"$message\n$errorCode\n"
+		    set message \
+			"$message\nerrorInfo:"
+		    set message \
+			"$message\n$errorInfo\n"
 		    exec hpcm_sendmail << $message
 		    ladd sent_errors $out_file
 		}
@@ -599,10 +612,10 @@ proc update_scoreboard { { force no } } {
 		    set out_mtime ""
 		}
 
-		# Compute update == `yes' if OUTPUT file is
-		# to be updated, and `no' otherwise.  Add
-		# output file to inout_mtime_list if we are NOT
-		# before file start time.
+		# Compute update == `yes' if OUTPUT file
+		# is to be updated, and `no' otherwise.
+		# Add output file to inout_mtime_list if
+		# we are NOT before file start time.
 		#
 		set update yes
 		#
@@ -613,11 +626,13 @@ proc update_scoreboard { { force no } } {
 		     && $last_time < $out_start } {
 		    set update no
 		} else {
-		    lappend inout_mtime_list [list out $out_file]
+		    lappend inout_mtime_list \
+		            [list out $out_file]
 		}
 		#
-		# If output file exists and has an mtime >=
-		# the OUTPUT stop time, do NOT update.
+		# If output file exists and has an mtime
+		# >= the OUTPUT stop time, do NOT
+		# update.
 		#
 		if {    $out_mtime != "" \
 		     && $out_stop != "" \
@@ -842,8 +857,9 @@ proc update_scoreboard { { force no } } {
 			[file join $judging_directory \
 				   $in_file]
 
-		    # Add input file to inout_mtime_list and first
-		    # existing file to output contents.
+		    # Add input file to inout_mtime_list
+		    # and first existing file to output
+		    # contents.
 		    #
 		    if { [file exists $in_file] } {
 
