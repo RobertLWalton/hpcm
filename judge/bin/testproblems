@@ -4,7 +4,7 @@
 #
 # File:		testproblems
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Thu May 18 03:56:17 EDT 2006
+# Date:		Mon Nov  6 05:11:47 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -12,10 +12,10 @@
 #
 # RCS Info (may not be true date or author):
 #
-#   $Author: hc3 $
-#   $Date: 2006/05/18 08:16:51 $
+#   $Author: walton $
+#   $Date: 2006/11/06 10:23:44 $
 #   $RCSfile: testproblems,v $
-#   $Revision: 1.18 $
+#   $Revision: 1.19 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -142,6 +142,7 @@ while { 1 } {
 
 set tmp /tmp/testproblems[pid]
 file delete -force -- $tmp
+set diff_files {}
 
 # Arrange to always delete $tmp at end.
 #
@@ -153,7 +154,7 @@ set wd [pwd]
 set fd [open $tmp w]
 
 proc diff { file1 file2 } {
-    global problem fd
+    global problem fd diff_files
     puts "diff $file1 $file2"
     catch {
 	set diffs [exec diff $file1 $file2]
@@ -165,6 +166,8 @@ proc diff { file1 file2 } {
 	}
 	puts $fd $diffs
 	puts $diffs
+	lappend diff_files \
+	        [list $problem $file1 $file2]
     }
 }
 
@@ -202,8 +205,9 @@ foreach x $argv {
 	#
 	set done ""
 	set made ""
-	foreach file [glob $problem.in $problem.jin \
-			   *.in *.jin] {
+	foreach file [lsort [glob $problem.in \
+	                          $problem.jin \
+			          *.in *.jin]] {
 	    set f [file rootname $file]
 	    if { [lcontain $f $done] } continue
 	    lappend done $f
@@ -309,6 +313,21 @@ puts ""
 puts "******************** SUMMARY:"
 exec cat $tmp >@ stdout
 file delete $tmp
+if { [llength $diff_files] > 0 } {
+    puts "******************** \
+          FILES THAT ARE DIFFERENT:"
+    set p ""
+    foreach item $diff_files {
+        set problem [lindex $item 0]
+        set file1 [lindex $item 1]
+        set file2 [lindex $item 2]
+	if { $p != $problem } {
+	    puts "  in $problem:"
+	    set p $problem
+	}
+	puts [format {%38s != %-38s} $file1 $file2]
+    }
+}
 exit 0
 
 } out
