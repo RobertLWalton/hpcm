@@ -6,7 +6,7 @@
 #
 # File:		makecontest
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Sep 29 13:13:56 EDT 2006
+# Date:		Mon Nov  6 10:23:30 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/09/29 17:12:56 $
+#   $Date: 2006/11/06 16:03:09 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.173 $
+#   $Revision: 1.174 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -522,6 +522,7 @@ makecontest option ... index_specification ...
    	problem_source_files
    	problem_solution_files
    	problem_excluded_files
+   	problem_make_files
 	problem_print_files
 
     The values of these variables are TCL lists of
@@ -537,8 +538,16 @@ makecontest option ... index_specification ...
 	    [indent_list 12 $problem_solution_files]
    	problem_excluded_files:
 	    [indent_list 12 $problem_excluded_files]
+   	problem_make_files:
+	    Undefined.
    	problem_print_files:
 	    Undefined.
+
+    The problem_make_files variable, if set, gives
+    instructions for making files in the problem
+    directory.  There are executed as per the descrip-
+    tion of this variable in the `Problem .rc Files'
+    section of hpcm/judge/lib/hpcm_judging.rc.
 
     The description and source file lists are lists of
     description or source file names relative to the
@@ -1431,11 +1440,74 @@ proc read_rc_file { file problem options } {
            problem_solution_files \
 	   problem_description_files \
 	   problem_excluded_files \
+	   problem_make_files \
 	   problem_print_files
     set PROBLEM $problem
     set EXTENSION UNDEFINED
     set OPTIONS $options
     source_file $file
+}
+# Subfunction to execute problem_make_files instruc-
+# tions in the source directory.  Problem is the
+# problem name for messages.
+#
+proc execute_makes { instructions source problem } {
+
+    if { [catch { llength $instructions }] } {
+        error "problem_make_files value for $problem\
+	       is not a TCL list\n:    $instructions"
+    }
+
+    foreach instruction $instructions {
+
+	if { [catch {llength $instruction}] } {
+	    error "make instruction for $problem is not\
+	           a TCL list: $instruction"
+	}
+
+	# If a source file in the instruction does
+	# not exist, ignore instruction.
+	#
+	set sources [lrange $instruction 2 end]
+	set non_existant_input_found 0
+	foreach source $sources {
+	    if { ! [file exists $source/$source] } {
+		set non_existant_input_found 1
+		break
+	    }
+	}
+	if { $non_existant_input_found } continue
+
+	set target [lindex $instruction 0]
+	if { [file exists $source/$target] } {
+
+	    # If target file exists and no source file
+	    # is more recent, skip instruction.
+	    #
+	    set mtime [file mtime $source/$target]
+	    set skip 1
+	    foreach source $sources {
+		if {   [file mtime $source/$source] \
+		     > $mtime } {
+		    set skip 0
+		    break
+		}
+	    }
+	    if { $skip } continue
+	}
+
+	if { [file exists $source/$target] } {
+	    puts "Deleting $source/$target"
+	    file delete -force -- $source/$target
+	}
+	if { [llength $instruction] == 1 } {
+	    set command "make $target"
+	} else {
+	    set command [lindex $instruction 1]
+	}
+	puts "Making $target by executing $command"
+	exec_in_directory $source $command >&@ stdout
+    }
 }
 # Subfunction that returns true if item matches any
 # regexp in a list of regexps.
@@ -1543,6 +1615,7 @@ proc process_index_specification {} {
 	   problem_source_files \
 	   problem_solution_files \
 	   problem_excluded_files \
+	   problem_make_files \
 	   problem_print_files
 
     # Save hpcm_judging.rc defined values of global
@@ -1726,11 +1799,18 @@ proc process_index_specification {} {
 		        $default_solution_files
 		    set problem_excluded_files \
 		        $default_excluded_files
+		    catch { unset problem_make_files }
 		    catch { unset problem_print_files }
 		    set PROBLEM [file tail $source]
 		    read_rc_file \
 		        $source/$PROBLEM.rc \
 			$PROBLEM $options
+		    if { [info exists \
+		               problem_make_files] } {
+			execute_makes \
+			    $problem_make_files \
+			    $source $PROBLEM
+		    }
 		    if { [lcontain $options all] } {
 		        set problem_source_files {.*}
 		        set problem_description_files {}
