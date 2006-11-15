@@ -4,7 +4,7 @@
 #
 # File:		rerun_contest
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Wed Nov 15 03:33:11 EST 2006
+# Date:		Wed Nov 15 05:44:10 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/11/15 09:50:16 $
+#   $Date: 2006/11/15 10:43:52 $
 #   $RCSfile: rerun_contest,v $
-#   $Revision: 1.1 $
+#   $Revision: 1.2 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -98,7 +98,10 @@ rerun_contest [-force|-norun]
         MAIL', makes a subdirectory with the name in
 	`mail' and copies the `Received_Mail' file from
 	the `ORIGINAL_MAIL' submission subdirectory to
-	the `mail' submission subdirectory.
+	the `mail' submission subdirectory.  If a sub-
+	mission subdirectory has no readable Received_
+	Mail file, a note is printed and the subdirec-
+	tory is ignored.
 
     (7) Unless the `-norun' option is given, invokes
         dispatchmail on all the submission subdirector-
@@ -109,9 +112,10 @@ rerun_contest [-force|-norun]
 set j_d $judging_directory
 set o_mail $j_d/ORIGINAL_MAIL
 
+puts "Judging directory is $j_d"
+
 if { ! [file isdirectory $o_mail] } {
-    puts "ORIGINAL_MAIL subdirectory of judging\
-          directory does not exist"
+    puts "ORIGINAL_MAIL does not exist"
     exit 1
 }
 
@@ -136,8 +140,7 @@ while { 1 } {
 #
 if {    ! [catch { file type $j_d/contest } ] \
      && [catch { file type $j_d/ORIGINAL_CONTEST }] } {
-    puts "Renaming $j_d/contest"
-    puts "      to $j_d/ORIGINAL_CONTEST"
+    puts "Renaming contest to ORIGINAL_CONTEST"
     file rename $j_d/contest $j_d/ORIGINAL_CONTEST
 }
 
@@ -157,6 +160,7 @@ while { "yes" } {
 close $in
 
 if { $found == "no" } {
+    puts "Adding RERUN_CONTEST STUFF to hpcm_judging.rc"
     set out [open $j_d/hpcm_judging.rc a]
     puts $out ""
     puts $out "##### BEGIN RERUN_CONTEST STUFF #####"
@@ -188,12 +192,14 @@ foreach source \
          && $type == "link"
 	 && ! [file exists $source] } {
 
+	set name [file tail $source]
+
 	# Broken link found.
 	#
 	if { $p_l == "" } {
 	    # No place to search.
 	    if { $force } break
-	    puts "Broken $source"
+	    puts "Broken solutions/$name"
 	    set butand but
 	    foreach d $p_l_list {
 	        puts "   $butand $d not found"
@@ -202,13 +208,12 @@ foreach source \
 	    exit 1
 	}
 
-	set name [file tail $source]
 	set ok $force
 	foreach d {demos public private}
 	{
 	    set target $p_l/$d/$name
 	    if { [file isdirectory $target] } {
-	        puts "Relinking $source"
+	        puts "Relinking solutions/$name"
 		puts "       to $target"
 		file delete -force -- $source
 		link_file $source $target
@@ -217,7 +222,7 @@ foreach source \
 	    }
 	}
 	if { $ok == "no" } {
-	    puts "Could not relink $source"
+	    puts "Could not relink solutions/$name"
 	    all_ok no
 	}
     }
@@ -225,8 +230,46 @@ foreach source \
 
 if { $all_ok == "no" } { exit 1 }
 
+# Delete mail directory.
+#
+if { [file exists $j_d/mail] } {
+    puts "Deleting mail"
+    file delete -force -- $j_d/mail
+}
 
+# Recreate mail directory and its contents.
+#
+puts "Creating mail/*/Received_mail"
+mkdir $j_d/mail
+set regexp {^.*<<.*>>-submission$}
+set subdirs {}
+foreach subdir \
+        [lsort [glob -nocomplain $o_mail/*]] {
+    set subdir [file tail $subdir]
+    if { ! [regexp $regexp $subdir] } continue
+    set source $o_mail/$subdir/Received_Mail
+    set target $j_d/mail/$subdir/Received_Mail
+    if { ! [file exists $source] } {
+        puts "Does not exist:\
+	      ORIGINAL_MAIL/$subdir/Received_Mail"
+    } elseif { ! [file readable $source] } {
+        puts "Not readable: \
+	      ORIGINAL_MAIL/$subdir/Received_Mail"
+    } elseif { [catch {
+	    mkdir mail/$subdir
+	    copy_file $source $target
+	    lappend subdirs $subdir
+		      } out] } {
+	puts "Error making mail/$subdir/Received_Mail"
+	puts $out
+	exit 1
+    }
+}
 
-
+if { $norun == "no" } {
+    puts "Executing dispatchmail for all submissions"
+    exec dispatchmail >@ stdout 2>@ stderr \
+         << "[join $subdirs "\n"]\n"
+}
 
 exit 0
