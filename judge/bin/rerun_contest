@@ -4,7 +4,7 @@
 #
 # File:		rerun_contest
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Wed Nov 15 08:53:42 EST 2006
+# Date:		Wed Nov 15 09:35:04 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/11/15 14:31:37 $
+#   $Date: 2006/11/15 14:41:14 $
 #   $RCSfile: rerun_contest,v $
-#   $Revision: 1.3 $
+#   $Revision: 1.4 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -120,9 +120,7 @@ rerun_contest \[-force|-norun\]
 #
 set force 0
 set norun 0
-set myargv $argv
-while { 1 } {
-    set arg [lindex $myargv 0]
+foreach arg $argv {
     switch -glob -- $arg {
     -doc* {
 	puts $document
@@ -133,9 +131,8 @@ while { 1 } {
     default {
         puts "ERROR: bad option: $arg"
 	exit 1
+	}
     }
-    }
-    set myargv [lrange $myargv 1 end]
 }
 
 # Abbreviations:
@@ -162,19 +159,19 @@ if {    ! [catch { file type $j_d/contest } ] \
 # Add to hpcm_judging.rc if appropriate.
 #
 set in [open $j_d/hpcm_judging.rc r]
-set found no
+set found 0
 set regexp {(BEGIN|END)[ \t]+RERUN_CONTEST[ \t]+STUFF}
-while { "yes" } {
+while { 1 } {
     set line [gets $in]
     if { [eof $in] } break;
     if { [regexp $regexp $line] } {
-        set found yes
+        set found 1
 	break
     }
 }
 close $in
 
-if { $found == "no" } {
+if { ! $found } {
     puts "Adding RERUN_CONTEST STUFF to hpcm_judging.rc"
     set out [open $j_d/hpcm_judging.rc a]
     puts $out ""
@@ -200,7 +197,7 @@ foreach d $p_l_list {
     }
 }
 
-set all_ok yes
+set all_ok 1
 foreach target \
         [lsort [glob -nocomplain $j_d/solutions/*]] {
     if {    ! [catch { set type [file type $target] }] \
@@ -224,27 +221,26 @@ foreach target \
 	}
 
 	set ok $force
-	foreach d {demos public private}
-	{
+	foreach d {demos public private} {
 	    set source $p_l/$d/$name
 	    if { [file isdirectory $source] } {
 	        puts "Relinking solutions/$name"
 		puts "       to $source"
 		file delete -force -- $target
 		link_file $source $target
-		set ok yes
+		set ok 1
 		break
 	    }
 	}
-	if { $ok == "no" } {
+	if { ! $ok } {
 	    puts "ERROR: Could not re-link\
 	          solutions/$name"
-	    all_ok no
+	    all_ok 0
 	}
     }
 }
 
-if { $all_ok == "no" } { exit 1 }
+if { ! $all_ok } { exit 1 }
 
 # Delete mail directory.
 #
@@ -285,7 +281,7 @@ foreach subdir \
     }
 }
 
-if { $norun == "no" } {
+if { ! $norun } {
     puts "Executing dispatchmail for all submissions"
     exec dispatchmail >@ stdout 2>@ stderr \
          << "[join $subdirs "\n"]\n"
