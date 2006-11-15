@@ -1,0 +1,98 @@
+#! /bin/sh
+#
+# Find differences in contest re-run from original
+# contest.
+#
+# File:		diff_contest
+# Author:	Bob Walton <walton@deas.harvard.edu>
+# Date:		Wed Nov 15 09:49:12 EST 2006
+#
+# The authors have placed this program in the public
+# domain; they make no warranty and accept no liability
+# for this program.
+#
+# RCS Info (may not be true date or author):
+#
+#   $Author: walton $
+#   $Date: 2006/11/15 15:04:19 $
+#   $RCSfile: rerun_diff,v $
+#   $Revision: 1.1 $
+#
+# The next line starts tcl \
+exec tcl "$0" "$@"
+
+# Include common code and parameters:
+#
+set lib_directory "[file dirname $argv0]/../lib"
+source $lib_directory/judging_common.tcl
+catch {
+
+set document "
+diff_contest
+
+    Given subdirectories named `ORIGINAL_MAIL' and
+    `mail' in the judging directory, list all the
+    submission directories in `ORIGINAL_MAIL' that have
+    non-matching Auto_Score files in `mail'.  For each
+    non-matching case output the differing Auto_Score
+    files.  Non-existing Auto_Score files are taken to
+    have the value `does not exist' for the purposed of
+    comparison and output."
+
+if { [llength $argv] > 0 } {
+    puts $document
+    exit 1
+}
+
+# Abbreviations:
+#
+set j_d [truename $judging_directory]
+set o_mail $j_d/ORIGINAL_MAIL
+
+puts "Judging directory is:"
+puts "    $j_d"
+
+if { ! [file isdirectory $o_mail] } {
+    puts "ERROR: ORIGINAL_MAIL does not exist"
+    exit 1
+}
+
+set directories 0
+set differences 0
+
+set regexp {^.*<<.*>>-submission$}
+foreach subdir \
+        [lsort [glob -nocomplain $o_mail/*]] {
+    set subdir [file tail $subdir]
+    if { ! [regexp $regexp $subdir] } continue
+
+    incr directories
+    set source $o_mail/$subdir/Auto_Score
+    set target $j_d/mail/$subdir/Auto_Score
+    if { ! [file readable $source] } {
+        set source "does not exist"
+    } else {
+        set source [read_entire_file $source]
+    }
+    if { ! [file readable $target] } {
+        set target "does not exist"
+    } else {
+        set target [read_entire_file $target]
+    }
+    if { $source != $target } {
+	puts $subdir
+	puts "    ORIGINAL_MAIL Auto_Score: $source"
+	puts "             mail Auto_Score: $target"
+	incr differences
+    }
+}
+
+puts "    $directories submission directories;\
+          $differences have changed"
+
+exit 0
+
+# Include common error catching code:
+#
+} caught_output
+caught_error
