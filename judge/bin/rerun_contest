@@ -1,0 +1,232 @@
+#! /bin/sh
+#
+# Re-run the autojudge on contest data.
+#
+# File:		rerun_contest
+# Author:	Bob Walton <walton@deas.harvard.edu>
+# Date:		Wed Nov 15 03:33:11 EST 2006
+#
+# The authors have placed this program in the public
+# domain; they make no warranty and accept no liability
+# for this program.
+#
+# RCS Info (may not be true date or author):
+#
+#   $Author: walton $
+#   $Date: 2006/11/15 09:50:16 $
+#   $RCSfile: rerun_contest,v $
+#   $Revision: 1.1 $
+#
+# The next line starts tcl \
+exec tcl "$0" "$@"
+
+set document "
+rerun_contest [-force|-norun]
+
+    Given a subdirectory named `ORIGINAL_MAIL' in the
+    judging directory, this program re-creates the
+    `mail' subdirectory and re-runs the autojudge on all
+    its submissions.
+
+    To use this program, make a copy of the judging di-
+    rectory and its subdirectories (using `cp -r' or
+    `tar cf, tar xf') and working in the copy, rename
+    the `mail' subdirectory to `ORIGINAL_MAIL' and then
+    run this program as many time as you like.  The
+    requirement that you produce the `ORIGINAL_MAIL'
+    directory by hand is a safety measure intended to
+    prevent this program from being run on a live con-
+    test.
+
+    This program specifically does the following in
+    its judging directory (which is the copy of the
+    original):
+
+    (1) Moves any `contest' link or subdirectory to
+        `ORIGINAL_CONTEST' provided the latter does
+	not exist.  This is a safety measure intended
+	to prevent contact with any original contest
+	directory.
+
+    (2) Adds stuff to the end of `hpcm_judging.rc', if
+        the stuff is not already there, to suppress
+	authentication checks and suppress mailing
+	replies back to the contestant.
+
+	Note that if you want to update old stuff pre-
+	viously placed in this file by rerun_contest,
+	you must delete the old stuff by hand and
+	rerun this program.
+
+	The stuff added is marked by lines:
+
+	    ##### BEGIN RERUN_CONTEST STUFF #####
+	and
+	    ##### END RERUN_CONTEST STUFF #####
+
+	You can edit this stuff, or make your own stuff
+	from scratch surrounded by the above lines.
+
+    (3) Repairs any broken links in the `solutions' sub-
+        directory.  If this fails for some link, this
+	program stops unless given the `-force' option.
+
+	To repair a link named P, this program selects
+	the first of the following directories that
+	exist:
+		~/hpcm/problem_library
+		$hpcm_directory/problem_library
+		
+	In the selected directory this program searches
+	the following in order:
+
+		demos/P
+		public/P
+		private/P
+
+	and uses the first of these that is a directory.
+
+    (4) Deletes any existing `mail' subdirectory of the
+        judging directory and then remakes an empty
+	version.
+
+    (5) Gives a-x permission to the judging directory
+        and the new `mail' subdirectory so JAVA will
+	work.
+
+    (6) For each submission subdirectory in `ORIGINAL-
+        MAIL', makes a subdirectory with the name in
+	`mail' and copies the `Received_Mail' file from
+	the `ORIGINAL_MAIL' submission subdirectory to
+	the `mail' submission subdirectory.
+
+    (7) Unless the `-norun' option is given, invokes
+        dispatchmail on all the submission subdirector-
+	ies of `mail'."
+
+// Abbreviations:
+//
+set j_d $judging_directory
+set o_mail $j_d/ORIGINAL_MAIL
+
+if { ! [file isdirectory $o_mail] } {
+    puts "ORIGINAL_MAIL subdirectory of judging\
+          directory does not exist"
+    exit 1
+}
+
+# Process options.
+#
+set force 0
+set norun 0
+while { 1 } {
+    switch -glob -- [lindex $argv 0] {
+    -doc* {
+	puts $document
+	exit 1
+    }
+    -force { set force 1 }
+    -norun { set norun 1 }
+    default break
+    }
+    set argv [lrange $argv 1 end]
+}
+
+# Move contest to ORIGINAL_CONTEST if appropriate.
+#
+if {    ! [catch { file type $j_d/contest } ] \
+     && [catch { file type $j_d/ORIGINAL_CONTEST }] } {
+    puts "Renaming $j_d/contest"
+    puts "      to $j_d/ORIGINAL_CONTEST"
+    file rename $j_d/contest $j_d/ORIGINAL_CONTEST
+}
+
+# Add to hpcm_judging.rc if appropriate.
+#
+set in [open $j_d/hpcm_judging.rc r]
+set found no
+set regexp {(BEGIN|END)[ \t]+RERUN_CONTEST[ \t]+STUFF}
+while { "yes" } {
+    set line [gets $in]
+    if { [eof $in] } break;
+    if { [regexp $regexp $line] } {
+        set found yes
+	break
+    }
+}
+close $in
+
+if { $found == "no" } {
+    set out [open $j_d/hpcm_judging.rc a]
+    puts $out ""
+    puts $out "##### BEGIN RERUN_CONTEST STUFF #####"
+    puts $out ""
+    puts $out "set use_authentication no"
+    puts $out "proc send_mail { message_file } { }"
+    puts $out "proc send_message { message } { }"
+    puts $out ""
+    puts $out "##### END RERUN_CONTEST STUFF #####"
+    close $out
+}
+
+# Repair solutions links.
+#
+set p_l_list [list $env(HOME)/hpcm/problem_library \
+                   $hpcm_directory/problem_library]
+set p_l ""
+foreach d $p_l_list {
+    if { [file isdirectory $d] } {
+	set p_l [truename $d]
+	break
+    }
+}
+
+set all_ok yes
+foreach source \
+        [lsort [glob -nocomplain $j_d/solutions/*]] {
+    if {    ! [catch { set type [file type $source] }] \
+         && $type == "link"
+	 && ! [file exists $source] } {
+
+	# Broken link found.
+	#
+	if { $p_l == "" } {
+	    # No place to search.
+	    if { $force } break
+	    puts "Broken $source"
+	    set butand but
+	    foreach d $p_l_list {
+	        puts "   $butand $d not found"
+		set butand and
+	    }
+	    exit 1
+	}
+
+	set name [file tail $source]
+	set ok $force
+	foreach d {demos public private}
+	{
+	    set target $p_l/$d/$name
+	    if { [file isdirectory $target] } {
+	        puts "Relinking $source"
+		puts "       to $target"
+		file delete -force -- $source
+		link_file $source $target
+		set ok yes
+		break
+	    }
+	}
+	if { $ok == "no" } {
+	    puts "Could not relink $source"
+	    all_ok no
+	}
+    }
+}
+
+if { $all_ok == "no" } { exit 1 }
+
+
+
+
+
+exit 0
