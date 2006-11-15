@@ -4,7 +4,7 @@
 #
 # File:		rerun_contest
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Wed Nov 15 05:44:10 EST 2006
+# Date:		Wed Nov 15 08:53:42 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,26 +13,34 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/11/15 10:43:52 $
+#   $Date: 2006/11/15 14:31:37 $
 #   $RCSfile: rerun_contest,v $
-#   $Revision: 1.2 $
+#   $Revision: 1.3 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
 
+# Include common code and parameters:
+#
+set lib_directory "[file dirname $argv0]/../lib"
+source $lib_directory/judging_common.tcl
+catch {
+
 set document "
-rerun_contest [-force|-norun]
+rerun_contest \[-force|-norun\]
 
     Given a subdirectory named `ORIGINAL_MAIL' in the
-    judging directory, this program re-creates the
-    `mail' subdirectory and re-runs the autojudge on all
-    its submissions.
+    judging directory that is a copy of the contest
+    `mail' subdirectory, this program creates a brand
+    new `mail' subdirectory and contains only `Received_
+    Mail' submission files, and re-runs the autojudge
+    on all these submissions.
 
     To use this program, make a copy of the judging di-
     rectory and its subdirectories (using `cp -r' or
-    `tar cf, tar xf') and working in the copy, rename
+    `tar cf, tar xf') and, working in the copy, rename
     the `mail' subdirectory to `ORIGINAL_MAIL' and then
-    run this program as many time as you like.  The
+    run this program as many times as you like.  The
     requirement that you produce the `ORIGINAL_MAIL'
     directory by hand is a safety measure intended to
     prevent this program from being run on a live con-
@@ -45,7 +53,7 @@ rerun_contest [-force|-norun]
     (1) Moves any `contest' link or subdirectory to
         `ORIGINAL_CONTEST' provided the latter does
 	not exist.  This is a safety measure intended
-	to prevent contact with any original contest
+	to prevent contact with any original `contest'
 	directory.
 
     (2) Adds stuff to the end of `hpcm_judging.rc', if
@@ -57,7 +65,7 @@ rerun_contest [-force|-norun]
 	viously placed in this file by rerun_contest,
 	you must delete the old stuff by hand and
 	rerun this program.
-
+
 	The stuff added is marked by lines:
 
 	    ##### BEGIN RERUN_CONTEST STUFF #####
@@ -69,16 +77,17 @@ rerun_contest [-force|-norun]
 
     (3) Repairs any broken links in the `solutions' sub-
         directory.  If this fails for some link, this
-	program stops unless given the `-force' option.
+	program stops unless it is given the `-force'
+	option.
 
 	To repair a link named P, this program selects
 	the first of the following directories that
 	exist:
 		~/hpcm/problem_library
-		$hpcm_directory/problem_library
+		\$hpcm_directory/problem_library
 		
 	In the selected directory this program searches
-	the following in order:
+	for the following in order:
 
 		demos/P
 		public/P
@@ -93,47 +102,53 @@ rerun_contest [-force|-norun]
     (5) Gives a-x permission to the judging directory
         and the new `mail' subdirectory so JAVA will
 	work.
-
-    (6) For each submission subdirectory in `ORIGINAL-
-        MAIL', makes a subdirectory with the name in
-	`mail' and copies the `Received_Mail' file from
-	the `ORIGINAL_MAIL' submission subdirectory to
-	the `mail' submission subdirectory.  If a sub-
-	mission subdirectory has no readable Received_
-	Mail file, a note is printed and the subdirec-
-	tory is ignored.
+
+    (6) For each submission subdirectory S in `ORIGINAL_
+        MAIL', makes a subdirectory named S in `mail'
+	and copies the `Received_Mail' file from the
+	`ORIGINAL_MAIL/S' submission subdirectory to
+	the `mail/S' subdirectory.  If an `ORIGINAL_
+	MAIL' submission subdirectory has no readable
+	Received_Mail file, a note is printed and the
+	subdirectory is skipped (ignored).
 
     (7) Unless the `-norun' option is given, invokes
         dispatchmail on all the submission subdirector-
 	ies of `mail'."
 
-// Abbreviations:
-//
-set j_d $judging_directory
-set o_mail $j_d/ORIGINAL_MAIL
-
-puts "Judging directory is $j_d"
-
-if { ! [file isdirectory $o_mail] } {
-    puts "ORIGINAL_MAIL does not exist"
-    exit 1
-}
-
 # Process options.
 #
 set force 0
 set norun 0
+set myargv $argv
 while { 1 } {
-    switch -glob -- [lindex $argv 0] {
+    set arg [lindex $myargv 0]
+    switch -glob -- $arg {
     -doc* {
 	puts $document
 	exit 1
     }
     -force { set force 1 }
     -norun { set norun 1 }
-    default break
+    default {
+        puts "ERROR: bad option: $arg"
+	exit 1
     }
-    set argv [lrange $argv 1 end]
+    }
+    set myargv [lrange $myargv 1 end]
+}
+
+# Abbreviations:
+#
+set j_d [truename $judging_directory]
+set o_mail $j_d/ORIGINAL_MAIL
+
+puts "Judging directory is:"
+puts "    $j_d"
+
+if { ! [file isdirectory $o_mail] } {
+    puts "ERROR: ORIGINAL_MAIL does not exist"
+    exit 1
 }
 
 # Move contest to ORIGINAL_CONTEST if appropriate.
@@ -186,20 +201,20 @@ foreach d $p_l_list {
 }
 
 set all_ok yes
-foreach source \
+foreach target \
         [lsort [glob -nocomplain $j_d/solutions/*]] {
-    if {    ! [catch { set type [file type $source] }] \
+    if {    ! [catch { set type [file type $target] }] \
          && $type == "link"
-	 && ! [file exists $source] } {
+	 && ! [file exists $target] } {
 
-	set name [file tail $source]
+	set name [file tail $target]
 
 	# Broken link found.
 	#
 	if { $p_l == "" } {
 	    # No place to search.
 	    if { $force } break
-	    puts "Broken solutions/$name"
+	    puts "ERROR: Broken solutions/$name"
 	    set butand but
 	    foreach d $p_l_list {
 	        puts "   $butand $d not found"
@@ -211,18 +226,19 @@ foreach source \
 	set ok $force
 	foreach d {demos public private}
 	{
-	    set target $p_l/$d/$name
-	    if { [file isdirectory $target] } {
+	    set source $p_l/$d/$name
+	    if { [file isdirectory $source] } {
 	        puts "Relinking solutions/$name"
-		puts "       to $target"
-		file delete -force -- $source
+		puts "       to $source"
+		file delete -force -- $target
 		link_file $source $target
 		set ok yes
 		break
 	    }
 	}
 	if { $ok == "no" } {
-	    puts "Could not relink solutions/$name"
+	    puts "ERROR: Could not re-link\
+	          solutions/$name"
 	    all_ok no
 	}
     }
@@ -241,6 +257,8 @@ if { [file exists $j_d/mail] } {
 #
 puts "Creating mail/*/Received_mail"
 mkdir $j_d/mail
+grant_access $j_d
+grant_access $j_d/mail
 set regexp {^.*<<.*>>-submission$}
 set subdirs {}
 foreach subdir \
@@ -260,7 +278,8 @@ foreach subdir \
 	    copy_file $source $target
 	    lappend subdirs $subdir
 		      } out] } {
-	puts "Error making mail/$subdir/Received_Mail"
+	puts "ERROR: Cannot make\
+	      mail/$subdir/Received_Mail"
 	puts $out
 	exit 1
     }
@@ -273,3 +292,8 @@ if { $norun == "no" } {
 }
 
 exit 0
+
+# Include common error catching code:
+#
+} caught_output
+caught_error
