@@ -5,7 +5,7 @@
 #
 # File:		diff_contest
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Wed Nov 15 09:49:12 EST 2006
+# Date:		Thu Nov 16 14:16:08 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/11/15 15:04:19 $
+#   $Date: 2006/11/16 19:57:15 $
 #   $RCSfile: rerun_diff,v $
-#   $Revision: 1.1 $
+#   $Revision: 1.2 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -28,18 +28,21 @@ source $lib_directory/judging_common.tcl
 catch {
 
 set document "
-diff_contest
+diff_contest \[original_dir\]
 
-    Given subdirectories named `ORIGINAL_MAIL' and
-    `mail' in the judging directory, list all the
-    submission directories in `ORIGINAL_MAIL' that have
-    non-matching Auto_Score files in `mail'.  For each
-    non-matching case output the differing Auto_Score
-    files.  Non-existing Auto_Score files are taken to
-    have the value `does not exist' for the purposed of
-    comparison and output."
+    Given directories named original_dir (default is
+    \$judging_directory/ORIGINAL_MAIL') and \$judging_
+    directory/mail', list all the submission directories
+    in the original mail directory that have non-match-
+    ing Auto_Score files in `mail'.  For each non-match-
+    ing case output the differing Auto_Score files and
+    the Subject line of the Received_Mail file.  Non-
+    existing Auto_Score files are taken to have the
+    value `does not exist' for the purposed of compari-
+    son and output."
 
-if { [llength $argv] > 0 } {
+if {    [llength $argv] > 1 \
+     || [regexp {^-doc} [lindex $argv 0]] } {
     puts $document
     exit 1
 }
@@ -47,13 +50,33 @@ if { [llength $argv] > 0 } {
 # Abbreviations:
 #
 set j_d [truename $judging_directory]
-set o_mail $j_d/ORIGINAL_MAIL
+
+# Argument Processing.
+#
+if { [llength $argv] == 1 } {
+    set o_dir [lindex $argv 0]
+    set o_name [file tail $o_dir]
+    if { $o_name == "mail" } {
+        set o_name [file tail [file dirname $o_dir]]
+    }
+    set len [string length $o_name]
+    if { $len < 4 } {
+        set o_name [format {%4s} $o_name]
+	set m_name mail
+    } else {
+        set m_name [format {%*s} $len mail]
+    }
+} else {
+    set o_dir $j_d/ORIGINAL_MAIL
+    set o_name "ORIGINAL_MAIL"
+    set m_name "         mail"
+}
 
 puts "Judging directory is:"
 puts "    $j_d"
 
-if { ! [file isdirectory $o_mail] } {
-    puts "ERROR: ORIGINAL_MAIL does not exist"
+if { ! [file isdirectory $o_dir] } {
+    puts "ERROR: $o_dir does not exist"
     exit 1
 }
 
@@ -62,12 +85,12 @@ set differences 0
 
 set regexp {^.*<<.*>>-submission$}
 foreach subdir \
-        [lsort [glob -nocomplain $o_mail/*]] {
+        [lsort [glob -nocomplain $o_dir/*]] {
     set subdir [file tail $subdir]
     if { ! [regexp $regexp $subdir] } continue
 
     incr directories
-    set source $o_mail/$subdir/Auto_Score
+    set source $o_dir/$subdir/Auto_Score
     set target $j_d/mail/$subdir/Auto_Score
     if { ! [file readable $source] } {
         set source "does not exist"
@@ -80,9 +103,27 @@ foreach subdir \
         set target [read_entire_file $target]
     }
     if { $source != $target } {
+        set received $o_dir/$subdir/Received_Mail
+	if { ! [file readable $received] } {
+	    set subject "$received does not exist"
+	} else {
+	    set subject "No Subject field"
+	    set in [open $received r]
+	    while { 1 } {
+	        set line [gets $in]
+		if { [eof $in] } break
+		if { [regexp -nocase \
+		             {^Subject:} $line] } {
+		    set subject $line
+		    break
+		}
+	    }
+	    close $in
+	}
 	puts $subdir
-	puts "    ORIGINAL_MAIL Auto_Score: $source"
-	puts "             mail Auto_Score: $target"
+	puts "    $subject"
+	puts "    $o_name Auto_Score: $source"
+	puts "    $m_name Auto_Score: $target"
 	incr differences
     }
 }
