@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Oct 12 10:30:17 EDT 2006
+# Date:		Fri Nov 17 03:32:59 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/10/12 14:30:46 $
+#   $Date: 2006/11/17 08:36:26 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.54 $
+#   $Revision: 1.55 $
 
 # See STATUS file for description of versions.
 #
@@ -162,22 +162,26 @@ NO_SUCH_FILE:
 # The following must be done to make sure things are
 # ready to run when there are auxiliary judges.
 #
+# Note: -perm +g+r (or +g+x) must be put AFTER -prune
+# clauses as it will prevent them from being executed
+# and thus pruning.
+#
 aux auxiliary:	submakes
 	@echo Setting Group Permissions
 	find ~ -type l -or \
-	       -perm +g+r -or \
 	       -name secure -not -path ~/hpcm/secure \
 	             -prune -or \
 	       -name .ssh -prune -or \
 	       -name .Xauthority -or \
 	       -path ~/judging_'*'_identity -or \
+	       -perm +g+r -or \
 	       -perm +u+r -print -exec chmod g+r {} \;
 	find ~ -type l -or \
-	       -perm +g+x -or \
 	       -name secure -not -path ~/hpcm/secure \
 	             -prune -or \
 	       -name .ssh -prune -or \
 	       -name .Xauthority -or \
+	       -perm +g+x -or \
 	       -perm +u+x -print -exec chmod g+x {} \;
 
 # The following must be done to make sure things
