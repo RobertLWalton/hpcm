@@ -2,7 +2,7 @@
 #
 # File:		scoring_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat May 13 15:18:21 EDT 2006
+# Date:		Sat Dec  9 05:23:29 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -10,10 +10,10 @@
 #
 # RCS Info (may not be true date or author):
 #
-#   $Author: hc3 $
-#   $Date: 2006/05/13 19:18:28 $
+#   $Author: walton $
+#   $Date: 2006/12/09 10:24:47 $
 #   $RCSfile: scoring_common.tcl,v $
-#   $Revision: 1.66 $
+#   $Revision: 1.67 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -476,7 +476,11 @@ proc compute_score_file { outfile testfile scorefile \
 #
 #	end_marker
 #
-# to the marker associated with eof-eof.
+# to the marker associated with eof-eof, and sets
+#
+#	largest_marker
+#
+# to the largest marker of any difference type.
 #
 # Returns score, which is:
 #
@@ -513,6 +517,41 @@ proc compute_score_file { outfile testfile scorefile \
 #
 #    Completely Correct
 #
+# Return -1, 0, 1 according to whether old < new,
+# old == new, or old > new, where old and new are
+# markers each of which is a list of 4 integers.
+# Also the marker "" is accepted as the largest
+# possible marker.
+#
+proc compare_markers { new old } {
+    if { $new == "" } {
+        if { $old == "" } {
+	    return 0
+	} else {
+	    return 1
+	}
+    } elseif { $old == "" } {
+	return -1
+    } elseif { [lindex $new 0] > [lindex $old 0] } {
+	return 1
+    } elseif { [lindex $new 0] < [lindex $old 0] } {
+	return -1
+    } elseif { [lindex $new 1] > [lindex $old 1] } {
+	return 1
+    } elseif { [lindex $new 1] < [lindex $old 1] } {
+	return -1
+    } elseif { [lindex $new 2] > [lindex $old 2] } {
+	return 1
+    } elseif { [lindex $new 2] < [lindex $old 2] } {
+	return -1
+    } elseif { [lindex $new 3] > [lindex $old 3] } {
+	return 1
+    } elseif { [lindex $new 3] < [lindex $old 3] } {
+	return -1
+    } else {
+        return 0
+    }
+}
 proc compute_score { } {
 
     global instruction_array score_array \
@@ -523,7 +562,8 @@ proc compute_score { } {
     	   incorrect_output_marker \
     	   incomplete_output_marker \
     	   formatting_error_marker \
-	   end_marker
+	   end_marker \
+	   largest_marker
 
     # Note end_types is not global.
 
@@ -535,6 +575,7 @@ proc compute_score { } {
     set incomplete_output_marker ""
     set formatting_error_marker ""
     set end_marker ""
+    set largest_marker ""
 
     set waf \
 	[info exists \
@@ -634,28 +675,14 @@ proc compute_score { } {
 	lappend ${kind}_types $type
 	set old [set ${kind}_marker]
 	set new $score_marker_array($type)
-	if { $new == "" } {
-	    continue
-	} elseif { $old == "" } {
-	    # Drop through
-	} elseif { [lindex $new 0] > [lindex $old 0] } {
-	    continue
-	} elseif { [lindex $new 0] < [lindex $old 0] } {
-	    # Drop through
-	} elseif { [lindex $new 1] > [lindex $old 1] } {
-	    continue
-	} elseif { [lindex $new 1] < [lindex $old 1] } {
-	    # Drop through
-	} elseif { [lindex $new 2] > [lindex $old 2] } {
-	    continue
-	} elseif { [lindex $new 2] < [lindex $old 2] } {
-	    # Drop through
-	} elseif { [lindex $new 3] > [lindex $old 3] } {
-	    continue
-	} elseif { [lindex $new 3] < [lindex $old 3] } {
-	    # Drop through
-	} else continue
-	set ${kind}_marker $new
+	if { [compare_markers $new $old] < 0 } {
+	    set ${kind}_marker $new
+	}
+	set old $largest_marker
+	if {    $old == "" \
+	     || [compare_markers $new $old] > 0 } {
+	    set largest_marker $new
+	}
     }
 
     if { $incorrect_output_types != "" } {
