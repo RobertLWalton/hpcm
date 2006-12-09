@@ -2,7 +2,7 @@
 #
 # File:		scoring_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Dec  9 05:23:29 EST 2006
+# Date:		Sat Dec  9 06:36:38 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/12/09 10:24:47 $
+#   $Date: 2006/12/09 11:42:40 $
 #   $RCSfile: scoring_common.tcl,v $
-#   $Revision: 1.67 $
+#   $Revision: 1.68 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -468,9 +468,9 @@ proc compute_score_file { outfile testfile scorefile \
 # to the smallest markers associated with any of the
 # difference types listed in the associated _types
 # variables.  Here smallest is 4-tuple comparison,
-# and the markers are lists `OGN OCN TGN TCN'.  The
-# missing marker value "" is treated as being larger
-# than any other marker value.
+# and the markers are lists `OGN OCN TGN TCN'.  If
+# there are no markers listed for one of these vari-
+# ables, the value of the variable is "".
 #
 # Also sets
 #
@@ -520,19 +520,9 @@ proc compute_score_file { outfile testfile scorefile \
 # Return -1, 0, 1 according to whether old < new,
 # old == new, or old > new, where old and new are
 # markers each of which is a list of 4 integers.
-# Also the marker "" is accepted as the largest
-# possible marker.
 #
 proc compare_markers { new old } {
-    if { $new == "" } {
-        if { $old == "" } {
-	    return 0
-	} else {
-	    return 1
-	}
-    } elseif { $old == "" } {
-	return -1
-    } elseif { [lindex $new 0] > [lindex $old 0] } {
+    if { [lindex $new 0] > [lindex $old 0] } {
 	return 1
     } elseif { [lindex $new 0] < [lindex $old 0] } {
 	return -1
@@ -673,11 +663,15 @@ proc compute_score { } {
 	}
 
 	lappend ${kind}_types $type
-	set old [set ${kind}_marker]
 	set new $score_marker_array($type)
-	if { [compare_markers $new $old] < 0 } {
+	if { $new == "" } continue
+
+	set old [set ${kind}_marker]
+	if {    $old == "" \
+	     || [compare_markers $new $old] < 0 } {
 	    set ${kind}_marker $new
 	}
+
 	set old $largest_marker
 	if {    $old == "" \
 	     || [compare_markers $new $old] > 0 } {
@@ -1156,7 +1150,8 @@ proc execute_response_commands \
 		    regsub -all -- {-PROPOSED-SCORE-} \
 		           $string $proposed_score \
 			   string
-		    regsub -all -- {-SUBMIT-QUALIFIER-} \
+		    regsub -all -- \
+		           {-SUBMIT-QUALIFIER-} \
 		           $string $submit_qualifier \
 			   string
 		    lappend new_command $string
