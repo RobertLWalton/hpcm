@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Dec 10 15:38:38 EST 2006
+# Date:		Sun Dec 10 16:01:46 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/12/10 20:39:08 $
+#   $Date: 2006/12/10 21:09:39 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.139 $
+#   $Revision: 1.140 $
 #
 
 # Table of Contents
@@ -1895,27 +1895,29 @@ proc clear_flag { flagfilename } {
 # Make Functions
 # ---- ---------
 
-# Function to execute problem_make_files instructions in
-# the s_d directory.  Problem is the problem name for
-# messages.  Return_first is true if and only instead of
-# making anything, the name of the first file in s_d
-# that needs to be made is returned, or "" is returned
-# if no file needs to be made.
+# Function to execute problem_make_files type instruc-
+# tions in the s_d directory.  `name' is the name of the
+# instructions: e.g. `problem_make_file value for
+# PROBLEM' or `automatically generated make instruc-
+# tions'.  It is used only in messages.  Return_first is
+# true if and only instead of making anything, the name
+# of the first file in s_d that needs to be made is
+# returned, or "" is returned if no file needs to be
+# made.
 #
 proc execute_makes \
-	{ instructions s_d problem \
+	{ instructions s_d name \
 	  { return_first 0 } } {
 
     if { [catch { llength $instructions }] } {
-        error "problem_make_files value for $problem\
-	       is not a TCL list\n:    $instructions"
+        error "$name is not a TCL\
+	       list\n:    $instructions"
     }
 
     foreach instruction $instructions {
 
 	if { [catch {llength $instruction}] } {
-	    error "problem_make_files instruction for\
-	           $problem is not a TCL\
+	    error "instruction in $name is not a TCL\
 		   list:\n    $instruction"
 	}
 
