@@ -5,7 +5,7 @@
 #
 # File:		autojudge
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Dec  9 19:53:56 EST 2006
+# Date:		Sun Dec 10 03:33:52 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/12/10 00:54:24 $
+#   $Date: 2006/12/10 08:34:29 $
 #   $RCSfile: autojudge,v $
-#   $Revision: 1.131 $
+#   $Revision: 1.132 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -1272,8 +1272,11 @@ foreach item $score_fixes {
 	    # Marker is {OG OC TG TC}
 	    #
             # For incorrect_output and incomplete_output
-            # chose the smaller of {OG GC} and {TG TC}.
-            # For incomplete_output chose the larger.
+            # choose the smaller of {OG GC} and {TG TC}.
+            # For incomplete_output choose the larger.
+	    # However, as a special case, if {OG OC} ==
+	    # {0 0}, choose {TG TC} (which should be
+	    # {0 1} or {1 1}).
             #
 	    set choose_first [expr { \
                   [lindex $m 0] \
@@ -1286,6 +1289,10 @@ foreach item $score_fixes {
 	    if { $x == "incomplete_output" } {
 	        set choose_first \
 		    [expr { ! $choose_first }]
+	    }
+	    if {    [lindex $m 0] == 0 \
+	         && [lindex $m 1] == 0 } {
+	        set choose_first 0
 	    }
 	    if { $choose_first } {
 		set m [lrange $m 0 1]
