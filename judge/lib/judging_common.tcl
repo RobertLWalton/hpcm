@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Dec 10 16:01:46 EST 2006
+# Date:		Sun Dec 10 16:32:26 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/12/10 21:09:39 $
+#   $Date: 2006/12/10 21:32:56 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.140 $
+#   $Revision: 1.141 $
 #
 
 # Table of Contents
@@ -1970,6 +1970,67 @@ proc execute_makes \
 	exec_in_directory $s_d $command >&@ stdout
     }
     return ""
+}
+
+
+# Like execute_makes but locks the s_d directory if nec-
+# essary.  The s_d_is_locked_name argument names a vari-
+# able which is 1 if s_d is locked, 0 if not, and set to
+# 1 by this function if it locks the directory.  Makes
+# are always executed by this function if necessary
+# (there is no return_first option).  To avoid unneces-
+# sary locking, this function tests whether there are
+# any files to be made before locking s_d.
+#
+proc execute_locked_makes \
+	{ instructions s_d name s_d_is_locked_name } {
+
+    upvar $s_d_is_locked_name s_d_is_locked
+
+    if { ! $s_d_is_locked } {
+
+        set first_target \
+	    [execute_makes $instructions $s_d $name 1]
+
+	# If there is nothing to do, exit procedure.
+	#
+	if { $first_target == "" } return
+
+	# Try repeatedly to lock s_d, but if this fails
+	# after a while, just give up and call error.
+	#
+	set seconds 0
+	set limit 120
+	set sleep 2
+	set step 5
+	# puts's are at step * sleep second intervals
+	#
+	while { "yes" } {
+	    if { [dispatch_lock $s_d] } {
+	    	break
+	    } elseif { $seconds >= $limit } {
+		error "CANNOT LOCK $s_d:\
+		       giving up on making\
+		       $first_target"
+	    } elseif { $seconds == 0 } {
+	    	# do nothing
+	    } elseif { $seconds == $step * $sleep } {
+	        puts "Waiting for $s_d lock"
+	    } elseif { $seconds \
+		       % ( $step * $sleep ) == 0 } {
+	        puts "....will wait\
+		      [expr $limit - $seconds]\
+		      more seconds"
+	    }
+	    sleep $sleep
+	    incr seconds $sleep
+	}
+	puts "Locked $s_d"
+	set s_d_is_locked 1
+    }
+
+    execute_makes $instructions $s_d $name
+
 }
 
 # Logical Expression Compilation
