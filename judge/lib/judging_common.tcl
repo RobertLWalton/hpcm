@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Oct 20 12:34:21 EDT 2006
+# Date:		Sun Dec 10 14:38:07 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/10/20 16:47:50 $
+#   $Date: 2006/12/10 19:52:37 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.137 $
+#   $Revision: 1.138 $
 #
 
 # Table of Contents
@@ -29,6 +29,7 @@
 #	Reply Functions
 #	File Functions
 #	Flag Functions
+#	Make Functions
 #	Logical Expression Compilation
 #	Parse Functions
 #	Inline Code
@@ -1889,6 +1890,82 @@ proc clear_flag { flagfilename } {
     global judging_directory
     file delete -force \
          $judging_directory/flag/$flagfilename
+}
+
+# Make Functions
+# ---- ---------
+
+# Function to execute problem_make_files instructions in
+# the s_d directory.  Problem is the problem name for
+# messages.  Return_first is true if and only instead of
+# making anything, the name of the first file in s_d
+# that needs to be made is returned, or "" is returned
+# if no file needs to be made.
+#
+proc execute_makes \
+	{ instructions s_d problem \
+	  { return_first 0 } } {
+
+    if { [catch { llength $instructions }] } {
+        error "problem_make_files value for $problem\
+	       is not a TCL list\n:    $instructions"
+    }
+
+    foreach instruction $instructions {
+
+	if { [catch {llength $instruction}] } {
+	    error "problem_make_files instruction for\
+	           $problem is not a TCL\
+		   list:\n    $instruction"
+	}
+
+	# If a source file in the instruction does
+	# not exist, ignore instruction.
+	#
+	set sources [lrange $instruction 2 end]
+	set non_existant_input_found 0
+	foreach source $sources {
+	    if { ! [file exists $s_d/$source] } {
+		set non_existant_input_found 1
+		break
+	    }
+	}
+	if { $non_existant_input_found } continue
+
+	set target [lindex $instruction 0]
+	if { [file exists $s_d/$target] } {
+
+	    # If target file exists and no source file
+	    # is more recent, skip instruction.
+	    #
+	    set mtime [file mtime $s_d/$target]
+	    set skip 1
+	    foreach source $sources {
+		if {   [file mtime $s_d/$source] \
+		     > $mtime } {
+		    set skip 0
+		    break
+		}
+	    }
+	    if { $skip } continue
+	}
+
+	if { $return_first } return $target
+
+	if { [file exists $s_d/$target] } {
+	    puts "Deleting $s_d/$target"
+	    file delete -force -- $s_d/$target
+	}
+	if { [llength $instruction] == 1 } {
+	    set command "make $target"
+	} else {
+	    set command [lindex $instruction 1]
+	}
+	puts "In $s_d:"
+	puts "    making $target by executing: $command"
+	exec_in_directory $s_d $command >&@ stdout
+    }
+    return ""
 }
 
 # Logical Expression Compilation
