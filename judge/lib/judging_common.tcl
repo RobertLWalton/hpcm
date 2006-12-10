@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Dec 10 14:38:07 EST 2006
+# Date:		Sun Dec 10 15:38:38 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/12/10 19:52:37 $
+#   $Date: 2006/12/10 20:39:08 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.138 $
+#   $Revision: 1.139 $
 #
 
 # Table of Contents
@@ -1950,7 +1950,9 @@ proc execute_makes \
 	    if { $skip } continue
 	}
 
-	if { $return_first } return $target
+	if { $return_first } {
+	    return $target
+	}
 
 	if { [file exists $s_d/$target] } {
 	    puts "Deleting $s_d/$target"
