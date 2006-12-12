@@ -4,7 +4,7 @@
 #
 # File:		testproblems
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Mon Nov  6 09:13:53 EST 2006
+# Date:		Tue Dec 12 07:27:39 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,26 +13,26 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/11/06 16:00:25 $
+#   $Date: 2006/12/12 14:30:46 $
 #   $RCSfile: testproblems,v $
-#   $Revision: 1.20 $
+#   $Revision: 1.21 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
 
 set document "
-testproblems \[-keep | -filter\] directory ...
+testproblems \[-keep\] directory ...
 testproblems
 testproblems -
 
     The command with no arguments is equivalent to
 
-    	testproblems -keep -filter .
+    	testproblems .
 
     The command with just the argument `-' is equivalent
     to
 
-    	testproblems -filter .
+    	testproblems -keep .
 
     This program runs:
 
@@ -46,16 +46,25 @@ testproblems -
     all the saved output at the end of this program's
     execution.  Errors made during the above run are
     also played back.
+    
+    Before doing the above, this program uses any
+    problem_make_files value in any problem .rc file in
+    a directory to make or remake files in the direc-
+    tory, and after finishing all other operations in
+    the directory, this program removes these files.  If
+    these files exist when this program is run, they are
+    deleted and remade.
 
-    The -keep option suppresses the final `make clean'.
-
+    The -keep option suppresses the final `make clean'
+    and the removal of files.
+
     If a directory contains .jin files, then the pro-
     gram runs
 
     		make clean
 
     once followed by
-
+
     		jfilter -v f.jin f.in >& f.in#
 		ln -s f.in problem.in
 		make
@@ -80,22 +89,15 @@ testproblems -
 
     is executed and f.in and f.in+ are diff'ed, instead
     of making f.in from f.jin.
-
-    If the -filter option is present, then after making
-    an f.out file and diff'ing it with f.test,
-
-    		make Scoring_Filter
-
-    is executed if Scoring_Filter does not exist.  If
-    this has errors, they are ignored.  If after this
-    Scoring_Filter does not exist,
+
+    If after the above, Scoring_Filter does not exist,
 
 	jfilter -v f.jin f.out f.jout >& f.jout#
 	rm f.jout f.jout#
 
     is execute if f.jin exists.  But if Scoring_Filter
     does exist then
-
+
 	Scoring_Filter f.in < f.out > f.fout
 	jfilter -v f.jin f.fout f.jfout >& f.jfout#
 	rm f.fout f.jfout f.jfout#
@@ -120,20 +122,18 @@ testproblems -
 # Process options.
 #
 if { [llength $argv] == 0 } {
-    set argv {-keep -filter .}
+    set argv {.}
 } elseif {    [llength $argv] == 1 \
            && [lindex $argv 0] == "-" } {
-    set argv {-filter .}
+    set argv {-keep .}
 }
 set keep 0
-set filter 0
 while { 1 } {
     switch -glob -- [lindex $argv 0] {
     -doc* {
 	puts $document
 	exit 1
     }
-    -filter { set filter 1 }
     -keep { set keep 1 }
     default break
     }
@@ -171,6 +171,18 @@ proc diff { file1 file2 } {
     }
 }
 
+# Read .rc file to possibly set any problem_make_files
+# global variable.
+#
+proc read_rc_file { file problem } {
+    global PROBLEM EXTENSION OPTIONS \
+	   problem_make_files
+    set PROBLEM $problem
+    set EXTENSION UNDEFINED
+    set OPTIONS UNDEFINED
+    source_file $file
+}
+
 foreach x $argv {
 
     if { ! [file isdirectory $x] } {
@@ -193,18 +205,67 @@ foreach x $argv {
 
     cd $x
     if { [catch {
+
 	set problem [file tail [pwd]]
+
+	# Do initial clean.
+	#
 	set type none
 	catch { set type [file type $problem.in] }
 	if { $type == "link" } {
 	    file delete $problem.in
 	}
 	exec make clean >@ stdout 2>@ stderr
+
+	# List of files to be deleted at end.
+	#
+	set made ""
+
+	# Find any .rc file and execute any problem_
+	# make_files instructions.
+	#
+	if { [file exists $problem.rc] } {
+
+	    catch { unset problem_make_files }
+	    read_rc_file $problem.rc $problem
+	    if { [info exists problem_make_files] } {
+	        set make_files $problem_make_files
+	    } else {
+	        set make_files {}
+	    }
+
+	    if { [catch { llength $make_files }] } {
+	        error "$problem.rc problem_make_files\
+		       value is not a TCL\
+		       list:\n    $make_files"
+	    }
+	    foreach instruction $make_files {
+		if { [catch { llength $instruction }] \
+		   } {
+		    error "$problem.rc problem_make_files\
+			   instruction is not a TCL\
+			   list:\n    $instruction"
+		}
+		set file [lindex $instruction 0]
+		if { $file == "" } {
+		    error "$problem.rc problem_make_files\
+			   instruction has empty file\
+			   name:\n    $instruction"
+		}
+		lappend made $file
+	    }
+
+	    puts "(re)making $made"
+	    eval file delete -force -- $made
+	    execute_makes $make_files . \
+	                  "problem_make_files value in\
+			   $problem.rc"
+	}
+
 	# Make sure that "problem" is the first
 	# value of f if it is a value of f.
 	#
 	set done ""
-	set made ""
 	foreach file [lsort [glob $problem.in \
 	                          $problem.jin \
 			          *.in *.jin]] {
@@ -248,57 +309,49 @@ foreach x $argv {
 		file delete $problem.in
 	    }
 	    diff $f.out $f.test
-	    if { $filter } {
-	        if { ! [file exists Scoring_Filter] } {
-		    catch { exec make Scoring_Filter \
-		                 >@ stdout }
-		    if { [file exists Scoring_Filter] \
-		       } {
-		        lappend made Scoring_Filter
-		    }
+
+	    if { [file exists Scoring_Filter] } {
+		puts "Scoring_Filter $f.in\
+		      < $f.out > $f.fout"
+		exec Scoring_Filter $f.in \
+		     < $f.out > $f.fout
+		lappend made $f.fout
+		if { [file exists $f.ftest] } {
+		    diff $f.fout $f.ftest
 		}
-		if { [file exists Scoring_Filter] } {
-		    puts "Scoring_Filter $f.in\
-		          < $f.out > $f.fout"
-		    exec Scoring_Filter $f.in \
-		         < $f.out > $f.fout
-		    lappend made $f.fout
-		    if { [file exists $f.ftest] } {
-		        diff $f.fout $f.ftest
+		if { [file exists $f.jin] } {
+		    file delete -force -- $f.jfout#
+		    puts "jfilter -v\
+			  $f.jin $f.fout $f.jfout\
+			  >& $f.jfout#"
+		    exec jfilter -v \
+			 $f.jin $f.fout $f.jfout \
+			 >& $f.jfout#
+		    lappend made $f.jfout $f.jfout#
+		    if { [file exists $f.jftest] } {
+			diff $f.jfout $f.jftest
 		    }
-		    if { [file exists $f.jin] } {
-			file delete -force -- $f.jfout#
-		        puts "jfilter -v\
-			      $f.jin $f.fout $f.jfout\
-			      >& $f.jfout#"
-		        exec jfilter -v \
-			     $f.jin $f.fout $f.jfout \
-			     >& $f.jfout#
-			lappend made $f.jfout $f.jfout#
-			if { [file exists $f.jftest] } {
-			    diff $f.jfout $f.jftest
-			}
-			diff $f.in# $f.jfout#
-		    }
-		} elseif { [file exists $f.jin] } {
-		    file delete -force -- $f.jout#
-		    puts "jfilter -v $f.jin $f.out\
-		                  $f.jout >& $f.jout#"
-		    exec jfilter -v $f.jin $f.out \
-		         $f.jout >& $f.jout#
-		    lappend made $f.jout $f.jout#
-		    if { [file exists $f.jtest] } {
-			diff $f.jout $f.jtest
-		    }
-		    diff $f.in# $f.jout#
+		    diff $f.in# $f.jfout#
 		}
+	    } elseif { [file exists $f.jin] } {
+		file delete -force -- $f.jout#
+		puts "jfilter -v $f.jin $f.out\
+			      $f.jout >& $f.jout#"
+		exec jfilter -v $f.jin $f.out \
+		     $f.jout >& $f.jout#
+		lappend made $f.jout $f.jout#
+		if { [file exists $f.jtest] } {
+		    diff $f.jout $f.jtest
+		}
+		diff $f.in# $f.jout#
 	    }
+
 	    if { ! $keep } {
 	        exec make clean >@ stdout 2>@ stderr
 	    }
 	}
 	if { ! $keep && [llength $made] > 0 } {
-	    puts "rm $made"
+	    puts "rm -f $made"
 	    eval file delete -force -- $made
 	}
     } out] } {
