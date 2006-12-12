@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Dec 10 16:32:26 EST 2006
+# Date:		Tue Dec 12 09:48:39 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/12/10 21:32:56 $
+#   $Date: 2006/12/12 15:00:02 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.141 $
+#   $Revision: 1.142 $
 #
 
 # Table of Contents
@@ -66,6 +66,23 @@
 #
 # if you do not want any errors written to log files.
 # See `log_error' below.
+#
+# Put the command
+#
+#	set judging_directory "SOME-DIRECTORY"
+#
+# in front of
+#
+#	source $lib_directory/judging_common.tcl
+#
+# if the current program is to pretend that SOME-
+# DIRECTORY is the judging directory and that there is
+# a link from SOME-DIRECTORY/hpcm_judging.rc to
+#
+#	$lib_directory/hpcm_judging.rc
+#
+# Usually SOME-DIRECTORY is '.', and log_mode is set
+# to `none'.
 #
 # The catch and `caught_error' function catches all
 # program errors and causes them to be announced on the
@@ -382,6 +399,12 @@ proc log_error { error_output } {
 	puts stderr "errorInfo follows:"
 	puts stderr "--------------------"
 	puts stderr $errorInfo
+	puts stderr "--------------------"
+	puts stderr $error_output
+	puts stderr "--------------------"
+	puts stderr "ABOVE ERROR during $argv0 $argv"
+	puts stderr "------------------------------"
+	return
     }
 
     # Write error to standard error output.
@@ -391,8 +414,6 @@ proc log_error { error_output } {
     puts stderr "--------------------"
     puts stderr $error_output
     puts stderr "------------------------------"
-
-    if { $log_mode == "none" } return
 
     # Compute $log_dir, the logging directory to be
     # used.  Make it if necessary.  Be sure it is
@@ -2348,36 +2369,42 @@ proc parse_block_eval_if \
 # ------ ----
 
 
-# Locate the directory containing the judging para-
-# meters file.  This should be unique.  If unique, the
-# name is stored in the `judging_directory' variable.
-#
-set judging_directory ""
-foreach __d__ ". .. ../.. ../../.. ../../../.." {
-    if { [file exists \
-	       $__d__/hpcm_judging.rc] } {
-	lappend judging_directory $__d__
-    }
-}
-
-# If directory containing judging parameters file
-# is unique, source the file.  Otherwise call error.
-# Before sourcing file, run a security check: insist
-# that file not be readable by `others', but only by
-# group and owner.
-#
-if { [llength $judging_directory] == 1 } {
-    source_file \
-        $judging_directory/hpcm_judging.rc
-} elseif { [llength $judging_directory] == 0 } {
-    error "hpcm_judging.rc not found"
+if { [info exists judging_directory] } {
+    source_file $lib_directory/hpcm_judging.rc
 } else {
-    set __m__ "Too many hpcm_judging.rc files:"
-    foreach __d__ $judging_directory {
-        set __m__ "$__m__\n\
-	          \     $__d__/hpcm_judging.rc"
+
+    # Locate the directory containing the judging para-
+    # meters file.  This should be unique.  If unique,
+    # the name is stored in the `judging_directory'
+    # variable.
+    #
+    set judging_directory ""
+    foreach __d__ ". .. ../.. ../../.. ../../../.." {
+	if { [file exists \
+		   $__d__/hpcm_judging.rc] } {
+	    lappend judging_directory $__d__
+	}
     }
-    error $__m__
+
+    # If directory containing judging parameters file
+    # is unique, source the file.  Otherwise call error.
+    # Before sourcing file, run a security check: insist
+    # that file not be readable by `others', but only by
+    # group and owner.
+    #
+    if { [llength $judging_directory] == 1 } {
+	source_file \
+	    $judging_directory/hpcm_judging.rc
+    } elseif { [llength $judging_directory] == 0 } {
+	error "hpcm_judging.rc not found"
+    } else {
+	set __m__ "Too many hpcm_judging.rc files:"
+	foreach __d__ $judging_directory {
+	    set __m__ "$__m__\n\
+		      \     $__d__/hpcm_judging.rc"
+	}
+	error $__m__
+    }
 }
 
 # Set signals to cause errors.

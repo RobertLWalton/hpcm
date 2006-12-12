@@ -4,7 +4,7 @@
 #
 # File:		testproblems
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Tue Dec 12 07:27:39 EST 2006
+# Date:		Tue Dec 12 09:48:58 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,12 +13,18 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/12/12 14:30:46 $
+#   $Date: 2006/12/12 14:58:44 $
 #   $RCSfile: testproblems,v $
-#   $Revision: 1.21 $
+#   $Revision: 1.22 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
+
+set lib_directory "[file dirname $argv0]/../lib"
+set judging_directory .
+source $lib_directory/judging_common.tcl
+set log_mode none
+catch {
 
 set document "
 testproblems \[-keep\] directory ...
@@ -385,5 +391,7 @@ exit 0
 
 } out
 file delete $tmp
-puts $out
-exit 1
+error $out $errorInfo $errorCode
+
+} caught_output
+caught_error
