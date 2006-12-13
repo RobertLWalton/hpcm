@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Oct 29 08:34:11 EST 2006
+# Date:		Wed Dec 13 06:50:24 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/10/29 13:35:53 $
+#   $Date: 2006/12/13 13:19:12 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.218 $
+#   $Revision: 1.219 $
 
 # Table of Contents:
 #
@@ -177,6 +177,69 @@ set makecontest_arguments "
 # with `=' for name replacements, and `:' for option
 # replacements.  For more details, see the documentation
 # of makecontest (run `makecontest -doc').
+
+
+# The contest_ssh_commands global variable lists SSH
+# commands installed into the contest/secure directory
+# with wrappers in contest directory.  The variable
+# value is a list of items, where each item is a list
+# with the format:
+#
+#	{ NAME ACCOUNT COMMAND }
+#
+# From this makecontest constructs files such that when
+# the contestant executes `NAME' as a command, the
+# system maps this to the execution of COMMAND in the
+# ACCOUNT.  An example COMMAND is "lpr" for printing.
+#
+# Specifically, makecontest makes the executable file
+# contest/secure/NAME with contents:
+#
+#	ssh -x ACCOUNT -i CCC/secure/NAME_identity
+#
+# where CCC is the true name (pwd name) of the contest
+# directory.  Makecontest makes RSA key files
+#
+#	contest/secure/NAME_identity
+#	contest/secure/NAME_identity.pub
+#
+# where the private key (NAME_identity) is NOT password
+# protected.  Makecontest makes the file
+#
+#	contest/secure/NAME_authorized_keys
+#
+# with contents
+#
+#	command="COMMAND" PUBKEY
+#
+# where PUBKEY is a copy of the contents of the NAME_
+# identity.pub file, the public key.  Lastly, make-
+# contest makes a wrapper file contest/NAME that is a
+# copy of the hpcm/secure/src/hpcm_wrapper binary.  This
+# file is given a+x,u+s permissions and when executed
+# changes the real UID to that of the judge and executes
+# contest/secure/NAME.  The files makecontest make in
+# the contest/secure directory are denied any but user
+# permissions.
+#
+# Pre-existing files will not be altered by makecontest.
+# In particular, contest/secure/NAME may be edited after
+# it has been initially made.
+#
+set contest_ssh_commands {}
+
+# The judging_ssh_commands global variable is just like
+# the contest_ssh_commands global variable, except it
+# uses the `secure' subdirectory of the judging direc-
+# tory in place of contest/secure, and it makes no wrap-
+# pers.  An example COMMAND is:
+#
+#	"head -1000 >public_html/SSS;\
+#	 chmod 644 public_html/SSS"
+#
+# for copying a scoreboard into a web page named SSS.
+#
+set judging_ssh_commands {}
 
 
 # Problem .rc Files
