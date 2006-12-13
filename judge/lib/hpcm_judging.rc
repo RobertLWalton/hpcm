@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Dec 13 06:50:24 EST 2006
+# Date:		Wed Dec 13 08:44:04 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/12/13 13:19:12 $
+#   $Date: 2006/12/13 13:47:32 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.219 $
+#   $Revision: 1.220 $
 
 # Table of Contents:
 #
@@ -2333,6 +2333,16 @@ proc archive_directory { dirname } {
     file delete -force $dirname.tar
     exec sh -c "cd $dirname;\
                 tar cf $dirname.tar --exclude .. * .?*"
+}
+
+# Give a file r, w, x, or s permissions for its user.
+# s and x permission together make a file executable
+# set-user-id.
+#
+proc grant_user_access { filename permissions } {
+    if { $permissions != "" } {
+	chmod "u+$permissions" $filename
+    }
 }
 
 # Function to change the permissions of a file or direc-
