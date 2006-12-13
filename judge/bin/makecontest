@@ -6,7 +6,7 @@
 #
 # File:		makecontest
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Dec 10 16:10:46 EST 2006
+# Date:		Wed Dec 13 08:20:40 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/12/10 21:11:37 $
+#   $Date: 2006/12/13 15:03:40 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.176 $
+#   $Revision: 1.177 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -57,14 +57,17 @@ makecontest option ... index_specification ...
 		-help2, -this_contest, -solutions,
 		-mail, -print_files, -solution_files
 		-secure, -procmailrc, -who_where,
-		-trashable.
+		-trashable, -contest_ssh_commands,
+		-judging_ssh_commands.
     -email	Equals all options needed to have email
     		contestant accounts; specifically, the
 		following: -info, -solutions, -mail,
 		-this_contest, -procmailrc, -print_
-		files, -solution_files.
-    -formal     Same as local plus -problems and -demos.
-    -informal   Same as local plus -startcontest and
+		files, -solution_files, -judging_ssh_
+		commands.
+    -formal     Same as -local plus -problems and
+    		-demos.
+    -informal   Same as -local plus -startcontest and
     		-info.
 
     -info	Make ./info, ./info/help/index,
@@ -119,10 +122,27 @@ makecontest option ... index_specification ...
     -trashall   Make ./contest/trashable with all
     		accounts
 
-    -printer    Make ./contest/printer and
-    		     ./contest/printer_jobs
-    -printer_map    Make ./contest/printer_map and
-    		         ./contest/printer_jobs
+    -contest_ssh_commands  From elements of the contest_
+    		ssh_commands global variable name files:
+    		./contest/NAME
+		./contest/secure/NAME
+		./contest/secure/NAME_identity
+		./contest/secure/NAME_identity.pub
+		./contest/secure/NAME_authorized_keys
+    -judging_ssh_commands  From elements of the judging_
+    		ssh_commands global variable name files:
+		./secure/NAME
+		./secure/NAME_identity
+		./secure/NAME_identity.pub
+		./secure/NAME_authorized_keys
+
+    -printer    Using the optional `printer' global
+    	        variable make ./contest/printer, and
+    		also make ./contest/printer_jobs
+    -printer_map  Using the optional `printer_map'
+                global variable make ./contest/printer_
+		map, and also make ./contest/printer_
+		jobs
 
     -javahelp	Make ./contest/javahelp
     -stlhelp	Make ./contest/stlhelp
@@ -807,6 +827,16 @@ makecontest option ... index_specification ...
     empty, a TODO is written on how to set up the
     accounts.
 
+    The -contest_ssh_commands option makes files from
+    the list elements of the contest_ssh_commands
+    global variable.  See that variable in hpcm/lib/
+    hpcm_judging.rc for details.
+
+    The -judging_ssh_commands option makes files from
+    the list elements of the judging_ssh_commands
+    global variable.  See that variable in hpcm/lib/
+    hpcm_judging.rc for details.
+
     The -printer program option makes the ./contest/
     printer file if that file does not exist.  This file
     is the name of the printer, which is the value of
@@ -943,6 +973,8 @@ set procmailrc_option		no
 set who_where_option		no
 set trashable_option		no
 set trashall_option		no
+set contest_ssh_commands_option	no
+set judging_ssh_commands_option	no
 set printer_option		no
 set printer_map_option		no
 set javahelp_option		no
@@ -1045,6 +1077,14 @@ while { $argi < $argc } {
         -who_where	{ set who_where_option 	yes }
         -trashable	{ set trashable_option 	yes }
         -trashall	{ set trashall_option 	yes }
+        -contest_ssh_commands \
+			{ set \
+			  contest_ssh_commands_option \
+			  yes }
+        -judging_ssh_commands \
+			{ set \
+			  judging_ssh_commands_option \
+			  yes }
         -printer	{ set printer_option 	yes }
         -printer_map	{ set printer_map_option \
 						yes }
@@ -1171,6 +1211,7 @@ if {    $contest_option \
      || $who_where_option \
      || $trashable_option \
      || $trashall_option \
+     || $contest_ssh_commands_option \
      || $printer_option \
      || $printer_map_option \
      || $javahelp_option \
@@ -2970,6 +3011,96 @@ if { $trashable_option || $trashall_option } {
 		     "" \
 		     "to setup new accounts."
 	    }
+	}
+    }
+}
+
+# Process contest_ssh_commands and judging_ssh_commands.
+#
+foreach case { contest judging } {
+{
+    # Skip if no -CASE_ssh_commands option.
+    #
+    if { ! [set ${case}_ssh_commands_option] } continue
+
+    if { $case == "contest" } { set dir ./contest }
+    else { set dir . }
+
+    set secure [truename $dir/secure]
+    set wrapper $hpcm_directory/secure/src/hpcm_wrapper
+
+    foreach item [set ${case}_ssh_commands] {
+        set name    [lindex $item 0]
+        set account [lindex $item 1]
+        set command [lindex $item 2]
+
+	if { ! [file exists $secure/$name] } {
+
+	    # We must unset ssh agent socket if we are
+	    # to get -i option to work right.
+	    #
+	    write_file \
+	        $secure/$name \
+		"#!/bin/sh\n\
+		 unset SSH_AUTH_SOCK;\n\
+		 ssh -x -i $secure/${name}_identity\
+		     $account"
+	    grant_user_access $secure/$name x
+	    deny_group_access $secure/$name
+	    puts "Made $dir/secure/$name"
+	}
+
+	if { ! [file exists \
+	             $secure/${name}_identity.pub] \
+	     && \
+	     ! [file exists
+	             $secure/${name}_authorized_keys] \
+	     && \
+	       [file exists
+	             $secure/${name}_identity] \
+	   } {
+	    file delete -force -- \
+	         $secure/${name}_identity
+	}
+
+	if { ! [file exists $secure/${name}_identity] \
+	   } {
+	    file delete -force -- \
+	         $secure/${name}_identity.pub \
+	         $secure/${name}_authorized_key
+	    ssh_keygen $secure/${name}_identity
+	    deny_group_access $secure/{name}_identity
+	    deny_group_access \
+	        $secure/{name}_identity.pub
+	    puts "Made $dir/secure/${name}_identity"
+	    puts "Made $dir/secure/${name}_identity.pub"
+	}
+
+	if { ! [file exists \
+	             $secure/${name}_authorized_keys] \
+	   } {
+	    write_file \
+	        $secure/${name}_authorized_keys \
+		"command=\"$command\"\
+		 [read_file \
+		     $secure/${name}_identity.pub]"
+	    deny_group_access \
+	        $secure/${name}_authorized_keys
+	    puts "Made\
+	          $dir/secure/${name}_authorized_keys"
+	}
+
+	if { $case == "contest" \
+	     && ! [file exists ./contest/$name] } {
+
+	    if { ! [file executable $wrapper] } {
+	        error "$wrapper is not an existing\
+		       executable file"
+	    }
+	    copy_file $wrapper ./contest/$name
+	    grant_user_access ./contest/$name rwxs
+	    grant_access ./contest/$name rx
+	    puts "Made ./contest/$name"
 	}
     }
 }
