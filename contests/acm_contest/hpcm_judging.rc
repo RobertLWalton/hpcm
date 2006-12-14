@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Oct 29 10:03:12 EST 2006
+# Date:		Thu Dec 14 07:14:05 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/11/15 17:29:25 $
+#   $Date: 2006/12/14 14:57:57 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.61 $
+#   $Revision: 1.62 $
 
 # Table of Contents
 #
@@ -139,33 +139,55 @@ set this_contest_postfix "
 Good Hunting!
 "
 
-# The following is the printer map for any timed
-# contest.  Entries are lines of the format
+# The following printer_list variable specifies the
+# printers to be used during any timed contest.  If
+# this list is empty, the PRINTER environment variable
+# will be used for all contestants.
 #
-#	REGEXP	PRINTER
+# The variable value is a list of items each with the
+# following format:
 #
-# where REGEXP is an expr(1) (not TCL) regular expres-
-# sion that matches the account name and PRINTER is the
-# printer.  Comment lines begin with #, and blank lines
-# are ignored.  Backslashes in regular expressions must
-# be doubled.  Must end with a line feed.
+#	{ REGEXP PRINTER [ACCOUNT [COMMAND]] }
 #
-# If the PRINTER contains an @, it is an email address
-# to which postscript is mailed.  If PRINTER begins with
-# an @, the beginning @ is removed and the rest is
-# treated as an email address to which the postscript
-# is mailed as an attachment.
+# REGEXP is an expr(1) (not TCL) regular expression that
+# matches the contestant account name.  Backslashes in
+# REGEXP must be doubled, or alternatively REGEXP can be
+# { } quoted.  There must be no whitespace in REGEXP.
 #
-# The `catch' is just in case $env(PRINTER) is undefined
-# and this variable is not needed.
+# PRINTER has one of the following formats:
 #
-catch { set timed_printer_map "
-# Do not edit.  This is copied from the
-# timed_printer_map global variable in the
-# hpcm_judging.rc file in the judging directory.
+#	|COMMAND	To print, execute COMMAND with
+#			the postscript version of the
+#			printout as the standard input.
+#			Note that COMMAND can have
+#			spaces and "s.
 #
-.* $env(PRINTER)
-" }
+#	@EMAIL-ADDRESS	Mail the postscript to the
+#			EMAIL-ADDRESS as an attachment.
+#
+#	EMAIL-ADDRESS	Mail the postscript to the
+#			EMAIL-ADDRESS as the body of
+#			The message.  EMAIL-ADDRESSes
+#			must contain an @ sign and must
+#			not begin with | or !.
+#
+#	PRINTER		Name of the printer to which to
+#			send the postscript.  Printer
+#			names must not begin with | or
+#			! or contain an @.
+#
+# If ACCOUNT is given, PRINTER must be of the form |NAME
+# where NAME is the name of a new command that will be
+# created so that running NAME locally will run COMMAND
+# remotely in ACCOUNT using SSH.  If COMMAND is not
+# given (after ACCOUNT), it defaults to `lpr'.  Here
+# COMMAND can have spaces but may not have "s.  ACCOUNT
+# should be an account name acceptable to SSH.  Several
+# printer list items may have |NAME as their printer,
+# but at most one of these should have an ACCOUNT.
+#
+set printer_list {
+}
 
 # TCL list of TCL regular expressions that match the
 # test accounts which are NOT to appear on the score-
@@ -377,13 +399,13 @@ set startcontest yes
 # dated contest.  It lets each contestant determine
 # his/her own printer by placing the printer name in the
 # ~/PRINTER file of the contestant's account.  See
-# timed_printer_map above and `hpcm/contestant/bin/
-# printer_pipe -doc' for more documentation.
+# `hpcm/contestant/bin/printer_pipe -doc' for more
+# documentation.
 #
 set feedback_printer_map "
-# Do not edit.  This is copied from the
-# feedback_printer_map global variable in the
-# hpcm_judging.rc file in the judging directory.
+# Do not edit.  This is copied from the feedback_
+# printer_map global variable in the hpcm_judging.rc
+# file in the judging directory.
 #
 .* !~/PRINTER
 "
@@ -391,6 +413,59 @@ set feedback_printer_map "
 
 # Computed Parameters (Do Not Modify)
 # -------- ---------- ---------------
+
+# The following is the printer_map file value for the
+# timed contest.  It is computed from printer_list if
+# that is not empty.  This code may append items to
+# contest_ssh_commands.
+#
+if { [llength $printer_list] == 0 } {
+    if { [info exists env(PRINTER)] {
+        set timed_printer_map "
+# Do not edit.  This is created from the printer_list
+# global variable in the hpcm_judging.rc file in the
+# judging directory.
+#
+.* $env(PRINTER)
+"
+    }
+} else {
+    set timed_printer_map "
+# Do not edit.  This is created from the printer_list
+# global variable in the hpcm_judging.rc file in the
+# judging directory.
+#"
+    foreach item $printer_list {
+
+	set regexp  [lindex $item 0]
+	set printer [lindex $item 1]
+	set account [lindex $item 2]
+	set command [lindex $item 3]
+
+	regsub -all {\\} $regexp {\\\\} regexp
+	set timed_printer_map \
+	    "$timed_printer_map\n$regexp $printer"
+
+	if { $account != "" } {
+	    if { ! [regexp {^\|(.*)$} $printer \
+	                              forget name] } {
+	        error "Bad item in printer_list: $item"
+	    }
+	    if { [regexp {[\ \t]} $name] } {
+	        error "Space in new printer_list local\
+		       command name: $name"
+	    }
+	    if { $command == "" } {
+	        set command lpr
+	    } else if { [regexp {\"} $command] } {
+	        error "Printer_list item command\
+		       contains \": $item"
+	    }
+	    lappend contest_ssh_commands \
+	            [list $name $account $command]
+	}
+    }
+}
 
 # You should NOT make changes beyond this point, unless
 # you want to tune the contest to be a variant of one of
@@ -497,13 +572,15 @@ switch $scoring_type {
     }
 }
 
-# Set printer_map according to contest subtype.  Catch
-# errors in case printer_maps are undefined.
+# Set contest_printer_map according to contest subtype.
+# Catch errors in case printer_maps are undefined.
 #
 if { $scoring_subtype == "timed" } {
-    catch { set printer_map $timed_printer_map }
+    catch { set contest_printer_map \
+                $timed_printer_map }
 } else {
-    catch { set printer_map $feedback_printer_map }
+    catch { set contest_printer_map \
+                $feedback_printer_map }
 }
 
 # Default arguments to makecontest.
