@@ -6,7 +6,7 @@
 #
 # File:		makecontest
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Dec 13 08:20:40 EST 2006
+# Date:		Thu Dec 14 07:32:47 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/12/13 15:03:40 $
+#   $Date: 2006/12/14 15:09:24 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.177 $
+#   $Revision: 1.178 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -136,13 +136,13 @@ makecontest option ... index_specification ...
 		./secure/NAME_identity.pub
 		./secure/NAME_authorized_keys
 
-    -printer    Using the optional `printer' global
-    	        variable make ./contest/printer, and
-    		also make ./contest/printer_jobs
-    -printer_map  Using the optional `printer_map'
-                global variable make ./contest/printer_
-		map, and also make ./contest/printer_
-		jobs
+    -printer    Using the optional `contest_printer'
+    		global variable make ./contest/printer,
+		and also make ./contest/printer_jobs
+    -printer_map  Using the optional `contest_printer_
+    		map' global variable make ./contest/
+		printer_map, and also make ./contest/
+		printer_jobs
 
     -javahelp	Make ./contest/javahelp
     -stlhelp	Make ./contest/stlhelp
@@ -840,22 +840,23 @@ makecontest option ... index_specification ...
     The -printer program option makes the ./contest/
     printer file if that file does not exist.  This file
     is the name of the printer, which is the value of
-    the `printer' global variable if that exists, else
-    is the value of the `PRINTER' environment variable
-    if that exists, else is the value `UNKNOWN' which
-    means the file needs to be edited.  If the `printer'
-    global variable does not exist, a TODO is written
-    to suggest editing the .contest/printer file just
-    made.
+    the `contest_printer' global variable if that
+    exists, else is the value of the `PRINTER' environ-
+    ment variable if that exists, else is the value
+    `UNKNOWN' which means the file needs to be edited.
+    If the `contest_printer' global variable does not
+    exist, a TODO is written to suggest editing the
+    .contest/printer file just made.
 
     The -printer_map program option is similar to the
     -printer option but makes a ./contest/printer_map
     file instead of a ./contest/printer file and always
-    uses the value of the `printer_map' global variable.
-    The file is written if it does not exist or if it
-    does not equal the `printer_map' variable value.  If
-    the `printer_map' variable is not set, the file is
-    not written but a TODO is written.
+    uses the value of the `contest_printer_map' global
+    variable.  The file is written if it does not exist
+    or if it does not equal the `contest_printer_map'
+    variable value.  If the `contest_printer_map' vari-
+    able is not set, the file is not written but a TODO
+    is written.
 
     Note that if both the ./contest/printer and
     ./contest/printer_map files exist, contestant
@@ -1003,7 +1004,13 @@ while { $argi < $argc } {
 			  set secure_option	yes
 			  set procmailrc_option	yes
 			  set who_where_option	yes
-			  set trashable_option	yes }
+			  set trashable_option	yes
+			  set \
+			   contest_ssh_commands_option \
+			   yes
+			  set \
+			   judging_ssh_commands_option \
+			   yes }
         -email		{ set info_option	yes
 			  set solutions_option	yes
 			  set this_contest_option \
@@ -1013,7 +1020,10 @@ while { $argi < $argc } {
 			  			yes
 			  set solution_files_option \
 			  			yes
-			  set procmailrc_option	yes }
+			  set procmailrc_option	yes
+			  set \
+			   judging_ssh_commands_option \
+			   yes }
         -formal		{ set contest_option	yes
 			  set bin_option	yes
 			  set home_option	yes
@@ -1031,6 +1041,12 @@ while { $argi < $argc } {
 			  set procmailrc_option	yes
 			  set who_where_option	yes
 			  set trashable_option	yes
+			  set \
+			   contest_ssh_commands_option \
+			   yes
+			  set \
+			   judging_ssh_commands_option \
+			   yes
 			  set problems_option	yes
 			  set demos_option	yes }
         -informal	{ set contest_option	yes
@@ -1050,6 +1066,12 @@ while { $argi < $argc } {
 			  set procmailrc_option	yes
 			  set who_where_option	yes
 			  set trashable_option	yes
+			  set \
+			   contest_ssh_commands_option \
+			   yes
+			  set \
+			   judging_ssh_commands_option \
+			   yes
 			  set info_option	yes
 			  set startcontest_option \
 			  			yes }
@@ -3088,6 +3110,15 @@ foreach case { contest judging } {
 	        $secure/${name}_authorized_keys
 	    puts "Made\
 	          $dir/secure/${name}_authorized_keys"
+	    TODO "You must append\
+	          $dir/secure/${name}_authorized_keys" \
+		 "to the ~/.ssh/authorized_keys file of\
+		  the account $account" \
+		 "You may wish to edit the command\
+		  parameter in this file, which is" \
+		 "the command that will be executed by\
+		  SSH $account when $name is executed\
+		  locally."
 	}
 
 	if { $case == "contest" \
@@ -3116,23 +3147,23 @@ if { $printer_option \
 
     set printer_jobs_option yes
 
-    if { [info exists printer] } {
+    if { [info exists contest_printer] } {
         set todo no
     } elseif { [info exists env(PRINTER)] } {
-	set printer $env(PRINTER)
+	set contest_printer $env(PRINTER)
         set todo yes
     } else {
-	set printer UNKNOWN
+	set contest_printer UNKNOWN
         set todo yes
     }
 
-    write_file $c_d/printer $printer
+    write_file $c_d/printer $contest_printer
     grant_access $c_d/printer
     puts "Wrote ./contest/printer"
 
     if { $todo } {
 	TODO "Wrote ./contest/printer to be\
-	      `$printer';" \
+	      `$contest_printer';" \
 	     "Edit ./contest/printer to change." \
 	     "Execute `chmod a-rw ./contest/printer'\
 	      to disable." \
@@ -3147,20 +3178,21 @@ if { $printer_option \
 # Make $c_d/printer_map
 #
 if { $printer_map_option } {
-    if { ! [info exists printer_map] } {
+    if { ! [info exists contest_printer_map] } {
 
-        TODO "Set the printer_map global variable" \
+        TODO "Set the contest_printer_map global\
+	      variable" \
 	     "in hpcm_judging.rc and run\
 	      `makecontest -printer_map'"
 
     } elseif {    ! [file exists $c_d/printer_map] \
                ||    [read_entire_file \
 	       		  $c_d/printer_map] \
-	          != $printer_map } {
+	          != $contest_printer_map } {
 
 	set printer_jobs_option yes
 
-	write_file $c_d/printer_map $printer_map
+	write_file $c_d/printer_map $contest_printer_map
 	grant_access $c_d/printer_map
 	puts "Wrote ./contest/printer_map"
     }
