@@ -4,7 +4,7 @@
 #
 # File:		printer_broadcast
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Fri Oct 13 21:35:22 EDT 2006
+# Date:		Fri Dec 15 12:56:09 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/10/14 01:47:51 $
+#   $Date: 2006/12/15 18:35:57 $
 #   $RCSfile: printer_broadcast,v $
-#   $Revision: 1.13 $
+#   $Revision: 1.14 $
 
 Pswitch=0
 
@@ -84,7 +84,11 @@ fi
 
 # Make a list of all printers.
 #
-printers=""
+# We are forced to use a bash array variable as a
+# printer name that is an executable command may have
+# spaces.
+#
+printers=0
 if test -r "$contest/printer_map"
 then
 
@@ -106,7 +110,9 @@ then
 	"#") continue ;;
 	"")   continue ;;
 	esac
-	printers="$printers $printer"
+
+	p[$printers]="$printer"
+	printers=`expr $printers + 1`
     done
 
     # Close printer_map file.
@@ -115,10 +121,12 @@ then
 
 elif test -r "$contest/printer"
 then
-    printers=`cat "$contest/printer"`
+    p[0]=`cat "$contest/printer"`
+    printers=1
 elif test "${PRINTER:-}" != ""
 then
-    printers=$PRINTER
+    p[0]=$PRINTER
+    printers=1
 else
     echo >&2 Could not find printers.
     exit 1
@@ -137,11 +145,15 @@ fi
 # Print tmpfile to all printers, or just echo
 # printer name if -P.
 #
-for printer in $printers
+i=0
+while test $i -lt $printers
 do
     # Ignore blank printer names or printer names
     # beginning with !.
     #
+    printer="${p[$i]}"
+    i=`expr $i + 1`
+
     if test ` expr "$printer" : "!" ` -ne 0
     then
     	continue
@@ -154,7 +166,7 @@ do
 
     if test $Pswitch -ne 0
     then
-    	echo -n " $printer"
+    	echo "$printer"
 	continue
     fi
 
@@ -177,7 +189,7 @@ do
     case "$printer" in
 	\|*)
 	    c=` expr "$printer" : '|\(.*\)$' `
-	    cat $tmpfile | eval "$c"
+	    ( cd $contest; cat $tmpfile | eval "$c" )
 	    ;;
 	@*)
 	    address=` expr "$printer" : '@\(.*\)$' `
@@ -214,10 +226,5 @@ do
     esac
 
 done
-
-if test $Pswitch -ne 0
-then
-    echo ""
-fi
 
 exit 0
