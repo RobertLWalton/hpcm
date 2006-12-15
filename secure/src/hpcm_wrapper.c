@@ -2,7 +2,7 @@
  *
  * File:	hpcm_wrapper.c
  * Authors:	Bob Walton (walton@deas.harvard.edu)
- * Date:	Fri Oct 13 01:07:34 EDT 2006
+ * Date:	Fri Dec 15 12:36:22 EST 2006
  *
  * The authors have placed this program in the public
  * domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
  * RCS Info (may not be true date or author):
  *
  *   $Author: walton $
- *   $Date: 2006/10/13 05:51:56 $
+ *   $Date: 2006/12/15 17:49:11 $
  *   $RCSfile: hpcm_wrapper.c,v $
- *   $Revision: 1.1 $
+ *   $Revision: 1.2 $
  */
 
 #include <stdlib.h>
@@ -25,13 +25,17 @@
 char documentation [] =
 "/<directory>/<program>\n"
 "\n"
-"    This program checks that it has been called\n"
-"    no arguments and a program name (argv[0]) begin-\n"
-"    ning with `/' and does not end with `/'.  Then\n"
-"    the program sets the real UID and GID to the\n"
-"    effective UID and GID and execs:\n"
+"    This program checks that it has been called with\n"
+"    no arguments and a program name (argv[0]) that\n"
+"    does not end with `/'.  Then the program sets\n"
+"    the real UID and GID to the effective UID and\n"
+"    GID and execs:\n"
 "\n"
-"        /<directory>/secure/<program>\n"
+"        <directory>/secure/<program>\n"
+"\n"
+"    where the program name (argv[0]) has the form\n"
+"\n"
+"        <directory>/<program>\n"
 "\n"
 "    It is intended that this program be set UID,\n"
 "    and thus serve as a wrapper for the program it\n"
@@ -83,17 +87,10 @@ int main ( int argc, char ** argv )
 	                  program_name);
 	exit ( 1 );
     }
-    else if ( program_name[0] != '/' )
-    {
-        fprintf ( stderr, "%s: program name does not"
-	                  " begin with /\n",
-			  program_name );
-	exit ( 1 );
-    }
 
     strcpy ( exec_name, program_name );
     p = exec_name;
-    q = NULL;
+    q = exec_name;
     while ( * p )
     {
         if ( * p ++ == '/' ) q = p;
