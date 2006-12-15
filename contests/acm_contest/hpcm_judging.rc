@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Dec 14 07:14:05 EST 2006
+# Date:		Fri Dec 15 08:50:28 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/12/14 14:57:57 $
+#   $Date: 2006/12/15 13:49:32 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.62 $
+#   $Revision: 1.63 $
 
 # Table of Contents
 #
@@ -420,7 +420,7 @@ set feedback_printer_map "
 # contest_ssh_commands.
 #
 if { [llength $printer_list] == 0 } {
-    if { [info exists env(PRINTER)] {
+    if { [info exists env(PRINTER)] } {
         set timed_printer_map "
 # Do not edit.  This is created from the printer_list
 # global variable in the hpcm_judging.rc file in the
@@ -442,10 +442,6 @@ if { [llength $printer_list] == 0 } {
 	set account [lindex $item 2]
 	set command [lindex $item 3]
 
-	regsub -all {\\} $regexp {\\\\} regexp
-	set timed_printer_map \
-	    "$timed_printer_map\n$regexp $printer"
-
 	if { $account != "" } {
 	    if { ! [regexp {^\|(.*)$} $printer \
 	                              forget name] } {
@@ -457,13 +453,19 @@ if { [llength $printer_list] == 0 } {
 	    }
 	    if { $command == "" } {
 	        set command lpr
-	    } else if { [regexp {\"} $command] } {
+	    } elseif { [regexp {\"} $command] } {
 	        error "Printer_list item command\
 		       contains \": $item"
 	    }
 	    lappend contest_ssh_commands \
 	            [list $name $account $command]
+
+	    set printer "|[truename ./contest]/$name"
 	}
+
+	regsub -all {\\} $regexp {\\\\} regexp
+	set timed_printer_map \
+	    "$timed_printer_map\n$regexp $printer"
     }
 }
 
