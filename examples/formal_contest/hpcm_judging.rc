@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Dec 15 12:48:49 EST 2006
+# Date:		Sat Dec 16 06:21:43 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/12/15 17:48:04 $
+#   $Date: 2006/12/16 11:23:05 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.64 $
+#   $Revision: 1.65 $
 
 # Table of Contents
 #
@@ -147,7 +147,7 @@ Good Hunting!
 # The variable value is a list of items each with the
 # following format:
 #
-#	{ REGEXP PRINTER [ACCOUNT [COMMAND]] }
+#	{ REGEXP PRINTER [ACCOUNT [REMOTE-COMMAND]] }
 #
 # REGEXP is an expr(1) (not TCL) regular expression that
 # matches the contestant account name.  Backslashes in
@@ -156,11 +156,13 @@ Good Hunting!
 #
 # PRINTER has one of the following formats:
 #
+#   If no ACCOUNT given:
+#
 #	|COMMAND	To print, execute COMMAND with
 #			the postscript version of the
 #			printout as the standard input.
 #			Note that COMMAND can have
-#			spaces and "s.
+#			spaces and ""s.
 #
 #	@EMAIL-ADDRESS	Mail the postscript to the
 #			EMAIL-ADDRESS as an attachment.
@@ -176,15 +178,23 @@ Good Hunting!
 #			names must not begin with | or
 #			! or contain an @.
 #
-# If ACCOUNT is given, PRINTER must be of the form |NAME
-# where NAME is the name of a new command that will be
-# created so that running NAME locally will run COMMAND
-# remotely in ACCOUNT using SSH.  If COMMAND is not
-# given (after ACCOUNT), it defaults to `lpr'.  Here
-# COMMAND can have spaces but may not have "s.  ACCOUNT
-# should be an account name acceptable to SSH.  Several
-# printer list items may have |NAME as their printer,
-# but at most one of these should have an ACCOUNT.
+#   If ACCOUNT given:
+#
+#	|NAME		Name is a unique command name
+#			without spaces or /'s that will
+#			be created and will run REMOTE-
+#			COMMAND in ACCOUNT using SSH.
+#
+#			If REMOTE-COMMAND is not given,
+#			it defaults to "lpr".  REMOTE-
+#			COMMAND can have spaces but NOT
+#			""s.  ACCOUNT must be an SSH
+#			account name.
+#
+# Several printer_list items may have identical
+# PRINTERs, and in particular several may have the same
+# `|NAME' as long as they have the same ACCOUNT and
+# REMOTE-COMMAND.
 #
 set printer_list {
 }
@@ -435,30 +445,45 @@ if { [llength $printer_list] == 0 } {
 # global variable in the hpcm_judging.rc file in the
 # judging directory.
 #"
+    catch { unset names }
     foreach item $printer_list {
 
 	set regexp  [lindex $item 0]
 	set printer [lindex $item 1]
 	set account [lindex $item 2]
-	set command [lindex $item 3]
+	set remote_command [lindex $item 3]
 
 	if { $account != "" } {
 	    if { ! [regexp {^\|(.*)$} $printer \
 	                              forget name] } {
 	        error "Bad item in printer_list: $item"
 	    }
-	    if { [regexp {[\ \t]} $name] } {
-	        error "Space in new printer_list local\
-		       command name: $name"
+	    if { [regexp {[/\ \t]} $name] } {
+	        error "Space or / in new printer_list\
+		       local command name: $name"
 	    }
-	    if { $command == "" } {
-	        set command lpr
+	    if { $remote_command == "" } {
+	        set remote_command lpr
 	    } elseif { [regexp {\"} $command] } {
 	        error "Printer_list item command\
 		       contains \": $item"
 	    }
-	    lappend contest_ssh_commands \
-	            [list $name $account $command]
+	    set list [list $account $remote_command]
+	    if { [info exists names($name)] } {
+	        if { $list != $names($name) } {
+		    error "printer_list items for\
+		           |$name do not have\
+			   identical accounts or\
+			   remote commands"
+		}
+	    } else {
+		lappend contest_ssh_commands \
+			[list $name $account \
+			      $remote_command]
+		set names($name) $list
+	    }
+
+	    set printer "|$contest_directory/$name"
 	}
 
 	regsub -all {\\} $regexp {\\\\} regexp
