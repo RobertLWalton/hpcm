@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Dec 16 04:03:20 EST 2006
+# Date:		Sat Dec 16 06:43:15 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/12/16 09:11:05 $
+#   $Date: 2006/12/16 12:13:51 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.144 $
+#   $Revision: 1.145 $
 #
 
 # Table of Contents
@@ -1806,14 +1806,17 @@ proc set_contest_directory {} {
 	    error "contest_directory is not\
 	           absolute: $contest_directory"
 	}
-        if { ! [file isdirectory $contest_directory] } {
+        if {    ! [catch { file type \
+	                        $contest_directory }] \
+	     && ! [file isdirectory \
+	                $contest_directory] } {
 	    error "contest_directory is not\
 	           a directory: $contest_directory"
 	}
 	if {    ! [catch { file type $c_d }] \
 	     && (    ! [file isdirectory $c_d] \
 	          ||    [truename $c_d] \
-		     != $contest_directory } {
+		     != $contest_directory ) } {
 	    error "contest_directory\
 	           ($contest_directory)\n    is not\
 		   truename of $c_d$"
