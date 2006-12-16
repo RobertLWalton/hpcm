@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Dec 16 03:43:36 EST 2006
+# Date:		Sat Dec 16 04:03:20 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/12/16 08:59:47 $
+#   $Date: 2006/12/16 09:11:05 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.143 $
+#   $Revision: 1.144 $
 #
 
 # Table of Contents
@@ -1799,11 +1799,28 @@ proc send_reply { args } {
 #
 proc set_contest_directory {} {
     global contest_directory judging_directory
+    set c_d $judging_directory/contest
+
     if { [info exists contest_directory] } {
+        if { ! [regexp {/} $contest_directory] } {
+	    error "contest_directory is not\
+	           absolute: $contest_directory"
+	}
+        if { ! [file isdirectory $contest_directory] } {
+	    error "contest_directory is not\
+	           a directory: $contest_directory"
+	}
+	if {    ! [catch { file type $c_d }] \
+	     && (    ! [file isdirectory $c_d] \
+	          ||    [truename $c_d] \
+		     != $contest_directory } {
+	    error "contest_directory\
+	           ($contest_directory)\n    is not\
+		   truename of $c_d$"
+	}
         return $contest_directory
     }
 
-    set c_d $judging_directory/contest
     if { [file isdirectory $c_d] } {
         set contest_directory [truename $c_d]
 	return $contest_directory
@@ -1823,7 +1840,10 @@ proc set_contest_directory {} {
 	       end with `_PASSWORD'"
     }
     set contest_directory "$dir/contest_$tail"
-    return $contest_directory
+
+    # The following forces checking.
+    #
+    return [set_contest_directory]
 }
 
 # Write entire file to channel.  If number of lines in
