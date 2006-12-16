@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Dec 12 09:48:39 EST 2006
+# Date:		Sat Dec 16 03:43:36 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/12/12 15:00:02 $
+#   $Date: 2006/12/16 08:59:47 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.142 $
+#   $Revision: 1.143 $
 #
 
 # Table of Contents
@@ -1785,6 +1785,46 @@ proc send_reply { args } {
 
 # File Functions
 # ---- ---------
+
+# Set the contest_directory global variable to the true
+# name of the contest directory, even if that directory
+# does not exist yet.  Return the contest_directory
+# variable value.
+#
+# If the variable already exists, do not change it.
+# Otherwise if $judging_directory/contest is (linked to)
+# a directory, return the truename of that directory.
+# Otherwise compute the contest_directory value from
+# the judging_directory value.
+#
+proc set_contest_directory {} {
+    global contest_directory judging_directory
+    if { [info exists contest_directory] } {
+        return $contest_directory
+    }
+
+    set c_d $judging_directory/contest
+    if { [file isdirectory $c_d] } {
+        set contest_directory [truename $c_d]
+	return $contest_directory
+    }
+
+    set j_d [truename $judging_directory]
+    set dir [file dirname $j_d]
+    set tail [file tail $j_d]
+    if { ! [regexp {^judging_(.*)$} $tail \
+		   forget tail] } {
+	error "$j_d last component does not\
+	       begin with `judging_'"
+    }
+    if { ! [regexp {^(.*)_[^_]+$} $tail \
+                   forget tail] } {
+	error "$j_d last component does not\
+	       end with `_PASSWORD'"
+    }
+    set contest_directory "$dir/contest_$tail"
+    return $contest_directory
+}
 
 # Write entire file to channel.  If number of lines in
 # file is greater than third argument, do not write
