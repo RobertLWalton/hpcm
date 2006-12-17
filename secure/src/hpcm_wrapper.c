@@ -11,9 +11,9 @@
  * RCS Info (may not be true date or author):
  *
  *   $Author: walton $
- *   $Date: 2006/12/15 17:49:11 $
+ *   $Date: 2006/12/17 17:37:34 $
  *   $RCSfile: hpcm_wrapper.c,v $
- *   $Revision: 1.2 $
+ *   $Revision: 1.3 $
  */
 
 #include <stdlib.h>
@@ -31,7 +31,7 @@ char documentation [] =
 "    the real UID and GID to the effective UID and\n"
 "    GID and execs:\n"
 "\n"
-"        <directory>/secure/<program>\n"
+"        <directory>/secure/bin/<program>\n"
 "\n"
 "    where the program name (argv[0]) has the form\n"
 "\n"
@@ -48,7 +48,7 @@ char documentation [] =
  * program to be exec'ed.
  */
 const char * program_name;
-char exec_name[NAME_SIZE+20];
+char exec_name[NAME_SIZE+40];
 
 void errno_exit ( char * m )
 {
@@ -102,7 +102,7 @@ int main ( int argc, char ** argv )
 			  program_name );
 	exit ( 1 );
     }
-    strcpy ( q, "secure/" );
+    strcpy ( q, "secure/bin/" );
     r = program_name + ( q - exec_name );
     q += strlen ( q );
     strcpy ( q, r );

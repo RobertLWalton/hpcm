@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/12/16 12:14:05 $
+#   $Date: 2006/12/17 17:37:34 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.66 $
+#   $Revision: 1.67 $
 
 # Table of Contents
 #
@@ -144,57 +144,41 @@ Good Hunting!
 # this list is empty, the PRINTER environment variable
 # will be used for all contestants.
 #
-# The variable value is a list of items each with the
-# following format:
+# The variable value is a list of items each with one
+# of the following formats:
 #
-#	{ REGEXP PRINTER [ACCOUNT [REMOTE-COMMAND]] }
+#	{ REGEXP NAME ssh ACCOUNT REMOTE-COMMAND }
+#	    Print by piping postscript through
+#	    ssh to execute REMOTE-COMMAND in the
+#	    remote ACCOUNT.
+#
+#	{ REGEXP NAME sh COMMAND}
+#	    Print by piping postscript into the
+#	    given command.
+#
+#	{ REGEXP NAME }
+#	    Print as designated by a previous list item
+#	    with the same name.
+#
+#	{ REGEXP NAME ... }
+#	    Print by piping postscript into the command
+#	    created by appending { NAME ... } to the
+#	    contest_commands global variable: see that
+#	    variable in hpcp/judge/lib/hpcm_judging.rc
+#	    for details.  In particular, emailing the
+#	    postscript to some address is supported.
 #
 # REGEXP is an expr(1) (not TCL) regular expression that
 # matches the contestant account name.  Backslashes in
 # REGEXP must be doubled, or alternatively REGEXP can be
 # { } quoted.  There must be no whitespace in REGEXP.
+# The first item matched by a contestant account name is
+# used.
 #
-# PRINTER has one of the following formats:
-#
-#   If no ACCOUNT given:
-#
-#	|COMMAND	To print, execute COMMAND with
-#			the postscript version of the
-#			printout as the standard input.
-#			Note that COMMAND can have
-#			spaces and ""s.
-#
-#	@EMAIL-ADDRESS	Mail the postscript to the
-#			EMAIL-ADDRESS as an attachment.
-#
-#	EMAIL-ADDRESS	Mail the postscript to the
-#			EMAIL-ADDRESS as the body of
-#			The message.  EMAIL-ADDRESSes
-#			must contain an @ sign and must
-#			not begin with | or !.
-#
-#	PRINTER		Name of the printer to which to
-#			send the postscript.  Printer
-#			names must not begin with | or
-#			! or contain an @.
-#
-#   If ACCOUNT given:
-#
-#	|NAME		Name is a unique command name
-#			without spaces or /'s that will
-#			be created and will run REMOTE-
-#			COMMAND in ACCOUNT using SSH.
-#
-#			If REMOTE-COMMAND is not given,
-#			it defaults to "lpr".  REMOTE-
-#			COMMAND can have spaces but NOT
-#			""s.  ACCOUNT must be an SSH
-#			account name.
-#
-# Several printer_list items may have identical
-# PRINTERs, and in particular several may have the same
-# `|NAME' as long as they have the same ACCOUNT and
-# REMOTE-COMMAND.
+# NAME is the name of a command that will be create to
+# invoke the proper pipe.  It may not contain whitespace
+# or /.  It should be distinct from other file names
+# in ./contest.
 #
 set printer_list {
 }
@@ -424,81 +408,46 @@ set feedback_printer_map "
 # Computed Parameters (Do Not Modify)
 # -------- ---------- ---------------
 
-# The following is the printer_map file value for the
-# timed contest.  It is computed from printer_list if
-# that is not empty.  This code may append items to
-# contest_ssh_commands.
-#
-if { [llength $printer_list] == 0 } {
-    if { [info exists env(PRINTER)] } {
-        set timed_printer_map "
-# Do not edit.  This is created from the printer_list
-# global variable in the hpcm_judging.rc file in the
-# judging directory.
-#
-.* $env(PRINTER)
-"
-    }
-} else {
-    set timed_printer_map "
-# Do not edit.  This is created from the printer_list
-# global variable in the hpcm_judging.rc file in the
-# judging directory.
-#"
-    set_contest_directory
-    catch { unset names }
-    foreach item $printer_list {
-
-	set regexp  [lindex $item 0]
-	set printer [lindex $item 1]
-	set account [lindex $item 2]
-	set remote_command [lindex $item 3]
-
-	if { $account != "" } {
-	    if { ! [regexp {^\|(.*)$} $printer \
-	                              forget name] } {
-	        error "Bad item in printer_list: $item"
-	    }
-	    if { [regexp {[/\ \t]} $name] } {
-	        error "Space or / in new printer_list\
-		       local command name: $name"
-	    }
-	    if { $remote_command == "" } {
-	        set remote_command lpr
-	    } elseif { [regexp {\"} $remote_command] } {
-	        error "Printer_list item command\
-		       contains \": $item"
-	    }
-	    set list [list $account $remote_command]
-	    if { [info exists names($name)] } {
-	        if { $list != $names($name) } {
-		    error "printer_list items for\
-		           |$name do not have\
-			   identical accounts or\
-			   remote commands"
-		}
-	    } else {
-		lappend contest_ssh_commands \
-			[list $name $account \
-			      $remote_command]
-		set names($name) $list
-	    }
-
-	    set printer "|$contest_directory/$name"
-	}
-
-	regsub -all {\\} $regexp {\\\\} regexp
-	set timed_printer_map \
-	    "$timed_printer_map\n$regexp $printer"
-    }
-}
-
 # You should NOT make changes beyond this point, unless
 # you want to tune the contest to be a variant of one of
 # the standards supported by this file.  If you do want
 # to tune the contest, put changes at the very end of
 # this file, where they will override the settings of
 # this file.
+
+# The following computes the printer_map file value for
+# the timed contest.  This code may append items to
+# contest_commands.
+#
+set timed_printer_map "
+# Do not edit.  This is created from the printer_list
+# global variable in the hpcm_judging.rc file in the
+# judging directory.
+#"
+if { [llength $printer_list] == 0 } {
+    if { [info exists env(PRINTER)] } {
+        set timed_printer_map \
+	    "$timed_printer_map\n.* $env(PRINTER)"
+    }
+} else {
+    set_contest_directory
+    catch { unset names }
+    foreach item $printer_list {
+
+	set regexp  [lindex $item 0]
+	set name [lindex $item 1]
+
+	if { [llength $item] > 2 } {
+	    lappend contest_commands \
+	            [lrange $item 1 end]
+	}
+
+	regsub -all {\\} $regexp {\\\\} regexp
+	set timed_printer_map \
+	    "$timed_printer_map\n$regexp\
+	     |$contest_directory/$name"
+    }
+}
 
 set javaok [info exists java_api_index]
 if {    $javaok \
