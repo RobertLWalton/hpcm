@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Mar  3 06:48:04 EST 2006
+# Date:		Sun Dec 17 09:57:38 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -10,12 +10,13 @@
 #
 # RCS Info (may not be true date or author):
 #
-#   $Author: hc3 $
-#   $Date: 2006/03/03 11:58:53 $
+#   $Author: walton $
+#   $Date: 2006/12/17 16:37:08 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.26 $
+#   $Revision: 1.27 $
 
 all:	scorediff hpcm_sandbox_x hpcm_print_passwords \
+	hpcm_remote_sendmail \
 	hpcm_email_passwords chkpage \
 	hpcm_clisp.lsp hpcm_extract_test_replies \
 	filtered_diff email_diff hpcm_helper help \
@@ -81,6 +82,9 @@ hpcm_print_passwords:
 
 hpcm_email_passwords:
 	ln -s ../../secure/bin/hpcm_email_passwords .
+
+hpcm_remote_sendmail:
+	ln -s ../../contestant/bin/hpcm_remote_sendmail .
 
 hpcm_clisp.lsp:
 	ln -s ../../contestant/bin/hpcm_clisp.lsp .

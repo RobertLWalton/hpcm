@@ -1,0 +1,74 @@
+#! /bin/sh
+#
+# Send standard input to a mailing address.
+#
+# File:		hpcm_remote_sendmail
+# Author:	Bob Walton <walton@deas.harvard.edu>
+# Date:		Sun Dec 17 10:37:21 EST 2006
+#
+# The authors have placed this program in the public
+# domain; they make no warranty and accept no liability
+# for this program.
+#
+# RCS Info (may not be true date or author):
+#
+#   $Author: walton $
+#   $Date: 2006/12/17 16:36:29 $
+#   $RCSfile: hpcm_remote_sendmail,v $
+#   $Revision: 1.1 $
+
+case "$1" in
+   "" | -doc* )
+   	echo "
+hpcm_remote_sendmail 'email-address'
+hpcm_remote_sendmail '@email-address'
+
+    Email the standard input to the email-address.
+    If the first argument does NOT begin with @, the
+    input is the body of the message.  Otherwise the
+    input is an attachment.  The message has no header
+    except for \`To: email-address'."
+
+    	exit 1
+	;;
+esac
+
+address="$1"
+case "$address" in
+    @*)
+	t=/tmp/printer_pipe$$
+	trap "rm -f $t" 0
+	cat > $t
+	address=` expr "$address" : '@\(.*\)$' `
+	if ( head -1 $t | \
+	     grep '^%!PS' >/dev/null 2>&1 )
+	then
+	    ct=application/postscript
+	else
+	    ct=text/plain
+	fi
+        ( echo "To: $address"; \
+	  echo "Content-type: multipart/mixed;" \
+	       "boundary=\"=-s81nn0vOWcIHsyzN7sbU\""; \
+	  echo ""; \
+	  echo "--=-s81nn0vOWcIHsyzN7sbU"; \
+	  echo "Content-Disposition: attachment"; \
+	  echo "Content-Type: $ct"; \
+	  echo "Content-Transfer-Encoding: 7bit"; \
+	  echo ""; \
+	  cat $t; \
+	  echo "--=-s81nn0vOWcIHsyzN7sbU" ) \
+	  | /usr/sbin/sendmail -t
+	rm -f $t
+	exit 0
+    	;;
+    *)
+        ( echo "To: $address"; \
+	  echo "Subject: $filename $where"; \
+	  echo ""; cat ) | /usr/sbin/sendmail -t
+	exit 0
+    	;;
+esac
+
+echo >&2 WE SHOULD NEVER GET HERE
+exit 1

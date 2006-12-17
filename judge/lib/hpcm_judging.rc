@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Dec 16 03:42:32 EST 2006
+# Date:		Sun Dec 17 06:28:48 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/12/16 09:01:41 $
+#   $Date: 2006/12/17 16:36:57 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.222 $
+#   $Revision: 1.223 $
 
 # Table of Contents:
 #
@@ -189,68 +189,102 @@ set makecontest_arguments "
 # replacements.  For more details, see the documentation
 # of makecontest (run `makecontest -doc').
 
-
-# The contest_ssh_commands global variable lists SSH
-# commands installed into the contest/secure directory
-# with wrappers in contest directory.  The variable
-# value is a list of items, where each item is a list
-# with the format:
+# The contest_commands global variable lists commands
+# that are created and installed in the ./contest/
+# secure/bin directory with wrappers in contest direc-
+# tory.  These commands take no arguments and are
+# filters into which postscript files are generally
+# piped for printing.  Other such filtering uses are
+# possible.
 #
-#	{ NAME ACCOUNT COMMAND }
+# This variable value is a list of items, where each
+# item has one of the formats:
+#	    
+#	{ NAME sh COMMAND }
+#	    Executing NAME executes COMMAND as in
+#	    "exec $COMMAND" executed by /bin/ssh.
 #
-# From this makecontest constructs files such that when
-# the contestant executes `NAME' as a command, the
-# system maps this to the execution of COMMAND in the
-# ACCOUNT.  An example COMMAND is "lpr" for printing.
+#	{ NAME ssh ACCOUNT REMOTE-COMMAND [OPTIONS] }
+#	    Executing NAME executes ssh which in turn
+#	    executes REMOTE-COMMAND in ACCOUNT.
+#	    The public/private key pair
+#		./contest/secure/bin/NAME_identity.pub
+#		./contest/secure/bin/NAME_identity
+#	    is created by makecontest and the private
+#	    key is used by the ssh -i option.  The
+#	    file
+#		./contest/secure/bin/
+#			  NAME_authorized_keys
+#	    is created by makecontest to be appended
+#	    to the ~/.ssh/authorized_keys file in
+#	    ACCOUNT.  ACCOUNT must be an account name
+#	    in ssh format.  REMOTE-COMMAND may have
+#	    whitespace but no ""'s.  OPTIONS are the
+#	    options passed to ssh: they are by default
+#	    "-x -i PRIVATEKEY".  The string PRIVATEKEY
+#	    in OPTIONS is replaced by the full name of
+#	    the private key file.
 #
-# Specifically, makecontest makes the executable file
-# contest/secure/NAME with contents:
+#	{ NAME email ADDRESS [REGEXP REMOTE-COMMAND] }
+#	    Executing NAME executes hpcm_remote_sendmail
+#	    with the given destination address.  ADDRESS
+#	    may have spaces and ""s but may NOT contain
+#	    ''s.  If KEY and REMOTE command are given,
+#	    makecontest creates the file
+#		./contest/secure/bin/NAME_procmailrc
+#	    which when appended to the .procmailrc file
+#	    in the email receiver will filter email
+#	    whose `To' address matches REGEXP through
+#	    the REMOTE-COMMAND.  REGEXP is an egrep(1)
+#	    regular expression.  The procmail entry will
+#	    cause the BODY of incoming email to be input
+#	    to REMOTE-COMMAND, which should be shell
+#	    executable.
 #
-#	ssh -x ACCOUNT -i CCC/secure/NAME_identity
+# REMOTE-COMMANDS must be executable by whatever shell
+# is in use in the remote account (e.g., /bin/sh or
+# /bin/csh, etc.).
 #
-# where CCC is the true name (pwd name) of the contest
-# directory.  Makecontest makes RSA key files
+# Some examples are:
 #
-#	contest/secure/NAME_identity
-#	contest/secure/NAME_identity.pub
+#	{ remote ssh me@mine.com {lpr -P my-printer} }
+#	{ me email {"printme"<me@mine.com>}
+#            printme {lpr -P my-printer}}
+#	{ local sh {lpr -P my-printer} }
 #
-# where the private key (NAME_identity) is NOT password
-# protected.  Makecontest makes the file
+# For any of the above makecontest creates the file
 #
-#	contest/secure/NAME_authorized_keys
+#	./contest/secure/bin/NAME
 #
-# with contents
+# which when executed does what is indicated above, and
+# creates the file
 #
-#	command="COMMAND" PUBKEY
+#	./contest/NAME
 #
-# where PUBKEY is a copy of the contents of the NAME_
-# identity.pub file, the public key.  Lastly, make-
-# contest makes a wrapper file contest/NAME that is a
-# copy of the hpcm/secure/src/hpcm_wrapper binary.  This
-# file is given a+x,u+s permissions and when executed
-# changes the real UID to that of the judge and executes
-# contest/secure/NAME.  The files makecontest make in
-# the contest/secure directory are denied any but user
-# permissions.
+# which is a wrapper that when execute changes the real
+# UID to the judge's account and then executes
+# ./contest/secure/bin/NAME.  ./contest/NAME is given
+# a+x,u+s permissions.  Files within ./contest/secure
+# are denied all permissions but user permissions.
 #
 # Pre-existing files will not be altered by makecontest.
-# In particular, contest/secure/NAME may be edited after
-# it has been initially made.
+# In particular, ./contest/secure/bin/NAME may be edited
+# after it has been initially made.
 #
-set contest_ssh_commands {}
+set contest_commands {}
 
-# The judging_ssh_commands global variable is just like
-# the contest_ssh_commands global variable, except it
-# uses the `secure' subdirectory of the judging direc-
-# tory in place of contest/secure, and it makes no wrap-
-# pers.  An example COMMAND is:
+# The judging_commands global variable is just like the
+# contest_commands global variable, except it uses the
+# `./secure' subdirectory of the judging directory in
+# place of ./contest/secure, and it makes no wrappers.
+# The usual use is sending scoreboards to remote web
+# pages.  An example REMOTE-COMMAND usable for copying a
+# scoreboard to a web page named SSS is:
 #
-#	"head -1000 >public_html/SSS;\
-#	 chmod 644 public_html/SSS"
+#	{head -1000 >public_html/SSS;\
+#	 chmod 644 public_html/SSS}
 #
-# for copying a scoreboard into a web page named SSS.
-#
-set judging_ssh_commands {}
+set judging_commands {}
 
 
 # Problem .rc Files
