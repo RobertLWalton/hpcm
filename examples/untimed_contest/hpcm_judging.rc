@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Dec 14 09:16:39 EST 2006
+# Date:		Mon Dec 18 11:30:31 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,25 +11,28 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/12/14 14:15:46 $
+#   $Date: 2006/12/18 17:58:04 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.53 $
+#   $Revision: 1.54 $
 
 # Table of Contents
 #
-#	Parameters: General Parameters
-#	Parameters: Local Account Parameters
-#	Parameters: Web Page Parameters
-#	Parameters: Usually Not Modified
+#	Parameters to be Modified
+#	Local Account Parameters
+#	Web Page Parameters
+#	Parameters Not Usually Modified
 #	Computed Parameters (Do Not Modify)
 #	Parameter Overrides
 
-# Parameters: General Parameters
-# ----------- ------- ----------
+# Parameters to be Modified
+# ---------- -- -- --------
 
 # Read standard parameters.
 #
 source $lib_directory/hpcm_judging.rc
+
+# The following parameters determine the type and
+# variety of contest.
 
 # Set to the HPCM directory.  $env(HOME) is the home
 # directory of the current (judge's) account.
@@ -224,8 +227,8 @@ set problems_arguments "
 # for complete details.
 
 
-# Parameters: Local Account Parameters
-# ----------- ----- ------- ----------
+# Local Account Parameters
+# ----- ------- ----------
 
 # Parameters to be set if there are local contestant
 # accounts:
@@ -256,8 +259,8 @@ set ssh_enable yes
 # set ssh_enable no
 
 
-# Parameters: Web Page Parameters
-# ----------- --- ---- ----------
+# Web Page Parameters
+# --- ---- ----------
 
 # URL of contest web page.
 #
@@ -301,27 +304,39 @@ set web_postfix ""
 set web_solutions_header ""
 set web_solutions_prefix ""
 
-# TCL list of addresses to email or ssh scoreboard to.
-# If this list contains zzz<YYY>, then every time the
-# scoreboard is updated it will be emailed to
-# `zzz<YYY>', and you should append the ./zzz_procmailrc
-# file to the ~/.procmailrc file of the account YYY.
-# If this list contains !zzz<YYY>, then every time the
-# scoreboard is updated it will be ssh'ed to `zzz<YYY>',
-# and you should append the ./zzz_authorized_keys file
-# to the ~/.ssh/authorized_keys file of the account YYY.
-# In either case edit what you append to change the
-# name of the score file from public_html/DDDD/zzz to
-# whatever is appropriate.  There should be NO spaces
-# in zzz or YYY.
+# The following scoreboard_commands variable specifies
+# places to send a copy of ./contest/scoreboard.1.  The
+# variable value is a list of items each with one of
+# the following formats:
 #
-set scoreboard_addresses { }
-# set scoreboard_addresses {
-#	zzz<YYY>
-# }
+#	{ NAME ssh ACCOUNT [REMOTE-COMMAND] }
+#	    Pipe ./scoreboard.web through ssh to
+#	    execute REMOTE-COMMAND in the remote
+#	    ACCOUNT.  If not given, REMOTE-COMMAND
+#	    defaults to a template which can be
+#	    filled out by editing in the file
+#	    ./secure/bin/NAME after it is created
+#	    (this will be mentioned in a TODO).
+#
+#	{ NAME ... }
+#	    Pipe ./scoreboard.web to a command
+#	    created by appending { NAME ... } to the
+#	    judging_commands global variable: see that
+#	    variable in hpcp/judge/lib/hpcm_judging.rc
+#	    for details.  In particular, emailing the
+#	    scoreboard to some address is supported,
+#	    and for emailing REMOTE-COMMAND defaults
+#	    as for ssh.
+#
+# NAME is the name of a command that will be created in
+# ./secure/bin to invoke the proper pipe.  It may not
+# contain whitespace or /.
+#
+set scoreboard_commands {
+}
 
-# Parameters: Usually Not Modified
-# ----------- ------- --- --------
+# Parameters Not Usually Modified
+# ---------- --- ------- --------
 
 # Normally you should not have to make changes below
 # this point.
@@ -448,24 +463,6 @@ $browser '$browser $stl_api_index'
 "
 }
 
-# Compute files for makecontest -scoreboard_ssh
-# and -scoreboard_procmailrc to make that are related to
-# scoreboard_addresses.
-#
-set scoreboard_ssh {}
-set scoreboard_procmailrc {}
-foreach to $scoreboard_addresses {
-    if { ! [regexp {^([^<]*)<([^>]*)>$} $to \
-                   forget zzz account] } {
-        error "bad address in scoreboard_addresses: $to"
-    }
-    if { [regexp {^!(.*)$} $zzz forget zzz] } {
-        lappend scoreboard_ssh $zzz
-    } else {
-        lappend scoreboard_procmailrc $zzz
-    }
-}
-
 # Default arguments to makecontest.
 #
 set makecontest_arguments "
@@ -480,7 +477,7 @@ set makecontest_arguments "
                 -description] \
     [include_if { $makescoreboard == "yes" } \
     		"-scoreboard"] \
-    -web -scoreboard_ssh -scoreboard_procmailrc \
+    -web \
     $judging_directory/help/index, \
 	=help/ \
     $hpcm_directory/contestant/help/index, \
@@ -561,9 +558,9 @@ set scoreboard_problems \
 #
 #   <contents of $judging_directory/scoreboard.tail>
 #
-# This file is then emailed or ssh'ed to the addresses
-# in the scoreboard_addresses global variable.  If the
-# scorebaord_account_type variable contains the word
+# This file is then piped to the filters named in the
+# scoreboard_commands global variable.  If the
+# scoreboard_account_type variable contains the word
 # `local', this file is also copied to $judging_direc-
 # tory/contest/scoreboard.1 which is given a+r permis-
 # sions.
