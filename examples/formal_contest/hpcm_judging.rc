@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Dec 16 06:35:55 EST 2006
+# Date:		Mon Dec 18 10:07:24 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/12/17 17:37:34 $
+#   $Date: 2006/12/18 15:19:55 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.67 $
+#   $Revision: 1.68 $
 
 # Table of Contents
 #
@@ -139,7 +139,7 @@ set this_contest_postfix "
 Good Hunting!
 "
 
-# The following printer_list variable specifies the
+# The following printer_commands variable specifies the
 # printers to be used during any timed contest.  If
 # this list is empty, the PRINTER environment variable
 # will be used for all contestants.
@@ -180,7 +180,7 @@ Good Hunting!
 # or /.  It should be distinct from other file names
 # in ./contest.
 #
-set printer_list {
+set printer_commands {
 }
 
 # TCL list of TCL regular expressions that match the
@@ -292,32 +292,44 @@ set web_page_URL "www.somewhere.edu/~xxx/yyy"
 # relative to the contest web page.  The web_scoreboard_
 # URL is the URL of the scoreboard relative to the web
 # page; usually this is posted by using scoreboard_
-# addresses (see above).  Problems will be put on the
+# commands (see above).  Problems will be put on the
 # web page if "web" is in `description_type'.
 #
 set web_solutions_password ""
 set web_help_URL ""
 set web_scoreboard_URL ""
 
-# TCL list of addresses to email scoreboard to.  If this
-# list contains zzz<YYY>, then every time the scoreboard
-# is updated it will be emailed to `zzz<YYY>', so in the
-# account YYY .procmailrc file you should put something
-# like the following to copy the scoreboard into the
-# public_html/xxx file of the YYY account:
+# The following scoreboard_commands variable specifies
+# places to send a copy of ./contest/scoreboard.1.  The
+# variable value is a list of items each with one of
+# the following formats:
 #
-#	:0 b:
-#	* ^To:.*zzz
-#	| cat >public_html/xxx;\
-#	  chmod a+r public_html/xxx
+#	{ NAME ssh ACCOUNT [REMOTE-COMMAND] }
+#	    Pipe ./contest/scoreboard.1 through ssh to
+#	    execute REMOTE-COMMAND in the remote
+#	    ACCOUNT.  If not given, REMOTE-COMMAND
+#	    defaults to a template which can be
+#	    filled out by editing in the file
+#	    ./secure/bin/NAME after it is created
+#	    (this will be mentioned in a TODO).
 #
-# If there are spaces or quotes in zzz<YYY>, it should
-# be enclosed in {} braces in the address list.
+#	{ NAME ... }
+#	    Pipe ./contest/scoreboard.1 to a command
+#	    created by appending { NAME ... } to the
+#	    judging_commands global variable: see that
+#	    variable in hpcp/judge/lib/hpcm_judging.rc
+#	    for details.  In particular, emailing the
+#	    scoreboard to some address is supported,
+#	    and for emailing REMOTE-COMMAND defaults
+#	    as for ssh.
 #
-set scoreboard_addresses { }
-# set scoreboard_addresses {
-#	{"some thing"<someaccount@somecomputer>}
-# }
+# NAME is the name of a command that will be created in
+# ./secure/bin to invoke the proper pipe.  It may not
+# contain whitespace or /.
+#
+set scoreboard_commands {
+}
+
 
 # Parameters Not Usually Modified
 # ---------- --- ------- --------
@@ -420,11 +432,11 @@ set feedback_printer_map "
 # contest_commands.
 #
 set timed_printer_map "
-# Do not edit.  This is created from the printer_list
-# global variable in the hpcm_judging.rc file in the
-# judging directory.
+# Do not edit.  This is created from the printer_
+# commands global variable in the hpcm_judging.rc file
+# in the judging directory.
 #"
-if { [llength $printer_list] == 0 } {
+if { [llength $printer_commands] == 0 } {
     if { [info exists env(PRINTER)] } {
         set timed_printer_map \
 	    "$timed_printer_map\n.* $env(PRINTER)"
@@ -432,7 +444,7 @@ if { [llength $printer_list] == 0 } {
 } else {
     set_contest_directory
     catch { unset names }
-    foreach item $printer_list {
+    foreach item $printer_commands {
 
 	set regexp  [lindex $item 0]
 	set name [lindex $item 1]
@@ -490,6 +502,23 @@ if { $allow_email_submissions == "no" } {
 } else {
     error "Bad allow_email_submissions value:\
            $allow_email_submissions"
+}
+
+# Fix up omitted REMOTE-COMMANDs in scoreboard_commands.
+#
+set commands $scoreboard_commands
+set scoreboard_commands {}
+foreach item $commands {
+    if { (    [lindex $item 1] == "ssh" \
+           && [llength $item] == 3 ) \
+	 || \
+	 (    [lindex $item 1] == "email" \
+	   && [llength $item] == 4 ) } {
+        lappend item \
+	        "head -c 10000 >./public_html/PAGE;\
+	         chmod 644 ./public_html/PAGE"
+    }
+    lappend scoreboard_commands $item
 }
 
 # Set scoring subtype to timed, feedback, or dated
@@ -728,7 +757,7 @@ set no_freeze_timed_scoreboard_instructions {
 #
 # where JD is the $judging_directory.  World read access
 # is granted to this file, which is also sent to any
-# addresses in the scoreboard_addresses global variable.
+# filters in the scoreboard_commands global variable.
 # The file has the format:
 #
 #  NAME             Public Scoreboard             TIME
@@ -890,7 +919,7 @@ set freeze_timed_scoreboard_instructions {
 #
 # where JD is the $judging_directory.  World read access
 # is granted to this file, which is also sent to any
-# addresses in the scoreboard_addresses global variable.
+# filters in the scoreboard_commands global variable.
 # The file has the format:
 #
 #   NAME          Post Contest Scoreboard           TIME

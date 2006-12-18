@@ -6,7 +6,7 @@
 #
 # File:		makecontest
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Dec 17 06:28:22 EST 2006
+# Date:		Mon Dec 18 07:47:21 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/12/17 16:38:01 $
+#   $Date: 2006/12/18 15:15:15 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.182 $
+#   $Revision: 1.183 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -58,13 +58,13 @@ makecontest option ... index_specification ...
 		-mail, -print_files, -solution_files
 		-secure, -procmailrc, -who_where,
 		-trashable, -contest_commands, -judging_
-		commands.
+		commands, -scoreboard_commands.
     -email	Equals all options needed to have email
     		contestant accounts; specifically, the
 		following: -info, -solutions, -mail,
 		-this_contest, -procmailrc, -print_
 		files, -solution_files, -judging_
-		commands.
+		commands, -scoreboard_commands.
     -formal     Same as -local plus -problems and
     		-demos.
     -informal   Same as -local plus -startcontest and
@@ -138,6 +138,10 @@ makecontest option ... index_specification ...
 		./secure/bin/NAME_identity.pub
 		./secure/bin/NAME_authorized_keys
 		./secure/bin/NAME_procmailrc
+    -scoreboard_commands  Append scoreboard_commands
+    		global variable to the judging_commands
+		global variable.  Implies -judging_
+		commands.
 
     -printer    Using the optional `contest_printer'
     		global variable make ./contest/printer,
@@ -151,16 +155,6 @@ makecontest option ... index_specification ...
     -stlhelp	Make ./contest/stlhelp
 
     -web	Make ./web and ./web.tar
-
-    -scoreboard_ssh
-    		For each zzz in the scoreboard_ssh
-		global variable, make ./zzz_identity,
-		./zzz_identity.pub, and ./zzz_
-		authorized_keys.
-    -scoreboard_procmailrc
-    		For each zzz in the scoreboard_
-		procmailrc global variable, make
-		./zzz_procmailrc.
 
     -startcontest   Run the startcontest program if
     		    necessary.
@@ -896,25 +890,11 @@ makecontest option ... index_specification ...
     been done, or if it has been done but a background
     process waiting to start the contest has died.
 
-    The -scoreboard_ssh program option makes files need-
-    ed if the `makescoreboard' program is to copy the
-    scoreboard to remote accounts using ssh (see
-    scoreboard_addresses in hpcm/judge/lib/hpcm_judg-
-    ing.rc).  For each element zzz of the scoreboard_ssh
-    global variable, the ssh_keygen function (see hpcm_
-    judging.rc) is called to make a private key ./zzz_
-    identity and a public key ./zzz_identity.pub, and an
-    entry for the ~/.ssh/authorized_keys file in receiv-
-    ing accounts is made in ./zzz_authorized_keys.
-
-    The -scoreboard_procmailrc program option makes
-    files useful if the `makescoreboard' program is to
-    email the scoreboard to remote accounts (see
-    scoreboard_addresses in hpcm/judge/lib/hpcm_judg-
-    ing.rc).  For each element zzz of the scoreboard_
-    procmailrc global variable, ./zzz_procmailrc is
-    made containing an entry for the ~/.procmailrc file
-    in receiving accounts.
+    The -scoreboard_commands program option appends the
+    value of the scoreboard_commands global variable to
+    the judging_commands global variable.  See documen-
+    tation on judging_commands in hpcm/judge/lib/hpcm_
+    judging.rc.  Implies -judging_commands.
 
     The -scoreboard program option executes the
     `makescoreboard start' command unless this has
@@ -984,8 +964,7 @@ set printer_map_option		no
 set javahelp_option		no
 set stlhelp_option		no
 set web_option			no
-set scoreboard_ssh_option	no
-set scoreboard_procmailrc_option	no
+set scoreboard_commands_option	no
 set startcontest_option		no
 set scoreboard_option		no
 #
@@ -1011,6 +990,9 @@ while { $argi < $argc } {
 			  set contest_commands_option \
 			  			yes
 			  set judging_commands_option \
+			  			yes
+			  set \
+			    scoreboard_commands_option \
 			  			yes }
         -email		{ set info_option	yes
 			  set solutions_option	yes
@@ -1023,6 +1005,9 @@ while { $argi < $argc } {
 			  			yes
 			  set procmailrc_option	yes
 			  set judging_commands_option \
+			  			yes
+			  set \
+			    scoreboard_commands_option \
 			  			yes }
         -formal		{ set contest_option	yes
 			  set bin_option	yes
@@ -1044,6 +1029,9 @@ while { $argi < $argc } {
 			  set contest_commands_option \
 			  			yes
 			  set judging_commands_option \
+			  			yes
+			  set \
+			    scoreboard_commands_option \
 			  			yes
 			  set problems_option	yes
 			  set demos_option	yes }
@@ -1067,6 +1055,9 @@ while { $argi < $argc } {
 			  set contest_commands_option \
 			  			yes
 			  set judging_commands_option \
+			  			yes
+			  set \
+			    scoreboard_commands_option \
 			  			yes
 			  set info_option	yes
 			  set startcontest_option \
@@ -1107,12 +1098,12 @@ while { $argi < $argc } {
         -javahelp	{ set javahelp_option	yes }
         -stlhelp	{ set stlhelp_option	yes }
         -web		{ set web_option	yes }
-        -scoreboard_ssh	{ set scoreboard_ssh_option \
-						yes }
-        -scoreboard_procmailrc	\
+        -scoreboard_commands	\
 	                { set \
-			  scoreboard_procmailrc_option \
-						yes }
+			  scoreboard_commands_option \
+						yes
+			  set judging_commands_option \
+			  			yes }
         -startcontest	{ set startcontest_option \
 						yes }
         -scoreboard	{ set scoreboard_option \
@@ -3025,6 +3016,14 @@ if { $trashable_option || $trashall_option } {
     }
 }
 
+# Append scoreboard_commands to judging_commands if
+# desired.  Must be done before judging_commands is
+# processed.
+#
+if { $scoreboard_commands_option } {
+    eval lappend judging_commands $scoreboard_commands
+}
+
 # Process contest_commands and judging_commands.
 #
 foreach case { contest judging } {
@@ -3067,7 +3066,7 @@ foreach case { contest judging } {
 	switch -- $type {
 	sh {
 	    if { [llength $item] != 3 } {
-	        error "Bad item in ${case}_commands\
+	        error "Bad item in ${case}_commands:\
 		       $item"
 	    }
 	    set command [lindex $item 2]
@@ -3085,7 +3084,7 @@ foreach case { contest judging } {
 	ssh {
 	    if {    [llength $item] != 4 \
 	         && [llength $item] != 5 } {
-	        error "Bad item in ${case}_commands\
+	        error "Bad item in ${case}_commands:\
 		       $item"
 	    }
 	    set account [lindex $item 2]
@@ -3101,7 +3100,9 @@ foreach case { contest judging } {
 	    if { [llength $item] == 5 } {
 		set options [lindex $item 4]
 	    } else {
-	        set options "-x -i PRIVATEKEY"
+	        set options\
+		    "-o PasswordAuthentication=no\
+		     -T -x -i PRIVATEKEY"
 	    }
 	    regsub -all PRIVATEKEY $options \
 		   $bin/${name}_identity options
@@ -3162,19 +3163,21 @@ foreach case { contest judging } {
 		TODO "You must append\
 		      $dirbin/${name}_authorized_keys" \
 		     "to the ~/.ssh/authorized_keys\
-		      file of the account $account" \
+		      file" \
+		     "of the account $account" \
 		     "You may wish to edit the command\
-		      parameter in this file, which\
-		      is" \
-		     "the command that will be executed\
-		      by SSH $account when $name is\
-		      executed locally."
+		      parameter in this file," \
+		     "which is the command that will be\
+		      executed by" \
+		     "ssh $account" \
+		     "when $dirbin/$name is executed\
+		      locally."
 	    }
 	}
 	email {
 	    if {    [llength $item] != 3 \
 	         && [llength $item] != 5 } {
-	        error "Bad item in ${case}_commands\
+	        error "Bad item in ${case}_commands:\
 		       $item"
 	    }
 	    set address [lindex $item 2]
@@ -3210,9 +3213,9 @@ foreach case { contest judging } {
 
 		TODO "You must append\
 		      $dirbin/${name}_procmailrc" \
-		     "to the ~/.procmailrc file" \
-		     "of the account addressed\
-		      by $address" \
+		     "to the ~/.procmailrc file of the\
+		      account addressed by" \
+		     "$address" \
 		     "You may wish to edit the command\
 		      after '|' in this file, which\
 		      is" \
@@ -3220,8 +3223,13 @@ foreach case { contest judging } {
 		      piped the body of any email\
 		      received" \
 		     "whose TO address matches\
-		      the regular expression $regexp" 
+		      the regular expression" \
+		     "`$regexp'" 
 	    }
+	}
+	default {
+	    error "Bad item in ${case}_commands:\
+		   $item"
 	}
 	}
 
@@ -3394,103 +3402,6 @@ if {    $startcontest_option \
     if { ! [file exists $j_d/Startcontest_PID] } {
 	puts "Executing: startcontest start"
         exec startcontest start >@ stdout
-    }
-}
-
-# Make scoreboard_ssh files if desired.
-#
-if { $scoreboard_ssh_option } {
-
-    set file_list {}
-    foreach zzz $scoreboard_ssh {
-	if {    ! [file exists $j_d/${zzz}_identity] \
-	     || ! [file exists \
-			$j_d/${zzz}_identity.pub] } {
-	    file delete -force $j_d/${zzz}_identity
-	    file delete -force $j_d/${zzz}_identity.pub
-	    ssh_keygen $j_d/${zzz}_identity
-	    puts "Made ./${zzz}_identity"
-	    puts "Made ./${zzz}_identity.pub"
-	}
-	if {    ! [file exists \
-			$j_d/${zzz}_authorized_keys] \
-	     ||   [file mtime \
-			$j_d/${zzz}_identity.pub]
-		> [file mtime \
-			$j_d/${zzz}_authorized_keys] } {
-	    if { [file exists \
-		       $j_d/${zzz}_authorized_keys] } {
-		file delete -force \
-		     $j_d/${zzz}_authorized_keys
-		puts "Deleted old\
-		      ./${zzz}_authorized_keys"
-	    }
-	    set pub [read_file $j_d/${zzz}_identity.pub]
-	    write_file $j_d/${zzz}_authorized_keys \
-		"command=\"head -1000\
-		           >public_html/DDDD/$zzz;\
-			   chmod 644\
-			   public_html/DDDD/$zzz\" $pub"
-	    puts "Made ./${zzz}_authorized_keys"
-	    lappend file_list ./${zzz}_authorized_keys
-	}
-    }
-    if { [llength $file_list] > 0 } {
-	TODO "Append the following files to the\
-	      ~/.ssh/authorized_keys files of the" \
-	     "accounts to which the scoreboard is to\
-	      be sent via ssh, and replace" \
-	     "each public_html/DDDD/* in each addition\
-	      by the correct file name:" \
-	     "" \
-	     "    [indent_list 4 $file_list]" \
-	     "" \
-	     "The file zzz_authorized_keys is to be\
-	      used for accounts YYY" \
-	     "if `!zzz<YYY>' appears in the\
-	      scoreboard_addresses global variable" \
-	     "or a similar global variable." \
-	     "" \
-	     "WARNING: scoreboard files may be\
-	      automatically deleted" \
-	     "         immediately after they are made\
-	               due to errors" \
-	     "         caused by unset or incorrectly\
-	               set authorized_keys files."
-    }
-}
-
-# Make scoreboard_procmailrc files if desired.
-#
-if { $scoreboard_procmailrc_option } {
-
-    set file_list {}
-    foreach zzz $scoreboard_procmailrc {
-	if { ! [file exists $j_d/${zzz}_procmailrc] } {
-	    write_file $j_d/${zzz}_procmailrc "
-:0 b:
-* ^To:.*${zzz}
-| cat >public_html/DDDD/${zzz}; \\
-  chmod a+r public_html/DDDD/${zzz}"
-	    puts "Made ./${zzz}_procmailrc"
-	    lappend file_list ./${zzz}_procmailrc
-	}
-    }
-    if { [llength $file_list] > 0 } {
-	TODO "Append the following files to the\
-	      ~/.procmailrc files of the" \
-	     "accounts to which the scoreboard is to\
-	      be sent via email, and replace" \
-	     "each public_html/DDDD/* in each addition\
-	      by the correct file name:" \
-	     "" \
-	     "    [indent_list 4 $file_list]" \
-	     "" \
-	     "The file zzz_procmailrc is to be\
-	      used for accounts YYY" \
-	     "if `zzz<YYY>' appears in the\
-	      scoreboard_addresses global variable" \
-	     "or a similar global variable."
     }
 }
 

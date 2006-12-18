@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Dec 17 06:28:48 EST 2006
+# Date:		Mon Dec 18 08:16:27 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/12/17 16:36:57 $
+#   $Date: 2006/12/18 15:17:41 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.223 $
+#   $Revision: 1.224 $
 
 # Table of Contents:
 #
@@ -220,10 +220,14 @@ set makecontest_arguments "
 #	    ACCOUNT.  ACCOUNT must be an account name
 #	    in ssh format.  REMOTE-COMMAND may have
 #	    whitespace but no ""'s.  OPTIONS are the
-#	    options passed to ssh: they are by default
-#	    "-x -i PRIVATEKEY".  The string PRIVATEKEY
-#	    in OPTIONS is replaced by the full name of
-#	    the private key file.
+#	    options passed to ssh: they are by default:
+#
+#		    "-o PasswordAuthentication=no\
+#		     -T -x -i PRIVATEKEY"
+#
+#	    The string PRIVATEKEY in OPTIONS is replaced
+#	    by the full name (truename) of the private
+#	    key file.
 #
 #	{ NAME email ADDRESS [REGEXP REMOTE-COMMAND] }
 #	    Executing NAME executes hpcm_remote_sendmail
@@ -918,36 +922,11 @@ set scoreboard_width 80
 #
 set scoreboard_markers "|$!#^%@<>"
 
-# List of addresses for `makescoreboard' to email or ssh
-# the scoreboard to.  If scoreboard_instructions in-
-# cludes a `SEND' instruction for an OUTPUT file, and
-# scoreboard_addresses is a list containing zzz<YYY>,
-# then every time the output file is made it will be
-# emailed to `zzz<YYY>'.
+# List of items to be added to judging_commands that
+# create filters to which the scoreboard is to be
+# sent.  See judging_commands for documentation.
 #
-# As an alternative, an address can be of the form
-# `!zzz<YYY>', in which case the output file is sent
-# to the account YYY using `ssh -i zzz_identity YYY'.
-#
-# See documentation for `scoreboard_instructions' for
-# more details and additional SEND features.
-#
-set scoreboard_addresses { }
-
-# Makecontest -scoreboard_ssh makes the zzz_identity and
-# zzz_authorized_keys files for every zzz in the follow-
-# ing list.  The latter file is to be added to the
-# ~/.ssh/authorized_keys files of accounts receiving the
-# scoreboard via ssh.
-#
-set scoreboard_ssh { scoreboard }
-
-# Makecontest -scoreboard_procmailrc makes the zzz_
-# procmailrc file for every zzz in the following list.
-# The later file is to be added to the ~/.procmailrc
-# files of accounts receiving the scoreboard by email.
-#
-set scoreboard_procmailrc { scoreboard }
+set scoreboard_commands {}
 
 # Interval in seconds between times when the `make-
 # scoreboard' program looks at flags and file modi-

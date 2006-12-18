@@ -4,7 +4,7 @@
 #
 # File:		makescoreboard
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Oct 29 11:07:14 EST 2006
+# Date:		Sun Dec 17 21:19:10 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/10/29 16:05:40 $
+#   $Date: 2006/12/18 15:16:45 $
 #   $RCSfile: makescoreboard,v $
-#   $Revision: 1.79 $
+#   $Revision: 1.80 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -384,7 +384,8 @@ proc update_scoreboard { { force no } } {
            shutdown_time sent_errors \
 	   judging_directory pid_file argv \
            finder_file errorCode errorInfo \
-	   abbreviation_array bar solid_bar space
+	   abbreviation_array bar solid_bar space \
+	   scoreboard_commands
 
     set time [clock seconds]
     if {    $shutdown_time != "" \
@@ -527,39 +528,13 @@ proc update_scoreboard { { force no } } {
 		    # Send email.
 		    #
 		    if { $send } {
-			foreach to $send_addresses {
-			    set to [string trim $to]
-			    if { [regexp {^!} $to] } {
-				set m \
-				  {^!([^<]*)<([^>]*)>$}
-				if { ! [regexp \
-				          $m $to \
-					  forget zzz \
-					  account] } {
-				    error "Badly\
-				           formatted\
-					   address in\
-					   $send_name:\
-					   $to"
-				}
-				set f $judging_directory
-				set f $f/${zzz}_identity
-				set error_data \
-				    "\nError was during\
-				     ssh_copy_message\
-				     $f $account ...\n"
-				ssh_copy_message \
-				    $f $account \
-				    $contents
-			    } else {
-				set error_data \
-				    "\nError was during\
-				     send_message\
-				     \"To: $to..\"\n"
-				send_message \
-				   "To:\
-				    $to\n\n$contents"
-			    }
+			set bin $judging_directory
+			set bin $bin/secure/bin
+			foreach to $send_commands {
+			    set error_data \
+				"\nError was during\
+				 execution of $bin/$to"
+			    exec $bin/$to <<$contents
 			}
 		    }
 		    lsub sent_errors $out_file
@@ -584,8 +559,11 @@ proc update_scoreboard { { force no } } {
 			"Subject: makescoreboard error\
 			 outputting $out_file\n"
 		    set message "$message\nNOTE:\
-				 the file $out_file has\
+				 The file $out_file has\
 				 been DELETED!\n"
+		    set message "$message\n     \
+				 It will reappear after\
+				 you fix this error.\n"
 		    set message "$message$error_data"
 		    set message \
 			"$message\n$error_message\n"
@@ -705,18 +683,22 @@ proc update_scoreboard { { force no } } {
 
 	    yes_SEND {
 
-		# Compute send_addresses and send_name
-		# for use when output done.
+		# Compute send_commands for use when
+		# output done.
 		#
 		set name [lindex $instruction 1]
-		if { $name == "" } {
-		    set name addresses
-		}
 		set send_name scoreboard_$name
-		if { ! [info exists $send_name] } {
-		   set send_addresses ""
+		if { $name == "" } {
+		    set send_commands {}
+		    foreach item $scoreboard_commands {
+		        lappend send_commands \
+			        [lindex $item 0]
+		    }
+		} elseif { ! [info exists \
+				   $send_name] } {
+		   set send_commands {}
 		} else {
-		   set send_addresses [set $send_name]
+		   set send_commands [set $send_name]
 		}
 
 		# Set switch to indicate SEND happened.

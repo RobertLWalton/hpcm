@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Sep 29 13:20:48 EDT 2006
+# Date:		Mon Dec 18 10:26:26 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/09/29 17:19:26 $
+#   $Date: 2006/12/18 15:26:16 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.69 $
+#   $Revision: 1.70 $
 #
 # To make an untimed contest named `foo':
 #
@@ -278,7 +278,7 @@ dangerous_test_clean:
 
 dangerous_clean:
 	-makescoreboard stop
-	rm -rf mail help flag log web* \
+	rm -rf mail help flag log secure .ssh web* \
 	       info* solutions* \
 	       TODO replies mbox *.ps *.pdf \
 	       `readlink contest` \
@@ -290,8 +290,4 @@ dangerous_clean:
 	       solution_files* \
 	       Scorefinder* \
 	       Scoreboard_PID \
-	       scoreboard.web \
-	       *_authorized_keys \
-	       *_identity \
-	       *_identity.pub \
-	       *_procmailrc
+	       scoreboard.web
