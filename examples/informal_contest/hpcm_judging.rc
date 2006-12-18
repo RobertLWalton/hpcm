@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Dec 14 09:14:59 EST 2006
+# Date:		Mon Dec 18 10:29:01 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/12/14 14:14:04 $
+#   $Date: 2006/12/18 17:44:39 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.26 $
+#   $Revision: 1.27 $
 
 # Table of Contents
 #
@@ -235,25 +235,36 @@ set web_solutions_password ""
 set web_help_URL ""
 set web_scoreboard_URL ""
 
-# TCL list of addresses to email scoreboard to.  If this
-# list contains zzz<YYY>, then every time the scoreboard
-# is updated it will be emailed to `zzz<YYY>', so in the
-# account YYY .procmailrc file you should put something
-# like the following to copy the scoreboard into the
-# public_html/xxx file of the YYY account:
+# The following scoreboard_commands variable specifies
+# places to send a copy of ./contest/scoreboard.1.  The
+# variable value is a list of items each with one of
+# the following formats:
 #
-#	:0 b:
-#	* ^To:.*zzz
-#	| cat >public_html/xxx;\
-#	  chmod a+r public_html/xxx
+#	{ NAME ssh ACCOUNT [REMOTE-COMMAND] }
+#	    Pipe ./contest/scoreboard.1 through ssh to
+#	    execute REMOTE-COMMAND in the remote
+#	    ACCOUNT.  If not given, REMOTE-COMMAND
+#	    defaults to a template which can be
+#	    filled out by editing in the file
+#	    ./secure/bin/NAME after it is created
+#	    (this will be mentioned in a TODO).
 #
-# If there are spaces or quotes in zzz<YYY>, it should
-# be enclosed in {} braces in the address list.
+#	{ NAME ... }
+#	    Pipe ./contest/scoreboard.1 to a command
+#	    created by appending { NAME ... } to the
+#	    judging_commands global variable: see that
+#	    variable in hpcp/judge/lib/hpcm_judging.rc
+#	    for details.  In particular, emailing the
+#	    scoreboard to some address is supported,
+#	    and for emailing REMOTE-COMMAND defaults
+#	    as for ssh.
 #
-set scoreboard_addresses { }
-# set scoreboard_addresses {
-#	{"some thing"<someaccount@somecomputer>}
-# }
+# NAME is the name of a command that will be created in
+# ./secure/bin to invoke the proper pipe.  It may not
+# contain whitespace or /.
+#
+set scoreboard_commands {
+}
 
 # Parameters Not Usually Modified
 # ---------- --- ------- --------
