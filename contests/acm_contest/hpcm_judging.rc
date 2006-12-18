@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Dec 18 10:07:24 EST 2006
+# Date:		Mon Dec 18 11:22:38 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/12/18 15:19:55 $
+#   $Date: 2006/12/18 16:24:29 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.68 $
+#   $Revision: 1.69 $
 
 # Table of Contents
 #
@@ -502,23 +502,6 @@ if { $allow_email_submissions == "no" } {
 } else {
     error "Bad allow_email_submissions value:\
            $allow_email_submissions"
-}
-
-# Fix up omitted REMOTE-COMMANDs in scoreboard_commands.
-#
-set commands $scoreboard_commands
-set scoreboard_commands {}
-foreach item $commands {
-    if { (    [lindex $item 1] == "ssh" \
-           && [llength $item] == 3 ) \
-	 || \
-	 (    [lindex $item 1] == "email" \
-	   && [llength $item] == 4 ) } {
-        lappend item \
-	        "head -c 10000 >./public_html/PAGE;\
-	         chmod 644 ./public_html/PAGE"
-    }
-    lappend scoreboard_commands $item
 }
 
 # Set scoring subtype to timed, feedback, or dated
