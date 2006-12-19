@@ -4,7 +4,7 @@
 #
 # File:		overview
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Oct 21 04:30:22 EDT 2006
+# Date:		Tue Dec 19 09:11:00 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/10/21 08:31:29 $
+#   $Date: 2006/12/19 14:29:50 $
 #   $RCSfile: overview,v $
-#   $Revision: 1.144 $
+#   $Revision: 1.145 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -1444,7 +1444,7 @@ file that gives instructions on how to do each of these.
 
     help_print_files
     demos_print_files
-    problems_print_files
+    problem_print_files
         Lists of files to be printed.  The help, demos,
 	and problem description files are given in sep-
 	arate lists, each beginning with an index file,
@@ -3801,6 +3801,12 @@ tenance.  Annotations are as in `Programs: Judging'.
     sloc_counts		Count SLOCs (source lines of
     			code in HPCM program files).
 
+    rerun_contest	Rerun autojudge on contest in
+    			order to compare results with
+			previous judgments.
+    diff_contest	Do the comparison just mention-
+    			ed.
+
 
 Common Functions
 ------ ---------
@@ -3880,6 +3886,9 @@ functions.  A brief summary of these functions is:
 
     proc archive_directory { dirname }
         Make .tar file from directory.
+
+    proc grant_user_access { filename permissions }
+        Add user permissions to a file or directory.
 
     proc grant_access { filename { allow rx } }
     	Add a+x, a+r, or a+w permissions to file or
@@ -4038,6 +4047,11 @@ mary of these is:
     proc blank_body { ch }
         Check if received email has a blank body.
 
+    proc set_contest_directory {}
+        Set the contest_directory global variable to
+	the truename of the contest directory, even if
+	that directory does not exist yet.
+
     proc put_file { filename
 		   { ch stdout }
 		   { line_count 1000000000 } }
@@ -4060,6 +4074,17 @@ mary of these is:
     proc test_flag { flagfilename }
     proc clear_flag { flagfilename }
     	Manage flags in the flag directory.
+
+    proc execute_makes { instructions s_d name
+                         { return_first 0 } }
+	Execute problem_make_files instructions in
+	directory s_d (name is for error messages), or
+	just return the name of the first file that
+	needs to be made.
+    proc execute_locked_makes { instructions s_d name
+                                s_d_is_locked_name }
+	Execute problem_make_files instructions in
+	the locked directory s_d.
 
     proc compile_logical_expression { expression
                                       abbreviations
@@ -4186,6 +4211,10 @@ scores.  A brief summary of these is:
 	    { outfile testfile scorefile
 	      { options {} } }
     	Compute .score file from outfile and testfile.
+
+    proc compare_markers { new old }
+        Indicate which of two scorediff markers is
+	larger.
 
     proc compute_score { }
     	Compute score from scoring instructions and
