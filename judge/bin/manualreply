@@ -5,7 +5,7 @@
 #
 # File:		manualreply
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Oct  5 08:10:07 EDT 2005
+# Date:		Wed Dec 20 07:24:28 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,10 +13,10 @@
 #
 # RCS Info (may not be true date or author):
 #
-#   $Author: hc3 $
-#   $Date: 2005/10/05 12:10:11 $
+#   $Author: walton $
+#   $Date: 2006/12/20 13:04:01 $
 #   $RCSfile: manualreply,v $
-#   $Revision: 1.70 $
+#   $Revision: 1.71 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -109,7 +109,7 @@ if { $my_argc != 0 } {
 
 set main_menu "
     ? = help        \
-x = exit            \
+x = q = exit        \
 sm = scoring menu   \
 ss = send score
 #  = look at #      \
@@ -131,7 +131,7 @@ ai = autoinfo"
 
 set scoring_menu "
                         ? = help                       \
-x  = exit
+x  = q = exit
 io = Incorrect Output   cc = Completely Correct        \
  #  = look at #
 fe = Formatting Error   ic = Incomplete Output         \
@@ -1032,9 +1032,9 @@ proc refresh_proofs_info { } {
 	Scoring Instructions:\
 	    [string trim $scoring_instructions]\n   \
         n|p = goto next|previous proof  \
-        ? = help   x = exit   ss = send score + mm\n   \
-        mm|sm = return to main|scoring menu  \
-        ps XX = set propose score to XX"
+        x|q|ss|ls|sh|... = mm + x|q|ss|ls|sh|... \n   \
+        ? = help    ps XX = set propose score to XX   \
+	            pr = refresh"
 
     set window_info_height [llength [split $info "\n"]]
     set_window_info $info
@@ -1125,7 +1125,7 @@ proc display_proofs {} {
 
     global last_file window_error window_prompt \
 	   proposed_score answer auto_score_marker \
-	   scoring_instructions
+	   scoring_instructions main_menu
 
     if { [catch {
 	    set score_file [lindex $auto_score_marker 0]
@@ -1178,15 +1178,27 @@ proc display_proofs {} {
 
 	set answer [string trim [gets stdin]]
 	switch -regexp -- $answer {
-	    {^mm$} { return mm }
 	    {^sm$} { return sm }
+	    {^mm$} { return mm }
+	    {^ss$} -
+	    {^ls$} -
+	    {^sh$} -
+	    {^ir$} -
+	    {^er$} -
+	    {^sr$} -
+	    {^nr$} -
+	    {^sq$} -
+	    {^xq$} -
+	    {^aj$} -
+	    {^ai$} {
+	        set menu $main_menu
+		refresh_info
+		return $answer
+	    }
+	    {^q$} -
 	    {^x$} {
 		exit_cleanup
 		exit 0
-	    }
-	    {^ss$} {
-		send_score
-		return mm
 	    }
 	    "^ps[ \t]" {
 		if { [catch { set l [llength $answer] \
@@ -1303,13 +1315,19 @@ proc not_readonly {} {
     }
 }
 
+set replay ""
 while { "yes" } {
 
     set window_prompt "> "
     display_window
     set window_error ""
 
-    set answer [string trim [gets stdin]]
+    if { $replay != "" } {
+        set answer $replay
+    } else {
+	set answer [string trim [gets stdin]]
+    }
+    set replay ""
     switch -regexp -- $answer {
         {^[1-9][0-9]*$} {
 	    if { [get_file $answer] } {
@@ -1583,6 +1601,7 @@ while { "yes" } {
 	    set menu $main_menu
 	    refresh_info
 	}
+	{^q$} -
 	{^x$} {
 	    exit_cleanup
 	    exit 0
@@ -1621,12 +1640,7 @@ while { "yes" } {
 	    refresh_info
 	}
 	{^pr$} {
-	    switch -exact [display_proofs] {
-	        "" {}
-		mm { set menu $main_menu }
-		sm { set menu $scoring_menu }
-	    }
-	    refresh_info
+	    set replay [display_proofs]
 	}
 	{^\?} {
 	    display_help
