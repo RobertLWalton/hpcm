@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/12/21 13:15:45 $
+#   $Date: 2006/12/21 13:48:03 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.147 $
+#   $Revision: 1.148 $
 #
 
 # Table of Contents
@@ -67,7 +67,12 @@
 #
 #	set log_disable yes
 #
-# if you do not want any errors written to log files.
+# if you do NOT want any errors written to log files.
+# Put
+#
+#	set log_quiet yes
+#
+# if you do NOT want any errors written to stderr.
 # See `log_error' below.
 #
 # Put the command
@@ -330,27 +335,28 @@ proc caught_error {} {
 
 # Function called to log an error when the program
 # may want to continue.  The error is printed on the
-# standard error output.  Unless `log_disable' is `yes',
-# the error is also written to a file.  If `log_mode'
-# is `auto' or `auto+manual', the first error of a pro-
-# gram is also emailed to any submitter/requester iden-
-# tified in the Received_Mail file, and if the `log_
-# mode' is `auto', this mail is cc'ed to any log mana-
-# ger.  This mail will contain a copy of any X-HPCM-
-# Test-Subject field that is in any Received_Mail file
-# if the error is being logged in the current direc-
-# tory (see below).
+# standard error output unless `log_quiet' exists and
+# equals `yes'.  Unless `log_disable' exists and equals
+# `yes', the error is also written to a file.  In this
+# case, if `log_mode' is `auto' or `auto+manual', the
+# first error of a program is also emailed to any
+# submitter/requester identified in the Received_Mail
+# file, and if the `log_mode' is `auto', this mail is
+# cc'ed to any log manager.  This mail will contain a
+# copy of any X-HPCM-Test-Subject field that is in any
+# Received_Mail file if the error is being logged in the
+# current directory (see below).
 #
 # When the error information is written to a file, a
 # separate file is created for each error.  If the
-# log_globally variable does not exist or does not equal
-# `yes' and the current directory is writable, the file
-# is written into the current directory.  Otherwise if
-# $judging_directory/log names a directory that exists
-# or can be made and is writable once it is made, then
-# the file is written into this directory.  Otherwise
-# the file is written into $default_log_directory, which
-# is defined above as an emergency last resort.
+# `log_globally' variable does not exist or does not
+# equal `yes' and the current directory is writable, the
+# file is written into the current directory.  Otherwise
+# if $judging_directory/log names a directory that
+# exists or can be made and is writable once it is made,
+# then the file is written into this directory.  Other-
+# wise the file is written into $default_log_directory,
+# which is defined above as an emergency last resort.
 #
 # The format of the file name is:
 #
@@ -381,7 +387,7 @@ proc log_error { error_output } {
 
     global argv0 argv errorCode errorInfo \
 	   default_log_directory judging_directory \
-	   log_globally log_disable log_mode \
+	   log_globally log_disable log_quiet log_mode \
 	   log_error_count log_error_maximum \
 	   log_manager \
 	   message_From_line message_to message_from \
@@ -403,6 +409,12 @@ proc log_error { error_output } {
     } elseif { $log_error_count > $log_error_maximum } {
     	set log_disable yes
     }
+    if {    [info exists log_quiet] \
+         && $log_quiet == "yes" } {
+        set noisy no
+    } else {
+        set noisy yes
+    }
 
     # If `log_disable' is `yes', do not write to file,
     # but print errorCode and errorInfo to standard
@@ -412,27 +424,32 @@ proc log_error { error_output } {
     #
     if {    [info exists log_disable] \
          && $log_disable == "yes" } {
-	puts stderr "------------------------------"
-	puts stderr "ERROR during $argv0 $argv"
-	puts stderr "errorCode: $errorCode"
-	puts stderr "errorInfo follows:"
-	puts stderr "--------------------"
-	puts stderr $errorInfo
-	puts stderr "--------------------"
-	puts stderr $error_output
-	puts stderr "--------------------"
-	puts stderr "ABOVE ERROR during $argv0 $argv"
-	puts stderr "------------------------------"
+	if { $noisy } {
+	    puts stderr "------------------------------"
+	    puts stderr "ERROR during $argv0 $argv"
+	    puts stderr "errorCode: $errorCode"
+	    puts stderr "errorInfo follows:"
+	    puts stderr "--------------------"
+	    puts stderr $errorInfo
+	    puts stderr "--------------------"
+	    puts stderr $error_output
+	    puts stderr "--------------------"
+	    puts stderr "ABOVE ERROR during $argv0\
+	    				    $argv"
+	    puts stderr "------------------------------"
+	}
 	return
     }
 
     # Write error to standard error output.
     #
-    puts stderr "------------------------------"
-    puts stderr "ERROR during $argv0 $argv"
-    puts stderr "--------------------"
-    puts stderr $error_output
-    puts stderr "------------------------------"
+    if { $noisy } {
+	puts stderr "------------------------------"
+	puts stderr "ERROR during $argv0 $argv"
+	puts stderr "--------------------"
+	puts stderr $error_output
+	puts stderr "------------------------------"
+    }
 
     # Compute $log_dir, the logging directory to be
     # used.  Make it if necessary.  Be sure it is
@@ -484,8 +501,10 @@ proc log_error { error_output } {
 
     # Write error to $log_file file.
     #
-    puts stderr "-----"
-    puts stderr "Logging to $log_file"
+    if { $noisy } {
+	puts stderr "-----"
+	puts stderr "Logging to $log_file"
+    }
 
     set log_ch [open $log_file a]
     puts $log_ch "----------------------------------"
@@ -646,13 +665,17 @@ proc log_error { error_output } {
 	    # Close mail file and send mail.
 	    #
 	    close $mail_ch
-	    puts stderr ""
-	    puts stderr "Mailing $log_tail"
-	    puts stderr "To $to $cc"
+	    if { $noisy } {
+		puts stderr ""
+		puts stderr "Mailing $log_tail"
+		puts stderr "To $to $cc"
+	    }
 	    send_mail $log_file.mail
 	}
     }
-    puts stderr "------------------------------"
+    if { $noisy } {
+	puts stderr "------------------------------"
+    }
 
     set_flag Needs_Reply_Flag
 }
