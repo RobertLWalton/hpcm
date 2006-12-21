@@ -4,7 +4,7 @@
 #
 # File:		startcontest
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Oct 21 04:30:50 EDT 2006
+# Date:		Thu Dec 21 08:17:27 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,14 +13,42 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/10/21 08:31:29 $
+#   $Date: 2006/12/21 14:13:39 $
 #   $RCSfile: startcontest,v $
-#   $Revision: 1.12 $
+#   $Revision: 1.13 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
 
 # Use tcl rather than tclsh so that `signal' is defined.
+
+# If -start-, set up error handling so we will catch
+# errors during sourcing of hpcm_judging.rc and do
+# retries if necessary.
+#
+if { [lindex $argv 0] == "-start-" } {
+    set start_errors [lindex $argv 1]
+    if { $start_errors < 4 } {
+        proc caught_error_retry {} {
+	    global start_errors pid_file
+	    incr start_errors
+	    sleep 2
+	    if { [info exists pid_file] } {
+		file delete -force $pid_file
+	    }
+	    exec startcontest -start- $start_errors &
+	    exit 0
+	}
+    }
+    set log_globally yes
+    set log_quiet yes
+} else {
+    set log_disable yes
+}
+
+# Save program start time.
+#
+set startcontest_start_time [clock seconds]
 
 # Include common code and parameters:
 #
@@ -30,12 +58,6 @@ source $lib_directory/judging_common.tcl
 # Abbreviation for use in this file.
 #
 set c_d $judging_directory/contest
-
-# Set log mode, saving old mode.
-#
-set log_globally yes
-set saved_log_mode $log_mode
-set log_mode none
 
 catch {
 
@@ -85,47 +107,24 @@ startcontest { start | status | stop }
     However, errors made by any background child are
     logged to log files."
 
+#	startcontest start
+#
+# calls
+#
+#	startcontest -start- N
+#
+# where N is the number of retries because of errors,
+# or is just 1 to indicate we should retry because
+# parameters have changed.
 
 # If there are any illegal arguments print documentation
 # and exit with error.
 #
 set arg [lindex $argv 0]
-if { $argc > 1 || \
-     ! [lcontain {start status stop -start-} $arg] } {
+if {    ! [lcontain {start status stop -start-} $arg] \
+     || ( $arg != "-start-" && $argc != 1 ) } {
     puts $document
     exit 1
-}
-
-# Function to re-read hpcm_judging.rc if necessary.
-#
-# If the file is changing an error may occur, and
-# nothing is done.  The file will be re-read after
-# the next delay timeout.
-#
-set hpcm_judging_rc_mtime \
-    [file mtime $judging_directory/hpcm_judging.rc]
-proc re_read_rc { } {
-
-    # Import standard globals, e.g. tclvars.
-    #
-    global env errorCode errorInfo argv argc
-    foreach x [info globals tcl_*] {
-        global $x
-    }
-    global judging_directory lib_directory
-
-    global scoreboard_start_time \
-           hpcm_judging_rc_mtime
-
-    catch {
-    	set mtime \
-	    [file mtime \
-	          $judging_directory/hpcm_judging.rc]
-	if { $mtime > $hpcm_judging_rc_mtime } {
-	    source $judging_directory/hpcm_judging.rc
-	    set hpcm_judging_rc_mtime $mtime
-	}
-    }
 }
 
 set pid_file $judging_directory/Startcontest_PID
@@ -243,7 +242,9 @@ if { (    ! [file isdirectory $c_d/problems] \
                   [get_access \
 		       $c_d/help/problems]] ) } {
 
-    puts "startcontest has been done previously"
+    if { $arg == "start" } {
+	puts "startcontest has been done previously"
+    }
     exit 0
 }
 
@@ -284,7 +285,7 @@ if { ! [regexp {^(|problem|team)$} $stime] } {
 
 	    # Run startcontest as a subprocess.
 	    #
-	    exec startcontest -start- &
+	    exec startcontest -start- 0 &
 
 	    # Wait for any output from subprocess.
 	    #
@@ -307,14 +308,9 @@ if { ! [regexp {^(|problem|team)$} $stime] } {
     }
     -start- {
 
+
         # Come here if subprocess (indicated by special
 	# -start- argument).
-
-	# Restore log mode and disable standard output
-	# and error.
-	#
-	set log_mode $saved_log_mode
-	disable_stderr
 
 	# Set pid file.
 	#
@@ -322,16 +318,23 @@ if { ! [regexp {^(|problem|team)$} $stime] } {
 	set wrote_pid_file yes
 
 	# Wait for start time and then fall through to
-	# grant permissions.  Re-read hpcm_juding.rc
-	# as necessary to get start time changes.
+	# grant permissions.  If hpcm_judging.rc has
+	# changed since program started, re-execute
+	# startcontest -start-.
 	#
 	while { "yes" } {
-	    re_read_rc
-	    set stime $scoreboard_start_time
-	    if { $stime == "" } break
-	    set stime [clock scan $stime]
+
+	    set pfile $judging_directory/hpcm_judging.rc
+	    if {    [file mtime $pfile] \
+	         >= $startcontest_start_time } {
+	        file delete -force $pid_file
+		exec startcontest -start- 0 &
+		exit 0
+	    }
+	        
     	    if { [clock seconds] >= $stime } break
 	    sleep 60
+	    set start_errors 0
 	}
     }
     }
