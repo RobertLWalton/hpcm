@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Dec 21 02:39:41 EST 2006
+# Date:		Thu Dec 21 08:06:59 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/12/21 08:20:08 $
+#   $Date: 2006/12/21 13:15:45 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.146 $
+#   $Revision: 1.147 $
 #
 
 # Table of Contents
@@ -98,6 +98,16 @@
 # cannot find judging parameters.
 #
 set default_log_directory $env(HOME)/HPCM_Error_Log
+
+# Hook to retry when a caught_error happens.  The
+# caught_error function calls this first, then logs
+# the error, then calls exit_cleanup, and then
+# exits with 0 status.  If this function is NOT
+# defined, it is assumed to be a no operation.  The
+# function may be defined before judging_common.tcl
+# is sourced.
+#
+# proc caught_error_retry {} {}
 
 # Exit cleanup.  Called to do special cleanup before
 # exit.  Default does nothing.  This proc may be
@@ -309,6 +319,10 @@ proc make_unchecked { filename } {
 #
 proc caught_error {} {
     global caught_output
+    if { [llength [info procs \
+                        caught_error_retry]] != 0 } {
+	caught_error_retry
+    }
     log_error $caught_output
     exit_cleanup
     exit 0
