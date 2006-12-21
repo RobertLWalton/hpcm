@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Dec 16 06:43:15 EST 2006
+# Date:		Thu Dec 21 02:39:41 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/12/16 12:13:51 $
+#   $Date: 2006/12/21 08:20:08 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.145 $
+#   $Revision: 1.146 $
 #
 
 # Table of Contents
@@ -58,11 +58,14 @@
 #
 #	set log_globally yes
 #
-# in front of the `catch {' if you want errors to be
-# logged in the log directory instead of the current
-# directory.  Put
+# in front of
 #
-#	set log_mode none
+#	source $lib_directory/judging_common.tcl
+#
+# if you want errors to be logged in the log directory
+# instead of the current directory.  Put
+#
+#	set log_disable yes
 #
 # if you do not want any errors written to log files.
 # See `log_error' below.
@@ -81,15 +84,15 @@
 #
 #	$lib_directory/hpcm_judging.rc
 #
-# Usually SOME-DIRECTORY is '.', and log_mode is set
-# to `none'.
+# Usually SOME-DIRECTORY is '.', and log_disable is set
+# to `yes'.
 #
 # The catch and `caught_error' function catches all
 # program errors and causes them to be announced on the
 # standard error output and be logged according to the
-# log_mode and log_globally settings.  This can cause
-# errors to be recorded in an error log file and to
-# generate email notification.
+# log_disable, log_globally, and log_mode settings.
+# This can cause errors to be recorded in an error log
+# file and to generate email notification.
 
 # Default error log directory name.  For use if we
 # cannot find judging parameters.
@@ -313,7 +316,7 @@ proc caught_error {} {
 
 # Function called to log an error when the program
 # may want to continue.  The error is printed on the
-# standard error output.  Unless `log_mode' is `none',
+# standard error output.  Unless `log_disable' is `yes',
 # the error is also written to a file.  If `log_mode'
 # is `auto' or `auto+manual', the first error of a pro-
 # gram is also emailed to any submitter/requester iden-
@@ -356,15 +359,15 @@ proc caught_error {} {
 # Number of calls to log_error during this program.
 #
 # If log_error_count > log_error_maximum then
-# log_mode is reset to `none'.
+# log_disable is set to `yes'.
 #
 set log_error_count 0
 #
 proc log_error { error_output } {
 
     global argv0 argv errorCode errorInfo \
-	   default_log_directory \
-	   judging_directory log_globally log_mode \
+	   default_log_directory judging_directory \
+	   log_globally log_disable log_mode \
 	   log_error_count log_error_maximum \
 	   log_manager \
 	   message_From_line message_to message_from \
@@ -374,7 +377,7 @@ proc log_error { error_output } {
     set log_directory $judging_directory/log
 
     # Increment count of calls to log error and if
-    # appropriate change log_mode to `none' or exit
+    # appropriate set log_disable to `yes' or exit
     # from program.
     #
     incr log_error_count
@@ -384,15 +387,17 @@ proc log_error { error_output } {
 	exit_cleanup
         exit 2
     } elseif { $log_error_count > $log_error_maximum } {
-    	set log_mode none
+    	set log_disable yes
     }
 
-    # If `log_mode' is `none', do not write to file, but
-    # print errorCode and errorInfo to standard error
-    # output and return.  Do this before writing error,
-    # so that error will be visible at end of printout.
+    # If `log_disable' is `yes', do not write to file,
+    # but print errorCode and errorInfo to standard
+    # error output and return.  Do this before writing
+    # error, so that error will be visible at end of
+    # printout.
     #
-    if { $log_mode == "none" } {
+    if {    [info exists log_disable] \
+         && $log_disable == "yes" } {
 	puts stderr "------------------------------"
 	puts stderr "ERROR during $argv0 $argv"
 	puts stderr "errorCode: $errorCode"
@@ -2432,52 +2437,60 @@ proc parse_block_eval_if \
 # ------ ----
 
 
-if { [info exists judging_directory] } {
-    source_file $lib_directory/hpcm_judging.rc
-} else {
+# Catch errors sourcing hpcm_judging.rc.
+#
+if { [catch {
 
-    # Locate the directory containing the judging para-
-    # meters file.  This should be unique.  If unique,
-    # the name is stored in the `judging_directory'
-    # variable.
-    #
-    set judging_directory ""
-    foreach __d__ ". .. ../.. ../../.. ../../../.." {
-	if { [file exists \
-		   $__d__/hpcm_judging.rc] } {
-	    lappend judging_directory $__d__
-	}
-    }
-
-    # If directory containing judging parameters file
-    # is unique, source the file.  Otherwise call error.
-    # Before sourcing file, run a security check: insist
-    # that file not be readable by `others', but only by
-    # group and owner.
-    #
-    if { [llength $judging_directory] == 1 } {
-	source_file \
-	    $judging_directory/hpcm_judging.rc
-    } elseif { [llength $judging_directory] == 0 } {
-	error "hpcm_judging.rc not found"
+    if { [info exists judging_directory] } {
+	source_file $lib_directory/hpcm_judging.rc
     } else {
-	set __m__ "Too many hpcm_judging.rc files:"
-	foreach __d__ $judging_directory {
-	    set __m__ "$__m__\n\
-		      \     $__d__/hpcm_judging.rc"
+
+	# Locate the directory containing the judging
+	# parameters file.  This should be unique.  If
+	# unique, the name is stored in the `judging_
+	# directory' variable.
+	#
+	set judging_directory ""
+	foreach __d__ \
+	        ". .. ../.. ../../.. ../../../.." {
+	    if { [file exists \
+		       $__d__/hpcm_judging.rc] } {
+		lappend judging_directory $__d__
+	    }
 	}
-	error $__m__
+
+	# If directory containing judging parameters
+	# file is unique, source the file.  Otherwise
+	# call error.  Before sourcing file, run a
+	# security check: insist that file not be
+	# readable by `others', but only by group and
+	# owner.
+	#
+	if { [llength $judging_directory] == 1 } {
+	    source_file \
+		$judging_directory/hpcm_judging.rc
+	} elseif { [llength $judging_directory] == 0 } {
+	    error "hpcm_judging.rc not found"
+	} else {
+	    set __m__ "Too many hpcm_judging.rc files:"
+	    foreach __d__ $judging_directory {
+		set __m__ "$__m__\n\
+			  \     $__d__/hpcm_judging.rc"
+	    }
+	    error $__m__
+	}
     }
-}
 
-# Set signals to cause errors.
-#
-make_signals_errors
+    # Set signals to cause errors.
+    #
+    make_signals_errors
 
-# Received mail subject field first word to program
-# mapping for autodispatch:
-#
-array set autodispatch_map {
-    submit	autojudge
-    get		autoinfo
-}
+    # Received mail subject field first word to program
+    # mapping for autodispatch:
+    #
+    array set autodispatch_map {
+	submit	autojudge
+	get		autoinfo
+    }
+
+} caught_output] } caught_error
