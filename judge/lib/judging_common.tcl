@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Dec 21 08:06:59 EST 2006
+# Date:		Tue Dec 26 02:55:32 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/12/21 13:48:03 $
+#   $Date: 2006/12/26 07:59:33 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.148 $
+#   $Revision: 1.149 $
 #
 
 # Table of Contents
@@ -2530,4 +2530,7 @@ if { [catch {
 	get		autoinfo
     }
 
-} caught_output] } caught_error
+} caught_output] } {
+    puts "ERROR: $caught_output"
+    exit 2
+}
