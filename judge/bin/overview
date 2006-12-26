@@ -4,7 +4,7 @@
 #
 # File:		overview
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Dec 22 08:55:17 EST 2006
+# Date:		Tue Dec 26 12:14:17 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/12/23 07:13:39 $
+#   $Date: 2006/12/26 17:42:54 $
 #   $RCSfile: overview,v $
-#   $Revision: 1.149 $
+#   $Revision: 1.150 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -258,6 +258,21 @@ Then choose the type of contest you want to create
     hpcm/examples/<contest-type>/Makefile
     hpcm/examples/<contest-type>/hpcm_judging.rc
 
+Usually a contest is created by creating a `judging
+directory' to contain all the judging files and subdi-
+rectories, copying the files
+
+    hpcm/examples/<contest-type>/Makefile
+    hpcm/examples/<contest-type>/hpcm_judging.rc
+
+into this directory, editing parameters in the copy of
+hpcm_judging.rc, and running `make' in the new judging
+directory.  One must then follow a few instructions in
+the newly created judging directory TODO file made by
+`make'.  Here `make' just runs the `makecontest' pro-
+gram.  The copy of `Makefile' contains more detailed in-
+structions specific to the <contest-type>.
+
 You may also want to try skimming
 
     hpcm/judge/lib/hpcm_judging.rc
@@ -296,7 +311,8 @@ Contest Definition Data
     Files that define particular contests, including
     documentation for contestants, problem definitions,
     solution definitions, and contest parameter defini-
-    tions.
+    tions.  These are mostly created by the `make-
+    contest' program.
 
 Contest Raw Data
     Files that capture submissions and information gen-
@@ -373,9 +389,14 @@ directory:
 		file describing the problem.  For such
 		problems the problem description cannot
 		be redistributed to the public, but the
-		problem test data and solutions are
-		usually redistributable.
+		problem test data and solutions are usu-
+		ally independently written and redistri-
+		butable.
 
+	test	Pseudo-problems set up to test HPCM
+		features: used in conjunction with the
+		hpcm/examples/test directory.
+
 The problem directories are listed in the
 
 	hpcm/problem_library/index
@@ -383,7 +404,7 @@ The problem directories are listed in the
 file, which can be input to the makecontest program to
 define which problems are to be used in a particular
 contest, and to create an index of these problems.
-
+
 Emails giving permission to make various problems public
 are in the directory
 
@@ -555,6 +576,18 @@ tory deletes all temporary files, including `pppp',
 `core', `core.\[0-9\]*', `*.class', `*.fas', and `*.lib'
 files.
 
+For maintenance purposes it is desirable that all the
+problem `Makefile's be essentially the same so they can
+be maintained from the same prototype by the remakeMake-
+file program.  The prototype files have names of the
+form
+
+	hpcm/problem_library/Makefile?
+
+and most problem `Makefile's have prototype
+
+	hpcm/problem_library/Makefile1
+
 
 
 Library Data: Problems: Judge's Parameters and Filters
@@ -722,7 +755,7 @@ program makes the following count.jtest file:
 
 The first character of each line here indicates whether
 the line begins a case (-) or continues a case (.) (but
-there are no examples of case continuation line here).
+there are no examples of case continuation lines here).
 
 During scoring the .out file will be similarly jfiltered
 to produce the .jout file that will be compared to the
@@ -847,11 +880,12 @@ the current installation of HPCM.  The global variable
 
 is a list of instructions on how to make such files.
 A typical instruction is
-
-	{ Scoring_Filter
-	  { g++ -o Scoring_Filter Scoring_Filter.cc }
-	  Scoring_Filter.cc }
 
+	{ Scoring_Filter
+	  { g++ -o Scoring_Filter Scoring_Filter.cc \\
+	        -lm }
+	  Scoring_Filter.cc }
+
 which says that the Scoring_Filter binary file is to be
 made using the given g++ command if the Scoring_Filter
 file does not exist or if it is older than the Scoring_
@@ -884,11 +918,11 @@ submission directory to the file named `N.out' in the
 problem directory if that file exists, or to the file
 named `N.test' in the problem directory if `N.out' does
 not exist but `N.test' does.
-
+
 In addition to the control over problem files given by
 the global variables just mentioned, two other HPCM
 features support complex problems.
-
+
 First, if there is a source file named xxx.ISF, then
 this is an initial value for a read-write submittable
 file named xxx.  The hpcm_get and hpcm_extract programs
@@ -907,7 +941,10 @@ documentation in hpcm_judging.rc for details.
 The directory:		hpcm/examples/test
 
 contains tests of the features described in this sec-
-tion.
+tion.  This directory uses pseudo-problems in the di-
+rectory
+
+	hpcm/problem_library/test
 
 
 Library Data: Help Documentation
@@ -1047,9 +1084,7 @@ type of contest.  Some of these subdirectories are:
     test		A directory for testing Complex
     			Problem submission features
 			by making submissions without
-			using hpcm_sendmail and checking
-			the results in the judge's sub-
-			mission directories.
+			using hpcm_sendmail.
 
 Each of these subdirectories contains a Makefile that
 contains documentation on how to use the files in the
@@ -1353,7 +1388,7 @@ file that gives instructions on how to do each of these.
 	email, and it is the root of a subdirectory tree
 	that holds the files that can be obtained by
 	contestants via email.  Contestants use hpcm_
-	get for informal contests, which for uses email
+	get for informal contests, which uses email
 	under the hood, and contestants using their own
 	accounts and communicating with the autojudge
 	by email may be able to get and run hpcm_get
