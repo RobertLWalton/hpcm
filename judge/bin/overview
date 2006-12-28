@@ -4,7 +4,7 @@
 #
 # File:		overview
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Dec 28 02:34:36 EST 2006
+# Date:		Thu Dec 28 02:50:27 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/12/28 07:46:43 $
+#   $Date: 2006/12/28 07:59:45 $
 #   $RCSfile: overview,v $
-#   $Revision: 1.152 $
+#   $Revision: 1.153 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -3964,6 +3964,11 @@ customize.  Changes of operating system, TCL extensions,
 or user preferences can be made just by changing these
 functions.  A brief summary of these functions is:
 
+    proc scoreboard_shutdown { }
+        Executed by the `makescoreboard' program when
+	the scoreboard_shutdown_time arrives.  Usable
+	to reconfigure a contest.
+
     proc submitter_compress { submitter }
         Compress the email address of a submitter to
 	make a scoreboard contestant name.
@@ -3985,11 +3990,11 @@ functions.  A brief summary of these functions is:
 
     proc translate_base64 { text }
         Translate base64 MIME encoded text.
-
+
     proc truename { dirname }
         Return absolute name of a directory that would
 	be given by `pwd' if the directory were current.
-
+
     proc create_file { filename }
         Create a file unless the file already exists,
 	and return an indication of whether a new file
@@ -4022,7 +4027,7 @@ functions.  A brief summary of these functions is:
         Deny all permissions for a file or directory ex-
 	cept to owner or group, and deny write permis-
 	sions to group.
-
+
     proc deny_group_access { filename }
         Deny all permissions for a file or directory ex-
 	cept owner permissions.
@@ -4032,7 +4037,7 @@ functions.  A brief summary of these functions is:
 
     proc edit_file { filename }
         Edit a file with your favorite editor.
-
+
     proc call_shell {}
         Invoke your favorite shell for interactive use.
 
@@ -4062,11 +4067,11 @@ functions.  A brief summary of these functions is:
     proc process_found { display }
         Returns true iff root process existed when
 	display_process_tree returned display.
-
+
     proc signal_process_tree { signal root_pid }
         Send a KILL or INT signal to all the processes
 	in a process tree rooted at a given process ID.
-
+
     proc make_signals_errors {}
     proc make_signals_ignored {}
     proc make_signals_default {}
@@ -4092,13 +4097,13 @@ The file hpcm/judge/lib/judging_common.tcl contains
 functions usable by any HPCM TCL program.  A brief sum-
 mary of these is:
 
-    proc exit_cleanup {}
-    	Called on every exit; can be redefined to per-
-	form cleanup actions.
-
     proc caught_error_retry {}
         Can be defined to retry executing a program when
 	an error is caught reading hpcm_judging.rc.
+
+    proc exit_cleanup {}
+    	Called on every exit; can be redefined to per-
+	form cleanup actions.
 
     include_if { condition textexpr }
 	Evaluate condition and if true evaluate text-
@@ -4119,13 +4124,13 @@ mary of these is:
         Convert standard time data to/from the date
 	format used in submission directory names and
 	error log file names.
-
+
     proc is_checked { filename }
     proc make_checked { filename }
     proc make_unchecked { filename }
         Manages the `checked' flag in an error log file
 	name.
-
+
     proc caught_error {}
         Process an error caught during an HPCM TCL
 	program.
@@ -4144,6 +4149,9 @@ mary of these is:
     proc read_part_line { ch end_of_file }
 	Read the body part lines of received email.
 
+    proc blank_body { ch }
+        Check if received email has a blank body.
+
     proc compute_message_reply_to {}
     proc compute_message_date {}
     proc compute_authentication {}
@@ -4156,7 +4164,7 @@ mary of these is:
     proc read_sendmail_rc {}
         Read the ./contest/secure/hpcm_sendmail.rc file
 	and return the parameters it contains.
-
+
     proc reply { args }
         Call compose_reply and then send_reply.
 
@@ -4165,9 +4173,6 @@ mary of these is:
 
     proc send_reply { args }
         Send the reply stored in Reply_Mail+.
-
-    proc blank_body { ch }
-        Check if received email has a blank body.
 
     proc set_contest_directory {}
         Set the contest_directory global variable to
@@ -4196,7 +4201,7 @@ mary of these is:
     proc test_flag { flagfilename }
     proc clear_flag { flagfilename }
     	Manage flags in the flag directory.
-
+
     proc execute_makes { instructions s_d name
                          { return_first 0 } }
 	Execute problem_make_files instructions in
@@ -4218,6 +4223,7 @@ mary of these is:
 	Parse a block and process if/elseif/else
 	statements in it, returning the block with
 	these removed.
+
 
 Common Functions: Display
 ------ ---------- -------
@@ -4311,7 +4317,7 @@ displays.  A brief summary of these is:
     proc send_query { header }
     	Create and email a query to the judge.
 
-
+
 Common Functions: Scoring
 ------ ---------- -------
 
@@ -4341,14 +4347,14 @@ scores.  A brief summary of these is:
     proc compute_score { }
     	Compute score from scoring instructions and
 	score arrays.
-
+
     proc compose_response \\
 	    { { compose_reply_options \"\" } }
     	Compose a reply indicating the score.
 
     proc send_response { commands }
     	Send any previously composed response.
-
+
     proc get_proof { args }
     	Set the current proof group and proof within
 	this group.
