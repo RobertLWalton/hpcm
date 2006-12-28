@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Nov 17 03:32:59 EST 2006
+# Date:		Thu Dec 28 03:01:00 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,13 +11,13 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/11/17 08:36:26 $
+#   $Date: 2006/12/28 08:05:41 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.55 $
+#   $Revision: 1.56 $
 
 # See STATUS file for description of versions.
 #
-VERSION=02_001
+VERSION=02_000
 
 # Tar extension, zip option, and unzip option.
 # Can be set to use zipped or unzipped tar files.
