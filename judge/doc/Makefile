@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Mar  7 03:44:39 EST 2006
+# Date:		Fri Dec 29 11:11:30 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -10,10 +10,10 @@
 #
 # RCS Info (may not be true date or author):
 #
-#   $Author: hc3 $
-#   $Date: 2006/03/07 08:48:34 $
+#   $Author: walton $
+#   $Date: 2006/12/29 19:22:52 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.29 $
+#   $Revision: 1.30 $
 
 # make
 #	Makes documentation as fprintable .txt files in
@@ -36,24 +36,28 @@ DOCS=	overview.txt \
 	judge/autoinfo.txt \
 	judge/autojudge.txt \
 	judge/chkpage.txt \
+	judge/diff_contest.txt \
 	judge/dispatchmail.txt \
+	contestant/email_diff.txt \
 	judge/extractmail.txt \
 	judge/fcheck.txt \
 	judge/fcheckc.txt \
 	judge/file_list.txt \
-	judge/fprint.txt \
 	contestant/filtered_diff.txt \
+	judge/fprint.txt \
 	contestant/fprint.txt \
 	contestant/help.txt \
+	judge/hpcm_clisp.txt \
 	contestant/hpcm_clisp.txt \
-	judge/hpcm_email_passwords.txt \
+	secure/hpcm_email_passwords.txt \
 	contestant/hpcm_extract.txt \
 	contestant/hpcm_extract_test_replies.txt \
 	contestant/hpcm_get.txt \
 	judge/hpcm_help.txt \
 	contestant/hpcm_helper.txt \
 	secure/hpcm_make_accounts.txt \
-	judge/hpcm_print_passwords.txt \
+	secure/hpcm_print_passwords.txt \
+	contestant/hpcm_remote_sendmail.txt \
 	contestant/hpcm_sandbox.txt \
 	judge/hpcm_sandbox.txt \
 	contestant/hpcm_sendmail.txt \
@@ -61,6 +65,8 @@ DOCS=	overview.txt \
 	secure/hpcm_set_passwords.txt \
 	contestant/hpcm_submit.txt \
 	secure/hpcm_TRASH_ACCOUNTS.txt \
+	secure/hpcm_wrapper.txt \
+	judge/javahelp.txt \
 	contestant/javahelp.txt \
 	judge/jfilter.txt \
 	judge/jprint.txt \
@@ -77,6 +83,7 @@ DOCS=	overview.txt \
 	judge/printer_broadcast.txt \
 	judge/receivemail.txt \
 	judge/remakeMakefile.txt \
+	judge/rerun_contest.txt \
 	contestant/scoreboard.txt \
 	judge/scoreboard.txt \
 	judge/scorediff.txt \
@@ -85,6 +92,8 @@ DOCS=	overview.txt \
 	contestant/SETUP_PROTOTYPE.txt \
 	judge/sloc_counts.txt \
 	judge/startcontest.txt \
+	judge/stlhelp.txt \
+	contestant/stlhelp.txt \
 	judge/testproblems.txt \
 	judge/tracker.txt \
 	judge/trackfinder.txt \
@@ -118,6 +127,7 @@ hpcm_judging.rc:
 
 bin:
 	cd ../bin; make
+	cd ../../contestant/bin; make
 
 judge:
 	mkdir judge
@@ -156,6 +166,11 @@ judge/chkpage.txt:	hpcm_judging.rc \
 	rm -f judge/chkpage.txt
 	-../../judge/bin/chkpage -doc \
 	    >judge/chkpage.txt
+judge/diff_contest.txt:	hpcm_judging.rc \
+			../../judge/bin/diff_contest
+	rm -f judge/diff_contest.txt
+	-../../judge/bin/diff_contest -doc \
+	    >judge/diff_contest.txt
 judge/dispatchmail.txt:	hpcm_judging.rc \
 			../../judge/bin/dispatchmail
 	rm -f judge/dispatchmail.txt
@@ -186,21 +201,16 @@ judge/fprint.txt:	hpcm_judging.rc \
 	rm -f judge/fprint.txt
 	-../../judge/bin/fprint -doc \
 	    >judge/fprint.txt
-judge/hpcm_email_passwords.txt:	hpcm_judging.rc \
-		../../judge/bin/hpcm_email_passwords
-	rm -f judge/hpcm_email_passwords.txt
-	-../../judge/bin/hpcm_email_passwords -doc \
-	    >judge/hpcm_email_passwords.txt
+judge/hpcm_clisp.txt:	hpcm_judging.rc \
+			../../judge/bin/hpcm_clisp
+	rm -f judge/hpcm_clisp.txt
+	-../../judge/bin/hpcm_clisp -doc \
+	    >judge/hpcm_clisp.txt
 judge/hpcm_help.txt:	hpcm_judging.rc \
 		../../judge/bin/hpcm_help
 	rm -f judge/hpcm_help.txt
 	-../../judge/bin/hpcm_help -doc \
 	    >judge/hpcm_help.txt
-judge/hpcm_print_passwords.txt:	hpcm_judging.rc \
-		../../judge/bin/hpcm_print_passwords
-	rm -f judge/hpcm_print_passwords.txt
-	-../../judge/bin/hpcm_print_passwords -doc \
-	    >judge/hpcm_print_passwords.txt
 judge/hpcm_sandbox.txt:	hpcm_judging.rc \
 			../../judge/bin/hpcm_sandbox
 	rm -f judge/hpcm_sandbox.txt
@@ -220,6 +230,11 @@ judging.txt:	hpcm_judging.rc \
 			../../judge/bin/judging
 	rm -f judging.txt
 	-../../judge/bin/judging -doc >judging.txt
+judge/javahelp.txt:	hpcm_judging.rc \
+		        ../../judge/bin/javahelp
+	rm -f judge/javahelp.txt
+	-../../judge/bin/javahelp -doc \
+	    >judge/javahelp.txt
 judge/jfilter.txt:	hpcm_judging.rc \
 		        ../../judge/bin/jfilter
 	rm -f judge/jfilter.txt
@@ -240,6 +255,11 @@ judge/remakeMakefile.txt:	hpcm_judging.rc \
 	rm -f judge/remakeMakefile.txt
 	-../../judge/bin/remakeMakefile -doc \
 	    >judge/remakeMakefile.txt
+judge/rerun_contest.txt:	hpcm_judging.rc \
+		        ../../judge/bin/rerun_contest
+	rm -f judge/rerun_contest.txt
+	-../../judge/bin/rerun_contest -doc \
+	    >judge/rerun_contest.txt
 judge/makecontest.txt:	hpcm_judging.rc \
 			../../judge/bin/makecontest
 	rm -f judge/makecontest.txt
@@ -304,6 +324,11 @@ judge/startcontest.txt:	hpcm_judging.rc \
 	rm -f judge/startcontest.txt
 	-../../judge/bin/startcontest -doc \
 	    >judge/startcontest.txt
+judge/stlhelp.txt:	hpcm_judging.rc \
+		        ../../judge/bin/stlhelp
+	rm -f judge/stlhelp.txt
+	-../../judge/bin/stlhelp -doc \
+	    >judge/stlhelp.txt
 judge/testproblems.txt:	hpcm_judging.rc \
 			../../judge/bin/testproblems
 	rm -f judge/testproblems.txt
@@ -322,11 +347,21 @@ judge/trackfinder.txt:	hpcm_judging.rc \
 
 # ../../secure/bin docs
 #
+secure/hpcm_email_passwords.txt:    hpcm_judging.rc \
+		../../secure/bin/hpcm_email_passwords
+	rm -f secure/hpcm_email_passwords.txt
+	-../../secure/bin/hpcm_email_passwords -doc \
+	    >secure/hpcm_email_passwords.txt
 secure/hpcm_make_accounts.txt:	\
 		../../secure/bin/hpcm_make_accounts
 	rm -f secure/hpcm_make_accounts.txt
 	-../../secure/bin/hpcm_make_accounts -doc \
 	    >secure/hpcm_make_accounts.txt
+secure/hpcm_print_passwords.txt:    hpcm_judging.rc \
+		../../secure/bin/hpcm_print_passwords
+	rm -f secure/hpcm_print_passwords.txt
+	-../../secure/bin/hpcm_print_passwords -doc \
+	    >secure/hpcm_print_passwords.txt
 secure/hpcm_set_passwords.txt:	\
 		../../secure/bin/hpcm_set_passwords
 	rm -f secure/hpcm_set_passwords.txt
@@ -338,8 +373,21 @@ secure/hpcm_TRASH_ACCOUNTS.txt:	\
 	-../../secure/bin/hpcm_TRASH_ACCOUNTS -doc \
 	    >secure/hpcm_TRASH_ACCOUNTS.txt
 
+# ../../secure/src docs
+#
+secure/hpcm_wrapper.txt:    hpcm_judging.rc \
+		../../secure/src/hpcm_wrapper
+	rm -f secure/hpcm_wrapper.txt
+	-../../secure/src/hpcm_wrapper -doc \
+	    >secure/hpcm_wrapper.txt
+
 # ../../contestant/bin docs
 #
+contestant/email_diff.txt: \
+		../../contestant/bin/email_diff
+	rm -f contestant/email_diff.txt
+	-../../contestant/bin/email_diff -doc \
+	    >contestant/email_diff.txt
 contestant/filtered_diff.txt: \
 		../../contestant/bin/filtered_diff
 	rm -f contestant/filtered_diff.txt
@@ -379,6 +427,11 @@ contestant/hpcm_helper.txt:	\
 	rm -f contestant/hpcm_helper.txt
 	-../../contestant/bin/hpcm_helper -doc \
 	    >contestant/hpcm_helper.txt
+contestant/hpcm_remote_sendmail.txt:	\
+	    ../../contestant/bin/hpcm_remote_sendmail
+	rm -f contestant/hpcm_remote_sendmail.txt
+	-../../contestant/bin/hpcm_remote_sendmail -doc \
+	    >contestant/hpcm_remote_sendmail.txt
 contestant/hpcm_sandbox.txt:	\
 		../../contestant/bin/hpcm_sandbox
 	rm -f contestant/hpcm_sandbox.txt
@@ -426,6 +479,11 @@ contestant/SETUP_PROTOTYPE.txt:	\
 	rm -f contestant/SETUP_PROTOTYPE.txt
 	-../../contestant/bin/SETUP_PROTOTYPE -doc \
 	    >contestant/SETUP_PROTOTYPE.txt
+contestant/stlhelp.txt:	\
+		../../contestant/bin/stlhelp
+	rm -f contestant/stlhelp.txt
+	-../../contestant/bin/stlhelp -doc \
+	    >contestant/stlhelp.txt
 contestant/TRASH_ACCOUNT.txt:	\
 		../../contestant/bin/TRASH_ACCOUNT
 	rm -f contestant/TRASH_ACCOUNT.txt
