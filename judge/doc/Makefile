@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Dec 29 11:11:30 EST 2006
+# Date:		Sat Dec 30 04:22:48 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/12/29 19:22:52 $
+#   $Date: 2006/12/30 09:23:11 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.30 $
+#   $Revision: 1.31 $
 
 # make
 #	Makes documentation as fprintable .txt files in
@@ -126,8 +126,9 @@ hpcm_judging.rc:
 	ln -s ../lib/hpcm_judging.rc
 
 bin:
-	cd ../bin; make
+	cd ../../secure/src; make
 	cd ../../contestant/bin; make
+	cd ../bin; make
 
 judge:
 	mkdir judge
