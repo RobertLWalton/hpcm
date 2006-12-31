@@ -1,8 +1,8 @@
-# Makefile for an Untimes Contest
+# Makefile for an Untimed Contest
 #
 # File:		Makefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Dec 18 10:26:26 EST 2006
+# Date:		Sun Dec 31 04:32:28 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/12/18 15:26:16 $
+#   $Date: 2006/12/31 10:47:01 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.70 $
+#   $Revision: 1.71 $
 #
 # To make an untimed contest named `foo':
 #
@@ -36,13 +36,14 @@
 #    tests, so you may not need to make a new prototype
 #    directory for this contest.
 #
-# 3. Create a judging directory ~/judging_foo_password
-#    where this password is needed to keep outsiders
-#    from guessing the path to the received submissions,
-#    because JAVA requires this path be a+x to access
-#    .class files inside the sandbox.
+# 3. Create a judging directory ~/judging_foo_PASSWORD
+#    where PASSWORD is a random string of characters and
+#    is needed to keep outsiders from guessing the path
+#    to the received submissions, because JAVA requires
+#    this path be a+x to access .class files inside the
+#    sandbox.
 #
-#    This password is never really used, and so can be
+#    This PASSWORD is never really used, and so can be
 #    something awfully unguessable.
 #
 # 4. Put copies of the files in this directory into
@@ -55,6 +56,18 @@
 #    will have been created in the judging directory.
 #    After you follow an instruction, edit it out of
 #    the TODO file.
+#
+#    Some of the instructions may cause the creating of
+#    contestant accounts.  Generally all contestant
+#    accounts in an untimed contest are assigned
+#    different random passwords by `makecontest' after
+#    you have added account names to the ./contest/
+#    secure/passwords file.  You should create a special
+#    contestant `test account' that you yourself use for
+#    testing the contest, and may put `none' as the
+#    password for that account in the passwords file,
+#    so you can control the test account password by the
+#    UNIX passwd program.
 #
 # 7.  Contest judging is automatic.  You can use the
 #     `lookat' program to invoke `manualreply' to
@@ -73,7 +86,7 @@
 #     compare its X-HPCM-Test-Subject field with the
 #     results in the body of the reply.
 #
-#     Note that serveral of the test submissions time
+#     Note that several of the test submissions time
 #     out, and for those submissions the autojudge will
 #     take over a minute to reply.
 #
@@ -90,12 +103,14 @@
 #
 #     You can also transmit the contents of the hpcm/
 #     examples/test_submissions directory to a directory
-#     in the test contestant account and then use
-#     `make test_email' in that directory to send
-#     test submissions, provided you have set up the
-#     contestant unix tools for the test contestant
-#     account.  See info/help/email_unix_tools and the
-#     hpcm/examples/test_submissions/Makefile file.
+#     in the test account and then use `make test_email'
+#     in that directory to send test submissions.  If
+#     there are no contestant accounts, you can trans-
+#     mit the test_submissions directory to any UNIX
+#     account, set up the contestant UNIX tools for that
+#     account, and use `make test_email'.  See info/
+#     help/email_unix_tools and the hpcm/examples/test_
+#     submissions/Makefile file.
 #
 # 10. A web page containing problem descriptions, and
 #     optionally solutions, is made using the web page
@@ -109,8 +124,8 @@
 #     and the tar file makes this easy.
 #
 #     It is also possible to post a copy of the score-
-#     board on the web.  See scoreboard_addresses in
-#     hpcm_judging.rc.
+#     board on the web.  See scoreboard_commands in
+#     ./hpcm_judging.rc.
 #
 # 11. You may want to print out handouts.  Here are
 #     some ways to make printouts, where THIS_CONTEST
@@ -122,10 +137,9 @@
 #     or
 #	 ~/judging_foo_password/info/help/this_contest
 #
-#     which have the same contents (at most one of the
-#     latter two files exist).  The .pdf files made
-#     by the commands below are ready to print or put on
-#     the web.
+#     which have the same contents when they exist.  The
+#     .pdf files made by the commands below are ready to
+#     print or put on the web.
 #
 #     You can also make .ps files instead of .pdf files
 #     simply by changing .pdf to .ps in all the commands
@@ -189,6 +203,15 @@
 #     scoreboard can be updated by
 #
 #		makescoreboard update
+#
+# 13. If you have made contestant accounts, give contes-
+#     tants access to their accounts by creating the
+#     file ./contest/secure/passwords_header and running
+#     the hpcm_email_passwords program to email the
+#     passwords to the contestants.  Or run hpcm_print_
+#     passwords to print the passwords to hand out to
+#     the contestants.  See `hpcm_email_passwords -doc'
+#     and `hpcm_print_passwords -doc'.
 
 # Parameters:
 #
@@ -246,7 +269,7 @@ this_contest.ps: help/this_contest
 
 # Print_files_do_nothing merely causes the print files
 # to be remade whenever required regardless of pre-
-# requisits.
+# requisites.
 #
 print_files_do_nothing:
 

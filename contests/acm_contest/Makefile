@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Dec 31 04:29:56 EST 2006
+# Date:		Sun Dec 31 05:36:47 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/12/31 10:30:24 $
+#   $Date: 2006/12/31 10:40:31 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.52 $
+#   $Revision: 1.53 $
 #
 # To make a formal contest named `foo':
 #
@@ -314,7 +314,7 @@ this_contest.ps: help/this_contest
 
 # Print_files_do_nothing merely causes the print files
 # to be remade whenever required regardless of pre-
-# requisits.
+# requisites.
 #
 print_files_do_nothing:
 
