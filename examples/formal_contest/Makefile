@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Dec 31 05:36:47 EST 2006
+# Date:		Sun Dec 31 05:56:10 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/12/31 10:40:31 $
+#   $Date: 2006/12/31 11:01:57 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.53 $
+#   $Revision: 1.54 $
 #
 # To make a formal contest named `foo':
 #
@@ -234,10 +234,10 @@
 #
 #		makescoreboard update
 #
-# 14. For a `timed+feedback' or `timed+dated' contest
+# 14. For a `timed+feedback' or `timed+unranked' contest
 #     (see `scoring_type' in ./hpcm_judging.rc),
 #     the contest is automatically converted from a
-#     formal contest to an untimed or dated contest
+#     formal contest to a feedback or unranked contest
 #     some time (e.g., 12 hours) after the contest ends.
 #     After this you may wish to give contestants access
 #     to their accounts by

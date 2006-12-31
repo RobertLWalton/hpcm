@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Dec 31 05:45:09 EST 2006
+# Date:		Sun Dec 31 05:52:39 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/12/31 10:46:17 $
+#   $Date: 2006/12/31 11:01:57 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.73 $
+#   $Revision: 1.74 $
 
 # Table of Contents
 #
@@ -52,21 +52,23 @@ set contest_name "CONTEST NAME IS TBD"
 #			incorrect, in, and inout submis-
 #			sions.
 #
-#	dated		Only date of correct submission
-#			is given.
+#	unranked	Only date of correct submission
+#			is given.  Contestants are
+#			listed in order of the number of
+#			problems they got right.
 #
 #	timed+feedback	The contest is timed, but 12
 #			hours after the stop time the
 #			contest is converted into an
 #			feedback contest.
 #
-#	timed+dated	The contest is timed, but 12
+#	timed+unranked	The contest is timed, but 12
 #			hours after the stop time the
 #			contest is converted into a
-#			dated contest.
+#			unranked contest.
 #
 # In, inout, and solution submissions are allowed during
-# feedback or dated contests (or parts of converted
+# feedback or unranked contests (or parts of converted
 # contests).
 #
 set scoring_type timed+feedback
@@ -92,16 +94,16 @@ set penalty_minutes 20
 # set penalty_minutes 0
 
 # If the scoring_type is "timed", "feedback", or
-# "dated", leave this as "" if there will be a manager
-# on duty during the contest to run the tracker program
-# and manually check the scoring.  Otherwise set it to
-# the email address to be notified for errors or
+# "unranked", leave this as "" if there will be a mana-
+# ger on duty during the contest to run the tracker pro-
+# gram and manually check the scoring.  Otherwise set it
+# to the email address to be notified for errors or
 # queries, and in this case the scoring will be all
 # automatic.
 #
 # But if the scoring_type is timed+feedback or timed+
-# dated, set this non-"" and it will be used for the
-# automatically scored feedback/dated post contest,
+# unranked, set this non-"" and it will be used for the
+# automatically scored feedback/unranked post contest,
 # after the timed contest is over.  In these cases where
 # a timed contest is converted to an untimed post
 # contest, the timed contest must have a manager on duty
@@ -188,7 +190,7 @@ set printer_commands {
 # test accounts which are NOT to appear on the score-
 # board once a timed contest starts.  They will appear
 # before a timed contest starts, and for contests of
-# scoring_type "feedback" or "dated", but not for
+# scoring_type "feedback" or "unranked", but not for
 # the post contests of "timed+xxxx" contests.
 #
 set test_accounts { }
@@ -385,10 +387,10 @@ set window_height 24
 #
 # set hpcm_prototype_account TBD
 
-# Time in seconds after stop_time that contest is
-# converted from a timed to a feedback or dated contest
+# Time in seconds after stop_time that contest is con-
+# verted from a timed to a feedback or unranked contest
 # when the scoring_type is timed+feedback or
-# timed+dated.
+# timed+unranked.
 #
 set conversion_delay [expr 12 * 60 * 60]
 
@@ -403,7 +405,7 @@ set makescoreboard yes
 set startcontest yes
 
 # The following is the printer map for a feedback or
-# dated contest.  It lets each contestant determine
+# unranked contest.  It lets each contestant determine
 # his/her own printer by placing the printer name in the
 # ~/PRINTER file of the contestant's account.  See
 # `hpcm/contestant/bin/printer_pipe -doc' for more
@@ -505,7 +507,7 @@ if { $allow_email_submissions == "no" } {
            $allow_email_submissions"
 }
 
-# Set scoring subtype to timed, feedback, or dated
+# Set scoring subtype to timed, feedback, or unranked
 # according to the contest_type, stop_time, conversion_
 # delay, and time of day.  For a timed+xxxxx contest the
 # subtype is "timed" till conversion_delay after stop_
@@ -520,9 +522,9 @@ set scoring_subtype $scoring_type
 switch $scoring_type {
     timed { }
     feedback { }
-    dated { }
+    unranked { }
     timed+feedback -
-    timed+dated {
+    timed+unranked {
 	set f $judging_directory
 	set f $f/post_contest_reconfiguration
 	if { ! [file exists $f] } {
@@ -917,8 +919,8 @@ set freeze_timed_scoreboard_instructions {
 # Whether the scoreboard table gives dates or feedback
 # problem scores is determined by the scoring_type
 # global variable value, which must be either "timed+
-# dated" or "timed+feedback" for a post contest score-
-# board to exist.
+# unranked" or "timed+feedback" for a post contest
+# scoreboard to exist.
 #
 set post_contest_scoreboard_instructions {
 
@@ -951,7 +953,7 @@ set post_contest_scoreboard_instructions {
 }
 
 # Scoreboard instructions to be used for a feedback or
-# dated contest:
+# unranked contest:
 #
 set not_timed_scoreboard_instructions {
 
@@ -1113,7 +1115,7 @@ solving'.
 You can print on the printer of your choice, or get
 printouts emailed to you, by making a ~/PRINTER file.
 See `help print' for details.
-"][include_if { $scoring_type == "dated" } "
+"][include_if { $scoring_type == "unranked" } "
 The command `scoreboard' will display the scoreboard.
 This contains the date of each correct submission.  See
 `help scoreboard' for more details.
@@ -1180,7 +1182,7 @@ depend on submission type as follows:
     incorrect `inout-submit'	$inout_percent%
 
 See `help scoreboard', feedback contests, for details.
-"][include_if { $scoring_type == "timed+dated" } "
+"][include_if { $scoring_type == "timed+unranked" } "
 The day after the contest proper, the contest will be
 converted to a different type of contest.  You will then
 be given your account name and password, and can log in
