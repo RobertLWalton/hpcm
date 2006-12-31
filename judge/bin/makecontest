@@ -6,7 +6,7 @@
 #
 # File:		makecontest
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Dec 31 10:40:53 EST 2006
+# Date:		Sun Dec 31 11:36:44 EST 2006
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/12/31 16:13:46 $
+#   $Date: 2006/12/31 17:05:58 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.189 $
+#   $Revision: 1.190 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -807,9 +807,11 @@ makecontest option ... index_specification ...
     accounts in the `passwords' file, not including the
     account name `none', and not including the names of
     any accounts that already exist.  The -trashall
-    option is like the -trashable option but includes
-    all accounts other than `none', whether or not the
-    account already exists.
+    option is like the -trashable option but always
+    writes ./contest/trashable to include all accounts
+    other than `none', whether or not an account already
+    exists and whether or not ./contest/trashable
+    already exists.
 
     An account needs to be listed in the `trashable'
     file in order for the `TRASH_ACCOUNT' program be
@@ -2483,8 +2485,8 @@ if { $secure_option } {
 	set ch [open $c_d/secure/passwords w]
 	puts $ch "# If you add an existing account to\
 	            this file,"
-	puts $ch "# execute `makecontest -secure\
-	            -trashall"
+	puts $ch "# execute `makecontest' and THEN\
+	            execute `makecontest -trashall'"
 	puts $ch "#"
 	puts $ch "# $apw:$ctc"
 	puts $ch ""
@@ -2541,7 +2543,10 @@ if { $secure_option } {
 		set ts_d "$ts_d/secure/bin"
 		TODO "Passwords have been added to" \
 		      $c_d/secure/passwords." \
-		     "You should inspect this file and\
+		     "" \
+		     "If you have NOT added existing\
+		      accounts to this file," \
+		     "you should inspect the file and\
 		      then execute:" \
 		     "" \
 		     "    su root" \
@@ -2550,7 +2555,11 @@ if { $secure_option } {
 		     "    exit" \
 		     "" \
 		     "to reset the passwords for all\
-		      accounts."
+		      accounts." \
+		     "" \
+		     "If you have added existing\
+		      accounts to the file, run\
+		      `makecontest -trashall' instead."
 	    }
 	}
     }
@@ -2809,13 +2818,13 @@ if { $who_where_option } {
 	    grant_access $c_d/who_where
 	    puts "Wrote ./contest/who_where"
 
-	    TODO "Edit ./contest/who_where to specify\
+	    TODO "If you want to, edit\
+	          ./contest/who_where to specify the\
 		  location" \
 		 "of teams, by replacing `WHERE' for\
-		  each" \
-		 "account with a SHORT description of\
-		  the" \
-		 "team's location."
+		  each account" \
+		 "with a SHORT description of the\
+		  team's location."
 	}
     } elseif { [file mtime $c_d/who_where] \
 	       < [file mtime $c_d/secure/passwords] } {
@@ -2965,7 +2974,8 @@ if { $trashable_option || $trashall_option } {
 	    file delete -force $c_d/trashable
 	}
     } else {
-        if { [file readable $c_d/trashable] } {
+        if {    [file readable $c_d/trashable] \
+	     && $trashall_option == "no" } {
 	    set old_trashable \
 	        [read_entire_file $c_d/trashable]
 	    if { [catch { llength $old_trashable }] } {
@@ -3011,7 +3021,12 @@ if { $trashable_option || $trashall_option } {
 	    } else {
 		TODO "./contest/trashable" \
 		     "has been written with new\
-		      contents.  You should execute:" \
+		      contents.  If you have just" \
+		     "added existing accounts to\
+		      ./contest/secure/passwords," \
+		     "you should execute `makecontest\
+		      -trashall'." \
+		     "Otherwise you should execute:" \
 		     "" \
 		     "    su root" \
 		     "    $ts_d/hpcm_setup_accounts\
