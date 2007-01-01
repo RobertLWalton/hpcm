@@ -1,9 +1,9 @@
 #! /bin/sh
 #
-# Find differences in contest re-run from original
-# contest.
+# Find differences between a the mail and rerun
+# submission results.
 #
-# File:		diff_contest
+# File:		rerun_diff
 # Author:	Bob Walton <walton@deas.harvard.edu>
 # Date:		Thu Nov 16 14:16:08 EST 2006
 #
@@ -14,35 +14,53 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/11/16 19:57:15 $
+#   $Date: 2007/01/01 19:28:54 $
 #   $RCSfile: rerun_diff,v $
-#   $Revision: 1.2 $
+#   $Revision: 1.3 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
 
 # Include common code and parameters:
 #
+set log_disable yes
 set lib_directory "[file dirname $argv0]/../lib"
 source $lib_directory/judging_common.tcl
 catch {
 
 set document "
-diff_contest \[original_dir\]
+rerun_diff \[PROBLEM_RE \[SUBMISSION_RE \\
+	   \[SOURCE \[TARGET\]\]\]\]
 
-    Given directories named original_dir (default is
-    \$judging_directory/ORIGINAL_MAIL') and \$judging_
-    directory/mail', list all the submission directories
-    in the original mail directory that have non-match-
-    ing Auto_Score files in `mail'.  For each non-match-
-    ing case output the differing Auto_Score files and
-    the Subject line of the Received_Mail file.  Non-
-    existing Auto_Score files are taken to have the
-    value `does not exist' for the purposed of compari-
-    son and output."
+    Prints differences between ./mail and ./rerun sub-
+    missions.  The submissions choosen are those whose
+    ./mail submission directories contain a substring
+    matching the regular expression
+    
+	\"SUBMISSION_RE.*-submission\$\"
 
-if {    [llength $argv] > 1 \
-     || [regexp {^-doc} [lindex $argv 0]] } {
+    and whose Received_Mail header contains a subject
+    header line with a substring matching the regular
+    expression
+    
+        \"submit.*PROBLEM_RE\"
+	
+    where the matches are case insensitive and the RE's
+    both default to \".\".
+
+    If SOURCE is given it replaces ./mail, and if TARGET
+    is given it replaces ./rerun.
+
+    List all the submissions that have non-matching
+    Auto_Score files.  For each non-matching case, out-
+    puts the differing Auto_Score files and the Subject
+    line of the Received_Mail file.  Non-existing Auto_
+    Score files are taken to have the value `does not
+    exist' for the purposed of comparison and output."
+
+# Process -doc option.
+#
+if { [regexp {^-doc} [lindex $argv 0]] } {
     puts $document
     exit 1
 }
@@ -50,86 +68,110 @@ if {    [llength $argv] > 1 \
 # Abbreviations:
 #
 set j_d [truename $judging_directory]
-
-# Argument Processing.
-#
-if { [llength $argv] == 1 } {
-    set o_dir [lindex $argv 0]
-    set o_name [file tail $o_dir]
-    if { $o_name == "mail" } {
-        set o_name [file tail [file dirname $o_dir]]
-    }
-    set len [string length $o_name]
-    if { $len < 4 } {
-        set o_name [format {%4s} $o_name]
-	set m_name mail
-    } else {
-        set m_name [format {%*s} $len mail]
-    }
-} else {
-    set o_dir $j_d/ORIGINAL_MAIL
-    set o_name "ORIGINAL_MAIL"
-    set m_name "         mail"
-}
+set pwd [pwd]
 
 puts "Judging directory is:"
 puts "    $j_d"
 
-if { ! [file isdirectory $o_dir] } {
-    puts "ERROR: $o_dir does not exist"
-    exit 1
+# Calculate arguments.
+#
+set problem_re [lindex $argv 0]
+set submission_re [lindex $argv 1]
+set source [lindex $argv 2]
+set target [lindex $argv 3]
+if { $problem_re == "" } { set problem_re "." }
+set problem_re "submit.*$problem_re"
+if { $submission_re == "" } { set submission_re "." }
+set submission_re "$submission_re.*-submission\$"
+if { $source == "" } { set source $j_d/mail }
+if { $target == "" } { set target $j_d/rerun }
+set sourceabbrev [file tail $source]
+set targetabbrev [file tail $target]
+set sourcetag $sourceabbrev
+set targettag $targetabbrev
+while {    [string length $sourcetag] \
+        != [string length $targettag] } {
+    if { [string length $sourcetag] \
+         > [string length $targettag] } {
+        set targettag " $targettag"
+    } else {
+        set sourcetag " $sourcetag"
+    }
 }
 
+# Function to return true if and only if the subject
+# field of the rm mail file header matches the
+# regexp (with -nocase).
+#
+proc received_matches { rm regexp } {
+    global message_subject
+    set ch [open $rm r]
+    read_header $ch
+    close $ch
+    return [regexp -nocase -- $regexp $message_subject]
+}
+
+# Process ./mail subdirectories.
+#
 set directories 0
 set differences 0
-
-set regexp {^.*<<.*>>-submission$}
-foreach subdir \
-        [lsort [glob -nocomplain $o_dir/*]] {
+foreach subdir [lsort [glob -nocomplain $source/*]] {
     set subdir [file tail $subdir]
-    if { ! [regexp $regexp $subdir] } continue
-
-    incr directories
-    set source $o_dir/$subdir/Auto_Score
-    set target $j_d/mail/$subdir/Auto_Score
-    if { ! [file readable $source] } {
-        set source "does not exist"
+    if { ! [regexp -nocase -- \
+                   $submission_re $subdir] } continue
+    set sourcerm $source/$subdir/Received_Mail
+    if { ! [file exists $sourcerm] } {
+        puts "ERROR: does not exist:\
+	      $sourceabbrev/$subdir/Received_Mail"
+    } elseif { ! [file readable $sourcerm] } {
+        puts "ERROR: not readable: \
+	      $sourceabbrev/$subdir/Received_Mail"
+    } elseif { ! [received_matches $sourcerm \
+                                   $problem_re] } {
+        continue
     } else {
-        set source [read_entire_file $source]
-    }
-    if { ! [file readable $target] } {
-        set target "does not exist"
-    } else {
-        set target [read_entire_file $target]
-    }
-    if { $source != $target } {
-        set received $o_dir/$subdir/Received_Mail
-	if { ! [file readable $received] } {
-	    set subject "$received does not exist"
+	incr directories
+	set sourceas $source/$subdir/Auto_Score
+	set targetas $target/$subdir/Auto_Score
+	if { ! [file readable $sourceas] } {
+	    set sourceas "does not exist"
 	} else {
-	    set subject "No Subject field"
-	    set in [open $received r]
-	    while { 1 } {
-	        set line [gets $in]
-		if { [eof $in] } break
-		if { [regexp -nocase \
-		             {^Subject:} $line] } {
-		    set subject $line
-		    break
+	    set sourceas [read_entire_file $sourceas]
+	}
+	if { ! [file readable $targetas] } {
+	    set targetas "does not exist"
+	} else {
+	    set targetas [read_entire_file $targetas]
+	}
+	if { $sourceas != $targetas } {
+	    incr differences
+	    set received $source/$subdir/Received_Mail
+	    if { ! [file readable $received] } {
+		set subject "$received does not exist"
+	    } else {
+		set in [open $received r]
+		read_header $in
+		close $in
+		set subject $message_subject
+		if { $subject == "" } {
+		    set subject "No Subject field"
 		}
 	    }
-	    close $in
+	    puts $subdir
+	    puts "    $subject"
+	    puts "    $sourcetag Auto_Score:\
+	              $sourceas"
+	    puts "    $targettag Auto_Score:\
+	              $targetas"
 	}
-	puts $subdir
-	puts "    $subject"
-	puts "    $o_name Auto_Score: $source"
-	puts "    $m_name Auto_Score: $target"
-	incr differences
+
     }
 }
 
 puts "    $directories submission directories;\
           $differences have changed"
+
+exit 0
 
 exit 0
 

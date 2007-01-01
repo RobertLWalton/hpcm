@@ -4,7 +4,7 @@
 #
 # File:		rerun_contest
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Mon Jan  1 09:30:49 EST 2007
+# Date:		Mon Jan  1 13:07:30 EST 2007
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2007/01/01 17:40:55 $
+#   $Date: 2007/01/01 19:28:54 $
 #   $RCSfile: rerun_contest,v $
-#   $Revision: 1.5 $
+#   $Revision: 1.6 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -29,7 +29,8 @@ catch {
 
 set document "
 rerun_contest \[-force|-norun\] \\
-              \[PROBLEM_RE \[SUBMISSION_RE\]\]
+              \[PROBLEM_RE \[SUBMISSION_RE \\
+	      \[SOURCE \[TARGET\]\]\]\]
 
     Copies submission Received_Mail files into ./rerun
     subdirectories and runs `autojudge -manual' in these
@@ -48,6 +49,9 @@ rerun_contest \[-force|-norun\] \\
     where the matches are case insensitive and the RE's
     both default to \".\".
 
+    If SOURCE is given it replaces ./mail, and if TARGET
+    is given it replaces ./rerun.
+
     Rerun output may be compared with ./mail results
     using the rerun_diff program.  This program does not
     do anything for a submission whose ./rerun directory
@@ -58,7 +62,7 @@ rerun_contest \[-force|-norun\] \\
     This program may be run in a copy of a judging di-
     rectory and its subdirectories made using `cp -r'
     or `tar cf, tar xf'.
-
+
     This program specifically does the following in
     the judging directory:
 
@@ -95,7 +99,7 @@ rerun_contest \[-force|-norun\] \\
     (3) Gives a-x permission to the judging directory,
         its parent, and its `rerun' subdirectory, so
 	that JAVA will work.
-
+
     (4) For each submission subdirectory S in ./mail
         that has a Received_Mail file and matches the
 	given RE's and for which the ./rerun/S directory
@@ -134,12 +138,6 @@ while { 1 } {
     }
     set myargv [lrange $myargv 1 end]
 }
-set problem_re [lindex $myargv 0]
-set submission_re [lindex $myargv 1]
-if { $problem_re == "" } { set problem_re "." }
-if { $submission_re == "" } { set submission_re "." }
-set problem_re "submit.*$problem_re"
-set submission_re "$submission_re.*-submission\$"
 
 
 # Abbreviations:
@@ -149,6 +147,21 @@ set pwd [pwd]
 
 puts "Judging directory is:"
 puts "    $j_d"
+
+# Calculate arguments.
+#
+set problem_re [lindex $myargv 0]
+set submission_re [lindex $myargv 1]
+set source [lindex $myargv 2]
+set target [lindex $myargv 3]
+if { $problem_re == "" } { set problem_re "." }
+set problem_re "submit.*$problem_re"
+if { $submission_re == "" } { set submission_re "." }
+set submission_re "$submission_re.*-submission\$"
+if { $source == "" } { set source $j_d/mail }
+if { $target == "" } { set target $j_d/rerun }
+set sourceabbrev [file tail $source]
+set targetabbrev [file tail $target]
 
 # Repair solutions links.
 #
@@ -164,13 +177,13 @@ foreach d $p_l_list {
 }
 
 set all_ok 1
-foreach target \
+foreach ltarget \
         [lsort [glob -nocomplain $j_d/solutions/*]] {
-    if {    ! [catch { set type [file type $target] }] \
+    if {    ! [catch { set type [file type $ltarget] }] \
          && $type == "link"
-	 && ! [file exists $target] } {
+	 && ! [file exists $ltarget] } {
 
-	set name [file tail $target]
+	set name [file tail $ltarget]
 
 	# Broken link found.
 
@@ -190,12 +203,12 @@ foreach target \
 
 	set ok 0
 	foreach d {demos public private} {
-	    set source $p_l/$d/$name
-	    if { [file isdirectory $source] } {
+	    set lsource $p_l/$d/$name
+	    if { [file isdirectory $lsource] } {
 	        puts "Relinking solutions/$name"
-		puts "       to $source"
-		file delete -force -- $target
-		link_file $source $target
+		puts "       to $lsource"
+		file delete -force -- $ltarget
+		link_file $lsource $ltarget
 		set ok 1
 		break
 	    }
@@ -227,24 +240,24 @@ if { ! $all_ok } {
 
 # Create ./rerun if necessary.
 #
-if { ! [file exists $j_d/rerun] } {
-    puts "Creating ./rerun"
-    mkdir $j_d/rerun
+if { ! [file exists $target] } {
+    puts "Creating $targetabbrev"
+    mkdir $target
 }
 
 # Be sure directories have permissions.
 #
-grant_access $j_d/.. x
-grant_access $j_d x
-grant_access $j_d/rerun x
+grant_access $target/../.. x
+grant_access $target/.. x
+grant_access $target x
 
 # Function to return true if and only if the subject
-# field of the source mail file header matches the
+# field of the rm mail file header matches the
 # regexp (with -nocase).
 #
-proc received_matches { source regexp } {
+proc received_matches { rm regexp } {
     global message_subject
-    set ch [open $source r]
+    set ch [open $rm r]
     read_header $ch
     close $ch
     return [regexp -nocase -- $regexp $message_subject]
@@ -252,38 +265,37 @@ proc received_matches { source regexp } {
 
 # Process ./mail subdirectories.
 #
-foreach subdir \
-        [lsort [glob -nocomplain $j_d/mail/*]] {
+foreach subdir [lsort [glob -nocomplain $source/*]] {
     set subdir [file tail $subdir]
     if { ! [regexp -nocase -- \
                    $submission_re $subdir] } continue
-    if { [file isdirectory $j_d/rerun/$subdir] } \
+    if { [file isdirectory $target/$subdir] } \
         continue
-    set source $j_d/mail/$subdir/Received_Mail
-    set target $j_d/rerun/$subdir/Received_Mail
-    if { ! [file exists $source] } {
+    set sourcerm $source/$subdir/Received_Mail
+    set targetrm $target/$subdir/Received_Mail
+    if { ! [file exists $sourcerm] } {
         puts "ERROR: does not exist:\
-	      ./mail/$subdir/Received_Mail"
-    } elseif { ! [file readable $source] } {
+	      $sourceabbrev/$subdir/Received_Mail"
+    } elseif { ! [file readable $sourcerm] } {
         puts "ERROR: not readable: \
-	      ./mail/$subdir/Received_Mail"
-    } elseif { ! [received_matches $source \
+	      $sourceabbrev/$subdir/Received_Mail"
+    } elseif { ! [received_matches $sourcerm \
                                    $problem_re] } {
         continue
     } elseif { [catch {
-	    mkdir $j_d/rerun/$subdir
-	    copy_file $source $target
+	    mkdir $target/$subdir
+	    copy_file $sourcerm $targetrm
 		      } out] } {
 	puts "ERROR: Cannot make\
-	      ./rerun/$subdir/Received_Mail"
+	      $targetabbrev/$subdir/Received_Mail"
 	puts $out
     } elseif { $norun } { 
-        puts "Made ./rerun/$subdir/Received_Mail"
+        puts "Made $targetabbrev/$subdir/Received_Mail"
     } else {
 
 	# Change to rerun directory.
 	#
-	cd $j_d/rerun/$subdir
+	cd $target/$subdir
 
 	# Open autodispatch.log file.
 	#
