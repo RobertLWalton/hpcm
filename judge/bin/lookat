@@ -1,12 +1,12 @@
 #!/bin/sh
 #
-# Looks at all the subdirectories of the mail directory
-# that have files containing lines matching regular
-# expressions.
+# Looks at all the submission directories in the mail
+# or rerun directories that have files containing lines
+# matching regular expressions.
 #
 # File:		lookat
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Dec 21 03:26:15 EST 2006
+# Date:		Mon Jan  1 11:42:03 EST 2007
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/12/21 08:29:33 $
+#   $Date: 2007/01/01 17:40:55 $
 #   $RCSfile: lookat,v $
-#   $Revision: 1.32 $
+#   $Revision: 1.33 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -72,15 +72,17 @@ proc abbreviations_doc { } {
 }
 
 set document "
-lookat 'regular-expression'
-lookat 'logical-expression'
+lookat \[-rerun\] 'regular-expression'
+lookat \[-rerun\] 'logical-expression'
 
-    This program executes `manualreply' on each subdi-
-    rectory of the mail directory that matches the log-
-    ical-expression.  `lookat 'regular-expression''
-    is a special case and matches all mail directories
-    whose submitter matches the regular expression.  It
-    is equivalent to
+    This program executes `manualreply' on each submis-
+    sion subdirectory of the `mail' directory (or
+    `rerun' directory if the -rerun option is given)
+    that matches the logical-expression.
+    
+    `lookat 'regular-expression'' is a special case and
+    matches all submissions whose submitter matches the
+    regular expression.  It is equivalent to
 
         lookat 'regular-expression & \\
 	        ( SUBJECT | AUTO | MANUAL )'
@@ -92,7 +94,7 @@ lookat 'logical-expression'
 
     	filename-regexp::line-regexp
 
-    and is `true' iff the subdirectory contains a file
+    and is `true' iff the submission contains a file
     whose filename matches the filename-regexp and whose
     contents contain a line that matches the line-
     regexp.  As special cases, if filename-regexp is
@@ -100,8 +102,8 @@ lookat 'logical-expression'
     omitted), the line-regexp is matched against the
     submitter's name; and if filename-regexp is `DATE',
     the line-regexp is matched against the submission
-    date (formatted as it appears in the subdirectory
-    name).
+    date (formatted as it appears in the submission
+    directory name).
 
     The atoms `0' and `1' are also specially treated:
     they represent `false' and `true'.
@@ -136,15 +138,15 @@ lookat 'logical-expression'
     If a file is larger than $size_limit bytes, at most
     the first $size_limit bytes of the file are read.
 
-    After the list of subdirectories is computed, the
-    list is displayed.  For each subdirectory and each
+    After the list of submissions is computed, the
+    list is displayed.  For each submission and each
     logical expression atom that matches within the
-    subdirectory, the first filename and line matched
+    submission, the first filename and line matched
     for the atom is displayed.  The user of this program
-    can execute `manualreply' on a subdirectory by typ-
-    ing its number within the list of the subdirector-
-    ies.  Upon return from manualreply, the list is re-
-    displayed, but it is NOT recomputed.
+    can execute `manualreply' on a submission by typ-
+    ing its number within the list of the submissions.
+    Upon return from manualreply, the list is redisplay-
+    ed, but it is NOT recomputed.
 
     Unlike most HPCM judging programs, errors made by
     this program are not written to log files, but are
@@ -153,18 +155,18 @@ lookat 'logical-expression'
     This program is interactive.  A summary of its
     commands is:
 
-        #	Call manualreply on subdirectory # of
-		the subdirectory list, where # is
+        #	Call manualreply on submission # of
+		the submission list, where # is
 		a strictly positive integer.
 
 	e logical-expression
-		Recompute the subdirectory list using
+		Recompute the submission list using
 		the new logical expression.
 
-	u	Move up in the subdirectory list.
+	u	Move up in the submission list.
 	p	Ditto (move to previous).
 
-	d	Move down in the subdirectory list.
+	d	Move down in the submission list.
 	n	Ditto (move to next).
 
 	x	Exit.
@@ -208,12 +210,12 @@ lookat 'logical-expression'
 	    also listed."
 
 set help "
-# = call manualreply on mail subdirectory number # in\
-	the subdirectory list
+# = call manualreply on number #\
+         in the submission directory list
 
 e logical-expression = change the logical expression to\
 	a new value.  List
-  all the mail subdirectories satisfying the new\
+  all the submission directories satisfying the new\
    	expression.  For each
   expression atom that matches a file line, display\
    	the first line matched.
@@ -222,23 +224,14 @@ e logical-expression = change the logical expression to\
    	expected are not listed,
   there is a good chance you mistyped the expression.
 
-u = move up in the subdirectory list      \
+u = move up in the submission directory list      \
 	p = ditto (previous)
-d = move down in the subdirectory list    \
+d = move down in the submission directory list    \
 	n = ditto (next)
 
 x = q = control-D = exit      \
 	a = print abbreviations      ? = help
 "
-
-
-# If wrong number of arguments or first argument
-# begins with `-doc', print documentation and exit.
-#
-if { $argc != 1 || [regexp {^-doc} [lindex $argv 0]] } {
-    puts $document
-    exit 1
-}
 
 # Compile logical expression.  For each atom(i),
 # filename_regexp(i) and line_regexp(i) are the parts of
@@ -320,7 +313,7 @@ set manualdirs ""
 #
 proc compute_directory_list {} {
 
-    global judging_directory atom value \
+    global mail_directory atom value \
     	   filename_regexp line_regexp \
 	   manualcount manualdirs \
 	   manuallast size_limit compiled_expression
@@ -329,12 +322,11 @@ proc compute_directory_list {} {
     set manuallast 0
     set manualdirs ""
 
-    # Loop through the subdirectory names.
+    # Loop through the submission directory names.
     #
     foreach dir \
 	    [lsort \
-	       [glob -nocomplain \
-	             $judging_directory/mail/*]] {
+	       [glob -nocomplain $mail_directory/*]] {
 
 	# Be sure its a submission directory and find
 	# submitter and date.
@@ -564,10 +556,32 @@ proc exec_manualreply { i } {
     }
 }
 
+# If first argument begins with `-doc', or wrong number
+# of arguments, print documentation and exit.  Else
+# set mail_directory and expression.
+#
+if { [regexp {^-doc} [lindex $argv 0]] } {
+    puts $document
+    exit 1
+}
+if { [lindex $argv 0] == "-rerun" } {
+    if { $argc != 2 } {
+	puts $document
+	exit 1
+    }
+    set mail_directory $judging_directory/rerun
+    set_expression [lindex $argv 1]
+} else {
+    if { $argc != 1 } {
+	puts $document
+	exit 1
+    }
+    set mail_directory $judging_directory/mail
+    set_expression [lindex $argv 0]
+}
 
 # Set up the interactive loop.
 #
-set_expression [lindex $argv 0]
 compute_directory_list
 set directory_height [expr { $window_height - 5 }]
 set error_line ""
@@ -665,7 +679,7 @@ while { "yes" } {
 	    puts $help
 	    puts ""
 	    puts "Currently $manualcount\
-		  subdirectories are listed and\
+		  submissions are listed and\
 		  the logical expression is:"
 	    puts ""
 	    puts "     $logical_expression"

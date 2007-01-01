@@ -4,7 +4,7 @@
 #
 # File:		rerun_contest
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Wed Nov 15 09:35:04 EST 2006
+# Date:		Mon Jan  1 09:30:49 EST 2007
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,72 +13,66 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/11/15 14:41:14 $
+#   $Date: 2007/01/01 17:40:55 $
 #   $RCSfile: rerun_contest,v $
-#   $Revision: 1.4 $
+#   $Revision: 1.5 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
 
 # Include common code and parameters:
 #
+set log_disable yes
 set lib_directory "[file dirname $argv0]/../lib"
 source $lib_directory/judging_common.tcl
 catch {
 
 set document "
-rerun_contest \[-force|-norun\]
+rerun_contest \[-force|-norun\] \\
+              \[PROBLEM_RE \[SUBMISSION_RE\]\]
 
-    Given a subdirectory named `ORIGINAL_MAIL' in the
-    judging directory that is a copy of the contest
-    `mail' subdirectory, this program creates a brand
-    new `mail' subdirectory and contains only `Received_
-    Mail' submission files, and re-runs the autojudge
-    on all these submissions.
+    Copies submission Received_Mail files into ./rerun
+    subdirectories and runs `autojudge -manual' in these
+    directories.  The submissions choosen are those
+    whose submission directories contain a substring
+    matching the regular expression
+    
+	\"SUBMISSION_RE.*-submission\$\"
 
-    To use this program, make a copy of the judging di-
-    rectory and its subdirectories (using `cp -r' or
-    `tar cf, tar xf') and, working in the copy, rename
-    the `mail' subdirectory to `ORIGINAL_MAIL' and then
-    run this program as many times as you like.  The
-    requirement that you produce the `ORIGINAL_MAIL'
-    directory by hand is a safety measure intended to
-    prevent this program from being run on a live con-
-    test.
+    and whose Received_Mail header contains a subject
+    header line with a substring matching the regular
+    expression
+    
+        \"submit.*PROBLEM_RE\"
+	
+    where the matches are case insensitive and the RE's
+    both default to \".\".
+
+    Rerun output may be compared with ./mail results
+    using the rerun_diff program.  This program does not
+    do anything for a submission whose ./rerun directory
+    already exists.  The program rerun_remove can be
+    used to remove submission ./rerun directories in
+    preparation for redoing them.
+
+    This program may be run in a copy of a judging di-
+    rectory and its subdirectories made using `cp -r'
+    or `tar cf, tar xf'.
 
     This program specifically does the following in
-    its judging directory (which is the copy of the
-    original):
+    the judging directory:
 
-    (1) Moves any `contest' link or subdirectory to
-        `ORIGINAL_CONTEST' provided the latter does
-	not exist.  This is a safety measure intended
-	to prevent contact with any original `contest'
-	directory.
-
-    (2) Adds stuff to the end of `hpcm_judging.rc', if
-        the stuff is not already there, to suppress
-	authentication checks and suppress mailing
-	replies back to the contestant.
-
-	Note that if you want to update old stuff pre-
-	viously placed in this file by rerun_contest,
-	you must delete the old stuff by hand and
-	rerun this program.
-
-	The stuff added is marked by lines:
-
-	    ##### BEGIN RERUN_CONTEST STUFF #####
-	and
-	    ##### END RERUN_CONTEST STUFF #####
-
-	You can edit this stuff, or make your own stuff
-	from scratch surrounded by the above lines.
-
-    (3) Repairs any broken links in the `solutions' sub-
+    (1) Repairs any broken links in the `solutions' sub-
         directory.  If this fails for some link, this
 	program stops unless it is given the `-force'
-	option.
+	option.  This program also stops and does
+	nothing if it finds a broken link and the
+	./contest directory exists, unless the `-force'
+	option is given.  This last is a safety measure.
+
+	If used during a normal contest, no `solutions'
+	sublinks should be broken, and this step should
+	do nothing.
 
 	To repair a link named P, this program selects
 	the first of the following directories that
@@ -95,32 +89,40 @@ rerun_contest \[-force|-norun\]
 
 	and uses the first of these that is a directory.
 
-    (4) Deletes any existing `mail' subdirectory of the
-        judging directory and then remakes an empty
-	version.
+    (2) Creates the `rerun' subdirectory of the judging
+        directory if that does not exist.
 
-    (5) Gives a-x permission to the judging directory
-        and the new `mail' subdirectory so JAVA will
-	work.
-
-    (6) For each submission subdirectory S in `ORIGINAL_
-        MAIL', makes a subdirectory named S in `mail'
-	and copies the `Received_Mail' file from the
-	`ORIGINAL_MAIL/S' submission subdirectory to
-	the `mail/S' subdirectory.  If an `ORIGINAL_
-	MAIL' submission subdirectory has no readable
-	Received_Mail file, a note is printed and the
-	subdirectory is skipped (ignored).
+    (3) Gives a-x permission to the judging directory,
+        its parent, and its `rerun' subdirectory, so
+	that JAVA will work.
 
-    (7) Unless the `-norun' option is given, invokes
-        dispatchmail on all the submission subdirector-
-	ies of `mail'."
+    (4) For each submission subdirectory S in ./mail
+        that has a Received_Mail file and matches the
+	given RE's and for which the ./rerun/S directory
+	does not already exist:
+
+	(4a)	Make the ./rerun/S directory
+	(4b)	Copy ./mail/S/Received_Mail to ./rerun/S
+	(4c)	Execute `autojudge -manual' in ./rerun/S
+		unless the `-norun' option is given.  A
+		file named autodispatch.log is created
+		just as the autodisptach program would,
+		containing the standard output and error
+		from `autojudge -manual'.
+	(4d)	Print a note indicating the results from
+		the above steps.  If ./mail/S/Received_
+		Mail does not exist or is not readable,
+		(4a,b,c) are not done and only the note
+		is printed."
+	
 
 # Process options.
 #
 set force 0
 set norun 0
-foreach arg $argv {
+set myargv $argv
+while { 1 } {
+    set arg [lindex $myargv 0]
     switch -glob -- $arg {
     -doc* {
 	puts $document
@@ -128,65 +130,29 @@ foreach arg $argv {
     }
     -force { set force 1 }
     -norun { set norun 1 }
-    default {
-        puts "ERROR: bad option: $arg"
-	exit 1
-	}
+    default break
     }
+    set myargv [lrange $myargv 1 end]
 }
+set problem_re [lindex $myargv 0]
+set submission_re [lindex $myargv 1]
+if { $problem_re == "" } { set problem_re "." }
+if { $submission_re == "" } { set submission_re "." }
+set problem_re "submit.*$problem_re"
+set submission_re "$submission_re.*-submission\$"
+
 
 # Abbreviations:
 #
 set j_d [truename $judging_directory]
-set o_mail $j_d/ORIGINAL_MAIL
+set pwd [pwd]
 
 puts "Judging directory is:"
 puts "    $j_d"
 
-if { ! [file isdirectory $o_mail] } {
-    puts "ERROR: ORIGINAL_MAIL does not exist"
-    exit 1
-}
-
-# Move contest to ORIGINAL_CONTEST if appropriate.
-#
-if {    ! [catch { file type $j_d/contest } ] \
-     && [catch { file type $j_d/ORIGINAL_CONTEST }] } {
-    puts "Renaming contest to ORIGINAL_CONTEST"
-    file rename $j_d/contest $j_d/ORIGINAL_CONTEST
-}
-
-# Add to hpcm_judging.rc if appropriate.
-#
-set in [open $j_d/hpcm_judging.rc r]
-set found 0
-set regexp {(BEGIN|END)[ \t]+RERUN_CONTEST[ \t]+STUFF}
-while { 1 } {
-    set line [gets $in]
-    if { [eof $in] } break;
-    if { [regexp $regexp $line] } {
-        set found 1
-	break
-    }
-}
-close $in
-
-if { ! $found } {
-    puts "Adding RERUN_CONTEST STUFF to hpcm_judging.rc"
-    set out [open $j_d/hpcm_judging.rc a]
-    puts $out ""
-    puts $out "##### BEGIN RERUN_CONTEST STUFF #####"
-    puts $out ""
-    puts $out "set use_authentication no"
-    puts $out "proc send_mail { message_file } { }"
-    puts $out "proc send_message { message } { }"
-    puts $out ""
-    puts $out "##### END RERUN_CONTEST STUFF #####"
-    close $out
-}
-
 # Repair solutions links.
 #
+set c_d_exists [file isdirectory $j_d/contest]
 set p_l_list [list $env(HOME)/hpcm/problem_library \
                    $hpcm_directory/problem_library]
 set p_l ""
@@ -207,20 +173,22 @@ foreach target \
 	set name [file tail $target]
 
 	# Broken link found.
-	#
-	if { $p_l == "" } {
-	    # No place to search.
-	    if { $force } break
+
+	if { $c_d_exists && ! $force } {
+	    # ./contest is directory.
 	    puts "ERROR: Broken solutions/$name"
-	    set butand but
-	    foreach d $p_l_list {
-	        puts "   $butand $d not found"
-		set butand and
-	    }
-	    exit 1
+	    set all_ok 0
+	    continue
 	}
 
-	set ok $force
+	if { $p_l == "" } {
+	    # No place to search.
+	    puts "ERROR: Broken solutions/$name"
+	    set all_ok 0
+	    continue
+	}
+
+	set ok 0
 	foreach d {demos public private} {
 	    set source $p_l/$d/$name
 	    if { [file isdirectory $source] } {
@@ -235,56 +203,106 @@ foreach target \
 	if { ! $ok } {
 	    puts "ERROR: Could not re-link\
 	          solutions/$name"
-	    all_ok 0
+	    foreach d {demos public private} {
+	        puts "     $p_l/$d/$name not found"
+	    }
+	    set all_ok 0
+	    continue
 	}
     }
 }
 
-if { ! $all_ok } { exit 1 }
-
-# Delete mail directory.
-#
-if { [file exists $j_d/mail] } {
-    puts "Deleting mail"
-    file delete -force -- $j_d/mail
+if { ! $all_ok } {
+    if { $p_l == "" } {
+	foreach d $p_l_list {
+	    puts "    $d not found"
+	}
+    }
+    if { $c_d_exists && ! $force } {
+	puts "    SAFETY VIOLATION: ./contest is a\
+		  directory"
+    }
+    if { ! $force } { exit 1 }
 }
 
-# Recreate mail directory and its contents.
+# Create ./rerun if necessary.
 #
-puts "Creating mail/*/Received_mail"
-mkdir $j_d/mail
-grant_access $j_d
-grant_access $j_d/mail
-set regexp {^.*<<.*>>-submission$}
-set subdirs {}
+if { ! [file exists $j_d/rerun] } {
+    puts "Creating ./rerun"
+    mkdir $j_d/rerun
+}
+
+# Be sure directories have permissions.
+#
+grant_access $j_d/.. x
+grant_access $j_d x
+grant_access $j_d/rerun x
+
+# Function to return true if and only if the subject
+# field of the source mail file header matches the
+# regexp (with -nocase).
+#
+proc received_matches { source regexp } {
+    global message_subject
+    set ch [open $source r]
+    read_header $ch
+    close $ch
+    return [regexp -nocase -- $regexp $message_subject]
+}
+
+# Process ./mail subdirectories.
+#
 foreach subdir \
-        [lsort [glob -nocomplain $o_mail/*]] {
+        [lsort [glob -nocomplain $j_d/mail/*]] {
     set subdir [file tail $subdir]
-    if { ! [regexp $regexp $subdir] } continue
-    set source $o_mail/$subdir/Received_Mail
-    set target $j_d/mail/$subdir/Received_Mail
+    if { ! [regexp -nocase -- \
+                   $submission_re $subdir] } continue
+    if { [file isdirectory $j_d/rerun/$subdir] } \
+        continue
+    set source $j_d/mail/$subdir/Received_Mail
+    set target $j_d/rerun/$subdir/Received_Mail
     if { ! [file exists $source] } {
-        puts "Does not exist:\
-	      ORIGINAL_MAIL/$subdir/Received_Mail"
+        puts "ERROR: does not exist:\
+	      ./mail/$subdir/Received_Mail"
     } elseif { ! [file readable $source] } {
-        puts "Not readable: \
-	      ORIGINAL_MAIL/$subdir/Received_Mail"
+        puts "ERROR: not readable: \
+	      ./mail/$subdir/Received_Mail"
+    } elseif { ! [received_matches $source \
+                                   $problem_re] } {
+        continue
     } elseif { [catch {
-	    mkdir mail/$subdir
+	    mkdir $j_d/rerun/$subdir
 	    copy_file $source $target
-	    lappend subdirs $subdir
 		      } out] } {
 	puts "ERROR: Cannot make\
-	      mail/$subdir/Received_Mail"
+	      ./rerun/$subdir/Received_Mail"
 	puts $out
-	exit 1
-    }
-}
+    } elseif { $norun } { 
+        puts "Made ./rerun/$subdir/Received_Mail"
+    } else {
 
-if { ! $norun } {
-    puts "Executing dispatchmail for all submissions"
-    exec dispatchmail >@ stdout 2>@ stderr \
-         << "[join $subdirs "\n"]\n"
+	# Change to rerun directory.
+	#
+	cd $j_d/rerun/$subdir
+
+	# Open autodispatch.log file.
+	#
+	set logch [open autodispatch.log a]
+	puts $logch "----------------------------------"
+	puts $logch "Starting autojudge -manual:\
+		     [clock format [clock seconds]]"
+	puts $logch "----------------------------------"
+	set c [catch { exec autojudge -manual } out]
+	puts $logch $out
+	close $logch
+	cd $pwd
+
+	if { $c } {
+	    puts "Reran with SYSTEM ERROR: $subdir"
+	} else {
+	    puts "Reran $subdir"
+	}
+    }
 }
 
 exit 0
