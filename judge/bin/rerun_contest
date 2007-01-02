@@ -4,7 +4,7 @@
 #
 # File:		rerun_contest
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Tue Jan  2 04:38:08 EST 2007
+# Date:		Tue Jan  2 09:35:49 EST 2007
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2007/01/02 11:37:06 $
+#   $Date: 2007/01/02 14:37:33 $
 #   $RCSfile: rerun_contest,v $
-#   $Revision: 1.7 $
+#   $Revision: 1.8 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -238,6 +238,11 @@ puts "    $j_d"
 #
 set problem_re "submit.*$problem_re"
 set submission_re "$submission_re.*-submission\$"
+set len  [string length $sourceabbrev]
+set len2 [string length $targetabbrev]
+if { $len2 > $len } { set len $len2 }
+set sourcetag [format "%${len}s" $sourceabbrev]
+set targettag [format "%${len}s" $targetabbrev]
 
 # Repair solutions links.
 #
@@ -347,6 +352,8 @@ if { [lcontain {rerun copy redo} $command] } {
 
 # Process source submission subdirectories.
 #
+set directories 0
+set differences 0
 foreach subdir [lsort [glob -nocomplain $source/*]] {
     set subdir [file tail $subdir]
 
@@ -355,6 +362,8 @@ foreach subdir [lsort [glob -nocomplain $source/*]] {
     if {    [lcontain {rerun copy} $command] \
          && [file isdirectory $target/$subdir] } \
         continue
+
+    incr directories
 
     set sourcerm $source/$subdir/Received_Mail
     set targetrm $target/$subdir/Received_Mail
@@ -374,10 +383,55 @@ foreach subdir [lsort [glob -nocomplain $source/*]] {
 	puts $out
     } elseif { ! [regexp -nocase -- $problem_re \
                          $message_subject] } {
+	incr directories -1
         continue
     } elseif { $command == "look" } {
         puts "$subdir"
-	puts "    $message_subject"
+	puts "    [format {%14s} \
+	                  Subject]:$message_subject"
+	foreach file {Auto_Score
+	              Old_Auto_Score
+	              Manual_Score} {
+	    set f $source/$subdir/$file
+	    if { [file exists $f] } {
+	        puts "    [format {%14s} $file]:\
+		          [read_entire_file $f]"
+	    }
+	}
+    } elseif { $command == "diff" } {
+	foreach d {source target} {
+	    set as [set $d]/$subdir/Auto_Score
+	    if { [file exists $as] } {
+	        set as [read_entire_file $as]
+	    } else {
+	        set as "does not exist"
+	    }
+	    set ${d}as $as
+	}
+
+	if { $sourceas == $targetas } continue
+
+	incr differences
+        puts "$subdir"
+	puts "    [format {%14s} \
+	                  Subject]:$message_subject"
+	foreach file {Auto_Score
+	              Old_Auto_Score
+	              Manual_Score} {
+	    foreach d {source target} {
+		set f [set $d]/$subdir/$file
+		if { [file exists $f] } {
+		    puts "    [format {%14s} $file]:\
+			      [set ${d}tag]:\
+			      [read_entire_file $f]"
+	        }
+	    }
+	}
+    } elseif { $command == "remove" } {
+	if { [file isdirectory $target/$subdir] } {
+	    puts "Deleted $subdir"
+	    file delete -force -- $target/$subdir
+	}
     } elseif {    [lcontain {rerun copy} $command] \
                && [catch {
 		    file mkdir $target/$subdir
@@ -400,6 +454,7 @@ foreach subdir [lsort [glob -nocomplain $source/*]] {
 
 	# Open autodispatch.log file.
 	#
+	file delete -force autodispatch.log
 	set logch [open autodispatch.log a]
 
 	# Set up for printing notes.
@@ -421,7 +476,9 @@ foreach subdir [lsort [glob -nocomplain $source/*]] {
 	        if { [lcontain {Received_Mail
 				Reply_Mail_History
 				Old_Auto_Score
-				Manual_Score} $file] } {
+				Manual_Score
+				autodispatch.log} \
+				$file] } {
 		    continue
 		}
 	        puts $logch "Deleting $file"
@@ -472,6 +529,15 @@ foreach subdir [lsort [glob -nocomplain $source/*]] {
 	    puts "    $line"
 	}
     }
+}
+
+puts ""
+if { $command == "diff" } {
+    puts "Processed $directories submission\
+          directories; $differences have changed."
+} else {
+    puts "Processed $directories submission\
+          directories."
 }
 
 exit 0
