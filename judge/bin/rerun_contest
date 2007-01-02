@@ -4,7 +4,7 @@
 #
 # File:		rerun_contest
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Mon Jan  1 13:07:30 EST 2007
+# Date:		Tue Jan  2 04:38:08 EST 2007
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2007/01/01 19:28:54 $
+#   $Date: 2007/01/02 11:37:06 $
 #   $RCSfile: rerun_contest,v $
-#   $Revision: 1.6 $
+#   $Revision: 1.7 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -28,15 +28,27 @@ source $lib_directory/judging_common.tcl
 catch {
 
 set document "
-rerun_contest \[-force|-norun\] \\
-              \[PROBLEM_RE \[SUBMISSION_RE \\
-	      \[SOURCE \[TARGET\]\]\]\]
+rerun_contest COMMAND \\
+    \[-force|-source SRCDIR|-target TARDIR\] \\
+    \[PROBLEM_RE \[SUBMISSION_RE\]\]
 
-    Copies submission Received_Mail files into ./rerun
-    subdirectories and runs `autojudge -manual' in these
-    directories.  The submissions choosen are those
-    whose submission directories contain a substring
-    matching the regular expression
+    Executes a COMMAND that involves rerunning the
+    autojudge on submissions.  COMMAND may be rerun,
+    copy, redo, repair, diff, look, or remove.  For
+    example, rerun copies a submission in the source
+    directory to the target directory and runs autojudge
+    on the copy.
+
+    The source directory defaults to `./mail', and the
+    target directory defaults to `./rerun'.  All runs
+    of autojudge are executions of `autojudge -manual'
+    with the standard output and standard error being
+    captured in a new `autodispatch.log' file in the
+    submission directory, just as autodispatch would do.
+
+    The submissions choosen are those in the source di-
+    rectory whose submission directories contain a sub-
+    string matching the regular expression
     
 	\"SUBMISSION_RE.*-submission\$\"
 
@@ -46,273 +58,418 @@ rerun_contest \[-force|-norun\] \\
     
         \"submit.*PROBLEM_RE\"
 	
-    where the matches are case insensitive and the RE's
-    both default to \".\".
+    Matches are case insensitive and the RE's both
+    default to \"\".
 
-    If SOURCE is given it replaces ./mail, and if TARGET
-    is given it replaces ./rerun.
-
-    Rerun output may be compared with ./mail results
-    using the rerun_diff program.  This program does not
-    do anything for a submission whose ./rerun directory
-    already exists.  The program rerun_remove can be
-    used to remove submission ./rerun directories in
-    preparation for redoing them.
-
+    The `redo' command with `-target ./mail' option can
+    be used to rerun autojudge for selected submissions
+    of a contest in progress, e.g., for selected
+    problems.
+
     This program may be run in a copy of a judging di-
     rectory and its subdirectories made using `cp -r'
     or `tar cf, tar xf'.
-
-    This program specifically does the following in
-    the judging directory:
 
-    (1) Repairs any broken links in the `solutions' sub-
-        directory.  If this fails for some link, this
-	program stops unless it is given the `-force'
-	option.  This program also stops and does
-	nothing if it finds a broken link and the
-	./contest directory exists, unless the `-force'
-	option is given.  This last is a safety measure.
+    The rerun, redo, and repair commands begin by re-
+    pairing any broken links in the `solutions' subdi-
+    rectory of the judging directory.  If this fails for
+    some link, this program stops unless it is given the
+    `-force' option.  This program also stops and does
+    nothing if it finds a broken link and ./contest is
+    an existing directory, unless the `-force' option is
+    given.  This last is a safety measure.
 
-	If used during a normal contest, no `solutions'
-	sublinks should be broken, and this step should
-	do nothing.
+    If used during a normal contest, no `solutions' sub-
+    directory links should be broken, and this step
+    should do nothing.
 
-	To repair a link named P, this program selects
-	the first of the following directories that
-	exist:
+    To repair a link named P, this program selects the
+    first of the following directories that exist:
+
 		~/hpcm/problem_library
 		\$hpcm_directory/problem_library
 		
-	In the selected directory this program searches
-	for the following in order:
+    In the selected directory this program searches
+    for the following in order:
 
 		demos/P
 		public/P
 		private/P
 
-	and uses the first of these that is a directory.
+    and uses the first of these that is a directory.
 
-    (2) Creates the `rerun' subdirectory of the judging
-        directory if that does not exist.
-
-    (3) Gives a-x permission to the judging directory,
-        its parent, and its `rerun' subdirectory, so
-	that JAVA will work.
+    The `repair' command just repairs links, and does
+    nothing else.
 
-    (4) For each submission subdirectory S in ./mail
-        that has a Received_Mail file and matches the
-	given RE's and for which the ./rerun/S directory
-	does not already exist:
+    The rerun, copy, and redo commands create the target
+    directory if that does not exist.  These commands
+    also set a+x permissions on the target directory,
+    its parent, and the parent of its parent, so that
+    JAVA will work.
 
-	(4a)	Make the ./rerun/S directory
-	(4b)	Copy ./mail/S/Received_Mail to ./rerun/S
-	(4c)	Execute `autojudge -manual' in ./rerun/S
-		unless the `-norun' option is given.  A
-		file named autodispatch.log is created
-		just as the autodisptach program would,
-		containing the standard output and error
-		from `autojudge -manual'.
-	(4d)	Print a note indicating the results from
-		the above steps.  If ./mail/S/Received_
+    All the commands iterate over all submission subdi-
+    rectories S in the source directory that have a
+    Received_Mail file such that the name of S and the
+    subject of the Received_Mail file match the RE's
+    given by the arguments or their defaults.  The fol-
+    lowing are the details for each command for a given
+    submission S, where ./mail is the source directory
+    and ./rerun is the target directory.
+
+    rerun
+
+        If the directory ./rerun/S does not already
+	exist:
+
+	    (1) Make the ./rerun/S directory
+	    (2) Copy ./mail/S/Received_Mail to ./rerun/S
+	    (3) Execute `autojudge -manual' in
+	        ./rerun/S.
+	    (4) Print a note indicating the results from
+	        the above steps.  If ./mail/S/Received_
 		Mail does not exist or is not readable,
-		(4a,b,c) are not done and only the note
-		is printed."
-	
+		none of the above are done and only the
+		note is printed.
 
-# Process options.
-#
-set force 0
-set norun 0
-set myargv $argv
-while { 1 } {
-    set arg [lindex $myargv 0]
-    switch -glob -- $arg {
-    -doc* {
-	puts $document
-	exit 1
-    }
-    -force { set force 1 }
-    -norun { set norun 1 }
-    default break
-    }
-    set myargv [lrange $myargv 1 end]
-}
+    copy
 
+        Same as `rerun' but skip running autojudge (3).
+
+    redo
+
+        In ./rerun/S:
+
+	    (1) If Auto_Score exists and Old_Auto_Score
+	        does not, rename Auto_Score to Old_Auto_
+		Score.
+	    (2) Delete all files except Received_Mail,
+	        Reply_Mail_History, Old_Auto_Score, and
+		Manual_Score.
+	    (3) Execute `autojudge -manual'.
+	    (4) If Old_Auto_Score and Auto_Score both
+	        exist and are equal, delete Old_Auto_
+		Score.
+	    (5) Print a note indicating the results from
+	        the above steps.  If Received_Mail does
+	        not exist or is not readable, none of
+		the above are done and only the note is
+		printed.
+
+	Note: S is selected by examining ./mail/S, NOT
+	./rerun/S.  Both source and target are used.
+
+    look
+
+        Print S and the contents of the following in the
+	./mail/S directory:
+
+		Received_Mail subject field
+		Auto_Score file
+		Old_Auto_Score file
+		Manual_Score file
+
+    diff
+
+	Compare ./mail/S and ./rerun/S.  If they have
+	different Auto_Score files, print S and the
+	contents of the following:
+
+		Received_Mail subject field
+		Auto_Score file in each directory
+		Old_Auto_Score file in each directory
+		Manual_Score file in each directory
+
+    remove
+
+    	Delete ./rerun/S.
+
+	Note: S is selected by examining ./mail/S, NOT
+	./rerun/S.  Both source and target are used."
 
 # Abbreviations:
 #
 set j_d [truename $judging_directory]
 set pwd [pwd]
 
+# Process options.
+#
+set force 0
+set source $j_d/mail
+set sourceabbrev ./mail
+set target $j_d/rerun
+set targetabbrev ./rerun
+set myargv $argv
+set command [lindex $myargv 0]
+set myargv [lrange $myargv 1 end]
+if { [regexp {^-doc} $command] } {
+    puts $document
+    exit 1
+}
+while { 1 } {
+    set arg [lindex $myargv 0]
+    set skip 1
+    switch -glob -- $arg {
+    -force { set force 1 }
+    -source { set source [lindex $myargv 1]
+	      set sourceabbrev .../[file tail $source]
+              set skip 2 }
+    -target { set target [lindex $myargv 1]
+	      set targetabbrev .../[file tail $target]
+              set skip 2 }
+    default break
+    }
+    set myargv [lrange $myargv $skip end]
+}
+set problem_re    [lindex $myargv 0]
+set submission_re [lindex $myargv 1]
+
+# Check command.
+#
+if { ! [lcontain {rerun copy redo repair \
+                  look diff remove} \
+                 $command] } {
+    error "Bad command: $command"
+}
+
 puts "Judging directory is:"
 puts "    $j_d"
 
 # Calculate arguments.
 #
-set problem_re [lindex $myargv 0]
-set submission_re [lindex $myargv 1]
-set source [lindex $myargv 2]
-set target [lindex $myargv 3]
-if { $problem_re == "" } { set problem_re "." }
 set problem_re "submit.*$problem_re"
-if { $submission_re == "" } { set submission_re "." }
 set submission_re "$submission_re.*-submission\$"
-if { $source == "" } { set source $j_d/mail }
-if { $target == "" } { set target $j_d/rerun }
-set sourceabbrev [file tail $source]
-set targetabbrev [file tail $target]
 
 # Repair solutions links.
 #
-set c_d_exists [file isdirectory $j_d/contest]
-set p_l_list [list $env(HOME)/hpcm/problem_library \
-                   $hpcm_directory/problem_library]
-set p_l ""
-foreach d $p_l_list {
-    if { [file isdirectory $d] } {
-	set p_l [truename $d]
-	break
+if { [lcontain {rerun redo repair} $command] } {
+
+    set c_d_exists [file isdirectory $j_d/contest]
+
+    # Set p_l to program_library directory.
+    #
+    set p_l_list [list $env(HOME)/hpcm/problem_library \
+		       $hpcm_directory/problem_library]
+    set p_l ""
+    foreach d $p_l_list {
+	if { [file isdirectory $d] } {
+	    set p_l [truename $d]
+	    break
+	}
     }
-}
 
-set all_ok 1
-foreach ltarget \
-        [lsort [glob -nocomplain $j_d/solutions/*]] {
-    if {    ! [catch { set type [file type $ltarget] }] \
-         && $type == "link"
-	 && ! [file exists $ltarget] } {
+    # Iterate over links.
+    #
+    set all_ok 1
+    foreach ltarget \
+	    [lsort [glob -nocomplain \
+	                 $j_d/solutions/*]] {
+	if {    ! [catch { set type \
+	                       [file type $ltarget] }] \
+	     && $type == "link"
+	     && ! [file exists $ltarget] } {
 
-	set name [file tail $ltarget]
+	    set name [file tail $ltarget]
 
-	# Broken link found.
+	    # Broken link found.
 
-	if { $c_d_exists && ! $force } {
-	    # ./contest is directory.
-	    puts "ERROR: Broken solutions/$name"
-	    set all_ok 0
-	    continue
-	}
-
-	if { $p_l == "" } {
-	    # No place to search.
-	    puts "ERROR: Broken solutions/$name"
-	    set all_ok 0
-	    continue
-	}
-
-	set ok 0
-	foreach d {demos public private} {
-	    set lsource $p_l/$d/$name
-	    if { [file isdirectory $lsource] } {
-	        puts "Relinking solutions/$name"
-		puts "       to $lsource"
-		file delete -force -- $ltarget
-		link_file $lsource $ltarget
-		set ok 1
-		break
+	    if { $c_d_exists && ! $force } {
+		# ./contest is directory.
+		puts "ERROR: Broken solutions/$name"
+		set all_ok 0
+		continue
 	    }
-	}
-	if { ! $ok } {
-	    puts "ERROR: Could not re-link\
-	          solutions/$name"
+
+	    if { $p_l == "" } {
+		# No place to search.
+		puts "ERROR: Broken solutions/$name"
+		set all_ok 0
+		continue
+	    }
+
+	    set ok 0
 	    foreach d {demos public private} {
-	        puts "     $p_l/$d/$name not found"
+		set lsource $p_l/$d/$name
+		if { [file isdirectory $lsource] } {
+		    puts "Relinking solutions/$name"
+		    puts "       to $lsource"
+		    file delete -force -- $ltarget
+		    link_file $lsource $ltarget
+		    set ok 1
+		    break
+		}
 	    }
-	    set all_ok 0
-	    continue
+	    if { ! $ok } {
+		puts "ERROR: Could not re-link\
+		      solutions/$name"
+		foreach d {demos public private} {
+		    puts "     $p_l/$d/$name not found"
+		}
+		set all_ok 0
+		continue
+	    }
 	}
     }
-}
 
-if { ! $all_ok } {
-    if { $p_l == "" } {
-	foreach d $p_l_list {
-	    puts "    $d not found"
+    if { ! $all_ok } {
+	if { $p_l == "" } {
+	    foreach d $p_l_list {
+		puts "    $d not found"
+	    }
 	}
+	if { $c_d_exists && ! $force } {
+	    puts "    SAFETY VIOLATION: ./contest is a\
+		      directory"
+	}
+	if { ! $force } { exit 1 }
     }
-    if { $c_d_exists && ! $force } {
-	puts "    SAFETY VIOLATION: ./contest is a\
-		  directory"
+}
+
+if { $command == "repair" } { exit 0 }
+
+if { [lcontain {rerun copy redo} $command] } {
+
+    # Create target if necessary.
+    #
+    if { ! [file exists $target] } {
+	puts "Creating $targetabbrev"
+	file mkdir $target
     }
-    if { ! $force } { exit 1 }
+
+    # Be sure directories have permissions.
+    # Ignore errors for .. or ../..
+    #
+    catch {
+	grant_access $target x
+	grant_access $target/.. x
+	grant_access $target/../.. x
+    }
 }
 
-# Create ./rerun if necessary.
-#
-if { ! [file exists $target] } {
-    puts "Creating $targetabbrev"
-    mkdir $target
-}
-
-# Be sure directories have permissions.
-#
-grant_access $target/../.. x
-grant_access $target/.. x
-grant_access $target x
-
-# Function to return true if and only if the subject
-# field of the rm mail file header matches the
-# regexp (with -nocase).
-#
-proc received_matches { rm regexp } {
-    global message_subject
-    set ch [open $rm r]
-    read_header $ch
-    close $ch
-    return [regexp -nocase -- $regexp $message_subject]
-}
-
-# Process ./mail subdirectories.
+# Process source submission subdirectories.
 #
 foreach subdir [lsort [glob -nocomplain $source/*]] {
     set subdir [file tail $subdir]
+
     if { ! [regexp -nocase -- \
                    $submission_re $subdir] } continue
-    if { [file isdirectory $target/$subdir] } \
+    if {    [lcontain {rerun copy} $command] \
+         && [file isdirectory $target/$subdir] } \
         continue
+
     set sourcerm $source/$subdir/Received_Mail
     set targetrm $target/$subdir/Received_Mail
+
     if { ! [file exists $sourcerm] } {
         puts "ERROR: does not exist:\
 	      $sourceabbrev/$subdir/Received_Mail"
     } elseif { ! [file readable $sourcerm] } {
         puts "ERROR: not readable: \
 	      $sourceabbrev/$subdir/Received_Mail"
-    } elseif { ! [received_matches $sourcerm \
-                                   $problem_re] } {
-        continue
     } elseif { [catch {
-	    mkdir $target/$subdir
-	    copy_file $sourcerm $targetrm
-		      } out] } {
+		    set ch [open $sourcerm r]
+		    read_header $ch
+		    close $ch } out] } {
+	puts "ERROR: could not read\
+	      $sourceabbrev/$subdir/Received_Mail"
+	puts $out
+    } elseif { ! [regexp -nocase -- $problem_re \
+                         $message_subject] } {
+        continue
+    } elseif { $command == "look" } {
+        puts "$subdir"
+	puts "    $message_subject"
+    } elseif {    [lcontain {rerun copy} $command] \
+               && [catch {
+		    file mkdir $target/$subdir
+		    copy_file $sourcerm $targetrm
+			      } out] } {
 	puts "ERROR: Cannot make\
 	      $targetabbrev/$subdir/Received_Mail"
 	puts $out
-    } elseif { $norun } { 
-        puts "Made $targetabbrev/$subdir/Received_Mail"
-    } else {
+    } elseif { [lcontain {rerun redo} $command] } {
 
-	# Change to rerun directory.
+        if { ! [file isdirectory $target/$subdir] } {
+	    puts "ERROR: $targetabbrev/$subdir\
+	          does not exist"
+	    continue
+	}
+        
+	# Change to target submission directory.
 	#
 	cd $target/$subdir
 
 	# Open autodispatch.log file.
 	#
 	set logch [open autodispatch.log a]
-	puts $logch "----------------------------------"
-	puts $logch "Starting autojudge -manual:\
+
+	# Set up for printing notes.
+	#
+	set note Reran
+	set note_list {}
+
+	if { $command == "redo" } {
+	    set note Redid
+
+	    if {    [file exists Auto_Score] \
+	         && ! [file exists Old_Auto_Score] } {
+	        puts $logch "Renaming Auto_Score to\
+		             Old_Auto_Score"
+		file rename Auto_Score Old_Auto_Score
+	    }
+
+	    foreach file [glob -nocomplain *] {
+	        if { [lcontain {Received_Mail
+				Reply_Mail_History
+				Old_Auto_Score
+				Manual_Score} $file] } {
+		    continue
+		}
+	        puts $logch "Deleting $file"
+		file delete -force -- $file
+	    }
+	}
+
+	puts $logch "Start of autojudge -manual:\
 		     [clock format [clock seconds]]"
 	puts $logch "----------------------------------"
-	set c [catch { exec autojudge -manual } out]
+	if { [catch { exec autojudge -manual } out] } {
+	    lappend note_list \
+	            "Autojudge -manual suffered a\
+		     SYSTEM ERROR"
+	}
 	puts $logch $out
+	puts $logch "----------------------------------"
+	puts $logch "End of autojudge -manual:\
+		     [clock format [clock seconds]]"
+
+	if { $command == "redo" } {
+	    if {    [file exists Auto_Score] \
+	         && [file exists Old_Auto_Score] } {
+	        set auto_score \
+		    [read_entire_file Auto_Score]
+	        set old_auto_score \
+		    [read_entire_file Old_Auto_Score]
+		if { $auto_score == $old_auto_score } {
+		    puts $logch \
+		         "Auto_Score == Old_Auto_Score"
+		    puts $logch \
+		         "Deleting Old_Auto_Score"
+		    file delete -force -- Old_Auto_Score
+		} else {
+		    lappend note_list \
+			"Auto_Score: new $auto_score\
+			 \        != old\
+			             $old_auto_score"
+		}
+	    }
+	}
 	close $logch
+
 	cd $pwd
 
-	if { $c } {
-	    puts "Reran with SYSTEM ERROR: $subdir"
-	} else {
-	    puts "Reran $subdir"
+	puts "$note $subdir"
+	foreach line $note_list {
+	    puts "    $line"
 	}
     }
 }
