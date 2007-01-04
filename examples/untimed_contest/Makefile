@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Jan  2 09:50:23 EST 2007
+# Date:		Thu Jan  4 05:15:31 EST 2007
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2007/01/02 14:52:01 $
+#   $Date: 2007/01/04 10:22:39 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.72 $
+#   $Revision: 1.73 $
 #
 # To make an untimed contest named `foo':
 #
@@ -62,7 +62,8 @@
 #    accounts in an untimed contest are assigned
 #    different random passwords by `makecontest' after
 #    you have added account names to the ./contest/
-#    secure/passwords file.  You should create a special
+#    secure/passwords file.  If there are contestant
+#    accounts for the contest, create a special
 #    contestant `test account' that you yourself use for
 #    testing the contest, and may put `none' as the
 #    password for that account in the passwords file,
@@ -73,13 +74,19 @@
 #     `lookat' program to invoke `manualreply' to
 #     examine submissions, if necessary.
 #
-# 8.  Test the contest by sending the contest mail
-#     with the Subject `get help'.  Then try emailing
-#     several demos/count and the demos/javaio
-#     solutions with Subjects of the form `submit
-#     count.xxx' (change `count1' to `count' in the
-#     subject) or `submit javaio.java'.  See the
-#     info/help/email_contests file for more details.
+# 8.  If the contest allows contestants to email sub-
+#     missions from their own accounts, test the contest
+#     by sending email to the contest autojudge with
+#     `Subject: get help'.  Then try emailing several
+#     demos/count solutions and the demos/javaio solu-
+#     tion with subjects of the form `submit count.xxx'
+#     (change `count1' to `count' in the subject) or
+#     `submit javaio.java'.  See the info/help/email_
+#     contests file for more details.
+#
+#     If the contest has contestant accounts, try
+#     submitting demos/count solutions from your test
+#     account.
 #
 # 9.  You can also test the contest by executing
 #     `make test'.  Then read each email reply and
