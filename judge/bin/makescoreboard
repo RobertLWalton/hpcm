@@ -4,7 +4,7 @@
 #
 # File:		makescoreboard
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Jan  5 12:34:45 EST 2007
+# Date:		Fri Jan  5 13:59:13 EST 2007
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2007/01/05 17:35:43 $
+#   $Date: 2007/01/05 18:59:39 $
 #   $RCSfile: makescoreboard,v $
-#   $Revision: 1.84 $
+#   $Revision: 1.85 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -30,7 +30,7 @@ if { [lindex $argv 0] == "-start-" } {
     set start_errors [lindex $argv 1]
     if { $start_errors < 4 } {
         proc caught_error_retry {} {
-	    global start_errors pid_file
+	    global start_errors pid_file argv
 	    incr start_errors
 	    sleep 2
 	    if { [info exists pid_file] } {
@@ -406,6 +406,7 @@ proc update_scoreboard { { force no } } {
            finder_file errorCode errorInfo \
 	   abbreviation_array bar solid_bar space \
 	   scoreboard_commands
+
 
     set time [clock seconds]
     if {    $shutdown_time != "" \
@@ -915,15 +916,39 @@ proc update_scoreboard { { force no } } {
 			[file join $judging_directory \
 				   $in_file]
 
-		    # Add input file to inout_mtime_list
-		    # and first existing file to output
+		    # Add first existing input file to
+		    # inout_mtime_list if it is not
+		    # already on list.  Note, if it
+		    # is on as (previous) output file,
+		    # it is NOT added to list (else
+		    # is might produce perpetual
+		    # updates as its mtime would be
+		    # > last_time).
+		    #
+		    # Also add this file to the output
 		    # contents.
+		    #
+		    # Add non-existing files before
+		    # first existing file to the
+		    # inout_mtime_list.
 		    #
 		    if { [file exists $in_file] } {
 
-			set mtime [file mtime $in_file]
-			lappend inout_mtime_list \
-				[list $mtime $in_file]
+			set found no
+			foreach item $inout_mtime_list {
+			    if {    $in_file \
+			         == [lindex $item 1] } {
+			        set found yes
+				break
+			    }
+			}
+			if { $found == "no" } {
+			    set mtime \
+			        [file mtime $in_file]
+			    lappend inout_mtime_list \
+				    [list $mtime \
+				          $in_file]
+			}
 
 			if { [file size $in_file] > 0 \
 					} {
