@@ -2,7 +2,7 @@
 #
 # File:		display_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Jan  7 09:06:11 EST 2007
+# Date:		Sun Jan  7 09:13:22 EST 2007
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2007/01/07 14:09:13 $
+#   $Date: 2007/01/07 14:14:07 $
 #   $RCSfile: display_common.tcl,v $
-#   $Revision: 1.47 $
+#   $Revision: 1.48 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -999,17 +999,17 @@ proc make_diff { file } {
 # Set the window display to the file_list.  Set the
 # `last_display' variable to `file_list'.
 #
-# If `full' is `yes' display in 2 columns with numbers
-# and time, sorting by time, and including TBD's.
-# Otherwise display in 3 columns without numbers or
-# time, omitting TBD's, and sorting alphabetically.
+# If first argument is `full' display in 2 columns with
+# numbers and time, sorting by time, and including
+# TBD's.  Otherwise display in 3 columns without numbers
+# or time, omitting TBD's, and sorting alphabetically.
 #
-proc set_file_list_display { { full no } } {
+proc set_file_list_display { { full "" } } {
 
     global file_list file_list_origin_mtime \
     	   window_bar last_display
 
-    if { $full } {
+    if { $full == "full" } {
         set width 39
     } else {
         set width 26
@@ -1020,12 +1020,12 @@ proc set_file_list_display { { full no } } {
 	incr n
 	set time [lindex $item 1]
 	if { $time == "TBD" } {
-	    if { $full == "no" } continue
+	    if { $full != "full" } continue
 	    set next [format {%3d. %6.6s%1.1s %s} \
 			     $n \
 			     TBD [lindex $item 4] \
 			     [lindex $item 2]]
-	} elseif { $full == "no" } {
+	} elseif { $full != "full" } {
 	    set next [lindex $item 2]
 	} else {
 	    set time \
@@ -1061,7 +1061,7 @@ proc set_file_list_display { { full no } } {
 
     set entries [lsort $entries]
     set display "$window_bar"
-    if { $full } {
+    if { $full == "full" } {
 	set half \
 	    [expr { ( [llength $entries] + 1 ) / 2 }]
 	set i 0
