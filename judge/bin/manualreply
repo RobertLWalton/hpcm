@@ -5,7 +5,7 @@
 #
 # File:		manualreply
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Dec 20 07:24:28 EST 2006
+# Date:		Sun Jan  7 04:49:31 EST 2007
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/12/20 13:04:01 $
+#   $Date: 2007/01/07 10:09:46 $
 #   $RCSfile: manualreply,v $
-#   $Revision: 1.71 $
+#   $Revision: 1.72 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -962,6 +962,7 @@ proc refresh_display {} {
 proc refresh_info {} {
 
     global proposed_score manual_score auto_score \
+    	   old_auto_score \
     	   window_info_height directory menu \
 	   scoring_instructions submitted_problem
 
@@ -993,8 +994,18 @@ Scores:  Auto: $auto_score   Manual: $manual_score"
 	} else {
 	    set scoring_info "$scoring_info
 Scores:  Auto: $auto_score   Manual: $manual_score
-           Proposed: $proposed_score"
+         Proposed: $proposed_score"
 	    set window_info_height 9
+	}
+	if { $old_auto_score != "None" } {
+	    if { $window_info_height == 8 } {
+	        set scoring_info "$scoring_info
+         OLD_AUTO_SCORE: $old_auto_score"
+		incr window_info_height
+	    } else {
+	        set scoring_info "$scoring_info  \
+                    OLD_AUTO_SCORE: $old_auto_score"
+	    }
 	}
     }
 
