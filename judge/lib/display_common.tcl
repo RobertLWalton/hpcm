@@ -2,7 +2,7 @@
 #
 # File:		display_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Jan  7 07:08:46 EST 2007
+# Date:		Sun Jan  7 09:06:11 EST 2007
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2007/01/07 12:47:41 $
+#   $Date: 2007/01/07 14:09:13 $
 #   $RCSfile: display_common.tcl,v $
-#   $Revision: 1.46 $
+#   $Revision: 1.47 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -76,6 +76,10 @@
 # unless it is too large.  The window_display should end
 # with a `==========' bar to separate it from the win-
 # dow_info.
+#
+# As a special case, if window_info_height is 0, neither
+# window_info or the blank line following it are dis-
+# played.
 #
 # Of the following variables, window_error and window_
 # prompt can be set directly, while the other variables
@@ -144,23 +148,27 @@ proc display_window {} {
     #
     # We need to leave 3 lines for the window_prompt,
     # window_error, and the blank line above these.
+    # Or 2 if window_info_height == 0.
     #
+    set d $window_display
+    set i "$window_info\n\n"
+    set e $window_error
+    set p $window_prompt
     set offset \
         [expr   $window_height \
 	      + $window_blank_height \
 	      - $window_display_height \
 	      - $window_info_height - 3 - 1]
+    if { $window_info_height == 0 } {
+        set i ""
+	incr offset 1
+    }
     set b [string range $window_newlines 0 $offset]
-
-    set d $window_display
-    set i $window_info
-    set e $window_error
-    set p $window_prompt
 
     # We try to output the display all-at-once to get
     # the effect of a quick refresh.
     #
-    puts -nonewline "$b\n$d\n$i\n\n$e\n$p"
+    puts -nonewline "$b\n$d\n$i$e\n$p"
     flush stdout
 }
 
