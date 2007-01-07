@@ -2,7 +2,7 @@
 #
 # File:		display_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Jan  7 09:13:22 EST 2007
+# Date:		Sun Jan  7 09:24:38 EST 2007
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2007/01/07 14:14:07 $
+#   $Date: 2007/01/07 14:32:54 $
 #   $RCSfile: display_common.tcl,v $
-#   $Revision: 1.48 $
+#   $Revision: 1.49 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -1016,6 +1016,7 @@ proc set_file_list_display { { full "" } } {
     }
     set n 0
     set entries {}
+    set long_entries {}
     foreach item $file_list {
 	incr n
 	set time [lindex $item 1]
@@ -1051,12 +1052,17 @@ proc set_file_list_display { { full "" } } {
 	set commented "${next} [lindex $item 3]"
 
 	if { [string length $commented] <= $width } {
-	    set next $commented
-	} elseif { [string length $next] > $width } {
-	    set w [expr $width - 4]
-	    set next "[string range $next 0 $w]..."
+	    lappend entries $commented
+	} elseif { [string length $next] <= $width } {
+	    lappend entries $next
+	} elseif { [string length $commented] <= 80 } {
+	    lappend long_entries $commented
+	} elseif { [string length $next] <= 80 } {
+	    lappend long_entries $next
+	} else {
+	    lappend long_entries \
+	            [string range $next 0 79]
 	}
-	lappend entries $next
     }
 
     set entries [lsort $entries]
@@ -1090,6 +1096,10 @@ proc set_file_list_display { { full "" } } {
 	    incr j
 	    incr k
 	}
+    }
+
+    foreach long_entry [lsort $long_entries] {
+        set display "$display\n$long_entry"
     }
 
     set_window_display "$display\n$window_bar"
