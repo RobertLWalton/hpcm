@@ -4,7 +4,7 @@
 #
 # File:		rerun_contest
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Tue Jan  2 09:38:49 EST 2007
+# Date:		Sun Jan  7 03:26:00 EST 2007
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2007/01/02 14:39:38 $
+#   $Date: 2007/01/07 08:53:46 $
 #   $RCSfile: rerun_contest,v $
-#   $Revision: 1.9 $
+#   $Revision: 1.10 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -34,8 +34,8 @@ rerun_contest COMMAND \\
 
     Executes a COMMAND that involves rerunning the
     autojudge on submissions.  COMMAND may be rerun,
-    copy, redo, repair, diff, look, or remove.  For
-    example, rerun copies a submission in the source
+    copy, copyall, redo, repair, diff, look, or remove.
+    For example, rerun copies a submission in the source
     directory to the target directory and runs autojudge
     on the copy.
 
@@ -101,11 +101,11 @@ rerun_contest COMMAND \\
     The `repair' command just repairs links, and does
     nothing else.
 
-    The rerun, copy, and redo commands create the target
-    directory if that does not exist.  These commands
-    also set a+x permissions on the target directory,
-    its parent, and the parent of its parent, so that
-    JAVA will work.
+    The rerun, copy, copyall, and redo commands create
+    the target directory if that does not exist.  These
+    commands also set a+x permissions on the target di-
+    rectory, its parent, and the parent of its parent,
+    so that JAVA will work.
 
     All the commands iterate over all submission subdi-
     rectories S in the source directory that have a
@@ -134,6 +134,12 @@ rerun_contest COMMAND \\
     copy
 
         Same as `rerun' but skip running autojudge (3).
+
+    copyall
+
+        Same as `copy' but entire ./mail/S directory
+	is copied to ./rerun/S.  Symbolic links are
+	copied as they are (and not followed).
 
     redo
 
@@ -225,7 +231,7 @@ set submission_re [lindex $myargv 1]
 
 # Check command.
 #
-if { ! [lcontain {rerun copy redo repair \
+if { ! [lcontain {rerun copy copyall redo repair \
                   look diff remove} \
                  $command] } {
     error "Bad command: $command"
@@ -331,7 +337,7 @@ if { [lcontain {rerun redo repair} $command] } {
 
 if { $command == "repair" } { exit 0 }
 
-if { [lcontain {rerun copy redo} $command] } {
+if { [lcontain {rerun copy copyall redo} $command] } {
 
     # Create target if necessary.
     #
@@ -359,7 +365,7 @@ foreach subdir [lsort [glob -nocomplain $source/*]] {
 
     if { ! [regexp -nocase -- \
                    $submission_re $subdir] } continue
-    if {    [lcontain {rerun copy} $command] \
+    if {    [lcontain {rerun copy copyall} $command] \
          && [file isdirectory $target/$subdir] } \
         continue
 
@@ -432,6 +438,9 @@ foreach subdir [lsort [glob -nocomplain $source/*]] {
 	    puts "Deleted $subdir"
 	    file delete -force -- $target/$subdir
 	}
+    } elseif { $command == "copyall" } {
+	copy_directory $source/$subdir $target/$subdir
+	puts "Copied All of $subdir"
     } elseif {    [lcontain {rerun copy} $command] \
                && [catch {
 		    file mkdir $target/$subdir
@@ -440,6 +449,8 @@ foreach subdir [lsort [glob -nocomplain $source/*]] {
 	puts "ERROR: Cannot make\
 	      $targetabbrev/$subdir/Received_Mail"
 	puts $out
+    } elseif { $command == "copy" } {
+	puts "Copied $subdir/Received_Mail"
     } elseif { [lcontain {rerun redo} $command] } {
 
         if { ! [file isdirectory $target/$subdir] } {
@@ -490,6 +501,11 @@ foreach subdir [lsort [glob -nocomplain $source/*]] {
 		     [clock format [clock seconds]]"
 	puts $logch "----------------------------------"
 	if { [catch { exec autojudge -manual } out] } {
+	    if {    [lindex $errorCode 1] == "SIG"
+	         && [lindex $errorCode 2] == "SIGINT" \
+	       } {
+	        exit 1
+	    }
 	    lappend note_list \
 	            "Autojudge -manual suffered a\
 		     SYSTEM ERROR"
@@ -514,8 +530,8 @@ foreach subdir [lsort [glob -nocomplain $source/*]] {
 		    file delete -force -- Old_Auto_Score
 		} else {
 		    lappend note_list \
-			"Auto_Score: new $auto_score\
-			 \        != old\
+			"Auto_Score: new $auto_score" \
+			"         != old\
 			             $old_auto_score"
 		}
 	    }
