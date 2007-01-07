@@ -6,7 +6,7 @@
 #
 # File:		lookat
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Jan  1 11:42:03 EST 2007
+# Date:		Sun Jan  7 02:54:04 EST 2007
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2007/01/01 17:40:55 $
+#   $Date: 2007/01/07 08:03:50 $
 #   $RCSfile: lookat,v $
-#   $Revision: 1.33 $
+#   $Revision: 1.34 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -45,6 +45,7 @@ array set abbreviations "
     SUBJECT	{^Received_Mail\$::^Subject:}
     AUTO	{^Auto_Score\$::.}
     MANUAL	{^Manual_Score\$::.}
+    OLDAUTO	{^Old_Auto_Score\$::.}
     GOTTEN	{^$gf\$::\\.(txt|html|htm|ps)\$}
     NOREPLY	{^No_Reply\$::.}
     IO		{^$asf\$::Incorrect Output}
@@ -72,13 +73,12 @@ proc abbreviations_doc { } {
 }
 
 set document "
-lookat \[-rerun\] 'regular-expression'
-lookat \[-rerun\] 'logical-expression'
+lookat \[-rerun | -source SRCDIR\] 'logical-expression'
+lookat \[-rerun | -source SRCDIR\] 'regular-expression'
 
     This program executes `manualreply' on each submis-
-    sion subdirectory of the `mail' directory (or
-    `rerun' directory if the -rerun option is given)
-    that matches the logical-expression.
+    sion subdirectory of the `mail' directory that
+    matches the logical-expression.
     
     `lookat 'regular-expression'' is a special case and
     matches all submissions whose submitter matches the
@@ -89,6 +89,10 @@ lookat \[-rerun\] 'logical-expression'
 
     which involves abbreviations SUBJECT, AUTO, and
     MANUAL and is explained in what follows.
+
+    If -rerun is given the `rerun' directory is used
+    instead of `mail'.  If -source is given, SRCDIR is
+    used instead of `mail'.
     
     Each atom of the logical expression has the form
 
@@ -563,14 +567,20 @@ proc exec_manualreply { i } {
 if { [regexp {^-doc} [lindex $argv 0]] } {
     puts $document
     exit 1
-}
-if { [lindex $argv 0] == "-rerun" } {
+} elseif { [lindex $argv 0] == "-rerun" } {
     if { $argc != 2 } {
 	puts $document
 	exit 1
     }
     set mail_directory $judging_directory/rerun
     set_expression [lindex $argv 1]
+} elseif { [lindex $argv 0] == "-source" } {
+    if { $argc != 3 } {
+	puts $document
+	exit 1
+    }
+    set mail_directory [lindex $argv 1]
+    set_expression [lindex $argv 2]
 } else {
     if { $argc != 1 } {
 	puts $document
