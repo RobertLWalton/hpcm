@@ -2,7 +2,7 @@
 #
 # File:		display_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Jan  7 05:02:30 EST 2007
+# Date:		Sun Jan  7 07:08:46 EST 2007
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2007/01/07 10:03:22 $
+#   $Date: 2007/01/07 12:47:41 $
 #   $RCSfile: display_common.tcl,v $
-#   $Revision: 1.45 $
+#   $Revision: 1.46 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -991,24 +991,34 @@ proc make_diff { file } {
 # Set the window display to the file_list.  Set the
 # `last_display' variable to `file_list'.
 #
-proc set_file_list_display {} {
+# If `full' is `yes' display in 2 columns with numbers
+# and time, sorting by time, and including TBD's.
+# Otherwise display in 3 columns without numbers or
+# time, omitting TBD's, and sorting alphabetically.
+#
+proc set_file_list_display { { full no } } {
 
     global file_list file_list_origin_mtime \
     	   window_bar last_display
 
-    set display "$window_bar"
-
+    if { $full } {
+        set width 39
+    } else {
+        set width 26
+    }
     set n 0
-    set previous ""
-
-    # If `previous' is non-empty it is the previous
-    # item and has no more than 39 characters.
-    #
+    set entries {}
     foreach item $file_list {
 	incr n
 	set time [lindex $item 1]
 	if { $time == "TBD" } {
-	    set tttt TBD
+	    if { $full == "no" } continue
+	    set next [format {%3d. %6.6s%1.1s %s} \
+			     $n \
+			     TBD [lindex $item 4] \
+			     [lindex $item 2]]
+	} elseif { $full == "no" } {
+	    set next [lindex $item 2]
 	} else {
 	    set time \
 	        [expr $time - $file_list_origin_mtime]
@@ -1025,36 +1035,53 @@ proc set_file_list_display {} {
 	    if { [string length $tttt] > 6 } {
 		set tttt "${sign}inf"
 	    }
+	    set next [format {%3d. %6.6s%1.1s %s} \
+			     $n \
+			     $tttt [lindex $item 4] \
+			     [lindex $item 2]]
 	}
-	set next [format {%3d. %6.6s%1.1s %s} \
-			 $n \
-			 $tttt [lindex $item 4] \
-			 [lindex $item 2]]
 	set commented "${next} [lindex $item 3]"
 
-	if { [string length $commented] <= 80 } {
+	if { [string length $commented] <= $width } {
 	    set next $commented
+	} elseif { [string length $next] > $width } {
+	    set w [expr $width - 4]
+	    set next "[string range $next 0 $w]..."
 	}
-	if { [string length $next] > 39 } {
-	    if { $previous != "" } {
-	    	set next "$previous\n$next"
-	    }
-	    set previous ""
-	} elseif { $previous != "" } {
-	    set next [format {%-40s%s} $previous $next]
-	    set previous ""
-	} else {
-	    set previous $next
-	    set next ""
-	}
-
-	if { $next != "" } {
-	    set display "$display\n$next"
-	}
+	lappend entries $next
     }
 
-    if { $previous != "" } {
-	set display "$display\n$previous"
+    set entries [lsort $entries]
+    set display "$window_bar"
+    if { $full } {
+	set half \
+	    [expr { ( [llength $entries] + 1 ) / 2 }]
+	set i 0
+	set j $half
+	while { $i < $half } {
+	    set next [format {%-40s%s} \
+			     [lindex $entries $i] \
+			     [lindex $entries $j]]
+	    set display "$display\n$next"
+	    incr i
+	    incr j
+	}
+    } else {
+	set third \
+	    [expr { ( [llength $entries] + 2 ) / 3 }]
+	set i 0
+	set j $third
+	set k [expr 2 * $third]
+	while { $i < $third } {
+	    set next [format {%-27s%-27s%s} \
+			     [lindex $entries $i] \
+			     [lindex $entries $j] \
+			     [lindex $entries $k]]
+	    set display "$display\n$next"
+	    incr i
+	    incr j
+	    incr k
+	}
     }
 
     set_window_display "$display\n$window_bar"
