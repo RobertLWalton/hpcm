@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Dec 21 08:42:32 EST 2006
+# Date:		Sun Jan  7 03:25:06 EST 2007
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/12/21 13:48:03 $
+#   $Date: 2007/01/07 08:26:05 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.227 $
+#   $Revision: 1.228 $
 
 # Table of Contents:
 #
@@ -2345,12 +2345,22 @@ proc link_file { source { target . } } {
 
 # Function to copy a file preserving modification date
 # and protection settings.  Note that unlike the TCL
-# `file copy' command, this function will not copy
+# `file copy' command, this function will NOT copy
 # a symbolic link, but will copy the underlying file
 # instead.
 #
 proc copy_file { source target } {
     exec cp -p $source $target
+}
+
+# Function to copy a directory and its contents preser-
+# ving modification dates and protection settings.  Note
+# that unlike the copy_file command, this function will
+# NOT copy the underlying file of a symbolic link, but
+# will copy the link instead.
+#
+proc copy_directory { source target } {
+    exec cp -rpP $source $target
 }
 
 # Make an archive (e.g. tar) of a directory.  Given
