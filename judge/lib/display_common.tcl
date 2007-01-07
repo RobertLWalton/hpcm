@@ -2,7 +2,7 @@
 #
 # File:		display_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Jan  7 09:24:38 EST 2007
+# Date:		Sun Jan  7 10:18:24 EST 2007
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2007/01/07 14:32:54 $
+#   $Date: 2007/01/07 15:37:41 $
 #   $RCSfile: display_common.tcl,v $
-#   $Revision: 1.49 $
+#   $Revision: 1.50 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -136,7 +136,10 @@ set window_newlines "$window_newlines$window_newlines"
 # with blank lines will have window_height + window_
 # blank_height lines.
 #
-proc display_window {} {
+# If first arg is `no_info', info and blank line follow-
+# ing it are not displayed.
+#
+proc display_window { { no_info "" } } {
 
     global window_newlines \
            window_height window_blank_height \
@@ -148,7 +151,7 @@ proc display_window {} {
     #
     # We need to leave 3 lines for the window_prompt,
     # window_error, and the blank line above these.
-    # Or 2 if window_info_height == 0.
+    # Or 2 if window_info_height == 0 or no_info.
     #
     set d $window_display
     set i "$window_info\n\n"
@@ -159,7 +162,8 @@ proc display_window {} {
 	      + $window_blank_height \
 	      - $window_display_height \
 	      - $window_info_height - 3 - 1]
-    if { $window_info_height == 0 } {
+    if {    $no_info == "no_info" \
+         || $window_info_height == 0 } {
         set i ""
 	incr offset 1
     }

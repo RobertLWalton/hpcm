@@ -5,7 +5,7 @@
 #
 # File:		manualreply
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Jan  7 04:49:31 EST 2007
+# Date:		Sun Jan  7 10:11:27 EST 2007
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2007/01/07 10:09:46 $
+#   $Date: 2007/01/07 15:41:46 $
 #   $RCSfile: manualreply,v $
-#   $Revision: 1.72 $
+#   $Revision: 1.73 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -113,9 +113,9 @@ x = q = exit        \
 sm = scoring menu   \
 ss = send score
 #  = look at #      \
-v# = view #         \
-e# = edit #         \
-ls = list files
+v#/e# = view/edit # \
+ls = list files     \
+ll = long form ls
 pr = lookat proofs  \
 c# = checkoff #     \
 u# = uncheckoff #   \
@@ -148,21 +148,21 @@ pc = Program Crashed    oe = Output Size Limit Exceeded\
 # blank lines are changed to window bars by code.
 
 set help(?) "
-? WHAT
-
-Gives help for WHAT, where WHAT can be:
+? WHAT                Gives help for WHAT, where WHAT\
+		      can be:
 
     Any command listed in the main or scoring menu. \
     	E.g. `? ls'.
-    Note that any command in either menu can be\
-    	executed even
-    if the other menu is being displayed.
+    Note that most commands can be executed even if\
+        they are not in the
+    menu currently being displayed.
 
     Any standard filename, e.g. `? Received_Mail', or\
     	any standard file
     extension, e.g., `? .diff'.
-    
-Type `? topics' for list of help topics.
+
+or more specifically, any of:
+
 "
 
 set help(Dispatch_PID) "
@@ -186,7 +186,7 @@ set help(#) "
                         identifier'.   This is one of:
 
   - The decimal integer number of a file listed by the\
-    	last `ls' command.
+    	last `ll' command.
   - A file extension, beginning with a `.'.
   - The beginning of a file name, if the first\
         character of the name is
@@ -282,6 +282,24 @@ set help(ls) "
 ls
 
 List the names of all the files in the current\
+    directory.  After each
+listed file name one of the following may appear if\
+    there is room:
+
+    (DDDDDb)		DDDDD is size of the file in\
+			    bytes.
+    (empty)		The file is empty.
+    (directory)		The file is a directory.
+    (dangling link)	The file is a link with no\
+			    resolution.
+    {CCC}		CCC is the contents of a single\
+			    line file.
+"
+
+set help(ll) "
+ll
+
+List the names of all the files in the current\
     directory.  This list is in
 order of the file creation dates, and the time the file\
     is created is given
@@ -291,15 +309,26 @@ file if that is present, or of the most recent file\
     otherwise.  Here `inf'
 means a time too large to be displayed.
 
+Type `? ll2' for more information.
+"
+set help(ll2) "
+ll      (2 of 3)
+
 The files are numbered.  These numbers can be used as\
     file identifiers in
 other commands.  The numbers will change when files are\
     deleted.
 
-Type `? ls2' for more information.
+If a file is listed that is newly created, a * appears\
+    after the file time.
+This * disappears when the list of files is\
+    regenerated, so its presence
+is not that reliable.
+
+Type `? ll3' for more information.
 "
-set help(ls2) "
-ls      (2 of 3)
+set help(ll3) "
+ll      (3 of 3)
 
 After each listed file name one of the following may\
     appear if there is room:
@@ -312,17 +341,6 @@ After each listed file name one of the following may\
 			    resolution.
     {CCC}		CCC is the contents of a single\
 			    line file.
-
-Type `? ls3' for more information.
-"
-set help(ls3) "
-ls      (3 of 3)
-
-If a file is listed that is newly created, a * appears\
-    after the file time.
-This * disappears when the list of files is\
-    regenerated, so its presence
-is not that reliable.
 "
 
 set help(ai) "
@@ -809,10 +827,6 @@ set help(.bdiff) $help(.diff)
 set help(core) $help(.diff)
 
 
-set help(topics) "
-List of help topics:
-
-"
 set c 0
 proc topic_compare { t1 t2 } {
     regsub {\.} $t1 "" t1
@@ -825,12 +839,12 @@ foreach topic [lsort -command topic_compare \
     incr l 4
     incr c $l
     if { $c > 80 } {
-        set help(topics) "$help(topics)\n"
+        set help(?) "$help(?)\n"
 	set c $l
     }
-    set help(topics) "$help(topics)    $topic"
+    set help(?) "$help(?)    $topic"
 }
-set help(topics) "$help(topics)\n"
+set help(?) "$help(?)\n"
 
 # Reply Functions
 # ----- ---------
@@ -1101,7 +1115,8 @@ proc send_score { } {
     }
 }
 
-# Execute ? command for main or proof loop.
+# Execute ? command for main or proof loop.  Return next
+# command.
 #
 proc display_help { } {
 
@@ -1123,6 +1138,10 @@ proc display_help { } {
 	"$window_bar$last_help$window_bar"
     set_window_display $last_help
     set last_display help
+    display_window no_info
+    set replay [string trim [gets stdin]]
+    if { $replay == "" } { set replay ls }
+    return $replay
 }
 
 # Function to run proof display loop.  Returns an action
@@ -1131,12 +1150,14 @@ proc display_help { } {
 #	"mm" = switch to main menu
 #	"sm" = switch to scoring menu
 #	""   = do nothing
+#	other = command to execute
+#		(first element of $answer)
 #
 proc display_proofs {} {
 
     global last_file window_error window_prompt \
 	   proposed_score answer auto_score_marker \
-	   scoring_instructions main_menu
+	   scoring_instructions main_menu menu
 
     if { [catch {
 	    set score_file [lindex $auto_score_marker 0]
@@ -1181,18 +1202,25 @@ proc display_proofs {} {
     if { [get_proof] == "no" } return ""
     if { [set_proof_display] == "no" } return ""
 
+    set replay ""
     while { "yes" } {
 
 	set window_prompt "> "
 	display_window
 	set window_error ""
 
-	set answer [string trim [gets stdin]]
+        if { $replay != "" } {
+	    set answer $replay
+	    set replay ""
+	} else {
+	    set answer [string trim [gets stdin]]
+	}
 	switch -regexp -- $answer {
 	    {^sm$} { return sm }
 	    {^mm$} { return mm }
 	    {^ss$} -
 	    {^ls$} -
+	    {^ll$} -
 	    {^sh$} -
 	    {^ir$} -
 	    {^er$} -
@@ -1271,7 +1299,7 @@ proc display_proofs {} {
 		}
 	    }
 	    {^\?} {
-		display_help
+		set replay [display_help]
 	    }
 	    {^pr$} {
 		refresh_proofs_info
@@ -1437,6 +1465,14 @@ while { "yes" } {
 	    refresh_file_list
 	    refresh_info
 	    set_file_list_display
+	}
+	{^ll$} {
+	    refresh_file_list
+	    set_file_list_display full
+	    display_window no_info
+	    set replay [string trim [gets stdin]]
+	    refresh_info
+	    refresh_display
 	}
 	{^ir$} {
 	    if { [not_readonly] } {
@@ -1654,7 +1690,7 @@ while { "yes" } {
 	    set replay [display_proofs]
 	}
 	{^\?} {
-	    display_help
+	    set replay [display_help]
 	}
 	{^$} {
 	    if { [eof stdin] } {
