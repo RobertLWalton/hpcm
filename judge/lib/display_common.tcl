@@ -2,7 +2,7 @@
 #
 # File:		display_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Oct  3 13:12:50 EDT 2005
+# Date:		Sun Jan  7 04:50:50 EST 2007
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -10,10 +10,10 @@
 #
 # RCS Info (may not be true date or author):
 #
-#   $Author: hc3 $
-#   $Date: 2005/10/03 17:40:52 $
+#   $Author: walton $
+#   $Date: 2007/01/07 09:53:56 $
 #   $RCSfile: display_common.tcl,v $
-#   $Revision: 1.43 $
+#   $Revision: 1.44 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -855,6 +855,25 @@ proc read_auto_score {} {
 }
 set read_array(Auto_Score) read_auto_score
 set auto_score None
+
+# Read Old_Auto_Score file.
+#
+proc read_old_auto_score {} {
+
+    global old_auto_score old_auto_score_marker
+
+    set old_auto_score \
+        [string trim [read_score Old_Auto_Score]]
+    set old_auto_score_marker ""
+    regexp \
+      {^([^: \t]+:[^ \t]*)[ \t]+([^ \t].*)$} \
+      $old_auto_score forget \
+      old_auto_score_marker old_auto_score
+    regsub -all {:} $old_auto_score_marker { } \
+           old_auto_score_marker
+}
+set read_array(Auto_Score) read_old_auto_score
+set old_auto_score None
 
 # Read Manual_Score file.
 #
