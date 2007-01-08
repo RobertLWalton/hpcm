@@ -5,7 +5,7 @@
 #
 # File:		manualreply
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Jan  8 04:25:24 EST 2007
+# Date:		Mon Jan  8 08:00:36 EST 2007
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2007/01/08 10:01:58 $
+#   $Date: 2007/01/08 13:03:51 $
 #   $RCSfile: manualreply,v $
-#   $Revision: 1.76 $
+#   $Revision: 1.77 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -614,7 +614,9 @@ to this proposed score.  If anything unusual exists,\
     such as the presence of a
 previous manual score, the user is given a chance to\
     edit and abort the
-message before it is sent.
+message before it is sent.  If the message is sent and\
+    the Old_Auto_Score
+file exists, that file is deleted.
 
 After the message is sent this command restores the\
     main menu.
@@ -890,13 +892,21 @@ proc compose_score_reply {} {
 #
 proc send_score_reply {} {
 
-    global proposed_score manual_score 
+    global proposed_score manual_score window_error
 
     send_reply
 
     write_file Manual_Score $proposed_score
     set_flag Score_Flag
     set manual_score $proposed_score
+
+    if { [file exists Old_Auto_Score] } {
+        file delete -force Old_Auto_Score
+	set window_error \
+	    "Old_Auto_Score deleted and Score sent!"
+    } else {
+	set window_error "Score sent!"
+    }
 }
 
 
@@ -1093,7 +1103,6 @@ proc send_score { } {
 	send_score_reply
 	set last_file Reply_Mail
 	set last_display file
-	set window_error "Score sent!"
     } else {
 	set window_error "NOTICE: An unexpected\
 	    situation exists."
@@ -1113,7 +1122,6 @@ proc send_score { } {
 	    if { [yes?] } {
 		send_score_reply
 		set last_file Reply_Mail
-		set window_error "Score sent!"
 	    } else {
 		set window_error "Score sending\
 		    ABORTED!"
