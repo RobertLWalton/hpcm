@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2007/01/08 07:35:04 $
+#   $Date: 2007/01/08 08:19:28 $
 #   $RCSfile: display_common.tcl,v $
-#   $Revision: 1.51 $
+#   $Revision: 1.52 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -1011,12 +1011,20 @@ proc make_diff { file } {
 proc set_file_list_display { { full "" } } {
 
     global file_list file_list_origin_mtime \
-    	   window_bar last_display
+    	   window_bar last_display \
+	   window_height window_info_height
 
+    # Height is the number of lines of the file that are
+    # displayed.  The 5 includes the prompt, error line,
+    # blank line after info, and two bar lines.
+    #
     if { $full == "full" } {
         set width 39
+	set height [expr $window_height - 4]
     } else {
         set width 26
+	set height [expr $window_height \
+			 - $window_info_height - 5]
     }
     set n 0
     set entries {}
@@ -1030,8 +1038,10 @@ proc set_file_list_display { { full "" } } {
 			     $n \
 			     TBD [lindex $item 4] \
 			     [lindex $item 2]]
+	    set numbered $next
 	} elseif { $full != "full" } {
 	    set next [lindex $item 2]
+	    set numbered [format {%3d. %s} $n $next]
 	} else {
 	    set time \
 	        [expr $time - $file_list_origin_mtime]
@@ -1052,20 +1062,22 @@ proc set_file_list_display { { full "" } } {
 			     $n \
 			     $tttt [lindex $item 4] \
 			     [lindex $item 2]]
+	    set numbered $next
 	}
 	set commented "${next} [lindex $item 3]"
+	set ncommented "${numbered} [lindex $item 3]"
 
 	if { [string length $commented] <= $width } {
 	    lappend entries $commented
 	} elseif { [string length $next] <= $width } {
 	    lappend entries $next
-	} elseif { [string length $commented] <= 80 } {
-	    lappend long_entries $commented
-	} elseif { [string length $next] <= 80 } {
-	    lappend long_entries $next
+	} elseif { [string length $ncommented] <= 80 } {
+	    lappend long_entries $ncommented
+	} elseif { [string length $numbered] <= 80 } {
+	    lappend long_entries $numbered
 	} else {
 	    lappend long_entries \
-	            [string range $next 0 79]
+	            [string range $numbered 0 79]
 	}
     }
 
@@ -1084,9 +1096,27 @@ proc set_file_list_display { { full "" } } {
 	    incr i
 	    incr j
 	}
+	foreach long_entry [lsort $long_entries] {
+	    set display "$display\n$long_entry"
+	    incr i
+	}
+	if { $i > $height } {
+	    set bar [bar_with_text ". . . . .\
+		     SCROLL UP TO SEE ALL FILES"]
+	    set_window_display "$display\n$bar"
+	} else {
+	    set_window_display "$display\n$window_bar"
+	}
     } else {
-	set third \
-	    [expr { ( [llength $entries] + 2 ) / 3 }]
+        set length [llength $entries]
+	set limit [expr 3 * $height]
+	set more 0
+	if { $length > $limit } {
+	    set more [expr $length - $limit]
+	    set length $limit
+	}
+
+	set third [expr { ( $length + 2 ) / 3 }]
 	set i 0
 	set j $third
 	set k [expr 2 * $third]
@@ -1100,13 +1130,24 @@ proc set_file_list_display { { full "" } } {
 	    incr j
 	    incr k
 	}
+	foreach long_entry [lsort $long_entries] {
+	    if { $i < $height } {
+		set display "$display\n$long_entry"
+	    } else {
+	        incr more
+	    }
+	    incr i
+	}
+
+	if { $more > 0 } {
+	    set bar [bar_with_text ". . . . .\
+		     use ll to see $more more files"]
+	    set_window_display "$display\n$bar"
+	} else {
+	    set_window_display "$display\n$window_bar"
+	}
     }
 
-    foreach long_entry [lsort $long_entries] {
-        set display "$display\n$long_entry"
-    }
-
-    set_window_display "$display\n$window_bar"
     set last_display file_list
 }
 
@@ -1124,6 +1165,7 @@ proc set_file_display { filename } {
          || ! [file isfile $filename] } {
 	refresh_file_list
     	set_file_list_display
+	set window_error "ERROR: cannot read $filename"
 	return
     }
 
