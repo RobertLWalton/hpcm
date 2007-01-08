@@ -5,7 +5,7 @@
 #
 # File:		autojudge
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Dec 11 01:59:08 EST 2006
+# Date:		Mon Jan  8 06:32:58 EST 2007
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/12/11 07:01:16 $
+#   $Date: 2007/01/08 12:02:15 $
 #   $RCSfile: autojudge,v $
-#   $Revision: 1.133 $
+#   $Revision: 1.134 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -39,7 +39,7 @@ catch {
 
 set document "
 cd submission_directory
-autojudge \[-manual\] 
+autojudge \[-rerun|-manual\] 
 
     Given the submission directory as the current dir-
     ectory, and given that the submission directory
@@ -55,6 +55,23 @@ autojudge \[-manual\]
     ning.  This suppresses sending email to the submit-
     ter.
 
+    If the -rerun option is given, this sets scoring_
+    mode to `manual' and does the following:
+
+        Pre-Processing (before everything else):
+
+	    If Auto_Score exists and Old_Auto_Score does
+	    not, rename Auto_Score to Old_Auto_Score.
+	    Then delete all files except Received_Mail,
+	    Reply_Mail, Reply_Mail_History, No_Reply,
+	    Old_Auto_Score, Manual_Score, and
+	    autodispatch.log.
+
+	Post-Processing (after everything else):
+
+	    If Old_Auto_Score and Auto_Score both exist
+	    and are equal, delete Old_Auto_Score.
+
     The `Auto_Score' file consists of one line with one
     of the following forms:
 
@@ -74,7 +91,7 @@ autojudge \[-manual\]
     Here <group> or <case> may be 0 if they are missing
     because they cannot be computed (e.g., no .jin file,
     or no groups in the input).
-
+
     The first error to occur determines the score,
     except in the case of Formatting Error, which is
     ignored if there is some other error.  The .*score
@@ -84,7 +101,7 @@ autojudge \[-manual\]
     that could be reported.  The smaller is reported for
     `Incorrect Output' and `Formatting Error', and the
     larger for the other errors.
-    
+
     The `Cpu Time Limit Exceeded', `Output Size Limit
     Exceeded', and `Program Crashed' scores are reported
     only if a .out file is empty or a .err file is non-
@@ -106,7 +123,7 @@ autojudge \[-manual\]
 
       Subject: submit PROBLEM\[.EXTENSION\]\
       		      \[QUALIFIER\]
-
+
     field of the message in the Received_Mail file.
     Here `PROBLEM' names the problem and the solution
     binary, and is the basename of the .in, .out, .cerr,
@@ -114,9 +131,9 @@ autojudge \[-manual\]
     it tells the programming language being used, and
     must be a member of the `allowed_extensions' global
     variable value, which by default is:
-    
-    	$allowed_extensions
 
+    	$allowed_extensions
+
     The submit qualifier, QUALIFIER, becomes the value
     of the global variable `submit_qualifier', which may
     be used by response_instructions to tailor the re-
@@ -144,7 +161,7 @@ autojudge \[-manual\]
 	Files' section of hpcm_judging.rc for detailed
 	specification of the values of these global
 	variables and their defaults.
-
+
       . Submitted files which are extracted from the
         submitted message in the Received_Mail file
         by the extractmail program.  These files must
@@ -153,7 +170,7 @@ autojudge \[-manual\]
 	The default is for PROBLEM.EXTENSION to be
 	the only required file if EXTENSION is not
 	empty.
-
+
       . A list of input names is computed.  If the
         global variable problem_input_names exists, its
 	value is the list of input names.  Otherwise N
@@ -176,7 +193,7 @@ autojudge \[-manual\]
 	them exist.  This if N.out and Scoring_Filter
 	exist, N.fout will be made, and if N.jin also
 	exists, then N.jfout will be made.
-
+
       * Files listed in the problem_link_files and
         problem_optional_link_files global variables are
 	linked from the problem solution directory to
@@ -192,7 +209,7 @@ autojudge \[-manual\]
 	the submission directory, in preference over
 	N.test in the solution directory.  Ditto for
 	.ftest, .jtest, .jftest.
-
+
       . The program binary file `PROBLEM' and the
 	compiler error file PROBLEM.cerr are made by
 	executing `make PROBLEM' in the submission
@@ -213,7 +230,7 @@ autojudge \[-manual\]
         Scoring_Filter exists, N.jfout if in addition
 	N.jin exists, and N.jout is made if N.jin exists
 	but Scoring_Filter does not.
-
+
       . For each input name N, one of N.score, N.fscore,
         N.jscore, or N.jfscore is made, according to
 	whether or not Scoring_Filter and N.jin exist.
@@ -227,7 +244,7 @@ autojudge \[-manual\]
     Here files marked with * are linked into the current
     submission directory from the problem's solution
     directory.
-    
+
     In general, this program does not make a file that
     already exists, unless one of the files input to
     make the file is more recent that the file to be
@@ -250,7 +267,7 @@ autojudge \[-manual\]
     to the submitter as the final word on the submis-
     sion.  In either case this program terminates after
     reporting the error.
-
+
     Errors in extraction are classified as system errors
     if extractmail outputs the phrase `SYSTEM ERROR' and
     submitter errors otherwise.  SYSTEM ERRORs are log-
@@ -262,12 +279,12 @@ autojudge \[-manual\]
     While making files in the problem solution direc-
     tory, this program locks the solution directory with
     a Dispatch_PID file.
- 
+
     For purposes of computing file dependencies, all
     non-extracted files made (not linked) by this pro-
     gram in the submission directory are assumed to
     depend upon all the extracted and linked files.
-
+
     When this program creates a `Reply_Mail' file it
     uses instructions in the `response_instructions'
     global variable.  This variable contains instruc-
@@ -277,7 +294,7 @@ autojudge \[-manual\]
     response instructions is described in hpcm_
     judging.rc, where a default value is also given for
     the `response_instructions' variable.
-
+
     With default response instructions, this program
     sends a reply if the score is `Completely Correct'
     or the scoring_mode is `auto' or `auto+manual'.  If
@@ -296,7 +313,7 @@ autojudge \[-manual\]
     erate a final reply.
 
     This program prints information about its progress.
- 
+
     Unless this program creates a Reply_Mail file that
     is intended to be the final reply to the submitter
     (e.g., because the score is `Completely Correct' or
@@ -306,12 +323,12 @@ autojudge \[-manual\]
     (e.g. tracker) that they should search for submis-
     sion directories for which the manualreply program
     should be called.
-
+
     If this program writes the Auto_Score file, it also
     sets the score flag (the flag directory Score_Flag
     file), to signal that any scoreboards need to be
     recomputed.
-
+
     Problem names that contain `/' or `.' or begin with
     `-' or have no solution directory are illegal, and
     are submitter errors.  Similarly extension names
@@ -329,11 +346,16 @@ autojudge \[-manual\]
 set my_argc $argc
 set my_argv $argv
 
-# Process any -manual argument.
+# Process any -rerun or -manual argument.
 #
 set manual 0
+set rerun 0
 if { [lindex $my_argv 0] == "-manual" } {
     set manual 1
+    set my_argv [lrange $my_argv 1 end]
+    incr my_argc -1
+} elseif { [lindex $my_argv 0] == "-rerun" } {
+    set rerun 1
     set my_argv [lrange $my_argv 1 end]
     incr my_argc -1
 }
@@ -343,6 +365,66 @@ if { [lindex $my_argv 0] == "-manual" } {
 if { $my_argc > 0 } {
     puts $document
     exit 1
+}
+
+# Do -rerun preprocessing.
+#
+if { $rerun } {
+
+    # Safety check that we are in a submission
+    # directory (before we start deleting things).
+    #
+    if { ! [file readable Received_Mail] } {
+        error "Received_Mail not readable"
+    }
+
+    # Move Auto_Score to Old_Auto_Score.
+    #
+    if {    [file exists Auto_Score] \
+	 && ! [file exists Old_Auto_Score] } {
+	puts "Renaming Auto_Score to Old_Auto_Score"
+	file rename Auto_Score Old_Auto_Score
+    }
+
+    # Delete files.
+    #
+    foreach file [glob -nocomplain *] {
+	if { [lcontain {Received_Mail
+			Reply_Mail
+			Reply_Mail_History
+			No_Reply
+			Old_Auto_Score
+			Manual_Score
+			autodispatch.log} \
+			$file] } {
+	    continue
+	}
+	puts "Deleting $file"
+	file delete -force -- $file
+    }
+
+    # Set up -rerun post-processing.
+    #
+    proc exit_cleanup {} {
+
+	# Delete or keep Old_Auto_Score.
+	#
+	if {    [file exists Auto_Score] \
+	     && [file exists Old_Auto_Score] } {
+	    set auto_score \
+		[read_entire_file Auto_Score]
+	    set old_auto_score \
+		[read_entire_file Old_Auto_Score]
+	    if { $auto_score == $old_auto_score } {
+		puts "Auto_Score == Old_Auto_Score"
+		puts "Deleting Old_Auto_Score"
+		file delete -force -- Old_Auto_Score
+	    } else {
+		puts "Auto_Score: new $auto_score"
+		puts "         != old $old_auto_score"
+	    }
+	}
+    }
 }
 
 # Handle submitter error in subject.
@@ -361,6 +443,7 @@ proc subject_error { what } {
 	  RECEIVED-HEADER
     puts "SUBMISSION ERROR: $what\
           `Subject:$message_subject'"
+    exit_cleanup
     exit 0
 }
 
@@ -524,9 +607,10 @@ execute_links $PROBLEM.rc \
               "initial problem .rc file linking" 1
 source_file $PROBLEM.rc
 
-# Force scoring mode if there was a -manual option.
+# Force scoring mode if there was a -manual or -rerun
+# option.
 #
-if { $manual } {
+if { $manual || $rerun } {
     set scoring_mode manual
 }
 
@@ -547,6 +631,7 @@ set extracted_files ""
 if { [catch { exec extractmail } extractout] } {
     if { [regexp {SYSTEM ERROR} $extractout] } {
 	puts $extractout
+	exit_cleanup
         exit 0
     } else {
 
@@ -572,6 +657,7 @@ if { [catch { exec extractmail } extractout] } {
 	puts "Reply indicating error has been emailed\
 	      to submitter."
 
+	exit_cleanup
 	exit 0
     }
 } else {
@@ -902,6 +988,7 @@ if { [should_be_made \
 		           $name.jout $name.fjout
 	}
 	auto_score_reply "Syntax Error"
+	exit_cleanup
 	exit 0
     }
 }
@@ -1066,6 +1153,7 @@ foreach name $input_names {
 if {    [file exists Auto_Score] \
      &&    [file mtime Auto_Score] \
         >= $score_mtime } {
+    exit_cleanup
     exit 0
 }
 
@@ -1222,6 +1310,7 @@ if { $score != "" } {
     auto_score_reply "Completely Correct"
 }
 
+exit_cleanup
 exit 0
 
 # Include common error catching code:
