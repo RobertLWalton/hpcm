@@ -2,7 +2,7 @@
 #
 # File:		display_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Jan  7 10:18:24 EST 2007
+# Date:		Mon Jan  8 02:31:58 EST 2007
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2007/01/07 15:37:41 $
+#   $Date: 2007/01/08 07:35:04 $
 #   $RCSfile: display_common.tcl,v $
-#   $Revision: 1.50 $
+#   $Revision: 1.51 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -1140,20 +1140,30 @@ proc set_file_display { filename } {
 
     set file_ch [open $filename r]
     set n 0
+    set more 0
     while { "yes" } {
     	set line [gets $file_ch]
 	if { [eof $file_ch] } break
+	set line [tab_expand $line]
 
-	incr n
+	incr more
 
-	if { $n <= $height } {
-	    set display "$display\n$line"
+	while { $n < $height } {
+	    incr n
+	    if { [string length $line] > 80 } {
+		set prefix [string range $line 0 78]
+		set line [string range $line 79 end]
+	        set display "$display\n$prefix\\"
+	    } else {
+		set display $display\n$line
+		incr more -1
+		break
+	    }
 	}
     }
     close $file_ch
 
-    if { $n > $height } {
-	set more [expr $n - $height]
+    if { $more > 0 } {
     	set bar [bar_with_text ". . . . .\
 		 there are $more more lines in this\
 		 file"]
