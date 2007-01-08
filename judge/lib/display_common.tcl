@@ -2,7 +2,7 @@
 #
 # File:		display_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Jan  8 02:31:58 EST 2007
+# Date:		Mon Jan  8 03:26:53 EST 2007
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2007/01/08 08:19:28 $
+#   $Date: 2007/01/08 08:27:31 $
 #   $RCSfile: display_common.tcl,v $
-#   $Revision: 1.52 $
+#   $Revision: 1.53 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -1159,7 +1159,7 @@ proc set_file_list_display { { full "" } } {
 proc set_file_display { filename } {
 
     global window_height window_info_height \
-           last_display
+           last_display window_error
 
     if {    ! [file readable $filename] \
          || ! [file isfile $filename] } {
