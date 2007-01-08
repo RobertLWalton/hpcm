@@ -4,7 +4,7 @@
 #
 # File:		rerun_contest
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Sun Jan  7 03:26:00 EST 2007
+# Date:		Mon Jan  8 07:04:12 EST 2007
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2007/01/07 08:53:46 $
+#   $Date: 2007/01/08 12:38:31 $
 #   $RCSfile: rerun_contest,v $
-#   $Revision: 1.10 $
+#   $Revision: 1.11 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -145,21 +145,15 @@ rerun_contest COMMAND \\
 
         In ./rerun/S:
 
-	    (1) If Auto_Score exists and Old_Auto_Score
-	        does not, rename Auto_Score to Old_Auto_
+	    (1) Execute `autojudge -rerun'.  Note that
+	        if this changes the value of Auto_Score,
+		the old value is preserved in Old_Auto_
 		Score.
-	    (2) Delete all files except Received_Mail,
-	        Reply_Mail_History, Old_Auto_Score, and
-		Manual_Score.
-	    (3) Execute `autojudge -manual'.
-	    (4) If Old_Auto_Score and Auto_Score both
-	        exist and are equal, delete Old_Auto_
-		Score.
-	    (5) Print a note indicating the results from
+	    (2) Print a note indicating the results from
 	        the above steps.  If Received_Mail does
-	        not exist or is not readable, none of
-		the above are done and only the note is
-		printed.
+	        not exist or is not readable, the above
+		is not done and only the note is print-
+		ed.
 
 	Note: S is selected by examining ./mail/S, NOT
 	./rerun/S.  Both source and target are used.
@@ -173,7 +167,7 @@ rerun_contest COMMAND \\
 		Auto_Score file
 		Old_Auto_Score file
 		Manual_Score file
-
+
     diff
 
 	Compare ./mail/S and ./rerun/S.  If they have
@@ -184,7 +178,7 @@ rerun_contest COMMAND \\
 		Auto_Score file in each directory
 		Old_Auto_Score file in each directory
 		Manual_Score file in each directory
-
+
     remove
 
     	Delete ./rerun/S.
@@ -463,57 +457,41 @@ foreach subdir [lsort [glob -nocomplain $source/*]] {
 	#
 	cd $target/$subdir
 
+	# Set up for printing notes and running
+	# autojudge.
+	#
+	set note_list {}
+	if { $command == "redo" } {
+	    set note Redid
+	    set mode -rerun
+	} else {
+	    set note Reran
+	    set mode -manual
+	}
+
 	# Open autodispatch.log file.
 	#
 	file delete -force autodispatch.log
 	set logch [open autodispatch.log a]
 
-	# Set up for printing notes.
-	#
-	set note Reran
-	set note_list {}
-
-	if { $command == "redo" } {
-	    set note Redid
-
-	    if {    [file exists Auto_Score] \
-	         && ! [file exists Old_Auto_Score] } {
-	        puts $logch "Renaming Auto_Score to\
-		             Old_Auto_Score"
-		file rename Auto_Score Old_Auto_Score
-	    }
-
-	    foreach file [glob -nocomplain *] {
-	        if { [lcontain {Received_Mail
-				Reply_Mail_History
-				Old_Auto_Score
-				Manual_Score
-				autodispatch.log} \
-				$file] } {
-		    continue
-		}
-	        puts $logch "Deleting $file"
-		file delete -force -- $file
-	    }
-	}
-
-	puts $logch "Start of autojudge -manual:\
+	puts $logch "Start of autojudge $mode:\
 		     [clock format [clock seconds]]"
 	puts $logch "----------------------------------"
-	if { [catch { exec autojudge -manual } out] } {
+	if { [catch { exec autojudge $mode } out] } {
 	    if {    [lindex $errorCode 1] == "SIG"
 	         && [lindex $errorCode 2] == "SIGINT" \
 	       } {
 	        exit 1
 	    }
 	    lappend note_list \
-	            "Autojudge -manual suffered a\
+	            "Autojudge $mode suffered a\
 		     SYSTEM ERROR"
 	}
 	puts $logch $out
 	puts $logch "----------------------------------"
-	puts $logch "End of autojudge -manual:\
+	puts $logch "End of autojudge $mode:\
 		     [clock format [clock seconds]]"
+	close $logch
 
 	if { $command == "redo" } {
 	    if {    [file exists Auto_Score] \
@@ -522,13 +500,7 @@ foreach subdir [lsort [glob -nocomplain $source/*]] {
 		    [read_entire_file Auto_Score]
 	        set old_auto_score \
 		    [read_entire_file Old_Auto_Score]
-		if { $auto_score == $old_auto_score } {
-		    puts $logch \
-		         "Auto_Score == Old_Auto_Score"
-		    puts $logch \
-		         "Deleting Old_Auto_Score"
-		    file delete -force -- Old_Auto_Score
-		} else {
+		if { $auto_score != $old_auto_score } {
 		    lappend note_list \
 			"Auto_Score: new $auto_score" \
 			"         != old\
@@ -536,7 +508,6 @@ foreach subdir [lsort [glob -nocomplain $source/*]] {
 		}
 	    }
 	}
-	close $logch
 
 	cd $pwd
 
