@@ -5,7 +5,7 @@
 #
 # File:		manualreply
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Jan  8 08:00:36 EST 2007
+# Date:		Mon Jan  8 09:37:06 EST 2007
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2007/01/08 13:03:51 $
+#   $Date: 2007/01/08 14:53:38 $
 #   $RCSfile: manualreply,v $
-#   $Revision: 1.77 $
+#   $Revision: 1.78 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -245,7 +245,7 @@ set help(aj) "
 aj
 
 
-Run `autojudge -manual' in the current directory.  The\
+Run `autojudge -rerun' in the current directory.  The\
     autojudge
 program makes any missing or out of date Auto_Score\
     file and any missing
@@ -909,6 +909,39 @@ proc send_score_reply {} {
     }
 }
 
+# Run `autojudge -rerun' making autodispatch.log file.
+#
+proc run_autojudge {} {
+
+    puts "Running autojudge -rerun"
+
+    # Put output in new autodispatch.log file.
+    #
+    file delete -force autodispatch.log
+    set logch [open autodispatch.log a]
+
+    puts $logch "Start of autojudge -rerun:\
+		 [clock format [clock seconds]]"
+    puts $logch "----------------------------------"
+    set syserr [catch { exec autojudge -rerun } out]
+    puts $logch $out
+    puts $logch "----------------------------------"
+    puts $logch "End of autojudge -rerun:\
+		 [clock format [clock seconds]]"
+    close $logch
+    puts $out
+
+    if { $syserr } {
+        puts "Autojudge -rerun suffered a SYSTEM ERROR"
+    }
+    if { ! [file exists Auto_Score] } {
+	puts "Autojudge -rerun FAILED to make\
+	                Auto_Score"
+    }
+
+    continue?
+}
+
 
 # Menu Initialization
 # ---- --------------
@@ -950,14 +983,7 @@ It appears that `autojudge' should be run."
     display_window
 
     if { [yes?] } {
-
-    	puts "Running autojudge"
-	catch { exec autojudge >&@ stdout }
-
-	if { ! [file exists Auto_Score] } {
-	    puts "autojudge FAILED to make Auto_Score"
-	}
-	continue?
+	run_autojudge
 	refresh_file_list
     }
 }
@@ -1595,17 +1621,7 @@ while { "yes" } {
 	}
 	{^aj$} {
 	    if { [not_readonly] } {
-
-		puts "Running autojudge -manual"
-		catch { exec autojudge -manual \
-		             >&@ stdout }
-
-		if { ! [file exists Auto_Score] \
-			} {
-		    puts "autojudge -manual FAILED to\
-		          make Auto_Score"
-		}
-		continue?
+		run_autojudge
 		refresh_file_list
 		refresh_info
 		refresh_display
