@@ -5,7 +5,7 @@
 #
 # File:		manualreply
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Jan  8 02:40:06 EST 2007
+# Date:		Mon Jan  8 03:29:25 EST 2007
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2007/01/08 07:42:28 $
+#   $Date: 2007/01/08 09:00:55 $
 #   $RCSfile: manualreply,v $
-#   $Revision: 1.74 $
+#   $Revision: 1.75 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -151,17 +151,13 @@ set help(?) "
 ? WHAT                Gives help for WHAT, where WHAT\
 		      can be:
 
-    Any command listed in the main or scoring menu. \
+  - Any command listed in the main or scoring menu. \
     	E.g. `? ls'.
-    Note that most commands can be executed even if\
-        they are not in the
-    menu currently being displayed.
-
-    Any standard filename, e.g. `? Received_Mail', or\
+  - Any standard filename, e.g. `? Received_Mail', or\
     	any standard file
     extension, e.g., `? .diff'.
 
-or more specifically, any of:
+or more specifically, WHAT can be any of:
 
 "
 
@@ -186,14 +182,15 @@ set help(#) "
                         identifier'.   This is one of:
 
   - The decimal integer number of a file listed by the\
-    	last `ll' command.
+    	last `ll' command
+    (or in some cases listed by the `ls' command).
   - A file extension, beginning with a `.'.
   - The beginning of a file name, if the first\
         character of the name is
     a CAPITAL letter.
   - The full name of the file.
 
-Typing a file identifier by itself is recoginzed as a\
+Typing a file identifier by itself is recognized as a\
     command to display
 the file, if the file identifier is unambiguous.
 "
@@ -248,7 +245,7 @@ set help(aj) "
 aj
 
 
-Call `autojudge -manual' in the current directory.  The\
+Run `autojudge -manual' in the current directory.  The\
     autojudge
 program makes any missing or out of date Auto_Score\
     file and any missing
@@ -498,6 +495,9 @@ have `-checked' or `-unchecked' in their names.  When\
 changed to alter its checked status, the name of its\
     associated `.mail' file
 is also changed.
+
+Type `? c' or `? u' for information about the `check'\
+    and `uncheck' commands.
 "
 
 set help(u) "
@@ -717,9 +717,16 @@ Manual_Score	The score entered manually\
 		A proof specifies the locations of\
 		    mismatched tokens in the
 		two files.
+
+.xxscore	Ditto but for differences between\
+                    .xxout and .xxtest,
+		where xx is one of f, j, jf.
 "
 set help(Manual_Score) $help(Auto_Score)
 set help(.score) $help(Auto_Score)
+set help(.fscore) $help(Auto_Score)
+set help(.jscore) $help(Auto_Score)
+set help(.jfscore) $help(Auto_Score)
 
 
 
@@ -827,22 +834,26 @@ set help(.bdiff) $help(.diff)
 set help(core) $help(.diff)
 
 
-set c 0
 proc topic_compare { t1 t2 } {
     regsub {\.} $t1 "" t1
     regsub {\.} $t2 "" t2
     return [string compare -nocase $t1 $t2]
 }
+set c 0
 foreach topic [lsort -command topic_compare \
                      [array names help]] {
     set l [string length $topic]
-    incr l 4
-    incr c $l
-    if { $c > 80 } {
-        set help(?) "$help(?)\n"
-	set c $l
+    set t [expr { 4 - ( $c % 4 ) }]
+    if { $c + $t + $l > 80 } {
+        set help(?) "$help(?)\n    "
+	set c 4
+    } else {
+        incr c $t
+	incr t -1
+	set help(?) "$help(?)[string range "    " 0 $t]"
     }
-    set help(?) "$help(?)    $topic"
+    set help(?) "$help(?)$topic"
+    incr c $l
 }
 set help(?) "$help(?)\n"
 
@@ -1131,7 +1142,7 @@ proc display_help { } {
 	set window_error \
 	    "ERROR: no help available for\
 			  `$what'!"
-	set topic "topics"
+	set topic "?"
     }
     set last_help $help($topic)
     set last_help \
@@ -1515,8 +1526,8 @@ while { "yes" } {
 		set window_error \
 		    "ERROR: No reply composed!"
 	    } elseif { [not_readonly] } {
-		set_file_display Reply_Mail+
 		set window_error ""
+		set_file_display Reply_Mail+
 		set window_prompt \
 		    "Do you want to send the above\
 			(y or n)? "
