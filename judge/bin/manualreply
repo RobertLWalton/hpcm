@@ -5,7 +5,7 @@
 #
 # File:		manualreply
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Jan  9 04:56:22 EST 2007
+# Date:		Tue Jan  9 09:16:57 EST 2007
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2007/01/09 09:57:32 $
+#   $Date: 2007/01/09 15:26:46 $
 #   $RCSfile: manualreply,v $
-#   $Revision: 1.80 $
+#   $Revision: 1.81 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -130,8 +130,8 @@ aj = autojudge      \
 ai = autoinfo"
 
 set scoring_menu "
-                        ? = help                       \
-x  = q = exit
+? = help                x  = q = exit                  \
+ pr = lookat proofs
 io = Incorrect Output   cc = Completely Correct        \
  #  = look at #
 fe = Formatting Error   ic = Incomplete Output         \
@@ -139,7 +139,7 @@ fe = Formatting Error   ic = Incomplete Output         \
 se = Syntax Error       te = Cpu Time Limit Exceeded   \
  ss = send score + mm
 pc = Program Crashed    oe = Output Size Limit Exceeded\
- pr = lookat proofs"
+roas = rm Old_Auto_Score"
 
 # Help Displays
 # ---- --------
@@ -268,7 +268,15 @@ Old_Auto_Score, Manual_Score, and autodispatch.log. \
     `Autojudge -rerun' finishes
 by deleting Old_Auto_Score if it equals a newly made\
     Auto_Score.
+
+
+roas
+
+Delete the Old_Auto_Score file.  Use this if any\
+    difference between the
+Auto_Score and Old_Auto_Score files is ignorable.
 "
+set help(roas) $help(aj)
 
 set help(v) "
 v
@@ -1104,8 +1112,8 @@ Scores:  Auto: $auto_score   Manual: $manual_score
 proc refresh_proofs_info { } {
 
     global window_info_height scoring_instructions \
-	   auto_score proposed_score manual_score
-
+	   auto_score proposed_score manual_score \
+	   old_auto_score
 
     if { $manual_score == "None" } {
 	set scoring_info \
@@ -1115,6 +1123,20 @@ proc refresh_proofs_info { } {
 	set scoring_info \
 	    "Auto: $auto_score   \
 	     Manual: $manual_score"
+	if {    $proposed_score != $manual_score \
+	     && $proposed_score != "None" } {
+	    set scoring_info \
+	        "$scoring_info\n   \
+		\         Proposed: $proposed_score"
+	}
+    }
+    if { $old_auto_score != "None" } {
+	if { ! [regexp {\n} $scoring_info] } {
+	    set scoring_info "$scoring_info\n         "
+	}
+	set scoring_info \
+	    "$scoring_info   \
+	     OLD_AUTO_SCORE: $old_auto_score"
     }
 
     set info "[compute_proof_info]   \
@@ -1207,33 +1229,31 @@ proc display_help { } {
     return $replay
 }
 
-# Function to run proof display loop.  Returns an action
-# to be performed after the loop as follows:
-#
-#	"mm" = switch to main menu
-#	"sm" = switch to scoring menu
-#	""   = do nothing
-#	other = command to execute
-#		(first element of $answer)
+# Function to run proof display loop.  Returns next
+# command to execute (next value of $answer) or ""
+# if no next command.
 #
 proc display_proofs {} {
 
     global last_file window_error window_prompt \
 	   proposed_score answer auto_score_marker \
-	   scoring_instructions main_menu menu
+	   scoring_instructions main_menu menu \
+	   last_display
 
     if { [catch {
 	    set score_file [lindex $auto_score_marker 0]
 	    if {    $score_file == "" \
 	         || [file extension $score_file] == "" \
 		 || ! [file exists $score_file] } {
-	        error "No .score file"
+	        set window_error "No .score file"
+		return ""
 	    }
 	    set name [file rootname $score_file]
 	    set ext [file extension $score_file]
 	    if {    $ext == "" \
 	         || ! [file exists $score_file] } {
-	        error "No .score file"
+	        set window_error "No .score file"
+		return ""
 	    }
 	         
 	    set jin_instructions none
@@ -1279,8 +1299,8 @@ proc display_proofs {} {
 	    set answer [string trim [gets stdin]]
 	}
 	switch -regexp -- $answer {
-	    {^sm$} { return sm }
-	    {^mm$} { return mm }
+	    {^sm$} -
+	    {^mm$} -
 	    {^ss$} -
 	    {^ls$} -
 	    {^ll$} -
@@ -1292,9 +1312,13 @@ proc display_proofs {} {
 	    {^sq$} -
 	    {^xq$} -
 	    {^aj$} -
-	    {^ai$} {
+	    {^ai$} -
+	    {^roas$} {
 	        set menu $main_menu
+		refresh_file_list
+		set last_display file_list
 		refresh_info
+		refresh_display
 		return $answer
 	    }
 	    {^q$} -
@@ -1741,6 +1765,18 @@ while { "yes" } {
 	}
 	{^pr$} {
 	    set replay [display_proofs]
+	}
+	{^roas$} {
+	    if { [file exists Old_Auto_Score] } {
+	        file delete -force Old_Auto_Score
+		refresh_file_list
+		refresh_info
+		set window_error \
+		    "Old_Auto_Score deleted"
+	    } else {
+		set window_error \
+		    "Old_Auto_Score does not exist"
+	    }
 	}
 	{^\?} {
 	    set replay [display_help]
