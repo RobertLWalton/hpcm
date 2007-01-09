@@ -5,7 +5,7 @@
 #
 # File:		manualreply
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Jan  9 09:16:57 EST 2007
+# Date:		Tue Jan  9 10:27:14 EST 2007
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2007/01/09 15:26:46 $
+#   $Date: 2007/01/09 16:58:10 $
 #   $RCSfile: manualreply,v $
-#   $Revision: 1.81 $
+#   $Revision: 1.82 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -161,7 +161,16 @@ or more specifically, WHAT can be any of:
 
 "
 
-set help(Dispatch_PID) "
+set help(Makefile) "
+Makefile	Makefile to make solution binary and\
+		    .out file.  Symbolic link
+		to solution directory.
+
+autodispatch.log
+		Complete output of autodispatch run;\
+		    includes output from
+		autojudge or autoinfo.
+
 Dispatch_PID	A file containing the process\
 			    ID (pid) of a program
 		that has locked the current directory. \
@@ -175,7 +184,10 @@ Gotten	A list of files gotten from the current\
 			    NOT a solution
 	submission.
 "
-set help(Gotten) $help(Dispatch_PID)
+set help(autodispatch.log) $help(Makefile)
+set help(.log) $help(Makefile)
+set help(Dispatch_PID) $help(Makefile)
+set help(Gotten) $help(Makefile)
 
 set help(#) "
 #			# denotes a `file\
@@ -517,29 +529,28 @@ Type `? c' for more information about error files.
 set help(u#) $help(u)
 
 set help(.mail) "
-.mail
+*-unchecked-error
+*-checked-error
+    Error files, which are checked or unchecked, according to whether or not
+    they have `-checked' or `-unchecked' in their names.  Unchecked files
+    are recognized by `tracker' as something that needs attention.
 
-Associated with an error file there is sometimes a file\
-    with the same name
-but with the extension `.mail' added.  This file\
-    contains an email message
-sent to a submitter.  Except to look at this email\
-    message, this file
-should be ignored.  The absence of this file indicates\
-    no submitter was
-notified of the error.
+*-unchecked-error.mail
+*-checked-error.mail
+    Associated with an error file there is sometimes a file with the same name
+    but with the extension `.mail' added.  This file contains an email message
+    sent to a submitter.  Except to look at this email message, this file
+    should be ignored.  The absence of this file indicates no submitter was
+    notified of the error.
 
-Error files can be checked or unchecked, according to\
-    whether or not they
-have `-checked' or `-unchecked' in their names.  When\
-    an error file name is
-changed to alter its checked status, the name of its\
-    associated `.mail' file
-is also changed.
+    When an error file name is changed to alter its checked status, the name
+    of its associated `.mail' file is also changed.
 
 Type `? c' or `? u' for information about the `check'\
     and `uncheck' commands.
 "
+set help(unchecked-error) $help(.mail)
+set help(checked-error) $help(.mail)
 
 set help(sh) "
 sh
@@ -745,9 +756,12 @@ Manual_Score	The score entered manually\
 		    mismatched tokens in the
 		two files.
 
-.xxscore	Ditto but for differences between\
-                    .xxout and .xxtest,
-		where xx is one of f, j, jf.
+.fscore		Ditto but for differences between\
+                    .fout and .ftest
+.jscore		Ditto but for differences between\
+                    .jout and .jtest
+.jfscore	Ditto but for differences between\
+                    .jfout and .jftest
 "
 set help(Old_Auto_Score) $help(Auto_Score)
 set help(Manual_Score) $help(Auto_Score)
@@ -764,17 +778,14 @@ set help(.c) "
 .cc	Source file for a solution written in C++.
 
 .java	Source file for a solution written in JAVA.
+
+.lsp	Source file for a solution written in COMMONLISP.
 "
 set help(.cc) $help(.c)
 set help(.java) $help(.c)
+set help(.lsp) $help(.c)
 
 
-
-set help(Makefile) "
-Makefile	Makefile to make solution binary and\
-		    .out file.  Symbolic link
-		to solution directory.
-"
 
 set help(Scoring_Filter) "
 Scoring_Filter	A program that filters the .out\
@@ -795,13 +806,23 @@ Scoring_Filter	A program that filters the .out\
 .ftest	The result of filtering the .test file through\
 			    the Scoring_Filter
 	program.
+
+.jfout  .fout with case marks.  Made by jfilter from\
+	    .jin and .fout.
+.jftest .ftest with case marks.  Made by jfilter from\
+	    .jin and .ftest.
 "
 set help(.fout) $help(Scoring_Filter)
 set help(.ftest) $help(Scoring_Filter)
+set help(.jfout) $help(Scoring_Filter)
+set help(.jftest) $help(Scoring_Filter)
 
 
 set help(.class) "
 .class	JAVA relocatable binary (byte code) file.
+
+.fas    COMMONLISP binary (byte code) file.
+.lib    COMMONLISP binary (byte code) file.
 
 .cerr	Solution compilation error output.  Does NOT\
 	    affect score.
@@ -811,8 +832,11 @@ No extension; with same basename as solution source.
 	    this is a shell script
 	invoking the .class file with the same basename\
 	    as the source.
+	Similarly for COMMONLISP.
 	If missing, score is `Syntax Error'.
 "
+set help(.fas) $help(.class)
+set help(.lib) $help(.class)
 set help(.cerr) $help(.class)
 set help(no-extension) $help(.class)
 
@@ -821,12 +845,22 @@ set help(no-extension) $help(.class)
 set help(.in) "
 .in	Judge's input.  Symbolic link to solution\
 	    directory.
+        May be made by jfilter from .jin file.
 
 .test	Judge's output.  Symbolic link to solution\
 	    directory.
 
 .out	Solution output.  If empty, score is `Program\
 	    Crashed'.
+
+.jin    Judge's input with extra instructions for\
+	    dividing input and output
+        into cases (and groups of cases).
+
+.jout   .out with case marks.  Made by jfilter from\
+	    .jin and .out.
+.jtest  .test with case marks.  Made by jfilter from\
+	    .jin and .test.
 
 .err	Solution error output.  If non-empty, score is\
 	    `Program Crashed' or
@@ -839,9 +873,12 @@ set help(.in) "
 	    Symbolic link to
 	solution directory.
 "
+set help(.jin) $help(.in)
 set help(.rc) $help(.in)
 set help(.test) $help(.in)
+set help(.jtest) $help(.in)
 set help(.out) $help(.in)
+set help(.jout) $help(.in)
 set help(.err) $help(.in)
 
 
@@ -854,12 +891,12 @@ set help(.diff) "
 	    is not created until it
 	is viewed.
 
-core	Core dump of the solution execution; usually\
+core*	Core dump of the solution execution; usually\
 	    only present if the
 	solution crashed.  Does NOT affect score.
 "
 set help(.bdiff) $help(.diff)
-set help(core) $help(.diff)
+set help(core*) $help(.diff)
 
 
 proc topic_compare { t1 t2 } {
@@ -1212,11 +1249,30 @@ proc display_help { } {
     regsub -all "\[\ \t\]" $what "" topic
     if { $topic == "" } {
 	set topic "?"
-    } elseif { ! [info exists help($topic)] } {
-	set window_error \
-	    "ERROR: no help available for\
-			  `$what'!"
-	set topic "?"
+    }
+    if { ! [info exists help($topic)] } {
+	set found {}
+	set s [string length $topic]
+	incr s -1
+	foreach t [array names help] {
+	    if { $topic == [string range $t 0 $s] } {
+	        lappend found $t
+	    }
+	}
+	switch [llength $found] {
+	0 { set window_error \
+		"ERROR: no help available for\
+			      `$what'!"
+	    set topic "?"
+	}
+	1 { set topic [lindex $found 0] }
+	default
+	  { set window_error \
+		"ERROR: too many topics start\
+		 with `$what': $found"
+	    set topic "?"
+	}
+	}
     }
     set last_help $help($topic)
     set last_help \
@@ -1558,6 +1614,7 @@ while { "yes" } {
 	    set_file_list_display full
 	    display_window no_info
 	    set replay [string trim [gets stdin]]
+	    if { $replay == "" } { set replay ls }
 	    refresh_info
 	    refresh_display
 	}
@@ -1770,6 +1827,8 @@ while { "yes" } {
 	    if { [file exists Old_Auto_Score] } {
 	        file delete -force Old_Auto_Score
 		refresh_file_list
+		set last_display file_list
+		refresh_display
 		refresh_info
 		set window_error \
 		    "Old_Auto_Score deleted"
