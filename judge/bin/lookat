@@ -6,7 +6,7 @@
 #
 # File:		lookat
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Jan  9 02:30:28 EST 2007
+# Date:		Tue Jan  9 02:38:42 EST 2007
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2007/01/09 07:31:29 $
+#   $Date: 2007/01/09 07:39:44 $
 #   $RCSfile: lookat,v $
-#   $Revision: 1.35 $
+#   $Revision: 1.36 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -68,8 +68,12 @@ proc abbreviations_doc { } {
 
     set result ""
     foreach abbrev [lsort [array names abbreviations]] {
-        set result "$result       \
-	    $abbrev	$abbreviations($abbrev)\n"
+	if { [string length $abbrev] > 7 } {
+	    error "Abbreviation name too long: $abbrev"
+	}
+        set result "$result     \
+	    [format {%-7s %s} $abbrev \
+	            $abbreviations($abbrev)]\n"
     }
     return $result
 }
