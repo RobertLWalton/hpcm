@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Dec 26 02:55:32 EST 2006
+# Date:		Tue Jan  9 03:05:09 EST 2007
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/12/26 07:59:33 $
+#   $Date: 2007/01/09 08:26:09 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.149 $
+#   $Revision: 1.150 $
 #
 
 # Table of Contents
@@ -2204,18 +2204,17 @@ proc execute_locked_makes \
 # of atoms.  E.g., "x & (y | 1)" would treat "(y" and
 # "1)" as atoms.
 #
-# The logical expression is a list whose elements are
-# tokens.  Before any token is processed, it is looked
-# up in the abbreviations array, and any value found
-# replaces the token.  Note that the value must be a
-# single token.  Thus if `AB(T)' is defined, where AB
-# is the `abbreviations' parameter to this function and
-# T is a token in the logical expression (an element of
-# the logical expression viewed as a list), then the
-# value of `AB(T)' replaces T in the logical expression.
-# This rule is NOT recursive.  T and AB(T) may be any
-# tokens, e.g., one may set AB("OR") to "|" and
-# AB("TRUE") to "1".
+# The logical expression is a TCL list whose elements
+# are tokens.  Before any token is processed, it is
+# looked up in the abbreviations array, and any value
+# found replaces the token.  The value may be any TCL
+# list.  Thus if `AB(T)' is defined, where AB is the
+# `abbreviations' parameter to this function and T is a
+# token in the logical expression (an element of the
+# logical expression viewed as a list), then the value
+# of `AB(T)' replaces T in the logical expression.  This
+# rule IS recursive.  T may be any TCL list, e.g., one
+# may set AB("OR") to "|" and AB("TRUE") to "1".
 #
 # Note that the compiled expression must be evaluated
 # in an environment in which the `values' array is
@@ -2227,10 +2226,26 @@ proc execute_locked_makes \
 # environment is conducted to find logical expression
 # syntax errors.
 #
+proc unabbreviate_expression \
+	{ expression abbreviations } {
+    upvar $abbreviations abbrevs
+    set result {}
+    foreach item $expression {
+        if { [info exists abbrevs($item)] } {
+	    eval lappend result \
+	         [unabbreviate_expression \
+		      $abbrevs($item) abbrevs]
+	} else {
+	    lappend result $item
+	}
+    }
+    return $result
+}
+#
 proc compile_logical_expression \
-    { expression abbreviations atoms values } {
+	{ expression abbreviations atoms values  } {
 
-    upvar $abbreviations abbreviation
+    upvar $abbreviations abbrevs
     upvar $atoms atom
     upvar $values value
 
@@ -2238,15 +2253,11 @@ proc compile_logical_expression \
     catch { unset value }
 
     set n 0
-    set depth 0
     set logical_expression ""
-    foreach token $expression {
 
-	# Replace abbreviation tokens.
-	#
-	if { [info exists abbreviation($token)] } {
-	    set token $abbreviation($token)
-	}
+    set depth 0
+    foreach token [unabbreviate_expression \
+                       $expression abbrevs] {
 
 	switch -- $token {
 	    (   {	incr depth }
