@@ -5,7 +5,7 @@
 #
 # File:		manualreply
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Jan  9 10:27:14 EST 2007
+# Date:		Wed Jan 10 07:52:36 EST 2007
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2007/01/09 16:58:10 $
+#   $Date: 2007/01/10 13:49:56 $
 #   $RCSfile: manualreply,v $
-#   $Revision: 1.82 $
+#   $Revision: 1.83 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -1064,20 +1064,17 @@ set directory [file tail [pwd]]
 set proposed_score None
 set last_file ""
 set last_display ""
-set last_help ""
 
 # Procedure to recompute window_display for menu loop.
 #
 proc refresh_display {} {
 
-    global last_display last_file last_help
+    global last_display last_file
 
     if { $last_display == "file_list" } {
 	set_file_list_display
     } elseif { $last_display == "file" } {
 	set_file_display $last_file
-    } elseif { $last_display == "help" } {
-	set_window_display $last_help
     }
 }
 
@@ -1240,15 +1237,15 @@ proc send_score { } {
 # Execute ? command for main or proof loop.  Return next
 # command.
 #
+set last_help "?"
 proc display_help { } {
 
-    global help window_error last_help window_bar \
-           last_display answer
+    global help window_error last_help window_bar answer
 
     set what [string trim [string range $answer 1 end]]
     regsub -all "\[\ \t\]" $what "" topic
     if { $topic == "" } {
-	set topic "?"
+	set topic $last_help
     }
     if { ! [info exists help($topic)] } {
 	set found {}
@@ -1274,14 +1271,13 @@ proc display_help { } {
 	}
 	}
     }
-    set last_help $help($topic)
-    set last_help \
-	"$window_bar$last_help$window_bar"
-    set_window_display $last_help
-    set last_display help
+    set last_help $topic
+
+    set bar [bar_with_text "type `??' to display help\
+                            topics"]
+    set_window_display "$bar$help($topic)$window_bar"
     display_window no_info
     set replay [string trim [gets stdin]]
-    if { $replay == "" } { set replay ls }
     return $replay
 }
 
@@ -1443,6 +1439,8 @@ proc display_proofs {} {
 	    }
 	    {^\?} {
 		set replay [display_help]
+		refresh_proofs_info
+		set_proof_display
 	    }
 	    {^pr$} {
 		refresh_proofs_info
@@ -1839,6 +1837,7 @@ while { "yes" } {
 	}
 	{^\?} {
 	    set replay [display_help]
+	    refresh_display
 	}
 	{^$} {
 	    if { [eof stdin] } {
