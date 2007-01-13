@@ -4,7 +4,7 @@
 #
 # File:		rerun_contest
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Tue Jan  9 03:27:34 EST 2007
+# Date:		Sat Jan 13 07:12:56 EST 2007
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2007/01/09 08:28:25 $
+#   $Date: 2007/01/13 12:55:22 $
 #   $RCSfile: rerun_contest,v $
-#   $Revision: 1.12 $
+#   $Revision: 1.13 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -30,7 +30,7 @@ catch {
 set document "
 rerun_contest COMMAND \\
     \[-force|-source SRCDIR|-target TARDIR\] \\
-    \[PROBLEM_RE \[SUBMISSION_RE\]\]
+    \[PROBLEM_RE \[SUBMITTER_RE \[DATE_RE\]\]\]
 
     Executes a COMMAND that involves rerunning the
     autojudge on submissions.  COMMAND may be rerun,
@@ -41,16 +41,16 @@ rerun_contest COMMAND \\
 
     The source directory defaults to `./mail', and the
     target directory defaults to `./rerun'.  All runs
-    of autojudge are executions of `autojudge -manual'
+    of autojudge are executions of `autojudge -rerun'
     with the standard output and standard error being
     captured in a new `autodispatch.log' file in the
     submission directory, just as autodispatch would do.
 
     The submissions chosen are those in the source di-
-    rectory whose submission directories contain a sub-
-    string matching the regular expression
+    rectory whose submission directory names match the
+    regular expression
     
-	\"SUBMISSION_RE.*-submission\$\"
+      \".*DATE_RE.*-<<.*SUBMITTER_RE.*>>-submission\$\"
 
     and whose Received_Mail header contains a subject
     header line with a substring matching the regular
@@ -121,25 +121,25 @@ rerun_contest COMMAND \\
         If the directory ./rerun/S does not already
 	exist:
 
-	    (1) Make the ./rerun/S directory
-	    (2) Copy ./mail/S/Received_Mail to ./rerun/S
-	    (3) Execute `autojudge -manual' in
+	    (1) Copy ./mail/S to ./rerun/S.  Symbolic
+	        links are copied as symbolic links.
+		Permissions and dates are preserved.
+	    (2) Execute `autojudge -rerun' in
 	        ./rerun/S.
-	    (4) Print a note indicating the results from
+	    (3) Print a note indicating the results from
 	        the above steps.  If ./mail/S/Received_
 		Mail does not exist or is not readable,
 		none of the above are done and only the
 		note is printed.
 
-    copy
-
-        Same as `rerun' but skip running autojudge (3).
-
     copyall
 
-        Same as `copy' but entire ./mail/S directory
-	is copied to ./rerun/S.  Symbolic links are
-	copied as they are (and not followed).
+        Same as `rerun' but skip running autojudge (2).
+
+    copy
+
+        Same as `copy' but only ./mail/S/Received_Mail
+	is copied to ./rerun/S.
 
     redo
 
@@ -225,8 +225,9 @@ while { 1 } {
     }
     set myargv [lrange $myargv $skip end]
 }
-set problem_re    [lindex $myargv 0]
-set submission_re [lindex $myargv 1]
+set problem_re   [lindex $myargv 0]
+set submitter_re [lindex $myargv 1]
+set date_re      [lindex $myargv 2]
 
 # Check command.
 #
@@ -242,7 +243,8 @@ puts "    $j_d"
 # Calculate arguments.
 #
 set problem_re "submit.*$problem_re"
-set submission_re "$submission_re.*-submission\$"
+set submission_re \
+    "^.*$date_re.*-<<.*$submitter_re.*>>-submission\$"
 set len  [string length $sourceabbrev]
 set len2 [string length $targetabbrev]
 if { $len2 > $len } { set len $len2 }
@@ -437,10 +439,16 @@ foreach subdir [lsort [glob -nocomplain $source/*]] {
 	    puts "Deleted $subdir"
 	    file delete -force -- $target/$subdir
 	}
+    } elseif {    [lcontain {rerun copyall} $command] \
+               && [catch {
+			copy_directory $source/$subdir \
+			               $target/$subdir
+			      } out] } {
+	puts "ERROR: Cannot copy ALL of $subdir"
+	puts $out
     } elseif { $command == "copyall" } {
-	copy_directory $source/$subdir $target/$subdir
-	puts "Copied All of $subdir"
-    } elseif {    [lcontain {rerun copy} $command] \
+	puts "Copied ALL of $subdir"
+    } elseif {    $command == "copy" \
                && [catch {
 		    file mkdir $target/$subdir
 		    copy_file $sourcerm $targetrm
@@ -468,10 +476,8 @@ foreach subdir [lsort [glob -nocomplain $source/*]] {
 	set note_list {}
 	if { $command == "redo" } {
 	    set note Redid
-	    set mode -rerun
 	} else {
 	    set note Reran
-	    set mode -manual
 	}
 
 	# Open autodispatch.log file.
@@ -479,38 +485,37 @@ foreach subdir [lsort [glob -nocomplain $source/*]] {
 	file delete -force autodispatch.log
 	set logch [open autodispatch.log a]
 
-	puts $logch "Start of autojudge $mode:\
+	puts $logch "Start of autojudge -rerun:\
 		     [clock format [clock seconds]]"
 	puts $logch "----------------------------------"
-	if { [catch { exec autojudge $mode } out] } {
+	if { [catch { exec autojudge -rerun } out] } {
 	    if {    [lindex $errorCode 1] == "SIG"
 	         && [lindex $errorCode 2] == "SIGINT" \
 	       } {
 	        exit 1
 	    }
 	    lappend note_list \
-	            "Autojudge $mode suffered a\
+	            "Autojudge -rerun suffered a\
 		     SYSTEM ERROR"
 	}
 	puts $logch $out
 	puts $logch "----------------------------------"
-	puts $logch "End of autojudge $mode:\
+	puts $logch "End of autojudge -rerun:\
 		     [clock format [clock seconds]]"
 	close $logch
 
-	if { $command == "redo" } {
-	    if {    [file exists Auto_Score] \
-	         && [file exists Old_Auto_Score] } {
-	        set auto_score \
-		    [read_entire_file Auto_Score]
-	        set old_auto_score \
-		    [read_entire_file Old_Auto_Score]
-		if { $auto_score != $old_auto_score } {
-		    lappend note_list \
-			"Auto_Score: new $auto_score" \
-			"         != old\
-			             $old_auto_score"
-		}
+	if {    [file exists Auto_Score] \
+	     && [file exists Old_Auto_Score] } {
+	    set auto_score \
+		[read_entire_file Auto_Score]
+	    set old_auto_score \
+		[read_entire_file Old_Auto_Score]
+	    if { $auto_score != $old_auto_score } {
+		incr differences
+		lappend note_list \
+		    "Auto_Score: new $auto_score" \
+		    "         != old\
+				 $old_auto_score"
 	    }
 	}
 
@@ -527,6 +532,10 @@ puts ""
 if { $command == "diff" } {
     puts "Processed $directories submission\
           directories; $differences have changed."
+} elseif { [lcontain {rerun redo} $command] } {
+    puts "Processed $directories submission\
+          directories;\n          $differences have\
+	  Auto_Score/Old_Auto_Score differences."
 } else {
     puts "Processed $directories submission\
           directories."
