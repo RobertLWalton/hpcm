@@ -4,7 +4,7 @@
 #
 # File:		rerun_contest
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Sat Jan 13 07:12:56 EST 2007
+# Date:		Sat Jan 13 07:55:20 EST 2007
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2007/01/13 12:55:22 $
+#   $Date: 2007/01/13 13:19:08 $
 #   $RCSfile: rerun_contest,v $
-#   $Revision: 1.13 $
+#   $Revision: 1.14 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -47,29 +47,25 @@ rerun_contest COMMAND \\
     submission directory, just as autodispatch would do.
 
     The submissions chosen are those in the source di-
-    rectory whose submission directory names match the
-    regular expression
-    
-      \".*DATE_RE.*-<<.*SUBMITTER_RE.*>>-submission\$\"
-
+    rectory whose submission directories have names con-
+    taining a date with a substring matching DATE_RE and
+    a submitter with a substring matching SUBMITTER_RE,
     and whose Received_Mail header contains a subject
     header line with a substring matching the regular
-    expression
-    
-        \"submit.*PROBLEM_RE\"
+    expression \"submit.*PROBLEM_RE\".
 	
-    Matches are case insensitive and the RE's both
+    Matches are case insensitive and the RE's all
     default to \"\".
 
     The `redo' command with `-target ./mail' option can
     be used to rerun autojudge for selected submissions
     of a contest in progress, e.g., for selected
     problems.
-
+
     This program may be run in a copy of a judging di-
     rectory and its subdirectories made using `cp -r'
     or `tar cf, tar xf'.
-
+
     The rerun, redo, and repair commands begin by re-
     pairing any broken links in the `solutions' subdi-
     rectory of the judging directory.  If this fails for
@@ -100,13 +96,13 @@ rerun_contest COMMAND \\
 
     The `repair' command just repairs links, and does
     nothing else.
-
+
     The rerun, copy, copyall, and redo commands create
     the target directory if that does not exist.  These
     commands also set a+x permissions on the target di-
     rectory, its parent, and the parent of its parent,
     so that JAVA will work.
-
+
     All the commands iterate over all submission subdi-
     rectories S in the source directory that have a
     Received_Mail file such that the name of S and the
@@ -361,11 +357,16 @@ if { [lcontain {rerun copy copyall redo} $command] } {
 #
 set directories 0
 set differences 0
+set errors 0
 foreach subdir [lsort [glob -nocomplain $source/*]] {
     set subdir [file tail $subdir]
-
+    if { ! [regexp {^([^<]*)-<<(.*)>>-submission$} \
+                   $subdir forget date submitter] } \
+	continue
     if { ! [regexp -nocase -- \
-                   $submission_re $subdir] } continue
+                   $date_re $date] } continue
+    if { ! [regexp -nocase -- \
+                   $submitter_re $submitter] } continue
     if {    [lcontain {rerun copy copyall} $command] \
          && [file isdirectory $target/$subdir] } \
         continue
@@ -378,9 +379,11 @@ foreach subdir [lsort [glob -nocomplain $source/*]] {
     if { ! [file exists $sourcerm] } {
         puts "ERROR: does not exist:\
 	      $sourceabbrev/$subdir/Received_Mail"
+	inc errors
     } elseif { ! [file readable $sourcerm] } {
         puts "ERROR: not readable: \
 	      $sourceabbrev/$subdir/Received_Mail"
+	inc errors
     } elseif { [catch {
 		    set ch [open $sourcerm r]
 		    read_header $ch
@@ -388,6 +391,7 @@ foreach subdir [lsort [glob -nocomplain $source/*]] {
 	puts "ERROR: could not read\
 	      $sourceabbrev/$subdir/Received_Mail"
 	puts $out
+	inc errors
     } elseif { ! [regexp -nocase -- $problem_re \
                          $message_subject] } {
 	incr directories -1
@@ -446,6 +450,7 @@ foreach subdir [lsort [glob -nocomplain $source/*]] {
 			      } out] } {
 	puts "ERROR: Cannot copy ALL of $subdir"
 	puts $out
+	inc errors
     } elseif { $command == "copyall" } {
 	puts "Copied ALL of $subdir"
     } elseif {    $command == "copy" \
@@ -456,6 +461,7 @@ foreach subdir [lsort [glob -nocomplain $source/*]] {
 	puts "ERROR: Cannot make\
 	      $targetabbrev/$subdir/Received_Mail"
 	puts $out
+	inc errors
     } elseif { $command == "copy" } {
 	puts "Copied $subdir/Received_Mail"
     } elseif { [lcontain {rerun redo} $command] } {
@@ -463,6 +469,7 @@ foreach subdir [lsort [glob -nocomplain $source/*]] {
         if { ! [file isdirectory $target/$subdir] } {
 	    puts "ERROR: $targetabbrev/$subdir\
 	          does not exist"
+	    inc errors
 	    continue
 	}
         
@@ -497,6 +504,7 @@ foreach subdir [lsort [glob -nocomplain $source/*]] {
 	    lappend note_list \
 	            "Autojudge -rerun suffered a\
 		     SYSTEM ERROR"
+	    inc errors
 	}
 	puts $logch $out
 	puts $logch "----------------------------------"
@@ -539,6 +547,9 @@ if { $command == "diff" } {
 } else {
     puts "Processed $directories submission\
           directories."
+}
+if { $errors != 0 } {
+    puts "There were $errors ERRORS!"
 }
 
 exit 0
