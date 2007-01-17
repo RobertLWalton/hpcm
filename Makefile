@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Jan 17 09:37:43 EST 2007
+# Date:		Wed Jan 17 11:31:29 EST 2007
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2007/01/17 16:31:20 $
+#   $Date: 2007/01/17 16:36:55 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.58 $
+#   $Revision: 1.59 $
 
 # Include file that contains the following variables:
 #
@@ -171,6 +171,9 @@ ARCHIVE_FILES = \
 #	subdirectories that have Makefiles.  Runs
 #	`make clean' in all these directories.  Does NOT
 #       clean the ARCHIVE.
+#
+# make cleanarchive
+#	Remove ARCHIVE/hpcm_${VERSION}.
 
 all:	submakes
 
@@ -242,7 +245,8 @@ solution.slocs:
 
 # Make Signatures File:
 #
-HPCM_${VERSION}_Signatures:	signatures_header \
+HPCM_${VERSION}_Signatures:	Makefile \
+		    signatures_header \
 		    hpcm_${VERSION}.files \
 		    hpcm_${VERSION}_solutions.files \
 		    hpcm_${VERSION}_${NONDIS}.files
@@ -322,7 +326,7 @@ cvsroot:	hpcm_${VERSION}_cvs${TAREXT}
 # Make CVS Signatures File:
 #
 HPCM_${VERSION}_CVS_Signatures:	\
-		signatures_header cvsroot
+		signatures_header Makefile cvsroot
 	rm -f HPCM_${VERSION}_CVS_Signatures
 	echo "HPCM ${VERSION} CVS" \
 	     > HPCM_${VERSION}_CVS_Signatures
@@ -389,7 +393,7 @@ tar:	hpcm_${VERSION}${TAREXT} \
         hpcm_${VERSION}_solutions${TAREXT} \
         hpcm_${VERSION}_${NONDIS}${TAREXT}
 
-hpcm_${VERSION}${TAREXT}:	\
+hpcm_${VERSION}${TAREXT}:	Makefile \
 		HPCM_${VERSION}_Signatures \
 		HPCM_${VERSION}_CVS_Signatures \
 		hpcm_${VERSION}.files
@@ -401,7 +405,7 @@ hpcm_${VERSION}${TAREXT}:	\
 	   `cat hpcm/hpcm_${VERSION}.files` \
 	   ${TARZIP}
 
-hpcm_${VERSION}_solutions${TAREXT}:	\
+hpcm_${VERSION}_solutions${TAREXT}:	Makefile \
                         hpcm_${VERSION}_solutions.files
 	d=`pwd`;d=`basename $$d`; test $$d = hpcm
 	rm -f hpcm_${VERSION}_solutions${TAREXT}
@@ -411,7 +415,7 @@ hpcm_${VERSION}_solutions${TAREXT}:	\
 	   `cat hpcm/hpcm_${VERSION}_solutions.files` \
 	   ${TARZIP}
 
-hpcm_${VERSION}_${NONDIS}${TAREXT}:	\
+hpcm_${VERSION}_${NONDIS}${TAREXT}:	Makefile \
 		hpcm_${VERSION}_${NONDIS}.files
 	d=`pwd`;d=`basename $$d`; test $$d = hpcm
 	rm -f hpcm_${VERSION}_${NONDIS}${TAREXT}
@@ -468,14 +472,13 @@ cvs.files:	NO_SUCH_FILE
 
 # Make web directory to distribute HPCM.
 #
-web:		VERSION Makefile \
+web:		VERSION Makefile STATUS \
 		hpcm_${VERSION}${TAREXT} \
 		hpcm_${VERSION}_solutions${TAREXT} \
 		HPCM_${VERSION}_Signatures \
 		HPCM_${VERSION}_CVS_Signatures \
 		web_index.html \
 		web_solutions_index.html
-	rm -rf web hpcm_${VERSION}_web${TAREXT}
 	cd judge/doc; make overview.txt \
 			   installing_hpcm.txt \
 			   judging.txt
@@ -542,6 +545,9 @@ ARCHIVE/hpcm_${VERSION}:	${ARCHIVE_FILES}
 	mkdir ARCHIVE/hpcm_${VERSION}
 	cp -p ${ARCHIVE_FILES} ARCHIVE/hpcm_${VERSION}
 	chmod 400 ARCHIVE/hpcm_${VERSION}/*
+
+cleanarchive:
+	rm -rf ARCHIVE/hpcm_${VERSION}
 
 cleanall:
 	for x in `find . -name Makefile -print`; \
