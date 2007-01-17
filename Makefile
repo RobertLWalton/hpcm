@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Jan 13 09:19:16 EST 2007
+# Date:		Wed Jan 17 09:37:43 EST 2007
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,13 +11,29 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2007/01/13 15:00:02 $
+#   $Date: 2007/01/17 16:31:20 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.57 $
+#   $Revision: 1.58 $
 
+# Include file that contains the following variables:
+#
+#	VERSION		HPCM_xx_yyy
+#
+#	COPYRIGHT	Signatures file copyright
+#			notice.
+#
+#	WEB_CONTACT	Email address of contact to be
+#			listed on HPCM web pages.
+#
+#	WEB_PASSWORD	Password that is part of hidden
+#			URL name of solutions web sub-
+#			directory.  If not set, then no
+#			solutions subdirectory of the
+#			web directory is made.
+#
 # See STATUS file for description of versions.
 #
-VERSION=02_000
+include VERSION
 
 # Tar extension, zip option, and unzip option.
 # Can be set to use zipped or unzipped tar files.
@@ -32,6 +48,18 @@ TARUNZIP = --gunzip
 # Abbreviation to shorten lines.
 #
 NONDIS = non_distributable
+
+
+# Files to be archived
+#
+ARCHIVE_FILES = \
+	hpcm_${VERSION}_cvs.tgz \
+	HPCM_${VERSION}_CVS_Signatures \
+	HPCM_${VERSION}_Signatures \
+	hpcm_${VERSION}_non_distributable.tgz \
+	hpcm_${VERSION}_solutions.tgz \
+	hpcm_${VERSION}.tgz \
+	hpcm_${VERSION}_web.tgz
 
 # Commands.
 #
@@ -81,15 +109,14 @@ NONDIS = non_distributable
 #	    tar zcf hpcm_${VERSION}_cvs.tgz CVSROOT hpcm
 #
 #	Also, before these files are made you must de-
-#	fine the HPCM_COPYRIGHT environment variable to
-#	be the copyright notice to be put into the Sig-
-#	natures files (see below).
+#	fine the COPYRIGHT environment variable to be
+#	the copyright notice to be put into the Signa-
+#       tures files (see below).
 #
 # make signatures
 #	Make HPCM_${VERSION}_Signatures file, a
 #	copyrighted file with signatures of all tar'able
-#	files.  HPCM_COPYRIGHT must be defined (see
-#	above).
+#	files.  COPYRIGHT must be defined (see above).
 #
 # make check
 #	Check the signatures in HPCM_${VERSION}_
@@ -102,7 +129,7 @@ NONDIS = non_distributable
 #	containing the CVS root for HPCM.  The
 #	signatures file is a copyrighted file with
 #	signatures of all files in the cvs tar file.
-#	HPCM_COPYRIGHT must be defined (see above).
+#	COPYRIGHT must be defined (see above).
 #
 # make cvscheck
 #	Check the signatures in HPCM_${VERSION}_CVS_
@@ -114,30 +141,36 @@ NONDIS = non_distributable
 #	that directory.  In order to do this you need
 #	to set the following environment variables:
 #
-#	    HPCM_COPYRIGHT
+#	    COPYRIGHT
 #		This is the copyright notice to be put
 #		in the Signatures files.
 #
-#	    HPCM_WEB_CONTACT
+#	    WEB_CONTACT
 #		Email address of contact to be listed on
-#		the web page.
+#		web pages.
 #
-#	    HPCM_WEB_PASSWORD
+#	    WEB_PASSWORD
 #		If this is defined, solutions are put in
 #		the web subpage named
 #
-#		    private/${HPCM_WEB_PASSWORD}
+#		    private/${WEB_PASSWORD}
 #
 #		where the private directory is not read-
 #		able except by its owner.
 #
+# make archive
+#	Make the ARCHIVE/hpcm_${VERSION} containing the
+#	ARCHIVE_FILES.
+#	
 # make clean
-#	Clean everything in this directory.
+#	Clean everything in this directory but not the
+#       ARCHIVE.
 #
 # make cleanall
 #	Clean everything in this directory and all its
 #	subdirectories that have Makefiles.  Runs
-#	`make clean' in all these directories.
+#	`make clean' in all these directories.  Does NOT
+#       clean the ARCHIVE.
 
 all:	submakes
 
@@ -213,8 +246,6 @@ HPCM_${VERSION}_Signatures:	signatures_header \
 		    hpcm_${VERSION}.files \
 		    hpcm_${VERSION}_solutions.files \
 		    hpcm_${VERSION}_${NONDIS}.files
-	@if test "${HPCM_COPYRIGHT}" = ""; \
-	then echo HPCM_COPYRIGHT not defined; exit 1; fi
 	rm -f HPCM_${VERSION}_Signatures
 	echo "HPCM ${VERSION}" \
 	     > HPCM_${VERSION}_Signatures
@@ -222,7 +253,7 @@ HPCM_${VERSION}_Signatures:	signatures_header \
 	     >> HPCM_${VERSION}_Signatures
 	echo "" \
 	     >> HPCM_${VERSION}_Signatures
-	echo "${HPCM_COPYRIGHT}" \
+	echo "${COPYRIGHT}" \
 	     >> HPCM_${VERSION}_Signatures
 	echo "" \
 	     >> HPCM_${VERSION}_Signatures
@@ -292,8 +323,6 @@ cvsroot:	hpcm_${VERSION}_cvs${TAREXT}
 #
 HPCM_${VERSION}_CVS_Signatures:	\
 		signatures_header cvsroot
-	@if test "${HPCM_COPYRIGHT}" = ""; \
-	then echo HPCM_COPYRIGHT not defined; exit 1; fi
 	rm -f HPCM_${VERSION}_CVS_Signatures
 	echo "HPCM ${VERSION} CVS" \
 	     > HPCM_${VERSION}_CVS_Signatures
@@ -301,7 +330,7 @@ HPCM_${VERSION}_CVS_Signatures:	\
 	     >> HPCM_${VERSION}_CVS_Signatures
 	echo "" \
 	     >> HPCM_${VERSION}_CVS_Signatures
-	echo "${HPCM_COPYRIGHT}" \
+	echo "${COPYRIGHT}" \
 	     >> HPCM_${VERSION}_CVS_Signatures
 	echo "" \
 	     >> HPCM_${VERSION}_CVS_Signatures
@@ -439,13 +468,14 @@ cvs.files:	NO_SUCH_FILE
 
 # Make web directory to distribute HPCM.
 #
-web:	cleanweb hpcm_${VERSION}${TAREXT} \
-		 HPCM_${VERSION}_Signatures \
-		 HPCM_${VERSION}_CVS_Signatures \
-		 web_index.html
-	@if test "${HPCM_WEB_CONTACT}" = ""; \
-	then echo HPCM_WEB_CONTACT not set; \
-	     exit 1; fi
+web:		VERSION Makefile \
+		hpcm_${VERSION}${TAREXT} \
+		hpcm_${VERSION}_solutions${TAREXT} \
+		HPCM_${VERSION}_Signatures \
+		HPCM_${VERSION}_CVS_Signatures \
+		web_index.html \
+		web_solutions_index.html
+	rm -rf web hpcm_${VERSION}_web${TAREXT}
 	cd judge/doc; make overview.txt \
 			   installing_hpcm.txt \
 			   judging.txt
@@ -466,29 +496,27 @@ web:	cleanweb hpcm_${VERSION}${TAREXT} \
 	      <web_index.html \
 	      -e '/VERSION/s//${VERSION}/g' \
 	      -e '/TAREXT/s//${TAREXT}/g' \
-	      -e '/CONTACT/s//${HPCM_WEB_CONTACT}/g' \
+	      -e '/CONTACT/s//${WEB_CONTACT}/g' \
 	      -e '/MD5SUM/s//'$${MD5SUM}'/g' \
 	      > web/index.html
 	chmod 444 web/*
 	chmod 755 web
-	@if test "${HPCM_WEB_PASSWORD}" = ""; \
-	then echo HPCM_WEB_PASSWORD not set; \
-	     echo Not putting solutions into web; \
+	@if test "${WEB_PASSWORD}" = ""; \
+	then echo NOTE: WEB_PASSWORD not set';' \
+	          Not putting solutions into web; \
 	else make web_solutions; fi
-	cd web; tar cf ../hpcm_${VERSION}_web${TAREXT} \
-		       * ${TARZIP}
-	chmod a-wx hpcm_${VERSION}_web${TAREXT}
 
-web_solutions:	web/index.html \
+web_solutions:	VERSION Makefile \
+		web/index.html \
 		web_solutions_index.html \
 		hpcm_${VERSION}_solutions${TAREXT}
-	test "${HPCM_WEB_PASSWORD}" != ""
+	test "${WEB_PASSWORD}" != ""
 	mkdir web/private 
-	mkdir web/private/${HPCM_WEB_PASSWORD}
+	mkdir web/private/${WEB_PASSWORD}
 	chmod 711 web/private
-	chmod 755 web/private/${HPCM_WEB_PASSWORD}
+	chmod 755 web/private/${WEB_PASSWORD}
 	cp -p hpcm_${VERSION}_solutions${TAREXT} \
-	      web/private/${HPCM_WEB_PASSWORD}
+	      web/private/${WEB_PASSWORD}
 	MD5SUM=`md5sum web/private/*/*${TAREXT}` ; \
 	  MD5SUM=`expr "$${MD5SUM}" : \
 	               '[ 	]*\([^ 	]*\)[ 	]' `; \
@@ -496,11 +524,24 @@ web_solutions:	web/index.html \
 	    <web_solutions_index.html \
 	    -e '/VERSION/s//${VERSION}/g' \
 	    -e '/TAREXT/s//${TAREXT}/g' \
-	    -e '/CONTACT/s//${HPCM_WEB_CONTACT}/g' \
+	    -e '/CONTACT/s//${WEB_CONTACT}/g' \
 	    -e '/MD5SUM/s//'$${MD5SUM}'/g' \
-	    >web/private/${HPCM_WEB_PASSWORD}/index.html
-	chmod 444 web/private/${HPCM_WEB_PASSWORD}/*
+	    >web/private/${WEB_PASSWORD}/index.html
+	chmod 444 web/private/${WEB_PASSWORD}/*
 
+hpcm_${VERSION}_web${TAREXT}:	web
+	rm -f hpcm_${VERSION}_web${TAREXT}
+	cd web; tar cf ../hpcm_${VERSION}_web${TAREXT} \
+		       * ${TARZIP}
+	chmod a-wx hpcm_${VERSION}_web${TAREXT}
+
+archive:	ARCHIVE/hpcm_${VERSION}
+
+ARCHIVE/hpcm_${VERSION}:	${ARCHIVE_FILES}
+	rm -rf ARCHIVE/hpcm_${VERSION}
+	mkdir ARCHIVE/hpcm_${VERSION}
+	cp -p ${ARCHIVE_FILES} ARCHIVE/hpcm_${VERSION}
+	chmod 400 ARCHIVE/hpcm_${VERSION}/*
 
 cleanall:
 	for x in `find . -name Makefile -print`; \
