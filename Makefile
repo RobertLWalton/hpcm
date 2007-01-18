@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Jan 17 11:31:29 EST 2007
+# Date:		Thu Jan 18 11:14:14 EST 2007
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2007/01/17 16:36:55 $
+#   $Date: 2007/01/18 16:28:47 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.59 $
+#   $Revision: 1.60 $
 
 # Include file that contains the following variables:
 #
@@ -482,6 +482,7 @@ web:		VERSION Makefile STATUS \
 	cd judge/doc; make overview.txt \
 			   installing_hpcm.txt \
 			   judging.txt
+	rm -rf web
 	mkdir web
 	cp -p hpcm_${VERSION}${TAREXT} \
 	      HPCM_${VERSION}_Signatures \
