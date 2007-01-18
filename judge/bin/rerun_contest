@@ -4,7 +4,7 @@
 #
 # File:		rerun_contest
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Sat Jan 13 07:55:20 EST 2007
+# Date:		Thu Jan 18 09:38:56 EST 2007
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2007/01/13 13:19:08 $
+#   $Date: 2007/01/18 14:50:20 $
 #   $RCSfile: rerun_contest,v $
-#   $Revision: 1.14 $
+#   $Revision: 1.15 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -121,43 +121,37 @@ rerun_contest COMMAND \\
 	        links are copied as symbolic links.
 		Permissions and dates are preserved.
 	    (2) Execute `autojudge -rerun' in
-	        ./rerun/S.
+	        ./rerun/S.  Note that if this changes
+		the value of Auto_Score, the old value
+		is preserved in Old_Auto_Score.
 	    (3) Print a note indicating the results from
 	        the above steps.  If ./mail/S/Received_
 		Mail does not exist or is not readable,
 		none of the above are done and only the
 		note is printed.
 
-    copyall
-
-        Same as `rerun' but skip running autojudge (2).
-
-    copy
-
-        Same as `copy' but only ./mail/S/Received_Mail
-	is copied to ./rerun/S.
-
-    redo
-
-        In ./rerun/S:
-
-	    (1) Execute `autojudge -rerun'.  Note that
-	        if this changes the value of Auto_Score,
-		the old value is preserved in Old_Auto_
-		Score.
-	    (2) Print a note indicating the results from
-	        the above steps.  If Received_Mail does
-	        not exist or is not readable, the above
-		is not done and only the note is print-
-		ed.
-
-	Note: S is selected by examining ./mail/S, NOT
-	./rerun/S.  Both source and target are used.
-
 	Note: `lookat -rerun OLDAUTO' will find all the
 	rerun submissions with an Old_Auto_Score file,
 	and `lookat -rerun RERUN' will find all with
 	both Old_Auto_Score and Auto_Score files.
+
+    copyall
+
+        Same as `rerun' but skip running autojudge (2).
+
+    copy
+
+        Same as `copy' but only ./mail/S/Received_Mail
+	is copied to ./rerun/S.
+
+    redo
+
+        Same as `rerun' except step (1), copying
+	./mail/S to ./rerun/S, is omitted.  ./rerun/S
+	must already exist.
+
+	Note: S is selected by examining ./mail/S, NOT
+	./rerun/S.  Both source and target are used.
 
     look
 
@@ -168,7 +162,7 @@ rerun_contest COMMAND \\
 		Auto_Score file
 		Old_Auto_Score file
 		Manual_Score file
-
+
     diff
 
 	Compare ./mail/S and ./rerun/S.  If they have
@@ -179,7 +173,7 @@ rerun_contest COMMAND \\
 		Auto_Score file in each directory
 		Old_Auto_Score file in each directory
 		Manual_Score file in each directory
-
+
     remove
 
     	Delete ./rerun/S.
@@ -239,8 +233,6 @@ puts "    $j_d"
 # Calculate arguments.
 #
 set problem_re "submit.*$problem_re"
-set submission_re \
-    "^.*$date_re.*-<<.*$submitter_re.*>>-submission\$"
 set len  [string length $sourceabbrev]
 set len2 [string length $targetabbrev]
 if { $len2 > $len } { set len $len2 }
@@ -440,8 +432,8 @@ foreach subdir [lsort [glob -nocomplain $source/*]] {
 	}
     } elseif { $command == "remove" } {
 	if { [file isdirectory $target/$subdir] } {
-	    puts "Deleted $subdir"
 	    file delete -force -- $target/$subdir
+	    puts "Deleted $subdir"
 	}
     } elseif {    [lcontain {rerun copyall} $command] \
                && [catch {
@@ -487,14 +479,13 @@ foreach subdir [lsort [glob -nocomplain $source/*]] {
 	    set note Reran
 	}
 
-	# Open autodispatch.log file.
+	# Delete old autodispatch.log file.
 	#
 	file delete -force autodispatch.log
-	set logch [open autodispatch.log a]
 
-	puts $logch "Start of autojudge -rerun:\
-		     [clock format [clock seconds]]"
-	puts $logch "----------------------------------"
+	# Run autojudge -rerun.
+	#
+	set starttime [clock format [clock seconds]]
 	if { [catch { exec autojudge -rerun } out] } {
 	    if {    [lindex $errorCode 1] == "SIG"
 	         && [lindex $errorCode 2] == "SIGINT" \
@@ -506,6 +497,14 @@ foreach subdir [lsort [glob -nocomplain $source/*]] {
 		     SYSTEM ERROR"
 	    inc errors
 	}
+
+	# Write new autodispatch.log file.
+	#
+	set logch [open autodispatch.log w]
+
+	puts $logch "Start of autojudge -rerun:\
+	             $starttime"
+	puts $logch "----------------------------------"
 	puts $logch $out
 	puts $logch "----------------------------------"
 	puts $logch "End of autojudge -rerun:\
