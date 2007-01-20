@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Jan 18 11:14:14 EST 2007
+# Date:		Sat Jan 20 05:32:20 EST 2007
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2007/01/18 16:28:47 $
+#   $Date: 2007/01/20 10:36:53 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.60 $
+#   $Revision: 1.61 $
 
 # Include file that contains the following variables:
 #
@@ -25,15 +25,21 @@
 #	WEB_CONTACT	Email address of contact to be
 #			listed on HPCM web pages.
 #
+# See STATUS file for description of versions.
+#
+include VERSION
+
+# Optional include file that contains the following
+# variable:
+#
+#
 #	WEB_PASSWORD	Password that is part of hidden
 #			URL name of solutions web sub-
 #			directory.  If not set, then no
 #			solutions subdirectory of the
 #			web directory is made.
 #
-# See STATUS file for description of versions.
-#
-include VERSION
+-include HPCM_WEB_SOLUTIONS_PASSWORD
 
 # Tar extension, zip option, and unzip option.
 # Can be set to use zipped or unzipped tar files.
@@ -48,7 +54,6 @@ TARUNZIP = --gunzip
 # Abbreviation to shorten lines.
 #
 NONDIS = non_distributable
-
 
 # Files to be archived
 #
@@ -472,7 +477,7 @@ cvs.files:	NO_SUCH_FILE
 
 # Make web directory to distribute HPCM.
 #
-web:		VERSION Makefile STATUS \
+web:		Makefile STATUS \
 		hpcm_${VERSION}${TAREXT} \
 		hpcm_${VERSION}_solutions${TAREXT} \
 		HPCM_${VERSION}_Signatures \
@@ -510,7 +515,7 @@ web:		VERSION Makefile STATUS \
 	          Not putting solutions into web; \
 	else make web_solutions; fi
 
-web_solutions:	VERSION Makefile \
+web_solutions:	Makefile \
 		web/index.html \
 		web_solutions_index.html \
 		hpcm_${VERSION}_solutions${TAREXT}
