@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Jan 18 11:55:31 EST 2007
+# Date:		Sat Jan 20 06:01:17 EST 2007
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2007/01/18 16:55:47 $
+#   $Date: 2007/01/20 11:02:41 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.28 $
+#   $Revision: 1.29 $
 
 all:	scorediff hpcm_sandbox_x hpcm_print_passwords \
 	hpcm_remote_sendmail \
@@ -47,15 +47,15 @@ hpcm_sandbox_x:	../../secure/src/hpcm_sandbox.c
 secure_hpcm_sandbox_x:
 	(cd ../../secure/src; make hpcm_sandbox)
 	ln -s ${SECURE_BIN}/hpcm_sandbox hpcm_sandbox_x
-	@if cmp hpcm_sandbox_x \
+	@if cmp ${SECURE_BIN}/hpcm_sandbox.compile \
 	        ../../secure/src/hpcm_sandbox; \
-	    then x=x; \
-	    else echo ===============================; \
-	         echo WARNING: \
-		      ${SECURE_BIN}/hpcm_sandbox \
-	    	      is out of date; \
-	         echo ===============================; \
-	    fi
+	 then x=x; \
+	 else echo ===============================; \
+	      echo WARNING: \
+		   ${SECURE_BIN}/hpcm_sandbox \
+		   is out of date; \
+	      echo ===============================; \
+	 fi
 
 check_security:
 	@if test ! -u hpcm_sandbox_x; \
