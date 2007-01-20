@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Jan 20 06:58:43 EST 2007
+# Date:		Sat Jan 20 07:12:58 EST 2007
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2007/01/20 11:58:59 $
+#   $Date: 2007/01/20 12:14:14 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.12 $
+#   $Revision: 1.13 $
 
 # Kill all implicit rules
 #
@@ -26,21 +26,15 @@ all: hpcm_sandbox hpcm_sendmail hpcm_wrapper
 root_install:	${SECURE_BIN}/hpcm_sandbox
 root_uninstall:	${SECURE_BIN}_uninstall
 
-${SECURE_BIN}/hpcm_sandbox:	hpcm_sandbox.c
+${SECURE_BIN}/hpcm_sandbox:	\
+		${SECURE_BIN}/hpcm_sandbox.compiled
 	test `id -un` = root
 	test -d ${SECURE_BIN}
 	test -w ${SECURE_BIN}
-	rm -f hpcm_sandbox
-	make --no-print-directory hpcm_sandbox
 	-mv -f ${SECURE_BIN}/hpcm_sandbox \
 	       ${SECURE_BIN}/hpcm_sandbox-
-	-mv -f ${SECURE_BIN}/hpcm_sandbox.compiled \
-	       ${SECURE_BIN}/hpcm_sandbox.compiled-
-	mv -f hpcm_sandbox \
-	      ${SECURE_BIN}/hpcm_sandbox.compiled
 	cp -p ${SECURE_BIN}/hpcm_sandbox.compiled \
 	      ${SECURE_BIN}/hpcm_sandbox
-	chmod 644 ${SECURE_BIN}/hpcm_sandbox.compiled
 	chmod 755 ${SECURE_BIN}/hpcm_sandbox
 	chmod u+s ${SECURE_BIN}/hpcm_sandbox
 	ls -l ${SECURE_BIN}/hpcm_sandbox*
@@ -54,6 +48,19 @@ ${SECURE_BIN}/hpcm_sandbox:	hpcm_sandbox.c
 	 else \
 	     make --no-print-directory hpcm_sandbox_x; \
 	 fi
+
+${SECURE_BIN}/hpcm_sandbox.compiled:	hpcm_sandbox.c
+	test `id -un` = root
+	test -d ${SECURE_BIN}
+	test -w ${SECURE_BIN}
+	rm -f hpcm_sandbox
+	make --no-print-directory hpcm_sandbox
+	-mv -f ${SECURE_BIN}/hpcm_sandbox.compiled \
+	       ${SECURE_BIN}/hpcm_sandbox.compiled-
+	mv -f hpcm_sandbox \
+	      ${SECURE_BIN}/hpcm_sandbox.compiled
+	chmod 644 ${SECURE_BIN}/hpcm_sandbox.compiled
+	ls -l ${SECURE_BIN}/hpcm_sandbox.*
 
 ${SECURE_BIN}_uninstall:
 	test `id -un` = root
