@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Oct 13 01:32:50 EDT 2006
+# Date:		Sat Jan 20 06:58:43 EST 2007
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/10/13 05:51:56 $
+#   $Date: 2007/01/20 11:58:59 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.11 $
+#   $Revision: 1.12 $
 
 # Kill all implicit rules
 #
@@ -67,8 +67,8 @@ ${SECURE_BIN}_uninstall:
 hpcm_sandbox_x:	
 	rm -f ../../judge/bin/hpcm_sandbox_x
 	cd ../../judge/bin; \
-	    make SECURE_BIN="${SECURE_BIN}" \
-			hpcm_sandbox_x
+	    ln -s ${SECURE_BIN}/hpcm_sandbox \
+	          hpcm_sandbox_x
 
 hpcm_sandbox:	hpcm_sandbox.c
 	gcc -o hpcm_sandbox hpcm_sandbox.c
