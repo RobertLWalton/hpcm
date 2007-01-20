@@ -4,7 +4,7 @@
 #
 # File:		startcontest
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Jan 20 10:50:40 EST 2007
+# Date:		Sat Jan 20 12:45:00 EST 2007
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2007/01/20 15:52:18 $
+#   $Date: 2007/01/20 17:48:03 $
 #   $RCSfile: startcontest,v $
-#   $Revision: 1.15 $
+#   $Revision: 1.16 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -36,8 +36,8 @@ if { [lindex $argv 0] == "-start-" } {
 	    if { [info exists pid_file] } {
 		file delete -force $pid_file
 	    }
-	    exec startcontest -start- $start_errors \
-	         < /dev/null &
+	    exec_in_background startcontest -start- \
+	                       $start_errors
 	    exit 0
 	}
     }
@@ -286,7 +286,7 @@ if { ! [regexp {^(|problem|team)$} $stime] } {
 
 	    # Run startcontest as a subprocess.
 	    #
-	    exec startcontest -start- 0 < /dev/null &
+	    exec_in_background startcontest -start- 0
 
 	    # Wait for any output from subprocess.
 	    #
@@ -329,8 +329,8 @@ if { ! [regexp {^(|problem|team)$} $stime] } {
 	    if {    [file mtime $pfile] \
 	         >= $startcontest_start_time } {
 	        file delete -force $pid_file
-		exec startcontest -start- 0 \
-		     < /dev/null &
+		exec_in_background startcontest \
+		                   -start- 0
 		exit 0
 	    }
 	        

@@ -4,7 +4,7 @@
 #
 # File:		makescoreboard
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Jan 20 10:47:59 EST 2007
+# Date:		Sat Jan 20 12:42:28 EST 2007
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2007/01/20 15:50:30 $
+#   $Date: 2007/01/20 17:48:03 $
 #   $RCSfile: makescoreboard,v $
-#   $Revision: 1.86 $
+#   $Revision: 1.87 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -36,10 +36,10 @@ if { [lindex $argv 0] == "-start-" } {
 	    if { [info exists pid_file] } {
 		file delete -force $pid_file
 	    }
-	    eval exec makecontest -start- \
+	    eval exec_in_background \
+	         makecontest -start- \
 	         $start_errors \
-	         [lrange $argv 2 end] \
-		 < /dev/null &
+	         [lrange $argv 2 end]
 	    exit 0
 	}
     }
@@ -1066,9 +1066,9 @@ switch -- $command {
 
 	# Run makescoreboard as a subprocess.
 	#
-        set pid [eval exec makescoreboard -start- 0 \
-	              [lrange $argv 1 end] \
-		      < /dev/null &]
+        set pid [eval exec_in_background \
+	              makescoreboard -start- 0 \
+	              [lrange $argv 1 end]]
 
 	# Wait for any output from first run.
 	#
@@ -1137,10 +1137,9 @@ switch -- $command {
 	# and exit.
 	#
 	file delete -force $pid_file
-	eval exec makescoreboard -start- \
-		  $start_errors \
-		  [lrange $argv 2 end] \
-		  < /dev/null &
+	eval exec_in_background \
+	     makescoreboard -start- \
+	     $start_errors [lrange $argv 2 end]
 	exit 0
 	
     }
