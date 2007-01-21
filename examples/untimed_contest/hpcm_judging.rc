@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Jan  4 07:08:42 EST 2007
+# Date:		Sun Jan 21 06:36:10 EST 2007
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2007/01/04 12:13:15 $
+#   $Date: 2007/01/21 11:58:06 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.56 $
+#   $Revision: 1.57 $
 
 # Table of Contents
 #
@@ -288,8 +288,8 @@ set web_page_URL "www.somewhere.edu/~xxx/yyy"
 #
 set web_manager_address $manager_address
 set web_solutions_password ""
-set web_help_URL ""
-set web_scoreboard_URL ""
+set web_help_URL "../help"
+set web_scoreboard_URL "scoreboard"
 
 # You may want to set the following.  If left "", the
 # page headers are automatically constructed from the
@@ -410,6 +410,21 @@ set contest_printer_map "
 set is_makecontest \
     [expr { [file tail $argv0] == "makecontest" }]
 
+# Compute default autojudge_address for email contest.
+#
+if {    [regexp email $account_type] \
+     && $autojudge_address == "" } {
+    set aja [truename $judging_directory]
+    set aja [file tail $aja]
+    if {    ! [regexp {^judging_(.*)_[^_]*$} $aja \
+                      forget aja] \
+	 || $aja == "" } {
+        error "Cannot set default autojudging_address\
+	       for email contest"
+    }
+    set autojudging_address $aja
+}
+
 # Set addresses of autojudge.
 #
 if { $autojudge_address != "" } {
@@ -434,7 +449,8 @@ if { [regexp email $account_type] } {
 # Set javahelp and stlhelp global variables if
 # appropriate.
 
-set javaok [info exists java_api_index]
+set javaok [expr {    [info exists java_api_index] \
+                  && [regexp local $account_type] }]
 
 if {    $is_makecontest \
      && $javaok \
@@ -450,7 +466,8 @@ $browser '$browser $java_api_index'
 "
 }
 
-set stlok [info exists stl_api_index]
+set stlok [expr {    [info exists stl_api_index] \
+                  && [regexp local $account_type] }]
 if {    $is_makecontest \
      && $stlok \
      && [regexp {r..} [get_access $stl_api_index]] } {
@@ -655,15 +672,6 @@ set inout_percent [expr 100 - 100 * [lindex $sqf 1]]
 set inout_percent [format {%.0f} $inout_percent]
 set ic_percent [expr 100 - 100 * [lindex $sqf 4]]
 set ic_percent [format {%.0f} $ic_percent]
-
-# Check that autojudge_address is set for email
-# contest.
-#
-if {    [lcontain $account_list email] \
-     && $autojudge_address == "" } {
-    error "autojudge_address must be non-empty for\
-           email accounts"
-}
 
 # Compute this_contest.
 #
