@@ -2,7 +2,7 @@
 #
 # File:		Makefile.mk
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu May  4 09:13:10 EDT 2006
+# Date:		Sun Jan 21 05:45:45 EST 2007
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -10,10 +10,10 @@
 #
 # RCS Info (may not be true date or author):
 #
-#   $Author: hc3 $
-#   $Date: 2006/05/04 13:13:00 $
+#   $Author: walton $
+#   $Date: 2007/01/21 10:52:16 $
 #   $RCSfile: Makefile.mk,v $
-#   $Revision: 1.34 $
+#   $Revision: 1.35 $
 
 extract_replies:	mbox
 	rm -rf replies
@@ -125,8 +125,12 @@ test_get:	${TEST_PREREQUISITES} \
 	$S/get_count.send \
 	$S/get_bad_body.send \
 	$S/get_illegal_filenames.send \
-	$S/get_unreadable_files.send \
-	$S/get_forbidden_files.send
+	$S/get_unreadable_files.send
+	@echo "NOTE: If contestants are NOT permitted" \
+	      " to get all problems at once,"
+	@echo "   also execute \`make test_forbidden'"
+
+test_forbidden:	$S/get_forbidden_files.send
 
 test_query:	${TEST_PREREQUISITES} \
 	$S/query.send \
