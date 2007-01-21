@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Dec 31 05:45:26 EST 2006
+# Date:		Sun Jan 21 05:11:16 EST 2007
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2007/01/04 12:04:09 $
+#   $Date: 2007/01/21 10:12:16 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.31 $
+#   $Revision: 1.32 $
 
 # Table of Contents
 #
@@ -275,6 +275,12 @@ set scoreboard_commands {
 # Normally you should not have to make changes below
 # this point.
 
+# The following is true if and only if contestants
+# getting all the problems at once is to be forbidden.
+#
+set forbid_getting_all_problems \
+    [expr $scoring_type == problem]
+
 # Set to "yes" if in addition to normal submissions from
 # contestants with accounts, you want to allow email
 # submissions.  You may want to reset submitter_
@@ -341,7 +347,8 @@ set contest_printer_map "
 .* !~/PRINTER
 "
 
-# Computed web page parameters.
+# Computed web page parameters.  `web_problems' is `yes'
+# if problem descriptions are to be put on the web page.
 #
 set web_contest_name $contest_name
 if { [regexp web $description_type] } {
@@ -359,6 +366,14 @@ if { [regexp web $description_type] } {
 # to tune the contest, put changes at the very end of
 # this file, where they will override the settings of
 # this file.
+
+if { $forbid_getting_all_problems } {
+    array set info_map {
+	problems
+	{FORBIDDEN {You are not allowed to get all\
+	            problems at once in this contest.}}
+    }
+}
 
 set javaok [info exists java_api_index]
 if {    $javaok \
