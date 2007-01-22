@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2007/01/21 10:52:16 $
+#   $Date: 2007/01/22 12:04:42 $
 #   $RCSfile: Makefile.mk,v $
-#   $Revision: 1.35 $
+#   $Revision: 1.36 $
 
 extract_replies:	mbox
 	rm -rf replies
@@ -55,33 +55,30 @@ diff_replies:
 	    'a response from .*@'; \
 	done
 
-test_email:	test_count_correct \
+test_basic:	test_count_correct \
 		test_javaio_correct \
 		test_count_incorrect \
+		test_system_error \
+		test_query \
+		test_problem_name
+
+test_email:	test_basic \
 		test_unformatted \
-		test_system_error \
-		test_get \
-		test_query \
-		test_problem_name
+		test_get
 
-test_informal:	test_count_correct \
-		test_javaio_correct \
-		test_count_incorrect \
+test_local:	test_basic \
+		test_formatted
+
+test_informal:	test_basic \
 		test_formatted \
-		test_system_error \
-		test_get \
-		test_query \
-		test_problem_name
+		test_get
+	@echo "NOTE: If contestants are NOT permitted" \
+	      " to get all problems at once,"
+	@echo "   also execute \`make test_forbidden'"
 
-test_formal:	test_count_correct \
-		test_javaio_correct \
-		test_count_incorrect \
-		test_formatted \
-		test_system_error \
-		test_query \
-		test_problem_name
+test_formal:	test_local
 
-test_untimed:	test_formal
+test_untimed:	test_local
 
 test_count_correct:	${TEST_PREREQUISITES} \
 	$S/count_correct.c.send \
@@ -126,9 +123,6 @@ test_get:	${TEST_PREREQUISITES} \
 	$S/get_bad_body.send \
 	$S/get_illegal_filenames.send \
 	$S/get_unreadable_files.send
-	@echo "NOTE: If contestants are NOT permitted" \
-	      " to get all problems at once,"
-	@echo "   also execute \`make test_forbidden'"
 
 test_forbidden:	$S/get_forbidden_files.send
 
