@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Jan  4 05:15:31 EST 2007
+# Date:		Mon Jan 22 22:14:25 EST 2007
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2007/01/04 10:22:39 $
+#   $Date: 2007/01/23 03:16:56 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.73 $
+#   $Revision: 1.75 $
 #
 # To make an untimed contest named `foo':
 #
@@ -89,9 +89,12 @@
 #     account.
 #
 # 9.  You can also test the contest by executing
-#     `make test'.  Then read each email reply and
-#     compare its X-HPCM-Test-Subject field with the
-#     results in the body of the reply.
+#     `make test_email' if the contest is accessible
+#     to contestants by email, and `make test_local'
+#     if the contest is accessible by local accounts.
+#     Then read each email reply and compare its
+#     X-HPCM-Test-Subject field with the results in the
+#     body of the reply.
 #
 #     Note that several of the test submissions time
 #     out, and for those submissions the autojudge will
@@ -288,18 +291,8 @@ help/this_contest: print_files_do_nothing
 	makecontest -this_contest
 
 # Test Rules:
-
-test:	test_email
-
-.SUFFIXES: .mail .send
-
-.mail.send:
-	( echo To: `cat Contest_Address`; cat $*.mail) \
-	    | ${SENDMAIL}
-	sleep 2
-
-TEST_PREREQUISITES=Contest_Address ./mail
-include ${HPCM}/examples/test_submissions/Makefile.mk
+#
+-include make_test
 
 # Cleanup Rules:
 
@@ -308,7 +301,7 @@ dangerous_test_clean:
 
 dangerous_clean:
 	-makescoreboard stop
-	rm -rf mail rerun help flag log \
+	rm -rf mail rerun help flag log make_test \
 	       secure .ssh web* \
 	       info* solutions* \
 	       TODO replies mbox *.ps *.pdf \

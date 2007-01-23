@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Jan 21 07:03:26 EST 2007
+# Date:		Mon Jan 22 22:17:58 EST 2007
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2007/01/21 12:03:40 $
+#   $Date: 2007/01/23 03:20:55 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.59 $
+#   $Revision: 1.60 $
 
 # Table of Contents
 #
@@ -445,6 +445,17 @@ if { [regexp email $account_type] } {
 } else {
     set use_authentication yes
     set format_submissions yes
+}
+
+# Set make_test.
+#
+set test_submissions \
+    $hpcm_directory/examples/test_submissions
+set make_test "include $test_submissions/Makefile.mk"
+if { [regexp local $account_type] } {
+    set make_test "$make_test\ntest:\ttest_local"
+} else {
+    set make_test "$make_test\ntest:\ttest_email"
 }
 
 # Set javahelp and stlhelp global variables if
