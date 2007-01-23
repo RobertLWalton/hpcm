@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Jan 22 22:14:25 EST 2007
+# Date:		Mon Jan 22 07:05:13 EST 2007
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2007/01/23 03:16:56 $
+#   $Date: 2007/01/23 03:13:08 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.75 $
+#   $Revision: 1.74 $
 #
 # To make an untimed contest named `foo':
 #
@@ -292,7 +292,7 @@ help/this_contest: print_files_do_nothing
 
 # Test Rules:
 #
--include make_test
+include ${HPCM}/examples/test_submissions/Makefile.mk
 
 # Cleanup Rules:
 
@@ -301,7 +301,7 @@ dangerous_test_clean:
 
 dangerous_clean:
 	-makescoreboard stop
-	rm -rf mail rerun help flag log make_test \
+	rm -rf mail rerun help flag log \
 	       secure .ssh web* \
 	       info* solutions* \
 	       TODO replies mbox *.ps *.pdf \
