@@ -2,7 +2,7 @@
 #
 # File:		Makefile.mk
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Jan 23 05:09:51 EST 2007
+# Date:		Tue Jan 23 07:05:58 EST 2007
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2007/01/23 10:53:56 $
+#   $Date: 2007/01/23 12:06:29 $
 #   $RCSfile: Makefile.mk,v $
-#   $Revision: 1.39 $
+#   $Revision: 1.40 $
 
 BASIC_TESTS = \
 	test_count_correct \
@@ -56,27 +56,16 @@ manual_diff_local:	\
 		${AUTO_MANUAL_TESTS:%=%.manual_diff} \
 		test_formatted.diff
 
-test_informal:	${BASIC_TESTS:%=%.local} \
-		${AUTO_MANUAL_TESTS:%=%.local} \
-		test_formatted.local \
+test_informal:	test_local \
 		test_get.local
 
 auto_diff_informal:	\
-		${BASIC_TESTS:%=%.diff} \
-		${AUTO_MANUAL_TESTS:%=%.auto_diff} \
-		test_formatted.diff \
+		auto_diff_local \
 		test_get.diff
 
 manual_diff_informal:	\
-		${BASIC_TESTS:%=%.diff} \
-		${AUTO_MANUAL_TESTS:%=%.manual_diff} \
-		test_formatted.diff \
+		manual_diff_local \
 		test_get.diff
-
-test_forbidden.email:	$S/get_forbidden_files.email
-test_forbidden.local:	$S/get_forbidden_files.local
-
-diff_forbidden:	$S/get_forbidden_files.diff
 
 %.email:	%.mail ./Contest_Address ./mail
 	( echo To: `cat Contest_Address`; cat $*.mail) \
@@ -171,6 +160,9 @@ GET_FILES = \
 	get_illegal_filenames \
 	get_unreadable_files
 
+FORBIDDEN_FILES = \
+	get_forbidden_files
+
 QUERY_FILES = \
 	query \
 	bad_subject_format
@@ -251,6 +243,15 @@ test_get.email:	\
 
 test_get.diff:	\
 	${GET_FILES:%=$S/replies/%.diff}
+
+test_forbidden.local:	\
+	${FORBIDDEN_FILES:%=$S/%.local}
+
+test_forbidden.email:	\
+	${FORBIDDEN_FILES:%=$S/%.email}
+
+test_forbidden.diff:	\
+	${FORBIDDEN_FILES:%=$S/replies/%.diff}
 
 test_query.local:	\
 	${QUERY_FILES:%=$S/%.local}
