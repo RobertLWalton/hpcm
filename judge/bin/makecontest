@@ -6,7 +6,7 @@
 #
 # File:		makecontest
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Jan 21 07:12:26 EST 2007
+# Date:		Mon Jan 22 21:18:52 EST 2007
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2007/01/21 12:16:33 $
+#   $Date: 2007/01/23 02:31:58 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.194 $
+#   $Revision: 1.195 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -58,13 +58,15 @@ makecontest option ... index_specification ...
 		-mail, -print_files, -solution_files
 		-secure, -procmailrc, -who_where,
 		-trashable, -contest_commands, -judging_
-		commands, -scoreboard_commands.
+		commands, -scoreboard_commands,
+		-make_test.
     -email	Equals all options needed to have email
     		contestant accounts; specifically, the
 		following: -info, -solutions, -mail,
 		-this_contest, -procmailrc, -print_
 		files, -solution_files, -judging_
-		commands, -scoreboard_commands.
+		commands, -scoreboard_commands,
+		-make_test.
     -formal     Same as -local plus -problems and
     		-demos.
     -informal   Same as -local plus -startcontest and
@@ -155,6 +157,9 @@ makecontest option ... index_specification ...
     -stlhelp	Make ./contest/stlhelp
 
     -web	Make ./web and ./web.tar
+
+    -make_test  Using the optional `make_test' global
+    		variable make ./make_test.
 
     -startcontest   Run the startcontest program if
     		    necessary.
@@ -886,6 +891,11 @@ makecontest option ... index_specification ...
     and a TODO is written to move ./web to the appro-
     priate remote host.
 
+    The -make_test program option makes the ./make_test
+    file to be a copy of the `make_test' global variable
+    if the variable exists and does not already equal
+    the contents of the file.
+
     The -startcontest program option executes the
     `startcontest start' command unless this has already
     been done, or if it has been done but a background
@@ -904,14 +914,14 @@ makecontest option ... index_specification ...
     moves any scoreboard.1head file from the judging
     directory to the contest directory if the contest
     directory exists and does not have this file.
-
+
     Although we have used the names `./info', `./mail',
     `./contest', and `./help' in this description, the
     actual directories are the info, mail, contest,
     help, etc. subdirectories of the judging_directory.
     The file names within these directories are literal-
     ly as given in this document.
-
+
     Like other HPCM programs, `makecontest' can be
     run from anywhere in the judge's directory subtree
     which is rooted by the directory containing the
@@ -965,6 +975,7 @@ set printer_map_option		no
 set javahelp_option		no
 set stlhelp_option		no
 set web_option			no
+set make_test_option		no
 set scoreboard_commands_option	no
 set startcontest_option		no
 set scoreboard_option		no
@@ -994,7 +1005,8 @@ while { $argi < $argc } {
 			  			yes
 			  set \
 			    scoreboard_commands_option \
-			  			yes }
+			  			yes
+			  set make_test_option	yes }
         -email		{ set info_option	yes
 			  set solutions_option	yes
 			  set this_contest_option \
@@ -1009,7 +1021,8 @@ while { $argi < $argc } {
 			  			yes
 			  set \
 			    scoreboard_commands_option \
-			  			yes }
+			  			yes
+			  set make_test_option	yes }
         -formal		{ set contest_option	yes
 			  set bin_option	yes
 			  set home_option	yes
@@ -1034,6 +1047,7 @@ while { $argi < $argc } {
 			  set \
 			    scoreboard_commands_option \
 			  			yes
+			  set make_test_option	yes
 			  set problems_option	yes
 			  set demos_option	yes }
         -informal	{ set contest_option	yes
@@ -1060,6 +1074,7 @@ while { $argi < $argc } {
 			  set \
 			    scoreboard_commands_option \
 			  			yes
+			  set make_test_option	yes
 			  set info_option	yes
 			  set startcontest_option \
 			  			yes }
@@ -1099,6 +1114,7 @@ while { $argi < $argc } {
         -javahelp	{ set javahelp_option	yes }
         -stlhelp	{ set stlhelp_option	yes }
         -web		{ set web_option	yes }
+        -make_test	{ set make_test_option	yes }
         -scoreboard_commands	\
 	                { set \
 			  scoreboard_commands_option \
@@ -3430,6 +3446,19 @@ if { $web_option } {
 	TODO "Copy ./web (which is archived as\
 	      ./web.tar) to the appropriate" \
 	     "location."
+    }
+}
+
+# Make ./make_test
+#
+if {    $make_test_option \
+     && [info exists make_test] \
+     && (    ! [file exists $j_d/make_test]
+          ||    [read_entire_file $j_d/make_test] \
+	     != $make_test } {
+
+	write_file $j_d/make_test $make_test
+	puts "Wrote ./make_test"
     }
 }
 
