@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Jan  2 09:49:59 EST 2007
+# Date:		Tue Jan 23 09:32:00 EST 2007
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2007/01/02 14:52:01 $
+#   $Date: 2007/01/23 14:34:11 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.55 $
+#   $Revision: 1.56 $
 #
 # To make a formal contest named `foo':
 #
@@ -252,17 +252,6 @@
 #	   program to send the passwords to the contes-
 #	   tants.  See `hpcm_email_passwords -doc'.
 
-# Parameters:
-#
-# The location of the hpcm directory.
-#
-HPCM=${HOME}/hpcm
-#
-# Locations of test data.
-#
-S=${HPCM}/examples/test_submissions
-R=${HPCM}/examples/test_submissions/formal_replies
-
 # Kill all implicit rules:
 #
 .SUFFIXES:
@@ -326,17 +315,8 @@ help/this_contest: print_files_do_nothing
 	makecontest -this_contest
 
 # Test Rules:
-
-test:	test_formal
-
-.SUFFIXES: .mail .send
-
-.mail.send:
-	hpcm_sendmail <$*.mail
-	sleep 2
-
-TEST_PREREQUISITES= ./mail
-include ${HPCM}/examples/test_submissions/Makefile.mk
+#
+-include make_test
 
 # Cleanup Rules:
 
@@ -346,7 +326,7 @@ dangerous_test_clean:
 dangerous_clean:
 	-makescoreboard stop
 	-startcontest stop
-	rm -rf mail rerun help flag log \
+	rm -rf mail rerun help flag log make_test \
 	       secure .ssh web* \
 	       solutions* TODO replies mbox *.ps *.pdf \
 	       `readlink contest` \
