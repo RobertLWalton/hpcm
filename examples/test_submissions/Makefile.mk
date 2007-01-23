@@ -2,7 +2,7 @@
 #
 # File:		Makefile.mk
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Jan 22 07:12:59 EST 2007
+# Date:		Tue Jan 23 03:50:39 EST 2007
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,72 +11,43 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2007/01/23 02:18:26 $
+#   $Date: 2007/01/23 09:37:45 $
 #   $RCSfile: Makefile.mk,v $
-#   $Revision: 1.37 $
-
-extract_replies:	mbox
-	rm -rf replies
-	mkdir replies
-	cd replies; hpcm_extract_test_replies <../mbox
-
-# In the following, RCSfile and Revision are for
-# get_count.
-#
-diff_replies:
-	r=`cd replies; ls *.reply`; for x in $$r; do \
-	  echo $$x; e=':.*\$$'; \
-	     email_diff replies/$$x $R/$$x \
-	    "From " "Received:" "Return-Path:" \
-	    "Date:" "From:" "To:" "Reply-To:" "Cc:" \
-	    "Status:" "Message-ID:" \
-	    "Subject:.*unchecked-error" \
-	    "X-HPCM-Date:" "X-HPCM-Reply-To:" \
-	    "X-HPCM-Signature:" \
-	    -body \
-	    ">From " \
-	    "*Date:" "*From:" "*To:" "*Reply-To:" \
-	    "*Cc:" "*Received:" "*Return-Path:" \
-	    "*Status:" "*Message-ID:" \
-	    "X-HPCM-Date:" "X-HPCM-Reply-To:" \
-	    "X-HPCM-Signature:" \
-	    '[ \t]*\$$Author'$$e \
-	    '[ \t]*\$$Date'$$e \
-	    '[ \t]*\$$RCSfile'$$e \
-	    '[ \t]*\$$Revision'$$e \
-	    '#.*\$$Author'$$e \
-	    '#.*\$$Date'$$e \
-	    '#.*\$$RCSfile'$$e \
-	    '#.*\$$Revision'$$e \
-	    '//.*\$$Author'$$e \
-	    '//.*\$$Date'$$e \
-	    '//.*\$$RCSfile'$$e \
-	    '//.*\$$Revision'$$e \
-	    'a response from .*@'; \
-	done
+#   $Revision: 1.38 $
 
 BASIC_TESTS = \
-	test_count_correct.test \
-	test_javaio_correct.test \
-	test_count_incorrect.test \
-	test_system_error.test \
-	test_query.test \
-	test_problem_name.test
+	test_count_correct \
+	test_javaio_correct \
+	test_count_incorrect \
+	test_system_error \
+	test_query \
+	test_problem_name
 
-test_email:	${BASIC_TESTS:.test=.email} \
+test_email:	${BASIC_TESTS:%=%.email} \
 		test_unformatted.email \
 		test_get.email
 
-test_local:	${BASIC_TESTS:.test=.local} \
+diff_email:	${BASIC_TESTS:%=%.diff} \
+		test_unformatted.diff \
+		test_get.diff
+
+test_local:	${BASIC_TESTS:%=%.local} \
 		test_formatted.local
 
-test_informal:	${BASIC_TESTS:.test=.local} \
+diff_local:	${BASIC_TESTS:%=%.diff} \
+		test_formatted.diff
+
+test_informal:	${BASIC_TESTS:%=%.local} \
 		test_formatted.local \
 		test_get.local
 
+diff_informal:	${BASIC_TESTS:%=%.diff} \
+		test_formatted.diff \
+		test_get.diff
+
 test_forbidden:	$S/get_forbidden_files.local
 
-test_formal:	test_local
+diff_forbidden:	$S/get_forbidden_files.diff
 
 %.email:	%.mail ./Contest_Address ./mail
 	( echo To: `cat Contest_Address`; cat $*.mail) \
@@ -87,115 +58,181 @@ test_formal:	test_local
 	hpcm_sendmail <$*.mail
 	sleep 2
 
+extract_replies:	mbox
+	rm -rf replies
+	mkdir replies
+	cd replies; hpcm_extract_test_replies <../mbox
+
+# In the following, RCSfile and Revision are for
+# get_count.  `e' is defined to avoid replacements by
+# cvs/rcs in this text.
+#
+%.diff:		%.reply ./replies
+	@echo $(<F); e=':.*\$$'; \
+	 email_diff $< ./replies/$(<F) \
+	 "From " "Received:" "Return-Path:" \
+	 "Date:" "From:" "To:" "Reply-To:" "Cc:" \
+	 "Status:" "Message-ID:" \
+	 "Subject:.*unchecked-error" \
+	 "X-HPCM-Date:" "X-HPCM-Reply-To:" \
+	 "X-HPCM-Signature:" \
+	 -body \
+	 ">From " \
+	 "*Date:" "*From:" "*To:" "*Reply-To:" \
+	 "*Cc:" "*Received:" "*Return-Path:" \
+	 "*Status:" "*Message-ID:" \
+	 "X-HPCM-Date:" "X-HPCM-Reply-To:" \
+	 "X-HPCM-Signature:" \
+	 '[ \t]*\$$Author'$$e \
+	 '[ \t]*\$$Date'$$e \
+	 '[ \t]*\$$RCSfile'$$e \
+	 '[ \t]*\$$Revision'$$e \
+	 '#.*\$$Author'$$e \
+	 '#.*\$$Date'$$e \
+	 '#.*\$$RCSfile'$$e \
+	 '#.*\$$Revision'$$e \
+	 '//.*\$$Author'$$e \
+	 '//.*\$$Date'$$e \
+	 '//.*\$$RCSfile'$$e \
+	 '//.*\$$Revision'$$e \
+	 'a response from .*@'
+
 COUNT_CORRECT_FILES = \
-	$S/count_correct.c.mail \
-	$S/count_correct.cc.mail \
-	$S/count_correct.java.mail \
-	$S/count_correct.lsp.mail
+	count_correct.c \
+	count_correct.cc \
+	count_correct.java \
+	count_correct.lsp
 
 JAVAIO_CORRECT_FILES = \
-	$S/javaio_correct.mail
+	javaio_correct
 
 COUNT_INCORRECT_FILES = \
-	$S/count_incorrect_output.c.mail \
-	$S/count_incomplete_output.cc.mail \
-	$S/count_formatting_error.java.mail \
-	$S/count_crash.cc.mail \
-	$S/count_timeout.java.mail \
-	$S/count_timeout.c.mail \
-	$S/count_too_much_output.c.mail
+	count_incorrect_output.c \
+	count_incomplete_output.cc \
+	count_formatting_error.java \
+	count_crash.cc \
+	count_timeout.java \
+	count_timeout.c \
+	count_too_much_output.c
 
 FORMATTED_FILES = \
-	$S/multipart_formatted.mail
+	multipart_formatted
 
 UNFORMATTED_FILES = \
-	$S/unformatted.mail \
-	$S/yahoo.mail \
-	$S/quoted_printable.mail \
-	$S/base64.mail \
-	$S/text_plain.mail \
-	$S/bad_multipart_encoding.mail \
-	$S/bad_multipart_type.mail \
-	$S/multipart_7bit.mail \
-	$S/multipart_base64.mail \
-	$S/multipart_pine.mail \
-	$S/multipart_quoted_printable.mail \
-	$S/multipart_simple_boundary.mail
+	unformatted \
+	yahoo \
+	quoted_printable \
+	base64 \
+	text_plain \
+	bad_multipart_encoding \
+	bad_multipart_type \
+	multipart_7bit \
+	multipart_base64 \
+	multipart_pine \
+	multipart_quoted_printable \
+	multipart_simple_boundary
 
 SYSTEM_ERROR_FILES = \
-	$S/system_error.mail
+	system_error
 
 GET_FILES = \
-	$S/get_count.mail \
-	$S/get_bad_body.mail \
-	$S/get_illegal_filenames.mail \
-	$S/get_unreadable_files.mail
+	get_count \
+	get_bad_body \
+	get_illegal_filenames \
+	get_unreadable_files
 
 QUERY_FILES = \
-	$S/query.mail \
-	$S/bad_subject_format.mail
+	query \
+	bad_subject_format
 
 PROBLEM_NAME_FILES = \
-	$S/bad_problem_name1.mail \
-	$S/bad_problem_name2.mail \
-	$S/bad_problem_name3.mail \
-	$S/bad_problem_name4.mail \
-	$S/bad_problem_name5.mail \
-	$S/bad_problem_name6.mail \
-	$S/bad_problem_name7.mail \
-	$S/bad_problem_name8.mail \
-	$S/bad_problem_name9.mail
+	bad_problem_name1 \
+	bad_problem_name2 \
+	bad_problem_name3 \
+	bad_problem_name4 \
+	bad_problem_name5 \
+	bad_problem_name6 \
+	bad_problem_name7 \
+	bad_problem_name8 \
+	bad_problem_name9
 
 test_count_correct.local:	\
-	${COUNT_CORRECT_FILES:.mail=.local}
+	${COUNT_CORRECT_FILES:%=$S/%.local}
 
 test_count_correct.email:	\
-	${COUNT_CORRECT_FILES:.mail=.email}
+	${COUNT_CORRECT_FILES:%=$S/%.email}
+
+test_count_correct.diff:	\
+	${COUNT_CORRECT_FILES:%=$S/replies/%.diff}
 
 test_javaio_correct.local:	\
-	${JAVAIO_CORRECT_FILES:.mail=.local}
+	${JAVAIO_CORRECT_FILES:%=$S/%.local}
 
 test_javaio_correct.email:	\
-	${JAVAIO_CORRECT_FILES:.mail=.email}
+	${JAVAIO_CORRECT_FILES:%=$S/%.email}
+
+test_javaio_correct.diff:	\
+	${JAVAIO_CORRECT_FILES:%=$S/replies/%.diff}
 
 test_count_incorrect.local:	\
-	${COUNT_INCORRECT_FILES:.mail=.local}
+	${COUNT_INCORRECT_FILES:%=$S/%.local}
 
 test_count_incorrect.email:	\
-	${COUNT_INCORRECT_FILES:.mail=.email}
+	${COUNT_INCORRECT_FILES:%=$S/%.email}
+
+test_count_incorrect.diff:	\
+	${COUNT_INCORRECT_FILES:%=$S/replies/%.diff}
 
 test_formatted.local:	\
-	${FORMATTED_FILES:.mail=.local}
+	${FORMATTED_FILES:%=$S/%.local}
 
 test_formatted.email:	\
-	${FORMATTED_FILES:.mail=.email}
+	${FORMATTED_FILES:%=$S/%.email}
+
+test_formatted.diff:	\
+	${FORMATTED_FILES:%=$S/replies/%.diff}
 
 test_unformatted.local:	\
-	${UNFORMATTED_FILES:.mail=.local}
+	${UNFORMATTED_FILES:%=$S/%.local}
 
 test_unformatted.email:	\
-	${UNFORMATTED_FILES:.mail=.email}
+	${UNFORMATTED_FILES:%=$S/%.email}
+
+test_unformatted.diff:	\
+	${UNFORMATTED_FILES:%=$S/replies/%.diff}
 
 test_system_error.local:	\
-	${SYSTEM_ERROR_FILES:.mail=.local}
+	${SYSTEM_ERROR_FILES:%=$S/%.local}
 
 test_system_error.email:	\
-	${SYSTEM_ERROR_FILES:.mail=.email}
+	${SYSTEM_ERROR_FILES:%=$S/%.email}
+
+test_system_error.diff:	\
+	${SYSTEM_ERROR_FILES:%=$S/replies/%.diff}
 
 test_get.local:	\
-	${GET_FILES:.mail=.local}
+	${GET_FILES:%=$S/%.local}
 
 test_get.email:	\
-	${GET_FILES:.mail=.email}
+	${GET_FILES:%=$S/%.email}
+
+test_get.diff:	\
+	${GET_FILES:%=$S/replies/%.diff}
 
 test_query.local:	\
-	${QUERY_FILES:.mail=.local}
+	${QUERY_FILES:%=$S/%.local}
 
 test_query.email:	\
-	${QUERY_FILES:.mail=.email}
+	${QUERY_FILES:%=$S/%.email}
+
+test_query.diff:	\
+	${QUERY_FILES:%=$S/replies/%.diff}
 
 test_problem_name.local:	\
-	${PROBLEM_NAME_FILES:.mail=.local}
+	${PROBLEM_NAME_FILES:%=$S/%.local}
 
 test_problem_name.email:	\
-	${PROBLEM_NAME_FILES:.mail=.email}
+	${PROBLEM_NAME_FILES:%=$S/%.email}
+
+test_problem_name.diff:	\
+	${PROBLEM_NAME_FILES:%=$S/replies/%.diff}
