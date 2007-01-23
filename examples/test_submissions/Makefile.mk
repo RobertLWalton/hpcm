@@ -2,7 +2,7 @@
 #
 # File:		Makefile.mk
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Jan 23 03:50:39 EST 2007
+# Date:		Tue Jan 23 05:09:51 EST 2007
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,41 +11,70 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2007/01/23 09:37:45 $
+#   $Date: 2007/01/23 10:53:56 $
 #   $RCSfile: Makefile.mk,v $
-#   $Revision: 1.38 $
+#   $Revision: 1.39 $
 
 BASIC_TESTS = \
 	test_count_correct \
 	test_javaio_correct \
 	test_count_incorrect \
-	test_system_error \
-	test_query \
 	test_problem_name
 
+AUTO_MANUAL_TESTS = \
+	test_system_error \
+	test_query
+
 test_email:	${BASIC_TESTS:%=%.email} \
+		${AUTO_MANUAL_TESTS:%=%.email} \
 		test_unformatted.email \
 		test_get.email
 
-diff_email:	${BASIC_TESTS:%=%.diff} \
+auto_diff_email:	\
+		${BASIC_TESTS:%=%.diff} \
+		${AUTO_MANUAL_TESTS:%=%.auto_diff} \
+		test_unformatted.diff \
+		test_get.diff
+
+manual_diff_email:	\
+		${BASIC_TESTS:%=%.diff} \
+		${AUTO_MANUAL_TESTS:%=%.manual_diff} \
 		test_unformatted.diff \
 		test_get.diff
 
 test_local:	${BASIC_TESTS:%=%.local} \
+		${AUTO_MANUAL_TESTS:%=%.local} \
 		test_formatted.local
 
-diff_local:	${BASIC_TESTS:%=%.diff} \
+auto_diff_local:	\
+		${BASIC_TESTS:%=%.diff} \
+		${AUTO_MANUAL_TESTS:%=%.auto_diff} \
+		test_formatted.diff
+
+manual_diff_local:	\
+		${BASIC_TESTS:%=%.diff} \
+		${AUTO_MANUAL_TESTS:%=%.manual_diff} \
 		test_formatted.diff
 
 test_informal:	${BASIC_TESTS:%=%.local} \
+		${AUTO_MANUAL_TESTS:%=%.local} \
 		test_formatted.local \
 		test_get.local
 
-diff_informal:	${BASIC_TESTS:%=%.diff} \
+auto_diff_informal:	\
+		${BASIC_TESTS:%=%.diff} \
+		${AUTO_MANUAL_TESTS:%=%.auto_diff} \
 		test_formatted.diff \
 		test_get.diff
 
-test_forbidden:	$S/get_forbidden_files.local
+manual_diff_informal:	\
+		${BASIC_TESTS:%=%.diff} \
+		${AUTO_MANUAL_TESTS:%=%.manual_diff} \
+		test_formatted.diff \
+		test_get.diff
+
+test_forbidden.email:	$S/get_forbidden_files.email
+test_forbidden.local:	$S/get_forbidden_files.local
 
 diff_forbidden:	$S/get_forbidden_files.diff
 
@@ -68,34 +97,35 @@ extract_replies:	mbox
 # cvs/rcs in this text.
 #
 %.diff:		%.reply ./replies
-	@echo $(<F); e=':.*\$$'; \
-	 email_diff $< ./replies/$(<F) \
-	 "From " "Received:" "Return-Path:" \
-	 "Date:" "From:" "To:" "Reply-To:" "Cc:" \
-	 "Status:" "Message-ID:" \
-	 "Subject:.*unchecked-error" \
-	 "X-HPCM-Date:" "X-HPCM-Reply-To:" \
-	 "X-HPCM-Signature:" \
-	 -body \
-	 ">From " \
-	 "*Date:" "*From:" "*To:" "*Reply-To:" \
-	 "*Cc:" "*Received:" "*Return-Path:" \
-	 "*Status:" "*Message-ID:" \
-	 "X-HPCM-Date:" "X-HPCM-Reply-To:" \
-	 "X-HPCM-Signature:" \
-	 '[ \t]*\$$Author'$$e \
-	 '[ \t]*\$$Date'$$e \
-	 '[ \t]*\$$RCSfile'$$e \
-	 '[ \t]*\$$Revision'$$e \
-	 '#.*\$$Author'$$e \
-	 '#.*\$$Date'$$e \
-	 '#.*\$$RCSfile'$$e \
-	 '#.*\$$Revision'$$e \
-	 '//.*\$$Author'$$e \
-	 '//.*\$$Date'$$e \
-	 '//.*\$$RCSfile'$$e \
-	 '//.*\$$Revision'$$e \
-	 'a response from .*@'
+	-@echo $(<F); e=':.*\$$'; \
+	  email_diff $< ./replies/$(<F) \
+	  "From " "Received:" "Return-Path:" \
+	  "Date:" "From:" "To:" "Reply-To:" "Cc:" \
+	  "Status:" "Message-ID:" \
+	  "Subject:.*unchecked-error" \
+	  "X-HPCM-Date:" "X-HPCM-Reply-To:" \
+	  "X-HPCM-Signature:" \
+	  -body \
+	  ">From " \
+	  "*Date:" "*From:" "*To:" "*Reply-To:" \
+	  "*Cc:" "*Received:" "*Return-Path:" \
+	  "*Status:" "*Message-ID:" \
+	  "X-HPCM-Date:" "X-HPCM-Reply-To:" \
+	  "X-HPCM-Signature:" \
+	  "X-HPCM-Signature_OK:" \
+	  '[ \t]*\$$Author'$$e \
+	  '[ \t]*\$$Date'$$e \
+	  '[ \t]*\$$RCSfile'$$e \
+	  '[ \t]*\$$Revision'$$e \
+	  '#.*\$$Author'$$e \
+	  '#.*\$$Date'$$e \
+	  '#.*\$$RCSfile'$$e \
+	  '#.*\$$Revision'$$e \
+	  '//.*\$$Author'$$e \
+	  '//.*\$$Date'$$e \
+	  '//.*\$$RCSfile'$$e \
+	  '//.*\$$Revision'$$e \
+	  'a response from .*@'
 
 COUNT_CORRECT_FILES = \
 	count_correct.c \
@@ -207,8 +237,11 @@ test_system_error.local:	\
 test_system_error.email:	\
 	${SYSTEM_ERROR_FILES:%=$S/%.email}
 
-test_system_error.diff:	\
-	${SYSTEM_ERROR_FILES:%=$S/replies/%.diff}
+test_system_error.auto_diff:	\
+	${SYSTEM_ERROR_FILES:%=$S/auto_replies/%.diff}
+
+test_system_error.manual_diff:	\
+	${SYSTEM_ERROR_FILES:%=$S/manual_replies/%.diff}
 
 test_get.local:	\
 	${GET_FILES:%=$S/%.local}
@@ -225,8 +258,11 @@ test_query.local:	\
 test_query.email:	\
 	${QUERY_FILES:%=$S/%.email}
 
-test_query.diff:	\
-	${QUERY_FILES:%=$S/replies/%.diff}
+test_query.auto_diff:	\
+	${QUERY_FILES:%=$S/auto_replies/%.diff}
+
+test_query.manual_diff:	\
+	${QUERY_FILES:%=$S/manual_replies/%.diff}
 
 test_problem_name.local:	\
 	${PROBLEM_NAME_FILES:%=$S/%.local}
