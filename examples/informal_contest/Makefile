@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2007/01/02 14:52:01 $
+#   $Date: 2007/01/23 02:43:30 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.51 $
+#   $Revision: 1.52 $
 #
 # To make an informal contest named `foo':
 #
@@ -281,14 +281,7 @@ help/this_contest: print_files_do_nothing
 
 test:	test_informal
 
-.SUFFIXES: .mail .send
-
-.mail.send:
-	hpcm_sendmail <$*.mail
-	sleep 2
-
-TEST_PREREQUISITES= ./mail
-include ${HPCM}/examples/test_submissions/Makefile.mk
+-include make_test
 
 # Cleanup Rules:
 
@@ -297,7 +290,7 @@ dangerous_test_clean:
 
 dangerous_clean:
 	-makescoreboard stop
-	rm -rf mail rerun help flag log \
+	rm -rf mail rerun help flag log make_test \
 	       secure .ssh web* \
 	       info* solutions* \
 	       TODO replies mbox *.ps *.pdf \
