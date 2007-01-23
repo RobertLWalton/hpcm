@@ -2,7 +2,7 @@
 #
 # File:		Makefile.mk
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Jan 23 07:05:58 EST 2007
+# Date:		Tue Jan 23 07:35:11 EST 2007
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2007/01/23 12:06:29 $
+#   $Date: 2007/01/23 12:35:28 $
 #   $RCSfile: Makefile.mk,v $
-#   $Revision: 1.40 $
+#   $Revision: 1.41 $
 
 BASIC_TESTS = \
 	test_count_correct \
@@ -67,12 +67,12 @@ manual_diff_informal:	\
 		manual_diff_local \
 		test_get.diff
 
-%.email:	%.mail ./Contest_Address ./mail
+%.email:	%.mail ./Contest_Address
 	( echo To: `cat Contest_Address`; cat $*.mail) \
 	    | ${SENDMAIL}
 	sleep 2
 
-%.local:	%.mail ./mail
+%.local:	%.mail
 	hpcm_sendmail <$*.mail
 	sleep 2
 
