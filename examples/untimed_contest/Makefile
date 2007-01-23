@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Jan 22 07:05:13 EST 2007
+# Date:		Mon Jan 22 22:29:00 EST 2007
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2007/01/23 03:13:08 $
+#   $Date: 2007/01/23 03:34:49 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.74 $
+#   $Revision: 1.76 $
 #
 # To make an untimed contest named `foo':
 #
@@ -89,12 +89,9 @@
 #     account.
 #
 # 9.  You can also test the contest by executing
-#     `make test_email' if the contest is accessible
-#     to contestants by email, and `make test_local'
-#     if the contest is accessible by local accounts.
-#     Then read each email reply and compare its
-#     X-HPCM-Test-Subject field with the results in the
-#     body of the reply.
+#     `make test'.  Then read each email reply and
+#     compare its X-HPCM-Test-Subject field with the
+#     results in the body of the reply.
 #
 #     Note that several of the test submissions time
 #     out, and for those submissions the autojudge will
@@ -223,21 +220,6 @@
 #     the contestants.  See `hpcm_email_passwords -doc'
 #     and `hpcm_print_passwords -doc'.
 
-# Parameters:
-#
-# The location of the hpcm directory.
-#
-HPCM=${HOME}/hpcm
-#
-# Locations of test data.
-#
-S=${HPCM}/examples/test_submissions
-R=${HPCM}/examples/test_submissions/email_replies
-#
-# Sendmail program with arguments:
-#
-SENDMAIL = /usr/sbin/sendmail -oi -t
-
 # Kill all implicit rules:
 #
 .SUFFIXES:
@@ -292,7 +274,7 @@ help/this_contest: print_files_do_nothing
 
 # Test Rules:
 #
-include ${HPCM}/examples/test_submissions/Makefile.mk
+-include make_test
 
 # Cleanup Rules:
 
@@ -301,7 +283,7 @@ dangerous_test_clean:
 
 dangerous_clean:
 	-makescoreboard stop
-	rm -rf mail rerun help flag log \
+	rm -rf mail rerun help flag log make_test \
 	       secure .ssh web* \
 	       info* solutions* \
 	       TODO replies mbox *.ps *.pdf \
