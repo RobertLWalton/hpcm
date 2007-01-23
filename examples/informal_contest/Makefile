@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Jan 22 22:15:38 EST 2007
+# Date:		Tue Jan 23 05:59:43 EST 2007
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2007/01/23 03:15:47 $
+#   $Date: 2007/01/23 10:59:56 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.54 $
+#   $Revision: 1.55 $
 #
 # To make an informal contest named `foo':
 #
@@ -204,17 +204,6 @@
 #     out to the contestants.  See `hpcm_email_passwords
 #     -doc' and `hpcm_print_passwords -doc'.
 
-# Parameters:
-#
-# The location of the hpcm directory.
-#
-HPCM=${HOME}/hpcm
-#
-# Locations of test data.
-#
-S=${HPCM}/examples/test_submissions
-R=${HPCM}/examples/test_submissions/informal_replies
-
 # Kill all implicit rules:
 #
 .SUFFIXES:
