@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Jan  2 09:49:32 EST 2007
+# Date:		Mon Jan 22 21:44:21 EST 2007
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2007/01/23 02:43:30 $
+#   $Date: 2007/01/23 02:44:38 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.52 $
+#   $Revision: 1.53 $
 #
 # To make an informal contest named `foo':
 #
