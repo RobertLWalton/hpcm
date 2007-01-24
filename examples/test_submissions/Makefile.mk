@@ -2,7 +2,7 @@
 #
 # File:		Makefile.mk
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Jan 23 07:35:11 EST 2007
+# Date:		Wed Jan 24 01:48:41 EST 2007
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,48 +11,48 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2007/01/23 12:35:28 $
+#   $Date: 2007/01/24 06:58:58 $
 #   $RCSfile: Makefile.mk,v $
-#   $Revision: 1.41 $
+#   $Revision: 1.42 $
 
-BASIC_TESTS = \
+COMMON_TESTS = \
 	test_count_correct \
 	test_javaio_correct \
-	test_count_incorrect \
 	test_problem_name
 
 AUTO_MANUAL_TESTS = \
+	test_count_incorrect \
 	test_system_error \
 	test_query
 
-test_email:	${BASIC_TESTS:%=%.email} \
+test_email:	${COMMON_TESTS:%=%.email} \
 		${AUTO_MANUAL_TESTS:%=%.email} \
 		test_unformatted.email \
 		test_get.email
 
 auto_diff_email:	\
-		${BASIC_TESTS:%=%.diff} \
+		${COMMON_TESTS:%=%.diff} \
 		${AUTO_MANUAL_TESTS:%=%.auto_diff} \
 		test_unformatted.diff \
 		test_get.diff
 
 manual_diff_email:	\
-		${BASIC_TESTS:%=%.diff} \
+		${COMMON_TESTS:%=%.diff} \
 		${AUTO_MANUAL_TESTS:%=%.manual_diff} \
 		test_unformatted.diff \
 		test_get.diff
 
-test_local:	${BASIC_TESTS:%=%.local} \
+test_local:	${COMMON_TESTS:%=%.local} \
 		${AUTO_MANUAL_TESTS:%=%.local} \
 		test_formatted.local
 
 auto_diff_local:	\
-		${BASIC_TESTS:%=%.diff} \
+		${COMMON_TESTS:%=%.diff} \
 		${AUTO_MANUAL_TESTS:%=%.auto_diff} \
 		test_formatted.diff
 
 manual_diff_local:	\
-		${BASIC_TESTS:%=%.diff} \
+		${COMMON_TESTS:%=%.diff} \
 		${AUTO_MANUAL_TESTS:%=%.manual_diff} \
 		test_formatted.diff
 
@@ -202,8 +202,11 @@ test_count_incorrect.local:	\
 test_count_incorrect.email:	\
 	${COUNT_INCORRECT_FILES:%=$S/%.email}
 
-test_count_incorrect.diff:	\
-	${COUNT_INCORRECT_FILES:%=$S/replies/%.diff}
+test_count_incorrect.auto_diff:	\
+    ${COUNT_INCORRECT_FILES:%=$S/auto_replies/%.diff}
+
+test_count_incorrect.manual_diff:	\
+    ${COUNT_INCORRECT_FILES:%=$S/manual_replies/%.diff}
 
 test_formatted.local:	\
 	${FORMATTED_FILES:%=$S/%.local}
