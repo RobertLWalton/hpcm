@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Jan 24 02:13:07 EST 2007
+# Date:		Wed Jan 24 02:55:56 EST 2007
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2007/01/24 07:49:38 $
+#   $Date: 2007/01/24 07:58:39 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.7 $
+#   $Revision: 1.8 $
 
 # This Makefile is to be used to test HPCM from a
 # contestant account.  Instructions are:
@@ -109,6 +109,6 @@ all:
 	      "documentation."
 
 .SUFFIXES:
-
 S=.
+SENDMAIL = /usr/sbin/sendmail -oi -t
 include Makefile.mk
