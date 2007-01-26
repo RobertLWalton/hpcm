@@ -6,7 +6,7 @@
 #
 # File:		makecontest
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Jan 22 21:47:26 EST 2007
+# Date:		Fri Jan 26 09:50:24 EST 2007
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2007/01/23 03:12:45 $
+#   $Date: 2007/01/26 18:07:15 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.196 $
+#   $Revision: 1.197 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -192,227 +192,61 @@ makecontest option ... index_specification ...
     of the program if this file is not empty.  Informa-
     tion items in the ./TODO file are call `TODO's.
 
-    The -contest program option makes the contest direc-
-    tory and the symbolic link `./contest' to that di-
-    rectory.  This is needed contests with local contes-
-    tant accounts, but not for contests with only email
-    accounts.  If `./contest' does not exist, and name
-    of the judging directory is ~/XXX/judging_YYY_PPP
-    where PPP is a password, the directory named
-    ~/XXX/contest_YYY is made and used as the contest
-    directory.  That is, the judging directory name is
-    modified by replacing `judging_' by `contest_' at
-    its beginning, and removing from the end any `_PPP'.
-    If the judging directory name is ~/XXX/judging_YYY
-    and there is no `_PPP', the contest directory name
-    ~/XXX/contest_YYY is still used (YYY must not con-
-    tain a `_').  It is an error if `./contest' does not
-    exist but the contest directory already exists.
+Index Specifications
+----- --------------
 
-    If `./contest' is made, or if anything is made in
-    `./contest', a+x is set for that directory and its
-    parent.
+    Most of the options cause particular directories or
+    files to be made.  In particular the following
+    options cause the given directories and their
+    contents to be made:
 
-    The -bin program option makes the symbolic link
-    ./contest/bin to `\$hpcm_directory/contestant/bin',
-    where the `hpcm_directory' global variable defaults
-    to `~/hpcm'.  If this cannot be done, it is not an
-    error, but a TODO to fix the situation is written.
-
-    The -home program option makes the symbolic link
-    ./contest/home to ~PROTO/home, where PROTO is the
-    name of the prototype account that is set up by
-    the `SETUP_PROTOTYPE' program.  PROTO is defined
-    as the value of the global variable `hpcm_prototype_
-    account' if that variable is defined.  Otherwise
-    PROTO is the unique account name which has the form
-    `*\[_-\]proto' such that the directory ~PROTO/home
-    is readable and executable and the files ~PROTO/
-    home/setup.tar, ~PROTO/home/setup.ls, and ~PROTO/
-    home/empty.ls exist and are readable, if such a
-    unique account name exists.  If the prototype
-    account cannot be found, it is not an error, but
-    a TODO to fix the situation is written.
+    	-help		./contest/help
+	-demos		./contest/demos
+	-problems	./contest/problems
+	-info		./info/help
+			./info/demos
+			./info/problems
+	-solutions	./solutions
 
-    The index files are read and used to generate a list
-    of items to be included in the ./info and ./contest
+    The index specifications determine the contents of
+    these directories.  Each index specification names
+    an input index file that is read and used to gener-
+    ate a list of items to be included in the above
     directories.  Each item is a file or directory, and
-    corresponds to an item entry in an index file.  The
-    item entry has the form:
+    corresponds to an item entry in an input index file.
+    The item entry has the form:
 
     	*** item_name item_option ...
 	    Text describing the item.
 
-    Items have names which, after optional substitutions
-    described below, must begin with `help/', `demos/',
-    or `problems/', depending the subdirectory of ./info
-    or ./contest into which the item is to be included.
-    Only the three subdirectories just mentioned are
-    allowed.  The item entry of each included item is
-    copied into an output index file, which is the
-    `help/index' file if the item name begins with
-    `help/', the `help/problems' file if the item name
-    begins with `problems/', or the `help/demos' file
-    if the item name begins with `demos/'.
-
-    When an item entry is copied to an output index,
-    the `***' in the first line of the entry is replace
-    by 3 space characters, the item name is replaced by
-    the name after substitutions, and the item options
-    are removed.
-
-    The input index files also contain header entries
-    that precede item entries.  When an item entry is
-    copied into an output index, the header entry im-
-    mediately preceding it is copied into the same out-
-    put index.  More specifically, a header entry is
-    copied if it is separated from an item entry being
-    copied only by other item entries.
-
-    Lastly, any line beginning with `#' in an input
-    index file is a comment line that is completely
-    ignored, as if it did not exist.
-
-    When an item is included in the ./info directory,
-    a symbolic link is made to the item if it is a
-    file.  If it is a directory, a new directory
-    is created containing a symbolic link to any problem
-    source and description files in the directory.  The
-    exact definitions of problem source and description
-    files are given below.  Problem description file
-    links are included within the ./info directory even
-    if no -description program option is given.
-
-    When an item is included in the ./contest directory
-    (i.e., in ./contest/demos, ./contest/problems, or
-    ./contest/help) files are copied and new directories
-    are made.  Access is granted using a+r and a+rx file
-    and directory modes, except for
+    The index specification contains substitutions that
+    modify the item_name and the item_options.  We will
+    describe how substitutions are done below, after
+    describing everything else about index entries and
+    index files.
     
-    		./contest/problems 
-    		./contest/help/problems
-
-    which are left with the mode determined by the
-    umask (presumably o-rx or og-rx).  The `startcon-
-    test' program sets the mode of these to a+rx.  The
-    directory items copied are determined by the
-    problem_source_files, problem_description_files,
-    and problem_excluded_files global variables and the
-    `all' option in the index.  See below for details.
-
-    If we consider the directory pairs:
-
-    	./info/demos		./contest/demos
-    	./info/problems		./contest/problems
-    	./info/help		./contest/help
-
-    then if both directories of a pair are made, both
-    are identical after symbolic links are followed,
-    except that if there is no -description option,
-    problem description files are generally copied into
-    ./info subdirectories but not into ./contest subdir-
-    ectories.  But if the -description option is given,
-    the UNIX `diff -r' command should report the two
-    directories in each of the above pairs to be
-    identical.
+    After substitutions have been performed, the item_
+    name must begin with `help/', `demos/', or
+    `problems/', and this determines which subdirectory
+    of ./info or ./contest is to contain the item.
+    Only the three subdirectories just mentioned are
+    allowed.
 
-    Directory items may also be included in the
-    ./solutions directory.  In this directory the item
-    name after substitutions is stripped of any direc-
-    tory prefix; e.g., the name `demos/count' becomes
-    `count'.  The inclusion here is by symbolic link
-    from directory to directory: e.g. `./solutions
-    /count' is symbolically linked to the item direc-
-    tory.  This means that all demos and problems in the
-    contest must have unique single component names
-    (except for items with the `nosolution' item option:
-    see below).
-
-    If this program is building a ./info directory, it
-    actually builds a ./info+ directory instead.  Then
-    it does a `diff -r ./info ./info+', and checks the
-    output to see if there is any difference between
-    ./info and ./info+ except for the first lines of
-    the help indices (help/demos, help/problems, and
-    help/index).  If there are no differences, the
-    ./info+ directory is removed and nothing else is
-    done.  If the two directories have other differ-
-    ences, the following renaming occurs:
-
-    		./info-	    becomes    ./info--
-    		./info	    becomes    ./info-
-    		./info+	    becomes    ./info
-
-    A similar stratagem is followed for ./solutions,
-    ./contest/problems, ./contest/demos, and .contest/
-    help.
-
-    The item entries and header entries are in input
-    index files, each of which is referenced in a sep-
-    arate index specification.  The format of an index
-    specification is given above: it is a sequence of
-    arguments, all but the last of which end in either a
-    `:' or a `,'.  The `:' indicates the next argument
-    is an index directory name (see below) and the `,'
-    indicates the next argument is either a name sub-
-    stitution or an option substitution (also see
-    below).
-
-    Each input index file is associated with an index
-    directory.  An unedited version of the index file is
-    normally found in its index directory.  Sometimes an
-    edited copy of this index file is placed in the
-    current judging directory, with the editing consist-
-    ing of changes to the item entry options described
-    below which control what is included in the new
-    info, contest, and solutions directories.  Often,
-    however, an edited copy of the index file need not
-    be made, because item entry option mapping, describ-
-    ed below, is sufficient.
-
-    An index directory may optionally be given in a
-    specification by ending the first argument of the
-    specification, which names the index input file,
-    with a `:', and giving the name of the index direc-
-    tory as the second argument in the specification
-    (with an optional ending `,').  If no index direc-
-    tory is given in an index specification, the direc-
-    tory that contains the index file is used as the
-    index directory.
-
-    The index file consists of two types of entries:
-    header entries and item entries.  Item entries begin
-    with a line that starts with `***', followed by
-    whitespace, and optionally preceded by whitespace.
-    Header entries begin with a line that starts with
-    neither whitespace nor `***' followed by whitespace.
-    A header entry stops at the next line that begins an
-    item entry, or at the end of file.  An item entry
-    stops at the next line that begins a header or item
-    entry, or at the end of file.
-
-    As noted above, the first line of an item entry has
-    the form:
-
-    	*** item_name item_option ...
-
-    The item name is the name of the item file or direc-
-    tory relative to the index directory (the directory
-    normally containing the unedited index file).  The
-    possible item options are:
+    After substitution, the possible item options are:
 
       include	  Include item in the ./info and
       		  ./contest directories, and in the
 		  ./solutions directory if the
 		  `nosolution' item option is absent
-		  and the item name after substitutions
-		  begins with `demos/' or `problems/'.
+		  (after substitutions) and the item
+		  name (after substitutions) begins with
+		  `demos/' or `problems/'.
 
       nosolution  Do NOT include the item in the 
                   ./solutions directory, even if the
 		  item name after substitutions begins
 		  with `demos/' or `problems/'.
-
+
       all	  This changes the definition of the
       		  global variable problem_source_files
 		  to {.*}, which means that all files
@@ -425,13 +259,117 @@ makecontest option ... index_specification ...
       		  passed to the PROBLEM.rc file: see
 		  below for details.
 
+  Output Indices
+  ------ -------
+
+    Each input index file is copied into an output index
+    that is determined by the item name after substitu-
+    tions.  The output indeces are the following files:
+
+    	help/index	    Item name is help/...
+	help/demos	    Item name is demos/...
+	help/problems	    Item name is problems/...
+
+    If there are several index specifications and hence
+    several input index files, then several input index
+    files may be copied into th same output index.
+
+    An item entry is copied to an output index if it is
+    included (has the `include' option after substitu-
+    tion).  When the entry is copied, the `***' in the
+    first line of the entry is replace by 3 space char-
+    acters, the item name is replaced by the name after
+    substitutions, and the item options are removed.
+
+    In addition to item entries, an input index file
+    contains header entries.  Header entries begin with
+    a line that starts with neither whitespace nor `***'
+    followed by whitespace.  A header entry stops at the
+    next line that begins an item entry, or at the end
+    of file.  An item entry stops at the next line that
+    begins a header or item entry, or at the end of
+    file.
+
+    A header entry is copied to an output index if it
+    is followed by an included item entry and if no
+    other header entries are between it and that next
+    included item entry.
+
+    Lastly, any line beginning with `#' in an input
+    index file is a comment line that is completely
+    ignored, as if it did not exist.
+
+  Index Specification Syntax
+  ----- ------------- ------
+
+    An index specification determined one input index
+    file, an associated input index directory, and a set
+    of substitution patterns.  The is a sequence of
+    arguments to the `makecontest' program.  All these
+    arguments but the last end in either a `:' or a `,'.
+    The `:' indicates the next argument is an index
+    directory name (see below) and the `,' indicates the
+    next argument is either a name substitution pattern
+    or an option substitution pattern (also see below).
+
+    Each input index file is associated with an index
+    directory.  An unedited version of the index file is
+    normally found in its index directory.  Sometimes an
+    edited copy of this index file is placed in the
+    current judging directory, with the editing consist-
+    ing of changes to the item entry options that con-
+    trol which items are included.  However, an edited
+    copy of the index file need not be made, because
+    item entry option mapping, described below, is often
+    sufficient.
+
+    An index directory may optionally be given in a
+    specification by ending the first argument of the
+    specification, which names the input index file,
+    with a `:', and giving the name of the index direc-
+    tory as the second argument in the specification
+    (with an optional ending `,').  If no index direc-
+    tory is given in an index specification, the direc-
+    tory that contains the index file is used as the
+    index directory.
+
+  Item Name Substitution Patterns
+  ---- ---- ------------ --------
+
+    Item names undergo substitutions sepcified by index
+    specification arguments of the form `nameXs=nameXt'.
+    If the item name begins with the nameXs string, that
+    string will be replaced by nameXt.  If there are
+    several possible substitutions, the longest nameXs
+    will be selected, and if there are several longest,
+    the first will be selected.
+
+    Thus, for example, given an index specification of
+    the form
+
+    	my_index: foo/bar, public/=problems/, \\
+	          public/shelf/=problems/old/
+
+    then
+
+      public/foo2	   becomes    problems/foo2
+      public/shelf/foo1    becomes    problems/old/foo1
+
+    Substitutions are not recursive: the result of a
+    substitution is NOT subject to further substitu-
+    tions.
+
+  Option Substitution Patterns
+  ------ ------------ --------
+
     The `include' option is rarely encoded directly in
     the index files.  Instead options categorizing the
     entries are made up by the author of an index file
     and mapped by the index specification to the
     `include' option.  Mapping is done by option substi-
     tution that occurs before the options are finally
-    processed.  A substitution of the form:
+    processed.  An option substitution pattern of the
+    form:
 
     	option1s:'option11t option12t ...'
 
@@ -446,99 +384,44 @@ makecontest option ... index_specification ...
     files, and not on options that are the result of
     substitution.  After substitutions are done, unknown
     options are ignored.
-
-    In mapping item options, the item_name is also
-    mapped like an option and the result treated as
-    options.  This permits substitutions like
+
+    In mapping item options, the unsubstituted item_name
+    is also mapped like an option and the result treated
+    as options.  This permits substitutions like
 
     	item_name:include
 
     to include an item by name.  Thus an item_name is
     used twice, once as the name of the item  (more on
     this below), and once as an item_option.
-
-    If an item has the `include' option after option
-    substitutions, the item entry is included in an out-
-    put index within the ./info directory.   The indices
-    are
-
-    	   index		for items named
-
-      ./info/help/index	    ./info/help/...
-      ./info/help/demos	    ./info/demos/...
-      ./info/help/problems  ./info/problems/...
-
-    There is a similar inclusion for the ./contest dir-
-    ectory.
-
-    When an item entry is included in an output index,
-    the header entry preceding it is included if it is
-    separated from the item entry only by item entries
-    that were not included in that output index.  Thus
-    a header entry is associated with the consecutive
-    item entries that follow it, and the header entry is
-    included in an output index if and only if any of
-    these item entries is included.  The header entry
-    may end up being included in several output indices
-    if the item entries following it are included in
-    several different output indices.
 
-    The program options -demos, -problems, and -help can
-    be used by omission to prevent the ./contest/demos,
-    ./contest/problems, or ./contest/help directories
-    from being created, but program options never affect
-    the content of any output indices that are created.
+  PROBLEM.rc Global Variables
+  ---------- ------ ---------
 
-    The name of an item is a modification of the name
-    of the item as it appears in the input index file
-    item entry.  The modification results from substitu-
-    tions specified in the index specification.  Spec-
-    ifically, a substitution of the form `nameXs=nameXt'
-    may be applied to the item name.  If the item name
-    begins with the nameXs string, that string will be
-    replaced by nameXt.  If there are several possible
-    substitutions, the longest nameXs will be selected,
-    and if there are several longest, the first will be
-    selected.
-
-    Thus, for example, given an index specification of
-    the form
-
-    	my_index: foo/bar, public/=problems/, \\
-	          public/shelf/=problems/old/
-
-    then
-
-      public/foo2	   becomes    problems/foo2
-      public/shelf/foo1    becomes    problems/old/foo1
-
-    with the changed names being used as the names of
-    the items within the ./info and ./contest
-    directories and as the names of the item in any
-    output index files.
-
-    Substitutions are not recursive: the result of a
-    substitution is NOT subject to further substitu-
-    tions.
-
-    When an index item names a problem, demo, or help
-    directory, it is necessary to determine the problem,
-    demo, or help source and description files.  In this
-    case the directory is inspected for a file named
-    `PROBLEM.rc', where `PROBLEM' is the last component
-    of the directory name.  If that file exists it is
-    sourced into a local procedure (so it will not
-    define global variables other than those needed by
-    makecontest).  The PROBLEM.rc file may reference the
-    variables
+    When an index item names a directory, it is neces-
+    sary to determine which files in the directory are
+    source and description files.  In this case the di-
+    rectory is inspected for a file named `PROBLEM.rc',
+    where `PROBLEM' is the last component of the direc-
+    tory name.  If that file exists it is sourced into a
+    local procedure (so it will not define global vari-
+    ables other than those needed by makecontest).  The
+    PROBLEM.rc file may reference the variables
 
     	PROBLEM		Name of problem.
 	EXTENSION	Equals \"UNDEFINED\"
 	OPTIONS		The options in the index item,
 			as a TCL list, after expansion.
 
-   The PROBLEM.rc file may define the following vari-
-   ables:
+    The name `PROBLEM.rc' is something of a misnomer for
+    help files.  In this case `PROBLEM' is merely the
+    last component of the index item directory name.  It
+    is very rare for a help file directory to need a .rc
+    file: usually such directories have the `all' option
+    and hold UNIX Email Tools programs.
+
+    The PROBLEM.rc file may define the following vari-
+    ables:
 
 	problem_description_files
    	problem_source_files
@@ -582,20 +465,20 @@ makecontest option ... index_specification ...
     would be in both the description and file lists, it
     is deleted from the source list, so it is in only
     the description file list.
- 
+
     The difference between source and description files
     is that source files are always copied into
     ./contest/{problems,demos,help}, whereas description
     files are copied only if the -description option is
     given to makecontest.
     
-    The `all' option in an index item changes the
-    problem_source_files value to {.*} and the problem_
-    description_files value to {}.  This effectively
-    eliminates the effect these two global variables and
-    includes all files not excluded by the problem_
-    excluded_files global variable, regardless of the
-    setting of the -description option.
+    The `all' post-substituion option in an index item
+    changes the problem_source_files value for the index
+    item to {.*} and the problem_description_files value
+    to {}.  This eliminates the effect of these two
+    global variables and includes all files not excluded
+    by the problem_excluded_files global variable, re-
+    gardless of the setting of the -description option.
 
     The print files are a list of all the files to be
     printed and given to contestants.  This is a list of
@@ -603,12 +486,6 @@ makecontest option ... index_specification ...
     is the value of the problem_print_files global vari-
     able if that is defined, and is otherwise the sorted
     list of description files.
-
-    The name `PROBLEM.rc' is something of a misnomer for
-    help files.  In this case `PROBLEM' is merely the
-    last component of the index item directory name.  It
-    is very rare for a help file directory to need a .rc
-    file.
 
     By convention, a problem or demo source file that
     has the extension `.ISF' is intended as the initial
@@ -621,16 +498,164 @@ makecontest option ... index_specification ...
     named `foo.c' that will be submitted (by the con-
     testant executing `make submit').  `.ISF' stands for
     `initial submittable file'.
-
-    This current program does nothing special with files
-    having the `.ISF' extension.  It is the `hpcm_get'
-    and `hpcm_extract' programs that automatically copy
-    a file with a name such as `xxx.ISF' into a writable
-    file named `xxx'.
 
-    We proceed to describe the program options not di-
-    rectly involved with making ./info, ./contest/help,
-    ./contest/problems, or ./contest/demos.
+    Makecontest does nothing special with files having
+    the `.ISF' extension.  It is the `hpcm_get' and
+    `hpcm_extract' programs that automatically copy a
+    file with a name such as `xxx.ISF' into a writable
+    file named `xxx'.
+
+The -contest Option
+--- -------- ------
+
+    The -contest program option makes the contest direc-
+    tory and the symbolic link `./contest' to that di-
+    rectory.  This is needed contests with local contes-
+    tant accounts, but not for contests with only email
+    accounts.  If `./contest' does not exist, and name
+    of the judging directory is ~/XXX/judging_YYY_PPP
+    where PPP is a password, the directory named
+    ~/XXX/contest_YYY is made and used as the contest
+    directory.  That is, the judging directory name is
+    modified by replacing `judging_' by `contest_' at
+    its beginning, and removing from the end any `_PPP'.
+    If the judging directory name is ~/XXX/judging_YYY
+    and there is no `_PPP', the contest directory name
+    ~/XXX/contest_YYY is still used (YYY must not con-
+    tain a `_').  It is an error if `./contest' does not
+    exist but the contest directory already exists.
+
+    If `./contest' is made, or if anything is made in
+    `./contest', a+x is set for that directory and its
+    parent.
+
+The -bin Option
+--- ---- ------
+
+    The -bin program option makes the symbolic link
+    ./contest/bin to `\$hpcm_directory/contestant/bin',
+    where the `hpcm_directory' global variable defaults
+    to `~/hpcm'.  If this cannot be done, it is not an
+    error, but a TODO to fix the situation is written.
+
+The -home Option
+--- ----- ------
+
+    The -home program option makes the symbolic link
+    ./contest/home to ~PROTO/home, where PROTO is the
+    name of the prototype account that is set up by
+    the `SETUP_PROTOTYPE' program.  PROTO is defined
+    as the value of the global variable `hpcm_prototype_
+    account' if that variable is defined.  Otherwise
+    PROTO is the unique account name which has the form
+    `*\[_-\]proto' such that the directory ~PROTO/home
+    is readable and executable and the files ~PROTO/
+    home/setup.tar, ~PROTO/home/setup.ls, and ~PROTO/
+    home/empty.ls exist and are readable, if such a
+    unique account name exists.  If the prototype
+    account cannot be found, it is not an error, but
+    a TODO to fix the situation is written.
+
+The -info Option
+--- ----- ------
+
+    The -info option creates the ./info directory and
+    is subdirectories, ./info/help, ./info/demos, and
+    ./info/problems.  The specific contents of these
+    subdirectories is determined by the index specifica-
+    tions: see above.
+
+    When an item is included in the ./info directory,
+    a symbolic link is made to the item if it is a
+    file.  If it is a directory, a new directory
+    is created containing a symbolic link to any problem
+    source and description files in the directory.  The
+    exact definitions of problem source and description
+    files are given below.  Problem description file
+    links are included within the ./info directory even
+    if no -description program option is given.
+
+The -help, -demos, and -problems Options
+--- ------ ------- --- --------- -------
+
+    These options create ./contest/help, ./contest/
+    demos, and ./contest/problems, respectively.  The
+    specific contents of these directories is determined
+    by the index specifications: see above.
+
+    When an index item is included in one of these
+    directories, files are copied and new directories
+    are made.  Access is granted using a+r and a+rx file
+    and directory modes, except for
+    
+    		./contest/problems 
+    		./contest/help/problems
+
+    which are left with the mode determined by the
+    umask (presumably o-rx or og-rx).  The `startcon-
+    test' program sets the mode of these to a+rx.  The
+    directory items copied are determined by the
+    problem_source_files, problem_description_files,
+    and problem_excluded_files global variables and the
+    `all' option in the index.  See below for details.
+
+The -solutions Option
+--- ---------- ------
+
+    The -solutions option creates the ./solutions direc-
+    tory.  This contains all items that name directories
+    (and not files), have substituted item names begin-
+    ning with demos/ or problems/, and do NOT have the
+    `nosolutions' option after option substitution.  For
+    each such item a symbolic link is created in the
+    ./solutions directory to the item directory, and
+    this link is given as its name the name of the last
+    component of the substituted item name.  e.g., the
+    name `demos/count' becomes `count'.  This means that
+    all demos and problems items in the contest must
+    have unique last components (except for items with
+    the `nosolution' item option).
+
+Notes on help, demos, and problems Subdirectories
+----- -- ----- ------ --- -------- --------------
+
+    If we consider the directory pairs:
+
+    	./info/demos		./contest/demos
+    	./info/problems		./contest/problems
+    	./info/help		./contest/help
+
+    then if both directories of a pair are made, both
+    are identical after symbolic links are followed,
+    except that if there is no -description option,
+    problem description files are generally copied into
+    ./info subdirectories but not into ./contest subdir-
+    ectories.  But if the -description option is given,
+    the UNIX `diff -r' command should report the two
+    directories in each of the above pairs to be
+    identical.
+
+    If this program is building a ./info directory, it
+    actually builds a ./info+ directory instead.  Then
+    it does a `diff -r ./info ./info+', and checks the
+    output to see if there is any difference between
+    ./info and ./info+ except for the first lines of
+    the help indices (help/demos, help/problems, and
+    help/index).  If there are no differences, the
+    ./info+ directory is removed and nothing else is
+    done.  If the two directories have other differ-
+    ences, the following renaming occurs:
+
+    		./info-	    becomes    ./info--
+    		./info	    becomes    ./info-
+    		./info+	    becomes    ./info
+
+    A similar stratagem is followed for ./solutions,
+    ./contest/problems, ./contest/demos, and .contest/
+    help.
+
+The -this_contest Option
+--- ------------- ------
 
     The -this_contest program option creates the follow-
     ing if they do not exist:
@@ -640,7 +665,7 @@ makecontest option ... index_specification ...
 	./help/this_contest		file
 	./help/this_contest_parameter	file
 	./help/this_contest_original	file
-
+
     Note these are in the judging directory proper, and
     not in the ./info or ./contest subdirectories.  The
     ./help/index file is an INPUT index file that con-
@@ -658,7 +683,7 @@ makecontest option ... index_specification ...
     with this header entry, all the help index files,
     `help/demos', `help/problems', and `help/index', are
     mentioned at the beginning of `help/index'.
-
+
     The ./help/this_contest* files are written to be a
     copy of the `this_contest' global variable.  The
     ./help/this_contest_original is written only if it
@@ -677,6 +702,9 @@ makecontest option ... index_specification ...
 
     If ./help/this_contest is written, a TODO is written
     indicating what has been done.
+
+The -mail Option
+--- ----- ------
 
     The -mail program option causes the ./mail directory
     to be made if it does not exist.  If it is made, its
@@ -685,6 +713,9 @@ makecontest option ... index_specification ...
     the JAVA interpreter turns relative file names into
     absolute file names, requiring `a+x' permissions
     in the path from the root to the object file.
+
+The -help2 Option
+--- ------ ------
 
     The -help2 program option creates the ./contest/
     help2 directory if it does not exist.  It is simply
@@ -696,6 +727,9 @@ makecontest option ... index_specification ...
     files put in ./contest/help1 will override those
     in ./contest/help that is linked to ./contest/help2.
 
+The -print_files Option
+--- ------------ ------
+
     The -print_files program option makes the ./help_
     print_files, ./problem_print_files, and ./demos_
     print_files files which each list files that can be
@@ -710,12 +744,18 @@ makecontest option ... index_specification ...
     print files lists will be nearly empty and incor-
     rect.
 
+The -solution_files Option
+--- --------------- ------
+
     The -solution_files program option makes the
     ./solution_files file that lists files in the
     solutions subdirectory that can be posted on the web
     to define solutions.  These files are defined by
     the problem_solution_files and problem_excluded_
     files global variables.
+
+The -secure Option
+--- ------- ------
 
     The -secure program option makes the following if
     they do not exist:
@@ -733,7 +773,7 @@ makecontest option ... index_specification ...
     address in the `autojudge_addresses' global varia-
     ble, if that variable is non-empty, and is otherwise
     made automatically and using a random number.
-
+
     The ./contest/secure/passwords file consists of
     lines of the form
 
@@ -748,7 +788,7 @@ makecontest option ... index_specification ...
     indicate a line is not associated with an account,
     and the password `none' may be used to indicate the
     password is to be assigned by other means.
-
+
     The -secure program option also causes any existing
     ./contest/secure/passwords file to be inspected for
     lines with empty passwords.  If any are found,
@@ -761,6 +801,9 @@ makecontest option ... index_specification ...
     an existing account, a TODO is written telling how
     to reset the account's password.
 
+The -ssh Option
+--- ---- ------
+
     The -ssh program option makes the file `./contest/
     extra_setup.tar' containing the file `.ssh/
     authorized_keys' which is the concatenation of all
@@ -770,7 +813,10 @@ makecontest option ... index_specification ...
     to fix the situation is written.  In order to make
     the tar file, `./.ssh' and `./ssh/authorized_keys'
     are made.
-
+
+The -procmailrc Option
+--- ----------- ------
+
     The -procmailrc program option updates the ~/
     .procmailrc file with one entry for each autojudge
     address.  If `./contest/secure/hpcm_sendmail.rc'
@@ -781,7 +827,7 @@ makecontest option ... index_specification ...
     Address file.  If there are no autojudge addresses,
     it is not an error, but a TODO to fix the situation
     is written.
-
+
     The -procmailrc program option also ensures that
     the entry
 
@@ -792,6 +838,9 @@ makecontest option ... index_specification ...
     incoming mail into the ~/hpcm_mbox file, just in
     case such a record is needed.  This entry must be
     before other entries that route mail.
+
+The -who_where Option
+--- ---------- ------
 
     The -who_where program option makes the ./contest/
     who_where file if it does not exist, or updates it
@@ -806,6 +855,9 @@ makecontest option ... index_specification ...
     Lines with account name `none' in the `passwords'
     file are not copied to the `who_where' file.
 
+The -trashable and -trashall Options
+--- ---------- --- --------- -------
+
     The -trashable program option creates the ./contest/
     trashable file from the ./contest/secure/passwords
     file.  The `trashable' file is just a list of the
@@ -830,6 +882,9 @@ makecontest option ... index_specification ...
     If the `trashable' file is changed to something non-
     empty, a TODO is written on how to set up the
     accounts.
+
+The -{contest,judging,scoreboard}_commands Options
+--- -------------------------------------- -------
 
     The -contest_commands option makes files from the
     list elements of the contest_commands global vari-
@@ -840,7 +895,16 @@ makecontest option ... index_specification ...
     list elements of the judging_commands global vari-
     able.  See that variable in hpcm/lib/hpcm_judging.rc
     for details.
-
+
+    The -scoreboard_commands program option appends the
+    value of the scoreboard_commands global variable to
+    the judging_commands global variable.  See documen-
+    tation on judging_commands in hpcm/judge/lib/hpcm_
+    judging.rc.  Implies -judging_commands.
+
+The -printer and -printer_map Options
+--- -------- --- ------------ -------
+
     The -printer program option makes the ./contest/
     printer file if that file does not exist or is
     writable.  This file is the name of the printer,
@@ -852,7 +916,7 @@ makecontest option ... index_specification ...
     does not exist, a TODO is written to suggest editing
     the .contest/printer file just made.  The file is
     not written if it would not be changed.
-
+
     The -printer_map program option is similar to the
     -printer option but makes a ./contest/printer_map
     file instead of a ./contest/printer file and always
@@ -870,6 +934,9 @@ makecontest option ... index_specification ...
     printer_jobs file is also made if it does not
     exist.
 
+The -javahelp and -stlhelp Options
+--- --------- --- -------- -------
+
     The -javahelp program option writes the ./contest/
     javahelp file, making the file equal to the value
     of the `javahelp' global variable.  The file is
@@ -877,10 +944,13 @@ makecontest option ... index_specification ...
     the `javahelp' variable value.  If the `javahelp'
     variable is not set, the file is not written but a
     TODO is written.
-
+
     The -stlhelp program option is just like -javahelp
     but writes the ./contest/stlhelp file from the
     `stlhelp' global variable.
+
+The -web Option
+--- ---- ------
 
     The -web program option invokes the makeweb program
     to make the ./web directory.  More specifically,
@@ -891,21 +961,21 @@ makecontest option ... index_specification ...
     and a TODO is written to move ./web to the appro-
     priate remote host.
 
+The -make_test Option
+--- ---------- ------
+
     The -make_test program option makes the ./make_test
     file to be a copy of the `make_test' global variable
     if the variable exists and does not already equal
     the contents of the file.
 
+The -startcontest and -scoreboard Options
+--- ------------- --- ----------- -------
+
     The -startcontest program option executes the
     `startcontest start' command unless this has already
     been done, or if it has been done but a background
     process waiting to start the contest has died.
-
-    The -scoreboard_commands program option appends the
-    value of the scoreboard_commands global variable to
-    the judging_commands global variable.  See documen-
-    tation on judging_commands in hpcm/judge/lib/hpcm_
-    judging.rc.  Implies -judging_commands.
 
     The -scoreboard program option executes the
     `makescoreboard start' command unless this has
@@ -915,6 +985,9 @@ makecontest option ... index_specification ...
     directory to the contest directory if the contest
     directory exists and does not have this file.
 
+Makecontest Execution Notes
+----------- --------- -----
+
     Although we have used the names `./info', `./mail',
     `./contest', and `./help' in this description, the
     actual directories are the info, mail, contest,
