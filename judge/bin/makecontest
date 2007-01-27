@@ -6,7 +6,7 @@
 #
 # File:		makecontest
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Jan 27 07:05:37 EST 2007
+# Date:		Sat Jan 27 09:05:13 EST 2007
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2007/01/27 12:19:24 $
+#   $Date: 2007/01/27 14:41:06 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.201 $
+#   $Revision: 1.202 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -271,11 +271,11 @@ Index Specifications
     tutions.  The output index files exist within the
     ./contest and ./info directories and have the fol-
     lowing names relative to these directories:
-
+
     	help/index	    Item name is help/...
 	help/demos	    Item name is demos/...
 	help/problems	    Item name is problems/...
-
+
     If both ./contest and ./info directories exist,
     there may be two copies of each output index file,
     one in ./contest and one in ./info.
@@ -382,7 +382,7 @@ Index Specifications
     is very rare for a help file directory to need a .rc
     file: usually such directories have the `all' op-
     tion.
-
+
     The PROBLEM.rc file may define the following vari-
     ables:
 
@@ -392,7 +392,7 @@ Index Specifications
    	problem_excluded_files
    	problem_make_files
 	problem_print_files
-
+
     The values of these variables are TCL lists of
     regular expressions.  Default values are provided
     for these variables by hpcm_judging.rc, and these
@@ -410,7 +410,7 @@ Index Specifications
 	    Undefined.
    	problem_print_files:
 	    Undefined.
-
+
     The problem_make_files variable, if set, gives in-
     structions for making files in the problem direc-
     tory.  There are executed by `makecontest' as per
@@ -432,21 +432,21 @@ Index Specifications
     lists, it is deleted from the source list, so it
     is in only the description file list.  The regular
     expressions are TCL regular expressions.
-
+
     The ONLY difference between source and description
     files is that source files are always copied into
     ./contest/{problems,demos,help}, whereas description
     files are copied only if the -description option is
     given to makecontest.
     
-    The `all' post-substituion option in an index item
+    The `all' post-substitution option in an index item
     changes the problem_source_files value for the index
     item to {.*} and the problem_description_files value
     to {}.  This eliminates the effect of these two
     global variables and includes all files not excluded
     by the problem_excluded_files global variable, re-
     gardless of the setting of the -description option.
-
+
     The print files are files to be printed and given to
     contestants BEFORE the contest starts.  The list of
     print files for an item is copied into a file named
@@ -490,7 +490,7 @@ Index Specifications
   Item Name Substitution Patterns
   ---- ---- ------------ --------
 
-    Item names undergo substitutions sepcified by index
+    Item names undergo substitutions specified by index
     specification arguments of the form `nameXs=nameXt'.
     If the item name begins with the nameXs string, that
     string will be replaced by nameXt.  If there are
@@ -832,14 +832,14 @@ The -secure Option
 	./contest/secure/passwords	    file
 
     If any of these are made their modes are set to
-    go-rw.  If the ./contest/secure/passwords file is
+    go-rwx.  If the ./contest/secure/passwords file is
     made, a TODO for editing it is written, but the
-    file automatically made is empty.
+    file automatically made is effectively empty.
 
     The `To' address in hpcm_sendmail.rc is the first
     address in the `autojudge_addresses' global varia-
     ble, if that variable is non-empty, and is otherwise
-    made automatically and using a random number.
+    made automatically using a random number.
 
     The ./contest/secure/passwords file consists of
     lines of the form
@@ -867,6 +867,7 @@ The -secure Option
     line's account.  If a new password is generated for
     an existing account, a TODO is written telling how
     to reset the account's password.
+
 
 The -ssh Option
 --- ---- ------
@@ -931,11 +932,9 @@ The -trashable and -trashall Options
     accounts in the `passwords' file, not including the
     account name `none', and not including the names of
     any accounts that already exist.  The -trashall
-    option is like the -trashable option but always
-    writes ./contest/trashable to include all accounts
-    other than `none', whether or not an account already
-    exists and whether or not ./contest/trashable
-    already exists.
+    option is like the -trashable option but includes
+    all accounts other than `none', whether or not an
+    account already exists.
 
     An account needs to be listed in the `trashable'
     file in order for the `TRASH_ACCOUNT' program be
@@ -947,8 +946,7 @@ The -trashable and -trashall Options
     `trashable' file is deleted.
 
     If the `trashable' file is changed to something non-
-    empty, a TODO is written on how to set up the
-    accounts.
+    empty, a TODO is written on how to set up accounts.
 
 The -{contest,judging,scoreboard}_commands Options
 --- -------------------------------------- -------
@@ -1025,8 +1023,8 @@ The -web Option
     same, then ./web- is renamed to ./web--, ./web to
     ./web-, and ./web+ to ./web.  Whenever ./web becomes
     more recent than ./web.tar, a new ./web.tar is made
-    and a TODO is written to move ./web to the appro-
-    priate remote host.
+    and a TODO is written to move ./web via ./web.tar to
+    the appropriate remote host.
 
 The -make_test Option
 --- ---------- ------
@@ -1034,7 +1032,10 @@ The -make_test Option
     The -make_test program option makes the ./make_test
     file to be a copy of the `make_test' global variable
     if the variable exists and does not already equal
-    the contents of the file.
+    the contents of the file.  This file is included by
+    the judging directory `Makefile', and allows the
+    judging directory `hpcm_judging.rc' file to set up
+    `make' targets for testing the contest.
 
 The -startcontest and -scoreboard Options
 --- ------------- --- ----------- -------
@@ -1055,17 +1056,14 @@ The -startcontest and -scoreboard Options
 Makecontest Execution Notes
 ----------- --------- -----
 
-    Although we have used the names `./info', `./mail',
-    `./contest', and `./help' in this description, the
-    actual directories are the info, mail, contest,
-    help, etc. subdirectories of the judging_directory.
-    The file names within these directories are literal-
-    ly as given in this document.
-
-    Like other HPCM programs, `makecontest' can be
-    run from anywhere in the judge's directory subtree
-    which is rooted by the directory containing the
-    `hpcm_judging.rc' file.
+    Although we have used names such as `./info',
+    `./mail', `./contest', and `./help' in this descrip-
+    tion, we mean by `'./' the judging_directory, and
+    NOT the current directory.  Like other HPCM pro-
+    grams, `makecontest' can be run from anywhere in the
+    directory subtree rooted at the judging directory,
+    i.e., the directory containing the `hpcm_judging.rc'
+    file.
 
     Unlike most HPCM judging programs, errors made by
     this program are not written to log files, but are
