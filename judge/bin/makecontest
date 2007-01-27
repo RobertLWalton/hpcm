@@ -6,7 +6,7 @@
 #
 # File:		makecontest
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Jan 27 04:46:54 EST 2007
+# Date:		Sat Jan 27 05:54:00 EST 2007
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2007/01/27 09:53:11 $
+#   $Date: 2007/01/27 11:08:25 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.199 $
+#   $Revision: 1.200 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -606,7 +606,7 @@ The -info Option
     The -info option creates the ./info directory and
     is subdirectories, ./info/help, ./info/demos, and
     ./info/problems.  The specific contents of these
-    subdirectories is determined by the index specifica-
+    subdirectories is determined by index specifica-
     tions: see above.
 
     When an item is included in the ./info directory,
@@ -615,9 +615,10 @@ The -info Option
     is created containing a symbolic link to any problem
     source and description files in the directory.  The
     exact definitions of problem source and description
-    files are given below.  Problem description file
-    links are included within the ./info directory even
-    if no -description program option is given.
+    files are given in `PROBLEM.rc Global Variables'
+    above.  Problem description file links are included
+    within the ./info directory even if no -description
+    program option is given.
 
 The -help, -demos, and -problems Options
 --- ------ ------- --- --------- -------
@@ -625,40 +626,48 @@ The -help, -demos, and -problems Options
     These options create ./contest/help, ./contest/
     demos, and ./contest/problems, respectively.  The
     specific contents of these directories is determined
-    by the index specifications: see above.
+    by index specifications: see above.
 
     When an index item is included in one of these
     directories, files are copied and new directories
-    are made.  Access is granted using a+r and a+rx file
-    and directory modes, except for
+    are made.  Symbolic links cannot be used because
+    their targets would not have a+r permissions.
+    Access is granted to copied files and new director-
+    ies using a+r and a+rx permissions, except for
     
     		./contest/problems 
     		./contest/help/problems
 
-    which are left with the mode determined by the
+    which are left with permissions determined by the
     umask (presumably o-rx or og-rx).  The `startcon-
-    test' program sets the mode of these to a+rx.  The
-    directory items copied are determined by the
-    problem_source_files, problem_description_files,
-    and problem_excluded_files global variables and the
-    `all' option in the index.  See below for details.
+    test' program sets permissions of ./contest/problems
+    to a+rx and permissions of ./contest/help/problems
+    to a+r.
+
+    For directory items the files within the item direc-
+    tory that are copied are determined by the problem_
+    source_files, problem_description_files, and
+    problem_excluded_files global variables and the
+    `all' option in the index.  See `PROBLEM.rc Global
+    Variables' above for details.
 
 The -solutions Option
 --- ---------- ------
 
     The -solutions option creates the ./solutions direc-
-    tory.  This contains all items that name directories
-    (and not files), have substituted item names begin-
-    ning with demos/ or problems/, and do NOT have the
-    `nosolutions' option after option substitution.  For
-    each such item a symbolic link is created in the
-    ./solutions directory to the item directory, and
-    this link is given as its name the name of the last
-    component of the substituted item name.  e.g., the
-    name `demos/count' becomes `count'.  This means that
-    all demos and problems items in the contest must
-    have unique last components (except for items with
-    the `nosolution' item option).
+    tory.  This contains all items that have substituted
+    item names beginning with demos/ or problems/, and
+    do NOT have the `nosolutions' option after option
+    substitution.  It is an error if such an item is a
+    file and not a directory.  For each such item a sym-
+    bolic link is created in the ./solutions directory
+    to the item directory, and this link is given as its
+    name the name of the last component of the substitu-
+    ted item name.  e.g., the name `demos/count' becomes
+    `./solutions/count'.  This means that all demos and
+    problems items in the contest must have unique last
+    components (except for items with the `nosolution'
+    item option).
 
 Notes on help, demos, and problems Subdirectories
 ----- -- ----- ------ --- -------- --------------
