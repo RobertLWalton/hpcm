@@ -6,7 +6,7 @@
 #
 # File:		makecontest
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Jan 26 09:50:24 EST 2007
+# Date:		Sat Jan 27 02:58:51 EST 2007
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2007/01/26 18:07:15 $
+#   $Date: 2007/01/27 09:01:37 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.197 $
+#   $Revision: 1.198 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -222,8 +222,8 @@ Index Specifications
     The index specification contains substitutions that
     modify the item_name and the item_options.  We will
     describe how substitutions are done below, after
-    describing everything else about index entries and
-    index files.
+    describing everything else about index specifica-
+    tions, index files, and index entries.
     
     After substitutions have been performed, the item_
     name must begin with `help/', `demos/', or
@@ -249,37 +249,41 @@ Index Specifications
 
       all	  This changes the definition of the
       		  global variable problem_source_files
-		  to {.*}, which means that all files
-		  not excluded by the global variable
-		  problem_excluded_files will be
-		  source or description files.  See
-		  below for details.
+		  to {.*} and problem_description_files
+		  to {} for this index entry.  This
+		  means that all files not excluded by
+		  the global variable problem_excluded_
+		  files will be source files for this
+		  index entry.  See below for details.
 
       ...	  Other options may be given that are
       		  passed to the PROBLEM.rc file: see
 		  below for details.
 
+    An item entry is said to be `included' if it has the
+    `include' option after substitutions.
+
   Output Indices
   ------ -------
 
-    Each input index file is copied into an output index
-    that is determined by the item name after substitu-
-    tions.  The output indeces are the following files:
+    Each included item entry is copied into an output
+    index file determined by the item name after substi-
+    tutions.  The output index files exist within the
+    ./contest and ./info directories and have the fol-
+    lowing names relative to these directories:
 
     	help/index	    Item name is help/...
 	help/demos	    Item name is demos/...
 	help/problems	    Item name is problems/...
 
-    If there are several index specifications and hence
-    several input index files, then several input index
-    files may be copied into th same output index.
+    If both ./contest and ./info directories exist,
+    there may be two copies of each output index file,
+    one in ./contest and one in ./info.
 
-    An item entry is copied to an output index if it is
-    included (has the `include' option after substitu-
-    tion).  When the entry is copied, the `***' in the
-    first line of the entry is replace by 3 space char-
-    acters, the item name is replaced by the name after
-    substitutions, and the item options are removed.
+    When an item entry is copied, the `***' in the first
+    line of the entry is replace by 3 space characters,
+    the item name is replaced by the name after substi-
+    tutions, and the item options are removed.
 
     In addition to item entries, an input index file
     contains header entries.  Header entries begin with
@@ -290,10 +294,11 @@ Index Specifications
     begins a header or item entry, or at the end of
     file.
 
-    A header entry is copied to an output index if it
-    is followed by an included item entry and if no
-    other header entries are between it and that next
-    included item entry.
+    When an item entry is copied to an output index
+    file, the first header entry before the item entry
+    in its index input file is copied first, if that has
+    not already been done.  A header entry may be copied
+    into many output index files.
 
     Lastly, any line beginning with `#' in an input
     index file is a comment line that is completely
@@ -302,26 +307,23 @@ Index Specifications
   Index Specification Syntax
   ----- ------------- ------
 
-    An index specification determined one input index
+    An index specification determines one input index
     file, an associated input index directory, and a set
-    of substitution patterns.  The is a sequence of
-    arguments to the `makecontest' program.  All these
-    arguments but the last end in either a `:' or a `,'.
-    The `:' indicates the next argument is an index
-    directory name (see below) and the `,' indicates the
-    next argument is either a name substitution pattern
-    or an option substitution pattern (also see below).
+    of substitution patterns.  The specification is a
+    sequence of arguments to the `makecontest' program.
+    All these arguments but the last end in either a `:'
+    or a `,'.  The `:' indicates the next argument is an
+    index directory name (see below) and the `,' indica-
+    tes the next argument is a substitution pattern
+    (also see below).
 
     Each input index file is associated with an index
-    directory.  An unedited version of the index file is
-    normally found in its index directory.  Sometimes an
-    edited copy of this index file is placed in the
-    current judging directory, with the editing consist-
-    ing of changes to the item entry options that con-
-    trol which items are included.  However, an edited
-    copy of the index file need not be made, because
-    item entry option mapping, described below, is often
-    sufficient.
+    directory.  If this directory is DDD, and an item
+    entry within the input index file has item name III
+    before substitution, then the name of the item
+    itself is DDD/III.  This is either a file or a
+    directory; that is, the item is either a file or
+    a directory.
 
     An index directory may optionally be given in a
     specification by ending the first argument of the
@@ -332,6 +334,158 @@ Index Specifications
     tory is given in an index specification, the direc-
     tory that contains the index file is used as the
     index directory.
+
+    An unedited version of an input index file is nor-
+    mally found in its associated index directory, and
+    is normally used directly, with option substitution
+    patterns being used to determine which item entries
+    are to be included.  However, one can always put an
+    edited version of the input index file in the judg-
+    ing directory and specify the associated index
+    directory by using a `:' in the index specification.
+
+  PROBLEM.rc Global Variables
+  ---------- ------ ---------
+
+    An index item can be either a file or a directory.
+    When it is a directory, not all files in the direc-
+    tory will be copied into the ./contest directory
+    tree or linked into the ./info directory tree (see
+    the -info, -help, -demos, and -problems options
+    below).  The files in the directory are classified
+    into three kinds: `source', `description', and
+    `other'.  The `other' files are not copied or link-
+    ed.  The `source' files are always copied or linked.
+    The `description' files are always linked into the
+    ./info directory tree, but are copied into the
+    ./contest directory tree only if the `-description'
+    option is given.
+
+    Determination of which files are source and which
+    are description, within a directory item, is made
+    using global variable values which may be set by a
+    file named `PROBLEM.rc' within the directory, where
+    `PROBLEM' is the last component of the directory
+    name.  If that file exists it is sourced into a
+    local procedure (so it will not define global vari-
+    ables other than those needed by makecontest).  The
+    PROBLEM.rc file may reference the variables
+
+    	PROBLEM		Name of problem.
+	EXTENSION	Equals \"UNDEFINED\"
+	OPTIONS		The options in the index item,
+			as a TCL list, after expansion.
+
+    The name `PROBLEM.rc' is something of a misnomer for
+    help files.  In this case `PROBLEM' is merely the
+    last component of the index item directory name.  It
+    is very rare for a help file directory to need a .rc
+    file: usually such directories have the `all' op-
+    tion.
+
+    The PROBLEM.rc file may define the following vari-
+    ables:
+
+	problem_description_files
+   	problem_source_files
+   	problem_solution_files
+   	problem_excluded_files
+   	problem_make_files
+	problem_print_files
+
+    The values of these variables are TCL lists of
+    regular expressions.  Default values are provided
+    for these variables by hpcm_judging.rc, and these
+    in turn default as follows:
+
+	problem_description_files:
+	    [indent_list 12 $problem_description_files]
+   	problem_source_files:
+	    [indent_list 12 $problem_source_files]
+   	problem_solution_files:
+	    [indent_list 12 $problem_solution_files]
+   	problem_excluded_files:
+	    [indent_list 12 $problem_excluded_files]
+   	problem_make_files:
+	    Undefined.
+   	problem_print_files:
+	    Undefined.
+
+    The problem_make_files variable, if set, gives in-
+    structions for making files in the problem direc-
+    tory.  There are executed by `makecontest' as per
+    the description of this variable in the `Problem .rc
+    Files' section of hpcm/judge/lib/hpcm_judging.rc.
+    These instructions may make new files in the item
+    directory, and these files may then be selected for
+    including by the rules described below.
+
+    The description and source file lists are lists of
+    description or source file names relative to the
+    index item directory.  To be listed a file must have
+    a name whose LAST component matches a regular ex-
+    pression in the problem_description_files or pro-
+    blem_source_files global variable values, and NOT
+    have ANY name component that matches a regular
+    expression in problem_excluded_files.  If a file
+    would be in both the description and source file
+    lists, it is deleted from the source list, so it
+    is in only the description file list.  The regular
+    expressions are TCL regular expressions.
+
+    The ONLY difference between source and description
+    files is that source files are always copied into
+    ./contest/{problems,demos,help}, whereas description
+    files are copied only if the -description option is
+    given to makecontest.
+    
+    The `all' post-substituion option in an index item
+    changes the problem_source_files value for the index
+    item to {.*} and the problem_description_files value
+    to {}.  This eliminates the effect of these two
+    global variables and includes all files not excluded
+    by the problem_excluded_files global variable, re-
+    gardless of the setting of the -description option.
+
+    The print files are files to be printed and given to
+    contestants BEFORE the contest starts.  The list of
+    print files for an item is copied into a file named
+    ./problem_print_files, ./demos_print_files, or
+    ./help_print_files by the -print_files option (see
+    below).  If the problem_print_files global variable
+    exists, its value is the list of print files in the
+    item directory, where file names in the global vari-
+    able are relative to the item directory.  Otherwise
+    the sorted list of description files is used as the
+    list of print files.
+
+    The solution files are files to be printed and given
+    to contestants AFTER the contest ends.  This list is
+    computed in the same way as the source and descrip-
+    tion file lists are computed: all files within a
+    directory item whose LAST name component matches a
+    TCL regular expression in problem_solution_files and
+    NONE of whose components match a regular expression
+    in problem_excluded_files is a solution file.  See
+    the -solution_files option below.
+
+    By convention, a problem or demo source file that
+    has the extension `.ISF' is intended as the initial
+    version of a writable contestant file that the con-
+    testant will submit and may alter before submitting.
+    The writable contestant file itself has the name of
+    the initialization file with the `.ISF' stripped
+    from its end.  Thus a source file named `foo.c.ISF'
+    should be copied into a writable contestant file
+    named `foo.c' that will be submitted (by the con-
+    testant executing `make submit').  `.ISF' stands for
+    `initial submittable file'.
+
+    Makecontest does nothing special with files having
+    the `.ISF' extension.  It is the `hpcm_get' and
+    `hpcm_extract' programs that automatically copy a
+    file with a name such as `xxx.ISF' into a writable
+    file named `xxx'.
 
   Item Name Substitution Patterns
   ---- ---- ------------ --------
@@ -394,116 +548,6 @@ Index Specifications
     to include an item by name.  Thus an item_name is
     used twice, once as the name of the item  (more on
     this below), and once as an item_option.
-
-  PROBLEM.rc Global Variables
-  ---------- ------ ---------
-
-    When an index item names a directory, it is neces-
-    sary to determine which files in the directory are
-    source and description files.  In this case the di-
-    rectory is inspected for a file named `PROBLEM.rc',
-    where `PROBLEM' is the last component of the direc-
-    tory name.  If that file exists it is sourced into a
-    local procedure (so it will not define global vari-
-    ables other than those needed by makecontest).  The
-    PROBLEM.rc file may reference the variables
-
-    	PROBLEM		Name of problem.
-	EXTENSION	Equals \"UNDEFINED\"
-	OPTIONS		The options in the index item,
-			as a TCL list, after expansion.
-
-    The name `PROBLEM.rc' is something of a misnomer for
-    help files.  In this case `PROBLEM' is merely the
-    last component of the index item directory name.  It
-    is very rare for a help file directory to need a .rc
-    file: usually such directories have the `all' option
-    and hold UNIX Email Tools programs.
-
-    The PROBLEM.rc file may define the following vari-
-    ables:
-
-	problem_description_files
-   	problem_source_files
-   	problem_solution_files
-   	problem_excluded_files
-   	problem_make_files
-	problem_print_files
-
-    The values of these variables are TCL lists of
-    regular expressions.  Default values are provided
-    for these variables by hpcm_judging.rc, and these
-    in turn default as follows:
-
-	problem_description_files:
-	    [indent_list 12 $problem_description_files]
-   	problem_source_files:
-	    [indent_list 12 $problem_source_files]
-   	problem_solution_files:
-	    [indent_list 12 $problem_solution_files]
-   	problem_excluded_files:
-	    [indent_list 12 $problem_excluded_files]
-   	problem_make_files:
-	    Undefined.
-   	problem_print_files:
-	    Undefined.
-
-    The problem_make_files variable, if set, gives
-    instructions for making files in the problem
-    directory.  There are executed as per the descrip-
-    tion of this variable in the `Problem .rc Files'
-    section of hpcm/judge/lib/hpcm_judging.rc.
-
-    The description and source file lists are lists of
-    description or source file names relative to the
-    index item directory.  To be listed a file must have
-    a name whose LAST component matches a regular ex-
-    pression in the problem_description_files or pro-
-    blem_source_files global variable values, and NOT
-    have ANY name component that matches a regular
-    expression in problem_excluded_files.  If a file
-    would be in both the description and file lists, it
-    is deleted from the source list, so it is in only
-    the description file list.
-
-    The difference between source and description files
-    is that source files are always copied into
-    ./contest/{problems,demos,help}, whereas description
-    files are copied only if the -description option is
-    given to makecontest.
-    
-    The `all' post-substituion option in an index item
-    changes the problem_source_files value for the index
-    item to {.*} and the problem_description_files value
-    to {}.  This eliminates the effect of these two
-    global variables and includes all files not excluded
-    by the problem_excluded_files global variable, re-
-    gardless of the setting of the -description option.
-
-    The print files are a list of all the files to be
-    printed and given to contestants.  This is a list of
-    file names relative to the index item directory.  It
-    is the value of the problem_print_files global vari-
-    able if that is defined, and is otherwise the sorted
-    list of description files.
-
-    By convention, a problem or demo source file that
-    has the extension `.ISF' is intended as the initial
-    version of a writable contestant file that the con-
-    testant will submit and may alter before submitting.
-    The writable contestant file itself has the name of
-    the initialization file with the `.ISF' stripped
-    from its end.  Thus a source file named `foo.c.ISF'
-    should be copied into a writable contestant file
-    named `foo.c' that will be submitted (by the con-
-    testant executing `make submit').  `.ISF' stands for
-    `initial submittable file'.
-
-    Makecontest does nothing special with files having
-    the `.ISF' extension.  It is the `hpcm_get' and
-    `hpcm_extract' programs that automatically copy a
-    file with a name such as `xxx.ISF' into a writable
-    file named `xxx'.
 
 The -contest Option
 --- -------- ------
@@ -732,17 +776,21 @@ The -print_files Option
 
     The -print_files program option makes the ./help_
     print_files, ./problem_print_files, and ./demos_
-    print_files files which each list files that can be
-    fprint'ed.  These lists begin with the help/index,
-    help/problems, and help/demos index files respec-
-    tively, and then list all the files listed in those
-    indices.  However, if help/this_contest is listed in
-    help_print_files, it is moved to the front of the
-    help_print_files list.  WARNING: the -print_files
-    option lists files made by the index arguments to
-    makecontest, so if there are none of these, the
-    print files lists will be nearly empty and incor-
-    rect.
+    print_files files which each list files that may
+    be fprint'ed and given to contestants BEFORE the
+    contest starts.  These lists begin with the help/
+    index, help/problems, and help/demos index files
+    respectively, and then list all the files listed in
+    those indices, plus all files selected as print
+    files in directory items (see PROBLEM.rc Global
+    Variables above).  However, if help/this_contest is
+    listed in help_print_files, it is moved to the front
+    of the help_print_files list.
+    
+    WARNING: the command `makecontest -print_files' will
+    make nearly empty lists as this command does not
+    have the index specifications necessary to make the
+    lists properly.
 
 The -solution_files Option
 --- --------------- ------
@@ -752,7 +800,13 @@ The -solution_files Option
     solutions subdirectory that can be posted on the web
     to define solutions.  These files are defined by
     the problem_solution_files and problem_excluded_
-    files global variables.
+    files global variables.  See PROBLEM.rc Global Vari-
+    ables above.
+    
+    WARNING: the command `makecontest -solution_files'
+    will make an empty list as this command does not
+    have the index specifications necessary to make the
+    list properly.
 
 The -secure Option
 --- ------- ------
