@@ -6,7 +6,7 @@
 #
 # File:		makecontest
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Jan 27 09:05:13 EST 2007
+# Date:		Sun Jan 28 08:04:21 EST 2007
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2007/01/27 14:41:06 $
+#   $Date: 2007/01/28 13:28:37 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.202 $
+#   $Revision: 1.203 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -158,7 +158,7 @@ makecontest option ... index_specification ...
 
     -web	Make ./web and ./web.tar
 
-    -make_test  Using the optional `make_test' global
+    -make_test  From the optional `make_test' global
     		variable make ./make_test.
 
     -startcontest   Run the startcontest program if
@@ -174,24 +174,27 @@ makecontest option ... index_specification ...
 
   Pre-Existing Files and Links:
 
+    ./			 The judging directory.
     ./hpcm_judging.rc	 Parameters file.
 
 
 
-    Given a judging directory as the current directory,
-    complete with hpcm_judging.rc file, this program
-    makes subdirectories, links, and index files in the
-    judging directory and optional associated contest
-    directory, according to instructions in the index
-    specifications and options.  The form of the index
-    specifications and options is given above.
-
+    Given a judging directory (denoted as `./' in this
+    documentation) complete with hpcm_judging.rc file,
+    the `makecontest' program makes subdirectories,
+    links, and index files in the judging directory and
+    optional associated contest directory, according to
+    instructions in the index specifications and
+    options.  The form of the index specifications and
+    options is given above.
+
     This program appends instructions for its user to
     edit certain files and run certain programs to the
     ./TODO file, and prints an announcement at the end
     of the program if this file is not empty.  Informa-
     tion items in the ./TODO file are call `TODO's.
-
+
+
 Index Specifications
 ----- --------------
 
@@ -224,14 +227,15 @@ Index Specifications
     describe how substitutions are done below, after
     describing everything else about index specifica-
     tions, index files, and index entries.
-    
-    After substitutions have been performed, the item_
-    name must begin with `help/', `demos/', or
-    `problems/', and this determines which subdirectory
-    of ./info or ./contest is to contain the item.
-    Only the three subdirectories just mentioned are
-    allowed.
 
+    Before substitutions the item_name names the item,
+    a file or directory, relative to the input index
+    directory (see below).  After substitutions, the
+    item_name names the item relative to the ./info or
+    ./contest directories.  The item_name after substi-
+    tutions must begin with `help/', `demos/', or
+    `problems/'.
+
     After substitution, the possible item options are:
 
       include	  Include item in the ./info and
@@ -262,7 +266,7 @@ Index Specifications
 
     An item entry is said to be `included' if it has the
     `include' option after substitutions.
-
+
   Output Indices
   ------ -------
 
@@ -271,14 +275,17 @@ Index Specifications
     tutions.  The output index files exist within the
     ./contest and ./info directories and have the fol-
     lowing names relative to these directories:
-
-    	help/index	    Item name is help/...
-	help/demos	    Item name is demos/...
-	help/problems	    Item name is problems/...
+
+        Relative Output     Include item if
+	Index File Name	    after substitution:
+	---------------     -------------------
+    	help/index	    item name is help/...
+	help/demos	    item name is demos/...
+	help/problems	    item name is problems/...
 
     If both ./contest and ./info directories exist,
-    there may be two copies of each output index file,
-    one in ./contest and one in ./info.
+    there may be two identical copies of each output
+    index file, one in ./contest and one in ./info.
 
     When an item entry is copied, the `***' in the first
     line of the entry is replace by 3 space characters,
@@ -293,17 +300,18 @@ Index Specifications
     of file.  An item entry stops at the next line that
     begins a header or item entry, or at the end of
     file.
-
+
     When an item entry is copied to an output index
     file, the first header entry before the item entry
-    in its index input file is copied first, if that has
-    not already been done.  A header entry may be copied
-    into many output index files.
+    in its index input file is copied just before the
+    item, if that header entry has not previously been
+    copied into the output index file.  A header entry
+    may be copied into many output index files.
 
     Lastly, any line beginning with `#' in an input
     index file is a comment line that is completely
     ignored, as if it did not exist.
-
+
   Index Specification Syntax
   ----- ------------- ------
 
@@ -313,27 +321,26 @@ Index Specifications
     sequence of arguments to the `makecontest' program.
     All these arguments but the last end in either a `:'
     or a `,'.  The `:' indicates the next argument is an
-    index directory name (see below) and the `,' indica-
-    tes the next argument is a substitution pattern
-    (also see below).
+    input index directory name and the `,' indicates the
+    next argument is a substitution pattern (see below).
 
-    Each input index file is associated with an index
-    directory.  If this directory is DDD, and an item
+    Each input index file is associated with an input
+    index directory.  If this is named DDD, and an item
     entry within the input index file has item name III
     before substitution, then the name of the item
     itself is DDD/III.  This is either a file or a
     directory; that is, the item is either a file or
     a directory.
-
-    An index directory may optionally be given in a
-    specification by ending the first argument of the
+
+    An input index directory may optionally be given in
+    a specification by ending the first argument of the
     specification, which names the input index file,
-    with a `:', and giving the name of the index direc-
-    tory as the second argument in the specification
-    (with an optional ending `,').  If no index direc-
-    tory is given in an index specification, the direc-
-    tory that contains the index file is used as the
-    index directory.
+    with a `:', and giving the name of the input index
+    directory as the second argument in the specifica-
+    tion (with an optional ending `,').  If the first
+    argument does not end in `:', the directory that
+    contains the index file is used as the input index
+    directory.
 
     An unedited version of an input index file is nor-
     mally found in its associated index directory, and
@@ -341,7 +348,7 @@ Index Specifications
     patterns being used to determine which item entries
     are to be included.  However, one can always put an
     edited version of the input index file in the judg-
-    ing directory and specify the associated index
+    ing directory and specify the associated input index
     directory by using a `:' in the index specification.
 
   PROBLEM.rc Global Variables
@@ -350,13 +357,12 @@ Index Specifications
     An index item can be either a file or a directory.
     When it is a directory, not all files in the direc-
     tory will be copied into the ./contest directory
-    tree or linked into the ./info directory tree (see
-    the -info, -help, -demos, and -problems options
-    below).  The files in the directory are classified
-    into three kinds: `source', `description', and
-    `other'.  The `other' files are not copied or link-
-    ed.  The `source' files are always copied or linked.
-    The `description' files are always linked into the
+    tree or linked into the ./info directory tree.  The
+    files in the item directory are classified into
+    three kinds: `source', `description', and `other'.
+    The `other' files are not copied or linked.  The
+    `source' files are always copied or linked.  The
+    `description' files are always linked into the
     ./info directory tree, but are copied into the
     ./contest directory tree only if the `-description'
     option is given.
@@ -413,7 +419,7 @@ Index Specifications
 
     The problem_make_files variable, if set, gives in-
     structions for making files in the problem direc-
-    tory.  There are executed by `makecontest' as per
+    tory.  These are executed by `makecontest' as per
     the description of this variable in the `Problem .rc
     Files' section of hpcm/judge/lib/hpcm_judging.rc.
     These instructions may make new files in the item
@@ -459,15 +465,15 @@ Index Specifications
     the sorted list of description files is used as the
     list of print files.
 
-    The solution files are files to be printed and given
-    to contestants AFTER the contest ends.  This list is
-    computed in the same way as the source and descrip-
-    tion file lists are computed: all files within a
-    directory item whose LAST name component matches a
-    TCL regular expression in problem_solution_files and
-    NONE of whose components match a regular expression
-    in problem_excluded_files is a solution file.  See
-    the -solution_files option below.
+    The solution files are files to be put on the web
+    AFTER the contest ends.  This list is computed in
+    the same way as the source and description file
+    lists are computed: all files within a directory
+    item whose LAST name component matches a TCL regular
+    expression in problem_solution_files and NONE of
+    whose components match a regular expression in
+    problem_excluded_files is a solution file.  See the
+    -solution_files option below.
 
     By convention, a problem or demo source file that
     has the extension `.ISF' is intended as the initial
@@ -537,7 +543,8 @@ Index Specifications
     options appearing in the item entries in the index
     files, and not on options that are the result of
     substitution.  After substitutions are done, unknown
-    options are ignored.
+    options are ignored, and duplicate options are
+    treated as if they occurred only once.
 
     In mapping item options, the unsubstituted item_name
     is also mapped like an option and the result treated
