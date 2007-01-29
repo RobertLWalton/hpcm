@@ -6,7 +6,7 @@
 #
 # File:		makecontest
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Jan 29 07:53:01 EST 2007
+# Date:		Mon Jan 29 09:41:41 EST 2007
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2007/01/29 13:14:53 $
+#   $Date: 2007/01/29 15:00:07 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.204 $
+#   $Revision: 1.205 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -754,64 +754,76 @@ help, demos, problems, and solutions Directory Notes
 The -this_contest Option
 --- ------------- ------
 
-    The -this_contest program option creates the follow-
-    ing if they do not exist:
+    The `this_contest' help file gives contest specific
+    information and must be created uniquely for each
+    contest.  The -this_contest program option does this
+    by making the following:
 
 	./help				directory
 	./help/index			file
 	./help/this_contest		file
 	./help/this_contest_parameter	file
 	./help/this_contest_original	file
-
+
     Note these are in the judging directory proper, and
-    not in the ./info or ./contest subdirectories.  The
-    ./help/index file is an INPUT index file that con-
-    tains an entry for ./help/this_contest.  The latter
-    file is information about the current contest.  The
-    -this_contest option is processed before any input
-    index files are read, so ./help/index may be used as
-    an input index file in the same call to
+    not in the ./info or ./contest subdirectories.
+
+    The ./help/index file is an INPUT index file and if
+    used should be referenced by the first help file
+    index specification given to `makecontest'.  It
+    begins with a header entry designed to start the
+    `help/index' output index file.  This header entry
+    mentions the `help/demos', `help/problems', and
+    `help/index' help files that are not listed in input
+    index files but are instead made by `makecontest'.
+    After this header ./help/index has an item entry
+    for `this_contest', i.e., for ./help/this_contest,
+    which is the `this_contest' help file.
+
+    The -this_contest option is processed before any
+    input index files are read, so ./help/index may be
+    used as an input index file in the same call to
     `makecontest' that creates the ./help/index file.
 
-    If used, the ./help/index file should be referenced
-    by the first help file index specification given to
-    `makecontest'.  It contains a header entry designed
-    to start the output index file `help/index', and
-    with this header entry, all the help index files,
-    `help/demos', `help/problems', and `help/index', are
-    mentioned at the beginning of ./help/index.
+    The ./help/this_contest file is initially written to
+    be a copy of the `this_contest' global variable.
+    Then it may be edited either by changing the global
+    variable value, or by editing ./help/this_contest
+    directly.  The various ./help/this_contest* files
+    are designed to allow either of these procedures to
+    be used, and to suppress copying the global variable
+    value to ./help/this_contest once the latter has
+    been edited.
 
-    The ./help/this_contest* files are written to be a
-    copy of the `this_contest' global variable.  The
-    ./help/this_contest_original is written only if it
-    does not exist.  The ./help/this_contest_parameter
-    file is written if it does not exist or if it exists
-    but is not equal to the value of the `this_contest'
-    global variable.  The ./help/this_contest files is
-    written only if it does not exist, or if it equals
-    ./help/this_contest_parameter and the latter is to
-    be written.
-
-    Thus initially all the ./help/this_contest* files
-    are equal to the `this_contest' global variable
-    value.  You can then either update that value, or
-    you can edit the ./help/this_contest file.
-
+    The ./help/this_contest* files, when written, are
+    always written to be a copy of the `this_contest'
+    global variable.  The ./help/this_contest_original
+    file is written only if it does not exist.  The
+    ./help/this_contest_parameter file is written if it
+    does not exist or if it exists but is not equal to
+    the value of the `this_contest' global variable.
+    The ./help/this_contest file is written only if it
+    does not exist, or if it equals ./help/this_contest_
+    parameter and the latter is to be written.
+
     If ./help/this_contest is written, a TODO is written
     indicating what has been done and reminding you that
     you can edit ./help/this_contest.
-
+
+
 The -mail Option
 --- ----- ------
 
-    The -mail program option causes the ./mail directory
-    to be made if it does not exist.  If it is made, its
-    mode is set to a+x as is the mode of its parent and
-    its parent's parent.  This last is necessary because
-    the JAVA interpreter turns relative file names into
-    absolute file names, requiring `a+x' permissions
-    in the path from the root to the object file when
-    a submission is executed by the autojudge.
+    The ./mail directory holds submissions.  This direc-
+    tory is made by the -mail program option if it does
+    not exist.  If it is made, its mode is set to a+x as
+    is the mode of its parent and its parent's parent.
+    This last is necessary because the JAVA interpreter
+    turns relative file names into absolute file names,
+    requiring `a+x' permissions in the path from the
+    root to the object file when a submission is execu-
+    ted by the autojudge.
+
 
 The -help2 Option
 --- ------ ------
@@ -878,26 +890,34 @@ The -secure Option
     made, a TODO for editing it is written, but the
     file automatically made is effectively empty.
 
-    The `To' address in hpcm_sendmail.rc is the first
-    address in the `autojudge_addresses' global varia-
-    ble, if that variable is non-empty, and is otherwise
-    made automatically using a random number.
+    The hpcm_sendmail.rc file is used by the privileged
+    hpcm_sendmail program when it is run by contestant
+    local accounts.  It contains the judge's address and
+    a key used to cryptographically sign email being
+    sent from the contestant to the judge.  The judge's
+    address in hpcm_sendmail.rc is the first address in
+    the `autojudge_addresses' global variable, if that
+    variable is non-empty, and is otherwise made automa-
+    tically using a random number and the local account
+    and host names.  The key is made automatically using
+    a random number.
 
     The ./contest/secure/passwords file consists of
     lines of the form
 
     	account:password:who:c-email:t-email:comment
-
+
     Here `account' is a the login name of the contes-
     tant, `who' is a description of who the contestant
     is, and the `c-email' and `t-email' fields are the
     email addresses used to contact the coach and to
     contact the team members using the account, respec-
-    tively.  The account name `none' may be used to
+    tively.  The `t-email' field is normally unset and
+    unused.  The account name `none' may be used to
     indicate a line is not associated with an account,
     and the password `none' may be used to indicate the
     password is to be assigned by other means.
-
+
     The -secure program option also causes any existing
     ./contest/secure/passwords file to be inspected for
     lines with empty passwords.  If any are found,
@@ -914,16 +934,18 @@ The -secure Option
 The -ssh Option
 --- ---- ------
 
-    The -ssh program option makes the file `./contest/
-    extra_setup.tar' containing the file `.ssh/
-    authorized_keys' which is the concatenation of all
-    the files `~/.ssh/identity.pub, `~/.ssh/id_rsa.pub',
-    and `~/.ssh/id_dsa.pub' that exist.  If none of
-    these files exist, it is not an error, but a TODO
-    to fix the situation is written.  In order to make
-    the tar file, `./.ssh' and `./ssh/authorized_keys'
-    are made.
-
+    The -ssh program option makes the file ./contest/
+    extra_setup.tar whose contents are copied into each
+    contestant account by the hpcm/contestant/bin/TRASH_
+    ACCOUNT program that initializes contestant ac-
+    counts.  The extra_setup.tar file contains just the
+    file .ssh/authorized_keys which is the concatenation
+    of all the files ~/.ssh/{identity,id_rsa,id_dsa}.pub
+    that exist.  If none of these files exist, it is not
+    an error, but a TODO to fix the situation is writ-
+    ten.  In order to make the tar file, ./.ssh and
+    ./ssh/authorized_keys are made.
+
 The -procmailrc Option
 --- ----------- ------
 
