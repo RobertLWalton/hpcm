@@ -6,7 +6,7 @@
 #
 # File:		makecontest
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Jan 29 09:41:41 EST 2007
+# Date:		Mon Jan 29 11:43:43 EST 2007
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2007/01/29 15:00:07 $
+#   $Date: 2007/01/29 17:54:44 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.205 $
+#   $Revision: 1.206 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -949,17 +949,20 @@ The -ssh Option
 The -procmailrc Option
 --- ----------- ------
 
-    The -procmailrc program option updates the ~/
-    .procmailrc file with one entry for each autojudge
-    address.  If `./contest/secure/hpcm_sendmail.rc'
-    exists, one autojudge address is made from its
-    contents.  The other autojudge addresses are listed
-    in the `autojudge_addresses' global variable.  The
-    first autojudge address is written to the ./Contest_
-    Address file.  If there are no autojudge addresses,
-    it is not an error, but a TODO to fix the situation
-    is written.
-
+    The ~/.procmailrc file is used to route incoming
+    email to the `receivemail' and `dispatchmail' pro-
+    grams.  The -procmailrc option updates ~/.procmailrc
+    with one entry for each autojudge address password,
+    where an autojudge address has the form `PPP<AAA>'
+    and PPP is the password.  If ./contest/secure/
+    hpcm_sendmail.rc exists, one autojudge address is
+    taken from its contents.  The other autojudge
+    addresses are listed in the `autojudge_addresses'
+    global variable.  The first autojudge address is
+    written to the ./Contest_Address file.  If there are
+    no autojudge addresses, it is not an error, but a
+    TODO to fix the situation is written.
+
     The -procmailrc program option also ensures that
     the entry
 
@@ -970,23 +973,32 @@ The -procmailrc Option
     incoming mail into the ~/hpcm_mbox file, just in
     case such a record is needed.  This entry must be
     before other entries that route mail.
-
+
 The -who_where Option
 --- ---------- ------
+
+    The ./contest/who_where file is a copy of the
+    ./contest/secure/passwords file with passwords re-
+    placed by `where' values.  This replacement is done
+    by manually editing the ./contest/who_where file.
+    The `where' values are used in the ./contest/
+    printer_jobs file to designate the location of a
+    contestant.  If the who_where file is not edited,
+    its `where' values are \"WHERE\", which tells pro-
+    grams to use the account name instead of the WHERE
+    location to identify contestants.
 
     The -who_where program option makes the ./contest/
     who_where file if it does not exist, or updates it
     if it does exist and the ./contest/secure/passwords
-    file is newer.  The ./contest/who_where file is a
-    copy of the ./contest/secure/passwords file with the
-    passwords replaced by where values.  If any new
-    places to insert a `where' value are made in the
-    ./contest/who_where file, a TODO to edit the file
+    file is newer.  If any new accounts are inserted
+    into the `who_where' file, a TODO to edit the file
     is written.  There may be accounts in the `who_
     where' file that are not in the `passwords' file.
     Lines with account name `none' in the `passwords'
     file are not copied to the `who_where' file.
-
+
+
 The -trashable and -trashall Options
 --- ---------- --- --------- -------
 
@@ -999,7 +1011,7 @@ The -trashable and -trashall Options
     option is like the -trashable option but includes
     all accounts other than `none', whether or not an
     account already exists.
-
+
     An account needs to be listed in the `trashable'
     file in order for the `TRASH_ACCOUNT' program be
     able to initialize the files in the account.  This
@@ -1011,7 +1023,8 @@ The -trashable and -trashall Options
 
     If the `trashable' file is changed to something non-
     empty, a TODO is written on how to set up accounts.
-
+
+
 The -{contest,judging,scoreboard}_commands Options
 --- -------------------------------------- -------
 
@@ -1028,9 +1041,9 @@ The -{contest,judging,scoreboard}_commands Options
     The -scoreboard_commands program option appends the
     value of the scoreboard_commands global variable to
     the judging_commands global variable.  See documen-
-    tation on judging_commands in hpcm/judge/lib/hpcm_
-    judging.rc.  Implies -judging_commands.
-
+    tation on scoreboard_commands in hpcm/judge/lib/
+    hpcm_judging.rc.  Implies -judging_commands.
+
 The -printer and -printer_map Options
 --- -------- --- ------------ -------
 
@@ -1045,14 +1058,15 @@ The -printer and -printer_map Options
     does not exist, a TODO is written to suggest editing
     the .contest/printer file just made.  The file is
     not written if it would not be changed.
-
+
     The -printer_map program option is similar to the
     -printer option but makes a ./contest/printer_map
     file instead of a ./contest/printer file and always
     uses the value of the `contest_printer_map' global
-    variable.  If the `contest_printer_map' variable is
-    not set, the file is not written but a TODO is
-    written.
+    variable.  The ./contest/printer_map file maps con-
+    testant account names to printers.  If the `contest_
+    printer_map' variable is not set, the file is not
+    written but a TODO is written.
 
     Note that if both the ./contest/printer and
     ./contest/printer_map files exist, contestant
@@ -1062,12 +1076,14 @@ The -printer and -printer_map Options
     printer_map files are written, the ./contest/
     printer_jobs file is also made if it does not
     exist.
-
+
 The -javahelp and -stlhelp Options
 --- --------- --- -------- -------
 
-    The -javahelp program option writes the ./contest/
-    javahelp file, making the file equal to the value
+    The ./contest/javahelp file maps executions of the
+    contestant `javahelp' program to executions of
+    available browsers.  The -javahelp program option
+    writes this file, making the file equal to the value
     of the `javahelp' global variable.  The file is
     written if it does not exist or if it does not equal
     the `javahelp' variable value.  If the `javahelp'
@@ -1076,20 +1092,27 @@ The -javahelp and -stlhelp Options
 
     The -stlhelp program option is just like -javahelp
     but writes the ./contest/stlhelp file from the
-    `stlhelp' global variable.
-
+    `stlhelp' global variable.  This file maps execu-
+    tions of the contestant `stlhelp' program to execu-
+    tions of available browsers.
+
+
 The -web Option
 --- ---- ------
 
     The -web program option invokes the makeweb program
-    to make the ./web directory.  More specifically,
-    ./web+ is made, compared with ./web, and if not the
-    same, then ./web- is renamed to ./web--, ./web to
-    ./web-, and ./web+ to ./web.  Whenever ./web becomes
-    more recent than ./web.tar, a new ./web.tar is made
-    and a TODO is written to move ./web via ./web.tar to
-    the appropriate remote host.
+    to make the ./web directory.  This directory is made
+    to be copied to a web page somewhere.
 
+    More specifically, ./web+ is made, compared with
+    ./web, and if not the same, then ./web- is renamed
+    to ./web--, ./web to ./web-, and ./web+ to ./web.
+
+    Whenever ./web becomes more recent than ./web.tar,
+    a new ./web.tar is made and a TODO is written to
+    move ./web via ./web.tar to the appropriate remote
+    host.
+
 The -make_test Option
 --- ---------- ------
 
