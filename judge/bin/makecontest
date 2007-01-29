@@ -6,7 +6,7 @@
 #
 # File:		makecontest
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Jan 28 08:04:21 EST 2007
+# Date:		Mon Jan 29 07:53:01 EST 2007
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2007/01/28 13:28:37 $
+#   $Date: 2007/01/29 13:14:53 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.203 $
+#   $Revision: 1.204 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -559,6 +559,11 @@ Index Specifications
 The -contest Option
 --- -------- ------
 
+    Contests in which contestants have local accounts
+    must have a contest directory to hold files readable
+    and executable by the contestants.  Files in the
+    judging directory are not accessible to contestants.
+
     The -contest program option makes the contest direc-
     tory and the symbolic link `./contest' to that di-
     rectory.  This is needed for contests with local
@@ -569,29 +574,49 @@ The -contest Option
     ~/XXX/contest_YYY is made and used as the contest
     directory.  That is, the judging directory name is
     modified by replacing `judging_' by `contest_' at
-    its beginning, and removing from the end any `_PPP'.
-    If the judging directory name is ~/XXX/judging_YYY
-    and there is no `_PPP', the contest directory name
-    ~/XXX/contest_YYY is still used (YYY must not con-
-    tain a `_').  It is an error if `./contest' does not
-    exist but the contest directory already exists.
+    the beginning of its last component, and removing
+    from the end any `_PPP'.  If the judging directory
+    name is ~/XXX/judging_YYY and there is no `_PPP',
+    the contest directory name ~/XXX/contest_YYY is used
+    (YYY must not contain a `_').  It is an error if
+    `./contest' does not exist but the contest directory
+    already exists.
 
     If `./contest' is made, or if anything is made in
     `./contest', a+x is set for that directory and its
     parent.
-
+
 The -bin Option
 --- ---- ------
+
+    The bin subdirectory of the contest directory holds
+    programs executable by the contestant.
 
     The -bin program option makes the symbolic link
     ./contest/bin to `\$hpcm_directory/contestant/bin',
     where the `hpcm_directory' global variable defaults
     to `~/hpcm'.  If this cannot be done, it is not an
     error, but a TODO to fix the situation is written.
-
+
+
 The -home Option
 --- ----- ------
 
+    The `home' subdirectory of the contest directory
+    holds files that would normally be in the home
+    directory of each contestant account.  Instead,
+    symbolic links in the home directory of each con-
+    testant account target files in the `home' direc-
+    tory of the contest directory.  This permits one of
+    these files to be changed for all contestants at the
+    same time by editing a single file.
+
+    The `home' subdirectory of the contest directory
+    is symbolically linked to the `home' subdirectory
+    of the prototype account, where the target files
+    mentioned above are kept.  See the hpcm/contestant/
+    bin/SETUP_PROTOTYPE program.
+
     The -home program option makes the symbolic link
     ./contest/home to ~PROTO/home, where PROTO is the
     name of the prototype account that is set up by
@@ -607,8 +632,13 @@ The -home Option
     account cannot be found, it is not an error, but
     a TODO to fix the situation is written.
 
+
 The -info Option
 --- ----- ------
+
+    The ./info directory is the place from which the
+    `autoinfo' program that processes `get XXX' emails
+    gets files.
 
     The -info option creates the ./info directory and
     is subdirectories, ./info/help, ./info/demos, and
@@ -630,10 +660,14 @@ The -info Option
 The -help, -demos, and -problems Options
 --- ------ ------- --- --------- -------
 
-    These options create ./contest/help, ./contest/
-    demos, and ./contest/problems, respectively.  The
-    specific contents of these directories is determined
-    by index specifications: see above.
+    The ./contest/help, ./contest/demos, and ./contest/
+    problems directories are the places from which the
+    contestant local accounts get help files, demo
+    files, and problem source and optionally description
+    files, respectively.  These directories are made by
+    the -help, -demos, and -problems options, respec-
+    tively.  The specific contents of these directories
+    is determined by index specifications: see above.
 
     When an index item is included in one of these
     directories, files are copied and new directories
@@ -661,25 +695,26 @@ The -help, -demos, and -problems Options
 The -solutions Option
 --- ---------- ------
 
-    The -solutions option creates the ./solutions direc-
-    tory.  This contains all items that have substituted
-    item names beginning with demos/ or problems/, and
-    do NOT have the `nosolutions' option after option
-    substitution.  It is an error if such an item is a
-    file and not a directory.  For each such item a sym-
-    bolic link is created in the ./solutions directory
-    to the item directory, and this link is given as its
-    name the name of the last component of the substitu-
-    ted item name.  e.g., the name `demos/count' becomes
-    `./solutions/count'.  This means that all demos and
-    problems items in the contest must have unique last
-    components (except for items with the `nosolution'
-    item option).
+    The ./solutions directory is the place from which
+    the `autojudge' program gets the files it uses to
+    test a submission.  This directory is made by the
+    -solutions option.  It contains all items that have
+    substituted item names beginning with demos/ or
+    problems/, and do NOT have the `nosolutions' option
+    after option substitution.  It is an error if such
+    an item is a file and not a directory.  For each
+    such item a symbolic link is created in the
+    ./solutions directory to the item directory, and
+    this link is given as its name the name of the last
+    component of the substituted item name.  e.g., the
+    name `demos/count' produces `./solutions/count'.
+    This means that all demos and problems items in the
+    contest must have unique last components (except for
+    items with the `nosolution' item option).
 
-Notes on help, demos, problems, and solutions
------ -- ----- ------ --------- --- ---------
-Directories
------------
+
+help, demos, problems, and solutions Directory Notes
+----- ------ --------- --- --------- --------- -----
 
     If we consider the directory pairs:
 
