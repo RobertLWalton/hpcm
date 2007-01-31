@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Jan 31 03:54:27 EST 2007
+# Date:		Wed Jan 31 04:09:25 EST 2007
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2007/01/31 09:08:39 $
+#   $Date: 2007/01/31 09:09:37 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.62 $
+#   $Revision: 1.63 $
 
 # Include file that contains the following variables:
 #
@@ -125,12 +125,12 @@ ARCHIVE_FILES = \
 #
 # make check
 #	Check the signatures in HPCM_${VERSION}_
-#       Signatures, except for non-existant (e.g. non-
+#       Signatures, except for non-existent (e.g. non-
 #       distributed) files.
 #
 # make checkall
 #	Check ALL the signatures in HPCM_${VERSION}_
-#       Signatures, and list non-existant files.
+#       Signatures, and list non-existent files.
 #
 # make cvssignatures
 #	Make HPCM_${VERSION}_CVS_Signatures file
@@ -306,7 +306,7 @@ HPCM_${VERSION}_Signatures:	Makefile \
 	      >>  hpcm/HPCM_${VERSION}_Signatures
 	chmod a-wx HPCM_${VERSION}_Signatures
 
-# Check signatures except for non-existant files.
+# Check signatures except for non-existent files.
 #
 check:
 	cd ..; \
