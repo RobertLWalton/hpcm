@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Jan 20 05:32:20 EST 2007
+# Date:		Wed Jan 31 03:54:27 EST 2007
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2007/01/20 10:36:53 $
+#   $Date: 2007/01/31 09:08:39 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.61 $
+#   $Revision: 1.62 $
 
 # Include file that contains the following variables:
 #
@@ -125,7 +125,12 @@ ARCHIVE_FILES = \
 #
 # make check
 #	Check the signatures in HPCM_${VERSION}_
-#       Signatures.
+#       Signatures, except for non-existant (e.g. non-
+#       distributed) files.
+#
+# make checkall
+#	Check ALL the signatures in HPCM_${VERSION}_
+#       Signatures, and list non-existant files.
 #
 # make cvssignatures
 #	Make HPCM_${VERSION}_CVS_Signatures file
@@ -301,7 +306,7 @@ HPCM_${VERSION}_Signatures:	Makefile \
 	      >>  hpcm/HPCM_${VERSION}_Signatures
 	chmod a-wx HPCM_${VERSION}_Signatures
 
-# Check Signatures
+# Check signatures except for non-existant files.
 #
 check:
 	cd ..; \
@@ -309,12 +314,33 @@ check:
 	       -e '1,/ ======   MD5 Signatures:$$/'d \
 	       -e '/ ======   SHA1 Signatures:$$/,$$'d | \
 	       md5sum --check 2>&1 | \
-	       sed -e '/^[^ 	]*: OK$$/d'
+	       sed -e '/^[^ 	]*: OK$$/d' \
+		   -e '/^[^ 	]*: FAILED open or read/d' \
+	           -e '/: No such file or directory$$/d'
 	cd ..; \
 	   sed < hpcm/HPCM_${VERSION}_Signatures \
 	       -e '1,/ ======   SHA1 Signatures:$$/'d | \
 	       sha1sum --check 2>&1 | \
-	       sed -e '/^[^ 	]*: OK$$/d'
+	       sed -e '/^[^ 	]*: OK$$/d' \
+		   -e '/^[^ 	]*: FAILED open or read/d' \
+	           -e '/: No such file or directory$$/d'
+
+# Check all signatures.
+#
+checkall:
+	cd ..; \
+	   sed < hpcm/HPCM_${VERSION}_Signatures \
+	       -e '1,/ ======   MD5 Signatures:$$/'d \
+	       -e '/ ======   SHA1 Signatures:$$/,$$'d | \
+	       md5sum --check 2>&1 | \
+	       sed -e '/^[^ 	]*: OK$$/d' \
+	           -e '/: No such file or directory$$/d'
+	cd ..; \
+	   sed < hpcm/HPCM_${VERSION}_Signatures \
+	       -e '1,/ ======   SHA1 Signatures:$$/'d | \
+	       sha1sum --check 2>&1 | \
+	       sed -e '/^[^ 	]*: OK$$/d' \
+	           -e '/: No such file or directory$$/d'
 
 # Make cvsroot, a directory that holds the cvs files
 # to be signature summed.  You must make hpcm_cvs_
