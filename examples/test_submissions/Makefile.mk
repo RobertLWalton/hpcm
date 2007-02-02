@@ -2,7 +2,7 @@
 #
 # File:		Makefile.mk
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Jan 24 03:03:33 EST 2007
+# Date:		Fri Feb  2 10:00:56 EST 2007
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2007/01/24 08:04:48 $
+#   $Date: 2007/02/02 18:27:22 $
 #   $RCSfile: Makefile.mk,v $
-#   $Revision: 1.43 $
+#   $Revision: 1.44 $
 
 COMMON_TESTS = \
 	test_count_correct \
@@ -61,11 +61,11 @@ test_informal:	test_local \
 
 auto_diff_informal:	\
 		auto_diff_local \
-		test_get.diff
+		test_get.informal_diff
 
 manual_diff_informal:	\
 		manual_diff_local \
-		test_get.diff
+		test_get.informal_diff
 
 %.email:	%.mail ./Contest_Address
 	( echo To: `cat Contest_Address`; cat $*.mail) \
@@ -114,7 +114,8 @@ extract_replies:	mbox
 	  '//.*\$$Date'$$e \
 	  '//.*\$$RCSfile'$$e \
 	  '//.*\$$Revision'$$e \
-	  'a response from .*@'
+	  'a response from .*@' \
+	  'Input From .*'
 
 COUNT_CORRECT_FILES = \
 	count_correct.c \
@@ -246,6 +247,9 @@ test_get.email:	\
 
 test_get.diff:	\
     ${GET_FILES:%=$S/common_replies/%.diff}
+
+test_get.informal_diff:	\
+    ${GET_FILES:%=$S/informal_replies/%.diff}
 
 test_forbidden.local:	\
     ${FORBIDDEN_FILES:%=$S/%.local}

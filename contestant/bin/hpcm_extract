@@ -4,7 +4,7 @@
 #
 # File:		hpcm_extract
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Fri May  5 14:07:59 EDT 2006
+# Date:		Fri Feb  2 09:11:37 EST 2007
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -12,10 +12,10 @@
 #
 # RCS Info (may not be true date or author):
 #
-#   $Author: hc3 $
-#   $Date: 2006/05/05 19:35:12 $
+#   $Author: walton $
+#   $Date: 2007/02/02 18:25:16 $
 #   $RCSfile: hpcm_extract,v $
-#   $Revision: 1.18 $
+#   $Revision: 1.19 $
 
 # If this is not bash and bash is available, switch
 # to using bash.  Note that `which bash` may output
@@ -131,6 +131,8 @@ fi
 mode=header
 subject_ok=no
 subject=
+test_subject=
+test_subject_continue=no
 From=
 from=
 date=
@@ -146,7 +148,7 @@ do
 
     if test $? -ne 0
     then
-        if test $mode != header
+        if test $mode != finish -a $mode != begin
 	then
 	    # Create fake missing end of file.
 	    #
@@ -165,6 +167,21 @@ REPLY="---<>--<>---<>--<>---<>----- end of files"
     case $mode in
 
     header)
+        # For headers, save parts of header.
+	#
+	continue=`expr "$REPLY" : "[ 	]"`
+	if test $continue -ne 0
+	then
+	    if test $test_subject_continue = yes
+	    then
+	        test_subject="$test_subject
+$REPLY"
+	    fi
+	else
+	    test_subject_continue=no
+	fi
+
+
         # For headers, save parts of header.
 	#
     	case "$REPLY" in
@@ -187,6 +204,39 @@ REPLY="---<>--<>---<>--<>---<>----- end of files"
 
 	Subject:*)
 	    subject="$REPLY"
+	    ;;
+
+	X-HPCM-Test-Subject:*)
+	    test_subject="$REPLY"
+	    test_subject_continue=yes
+	    ;;
+
+	'')
+	    # Start of body.
+	    # Print output message header.
+	    #
+	    if test "$from" != ""
+	    then echo "$from"; fi
+	    if test "$date" != ""
+	    then echo "$date"; fi
+	    if test "$subject" != ""
+	    then echo "$subject"; fi
+	    if test "$test_subject" != ""
+	    then echo "$test_subject"; fi
+	    echo "X-HPCM-Subject:" \
+		 "output of hpcm_extract"
+	    mode=begin
+	    echo ""
+	    ;;
+	esac
+    	;;
+
+    begin)
+
+    	case "$REPLY" in
+
+	Subject:*)
+	    subject="$REPLY"
 	    # Set subject_ok according to whether
 	    # subject is `get ...'.  This Subject
 	    # line is not that of the message proper,
@@ -202,27 +252,16 @@ REPLY="---<>--<>---<>--<>---<>----- end of files"
 	    if test $ok -ne 0
 	    then
 	    	subject_ok=yes
-		subject=`expr "$REPLY" : \
-		              "${SUBJECT}:"'\(.*\)$' `
-		subject="Subject: RE:$subject"
 	    else
 	    	subject_ok=no
 	    fi
 	    ;;
+	esac
 
+    	case "$REPLY" in
 	'---<>--<>---<>--<>---<>-----'*)
-	    # Start of file.  Print header of a new
-	    # message containing the output of hpcm_
-	    # extract.
+	    # Print hpcm_extact subheader.
 	    #
-	    if test "$from" != ""
-	    then echo "$from"; fi
-	    if test "$date" != ""
-	    then echo "$date"; fi
-	    if test "$subject" != ""
-	    then echo "$subject"; fi
-	    echo "X-HPCM-Subject:" \
-		 "output of hpcm_extract"
 	    echo ""
 	    echo "Output of: hpcm_extract $home"
 	    if test "$From" != ""
@@ -232,8 +271,15 @@ REPLY="---<>--<>---<>--<>---<>----- end of files"
 	    mode=look
 	    has_errors=no
 	    ;;
+	*)
+	    echo "$REPLY"
+	    ;;
 	esac
-    	;;
+	;;
+
+    finish)
+	echo "$REPLY"
+	;;
 
     extract)
     	case "$REPLY" in
@@ -367,13 +413,13 @@ REPLY="---<>--<>---<>--<>---<>----- end of files"
 		     in extraction
 	    fi
 	    echo ""
-	    mode=header
+	    mode=finish
 	    ;;
 
 	"end of files<no>" )
 	    echo BAD SUBJECT: no files extracted
 	    echo ""
-	    mode=header
+	    mode=done
 	    ;;
 
 	*"<no>" )
