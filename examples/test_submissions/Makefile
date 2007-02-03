@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Jan 24 02:55:56 EST 2007
+# Date:		Sat Feb  3 00:43:44 EST 2007
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2007/01/24 07:58:39 $
+#   $Date: 2007/02/03 05:51:03 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.8 $
+#   $Revision: 1.9 $
 
 # This Makefile is to be used to test HPCM from a
 # contestant account.  Instructions are:
@@ -96,7 +96,10 @@
 #     hpcm/contestant/bin or hpcm/judge/bin directories
 #     in your PATH, you can follow the procedure in 5a
 #     changing `local' to `email' (even if you have used
-#     the UNIX Tools).
+#     the UNIX Tools).  However, you should not have,
+#     or should temporarily disable, ~/.procmailrc dur-
+#     ing execution of `make test_email', in order to
+#     avoid executing hpcm_extact automatically.
 #
 # 5c. Otherwise if 5a and 5b do not apply, examine each
 #     email reply by hand to compare its X-HPCM-Test-
