@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Jan 31 04:09:25 EST 2007
+# Date:		Fri Feb  9 20:08:15 EST 2007
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2007/01/31 09:09:37 $
+#   $Date: 2007/02/10 01:18:25 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.63 $
+#   $Revision: 1.64 $
 
 # Include file that contains the following variables:
 #
@@ -524,8 +524,12 @@ web:		Makefile STATUS \
 	      judge/doc/installing_hpcm.txt \
 	      judge/doc/judging.txt \
 	      web
-	MD5SUM=`md5sum web/hpcm_${VERSION}${TAREXT}`; \
+	FILE=web/hpcm_${VERSION}${TAREXT}; \
+	   MD5SUM=`md5sum $${FILE}`; \
 	   MD5SUM=`expr "$${MD5SUM}" : \
+	                 '[ 	]*\([^ 	]*\)[ 	]' `; \
+	   SHA1SUM=`sha1sum $${FILE}`; \
+	   SHA1SUM=`expr "$${SHA1SUM}" : \
 	                 '[ 	]*\([^ 	]*\)[ 	]' `; \
 	   sed \
 	      <web_index.html \
@@ -533,6 +537,7 @@ web:		Makefile STATUS \
 	      -e '/TAREXT/s//${TAREXT}/g' \
 	      -e '/CONTACT/s//${WEB_CONTACT}/g' \
 	      -e '/MD5SUM/s//'$${MD5SUM}'/g' \
+	      -e '/SHA1SUM/s//'$${SHA1SUM}'/g' \
 	      > web/index.html
 	chmod 444 web/*
 	chmod 755 web
@@ -552,15 +557,20 @@ web_solutions:	Makefile \
 	chmod 755 web/private/${WEB_PASSWORD}
 	cp -p hpcm_${VERSION}_solutions${TAREXT} \
 	      web/private/${WEB_PASSWORD}
-	MD5SUM=`md5sum web/private/*/*${TAREXT}` ; \
-	  MD5SUM=`expr "$${MD5SUM}" : \
-	               '[ 	]*\([^ 	]*\)[ 	]' `; \
+	FILE=web/private/*/*${TAREXT}; \
+	   MD5SUM=`md5sum $${FILE}`; \
+	   MD5SUM=`expr "$${MD5SUM}" : \
+	                 '[ 	]*\([^ 	]*\)[ 	]' `; \
+	   SHA1SUM=`sha1sum $${FILE}`; \
+	   SHA1SUM=`expr "$${SHA1SUM}" : \
+	                 '[ 	]*\([^ 	]*\)[ 	]' `; \
 	  sed \
 	    <web_solutions_index.html \
 	    -e '/VERSION/s//${VERSION}/g' \
 	    -e '/TAREXT/s//${TAREXT}/g' \
 	    -e '/CONTACT/s//${WEB_CONTACT}/g' \
 	    -e '/MD5SUM/s//'$${MD5SUM}'/g' \
+	    -e '/SHA1SUM/s//'$${SHA1SUM}'/g' \
 	    >web/private/${WEB_PASSWORD}/index.html
 	chmod 444 web/private/${WEB_PASSWORD}/*
 
