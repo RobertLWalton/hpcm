@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Jan 23 09:38:42 EST 2007
+# Date:		Sun Oct  7 07:02:39 EDT 2007
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2007/01/23 14:39:04 $
+#   $Date: 2007/10/07 11:05:58 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.76 $
+#   $Revision: 1.77 $
 
 # Table of Contents
 #
@@ -171,6 +171,13 @@ Good Hunting!
 #	    for details.  In particular, emailing the
 #	    postscript to some address is supported.
 #
+#	{ REGEXP TARGET }
+#	    Here TARGET is a printer name as per the
+#	    printer_pipe contestant command printer_map
+#	    file, and must begin with | or ! or contain
+#	    a @.  This merely makes an entry in the
+#	    contest/printer_map file.
+#
 # REGEXP is an expr(1) (not TCL) regular expression that
 # matches the contestant account name.  Backslashes in
 # REGEXP must be doubled, or alternatively REGEXP can be
@@ -181,7 +188,8 @@ Good Hunting!
 # NAME is the name of a command that will be create to
 # invoke the proper pipe.  It may not contain whitespace
 # or /.  It should be distinct from other file names
-# in ./contest.
+# in ./contest.  It may not begin with ! or | or contain
+# a @.
 #
 set printer_commands {
 }
@@ -476,9 +484,16 @@ if { [llength $printer_commands] == 0 } {
 	}
 
 	regsub -all {\\} $regexp {\\\\} regexp
-	set timed_printer_map \
-	    "$timed_printer_map\n$regexp\
-	     |$contest_directory/$name"
+
+	if {    [regexp {^[!|]} $name] \
+	     || [regexp {@} $name] } {
+	    set timed_printer_map \
+		"$timed_printer_map\n$regexp $name"
+	} else {
+	    set timed_printer_map \
+		"$timed_printer_map\n$regexp\
+		 |$contest_directory/$name"
+	}
     }
 }
 
