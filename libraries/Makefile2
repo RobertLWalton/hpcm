@@ -1,0 +1,139 @@
+# Makefile for the XXX Problem
+#
+# File:		Makefile
+# Date:		Mon Sep 24 22:11:23 EDT 2007
+#
+# See demonstration Makefile for documentation.
+#
+# The program for this problem is named:
+
+P = problem_name
+
+# The monitor program for this problem is named:
+
+M = monitor_name
+
+# The programming language in which the solution and
+# monitor are written has extension:
+
+E = .cc
+
+.SUFFIXES:
+.SUFFIXES: .c .cc .java .lsp
+
+default:	$P.out
+
+.c:
+	rm -f $* core core.[0-9]*
+	gcc -g -o $* $*.c -lm
+
+.cc:
+	rm -f $* core core.[0-9]*
+	g++ -g -o $* $*.cc -lm
+
+.java:
+	rm -f $* *.class core core.[0-9]*
+	javac -g $*.java
+	echo >$* '#!/bin/sh'
+	echo >>$* "exec `which java` $* \$$*"
+	chmod a+r *.class
+	chmod a+rx $*
+
+#
+.lsp:
+	rm -f $* $*.fas $*.lib core core.[0-9]*
+	hpcm_clisp -c $*.lsp
+	echo >$* '#!/bin/sh'
+	echo >>$* \
+	    "exec `hpcm_clisp -which` -I $*.fas \$$*"
+	chmod a+r $*.fas
+	chmod a+rx $*
+
+# Contestant's monitor, without debugging info.
+#
+$M:	$M$E $P$E
+	g++ -o $M $M$E -lm
+
+# Judge's monitor with debugging info.
+#
+judges_$M:  $M$E $P$E
+	g++ -g -o judges_$M -DJUDGE $M$E -lm
+
+# We cannot list $M as a prerequisite because then
+# $M$E would be required by the above rule, and it
+# is not available in the contestants working directory.
+# But for testing purpose we do need to make $M if
+# it does not exist or is older than $M$E or $P$E.
+#
+$P.out:	$P $P.in
+	@if test ! -x $M -o \
+	         \( -r $M$E -a -r $P$E -a \
+		    \( $M -ot $M$E -o \
+		       $M -ot $P$E \) \); \
+	    then echo g++ -o $M $M$E -lm; \
+		 g++ -o $M $M$E -lm; fi
+	rm -f $P.out core core.[0-9]*
+	chmod a+x . $P
+	$M hpcm_sandbox -cputime 60 \
+	                -datasize 4m \
+		        -stacksize 4m \
+		        -filesize 50k \
+			-tee $P.out \
+		        $P \
+	    <$P.in
+
+$P.debug:	$P $P.in
+	@if test ! -x $M -o \
+	         \( -r $M$E -a -r $P$E -a \
+		    \( $M -ot $M$E -o \
+		       $M -ot $P$E \) \); \
+	    then echo g++ -o $M $M$E -lm; \
+		 g++ -o $M $M$E -lm; fi
+	rm -f $P.debug core core.[0-9]*
+	chmod a+x . $P
+	$M hpcm_sandbox -cputime 60 \
+	                  -datasize 4m \
+		          -stacksize 4m \
+		          -filesize 4m \
+			  -tee $P.debug \
+		          $P debug \
+	    <$P.in
+
+debug:		$P.debug
+
+submit:		$P.out
+	hpcm_submit $P
+
+in-submit:	$P.out
+	hpcm_submit -in $P
+
+inout-submit:	$P.out
+	hpcm_submit -inout $P
+
+solution-submit:	$P.out
+	hpcm_submit -solution $P
+
+# We must not remove monitor from the contestant's
+# directory which has no $M$E to remake it.
+#
+clean:
+	rm -f $P *.class core core.[0-9]* \
+	      *.out *.debug *.fout *.jout *.jfout \
+	      $P.fas $P.lib make_$P_*input
+	@if test -r $M$E; \
+	    then echo rm -f $M judges_$M; \
+	         rm -f $M judges_$M; fi
+
+#
+# Author:	walton@deas.harvard.edu
+#
+# The authors have placed this file in the public
+# domain; they make no warranty and accept no liability
+# for this file.
+#
+# RCS Info (may not be true date or author):
+#
+#   $Author: walton $
+#   $Date: 2007/10/08 10:42:54 $
+#   $RCSfile: Makefile2,v $
+#   $Revision: 1.11 $
