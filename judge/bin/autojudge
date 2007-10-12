@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2007/01/08 12:02:15 $
+#   $Date: 2007/10/12 11:20:17 $
 #   $RCSfile: autojudge,v $
-#   $Revision: 1.134 $
+#   $Revision: 1.135 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -194,15 +194,16 @@ autojudge \[-rerun|-manual\]
 	exist, N.fout will be made, and if N.jin also
 	exists, then N.jfout will be made.
 
-      * Files listed in the problem_link_files and
-        problem_optional_link_files global variables are
-	linked from the problem solution directory to
-	the current submission directory.  Then the
-	following are linked if they do not exist in the
-	submission directory and they do exist in the
-	solution directory: Makefile, Scoring_Filter,
-	and for each input names N, N.in, N.test, N.jin,
-	N.ftest, N.jtest, N.jftest.
+      * Files listed in the problem_{link,copy}_files
+        and problem_optional_{link,copy}_files global
+	variables are {linked,copied} from the problem
+	solution directory to the current submission
+	directory.  Then the following are linked if
+	they do not exist in the submission directory
+	and they do exist in the solution directory:
+	Makefile, Scoring_Filter, and for each input
+	names N, N.in, N.test, N.jin, N.ftest, N.jtest,
+	N.jftest.
 
 	Note that if N.out exists in the problem solu-
 	tion directory, it will be linked to N.test in
@@ -210,6 +211,11 @@ autojudge \[-rerun|-manual\]
 	N.test in the solution directory.  Ditto for
 	.ftest, .jtest, .jftest.
 
+        The only reason for copying files instead of
+	linking them is when hpcm_sandbox needs to
+	access the file, as it has no permission on
+	the solution directory.
+
       . The program binary file `PROBLEM' and the
 	compiler error file PROBLEM.cerr are made by
 	executing `make PROBLEM' in the submission
@@ -504,29 +510,31 @@ if { ! [file isdirectory $s_d] } {
 }
 
 # Global variable that is list of all files linked
-# into the submission directory by autojudge.  Various
-# output files depend on all these (must not be older
-# than any of these).
+# or copies into the submission directory by autojudge.
+# Various output files depend on all these (must not be
+# older than any of these).
 #
-set linked_files ""
+set linked_or_copied_files ""
 
-# Function that links files according to the data that
-# has the format of a problem_link_files global variable
-# value: see hpcm_judging.rc.  Name describes the data
-# for error message purposes.  Optional is 1 if links
-# are options, 0 if they are required.  Relink is 1 (the
-# default) if existing links are deleted and relinked,
-# and 0 otherwise.
+# Function that {links,copies} files according to the
+# data that has the format of a problem_link_files
+# global variable value: see hpcm_judging.rc.  Name
+# describes the data for error message purposes.  Copy
+# is 1 to copy instead of link.  Optional is 1 if
+# {links,copies} are options, 0 if they are required.
+# Relink is 1 (the default) if existing {links,copies}
+# are deleted and {relinked,recopied}, and 0 otherwise.
 #
 # Appends files that exist or are newly linked to
-# linked_files above.
+# linked_or_copied_files above.
 #
 # The global s_d names the problem solution directory.
 #
-proc execute_links \
-	{ data name { optional 0 } { relink 1 } } {
+proc execute_links_or_copies \
+	{ data name {copy 0 } { optional 0 } \
+	            { relink 1 } } {
 
-    global s_d linked_files
+    global s_d linked_or_copied_files
 
     if { [catch { llength $data }] } {
 	error "bad $name, not a TCL list: $data"
@@ -562,7 +570,7 @@ proc execute_links \
 	    set type none
 	}
 
-	if {    $type == "link" && $relink \
+	if {    ! $copy && $type == "link" && $relink \
 	     && ( $source == "" \
 		  ||    [file readlink $target] \
 		     != $source ) } {
@@ -570,10 +578,17 @@ proc execute_links \
 	    file delete -force $target
 	    set type none
 	}
+	if {    $copy && $type == "file" && $relink \
+	     && ! [compare_files $source $target] } { \ 
+	    puts "Deleting $target"
+	    file delete -force $target
+	    set type none
+	}
 
 	if { $type != "none" } {
-	    if { ! [lcontain $linked_files $target] } {
-		lappend linked_files $target
+	    if { ! [lcontain $linked_or_copied_files \
+	                     $target] } {
+		lappend linked_or_copied_files $target
 	    }
 	} elseif { $source == "" } {
 	    if { ! $optional } {
@@ -582,14 +597,24 @@ proc execute_links \
 	    }
 	} else {
 	    set tail [file tail $source]
-	    if { $tail == $target } {
-		puts "Linking $target"
+	    if { $copy } {
+		if { $tail == $target } {
+		    puts "Copying $target"
+		} else {
+		    puts "Copying $tail to\
+			  $target"
+		}
+		copy_file $source $target
 	    } else {
-		puts "Linking $tail to\
-		      $target"
+		if { $tail == $target } {
+		    puts "Linking $target"
+		} else {
+		    puts "Linking $tail to\
+			  $target"
+		}
+		link_file $source $target
 	    }
-	    link_file $source $target
-	    lappend linked_files $target
+	    lappend linked_or_copied_files $target
 	}
     }
 }
@@ -603,8 +628,8 @@ set s_d_is_locked 0
 
 # Source any PROBLEM.rc file.
 #
-execute_links $PROBLEM.rc \
-              "initial problem .rc file linking" 1
+execute_links_or_copies \
+    $PROBLEM.rc "initial problem .rc file linking" 0 1
 source_file $PROBLEM.rc
 
 # Force scoring mode if there was a -manual or -rerun
@@ -777,15 +802,31 @@ if { $s_d_is_locked } {
 # Otherwise execute default.
 #
 if { [info exists problem_link_files] } {
-    execute_links $problem_link_files \
-    		  "problem_link_files value"
+    execute_links_or_copies \
+        $problem_link_files "problem_link_files value"
+}
+# Execute problem_copy_files instructions if any.
+# Otherwise execute default.
+#
+if { [info exists problem_copy_files] } {
+    execute_links_or_copies \
+        $problem_copy_files "problem_copy_files value" 1
 }
 # Execute problem_optional_link_files instructions if
 # any.
 #
 if { [info exists problem_optional_link_files] } {
-    execute_links $problem_optional_link_files \
-    		  "problem_optional_link_files value" 1
+    execute_links_or_copies \
+        $problem_optional_link_files \
+	"problem_optional_link_files value" 0 1
+}
+# Execute problem_optional_copy_files instructions if
+# any.
+#
+if { [info exists problem_optional_copy_files] } {
+    execute_links_or_copies \
+        $problem_optional_copy_files \
+        "problem_optional_copy_files value" 1 1
 }
 
 # Link everything that does not exist that we need.
@@ -819,10 +860,9 @@ foreach name $input_names {
 	    " $name.jtest $name.jout $name.jtest "
     }
 }
-execute_links $instructions \
-              "autojudge generated required link\
-	       instructions" \
-	      0
+execute_links_or_copies \
+    $instructions "autojudge generated required link\
+	           instructions" 0 0
 
 # Function to send reply to user containing new auto
 # score.
@@ -954,7 +994,7 @@ proc should_be_made { args } {
 #
 if { [should_be_made \
          [list $PROBLEM $PROBLEM.cerr] \
-	 [concat $linked_files \
+	 [concat $linked_or_copied_files \
 	 	 $extracted_files]] } {
 
     puts "Making $PROBLEM"
@@ -999,7 +1039,7 @@ foreach name $input_names {
     if { [should_be_made \
 	     [list $name.out $name.err] \
 	     [concat [list $PROBLEM] \
-		     $linked_files \
+		     $linked_or_copied_files \
 		     $extracted_files]] \
 	 && [file executable $PROBLEM] } {
 
