@@ -5,7 +5,7 @@
 #
 # File:		autojudge
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Jan  8 06:32:58 EST 2007
+# Date:		Fri Oct 12 07:28:37 EDT 2007
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2007/10/12 11:20:17 $
+#   $Date: 2007/10/12 11:34:29 $
 #   $RCSfile: autojudge,v $
-#   $Revision: 1.135 $
+#   $Revision: 1.136 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -510,7 +510,7 @@ if { ! [file isdirectory $s_d] } {
 }
 
 # Global variable that is list of all files linked
-# or copies into the submission directory by autojudge.
+# or copied into the submission directory by autojudge.
 # Various output files depend on all these (must not be
 # older than any of these).
 #
@@ -579,7 +579,13 @@ proc execute_links_or_copies \
 	    set type none
 	}
 	if {    $copy && $type == "file" && $relink \
-	     && ! [compare_files $source $target] } { \ 
+	     && ( ! [compare_files $source $target] \
+	          || \
+		  [file attributes $source \
+		                   -permissions] \
+		  != \
+		  [file attributes $target \
+		                   -permissions] ) } {
 	    puts "Deleting $target"
 	    file delete -force $target
 	    set type none
