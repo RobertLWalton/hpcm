@@ -2,7 +2,7 @@
  *
  * File:	hpcm_sandbox.c
  * Authors:	Bob Walton (walton@deas.harvard.edu)
- * Date:	Sat May  6 01:14:37 EDT 2006
+ * Date:	Thu Sep  4 03:52:49 EDT 2008
  *
  * The authors have placed this program in the public
  * domain; they make no warranty and accept no liability
@@ -10,10 +10,10 @@
  *
  * RCS Info (may not be true date or author):
  *
- *   $Author: hc3 $
- *   $Date: 2006/05/06 05:36:47 $
+ *   $Author: walton $
+ *   $Date: 2008/09/26 13:24:07 $
  *   $RCSfile: hpcm_sandbox.c,v $
- *   $Revision: 1.19 $
+ *   $Revision: 1.20 $
  */
 
 #include <stdlib.h>
@@ -145,6 +145,7 @@ int main ( int argc, char ** argv )
     int processes = 50;
     int watch = 0;
     int tee = 0;
+    int debug = 0;
     const char * file = NULL;
 
     /* Effective IDs of this process after change
@@ -163,7 +164,14 @@ int main ( int argc, char ** argv )
     {
         int * option;
 
-        if ( strcmp ( argv[index], "-watch" )
+        if ( strcmp ( argv[index], "-debug" )
+	     == 0 )
+	{
+	    debug = 1;
+	    ++ index;
+	    continue;
+	}
+        else if ( strcmp ( argv[index], "-watch" )
 	     == 0 )
 	{
 	    watch = 1;
@@ -509,6 +517,18 @@ int main ( int argc, char ** argv )
         errno_exit ( "setreuid setting real uid" );
     if ( setregid ( egid, -1 ) < 0 )
         errno_exit ( "setregid setting real gid" );
+
+    if ( debug )
+    {
+        fprintf ( stderr, "uid is now %d\n",
+	                  getuid() );
+        fprintf ( stderr, "gid is now %d\n",
+	                  getgid() );
+        fprintf ( stderr, "euid is now %d\n",
+	                  geteuid() );
+        fprintf ( stderr, "egid is now %d\n",
+	                  getegid() );
+    }
 
     {
         /* Set the resource limits */
