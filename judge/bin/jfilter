@@ -5,7 +5,7 @@
 #
 # File:		jfilter
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Nov  2 10:29:05 EST 2006
+# Date:		Sun Oct 19 08:09:41 EDT 2008
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/11/02 15:30:04 $
+#   $Date: 2008/10/20 02:02:29 $
 #   $RCSfile: jfilter,v $
-#   $Revision: 1.30 $
+#   $Revision: 1.31 $
 #
 # The next line starts tcl \
 exec tcl "$0" "$@"
@@ -304,8 +304,11 @@ jfilter \[options\] judging_input_file \\
     just the beginning of a line.  Otherwise they will
     match any part of a line.
 
-    Regexps are always matched with a -nocase option, so
-    letter case in a regexp makes no difference.
+    Regexps are matched with a -nocase option, so letter
+    case in the regexp makes no difference, unless the
+    regexp begins with a `$', in which case the regexp
+    without the beginning `$' is matched without the
+    -nocase option (so the match is case sensitive).
 
     Whitespace is trimmed from the beginning and end of
     any regexp in a parameter definition.  This means
@@ -364,6 +367,20 @@ jfilter \[options\] judging_input_file \\
     Unlike most HPCM judging programs, this program does
     not read any hpcm_judging.rc file and errors made by
     this program are not written to log files."
+
+# Execute regexp with -nocase if the regexp argument
+# does not begin with `$', or without -nocase and with
+# the beginning `$' removed from the regexp argument if
+# the latter does begin with `$'.
+#
+proc jfregexp { regexp string } {
+    if { [string index $regexp 0] == "$" } {
+        return [regexp -- [string range $regexp 1 end] \
+	               $string]
+    } else {
+        return [regexp -nocase -- $regexp $string]
+    }
+}
 
 # Process options.
 #
@@ -477,7 +494,7 @@ set last_designator ""
 while { ! [eof $jin] } {
 
     if {    $comment != "" \
-         && [regexp -nocase -- $comment $jin_line] } {
+         && [jfregexp $comment $jin_line] } {
 	set jin_line [gets $jin]
         continue
     }
@@ -630,8 +647,7 @@ if { $number_args == 2 } {
     while { ! [eof $jin] } {
 
 	if {    $comment != "" \
-	     && [regexp -nocase -- \
-	                $comment $jin_line] } {
+	     && [jfregexp $comment $jin_line] } {
 	    set jin_line [gets $jin]
 	    continue
 	}
@@ -645,52 +661,45 @@ if { $number_args == 2 } {
 	set last_was_end_mark 0
 	if { $in_end } {
 	} elseif {    $input_group_mark != "" \
-	           && [regexp -nocase -- \
-		              $input_group_mark \
-	                      $jin_line] } {
+	           && [jfregexp $input_group_mark \
+	                        $jin_line] } {
 	    set last_was_group_mark 1
 	    set is_mark 1
 	} elseif {    $input_group_head != "" \
-	           && [regexp -nocase -- \
-		              $input_group_head \
-		              $jin_line] } {
+	           && [jfregexp $input_group_head \
+		                $jin_line] } {
 	    set begin_group 1
 	}
 	if { $in_end || $is_mark } {
 	} elseif {    $input_end_mark != "" \
-	           && [regexp -nocase -- \
-		              $input_end_mark \
-	                      $jin_line] } {
+	           && [jfregexp $input_end_mark \
+	                        $jin_line] } {
 	    set last_was_end_mark 1
 	    set is_mark 1
 	    set in_end 1
 	    set begin_group 0
 	    set begin_case 0
 	} elseif {    $input_end_head != "" \
-	           && [regexp -nocase -- \
-		              $input_end_head \
-		              $jin_line] } {
+	           && [jfregexp $input_end_head \
+		                $jin_line] } {
 	    set begin_end 1
 	    set in_end 1
 	    set begin_group 0
 	    set begin_case 0
 	} elseif {    $input_case_mark != "" \
-	           && [regexp -nocase -- \
-		              $input_case_mark \
-	                      $jin_line] } {
+	           && [jfregexp $input_case_mark \
+	                        $jin_line] } {
 	    set last_was_case_mark 1
 	    set is_mark 1
         } elseif {    $input_case_head != "" \
-	           && [regexp -nocase -- \
-		              $input_case_head \
-		              $jin_line] } {
+	           && [jfregexp $input_case_head \
+		                $jin_line] } {
 	    set begin_case 1
 	}
 
 	if {    $input_separator != "" \
-	     && [regexp -nocase -- \
-			$input_separator \
-			$jin_line] } {
+	     && [jfregexp $input_separator \
+			  $jin_line] } {
 	    set last_was_case_mark 1
 	    set is_separator 1
 	} else {
@@ -780,8 +789,8 @@ if { $number_args == 3 } {
         set group_head 0
 	set case_head 0
 	if {    $output_group_head != "" \
-	     && [regexp -nocase -- $output_group_head \
-		        $out_line] } {
+	     && [jfregexp $output_group_head \
+		          $out_line] } {
 	    incr group_count
 	    set case_count 0
 	    set group_head 1
@@ -794,9 +803,8 @@ if { $number_args == 3 } {
 	    }
 	}
         if {    (    $output_case_head != "" \
-	          && [regexp -nocase -- \
-		             $output_case_head \
-		             $out_line] ) \
+	          && [jfregexp $output_case_head \
+		               $out_line] ) \
 	     || $last_line_was_separator } {
 	    incr case_count
 	    set case_head 1
@@ -817,9 +825,8 @@ if { $number_args == 3 } {
 
 	set last_line_was_separator \
 	    [expr {    $output_separator != "" \
-	            && [regexp -nocase -- \
-		               $output_separator \
-		               $out_line] }]
+	            && [jfregexp $output_separator \
+		                 $out_line] }]
 	
 	if { $copy && ! $selective_copy } {
 	    if { $group_head && $case_head } {
