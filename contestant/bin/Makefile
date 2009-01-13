@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Apr 18 07:05:49 EDT 2006
+# Date:		Tue Jan 13 09:07:17 EST 2009
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -10,12 +10,12 @@
 #
 # RCS Info (may not be true date or author):
 #
-#   $Author: hc3 $
-#   $Date: 2006/04/19 18:31:13 $
+#   $Author: walton $
+#   $Date: 2009/01/13 14:10:56 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.20 $
+#   $Revision: 1.21 $
 
-all:	hpcm_sandbox hpcm_sendmail modes
+all:	hpcm_sandbox hpcm_sendmail clisp modes
 
 # Kill all implicit rules
 #
@@ -34,6 +34,10 @@ hpcm_sendmail:	../../secure/src/hpcm_sendmail.c
 	chmod 555 hpcm_sendmail
 	chmod u+s hpcm_sendmail
 
+clisp:
+	rm -f clisp
+	ln -s `which clisp` clisp
+
 modes:
 	chmod a+rx . TRASH_ACCOUNT SETUP_PROTOTYPE \
 	           help hpcm_extract hpcm_get \
@@ -47,4 +51,4 @@ modes:
 	chmod a+x .. ../.. ../../..
 
 clean:
-	rm -f hpcm_sandbox hpcm_sendmail
+	rm -f hpcm_sandbox hpcm_sendmail clisp
