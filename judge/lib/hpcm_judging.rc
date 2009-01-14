@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Oct 12 07:10:13 EDT 2007
+# Date:		Tue Jan 13 21:47:22 EST 2009
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2007/10/12 11:06:50 $
+#   $Date: 2009/01/14 02:50:37 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.233 $
+#   $Revision: 1.234 $
 
 # Table of Contents:
 #
@@ -2334,7 +2334,7 @@ proc create_file { filename } {
 	    error $out $errorCode $errorInfo
 	}
     } else {
-	chmod u+w $filename
+	file attributes $filename -permissions u+w
 	ftruncate $filename 0
 	return yes
     }
@@ -2409,7 +2409,8 @@ proc archive_directory { dirname } {
 #
 proc grant_user_access { filename permissions } {
     if { $permissions != "" } {
-	chmod "u+$permissions" $filename
+	file attributes $filename \
+	                -permissions "u+$permissions"
     }
 }
 
@@ -2446,7 +2447,7 @@ proc grant_access { filename { allow rx } } {
 	set perm "${perm}x"
     }
     if { $perm != "" } {
-	chmod "a+$perm" $filename
+	file attributes $filename -permissions "a+$perm"
     }
 }
 
@@ -2490,13 +2491,13 @@ proc get_access { filename } {
 # to everyone but owner.
 #
 proc deny_access { filename } {
-    chmod o-rwx,g-w $filename
+    file attributes $filename -permissions o-rwx,g-w
 }
 
 # Deny rwx permissions to everyone but owner.
 #
 proc deny_group_access { filename } {
-    chmod o-rwx,g-rwx $filename
+    file attributes $filename -permissions o-rwx,g-rwx
 }
 
 # Function to view a file.  Change to your favorite
