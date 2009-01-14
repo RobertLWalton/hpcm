@@ -2,7 +2,7 @@
  *
  * File:	hpcm_sandbox.c
  * Authors:	Bob Walton (walton@deas.harvard.edu)
- * Date:	Thu Sep  4 03:52:49 EDT 2008
+ * Date:	Wed Jan 14 01:05:22 EST 2009
  *
  * The authors have placed this program in the public
  * domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
  * RCS Info (may not be true date or author):
  *
  *   $Author: walton $
- *   $Date: 2008/09/26 13:24:07 $
+ *   $Date: 2009/01/14 06:05:14 $
  *   $RCSfile: hpcm_sandbox.c,v $
- *   $Revision: 1.20 $
+ *   $Revision: 1.21 $
  */
 
 #include <stdlib.h>
@@ -46,7 +46,7 @@ char documentation [] =
 "      -filesize N    Output File Size in Bytes (4m)\n"
 "      -core N        Core Dump Size in Bytes (4m)\n"
 "      -openfiles N   Number of Open Files (30)\n"
-"      -processes N   Number of Processes (50)\n"
+"      -processes N   Number of Processes (200)\n"
 "\n"
 "    Here N is a non-negative decimal integer that\n"
 "    can end with `k' to multiply it by 1024 or `m'\n"
@@ -142,7 +142,7 @@ int main ( int argc, char ** argv )
     int filesize = 4 * 1024 * 1024;
     int core = 4 * 1024 * 1024;
     int openfiles = 30;
-    int processes = 50;
+    int processes = 200;
     int watch = 0;
     int tee = 0;
     int debug = 0;
