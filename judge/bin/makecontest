@@ -6,7 +6,7 @@
 #
 # File:		makecontest
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Jan 29 12:56:24 EST 2007
+# Date:		Tue Jan 13 21:21:22 EST 2009
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,14 +15,14 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2007/01/29 17:56:59 $
+#   $Date: 2009/01/14 03:48:33 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.207 $
+#   $Revision: 1.208 $
 #
-# The next line starts tcl \
-exec tcl "$0" "$@"
-
-# Use tcl rather than tclsh so that `signal' is defined.
+# The next lines start tclsh \
+trap "echo makecontest: Terminated by Signal" \
+    HUP INT QUIT; \
+tclsh "$0" "$@"; exit $status
 
 # Include common code and parameters:
 #
@@ -1394,14 +1394,14 @@ proc TODO { args } {
 
 # Make 10 character random password.
 #
-random seed
 proc make_password {} {
-    return [format {%02x%02x%02x%02x%02x} \
-		   [random 256] \
-		   [random 256] \
-		   [random 256] \
-		   [random 256] \
-		   [random 256]]
+    return \
+      [format {%02x%02x%02x%02x%02x} \
+	      [expr { int ( rand() * 256 ) % 256 }] \
+	      [expr { int ( rand() * 256 ) % 256 }] \
+	      [expr { int ( rand() * 256 ) % 256 }] \
+	      [expr { int ( rand() * 256 ) % 256 }] \
+	      [expr { int ( rand() * 256 ) % 256 }]]
 }
 
 # The judging directory name relative to the home
