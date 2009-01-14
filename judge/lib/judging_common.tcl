@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Jan  9 03:05:09 EST 2007
+# Date:		Tue Jan 13 10:32:25 EST 2009
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2007/01/09 08:26:09 $
+#   $Date: 2009/01/14 02:03:23 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.150 $
+#   $Revision: 1.151 $
 #
 
 # Table of Contents
@@ -122,6 +122,13 @@ proc exit_cleanup {} {}
 
 # List Functions
 # ---- ---------
+
+# Return 1 is element is an element of a the list, and 0
+# otherwise.
+#
+proc lcontain { list element } {
+    return [expr [lsearch -exact $list $element] >= 0]
+}
 
 # Append an element to a list if the element is NOT
 # already in the list.
@@ -2528,10 +2535,6 @@ if { [catch {
 	    error $__m__
 	}
     }
-
-    # Set signals to cause errors.
-    #
-    make_signals_errors
 
     # Received mail subject field first word to program
     # mapping for autodispatch:
