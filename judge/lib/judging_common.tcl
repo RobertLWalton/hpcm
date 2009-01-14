@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Jan 13 10:32:25 EST 2009
+# Date:		Wed Jan 14 00:12:05 EST 2009
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2009/01/14 02:03:23 $
+#   $Date: 2009/01/14 05:15:26 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.151 $
+#   $Revision: 1.152 $
 #
 
 # Table of Contents
@@ -128,6 +128,18 @@ proc exit_cleanup {} {}
 #
 proc lcontain { list element } {
     return [expr [lsearch -exact $list $element] >= 0]
+}
+
+# Return sorted intersection of two lists.
+#
+proc intersect { list1, list2 } {
+    set result {}
+    foreach x [lsort $list1] {
+        if { [lcontain $list2 $x] } {
+	    lappend result $x
+	}
+    }
+    return $result
 }
 
 # Append an element to a list if the element is NOT
