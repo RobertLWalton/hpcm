@@ -2,7 +2,7 @@
  *
  * File:	hpcm_sandbox.c
  * Authors:	Bob Walton (walton@deas.harvard.edu)
- * Date:	Wed Jan 14 01:05:22 EST 2009
+ * Date:	Sat Feb 21 13:24:49 EST 2009
  *
  * The authors have placed this program in the public
  * domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
  * RCS Info (may not be true date or author):
  *
  *   $Author: walton $
- *   $Date: 2009/01/14 06:05:14 $
+ *   $Date: 2009/02/21 18:33:40 $
  *   $RCSfile: hpcm_sandbox.c,v $
- *   $Revision: 1.21 $
+ *   $Revision: 1.22 $
  */
 
 #include <stdlib.h>
@@ -314,9 +314,32 @@ int main ( int argc, char ** argv )
 
         if ( tee )
 	{
+
+	    uid_t uid = getuid();
+	    uid_t euid = geteuid();
+	    if ( euid == 0 ) {
+	        // If effective uid is root, switch
+		// effective and real uids.
+
+		if ( setreuid ( euid, uid ) < 0 )
+		     errno_exit ( "root setreuid" );
+	    }
+
+	    // We do not want to create a file while
+	    // our effective ID is root.
+
 	    tee_fd =
 	        open ( file, O_WRONLY|O_CREAT|O_TRUNC,
 			     0666 );
+
+	    if ( euid == 0 ) {
+	        // If effective uid WAS root, switch
+		// effective and real uids.
+
+		if ( setreuid ( uid, euid ) < 0 )
+		     errno_exit ( "root setreuid" );
+	    }
+
 	    if ( tee_fd < 0 )
 	        errno_exit ( "opening -tee file" );
 	    if ( pipe ( out_pipe ) < 0 )
