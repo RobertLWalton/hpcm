@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Jan 20 06:04:37 EST 2007
+# Date:		Sun Feb 22 14:03:53 EST 2009
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,16 +11,16 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2007/01/20 11:04:53 $
+#   $Date: 2009/02/22 20:55:12 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.30 $
+#   $Revision: 1.31 $
 
-all:	scorediff hpcm_sandbox_x hpcm_print_passwords \
+all:	scorediff hpcm_sandbox_secure \
+        hpcm_print_passwords \
 	hpcm_remote_sendmail \
 	hpcm_email_passwords chkpage \
 	hpcm_clisp.lsp hpcm_extract_test_replies \
-	filtered_diff email_diff hpcm_helper help \
-	check_security
+	filtered_diff email_diff hpcm_helper help
 
 # Kill all implicit rules
 #
@@ -36,46 +36,52 @@ scorediff:	../src/scorediff.cc
 	cp -p ../src/scorediff .
 	chmod a-w,o-rwx scorediff
 
-hpcm_sandbox_x:	../../secure/src/hpcm_sandbox.c
-	rm -f hpcm_sandbox_x
-	@if test -x ${SECURE_BIN}/hpcm_sandbox; \
-        then make --no-print-directory \
-	          secure_hpcm_sandbox_x; \
-        else make --no-print-directory \
-	          unsecure_hpcm_sandbox_x; fi
-
-secure_hpcm_sandbox_x:
-	(cd ../../secure/src; make hpcm_sandbox)
-	ln -s ${SECURE_BIN}/hpcm_sandbox hpcm_sandbox_x
-	@if cmp ${SECURE_BIN}/hpcm_sandbox.compiled \
-	        ../../secure/src/hpcm_sandbox; \
-	 then x=x; \
-	 else echo ===============================; \
-	      echo WARNING: \
-		   ${SECURE_BIN}/hpcm_sandbox \
-		   is out of date; \
-	      echo ===============================; \
-	 fi
-
-check_security:
-	@if test ! -u hpcm_sandbox_x; \
-	    then echo ===============================; \
-	         echo WARNING: \
-		      hpcm_sandbox_x \
-	    	      is not set-user-id; \
-		 ls -lL hpcm_sandbox_x; \
-	         echo ===============================; \
-	    fi
-
-unsecure_hpcm_sandbox_x:
-	@echo ${SECURE_BIN}/hpcm_sandbox does not exist
-	@echo ======================================
-	@echo Making UNSECURE hpcm_sandbox_x
-	@echo ======================================
+hpcm_sandbox_unsecure:	../../secure/src/hpcm_sandbox.c
+	rm -f hpcm_sandbox_unsecure
 	(cd ../../secure/src; make hpcm_sandbox)
 	cp -p ../../secure/src/hpcm_sandbox \
-	    hpcm_sandbox_x
-	chmod a-w,o-rwx hpcm_sandbox_x
+	    hpcm_sandbox_unsecure
+	chmod a-w,o-rwx hpcm_sandbox_unsecure
+	make --no-print-directory \
+	      hpcm_sandbox_check_date; \
+
+hpcm_sandbox_secure:
+	@if ! -x hpcm_sandbox_unsecure; \
+	then make --no-print-directory \
+	          hpcm_sandbox_unsecure; \
+	fi
+	@if test -x ${SECURE_BIN}/hpcm_sandbox; \
+	then echo ln -s ${SECURE_BIN}/hpcm_sandbox \
+		  hpcm_sandbox_secure; \
+	     ln -s ${SECURE_BIN}/hpcm_sandbox \
+		   hpcm_sandbox_secure; \
+	     make --no-print-directory \
+		   hpcm_sandbox_check_date; \
+	fi
+	make --no-print-directory \
+	     hpcm_sandbox_check_security
+
+hpcm_sandbox_check_date:
+	@if test ! -r \
+	    ${SECURE_BIN}/hpcm_sandbox.compiled; \
+	then x=x; \
+	elif cmp ${SECURE_BIN}/hpcm_sandbox.compiled \
+	         hpcm_sandbox_unsecure; \
+	then x=x; \
+	else echo ===============================; \
+	     echo WARNING: \
+		  ${SECURE_BIN}/hpcm_sandbox \
+		  is out of date; \
+	     echo ===============================; \
+	fi
+
+hpcm_sandbox_check_security:
+	@if test ! -u hpcm_sandbox_secure; \
+	then echo ===============================; \
+	     echo WARNING: hpcm_sandbox \
+		  is not set-user-id; \
+	     echo ===============================; \
+	fi
 
 hpcm_print_passwords:
 	ln -s ../../secure/bin/hpcm_print_passwords .
@@ -84,7 +90,8 @@ hpcm_email_passwords:
 	ln -s ../../secure/bin/hpcm_email_passwords .
 
 hpcm_remote_sendmail:
-	ln -s ../../contestant/bin/hpcm_remote_sendmail .
+	ln -s \
+	   ../../contestant/bin/hpcm_remote_sendmail .
 
 hpcm_clisp.lsp:
 	ln -s ../../contestant/bin/hpcm_clisp.lsp .
@@ -112,7 +119,8 @@ chkpage:	../src/chkpage.c
 	chmod a-w,o-rwx chkpage
 
 clean:
-	rm -f scorediff hpcm_sandbox_x \
+	rm -f scorediff hpcm_sandbox_unsecure \
+	        hpcm_sandbox_secure \
 		hpcm_print_passwords chkpage \
 		hpcm_email_passwords \
 		hpcm_remote_sendmail \

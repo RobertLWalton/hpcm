@@ -5,7 +5,7 @@
 #
 # File:		hpcm_sandbox
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Mon Mar 25 05:26:26 EST 2002
+# Date:		Sun Feb 22 14:47:14 EST 2009
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,13 +13,13 @@
 #
 # RCS Info (may not be true date or author):
 #
-#   $Author: hc3 $
-#   $Date: 2002/03/25 10:36:01 $
+#   $Author: walton $
+#   $Date: 2009/02/22 20:55:12 $
 #   $RCSfile: hpcm_sandbox,v $
-#   $Revision: 1.4 $
+#   $Revision: 1.5 $
 
 # Additional resource altering arguments for
-# hpcm_sandbox_x.
+# hpcm_sandbox_(un)secure.
 #
 resources="-core 0"
 
@@ -28,14 +28,28 @@ case "$1" in
    	echo "
 hpcm_sandbox
 
-    Call the real hpcm_sandbox (more specifically,
-    judge/bin/hpcm_sandbox_x) with the additional
+    Call the real hpcm_sandbox with the additional
     resource altering arguments:
 
-    	$resources"
+    	$resources
+
+    If hpcm_sandbox_secure exists it is called unless
+    the environment variable HPCM_SANDBOX_UNSECURE is
+    set.  Otherwise hpcm_sandbox_unsecure is called."
 
     	exit 1
 	;;
 esac
 
-exec `dirname "$0"`/hpcm_sandbox_x $resources "$@"
+dir=`dirname "$0"`
+if test "${HPCM_SANDBOX_UNSECURE+set}" = "set"
+then
+    sandbox=hpcm_sandbox_unsecure
+elif test -x $dir/hpcm_sandbox_secure
+then
+    sandbox=hpcm_sandbox_secure
+else
+    sandbox=hpcm_sandbox_unsecure
+fi
+
+exec $dir/$sandbox $resources "$@"
