@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Feb 22 04:50:04 EST 2009
+# Date:		Sun Feb 22 05:44:03 EST 2009
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2009/02/22 09:52:06 $
+#   $Date: 2009/02/22 10:57:37 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.239 $
+#   $Revision: 1.240 $
 
 # Table of Contents:
 #
@@ -2671,9 +2671,16 @@ proc signal_process_tree { signal root_pid } {
 	}
     }
     if { $list != "" } {
-	echo kill $signal $list
-	kill $signal $list
+	puts "kill -$signal $list"
+	eval kill $signal $list
     }
+}
+
+# Function to send a kill signal.
+#
+proc kill { signal args } {
+    catch { eval exec kill -$signal $args } out
+    if { $out != "" } { puts $out }
 }
 
 # Function to sleep for s seconds.
