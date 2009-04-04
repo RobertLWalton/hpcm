@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Feb 22 14:03:53 EST 2009
+# Date:		Sat Apr  4 11:48:24 EDT 2009
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2009/02/22 20:55:12 $
+#   $Date: 2009/04/04 15:49:35 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.31 $
+#   $Revision: 1.32 $
 
 all:	scorediff hpcm_sandbox_secure \
         hpcm_print_passwords \
@@ -46,7 +46,7 @@ hpcm_sandbox_unsecure:	../../secure/src/hpcm_sandbox.c
 	      hpcm_sandbox_check_date; \
 
 hpcm_sandbox_secure:
-	@if ! -x hpcm_sandbox_unsecure; \
+	@if test ! -x hpcm_sandbox_unsecure; \
 	then make --no-print-directory \
 	          hpcm_sandbox_unsecure; \
 	fi
