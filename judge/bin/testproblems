@@ -4,7 +4,7 @@
 #
 # File:		testproblems
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Sun Feb 22 15:57:54 EST 2009
+# Date:		Fri May 22 02:29:34 EDT 2009
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2009/02/22 20:59:06 $
+#   $Date: 2009/05/22 13:32:45 $
 #   $RCSfile: testproblems,v $
-#   $Revision: 1.30 $
+#   $Revision: 1.31 $
 #
 # The next lines run tclsh \
 trap "echo testproblems: Terminated by Signal; exit 1" \
@@ -39,9 +39,7 @@ source $lib_directory/judging_common.tcl
 catch {
 
 set document "
-testproblems \[-keep\] directory ...
-testproblems
-testproblems -
+testproblems \[-p N\] \[-keep|-\] \[directory ...\]
 
     The command with no arguments is equivalent to
 
@@ -49,22 +47,37 @@ testproblems -
 
     The command with just the argument `-' is equivalent
     to
-
     	testproblems -keep .
 
-    This program runs:
+    In general the default directory is `.' and the
+    argument `-' is equivalent to `-keep'.
 
-    		make clean
-		make
-		diff *.out *.test
-		make clean
+    The `-p N' arguments cause the run to be done N
+    times in parallel, as a way of testing timing of on
+    multiple CPU computers.  To do this copies of the
+    directories are made inside /tmp, and testproblems
+    is run on these copies.
+
+    The output without the `-p' option is the output
+    of the `make' executions followed by a summary in-
+    cluding the diff listings of any files with unex-
+    pected differences followed by a list containing the
+    names of these files.  With the `-p' option the only
+    output is for each run a list of the names of files
+    with differences, if any, followed by timing infor-
+    mation.
+
+    This program runs:		make clean
+				make
+				diff *.out *.test
+				make clean
 
     in each directory.  It saves the diff outputs in
     addition to outputting them, and then plays back
     all the saved output at the end of this program's
     execution.  Errors made during the above run are
     also played back.
-    
+
     Before doing the above, this program uses any
     problem_make_files value in any problem .rc file in
     a directory to make or remake files in the direc-
@@ -75,7 +88,7 @@ testproblems -
 
     The -keep option suppresses the final `make clean'
     and the removal of files.
-
+
     If a directory contains .jin files, then the pro-
     gram runs
 
@@ -104,10 +117,10 @@ testproblems -
     If a directory contains both f.in and f.jin, then
 
     		jfilter -v f.jin f.in+ >& f.in#
-
+
     is executed and f.in and f.in+ are diff'ed, instead
     of making f.in from f.jin.
-
+
     If after the above, Scoring_Filter does not exist,
 
 	jfilter -v f.jin f.out f.jout >& f.jout#
@@ -139,33 +152,100 @@ testproblems -
 
 # Process options.
 #
-if { [llength $argv] == 0 } {
-    set argv {.}
-} elseif {    [llength $argv] == 1 \
-           && [lindex $argv 0] == "-" } {
-    set argv {-keep .}
-}
+# The `-SUB 1 filename' option is used when testproblems
+# is called recursively for the `-p' option, and
+# causes a list of names of differing files, followed by
+# a report of errors running testproblems, if any,
+# followed by timing information, to be APPENDED to the
+# named file.  There is no other output. `-SUB 2 file-
+# name' is similar but does not include the timing in-
+# formation.  `-SUB 3 filename' is similar but does not
+# include the error report or timing information and
+# does have the other output associated with test-
+# problems.  When called with -SUB 1, testproblems calls
+# `time testproblems -SUB 2 ...' and appends the timing
+# info to the named file.  When called with -SUB 2 test-
+# problems calls `testproblems > /dev/null -SUB 3 ...'
+# and if there is any returned text, which will be
+# stderr output, appends that as the error report to the
+# named file.  None of these options may be used with
+# the -p option, and there is no error checking of
+# the -SUB option arguments.
+#
+set parallel_runs 0
 set keep 0
+set SUB 0
+set SUB_filename ""
+set myargv $argv
 while { 1 } {
-    switch -glob -- [lindex $argv 0] {
+    switch -glob -- [lindex $myargv 0] {
     -doc* {
 	puts $document
 	exit 1
     }
     -keep { set keep 1 }
+    -     { set keep 1 }
+    -p {
+	    set myargv [lrange $myargv 1 end]
+	    set parallel_runs [lindex $myargv 0]
+	    if { [catch { expr { parallel_runs + 1 }}] \
+	         || \
+		 $parallel_runs <= 0 } {
+	        puts "-p $parallel_runs is not legal"
+		exit 2
+	    }
+    }
+    -SUB {
+	    set myargv [lrange $myargv 1 end]
+	    set SUB [lindex $myargv 0]
+	    set myargv [lrange $myargv 1 end]
+	    set SUB_filename [lindex $myargv 0]
+    }
     default break
     }
-    set argv [lrange $argv 1 end]
+    set myargv [lrange $myargv 1 end]
+}
+if { [llength $myargv] == 0 } {
+    set myargv .
 }
 
-file delete -force -- $tmp
-set diff_files {}
+if { $SUB == 1 } {
+    if { $keep } { set k -keep } else { set k "" }
+    # time writes its output to the standard error file
+    catch { eval exec time -p $argv0 \
+                 -SUB 2 $SUB_filename $k $myargv } \
+	  tout
+    set fd [open $SUB_filename a]
+    puts $fd "\n$tout"
+    close $fd
+    exit 0
+} elseif { $SUB == 2 } {
+    if { $keep } { set k -keep } else { set k "" }
+    set eout [eval exec $argv0 > /dev/null \
+                   -SUB 3 $SUB_filename $k $myargv]
+    if { $eout != "" } {
+	set fd [open $SUB_filename a]
+	puts $fd "\nTESTPROBLEMS ERROR OUTPUT\n\n$eout"
+	close $fd
+    }
+    exit 0
+} elseif { $SUB == 0 } {
+    file delete -force -- $tmp
+    set fd [open $tmp w]
+}
 
+set diff_files {}
 set wd [pwd]
-set fd [open $tmp w]
+
+proc putsfd { string } {
+    global SUB fd
+    if { $SUB == 0 } {
+        puts $fd $string
+    }
+}
 
 proc diff { file1 file2 } {
-    global problem fd diff_files
+    global problem diff_files
     puts "diff $file1 $file2"
     catch {
 	set diffs [exec diff $file1 $file2]
@@ -175,7 +255,7 @@ proc diff { file1 file2 } {
 	    set diffs \
 		"========== $file1:\n$diffs"
 	}
-	puts $fd $diffs
+	putsfd $diffs
 	puts $diffs
 	lappend diff_files \
 	        [list $problem $file1 $file2]
@@ -194,7 +274,7 @@ proc read_rc_file { file problem } {
     source_file $file
 }
 
-foreach x $argv {
+foreach x $myargv {
 
     if { ! [file isdirectory $x] } {
         puts "====================\
@@ -208,7 +288,7 @@ foreach x $argv {
 	continue
     }
 
-    puts $fd "==================== $x:"
+    putsfd "==================== $x:"
     puts -nonewline "===================="
     puts -nonewline "===================="
     puts -nonewline "===================="
@@ -226,7 +306,7 @@ foreach x $argv {
 	if { $type == "link" } {
 	    file delete $problem.in
 	}
-	exec make clean >@ stdout 2>@ stderr
+	exec make clean >&@ stdout
 
 	# List of files to be deleted at end.
 	#
@@ -260,7 +340,8 @@ foreach x $argv {
 	    foreach instruction $make_files {
 		if { [catch { llength $instruction }] \
 		   } {
-		    error "$problem.rc problem_make_files\
+		    error "$problem.rc\
+		           problem_make_files\
 			   instruction is not a TCL\
 			   list:\n    $instruction"
 		}
@@ -315,10 +396,10 @@ foreach x $argv {
 		       mout]
 	    if { $make_error } {
 	        if { $f != $problem } {
-		    puts $fd "========== making $f.out:"
+		    putsfd "========== making $f.out:"
 		    file delete $problem.in
 		}
-		puts $fd $mout
+		putsfd $mout
 		puts $mout
 		continue
 	    }
@@ -366,7 +447,7 @@ foreach x $argv {
 	    }
 
 	    if { ! $keep } {
-	        exec make clean >@ stdout 2>@ stderr
+	        exec make clean >&@ stdout
 	    }
 	}
 	if { ! $keep && [llength $made] > 0 } {
@@ -375,18 +456,28 @@ foreach x $argv {
 	}
     } out] } {
         puts $out
-	puts $fd $out
+	putsfd $out
     }
     cd $wd
 }
-close $fd
 
-puts ""
-puts "******************** SUMMARY:"
-exec cat $tmp >@ stdout
-file delete $tmp
+if { $SUB == 3 } {
+    set report [open $SUB_filename a]
+} else {
+    puts ""
+    puts "******************** SUMMARY:"
+    set report stdout
+}
+
+
+if { $SUB == 0 } {
+    close $fd
+    exec cat $tmp >@ stdout
+    file delete $tmp
+}
+
 if { [llength $diff_files] > 0 } {
-    puts "******************** \
+    puts $report "******************** \
           FILES THAT ARE DIFFERENT:"
     set p ""
     foreach item $diff_files {
@@ -394,12 +485,17 @@ if { [llength $diff_files] > 0 } {
         set file1 [lindex $item 1]
         set file2 [lindex $item 2]
 	if { $p != $problem } {
-	    puts "  in $problem:"
+	    puts $report "  in $problem:"
 	    set p $problem
 	}
-	puts [format {%38s != %-38s} $file1 $file2]
+	puts $report \
+	     [format {%38s != %-38s} $file1 $file2]
     }
 }
+if { $SUB == 3 } {
+    close $report
+}
+
 exit 0
 
 } caught_output
