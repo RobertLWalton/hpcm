@@ -1,0 +1,79 @@
+#!/bin/sh
+#
+# Helper to start a program with advice on how to get
+# help.  This is needed for programs like w3m which
+# has an unusualy help command specifier (H).
+#
+# File:		startup_helper
+# Author:	Bob Walton <walton@deas.harvard.edu>
+# Date:		Tue Sep 22 04:26:32 EDT 2009
+#
+# The authors have placed this program in the public
+# domain; they make no warranty and accept no liability
+# for this program.
+#
+# RCS Info (may not be true date or author):
+#
+#   $Author: walton $
+#   $Date: 2009/09/22 09:08:48 $
+#   $RCSfile: startup_helper,v $
+#   $Revision: 1.1 $
+
+case "$1" in
+     -doc* | "" )
+     		echo "
+startup_helper file program arguments
+
+    If ~/.${program}_startup_done does not exist,
+    display file followed by:
+
+    	Type <Enter> to start $program
+	Type \`suppress<Enter>' to start $program
+	     and suppress this message in the future.
+
+    If <Enter> is typed, just invoke program.  Otherwise
+    create ~/.${program}_startup_done and invoke
+    program.
+
+    If ~/.${program}_startup_done does exist, just
+    invoke program."
+
+    		exit 1
+		;;
+esac
+
+file="$1"
+program="$2"
+shift
+shift
+
+startup_done="${HOME}/.${program}_startup_done"
+
+if test ! -r ${startup_done}
+then
+    echo ""
+    cat "$file"
+    while x=x
+    do
+	echo ""
+    	echo "Type <Enter> to start ${program}"
+	echo "Type \`suppress<Enter>' to start" \
+	     "${program} and suppress this message" \
+	     "in the future."
+	echo -n "> "
+        read -r
+	case "${REPLY}" in
+	suppress)
+		touch "${startup_done}"
+		break
+		;;
+	"")	break
+		;;
+	*)
+		echo "CANNOT UNDERSTAND: ${REPLY}"
+		;;
+	esac
+    done
+fi
+
+exec ${program} "$@"
