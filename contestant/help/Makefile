@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Sep 28 17:04:18 EDT 2006
+# Date:		Tue Sep 22 04:02:58 EDT 2009
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/09/28 21:04:35 $
+#   $Date: 2009/09/22 08:08:53 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.27 $
+#   $Revision: 1.28 $
 
 # `make help.pdf' and `make demos.pdf' make printouts of
 # all the help and demos files respectively.  Note that
@@ -36,7 +36,7 @@
 # copies of all the help and demos files and indices
 # for these.
 
-all:	emailsh
+all:	emailsh modes STL_doc
 
 pdf:	help.pdf demos.pdf
 ps:	help.ps demos.ps
@@ -164,6 +164,14 @@ email/sh/hpcm_clisp.lsp:
 	cd email/sh; \
 	    ln -s ../../../bin/hpcm_clisp.lsp .
 
+# Make STL HTML documentation directory.
+#
+STL_doc:	private/STL_doc.tar.gz
+	rm -rf STL_doc
+	tar zxpf private/STL_doc.tar.gz
+	touch STL_doc
+	find STL_doc -type d -exec chmod a+rx {} \;
+	find STL_doc -type f -exec chmod a+r {} \;
 
 # Web_do merely causes `make web' to remake the
 # web directory even if it exists.
@@ -190,6 +198,9 @@ web:	all help.pdf demos.pdf web_do
 	find web -type d -exec chmod 755 {} \;
 	cd web; tar cf ../web.tar *
 
+modes:
+	chmod a+x . .. ../.. ../../..
+
 clean:
 	rm -rf email/sh/hpcm_extract \
 	       email/sh/hpcm_submit \
@@ -198,4 +209,5 @@ clean:
 	       web web.tar \
 	       help_index demos_index \
 	       help.ps help+.ps demos.ps \
-	       help.pdf help+.pdf demos.pdf
+	       help.pdf help+.pdf demos.pdf \
+	       STL_doc
