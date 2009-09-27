@@ -2,7 +2,7 @@
  *
  * File:	hpcm_sandbox.c
  * Authors:	Bob Walton (walton@deas.harvard.edu)
- * Date:	Sat Feb 21 13:24:49 EST 2009
+ * Date:	Sun Sep 27 06:51:41 EDT 2009
  *
  * The authors have placed this program in the public
  * domain; they make no warranty and accept no liability
@@ -11,10 +11,14 @@
  * RCS Info (may not be true date or author):
  *
  *   $Author: walton $
- *   $Date: 2009/02/21 18:33:40 $
+ *   $Date: 2009/09/27 10:51:55 $
  *   $RCSfile: hpcm_sandbox.c,v $
- *   $Revision: 1.22 $
+ *   $Revision: 1.23 $
  */
+
+#define _GNU_SOURCE
+    // Without this strsignal breaks with segmentation
+    // fault.
 
 #include <stdlib.h>
 #include <stdio.h>
