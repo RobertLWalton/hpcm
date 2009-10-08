@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Sep 22 04:02:58 EDT 2009
+# Date:		Thu Oct  8 11:02:03 EDT 2009
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2009/09/22 08:08:53 $
+#   $Date: 2009/10/08 15:09:51 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.28 $
+#   $Revision: 1.29 $
 
 # `make help.pdf' and `make demos.pdf' make printouts of
 # all the help and demos files respectively.  Note that
@@ -53,7 +53,6 @@ HELP_FILES = \
 	contest/informal_contest \
 	contest/untimed_contest \
 	common/xterminals \
-	email/email_unix_tools \
 	common/solving \
 	email/email_solving \
 	common/input \
@@ -68,6 +67,9 @@ HELP_FILES = \
 	advanced/dynamic_programming \
 	advanced/2D_geometry \
 	advanced/breadth_first_search
+
+# Removed from help files.
+#	email/email_unix_tools
 
 OTHER_HELP_FILES = \
 	email/email_unix_tools \
