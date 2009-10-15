@@ -2,7 +2,7 @@
  *
  * File:	hpcm_sandbox.c
  * Authors:	Bob Walton (walton@deas.harvard.edu)
- * Date:	Sun Sep 27 06:51:41 EDT 2009
+ * Date:	Wed Oct 14 23:19:50 EDT 2009
  *
  * The authors have placed this program in the public
  * domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
  * RCS Info (may not be true date or author):
  *
  *   $Author: walton $
- *   $Date: 2009/09/27 10:51:55 $
+ *   $Date: 2009/10/15 03:45:44 $
  *   $RCSfile: hpcm_sandbox.c,v $
- *   $Revision: 1.23 $
+ *   $Revision: 1.24 $
  */
 
 #define _GNU_SOURCE
@@ -42,20 +42,22 @@ char documentation [] =
 "    This program first checks its arguments for\n"
 "    options that set resource limits:\n"
 "\n"
-"      -cputime N     Cpu Time in Seconds (600)\n"
+"      -cputime N     Cpu Time in Seconds\n"
 "      -space N       Virtual Address Space Size,\n"
-"                     in Bytes (512m)\n"
-"      -datasize N    Data Area Size in Bytes (4m)\n"
-"      -stacksize N   Stack Size in Bytes (4m)\n"
-"      -filesize N    Output File Size in Bytes (4m)\n"
-"      -core N        Core Dump Size in Bytes (4m)\n"
-"      -openfiles N   Number of Open Files (30)\n"
-"      -processes N   Number of Processes (200)\n"
+"                     in Bytes\n"
+"      -datasize N    Data Area Size in Bytes\n"
+"      -stacksize N   Stack Size in Bytes\n"
+"      -filesize N    Output File Size in Bytes\n"
+"      -core N        Core Dump Size in Bytes\n"
+"      -openfiles N   Number of Open Files\n"
+"      -processes N   Number of Processes\n"
 "\n"
 "    Here N is a non-negative decimal integer that\n"
 "    can end with `k' to multiply it by 1024 or `m'\n"
-"    to multiply it by 1024 * 1024.  The values above\n"
-"    in parentheses are the default values.\n"
+"    to multiply it by 1024 * 1024 or `g' to multiply\n"
+"    it by 1024 * 1024 * 1024 (`g' is only valid on\n"
+"    64 bit computers).  If not set a resource is\n"
+"    unlimited.\n"
 "\n"
 "    There are also two other options.  First, with\n"
 "    the\n"
@@ -139,14 +141,17 @@ int main ( int argc, char ** argv )
 
     /* Options with default values. */
 
-    int cputime = 600;
-    int space = 512 * 1024 * 1024;
-    int datasize = 4 * 1024 * 1024;
-    int stacksize = 4 * 1024 * 1024;
-    int filesize = 4 * 1024 * 1024;
-    int core = 4 * 1024 * 1024;
-    int openfiles = 30;
-    int processes = 200;
+    rlim_t cputime = RLIM_INFINITY;
+    rlim_t space = RLIM_INFINITY;
+    rlim_t datasize = RLIM_INFINITY;
+    rlim_t stacksize = RLIM_INFINITY;
+    rlim_t filesize = RLIM_INFINITY;
+    rlim_t core = RLIM_INFINITY;
+    rlim_t openfiles = RLIM_INFINITY;
+    rlim_t processes = RLIM_INFINITY;
+
+    rlim_t max_value = RLIM_INFINITY;
+
     int watch = 0;
     int tee = 0;
     int debug = 0;
@@ -166,7 +171,7 @@ int main ( int argc, char ** argv )
 
     while ( index < argc )
     {
-        int * option;
+        rlim_t * option;
 
         if ( strcmp ( argv[index], "-debug" )
 	     == 0 )
@@ -246,7 +251,7 @@ int main ( int argc, char ** argv )
 	        if ( c < '0' || c > '9' ) break;
 		digit_found = 1;
 
-		if ( n > ( INT_MAX / 10 ) )
+		if ( n > ( max_value / 10 ) )
 		{
 		    fprintf ( stderr,
 			      "hpcm_sandbox: Number"
@@ -257,10 +262,31 @@ int main ( int argc, char ** argv )
 		n = 10 * n + ( c - '0' );
 	    }
 
-	    if ( c == 'm' )
+	    if ( c == 'g' )
+	    {
+		if ( sizeof ( rlim_t ) <= 4 )
+		{
+		    fprintf ( stderr,
+			      "hpcm_sandbox: g not"
+			      " valid on 32 bit"
+			      " computer: %s\n",
+			      argv[index] );
+		    exit (1);
+		}
+	        c = * s ++;
+		if ( n > ( max_value >> 30 ) )
+		{
+		    fprintf ( stderr,
+			      "hpcm_sandbox: Number"
+			      " too large: %s\n",
+			      argv[index] );
+		    exit (1);
+		}
+		n <<= 30;
+	    } else if ( c == 'm' )
 	    {
 	        c = * s ++;
-		if ( n > ( INT_MAX >> 20 ) )
+		if ( n > ( max_value >> 20 ) )
 		{
 		    fprintf ( stderr,
 			      "hpcm_sandbox: Number"
@@ -272,7 +298,7 @@ int main ( int argc, char ** argv )
 	    } else if ( c == 'k' )
 	    {
 	        c = * s ++;
-		if ( n > ( INT_MAX >> 10 ) )
+		if ( n > ( max_value >> 10 ) )
 		{
 		    fprintf ( stderr,
 			      "hpcm_sandbox: Number"
@@ -563,7 +589,8 @@ int main ( int argc, char ** argv )
 	struct rlimit limit;
 
 	limit.rlim_cur = cputime;
-	limit.rlim_max = cputime + 5;
+	limit.rlim_max = (cputime == RLIM_INFINITY ?
+	                  cputime : cputime + 5 );
 	/* rlim_cur is when the SIGXCPU signal is sent,
 	 * and rlim_max is when the SIGKILL signal is
 	 * sent.  Cases have been observed in which
@@ -613,15 +640,18 @@ int main ( int argc, char ** argv )
 	    errno_exit
 	        ( "setrlimit RLIMIT_CORE" );
 
-	limit.rlim_cur = openfiles;
-	limit.rlim_max = openfiles;
+	limit.rlim_cur = ( openfiles == RLIM_INFINITY ?
+	                   getdtablesize() :
+			   openfiles );
+	limit.rlim_max = limit.rlim_cur;
         if ( setrlimit ( RLIMIT_NOFILE, & limit ) < 0 )
 	    errno_exit
 	        ( "setrlimit RLIMIT_NOFILE" );
 
 #	ifdef RLIMIT_NPROC
-	limit.rlim_cur = processes;
-	limit.rlim_max = processes;
+	limit.rlim_cur = ( processes == RLIM_INFINITY ?
+			   10000 : processes );
+	limit.rlim_max = limit.rlim_cur;
         if ( setrlimit ( RLIMIT_NPROC, & limit ) < 0 )
 	    errno_exit
 	        ( "setrlimit RLIMIT_NPROC" );
