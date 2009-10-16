@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Apr  4 11:48:24 EDT 2009
+# Date:		Fri Oct 16 07:30:36 EDT 2009
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,16 +11,18 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2009/04/04 15:49:35 $
+#   $Date: 2009/10/16 12:04:16 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.32 $
+#   $Revision: 1.33 $
 
-all:	scorediff hpcm_sandbox_secure \
+all:	scorediff hpcm_sandbox_unsecure \
+        hpcm_sandbox_secure \
         hpcm_print_passwords \
 	hpcm_remote_sendmail \
 	hpcm_email_passwords chkpage \
 	hpcm_clisp.lsp hpcm_extract_test_replies \
-	filtered_diff email_diff hpcm_helper help
+	filtered_diff email_diff hpcm_helper \
+	startup_helper w3m_helper help
 
 # Kill all implicit rules
 #
@@ -45,20 +47,19 @@ hpcm_sandbox_unsecure:	../../secure/src/hpcm_sandbox.c
 	make --no-print-directory \
 	      hpcm_sandbox_check_date; \
 
-hpcm_sandbox_secure:
-	@if test ! -x hpcm_sandbox_unsecure; \
-	then make --no-print-directory \
-	          hpcm_sandbox_unsecure; \
-	fi
+hpcm_sandbox_secure:	hpcm_sandbox_unsecure
 	@if test -x ${SECURE_BIN}/hpcm_sandbox; \
-	then echo ln -s ${SECURE_BIN}/hpcm_sandbox \
-		  hpcm_sandbox_secure; \
-	     ln -s ${SECURE_BIN}/hpcm_sandbox \
-		   hpcm_sandbox_secure; \
+	then if test ! -x hpcm_sandbox_secure; \
+	     then echo ln -s \
+	               ${SECURE_BIN}/hpcm_sandbox \
+		       hpcm_sandbox_secure; \
+	          ln -s ${SECURE_BIN}/hpcm_sandbox \
+		        hpcm_sandbox_secure; \
+	     fi; \
 	     make --no-print-directory \
 		   hpcm_sandbox_check_date; \
 	fi
-	make --no-print-directory \
+	@make --no-print-directory \
 	     hpcm_sandbox_check_security
 
 hpcm_sandbox_check_date:
@@ -109,6 +110,12 @@ email_diff:
 hpcm_helper:
 	ln -s ../../contestant/bin/hpcm_helper .
 
+startup_helper:
+	ln -s ../../contestant/bin/startup_helper .
+
+w3m_helper:
+	ln -s ../../contestant/bin/w3m_helper .
+
 help:
 	ln -s hpcm_help help
 
@@ -130,4 +137,6 @@ clean:
 		filtered_diff \
 		email_diff \
 		hpcm_helper \
+		startup_helper \
+		w3m_helper \
 		help
