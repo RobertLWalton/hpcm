@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Oct 16 07:30:36 EDT 2009
+# Date:		Fri Oct 16 10:43:09 EDT 2009
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2009/10/16 12:04:16 $
+#   $Date: 2009/10/16 14:43:27 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.33 $
+#   $Revision: 1.34 $
 
 all:	scorediff hpcm_sandbox_unsecure \
         hpcm_sandbox_secure \
@@ -22,7 +22,9 @@ all:	scorediff hpcm_sandbox_unsecure \
 	hpcm_email_passwords chkpage \
 	hpcm_clisp.lsp hpcm_extract_test_replies \
 	filtered_diff email_diff hpcm_helper \
-	startup_helper w3m_helper help
+	startup_helper \
+	w3m_helper w3m_startup_message \
+	help
 
 # Kill all implicit rules
 #
@@ -116,6 +118,9 @@ startup_helper:
 w3m_helper:
 	ln -s ../../contestant/bin/w3m_helper .
 
+w3m_startup_message:
+	ln -s ../../contestant/bin/w3m_startup_message .
+
 help:
 	ln -s hpcm_help help
 
@@ -139,4 +144,5 @@ clean:
 		hpcm_helper \
 		startup_helper \
 		w3m_helper \
+		w3m_startup_message \
 		help
