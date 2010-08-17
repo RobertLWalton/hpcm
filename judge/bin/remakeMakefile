@@ -4,7 +4,7 @@
 #
 # File:		remakeMakefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Aug 17 02:47:42 EDT 2010
+# Date:		Tue Aug 17 18:14:00 EDT 2010
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2010/08/17 06:50:34 $
+#   $Date: 2010/08/17 23:52:34 $
 #   $RCSfile: remakeMakefile,v $
-#   $Revision: 1.12 $
+#   $Revision: 1.13 $
 #
 # The next lines start tclsh \
 trap "echo remakeMakefile: Terminated by Signal" \
@@ -23,206 +23,397 @@ trap "echo remakeMakefile: Terminated by Signal" \
 tclsh "$0" "$@"; exit $status
 
 set document "
-remakeMakefile checkfile sourcefile problemdir ...
+remakeMakefile \[-debug\] sourcedir\[/DERIVEDFROM\] \\
+               problemdir ...
 
-    For each problemdir, this program makes temporary
-    modified versions of checkfile and sourcefile using
-    information from problemdir/Makefile file.  Then
-    this program copies the modified sourcefile to
-    problemdir/Makefile if the modified checkfile exact-
-    ly equals problemdir/Makefile and the modified
-    sourcefile does NOT exactly equal problemdir/Make-
-    file.
-    
-    If checkfile is \"\" the test that checkfile equals
-    problemdir/Makefile is omitted.
-    
-    If sourcefile is \"\" the copy of sourcefile to
-    problemdir/Makefile is omitted.
+    For each problemdir, this program compiles data
+    taken from problemdir/Makefile as follows:
 
-    If problemdir is not actually a directory, this is
-    merely noted in the output.  Problemdir must end in
-    the problem name; it CANNOT be `.'.
+    1.  The FIRSTLINE of the Makefile.
 
-    The modification of a Makefile consists of:
-    
-        1. Replacing the first line of the file by the
-	   first line of problemdir/Makefile.
-	   
-	2. Replacing the `problem_name' of any file line
-	   of the form
+    2.  The DERIVEDFROM file of the Makefile.  This must
+        be on a line of the format:
 
-		P = problem_name
+	    ##*<ws>Derived From:<ws>DERIVEDFROM<ws>
 
-	   with the last component of `problemdir'  Here
-	   the `=' must be surrounded by single SPACE
-	   characters, but other spacing may vary.
+	If this line does not exist, the DERIVEDFROM
+	value may be given in the first remakeMakefile
+	command line argument (see above).
+
+    3.  The VALUE of every variable name <v> for which
+        there is a line of the format:
+
+	    <ws><v><ws>=VALUE
+
+    4.  The RCSVALUE of every RCS variable name <r> for
+        which there is a line of the format
+
+	    ##*<ws>\$<r>:RCSVALUE\$<ws>
+
+    Here <ws> denotes optional whitespace, i.e., any
+    sequence of space and tab characters.  The variable
+    names <v> and <r> are any sequences of letters,
+    digits, and underbars(_) not beginning with a digit.
+
+    Then this program finds the files
+
+    	sourcedir/DERIVEDFROM		Check File
+	sourcedir/DERIVEDFROM.new	Source File
 
-	3. Replacing any file line that matches
+    and modifies them by replacing any FIRSTLINE, VALUE,
+    and RCSVALUE it finds in them by the corresponding
+    data from problemdir/Makefile.   The check file
+    must exist but the source file need not exist.
 
-		#	\$Xxxx: ... $
+    Then this program compares the modified check file
+    with problemdir/Makefile.  If the files exactly
+    match and a source file exists and the modified
+    source file does not itself exactly match problem-
+    dir/Makefile, this program replaces problemdir/
+    Makefile with the modified source file.  In any
+    case this program reports its results/actions for
+    problemdir on a single line.
+    
+    If problemdir is not actually a directory, or does
+    not contain a Makefile, this is merely noted with a
+    single output line.
 
-	   by the corresponding line of problemdir/Make-
-	   file if the lines match except for the `...'
-	   and Xxxx is any of `Author', `Date',
-	   `RCSfile', or `Revision'.
-
-    The last modification (3) is NOT made when the mod-
-    ified sourcefile is copied to problemdir/Makefile.
-
-    The final disposition of each problemdir/Makefile is
-    printed.
+    The -debug option forces the modified check file to
+    be written to problemdir/Makefile.check and the
+    modified source file, if it exists, to be written
+    to problemdir/Makefile.source.  The file problem-
+    dir/Makefile is not written in this case.
 
     Unlike most HPCM judging programs, this program does
     not read any hpcm_judging.rc file and errors made by
     this program are not written to log files."
 
+# Handle -debug argument.
+#
+set debug 0
+if { [lindex $argv 0] == "-debug" } {
+    set debug 1
+    set argv [lrange $argv 1 end]
+}
+
 # If too few arguments or first argument begins with
 # `-', print documentation and exit with error.
 #
-if { $argc < 3 || [regexp {^-} [lindex $argv 0]] } {
+if { $argc < 2 || [regexp {^-} [lindex $argv 0]] } {
     puts $document
     exit 1
 }
 
-# Process arguments.
-#
-set checkfile [lindex $argv 0]
-set sourcefile [lindex $argv 1]
 
 # Constants
 #
-set WS "\[\ \t\]"
-set NWS "\[^\ \t\]"
-set RCS_keys { Author Date RCSfile Revision }
+set WS "\[\ \t\]*"
+set NWS "\[^\ \t\]*"
+set VAR "\[_A-Za-z\]\[_A-Za-z0-9\]*"
+set DERIVEDFROMLINE \
+    "^##*${WS}Derived From:${WS}(${NWS})${WS}\$"
+set VARLINE "(${WS})(${VAR})(${WS})=(.*)\$"
+set RCSVARLINE "^(##*${WS}\\\$)(${VAR}):(.*)(\\\$$WS)\$"
 
-# Function returns 1 if modified file equals problemdir/
-# Makefile, and 0 otherwise.
+# Sourcedir and DERIVEDFROM arguments.
 #
-proc test_file { file problemdir } {
+set sourcedir [lindex $argv 0]
+if { [file isdirectory $sourcedir] } {
+    set DERIVEDFROM ""
+} elseif { [file isfile $sourcedir] } {
+    set DERIVEDFROM [file tail $sourcedir]
+    set sourcedir [file dirname $sourcedir]
+} else {
+    puts "$sourcedir is not directory or file"
+    exit 1
+}
 
-    global WS NWS RCS_keys
-    set RCS_match \
-        "^(#$WS*)\\\$(\[^:\]*):(\[^\$\]*)\\\$($WS*)\$"
+# Files, stored in `caches' as lists of lines.
+#
+#   Makefile	problemdir/Makefile
+#   source      Original (unmodified) Source File
+set sourcefile	""
+#		Name of Original Source File
+#   check       Original (unmodified) Check File
+set checkfile   ""
+#		Name of Original Check File
 
-    set problem [file tail $problemdir]
-    set file_ch [open $file r]
-    set out_ch [open $problemdir/Makefile r]
-    set first yes
+# The value database is stored in the `value' array.
+#
+# value($v) is the value of variable $v.
+# value(RCS.$r) is the value of RCS variable $r.
+# value(.DERIVEDFROM.) is the value of DERIVEDFROM.
+# value(.FIRSTLINE.) is the value of the first line.
 
-    while { "yes" } {
-	set file_line [gets $file_ch]
-	set out_line [gets $out_ch]
-	if { [eof $file_ch] } {
-	    set match [eof $out_ch]
-	    break
-	} elseif { [eof $out_ch] } {
-	    set match 0
-	    break
+# Function that takes a line, extracts any data in
+# the line, and adds the data to the database.  If
+# the database already has the datum, an error
+# message is returned.  Otherwise "" is returned.
+#
+proc extract_line { line { is_first 0 } } {
+
+    global value DERIVEDFROMLINE VARLINE RCSVARLINE
+
+    if { $is_first } {
+        if { [info exists value(.FIRSTLINE.)] } {
+	    return "first line multiply defined"
 	}
-	if { $first } {
-	    set first no
+	set value(.FIRSTLINE.) $line
+        return ""
+    } elseif { [regexp $DERIVEDFROMLINE $line forget \
+                       filename] } {
+	if { [info exists value(.DERIVEDFROM.)] } {
+	    return "#... Derived From: ... multiply\
+	            defined"
 	} else {
-	    if { [regexp \
-		      "^($WS*)P = $NWS+($WS*)\$" \
-		      $file_line forget \
-		      bws ews] } {
-		set file_line \
-		    "${bws}P = $problem$ews"
-	    } elseif { \
-	           [regexp $RCS_match $file_line \
-		           forget \
-			   fbegin fname fstuff fend] \
-	        && [regexp $RCS_match $out_line \
-		           forget \
-			   obegin oname ostuff oend] \
-		&& [lsearch -exact $RCS_keys $fname] \
-		   >= 0 \
-		&& $fbegin == $obegin \
-		&& $fname == $oname \
-		&& $fend == $oend } {
-	        set file_line $out_line
-	    }
-	    if { $file_line != $out_line } {
-		set match 0
-		break
-	    }
+	    set value(.DERIVEDFROM.) $filename
+	    return ""
 	}
+    } elseif { [regexp $VARLINE $line forget \
+                       ws1 var ws2 val] } {
+	if { [info exists value($var)] } {
+	    return "$var = ... multiply defined"
+	} else {
+	    set value($var) $val
+	    return ""
+	}
+    } elseif { [regexp $RCSVARLINE $line forget \
+                       prefix var val postfix] } {
+	if { [info exists value(RCS.$var)] } {
+	    return "#...\$$var:...\$ multiply\
+	            defined"
+	} else {
+	    set value(RCS.$var) $val
+	    return ""
+	}
+    } else {
+        return ""
     }
-    close $file_ch
-    close $out_ch
-    return $match
 }
 
-# Function to copy modified file to problemdir/Makefile.
-# The target is deleted after its first line is read.
+# Function that takes a line and returns the line
+# modified as appropriate according to the value
+# database.  Note that the #...Derived From: line is NOT
+# modified (its only for information).
 #
-proc copy_file { file problemdir } {
+proc mod_line { line { is_first 0 } } {
 
-    global WS NWS
+    global value DERIVEDFROMLINE VARLINE RCSVARLINE
 
-    set problem [file tail $problemdir]
-    set file_ch [open $file r]
-    set out_ch [open $problemdir/Makefile r]
-    set first_line [gets $out_ch]
-    close $out_ch
-    file delete -force $problemdir/Makefile
-    set out_ch [open $problemdir/Makefile w]
-    set first yes
+    if { $is_first } {
+        return $value(.FIRSTLINE.)
+    } elseif { [regexp $VARLINE $line forget \
+                       ws1 var ws2 val] } {
+	if { [info exists value($var)] } {
+	    return "$ws1$var$ws2=$value($var)"
+	} else {
+	    return $line
+	}
+    } elseif { [regexp $RCSVARLINE $line forget \
+                       prefix var val postfix] } {
+	if { [info exists value(RCS.$var)] } {
+	    return \
+	        "$prefix$var:$value(RCS.$var)$postfix"
+	} else {
+	    return $line
+	}
+    } else {
+        return $line
+    }
+}
+
+# Function that reads problemdir/Makefile (which must
+# exist), stores it in the global `Makefile' cache,
+# and sets up the `value' database.  Returns an error
+# message or "" if no error.
+#
+proc read_Makefile { problemdir } {
+
+    global value Makefile DERIVEDFROM
+
+    if { [array exists value] } {
+	unset value
+    }
+    if { [info exists Makefile] } {
+	unset Makefile
+    }
+
+    if { $DERIVEDFROM != "" } {
+        set value(.DERIVEDFROM.) $DERIVEDFROM
+    }
+
+    set ch [open $problemdir/Makefile r]
+    set first 1
 
     while { "yes" } {
-	set file_line [gets $file_ch]
-	if { [eof $file_ch] } break
-	if { $first } {
-	    set first no
-	    set file_line $first_line
-	} elseif { [regexp \
-		      "^($WS*)P = $NWS+($WS*)\$" \
-		      $file_line forget \
-		      bws ews] } {
-	    set file_line "${bws}P = $problem$ews"
+        set line [gets $ch]
+	if { [eof $ch] } break
+	set message [extract_line $line $first]
+	set first 0
+	if { $message != "" } {
+	    close $ch
+	    return $message
 	}
-	puts $out_ch $file_line
+	lappend Makefile $line
     }
-    close $file_ch
-    close $out_ch
+
+    close $ch
+    return ""
 }
 
-foreach problemdir [lrange $argv 2 end] {
+# Function that reads filename and stores it in the
+# cache.  The file must exist and be readable.
+# If the named file is already in the cache nothing
+# is done.
+#
+proc read_file { filename cache } {
+
+    upvar $cache list
+    upvar ${cache}file file
+
+    if { $filename == $file } return
+
+    if { [info exists list] } {
+	unset list
+    }
+
+    set ch [open $filename r]
+
+    while { "yes" } {
+        set line [gets $ch]
+	if { [eof $ch] } break
+	lappend list $line
+    }
+
+    close $ch
+}
+
+# Function that compares `Makefile' with the modified
+# cached file and returns 1 if match and 0 if not.
+#
+proc compare_file { cache } {
+
+    global Makefile
+    upvar $cache file
+
+    set length [llength $Makefile]
+    if { [llength $file] != $length } {
+        return 0
+    }
+    set i 0
+    set first 1
+    while { $i < $length } {
+        set Mline [lindex $Makefile $i]
+	set fline [mod_line [lindex $file $i] $first]
+	set first 0
+	incr i
+	if { $Mline != $fline } {
+	    return 0
+	}
+    }
+    return 1
+}
+
+# Function that writes modified file stored in a cache
+# into file.
+#
+proc write_file { filename cache } {
+
+    upvar $cache file
+    set length [llength $file]
+
+    file delete -force $filename
+    set ch [open $filename w]
+
+    set i 0
+    set first 1
+    while { $i < $length } {
+	set line [mod_line [lindex $file $i] $first]
+	set first 0
+	incr i
+	puts $ch $line
+    }
+    close $ch
+}
+
+# Process a single problemdir.  Return a one-line
+# message giving disposition.
+#
+proc process_problemdir { problemdir } {
+
+    global debug value sourcedir \
+           source check sourcefile checkfile
 
     if { ! [file isdirectory $problemdir] } {
-        puts "$problemdir is not a directory"
-	continue
+        return "$problemdir is not a directory"
     }
 
-    if { ! [file isfile $problemdir/Makefile] } {
-        puts "$problemdir/Makefile does not exist"
-	continue
+    if { ! [file exists $problemdir/Makefile] } {
+        return "$problemdir/Makefile does not exist"
+    }
+    if { ! [file readable $problemdir/Makefile] } {
+        return "$problemdir/Makefile is not readable"
+    }
+    set message [read_Makefile $problemdir]
+    if { $message != "" } {
+        return "$problemdir/Makefile: $message"
     }
 
-    if {      $checkfile != "" \
-         && ! [test_file $checkfile $problemdir] } { \
-	puts "$problemdir/Makefile does NOT equal\
-	      modified $checkfile"
-	continue
+    if { ! [info exists value(.DERIVEDFROM.)] } {
+        return "$problemdir/Makefile has\
+	        no #...Derived From: ... line"
     }
 
-    if {    $sourcefile != "" \
-         && [test_file $sourcefile $problemdir] } { \
-	puts "$problemdir/Makefile equals\
-	      modified $sourcefile"
-        continue
+    set derivedfrom $value(.DERIVEDFROM.)
+    if { ! [file readable $sourcedir/$derivedfrom] } {
+        return "$problemdir: $sourcedir/$derivedfrom is\
+	        not readable"
+    }
+    read_file $sourcedir/$derivedfrom check
+
+    if { $debug } {
+        write_file $problemdir/Makefile.check check
     }
 
-    if { $sourcefile != "" } {
-	copy_file $sourcefile $problemdir
-	puts "modified $sourcefile copied to\
-	      $problemdir/Makefile"
-    } elseif { $checkfile != "" } {
-	puts "$problemdir/Makefile equals\
-	      modified $checkfile"
+    if { ! [compare_file check] } {
+        return "$problemdir/Makefile\
+	        does not match modified\
+		$sourcedir/$derivedfrom"
+    }
+    if { ! [file readable $sourcedir/${derivedfrom}.new]
+       } {
+        return "$problemdir/Makefile matches modified\
+	        $sourcedir/$derivedfrom"
+    }
+    read_file $sourcedir/${derivedfrom}.new source
+
+    if { $debug } {
+        write_file $problemdir/Makefile.check check
+    }
+
+    if { [compare_file source] } {
+        return "$problemdir/Makefile matches modified\
+	        $sourcedir/${derivedfrom}.new"
+    }
+
+    if { ! $debug } {
+	write_file $problemdir/Makefile source
+	return "$problemdir/Makefile written from modified\
+		$sourcedir/${derivedfrom}.new"
     } else {
-	puts "$problemdir/Makefile not changed"
+	return "$problemdir/Makefile WOULD HAVE BEEN\
+	        written from modified\
+		$sourcedir/${derivedfrom}.new but for\
+		-debug option"
+    }
+}
+
+foreach problemdir [lrange $argv 1 end] {
+
+    if { [catch { puts [process_problemdir \
+                          $problemdir] }] } {
+        puts "SYSTEM ERROR processing $problemdir:"
+	puts $errorInfo
     }
 }
 
