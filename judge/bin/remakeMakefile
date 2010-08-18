@@ -4,7 +4,7 @@
 #
 # File:		remakeMakefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Aug 17 18:14:00 EDT 2010
+# Date:		Wed Aug 18 04:06:04 EDT 2010
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2010/08/17 23:52:34 $
+#   $Date: 2010/08/18 09:07:02 $
 #   $RCSfile: remakeMakefile,v $
-#   $Revision: 1.13 $
+#   $Revision: 1.14 $
 #
 # The next lines start tclsh \
 trap "echo remakeMakefile: Terminated by Signal" \
@@ -29,7 +29,10 @@ remakeMakefile \[-debug\] sourcedir\[/DERIVEDFROM\] \\
     For each problemdir, this program compiles data
     taken from problemdir/Makefile as follows:
 
-    1.  The FIRSTLINE of the Makefile.
+    1.  The HEADER of the Makefile.  These are the
+        comment lines at the beginning of the Makefile
+	that have something in them other than #'s and
+	whitespace.
 
     2.  The DERIVEDFROM file of the Makefile.  This must
         be on a line of the format:
@@ -54,13 +57,13 @@ remakeMakefile \[-debug\] sourcedir\[/DERIVEDFROM\] \\
     sequence of space and tab characters.  The variable
     names <v> and <r> are any sequences of letters,
     digits, and underbars(_) not beginning with a digit.
-
+
     Then this program finds the files
 
     	sourcedir/DERIVEDFROM		Check File
 	sourcedir/DERIVEDFROM.new	Source File
-
-    and modifies them by replacing any FIRSTLINE, VALUE,
+
+    and modifies them by replacing any HEADER, VALUE,
     and RCSVALUE it finds in them by the corresponding
     data from problemdir/Makefile.   The check file
     must exist but the source file need not exist.
@@ -109,6 +112,7 @@ if { $argc < 2 || [regexp {^-} [lindex $argv 0]] } {
 #
 set WS "\[\ \t\]*"
 set NWS "\[^\ \t\]*"
+set HEADERLINE "^\[\ \t\]*#.*\[^#\ \t\]"
 set VAR "\[_A-Za-z\]\[_A-Za-z0-9\]*"
 set DERIVEDFROMLINE \
     "^##*${WS}Derived From:${WS}(${NWS})${WS}\$"
@@ -129,6 +133,7 @@ if { [file isdirectory $sourcedir] } {
 }
 
 # Files, stored in `caches' as lists of lines.
+# The headers of these files are omitted!
 #
 #   Makefile	problemdir/Makefile
 #   source      Original (unmodified) Source File
@@ -138,30 +143,28 @@ set sourcefile	""
 set checkfile   ""
 #		Name of Original Check File
 
+# The header of problemdir/Makefile
+set header	""
+
 # The value database is stored in the `value' array.
 #
 # value($v) is the value of variable $v.
 # value(RCS.$r) is the value of RCS variable $r.
 # value(.DERIVEDFROM.) is the value of DERIVEDFROM.
-# value(.FIRSTLINE.) is the value of the first line.
 
 # Function that takes a line, extracts any data in
 # the line, and adds the data to the database.  If
 # the database already has the datum, an error
 # message is returned.  Otherwise "" is returned.
 #
-proc extract_line { line { is_first 0 } } {
+# This function should NOT be applied to header lines.
+#
+proc extract_line { line } {
 
     global value DERIVEDFROMLINE VARLINE RCSVARLINE
 
-    if { $is_first } {
-        if { [info exists value(.FIRSTLINE.)] } {
-	    return "first line multiply defined"
-	}
-	set value(.FIRSTLINE.) $line
-        return ""
-    } elseif { [regexp $DERIVEDFROMLINE $line forget \
-                       filename] } {
+    if { [regexp $DERIVEDFROMLINE $line forget \
+                 filename] } {
 	if { [info exists value(.DERIVEDFROM.)] } {
 	    return "#... Derived From: ... multiply\
 	            defined"
@@ -194,16 +197,15 @@ proc extract_line { line { is_first 0 } } {
 # Function that takes a line and returns the line
 # modified as appropriate according to the value
 # database.  Note that the #...Derived From: line is NOT
-# modified (its only for information).
+# modified (its only for information).  Also note that
+# this function should NOT be applied to header lines.
 #
-proc mod_line { line { is_first 0 } } {
+proc mod_line { line } {
 
     global value DERIVEDFROMLINE VARLINE RCSVARLINE
 
-    if { $is_first } {
-        return $value(.FIRSTLINE.)
-    } elseif { [regexp $VARLINE $line forget \
-                       ws1 var ws2 val] } {
+    if { [regexp $VARLINE $line forget \
+                 ws1 var ws2 val] } {
 	if { [info exists value($var)] } {
 	    return "$ws1$var$ws2=$value($var)"
 	} else {
@@ -224,37 +226,49 @@ proc mod_line { line { is_first 0 } } {
 
 # Function that reads problemdir/Makefile (which must
 # exist), stores it in the global `Makefile' cache,
-# and sets up the `value' database.  Returns an error
-# message or "" if no error.
+# stores its header in `header', and sets up the `value'
+# database.  Returns an error message or "" if no error.
 #
 proc read_Makefile { problemdir } {
 
-    global value Makefile DERIVEDFROM
+    global value Makefile header HEADERLINE DERIVEDFROM
 
     if { [array exists value] } {
 	unset value
     }
-    if { [info exists Makefile] } {
-	unset Makefile
-    }
+    set Makefile ""
+    set header ""
 
     if { $DERIVEDFROM != "" } {
         set value(.DERIVEDFROM.) $DERIVEDFROM
     }
 
     set ch [open $problemdir/Makefile r]
-    set first 1
+    set line [gets $ch]
 
-    while { "yes" } {
-        set line [gets $ch]
-	if { [eof $ch] } break
-	set message [extract_line $line $first]
-	set first 0
+    # Read header.
+    #
+    while {    ! [eof $ch] \
+            && [regexp $HEADERLINE $line] } {
+	lappend header $line
+	set line [gets $ch]
+    }
+
+    if { $header == "" } {
+        close $ch
+	return "HEADER is missing from Makefile"
+    }
+
+    # Read body of Makefile
+    #
+    while { ! [eof $ch] } {
+	set message [extract_line $line] 
 	if { $message != "" } {
 	    close $ch
 	    return $message
 	}
 	lappend Makefile $line
+        set line [gets $ch]
     }
 
     close $ch
@@ -264,25 +278,32 @@ proc read_Makefile { problemdir } {
 # Function that reads filename and stores it in the
 # cache.  The file must exist and be readable.
 # If the named file is already in the cache nothing
-# is done.
+# is done.  The header lines of the file are omitted.
 #
 proc read_file { filename cache } {
+
+    global HEADERLINE
 
     upvar $cache list
     upvar ${cache}file file
 
     if { $filename == $file } return
 
-    if { [info exists list] } {
-	unset list
-    }
+    set list ""
 
     set ch [open $filename r]
+    set line [gets $ch]
 
-    while { "yes" } {
-        set line [gets $ch]
-	if { [eof $ch] } break
+    # Skip header
+    #
+    while {    ! [eof $ch] \
+	    && [regexp $HEADERLINE $line] } {
+	set line [gets $ch]
+    }
+
+    while { ! [eof $ch] } {
 	lappend list $line
+        set line [gets $ch]
     }
 
     close $ch
@@ -290,6 +311,7 @@ proc read_file { filename cache } {
 
 # Function that compares `Makefile' with the modified
 # cached file and returns 1 if match and 0 if not.
+# Header lines are omitted from the comparison.
 #
 proc compare_file { cache } {
 
@@ -301,11 +323,9 @@ proc compare_file { cache } {
         return 0
     }
     set i 0
-    set first 1
     while { $i < $length } {
         set Mline [lindex $Makefile $i]
-	set fline [mod_line [lindex $file $i] $first]
-	set first 0
+	set fline [mod_line [lindex $file $i]]
 	incr i
 	if { $Mline != $fline } {
 	    return 0
@@ -315,24 +335,21 @@ proc compare_file { cache } {
 }
 
 # Function that writes modified file stored in a cache
-# into file.
+# into file.  The header lines are prepended to the
+# modified lines from the cache.
 #
 proc write_file { filename cache } {
 
+    global header
     upvar $cache file
-    set length [llength $file]
+
 
     file delete -force $filename
     set ch [open $filename w]
 
-    set i 0
-    set first 1
-    while { $i < $length } {
-	set line [mod_line [lindex $file $i] $first]
-	set first 0
-	incr i
-	puts $ch $line
-    }
+    foreach line $header { puts $line }
+    foreach line $file { puts [mod_line $line] }
+
     close $ch
 }
 
@@ -398,8 +415,8 @@ proc process_problemdir { problemdir } {
 
     if { ! $debug } {
 	write_file $problemdir/Makefile source
-	return "$problemdir/Makefile written from modified\
-		$sourcedir/${derivedfrom}.new"
+	return "$problemdir/Makefile written from\
+	        modified $sourcedir/${derivedfrom}.new"
     } else {
 	return "$problemdir/Makefile WOULD HAVE BEEN\
 	        written from modified\
