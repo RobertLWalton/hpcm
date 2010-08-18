@@ -1,0 +1,43 @@
+#! /bin/sh
+#
+# Grant public access to non-symbolically linked files.
+#
+# File:		grant_access
+# Author:	Bob Walton <walton@seas.harvard.edu>
+# Date:		Wed Aug 18 06:08:02 EDT 2010
+#
+# The authors have placed this program in the public
+# domain; they make no warranty and accept no liability
+# for this program.
+#
+# RCS Info (may not be true date or author):
+#
+#   $Author: walton $
+#   $Date: 2010/08/18 10:19:00 $
+#   $RCSfile: grant_access,v $
+#   $Revision: 1.1 $
+
+case "$1" in
+   -doc* )
+   	echo "
+grant_access [filename ...]
+
+    For each filename, if the file is not symbolically
+    linked, then if it is readable grant a+r permis-
+    sions, and if it is executable grant a+x permis-
+    sions."
+
+    	exit 1
+	;;
+esac
+
+for F in "$@"
+do
+    if test ! -L $F
+    then
+        if test -r $F; then chmod a+r $F; fi
+        if test -x $F; then chmod a+x $F; fi
+    fi
+done
+
+exit 0

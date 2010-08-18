@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Oct 16 10:43:09 EDT 2009
+# Date:		Wed Aug 18 06:21:37 EDT 2010
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,11 +11,12 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2009/10/16 14:43:27 $
+#   $Date: 2010/08/18 10:23:45 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.34 $
+#   $Revision: 1.35 $
 
-all:	scorediff hpcm_sandbox_unsecure \
+all:	scorediff grant_access \
+	hpcm_sandbox_unsecure \
         hpcm_sandbox_secure \
         hpcm_print_passwords \
 	hpcm_remote_sendmail \
@@ -39,6 +40,10 @@ scorediff:	../src/scorediff.cc
 	(cd ../src; make scorediff)
 	cp -p ../src/scorediff .
 	chmod a-w,o-rwx scorediff
+
+grant_access:
+	ln -s \
+	   ../../contestant/bin/grant_access .
 
 hpcm_sandbox_unsecure:	../../secure/src/hpcm_sandbox.c
 	rm -f hpcm_sandbox_unsecure
@@ -131,7 +136,8 @@ chkpage:	../src/chkpage.c
 	chmod a-w,o-rwx chkpage
 
 clean:
-	rm -f scorediff hpcm_sandbox_unsecure \
+	rm -f scorediff grant_access \
+		hpcm_sandbox_unsecure \
 	        hpcm_sandbox_secure \
 		hpcm_print_passwords chkpage \
 		hpcm_email_passwords \
