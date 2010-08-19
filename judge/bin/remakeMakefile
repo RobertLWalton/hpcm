@@ -4,7 +4,7 @@
 #
 # File:		remakeMakefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Aug 18 04:06:04 EDT 2010
+# Date:		Wed Aug 18 10:27:49 EDT 2010
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2010/08/18 09:07:02 $
+#   $Date: 2010/08/19 15:43:49 $
 #   $RCSfile: remakeMakefile,v $
-#   $Revision: 1.14 $
+#   $Revision: 1.15 $
 #
 # The next lines start tclsh \
 trap "echo remakeMakefile: Terminated by Signal" \
@@ -23,7 +23,7 @@ trap "echo remakeMakefile: Terminated by Signal" \
 tclsh "$0" "$@"; exit $status
 
 set document "
-remakeMakefile \[-debug\] sourcedir\[/DERIVEDFROM\] \\
+remakeMakefile \[-keep\] sourcedir\[/DERIVEDFROM\] \\
                problemdir ...
 
     For each problemdir, this program compiles data
@@ -34,14 +34,15 @@ remakeMakefile \[-debug\] sourcedir\[/DERIVEDFROM\] \\
 	that have something in them other than #'s and
 	whitespace.
 
-    2.  The DERIVEDFROM file of the Makefile.  This must
-        be on a line of the format:
+    2.  The DERIVEDFROM file of Makefile.  This may be
+        given as a sourcedir/DERIVEDFROM argument to
+	remakeMakefile, or by a problemdir/Makefile line
+	of the format:
 
 	    ##*<ws>Derived From:<ws>DERIVEDFROM<ws>
 
-	If this line does not exist, the DERIVEDFROM
-	value may be given in the first remakeMakefile
-	command line argument (see above).
+	If given in both ways, the argument value is
+	used.
 
     3.  The VALUE of every variable name <v> for which
         there is a line of the format:
@@ -81,21 +82,21 @@ remakeMakefile \[-debug\] sourcedir\[/DERIVEDFROM\] \\
     not contain a Makefile, this is merely noted with a
     single output line.
 
-    The -debug option forces the modified check file to
+    The -keep option causes the modified check file to
     be written to problemdir/Makefile.check and the
     modified source file, if it exists, to be written
     to problemdir/Makefile.source.  The file problem-
-    dir/Makefile is not written in this case.
+    dir/Makefile is NOT written in this case.
 
     Unlike most HPCM judging programs, this program does
     not read any hpcm_judging.rc file and errors made by
     this program are not written to log files."
 
-# Handle -debug argument.
+# Handle -keep argument.
 #
-set debug 0
-if { [lindex $argv 0] == "-debug" } {
-    set debug 1
+set keep 0
+if { [lindex $argv 0] == "-keep" } {
+    set keep 1
     set argv [lrange $argv 1 end]
 }
 
@@ -150,7 +151,9 @@ set header	""
 #
 # value($v) is the value of variable $v.
 # value(RCS.$r) is the value of RCS variable $r.
-# value(.DERIVEDFROM.) is the value of DERIVEDFROM.
+# value(.DERIVEDFROM.) is the value of DERIVEDFROM;
+#    it is copied from the DERIVEDFROM global variable
+#    if that is not "".
 
 # Function that takes a line, extracts any data in
 # the line, and adds the data to the database.  If
@@ -202,7 +205,7 @@ proc extract_line { line } {
 #
 proc mod_line { line } {
 
-    global value DERIVEDFROMLINE VARLINE RCSVARLINE
+    global value VARLINE RCSVARLINE
 
     if { [regexp $VARLINE $line forget \
                  ws1 var ws2 val] } {
@@ -239,10 +242,6 @@ proc read_Makefile { problemdir } {
     set Makefile ""
     set header ""
 
-    if { $DERIVEDFROM != "" } {
-        set value(.DERIVEDFROM.) $DERIVEDFROM
-    }
-
     set ch [open $problemdir/Makefile r]
     set line [gets $ch]
 
@@ -269,6 +268,12 @@ proc read_Makefile { problemdir } {
 	}
 	lappend Makefile $line
         set line [gets $ch]
+    }
+
+    # Override Makefile DERIVEDFROM.
+    #
+    if { $DERIVEDFROM != "" } {
+        set value(.DERIVEDFROM.) $DERIVEDFROM
     }
 
     close $ch
@@ -347,8 +352,8 @@ proc write_file { filename cache } {
     file delete -force $filename
     set ch [open $filename w]
 
-    foreach line $header { puts $line }
-    foreach line $file { puts [mod_line $line] }
+    foreach line $header { puts $ch $line }
+    foreach line $file { puts $ch [mod_line $line] }
 
     close $ch
 }
@@ -358,7 +363,7 @@ proc write_file { filename cache } {
 #
 proc process_problemdir { problemdir } {
 
-    global debug value sourcedir \
+    global keep value sourcedir \
            source check sourcefile checkfile
 
     if { ! [file isdirectory $problemdir] } {
@@ -388,7 +393,7 @@ proc process_problemdir { problemdir } {
     }
     read_file $sourcedir/$derivedfrom check
 
-    if { $debug } {
+    if { $keep } {
         write_file $problemdir/Makefile.check check
     }
 
@@ -404,7 +409,7 @@ proc process_problemdir { problemdir } {
     }
     read_file $sourcedir/${derivedfrom}.new source
 
-    if { $debug } {
+    if { $keep } {
         write_file $problemdir/Makefile.check check
     }
 
@@ -413,7 +418,7 @@ proc process_problemdir { problemdir } {
 	        $sourcedir/${derivedfrom}.new"
     }
 
-    if { ! $debug } {
+    if { ! $keep } {
 	write_file $problemdir/Makefile source
 	return "$problemdir/Makefile written from\
 	        modified $sourcedir/${derivedfrom}.new"
@@ -421,7 +426,7 @@ proc process_problemdir { problemdir } {
 	return "$problemdir/Makefile WOULD HAVE BEEN\
 	        written from modified\
 		$sourcedir/${derivedfrom}.new but for\
-		-debug option"
+		-keep option"
     }
 }
 
