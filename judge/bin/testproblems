@@ -4,7 +4,7 @@
 #
 # File:		testproblems
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Fri May 22 15:35:24 EDT 2009
+# Date:		Thu Aug 19 17:54:39 EDT 2010
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2009/05/22 19:41:10 $
+#   $Date: 2010/08/20 09:01:05 $
 #   $RCSfile: testproblems,v $
-#   $Revision: 1.33 $
+#   $Revision: 1.34 $
 #
 # The next lines run tclsh \
 trap "echo testproblems: Terminated by Signal; exit 1" \
@@ -39,7 +39,8 @@ source $lib_directory/judging_common.tcl
 catch {
 
 set document "
-testproblems \[-p N\] \[-keep|-\] \[directory ...\]
+testproblems \[-p N\] \[-keep|-|-make|-judge\] \\
+             \[directory ...\]
 
     The command with no arguments is equivalent to
 
@@ -71,24 +72,38 @@ testproblems \[-p N\] \[-keep|-\] \[directory ...\]
 				make
 				diff *.out *.test
 				make clean
-
+
     in each directory.  It saves the diff outputs in
     addition to outputting them, and then plays back
     all the saved output at the end of this program's
     execution.  Errors made during the above run are
-    also played back.
-
+    also played back.  The -keep option suppresses the
+    final `make clean'.
+
     Before doing the above, this program uses any
     problem_make_files value in any problem .rc file in
     a directory to make or remake files in the direc-
     tory, and after finishing all other operations in
     the directory, this program removes these files.  If
     these files exist when this program is run, they are
-    deleted and remade.
+    deleted and remade if they are obsolete, but they
+    are NOT removed after finishing all other opera-
+    tions.  If the -make option is given, these files
+    are not removed after finishing all other opera-
+    tions.
 
-    The -keep option suppresses the final `make clean'
-    and the removal of files.
-
+    The -judge option causes linking to be done using
+    problem_link_files and problem_optional_link_files.
+    In addition, problem_copy_files and problem_
+    optional_copy_files are treated as if they were
+    link files instead of copy files.  Specifically,
+    problem_make_files is used to make files that
+    cannot be linked, and then linking is used to make
+    all files that can be linked.  The effect is to
+    use the same files as the judge would use, whereas
+    simply making files with problem_make_files usually
+    obtains the files the submitter would see.
+
     If a directory contains .jin files, then the pro-
     gram runs
 
@@ -117,10 +132,10 @@ testproblems \[-p N\] \[-keep|-\] \[directory ...\]
     If a directory contains both f.in and f.jin, then
 
     		jfilter -v f.jin f.in+ >& f.in#
-
+
     is executed and f.in and f.in+ are diff'ed, instead
     of making f.in from f.jin.
-
+
     If after the above, Scoring_Filter does not exist,
 
 	jfilter -v f.jin f.out f.jout >& f.jout#
@@ -142,10 +157,6 @@ testproblems \[-p N\] \[-keep|-\] \[directory ...\]
     reported.  If f.jout# or f.jfout# are made, they
     are similarly diff'ed with f.jin#.
 
-    All `rm' commands are suppressed by -keep.  All
-    `make clean' commands except the initial one in
-    each directory are suppressed by -keep.
-    
     If a non-directory is given the program, or if a
     directory with no Makefile is given, the program
     merely notes this in the output."
@@ -174,6 +185,8 @@ testproblems \[-p N\] \[-keep|-\] \[directory ...\]
 #
 set parallel_runs 0
 set keep 0
+set make 0
+set judge 0
 set SUB 0
 set SUB_filename ""
 set myargv $argv
@@ -185,6 +198,8 @@ while { 1 } {
     }
     -keep { set keep 1 }
     -     { set keep 1 }
+    -make { set make 1 }
+    -judge { set judge 1 }
     -p {
 	    set myargv [lrange $myargv 1 end]
 	    set parallel_runs [lindex $myargv 0]
@@ -324,16 +339,38 @@ proc diff { file1 file2 } {
     }
 }
 
-# Read .rc file to possibly set any problem_make_files
-# global variable.
+# Read .rc file to possibly set any problem_make_files,
+# and problem_{optional_,}{link,copy}_files global
+# variables.
 #
 proc read_rc_file { file problem } {
     global PROBLEM EXTENSION OPTIONS \
-	   problem_make_files
+	   problem_make_files \
+	   problem_link_files \
+	   problem_optional_link_files \
+	   problem_copy_files \
+	   problem_optional_copy_files
+
     set PROBLEM $problem
     set EXTENSION UNDEFINED
     set OPTIONS UNDEFINED
     source_file $file
+}
+
+# Test that a $problem.rc global variable value is a
+# TCL list and complain if it is not.
+#
+proc check_list { variable_name } {
+
+    global problem
+    upvar $variable_name variable
+
+    if { [catch { llength $variable }] } {
+	error "$problem.rc\
+	       $variable_name value is\
+	       not a TCL\
+	       list:\n    $variable"
+    }
 }
 
 foreach x $myargv {
@@ -372,32 +409,60 @@ foreach x $myargv {
 
 	# List of files to be deleted at end.
 	#
-	set made ""
+	set delete_at_end {}
 
 	# Compute make_files = problem_make_files value
-	# in any $problem.rc file.
+	# in any $problem.rc file.  Similarly if -judge
+	# option, compute link_files = problem_{link,
+	# copy}_files and optional_link_files = problem_
+	# optional_{link,copy}_files.
 	#
 	set make_files {}
+	set link_files {}
+	set optional_link_files {}
 	if { [file exists $problem.rc] } {
 
 	    catch { unset problem_make_files }
+	    catch { unset problem_link_files }
+	    catch { unset problem_optional_link_files }
+	    catch { unset problem_copy_files }
+	    catch { unset problem_optional_copy_files }
 	    read_rc_file $problem.rc $problem
-	    if { [info exists problem_make_files] } {
-	        set make_files $problem_make_files
 
-		if { [catch { llength $make_files }] } {
-		    error "$problem.rc\
-		           problem_make_files value is\
-			   not a TCL\
-			   list:\n    $make_files"
-		}
+	    if { [info exists problem_make_files] } {
+		check_list problem_make_files
+	        set make_files $problem_make_files
+	    }
+	    if { [info exists problem_link_files] } {
+		check_list problem_link_files
+		set link_files $problem_link_files
+	    }
+	    if { [info exists \
+		       problem_optional_link_files] } {
+		check_list \
+		    problem_optional_link_files
+		set optional_link_files \
+		    $problem_optional_link_files
+	    }
+	    if { [info exists problem_copy_files] } {
+		check_list problem_copy_files
+		eval lappend link_files \
+		     $problem_copy_files
+	    }
+	    if { [info exists \
+		       problem_optional_copy_files] } {
+		check_list \
+		    problem_optional_copy_files
+		eval lappend optional_copy_files \
+		    $problem_optional_link_files
 	    }
 	}
 
-	# If there are make_files, delete them and
-	# (re)make them.
+	# If there are make_files, (re)make them.
 	#
 	if { [llength $make_files] > 0 } {
+
+	    set made {}
 
 	    foreach instruction $make_files {
 		if { [catch { llength $instruction }] \
@@ -414,14 +479,117 @@ foreach x $myargv {
 			   instruction has empty file\
 			   name:\n    $instruction"
 		}
+		if {    ! [file exists $file] \
+		     && ! $make } {
+		    lappend delete_at_end $file
+		}
 		lappend made $file
 	    }
 
 	    puts "(re)making $made"
-	    eval file delete -force -- $made
 	    execute_makes $make_files . \
 	                  "problem_make_files value in\
 			   $problem.rc"
+	}
+
+	# If there are link files or optional link
+	# files, link them if they do not exist.  If
+	# -judge and they would be linked to another
+	# existing file, insist that they are linked
+	# to this file, removing any existing file or
+	# link and relinking if necessary.  If there
+	# is no file and no way to link it, complain
+	# if the file is on link_files list (and
+	# therefore is not optional).
+	#
+	set non_optional [llength $link_files]
+	    # If >= 0 file is not optional
+	foreach instruction \
+	        [concat $link_files \
+			$optional_link_files] {
+	    incr non_optional -1
+
+	    if { [catch { llength $instruction }] \
+	       } {
+	      error
+	        "$problem.rc\
+		 problem_{,optional_}{link,copy}_files\
+		 instruction is not a TCL\
+		 list:\n    $instruction"
+	    }
+
+	    set file [lindex $instruction 0]
+
+	    if { $file == "" } {
+	      error
+	        "$problem.rc\
+		 problem_{,optional_}{link,copy}_files\
+		 instruction has empty file\
+		 name:\n    $instruction"
+	    }
+	    if {    ! [file exists $file] \
+		 && ! $make } {
+		lappend delete_at_end $file
+	    }
+
+	    if { [file exists $file] && ! $judge } \
+	        continue
+
+	    # Compute desired target; File cannot be its
+	    # own target.
+	    #
+	    set target ""
+	    foreach t [lrange $instruction 1 end] {
+	        if { [file exists $t] } {
+		    set target $t
+		    break
+		}
+	    }
+
+	    if {    $target == "" \
+	         && ! [file exists $file] \
+		 && $non_optional >= 0 } {
+	      error
+	        "$problem.rc problem_{link,copy}_files\
+		 instruction requires that $file be\
+		 linked but this is not\
+		 possible:\n    $instruction"
+	    }
+
+	    # If no target and file exists or is
+	    # optional, skip it.
+	    #
+	    if { $target == "" } continue
+
+	    set old_target ""
+	    catch { set old_target \
+			[file readlink $file] }
+	    if { $old_target == $target } continue;
+
+	    # If old_target targets an existing file
+	    # we must have -judge at this point.
+	    # Similarly if $file exists we must have
+	    # -judge at this point.
+	    #
+	    if {    $old_target != "" \
+	         && ! [file exists $old_target] } {
+		puts "deleting link of $file to\
+		      $old_target as $old_target does\
+		      not exist"
+		file delete -force -- $file
+	    } elseif { $old_target != "" } {
+		puts "deleting link of $file to\
+		      $old_file as per -judge"
+		file delete -force -- $file
+	    } elseif { [file exists $file] } {
+		puts "deleting $file as per -judge"
+		file delete -force -- $file
+	    }
+
+	    # At this point $file does not exist.
+	    #
+	    puts "linking $file to $target"
+	    file link -symbolic $file $target
 	}
 
 	# Make sure that "problem" is the first
@@ -441,13 +609,13 @@ foreach x $myargv {
 	    if { ! [file exists $f.in] } {
 	        puts "jfilter -v $f.jin $f.in >& $f.in#"
 	        exec jfilter -v $f.jin $f.in >& $f.in#
-		lappend made $f.in $f.in#
+		lappend delete_at_end $f.in $f.in#
 	    } elseif { [file exists $f.jin] } {
 	        file delete -force -- $f.in+
 	        puts "jfilter -v $f.jin $f.in+\
 		      >& $f.in#"
 	        exec jfilter -v $f.jin $f.in+ >& $f.in#
-		lappend made $f.in+ $f.in#
+		lappend delete_at_end $f.in+ $f.in#
 		diff $f.in $f.in+
 	    }
 	    if { $f != $problem } {
@@ -467,7 +635,7 @@ foreach x $myargv {
 	    }
 	    if { $f != $problem } {
 	        file rename $problem.out $f.out
-		lappend made $f.out
+		lappend delete_at_end $f.out
 		file delete $problem.in
 	    }
 	    diff $f.out $f.test
@@ -477,7 +645,7 @@ foreach x $myargv {
 		      < $f.out > $f.fout"
 		exec Scoring_Filter $f.in \
 		     < $f.out > $f.fout
-		lappend made $f.fout
+		lappend delete_at_end $f.fout
 		if { [file exists $f.ftest] } {
 		    diff $f.fout $f.ftest
 		}
@@ -489,7 +657,8 @@ foreach x $myargv {
 		    exec jfilter -v \
 			 $f.jin $f.fout $f.jfout \
 			 >& $f.jfout#
-		    lappend made $f.jfout $f.jfout#
+		    lappend delete_at_end \
+		            $f.jfout $f.jfout#
 		    if { [file exists $f.jftest] } {
 			diff $f.jfout $f.jftest
 		    }
@@ -501,7 +670,7 @@ foreach x $myargv {
 			      $f.jout >& $f.jout#"
 		exec jfilter -v $f.jin $f.out \
 		     $f.jout >& $f.jout#
-		lappend made $f.jout $f.jout#
+		lappend delete_at_end $f.jout $f.jout#
 		if { [file exists $f.jtest] } {
 		    diff $f.jout $f.jtest
 		}
@@ -512,9 +681,9 @@ foreach x $myargv {
 	        exec make clean >&@ stdout
 	    }
 	}
-	if { ! $keep && [llength $made] > 0 } {
-	    puts "rm -f $made"
-	    eval file delete -force -- $made
+	if { ! $keep && [llength $delete_at_end] > 0 } {
+	    puts "rm -f $delete_at_end"
+	    eval file delete -force -- $delete_at_end
 	}
     } out] } {
         puts $out
