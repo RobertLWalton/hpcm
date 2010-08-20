@@ -4,7 +4,7 @@
 #
 # File:		testproblems
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Thu Aug 19 17:54:39 EDT 2010
+# Date:		Fri Aug 20 15:05:08 EDT 2010
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2010/08/20 09:01:05 $
+#   $Date: 2010/08/20 20:10:04 $
 #   $RCSfile: testproblems,v $
-#   $Revision: 1.34 $
+#   $Revision: 1.35 $
 #
 # The next lines run tclsh \
 trap "echo testproblems: Terminated by Signal; exit 1" \
@@ -39,7 +39,7 @@ source $lib_directory/judging_common.tcl
 catch {
 
 set document "
-testproblems \[-p N\] \[-keep|-|-make|-judge\] \\
+testproblems \[-p N\] \[-clean|-keep|-|-judge\] \\
              \[directory ...\]
 
     The command with no arguments is equivalent to
@@ -83,29 +83,38 @@ testproblems \[-p N\] \[-keep|-|-make|-judge\] \\
     Before doing the above, this program uses any
     problem_make_files value in any problem .rc file in
     a directory to make or remake files in the direc-
-    tory, and after finishing all other operations in
-    the directory, this program removes these files.  If
-    these files exist when this program is run, they are
-    deleted and remade if they are obsolete, but they
-    are NOT removed after finishing all other opera-
-    tions.  If the -make option is given, these files
-    are not removed after finishing all other opera-
-    tions.
+    tory.  If these files exist when this program is
+    run, they are deleted and remade if they are
+    obsolete.
 
-    The -judge option causes linking to be done using
-    problem_link_files and problem_optional_link_files.
-    In addition, problem_copy_files and problem_
-    optional_copy_files are treated as if they were
-    link files instead of copy files.  Specifically,
-    problem_make_files is used to make files that
-    cannot be linked, and then linking is used to make
-    all files that can be linked.  The effect is to
-    use the same files as the judge would use, whereas
-    simply making files with problem_make_files usually
-    obtains the files the submitter would see.
+    After making problem_make_files, files listed in
+    problem_link_files, and problem_optional_link_files,
+    are linked if they do not exist.  Also problem_copy_
+    files and problem_optional_copy_files are treated
+    the same as problem_link_files and problem_optional_
+    line_files.
+
+    The -judge option forces the links to be set as they
+    would be in a judging directory.  This means that
+    if a file exists but would link to another file if
+    it did not exist, the file is deleted and linked to
+    that other file.
+
+    If a file listed in problem_link_files (or problem_
+    copy_files) does not exist and cannot be linked
+    because all possible targets do not exists, and
+    error is announced.
+
+    If the -clean option is given, after finishing a
+    directory all files listed in problem_make_ files,
+    problem_link_files, problem_optional_link_files,
+    problem_copy_files, and problem_optional_copy_files
+    are deleted.  Otherwise they are left.  This is done
+    independently of the -keep option.
 
-    If a directory contains .jin files, then the pro-
-    gram runs
+    If a directory contains .jin files, AND problem.in
+    is NOT a regular file (it is a link or does not
+    exist), then the program runs
 
     		make clean
 
@@ -122,12 +131,14 @@ testproblems \[-p N\] \[-keep|-|-make|-judge\] \\
     for each f.jin file.  The -keep option suppresses
     the final `make clean' and `rm'.
 
-    If a directory contains multiple .in files, the
-    same thing is done as for .jin files, but jfilter
-    is not run and f.in is not removed.  If a directory
-    contains just problem.jin, the same thing is done
-    without the linking of problem.in or the moving
-    of problem.out (here f = problem).
+    If a directory contains multiple .in files, AND
+    problem.in is NOT an ordinary file (i.e., it does
+    not exist or is a link), same thing is done as for
+    .jin files, but jfilter is not run and f.in is not
+    removed.  If a directory contains just problem.jin,
+    the same thing is done without the linking of
+    problem.in or the moving of problem.out (here f =
+    problem).
 
     If a directory contains both f.in and f.jin, then
 
@@ -185,7 +196,7 @@ testproblems \[-p N\] \[-keep|-|-make|-judge\] \\
 #
 set parallel_runs 0
 set keep 0
-set make 0
+set clean 0
 set judge 0
 set SUB 0
 set SUB_filename ""
@@ -198,12 +209,13 @@ while { 1 } {
     }
     -keep { set keep 1 }
     -     { set keep 1 }
-    -make { set make 1 }
+    -clean { set clean 1 }
     -judge { set judge 1 }
     -p {
 	    set myargv [lrange $myargv 1 end]
 	    set parallel_runs [lindex $myargv 0]
-	    if { [catch { expr { $parallel_runs + 1 }}] \
+	    if { [catch \
+	            { expr { $parallel_runs + 1 }}] \
 	         || \
 		 $parallel_runs <= 0 } {
 	        puts "-p $parallel_runs is not legal"
@@ -412,10 +424,10 @@ foreach x $myargv {
 	set delete_at_end {}
 
 	# Compute make_files = problem_make_files value
-	# in any $problem.rc file.  Similarly if -judge
-	# option, compute link_files = problem_{link,
-	# copy}_files and optional_link_files = problem_
-	# optional_{link,copy}_files.
+	# in any $problem.rc file.  Similarly compute
+	# link_files = problem_{link,copy}_files and
+	# optional_link_files = problem_optional_{link,
+	# copy}_files.
 	#
 	set make_files {}
 	set link_files {}
@@ -479,8 +491,7 @@ foreach x $myargv {
 			   instruction has empty file\
 			   name:\n    $instruction"
 		}
-		if {    ! [file exists $file] \
-		     && ! $make } {
+		if { $clean } {
 		    lappend delete_at_end $file
 		}
 		lappend made $file
@@ -500,7 +511,9 @@ foreach x $myargv {
 	# link and relinking if necessary.  If there
 	# is no file and no way to link it, complain
 	# if the file is on link_files list (and
-	# therefore is not optional).
+	# therefore is not optional).  If -clean
+	# option, put all files that might be linked
+	# on the delete list.
 	#
 	set non_optional [llength $link_files]
 	    # If >= 0 file is not optional
@@ -527,8 +540,7 @@ foreach x $myargv {
 		 instruction has empty file\
 		 name:\n    $instruction"
 	    }
-	    if {    ! [file exists $file] \
-		 && ! $make } {
+	    if { $clean } {
 		lappend delete_at_end $file
 	    }
 
@@ -579,7 +591,7 @@ foreach x $myargv {
 		file delete -force -- $file
 	    } elseif { $old_target != "" } {
 		puts "deleting link of $file to\
-		      $old_file as per -judge"
+		      $old_target as per -judge"
 		file delete -force -- $file
 	    } elseif { [file exists $file] } {
 		puts "deleting $file as per -judge"
@@ -592,16 +604,25 @@ foreach x $myargv {
 	    file link -symbolic $file $target
 	}
 
-	# Make sure that "problem" is the first
-	# value of f if it is a value of f.
+	# If problem.in or problem.jin exist, only
+	# consider them.  Otherwise consider all
+	# *.in and *.jin.
 	#
 	set done ""
-	foreach file [lsort [glob $problem.in \
-	                          $problem.jin \
-			          *.in *.jin]] {
+	set inputs ""
+	if {    [file exists $problem.in] \
+	     || [file exists $problem.jin] } {
+	    set inputs [list $problem.in $problem.jin]
+	} else {
+	    set inputs [glob *.in *.jin]
+	    lappend done $problem
+	}
+	foreach file [lsort $inputs] {
+
 	    set f [file rootname $file]
 	    if { [lcontain $done $f] } continue
 	    lappend done $f
+
 	    if { $f != $problem } {
 	        puts "========== $file:"
 	    }
@@ -621,6 +642,7 @@ foreach x $myargv {
 	    if { $f != $problem } {
 	        exec ln -s $f.in $problem.in
 	    }
+
 	    set make_error \
 	        [catch { exec make >@ stdout } \
 		       mout]
@@ -633,6 +655,7 @@ foreach x $myargv {
 		puts $mout
 		continue
 	    }
+
 	    if { $f != $problem } {
 	        file rename $problem.out $f.out
 		lappend delete_at_end $f.out
