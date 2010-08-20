@@ -1,22 +1,25 @@
 # Makefile for the XXX Problem
 #
 # File:		Makefile
-# Date:		Mon Sep 24 22:11:23 EDT 2007
+# Date:		Fri Aug 20 07:22:22 EDT 2010
 #
 # See demonstration Makefile for documentation.
 #
-# The program for this problem is named:
-
+#   P		problem name
+#   M		monitor name
+#
+#   XTRA_INPUTS	extra input files that must be granted
+#		access
+#   XTRA_LIBS	extra libraries for C and C++ programs
+#   XTRA_LIMITS limits that override those given
+#               previously to hpcm_sandbox
+#   
 P = problem_name
-
-# The monitor program for this problem is named:
-
 M = monitor_name
 
-# The programming language in which the solution and
-# monitor are written has extension:
-
-E = .cc
+XTRA_INPUTS =
+XTRA_LIBS =
+XTRA_LIMITS =
 
 .SUFFIXES:
 .SUFFIXES: .c .cc .java .lsp
@@ -25,11 +28,11 @@ default:	$P.out
 
 .c:
 	rm -f $* core core.[0-9]*
-	gcc -g -o $* $*.c -lm
+	gcc -g -o $* $*.c -lm ${XTRA_LIBS}
 
 .cc:
 	rm -f $* core core.[0-9]*
-	g++ -g -o $* $*.cc -lm
+	g++ -g -o $* $*.cc -lm ${XTRA_LIBS}
 
 .java:
 	rm -f $* *.class core core.[0-9]*
@@ -49,55 +52,25 @@ default:	$P.out
 	chmod a+r $*.fas
 	chmod a+rx $*
 
-# Contestant's monitor, without debugging info.
-#
-$M:	$M$E $P$E
-	g++ -o $M $M$E -lm
-
-# Judge's monitor with debugging info.
-#
-judges_$M:  $M$E $P$E
-	g++ -g -o judges_$M -DJUDGE $M$E -lm
-
-# We cannot list $M as a prerequisite because then
-# $M$E would be required by the above rule, and it
-# is not available in the contestants working directory.
-# But for testing purpose we do need to make $M if
-# it does not exist or is older than $M$E or $P$E.
-#
 $P.out:	$P $P.in
-	@if test ! -x $M -o \
-	         \( -r $M$E -a -r $P$E -a \
-		    \( $M -ot $M$E -o \
-		       $M -ot $P$E \) \); \
-	    then echo g++ -o $M $M$E -lm; \
-		 g++ -o $M $M$E -lm; fi
 	rm -f $P.out core core.[0-9]*
-	chmod a+x . $P
+	grant_access . $P ${XTRA_INPUTS}
 	$M hpcm_sandbox -cputime 60 \
 	                -datasize 4m \
 		        -stacksize 4m \
-		        -filesize 50k \
-			-tee $P.out \
+		        ${XTRA_LIMITS} \
 		        $P \
-	    <$P.in
+	    <$P.in | tee $P.out
 
 $P.debug:	$P $P.in
-	@if test ! -x $M -o \
-	         \( -r $M$E -a -r $P$E -a \
-		    \( $M -ot $M$E -o \
-		       $M -ot $P$E \) \); \
-	    then echo g++ -o $M $M$E -lm; \
-		 g++ -o $M $M$E -lm; fi
 	rm -f $P.debug core core.[0-9]*
-	chmod a+x . $P
+	grant_access . $P ${XTRA_INPUTS}
 	$M hpcm_sandbox -cputime 60 \
-	                  -datasize 4m \
-		          -stacksize 4m \
-		          -filesize 4m \
-			  -tee $P.debug \
-		          $P debug \
-	    <$P.in
+	                -datasize 4m \
+		        -stacksize 4m \
+		        ${XTRA_LIMITS} \
+		        $P debug \
+	    <$P.in | tee $P.out
 
 debug:		$P.debug
 
@@ -113,19 +86,18 @@ inout-submit:	$P.out
 solution-submit:	$P.out
 	hpcm_submit -solution $P
 
-# We must not remove monitor from the contestant's
-# directory which has no $M$E to remake it.
-#
 clean:
 	rm -f $P *.class core core.[0-9]* \
 	      *.out *.debug *.fout *.jout *.jfout \
 	      $P.fas $P.lib make_$P_*input
-	@if test -r $M$E; \
-	    then echo rm -f $M judges_$M; \
-	         rm -f $M judges_$M; fi
 
 #
-# Author:	walton@deas.harvard.edu
+# Note: The monitor program must limit its own cpu time
+# and its own i/o sizes (there is no effective hpcm_
+# sandbox -filesize argument).
+
+# Derived From:	Makefile2
+# Author:	walton@seas.harvard.edu
 #
 # The authors have placed this file in the public
 # domain; they make no warranty and accept no liability
@@ -134,6 +106,6 @@ clean:
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2007/10/08 10:42:54 $
+#   $Date: 2010/08/20 23:24:38 $
 #   $RCSfile: Makefile2,v $
-#   $Revision: 1.11 $
+#   $Revision: 1.12 $
