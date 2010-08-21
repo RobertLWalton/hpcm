@@ -4,7 +4,7 @@
 #
 # File:		testproblems
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Fri Aug 20 18:53:42 EDT 2010
+# Date:		Sat Aug 21 07:44:38 EDT 2010
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2010/08/20 23:21:10 $
+#   $Date: 2010/08/21 12:29:39 $
 #   $RCSfile: testproblems,v $
-#   $Revision: 1.36 $
+#   $Revision: 1.37 $
 #
 # The next lines run tclsh \
 trap "echo testproblems: Terminated by Signal; exit 1" \
@@ -68,89 +68,101 @@ testproblems \[-p N\] \[-keep|-|-make|-judge\] \\
     with differences, if any, followed by timing infor-
     mation.
 
-    This program runs:		make clean
-				make
-				diff *.out *.test
-				make clean
+    To first approximation, this program runs:
+
+		make clean
+		make
+		diff *.out *.test
+		make clean
 
     in each directory.  It saves the diff outputs in
     addition to outputting them, and then plays back
-    all the saved output at the end of this program's
-    execution.  Errors made during the above run are
-    also played back.  The -keep option suppresses the
-    final `make clean'.
+    all relevant saved output for each directory at the
+    end of this program's execution.  Errors made during
+    the above run are also played back.  The -keep
+    option suppresses the final `make clean'.
 
-    Before doing the above, this program uses any
-    problem_make_files value in any problem .rc file in
-    a directory to make or remake files in the direc-
-    tory.  If these files exist when this program is
-    run, they are deleted and remade if they are
-    obsolete.
+    More specifically, for each directory this program
+    does the following.  First, it does a cd to the
+    directory and extracts the name PROBLEM as the last
+    component of the full name of the directory (obtain-
+    ed by pwd).  Then it deletes any symbolic link named
+    PROBLEM.in (but will NOT delete a regular file of
+    that name), and runs
+
+    		make clean
+
+    Next this program uses any problem_make_files value
+    in any PROBLEM.rc file in the directory to make or
+    remake files in the directory.  If these files exist
+    when this program is run, they are deleted and
+    remade if they are obsolete.
 
     After making problem_make_files, files listed in
-    problem_link_files, and problem_optional_link_files,
-    are linked if they do not exist.  Also problem_copy_
-    files and problem_optional_copy_files are treated
+    any PROBLEM.rc file problem_link_files and problem_
+    optional_link_files variables, are linked if the
+    files do not exist.  Also problem_copy_files and
+    problem_optional_copy_files variables are treated
     the same as problem_link_files and problem_optional_
-    line_files.
+    link_files (copying makes no sense in this context,
+    and it therefore replaced by linking).
 
     The -judge option forces the links to be set as they
     would be in a judging directory.  This means that
     if a file exists but would link to another file if
     it did not exist, the file is deleted and linked to
     that other file.
-
+
     If a file listed in problem_link_files (or problem_
     copy_files) does not exist and cannot be linked
-    because all possible targets do not exists, and
-    error is announced.
-
+    because all possible targets do not exist, an error
+    is announced.
+
     Unless the -keep or -make options are given, after
     finishing a directory all files listed in problem_
     make_files, problem_link_files, problem_optional_
     link_files, problem_copy_files, and problem_
     optional_copy_files are deleted.  Both the -make
-    and -keep options causes these files to be kept
+    and -keep options cause these files to be kept
     instead of being deleted.  -make is weaker than
     -keep in that it keeps only these files, and not
     other files.
 
     Next the .in and .jin files in the directory are
-    processed.  If problem.in is a link it is deleted.
-    Then a set of path roots is choosen such that if f
-    is in the set then either f.in or f.jin exists.  If
-    either problem.in or problem.jin exists (after any
-    linked problem.in is deleted), only f == problem is
-    used.  Otherwise all f for which either f.in or
-    f.jin exist are used.
+    processed.  If PROBLEM.in was a link it was deleted
+    as indicated above.  A set of path roots is chosen
+    such that if f is in the set then either f.in or
+    f.jin exists.  If either PROBLEM.in or PROBLEM.jin
+    exists (after any PROBLEM.in link is deleted),
+    only f == PROBLEM is used.  Otherwise all f for
+    which either f.in or f.jin exist are used.
 
-    Given f.jin the program runs
+    Given f.jin but NOT f.in, the program runs
 
-    		make clean
-
-    once followed by
-
-    		jfilter -v f.jin f.in >& f.in#
-		ln -s f.in problem.in
-		make
-		mv problem.out f.out
-		diff f.out f.test
-		make clean
-		rm f.in f.in# problem.in
+    	jfilter -v f.jin f.in >& f.in#
+	ln -s f.in PROBLEM.in          # if f != PROBLEM
+	make
+	rm PROBLEM.in                  # if f != PROBLEM
+	mv PROBLEM.out f.out           # if f != PROBLEM
+	diff f.out f.test
+	make clean
+	rm f.out		       # if f != PROBLEM
+	rm f.in f.in#
 
     The -keep option suppresses the final `make clean'
-    and `rm'.
-
+    and the final two `rm's.
+
     Given f.in but no f.jin, this program does the same
     thing as for f.jin, but jfilter is not run and f.in
     is not removed.
-
-    If a directory contains both f.in and f.jin, then
+
+    Given both f.in and f.jin, then
 
     		jfilter -v f.jin f.in+ >& f.in#
 
     is executed and f.in and f.in+ are diff'ed, instead
-    of making f.in from f.jin.
+    of making f.in from f.jin.  Also f.in is not
+    removed.
 
     If after the above, Scoring_Filter does not exist,
 
@@ -173,6 +185,12 @@ testproblems \[-p N\] \[-keep|-|-make|-judge\] \\
     reported.  If f.jout# or f.jfout# are made, they
     are similarly diff'ed with f.jin#.
 
+    If errors occur while processing a directory, they
+    are announced and processing of the directory is
+    terminated without removing the files that would
+    normally be removed when processing of the directory
+    was finished.
+
     If a non-directory is given the program, or if a
     directory with no Makefile is given, the program
     merely notes this in the output."
@@ -240,10 +258,6 @@ while { 1 } {
 if { [llength $myargv] == 0 } {
     set myargv .
 }
-
-# -keep forces -make
-#
-if { $keep } { set make 1 }
 
 set wd [pwd]
 
@@ -428,7 +442,8 @@ foreach x $myargv {
 	}
 	exec make clean >&@ stdout
 
-	# List of files to be deleted at end.
+	# List of files to be deleted at end if -keep
+	# option is absent.
 	#
 	set delete_at_end {}
 
@@ -607,7 +622,8 @@ foreach x $myargv {
 		file delete -force -- $file
 	    }
 
-	    # At this point $file does not exist.
+	    # At this point $file does not exist
+	    # and is not a link.
 	    #
 	    puts "linking $file to $target"
 	    file link -symbolic $file $target
@@ -615,7 +631,8 @@ foreach x $myargv {
 
 	# If problem.in or problem.jin exist, only
 	# consider them.  Otherwise consider all
-	# *.in and *.jin.
+	# *.in and *.jin.  Note that if problem.in
+	# was a link it was deleted above.
 	#
 	set done ""
 	set inputs ""
@@ -658,11 +675,9 @@ foreach x $myargv {
 	    if { $make_error } {
 	        if { $f != $problem } {
 		    putsfd "========== making $f.out:"
-		    file delete $problem.in
 		}
 		putsfd $mout
 		puts $mout
-		continue
 	    }
 
 	    if { $f != $problem } {
@@ -670,6 +685,9 @@ foreach x $myargv {
 		lappend delete_at_end $f.out
 		file delete $problem.in
 	    }
+
+	    if { $make_error } continue
+
 	    diff $f.out $f.test
 
 	    if { [file exists Scoring_Filter] } {
