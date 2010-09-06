@@ -2,7 +2,7 @@
 //
 // File:	constrainedsearch.cc
 // Authors:	Bob Walton (walton@deas.harvard.edu)
-// Date:	Sun Sep  5 04:16:00 EDT 2010
+// Date:	Mon Sep  6 10:11:57 EDT 2010
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: walton $
-//   $Date: 2010/09/06 01:50:06 $
+//   $Date: 2010/09/06 14:24:45 $
 //   $RCSfile: csearch.cc,v $
-//   $Revision: 1.1 $
+//   $Revision: 1.2 $
 
 #include <iostream>
 #include <cstdlib>
@@ -23,6 +23,7 @@
 using std::cin;
 using std::cout;
 using std::endl;
+using std::istream;
 
 const int MAX_N = 80;
 const int MAX_M = 26;
@@ -76,14 +77,15 @@ enum action_type { SET_COLOR, SET_ALLOWED };
 // There can be at most n set color actions and at most
 // n**2 SET_ALLOWED actions.
 //
+const int MAX_ACTIONS = MAX_N + MAX_N * MAX_N;
 struct action
 {
     action_type type;
     int i;
     int old_value;
-} actions[MAX_N + MAX_N * MAX_N],
+} actions[MAX_ACTIONS],
   * actionsp,
-  * actions_endp = actions + MAX_N;
+  * actions_endp = actions + MAX_ACTIONS;
 
 // Set color[i]= c.  Old_value == UNKNOWN always.
 //
@@ -113,6 +115,9 @@ void set_allowed ( int i, int value )
 //
 void undo ( action * ap )
 {
+    dout << "UNDO" << (actionsp - ap) << " ACTIONS"
+         << endl;
+
     assert ( ap >= actions );
     while ( actionsp > ap )
     {
@@ -125,6 +130,7 @@ void undo ( action * ap )
 	    break;
 	case SET_ALLOWED:
 	    allowed[i] = actionsp->old_value;
+	    break;
 	}
     }
 }
@@ -158,12 +164,15 @@ void compute_allowed
 //
 // For each SET_COLOR action propagate recomputes
 // allowed[j] for all neighbors j of the node whose
-// color was set.  If a new allowed[j] == 0 a conflict
-// is signalled.  If a new allowed[j] == 1 the color
+// color was set.  If new allowed[j] == 0 a conflict
+// is signalled.  If new allowed[j] == 1 the color
 // of j is set (it is forced).
 //
 bool propagate ( action * ap )
 {
+    dout << "PROPAGATE" << (actionsp - ap)
+         << " OR MORE ACTIONS" << endl;
+
     for ( ; ap < actionsp; ++ ap )
     {
 	if ( ap->type != SET_COLOR ) continue;
@@ -191,6 +200,9 @@ bool propagate ( action * ap )
 		continue;
 	    }
 
+	    // Find the unique (as new_allowed == 1) c
+	    // such that used[c] == false;
+	    //
 	    int c;
 	    for ( c = 0; c < m; ++ c )
 	    {
@@ -201,6 +213,8 @@ bool propagate ( action * ap )
 	    set_color ( j, c );
 	}
     }
+
+    return true;
 }
 
 // Continue Search.  Find a node i with minimum
@@ -222,6 +236,7 @@ void search ( int depth )
 
     if ( i == -1 )
     {
+        // All nodes have known colors.
         // We are done successfully.
 	//
 	// print result.
@@ -252,15 +267,112 @@ void search ( int depth )
 
 char line [MAX_LINE + 2];
 
+// Note: data input functions used by the Scoring_
+// Filter program with an input stream other than
+// cin, which is why instream is a parameter.
+
 // Judge's function to get line checking for line
 // too long.  Return false on eof, true otherwise.
 //
-bool get_line ( void )
+bool get_line ( istream & in )
 {
-    cin.getline ( line, MAX_LINE+2 );
-    if ( cin.eof() ) return false;
-    assert ( cin.gcount() <= MAX_LINE );
+    in.getline ( line, MAX_LINE+2 );
+    if ( in.eof() ) return false;
+    assert ( in.gcount() <= MAX_LINE );
     return true;
+}
+
+// Test case name line must have alread been read.
+//
+void read_data ( istream & in )
+{
+
+    // Read colors names.
+    //
+    assert ( get_line ( in ) );
+    m = strlen ( line );
+    assert ( 1 <= m && m <= MAX_M );
+    strncpy ( color_name, line, m );
+
+    // Judge's check that color names are distinct
+    // upper case letters.
+    //
+    {
+        bool used[MAX_M];
+	FOR(c,m) used[c] = false;
+	FOR(c,m)
+	{
+	    int name = color_name[c];
+	    assert ( 'A' <= name && name <= 'Z' );
+	    name -= 'A';
+	    assert ( ! used[name] );
+	    used[name] = true;
+	}
+    }
+
+    // Read initial colors.  Set any initially known
+    // colors using set_color.
+    //
+    actionsp = actions;
+    //
+    assert ( get_line ( in ) );
+    n = strlen ( line );
+    assert ( 1 <= n && n <= MAX_N );
+    FOR(i,n)
+    {
+	if ( line[i] == '?' )
+	    color[i] = UNKNOWN;
+	else FOR(c,m)
+	{
+	    if ( line[i] == color_name[c] )
+	    {
+		set_color ( i, c );
+		break;
+	    }
+	}
+    }
+
+    // Read connected[i][j].
+    //
+    FOR(i,n)
+    {
+	assert ( get_line ( in ) );
+	assert ( strlen ( line ) == n );
+	FOR(j,n)
+	{
+	    if ( line[j] == '.' )
+		connected[i][j] = false;
+	    else
+	    {
+		assert ( line[j] == '*' );
+		connected[i][j] = true;
+	    }
+	}
+    }
+
+    // Judge's check that on connected matrix.
+    //
+    {
+        FOR(i,n)
+	{
+	    assert ( ! connected[i][i] );
+	    FOR(j,n)
+	    {
+	        assert ( connected[i][j]
+		         ==
+			 connected[j][i] );
+	    }
+	}
+    }
+
+    // Compute allowed[i].
+    //
+    bool used[MAX_M];
+    FOR(i,n)
+    {
+        if ( color[i] == UNKNOWN )
+	    compute_allowed ( i, used, allowed[i] );
+    }
 }
 
 int main ( int argc, char * argv[] )
@@ -271,63 +383,14 @@ int main ( int argc, char * argv[] )
     {
 	// Read and output test case name line.
 	//
-        if ( ! get_line() ) break;
+        if ( ! get_line ( cin ) ) break;
 	cout << line << endl;
 
-	// Read colors names.
-	//
-	assert ( get_line() );
-	m = strlen ( line );
-	assert ( 1 <= m && m <= MAX_M );
-	strncpy ( color_name, line, m );
+	read_data ( cin );
 
-	// Read initial colors.
-	//
-	actionsp = actions;
-	//
-	assert ( get_line() );
-	n = strlen ( line );
-	assert ( 1 <= n && n <= MAX_N );
-	FOR(i,n)
-	{
-	    if ( line[i] == '?' )
-	        color[i] = UNKNOWN;
-	    else FOR(c,m)
-	    {
-	        if ( line[i] == color_name[c] )
-		{
-		    set_color ( i, c );
-		    break;
-		}
-	    }
-	}
-
-	// Read connected[i][j].
-	//
-	FOR(i,n)
-	{
-	    assert ( get_line() );
-	    assert ( strlen ( line ) == n );
-	    FOR(j,n)
-	    {
-	        if ( line[j] == '.' )
-		    connected[i][j] = false;
-		else
-		{
-		    assert ( line[j] == '*' );
-		    connected[i][j] = true;
-		}
-	    }
-	}
-
-	// Compute allowed[i].
-	//
-	bool used[MAX_M];
-	FOR(i,n)
-	    compute_allowed ( i, used, allowed[i] );
-
-	// Check legality and propagate initial color
-	// settings.
+	// Propagate initial color settings.
+	// Includes judge's check that initial settings
+	// are legal.
 	//
 	assert ( propagate ( actions ) );
 
@@ -342,4 +405,3 @@ int main ( int argc, char * argv[] )
 
     return 0;
 }
-
