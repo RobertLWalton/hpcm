@@ -2,7 +2,7 @@
 //
 // File:	constrainedsearch.cc
 // Authors:	Bob Walton (walton@deas.harvard.edu)
-// Date:	Mon Sep  6 16:42:52 EDT 2010
+// Date:	Tue Sep  7 04:32:09 EDT 2010
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: walton $
-//   $Date: 2010/09/07 01:30:30 $
+//   $Date: 2010/09/07 08:39:05 $
 //   $RCSfile: csearch.cc,v $
-//   $Revision: 1.3 $
+//   $Revision: 1.4 $
 
 #include <iostream>
 #include <cstdlib>
@@ -51,7 +51,8 @@ int color[MAX_N];
 const int UNKNOWN = -1;
 bool connected[MAX_N][MAX_N];
 
-// We use constrained search.
+// We use constrained search.  See the constrained
+// search help file.
 
 int number_of_solutions;
 
@@ -221,6 +222,25 @@ bool propagate ( action * ap )
     return true;
 }
 
+// Judge's check that the solution is legal.
+// If not, return false and print error message.
+//
+bool check_legality ( void )
+{
+    bool legal = true;
+    FOR(i,n) FOR(j,i)
+    {
+        if ( ! connected[i][j] ) continue;
+	if ( color[i] != color[j] ) continue;
+	cout << "NODES " << i << " AND " << j
+	     << " ARE CONNECTED AND BOTH HAVE"
+	        " COLOR "
+	     << color_name[color[i]] << endl;
+	legal = false;
+    }
+    return legal;
+}
+
 // Continue Search.  Find a node i with minimum
 // allowed[i] and try all its allowed colors.
 //
@@ -242,7 +262,9 @@ void search ( int depth )
     {
         // All nodes have known colors.
         // We are done successfully.
-	//
+
+	assert ( check_legality() );
+
 	// print result.
 	//
 	FOR(i,n) cout << color_name[color[i]];
@@ -262,6 +284,10 @@ void search ( int depth )
     FOR(c,m)
     {
         if ( used[c] ) continue;
+	dout << "SEARCH DEPTH " << depth
+	     << " SETTING NODE " << i
+	     << " TO COLOR " << c << endl;
+
 	set_color ( i, c );
 	if ( propagate ( saved_actionsp ) )
 	    search ( depth + 1 );
@@ -379,7 +405,13 @@ void read_data ( istream & in )
     }
 }
 
+// The make_constrained_input.cc program that makes
+// input test cases and the Scoring_Filter.cc program
+// the checks legality of solutions both include this
+// file but do NOT want to include the main() function.
+// 
 # ifndef MAKE_CONSTRAINEDSEARCH_INPUT
+# ifndef SCORING_FILTER
 
 int main ( int argc, char * argv[] )
 {
@@ -412,4 +444,5 @@ int main ( int argc, char * argv[] )
     return 0;
 }
 
+# endif // SCORING_FILTER
 # endif // MAKE_CONSTRAINEDSEARCH_INPUT
