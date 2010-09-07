@@ -2,7 +2,7 @@
 //
 // File:	constrainedsearch.cc
 // Authors:	Bob Walton (walton@deas.harvard.edu)
-// Date:	Mon Sep  6 10:11:57 EDT 2010
+// Date:	Mon Sep  6 16:42:52 EDT 2010
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: walton $
-//   $Date: 2010/09/06 14:24:45 $
+//   $Date: 2010/09/07 01:30:30 $
 //   $RCSfile: csearch.cc,v $
-//   $Revision: 1.2 $
+//   $Revision: 1.3 $
 
 #include <iostream>
 #include <cstdlib>
@@ -93,8 +93,10 @@ void set_color ( int i, int c )
 {
     dout << "SET COLOR[" << i << "] = " << c << endl;
     assert ( actionsp < actions_endp );
-    actionsp->type = SET_COLOR;
-    actionsp->i = i;
+    action & a = * actionsp ++;
+
+    a.type = SET_COLOR;
+    a.i = i;
     color[i] = c;
 }
 
@@ -105,9 +107,11 @@ void set_allowed ( int i, int value )
     dout << "SET ALLOWED[" << i << "] = " << value
          << endl;
     assert ( actionsp < actions_endp );
-    actionsp->type = SET_ALLOWED;
-    actionsp->i = i;
-    actionsp->old_value = allowed[i];
+    action & a = * actionsp ++;
+
+    a.type = SET_ALLOWED;
+    a.i = i;
+    a.old_value = allowed[i];
     allowed[i] = value;
 }
 
@@ -170,7 +174,7 @@ void compute_allowed
 //
 bool propagate ( action * ap )
 {
-    dout << "PROPAGATE" << (actionsp - ap)
+    dout << "PROPAGATE " << (actionsp - ap)
          << " OR MORE ACTIONS" << endl;
 
     for ( ; ap < actionsp; ++ ap )
@@ -299,7 +303,7 @@ void read_data ( istream & in )
     //
     {
         bool used[MAX_M];
-	FOR(c,m) used[c] = false;
+	FOR(name,MAX_M) used[name] = false;
 	FOR(c,m)
 	{
 	    int name = color_name[c];
@@ -375,6 +379,8 @@ void read_data ( istream & in )
     }
 }
 
+# ifndef MAKE_CONSTRAINEDSEARCH_INPUT
+
 int main ( int argc, char * argv[] )
 {
     debug = ( argc > 1 );
@@ -405,3 +411,5 @@ int main ( int argc, char * argv[] )
 
     return 0;
 }
+
+# endif // MAKE_CONSTRAINEDSEARCH_INPUT
