@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Jan 14 00:18:39 EST 2009
+# Date:		Wed Sep  8 06:13:13 EDT 2010
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2009/01/14 05:19:11 $
+#   $Date: 2010/09/08 10:52:58 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.153 $
+#   $Revision: 1.154 $
 #
 
 # Table of Contents
@@ -128,6 +128,16 @@ proc exit_cleanup {} {}
 #
 proc lcontain { list element } {
     return [expr [lsearch -exact $list $element] >= 0]
+}
+
+# Append lists to a list.  Like `eval lappend var $list'
+# but the latter fails if $list contains a \n.
+#
+proc lappend_lists { varname args } {
+    upvar $varname var
+    foreach arg $args {
+        foreach element $arg {
+	    lappend var $element } }
 }
 
 # Return sorted intersection of two lists.
@@ -2251,7 +2261,7 @@ proc unabbreviate_expression \
     set result {}
     foreach item $expression {
         if { [info exists abbrevs($item)] } {
-	    eval lappend result \
+	    lappend_lists result \
 	         [unabbreviate_expression \
 		      $abbrevs($item) abbrevs]
 	} else {

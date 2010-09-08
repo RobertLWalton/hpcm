@@ -2,7 +2,7 @@
 #
 # File:		scoring_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Dec  9 06:36:38 EST 2006
+# Date:		Wed Sep  8 06:18:32 EDT 2010
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/12/09 11:42:40 $
+#   $Date: 2010/09/08 10:52:58 $
 #   $RCSfile: scoring_common.tcl,v $
-#   $Revision: 1.68 $
+#   $Revision: 1.69 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -1178,7 +1178,7 @@ proc execute_response_commands \
 		set solution_files ""
 		if { [info exists \
 		           problem_required_files] } {
-		    eval lappend solution_files \
+		    lappend_lists solution_files \
 		         $problem_required_files
 		} elseif { $submitted_extension \
 		           != "" } {
@@ -1186,7 +1186,7 @@ proc execute_response_commands \
 		}
 		if { [info exists \
 		           problem_optional_files] } {
-		    eval lappend solution_files \
+		    lappend_lists solution_files \
 		         $problem_optional_files
 		}
 		    

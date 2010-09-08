@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2010/08/21 12:29:39 $
+#   $Date: 2010/09/08 10:54:21 $
 #   $RCSfile: testproblems,v $
-#   $Revision: 1.37 $
+#   $Revision: 1.38 $
 #
 # The next lines run tclsh \
 trap "echo testproblems: Terminated by Signal; exit 1" \
@@ -280,7 +280,7 @@ if { $parallel_runs > 0 } {
     set pids {}
     while { $i <= $parallel_runs } {
         cd $tmp/test$i
-	eval lappend pids \
+	lappend_lists pids \
 	     [eval exec $argv0 \
 		   -SUB 1 $tmp/test$i.report \
 		   $k $myargv &]
@@ -482,14 +482,14 @@ foreach x $myargv {
 	    }
 	    if { [info exists problem_copy_files] } {
 		check_list problem_copy_files
-		eval lappend link_files \
+		lappend_lists link_files \
 		     $problem_copy_files
 	    }
 	    if { [info exists \
 		       problem_optional_copy_files] } {
 		check_list \
 		    problem_optional_copy_files
-		eval lappend optional_copy_files \
+		lappend_lists optional_copy_files \
 		    $problem_optional_link_files
 	    }
 	}
@@ -548,7 +548,7 @@ foreach x $myargv {
 
 	    if { [catch { llength $instruction }] \
 	       } {
-	      error
+	      error \
 	        "$problem.rc\
 		 problem_{,optional_}{link,copy}_files\
 		 instruction is not a TCL\
@@ -558,14 +558,11 @@ foreach x $myargv {
 	    set file [lindex $instruction 0]
 
 	    if { $file == "" } {
-	      error
+	      error \
 	        "$problem.rc\
 		 problem_{,optional_}{link,copy}_files\
 		 instruction has empty file\
 		 name:\n    $instruction"
-	    }
-	    if { ! $make } {
-		lappend delete_at_end $file
 	    }
 
 	    if { [file exists $file] && ! $judge } \
@@ -585,7 +582,7 @@ foreach x $myargv {
 	    if {    $target == "" \
 	         && ! [file exists $file] \
 		 && $non_optional >= 0 } {
-	      error
+	      error \
 	        "$problem.rc problem_{link,copy}_files\
 		 instruction requires that $file be\
 		 linked but this is not\
@@ -627,6 +624,10 @@ foreach x $myargv {
 	    #
 	    puts "linking $file to $target"
 	    file link -symbolic $file $target
+
+	    if { ! $make } {
+		lappend delete_at_end $file
+	    }
 	}
 
 	# If problem.in or problem.jin exist, only
