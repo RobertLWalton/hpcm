@@ -2,7 +2,7 @@
 //
 // File:	constrainedsearch.cc
 // Authors:	Bob Walton (walton@deas.harvard.edu)
-// Date:	Tue Sep  7 20:38:28 EDT 2010
+// Date:	Wed Sep  8 03:59:51 EDT 2010
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -11,9 +11,14 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: walton $
-//   $Date: 2010/09/08 00:44:40 $
+//   $Date: 2010/09/08 08:51:27 $
 //   $RCSfile: csearch.cc,v $
-//   $Revision: 1.5 $
+//   $Revision: 1.6 $
+
+// constrainedsearch d... [#]	prints debugging info
+// constrainedsearch s... [#]	prints statistics
+//     # means stop search after # solutions
+//     default value of # is 1
 
 #include <iostream>
 #include <cstdlib>
@@ -30,8 +35,21 @@ const int MAX_M = 26;
 const int MAX_LINE = 80;
 
 bool debug = false;
+bool statistics = false;
 #define dout if ( debug ) cout
 #define FOR(i,n) for ( int i = 0; i < n; ++ i )
+
+// Statistics (for the curious).
+//
+// search_moves is the number of moves made by search.
+// forced_moves is the number of moves made by
+//              propagate.
+//
+int search_moves, forced_moves;
+
+// Number of solutions to print.  0 means print all.
+//
+int solutions_limit = 1;
 
 // Input data.
 //
@@ -215,6 +233,7 @@ bool propagate ( action * ap )
 	    }
 	    assert ( c < m );
 
+	    ++ forced_moves;
 	    set_color ( j, c );
 	}
     }
@@ -246,6 +265,10 @@ bool check_legality ( void )
 //
 void search ( int depth )
 {
+    if ( solutions_limit != 0
+         &&
+	 number_of_solutions >= solutions_limit )
+        return;
 
     // Find node i with color[i] == UNKNOWN and
     // minimum allowed[i].
@@ -288,6 +311,7 @@ void search ( int depth )
 	     << " SETTING NODE " << i
 	     << " TO COLOR " << c << endl;
 
+	++ search_moves;
 	set_color ( i, c );
 	if ( propagate ( saved_actionsp ) )
 	    search ( depth + 1 );
@@ -308,7 +332,7 @@ bool get_line ( istream & in )
 {
     in.getline ( line, MAX_LINE+2 );
     if ( in.eof() ) return false;
-    assert ( in.gcount() <= MAX_LINE );
+    assert ( in.gcount() <= MAX_LINE+1 );
     return true;
 }
 
@@ -415,7 +439,16 @@ void read_data ( istream & in )
 
 int main ( int argc, char * argv[] )
 {
-    debug = ( argc > 1 );
+    if ( argc > 1 )
+    {
+        if ( argv[1][0] == 's' )
+	    statistics = true;
+	else
+	    debug = true;
+
+        if ( argc > 2 && isdigit ( argv[2][0] ) )
+	    solutions_limit = atoi ( argv[2] );
+    }
 
     while ( true )
     {
@@ -435,10 +468,17 @@ int main ( int argc, char * argv[] )
 	// Search
 	//
 	number_of_solutions = 0;
+	search_moves = 0;
+	forced_moves = 0;
 	search ( 0 );
 
 	if ( number_of_solutions == 0 )
 	    cout << "no solutions" << endl;
+
+	if ( statistics )
+	    cout << search_moves << " SEARCH MOVES, "
+	         << forced_moves << " FORCED MOVES"
+		 << endl;
     }
 
     return 0;

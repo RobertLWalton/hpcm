@@ -3,7 +3,7 @@
 //
 // File:     make_constrainedsearch_input.cc
 // Author:   Bob Walton <walton@seas.harvard.edu>
-// Date:     Mon Sep  6 16:12:59 EDT 2010
+// Date:     Wed Sep  8 03:50:08 EDT 2010
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -12,9 +12,9 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: walton $
-//   $Date: 2010/09/07 09:38:31 $
+//   $Date: 2010/09/08 08:51:27 $
 //   $RCSfile: make_csearch_input.cc,v $
-//   $Revision: 1.1 $
+//   $Revision: 1.2 $
 
 // Input:
 //
@@ -46,7 +46,7 @@ unsigned seed;
 
 // Output data.
 //
-char initial_node_colors[MAX_N];
+char initial_node_color[MAX_N];
     // Initial node color assignment line (without
     // ending NUL or \n).
 
@@ -87,14 +87,14 @@ void assign_node_colors ( void )
 //
 void assign_initial_node_colors ( void )
 {
-    FOR(j,n) initial_node_colors[j] = '?';
+    FOR(j,n) initial_node_color[j] = '?';
 
     FOR(k,i)
     {
         int j = rand() % n;
-	while ( initial_node_colors[j] != '?' )
+	while ( initial_node_color[j] != '?' )
 	    j = ( j + 1 ) % n;
-	initial_node_colors[j] =
+	initial_node_color[j] =
 	    color_name [color[j]];
     }
 }
@@ -164,11 +164,12 @@ void assign_d_edges ( void )
 }
 
 // Assign v edges connecting same color nodes.
+// All other assignments must be done first.
 //
 void assign_v_edges ( void )
 {
     int desired = edges + v;
-    int vcount = 1000 * v;
+    int vcount = 10000000;
     while ( edges < desired )
     {
 	// Fail if v to large.
@@ -177,6 +178,17 @@ void assign_v_edges ( void )
 
         int i = rand() % n;
         int j = rand() % n;
+	while ( initial_node_color[i] != '?' )
+	    i = ( i + 1 ) % n;
+	FOR(k,n)
+	{
+	    if ( initial_node_color[j] == '?'
+	         &&
+		 color[i] == color[j]
+		 &&
+		 connected[i][j] ) break;
+	    j = ( j + 1 ) % n;
+	}
 	if ( i == j ) continue;
 	if ( connected[i][j] ) continue;
 	if ( color[i] != color[j] ) continue;
@@ -225,7 +237,7 @@ int main ( int argc )
 	assign_v_edges();
 
 	cout << setw ( m ) << color_name << endl;
-	cout << setw ( n ) << initial_node_colors
+	cout << setw ( n ) << initial_node_color
 	     << endl;
 	FOR(i,n)
 	{
