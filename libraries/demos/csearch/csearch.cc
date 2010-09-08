@@ -2,7 +2,7 @@
 //
 // File:	constrainedsearch.cc
 // Authors:	Bob Walton (walton@deas.harvard.edu)
-// Date:	Tue Sep  7 04:32:09 EDT 2010
+// Date:	Tue Sep  7 20:38:28 EDT 2010
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: walton $
-//   $Date: 2010/09/07 08:39:05 $
+//   $Date: 2010/09/08 00:44:40 $
 //   $RCSfile: csearch.cc,v $
-//   $Revision: 1.4 $
+//   $Revision: 1.5 $
 
 #include <iostream>
 #include <cstdlib>
@@ -437,7 +437,7 @@ int main ( int argc, char * argv[] )
 	number_of_solutions = 0;
 	search ( 0 );
 
-	if ( number_of_solutions = 0 )
+	if ( number_of_solutions == 0 )
 	    cout << "no solutions" << endl;
     }
 
