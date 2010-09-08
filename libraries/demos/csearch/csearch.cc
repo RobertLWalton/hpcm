@@ -2,7 +2,7 @@
 //
 // File:	constrainedsearch.cc
 // Authors:	Bob Walton (walton@deas.harvard.edu)
-// Date:	Wed Sep  8 03:59:51 EDT 2010
+// Date:	Wed Sep  8 10:45:37 EDT 2010
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: walton $
-//   $Date: 2010/09/08 08:51:27 $
+//   $Date: 2010/09/08 14:46:02 $
 //   $RCSfile: csearch.cc,v $
-//   $Revision: 1.6 $
+//   $Revision: 1.7 $
 
 // constrainedsearch d... [#]	prints debugging info
 // constrainedsearch s... [#]	prints statistics
@@ -44,8 +44,12 @@ bool statistics = false;
 // search_moves is the number of moves made by search.
 // forced_moves is the number of moves made by
 //              propagate.
+// constraint_violations is the number of constraint
+//              violations detected by propagate.
 //
-int search_moves, forced_moves;
+int search_moves,
+    forced_moves,
+    constraint_violations;
 
 // Number of solutions to print.  0 means print all.
 //
@@ -215,7 +219,11 @@ bool propagate ( action * ap )
 
 	    if ( new_allowed == allowed[j] ) continue;
 
-	    if ( new_allowed == 0 ) return false;
+	    if ( new_allowed == 0 )
+	    {
+		++ constraint_violations;
+	        return false;
+	    }
 
 	    if ( new_allowed > 1 )
 	    {
@@ -470,6 +478,7 @@ int main ( int argc, char * argv[] )
 	number_of_solutions = 0;
 	search_moves = 0;
 	forced_moves = 0;
+	constraint_violations = 0;
 	search ( 0 );
 
 	if ( number_of_solutions == 0 )
@@ -477,7 +486,9 @@ int main ( int argc, char * argv[] )
 
 	if ( statistics )
 	    cout << search_moves << " SEARCH MOVES, "
-	         << forced_moves << " FORCED MOVES"
+	         << forced_moves << " FORCED MOVES "
+	         << constraint_violations
+		 << " CONSTRAINT VIOLATIONS"
 		 << endl;
     }
 
