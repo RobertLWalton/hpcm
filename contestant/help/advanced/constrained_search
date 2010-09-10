@@ -1,11 +1,11 @@
-Constrained Search          Fri Sep 10 00:03:13 EDT 2010
+Constrained Search          Fri Sep 10 09:50:31 EDT 2010
 Problem Help
 
 Constrained search is most commonly used to solve
 puzzles that are based on constraints which force many
-of the moves.  It is a combination of brute force search
-and `propagation' which checks constraints and makes
-moves forced by constraints.
+of the moves.  Constrained search combines brute force
+search with `propagation' that checks constraints and
+makes moves forced by constraints.
 
 Constrained search as we view it here is a subclass of a
 very important and large class of programming problems
@@ -13,7 +13,7 @@ called `constrained search problems' or CSP problems.
 CSP is a very broad class of problems because constra-
 ints come in many forms, and there are correspondingly
 many different algorithmic tricks that may be deployed
-to solve them.  In the parlance of the literature on
+to solve CSP's.  In the parlance of the literature on
 CSP, brute force search is called `chronological back-
 tracking' and what we call `propagation' combines what
 the literature refers to as `forward checking' and as-
@@ -44,26 +44,26 @@ graph coloring case.  We merely need to execute the
 following:
 
     search:
-    	find a node n to which no color has been
+    	find a node i to which no color has been
 	     assigned
 	if there are no such nodes:
 	    announce success
 	    return
 	else
 	for each color c:
-	    assign c to n
+	    assign c to node i
 	    check the constraints and
 	        make any forced moves
 	    if no constraints have failed:
 		call search
-	    undo the effects of assigning c to n
+	    undo the effects of assigning c to node i
 
-If there are M colors, constraint failure occurs when
-some unassigned node n has neighbors that have all M
-colors so no assignment to n is possible.  Similarly
-a move is forced when some unassigned node n has neigh-
-bors with M-1 colors so the color to be assigned to n
-is forced.
+If there are m colors, constraint failure occurs when
+some unassigned node i has neighbors that have all m
+colors so no assignment to node i is possible.  Similar-
+ly a move is forced when some unassigned node i has
+neighbors with m-1 colors so the color to be assigned to
+node i is forced.
 
 The difficulty is how to organize the code that does
 constraint checking and move forcing, since every time
@@ -78,28 +78,29 @@ system state is simply a value for each graph node that
 records the color assigned to the node or the value
 UNKNOWN indicating no color has been assigned yet.  The
 action stack records each action that changes the system
-state so that action can be undo by the search function.
+state so that action can be undone by the search func-
+tion.
 
 Thus in our example the search function uses the follow-
 ing helper functions:
 
-    set_color n c:
+    set_color i c:
         push an action record into the action stack
-	     containing the ID of the node n
-	change the color of node n to c
+	     containing i
+	change the color of node i to c
 
     undo ap:
         while ap < end of stack
 	    pop an action record ar off the end of the
 	        action stack
-	    reset the color of the node n whose ID is
-	          in ar to UNKNOWN
+	    reset the color of node i to UNKNOWN,
+	          where i is taken from ar
 
 and the last loop in the search becomes:
 
         ap = end of action stack
 	for each color c:
-	    set_color n c
+	    set_color i c
 	    check the constraints and
 	        make any forced moves
 	    if no constraints have failed:
@@ -120,8 +121,8 @@ Thus the last loop in the search becomes;
 
         ap = end of action stack
 	for each color c:
-	    set_color n c
-	    if ( propagate ap )
+	    set_color i c
+	    if ( propagate ap ):
 		call search
 	    undo ap
 
@@ -131,7 +132,7 @@ constraint violation.
 
 In our example we choose to keep an extra piece of data
 for each node: the number of allowed colors.  This is
-the number of colors not assigned to any of the nodes
+the number of colors not assigned to any of the node's
 neighbors.  If this is 0 a constraint has been violated,
 and if this is 1 the color of the node is forced.
 
@@ -140,29 +141,29 @@ another action.  So now we have:
 
     action record:
 	type: SET_COLOR or SET_ALLOWED
-	node ID
+	i
 	old value
 
-    set_color n c
+    set_color i c
 	push a new action record with type SET_COLOR and
-	     node ID n into the action stack
-	set the color of node n to c
+	     i into the action stack
+	set the color of node i to c
 
     set_allowed n v
 	push a new action record with type SET_ALLOWED,
-	     node ID n, and old_value = the previous
-	     allowed value of n, into the action stack
-	set the allowed value of node n to v
+	     i, and old_value = the previous allowed
+	     value of node i, into the action stack
+	set the allowed value of node i to v
 
     undo ap:
         while ap < end of stack
 	    pop an action record ar off the end of the
 	        action stack
 	    switch on ar.type:
-	        SET_COLOR:  reset color of node ar.n to
+	        SET_COLOR:  reset color of node ar.i to
 		            UNKNOWN
 		SET_ALLOWED: reset allowed value of node
-		             ar.n to ar.old_value
+		             ar.i to ar.old_value
 
 With this the propagate function becomes:
 
@@ -173,18 +174,19 @@ With this the propagate function becomes:
 		record
 	    switch on ar.type:
 	        SET_COLOR:
-		    for each neighbor n2 of ar.n:
+		    for each neighbor node i2 of node
+		                                 ar.i:
 		        computed new allowed value nav
-			         of n2
+			         of node i2
 			if nav = 0 return false
 			else if nav = 1:
 			    let c2 be the only color
-			        n2's neighbors do not
-				have
-			    set_color n2 c2
+			        node i2's neighbors do
+				not have
+			    set_color i2 c2
 			else if nav not = previous
-			     allowed value of n2:
-			    set_allowed n2 nav
+			     allowed value of node i2:
+			    set_allowed i2 nav
 		SET_ALLOWED:
 		    do nothing
 	return true
@@ -192,10 +194,10 @@ With this the propagate function becomes:
 Lastly we employ a trick to reduce the size of the
 search tree.  In our search function we replace
 
-    	find a node n to which no color has been
+    	find a node i to which no color has been
 	     assigned
 by
-    	find a node n to which no color has been
+    	find a node i to which no color has been
 	     assigned which has MINIMUM allowed value
 
 This means the upper nodes of the search tree will have
@@ -211,37 +213,37 @@ allowed function and SET_ALLOWED action records.  Or
 you can check constraints and force moves when the pro-
 pagate function processes the SET_ALLOWED record rather
 than when it processes the SET_COLOR record.  And there
-are many other variants of the above code.
+are other variants of the above code.
 
 
 Application to Graph Coloring
 -----------------------------
 
 The observant reader may have noticed that if a graph
-node n has fewer than M-1 neighbors, where M is the
+node i has fewer than m-1 neighbors, where m is the
 number of colors, then a coloring of n can never be
 forced.  So perhaps constraints are not so useful in
 graph coloring.
 
 Ahh!  There is a trick that removes nodes with fewer
-than M neighbors from the graph and then after the graph
+than m neighbors from the graph and then after the graph
 is colored puts them back.
 
-Start with the graph and an empty list.  If there is a
-node n with fewer than M neighbors in the graph, remove
-n from the graph and put it on the end of the list.
-Continue until no node in the graph has fewer than M
-neighbors.
+Start with the graph and an empty stack.  If there is a
+node i with fewer than m neighbors in the graph, remove
+node i from the graph and push it on the stack.  Con-
+tinue until no node in the graph has fewer than m neigh-
+bors.
 
 Then color the remaining graph.
 
-Now if the list is not empty, the node n at its end has
-fewer than M neighbors.  Therefore there must be a color
-c which none of its neighbors has.  Assign c to n and
-put n back in the graph.  Continue until the list is
-empty.
+Now while the stack is not empty, pop the top node i off
+the stack.  Node i has fewer than m neighbors.  There-
+fore there must be a color c that none of its neighbors
+has.  Assign c to node i and put node i back in the
+graph.  Continue until the stack is empty.
 
-Now you are done.
+Now you are done coloring the original graph.
 
 
 
@@ -257,6 +259,6 @@ file.
 RCS Info (may not be true date or author):
 
     $Author: walton $
-    $Date: 2010/09/10 05:40:54 $
+    $Date: 2010/09/10 14:08:43 $
     $RCSfile: constrained_search,v $
-    $Revision: 1.1 $
+    $Revision: 1.2 $
