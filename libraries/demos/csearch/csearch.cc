@@ -1,8 +1,8 @@
 // Solution to the Constrained Search Problem
 //
-// File:	constrainedsearch.cc
+// File:	csearch.cc
 // Authors:	Bob Walton (walton@deas.harvard.edu)
-// Date:	Wed Sep  8 10:45:37 EDT 2010
+// Date:	Thu Sep  9 23:44:26 EDT 2010
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -11,12 +11,12 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: walton $
-//   $Date: 2010/09/08 14:46:02 $
+//   $Date: 2010/09/10 03:57:46 $
 //   $RCSfile: csearch.cc,v $
-//   $Revision: 1.7 $
+//   $Revision: 1.8 $
 
-// constrainedsearch d... [#]	prints debugging info
-// constrainedsearch s... [#]	prints statistics
+// csearch d... [#]	prints debugging info
+// csearch s... [#]	prints statistics
 //     # means stop search after # solutions
 //     default value of # is 1
 
@@ -442,7 +442,7 @@ void read_data ( istream & in )
 // the checks legality of solutions both include this
 // file but do NOT want to include the main() function.
 // 
-# ifndef MAKE_CONSTRAINEDSEARCH_INPUT
+# ifndef MAKE_CSEARCH_INPUT
 # ifndef SCORING_FILTER
 
 int main ( int argc, char * argv[] )
@@ -496,4 +496,4 @@ int main ( int argc, char * argv[] )
 }
 
 # endif // SCORING_FILTER
-# endif // MAKE_CONSTRAINEDSEARCH_INPUT
+# endif // MAKE_CSEARCH_INPUT

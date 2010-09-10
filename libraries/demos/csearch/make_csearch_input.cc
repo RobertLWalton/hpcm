@@ -1,9 +1,9 @@
 // Generate Constrained Search (Graph Coloring) Problem
 // Data
 //
-// File:     make_constrainedsearch_input.cc
+// File:     make_csearch_input.cc
 // Author:   Bob Walton <walton@seas.harvard.edu>
-// Date:     Wed Sep  8 03:50:08 EDT 2010
+// Date:     Thu Sep  9 23:54:20 EDT 2010
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -12,9 +12,9 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: walton $
-//   $Date: 2010/09/08 08:51:27 $
+//   $Date: 2010/09/10 03:57:46 $
 //   $RCSfile: make_csearch_input.cc,v $
-//   $Revision: 1.2 $
+//   $Revision: 1.3 $
 
 // Input:
 //
@@ -33,8 +33,8 @@
 //      random number generator seed for generating the
 //	test case.
 
-# define MAKE_CONSTRAINEDSEARCH_INPUT
-# include "constrainedsearch.cc"
+# define MAKE_CSEARCH_INPUT
+# include "csearch.cc"
 # include <iomanip>
 using std::setw;
 

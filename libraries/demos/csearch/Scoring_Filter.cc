@@ -3,7 +3,7 @@
 //
 // File:	Scoring_Filter.cc
 // Authors:	Bob Walton (walton@deas.harvard.edu)
-// Date:	Tue Sep  7 04:41:33 EDT 2010
+// Date:	Thu Sep  9 23:55:12 EDT 2010
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -12,13 +12,13 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: walton $
-//   $Date: 2010/09/07 09:38:31 $
+//   $Date: 2010/09/10 03:57:46 $
 //   $RCSfile: Scoring_Filter.cc,v $
-//   $Revision: 1.1 $
+//   $Revision: 1.2 $
 
-// Scoring_Filter constrainedsearch.in \
-//		  < constrainedsearch.out \
-//                > constrainedsearch.fout
+// Scoring_Filter csearch.in \
+//		  < csearch.out \
+//                > csearch.fout
 //
 // The .fout file copies lines from the .out file, but
 // replaces each set of correct solutions for a test
@@ -34,16 +34,16 @@
 // subsequent lines to be copied to the output.
 
 #define SCORING_FILTER
-#include "constrainedsearch.cc"
+#include "csearch.cc"
 #include <fstream>
 using std::ifstream;
 using std::cerr;
 
-// Test case name from constrainedsearch.in
+// Test case name from csearch.in
 //
 char test_case_name[MAX_LINE+2];
 
-// Next line from cin (constrainedsearch.out)
+// Next line from cin (csearch.out)
 //
 char out_line[MAX_LINE+2];
 

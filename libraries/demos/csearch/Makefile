@@ -14,7 +14,7 @@
 #   XTRA_LIMITS limits that override those given
 #               previously to hpcm_sandbox
 #   
-P = constrainedsearch
+P = csearch
 XTRA_INPUTS =
 XTRA_LIBS =
 XTRA_LIMITS =
@@ -104,6 +104,6 @@ clean:
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2010/09/06 01:50:05 $
+#   $Date: 2010/09/10 03:57:46 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.1 $
+#   $Revision: 1.2 $
