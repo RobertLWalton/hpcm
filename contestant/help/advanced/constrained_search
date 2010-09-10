@@ -69,8 +69,8 @@ node i is forced.
 The difficulty is how to organize the code that does
 constraint checking and move forcing, since every time
 a forced move is made more constraints must be checked.
-What we propose is to bundle this code into a `propa-
-gate' function.
+What we propose is to bundle much of this code into a
+`propagate' function.
 
 We start with the data needed by the brute force search.
 This consists of the system state and an action stack,
@@ -109,19 +109,31 @@ and the last loop in the search becomes:
 	    undo ap
 
 The only task left is to write the code that checks
-the constraints and makes the forced moves.  Our main
-idea is to encapsulate this in a `propagate' function
-that goes through the action stack from ap to the end
-of the stack checking constraints that may be affected
-by each action and making any forced moves.  The action
-stack may grow in this process when forced moves are
-made, but eventually the propagate function will catch
-up to the end of the stack.
+the constraints and makes the forced moves.  We will
+put some of the constraint checking into the search
+function by changing
+
+	for each color c:
+
+in the code above to
+
+	for each color c that is not the color of a
+	         neighbor of node i:
+
+Then our main idea is to encapsulate the rest of the
+constraint checking and move forcing into a `propagate'
+function that goes through the action stack from ap to
+the end of the stack checking constraints that may be
+affected by each action and making any forced moves.
+The action stack may grow in this process when forced
+moves are made, but eventually the propagate function
+will catch up to the end of the stack.
 
 Thus the last loop in the search becomes;
 
         ap = end of action stack
-	for each color c:
+	for each color c that is not the color of a
+	         neighbor of node i:
 	    set_color i c
 	    if ( propagate ap ):
 		call search
@@ -130,7 +142,7 @@ Thus the last loop in the search becomes;
 The propagate function returns true if it did not find
 any constraint violation, and false if it did find a
 constraint violation.
-
+
 In our example we choose to keep an extra piece of data
 for each node: the number of allowed colors.  This is
 the number of colors not assigned to any of the node's
@@ -144,7 +156,7 @@ another action.  So now we have:
 	type: SET_COLOR or SET_ALLOWED
 	i
 	old value
-
+
     set_color i c
 	push a new action record with type SET_COLOR and
 	     i into the action stack
@@ -260,6 +272,6 @@ file.
 RCS Info (may not be true date or author):
 
     $Author: walton $
-    $Date: 2010/09/10 14:34:15 $
+    $Date: 2010/09/10 15:01:36 $
     $RCSfile: constrained_search,v $
-    $Revision: 1.3 $
+    $Revision: 1.4 $
