@@ -1,0 +1,262 @@
+Constrained Search          Fri Sep 10 00:03:13 EDT 2010
+Problem Help
+
+Constrained search is most commonly used to solve
+puzzles that are based on constraints which force many
+of the moves.  It is a combination of brute force search
+and `propagation' which checks constraints and makes
+moves forced by constraints.
+
+Constrained search as we view it here is a subclass of a
+very important and large class of programming problems
+called `constrained search problems' or CSP problems.
+CSP is a very broad class of problems because constra-
+ints come in many forms, and there are correspondingly
+many different algorithmic tricks that may be deployed
+to solve them.  In the parlance of the literature on
+CSP, brute force search is called `chronological back-
+tracking' and what we call `propagation' combines what
+the literature refers to as `forward checking' and as-
+pects of what the literature calls `variable ordering'.
+
+One CSP problem is graph coloring, and we will use that
+problem here as an example application of our constrain-
+ed search algorithm.
+
+The graph coloring problem is simply this: given an
+undirected graph and a small finite list of colors,
+color each node of the graph so that no two adjacent
+nodes have the same color.
+
+A major application of graph coloring is register
+assignment in a compiler: the colors are the available
+registers, the graph nodes are the variables that must
+be assigned to registers, and the edges indicate that
+two variables exist at the same time and must therefore
+be in different registers.
+
+
+The Constrained Search with Propagate Algorithm
+-----------------------------------------------
+
+In a sense describing our algorithm is simple.  Take the
+graph coloring case.  We merely need to execute the
+following:
+
+    search:
+    	find a node n to which no color has been
+	     assigned
+	if there are no such nodes:
+	    announce success
+	    return
+	else
+	for each color c:
+	    assign c to n
+	    check the constraints and
+	        make any forced moves
+	    if no constraints have failed:
+		call search
+	    undo the effects of assigning c to n
+
+If there are M colors, constraint failure occurs when
+some unassigned node n has neighbors that have all M
+colors so no assignment to n is possible.  Similarly
+a move is forced when some unassigned node n has neigh-
+bors with M-1 colors so the color to be assigned to n
+is forced.
+
+The difficulty is how to organize the code that does
+constraint checking and move forcing, since every time
+a forced move is made more constraints must be checked.
+What we propose is to bundle this code into a `propa-
+gate' function.
+
+We start with the data needed by the brute force search.
+This consists of the system state and an action stack,
+also known as the `undo' stack.  In our example the
+system state is simply a value for each graph node that
+records the color assigned to the node or the value
+UNKNOWN indicating no color has been assigned yet.  The
+action stack records each action that changes the system
+state so that action can be undo by the search function.
+
+Thus in our example the search function uses the follow-
+ing helper functions:
+
+    set_color n c:
+        push an action record into the action stack
+	     containing the ID of the node n
+	change the color of node n to c
+
+    undo ap:
+        while ap < end of stack
+	    pop an action record ar off the end of the
+	        action stack
+	    reset the color of the node n whose ID is
+	          in ar to UNKNOWN
+
+and the last loop in the search becomes:
+
+        ap = end of action stack
+	for each color c:
+	    set_color n c
+	    check the constraints and
+	        make any forced moves
+	    if no constraints have failed:
+		call search
+	    undo ap
+
+The only task left is to write the code that checks
+the constraints and makes the forced moves.  Our main
+idea is to encapsulate this in a `propagate' function
+that goes through the action stack from ap to the end
+of the stack checking constraints that may be affected
+by each action and making any forced moves.  The action
+stack may grow in this process when forced moves are
+made, but eventually the propagate function will catch
+up to the end of the stack.
+
+Thus the last loop in the search becomes;
+
+        ap = end of action stack
+	for each color c:
+	    set_color n c
+	    if ( propagate ap )
+		call search
+	    undo ap
+
+The propagate function returns true if it did not find
+any constraint violation, and false if it did find a
+constraint violation.
+
+In our example we choose to keep an extra piece of data
+for each node: the number of allowed colors.  This is
+the number of colors not assigned to any of the nodes
+neighbors.  If this is 0 a constraint has been violated,
+and if this is 1 the color of the node is forced.
+
+Setting the number of allowed colors for a node becomes
+another action.  So now we have:
+
+    action record:
+	type: SET_COLOR or SET_ALLOWED
+	node ID
+	old value
+
+    set_color n c
+	push a new action record with type SET_COLOR and
+	     node ID n into the action stack
+	set the color of node n to c
+
+    set_allowed n v
+	push a new action record with type SET_ALLOWED,
+	     node ID n, and old_value = the previous
+	     allowed value of n, into the action stack
+	set the allowed value of node n to v
+
+    undo ap:
+        while ap < end of stack
+	    pop an action record ar off the end of the
+	        action stack
+	    switch on ar.type:
+	        SET_COLOR:  reset color of node ar.n to
+		            UNKNOWN
+		SET_ALLOWED: reset allowed value of node
+		             ar.n to ar.old_value
+
+With this the propagate function becomes:
+
+    propagate ap:
+        while ap < end of stack
+	    let ar be the action record pointed at by ap
+	        and increment ap to the next action
+		record
+	    switch on ar.type:
+	        SET_COLOR:
+		    for each neighbor n2 of ar.n:
+		        computed new allowed value nav
+			         of n2
+			if nav = 0 return false
+			else if nav = 1:
+			    let c2 be the only color
+			        n2's neighbors do not
+				have
+			    set_color n2 c2
+			else if nav not = previous
+			     allowed value of n2:
+			    set_allowed n2 nav
+		SET_ALLOWED:
+		    do nothing
+	return true
+
+Lastly we employ a trick to reduce the size of the
+search tree.  In our search function we replace
+
+    	find a node n to which no color has been
+	     assigned
+by
+    	find a node n to which no color has been
+	     assigned which has MINIMUM allowed value
+
+This means the upper nodes of the search tree will have
+fewer branches, and is a standard trick in brute force
+search to keep the search tree size down and improve
+running time.
+
+The above code can be varied a lot.  If you do not want
+to let the search function choose the node with minimum
+allowed value, you do not have to make the allowed value
+part of the system state, and can get rid of the set_
+allowed function and SET_ALLOWED action records.  Or
+you can check constraints and force moves when the pro-
+pagate function processes the SET_ALLOWED record rather
+than when it processes the SET_COLOR record.  And there
+are many other variants of the above code.
+
+
+Application to Graph Coloring
+-----------------------------
+
+The observant reader may have noticed that if a graph
+node n has fewer than M-1 neighbors, where M is the
+number of colors, then a coloring of n can never be
+forced.  So perhaps constraints are not so useful in
+graph coloring.
+
+Ahh!  There is a trick that removes nodes with fewer
+than M neighbors from the graph and then after the graph
+is colored puts them back.
+
+Start with the graph and an empty list.  If there is a
+node n with fewer than M neighbors in the graph, remove
+n from the graph and put it on the end of the list.
+Continue until no node in the graph has fewer than M
+neighbors.
+
+Then color the remaining graph.
+
+Now if the list is not empty, the node n at its end has
+fewer than M neighbors.  Therefore there must be a color
+c which none of its neighbors has.  Assign c to n and
+put n back in the graph.  Continue until the list is
+empty.
+
+Now you are done.
+
+
+
+
+File:		constrained_search
+Author:		Bob Walton <walton@seas.harvard.edu>
+Date:		See top of file.
+
+The authors have placed this file in the public domain;
+they make no warranty and accept no liability for this
+file.
+
+RCS Info (may not be true date or author):
+
+    $Author: walton $
+    $Date: 2010/09/10 05:40:54 $
+    $RCSfile: constrained_search,v $
+    $Revision: 1.1 $
