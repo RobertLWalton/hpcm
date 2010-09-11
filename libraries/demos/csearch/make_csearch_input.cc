@@ -3,7 +3,7 @@
 //
 // File:     make_csearch_input.cc
 // Author:   Bob Walton <walton@seas.harvard.edu>
-// Date:     Thu Sep  9 23:54:20 EDT 2010
+// Date:     Sat Sep 11 06:18:17 EDT 2010
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -12,9 +12,9 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: walton $
-//   $Date: 2010/09/10 03:57:46 $
+//   $Date: 2010/09/11 10:39:02 $
 //   $RCSfile: make_csearch_input.cc,v $
-//   $Revision: 1.3 $
+//   $Revision: 1.4 $
 
 // Input:
 //
@@ -99,7 +99,12 @@ void assign_initial_node_colors ( void )
     }
 }
 
-// Assign connections so the degree of each node is m.
+// Assign connections so the degree of each node is m
+// or m+1.  Note we MUST allow degree m+1 or else we
+// are insisting on a regular graph and as these are
+// uncommon for many n we will search for a long time
+// before finding one.
+//
 // Return true on success and false on failure.  The
 // later means there were too many nodes of some color,
 // and too few of different colors, which is unlikely
@@ -123,6 +128,8 @@ bool assign_m_edges ( void )
 		-- count;
 
 	        if ( j == i ) continue;
+		// The following allows nodes to have
+		// degree m or m+1; see above.
 		if ( degree[j] > m ) continue;
 		if ( color[i] == color[j] ) continue;
 		if ( connected[i][j] ) continue;
@@ -144,7 +151,7 @@ bool assign_m_edges ( void )
 //
 void assign_d_edges ( void )
 {
-    int dcount = 100 * n * n;
+    int dcount = 10000000;
     while ( edges < d * n / 2 )
     {
 	// Fail if d to large.

@@ -2,7 +2,7 @@
 //
 // File:	csearch.cc
 // Authors:	Bob Walton (walton@deas.harvard.edu)
-// Date:	Thu Sep  9 23:44:26 EDT 2010
+// Date:	Sat Sep 11 06:00:15 EDT 2010
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -11,14 +11,15 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: walton $
-//   $Date: 2010/09/10 03:57:46 $
+//   $Date: 2010/09/11 10:39:01 $
 //   $RCSfile: csearch.cc,v $
-//   $Revision: 1.8 $
+//   $Revision: 1.9 $
 
 // csearch d... [#]	prints debugging info
 // csearch s... [#]	prints statistics
 //     # means stop search after # solutions
 //     default value of # is 1
+//     # == 0 means all solutions are found
 
 #include <iostream>
 #include <cstdlib>
@@ -58,7 +59,8 @@ int solutions_limit = 1;
 // Input data.
 //
 //   n	        	Number of nodes.
-//			Node indices i, j are 0 .. n-1.
+//			Node indices i, j, k are
+//			0 .. n-1.
 //   m			Number of colors.
 //			Color indices c are 0  .. m-1.
 //   color_name[c]	1-character naming color c.
@@ -82,8 +84,9 @@ int number_of_solutions;
 // node i, if color[i] == UNKNOWN.  The search picks
 // a node with minimum allowed[i] to set the color of
 // next.  allowed[i] is recomputed by propagation; if
-// it is 0 propagation fails, and if it is 1 propagation
-// sets the color of node i.
+// it is 0 propagation fails (a constraint failure),
+// and if it is 1 propagation sets the color of node i
+// (a forced move).
 //
 int allowed[MAX_N];
 
@@ -142,7 +145,7 @@ void set_allowed ( int i, int value )
 //
 void undo ( action * ap )
 {
-    dout << "UNDO" << (actionsp - ap) << " ACTIONS"
+    dout << "UNDO " << (actionsp - ap) << " ACTIONS"
          << endl;
 
     assert ( ap >= actions );
@@ -217,8 +220,6 @@ bool propagate ( action * ap )
 	    int new_allowed;
 	    compute_allowed ( j, used, new_allowed );
 
-	    if ( new_allowed == allowed[j] ) continue;
-
 	    if ( new_allowed == 0 )
 	    {
 		++ constraint_violations;
@@ -227,7 +228,8 @@ bool propagate ( action * ap )
 
 	    if ( new_allowed > 1 )
 	    {
-		set_allowed ( j, new_allowed );
+		if ( new_allowed != allowed[j] )
+		    set_allowed ( j, new_allowed );
 		continue;
 	    }
 
@@ -251,12 +253,15 @@ bool propagate ( action * ap )
 
 // Judge's check that the solution is legal.
 // If not, return false and print error message.
+// UNKNOWN colored nodes are allowed and not
+// checked.
 //
 bool check_legality ( void )
 {
     bool legal = true;
     FOR(i,n) FOR(j,i)
     {
+	if ( color[i] == UNKNOWN ) continue;
         if ( ! connected[i][j] ) continue;
 	if ( color[i] != color[j] ) continue;
 	cout << "NODES " << i << " AND " << j
@@ -305,6 +310,10 @@ void search ( int depth )
 	return;
     }
 
+    // Cycle through all colors allowed to node i
+    // (because no neighbor of node i has these colors)
+    // trying each and calling search recursively.
+    //
     bool used[MAX_M];
     int new_allowed;
     compute_allowed ( i, used, new_allowed );
@@ -329,7 +338,7 @@ void search ( int depth )
 
 char line [MAX_LINE + 2];
 
-// Note: data input functions used by the Scoring_
+// Note: data input functions are used by the Scoring_
 // Filter program with an input stream other than
 // cin, which is why instream is a parameter.
 
@@ -349,7 +358,7 @@ bool get_line ( istream & in )
 void read_data ( istream & in )
 {
 
-    // Read colors names.
+    // Read color names.
     //
     assert ( get_line ( in ) );
     m = strlen ( line );
@@ -379,18 +388,23 @@ void read_data ( istream & in )
     //
     assert ( get_line ( in ) );
     n = strlen ( line );
-    assert ( 1 <= n && n <= MAX_N );
+    assert ( 2 <= n && n <= MAX_N );
     FOR(i,n)
     {
 	if ( line[i] == '?' )
 	    color[i] = UNKNOWN;
-	else FOR(c,m)
+	else
 	{
-	    if ( line[i] == color_name[c] )
+	    color[i] = UNKNOWN;
+	    FOR(c,m)
 	    {
-		set_color ( i, c );
-		break;
+		if ( line[i] == color_name[c] )
+		{
+		    set_color ( i, c );
+		    break;
+		}
 	    }
+	    assert ( color[i] != UNKNOWN );
 	}
     }
 
@@ -412,7 +426,8 @@ void read_data ( istream & in )
 	}
     }
 
-    // Judge's check that on connected matrix.
+    // Judge's check that connected matrix is
+    // symmetric with all-false diagonal.
     //
     {
         FOR(i,n)
@@ -425,6 +440,15 @@ void read_data ( istream & in )
 			 connected[j][i] );
 	    }
 	}
+    }
+
+    // Judge's check that all degrees are >= m.
+    //
+    FOR(i,n)
+    {
+        int degree = 0;
+	FOR(j,n) degree += connected[i][j];
+	assert ( degree >= m );
     }
 
     // Compute allowed[i].
@@ -454,7 +478,7 @@ int main ( int argc, char * argv[] )
 	else
 	    debug = true;
 
-        if ( argc > 2 && isdigit ( argv[2][0] ) )
+        if ( argc > 2 )
 	    solutions_limit = atoi ( argv[2] );
     }
 
@@ -467,11 +491,9 @@ int main ( int argc, char * argv[] )
 
 	read_data ( cin );
 
-	// Propagate initial color settings.
-	// Includes judge's check that initial settings
-	// are legal.
+	// Check that initial colors do not conflict.
 	//
-	assert ( propagate ( actions ) );
+	assert ( check_legality() );
 
 	// Search
 	//
@@ -479,7 +501,13 @@ int main ( int argc, char * argv[] )
 	search_moves = 0;
 	forced_moves = 0;
 	constraint_violations = 0;
-	search ( 0 );
+
+	// There may be immediate inconsistencies of the
+	// kind that a node has no allowed colors after
+	// initially forced moves are made.
+	//
+	if ( propagate ( actions ) )
+	    search ( 0 );
 
 	if ( number_of_solutions == 0 )
 	    cout << "no solutions" << endl;
