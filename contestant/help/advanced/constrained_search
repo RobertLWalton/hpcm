@@ -1,4 +1,4 @@
-Constrained Search          Fri Sep 10 11:40:00 EDT 2010
+Constrained Search          Sun Sep 12 00:46:34 EDT 2010
 Problem Help
 
 Constrained search is most commonly used to solve
@@ -225,8 +225,46 @@ part of the system state, and can get rid of the set_
 allowed function and SET_ALLOWED action records.  Or
 you can check constraints and force moves when the pro-
 pagate function processes the SET_ALLOWED record rather
-than when it processes the SET_COLOR record.  And there
-are other variants of the above code.
+than when it processes the SET_COLOR record.
+
+Another variation is to eliminated the propagate
+function and move the constraint checks to the ends of
+the action functions set_color and set_allowed.  These
+functions (actually just set_color in the example) then
+may fail, so they must return true on success and false
+on failure.  There is a minor difference in the order in
+which the system state changes are made and constraints
+are checked.
+
+However, you CANNOT eliminate the undo stack.  This is
+because when constraints are being checked at the end
+of an action function and this function makes a forced
+move, the function may still have more constraint check-
+ing to do, and maybe more forced moves to make.  The
+temptation to eliminate the undo stack and have the
+action functions call search at at their end and then
+undo their actions when search returns will not work,
+except for problems that are unusual in that each action
+function can make at most one forced move and that can
+be delayed till after the action function has finished
+its constraint checks.
+
+
+Constraint Monotonicity
+---------- ------------
+
+This algorithm depends upon the following monotonicity
+properties of the constraints:
+
+(1) If a constraint is violated in a particular system
+    state, and more action functions are called without
+    any undo's, the constraint will continue to be
+    violated.
+
+(2) If a move is forced in a particular system state,
+    and more action functions are called without any
+    undo's, either the move will continue to be forced,
+    or some constraint will become violated.
 
 
 Application to Graph Coloring
@@ -281,6 +319,6 @@ file.
 RCS Info (may not be true date or author):
 
     $Author: walton $
-    $Date: 2010/09/10 15:42:27 $
+    $Date: 2010/09/12 05:08:35 $
     $RCSfile: constrained_search,v $
-    $Revision: 1.6 $
+    $Revision: 1.7 $
