@@ -2,7 +2,7 @@
 //
 // File:	csearch.cc
 // Authors:	Bob Walton (walton@deas.harvard.edu)
-// Date:	Sat Sep 11 06:00:15 EDT 2010
+// Date:	Sun Sep 12 02:10:01 EDT 2010
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: walton $
-//   $Date: 2010/09/11 10:39:01 $
+//   $Date: 2010/09/12 06:14:04 $
 //   $RCSfile: csearch.cc,v $
-//   $Revision: 1.9 $
+//   $Revision: 1.10 $
 
 // csearch d... [#]	prints debugging info
 // csearch s... [#]	prints statistics
@@ -222,6 +222,9 @@ bool propagate ( action * ap )
 
 	    if ( new_allowed == 0 )
 	    {
+		dout << "NODE " << j
+		     << " HAS NO ALLOWED COLORS"
+		     << endl;
 		++ constraint_violations;
 	        return false;
 	    }
@@ -512,9 +515,9 @@ int main ( int argc, char * argv[] )
 	if ( number_of_solutions == 0 )
 	    cout << "no solutions" << endl;
 
-	if ( statistics )
+	if ( statistics || debug )
 	    cout << search_moves << " SEARCH MOVES, "
-	         << forced_moves << " FORCED MOVES "
+	         << forced_moves << " FORCED MOVES, "
 	         << constraint_violations
 		 << " CONSTRAINT VIOLATIONS"
 		 << endl;

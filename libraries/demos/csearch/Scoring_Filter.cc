@@ -3,7 +3,7 @@
 //
 // File:	Scoring_Filter.cc
 // Authors:	Bob Walton (walton@deas.harvard.edu)
-// Date:	Sat Sep 11 06:29:34 EDT 2010
+// Date:	Sun Sep 12 01:59:05 EDT 2010
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -12,9 +12,9 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: walton $
-//   $Date: 2010/09/11 10:39:01 $
+//   $Date: 2010/09/12 06:14:04 $
 //   $RCSfile: Scoring_Filter.cc,v $
-//   $Revision: 1.3 $
+//   $Revision: 1.4 $
 
 // Scoring_Filter csearch.in \
 //		  < csearch.out \
@@ -118,6 +118,8 @@ int main ( int argc, char ** argv )
 	    cout << out_line << endl;
 	    cin.getline ( out_line, MAX_LINE+2 );
 	}
+
+	if ( cin.eof() ) break;
 
 	if (    strncmp ( test_case_name, p,
 	                  strlen ( test_case_name ) )
