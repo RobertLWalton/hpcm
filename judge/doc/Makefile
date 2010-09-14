@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Jan  2 09:52:40 EST 2007
+# Date:		Tue Sep 14 05:29:32 EDT 2010
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2007/01/02 14:53:34 $
+#   $Date: 2010/09/14 09:32:02 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.32 $
+#   $Revision: 1.33 $
 
 # make
 #	Makes documentation as fprintable .txt files in
@@ -45,6 +45,7 @@ DOCS=	overview.txt \
 	contestant/filtered_diff.txt \
 	judge/fprint.txt \
 	contestant/fprint.txt \
+	contestant/grant_access.txt \
 	contestant/help.txt \
 	judge/hpcm_clisp.txt \
 	contestant/hpcm_clisp.txt \
@@ -392,6 +393,11 @@ contestant/fprint.txt:	../../contestant/bin/fprint
 	rm -f contestant/fprint.txt
 	-../../contestant/bin/fprint -doc \
 	    >contestant/fprint.txt
+contestant/grant_access.txt:	\
+		../../contestant/bin/grant_access
+	rm -f contestant/grant_access.txt
+	-../../contestant/bin/grant_access -doc \
+	    >contestant/grant_access.txt
 contestant/help.txt:	../../contestant/bin/help
 	rm -f contestant/help.txt
 	-../../contestant/bin/help -doc \
