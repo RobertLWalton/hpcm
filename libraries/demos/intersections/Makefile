@@ -1,7 +1,7 @@
 # Makefile for the Line Segment Intersections Problem
 #
 # File:		Makefile
-# Date:		Wed Aug 18 09:25:47 EDT 2010
+# Date:		Sun Sep 12 02:02:56 EDT 2010
 #
 # See demonstration Makefile for documentation.
 #
@@ -67,7 +67,6 @@ $P.debug:	$P $P.in
 	hpcm_sandbox -cputime 60 \
 	             -datasize 4m \
 		     -stacksize 4m \
-		     -filesize 4m \
 		     ${XTRA_LIMITS} \
 		     -tee $P.debug \
 		     $P debug \
@@ -103,6 +102,6 @@ clean:
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2010/09/04 10:54:59 $
+#   $Date: 2010/09/14 00:21:36 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.1 $
+#   $Revision: 1.2 $
