@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Oct  8 11:02:03 EDT 2009
+# Date:		Fri Sep 17 15:30:55 EDT 2010
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2009/10/08 15:09:51 $
+#   $Date: 2010/09/17 21:20:52 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.29 $
+#   $Revision: 1.30 $
 
 # `make help.pdf' and `make demos.pdf' make printouts of
 # all the help and demos files respectively.  Note that
@@ -63,20 +63,23 @@ HELP_FILES = \
 	common/scoreboard \
 	common/c++ \
 	common/java \
-	common/advice \
-	advanced/dynamic_programming \
-	advanced/2D_geometry \
-	advanced/breadth_first_search
+	common/advice
 
 # Removed from help files.
 #	email/email_unix_tools
 
-OTHER_HELP_FILES = \
-	email/email_unix_tools \
-	advanced/3D_geometry \
-	advanced/geometry_exercises \
+ADVANCED_HELP_FILES = \
+	advanced/2D_geometry \
+	advanced/dynamic_programming \
+	advanced/breadth_first_search \
+	advanced/constrained_search \
 	advanced/network_flows \
-	advanced/optimal_matchings
+	advanced/optimal_matchings \
+	advanced/3D_geometry
+
+# Not included
+#	advanced/geometry_exercises
+
 
 DEMOS_FILES = \
 	../../problem_library/demos/count/Makefile \
@@ -92,6 +95,12 @@ DEMOS_FILES = \
 	../../problem_library/demos/javaio/Makefile \
 	../../problem_library/demos/javaio/javaio.in \
 	../../problem_library/demos/javaio/javaio.test
+
+ADVANCED_DEMOS_FILES = \
+	../../problem_library/demos/intersections/intersections.txt \
+	../../problem_library/demos/intersections/intersections.cc \
+	../../problem_library/demos/csearch/csearch.txt \
+	../../problem_library/demos/csearch/csearch.cc
 
 help_index:	index
 	rm -f help_index
@@ -125,10 +134,59 @@ demos_index:	../../problem_library/index
 	     "DEMOS INDEX$$T$$T    `date`"
 	echo >>demos_index ""
 	sed -n <../../problem_library/index >>demos_index \
+	    -e '/^#[[:space:]]*end_demos_index/Q' \
 	    -e '/^#/d' \
-	    -e '/^[^[:space:]].* Problems/,$$d' \
 	    -e '/^\*\*\*[[:space:]]/d' \
 	    -e 'p'
+
+advanced_help_index:	index
+	rm -f advanced_help_index
+	T='	'; \
+	echo >>advanced_help_index \
+	     "ADVANCED HELP INDEX$$T   `date`"
+	echo >>advanced_help_index ""
+	A='^\*\*\*[[:space:]][[:space:]]*'; \
+	D='[^[:space:]]*\/'; \
+	M='[^[:space:]\/]*'; \
+	E='[[:space:]].*'; \
+	sed -n <index >>advanced_help_index \
+	    -e ': start' \
+	    -e '/^#[[:space:]]*begin_advanced_help/b accept' \
+	    -e 's/.*//' \
+	    -e 'n' \
+	    -e 'b start' \
+	    -e ': accept' \
+	    -e '/^#[[:space:]]*end_advanced_help/Q' \
+	    -e '/^#/b skip' \
+	    -e 's/'$$A$$D'\('$$M'\)'$$E'/\1/' \
+	    -e 'p' \
+	    -e ': skip' \
+	    -e 's/.*//' \
+	    -e 'n' \
+	    -e 'b accept'
+
+advanced_demos_index:	../../problem_library/index
+	rm -f advanced_demos_index
+	T='	'; \
+	echo >>advanced_demos_index \
+	     "ADVANCED DEMOS INDEX$$T   `date`"
+	echo >>advanced_demos_index ""
+	sed -n <../../problem_library/index \
+		>>advanced_demos_index \
+	    -e ': start' \
+	    -e '/^#[[:space:]]*begin_advanced_demos/b accept' \
+	    -e 's/.*//' \
+	    -e 'n' \
+	    -e 'b start' \
+	    -e ': accept' \
+	    -e '/^#[[:space:]]*end_advanced_demos/Q' \
+	    -e '/^#/b skip' \
+	    -e '/^\*\*\*[[:space:]]/b skip' \
+	    -e 'p' \
+	    -e ': skip' \
+	    -e 's/.*//' \
+	    -e 'n' \
+	    -e 'b accept'
 
 help.ps:	help_index ${HELP_FILES}
 	rm -rf help.ps
@@ -144,6 +202,20 @@ demos.ps:	demos_index ${DEMOS_FILES}
 	rm -rf demos.ps
 	../../judge/bin/fprint > demos.ps -o \
 	    demos_index ${DEMOS_FILES}
+
+advanced_help.ps:	advanced_help_index \
+			${ADVANCED_HELP_FILES}
+	rm -rf advanced_help.ps
+	../../judge/bin/fprint > advanced_help.ps -o \
+	    advanced_help_index ${ADVANCED_HELP_FILES}
+
+advanced_demos.ps:	advanced_demos_index \
+			${ADVANCED_DEMOS_FILES}
+	rm -rf advanced_demos.ps
+	../../judge/bin/fprint \
+	    > advanced_demos.ps -o \
+	    advanced_demos_index \
+	    ${ADVANCED_DEMOS_FILES}
 
 emailsh:	email/sh/hpcm_extract \
 		email/sh/hpcm_submit \
