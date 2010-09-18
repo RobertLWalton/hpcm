@@ -2,7 +2,7 @@
 //
 // File:	intersections.cc
 // Authors:	Bob Walton (walton@deas.harvard.edu)
-// Date:	Sat Sep 18 06:34:47 EDT 2010
+// Date:	Sat Sep 18 07:12:31 EDT 2010
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: walton $
-//   $Date: 2010/09/18 10:35:03 $
+//   $Date: 2010/09/18 11:20:44 $
 //   $RCSfile: intersections.cc,v $
-//   $Revision: 1.2 $
+//   $Revision: 1.3 $
 
 #include <iostream>
 #include <iomanip>
@@ -195,8 +195,11 @@ int main ( int argc, char * argv[] )
 
 	if ( A_side * B_side == 1 )
 	    cout << "NO INTERSECTION" << endl;
+	else if ( C_side * D_side == 1 )
+	    cout << "NO INTERSECTION" << endl;
 	else if ( A_side != 0 || B_side != 0 )
 	{
+	    // Lines are not parallel.
 	    // Intersection must be a single point.
 
 	    cout << "INTERSECTION ";
