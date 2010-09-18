@@ -2,7 +2,7 @@
 //
 // File:	intersections.cc
 // Authors:	Bob Walton (walton@deas.harvard.edu)
-// Date:	Sat Sep  4 05:34:34 EDT 2010
+// Date:	Sat Sep 18 06:34:47 EDT 2010
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: walton $
-//   $Date: 2010/09/04 10:54:51 $
+//   $Date: 2010/09/18 10:35:03 $
 //   $RCSfile: intersections.cc,v $
-//   $Revision: 1.1 $
+//   $Revision: 1.2 $
 
 #include <iostream>
 #include <iomanip>
@@ -90,7 +90,7 @@ double dist ( point X, point Y )
 //	+1	X is to the right of the directed
 //		     infinite line through YZ
 //
-// In the case where which_size is 0 an additional
+// In the case where which_side is 0 an additional
 // value, which_end is returned, as follows:
 //
 //	-1	X is before Y on the directed infinite
