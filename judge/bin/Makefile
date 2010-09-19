@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Aug 18 06:21:37 EDT 2010
+# Date:		Sun Sep 19 16:59:10 EDT 2010
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2010/08/18 10:23:45 $
+#   $Date: 2010/09/19 21:32:25 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.35 $
+#   $Revision: 1.36 $
 
 all:	scorediff grant_access \
 	hpcm_sandbox_unsecure \
@@ -24,7 +24,7 @@ all:	scorediff grant_access \
 	hpcm_clisp.lsp hpcm_extract_test_replies \
 	filtered_diff email_diff hpcm_helper \
 	startup_helper \
-	w3m_helper w3m_startup_message \
+	elinks_helper elinks_startup_message \
 	help
 
 # Kill all implicit rules
@@ -120,11 +120,11 @@ hpcm_helper:
 startup_helper:
 	ln -s ../../contestant/bin/startup_helper .
 
-w3m_helper:
-	ln -s ../../contestant/bin/w3m_helper .
+elinks_helper:
+	ln -s ../../contestant/bin/elinks_helper .
 
-w3m_startup_message:
-	ln -s ../../contestant/bin/w3m_startup_message .
+elinks_startup_message:
+	ln -s ../../contestant/bin/elinks_startup_message .
 
 help:
 	ln -s hpcm_help help
@@ -149,6 +149,6 @@ clean:
 		email_diff \
 		hpcm_helper \
 		startup_helper \
-		w3m_helper \
-		w3m_startup_message \
+		elinks_helper \
+		elinks_startup_message \
 		help
