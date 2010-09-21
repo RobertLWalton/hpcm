@@ -6,7 +6,7 @@
 #
 # File:		makecontest
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Sep  8 06:40:50 EDT 2010
+# Date:		Mon Sep 20 22:44:13 EDT 2010
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2010/09/08 10:54:20 $
+#   $Date: 2010/09/21 11:30:50 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.209 $
+#   $Revision: 1.210 $
 #
 # The next lines start tclsh \
 trap "echo makecontest: Terminated by Signal" \
@@ -2771,6 +2771,7 @@ if { $secure_option } {
 	    lappend lines $line
 	}
 	close $passwords_ch
+
 	if { $changed} {
 	    set passwords_ch \
 	        [open $c_d/secure/passwords w]
@@ -2782,31 +2783,26 @@ if { $secure_option } {
 
 	    if {    $account_exists \
 	         && $trashall_option == "no" } {
-		set tc_d [truename $c_d]
-		set ts_d [truename $hpcm_directory]
-		set ts_d "$ts_d/secure/bin"
+		set trashall_option yes
+		set trashable_option no
 		TODO "Passwords have been added to" \
-		      $c_d/secure/passwords." \
+		     "$c_d/secure/passwords" \
+		     "for accounts that already\
+		      exist." \
 		     "" \
-		     "If you have NOT ADDED existing\
-		      accounts to this file," \
-		     "but are just changing the\
-		      passwords of existing accounts," \
-		     "you should inspect the file and\
-		      then execute:" \
+		     "Therefore the -trashall option\
+		      has been forced."
+	    } elseif {    $account_exists == "no" \
+	               && $trashable_option == "no" \
+	               && $trashall_option == "no" } {
+		set trashable_option yes
+		TODO "Passwords have been added to" \
+		     "$c_d/secure/passwords" \
+		     "but only for accounts that do NOT\
+		      already exist." \
 		     "" \
-		     "    su root" \
-		     "    $ts_d/hpcm_set_passwords \\" \
-		     "        $tc_d" \
-		     "    exit" \
-		     "" \
-		     "to reset the passwords for all\
-		      accounts." \
-		     "" \
-		     "If you have ADDED existing\
-		      accounts to the file," \
-		     "run `makecontest -trashall'\
-		      instead."
+		     "Therefore the -trashable option\
+		      has been forced."
 	    }
 	}
     }
@@ -3249,13 +3245,15 @@ if { $trashable_option || $trashall_option } {
 	        "[truename $hpcm_directory]/secure/bin"
 
 	    if { $trashall_option } {
-		TODO "./contest/trashable" \
-		     "has been re-written to contain\
+		TODO "./contest/trashable\
+		      has been re-written to contain\
 		      all accounts." \
+		     "" \
 		     "You should edit it to contain\
-		      only the accounts you want to" \
-		     "trash, and then you should\
-		      execute:" \
+		      only the accounts you desire" \
+		     "to set passwords of and trash." \
+		     "" \
+		     "Then you should execute:" \
 		     "" \
 		     "    su root" \
 		     "    $ts_d/hpcm_setup_accounts\
@@ -3264,15 +3262,31 @@ if { $trashable_option || $trashall_option } {
 		     "    exit" \
 		     "    makecontest -trashable" \
 		     "" \
-		     "to trash the desired accounts."
+		     "to setup the desired accounts.\
+		      This will make any of the\
+		      desired" \
+		     "accounts that do not exist, set\
+		      all desired account passwords," \
+		     "and trash all desired accounts." \
+		     "" \
+		     "Instead of `hpcm_setup_accounts\
+		      all -force' you can use just" \
+		     "hpcm_set_passwords to just\
+			  reset passwords in the\
+			  desired accounts, or" \
+		     "you can use just\
+		      hpcm_TRASH_ACCOUNTS to just\
+		      trash the desired accounts."
 	    } else {
-		TODO "./contest/trashable" \
-		     "has been written with new\
-		      contents.  If you have just" \
-		     "added existing accounts to\
-		      ./contest/secure/passwords," \
-		     "you should execute `makecontest\
-		      -trashall'." \
+		TODO "./contest/trashable\
+		      has been written to contain just\
+		      accounts that" \
+		     "do not yet exist." \
+		     "" \
+		     "If you want to reset existing\
+		      accounts you should execute" \
+		     "`makecontest -trashall'." \
+		     "" \
 		     "Otherwise you should execute:" \
 		     "" \
 		     "    su root" \
@@ -3282,7 +3296,7 @@ if { $trashable_option || $trashall_option } {
 		     "    exit" \
 		     "    makecontest -trashable" \
 		     "" \
-		     "to setup new accounts."
+		     "to setup the new accounts."
 	    }
 	}
     }
