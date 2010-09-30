@@ -4,7 +4,7 @@
 #
 # File:		SETUP_PROTOTYPE
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Wed Sep 29 07:25:43 EDT 2010
+# Date:		Thu Sep 30 05:00:55 EDT 2010
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2010/09/29 13:53:29 $
+#   $Date: 2010/09/30 10:11:39 $
 #   $RCSfile: SETUP_PROTOTYPE,v $
-#   $Revision: 1.23 $
+#   $Revision: 1.24 $
 
 # List of files added to `ls -a /etc/skel` that are
 # not in `keep'.
@@ -65,7 +65,10 @@ SETUP_PROTOTYPE
 
     2. Make a brand new account, which we will refer to
        as ~PPP, which is to be the contestant prototype
-       account.
+       account.  It is very desirable for the name PPP
+       to end with either \`-proto' or \`_proto' as then
+       makecontest will find it automatically (see the
+       -home option to makecontest).
 
     3. Working in the ~PPP account execute:
 
@@ -76,25 +79,25 @@ SETUP_PROTOTYPE
 
        This installs the .procmailrc file needed by
        informal contests.
-
+
        Note that instead of doing this, you can put a
        .procmailrc file in the extra_setup.tar file
        specific to a particular contest.  See the doc-
        umentation of TRASH_ACCOUNT.  However, the
        .procmailrc file is itself NOT contest specific,
        so you might as well put it in the PPP account.
-
+
     4. If you want to use .ssh to log into contestant
        accounts, and for some reason you do not want
        to use a contest specific extra_setup.tar file,
-       prepare an appropriate ~JJJ/.ssh/identity.pub
+       prepare an appropriate ~JJJ/.ssh/id_rsa.pub
        file in the ~JJJ account, and then working in
        the ~PPP account execute:
 
 	cd
 	mkdir .ssh
 	chmod 700 .ssh
-	scp JJJ@localhost:.ssh/identity.pub \\
+	scp JJJ@localhost:.ssh/id_rsa.pub \\
 	    .ssh/authorized_keys
 	rm -f .ssh/random_seed .ssh/known_hosts
 	chmod 400 .ssh/authorized_keys
@@ -106,32 +109,47 @@ SETUP_PROTOTYPE
        JJJ account can log into the PPP account without
        knowing the password of the PPP account.
 
-       If your ssh uses ssh protocol 2 instead of ssh
-       protocol 1, then you may want to use the files
-       authorized_keys2 and id_rsa.pub instead of
-       authorized_keys and identity.pub.
-
+       Your usage of ssh may differ from the norm in
+       which case you will have to adjust the above.
+       For example, if you use dsa keys instead of rsa
+       keys change id_rsa above to id_dsa.
+
        It is better, however, use the extra_setup.tar
        file documented by TRASH_ACCOUNT to get the same
-       effect, as ssh keys are likely to be contest
-       specific, and NOT putting them in the PPP account
-       permits the PPP account to be non-contest-speci-
-       fic.
-
+       effect, as then ssh keys can be contest specific,
+       and NOT putting them in the PPP account permits
+       the PPP account to be non-contest-specific.  See
+       the -ssh option to makecontest.
+
     5. In the PPP account edit .cshrc, adding:
 
-    	set path=(~/.hpcm_contest/bin \$path)
-        alias ll -lL
-	set autologout=180
+    	   set path=(~/.hpcm_contest/bin \$path)
 
-      Then edit .profile (or .bash_profile) by adding:
+       or
+           setenv PATH \\
+	       \"\${PATH}:\${HOME}/.hpcm_contest/bin\"
 
-        PATH=\"\$HOME/.hpcm_contest/bin:\$PATH\"
+       and
 
-      You may want to edit other files in the prototype
-      account to make them suitable for contestant
-      accounts.
+	   set autologout=600
+       or
+	   unset autologout
 
+       and
+
+	   alias ll='ls -lL'
+           alias help='~/.hpcm_contest/bin/help'
+
+       Then edit .bashrc by adding:
+
+           PATH=\"\$PATH:\$HOME/.hpcm_contest/bin\"
+	   alias ll='ls -lL'
+           alias help='~/.hpcm_contest/bin/help'
+
+       You may want to edit other files in the prototype
+       account to make them suitable for contestant
+       accounts.
+
     6. In the PPP account execute:
 
     	~JJJ/hpcm/contestant/bin/SETUP_PROTOTYPE
@@ -149,7 +167,7 @@ SETUP_PROTOTYPE
     from the prototype account into the contestant
     account, and will link other files to copies of the
     files that are now in the ~PPP/home directory.
-
+
     Prototype ~/home directories are typically shared
     among many different contests, which may also have
     different judging accounts JJJ.  For each contest,
@@ -167,21 +185,21 @@ SETUP_PROTOTYPE
     home/.cshrc, with this symbolic link being copied
     via the setup.tar file and TRASH_ACCOUNT to each
     contestant account.
-
+
     If you need to make changes in the prototype account
     files, you should do the following:
 
-    C1.  If you need to change a file like .cshrc, you
-         will find that it is now in ~PPP/home/.cshrc.
+    C1.  If you need to change a file like .bashrc, you
+         will find that it is now in ~PPP/home/.bashrc.
 	 Simply edit this file in the PPP account.  You
 	 can do this anytime, even AFTER contest
 	 accounts have been set up.  This is because
-	 contestant account .cshrc is symbolically
-	 linked to ~PPP/home/.cshrc.  Note, however,
+	 contestant account .bashrc is symbolically
+	 linked to ~PPP/home/.bashrc.  Note, however,
 	 that if a contestant has already logged in,
-	 the change in .cshrc will have no effect until
+	 the change in .bashrc will have no effect until
 	 the contestant logs out and relogs in.
-
+
     C2.  If you need to change a file like .procmailrc,
          or .ssh/authorized_keys which has NOT been
 	 moved to ~PPP/home (because for security rea-
@@ -192,29 +210,29 @@ SETUP_PROTOTYPE
 
 	 	SETUP_PROTOTYPE
 
-	in the PPP account, and then rerun TRASH_ACCOUNT
-	in each contestant account.
+	in ~PPP to remake ~PPP/home/setup.tar, and then
+	rerun TRASH_ACCOUNT in each contestant account.
 
     C3. If you move the directory ~JJJ/hpcm/contestant/
         bin, then the next time you want to run SETUP_
 	PROTOTYPE in the prototype account, you will
 	have to execute
 
-	 ~JJJ/newhpcm/contestant/bin/SETUP_PROTOTYPE
+	 ~JJJ/hpcm/contestant/bin/SETUP_PROTOTYPE
 
 	instead of simply SETUP_PROTOTYPE.  This will
 	relink the ~/bin directory in the prototype
 	account.  This directory is NOT used in any way
 	by the contestant accounts, so they are not
 	affected by relinking ~/bin.
-
+
 
     In the remainder of this document we will describe
     in detail what SETUP_PROTOTYPE does.
 
     First, SETUP_PROTOTYPE does a \`cd' to the home
     directory of the current (prototype) account.
-
+
     Then SETUP_PROTOTYPE takes all ordinary files and
     directories that it finds in etc/skel and moves
     them to the ~/home/ directory.  For every file or
@@ -242,15 +260,20 @@ SETUP_PROTOTYPE
 
     First, instead of just considering the files in
     /etc/skel, these files plus those in the include
-    and keep lists minus any files in the exclude
-    list are considered.
-
-    Second, files in the keep list are not moved to
-    ~/home and the files are left untouched in ~.
+    and keep lists minus any files in the exclude list
+    are considered.  All these files not in the keep
+    list are moved to ~/home, linked in ~, and the links
+    are put in setup.tar.
+
+    Second, files in the keep list but not the exclude
+    list are not moved to ~/home and the files are left
+    unlinked and untouched in ~.  But these files are
+    put in setup.tar.
 
     Third, files in the move list are moved to ~/home
     but no link is made in ~ and these files are NOT
-    included in setup.tar.
+    included in setup.tar.  The exclude list has NO
+    affect on the move list.
 
     After moving files and directories, SETUP_PROTOTYPE
     makes the following files in ~/home/:
@@ -275,7 +298,7 @@ SETUP_PROTOTYPE
     and setup.ls+, and then only if these are different
     from any previous versions are they moved into
     position.
-
+
     SETUP_PROTOTYPE also manages permissions of ~/home
     and the things it contains.  It sets the permission
     of ~ to a+x and ~/home to a+rx, and sets the permis-
@@ -284,19 +307,20 @@ SETUP_PROTOTYPE
     directory has u+x permissions.  It sets the per-
     mission of empty.ls, setup.tar, and setup.ls in
     ~/home to a+r.
-
+
     Whenever SETUP_PROTOTYPE runs, it links ~/.hpcm_
     contest in the prototype account home directory to
-    \`.', so that ~/.cshrc will refer to ~/home/.cshrc
-    and the prototype account will still work.  It also
-    links ~/bin to the directory containing the SETUP_
-    PROTOTYPE program if this directory beings with
-    \`/', so after the above changes to .cshrc and
-    .profile the contents of this bin directory will
-    be in the PATH after login when you are in the
-    prototype account.  Note that neither .hpcm_contest
-    or bin are copied into the setup.tar file and
-    therefore they are NOT transfered to contestant 
+    \`.', so that ~/.bashrc will refer to ~/home/.bashrc
+    and so forth and the prototype account will still
+    work.  It also links ~/bin to the directory contain-
+    ing the SETUP_PROTOTYPE program if this latter
+    directory beings with \`/' and ~/bin is not an
+    ordinary directory, so after the above changes to
+    .cshrc and .bashrc the contents of this bin direc-
+    tory will be in the PATH after login when you are in
+    the prototype account.  Note that neither .hpcm_
+    contest or bin are copied into the setup.tar file
+    and therefore they are NOT transferred to contestant
     accounts."
 
 	exit 1
