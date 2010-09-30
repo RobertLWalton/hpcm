@@ -4,7 +4,7 @@
 #
 # File:		SETUP_PROTOTYPE
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Thu Sep 30 05:00:55 EDT 2010
+# Date:		Thu Sep 30 06:58:08 EDT 2010
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2010/09/30 10:11:39 $
+#   $Date: 2010/09/30 11:35:50 $
 #   $RCSfile: SETUP_PROTOTYPE,v $
-#   $Revision: 1.24 $
+#   $Revision: 1.25 $
 
 # List of files added to `ls -a /etc/skel` that are
 # not in `keep'.
@@ -27,14 +27,13 @@ include="NONE"
 #
 exclude="NONE"
 
-# Default list of files and directories that are NOT
-# to be moved to home but are to be included in tar.
+# List of files and directories that are NOT to be moved
+# to home but are to be included in tar.
 #
 keep=".ssh .procmailrc .emacs"
 
-# Default list of files and directories that are to
-# be moved to home but not linked from ~ and therefore
-# not included in tar.
+# List of files and directories that are to be moved to
+# home but NOT linked from ~ and NOT included in tar.
 #
 move="RCS"
 
@@ -352,11 +351,11 @@ then
 	then
 		echo "chmod 755 ~/home"
 	else
-		echo "ERROR in chmod 755 ~/home"
+		echo ERROR in "chmod 755 ~/home"
 		exit 1
 	fi
 else
-	echo "ERROR in mkdir ~/home"
+	echo ERROR in "mkdir ~/home"
 	exit 1
 fi
 
@@ -365,7 +364,7 @@ if chmod a+x .
 then
 	echo "chmod a+x ."
 else
-	echo "ERROR in chmod a+x ."
+	echo ERROR in "chmod a+x ."
 	exit 1
 fi
 
@@ -375,9 +374,9 @@ fi
 #
 for list in include exclude keep move
 do
-    if test -f .hpcm_$list
+    if test -e .hpcm_$list
     then
-        $list=`cat .hpcm_$list`
+        eval "$list=\"\`cat .hpcm_$list\`\""
     fi
 done
 
@@ -393,9 +392,10 @@ non_existent=
 # Move or keep files or directories listed in /etc/skel,
 # include list, and keep list, unless they are listed in
 # exclude list, or are . or ...   Put these files in the
-# list of files to be tar'ed.  Do not put process any
-# file twice (in case it is listed twice in /etc/skel,
-# include, and keep lists).
+# list of files to be tar'ed or if they do not exist in
+# the non_existent list.  Do not process any file twice
+# (in case it is listed twice in /etc/skel, include, and
+# keep lists).
 #
 for i in `ls -a /etc/skel` $include $keep
 do
@@ -444,7 +444,7 @@ do
 			echo "      " linked to \
 		             ".hpcm_contest/home/$i"
 			echo "      " perhaps you \
-		             should mv it back to '~'
+		             should mv it back to "~"
 			exit 1
 		fi
 
@@ -475,7 +475,7 @@ do
 
 	if test -L ~/home/"$i" -o -e ~/home/"$i"
 	then
-		echo ERROR: ~/home/"$i" already exists
+		echo ERROR: "~/home/$i" already exists
 		exit 1
 	fi
 
@@ -483,28 +483,28 @@ do
 	then
 		echo "moved $i to ~/home"
 	else
-		echo ERROR in mv "$i" ~/home
+		echo ERROR in "mv $i ~/home"
 		exit 1
 	fi
 
-        if test -r "~/home/$i"
+        if test -r ~/home/"$i"
 	then
-	    if chmod a+r "~/home/$i"
+	    if chmod a+r ~/home/"$i"
 	    then
 		    echo "chmod a+r ~/home/$i"
 	    else
-		    echo ERROR in chmod a+r "~/home/$i"
+		    echo ERROR in "chmod a+r ~/home/$i"
 		    exit 1
 	    fi
 	fi
 
-        if test -x "~/home/$i"
+        if test -x ~/home/"$i"
 	then
-	    if chmod a+x "~/home/$i"
+	    if chmod a+x ~/home/"$i"
 	    then
 		    echo "chmod a+x ~/home/$i"
 	    else
-		    echo ERROR in chmod a+x "~/home/$i"
+		    echo ERROR in "chmod a+x ~/home/$i"
 		    exit 1
 	    fi
 	fi
@@ -514,8 +514,8 @@ do
 		echo "linked $i to" \
 		     ".hpcm_contest/home/$i"
 	else
-		echo ERROR in ln -s \
-		     ".hpcm_contest/home/$i" "$i"
+		echo ERROR in \
+		  "ln -s .hpcm_contest/home/$i $i"
 		exit 1
 	fi
 done
@@ -545,7 +545,7 @@ do
 
 	if test -L ~/home/"$i" -o -e ~/home/"$i"
 	then
-		echo ERROR: ~/home/"$i" \
+		echo ERROR: "~/home/$i" \
 			    already exists
 		exit 1
 	fi
@@ -554,7 +554,7 @@ do
 	then
 		echo "moved $i to ~/home"
 	else
-		echo ERROR in mv "$i" ~/home
+		echo ERROR in "mv $i ~/home"
 		exit 1
 	fi
 
@@ -610,35 +610,40 @@ fi
 
 for f in empty.ls setup.tar setup.ls
 do
-	if cmp -s ~/home/$f+ ~/home/$f
+	if test -e ~/home/$f
 	then
-		echo no change in ~/home/$f
-    		rm -f ~/home/$f+
+	    if cmp -s ~/home/$f+ ~/home/$f
+	    then
+		    echo no change in ~/home/$f
+		    rm -f ~/home/$f+
+		    continue
+	    fi
+	fi
+
+	if test -e ~/home/$f-
+	then
+	    rm -f ~/home/$f--
+	    echo mv ~/home/$f- ~/home/$f--
+	    mv ~/home/$f- ~/home/$f--
+	fi
+	if test -e ~/home/$f
+	then
+	    if mv ~/home/$f ~/home/$f-
+	    then
+		echo mv ~/home/$f ~/home/$f-
+	    else
+		echo ERROR in \
+		  "mv ~/home/$f ~/home/$f-"
+		exit 1
+	    fi
+	fi
+	if mv ~/home/$f+ ~/home/$f
+	then
+		echo "mv ~/home/$f+ ~/home/$f"
 	else
-		if test -e ~/home/$f-
-		then
-		    echo mv -f ~/home/$f- ~/home/$f--
-		    mv -f ~/home/$f- ~/home/$f--
-		fi
-		if test -e ~/home/$f
-		then
-		    if mv -f ~/home/$f ~/home/$f-
-		    then
-			echo mv ~/home/$f ~/home/$f-
-		    else
-			echo ERROR in mv ~/home/$f \
-			                 ~/home/$f-
-			exit 1
-		    fi
-		fi
-		if mv -f ~/home/$f+ ~/home/$f
-		then
-			echo mv -f ~/home/$f+ ~/home/$f
-		else
-			echo ERROR in mv -f ~/home/$f+ \
-					    ~/home/$f
-			exit 1
-		fi
+		echo ERROR in \
+		     "mv ~/home/$f+ ~/home/$f"
+		exit 1
 	fi
 done
 
@@ -655,7 +660,7 @@ else
     then
 	    echo "linked .hpcm_contest to \`.'"
     else
-	    echo "ERROR in ln -s . .hpcm_contest"
+	    echo ERROR in "ln -s . .hpcm_contest"
 	    exit 1
     fi
 fi
@@ -685,11 +690,11 @@ case "$dir" in
 		    exit 1
 		fi
 
-		if ln -s $dir bin
+		if ln -s "$dir" bin
 		then
 			echo "linked bin to $dir"
 		else
-			echo "ERROR in ln -s $dir bin"
+			echo ERROR in "ln -s $dir bin"
 			exit 1
 		fi
 	fi
@@ -698,7 +703,7 @@ esac
 
 if test "non_existent" != ""
 then
-	echo WARNING: the following do NOT exist in ~
+	echo WARNING: the following do NOT exist in "~"
 	echo "        " and cannot be linked or kept:
 	echo "        " $non_existent
 fi
