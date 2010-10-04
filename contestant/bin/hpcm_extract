@@ -4,7 +4,7 @@
 #
 # File:		hpcm_extract
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Fri Feb  2 09:11:37 EST 2007
+# Date:		Mon Oct  4 18:13:59 EDT 2010
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,22 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2007/02/02 18:25:16 $
+#   $Date: 2010/10/04 23:01:01 $
 #   $RCSfile: hpcm_extract,v $
-#   $Revision: 1.19 $
-
-# If this is not bash and bash is available, switch
-# to using bash.  Note that `which bash` may output
-# a grubby error message and no error code if bash
-# does not exist.  Non-bash sh'es cannot handle the
-# -r option to read and perform unwanted backslash
-# interpretation in echo.
-#
-bash=`which bash 2>/dev/null`
-if test "$BASH" = "" -a "$bash" != "" -a -x "$bash"
-then
-    exec bash "$0" "$@"
-fi
+#   $Revision: 1.20 $
 
 # Print documentation if -... argument.
 #
@@ -66,7 +53,7 @@ hpcm_extract [directory]
     If a file that might be extracted already exists in
     that directory, the file is not extracted, but is
     compared against the existing file.
-    
+
     When this program extracts a file, it makes the file
     read only.  If the extracted file has a name of the
     form \`xxx.ISF' (ISF stands for \`initial submit-
@@ -75,6 +62,15 @@ hpcm_extract [directory]
     file named \`xxx' and makes the latter writable.
     The \`xxx' file will in general be (optionally) sub-
     mittable.
+
+    If the extracted file has a name of the form
+    \`xxx.BIN' or \`xxx.DAT' the action is the same as
+    for \`xxx.ISF' files except instead of just copying
+    the file, the file is decoded with hpcm_decode (the
+    files are base64 encodings of binary files).  For
+    \`xxx.BIN' files the resulting file is made readonly
+    and executable.  For \`xxx.DAT' files the resulting
+    file is made just readonly.
 
     The standard output records what was done.  It
     does not include the file contents.  The standard
@@ -292,8 +288,11 @@ $REPLY"
 
 	    # Make copy of .ISF files if appropriate.
 	    #
-	    base=` expr "$file" : '\(.*\)\.ISF$' `
-	    if test "$base" != ""
+	    baseISF=` expr "$file" : '\(.*\)\.ISF$' `
+	    baseBIN=` expr "$file" : '\(.*\)\.BIN$' `
+	    baseDAT=` expr "$file" : '\(.*\)\.DAT$' `
+	    base="$baseISF$baseBIN$baseDAT"
+	    if test "$baseISF" != ""
 	    then
 		if test ! -e "$home/$base"
 		then
@@ -308,6 +307,25 @@ $REPLY"
 		    echo "as \`$base' already exists."
 		    echo ""
 		    has_errors=yes
+		fi
+	    elif test "$baseBIN$baseDAT" != ""
+	    then
+		if test -e "$home/$base"
+		then
+		    rm -f "$home/$base"
+		    ~/.hpcm_contest/bin/hpcm_decode \
+		        < "$home/$file" > "$home/$base"
+		    echo "replacing existing \`$base'."
+		else
+		    ~/.hpcm_contest/bin/hpcm_decode \
+		        < "$home/$file" > "$home/$base"
+		    echo "creating \`$base'."
+		fi
+		chmod a-rwx "$home/$base"
+		chmod u+r "$home/$base"
+		if test "$baseBIN" != ""
+		then
+		    chmod u+x "$home/$base"
 		fi
 	    fi
 
