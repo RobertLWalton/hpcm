@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Sep 19 16:59:10 EDT 2010
+# Date:		Mon Oct  4 17:21:33 EDT 2010
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2010/09/19 21:32:25 $
+#   $Date: 2010/10/05 02:23:53 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.36 $
+#   $Revision: 1.37 $
 
 all:	scorediff grant_access \
 	hpcm_sandbox_unsecure \

@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Sep  8 06:13:13 EDT 2010
+# Date:		Mon Oct  4 22:09:16 EDT 2010
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2010/09/08 10:52:58 $
+#   $Date: 2010/10/05 02:24:03 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.154 $
+#   $Revision: 1.155 $
 #
 
 # Table of Contents
@@ -195,8 +195,12 @@ proc include_if { condition textexpr } {
 
 # Function to include lists in documentation with given
 # indent and given maximum length (defaulting to 56).
+# If the list is empty, print <empty-list>
 #
 proc indent_list { indent list { maxlen 56 } } {
+    if { "$list" == "" } {
+        set list "<empty-list>"
+    }
     set column $indent
     set out ""
     foreach item $list {

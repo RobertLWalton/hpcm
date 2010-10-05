@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Oct  4 20:26:16 EDT 2010
+# Date:		Mon Oct  4 21:18:40 EDT 2010
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2010/10/05 00:28:25 $
+#   $Date: 2010/10/05 02:24:03 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.244 $
+#   $Revision: 1.245 $
 
 # Table of Contents:
 #
@@ -2393,6 +2393,22 @@ proc link_file { source { target . } } {
 #
 proc copy_file { source target } {
     exec cp -p $source $target
+}
+
+# Function to copy a file encoding it in base64.
+#
+proc encode_file { source target } {
+
+    if { [catch { exec which base64 }] } {
+	proc encode_file { source target } {
+	    exec mimencode < $source > $target
+	}
+    } else {
+	proc encode_file { source target } {
+	    exec base64 < $source > $target
+	}
+    }
+    encode_file $source $target
 }
 
 # Function to copy a directory and its contents preser-
