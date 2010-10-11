@@ -2,7 +2,7 @@
 //
 // File:     javaio.java
 // Author:   Bob Walton <walton@deas.harvard.edu>
-// Date:     Thu Feb 12 23:05:12 EST 2004
+// Date:     Mon Oct 11 14:44:21 EDT 2010
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -10,188 +10,284 @@
 //
 // RCS Info (may not be true date or author):
 //
-//   $Author: hc3 $
-//   $Date: 2004/02/13 04:06:10 $
+//   $Author: walton $
+//   $Date: 2010/10/11 23:49:58 $
 //   $RCSfile: javaio.java,v $
-//   $Revision: 1.4 $
+//   $Revision: 1.5 $
+
+// This program is suitable for use as a template for
+// ACM programming contest submissions, and provides
+// input/output functions that are likely to be useful
+// in such contests.
+//
+// You may copy and modify this code without
+// any restriction.
+//
+// This program is new as of 10/2010, and may well
+// contain bugs.  No warranty is made: use at your own
+// risk.
 
 import java.io.*;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.util.Locale;
 
-// This program reads input, parses it into tokens,
-// prints info about the tokens, and prints a summary
-// at the end.  The program illustrates use of the
-// StreamTokenizer and DecimalFormat classes.
-
 public class javaio {
+    // The class name `javaio' must be changed if this
+    // is used as a template for a different problem.
+
+    // Set up the StreamTokenizer.
+    //
+    public static Reader reader
+	= new BufferedReader
+	      ( new InputStreamReader
+		    ( System.in ) );
+    public static StreamTokenizer in
+	= new StreamTokenizer ( reader );
+
+    // Read the remainder of the line.  Null is returned
+    // on an end of file.
+    //
+    public static String nextLine() throws IOException
+    {
+        in.resetSyntax();
+	in.wordChars ( 0x00, 0xFF );
+	in.whitespaceChars ( '\n', '\n' );
+	in.eolIsSignificant ( true );
+	in.nextToken();
+	switch ( in.ttype )
+	{
+	case StreamTokenizer.TT_EOF:
+	    return null;
+	case StreamTokenizer.TT_EOL:
+	    return "";
+	case StreamTokenizer.TT_WORD:
+	    {
+		String result = in.sval;
+		in.nextToken();
+		switch ( in.ttype )
+		{
+		case StreamTokenizer.TT_EOF:
+		    return result;
+		case StreamTokenizer.TT_EOL:
+		    return result;
+		}
+		throw new IOException
+		   ( "readLine line ended with "
+		     + in.toString() );
+	    }
+	}
+	throw new IOException
+	   ( "readLine encountered "
+	     + in.toString() );
+    }
+
+    // Read the next number, skipping lines.
+    // IOException is thrown if there is no number.
+    // This is an EOFException if an EOF is encountered.
+    //
+    public static double nextDouble() throws IOException
+    {
+        in.resetSyntax();
+	in.whitespaceChars ( 0x00, ' ' );
+	in.eolIsSignificant ( false );
+	in.parseNumbers();
+	in.nextToken();
+	switch ( in.ttype )
+	{
+	case StreamTokenizer.TT_EOF:
+	    throw new EOFException
+		( "nextNumber encountered EOF" );
+	case StreamTokenizer.TT_NUMBER:
+	    return in.nval;
+	}
+	throw new IOException
+	    ( "nextNumber found "
+	      + in.toString() );
+    }
+
+    // Ditto but insist the number be an int.
+    //
+    public static int nextInt() throws IOException
+    {
+	double v = nextDouble();
+	int i = (int) v;
+	if ( v != i )
+	    throw new IOException
+	        ( "nextInt found " + v );
+        return i;
+    }
+
+    // Ditto but insist the number be a long.
+    //
+    public static long nextLong() throws IOException
+    {
+	double v = nextDouble();
+	long i = (long) v;
+	if ( v != i )
+	    throw new IOException
+	        ( "nextInt found " + v );
+        return i;
+    }
+
+    // Read the next non-whitespace character, skipping
+    // lines.  IOException is thrown if there is no such
+    // character.  This is an EOFException if an EOF is
+    // encountered.
+    //
+    public static char nextChar() throws IOException
+    {
+        in.resetSyntax();
+	in.whitespaceChars ( 0x00, ' ' );
+	in.eolIsSignificant ( false );
+	in.nextToken();
+	if ( in.ttype == StreamTokenizer.TT_EOF )
+	    throw new EOFException
+		( "nextChar encountered EOF" );
+	return (char) in.ttype;
+    }
+
+    // Read the next string of non-whitespace charac-
+    // ters, skipping lines.  IOException is thrown if
+    // there is no such string.  This is an EOFException
+    // if an EOF is encountered.
+    //
+    public static String nextString() throws IOException
+    {
+        in.resetSyntax();
+	in.whitespaceChars ( 0x00, ' ' );
+	in.wordChars ( '!', 0xFF );
+	in.eolIsSignificant ( false );
+	in.nextToken();
+	switch ( in.ttype )
+	{
+	case StreamTokenizer.TT_EOF:
+	    throw new EOFException
+		( "nextString encountered EOF" );
+	case StreamTokenizer.TT_WORD:
+	    return in.sval;
+	}
+	throw new IOException
+	    ( "nextString found "
+	      + in.toString() );
+    }
+
+    // Execute System.out.print etc.  There functions
+    // allow you to `import javaio.*' and avoid
+    // 
+    //
+    public static void print ( String s )
+    {
+        System.out.print ( s );
+    }
+    public static void println ( String s )
+    {
+        System.out.println ( s );
+    }
+    public static void println()
+    {
+        System.out.println();
+    }
+    // Print right adjusted in field.
+    //
+    public static void printRight
+	    ( String s, int width )
+    {
+        for ( width = width - s.length();
+	      width > 0; -- width )
+	    System.out.print ( " " );
+	System.out.print ( s );
+    }
+    // Print left adjusted in field.
+    //
+    public static void printLeft ( String s, int width )
+    {
+	System.out.print ( s );
+        for ( width = width - s.length();
+	      width > 0; -- width )
+	    System.out.print ( " " );
+    }
+
+    // Set up number formatter.  Note that it is
+    // important in ACM programming contests to
+    // insist on an ENGLISH formatter.
+    //
+    // Also, do NOT put commas in the output.
+    //
+    static DecimalFormat formatter = (DecimalFormat)
+	NumberFormat.getInstance ( Locale.ENGLISH );
+
+    // Set the decimal number output pattern.  This has
+    // the form "###0.000" where if there are I #'s and
+    // F after-decimal 0's then there will be from
+    // 1 to I+1 integer digits and F fractional digits.
+    // 
+    public static void applyPattern ( String pattern )
+    {
+	formatter.applyPattern ( pattern );
+    }
+
+    // Print double using the set pattern.
+    //
+    public static void printDouble ( double v )
+    {
+        print ( formatter.format ( v ) );
+    }
+
+    // Ditto but right adjust.
+    //
+    public static void printDouble
+	    ( double v, int width )
+    {
+        printRight ( formatter.format ( v ), width );
+    }
+
 
     public static void main (String[] args)
 	    throws IOException {
 
-	// Set up the StreamTokenizer.
+	// Each test case has the format:
 	//
-	Reader reader
-	    = new BufferedReader
-		  ( new InputStreamReader
-		        ( System.in ) );
-	StreamTokenizer tokenizer
-	    = new StreamTokenizer ( reader );
+	//	<test-case-name-line>
+	//	<test-line>*
+	//	.
+	//
+	// where each <test-line> is free format of the
+	// form
+	//
+	//	<character> <string> <N> <number> ...
+	//
+	// and there are <N> numbers.
+	//
+	// The input is pretty printed.
 
-	// Set to read any string of non-whitespace
-	// characters as a word.
-	//
-	tokenizer.resetSyntax();
-	tokenizer.wordChars ( '!', '\u00FF' );
-	tokenizer.whitespaceChars ( '\u0000', ' ' );
-	//
-	// You must not set the same character to be
-	// both a word character and a whitespace
-	// character.
+	applyPattern ( "###0.00" );
 
-	// Set to read end of line as a token.
-	// If this function is not called, end of
-	// line is treated as a simple space character.
-	//
-	tokenizer.eolIsSignificant ( true );
-
-	// Read numbers as tokens.  If not called,
-	// numbers are not handled specially.
-	//
-	// WARNING: This makes isolated '.'s input as
-	// the the number 0, while `-'s may input as
-	// a separator.
-	//
-	tokenizer.parseNumbers();
-
-	// Parse certain characters as 1-character
-	// tokens.
-	//
-	tokenizer.ordinaryChar ( ',' );
-	tokenizer.ordinaryChar ( '(' );
-	tokenizer.ordinaryChar ( ')' );
-
-	// Set up number formatter.  Note that it is
-	// important in ACM programming contests to
-	// insist on an ENGLISH formatter.
-	//
-	// Also, do NOT put commas in the output.
-	//
-	DecimalFormat formatter = (DecimalFormat)
-	    NumberFormat.getInstance ( Locale.ENGLISH );
-	formatter.applyPattern ( "#0.00" );
-
-
-	// Process a paragraph.  Paragraphs are
-	// separated by blank lines.
-	//
-	int paragraph = 1;
-	boolean eof_seen = false;
-	while ( ! eof_seen )
+	for ( String test_case_name = nextLine();
+	      test_case_name != null;
+	      test_case_name = nextLine() )
 	{
-	    int numbers = 0;
-	    int words = 0;
-	    int separators = 0;
-	    int lines = 0;
+	    println ( test_case_name );
 
-	    boolean eop_seen = false;
-	    boolean line_is_blank = true;
-
-	    while ( ! eop_seen && ! eof_seen )
+	    while ( true )
 	    {
-	        tokenizer.nextToken();
-	        switch ( tokenizer.ttype )
+	        char c = nextChar();
+		if ( c == '.' )
 		{
-
-		case StreamTokenizer.TT_EOF:
-
-		    if ( line_is_blank )
-		    {
-			eof_seen = true;
-			break;
-		    } else
-		        throw new RuntimeException
-			    ( "EOF in bad place" );
-
-		case StreamTokenizer.TT_EOL:
-
-		    if ( ! line_is_blank )
-		        ++ lines;
-		    else if ( lines != 0 )
-		        eop_seen = true;
-		    line_is_blank = true;
+		    println ( c + nextLine() );
 		    break;
-
-		case StreamTokenizer.TT_NUMBER:
-
-		    System.out.print ( "NUMBER ");
-		    System.out.print ( tokenizer.nval );
-		    System.out.print ( " = ");
-		    System.out.print
-		        ( formatter.format
-			      ( tokenizer.nval ) );
-		    System.out.println();
-		    line_is_blank = false;
-		    ++ numbers;
-		    break;
-
-		case StreamTokenizer.TT_WORD:
-		    System.out.print ( "WORD ");
-		    System.out.print ( tokenizer.sval );
-		    System.out.println();
-		    line_is_blank = false;
-		    ++ words;
-		    break;
-
-		case '(':
-		case ')':
-		case ',':
-		case '-':
-		    System.out.print ( "SEPARATOR ");
-		    System.out.print
-		        ( (char) tokenizer.ttype );
-		    System.out.println();
-		    line_is_blank = false;
-		    ++ separators;
-		    break;
-
-		default:
-		    throw new RuntimeException
-			( "Bad token type "
-			  + tokenizer.ttype );
 		}
-	    }
-
-	    if ( lines > 0  )
-	    {
-		System.out.println
-		    ( "Paragraph " + paragraph + ":" );
-
-		System.out.println
-		    ( "    " + lines + " lines, "
-		             + words + " words, "
-			     + numbers + " numbers, "
-		             + separators
-			     + " separators." );
-
-		double m =
-		    ( (double) 100.0 )
-		    / ( words + numbers + separators );
-
-		System.out.println
-		    ( "    "
-		      + formatter.format
-		            ( m * words )
-		      + "% words, "
-		      + formatter.format
-		            ( m * numbers )
-		      + "% numbers, "
-		      + formatter.format
-		            ( m * separators )
-		      + "% separators." );
-
-		++ paragraph;
+		String s = nextString();
+		int N = nextInt();
+		println ( c + " " + s + " " + N + ":" );
+		for ( int i = 0; i < N; ++ i )
+		{
+		    if ( i % 5 == 0 && i != 0 )
+		         println ( "" );
+		    printDouble ( nextDouble(), 8 );
+		}
+		if ( N > 0 ) println ( "" );
+		nextLine();
 	    }
 	}
     }
