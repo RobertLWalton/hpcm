@@ -2,7 +2,7 @@
 //
 // File:     javaio.java
 // Author:   Bob Walton <walton@deas.harvard.edu>
-// Date:     Mon Oct 11 14:44:21 EDT 2010
+// Date:     Tue Oct 12 08:24:03 EDT 2010
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -11,14 +11,14 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: walton $
-//   $Date: 2010/10/11 23:49:58 $
+//   $Date: 2010/10/12 12:49:34 $
 //   $RCSfile: javaio.java,v $
-//   $Revision: 1.5 $
+//   $Revision: 1.6 $
 
 // This program is suitable for use as a template for
 // ACM programming contest submissions, and provides
 // input/output functions that are likely to be useful
-// in such contests.
+// for some problems in such contests.
 //
 // You may copy and modify this code without
 // any restriction.
@@ -97,12 +97,12 @@ public class javaio {
 	{
 	case StreamTokenizer.TT_EOF:
 	    throw new EOFException
-		( "nextNumber encountered EOF" );
+		( "nextDouble encountered EOF" );
 	case StreamTokenizer.TT_NUMBER:
 	    return in.nval;
 	}
 	throw new IOException
-	    ( "nextNumber found "
+	    ( "nextDouble found "
 	      + in.toString() );
     }
 
@@ -126,7 +126,7 @@ public class javaio {
 	long i = (long) v;
 	if ( v != i )
 	    throw new IOException
-	        ( "nextInt found " + v );
+	        ( "nextLong found " + v );
         return i;
     }
 
@@ -172,8 +172,8 @@ public class javaio {
 	      + in.toString() );
     }
 
-    // Execute System.out.print etc.  There functions
-    // allow you to `import javaio.*' and avoid
+    // Execute System.out.print etc.  These functions
+    // allow you to avoid typing `System.out.'.
     // 
     //
     public static void print ( String s )
@@ -212,22 +212,23 @@ public class javaio {
     // important in ACM programming contests to
     // insist on an ENGLISH formatter.
     //
-    // Also, do NOT put commas in the output.
-    //
     static DecimalFormat formatter = (DecimalFormat)
 	NumberFormat.getInstance ( Locale.ENGLISH );
 
     // Set the decimal number output pattern.  This has
-    // the form "###0.000" where if there are I #'s and
-    // F after-decimal 0's then there will be from
-    // 1 to I+1 integer digits and F fractional digits.
+    // the form "#0.000" and if there are F 0's after
+    // the decimal point, then numbers will have F
+    // decimal digits and at least one integer digit
+    // (which may be 0).
+    //
+    // Usually you should NOT put commas in the pattern.
     // 
     public static void applyPattern ( String pattern )
     {
 	formatter.applyPattern ( pattern );
     }
 
-    // Print double using the set pattern.
+    // Print double using the applied pattern.
     //
     public static void printDouble ( double v )
     {
@@ -249,19 +250,23 @@ public class javaio {
 	// Each test case has the format:
 	//
 	//	<test-case-name-line>
-	//	<test-line>*
+	//	<test-item>*
 	//	.
 	//
-	// where each <test-line> is free format of the
+	// where each <test-item> is free format of the
 	// form
 	//
 	//	<character> <string> <N> <number> ...
 	//
-	// and there are <N> numbers.
+	// on one or more lines, and there are <N>
+	// numbers.
 	//
-	// The input is pretty printed.
+	// The output is just the input pretty printed
+	// with 2 decimal places for each number.  The
+	// `#' seems to be unnecessary and to have no
+	// effect with OpenJDK java.
 
-	applyPattern ( "###0.00" );
+	applyPattern ( "#0.00" );
 
 	for ( String test_case_name = nextLine();
 	      test_case_name != null;
@@ -283,10 +288,10 @@ public class javaio {
 		for ( int i = 0; i < N; ++ i )
 		{
 		    if ( i % 5 == 0 && i != 0 )
-		         println ( "" );
-		    printDouble ( nextDouble(), 8 );
+		         println();
+		    printDouble ( nextDouble(), 10 );
 		}
-		if ( N > 0 ) println ( "" );
+		if ( N > 0 ) println();
 		nextLine();
 	    }
 	}
