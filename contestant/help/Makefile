@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Sep 17 15:30:55 EDT 2010
+# Date:		Wed Oct 13 09:14:49 EDT 2010
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2010/09/17 21:20:52 $
+#   $Date: 2010/10/13 13:34:23 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.30 $
+#   $Revision: 1.31 $
 
 # `make help.pdf' and `make demos.pdf' make printouts of
 # all the help and demos files respectively.  Note that
@@ -27,6 +27,12 @@
 # You can also make help.ps, help+.ps, and demos.ps,
 # which are just the .ps versions of the .pdf files.
 #
+# In addition to help.ps and demos.ps there are files
+# advanced_help.ps and advanced_demos.ps that have
+# information about more sophisticated algorithms.
+# To make these, just use `make advanced_help.ps',
+# etc.
+#
 # To make web help pages, execute `make web' and copy
 # the `web' directory to you web server, where it will
 # become a directory containing an `index.html' file.
@@ -38,8 +44,10 @@
 
 all:	emailsh modes STL_doc
 
-pdf:	help.pdf demos.pdf
-ps:	help.ps demos.ps
+pdf:	help.pdf demos.pdf \
+	advanced_help.pdf advanced_demos.pdf
+ps:	help.ps demos.ps \
+	advanced_help.ps advanced_demos.ps
 
 # Kill all implicit rules and make new rule:
 #
@@ -252,14 +260,17 @@ STL_doc:	private/STL_doc.tar.gz
 #
 web_do:
 
-web:	all help.pdf demos.pdf web_do
+web:	all help.pdf demos.pdf \
+	advanced_help.pdf advanced_demos.pdf web_do
 	rm -rf web.tar web
 	mkdir web
 	cp -rpL `ls | grep -v '^web$$' | \
 	              grep -v '^private$$' | \
 	              grep -v '^help.ps$$' | \
 	              grep -v '^help+.ps$$' | \
-	              grep -v '^demos.ps$$' ` \
+	              grep -v '^demos.ps$$' | \
+	              grep -v '^advanced_help.ps$$' | \
+	              grep -v '^advanced_demos.ps$$' ` \
 	   web
 	cp -rpL ../../problem_library/demos web/demos
 	rm -f `find web -name '*.rc' -print`
