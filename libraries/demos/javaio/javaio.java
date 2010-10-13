@@ -2,7 +2,7 @@
 //
 // File:     javaio.java
 // Author:   Bob Walton <walton@deas.harvard.edu>
-// Date:     Wed Oct 13 07:42:52 EDT 2010
+// Date:     Wed Oct 13 08:05:11 EDT 2010
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: walton $
-//   $Date: 2010/10/13 12:04:20 $
+//   $Date: 2010/10/13 12:05:08 $
 //   $RCSfile: javaio.java,v $
-//   $Revision: 1.7 $
+//   $Revision: 1.8 $
 
 // This program is suitable for use as a template for
 // ACM programming contest submissions, and provides
@@ -308,7 +308,7 @@ public class javaio {
 		// There is still a line feed left in
 		// the input for the <test-item> which
 		// must be flushed to be ready for the
-		// next item.
+		// next <test-item>.
 		//
 		nextLine();
 	    }
