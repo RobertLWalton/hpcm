@@ -1,13 +1,22 @@
-# Makefile for JAVA IO Demo
+# Makefile for the XXX Problem
 #
 # File:		Makefile
-# Date:		Sat May  6 01:27:00 EDT 2006
+# Date:		Sun Sep 12 02:02:56 EDT 2010
 #
 # See demonstration Makefile for documentation.
 #
-# The program for this problem is named:
-
+#   P		problem name
+#
+#   XTRA_INPUTS	extra input files that must be granted
+#		access
+#   XTRA_LIBS	extra libraries for C and C++ programs
+#   XTRA_LIMITS limits that override those given
+#               previously to hpcm_sandbox
+#   
 P = javaio
+XTRA_INPUTS =
+XTRA_LIBS =
+XTRA_LIMITS =
 
 .SUFFIXES:
 .SUFFIXES: .c .cc .java .lsp
@@ -16,11 +25,11 @@ default:	$P.out
 
 .c:
 	rm -f $* core core.[0-9]*
-	gcc -g -o $* $*.c -lm
+	gcc -g -o $* $*.c -lm ${XTRA_LIBS}
 
 .cc:
 	rm -f $* core core.[0-9]*
-	g++ -g -o $* $*.cc -lm
+	g++ -g -o $* $*.cc -lm ${XTRA_LIBS}
 
 .java:
 	rm -f $* *.class core core.[0-9]*
@@ -42,22 +51,23 @@ default:	$P.out
 
 $P.out:	$P $P.in
 	rm -f $P.out core core.[0-9]*
-	chmod a+x . $P
+	grant_access . $P ${XTRA_INPUTS}
 	hpcm_sandbox -cputime 60 \
 	             -datasize 4m \
 		     -stacksize 4m \
-		     -filesize 50k \
+		     -filesize 4m \
+		     ${XTRA_LIMITS} \
 		     -tee $P.out \
 		     $P \
 	    <$P.in
 
 $P.debug:	$P $P.in
 	rm -f $P.debug core core.[0-9]*
-	chmod a+x . $P
+	grant_access . $P ${XTRA_INPUTS}
 	hpcm_sandbox -cputime 60 \
 	             -datasize 4m \
 		     -stacksize 4m \
-		     -filesize 4m \
+		     ${XTRA_LIMITS} \
 		     -tee $P.debug \
 		     $P debug \
 	    <$P.in
@@ -82,7 +92,8 @@ clean:
 	      $P.fas $P.lib make_$P_*input
 
 #
-# Author:	walton@deas.harvard.edu
+# Derived From:	Makefile1
+# Author:	walton@seas.harvard.edu
 #
 # The authors have placed this file in the public
 # domain; they make no warranty and accept no liability
@@ -90,7 +101,7 @@ clean:
 #
 # RCS Info (may not be true date or author):
 #
-#   $Author: hc3 $
-#   $Date: 2006/05/06 05:28:40 $
+#   $Author: walton $
+#   $Date: 2010/10/13 12:31:46 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.3 $
+#   $Revision: 1.4 $
