@@ -2,7 +2,7 @@
 //
 // File:     javaio.java
 // Author:   Bob Walton <walton@deas.harvard.edu>
-// Date:     Tue Oct 12 08:24:03 EDT 2010
+// Date:     Wed Oct 13 07:42:52 EDT 2010
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: walton $
-//   $Date: 2010/10/12 12:49:34 $
+//   $Date: 2010/10/13 12:04:20 $
 //   $RCSfile: javaio.java,v $
-//   $Revision: 1.6 $
+//   $Revision: 1.7 $
 
 // This program is suitable for use as a template for
 // ACM programming contest submissions, and provides
@@ -22,6 +22,11 @@
 //
 // You may copy and modify this code without
 // any restriction.
+//
+// This code is not efficient, in that it excessively
+// resets StreamTokenizer parameters, but for ACM
+// contest programs, which do not have that much input,
+// this is acceptable.
 //
 // This program is new as of 10/2010, and may well
 // contain bugs.  No warranty is made: use at your own
@@ -53,7 +58,9 @@ public class javaio {
         in.resetSyntax();
 	in.wordChars ( 0x00, 0xFF );
 	in.whitespaceChars ( '\n', '\n' );
+	in.whitespaceChars ( '\r', '\r' );
 	in.eolIsSignificant ( true );
+
 	in.nextToken();
 	switch ( in.ttype )
 	{
@@ -64,6 +71,7 @@ public class javaio {
 	case StreamTokenizer.TT_WORD:
 	    {
 		String result = in.sval;
+
 		in.nextToken();
 		switch ( in.ttype )
 		{
@@ -92,6 +100,7 @@ public class javaio {
 	in.whitespaceChars ( 0x00, ' ' );
 	in.eolIsSignificant ( false );
 	in.parseNumbers();
+
 	in.nextToken();
 	switch ( in.ttype )
 	{
@@ -102,8 +111,7 @@ public class javaio {
 	    return in.nval;
 	}
 	throw new IOException
-	    ( "nextDouble found "
-	      + in.toString() );
+	    ( "nextDouble found " + in.toString() );
     }
 
     // Ditto but insist the number be an int.
@@ -140,10 +148,14 @@ public class javaio {
         in.resetSyntax();
 	in.whitespaceChars ( 0x00, ' ' );
 	in.eolIsSignificant ( false );
+
 	in.nextToken();
 	if ( in.ttype == StreamTokenizer.TT_EOF )
 	    throw new EOFException
 		( "nextChar encountered EOF" );
+	else if ( in.ttype < 0 )
+	    throw new IOException
+		( "nextChar found " + in.toString() );
 	return (char) in.ttype;
     }
 
@@ -158,6 +170,7 @@ public class javaio {
 	in.whitespaceChars ( 0x00, ' ' );
 	in.wordChars ( '!', 0xFF );
 	in.eolIsSignificant ( false );
+
 	in.nextToken();
 	switch ( in.ttype )
 	{
@@ -168,8 +181,7 @@ public class javaio {
 	    return in.sval;
 	}
 	throw new IOException
-	    ( "nextString found "
-	      + in.toString() );
+	    ( "nextString found " + in.toString() );
     }
 
     // Execute System.out.print etc.  These functions
@@ -188,7 +200,7 @@ public class javaio {
     {
         System.out.println();
     }
-    // Print right adjusted in field.
+    // Print right adjusted in field of given width.
     //
     public static void printRight
 	    ( String s, int width )
@@ -198,7 +210,7 @@ public class javaio {
 	    System.out.print ( " " );
 	System.out.print ( s );
     }
-    // Print left adjusted in field.
+    // Print left adjusted in field of given width.
     //
     public static void printLeft ( String s, int width )
     {
@@ -235,7 +247,7 @@ public class javaio {
         print ( formatter.format ( v ) );
     }
 
-    // Ditto but right adjust.
+    // Ditto but right adjust in field of given width.
     //
     public static void printDouble
 	    ( double v, int width )
@@ -264,7 +276,7 @@ public class javaio {
 	// The output is just the input pretty printed
 	// with 2 decimal places for each number.  The
 	// `#' seems to be unnecessary and to have no
-	// effect with OpenJDK java.
+	// effect with OpenJDK java in this context.
 
 	applyPattern ( "#0.00" );
 
@@ -279,7 +291,7 @@ public class javaio {
 	        char c = nextChar();
 		if ( c == '.' )
 		{
-		    println ( c + nextLine() );
+		    println ( "." );
 		    break;
 		}
 		String s = nextString();
@@ -292,6 +304,12 @@ public class javaio {
 		    printDouble ( nextDouble(), 10 );
 		}
 		if ( N > 0 ) println();
+
+		// There is still a line feed left in
+		// the input for the <test-item> which
+		// must be flushed to be ready for the
+		// next item.
+		//
 		nextLine();
 	    }
 	}
