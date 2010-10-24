@@ -2,7 +2,7 @@
 //
 // File:	intersections.cc
 // Authors:	Bob Walton (walton@deas.harvard.edu)
-// Date:	Sun Oct 24 11:33:21 EDT 2010
+// Date:	Sun Oct 24 16:22:56 EDT 2010
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: walton $
-//   $Date: 2010/10/24 20:11:04 $
+//   $Date: 2010/10/24 20:39:07 $
 //   $RCSfile: intersections.cc,v $
-//   $Revision: 1.4 $
+//   $Revision: 1.5 $
 
 #include <iostream>
 #include <iomanip>
@@ -67,13 +67,13 @@ bool debug = false;
 //	     the other segment viewed as a directed
 //	     finite line
 //   or
-//	both endpoints of one segment are foreward of
+//	both endpoints of one segment are forward of
 //	     the other segment viewed as a directed
 //	     finite line
 //
 // The directed infinite line that extends a directed
-// line segment divides 2d space into a left side, a
-// right side, and an on-line line.
+// line segment divides 2d space into two halfplanes,
+// the left side, and the right-side.
 //
 // Given a finite line segment AB whose direction is A
 // to B, consider the two lines perpendicular to AB
