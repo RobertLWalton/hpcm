@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Mar  7 14:07:09 EST 2011
+# Date:		Mon Mar  7 14:34:24 EST 2011
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2011/03/07 19:12:12 $
+#   $Date: 2011/03/07 19:34:57 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.7 $
+#   $Revision: 1.8 $
 
 CVSROOT=walton@login.seas.harvard.edu:/group/hc3/cvsroot
 
@@ -30,7 +30,8 @@ hpcm_2%.tgz:	IMPORTANT_README_2%
 	(cd tmp/hpcm/secure/src; make clean )
 	(cd tmp; rm -rf hpcm/problem_library/legal )
 	(cd tmp; rm -rf hpcm/binders )
-	(cd tmp; find hpcm -name CVS -exec rm -rf {} ';')
+	(cd tmp; find hpcm -ignore_readdir_race \
+	              -name CVS -exec rm -rf {} ';')
 	(cd tmp; tar zcf ../$@ hpcm )
 
 tmp/hpcm:
