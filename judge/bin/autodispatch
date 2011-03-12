@@ -5,7 +5,7 @@
 #
 # File:		autodispatch
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Jan 13 23:03:54 EST 2009
+# Date:		Sat Mar 12 01:54:53 EST 2011
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2009/01/14 05:24:53 $
+#   $Date: 2011/03/12 07:38:47 $
 #   $RCSfile: autodispatch,v $
-#   $Revision: 1.25 $
+#   $Revision: 1.26 $
 #
 # The next lines start tclsh \
 trap "echo autodispatch: Terminated by Signal" \
@@ -108,12 +108,11 @@ autodispatch \[directory\] \[-force\]
 
     If no program is called and if the reply mode is
     `auto', this program will compose a reply.  If the
-    `reply_manager' variable is NOT \"\", the reply is
-    CC'ed to the value of this variable, and the reply
-    says the person at this email address may respond.
-    Otherwise, if the `reply_manager' variable is \"\",
-    the reply says that no-one will look at the mes-
-    sage.
+    submitter is mapped by `response_manager_map' to any
+    CC addresses, the reply is CC'ed to these addresses,
+    and the reply says that these addresses may respond.
+    Otherwise, the reply says that no-one will look at
+    the message.
 
     If no program is called and if the reply mode is NOT
     `auto', this program will NOT compose a reply, but
@@ -229,7 +228,8 @@ if {  ! [catch { set s [lindex $message_subject 0] }] \
 } elseif { $reply_mode == "auto" } {
     putlog "Sending reply as no program is available to\
             call."
-    if { $reply_manager != "" } {
+    set response_cc [compute_response_cc]
+    if { $response_cc != "" } {
 	reply -cc \
 	      { LINE "This message cannot be properly\
 	              answered automatically," } \
@@ -238,7 +238,7 @@ if {  ! [catch { set s [lindex $message_subject 0] }] \
 	      BLANK \
 	      { LINE "Please fix the subject field or\
 	              wait for" } \
-	      "LINE {a response from $reply_manager}" \
+	      "LINE {a response from $response_cc}" \
 	      BLANK \
 	      {BAR "this message replies to:"} \
 	      RECEIVED-FULL-HEADER \

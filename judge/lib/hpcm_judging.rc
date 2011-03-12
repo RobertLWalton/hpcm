@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Oct 13 08:55:49 EDT 2010
+# Date:		Sat Mar 12 01:14:49 EST 2011
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2010/10/13 12:55:37 $
+#   $Date: 2011/03/12 07:38:47 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.246 $
+#   $Revision: 1.247 $
 
 # Table of Contents:
 #
@@ -1483,10 +1483,23 @@ set output_limit_regexp {file size limit exceeded}
 #
 set response_mode ""
 
-# Email address to which the CC response command Cc's
-# responses if it is not "".
+# Email addresses to which the CC response command cc's
+# responses if it is not "".  Other programs that do not
+# use response commands also cc any responses to the
+# submitter to these addresses.
 #
-set response_manager ""
+# This is a list of the format
+#
+#   { { regexp1 address1 } { regexp2 address2 } ... }
+#
+# such that email sent from a directory named
+# `date-<<submitter>>-submission' will be cc'ed to
+# addressI if `submitter' matches regexpI.  More than one
+# regexp may match.  AddressI may contain spaces if it
+# is quoted, and may contain multiple email addresses
+# separated by commas.
+#
+set response_manager_map ""
 
 # List of global variables that can be referenced in
 # the if-expressions of the response instructions.
@@ -1841,8 +1854,8 @@ set response_instructions {
 #	  commands is executed.
 #
 #     CC
-#	  Cc the reply to the `response_manager' if that
-#	  global variable does not have the value "".
+#	  Cc the reply according to the `response_
+#	  manager_map' value.
 #
 #     EDIT
 #	  This command indicates that the reply composed
@@ -2097,24 +2110,17 @@ proc submitter_compress { submitter } {
 #	auto		Automatic reply only; dispatch-
 #			mail automatically sends a
 #			reply, if autoinfo or autojudge
-#			are not invoked.  The reply_
-#			manager is cc'ed if that is not
-#			""; otherwise the reply indi-
-#			cates there will never be a
-#			proper reply.
+#			are not invoked.  response_
+#			manager_map is used to generate
+#			cc addresses; if there are none,
+#			the reply indicates there will
+#			never be a proper reply.
 #	auto+manual	Automatic reply if a good auto-
 #			matic reply is possible, as with
 #			certain errors, and manual reply
 #			otherwise.
 #
 set reply_mode auto
-
-# Reply Manager:
-#
-# Email address to cc replies to if in `auto' reply_mode
-# and no clearly correct automatic reply is possible.
-#
-set reply_manager ""
 
 # Use GMT for dates in file and directory names.  Other-
 # wise the local time zone is used.  Must be `yes' or

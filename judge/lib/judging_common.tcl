@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Oct  4 22:09:16 EDT 2010
+# Date:		Sat Mar 12 01:18:42 EST 2011
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2010/10/05 02:24:03 $
+#   $Date: 2011/03/12 07:38:48 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.155 $
+#   $Revision: 1.156 $
 #
 
 # Table of Contents
@@ -1386,6 +1386,38 @@ proc compute_message_reply_to {} {
     }
 }
 
+# Using the current directory name, compute the list of
+# addresses to cc a message to.  Uses the global
+# variable `response_manager_map'.  See hpcm_judging.rc
+# for details.  Returns "" if no addresses to cc to,
+# or if current directory name does not have format
+# date-<<submitter>>-submission.
+#
+proc compute_response_cc {} {
+
+    global response_manager_map
+
+    set dir [file tail [pwd]]
+    if { ! [regexp {^[^<>]*-<<(.*)>>-submission$} \
+    		   $dir forget submitter] } {
+    	return "";
+    }
+
+    set addresses ""
+    foreach pair $response_manager_map {
+        set regexp [lindex $pair 0]
+        set address [lindex $pair 1]
+	if { [regexp $regexp $submitter] } {
+	    lappend addresses $address
+	}
+    }
+
+    return [join $addresses ", "]
+}
+
+
+
+
 # Using information from the last call to read_header,
 # return the date that best timestamps the message.
 # This is the message `X-HPCM-date' field if that is not
@@ -1580,9 +1612,9 @@ proc read_sendmail_rc { } {
 #
 # The reply header is automatically produced using the
 # following options.  The -cc option causes the reply to
-# be cc'ed to the `response_manager' if that is not "".
-# The -error option changes the reply subject from
-# `RE:...' to `Errors In:...'.
+# be cc'ed via the `response_manager_map'.  The -error
+# option changes the reply subject from `RE:...' to
+# `Errors In:...'.
 #
 # Non-option arguments are commands chosen from the
 # following list:
@@ -1651,8 +1683,7 @@ proc compose_reply { args } {
            message_From_line message_to \
            message_from message_date \
 	   message_reply_to message_subject \
-	   message_x_hpcm_test_subject \
-	   response_manager
+	   message_x_hpcm_test_subject
 
     # Remove options from the arguments and remember.
     #
@@ -1685,8 +1716,11 @@ proc compose_reply { args } {
     # Write header.
     #
     puts $reply_ch   "To:[compute_message_reply_to]"
-    if { $cc_option && $response_manager != "" } {
-	puts $reply_ch "Cc: $response_manager"
+    if { $cc_option } {
+        set response_cc [compute_response_cc]
+	if { $response_cc != "" } {
+	    puts $reply_ch "Cc: $response_cc"
+	}
     }
     puts $reply_ch "Reply-To:$message_to"
     if { $errors_option } {
