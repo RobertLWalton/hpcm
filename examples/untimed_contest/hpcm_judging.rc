@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Sep 21 07:42:44 EDT 2010
+# Date:		Sat Mar 12 02:58:44 EST 2011
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2010/09/21 11:43:01 $
+#   $Date: 2011/03/12 08:09:25 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.68 $
+#   $Revision: 1.69 $
 
 # Table of Contents
 #
@@ -158,6 +158,18 @@ set manager_address "someone@somecomputer"
 # just reporting scores or getting problems.
 #
 set cc_manager no
+
+# Comment this out replacing regexp and address to add
+# an email address to which to CC responses to a sub-
+# mission by a submitter matching regexp.  Quote regexp
+# and address if they contain spaces.  More than one
+# regexp/address pair can be added to response_manager_
+# map in this way.  The `address' can contain multiple
+# comma separated email addresses.
+#
+# This allows teams to have their own response managers.
+#
+# lappend response_manager_map { regexp address }
 
 # The following are the beginning and ending of the
 # initial version of the ./help/this_contest file.  Each
@@ -641,12 +653,10 @@ set scoreboard_instructions {
 set scoring_mode auto
 set reply_mode auto
 set log_mode auto
-set reply_manager $manager_address
 set log_manager $manager_address
-if { $cc_manager } {
-    set response_manager $reply_manager
-} else {
-    set response_manager ""
+if { $manager_address != "" && $cc_manager } {
+    lappend response_manager_map \
+	    [list ".*" $manager_address]
 }
 
 # Compute response_list equal to the SORTED subset of
