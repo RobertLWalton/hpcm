@@ -7,7 +7,7 @@
 #
 # File:		makeweb
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Jan 13 23:17:34 EST 2009
+# Date:		Tue Mar 22 04:00:33 EDT 2011
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -16,9 +16,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2009/01/14 05:24:54 $
+#   $Date: 2011/03/22 08:02:45 $
 #   $RCSfile: makeweb,v $
-#   $Revision: 1.23 $
+#   $Revision: 1.24 $
 #
 # The next lines start tclsh \
 trap "echo makeweb: Terminated by Signal" \
@@ -74,13 +74,6 @@ if { [regexp {^-doc} [lindex $argv 0]] } {
     exit 1
 }
 
-# Set default web_directory.
-#
-if {    ! [info exists web_directory] \
-     || $web_directory == "" } {
-    set web_directory $judging_directory/web
-}
-
 # Process arguments.
 #
 set LB "{"
@@ -109,6 +102,23 @@ foreach arg $argv {
     }
 }
 
+# Exit with message if web_title does not exist or
+# is "".
+#
+if {    ! [info exists web_title] \
+     || $web_title == "" } {
+    puts "Web page not made\
+          (web_title does not exist or is \"\")."
+    exit 0
+}
+
+# Set default web_directory.
+#
+if {    ! [info exists web_directory] \
+     || $web_directory == "" } {
+    set web_directory $judging_directory/web
+}
+
 # Abbreviations to shorten lines.
 #
 set j_d $judging_directory
@@ -119,12 +129,6 @@ set w_d $web_directory
 #
 if { [file exists $w_d] } {
     error "$w_d already exists"
-}
-
-# Complain if no contest title.
-#
-if { $web_title == "" } {
-    error "web_title is \"\""
 }
 
 # Find problems and help directories and check
