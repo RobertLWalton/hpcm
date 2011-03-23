@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2011/03/12 11:30:19 $
+#   $Date: 2011/03/23 04:22:23 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.70 $
+#   $Revision: 1.71 $
 
 # Table of Contents
 #
@@ -65,7 +65,8 @@ array set submitter_compress_map {}
 #	email+local	Both the above.
 #	local+email
 #
-set account_type email
+set account_type local+email
+# set account_type email
 # set account_type local
 
 # If local accounts are provided, the following is the
@@ -280,37 +281,69 @@ set ssh_enable yes
 # Web Page Parameters
 # --- ---- ----------
 
-# URL of contest web page.
+# URL of contest web page.  Set to "" if there is no
+# contest web page (but there can still be web score-
+# board and/or help pages).  The contest web page,
+# if it exists, is made by `makeweb', may contain
+# problem descriptions, and references the scoreboard
+# and help pages if these exist.  Details of contest
+# web page construction follow.
+#
+# Note that web_page_URL is only used in documentation
+# and need NOT contain `http://'.
 #
 set web_page_URL "www.somewhere.edu/~xxx/yyy"
 
-# The following are passed to `makeweb' to make the web
-# page.  Leave as "" parameters you do not want to use
-# (e.g., if web_solutions_password is "" no solutions
-# web page will be made).
+# URL's of the help and scoreboard files if they are
+# on the web, or "" if they are not.
 #
-# The web_manager_address will be listed as a contact
-# on the web page.  The web_solutions_password PPP will
-# be used to name a subdirectory `private/PPP' of the
-# web page directory that will hold the solutions.  No
-# link will be made to this directory, and the `private'
-# subdirectory will be unreadable to the world, so PPP
-# will act as a password.  The web_help_URL is the URL
-# of the help page (see hpcm/contestant/help Makefile)
-# relative to the contest web page.  The web_scoreboard_
-# URL is the URL of the scoreboard relative to the web
-# page; usually this is posted by using scoreboard_
-# commands (see below).  Problems will be put on the
-# web page if "web" is in `description_type'.
+# If there is a contest web page (see above), then
+# these may be relative to that page, or they may be
+# absolute (e.g., begin with `http://').  If there is
+# no contest web page, these are only used in documen-
+# tation, and should be absolute but need not begin
+# with `http://' (e.g., they may begin with `www.').
 #
-set web_manager_address $manager_address
-set web_solutions_password ""
+# If a scoreboard is being put on the web, it is usually
+# posted by using scoreboard_commands (see below).
+#
 set web_help_URL "../help"
 set web_scoreboard_URL "scoreboard"
 
-# You may want to set the following.  If left "", the
-# page headers are automatically constructed from the
-# contest_name, and the prefixes and postfix are empty.
+# The following are passed to `makeweb' to make the con-
+# test web page, if it exists.  Leave as "" parameters
+# you do not want to use (e.g., if web_solutions_pass-
+# word is "" no solutions web page will be made).
+#
+# The web_manager_address will be listed as a contact
+# on the the contest web page, and also given as a con-
+# tact for web scoreboard and help file pages.
+#
+# The web_solutions_password PPP will be used to name a
+# subdirectory `private/PPP' of the web page directory
+# that will hold the solutions.  No link will be made to
+# this directory, and the `private' subdirectory will be
+# unreadable to the world, so PPP will act as a pass-
+# word.
+#
+# web_help_URL and web_scoreboard_URL are also passed to
+# `makeweb' and used to make references from the contest
+# web page to the web help files and scoreboard if these
+# exist (see above).  These may be URL's relative to the
+# contest web page, or absolute URL's.
+#
+# Problems will be put on the web page if "web" is in
+# `description_type'.
+#
+set web_manager_address $manager_address
+set web_solutions_password ""
+
+# If there is a contest web page, you may want to set
+# the following.
+#
+# If the headers are left "", the page headers are auto-
+# matically constructed from the contest_name.
+#
 # The prefixes come just after the page headers and
 # the postfix comes after everything but the web page
 # manager.  There are two pages involved: the contest
@@ -664,6 +697,26 @@ if { $manager_address != "" && $cc_manager } {
 	    [list ".*" $manager_address]
 }
 
+# Computed web page parameters.
+#
+if { $web_page_URL == "" } {
+    set web_title ""
+} else {
+    set web_title $contest_name
+}
+if { [regexp web $description_type] } {
+    set web_problems yes
+
+    if { $web_page_URL == "" } {
+        error "description_type ($description_type)\
+	       contains `web' but web_page_URL is\
+	       \"\"."
+    }
+
+} else {
+    set web_problems no
+}
+
 # Compute response_list equal to the SORTED subset of
 # {in inout solution} in response_mode, in order to
 # compute this_contest.
@@ -707,7 +760,8 @@ set get_descriptions_only \
     [expr {      [lcontain $description_list get] \
             && ! [lcontain $description_list web] }]
 
-# Compute feedback scoring data.
+# Compute feedback scoring data, in order to compute
+# this_contest.
 #
 set sqf $scoreboard_qualifier_factors
 set in_percent [expr 100 - 100 * [lindex $sqf 0]]
@@ -719,14 +773,65 @@ set ic_percent [format {%.0f} $ic_percent]
 
 # Compute this_contest.
 #
-set this_contest "$this_contest_prefix
-The important help and demonstration problem files
-are available at
+set this_contest "$this_contest_prefix[
+#
+# begin web/no-web page section.
+#
+][include_if { $web_page_URL != "" } "[
+#
+# There is a web page
+#
+]
+This contest has a web page at
 
     $web_page_URL
-[include_if { [lcontain $description_list web] } "
-Problem descriptions are also on this web page.
-"][include_if { [lcontain $account_list email] } "
+
+that includes:
+
+    this contest description[
+include_if { $web_help_URL != "" } "
+    help and demonstration files"][
+include_if { [lcontain $description_list web] } "
+    problem descriptions"][
+include_if { $web_scoreboard_URL != "" } "
+    a scoreboard"]
+"][include_if { $web_page_URL == "" } "[
+#
+# There is no web page
+#
+][include_if { $web_help_URL != "" } "
+Help and demonstration files are available on the web at
+
+    $web_help_URL
+"][include_if { $web_scoreboard_URL != "" } "
+A scoreboard is available on the web at
+
+    $web_scoreboard_URL
+[include_if { $web_help_URL != "" } "
+See the `scoreboard' help file for details about
+interpreting the scoreboard.
+"]
+If you appear on the scoreboard, and want to change your
+`scoreboard name', email
+
+    $web_manager_address
+
+[include_if { $account_list == "email local" } "
+who can map email addresses and account names to
+scoreboard names.
+"][include_if { $account_list == "email" } "
+who can map email addresses to scoreboard names.
+"][include_if { $account_list == "local" } "
+who can map account names to scoreboard names.
+"]"][
+#
+# End of web/no-web page section.
+#
+]"][include_if { [lcontain $account_list email] } "[
+#
+# Begin email section
+#
+]
 You may use your own private accounts to solve problems
 and submit solutions via email.  To send submissions and
 requests to the autojudge, send email
@@ -750,9 +855,12 @@ demos web pages, rename it `count.c', and submit it with
 
 	Subject: submit count.c
 	
-Other solutions to demonstration problems are on the web
-pages and can be submitted.
-[include_if { [llength $response_list] > 1 } "
+Other solutions to demonstration problems are available
+and can be submitted.
+[
+# Begin email alternative submissions section
+#
+][include_if { [llength $response_list] > 1 } "
 You can also use alternative submission emails with sub-
 jects of any one of the forms:
 "][include_if { [llength $response_list] == 1 } "
@@ -781,24 +889,37 @@ subjects of any one of the forms:
     Subject: submit pppp.ext inout"][
    include_if { ! [lcontain $response_list solution] } "
     Subject: submit pppp.ext solution"][
-   include_if { [llength $response_list] == 0 } "
-"]
-The scoreboard is on the web page.  See the `scoreboard'
-help file for details about interpreting the scoreboard.
-If you appear on the scoreboard, and want to change your
-`scoreboard name', email the web page manager, who can
-map email addresses to scoreboard names.
-
+   include_if { [llength $response_list] < 3 } "
+"][
+#
+# end email alternative submissions section
+#
+]
 See the `email_solving' help file for more details about
 solving problems using your own personal account.
-"][include_if { $account_list == "email local" } "
+[
+#
+# end email section
+#
+]"][include_if { [lcontain $account_list local] } "[
+#
+# Begin local accounts section
+#
+][include_if { [lcontain $account_list email] } "
 Alternatively you may get a contest account by applying
 to
-"][include_if { $account_list == "local" } "
+"][include_if { ! [lcontain $account_list email] } "
 You may get a contest account by applying to
-"][include_if { [lcontain $account_list local] } "
+"]
     $local_account_manager
 $local_account_conditions
+After logging into your account, the `TOPIC' help file
+can be seen by executing
+
+	help TOPIC
+
+Execute `help index' to see an index of all help files.
+
 Once you have an account, you can get all the demonstra-
 tion and contest problems into that account by\
 	executing[
@@ -815,7 +936,11 @@ a `~/PRINTER' file in this account: execute `help print'
 for details.  You can use the `scoreboard' command in
 this account to see the scoreboard: execute `help
 scores' and `help scoreboard' for details.
-[include_if { [llength $response_list] > 1 } "
+[
+#
+# begin local accounts alternative submission section
+#
+][include_if { [llength $response_list] > 1 } "
 In this account you can also use alternative submission
 commands:
 "][include_if { [llength $response_list] == 1 } "
@@ -843,10 +968,14 @@ sion commands:
    include_if { ! [lcontain $response_list solution] } "
     make solution-submit"][
    include_if { [llength $response_list] < 3 } "
-"]
+"][
+#
+# end local accounts alternative submission section
+#
+]
 Read the `solving' help file for more details on how to
 solve and submit a problem using this account.
-"][include_if { $javaok && $stlok } "
+[include_if { $javaok && $stlok } "
 In this account the `javahelp' and `stlhelp' commands
 give access to on-line Java and C++ STL documentation:
 see `help java' and `help c++'.
@@ -856,7 +985,15 @@ on-line Java documentation: see `help java'.
 "][include_if { ! $javaok && $stlok } "
 In this account the `stlhelp' command gives access to
 on-line C++ STL documentation: see `help c++'.
-"][include_if { $scoring_type == "unscored" } "
+"][
+#
+# end local accounts section
+#
+]"][
+#
+# begin scoring remarks section
+#
+][include_if { $scoring_type == "unscored" } "
 The scoreboard contains the date of each correct sub-
 mission.  Contestants appear alphabetically on the
 scoreboard, regardless of the number of problems they
@@ -888,27 +1025,28 @@ Penalties are applied only to incorrect submissions for
 problems you eventually submit correctly.  See the
 `scoreboard' help file, `Feedback Contests', for de-
 tails.
-"]$this_contest_postfix"
-
-# Computed web page parameters.
+"][
 #
-if { $web_page_URL == "" } {
-    error "web_page_URL must be non-empty"
-} elseif { [lcontain $account_type email] \
-           && $web_help_URL == "" } {
-    error "web_help_URL is empty for\
-           email contest"
-} elseif { [lcontain $account_type email] \
-           && $web_scoreboard_URL == "" } {
-    error "web_scoreboard_URL is empty for\
-           email contest"
-}
-set web_title $contest_name
-if { [regexp web $description_type] } {
-    set web_problems yes
-} else {
-    set web_problems no
-}
+# end scoring remarks section
+#
+][include_if { $web_scoreboard_URL == "" } "[
+#
+# Scoreboard name change section if no web scoreboard
+#
+]
+If you appear on the scoreboard, and want to change your
+`scoreboard name', email
+
+    $web_manager_address
+
+[include_if { $account_list == "email local" } "
+who can map email addresses and account names to
+scoreboard names.
+"][include_if { $account_list == "email" } "
+who can map email addresses to scoreboard names.
+"][include_if { $account_list == "local" } "
+who can map account names to scoreboard names.
+"]"]$this_contest_postfix"
 
 # Parameter Overrides
 # --------- ---------
