@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Mar 23 03:37:57 EDT 2011
+# Date:		Fri Mar 25 03:55:51 EDT 2011
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2011/03/23 07:40:34 $
+#   $Date: 2011/03/25 16:11:52 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.73 $
+#   $Revision: 1.74 $
 
 # Table of Contents
 #
@@ -121,6 +121,8 @@ set scoring_type feedback
 #	paper+web
 #	web+get, etc.
 #
+# set description_type get
+# set description_type get+web
 set description_type web
 
 # Set to allow different types of submit:
@@ -136,8 +138,8 @@ set description_type web
 #	in+inout+solution
 #	etc.
 #
-set response_mode in+inout+solution
 # set response_mode solution
+set response_mode in+inout+solution
 
 # Autojudge's email address, or "" if this is to be
 # automatically determined.
@@ -285,16 +287,17 @@ set ssh_enable yes
 # contest web page (but there can still be web score-
 # board and/or help pages).  The contest web page,
 # if it exists, is made by `makeweb', may contain
-# problem descriptions, and references the scoreboard
-# and help pages if these exist.  Details of contest
-# web page construction follow.
+# problem descriptions, and will contain references to
+# scoreboard and help pages if these exist.  Details of
+# the contest web page construction follow.
 #
 # Note that web_page_URL is only used in documentation
 # and need NOT contain `http://'.
 #
+# set web_page_URL ""
 set web_page_URL "www.somewhere.edu/~xxx/yyy"
 
-# URL's of the help and scoreboard files if they are
+# URL's of the help page and scoreboard file if they are
 # on the web, or "" if they are not.
 #
 # If there is a contest web page (see above), then
@@ -304,10 +307,15 @@ set web_page_URL "www.somewhere.edu/~xxx/yyy"
 # tation, and should be absolute but need not begin
 # with `http://' (e.g., they may begin with `www.').
 #
+# If email submissions are allowed, there must be a
+# help (and demos) web page; i.e., web_help_URL must
+# NOT be "".
+#
 # If a scoreboard is being put on the web, it is usually
 # posted by using scoreboard_commands (see below).
 #
-set web_help_URL "../help"
+set web_help_URL "http://www.seas.harvard.edu/hc3/help"
+# set web_help_URL ""
 # set web_scoreboard_URL "scoreboard"
 set web_scoreboard_URL ""
 
@@ -371,15 +379,16 @@ set web_solutions_prefix ""
 #	    ./secure/bin/NAME after it is created
 #	    (this will be mentioned in a TODO).
 #
-#	{ NAME ... }
-#	    Pipe ./scoreboard.web to a command
-#	    created by appending { NAME ... } to the
-#	    judging_commands global variable: see that
-#	    variable in hpcm/judge/lib/hpcm_judging.rc
-#	    for details.  In particular, emailing the
-#	    scoreboard to some address is supported,
-#	    and for emailing REMOTE-COMMAND defaults
-#	    as for ssh.
+#	{ NAME sh COMMAND }
+#	    Pipe ./scoreboard.web to COMMAND executed
+#	    by /bin/sh.
+#
+#	{ NAME email ... }
+#	    See contest_commands in hpcm/judge/lib/
+#	    hpcm_judging.rc.
+#
+# These items are appended to the judging_commands global
+# variable: see hpcm/judge/lib/hpcm_judging.rc.
 #
 # NAME is the name of a command that will be created in
 # ./secure/bin to invoke the proper pipe.  It may not
@@ -718,6 +727,12 @@ if { [regexp web $description_type] } {
     set web_problems no
 }
 
+if {    $web_help_URL == "" \
+     && [regexp email $account_type] } {
+    error "account type ($account_type) contains\
+           `email' but web_help_URL is \"\"."
+}
+
 # Compute response_list equal to the SORTED subset of
 # {in inout solution} in response_mode, in order to
 # compute this_contest.
@@ -839,10 +854,17 @@ requests to the autojudge, send email
 
 	To: $autojudge_address
 [include_if { $get_descriptions_only } "
-To get problem descriptions, send an email whose
+To get ALL problem descriptions, send an email whose
 `Subject:' field is
 
 	Subject: get problems
+
+and whose message body is empty.  To get just the
+description for a problem named pppp, use
+
+	Subject: get problems/pppp
+
+as the `Subject:' field instead.
 "]
 To submit a problem solution file named pppp.ext, send
 an email whose `Subject:' field is
@@ -945,8 +967,8 @@ scores' and `help scoreboard' for details.
 In this account you can also use alternative submission
 commands:
 "][include_if { [llength $response_list] == 1 } "
-In this account you can also use alternative submission
-command:
+In this account you can also use the alternative
+submission command:
 "][include_if { [lcontain $response_list in] } "
     make in-submit"][
    include_if { [lcontain $response_list inout] } "
@@ -1030,6 +1052,7 @@ tails.
 "][include_if { $web_scoreboard_URL == "" } "[
 #
 # Scoreboard name change section if no web scoreboard
+# but a local account exists
 #
 ]
 If you appear on the scoreboard, and want to change your
@@ -1039,8 +1062,6 @@ If you appear on the scoreboard, and want to change your
 [include_if { $account_list == "email local" } "
 who can map email addresses and account names to
 scoreboard names.
-"][include_if { $account_list == "email" } "
-who can map email addresses to scoreboard names.
 "][include_if { $account_list == "local" } "
 who can map account names to scoreboard names.
 "]"][
