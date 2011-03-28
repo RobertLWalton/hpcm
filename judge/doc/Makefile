@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Sep 14 05:29:32 EDT 2010
+# Date:		Mon Mar 28 14:02:12 EDT 2011
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2010/09/14 09:32:02 $
+#   $Date: 2011/03/28 18:16:43 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.33 $
+#   $Revision: 1.34 $
 
 # make
 #	Makes documentation as fprintable .txt files in
@@ -32,6 +32,7 @@
 DOCS=	overview.txt \
 	installing_hpcm.txt \
 	judging.txt \
+	managing.txt \
         judge/autodispatch.txt \
 	judge/autoinfo.txt \
 	judge/autojudge.txt \
@@ -141,7 +142,7 @@ secure:
 
 clean:
 	rm -rf overview.txt installing_hpcm.txt \
-	       judging.txt \
+	       judging.txt managing.txt \
 	       judge contestant secure \
 	       hpcm_judging.rc
 
@@ -271,6 +272,10 @@ judge/makeweb.txt:	hpcm_judging.rc \
 	rm -f judge/makeweb.txt
 	-../../judge/bin/makeweb -doc \
 	    >judge/makeweb.txt
+managing.txt:	hpcm_judging.rc \
+			../../judge/bin/managing
+	rm -f managing.txt
+	-../../judge/bin/managing -doc >managing.txt
 judge/manualreply.txt:	hpcm_judging.rc \
 			../../judge/bin/manualreply
 	rm -f judge/manualreply.txt

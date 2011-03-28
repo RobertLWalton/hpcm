@@ -1,0 +1,135 @@
+#!/bin/sh
+#
+# Make manager's managing document.
+#
+# File:		managing
+# Author:	Bob Walton (walton@deas.harvard.edu)
+# Date:		Mon Mar 28 14:06:35 EDT 2011
+#
+# The authors have placed this program in the public
+# domain; they make no warranty and accept no liability
+# for this program.
+#
+# RCS Info (may not be true date or author):
+#
+#   $Author: walton $
+#   $Date: 2011/03/28 18:15:35 $
+#   $RCSfile: managing,v $
+#   $Revision: 1.1 $
+#
+# The next lines start tclsh \
+trap "echo judging: Terminated by Signal" \
+    HUP INT QUIT; \
+tclsh "$0" "$@"; exit $status
+
+# Include common code and parameters:
+#
+set lib_directory "[file dirname $argv0]/../lib"
+set log_disable yes
+source $lib_directory/judging_common.tcl
+catch {
+
+puts "
+		     HPCM Managing
+		     ---- --------
+
+	Division of Responsibility
+	Account Control Files
+	Contest/Facility Parameters
+	Making the Contest Description
+	Making the Contest Web Page
+	Allocating Accounts
+	Changing the Problem Set
+
+
+Division of Responsibility
+-------- -- --------------
+
+This document describes what a contest/facility manager
+needs to know in a situation in which a judging account
+is shared between a contest/facility manager, who
+maintains a particular contest or practice facility, and
+a software manager, who makes new contests/facilites,
+manages the HPCM program code, and provides other
+services, such as backup.
+
+The contest/facility manager of a contest or practice
+facility named nnnn has responsibility for the existence
+and contents of all directories with names of the forms
+
+	~/*_nnnn_*
+	~/*_nnnn
+
+Included are the contest judging directory with a name
+of the form
+
+	~/judging_nnnn_*
+
+and the contest directory named
+
+	~/contest_nnnn
+
+However, the software manager, and not the contest/
+facility manager, will make initial versions of these
+last two directories, and then the contest/facility
+manager will assume responsibility for them.  So the
+contest/facility manager does not need to make contests
+or facilities, but only maintain them.
+
+The software manager has responsibility for the exis-
+tence and contents of all other files, with a few
+exceptions documented in `Account Control Files' below,
+and.  In particular, the software manager is responsible
+for the program files in ~/hpcm.
+
+Account Control Files
+------- ------- -----
+
+The software manager is responsible for ~/.bashrc, but
+upon request will add to its end code to read files
+with names of the form
+
+	~/.bashrc_nnnn
+
+where nnnn is the name of a contest/facility.  See the
+end of the ~/.bashrc file to see if this is already
+enabled.
+
+Any manager may add, modify, or delete their own line(s)
+to
+
+	~/.ssh/authorized_keys
+	~/.ssh/known_hosts
+
+(the latter is modified semi-automatically).  Notify the
+software manager when changes are made to
+
+	~/.ssh/authorized_keys
+
+so a backup may be kept (typically this is kept in
+~/.ssh/RCS).
+
+Contest/Facility Parameters
+---------------- ----------
+
+Making the Contest Description
+------ --- ------- -----------
+
+Making the Contest Web Page
+------ --- ------- --- ----
+
+Allocating Accounts
+---------- --------
+
+Changing the Problem Set
+-------- --- ------- ---
+
+"
+
+exit 0
+
+# Include common error catching code:
+#
+} caught_output
+caught_error
+
