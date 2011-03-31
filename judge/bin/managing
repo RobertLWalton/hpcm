@@ -4,7 +4,7 @@
 #
 # File:		managing
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Mar 28 14:06:35 EDT 2011
+# Date:		Thu Mar 31 12:00:15 EDT 2011
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2011/03/28 18:15:35 $
+#   $Date: 2011/03/31 16:01:24 $
 #   $RCSfile: managing,v $
-#   $Revision: 1.1 $
+#   $Revision: 1.2 $
 #
 # The next lines start tclsh \
 trap "echo judging: Terminated by Signal" \
@@ -55,7 +55,8 @@ services, such as backup.
 
 The contest/facility manager of a contest or practice
 facility named nnnn has responsibility for the existence
-and contents of all directories with names of the forms
+and contents of all directories and files with names of
+the forms:
 
 	~/*_nnnn_*
 	~/*_nnnn
@@ -72,7 +73,7 @@ and the contest directory named
 However, the software manager, and not the contest/
 facility manager, will make initial versions of these
 last two directories, and then the contest/facility
-manager will assume responsibility for them.  So the
+manager will assume responsibility for them.  Thus the
 contest/facility manager does not need to make contests
 or facilities, but only maintain them.
 
@@ -107,13 +108,75 @@ software manager when changes are made to
 	~/.ssh/authorized_keys
 
 so a backup may be kept (typically this is kept in
-~/.ssh/RCS).
+~/.ssh/RCS/authorized_keys,v).
 
 Contest/Facility Parameters
 ---------------- ----------
 
+The parameters for a contest/facility named nnnn are in
+the file:
+
+    ~/judging_nnnn_*/hpcm_judging.rc
+
+The first parts of this file contain parameters that
+must be particularized for the contest/facility, and
+these parts must be read and edited by the contest/
+facility manager.
+
+After changing parameters, `make' should be run by
+executing:
+
+    cd ~/judging_nnnn_*
+    make
+
+so that the new parameter settings will take effect.
+
+There are some more detailed notes on some of the para-
+meters that need to be set in the following sections.
+
 Making the Contest Description
 ------ --- ------- -----------
+
+The contest description is made in the file
+
+    ~/judging_nnnn_*/help/this_contest
+
+and automatically copied from there (by `make' and
+`makecontest') to the file
+
+    ~/contest_nnnn/help/this_contest
+
+and to the web pages file
+
+    ~/judging_nnnn_*/web/this_contest
+
+Contestants/Students can access this file from local
+accounts by executing `help', and if there is a web
+page, this file is the `description' part of the web
+page.
+
+Normally you can just compute this file using `make' by
+setting the hpcm_judging.rc parameters:
+
+	this_contest_prefix
+	this_contest_postfix
+
+These parameters can be edited, and `make' can be
+executed to recompute the file.  However, you can also
+edit the file
+
+    ~/judging_nnnn_*/help/this_contest
+
+directly.  Once you have edited this file directly,
+further runs of `make' will not change the file, but
+will copy the most recent edited version to
+
+    ~/contest_nnnn/help/this_contest
+and ~/judging_nnnn_*/web/this_contest
+
+So in the future you will have to maintain the file
+strictly by editing it.
+
 
 Making the Contest Web Page
 ------ --- ------- --- ----
