@@ -4,7 +4,7 @@
 #
 # File:		managing
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Apr 20 04:08:45 EDT 2011
+# Date:		Thu May 19 21:03:54 EDT 2011
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2011/04/20 17:43:59 $
+#   $Date: 2011/05/20 13:32:34 $
 #   $RCSfile: managing,v $
-#   $Revision: 1.3 $
+#   $Revision: 1.4 $
 #
 # The next lines start tclsh \
 trap "echo judging: Terminated by Signal" \
@@ -69,7 +69,7 @@ of the form
 and the contest directory named
 
 	~/contest_nnnn
-
+
 However, the software manager, and not the contest/
 facility manager, will make initial versions of these
 last two directories, and then the contest/facility
@@ -109,7 +109,7 @@ software manager when changes are made to
 
 so a backup may be kept (typically this is kept in
 ~/.ssh/RCS/authorized_keys,v).
-
+
 Contest/Facility Parameters
 ---------------- ----------
 
@@ -149,7 +149,7 @@ and automatically copied from there (by `make' and
 and to the web pages file
 
     ~/judging_nnnn_*/web/this_contest
-
+
 Contestants/Students can access this file from local
 accounts by executing `help', and if there is a web
 page, this file is the `description' part of the web
@@ -177,7 +177,7 @@ and ~/judging_nnnn_*/web/this_contest
 So in the future you will have to maintain the file
 strictly by editing it.
 
-
+
 Making the Contest/Facility Web Page
 ------ --- ---------------- --- ----
 
@@ -217,7 +217,7 @@ references copies of the problem descriptions included
 in the web page.  Also, if the web_help_URL parameter
 is not \"\", it is used as a reference to a help files
 web page.
-
+
 If the web_solutions_password parameter is \"ppp\" and
 not \"\", then the directory
 
@@ -255,7 +255,7 @@ the scoreboard, when changed, will be piped into the
 command
 
     ~/judging_nnnn_*/secure/sendscoreboard
-
+
 which in turn sends the scoreboard as the body of an
 email message to
 
@@ -282,13 +282,83 @@ and
 
 for details.
 
-
+
 Allocating Accounts
 ---------- --------
+
+In order to allocate and account named aaaa, open the
+file
+	contest_nnnn/secure/passwords
+
+for editing and change the line
+
+	aaaa:ppppp
+
+to
+
+	aaaa:ppppp:NAME:EMAIL
+
+where aaaa is the account name, ppppp is the account
+password which is already assigned and is a random
+hexadecimal number, NAME is the contestant's name, and
+EMAIL is the contestant's email.
+
+To send an email to the contestant with account aaaa
+that specifies the contest, contestant's account, and
+contestant's password, edit a welcome message describing
+the contest/facility into the file
+
+	contest_nnnn/secure/passwords_header
+
+and after begin such the aaaa:ppppp:NAME:EMAIL line is
+correct in the file
+
+	contest_nnnn/secure/passwords
+
+execute
+
+	cd contest_nnnn/secure
+	hpcm_mail aaaa -nosend
+
+This will NOT send the email, but will output it so you
+can check it.  Use
+
+	hpcm_mail aaaa -nosend |less
+
+if it is long and you need to scroll.  Then when it
+checks out, execute
+
+	hpcm_mail aaaa -send
+
+which has -send in place of -nosend, and the mail will
+actually be sent.
+
+The hpcm_mail program is in the file
+
+	~/bin/hpcm_mail
+
+and just adds the `From' and CC email addresses of the
+contest/facility manager to the outgoing mail.
+
+Note: General mail cannot be received on the computer
+that runs the contest, so it is necessary to change the
+`From' address on the outgoing mail to a legitimate
+email address to which the receiver can reply.  hpcm_
+mail does this.
+
+You can always resend the mail later if the contestant
+forgets his/her password.
+
 
 Changing the Problem Set
 -------- --- ------- ---
 
+
+Things The Software Manager Should Do
+------ --- -------- ------- ------ --
+
+Create more contest/facility accounts.
+Change account passwords.
 "
 
 exit 0
