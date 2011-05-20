@@ -4,7 +4,7 @@
 #
 # File:		managing
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu May 19 21:03:54 EDT 2011
+# Date:		Fri May 20 11:08:02 EDT 2011
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2011/05/20 13:32:34 $
+#   $Date: 2011/05/20 15:13:37 $
 #   $RCSfile: managing,v $
-#   $Revision: 1.4 $
+#   $Revision: 1.5 $
 #
 # The next lines start tclsh \
 trap "echo judging: Terminated by Signal" \
@@ -80,8 +80,9 @@ or facilities, but only maintain them.
 The software manager has responsibility for the exis-
 tence and contents of all other files, with a few
 exceptions documented in `Account Control Files' below,
-and.  In particular, the software manager is responsible
-for the program files in ~/hpcm.
+In particular, the software manager is responsible for
+the program files in ~/hpcm.
+
 
 Account Control Files
 ------- ------- -----
@@ -106,10 +107,11 @@ to
 software manager when changes are made to
 
 	~/.ssh/authorized_keys
-
+
 so a backup may be kept (typically this is kept in
 ~/.ssh/RCS/authorized_keys,v).
-
+
+
 Contest/Facility Parameters
 ---------------- ----------
 
@@ -134,6 +136,7 @@ so that the new parameter settings will take effect.
 There are some more detailed notes on some of the para-
 meters that need to be set in the following sections.
 
+
 Making the Contest/Facility Description
 ------ --- ---------------- -----------
 
@@ -149,10 +152,10 @@ and automatically copied from there (by `make' and
 and to the web pages file
 
     ~/judging_nnnn_*/web/this_contest
-
+
 Contestants/Students can access this file from local
 accounts by executing `help', and if there is a web
-page, this file is the `description' part of the web
+page, this file is the `More Details' subpage of the web
 page.
 
 Normally you can just compute this file using `make' by
@@ -170,14 +173,14 @@ edit the file
 directly.  Once you have edited this file directly,
 further runs of `make' will not change the file, but
 will copy the most recent edited version to
-
+
     ~/contest_nnnn/help/this_contest
 and ~/judging_nnnn_*/web/this_contest
 
 So in the future you will have to maintain the file
 strictly by editing it.
 
-
+
 Making the Contest/Facility Web Page
 ------ --- ---------------- --- ----
 
@@ -185,7 +188,7 @@ The web page is made in the directory
 
     ~/judging_nnnn_*/web
 
-and a .tar file of this director is made in
+and a .tar file of this directory is made in
 
     ~/judging_nnnn_*/web.tar
 
@@ -202,37 +205,37 @@ names of the form web_* in the file
 For example, if the web_manager parameter is defined
 as an email address, this is displayed appropriately
 at the bottom of the .../web/index.html file.
-
+
 The beginning of that file is the contents of the
 web_prefix parameter and the end of that file, before
 the manager annotation, is the contents of the web_
-posfix parameter, so the contents of .../web/index.htmn
+posfix parameter, so the contents of .../web/index.html
 is generally under the control of the parameters.  The
 middle of the file references a copy of the
 
     ~/judging_nnnn_*/help/this_contest
 
-file too describe contest/facility details, and
+file to describe contest/facility details, and
 references copies of the problem descriptions included
 in the web page.  Also, if the web_help_URL parameter
 is not \"\", it is used as a reference to a help files
 web page.
-
+
 If the web_solutions_password parameter is \"ppp\" and
 not \"\", then the directory
 
     ~/judging_nnnn_*/web/private/ppp/
 
-is created containing problem solutions and with an
-automatically created
+is created containing problem solutions, with an automa-
+tically created
 
     ~/judging_nnnn_*/web/private/ppp/index.html
 
 that has the contents of the web_solutions_prefix para-
-meter at its beginning.  The solutions directory is
+meter at its beginning.  The `private' directory is read
 protected so that `ppp' must be known in order to read
 the page.
-
+
 Also, if the web_scoreboard_URL parameter is not \"\",
 it is used as a reference to a scoreboard posted on the
 web.  Such a scoreboard is not strictly necessary if
@@ -248,14 +251,14 @@ set scoreboard_commands {
     { sendscoreboard email
       \"setscoreboard<myaccount@mycomputer.edu>\"
       setscoreboard
-      \"head -c 10000 >./public_html/scoreboardpage;\
+      \"head -c 10000 >./public_html/scoreboardpage;\\
        chmod 644 ./public_html/scoreboardpage\" } }
 
 the scoreboard, when changed, will be piped into the
 command
 
     ~/judging_nnnn_*/secure/sendscoreboard
-
+
 which in turn sends the scoreboard as the body of an
 email message to
 
@@ -271,7 +274,7 @@ the scoreboard copies automatically and pipe them in a
 protected way to the file ~/public_html/scoreboardpage
 in that account.  You can use a different file name, of
 course.
-
+
 Instead of using email, ssh, or some completely differ-
 ent mechanism can be use to send scoreboards.  See the
 scoreboard_commands documentation in
@@ -282,7 +285,7 @@ and
 
 for details.
 
-
+
 Allocating Accounts
 ---------- --------
 
@@ -302,7 +305,7 @@ where aaaa is the account name, ppppp is the account
 password which is already assigned and is a random
 hexadecimal number, NAME is the contestant's name, and
 EMAIL is the contestant's email.
-
+
 To send an email to the contestant with account aaaa
 that specifies the contest, contestant's account, and
 contestant's password, edit a welcome message describing
@@ -319,7 +322,7 @@ execute
 
 	cd contest_nnnn/secure
 	hpcm_mail aaaa -nosend
-
+
 This will NOT send the email, but will output it so you
 can check it.  Use
 
@@ -339,7 +342,7 @@ The hpcm_mail program is in the file
 
 and just adds the `From' and CC email addresses of the
 contest/facility manager to the outgoing mail.
-
+
 Note: General mail cannot be received on the computer
 that runs the contest, so it is necessary to change the
 `From' address on the outgoing mail to a legitimate
@@ -353,7 +356,73 @@ forgets his/her password.
 Changing the Problem Set
 -------- --- ------- ---
 
-
+The problem set is determined by the `problems_argu-
+ments' parameter in hpcm_judging.rc.  A typical setting
+is:
+
+  set problems_arguments \"
+    \$hpcm_directory/problem_library/bospre-ed.index, \\
+        public/=problems/, \\
+        ALL:include
+  \"
+
+This parameter is a character string that has the format
+
+    problems_arguments ::= index-specification*
+
+    index-specification ::=
+        INDEX-FILE-NAME, { substitution, }* substitution
+
+The space separated components of the `problems_argu-
+ments' string actually become program arguments to the
+makecontest program.  The INDEX-FILE-NAME is known as
+such because it does NOT begin with `-', and therefore
+is not an option, and because the previous argument did
+not end in `,'.  If one of these arguments ends with
+`,', then the next program argument is a substitution.
+
+The index file consists of entries with the format
+
+    *** ITEM-NAME option*
+        TEXT-DESCRIBING-ITEM
+
+where the item is in this case the name of a problem
+directory relative to the directory containing the index
+file.
+
+One of the outputs of processing the index file is a
+problems index stored in the file
+
+	~/contest_nnnn/help/problems
+	
+and available to contestants with by executing
+
+	help problems
+	
+in their account or by looking at a web page if that
+exits.  This index equals entries selected as described
+below after substitutions are made in the first line.
+These substitutions are determined by the `substitu-
+tions' arguments inside the `problems_arguments' value.
+
+The item is included in the output index if and only if
+after substitutions the item has the `include' option.
+In this case the ITEM-NAME before substitutions is used
+as the name of a file or subdirectory of the index file
+containing directory that is to be copied to the sub-
+directory of ~/contest_nnnn that is named by ITEM-NAME
+after substitutions.  The latter must begin with one
+of `problems/', `help/', or `demos/'.
+
+When the item is included in the output index, only the
+ITEM-NAME after substitutions is retained in the first
+line, but the ITEM-DESCRIPTION-TEXT lines are copied
+verbatim.
+
+
+
+
+
 Things The Software Manager Should Do
 ------ --- -------- ------- ------ --
 
