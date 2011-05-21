@@ -6,7 +6,7 @@
 #
 # File:		makecontest
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Mar 28 10:14:55 EDT 2011
+# Date:		Sat May 21 00:13:13 EDT 2011
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2011/03/28 14:15:14 $
+#   $Date: 2011/05/21 04:50:54 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.212 $
+#   $Revision: 1.213 $
 #
 # The next lines start tclsh \
 trap "echo makecontest: Terminated by Signal" \
@@ -236,37 +236,57 @@ Index Specifications
     tutions must begin with `help/', `demos/', or
     `problems/'.
 
-    After substitution, the possible item options are:
+    After substitutions for both the item_name and
+    options, the options which have effect are:
 
-      include	  Include item in the ./info and
-      		  ./contest directories, and in the
-		  ./solutions directory if the
-		  `nosolution' item option is absent
-		  (after substitutions) and the item
-		  name (after substitutions) begins with
-		  `demos/' or `problems/'.
+      include/noinclude
+          An item is included in the ./info and
+	  ./contest directories if the `include' option
+	  is present, the `noinclude' option is absent,
+	  and the item name begins with `help/',
+	  `demos/', or `problems/'.
+	  
+	  Thus the default is to not include, and an
+	  explicit `noinclude' overrides `include'.
 
-      nosolution  Do NOT include the item in the 
-                  ./solutions directory, even if the
-		  item name after substitutions begins
-		  with `demos/' or `problems/'.
+	  An item entry is said to be `included' if it
+	  is being included in the ./info and ./contest
+	  directories under these rules.
 
-      all	  This changes the definition of the
-      		  global variable problem_source_files
-		  to {.*} and problem_description_files
-		  to {} for this index entry.  This
-		  means that all files not excluded by
-		  the global variable problem_excluded_
-		  files will be source files for this
-		  index entry.  See below for details.
+      solution/nosolution
+          An item is included in the ./solutions direc-
+	  tory if the `solution' option is present or
+	  the `nosolution' option is absent, if the
+	  item is being included in the ./info and
+	  ./contest directories are per above, and if
+	  the item name begins with `demos/' or
+	  `problems/'.
 
-      ...	  Other options may be given that are
-      		  passed to the PROBLEM.rc file: see
-		  below for details.
-
-    An item entry is said to be `included' if it has the
-    `include' option after substitutions.
+	  Thus the default is to include in the
+	  ./solutions directory items included as per
+	  the above rules in ./{info,contest}/{demos,
+	  problems}, and an explicit `solution' over-
+	  rides `nosolution'.
 
+      all/notall
+          The definition of the global variable problem_
+	  source_files is changed to {.*} and the def-
+	  initiion of problem_description_files is
+	  changed to {} for this item, if the `all'
+	  option is present and the `notall' option is
+	  absent.  If these changes are made, all files
+	  not excluded by the global variable problem_
+	  excluded_files will be source files for this
+	  item.  See below for details.
+
+	  Thus the default is to make no changes, and
+	  an explicit `notall' overrides `all'.
+
+    Note that all options after substitution are made
+    available to the PROBLEM.rc file as the value of
+    the OPTIONS global variable.
+
+
   Output Indices
   ------ -------
 
@@ -286,7 +306,7 @@ Index Specifications
     If both ./contest and ./info directories exist,
     there may be two identical copies of each output
     index file, one in ./contest and one in ./info.
-
+
     When an item entry is copied, the `***' in the first
     line of the entry is replace by 3 space characters,
     the item name is replaced by the name after substi-
@@ -300,7 +320,7 @@ Index Specifications
     of file.  An item entry stops at the next line that
     begins a header or item entry, or at the end of
     file.
-
+
     When an item entry is copied to an output index
     file, the first header entry before the item entry
     in its index input file is copied just before the
@@ -323,7 +343,7 @@ Index Specifications
     or a `,'.  The `:' indicates the next argument is an
     input index directory name and the `,' indicates the
     next argument is a substitution pattern (see below).
-
+
     Each input index file is associated with an input
     index directory.  If this is named DDD, and an item
     entry within the input index file has item name III
@@ -331,7 +351,7 @@ Index Specifications
     itself is DDD/III.  This is either a file or a
     directory; that is, the item is either a file or
     a directory.
-
+
     An input index directory may optionally be given in
     a specification by ending the first argument of the
     specification, which names the input index file,
@@ -380,7 +400,8 @@ Index Specifications
     	PROBLEM		Name of problem.
 	EXTENSION	Equals \"UNDEFINED\"
 	OPTIONS		The options in the index item,
-			as a TCL list, after expansion.
+			after option substitutions, as
+			a TCL list.
 
     The name `PROBLEM.rc' is something of a misnomer for
     help files.  In this case `PROBLEM' is merely the
@@ -708,10 +729,12 @@ The -solutions Option
     test a submission.  This directory is made by the
     -solutions option.  It contains all items that have
     substituted item names beginning with demos/ or
-    problems/, and do NOT have the `nosolution' option
-    after option substitution.  It is an error if such
-    an item is a file and not a directory.  For each
-    such item a symbolic link is created in the
+    problems/, and have the `solution' option or do NOT
+    have the `nosolution' option after option substitu-
+    tion.  It is an error if such an item is a file and
+    not a directory.
+    
+    For each such item a symbolic link is created in the
     ./solutions directory to the item directory, and
     this link is given as its name the name of the last
     component of the substituted item name.  e.g., the
@@ -729,7 +752,7 @@ help, demos, problems, and solutions Directory Notes
     	./info/demos		./contest/demos
     	./info/problems		./contest/problems
     	./info/help		./contest/help
-
+
     then if both directories of a pair are made, both
     are identical after symbolic links are followed,
     except that if there is no -description option,
@@ -739,7 +762,7 @@ help, demos, problems, and solutions Directory Notes
     the UNIX `diff -r' command should report the two
     directories in each of the above pairs to be
     identical.
-
+
     If `makecontest' is building a ./info directory, it
     actually builds a ./info+ directory instead.  Then
     it does a `diff -r ./info ./info+', and checks the
@@ -766,7 +789,7 @@ The -this_contest Option
     information and must be created uniquely for each
     contest.  The -this_contest program option does this
     by making the following:
-
+
 	./help				directory
 	./help/index			file
 	./help/this_contest		file
@@ -775,7 +798,7 @@ The -this_contest Option
 
     Note these are in the judging directory proper, and
     not in the ./info or ./contest subdirectories.
-
+
     The ./help/index file is an INPUT index file and if
     used should be referenced by the first help file
     index specification given to `makecontest'.  It
@@ -802,7 +825,7 @@ The -this_contest Option
     be used, and to suppress copying the global variable
     value to ./help/this_contest once the latter has
     been edited.
-
+
     The ./help/this_contest* files, when written, are
     always written to be a copy of the `this_contest'
     global variable.  The ./help/this_contest_original
@@ -813,7 +836,7 @@ The -this_contest Option
     The ./help/this_contest file is written only if it
     does not exist, or if it equals ./help/this_contest_
     parameter and the latter is to be written.
-
+
     If ./help/this_contest is written, a TODO is written
     indicating what has been done and reminding you that
     you can edit ./help/this_contest.
@@ -839,13 +862,14 @@ The -help2 Option
     The -help2 program option creates the ./contest/
     help2 directory if it does not exist.  It is simply
     linked to the ./contest/help directory.
-
+
     Note that the contestant's `help' command searches
     ./contest/help1, ./contest/help2, ./contest/help3,
     and ./contest/help4 in order for help files.  Thus
     files put in ./contest/help1 will override those
     in ./contest/help that is linked to ./contest/help2.
-
+
+
 The -print_files Option
 --- ------------ ------
 
@@ -877,12 +901,13 @@ The -solution_files Option
     the problem_solution_files and problem_excluded_
     files global variables.  See PROBLEM.rc Global Vari-
     ables above.
-    
+
     WARNING: the command `makecontest -solution_files'
     will make an empty list as this command does not
     have the index specifications necessary to make the
     list properly.
-
+
+
 The -secure Option
 --- ------- ------
 
@@ -1984,7 +2009,13 @@ proc process_index_specification {} {
 		   $line forget indent forget2
 	    regsub {\*\*\*} $indent {   } indent
 
-	    if { ! [lcontain $options include] } {
+	    if { [lcontain $options noinclude] } {
+
+		# Item is not included.
+
+	    	set in_item	no
+
+	    } elseif { ! [lcontain $options include] } {
 
 		# Item is not included.
 
@@ -2092,7 +2123,10 @@ proc process_index_specification {} {
 			    "problem_make_files value\
 			     for $PROBLEM"
 		    }
-		    if { [lcontain $options all] } {
+		    if { [lcontain $options all] \
+		         && \
+			 ! [lcontain $options notall] \
+		       } {
 		        set problem_source_files {.*}
 		        set problem_description_files {}
 		    }
@@ -2193,8 +2227,10 @@ proc process_index_specification {} {
 		if {    $solutions_option \
 		     && [lcontain {problems demos} \
 				  $targetdir] \
-		     && ! [lcontain $options \
-				    nosolution] } {
+		     && ( [lcontain $options solution] \
+		          || \
+			  ! [lcontain $options \
+				    nosolution] ) } {
 		    if { ! [file isdirectory $source] \
 		    		} {
 			error "$source solution is not\
