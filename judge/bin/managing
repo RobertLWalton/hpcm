@@ -4,7 +4,7 @@
 #
 # File:		managing
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri May 20 11:08:02 EDT 2011
+# Date:		Sat May 21 02:12:43 EDT 2011
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2011/05/20 15:13:37 $
+#   $Date: 2011/05/21 13:21:38 $
 #   $RCSfile: managing,v $
-#   $Revision: 1.5 $
+#   $Revision: 1.6 $
 #
 # The next lines start tclsh \
 trap "echo judging: Terminated by Signal" \
@@ -49,7 +49,7 @@ This document describes what a contest/facility manager
 needs to know in a situation in which a judging account
 is shared between a contest/facility manager, who
 maintains a particular contest or practice facility, and
-a software manager, who makes new contests/facilites,
+a software manager, who makes new contests/facilities,
 manages the HPCM program code, and provides other
 services, such as backup.
 
@@ -209,7 +209,7 @@ at the bottom of the .../web/index.html file.
 The beginning of that file is the contents of the
 web_prefix parameter and the end of that file, before
 the manager annotation, is the contents of the web_
-posfix parameter, so the contents of .../web/index.html
+postfix parameter, so the contents of .../web/index.html
 is generally under the control of the parameters.  The
 middle of the file references a copy of the
 
@@ -357,13 +357,21 @@ Changing the Problem Set
 -------- --- ------- ---
 
 The problem set is determined by the `problems_argu-
-ments' parameter in hpcm_judging.rc.  A typical setting
-is:
+ments' parameter in hpcm_judging.rc.  An example, which
+we will explain below, is:
 
   set problems_arguments \"
     \$hpcm_directory/problem_library/bospre-ed.index, \\
         public/=problems/, \\
-        ALL:include
+        ALL:include, \\
+        public/password:noinclude \\
+    \$hpcm_directory/problem_library/index \\
+        public/=problems/, \\
+        bospre2010:include, \\
+        public/abbot:include \\
+    \$env(HOME)/problems_nnnn/index \\
+        =problems/, \\
+	ALL:include
   \"
 
 This parameter is a character string that has the format
@@ -372,7 +380,7 @@ This parameter is a character string that has the format
 
     index-specification ::=
         INDEX-FILE-NAME, { substitution, }* substitution
-
+
 The space separated components of the `problems_argu-
 ments' string actually become program arguments to the
 makecontest program.  The INDEX-FILE-NAME is known as
@@ -383,7 +391,7 @@ not end in `,'.  If one of these arguments ends with
 
 The index file consists of entries with the format
 
-    *** ITEM-NAME option*
+    *** ITEM-NAME OPTION*
         TEXT-DESCRIBING-ITEM
 
 where the item is in this case the name of a problem
@@ -404,23 +412,126 @@ exits.  This index equals entries selected as described
 below after substitutions are made in the first line.
 These substitutions are determined by the `substitu-
 tions' arguments inside the `problems_arguments' value.
-
+
 The item is included in the output index if and only if
-after substitutions the item has the `include' option.
-In this case the ITEM-NAME before substitutions is used
-as the name of a file or subdirectory of the index file
-containing directory that is to be copied to the sub-
-directory of ~/contest_nnnn that is named by ITEM-NAME
-after substitutions.  The latter must begin with one
-of `problems/', `help/', or `demos/'.
+after substitutions the item has the `include' option
+and does NOT have the `noinclude' option (`noinclude'
+overrides `include' and can be used to exclude indivi-
+dual within a category of items).  In this case the
+ITEM-NAME before substitutions is used as the name of
+a file or subdirectory of the index file containing
+directory that is to be copied to the subdirectory of
+~/contest_nnnn that is named by ITEM-NAME after substi-
+tutions.  The latter must begin with one of `problems/',
+`help/', or `demos/'.
 
 When the item is included in the output index, only the
 ITEM-NAME after substitutions is retained in the first
 line, but the ITEM-DESCRIPTION-TEXT lines are copied
 verbatim.
 
+There are two types of substitutions:
 
+    substitution ::=
+          item-name-substitution
+	| option-substitution
 
+    item-name-substitution ::= PREFIX1=PREFIX2
+
+    option-substitution ::= OPTION1:OPTION2 ...
+
+For item-name-substitutions, if an item name begins with
+PREFIX1, that prefix is replaced by PREFIX2.  Substitu-
+tions are NOT recursive.  If more than one apply, the
+one with the longest PREFIX1 is used.
+
+For option-substitutions, any unsubstituted OPTION1 is
+replaced by all the OPTION2's.  Again substitutions are
+NOT recursive.  ITEM-NAMEs are considered to be options.
+The special option ALL is considered to be an unsubsti-
+tuted option of all items, so `ALL:include' would give
+the `include' option to all items, for example.
+
+Now to explain the example above.  There are 3 indices
+from which problems are selected.  The first,
+
+    \$hpcm_directory/problem_library/bospre-ed.index
+
+is in the `\$hpcm_directory/problem_library' directory,
+where `\$hpcm_directory' is defined in hpcm_judging.rc
+and by default equals `\$env(HOME)/hpcm' where
+`\$env(HOME)' equals the account home directory, i.e.,
+`~'.  The problems we are interested in are in the
+`./public' subdirectory of this directory, and typical
+entries in this index file are
+
+    *** public/passwords E bospre2004 text
+	    What is a good way to generate memorable
+	    passwords?
+	    Boston Preliminary 2004.
+	    Author: Bob Walton
+
+    *** public/stringhash E bospre2005 text
+	    Computing a random hash value from a string.
+	    Boston Preliminary 2005.
+	    Author: Bob Walton
+
+Here the options are `E' (which abbreviates `easy'),
+bospre2004/5 which designates the contest that contained
+the problem, and `text', which means the problem invol-
+ved processing text (as opposed to a search problem, a
+geometry problem, etc.).  There are no substitutions for
+these.  All items are given the `include' option
+because of the `ALL:include' substitution.  The `public/
+passwords' item is given the `noinclude' option because
+of the `public/passwords:noinclude' substitution.
+Therefore the `public/passwords' item will NOT be in-
+cluded in the output, as `noinclude' overrides
+`include', whereas `public/stringhash' will be included.
+For included items, `public/' in the unsubstituted item
+name is replaced by `problems/' in the substituted item
+name, placing such items in the ./problems subdirector-
+ies (as opposed to the ./demos and ./help subdirector-
+ies).
+
+The second index,
+
+    \$hpcm_directory/problem_library/index
+
+is similar to the first, except it is a master index
+containing all publically available HPCM problems, so
+`ALL:include' is not sensible for it.  Instead
+`bospre2010:include' includes all problems from the
+2010 BOSPRE programming contest, and the addition of
+`public/abbot:include' includes the `abbot' problem
+in the `public' subdirectory of the directory contain-
+ing the index.
+
+The last index,
+
+    \$env(HOME)/problems_nnnn/index
+
+is in the subdirectory ~/problems_nnnn which has been
+made exclusively for your contest/facility, and which
+might contain an entry such as
+
+    *** my_problem
+        Description of My Problem.
+
+Here `ALL:include' includes all the problems in the
+directory, and `=problems/' prefixes each item name
+with `problems/', e.g., so
+
+    my_problem becomes problems/my_problem
+
+after substitution.
+
+Notice that the `problems_arguments' value is a sequence
+of program arguments separated from each other by space
+characters (a line ending \\'s turns the following line
+feed and line beginning space characters into a single
+space character), and each program argument ends with a
+`,' if and only if it is followed by a substitution.
 
 
 Things The Software Manager Should Do
