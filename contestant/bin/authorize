@@ -5,7 +5,7 @@
 #
 # File:		authorize
 # Author:	Bob Walton <walton@seas.harvard.edu>
-# Date:		Sun May 22 05:35:31 EDT 2011
+# Date:		Sun May 22 07:32:27 EDT 2011
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2011/05/22 11:25:30 $
+#   $Date: 2011/05/22 11:32:43 $
 #   $RCSfile: authorize,v $
-#   $Revision: 1.1 $
+#   $Revision: 1.2 $
 
 case "$1" in
    -doc* )
@@ -25,12 +25,9 @@ authorize
 
     This program installs ssh public keys in the current
     account.  Specifically, all public keys with file
-    names of the forms
-
-    	~/*_*.pub   or   ~/.ssh/*_*.pub
-
-    are made active for the current account.  Note that
-    public key names must contain `_'; the *_* part of
+    names of the form *_*.pub in either the home or
+    ~/.ssh directories are made active.  Note that
+    public key names must contain \`_'; the *_* part of
     the name should be unique and should identify the
     account containing the corresponding private key.
 
@@ -42,8 +39,8 @@ authorize
     
     Second, any files named ~/*_*.pub are moved into the
     ~/.ssh directory.  Note this may overwrite files in
-    that directory that have the same last name
-    component.
+    that directory that have the same last name compo-
+    nent.
     
     Then this program makes a temporary file that is
     the concatenation of all files with names of the
@@ -53,7 +50,7 @@ authorize
 	~/.ssh/*_*.pub
 
     The ~/.hpcm_contest/judges_ssh/*_*.pub keys can be
-    used by the judge to access that account.
+    used by the contest manager to access the account.
 
     If ./ssh/authorized_keys equals this temporary file,
     the temporary is deleted and nothing further is
@@ -65,11 +62,8 @@ authorize
 	mkdir RCS
 	ci -l authorized_keys
 
-    to back up ~/.ssh/authorized_keys, then replaces
-    ~/.ssh/authorized_keys by the temporary file, and
-    then prints messages.  The program prints messages
-    to indicate what it is doing.
-    "
+    to back up ~/.ssh/authorized_keys and then replaces
+    ~/.ssh/authorized_keys by the temporary file."
 
     	exit 1
 	;;
@@ -84,7 +78,7 @@ then
     chmod 700 ~/.ssh
 fi
 
-for F in `ls ~/*_*.pub` 2>/dev/null`
+for F in `ls ~/*_*.pub 2>/dev/null`
 do
     echo "Moving $F to ~/.ssh"
     echo "    chmod 400 $F"
@@ -99,13 +93,13 @@ trap "rm -f $t" 0
 rm -f $t 0
 waring=no
 
-for F in `ls ~/.hpcm_contest/judges_ssh/*.pub` \
+for F in `ls ~/.hpcm_contest/judges_ssh/*.pub \
           2>/dev/null`
 do
     cat "$F" >>$t
     warning=yes
 done
-for F in `ls *_*.pub` 2>/dev/null`
+for F in `ls *_*.pub 2>/dev/null`
 do
     cat "$F" >>$t
 done
