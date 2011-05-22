@@ -1,0 +1,150 @@
+#! /bin/sh
+#
+# Maintain the .ssh/authorized_keys file which in linux
+# controls who can log into an account.
+#
+# File:		authorize
+# Author:	Bob Walton <walton@seas.harvard.edu>
+# Date:		Sun May 22 05:35:31 EDT 2011
+#
+# The authors have placed this program in the public
+# domain; they make no warranty and accept no liability
+# for this program.
+#
+# RCS Info (may not be true date or author):
+#
+#   $Author: walton $
+#   $Date: 2011/05/22 11:25:30 $
+#   $RCSfile: authorize,v $
+#   $Revision: 1.1 $
+
+case "$1" in
+   -doc* )
+   	echo "
+authorize
+
+    This program installs ssh public keys in the current
+    account.  Specifically, all public keys with file
+    names of the forms
+
+    	~/*_*.pub   or   ~/.ssh/*_*.pub
+
+    are made active for the current account.  Note that
+    public key names must contain `_'; the *_* part of
+    the name should be unique and should identify the
+    account containing the corresponding private key.
+
+    WARNING: These accounts are NOT completely private:
+    the judge may access them (but usually does not).
+
+    First, if the ~/.ssh directory does not exist it is
+    made.
+    
+    Second, any files named ~/*_*.pub are moved into the
+    ~/.ssh directory.  Note this may overwrite files in
+    that directory that have the same last name
+    component.
+    
+    Then this program makes a temporary file that is
+    the concatenation of all files with names of the
+    form
+
+	~/.hpcm_contest/judges_ssh/*.pub
+	~/.ssh/*_*.pub
+
+    The ~/.hpcm_contest/judges_ssh/*_*.pub keys can be
+    used by the judge to access that account.
+
+    If ./ssh/authorized_keys equals this temporary file,
+    the temporary is deleted and nothing further is
+    done.
+
+    Otherwise this program uses
+
+    	cd ~/.ssh
+	mkdir RCS
+	ci -l authorized_keys
+
+    to back up ~/.ssh/authorized_keys, then replaces
+    ~/.ssh/authorized_keys by the temporary file, and
+    then prints messages.  The program prints messages
+    to indicate what it is doing.
+    "
+
+    	exit 1
+	;;
+esac
+
+if test ! -d ~/.ssh
+then
+    echo "Making the ~/.ssh directory"
+    echo "    mkdir ~/.ssh"
+    mkdir ~/.ssh
+    echo "    chmod 700 ~/.ssh"
+    chmod 700 ~/.ssh
+fi
+
+for F in `ls ~/*_*.pub` 2>/dev/null`
+do
+    echo "Moving $F to ~/.ssh"
+    echo "    chmod 400 $F"
+    chmod 400 $F
+    echo "    mv -f $F ~/.ssh"
+    mv -f $F ~/.ssh
+done
+
+cd ~/.ssh
+t=authorized_keys.$$
+trap "rm -f $t" 0
+rm -f $t 0
+waring=no
+
+for F in `ls ~/.hpcm_contest/judges_ssh/*.pub` \
+          2>/dev/null`
+do
+    cat "$F" >>$t
+    warning=yes
+done
+for F in `ls *_*.pub` 2>/dev/null`
+do
+    cat "$F" >>$t
+done
+
+if cmp -s $t authorized_keys
+then
+    exit 0
+fi
+
+echo "New version of authorized_keys in $t" \
+     "does NOT match current version"
+
+if test ! -x RCS
+then
+    echo "Making ~/.ssh/RCS directory for backups"
+    ehco "    mkdir RCS"
+    mkdir RCS
+fi
+
+if rcsdiff authorized_keys >/dev/null 2>&1
+then
+    echo "Backing up ~/.ssh/authorized_keys"
+    echo "    ci -l authorized_keys"
+    ci -l authorized_keys
+fi
+
+echo "Installing new ~/.ssh/authorized_keys file"
+echo "    mv -f $t authorized_keys"
+mv -f $t authorized_keys
+echo "    chmod 600 authorize_keys"
+chmod 600 authorize_keys
+
+if test $warning = yes
+then
+    echo ""
+    echo "WARNING:"
+    echo "    This account is NOT completely private."
+    echo "    Contest/practice-facility managers may"
+    echo "    access this account."
+fi
+
+exit 0
