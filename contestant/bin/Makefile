@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Oct  4 17:59:23 EDT 2010
+# Date:		Mon May 23 08:12:08 EDT 2011
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2010/10/04 22:10:44 $
+#   $Date: 2011/05/23 12:12:42 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.25 $
+#   $Revision: 1.26 $
 
 all:	hpcm_sandbox hpcm_sendmail clisp modes
 
@@ -48,7 +48,8 @@ modes:
 		   hpcm_extract_test_replies \
 		   filtered_diff email_diff \
 		   hpcm_helper javahelp stlhelp \
-		   startup_helper elinks_helper
+		   startup_helper elinks_helper \
+		   authorize
 	chmod a+r procmailrc hpcm_clisp.lsp \
 	          elinks_startup_message
 	chmod a+x .. ../.. ../../..
