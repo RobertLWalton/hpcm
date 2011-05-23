@@ -6,7 +6,7 @@
 #
 # File:		makecontest
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat May 21 00:13:13 EDT 2011
+# Date:		Mon May 23 06:50:50 EDT 2011
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2011/05/21 04:50:54 $
+#   $Date: 2011/05/23 10:51:51 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.213 $
+#   $Revision: 1.214 $
 #
 # The next lines start tclsh \
 trap "echo makecontest: Terminated by Signal" \
@@ -979,6 +979,13 @@ The -ssh Option
     ten.  In order to make the tar file, ./.ssh and
     ./ssh/authorized_keys are made.
 
+    The ~/.ssh/{identity,id_rsa,id_dsa}.pub files are
+    also copied by the -ssh option into the ./contest/
+    .ssh directory, which is made if necessary, so these
+    files will be available to the `hpcm/contestant/bin/
+    authorize' program.
+
+
 The -procmailrc Option
 --- ----------- ------
 
@@ -2978,19 +2985,48 @@ if { $secure_option } {
     }
 }
 
-# Make ./contest/extra_setup.tar
+# Make ./contest/extra_setup.tar and ./contest/.ssh
 #
-if {    $ssh_option \
-     && ! [file readable $c_d/extra_setup.tar] } {
+if { $ssh_option } {
     set keys ""
+    set key_changed no
     foreach f { identity.pub id_rsa.pub id_dsa.pub } {
-	set f $env(HOME)/.ssh/$f
-        if { [file readable $f] } {
-	    set keys "$keys\n[read_entire_file $f]"
+	set src $env(HOME)/.ssh/$f
+	set des $c_d/.ssh/$f
+	set dir $c_d/.ssh
+        if { [file readable $src] } {
+	    set keys "$keys\n[read_entire_file $src]"
+	    if { ! [file directory $dir] } {
+		file mkdir $dir
+		grant_access $dir
+		puts "Made ./contest/.ssh"
+	    }
+	    if { ! [file readable $des] \
+	         || \
+                 ! [compare_files $src $des } {
+		file delete -force $des
+		copy_file $src $des
+		grant_access $des
+		puts "Wrote ./contest/.ssh/$f"
+	        set key_changed yes
+	    }
+	} elseif { [file readable $des] } {
+	    file delete -force $des
+	    puts "Deleted ./contest/.ssh/$f"
+	    set key_changed yes
 	}
+	   
     }
-    set keys [string range $keys 1 end]
-    if { $keys != "" } {
+    if { $keys == "" } {
+        TODO "Cannot make ./contest/extra_setup.tar\
+	             or ./contest/.ssh" \
+	     "    because none of the files\
+	      ~/.ssh/identity.pub, ~/.ssh/id_rsa.pub" \
+	     "    or ~/.ssh/id_dsa.pub exist." \
+	     "Run ssh-keygen and then `makecontest\
+	      -ssh'."
+    } elseif { $key_changed } {
+	set keys [string range $keys 1 end]
         file delete -force -- $j_d/.ssh
         file mkdir $j_d/.ssh
 	deny_group_access $j_d/.ssh
@@ -3002,13 +3038,6 @@ if {    $ssh_option \
 	cd $wd
 	grant_access $c_d/extra_setup.tar
 	puts "Wrote ./contest/extra_setup.tar"
-    } else {
-        TODO "Cannot make ./contest/extra_setup.tar" \
-	     "    because none of the files\
-	      ~/.ssh/identity.pub, ~/.ssh/id_rsa.pub" \
-	     "    or ~/.ssh/id_dsa.pub exist." \
-	     "Run ssh-keygen and then `makecontest\
-	      -ssh'."
     }
 }
 
