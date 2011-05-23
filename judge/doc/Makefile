@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Mar 28 14:02:12 EDT 2011
+# Date:		Mon May 23 08:32:27 EDT 2011
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2011/03/28 18:16:43 $
+#   $Date: 2011/05/23 12:36:27 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.34 $
+#   $Revision: 1.35 $
 
 # make
 #	Makes documentation as fprintable .txt files in
@@ -33,6 +33,7 @@ DOCS=	overview.txt \
 	installing_hpcm.txt \
 	judging.txt \
 	managing.txt \
+	contestant/authorize.txt \
         judge/autodispatch.txt \
 	judge/autoinfo.txt \
 	judge/autojudge.txt \
@@ -384,6 +385,11 @@ secure/hpcm_wrapper.txt:    hpcm_judging.rc \
 
 # ../../contestant/bin docs
 #
+contestant/authorize.txt: \
+		../../contestant/bin/authorize
+	rm -f contestant/authorize.txt
+	-../../contestant/bin/authorize -doc \
+	    >contestant/authorize.txt
 contestant/email_diff.txt: \
 		../../contestant/bin/email_diff
 	rm -f contestant/email_diff.txt
