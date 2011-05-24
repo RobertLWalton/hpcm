@@ -4,7 +4,7 @@
 #
 # File:		managing
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon May 23 02:36:43 EDT 2011
+# Date:		Tue May 24 00:49:48 EDT 2011
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2011/05/23 07:24:09 $
+#   $Date: 2011/05/24 10:33:42 $
 #   $RCSfile: managing,v $
-#   $Revision: 1.7 $
+#   $Revision: 1.8 $
 #
 # The next lines start tclsh \
 trap "echo judging: Terminated by Signal" \
@@ -55,8 +55,8 @@ services, such as backup.
 
 The contest/facility manager of a contest or practice
 facility named nnnn has responsibility for the existence
-and contents of all directories and files with names of
-the forms:
+and contents of all directories and files in the judging
+account with names of the forms:
 
 	~/*_nnnn_*
 	~/*_nnnn
@@ -144,8 +144,8 @@ The contest description is made in the file
 
     ~/judging_nnnn_*/help/this_contest
 
-and automatically copied from there (by `make' and
-`makecontest') to the file
+and automatically copied from there (by `make') to the
+file
 
     ~/contest_nnnn/help/this_contest
 
@@ -289,9 +289,9 @@ for details.
 Allocating Accounts
 ---------- --------
 
-In order to allocate and account named aaaa, open the
+In order to allocate an account named aaaa, open the
 file
-	contest_nnnn/secure/passwords
+	~/contest_nnnn/secure/passwords
 
 for editing and change the line
 
@@ -312,16 +312,16 @@ account (including account hostname), and the contes-
 tant/student's password, edit a welcome message describ-
 ing the contest/facility into the file
 
-	contest_nnnn/secure/passwords_header
+	~/contest_nnnn/secure/passwords_header
 
-and such the aaaa:ppppp:NAME:EMAIL line is correct in
-the file
+and then after the aaaa:ppppp:NAME:EMAIL line is correct
+in the file
 
-	contest_nnnn/secure/passwords
+	~/contest_nnnn/secure/passwords
 
 execute
 
-	cd contest_nnnn/secure
+	cd ~/contest_nnnn/secure
 	hpcm_mail aaaa -nosend
 
 This will NOT send the email, but will output it so you
@@ -395,11 +395,11 @@ we will explain below, is:
         public/=problems/, \\
         ALL:include, \\
         public/password:noinclude \\
-    \$hpcm_directory/problem_library/index \\
+    \$hpcm_directory/problem_library/index, \\
         public/=problems/, \\
         bospre2010:include, \\
         public/abbot:include \\
-    \$env(HOME)/problems_nnnn/index \\
+    \$env(HOME)/problems_nnnn/index, \\
         =problems/, \\
 	ALL:include
   \"
@@ -413,11 +413,12 @@ This parameter is a character string that has the format
 
 The space separated components of the `problems_argu-
 ments' string actually become program arguments to the
-makecontest program.  The INDEX-FILE-NAME is known as
-such because it does NOT begin with `-', and therefore
-is not an option, and because the previous argument did
-not end in `,'.  If one of these arguments ends with
-`,', then the next program argument is a substitution.
+makecontest program (which is invoked by `make').  The
+INDEX-FILE-NAME is known as such because it does NOT
+begin with `-', and therefore is not an option, and
+because the previous argument did not end in `,'.  If
+one of these arguments ends with `,', then the next
+program argument is a substitution.
 
 The index file consists of entries with the format
 
@@ -433,7 +434,7 @@ problems index stored in the file
 
 	~/contest_nnnn/help/problems
 	
-and available to contestants/students with by executing
+and available to contestants/students by executing
 
 	help problems
 	
@@ -447,9 +448,9 @@ The item is included in the output index if and only if
 after substitutions the item has the `include' option
 and does NOT have the `noinclude' option (`noinclude'
 overrides `include' and can be used to exclude indivi-
-dual within a category of items).  In this case the
-ITEM-NAME before substitutions is used as the name of
-a file or subdirectory of the index file containing
+dual items within a category of items).  In this case
+the ITEM-NAME before substitutions is used as the name
+of a file or subdirectory of the index file containing
 directory that is to be copied to the subdirectory of
 ~/contest_nnnn that is named by ITEM-NAME after substi-
 tutions.  The latter must begin with `problems/' when
@@ -458,7 +459,7 @@ the item is a contest/facility problem.
 (Items can also be demonstration problems or help
 files.  For these the ITEM-NAME after substitutions
 must begin with `demos/' or `help/'.  The item is
-included in a different index in this case, either
+included in a different index in these cases, either
 ~/contest_nnnn/help/demos or ~/contest_nnnn/help/index,
 accessible by contestants/students using `help demos'
 or `help'.)
@@ -480,8 +481,8 @@ There are two types of substitutions:
 
 For item-name-substitutions, if an item name begins with
 PREFIX1, that prefix is replaced by PREFIX2.  Substitu-
-tions are NOT recursive.  If more than one apply, the
-one with the longest PREFIX1 is used.
+tions are NOT recursive.  If more than one apply, only
+the one with the longest PREFIX1 is used.
 
 Note that the `problem name' is the last component of
 the ITEM-NAME after substitution.  So, for example, if
@@ -579,13 +580,13 @@ Here `ALL:include' includes all the problems in the
 directory, and `=problems/' prefixes each item name
 with `problems/', e.g., so
 
-    my_problem becomes problems/my_problem
+    my_problem     becomes     problems/my_problem
 
 after substitution.
 
 Notice that the `problems_arguments' value is a sequence
 of program arguments separated from each other by space
-characters (a line ending \\'s turns the following line
+characters (a line ending \\ turns the following line
 feed and line beginning space characters into a single
 space character), and each program argument ends with a
 `,' if and only if it is followed by a substitution.
@@ -593,6 +594,9 @@ space character), and each program argument ends with a
 
 Things The Software Manager Should Do
 ------ --- -------- ------- ------ --
+
+If you want to do the following, ask the software
+manager to do them for you.
 
 Create more contest/facility accounts.
 Change account passwords.
