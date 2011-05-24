@@ -4,7 +4,7 @@
 #
 # File:		managing
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue May 24 00:49:48 EDT 2011
+# Date:		Tue May 24 07:01:34 EDT 2011
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2011/05/24 10:33:42 $
+#   $Date: 2011/05/24 11:17:00 $
 #   $RCSfile: managing,v $
-#   $Revision: 1.8 $
+#   $Revision: 1.9 $
 #
 # The next lines start tclsh \
 trap "echo judging: Terminated by Signal" \
@@ -39,6 +39,7 @@ puts "
 	Making the Contest/Facility Description
 	Making the Contest/Facility Web Page
 	Allocating Accounts
+	Scoreboard Maintenance
 	Changing the Problem Set
 
 
@@ -65,11 +66,11 @@ Included are the contest judging directory with a name
 of the form
 
 	~/judging_nnnn_*
-
+
 and the contest directory named
 
 	~/contest_nnnn
-
+
 However, the software manager, and not the contest/
 facility manager, will make initial versions of these
 last two directories, and then the contest/facility
@@ -102,12 +103,12 @@ to
 
 	~/.ssh/authorized_keys
 	~/.ssh/known_hosts
-
+
 (the latter is modified semi-automatically).  Notify the
 software manager when changes are made to
 
 	~/.ssh/authorized_keys
-
+
 so a backup may be kept (typically this is kept in
 ~/.ssh/RCS/authorized_keys,v).
 
@@ -381,8 +382,50 @@ password in the ~/.ssh directory).  Also, if you have an
 ssh-agent running (or if the software manager provided
 one for the contest/facility account), you can execute
 `ssh-add' to add the private key to the agent.
-
 
+There are (usually) a few `contestant/student' accounts
+reserved for testing use by the managers.  These are
+called `test accounts'.  In `/contest_nnnn/secure/
+passwords these have the password value `none', which
+means merely that their passwords are set by hand and
+not automatically.  Usually their passwords are set to
+the same password as the judging account.
+
+
+Scoreboard Maintenance
+---------- -----------
+
+By default account names are used in the scoreboard.
+However, there is a map from account names to scoreboard
+names, namely the `submitter_compress_map' parameter in
+hpcm_judging.rc.  See that file for documentation.
+
+The scoreboard is maintained by a program that must be
+kept running.  It may be started by
+
+	cd ~/judging_nnnn_*
+	makescoreboard start
+
+Once started, it will NOT stop until the computer oper-
+ating system is shut down, which usually happens only a
+few times in a year.  The above can be re-executed any
+time without harm; if the program is already running the
+above command will do nothing but say so.  Other com-
+mands that can be used in the ~/judging_nnnn_* directory
+are
+
+	makescoreboard status
+	makescoreboard stop
+	makescoreboard update
+
+The last forces an immediate update of the scoreboard,
+and can be used regardless of whether the makescoreboard
+program is still running or not.  Normally this program
+checks every 60 seconds to see if any of the files used
+as input to the scoreboard have changed, and if so, re-
+makes the scoreboard.
+
+
 Changing the Problem Set
 -------- --- ------- ---
 
@@ -410,7 +453,7 @@ This parameter is a character string that has the format
 
     index-specification ::=
         INDEX-FILE-NAME, { substitution, }* substitution
-
+
 The space separated components of the `problems_argu-
 ments' string actually become program arguments to the
 makecontest program (which is invoked by `make').  The
@@ -419,7 +462,7 @@ begin with `-', and therefore is not an option, and
 because the previous argument did not end in `,'.  If
 one of these arguments ends with `,', then the next
 program argument is a substitution.
-
+
 The index file consists of entries with the format
 
     *** ITEM-NAME OPTION*
@@ -443,7 +486,7 @@ exits.  This index equals entries selected as described
 below after substitutions are made in the first line.
 These substitutions are determined by the `substitu-
 tions' arguments inside the `problems_arguments' value.
-
+
 The item is included in the output index if and only if
 after substitutions the item has the `include' option
 and does NOT have the `noinclude' option (`noinclude'
@@ -455,7 +498,7 @@ directory that is to be copied to the subdirectory of
 ~/contest_nnnn that is named by ITEM-NAME after substi-
 tutions.  The latter must begin with `problems/' when
 the item is a contest/facility problem.
-
+
 (Items can also be demonstration problems or help
 files.  For these the ITEM-NAME after substitutions
 must begin with `demos/' or `help/'.  The item is
@@ -483,7 +526,7 @@ For item-name-substitutions, if an item name begins with
 PREFIX1, that prefix is replaced by PREFIX2.  Substitu-
 tions are NOT recursive.  If more than one apply, only
 the one with the longest PREFIX1 is used.
-
+
 Note that the `problem name' is the last component of
 the ITEM-NAME after substitution.  So, for example, if
 the ITEM-NAME is `public/my_problem' before substitu-
@@ -491,7 +534,7 @@ tion, and `public/=problems/' is the only applicable
 substitution, then `problems/my_problem' is the ITEM-
 NAME after substitution, and `my_problem' is the problem
 name.
-
+
 For option-substitutions, any unsubstituted OPTION1 is
 replaced by all the OPTION2's.  Again substitutions are
 NOT recursive.  ITEM-NAMEs are considered to be options.
@@ -523,13 +566,13 @@ and by default equals `\$env(HOME)/hpcm' where
 `~'.  The problems we are interested in are in the
 `public/' subdirectory of this directory, and typical
 entries in this index file are
-
+
     *** public/passwords E bospre2004 text
 	    What is a good way to generate memorable
 	    passwords?
 	    Boston Preliminary 2004.
 	    Author: Bob Walton
-
+
     *** public/stringhash E bospre2005 text
 	    Computing a random hash value from a string.
 	    Boston Preliminary 2005.
@@ -551,7 +594,7 @@ For included items, `public/' in the unsubstituted item
 name is replaced by `problems/' in the substituted item
 name, placing such items in the problems/ subdirector-
 ies.
-
+
 The second index,
 
     \$hpcm_directory/problem_library/index
@@ -564,7 +607,7 @@ containing all publically available HPCM problems, so
 `public/abbot:include' includes the `abbot' problem
 in the `public' subdirectory of the directory contain-
 ing the index.
-
+
 The last index,
 
     \$env(HOME)/problems_nnnn/index
@@ -591,12 +634,12 @@ feed and line beginning space characters into a single
 space character), and each program argument ends with a
 `,' if and only if it is followed by a substitution.
 
-
+
 Things The Software Manager Should Do
 ------ --- -------- ------- ------ --
 
-If you want to do the following, ask the software
-manager to do them for you.
+If you want to do one of the following, ask the software
+manager to do it for you.
 
 Create more contest/facility accounts.
 Change account passwords.
