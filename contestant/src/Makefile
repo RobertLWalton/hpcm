@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Aug 14 08:40:06 EDT 2011
+# Date:		Mon Aug 15 06:29:59 EDT 2011
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2011/08/14 12:49:03 $
+#   $Date: 2011/08/15 10:39:33 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.1 $
+#   $Revision: 1.2 $
 
 # Kill all implicit rules
 #
@@ -22,7 +22,7 @@
 
 all:	hpcm_display_graph
 
-test:	hpcm_display_graph_test.ps
+test_ps:	hpcm_display_graph_test.ps
 
 hpcm_display_graph:	hpcm_display_graph.cc
 	g++ -I /usr/include/cairo \
@@ -37,7 +37,12 @@ hpcm_display_graph_test.ps:	\
 	hpcm_display_graph -ps \
 	    hpcm_display_graph_test.in \
 	    hpcm_display_graph_test.out \
-	    > hpcm_display_graph_test.ps \
+	    > hpcm_display_graph_test.ps
+
+test_X:		hpcm_display_graph
+	hpcm_display_graph -X \
+	    hpcm_display_graph_test.in \
+	    hpcm_display_graph_test.out
 
 clean:
 	rm -f hpcm_display_graph \

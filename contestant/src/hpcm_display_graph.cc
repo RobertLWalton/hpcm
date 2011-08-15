@@ -2,7 +2,7 @@
 //
 // File:	hpcm_display_graph.cc
 // Authors:	Bob Walton (walton@deas.harvard.edu)
-// Date:	Sun Aug 14 07:51:24 EDT 2011
+// Date:	Mon Aug 15 06:39:21 EDT 2011
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: walton $
-//   $Date: 2011/08/14 12:49:03 $
+//   $Date: 2011/08/15 10:39:33 $
 //   $RCSfile: hpcm_display_graph.cc,v $
-//   $Revision: 1.3 $
+//   $Revision: 1.4 $
 
 #include <iostream>
 #include <iomanip>
@@ -114,21 +114,32 @@ inline int & edges ( int i, int j )
 // You MUST declare the entire paper size, 8.5x11",
 // else you get a non-centered printout.
 
-const double page_height = 11*72;	// 11.0"
-const double page_width = 8*72 + 72/2;	// 8.5"
+const double page_height = 11*72;	    // 11.0"
+const double page_width = 8*72 + 72/2;	    // 8.5"
 
-const double top_margin = 36;		// 0.5"
-const double bottom_margin = 36;	// 0.5"
-const double side_margin = 72;		// 1.0"
-const double title_height = 72+36;	// 1.5"
-const double title_font_size = 16;	// 16/72"
+const double top_margin = 36;		    // 0.5"
+const double bottom_margin = 36;	    // 0.5"
+const double side_margin = 72;		    // 1.0"
+const double page_title_height = 72+36;	    // 1.5"
+const double title_font_size = 16;	    // 16/72"
 
-const double big_node_size = 10.8;	// 3/20"
-const double small_node_size = 3.6;	// 1/20"
-const double narrow_line_width = 1;	// 1/72"
-const double wide_line_width = 3;	// 3/72"
+const double page_big_node_size = 5;	    // 5/72"
+const double page_small_node_size = 3;      // 3/72"
+const double page_narrow_edge_size = 1;    // 1/72"
+const double page_wide_edge_size = 2;	    // 2/72"
 
 const double print_box = page_width - 2 * side_margin;
+
+// For X-Windows, units are 1 pixel.
+
+const int window_height = 650;
+const int window_title_height = 50;
+const int window_width = 600;
+
+const int window_big_node_size = 5;
+const int window_small_node_size = 2;
+const int window_narrow_edge_size = 1;
+const int window_wide_edge_size = 3;
 
 // cairo_write_func_t to write data to cout.
 //
@@ -146,6 +157,9 @@ int main ( int argc, char ** argv )
 {
 
     cairo_surface_t * page = NULL;
+    Display * display = NULL;
+    Window window;
+    Visual * visual = NULL;
 
     // Process options.
 
@@ -162,6 +176,42 @@ int main ( int argc, char ** argv )
 	}
         else if (    strcmp ( "X", name ) == 0 )
 	{
+	    display = XOpenDisplay ( NULL );
+	    if ( display == NULL )
+	    {
+		cout << "Cannot open X-Display;"
+		        " maybe DISPLAY environment"
+			" variable is not set"
+		     << endl;
+		exit (1);
+	    }
+	    int screen = XDefaultScreen ( display );
+	    int black = XBlackPixel ( display, screen );
+	    int white = XWhitePixel ( display, screen );
+	    window =
+	        XCreateSimpleWindow
+		    ( display,
+	              XDefaultRootWindow ( display ),
+		      0, 0,
+		      window_width, window_height,
+		      0,
+		      black, white );
+	    Visual * visual =
+	        XDefaultVisual ( display, screen );
+	    page = cairo_xlib_surface_create
+	    		( display, window, visual,
+			  window_width, window_height );
+	    XSelectInput ( display, window,
+	                     StructureNotifyMask
+			   | KeyPressMask );
+	    XMapWindow ( display, window );
+
+	    while ( true )
+	    {
+	        XEvent e;
+		XNextEvent ( display, & e );
+		if ( e.type == MapNotify ) break;
+	    }
 	}
         else if ( strncmp ( "doc", name, 3 ) == 0 )
 	{
@@ -225,8 +275,8 @@ int main ( int argc, char ** argv )
     assert (    cairo_status ( title_c )
 	     == CAIRO_STATUS_SUCCESS );
 
-    string in_name, out_name;
-    getline ( out, out_name );
+    string in_name, out_line;
+    getline ( out, out_line );
         // We read-ahead the out file, as the test
 	// case name line of the next test case is
 	// also the end-of-test-case signal for the
@@ -247,13 +297,13 @@ int main ( int argc, char ** argv )
 	         << out_file << endl;
 	    exit ( 1 );
 	}
-	else if ( in_name.compare ( out_name ) != 0 )
+	else if ( in_name.compare ( out_line ) != 0 )
 	{
 	    cout << "Test case names are not equal:"
 	         << endl
 		 << "  " << in_file << ": " << in_name
 		 << endl
-		 << "  " << out_file << ": " << out_name
+		 << "  " << out_file << ": " << out_line
 		 << endl;
 	    exit ( 1 );
 	}
@@ -279,12 +329,10 @@ int main ( int argc, char ** argv )
 	    edges(i,j) = 0;
 	while ( true )
 	{
-	    getline ( out, out_name );
-	        // Out_name doubles as out file next
-		// input line.
+	    getline ( out, out_line );
 	    if ( out.eof() ) break;
 
-	    istringstream outs ( out_name );
+	    istringstream outs ( out_line );
 	    outs >> ws;
 	    if ( ! isdigit ( outs.peek() ) )
 	        break;
@@ -294,38 +342,20 @@ int main ( int argc, char ** argv )
 	    {
 	        cout << "Badly formatted line in "
 		     << out_file << ":" << endl
-		     << "  " << out_name << endl;
+		     << "  " << out_line << endl;
 		exit ( 1 );
 	    }
 	    if ( i < 1 || j < 1 || i > N || j > N )
 	    {
 	        cout << "Bad point indices in "
 		     << out_file << ":" << endl
-		     << "  " << out_name << endl;
+		     << "  " << out_line << endl;
 		exit ( 1 );
 	    }
 	    ++ edges(i-1,j-1);
 	}
 
-	// Show test case name.
-	//
-	cairo_text_extents_t te;
-	cairo_text_extents
-	    ( title_c, in_name.c_str(), & te );
-	assert (    cairo_status ( title_c )
-		 == CAIRO_STATUS_SUCCESS );
-	cairo_move_to
-	    ( title_c, page_width/2 - te.width/2,
-	      top_margin
-	      +
-	      title_font_size
-	      +
-	      ( title_height - title_font_size ) / 2 );
-	cairo_show_text ( title_c, in_name.c_str() );
-	assert (    cairo_status ( title_c )
-	         == CAIRO_STATUS_SUCCESS );
-
-	// Compute boundaries
+	// Compute bonding box for all points.
 	//
 	double xmin = DBL_MAX, xmax = - DBL_MAX;
 	double ymin = DBL_MAX, ymax = - DBL_MAX;
@@ -336,57 +366,159 @@ int main ( int argc, char ** argv )
 	    if ( point[i].y < ymin ) ymin = point[i].y;
 	    if ( point[i].y > ymax ) ymax = point[i].y;
 	}
-	double top = top_margin + title_height;
-	double bottom = page_height - bottom_margin;
-	double left = side_margin;
-	double right = page_width - side_margin;
 
-	// Set up point scaling.
-	//
-	double dx = xmax - xmin;
-	double dy = ymax - ymin;
-	if ( dx == 0 ) dx = 1;
-	if ( dy == 0 ) dy = 1;
-	double xscale = (right - left) / dx;
-	double yscale = (bottom - top) / dy;
-
-#	define CONVERT(i) \
-	    left + (point[i].x - xmin) * xscale, \
-	    bottom - (point[i].y - ymin) * yscale
-
-	// Draw points.
-	//
-	for ( int i = 0; i < N; ++ i )
+	while ( true )
 	{
-	    cairo_new_sub_path ( graph_c );
-	    cairo_arc
-	        ( graph_c, CONVERT(i),
-		  edges(i,i) > 0 ? big_node_size :
-				   small_node_size,
-		  0.0, 2 * M_PI );
-	    cairo_fill ( graph_c );
-	    assert (    cairo_status ( graph_c )
+	    double title_top, title_height, title_width,
+	           graph_top, graph_height,
+		   graph_left, graph_width,
+		   big_node_size, small_node_size,
+		   wide_edge_size, narrow_edge_size;
+
+	    if ( display != NULL )
+	    {
+
+		// Find window width and height.
+		//
+		Window parent;
+		int x, y;
+		unsigned width, height,
+		         border_width, depth;
+		XGetGeometry ( display, window,
+		               & parent,
+			       & x, & y,
+			       & width, & height,
+			       & border_width,
+			       & depth );
+		XClearArea ( display, window, 0, 0,
+		             width, height, false );
+
+	        title_top = 0;
+		title_width = width;
+		title_height = window_title_height;
+
+		// Use window_big_node_size as a graph
+		// margin to be sure big nodes can be
+		// seen.
+		//
+		graph_top = window_title_height;
+		graph_height = height - graph_top
+		             - window_big_node_size;
+		graph_left = window_big_node_size;
+		graph_width = width
+		            - 2 * window_big_node_size;
+
+		big_node_size = window_big_node_size;
+		small_node_size =
+		    window_small_node_size;
+		wide_edge_size = window_wide_edge_size;
+		narrow_edge_size =
+		    window_narrow_edge_size;
+	    }
+	    else
+	    {
+	        title_top = top_margin;
+		title_width = page_width;
+		title_height = page_title_height;
+
+		graph_top = top_margin
+		          + page_title_height;
+		graph_height =
+		    page_height - graph_top
+		                - bottom_margin;
+		graph_left = side_margin;
+		graph_width =
+		    page_width - 2 * side_margin;
+
+		big_node_size = page_big_node_size;
+		small_node_size = page_small_node_size;
+		wide_edge_size = page_wide_edge_size;
+		narrow_edge_size =
+		    page_narrow_edge_size;
+	    }
+
+	    // Set up point scaling.
+	    //
+	    double dx = xmax - xmin;
+	    double dy = ymax - ymin;
+	    if ( dx == 0 ) dx = 1;
+	    if ( dy == 0 ) dy = 1;
+	    double xscale = graph_width / dx;
+	    double yscale = graph_height / dy;
+
+#	    define CONVERT(i) \
+		  graph_left \
+		+ (point[i].x - xmin) * xscale, \
+		  graph_top + graph_height \
+		- (point[i].y - ymin) * yscale
+
+	    // Display test case name.
+	    //
+	    cairo_text_extents_t te;
+	    cairo_text_extents
+		( title_c, in_name.c_str(), & te );
+	    assert (    cairo_status ( title_c )
 		     == CAIRO_STATUS_SUCCESS );
+	    cairo_move_to
+		( title_c, title_width/2 - te.width/2,
+		  title_top
+		  +
+		  title_font_size
+		  +
+		    ( title_height - title_font_size )
+		  / 2 );
+	    cairo_show_text
+		( title_c, in_name.c_str() );
+	    assert (    cairo_status ( title_c )
+		     == CAIRO_STATUS_SUCCESS );
+
+	    // Draw points.
+	    //
+	    for ( int i = 0; i < N; ++ i )
+	    {
+		cairo_new_sub_path ( graph_c );
+		cairo_arc
+		    ( graph_c, CONVERT(i),
+		      edges(i,i) > 0 ? big_node_size :
+				       small_node_size,
+		      0.0, 2 * M_PI );
+		cairo_fill ( graph_c );
+		assert (    cairo_status ( graph_c )
+			 == CAIRO_STATUS_SUCCESS );
+	    }
+
+	    // Draw edges.
+	    //
+	    for ( int i = 0; i < N; ++ i )
+	    for ( int j = i + 1; j < N; ++ j )
+	    {
+		int count = edges(i,j) + edges(j,i);
+		if ( count == 0 ) continue;
+		cairo_move_to ( graph_c, CONVERT(i) );
+		cairo_line_to ( graph_c, CONVERT(j) );
+		cairo_set_line_width
+		    ( graph_c,
+		      count > 1 ? wide_edge_size :
+				  narrow_edge_size );
+		cairo_stroke ( graph_c );
+	    }
+
+	    cairo_show_page ( title_c );
+
+	    if ( display != NULL ) while ( true )
+	    {
+	        XEvent e;
+		XNextEvent ( display, & e );
+		if ( e.type == KeyPress )
+		    goto PAGE_DONE;
+		    // Go to next test case.
+		if ( e.type == ConfigureNotify )
+		    break;
+		    // Redraw current window.
+	    }
+	    else goto PAGE_DONE;
 	}
-
-	// Draw edges.
-	//
-	for ( int i = 0; i < N; ++ i )
-	for ( int j = i + 1; j < N; ++ j )
-	{
-	    int count = edges(i,j) + edges(j,i);
-	    if ( count == 0 ) continue;
-	    cairo_move_to ( graph_c, CONVERT(i) );
-	    cairo_line_to ( graph_c, CONVERT(j) );
-	    cairo_set_line_width
-		( graph_c,
-		  count > 1 ? wide_line_width :
-		              narrow_line_width );
-	    cairo_stroke ( graph_c );
-	}
-
-	cairo_show_page ( title_c );
-
+	PAGE_DONE:;
     }
 
     cairo_destroy ( title_c );
