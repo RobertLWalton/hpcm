@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Aug 21 20:12:25 EDT 2011
+# Date:		Sun Aug 21 20:08:49 EDT 2011
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2011/08/22 00:13:34 $
+#   $Date: 2011/08/22 00:09:03 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.39 $
+#   $Revision: 1.38 $
 
 all:	scorediff grant_access \
 	hpcm_sandbox_unsecure \
@@ -25,7 +25,7 @@ all:	scorediff grant_access \
 	filtered_diff email_diff hpcm_helper \
 	startup_helper \
 	elinks_helper elinks_startup_message \
-	help printer_pipe hpcm_display_graph
+	help hpcm_display_graph
 
 # Kill all implicit rules
 #
@@ -135,9 +135,6 @@ chkpage:	../src/chkpage.c
 	cp -p ../src/chkpage .
 	chmod a-w,o-rwx chkpage
 
-printer_pipe:
-	ln -s ../../contestant/bin/printer_pipe .
-
 hpcm_display_graph:
 	ln -s ../../contestant/bin/hpcm_display_graph .
 
@@ -157,6 +154,4 @@ clean:
 		startup_helper \
 		elinks_helper \
 		elinks_startup_message \
-		help \
-		printer_pipe \
-		hpcm_display_graph
+		help
