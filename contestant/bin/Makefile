@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon May 23 08:12:08 EDT 2011
+# Date:		Sun Aug 21 19:57:17 EDT 2011
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,11 +11,12 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2011/05/23 12:12:42 $
+#   $Date: 2011/08/22 00:06:38 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.26 $
+#   $Revision: 1.27 $
 
-all:	hpcm_sandbox hpcm_sendmail clisp modes
+all:	hpcm_sandbox hpcm_sendmail hpcm_display_graph \
+	clisp modes
 
 # Kill all implicit rules
 #
@@ -33,6 +34,13 @@ hpcm_sendmail:	../../secure/src/hpcm_sendmail.c
 	cp -p ../../secure/src/hpcm_sendmail .
 	chmod 555 hpcm_sendmail
 	chmod u+s hpcm_sendmail
+
+hpcm_display_graph:	../src/hpcm_display_graph.cc
+	rm -f hpcm_display_graph
+	(cd ../src; make hpcm_display_graph)
+	cp -p ../src/hpcm_display_graph .
+	chmod 555 hpcm_display_graph
+	chmod u+s hpcm_display_graph
 
 clisp:
 	rm -f clisp
@@ -55,4 +63,5 @@ modes:
 	chmod a+x .. ../.. ../../..
 
 clean:
-	rm -f hpcm_sandbox hpcm_sendmail clisp
+	rm -f hpcm_sandbox hpcm_sendmail \
+	      hpcm_display_graph clisp
