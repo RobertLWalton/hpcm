@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon May 23 08:32:27 EDT 2011
+# Date:		Sun Sep  4 07:58:15 EDT 2011
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2011/05/23 12:36:27 $
+#   $Date: 2011/09/04 12:02:43 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.35 $
+#   $Revision: 1.36 $
 
 # make
 #	Makes documentation as fprintable .txt files in
@@ -51,6 +51,7 @@ DOCS=	overview.txt \
 	contestant/help.txt \
 	judge/hpcm_clisp.txt \
 	contestant/hpcm_clisp.txt \
+	contestant/hpcm_display_graph.txt \
 	secure/hpcm_email_passwords.txt \
 	contestant/hpcm_extract.txt \
 	contestant/hpcm_extract_test_replies.txt \
@@ -418,6 +419,11 @@ contestant/hpcm_clisp.txt:	\
 	rm -f contestant/hpcm_clisp.txt
 	-../../contestant/bin/hpcm_clisp -doc \
 	    >contestant/hpcm_clisp.txt
+contestant/hpcm_display_graph.txt:	\
+		../../contestant/bin/hpcm_display_graph
+	rm -f contestant/hpcm_display_graph.txt
+	-../../contestant/bin/hpcm_display_graph -doc \
+	    >contestant/hpcm_display_graph.txt
 contestant/hpcm_extract.txt:	\
 		../../contestant/bin/hpcm_extract
 	rm -f contestant/hpcm_extract.txt

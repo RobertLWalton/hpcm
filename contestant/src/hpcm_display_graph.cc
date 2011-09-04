@@ -2,7 +2,7 @@
 //
 // File:	hpcm_display_graph.cc
 // Authors:	Bob Walton (walton@deas.harvard.edu)
-// Date:	Mon Aug 15 06:39:21 EDT 2011
+// Date:	Sun Sep  4 05:17:22 EDT 2011
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: walton $
-//   $Date: 2011/08/15 10:39:33 $
+//   $Date: 2011/09/04 11:57:56 $
 //   $RCSfile: hpcm_display_graph.cc,v $
-//   $Revision: 1.4 $
+//   $Revision: 1.5 $
 
 #include <iostream>
 #include <iomanip>
@@ -34,6 +34,9 @@ using std::istringstream;
 extern "C" {
 #include <cairo-ps.h>
 #include <cairo-xlib.h>
+#define XK_MISCELLANY
+#define XK_LATIN1
+#include <X11/keysymdef.h>
 }
 
 const char * const documentation = "\n"
@@ -75,20 +78,21 @@ const char * const documentation = "\n"
 "    enteed not have a digit as their first non-\n"
 "    whitespace character, and thus can be distin-\n"
 "    guished from edge lines.\n"
-"\n"
+"\f\n"
 "    With the -ps option, postscript is written to\n"
 "    the standard output.\n"
 "\n"
 "    With the -X option, an X-window is opened and\n"
 "    the first test case displayed.  Typing a car-\n"
 "    riage return goes to the next test case, and\n"
-"    typing an unsigned integer M followed by a car-\n"
-"    riage return goes to the M'th test case.\n"
+"    typing control-C terminates the display.\n"
 "\n"
 "    Points are displayed as dots, edges as lines.\n"
 "    If two edges overlap, the line is thickened.  If\n"
 "    there is a line from a point to itself, the\n"
-"    point dot is made larger.\n";
+"    point dot is made larger.  The X and Y scales\n"
+"    are chosen to be identical so relative distance\n"
+"    measurements may be made.\n";
 
 
 // Current test case data.
@@ -203,7 +207,9 @@ int main ( int argc, char ** argv )
 			  window_width, window_height );
 	    XSelectInput ( display, window,
 	                     StructureNotifyMask
-			   | KeyPressMask );
+			   | ExposureMask
+			   | KeyPressMask
+			   | KeyReleaseMask );
 	    XMapWindow ( display, window );
 
 	    while ( true )
@@ -274,6 +280,11 @@ int main ( int argc, char ** argv )
     cairo_set_source_rgb ( graph_c, 0.0, 0.0, 0.0 );
     assert (    cairo_status ( title_c )
 	     == CAIRO_STATUS_SUCCESS );
+
+    // Keep track of which control keys are pressed.
+    //
+    bool left_control_pressed = false;
+    bool right_control_pressed = false;
 
     string in_name, out_line;
     getline ( out, out_line );
@@ -446,6 +457,13 @@ int main ( int argc, char ** argv )
 	    double xscale = graph_width / dx;
 	    double yscale = graph_height / dy;
 
+	    // Make the scales the same.
+	    //
+	    if ( xscale > yscale )
+	        xscale = yscale;
+	    else if ( xscale < yscale )
+	        yscale = xscale;
+
 #	    define CONVERT(i) \
 		  graph_left \
 		+ (point[i].x - xmin) * xscale, \
@@ -510,9 +528,36 @@ int main ( int argc, char ** argv )
 	        XEvent e;
 		XNextEvent ( display, & e );
 		if ( e.type == KeyPress )
-		    goto PAGE_DONE;
+		{
+		    KeySym key =
+		        XLookupKeysym ( & e.xkey, 0 );
+		    if ( key == XK_Control_L )
+		        left_control_pressed = true;
+		    else if ( key == XK_Control_R )
+		        right_control_pressed = true;
+		    else if ( key == XK_c
+		              &&
+			      ( left_control_pressed
+			        ||
+				right_control_pressed )
+			    )
+		        goto PROGRAM_DONE;
+		    else
+		       goto PAGE_DONE;
 		    // Go to next test case.
-		if ( e.type == ConfigureNotify )
+		}
+		else if ( e.type == KeyRelease )
+		{
+		    KeySym key =
+		        XLookupKeysym ( & e.xkey, 0 );
+		    if ( key == XK_Control_L )
+		        left_control_pressed = false;
+		    else if ( key == XK_Control_R )
+		        right_control_pressed = false;
+		}
+		if ( e.type == Expose
+		     &&
+		     e.xexpose.count == 0 )
 		    break;
 		    // Redraw current window.
 	    }
@@ -520,6 +565,8 @@ int main ( int argc, char ** argv )
 	}
 	PAGE_DONE:;
     }
+
+    PROGRAM_DONE:
 
     cairo_destroy ( title_c );
     cairo_destroy ( graph_c );
