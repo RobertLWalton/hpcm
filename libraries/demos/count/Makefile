@@ -1,7 +1,7 @@
 # Makefile for the `count' Demonstration Problem
 #
 # File:		Makefile
-# Date:		Sat May  6 01:19:58 EDT 2006
+# Date:		Wed Sep 21 19:32:00 EDT 2011
 #
 # Exactly ONE of the four files count.c (C), count.cc
 # (C++), count.java (Java), or count.lsp (Commonlisp)
@@ -105,6 +105,15 @@ default:	count.out
 	    "exec `hpcm_clisp -which` -I $*.fas \$$*"
 	chmod a+r $*.fas
 	chmod a+rx $*
+
+# If count.in does not exist but sample.in does, then
+# copy sample.in to count.in and make the copy writable
+# by the user.
+#
+count.in:	
+	if test -r sample.in; \
+	then cp sample.in count.in; \
+	chmod u+rw count.in; fi
 #
 # hpcm_sandbox below may execute `count' as a special
 # unprivileged user named `sandbox', so various files
@@ -115,10 +124,10 @@ default:	count.out
 count.out:	count count.in
 	rm -f count.out core core.[0-9]*
 	chmod a+x . count
-	hpcm_sandbox -cputime 60 \
-	             -datasize 4m \
-		     -stacksize 4m \
-		     -filesize 50k \
+	hpcm_sandbox -cputime 30 \
+	             -datasize 32m \
+		     -stacksize 32m \
+		     -filesize 32m \
 		     -tee count.out \
 		     count \
 	    <count.in
@@ -126,10 +135,9 @@ count.out:	count count.in
 count.debug:	count count.in
 	rm -f count.debug core core.[0-9]*
 	chmod a+x . count
-	hpcm_sandbox -cputime 60 \
-	             -datasize 4m \
-		     -stacksize 4m \
-		     -filesize 4m \
+	hpcm_sandbox -cputime 30 \
+	             -datasize 32m \
+		     -stacksize 32m \
 		     -tee count.debug \
 		     count debug \
 	    <count.in 
@@ -163,7 +171,7 @@ clean:
 #
 # RCS Info (may not be true date or author):
 #
-#   $Author: hc3 $
-#   $Date: 2006/05/06 05:19:22 $
+#   $Author: walton $
+#   $Date: 2011/09/21 23:36:12 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.31 $
+#   $Revision: 1.32 $
