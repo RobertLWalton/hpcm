@@ -6,7 +6,7 @@
 #
 # File:		lookat
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Sep  8 06:40:04 EDT 2010
+# Date:		Wed Sep 28 13:25:26 EDT 2011
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2010/09/08 10:54:20 $
+#   $Date: 2011/09/28 18:14:35 $
 #   $RCSfile: lookat,v $
-#   $Revision: 1.38 $
+#   $Revision: 1.39 $
 #
 # The next lines start tclsh \
 trap "echo lookat: Terminated by Signal" \
@@ -152,16 +152,29 @@ lookat \[-rerun | -source SRCDIR\] 'regular-expression'
     list is displayed.  For each submission and each
     logical expression atom that matches within the
     submission, the first filename and line matched
-    for the atom is displayed.  The user of this program
-    can execute `manualreply' on a submission by typ-
-    ing its number within the list of the submissions.
-    Upon return from manualreply, the list is redisplay-
-    ed, but it is NOT recomputed.
+    for the atom is displayed.  If these lines include
+
+    	Received_Mail: Subject: submit FILE
+	Auto_Score: AUTOSCORE
+	Manual_Score: MANUALSCORE     \[may be missing]
+
+    these lines are reformatted as the one line
+
+    	FILE/AUTOSCORE/MANUALSCORE
+
+    and a warning message is output if AUTOSCORE and
+    MANUALSCORE disagree or AUTOSCORE is not `Completely
+    Correct' and MANUALSCORE is missing.
+    
+    The user of this program can execute `manualreply'
+    on a submission by typing its number within the list
+    of the submissions.  Upon return from manualreply,
+    the list is redisplayed, but it is NOT recomputed.
 
     Unlike most HPCM judging programs, errors made by
     this program are not written to log files, but are
     written to the standard error output.
-
+
     This program is interactive.  A summary of its
     commands is:
 
@@ -178,7 +191,7 @@ lookat \[-rerun | -source SRCDIR\] 'regular-expression'
 
 	d	Move down in the submission list.
 	n	Ditto (move to next).
-
+
 	x	Exit.
 
 	control-D
@@ -198,7 +211,7 @@ lookat \[-rerun | -source SRCDIR\] 'regular-expression'
 	    Lists auto-scored submissions and for each
 	    its Auto_Score file and Received_Mail
 	    `Subject:' line.
-
+
 	lookat 'AUTO & RECEIVED'
 	    Ditto in effect, usually, though in this
 	    form the file names are more carefully
@@ -435,6 +448,8 @@ proc format_matches { matches } {
     set auto ""
     set manual ""
     set other {}
+    set subject_regexp \
+        {^Subject:[ \t]*submit[ \t][ \t]*(.*)$}
     foreach match $matches {
         set line "    [lindex $match 0]:\
 		      [lindex $match 1]"
@@ -444,7 +459,7 @@ proc format_matches { matches } {
 	Received_Mail {
 	    if {    $subject != "" \
 	         || ! [regexp -nocase \
-	                      {^Subject:[ \t]*(.*)$} \
+	                      $subject_regexp \
 			      [lindex $match 1] \
 			      forget subject] } {
 		lappend other $line
@@ -470,14 +485,23 @@ proc format_matches { matches } {
 	  
 	}
     }
-    if {    $subject != "" \
-         && ( $auto != "" || $manual != "" ) } {
+    if { $subject != "" && $auto != "" } {
         set line "    $subject/$auto"
 	if { $manual != "" } {
 	    set line "$line/$manual"
 	}
 	set lines {}
 	lappend lines $line
+	regexp {^.*:[^ \t]* (.*)$} $auto forget auto
+	if { $auto != $manual && $manual != "" } {
+	    lappend lines \
+	        "!!! WARNING: Auto_Score DOES NOT MATCH\
+		              Manual_Score"
+	} elseif {    $auto != "Completely Correct" \
+	           && $manual == "" } {
+	    lappend lines \
+	        "!!! WARNING: Manual_Score IS MISSING"
+	}
 	lappend_lists lines $other
     }
     return $lines
