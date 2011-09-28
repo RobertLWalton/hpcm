@@ -4,7 +4,7 @@
 #
 # File:		testproblems
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Sat Aug 21 07:44:38 EDT 2010
+# Date:		Wed Sep 28 14:36:46 EDT 2011
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2010/09/08 10:54:21 $
+#   $Date: 2011/09/28 18:51:37 $
 #   $RCSfile: testproblems,v $
-#   $Revision: 1.38 $
+#   $Revision: 1.39 $
 #
 # The next lines run tclsh \
 trap "echo testproblems: Terminated by Signal; exit 1" \
@@ -130,12 +130,13 @@ testproblems \[-p N\] \[-keep|-|-make|-judge\] \\
 
     Next the .in and .jin files in the directory are
     processed.  If PROBLEM.in was a link it was deleted
-    as indicated above.  A set of path roots is chosen
+    as indicated above.  The set of path roots is chosen
     such that if f is in the set then either f.in or
-    f.jin exists.  If either PROBLEM.in or PROBLEM.jin
-    exists (after any PROBLEM.in link is deleted),
-    only f == PROBLEM is used.  Otherwise all f for
-    which either f.in or f.jin exist are used.
+    f.jin exists.  If PROBLEM is in this set but is not
+    the only member of the set, an error message is
+    produced and processing of the directory terminates.
+    Otherwise all f for which either f.in or f.jin exist
+    are used.
 
     Given f.jin but NOT f.in, the program runs
 
@@ -635,23 +636,22 @@ foreach x $myargv {
 	# *.in and *.jin.  Note that if problem.in
 	# was a link it was deleted above.
 	#
-	set done ""
 	set inputs ""
-	if {    [file exists $problem.in] \
-	     || [file exists $problem.jin] } {
-	    set inputs [list $problem.in $problem.jin]
-	} else {
-	    set inputs [glob *.in *.jin]
-	    lappend done $problem
-	}
-	foreach file [lsort $inputs] {
-
+	foreach file [glob *.in *.jin] {
 	    set f [file rootname $file]
-	    if { [lcontain $done $f] } continue
-	    lappend done $f
+	    if { [lcontain $inputs $f] } continue
+	    lappend inputs $f
+	}
+	if {    [lcontain $inputs $problem] \
+	     && [llength $inputs] > 1 } {
+	    error "ERROR: $problem.in or $problem.jin\
+	           exists\n       along with other .in\
+		   or .jin files"
+	}
+	foreach f [lsort $inputs] {
 
 	    if { $f != $problem } {
-	        puts "========== $file:"
+	        puts "========== $f:"
 	    }
 	    file delete -force -- $f.in#
 	    if { ! [file exists $f.in] } {
