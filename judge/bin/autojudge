@@ -5,7 +5,7 @@
 #
 # File:		autojudge
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Jan 13 23:05:51 EST 2009
+# Date:		Fri Sep 30 03:11:28 EDT 2011
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2009/01/14 05:24:53 $
+#   $Date: 2011/09/30 07:43:30 $
 #   $RCSfile: autojudge,v $
-#   $Revision: 1.137 $
+#   $Revision: 1.138 $
 #
 # The next lines start tclsh \
 trap "echo autojudge: Terminated by Signal" \
@@ -175,12 +175,14 @@ autojudge \[-rerun|-manual\]
         global variable problem_input_names exists, its
 	value is the list of input names.  Otherwise N
 	is on the list if and only if N.in or N.jin
-	exist in the problem solution directory.  An
-	exception is PROBLEM, which is only an input
-	name if there are no other input names, on the
-	grounds that otherwise it is probably arises
-	from a link to an input file with a different
-	name.
+	exist in the problem solution directory.  How-
+	ever PROBLEM is treated specially.  First, if
+	the list would contain PROBLEM and some other
+	name N, and if PROBLEM.in exists as a real file
+	and not a symbolic link, or PROBLEM.jin exists,
+	then it is an error.  Otherwise if there is some
+	N on the list besides PROBLEM, PROBLEM is re-
+	moved from the list.
 
       . Files listed in the problem_make_files global
         variable, which gives instructions on when and
@@ -204,13 +206,13 @@ autojudge \[-rerun|-manual\]
 	Makefile, Scoring_Filter, and for each input
 	names N, N.in, N.test, N.jin, N.ftest, N.jtest,
 	N.jftest.
-
+
 	Note that if N.out exists in the problem solu-
 	tion directory, it will be linked to N.test in
 	the submission directory, in preference over
 	N.test in the solution directory.  Ditto for
 	.ftest, .jtest, .jftest.
-
+
         The only reason for copying files instead of
 	linking them is when hpcm_sandbox needs to
 	access the file, as it has no permission on
@@ -240,7 +242,7 @@ autojudge \[-rerun|-manual\]
       . For each input name N, one of N.score, N.fscore,
         N.jscore, or N.jfscore is made, according to
 	whether or not Scoring_Filter and N.jin exist.
-
+
       . Auto_Score is computed from the resulting
 	.*score files.  Whenever Auto_Score is made, the
 	Score_Flag is set, and a Reply_Mail file is made
@@ -250,7 +252,7 @@ autojudge \[-rerun|-manual\]
     Here files marked with * are linked into the current
     submission directory from the problem's solution
     directory.
-
+
     In general, this program does not make a file that
     already exists, unless one of the files input to
     make the file is more recent that the file to be
@@ -273,7 +275,7 @@ autojudge \[-rerun|-manual\]
     to the submitter as the final word on the submis-
     sion.  In either case this program terminates after
     reporting the error.
-
+
     Errors in extraction are classified as system errors
     if extractmail outputs the phrase `SYSTEM ERROR' and
     submitter errors otherwise.  SYSTEM ERRORs are log-
@@ -290,7 +292,7 @@ autojudge \[-rerun|-manual\]
     non-extracted files made (not linked) by this pro-
     gram in the submission directory are assumed to
     depend upon all the extracted and linked files.
-
+
     When this program creates a `Reply_Mail' file it
     uses instructions in the `response_instructions'
     global variable.  This variable contains instruc-
@@ -300,7 +302,7 @@ autojudge \[-rerun|-manual\]
     response instructions is described in hpcm_
     judging.rc, where a default value is also given for
     the `response_instructions' variable.
-
+
     With default response instructions, this program
     sends a reply if the score is `Completely Correct'
     or the scoring_mode is `auto' or `auto+manual'.  If
@@ -329,12 +331,12 @@ autojudge \[-rerun|-manual\]
     (e.g. tracker) that they should search for submis-
     sion directories for which the manualreply program
     should be called.
-
+
     If this program writes the Auto_Score file, it also
     sets the score flag (the flag directory Score_Flag
     file), to signal that any scoreboards need to be
     recomputed.
-
+
     Problem names that contain `/' or `.' or begin with
     `-' or have no solution directory are illegal, and
     are submitter errors.  Similarly extension names
@@ -722,11 +724,19 @@ if { [info exists problem_input_names] } {
     # in that case.
     #
     set input_names ""
-    set problem_in_found 0
+    set problem_found 0
+    set non_link_problem_found 0
     foreach name [glob -nocomplain "$s_d/*"] {
 	set tail [file tail $name]
 	if { $tail == "$PROBLEM.in" } {
-	    set problem_in_found 1
+	    set problem_found 1
+	    if { [file type $name] != "link" } { 
+		set non_link_problem_found 1
+	    }
+	    continue
+	} elseif { $tail == "$PROBLEM.jin" } {
+	    set problem_found 1
+	    set non_link_problem_found 1
 	    continue
 	}
 
@@ -736,9 +746,16 @@ if { [info exists problem_input_names] } {
 	if { [lcontain $input_names $root] } continue
 	lappend input_names $root
     }
-    if {    $problem_in_found \
-	 && [llength $input_names] == 0 } {
-	lappend input_names $PROBLEM
+    if { [llength $input_names] == 0 } {
+	if { $problem_found } {
+	    lappend input_names $PROBLEM
+	} else {
+	    error "No *.in or *.jin files found"
+	}
+    } elseif { $non_link_problem_found } {
+	error "$PROBLEM.in exists and is not a symbolic
+	       link, or $PROBLEM.jin exists,\n    and\
+	       N.{in,jin} exists for some other N"
     }
     set input_names [lsort $input_names]
     set problem_input_names $input_names
