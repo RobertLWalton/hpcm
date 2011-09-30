@@ -5,7 +5,7 @@
 #
 # File:		manualreply
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Jan 13 23:17:58 EST 2009
+# Date:		Fri Sep 30 07:50:07 EDT 2011
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2009/01/14 05:24:54 $
+#   $Date: 2011/09/30 12:19:43 $
 #   $RCSfile: manualreply,v $
-#   $Revision: 1.84 $
+#   $Revision: 1.85 $
 #
 # The next lines start tclsh \
 trap "echo manualreply: Terminated by Signal" \
@@ -261,12 +261,18 @@ aj
 
 
 Run `autojudge -rerun' in the current directory.  The\
-    autojudge
-program makes any missing or out of date Auto_Score\
-    file and any missing
-or out of date files needed to make a new Auto_Score\
-    file.  The -rerun
-option suppresses sending email to the submitter.
+    autojudge program
+makes any missing or out of date Auto_Score file and\
+    any missing or out of date
+files needed to make a new Auto_Score file.  The -rerun\
+    option suppresses
+sending email to the submitter.
+
+aj first copies autodispatch.log to the end of\
+    autodispatch.log-history.
+It then executes `autojudge -rerun' and saves its\
+    output in a
+new autodispatch.log file.
 
 The autojudge `-rerun' option begins by renaming any\
     Auto_Score file to
@@ -274,12 +280,11 @@ Old_Auto_Score, unless the latter file already exists,\
     and then deletes
 all files execept Received_Mail, Reply_Mail,\
     Reply_Mail_History, No_Reply,
-Old_Auto_Score, Manual_Score, and autodispatch.log. \
-    The output of
-`autojudge -rerun' is saved in autodispatch.log. \
-    `Autojudge -rerun' finishes
-by deleting Old_Auto_Score if it equals a newly made\
-    Auto_Score.
+Old_Auto_Score, Manual_Score, autodispatch.log, and\
+    autodispatch.log-history.
+`Autojudge -rerun' finishes by deleting Old_Auto_Score\
+    if it equals
+a newly made Auto_Score.
 
 
 roas
@@ -976,6 +981,20 @@ proc send_score_reply {} {
 proc run_autojudge {} {
 
     puts "Running autojudge -rerun"
+
+    # Copy previous autodispatch.log if it exists to
+    # autodispatch.log-history.
+    #
+    if { [file exists autodispatch.log] } {
+	set histch [open autodispatch.log-history a]
+	puts $histch ""
+	puts $histch "==== ==== ==== ==== ==== ====\
+	              ==== ==== ==== ==== ==== ====\
+		      ==== ===="
+	puts $histch ""
+	put_file autodispatch.log $histch
+	close $histch
+    }
 
     # Put output in new autodispatch.log file.
     #
