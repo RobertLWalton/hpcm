@@ -2,7 +2,7 @@
 //
 // File:	hpcm_display_graph.cc
 // Authors:	Bob Walton (walton@deas.harvard.edu)
-// Date:	Sun Oct  2 05:28:33 EDT 2011
+// Date:	Sun Oct  2 05:29:59 EDT 2011
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: walton $
-//   $Date: 2011/10/02 09:29:11 $
+//   $Date: 2011/10/02 09:31:42 $
 //   $RCSfile: hpcm_display_graph.cc,v $
-//   $Revision: 1.6 $
+//   $Revision: 1.7 $
 
 #include <iostream>
 #include <iomanip>
@@ -505,7 +505,8 @@ int main ( int argc, char ** argv )
 		assert (    cairo_status ( title_c )
 			 == CAIRO_STATUS_SUCCESS );
 		cairo_move_to
-		    ( title_c, 0,
+		    ( title_c,
+		      title_width/2 - te.width/2,
 		        graph_bottom
 		      -   (   window_foot_height
 		            - title_font_size )
