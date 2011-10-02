@@ -2,7 +2,7 @@
 //
 // File:	hpcm_display_graph.cc
 // Authors:	Bob Walton (walton@deas.harvard.edu)
-// Date:	Sun Sep  4 05:17:22 EDT 2011
+// Date:	Sun Oct  2 05:28:33 EDT 2011
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: walton $
-//   $Date: 2011/09/04 11:57:56 $
+//   $Date: 2011/10/02 09:29:11 $
 //   $RCSfile: hpcm_display_graph.cc,v $
-//   $Revision: 1.5 $
+//   $Revision: 1.6 $
 
 #include <iostream>
 #include <iomanip>
@@ -136,9 +136,12 @@ const double print_box = page_width - 2 * side_margin;
 
 // For X-Windows, units are 1 pixel.
 
-const int window_height = 650;
+const int window_height = 700;
 const int window_title_height = 50;
+const int window_foot_height = 50;
 const int window_width = 600;
+const char window_foot[] =
+    "Type SPACE for next page, control-C to quit.";
 
 const int window_big_node_size = 5;
 const int window_small_node_size = 2;
@@ -382,6 +385,7 @@ int main ( int argc, char ** argv )
 	{
 	    double title_top, title_height, title_width,
 	           graph_top, graph_height,
+		   graph_bottom,
 		   graph_left, graph_width,
 		   big_node_size, small_node_size,
 		   wide_edge_size, narrow_edge_size;
@@ -414,7 +418,9 @@ int main ( int argc, char ** argv )
 		//
 		graph_top = window_title_height;
 		graph_height = height - graph_top
-		             - window_big_node_size;
+		             - window_big_node_size
+			     - window_foot_height;
+		graph_bottom = height;
 		graph_left = window_big_node_size;
 		graph_width = width
 		            - 2 * window_big_node_size;
@@ -489,6 +495,26 @@ int main ( int argc, char ** argv )
 		( title_c, in_name.c_str() );
 	    assert (    cairo_status ( title_c )
 		     == CAIRO_STATUS_SUCCESS );
+
+	    // Display foot for X-windows.
+	    //
+	    if ( display != NULL )
+	    {
+		cairo_text_extents
+		    ( title_c, window_foot, & te );
+		assert (    cairo_status ( title_c )
+			 == CAIRO_STATUS_SUCCESS );
+		cairo_move_to
+		    ( title_c, 0,
+		        graph_bottom
+		      -   (   window_foot_height
+		            - title_font_size )
+			/ 2 );
+		cairo_show_text
+		    ( title_c, window_foot );
+		assert (    cairo_status ( title_c )
+			 == CAIRO_STATUS_SUCCESS );
+	    }
 
 	    // Draw points.
 	    //
