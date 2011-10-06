@@ -4,7 +4,7 @@
 #
 # File:		makehelp
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Thu Oct  6 03:55:15 EDT 2011
+# Date:		Thu Oct  6 05:39:42 EDT 2011
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2011/10/06 09:27:28 $
+#   $Date: 2011/10/06 12:02:54 $
 #   $RCSfile: makehelp,v $
-#   $Revision: 1.1 $
+#   $Revision: 1.2 $
 #
 # The next lines start tclsh \
 trap "echo makehelp: Terminated by Signal" \
@@ -23,7 +23,8 @@ trap "echo makehelp: Terminated by Signal" \
 tclsh "$0" "$@"; exit $status
 
 set document "
-makehelp \[-h] help_index title index option ...
+makehelp \[-h | -e 'regexp ...'] \\
+         help_index title index option ...
 
     Read the index and make the help_index file which
     has the format of a help index file with the given
@@ -56,9 +57,14 @@ makehelp \[-h] help_index title index option ...
 # Handle -h argument.
 #
 set h 0
-if { [lindex $argv 0] == "-h" } {
-    set h 1
-    set argv [lrange $argv 1 end]
+while { true } {
+    if { [lindex $argv 0] == "-h" } {
+	set h 1
+	set argv [lrange $argv 1 end]
+    } elseif { [lindex $argv 0] == "-e" } {
+        set e [lindex $argv 1]
+	set argv [lrange $argv 2 end]
+    } else break
 }
 
 # If too few arguments or first argument begins with
@@ -73,6 +79,7 @@ set help_index [lindex $argv 0]
 set files "${help_index}.files"
 set title [lindex $argv 1]
 set index [lindex $argv 2]
+set indexdir [file dirname $index]
 set options [lrange $argv 3 end]
 set date [exec date]
 
@@ -96,10 +103,11 @@ set tline "$title[string repeat " " $count]$date"
 puts $hich $tline
 puts $hich ""
 
-set WS "\[\ \t\]*"
+set WS "\[\ \t\]"
+set NWS "\[^\ \t\]"
 set in_item 0
 set in_header 0
-set header ""
+set header {}
 while { true } {
     set line [gets $ich]
     if { [eof $ich] } break
@@ -123,14 +131,22 @@ while { true } {
 	}
 
 	if { $in_item } {
-	    puts $fch [lindex $line 1]
+	    set itemfile "$indexdir/[lindex $line 1]"
+
+	    set in_directory \
+	        [file isdirectory $itemfile]
+	    if { ! $in_directory } {
+	        puts $fch $itemfile
+	    }
+
 	    foreach hline $header {
 	        puts $hich $hline
 	    }
+	    set header {}
 	}
 
 	if { ! $h && $in_item } {
-	    regexp "^($WS\\*\\*\\*$WS)\[^\ \t]" \
+	    regexp "^(${WS}*\\*\\*\\*${WS}*)\[^\ \t]" \
 	           $line forget indent
 	    regsub "\\*\\*\\*" $indent "   " indent
 	    set name [file tail [lindex $line 1]]
@@ -146,6 +162,15 @@ while { true } {
 	set in_item 0
     } elseif { $in_item } {
         puts $hich $line
+	if { $in_directory } {
+	    if { [regexp \
+	            "^${WS}*(${NWS}+)(${WS}.*|)\$" \
+		    $line forget f forget1] \
+		 && \
+		 [file readable $indexdir/$f] } {
+	        puts $fch $indexdir/$f
+	    }
+	}
     }
 }
 
