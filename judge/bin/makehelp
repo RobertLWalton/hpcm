@@ -1,0 +1,156 @@
+#! /bin/sh
+#
+# Make index and list of files
+#
+# File:		makehelp
+# Author:	Bob Walton <walton@deas.harvard.edu>
+# Date:		Thu Oct  6 03:55:15 EDT 2011
+#
+# The authors have placed this program in the public
+# domain; they make no warranty and accept no liability
+# for this program.
+#
+# RCS Info (may not be true date or author):
+#
+#   $Author: walton $
+#   $Date: 2011/10/06 09:27:28 $
+#   $RCSfile: makehelp,v $
+#   $Revision: 1.1 $
+#
+# The next lines start tclsh \
+trap "echo makehelp: Terminated by Signal" \
+    HUP INT QUIT; \
+tclsh "$0" "$@"; exit $status
+
+set document "
+makehelp \[-h] help_index title index option ...
+
+    Read the index and make the help_index file which
+    has the format of a help index file with the given
+    title.  Also make the file help_index.files that
+    lists the files whose entries were included in the
+    index.  If a directory is included, list the files
+    in the directory in alphabetical order.
+
+    The index has item entries that begin with a header
+    line of format
+
+    	*** FILENAME option ...
+
+    These lines are included with changes unless the -h
+    option is given.  The changes consist of replacing
+    the `***' with single spaces, deleting the options,
+    and keeping only the tail of the FILENAME (the part
+    after the last `/').
+
+    FILENAMEs can also be used as options to select an
+    entry.
+
+    Lines beginning with `#' in the index are deleted,
+    as they are comments.
+
+    Unlike most HPCM judging programs, this program does
+    not read any hpcm_judging.rc file and errors made by
+    this program are not written to log files."
+
+# Handle -h argument.
+#
+set h 0
+if { [lindex $argv 0] == "-h" } {
+    set h 1
+    set argv [lrange $argv 1 end]
+}
+
+# If too few arguments or first argument begins with
+# `-', print documentation and exit with error.
+#
+if { $argc < 4 || [regexp {^-} [lindex $argv 0]] } {
+    puts $document
+    exit 1
+}
+
+set help_index [lindex $argv 0]
+set files "${help_index}.files"
+set title [lindex $argv 1]
+set index [lindex $argv 2]
+set options [lrange $argv 3 end]
+set date [exec date]
+
+if { [catch { set hich [open $help_index w] }] } {
+    puts "ERROR: could not open $help_index for writing"
+    exit 1
+}
+if { [catch { set fch [open $files w] }] } {
+    puts "ERROR: could not open $files for writing"
+    exit 1
+}
+if { [catch { set ich [open $index r] }] } {
+    puts "ERROR: could not open $index for reading"
+    exit 1
+}
+
+set count [expr 56 - [string length $title] \
+                   - [string length $date]]
+set tline "$title[string repeat " " $count]$date"
+
+puts $hich $tline
+puts $hich ""
+
+set WS "\[\ \t\]*"
+set in_item 0
+set in_header 0
+set header ""
+while { true } {
+    set line [gets $ich]
+    if { [eof $ich] } break
+    if { [regexp {^#} $line] } continue
+
+    if {    ! [catch { set len [llength $line] }] \
+         && $len >= 2
+	 && [lindex $line 0] == "***" } {
+
+	# index item entry header line
+
+	set in_item 0
+	set in_header 0
+	set option_list [lrange $line 1 end]
+	foreach option $options {
+	    if { [expr [lsearch -exact \
+	                         $option_list \
+	                         $option] >= 0] } {
+		set in_item 1
+	    }
+	}
+
+	if { $in_item } {
+	    puts $fch [lindex $line 1]
+	    foreach hline $header {
+	        puts $hich $hline
+	    }
+	}
+
+	if { ! $h && $in_item } {
+	    regexp "^($WS\\*\\*\\*$WS)\[^\ \t]" \
+	           $line forget indent
+	    regsub "\\*\\*\\*" $indent "   " indent
+	    set name [file tail [lindex $line 1]]
+	    puts $hich "$indent$name"
+	}
+	continue
+    } elseif { $in_header } {
+        lappend header $line
+    } elseif { [regexp "^\[^\ \t\]" $line] } {
+        set header ""
+	lappend header $line
+	set in_header 1
+	set in_item 0
+    } elseif { $in_item } {
+        puts $hich $line
+    }
+}
+
+close $hich
+close $fch
+close $ich
+
+exit 0
