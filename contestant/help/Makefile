@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Oct 13 09:14:49 EDT 2010
+# Date:		Thu Oct  6 05:35:39 EDT 2011
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2010/10/13 13:34:23 $
+#   $Date: 2011/10/06 12:10:45 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.31 $
+#   $Revision: 1.32 $
 
 # `make help.pdf' and `make demos.pdf' make printouts of
 # all the help and demos files respectively.  Note that
@@ -77,8 +77,8 @@ HELP_FILES = \
 #	email/email_unix_tools
 
 ADVANCED_HELP_FILES = \
-	advanced/2D_geometry \
 	advanced/dynamic_programming \
+	advanced/2D_geometry \
 	advanced/breadth_first_search \
 	advanced/constrained_search \
 	advanced/network_flows \
@@ -111,119 +111,63 @@ ADVANCED_DEMOS_FILES = \
 	../../problem_library/demos/csearch/csearch.cc
 
 help_index:	index
-	rm -f help_index
-	T='	'; \
-	echo >>help_index \
-	     "HELP INDEX$$T$$T    `date`"
-	echo >>help_index ""
-	A='^\*\*\*[[:space:]][[:space:]]*'; \
-	D='[^[:space:]]*\/'; \
-	M='[^[:space:]\/]*'; \
-	E='[[:space:]].*'; \
-	sed -n <index >>help_index \
-	    -e ': start' \
-	    -e '/^#[[:space:]]*end_help_index/Q' \
-	    -e '/'$$A'.* not_help_index/b skip' \
-	    -e '/^#/d' \
-	    -e 'b accept' \
-	    -e ': skip' \
-	    -e '/^[A-Z]/b start' \
-	    -e 's/.*//' \
-	    -e 'n' \
-	    -e 'b skip' \
-	    -e ': accept' \
-	    -e 's/'$$A$$D'\('$$M'\)'$$E'/\1/' \
-	    -e 'p'
-
-demos_index:	../../problem_library/index
-	rm -f demos_index
-	T='	'; \
-	echo >>demos_index \
-	     "DEMOS INDEX$$T$$T    `date`"
-	echo >>demos_index ""
-	sed -n <../../problem_library/index >>demos_index \
-	    -e '/^#[[:space:]]*end_demos_index/Q' \
-	    -e '/^#/d' \
-	    -e '/^\*\*\*[[:space:]]/d' \
-	    -e 'p'
-
-advanced_help_index:	index
-	rm -f advanced_help_index
-	T='	'; \
-	echo >>advanced_help_index \
-	     "ADVANCED HELP INDEX$$T   `date`"
-	echo >>advanced_help_index ""
-	A='^\*\*\*[[:space:]][[:space:]]*'; \
-	D='[^[:space:]]*\/'; \
-	M='[^[:space:]\/]*'; \
-	E='[[:space:]].*'; \
-	sed -n <index >>advanced_help_index \
-	    -e ': start' \
-	    -e '/^#[[:space:]]*begin_advanced_help/b accept' \
-	    -e 's/.*//' \
-	    -e 'n' \
-	    -e 'b start' \
-	    -e ': accept' \
-	    -e '/^#[[:space:]]*end_advanced_help/Q' \
-	    -e '/^#/b skip' \
-	    -e 's/'$$A$$D'\('$$M'\)'$$E'/\1/' \
-	    -e 'p' \
-	    -e ': skip' \
-	    -e 's/.*//' \
-	    -e 'n' \
-	    -e 'b accept'
-
-advanced_demos_index:	../../problem_library/index
-	rm -f advanced_demos_index
-	T='	'; \
-	echo >>advanced_demos_index \
-	     "ADVANCED DEMOS INDEX$$T   `date`"
-	echo >>advanced_demos_index ""
-	sed -n <../../problem_library/index \
-		>>advanced_demos_index \
-	    -e ': start' \
-	    -e '/^#[[:space:]]*begin_advanced_demos/b accept' \
-	    -e 's/.*//' \
-	    -e 'n' \
-	    -e 'b start' \
-	    -e ': accept' \
-	    -e '/^#[[:space:]]*end_advanced_demos/Q' \
-	    -e '/^#/b skip' \
-	    -e '/^\*\*\*[[:space:]]/b skip' \
-	    -e 'p' \
-	    -e ': skip' \
-	    -e 's/.*//' \
-	    -e 'n' \
-	    -e 'b accept'
+	rm -f help_index help_index.files
+	../../judge/bin/makehelp \
+	    help_index "HELP INDEX" index \
+	    ${HELP_FILES}
 
 help.ps:	help_index ${HELP_FILES}
 	rm -rf help.ps
 	../../judge/bin/fprint > help.ps -o \
-	    help_index ${HELP_FILES}
+	    help_index `cat help_index.files`
 
 help+.ps:	help_index ${HELP_FILES}
 	rm -rf help+.ps
 	../../judge/bin/fprint > help+.ps -o \
-	    ${EXTRAS} help_index ${HELP_FILES}
+	    ${EXTRAS} \
+	    help_index `cat help_index.files`
 
-demos.ps:	demos_index ${DEMOS_FILES}
-	rm -rf demos.ps
-	../../judge/bin/fprint > demos.ps -o \
-	    demos_index ${DEMOS_FILES}
+advanced_help_index:	index
+	rm -f advanced_help_index \
+	      advanced_help_index.files
+	../../judge/bin/makehelp \
+	    advanced_help_index "ADVANCED HELP INDEX" \
+	    index ${ADVANCED_HELP_FILES}
 
 advanced_help.ps:	advanced_help_index \
 			${ADVANCED_HELP_FILES}
 	rm -rf advanced_help.ps
 	../../judge/bin/fprint > advanced_help.ps -o \
-	    advanced_help_index ${ADVANCED_HELP_FILES}
+	    advanced_help_index \
+	    `cat advanced_help_index.files`
+
+demos_index:	../../problem_library/index
+	rm -f demos_index demos_index.files
+	../../judge/bin/makehelp -h \
+	    demos_index "DEMOS INDEX" \
+	    ../../problem_library/index \
+	    demos/count demos/javaio
+
+demos.ps:	demos_index ${DEMOS_FILES}
+	rm -rf demos.ps
+	../../judge/bin/fprint > demos.ps -o \
+	    demos_index `cat demos_index.files`
+
+advanced_demos_index:	../../problem_library/index
+	rm -f advanced_demos_index \
+	      advanced_demos_index.files
+	../../judge/bin/makehelp -h \
+	    advanced_demos_index \
+	    "ADVANCED DEMOS INDEX" \
+	    ../../problem_library/index \
+	    demos/intersections demos/csearch
 
 advanced_demos.ps:	advanced_demos_index \
 			${ADVANCED_DEMOS_FILES}
 	rm -rf advanced_demos.ps
-	../../judge/bin/fprint \
-	    > advanced_demos.ps -o \
+	../../judge/bin/fprint > advanced_demos.ps -o \
 	    advanced_demos_index \
-	    ${ADVANCED_DEMOS_FILES}
+	    `cat advanced_demos_index.files`
 
 emailsh:	email/sh/hpcm_extract \
 		email/sh/hpcm_submit \
