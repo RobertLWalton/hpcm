@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Oct  6 05:35:39 EDT 2011
+# Date:		Thu Oct  6 17:46:26 EDT 2011
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2011/10/06 12:10:45 $
+#   $Date: 2011/10/07 13:58:49 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.32 $
+#   $Revision: 1.33 $
 
 # `make help.pdf' and `make demos.pdf' make printouts of
 # all the help and demos files respectively.  Note that
@@ -56,22 +56,26 @@ ps:	help.ps demos.ps \
 .ps.pdf:
 	ps2pdf $*.ps $*.pdf
 
-HELP_FILES = \
+FORMAL_HELP_FILES = \
 	contest/formal_contest \
-	contest/informal_contest \
-	contest/untimed_contest \
 	common/xterminals \
 	common/solving \
-	email/email_solving \
 	common/input \
 	common/output \
 	common/print \
-	common/commonlisp \
 	common/scores \
 	common/scoreboard \
 	common/c++ \
 	common/java \
 	common/advice
+
+HELP_FILES = \
+	${FORMAL_HELP_FILES} \
+	contest/informal_contest \
+	contest/untimed_contest \
+	email/email_solving \
+	common/commonlisp
+
 
 # Removed from help files.
 #	email/email_unix_tools
@@ -126,6 +130,26 @@ help+.ps:	help_index ${HELP_FILES}
 	../../judge/bin/fprint > help+.ps -o \
 	    ${EXTRAS} \
 	    help_index `cat help_index.files`
+
+formal_help_index:	index
+	rm -f formal_help_index formal_help_index.files
+	../../judge/bin/makehelp \
+	    formal_help_index "HELP INDEX" index \
+	    ${FORMAL_HELP_FILES}
+
+formal_help.ps:	formal_help_index ${FORMAL_HELP_FILES}
+	rm -rf formal_help.ps
+	../../judge/bin/fprint > formal_help.ps -o \
+	    formal_help_index \
+	    `cat formal_help_index.files`
+
+formal_help+.ps:	formal_help_index \
+			${FORMAL_HELP_FILES}
+	rm -rf formal_help+.ps
+	../../judge/bin/fprint > formal_help+.ps -o \
+	    ${EXTRAS} \
+	    formal_help_index \
+	    `cat formal_help_index.files`
 
 advanced_help_index:	index
 	rm -f advanced_help_index \
