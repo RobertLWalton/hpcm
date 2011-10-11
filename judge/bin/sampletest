@@ -1,0 +1,158 @@
+#! /bin/sh
+#
+# Check that *.txt file contains sample.in
+# and sample.test.
+#
+# File:		sampletest
+# Author:	Bob Walton <walton@deas.harvard.edu>
+# Date:		Mon Oct 10 21:58:36 EDT 2011
+#
+# The authors have placed this program in the public
+# domain; they make no warranty and accept no liability
+# for this program.
+#
+# RCS Info (may not be true date or author):
+#
+#   $Author: walton $
+#   $Date: 2011/10/11 02:40:50 $
+#   $RCSfile: sampletest,v $
+#   $Revision: 1.1 $
+#
+# The next lines start tclsh \
+trap "echo sampletest: Terminated by Signal" \
+    HUP INT QUIT; \
+tclsh "$0" "$@"; exit $status
+
+set document "
+sampletest \[txt-file sample.in sample.out\]
+
+    Check that txt-file has the form:
+
+    	...
+	Sample Input
+	------ -----
+
+	<contents of sample.in>
+
+
+	Sample Output
+	------ ------
+
+	<contents of sample.test>
+
+
+	..."
+
+
+if { $argc == 0 } {
+    set txt_file [glob *.txt]
+    if { [llength $txt_file] == 0 } {
+        puts "No .txt file"
+	exit 1
+    } elseif { [llength $txt_file] > 1 } {
+        puts "Too many .txt files: $txt_file"
+	exit 1
+    }
+    set in_file sample.in
+    set test_file sample.test
+} elseif { $argc == 3 && ! [regexp {^-} [lindex $argv 0]] } {
+    set txt_file [lindex $argv 0]
+    set in_file [lindex $argv 1]
+    set test_file [lindex $argv 2]
+} else {
+    puts $document
+    exit 1
+}
+
+if { [catch { set txtch [open $txt_file r] } out] } {
+    puts "Cannot open $txt_file"
+    exit 1
+}
+
+while { true } {
+    set line [gets $txtch]
+    if { [eof $txtch ] } {
+        puts "Could not find Sample Input line."
+	exit 1
+    }
+    if { $line == "Sample Input" } break
+}
+
+set line [gets $txtch]
+if { $line != "------ -----" } {
+    puts "Bad line following Sample Input: $line"
+    exit 1
+}
+set line [gets $txtch]
+if { $line != "" } {
+    puts "Bad line following Sample Input: $line"
+    exit 1
+}
+
+if { [catch { set inch [open $in_file r] }] } {
+    puts "Cannot open $in_file"
+    exit 1
+}
+
+while { true } {
+    set in_line [gets $inch]
+    if { [eof $inch] } break
+    set txt_line [gets $txtch]
+    if { $txt_line != $in_line } {
+        puts "Txt line != in line:"
+	puts "  $txt_line"
+	puts "  $in_line"
+	exit 1
+    }
+}
+close $inch
+
+while { true } {
+    set line [gets $txtch]
+    if { ! [regexp "^\[\ \t\f\]*\$" $line] } break
+}
+
+if { $line != "Sample Output" } {
+    puts "Could not find Sample Output line."
+    exit 1
+}
+
+set line [gets $txtch]
+if { $line != "------ ------" } {
+    puts "Bad line following Sample Output: $line"
+    exit 1
+}
+set line [gets $txtch]
+if { $line != "" } {
+    puts "Bad line following Sample Output: $line"
+    exit 1
+}
+
+if { [catch { set testch [open $test_file r] }] } {
+    puts "Cannot open $test_file"
+    exit 1
+}
+
+while { true } {
+    set test_line [gets $testch]
+    if { [eof $testch] } break
+    set txt_line [gets $txtch]
+    if { $txt_line != $test_line } {
+        puts "Txt line != test line:"
+	puts "  $txt_line"
+	puts "  $test_line"
+	exit 1
+    }
+}
+close $testch
+
+set line [gets $txtch]
+if { ! [regexp "^\[\ \t\f\]*\$" $line] } {
+    puts "Bad line following Sample Output:"
+    puts "  $line"
+    exit 1
+}
+
+puts OK
+
+exit 0
