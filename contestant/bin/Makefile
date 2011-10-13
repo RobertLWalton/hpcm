@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Aug 21 19:57:17 EDT 2011
+# Date:		Thu Oct 13 08:13:50 EDT 2011
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2011/08/22 00:06:38 $
+#   $Date: 2011/10/13 12:13:59 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.27 $
+#   $Revision: 1.28 $
 
 all:	hpcm_sandbox hpcm_sendmail hpcm_display_graph \
 	clisp modes
@@ -52,7 +52,7 @@ modes:
 		   hpcm_decode \
 		   hpcm_submit print print2 fprint \
 		   printer printer_pipe scoreboard \
-		   xcsh grant_access hpcm_clisp \
+		   xsh xcsh grant_access hpcm_clisp \
 		   hpcm_extract_test_replies \
 		   filtered_diff email_diff \
 		   hpcm_helper javahelp stlhelp \
