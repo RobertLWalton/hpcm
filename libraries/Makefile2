@@ -1,7 +1,7 @@
 # Makefile for the XXX Problem
 #
 # File:		Makefile
-# Date:		Fri Aug 20 07:22:22 EDT 2010
+# Date:		Sun Oct  2 04:42:16 EDT 2011
 #
 # See demonstration Makefile for documentation.
 #
@@ -52,6 +52,10 @@ default:	$P.out
 	chmod a+r $*.fas
 	chmod a+rx $*
 
+$P.in:	
+	if test -r sample.in; \
+	then cp sample.in $P.in; chmod u+rw $P.in; fi
+
 $P.out:	$P $P.in
 	rm -f $P.out core core.[0-9]*
 	grant_access . $P ${XTRA_INPUTS}
@@ -90,6 +94,7 @@ clean:
 	rm -f $P *.class core core.[0-9]* \
 	      *.out *.debug *.fout *.jout *.jfout \
 	      $P.fas $P.lib make_$P_*input
+	if cmp -s $P.in sample.in; then rm $P.in; fi
 
 #
 # Note: The monitor program must limit its own cpu time
@@ -106,6 +111,6 @@ clean:
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2010/08/20 23:24:38 $
+#   $Date: 2011/11/20 08:08:45 $
 #   $RCSfile: Makefile2,v $
-#   $Revision: 1.12 $
+#   $Revision: 1.13 $

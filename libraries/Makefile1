@@ -1,7 +1,7 @@
 # Makefile for the XXX Problem
 #
 # File:		Makefile
-# Date:		Sun Sep 12 02:02:56 EDT 2010
+# Date:		Sun Oct  2 04:35:39 EDT 2011
 #
 # See demonstration Makefile for documentation.
 #
@@ -49,13 +49,17 @@ default:	$P.out
 	chmod a+r $*.fas
 	chmod a+rx $*
 
+$P.in:	
+	if test -r sample.in; \
+	then cp sample.in $P.in; chmod u+rw $P.in; fi
+
 $P.out:	$P $P.in
 	rm -f $P.out core core.[0-9]*
 	grant_access . $P ${XTRA_INPUTS}
-	hpcm_sandbox -cputime 60 \
-	             -datasize 4m \
-		     -stacksize 4m \
-		     -filesize 4m \
+	hpcm_sandbox -cputime 30 \
+	             -datasize 32m \
+		     -stacksize 32m \
+		     -filesize 32m \
 		     ${XTRA_LIMITS} \
 		     -tee $P.out \
 		     $P \
@@ -64,9 +68,9 @@ $P.out:	$P $P.in
 $P.debug:	$P $P.in
 	rm -f $P.debug core core.[0-9]*
 	grant_access . $P ${XTRA_INPUTS}
-	hpcm_sandbox -cputime 60 \
-	             -datasize 4m \
-		     -stacksize 4m \
+	hpcm_sandbox -cputime 30 \
+	             -datasize 32m \
+		     -stacksize 32m \
 		     ${XTRA_LIMITS} \
 		     -tee $P.debug \
 		     $P debug \
@@ -90,6 +94,7 @@ clean:
 	rm -f $P *.class core core.[0-9]* \
 	      *.out *.debug *.fout *.jout *.jfout \
 	      $P.fas $P.lib make_$P_*input
+	if cmp -s $P.in sample.in; then rm $P.in; fi
 
 #
 # Derived From:	Makefile1
@@ -102,6 +107,6 @@ clean:
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2010/09/13 23:51:25 $
+#   $Date: 2011/11/20 08:08:08 $
 #   $RCSfile: Makefile1,v $
-#   $Revision: 1.19 $
+#   $Revision: 1.20 $
