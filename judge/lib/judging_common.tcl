@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Mar 12 01:18:42 EST 2011
+# Date:		Thu Feb  2 12:12:57 EST 2012
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2011/03/12 07:38:48 $
+#   $Date: 2012/02/02 17:21:45 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.156 $
+#   $Revision: 1.157 $
 #
 
 # Table of Contents
@@ -1432,10 +1432,10 @@ proc compute_message_date {} {
 
     if { [regexp "\[^\ \t\n\r\f\]" \
 	         $message_x_hpcm_date] } {
-	return $message_x_hpcm_date
+	set date $message_x_hpcm_date
     } elseif { [regexp "\[^\ \t\n\r\f\]" \
                        $message_date] } {
-	return $message_date
+	set date $message_date
     } elseif { [catch { set len \
     			    [llength \
 			         $message_From_line] \
@@ -1446,6 +1446,13 @@ proc compute_message_date {} {
     } else {
     	return [clock format [clock seconds]]
     }
+
+    # Date may have +0000 at end; change to -0000.
+    # Mail uses +0000 to indicate GMT; TCLSH uses -0000
+    # and is out of date in this respect.
+    #
+    set date [regsub "\[+\]0000\$" $date "-0000"]
+    return $date
 }
 
 # Compute whether the header just read by read_header
