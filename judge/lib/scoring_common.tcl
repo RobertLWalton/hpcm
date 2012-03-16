@@ -2,7 +2,7 @@
 #
 # File:		scoring_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Mar 16 08:15:52 EDT 2012
+# Date:		Fri Mar 16 08:52:06 EDT 2012
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2012/03/16 12:45:26 $
+#   $Date: 2012/03/16 12:52:21 $
 #   $RCSfile: scoring_common.tcl,v $
-#   $Revision: 1.70 $
+#   $Revision: 1.71 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -434,7 +434,9 @@ proc compute_score_file { outfile testfile scorefile \
 	    }
 	    lappend options $arg
 	}
-	# TBD: Why the next line?
+	# The next line is necessary else the proof
+	# limit for the type is set to 0.
+	#
         if { [lcontain {number integer float} $type] } {
 	    lappend options $difference_type_proof_limit
 	}
