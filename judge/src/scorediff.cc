@@ -2,7 +2,7 @@
 //
 // File:	scorediff.cc
 // Authors:	Bob Walton (walton@deas.harvard.edu)
-// Date:	Sat May  6 12:58:58 EDT 2006
+// Date:	Fri Mar 16 08:25:02 EDT 2012
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -10,10 +10,10 @@
 //
 // RCS Info (may not be true date or author):
 //
-//   $Author: hc3 $
-//   $Date: 2006/05/06 16:58:13 $
+//   $Author: walton $
+//   $Date: 2012/03/16 12:44:40 $
 //   $RCSfile: scorediff.cc,v $
-//   $Revision: 1.81 $
+//   $Revision: 1.82 $
 
 // This is version 2, a major revision of the first
 // scorediff program.  This version is more explicitly
@@ -1552,12 +1552,14 @@ inline void found_difference
 	  double reldiff = 0.0 )
 {
     if (    type == FLOAT
-	 && absdiff <= float_absdiff_limit
-	 && reldiff <= float_reldiff_limit )
+	 && ( absdiff <= float_absdiff_limit
+	      ||
+	      reldiff <= float_reldiff_limit ) )
         return;
     if (    type == INTEGER
-	 && absdiff <= integer_absdiff_limit
-	 && reldiff <= integer_reldiff_limit )
+	 && ( absdiff <= integer_absdiff_limit
+	      ||
+	      reldiff <= integer_reldiff_limit ) )
         return;
 
     difference & d = differences[type];

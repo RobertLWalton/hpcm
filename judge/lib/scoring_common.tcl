@@ -2,7 +2,7 @@
 #
 # File:		scoring_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Sep  8 06:18:32 EDT 2010
+# Date:		Fri Mar 16 08:15:52 EDT 2012
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2010/09/08 10:52:58 $
+#   $Date: 2012/03/16 12:45:26 $
 #   $RCSfile: scoring_common.tcl,v $
-#   $Revision: 1.69 $
+#   $Revision: 1.70 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -58,9 +58,9 @@
 # if that is present in the scoring instructions, the
 # value of `instruction_array(letter-case)' is just
 # `letter-case'.  For a difference type like `number',
-# if `number 0.01 3.0' is present in the scoring
+# if `number 0.01 -' is present in the scoring
 # instructions, for example, the value of `instruction_
-# array(number)' is `number 0.01 3.0'.  Elements of
+# array(number)' is `number 0.01 -'.  Elements of
 # instruction_array correspond to differences listed in
 # the scoring_instructions global variable.
 #
@@ -575,9 +575,11 @@ proc compute_score { } {
 
         # If instruction for the difference type exists,
 	# continue loop, unless difference type is
-	# integer or float and instruction absolute or
-	# relative difference is less than score
-	# absolute or relative difference.
+	# integer or float and instruction absolute
+	# difference is less than score absolute
+	# difference OR the instruction relative
+	# difference is less than score relative
+	# difference.
 
         if { [info exists instruction_array($type)] } {
 
@@ -585,7 +587,7 @@ proc compute_score { } {
 		set s $score_array($type)
 		set i $instruction_array($type)
 		if { [lindex $s 1] <= [lindex $i 1] \
-		     && \
+		     || \
 		     [lindex $s 2] <= [lindex $i 2] } {
 		    continue
 		}
