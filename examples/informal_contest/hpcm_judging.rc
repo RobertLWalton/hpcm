@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Mar 25 01:16:35 EDT 2012
+# Date:		Sun Mar 25 02:10:17 EDT 2012
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2012/03/25 05:59:28 $
+#   $Date: 2012/03/25 07:34:17 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.46 $
+#   $Revision: 1.47 $
 
 # Table of Contents
 #
@@ -378,6 +378,12 @@ set forbid_getting_all_problems \
 #
 set allow_email_submissions no
 
+# Autojudge's email address, or "" if this is to be
+# automatically determined.
+#
+set autojudge_address ""
+# set autojudge_address "somename<someone@somecomputer>"
+
 # Set "yes" to use GMT for dates in file and directory
 # names.  Otherwise the local time zone is used.
 #
@@ -430,17 +436,6 @@ set contest_printer_map "
 .* !~/PRINTER
 "
 
-# Computed web page parameters.  `web_problems' is `yes'
-# if problem descriptions are to be put on the web page
-# and web_problems_URL is "".
-#
-set web_contest_name $contest_name
-if {    [regexp web $description_type] \
-     && $web_problems_URL == "" } {
-    set web_problems yes
-} else {
-    set web_problems no
-}
 
 # Computed Parameters (Do Not Modify)
 # -------- ---------- ---------------
@@ -458,6 +453,65 @@ if { $forbid_getting_all_problems } {
 	{FORBIDDEN {You are not allowed to get all\
 	            problems at once in this contest.}}
     }
+}
+
+if { $web_page_URL == "" } {
+    set web_title ""
+} else {
+    set web_title $contest_name
+}
+if {    [regexp web $description_type] \
+     && $web_problems_URL == "" } {
+    set web_problems yes
+
+    if { $web_page_URL == "" } {
+        error "description_type ($description_type)\
+	       contains `web' but web_page_URL and\
+	       web_problems_URL are \"\"."
+    }
+
+} else {
+    set web_problems no
+}
+
+set is_makecontest \
+    [expr { [file tail $argv0] == "makecontest" }]
+
+# Compute default autojudge_address for email contest.
+#
+if {    $allow_email_submissions \
+     && $autojudge_address == "" } {
+    set aja [truename $judging_directory]
+    set aja [file tail $aja]
+    if {    ! [regexp {^judging_(.*)_[^_]*$} $aja \
+                      forget aja] \
+	 || $aja == "" } {
+        error "Cannot set default autojudge_address\
+	       for email contest"
+    }
+    set autojudge_address \
+        "$aja<[account_name]@[host_name]>"
+}
+
+# Set addresses of autojudge.
+#
+if { $autojudge_address != "" } {
+    set autojudge_addresses [list $autojudge_address]
+}
+
+# Always return .cerr file on syntax error.
+#
+set response_mode "$response_mode+cerr"
+
+# If email accounts, do NOT require submissions to have
+# HPCM_BEGIN/HPCM_END lines etc and authentication.
+#
+if { $allow_email_submissions } {
+    set use_authentication no
+    set format_submissions no
+} else {
+    set use_authentication yes
+    set format_submissions yes
 }
 
 # Set make_test.
@@ -479,6 +533,10 @@ set make_test "
 # Locations of test data.
 #
 S=$SUBMISSIONS
+#
+# Sendmail program with arguments:
+#
+SENDMAIL = /usr/sbin/sendmail -oi -t
 
 include $SUBMISSIONS/Makefile.mk
 
@@ -488,7 +546,8 @@ diff_replies:	auto_diff_local\
                 test_get.diff$more_diffs"
 
 set javaok [info exists java_api_index]
-if {    $javaok \
+if {    $is_makecontest \
+     && $javaok \
      && [regexp {r..} [get_access $java_api_index]] } {
 
     set javahelp "
@@ -502,7 +561,8 @@ $browser '$browser $java_api_index'
 }
 
 set stlok [info exists stl_api_index]
-if {    $stlok \
+if {    $is_makecontest \
+     && $stlok \
      && [regexp {r..} [get_access $stl_api_index]] } {
 
     set stlhelp "
@@ -515,20 +575,6 @@ $browser '$browser $stl_api_index'
 "
 }
 
-# Require or do not require submission email to have a
-# formatted body with HPCM_BEGIN, HPCM_END, and `..'s.
-#
-if { $allow_email_submissions == "no" } {
-    set use_authentication yes
-    set format_submissions yes
-} elseif { $allow_email_submissions == "yes" } {
-    set use_authentication no
-    set format_submissions no
-} else {
-    error "Bad allow_email_submissions value:\
-           $allow_email_submissions"
-}
-
 # Default arguments to makecontest.
 #
 set makecontest_arguments "
@@ -536,16 +582,21 @@ set makecontest_arguments "
     [include_if { $javaok } "-javahelp"] \
     [include_if { $stlok } "-stlhelp"] \
     [include_if { [regexp get $description_type] } \
-    	        "-description"] \
+		  "-description"] \
     [include_if { $ssh_enable == "yes" } "-ssh"] \
     [include_if { $makescoreboard == "yes" } \
     		"-scoreboard"] \
+    -web \
     $judging_directory/help/index, \
 	=help/ \
     $hpcm_directory/contestant/help/index, \
 	common/=help/, \
 	contest/=help/, \
+	email/=help/, \
 	advanced/=help/, \
+	    [include_if { $allow_email_submissions } \
+		        email:include,] \
+	    local::include, \
 	    informal:include, \
 	    common:include, \
 	    advanced:include \

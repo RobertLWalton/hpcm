@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Mar 25 01:14:08 EDT 2012
+# Date:		Sun Mar 25 02:11:16 EDT 2012
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2012/03/25 05:58:04 $
+#   $Date: 2012/03/25 07:35:09 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.79 $
+#   $Revision: 1.80 $
 
 # Table of Contents
 #
@@ -140,12 +140,6 @@ set description_type web
 #
 # set response_mode solution
 set response_mode in+inout+solution
-
-# Autojudge's email address, or "" if this is to be
-# automatically determined.
-#
-set autojudge_address ""
-# set autojudge_address "somename<someone@somecomputer>"
 
 # Contest name, for scoreboard etc.
 #
@@ -407,6 +401,12 @@ set scoreboard_commands {
 # Normally you should not have to make changes below
 # this point.
 
+# Autojudge's email address, or "" if this is to be
+# automatically determined.
+#
+set autojudge_address ""
+# set autojudge_address "somename<someone@somecomputer>"
+
 # Set "yes" to use GMT for dates in file and directory
 # names.  Otherwise the local time zone is used.
 #
@@ -470,12 +470,39 @@ set contest_printer_map "
 # this file, where they will override the settings of
 # this file.
 
+if { $web_page_URL == "" } {
+    set web_title ""
+} else {
+    set web_title $contest_name
+}
+if {    [regexp web $description_type] \
+     && $web_problems_URL == "" } {
+    set web_problems yes
+
+    if { $web_page_URL == "" } {
+        error "description_type ($description_type)\
+	       contains `web' but web_page_URL and\
+	       web_problems_URL are \"\"."
+    }
+
+} else {
+    set web_problems no
+}
+
+if {    $web_help_URL == "" \
+     && [regexp email $account_type] } {
+    error "account type ($account_type) contains\
+           `email' but web_help_URL is \"\"."
+}
+
+set allow_email_submissions [regexp email $account_type]
+
 set is_makecontest \
     [expr { [file tail $argv0] == "makecontest" }]
 
 # Compute default autojudge_address for email contest.
 #
-if {    [regexp email $account_type] \
+if {    $allow_email_submissions \
      && $autojudge_address == "" } {
     set aja [truename $judging_directory]
     set aja [file tail $aja]
@@ -502,7 +529,7 @@ set response_mode "$response_mode+cerr"
 # If email accounts, do NOT require submissions to have
 # HPCM_BEGIN/HPCM_END lines etc and authentication.
 #
-if { [regexp email $account_type] } {
+if { $allow_email_submissions } {
     set use_authentication no
     set format_submissions no
 } else {
@@ -585,7 +612,7 @@ set makecontest_arguments "
     [include_if { $javaok } "-javahelp"] \
     [include_if { $stlok } "-stlhelp"] \
     [include_if { [regexp get $description_type] } \
-                -description] \
+		  "-description"] \
     [include_if { $ssh_enable == "yes" } "-ssh"] \
     [include_if { $makescoreboard == "yes" } \
     		"-scoreboard"] \
@@ -597,8 +624,7 @@ set makecontest_arguments "
 	contest/=help/, \
 	email/=help/, \
 	advanced/=help/, \
-	    [include_if { [regexp email \
-	                          $account_type] } \
+	    [include_if { $allow_email_submissions } \
 		        email:include,] \
 	    [include_if { [regexp local \
 	                          $account_type] } \
@@ -710,33 +736,7 @@ if { $manager_address != "" && $cc_manager } {
     lappend response_manager_map \
 	    [list ".*" $manager_address]
 }
-
-# Computed web page parameters.
-#
-if { $web_page_URL == "" } {
-    set web_title ""
-} else {
-    set web_title $contest_name
-}
-if {    [regexp web $description_type] \
-     && $web_problems_URL == "" } {
-    set web_problems yes
 
-    if { $web_page_URL == "" } {
-        error "description_type ($description_type)\
-	       contains `web' but web_page_URL is\
-	       \"\"."
-    }
-
-} else {
-    set web_problems no
-}
-
-if {    $web_help_URL == "" \
-     && [regexp email $account_type] } {
-    error "account type ($account_type) contains\
-           `email' but web_help_URL is \"\"."
-}
 
 # Compute response_list equal to the SORTED subset of
 # {in inout solution} in response_mode, in order to
