@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Mar 25 00:18:50 EDT 2012
+# Date:		Sun Mar 25 00:48:58 EDT 2012
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2012/03/25 04:48:48 $
+#   $Date: 2012/03/25 05:11:12 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.44 $
+#   $Revision: 1.45 $
 
 # Table of Contents
 #
@@ -242,33 +242,87 @@ set ssh_enable yes
 # Web Page Parameters
 # --- ---- ----------
 
-# URL of contest web page.
+# URL of contest web page.  Set to "" if there is no
+# contest web page (but there can still be web score-
+# board and/or help pages).  The contest web page,
+# if it exists, is made by `makeweb', may contain
+# problem descriptions, and will contain references to
+# scoreboard and help pages if these exist.  Details of
+# the contest web page construction follow.
 #
+# Note that web_page_URL is only used in documentation
+# and need NOT contain `http://'.
+#
+# set web_page_URL ""
 set web_page_URL "www.somewhere.edu/~xxx/yyy"
 
-# The following are passed to `makeweb' to make the web
-# page.  Leave as "" parameters you do not want to use
-# (e.g., if web_solutions_password is "" no solutions
-# web page will be made).
+# URL's of the help page and scoreboard file if they are
+# on the web, or "" if they are not.
+#
+# If there is a contest web page (see above), then
+# these may be relative to that page, or they may be
+# absolute (e.g., begin with `http://').  If there is
+# no contest web page, these are only used in documen-
+# tation, and should be absolute but need not begin
+# with `http://' (e.g., they may begin with `www.').
+#
+# If email submissions are allowed, there must be a
+# help (and demos) web page; i.e., web_help_URL must
+# NOT be "".
+#
+# If a scoreboard is being put on the web, it is usually
+# posted by using scoreboard_commands (see below).
+#
+set web_help_URL "http://www.seas.harvard.edu/hc3/help"
+# set web_help_URL ""
+# set web_scoreboard_URL "scoreboard"
+set web_scoreboard_URL ""
+
+# The following are passed to `makeweb' to make the con-
+# test web page, if it exists.  Leave as "" parameters
+# you do not want to use (e.g., if web_solutions_pass-
+# word is "" no solutions web page will be made).
 #
 # The web_manager_address will be listed as a contact
-# on the web page.  The web_solutions_password PPP will
-# be used to name a subdirectory `private/PPP' of the
-# web page directory that will hold the solutions.  No
-# link will be made to this directory, and the `private'
-# subdirectory will be unreadable to the world, so PPP
-# will act as a password.  The web_help_URL is the URL
-# of the help page (see hpcm/contestant/help Makefile)
-# relative to the contest web page.  The web_scoreboard_
-# URL is the URL of the scoreboard relative to the web
-# page; usually this is posted by using scoreboard_
-# commands (see below).  Problems will be put on the
-# web page if "web" is in `description_type'.
+# on the the contest web page, and also given as a con-
+# tact for web scoreboard and help file pages.
+#
+# The web_solutions_password PPP will be used to name a
+# subdirectory `private/PPP' of the web page directory
+# that will hold the solutions.  No link will be made to
+# this directory, and the `private' subdirectory will be
+# unreadable to the world, so PPP will act as a pass-
+# word.
+#
+# web_help_URL and web_scoreboard_URL are also passed to
+# `makeweb' and used to make references from the contest
+# web page to the web help files and scoreboard if these
+# exist (see above).  These may be URL's relative to the
+# contest web page, or absolute URL's.
+#
+# Problems will be put on the web page if "web" is in
+# `description_type'.
 #
 set web_manager_address $manager_address
 set web_solutions_password ""
-set web_help_URL ""
-set web_scoreboard_URL ""
+
+# If there is a contest web page, you may want to set
+# the following.
+#
+# If the headers are left "", the page headers are auto-
+# matically constructed from the contest_name.
+#
+# The prefixes come just after the page headers and
+# the postfix comes after everything but the web page
+# manager.  There are two pages involved: the contest
+# page and the contest solutions page (which has no
+# postfix).
+#
+set web_header ""
+set web_prefix ""
+set web_postfix ""
+set web_solutions_header ""
+set web_solutions_prefix ""
 
 # The following scoreboard_commands variable specifies
 # places to send a copy of ./contest/scoreboard.1.  The
@@ -284,15 +338,16 @@ set web_scoreboard_URL ""
 #	    ./secure/bin/NAME after it is created
 #	    (this will be mentioned in a TODO).
 #
-#	{ NAME ... }
-#	    Pipe ./contest/scoreboard.1 to a command
-#	    created by appending { NAME ... } to the
-#	    judging_commands global variable: see that
-#	    variable in hpcm/judge/lib/hpcm_judging.rc
-#	    for details.  In particular, emailing the
-#	    scoreboard to some address is supported,
-#	    and for emailing REMOTE-COMMAND defaults
-#	    as for ssh.
+#	{ NAME sh COMMAND }
+#	    Pipe ./contest/scoreboard.1 to COMMAND
+#	    executed by /bin/sh.
+#
+#	{ NAME email ... }
+#	    See contest_commands in hpcm/judge/lib/
+#	    hpcm_judging.rc.
+#
+# These items are appended to the judging_commands
+# global variable: see hpcm/judge/lib/hpcm_judging.rc.
 #
 # NAME is the name of a command that will be created in
 # ./secure/bin to invoke the proper pipe.  It may not
