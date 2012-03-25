@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon May 23 08:49:42 EDT 2011
+# Date:		Sun Mar 25 01:14:08 EDT 2012
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2011/05/23 12:50:25 $
+#   $Date: 2012/03/25 05:58:04 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.78 $
+#   $Revision: 1.79 $
 
 # Table of Contents
 #
@@ -297,8 +297,9 @@ set ssh_enable yes
 # set web_page_URL ""
 set web_page_URL "www.somewhere.edu/~xxx/yyy"
 
-# URL's of the help page and scoreboard file if they are
-# on the web, or "" if they are not.
+# URL's of the problem descriptions, help page, and
+# scoreboard file if they are on the web, or "" if they
+# are not.
 #
 # If there is a contest web page (see above), then
 # these may be relative to that page, or they may be
@@ -314,6 +315,7 @@ set web_page_URL "www.somewhere.edu/~xxx/yyy"
 # If a scoreboard is being put on the web, it is usually
 # posted by using scoreboard_commands (see below).
 #
+set web_problems_URL ""
 set web_help_URL "http://www.seas.harvard.edu/hc3/help"
 # set web_help_URL ""
 # set web_scoreboard_URL "scoreboard"
@@ -335,14 +337,16 @@ set web_scoreboard_URL ""
 # unreadable to the world, so PPP will act as a pass-
 # word.
 #
-# web_help_URL and web_scoreboard_URL are also passed to
-# `makeweb' and used to make references from the contest
-# web page to the web help files and scoreboard if these
+# web_problems_URL, web_help_URL, and web_scoreboard_URL
+# are also passed to `makeweb' and used to make refer-
+# ences from the contest web page to the problem
+# descriptions, web help files, and scoreboard if these
 # exist (see above).  These may be URL's relative to the
 # contest web page, or absolute URL's.
 #
-# Problems will be put on the web page if "web" is in
-# `description_type'.
+# If web_problems_URL is "" and description_type con-
+# tains `web', the problem descriptions from the problem
+# solution files will be put on the web page instead.
 #
 set web_manager_address $manager_address
 set web_solutions_password ""
@@ -441,12 +445,11 @@ set window_height 24
 #
 set makescoreboard yes
 
-# The following is the printer map for an untimed
-# contest.  It lets each contestant determine his/her
-# own printer by placing the printer name in the
-# ~/PRINTER file of the contestant's account.  See
-# `hpcm/contestant/bin/printer_pipe -doc' for more
-# documentation.
+# The following is the printer map.  It lets each con-
+# testant determine his/her own printer by placing the
+# printer name in the ~/PRINTER file of the contestant's
+# account.  See `hpcm/contestant/bin/ printer_pipe -doc'
+# for more documentation.
 #
 set contest_printer_map "
 # Do not edit.  This is copied from the contest_printer_
@@ -715,7 +718,8 @@ if { $web_page_URL == "" } {
 } else {
     set web_title $contest_name
 }
-if { [regexp web $description_type] } {
+if {    [regexp web $description_type] \
+     && $web_problems_URL == "" } {
     set web_problems yes
 
     if { $web_page_URL == "" } {
@@ -816,7 +820,11 @@ include_if { $web_scoreboard_URL != "" } "
 #
 # There is no web page
 #
-][include_if { $web_help_URL != "" } "
+][include_if { $web_problems_URL != "" } "
+Problem descriptions are available on the web at
+
+    $web_problems_URL
+"][include_if { $web_help_URL != "" } "
 Help and demonstration files are available on the web at
 
     $web_help_URL

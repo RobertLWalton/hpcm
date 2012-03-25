@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Mar 25 00:48:58 EDT 2012
+# Date:		Sun Mar 25 01:16:35 EDT 2012
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2012/03/25 05:11:12 $
+#   $Date: 2012/03/25 05:59:28 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.45 $
+#   $Revision: 1.46 $
 
 # Table of Contents
 #
@@ -55,8 +55,8 @@ array set submitter_compress_map {}
 
 # Problem description type.  One of:
 #
-#	web		Problem descriptions are on the
-#			web.
+#	web		Problem descriptions are on
+#			the contest web page.
 #
 #	paper		Problem descriptions have been
 #			given out on paper.
@@ -256,8 +256,9 @@ set ssh_enable yes
 # set web_page_URL ""
 set web_page_URL "www.somewhere.edu/~xxx/yyy"
 
-# URL's of the help page and scoreboard file if they are
-# on the web, or "" if they are not.
+# URL's of the problem descriptions, help page, and
+# scoreboard file if they are on the web, or "" if they
+# are not.
 #
 # If there is a contest web page (see above), then
 # these may be relative to that page, or they may be
@@ -273,6 +274,7 @@ set web_page_URL "www.somewhere.edu/~xxx/yyy"
 # If a scoreboard is being put on the web, it is usually
 # posted by using scoreboard_commands (see below).
 #
+set web_problems_URL ""
 set web_help_URL "http://www.seas.harvard.edu/hc3/help"
 # set web_help_URL ""
 # set web_scoreboard_URL "scoreboard"
@@ -294,14 +296,16 @@ set web_scoreboard_URL ""
 # unreadable to the world, so PPP will act as a pass-
 # word.
 #
-# web_help_URL and web_scoreboard_URL are also passed to
-# `makeweb' and used to make references from the contest
-# web page to the web help files and scoreboard if these
+# web_problems_URL, web_help_URL, and web_scoreboard_URL
+# are also passed to `makeweb' and used to make refer-
+# ences from the contest web page to the problem
+# descriptions, web help files, and scoreboard if these
 # exist (see above).  These may be URL's relative to the
 # contest web page, or absolute URL's.
 #
-# Problems will be put on the web page if "web" is in
-# `description_type'.
+# If web_problems_URL is "" and description_type con-
+# tains `web', the problem descriptions from the problem
+# solution files will be put on the web page instead.
 #
 set web_manager_address $manager_address
 set web_solutions_password ""
@@ -370,17 +374,9 @@ set forbid_getting_all_problems \
 
 # Set to "yes" if in addition to normal submissions from
 # contestants with accounts, you want to allow email
-# submissions.  You may want to reset submitter_
-# compress_mode below if you reset this.
+# submissions.
 #
 set allow_email_submissions no
-
-# Set to "long" to include a contestant's primary domain
-# name (e.g. `harvard') or "short" to not include the @
-# or anything after that.
-#
-# set submitter_compress_mode long
-set submitter_compress_mode short
 
 # Set "yes" to use GMT for dates in file and directory
 # names.  Otherwise the local time zone is used.
@@ -435,10 +431,12 @@ set contest_printer_map "
 "
 
 # Computed web page parameters.  `web_problems' is `yes'
-# if problem descriptions are to be put on the web page.
+# if problem descriptions are to be put on the web page
+# and web_problems_URL is "".
 #
 set web_contest_name $contest_name
-if { [regexp web $description_type] } {
+if {    [regexp web $description_type] \
+     && $web_problems_URL == "" } {
     set web_problems yes
 } else {
     set web_problems no
