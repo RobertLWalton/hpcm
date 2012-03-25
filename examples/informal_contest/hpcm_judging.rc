@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Mar 25 04:06:27 EDT 2012
+# Date:		Sun Mar 25 06:19:25 EDT 2012
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2012/03/25 08:09:38 $
+#   $Date: 2012/03/25 11:40:27 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.48 $
+#   $Revision: 1.49 $
 
 # Table of Contents
 #
@@ -599,7 +599,7 @@ set makecontest_arguments "
 	advanced/=help/, \
 	    [include_if { $allow_email_submissions } \
 		        email:include,] \
-	    local::include, \
+	    local:include, \
 	    informal:include, \
 	    common:include, \
 	    advanced:include \
@@ -689,7 +689,57 @@ foreach qualifier [split $response_mode +] {
     lappend response_list $qualifier-submit
 }
 #
-set this_contest "$this_contest_prefix
+set this_contest "$this_contest_prefix[
+#
+# begin web/no-web page section.
+#
+][include_if { $web_page_URL != "" } "[
+#
+# There is a web page
+#
+]
+This contest has a web page at
+
+    $web_page_URL
+
+that includes:
+
+    this contest description[
+include_if { $web_help_URL != "" } "
+    help and demonstration files"][
+include_if {    $web_problems \
+             || $web_problems_URL != "" } "
+    problem descriptions"][
+include_if { $web_scoreboard_URL != "" } "
+    a scoreboard"]
+"][include_if { $web_page_URL == "" } "[
+#
+# There is no web page
+#
+][include_if { $web_problems_URL != "" } "
+Problem descriptions are available on the web at
+
+    $web_problems_URL
+"][include_if { $web_help_URL != "" } "
+Help and demonstration files are available on the web at
+
+    $web_help_URL
+"][include_if { $web_scoreboard_URL != "" } "
+A scoreboard is available on the web at
+
+    $web_scoreboard_URL
+"][
+#
+# End of web/no-web page section.
+#
+]"]
+If you appear on the scoreboard, and want to change your
+`scoreboard name', email
+
+    $web_manager_address
+
+who can map account names to scoreboard names.
+
 The command `help' will display this file.  The impor-
 tant help and demonstration problem files are available
 via the contest web page, or you have been given a
@@ -707,7 +757,7 @@ index has the name `help/topic' you use the command
 `help topic' to view it.
 
 You have been given a password and an account name.  If
-you have an xterminal, the xcsh command will make more
+you have an xterminal, the xsh command will make more
 windows: see `help xterminals'.
 
 You can print on the printer of your choice, or get
