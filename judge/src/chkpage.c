@@ -3,7 +3,7 @@
 **
 ** Author:	Bob Walton (walton@deas.harvard.edu)
 ** File:	chkpage.c
-** Date:	Sat Nov 16 05:25:15 EST 2002
+** Date:	Fri Aug  3 20:05:39 EDT 2012
 **
 ** The authors have placed this program in the public
 ** domain; they make no warranty and accept no liability
@@ -11,13 +11,14 @@
 **
 ** RCS Info (may not be true date or author):
 **
-**   $Author: hc3 $
-**   $Date: 2002/11/16 10:25:54 $
+**   $Author: walton $
+**   $Date: 2012/08/04 00:05:50 $
 **   $RCSfile: chkpage.c,v $
-**   $Revision: 1.7 $
+**   $Revision: 1.8 $
 */
 
 #include <stdio.h>
+#include <stdlib.h>
 
 char documentation [] =
 "chkpage [-cCC] [-lLL] [filename ...]\n"

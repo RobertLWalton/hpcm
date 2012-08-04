@@ -2,7 +2,7 @@
 //
 // File:	scorediff.cc
 // Authors:	Bob Walton (walton@deas.harvard.edu)
-// Date:	Fri Mar 16 08:25:02 EDT 2012
+// Date:	Fri Aug  3 20:01:25 EDT 2012
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: walton $
-//   $Date: 2012/03/16 12:44:40 $
+//   $Date: 2012/08/04 00:03:46 $
 //   $RCSfile: scorediff.cc,v $
-//   $Revision: 1.82 $
+//   $Revision: 1.83 $
 
 // This is version 2, a major revision of the first
 // scorediff program.  This version is more explicitly
@@ -224,7 +224,7 @@ char documentation [] =
 "\n"
 "		The `-float A R' option causes all\n"
 "		`float a r' differences with a <= A\n"
-"		and r <= R to be ignored, as if they\n"
+"		OR r <= R to be ignored, as if they\n"
 "		did not exist.  See below for more\n"
 "		details.\n"
 "\n"
@@ -1330,7 +1330,7 @@ inline difference_type type_mismatch
 struct difference
     // Information about one type of difference.
 {
-    char *	name;
+    const char * name;
     	// Name of difference type.
 
     bool	found;
