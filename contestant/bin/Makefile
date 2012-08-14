@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Oct 13 08:13:50 EDT 2011
+# Date:		Mon Aug 13 23:14:26 EDT 2012
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,12 +11,12 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2011/10/13 12:13:59 $
+#   $Date: 2012/08/14 03:18:08 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.28 $
+#   $Revision: 1.29 $
 
 all:	hpcm_sandbox hpcm_sendmail hpcm_display_graph \
-	clisp modes
+	hpcm_display_segments clisp modes
 
 # Kill all implicit rules
 #
@@ -40,7 +40,12 @@ hpcm_display_graph:	../src/hpcm_display_graph.cc
 	(cd ../src; make hpcm_display_graph)
 	cp -p ../src/hpcm_display_graph .
 	chmod 555 hpcm_display_graph
-	chmod u+s hpcm_display_graph
+
+hpcm_display_segments:	../src/hpcm_display_segments.cc
+	rm -f hpcm_display_segments
+	(cd ../src; make hpcm_display_segments)
+	cp -p ../src/hpcm_display_segments .
+	chmod 555 hpcm_display_segments
 
 clisp:
 	rm -f clisp
@@ -64,4 +69,5 @@ modes:
 
 clean:
 	rm -f hpcm_sandbox hpcm_sendmail \
-	      hpcm_display_graph clisp
+	      hpcm_display_graph hpcm_display_segments \
+	      clisp
