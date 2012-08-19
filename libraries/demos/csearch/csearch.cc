@@ -2,7 +2,7 @@
 //
 // File:	csearch.cc
 // Authors:	Bob Walton (walton@deas.harvard.edu)
-// Date:	Sun Sep 12 02:10:01 EDT 2010
+// Date:	Sun Aug 19 03:55:18 EDT 2012
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: walton $
-//   $Date: 2010/09/12 06:14:04 $
+//   $Date: 2012/08/19 07:58:23 $
 //   $RCSfile: csearch.cc,v $
-//   $Revision: 1.10 $
+//   $Revision: 1.11 $
 
 // csearch d... [#]	prints debugging info
 // csearch s... [#]	prints statistics
@@ -23,6 +23,7 @@
 
 #include <iostream>
 #include <cstdlib>
+#include <cstring>
 #include <cassert>
 // You could use `using namespace std;' instead of the
 // following.

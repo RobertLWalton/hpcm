@@ -3,7 +3,7 @@
 //
 // File:	Scoring_Filter.cc
 // Authors:	Bob Walton (walton@deas.harvard.edu)
-// Date:	Sun Sep 12 01:59:05 EDT 2010
+// Date:	Sun Aug 19 03:56:35 EDT 2012
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -12,9 +12,9 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: walton $
-//   $Date: 2010/09/12 06:14:04 $
+//   $Date: 2012/08/19 07:58:23 $
 //   $RCSfile: Scoring_Filter.cc,v $
-//   $Revision: 1.4 $
+//   $Revision: 1.5 $
 
 // Scoring_Filter csearch.in \
 //		  < csearch.out \
@@ -36,6 +36,7 @@
 #define SCORING_FILTER
 #include "csearch.cc"
 #include <fstream>
+#include <cstring>
 using std::ifstream;
 using std::cerr;
 
