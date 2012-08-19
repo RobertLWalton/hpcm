@@ -3,7 +3,7 @@
 #define dprintf if ( debug ) printf
 int debug;
 
-main ( int argc )
+int main ( int argc, char * argv[] )
 {
     debug = ( argc > 1 );
 

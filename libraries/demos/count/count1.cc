@@ -4,7 +4,7 @@ using namespace std;
 #define dout if ( debug ) cout
 bool debug;
 
-main( int argc )
+int main( int argc, char * argv[] )
 {
     debug = ( argc > 1 );
 

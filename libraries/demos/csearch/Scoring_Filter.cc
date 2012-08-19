@@ -3,7 +3,7 @@
 //
 // File:	Scoring_Filter.cc
 // Authors:	Bob Walton (walton@deas.harvard.edu)
-// Date:	Sun Aug 19 03:56:35 EDT 2012
+// Date:	Sun Aug 19 04:08:59 EDT 2012
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -12,9 +12,9 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: walton $
-//   $Date: 2012/08/19 07:58:23 $
+//   $Date: 2012/08/19 08:10:27 $
 //   $RCSfile: Scoring_Filter.cc,v $
-//   $Revision: 1.5 $
+//   $Revision: 1.6 $
 
 // Scoring_Filter csearch.in \
 //		  < csearch.out \
@@ -82,7 +82,7 @@ bool compute_colors ( void )
 }
 
 
-int main ( int argc, char ** argv )
+int main ( int argc, char * argv[] )
 {
     debug = ( argc > 2 );
 
