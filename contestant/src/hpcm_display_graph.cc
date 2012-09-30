@@ -2,7 +2,7 @@
 //
 // File:	hpcm_display_graph.cc
 // Authors:	Bob Walton (walton@deas.harvard.edu)
-// Date:	Sun Oct  2 05:29:59 EDT 2011
+// Date:	Sun Sep 30 12:43:34 EDT 2012
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -11,15 +11,17 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: walton $
-//   $Date: 2011/10/02 09:31:42 $
+//   $Date: 2012/09/30 16:45:19 $
 //   $RCSfile: hpcm_display_graph.cc,v $
-//   $Revision: 1.7 $
+//   $Revision: 1.8 $
 
 #include <iostream>
 #include <iomanip>
 #include <fstream>
 #include <string>
 #include <sstream>
+#include <cstdlib>
+#include <cstring>
 #include <cctype>
 #include <cfloat>
 #include <cmath>
@@ -177,12 +179,28 @@ int main ( int argc, char ** argv )
 
         if (    strcmp ( "ps", name ) == 0 )
 	{
+	    if ( page != NULL )
+	    {
+		cout << "At most one -ps or -X option"
+			" allowed"
+		     << endl;
+		exit (1);
+	    }
+
 	    page = cairo_ps_surface_create_for_stream
 	    		( write_to_cout, NULL,
 			  page_width, page_height );
 	}
         else if (    strcmp ( "X", name ) == 0 )
 	{
+	    if ( page != NULL )
+	    {
+		cout << "At most one -ps or -X option"
+			" allowed"
+		     << endl;
+		exit (1);
+	    }
+
 	    display = XOpenDisplay ( NULL );
 	    if ( display == NULL )
 	    {
