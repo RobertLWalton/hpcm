@@ -2,7 +2,7 @@
 //
 // File:	hpcm_display_graph.cc
 // Authors:	Bob Walton (walton@deas.harvard.edu)
-// Date:	Sun Sep 30 12:43:34 EDT 2012
+// Date:	Sun Sep 30 12:46:09 EDT 2012
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: walton $
-//   $Date: 2012/09/30 16:45:19 $
+//   $Date: 2012/09/30 16:50:15 $
 //   $RCSfile: hpcm_display_graph.cc,v $
-//   $Revision: 1.8 $
+//   $Revision: 1.9 $
 
 #include <iostream>
 #include <iomanip>
@@ -42,8 +42,7 @@ extern "C" {
 }
 
 const char * const documentation = "\n"
-"hpcm_display_graph [-ps|-X] header \\\n"
-"                   input-file output-file\n"
+"hpcm_display_graph [-ps|-X] input-file output-file\n"
 "\n"
 "    This program displays undirected graphs defined\n"
 "    by points in the input-file and edges in the\n"
