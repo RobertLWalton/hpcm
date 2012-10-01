@@ -2,7 +2,7 @@
 //
 // File:	hpcm_display_graph.cc
 // Authors:	Bob Walton (walton@deas.harvard.edu)
-// Date:	Sun Sep 30 12:46:09 EDT 2012
+// Date:	Sun Sep 30 22:04:11 EDT 2012
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: walton $
-//   $Date: 2012/09/30 16:50:15 $
+//   $Date: 2012/10/01 02:24:42 $
 //   $RCSfile: hpcm_display_graph.cc,v $
-//   $Revision: 1.9 $
+//   $Revision: 1.10 $
 
 #include <iostream>
 #include <iomanip>
@@ -132,8 +132,6 @@ const double page_big_node_size = 5;	    // 5/72"
 const double page_small_node_size = 3;      // 3/72"
 const double page_narrow_edge_size = 1;    // 1/72"
 const double page_wide_edge_size = 2;	    // 2/72"
-
-const double print_box = page_width - 2 * side_margin;
 
 // For X-Windows, units are 1 pixel.
 
@@ -402,8 +400,8 @@ int main ( int argc, char ** argv )
 	{
 	    double title_top, title_height, title_width,
 	           graph_top, graph_height,
-		   graph_bottom,
 		   graph_left, graph_width,
+		   foot_top,
 		   big_node_size, small_node_size,
 		   wide_edge_size, narrow_edge_size;
 
@@ -429,23 +427,22 @@ int main ( int argc, char ** argv )
 		title_width = width;
 		title_height = window_title_height;
 
-		// Use window_big_node_size as a graph
-		// margin to be sure big nodes can be
-		// seen.
-		//
+		foot_top = height
+			 - window_foot_height;
+
 		graph_top = window_title_height;
 		graph_height = height - graph_top
 		             - window_big_node_size
 			     - window_foot_height;
-		graph_bottom = height;
-		graph_left = window_big_node_size;
-		graph_width = width
-		            - 2 * window_big_node_size;
+		graph_left = 0;
+		graph_width = width;
 
-		big_node_size = window_big_node_size;
+		big_node_size =
+		    window_big_node_size;
 		small_node_size =
 		    window_small_node_size;
-		wide_edge_size = window_wide_edge_size;
+		wide_edge_size =
+		    window_wide_edge_size;
 		narrow_edge_size =
 		    window_narrow_edge_size;
 	    }
@@ -464,21 +461,30 @@ int main ( int argc, char ** argv )
 		graph_width =
 		    page_width - 2 * side_margin;
 
-		big_node_size = page_big_node_size;
-		small_node_size = page_small_node_size;
-		wide_edge_size = page_wide_edge_size;
+		big_node_size =
+		    page_big_node_size;
+		small_node_size =
+		    page_small_node_size;
+		wide_edge_size =
+		    page_wide_edge_size;
 		narrow_edge_size =
 		    page_narrow_edge_size;
 	    }
 
-	    // Set up point scaling.
+	    // Set up point scaling.  Insist on a margin
+	    // of 4 * big_node_size to allow lines to be
+	    // inside graph box.
 	    //
 	    double dx = xmax - xmin;
 	    double dy = ymax - ymin;
 	    if ( dx == 0 ) dx = 1;
 	    if ( dy == 0 ) dy = 1;
-	    double xscale = graph_width / dx;
-	    double yscale = graph_height / dy;
+	    double xscale =
+	          ( graph_width - 4 * big_node_size )
+		/ dx;
+	    double yscale =
+	          ( graph_height - 4 * big_node_size )
+	        / dy;
 
 	    // Make the scales the same.
 	    //
@@ -487,11 +493,19 @@ int main ( int argc, char ** argv )
 	    else if ( xscale < yscale )
 	        yscale = xscale;
 
+	    // Compute left and bottom of graph so as
+	    // to center the graph.
+	    //
+	    double left = graph_left
+	        + 0.5 * (   graph_width
+		          - ( xmax - xmin ) * xscale );
+	    double bottom = graph_top + graph_height
+	        - 0.5 * (   graph_height
+		          - ( ymax - ymin ) * yscale );
+
 #	    define CONVERT(i) \
-		  graph_left \
-		+ (point[i].x - xmin) * xscale, \
-		  graph_top + graph_height \
-		- (point[i].y - ymin) * yscale
+		  left + (point[i].x - xmin) * xscale, \
+		  bottom - (point[i].y - ymin) * yscale
 
 	    // Display test case name.
 	    //
@@ -524,8 +538,9 @@ int main ( int argc, char ** argv )
 		cairo_move_to
 		    ( title_c,
 		      title_width/2 - te.width/2,
-		        graph_bottom
-		      -   (   window_foot_height
+		        foot_top
+		      + title_font_size
+		      +   (   window_foot_height
 		            - title_font_size )
 			/ 2 );
 		cairo_show_text
