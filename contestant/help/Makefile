@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Oct  6 17:46:26 EDT 2011
+# Date:		Thu Oct  4 07:36:12 EDT 2012
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2011/10/07 13:58:49 $
+#   $Date: 2012/10/04 11:40:00 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.33 $
+#   $Revision: 1.34 $
 
 # `make help.pdf' and `make demos.pdf' make printouts of
 # all the help and demos files respectively.  Note that
@@ -261,6 +261,8 @@ clean:
 	       email/sh/hpcm_clisp.lsp \
 	       web web.tar \
 	       help_index demos_index \
-	       help.ps help+.ps demos.ps \
-	       help.pdf help+.pdf demos.pdf \
+	       formal_help_index \
+	       advanced_help_index \
+	       advanced_demos_index \
+	       *.files *.ps *.pdf \
 	       STL_doc
