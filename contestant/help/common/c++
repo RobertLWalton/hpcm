@@ -1,4 +1,4 @@
-C++ Help		    Tue Sep  9 08:34:05 EDT 2008
+C++ Help		    Thu Oct  4 14:53:08 EDT 2012
 
 Include Files
 ------- -----
@@ -194,6 +194,10 @@ You can use the following for character input:
     int c = cin.get();	// Get next character.
     int c = cin.peek();	// Return next character
     			// without skipping over it.
+    cin.putback ( c );	// Put the character c just
+    			// obtained by cin.get() back
+			// at the beginning of the
+			// input.
 
 These return EOF for end of file.
 
@@ -262,6 +266,7 @@ Strings can be written using:
 
 	#include <sstream>
 	using std::ostringstream;
+	using std::ends;
 
 	ostringstream out;
 	. . . out << . . .
@@ -275,13 +280,13 @@ writes into your buffer).  You can get the starting
 address of a string that contains the contents of the
 internal buffer with `out.str().data()'.  Before doing
 this, use `out << ends' to write a NUL into the buffer.
-
+
 You can also use `cout << out.str()' to write the
 internal buffer to `cout' directly, but do NOT use
 `out << ends' in this case, as the NUL will be written
 to `cout' if you do.
 
-
+
 Writing Your Own << And >> Operators
 ------- ---- --- -- --- -- ---------
 
@@ -314,13 +319,14 @@ format.  A simple way is
     }
     . . .
     cout << myformat ( 99 );
-
+
 Here we have invented a typed structure to encapsulate
 the value when it is to be printed.  Note the argument
 to << may NOT be `myformat & s' because here s is not
 constant, and in use the `myformat' value is a temporary
-and temporaries are read-only.
-
+and temporaries are read-only.  However, the argument
+may be `const myformat & s'.
+
 Input operators can be define by:
 
     using std::istream;
@@ -361,6 +367,6 @@ file.
 RCS Info (may not be true date or author):
 
     $Author: walton $
-    $Date: 2008/09/09 12:31:49 $
+    $Date: 2012/10/04 18:56:22 $
     $RCSfile: c++,v $
-    $Revision: 1.14 $
+    $Revision: 1.15 $
