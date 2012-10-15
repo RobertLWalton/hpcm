@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Feb  9 20:08:15 EST 2007
+# Date:		Mon Oct 15 01:09:57 EDT 2012
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2007/02/10 01:18:25 $
+#   $Date: 2012/10/15 05:12:39 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.64 $
+#   $Revision: 1.65 $
 
 # Include file that contains the following variables:
 #
@@ -220,15 +220,15 @@ aux auxiliary:	submakes
 	       -name .ssh -prune -or \
 	       -name .Xauthority -or \
 	       -path ~/judging_'*'_identity -or \
-	       -perm +g+r -or \
-	       -perm +u+r -print -exec chmod g+r {} \;
+	       -perm -g+r -or \
+	       -perm -u+r -print -exec chmod g+r {} \;
 	find ~ -type l -or \
 	       -name secure -not -path ~/hpcm/secure \
 	             -prune -or \
 	       -name .ssh -prune -or \
 	       -name .Xauthority -or \
-	       -perm +g+x -or \
-	       -perm +u+x -print -exec chmod g+x {} \;
+	       -perm -g+x -or \
+	       -perm -u+x -print -exec chmod g+x {} \;
 
 # The following must be done to make sure things
 # are ready to run.
