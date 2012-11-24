@@ -1,7 +1,7 @@
-C Help			    Fri Nov 23 15:10:44 EST 2012
+C Help			    Sat Nov 24 07:27:12 EST 2012
 
-Program Structure 
-------- ---------
+C Language Program Structure 
+- -------- ------- ---------
 
 Typical program structure including end of file detect-
 ion, finding symbols such as `*' that end a string of
@@ -135,6 +135,14 @@ will specifically ask you to read lines to be processed
 as character strings, in which case use `gets' and be
 sure your line buffer is long enough.
 
+Occassionally one has a conflict with some name defined
+in the `#include's.  E.g., you may have trouble naming a
+global variable `time'.   To fix this, change the name
+of your variable.  A simple way of doing this is to put
+the following right after the `#include's:
+
+	#define time Time
+
 
 Output
 ------
@@ -175,75 +183,46 @@ infinite loop, which is best done with a debugger.
 
 It is also a good idea to use `assert' statements
 to check that assumptions you have made are valid during
-actual program execution.
+actual program execution.  For example, if you are
+certain that scanf should read 3 integers, then instead
+of writing
+
+	scanf ( "%d%d%d", ... );
+
+it might be better to write
+
+	assert ( scanf ( "%d%d%d", ... ) == 3 );
 
 
-Numeric Constants
-------- ---------
-
-The following code imports useful constants, which are
-the minimum and maximum values of various number types,
-and the values of PI and E.
-
-    INCLUDE			IMPORTS
-
-    #include <limits.h>		int INT_MAX;
-				int INT_MIN;
-				long LONG_MAX;
-				long LONG_MIN;
-				unsigned long ULONG_MIN;
-
-    #include <float,h>		double DBL_MAX;
-				double DBL_MIN;
-				float FLT_MAX;
-				float FLT_MIN;
-
-    #include <math.h>		double M_PI;
-				double M_E;
-
-
-
-Include Files
-------- -----
-
-The following are typical includes in modern C:
-
-
-Occassionally one has a conflict with some name defined
-in the includes.  E.g., you may have trouble naming a
-global variable `time'.   To fix this, change the name
-of your variable.  A simple way of doing this is to put
-the following right after the includes:
-
-	#define time Time
-
-
-
-
-
-
-
-
-
-
 Function and Macro Specifications
 -------- --- ----- --------------
 
-You can get full documentation of the function mentioned
-above by using the commands:
+You can get full documentation of the functions
+mentioned above plus other useful information by using
+the commands:
 
 	man scanf
 	man gets
 	man 3 printf
 	man assert
+	man math.h
+	man limits.h
+	man float.h
 
 The following is an extract from `man' pages of the
-details needed to use the functions mentioned above.
+details needed to use the functions mentioned above,
+plus some other useful information on number limits.
 Here we assume you already know something about how to
 use `scanf' and `printf', so we do not have to explain
 them from scratch.
 
-scanf ( const char * format, ... )
+Note that an `int' is guarenteed to be at least 32 bits
+and a `long long int' is guarenteed to be at least 64
+bits.  Floating point computations should always be done
+using `double's, and NOT `float's, to avoid having too
+little precision.
+
+int scanf ( const char * format, ... )
 
     Format can contain the following directives:
 
@@ -264,20 +243,92 @@ scanf ( const char * format, ... )
     		ignore preceeding whitespace.
 
     whitespace	Matches any amount of whitespace,
-    		including none.
+    		including none.  Line feeds are white-
+		space in this sense.
 
     other	Matches the given character.  E.g., if
     character	`*' is in the format, then `*' must be
     		next in the input if the input is to
 		match.  If you want to skip whitespace
-		followed by `*', you MUST put ` *' and
-		NOT just `*' in the format.
+		followed by `*', you MUST put " *" and
+		NOT just "*" in the format.
 
     Scanf returns the number of items successfully read
-    by %... format directives.
+    by %... format directives.  Thus if you are expect-
+    ing either a float or a `*', `scanf ( "%llf", ... )'
+    will return 1 if a number was found and read, or 0
+    if a `*' was found and NOT read.
 
 
-
+char * gets ( char * buffer )
+
+    Read characters from the standard input into the
+    buffer until a line feed is read.  Replace the line
+    feed by a '\0'.  If there are NO characters to be
+    read because we are at the end of file, return NULL,
+    which can be interpreted as `false'; otherwise
+    return buffer, the address of the buffer, which can
+    be interpreted as `true'.
+
+
+int printf ( const char * format, ... )
+
+    Format can contain the following directives, in
+    in which W and P stand for sequences of decimal
+    digits, where W is used for `widths' and P for
+    `precisions':
+
+    %d		Outputs an `int' as a decimal integer
+    		with no spaces before or after.
+
+    %Wd		Outputs an `int' as a decimal integer
+    		right adjusted in W columns.
+
+    %lld	Outputs a `long long int' as a decimal
+    		integer with no spaces before or after.
+
+    %Wlld	Outputs a `long long int' as a decimal
+    		integer right adjusted in W columns.
+
+    %f		Outputs a `double' as a floating point
+    		number with 6 decimal places and no
+		spaces before or after.
+
+    %.Pf	Ditto but with P decimal places instead
+    		of 6 decimal places.
+
+    %Wf		Outputs a `double' as a floating point
+    		number with 6 decimal places right
+		adjusted in W columns.
+
+    %W.Pf	Ditto but with P decimal places instead
+    		of 6 decimal places.
+
+    %s		Outputs a `const char *' or `char *'
+    		string with no spaces before or after.
+
+    %Ws		Ditto but outputs the string RIGHT
+    		adjusted in W columns.
+
+    %-Ws	Ditto but outputs the string LEFT
+    		adjusted in W columns.
+
+    %c		Outputs a `char' as an ASCII character
+    		with no spaces before or after.
+    		
+
+INT_MAX, INT_MIN, LLONG_MAX, LLONG_MIN, DBL_MAX, DBL_MIN
+
+    These are the maximum and minimum numbers that can
+    be stored respectively in an `int', `long long int',
+    or `double'.  The integer values are from `limits.h'
+    and the floating point values from `float.h'.
+
+M_PI, M_E
+
+    The mathematical constants PI and e from math.h.
+
+
 File:		c
 Author:		Bob Walton <walton@seas.harvard.edu>
 Date:		See top of file.
@@ -289,6 +340,6 @@ file.
 RCS Info (may not be true date or author):
 
     $Author: walton $
-    $Date: 2012/11/24 00:23:19 $
+    $Date: 2012/11/24 13:40:35 $
     $RCSfile: c,v $
-    $Revision: 1.2 $
+    $Revision: 1.3 $
