@@ -61,7 +61,7 @@ numbers, and debugging is:
 	       . . . . .
 	    }
 
-	    /* Skip `*' and preceeding whitespace. */
+	    /* Skip `*' and preceding whitespace. */
 
 	    scanf ( " *" );
 	    . . . . .
@@ -94,6 +94,16 @@ numbers, and debugging is:
 	return 0;
 
     }
+
+
+Occasionally one has a conflict with some name defined
+in the `#include's.  E.g., you may have trouble naming a
+global variable `time'.   To fix this, change the name
+of your variable.  A simple way of doing this is to put
+the following right after the `#include's:
+
+	#define time Time
+
 
 Input
 -----
@@ -131,18 +141,16 @@ then skips the input `*'.
 
 Floating point numbers can be read by `scanf' by using
 %lf instead of %d, and non-numbers can be read by using
-%s or %c - see below for synopsis.  Sometimes a problem
-will specifically ask you to read lines to be processed
-as character strings, in which case use `fgets' and be
-sure your line buffer is long enough.
+%s or %c - see synopsis below.  Sometimes a problem will
+specifically ask you to read lines to be processed as
+character strings, in which case use `fgets' and be sure
+your line buffer is long enough.
 
-Occassionally one has a conflict with some name defined
-in the `#include's.  E.g., you may have trouble naming a
-global variable `time'.   To fix this, change the name
-of your variable.  A simple way of doing this is to put
-the following right after the `#include's:
-
-	#define time Time
+On some problems there are no test case name lines but
+instead each test case has one input line containing
+text and one output line containing text.  For these
+the test case input line is read the same way as the
+test case name line is read above.
 
 
 Output
@@ -152,35 +160,36 @@ Output is written to the standard output; you MUST NOT
 open any file for input; you MUST NOT write to the
 standard error output.
 
-Output can be done with printf.  Some formats that may
-be useful are "%.3f" to print a double with exactly 3
-decimal places in as few columns as possible, "%10.3f"
+Output can be written with printf.  Some formats that
+may be useful are "%.3f" to print a double with exactly
+3 decimal places in as few columns as possible, "%10.3f"
 to do the same in 10 columns padding with spaces on the
 left, "%10s" to print a string right adjusted in 10
-columns, and "%-10s" to pirnt a string LEFT adjusted in
+columns, and "%-10s" to print a string LEFT adjusted in
 10 column.  Here the numbers 3 and 10 are merely repre-
 sentative, and can be replaced by any other non-zero
-positive integer.
+positive integers.
 
 
 Debugging
 ---------
 
 When your program is executed by the judge, it will
-NOT be passed ANY arguments.  One standard debugging
+NOT be passed ANY arguments.  A standard debugging
 technique is to output extra debugging information if
 and only if your program is passed an argument.
 
 The above program defines `debug' to be true if and
 only if the program is called with one or more argu-
-ments, and defined dprintf to do what printf does if
+ments, and defines dprintf to do what printf does if
 and only if `debug' is true.  Thus dprintf can be used
 to print debugging information.
 
 Debugging is best done with information printed by
-`dout', and not with a debugger like `gdb'.  The excep-
-tion is debugging programs that crash or go into an
-infinite loop, which is best done with a debugger.
+`dprintf', and not with a debugger like `gdb'.  The
+exception is debugging programs that crash or go into
+an infinite loop, which is best done with a debugger
+like `gdb'.
 
 It is also a good idea to use `assert' statements
 to check that assumptions you have made are valid during
@@ -193,6 +202,12 @@ of writing
 it might be better to write
 
 	assert ( scanf ( "%d%d%d", ... ) == 3 );
+
+Similarly, you could replace `scanf ( " *" )' in the
+above code by
+
+	assert ( scanf ( " %c", line[0] ) == 1 );
+	assert ( line[0] == '*' );
 
 
 Function and Macro Specifications
@@ -217,8 +232,8 @@ Here we assume you already know something about how to
 use `scanf' and `printf', so we do not have to explain
 them from scratch.
 
-Note that an `int' is guarenteed to be at least 32 bits
-and a `long long int' is guarenteed to be at least 64
+Note that an `int' is guaranteed to be at least 32 bits
+and a `long long int' is guaranteed to be at least 64
 bits.  Floating point computations should always be done
 using `double's, and NOT `float's, to avoid having too
 little precision.
@@ -228,20 +243,20 @@ int scanf ( const char * format, ... )
     Format can contain the following directives:
 
     %d		Scans an `int' after ignoring any
-    		preceeding whitespace.
+    		preceding whitespace.
 
     %lld	Scans a `long long int' after ignoring
-    		any preceeding whitespace.
+    		any preceding whitespace.
 
     %lf		Scans a `double' after ignoring any
-    		preceeding whitespace.
+    		preceding whitespace.
 
     %s		Scans a string of non-whitespace charac-
-    		ters, after ignoring any preceeding
+    		ters, after ignoring any preceding
 		whitespace.
 
     %c		Scans a single character.  Does NOT
-    		ignore preceeding whitespace.
+    		ignore preceding whitespace.
 
     whitespace	Matches any amount of whitespace,
     		including none.  Line feeds are white-
@@ -256,7 +271,7 @@ int scanf ( const char * format, ... )
 
     Scanf returns the number of items successfully read
     by %... format directives.  Thus if you are expect-
-    ing either a float or a `*', `scanf ( "%llf", ... )'
+    ing either a float or a `*', `scanf ( "%lf", ... )'
     will return 1 if a number was found and read, or 0
     if a `*' was found and NOT read.
 
@@ -268,8 +283,8 @@ char * fgets ( char * buffer, sizeof ( buffer ), stdin )
     then store a '\0' in the buffer.  If there are NO
     characters to be read because we are at the end of
     file, return NULL, which can be interpreted as
-    `false'; otherwise return buffer, the address of the
-    buffer, which can be interpreted as `true'.
+    `false'; otherwise return the address of the buffer,
+    which can be interpreted as `true'.
 
 
 int printf ( const char * format, ... )
@@ -341,6 +356,6 @@ file.
 RCS Info (may not be true date or author):
 
     $Author: walton $
-    $Date: 2012/11/25 07:51:07 $
+    $Date: 2012/11/25 11:30:16 $
     $RCSfile: c,v $
-    $Revision: 1.4 $
+    $Revision: 1.5 $
