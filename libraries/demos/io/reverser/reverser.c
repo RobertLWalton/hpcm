@@ -11,9 +11,9 @@
  * RCS Info (may not be true date or author):
  *
  *   $Author: walton $
- *   $Date: 2012/11/25 06:54:54 $
+ *   $Date: 2012/11/25 07:07:12 $
  *   $RCSfile: reverser.c,v $
- *   $Revision: 1.1 $
+ *   $Revision: 1.2 $
  */
 
 
@@ -25,7 +25,7 @@
 int debug;
 #define dprintf if ( debug ) printer
 
-char line[81];
+char line[82];
 
 /* Function to find and print the first word BEFORE q,
  * where q points into `line'.  It is a program error
@@ -62,7 +62,7 @@ int main ( int argc, char * argv[] )
 {
     debug = ( argc > 1 );
 
-    while ( gets ( line ) )
+    while ( fgets ( line, sizeof ( line ), stdin ) )
     {
     	/* Set p to beginning of line and q to end of
 	 * line.
@@ -81,7 +81,6 @@ int main ( int argc, char * argv[] )
 	    }
 	    else printf ( "%c", * p ++ );
 	}
-	printf ( "\n" );
     }
 
     return 0;
