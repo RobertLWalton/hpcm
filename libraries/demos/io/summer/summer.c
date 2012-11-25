@@ -2,7 +2,7 @@
  *
  * File:	summer.c
  * Authors:	Bob Walton (walton@deas.harvard.edu)
- * Date:	Sun Nov 25 08:19:51 EST 2012
+ * Date:	Sun Nov 25 09:02:00 EST 2012
  *
  * The authors have placed this program in the public
  * domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
  * RCS Info (may not be true date or author):
  *
  *   $Author: walton $
- *   $Date: 2012/11/25 13:32:45 $
+ *   $Date: 2012/11/25 14:02:24 $
  *   $RCSfile: summer.c,v $
- *   $Revision: 1.1 $
+ *   $Revision: 1.2 $
  */
 
 
@@ -40,12 +40,26 @@ int main ( int argc, char * argv[] )
 	/* Read input and compute corrected sum. */
 
 	double corrected_sum = 0, number, sum;
+
 	/* Read number until `='. */
+
 	while ( scanf ( "%lf", & number ) == 1 )
 	    corrected_sum += number;
-	scanf ( " =" );  /* Skip `='. */
+
+	/* Skip `='.  The last scanf above failed to
+	 * read a number, BUT, it did skip over the
+	 * whitespace preceding the `=', so we do
+	 * not need to skip it here.
+	 */
+
+	scanf ( "=" );
+
+	/* Read accountant computers sum. */
+
 	assert ( scanf ( "%lf", & sum ) == 1 );
+
 	/* Read end of line after sum. */
+
 	fgets ( line, sizeof ( line ), stdin );
 
 	/* corrected_sum and sum are both approximations
@@ -54,6 +68,10 @@ int main ( int argc, char * argv[] )
 	 * least 0.01, approximately, and if they are
 	 * equal, they should differ by much, much less.
 	 */
+
+	dprintf
+	    ( "SUM = %.15f, CORRECTED SUM = %.15f\n",
+	      sum, corrected_sum );
 
 	if ( fabs ( sum - corrected_sum ) < 0.005 )
 	    printf ( "%.2f is correct\n", sum );
