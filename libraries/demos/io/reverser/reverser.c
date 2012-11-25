@@ -2,7 +2,7 @@
  *
  * File:	reverser.c
  * Authors:	Bob Walton (walton@deas.harvard.edu)
- * Date:	Sun Nov 25 01:08:03 EST 2012
+ * Date:	Sun Nov 25 06:46:46 EST 2012
  *
  * The authors have placed this program in the public
  * domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
  * RCS Info (may not be true date or author):
  *
  *   $Author: walton $
- *   $Date: 2012/11/25 07:07:12 $
+ *   $Date: 2012/11/25 11:49:28 $
  *   $RCSfile: reverser.c,v $
- *   $Revision: 1.2 $
+ *   $Revision: 1.3 $
  */
 
 
@@ -23,7 +23,7 @@
 #include <assert.h>
 
 int debug;
-#define dprintf if ( debug ) printer
+#define dprintf if ( debug ) printf
 
 char line[82];
 
@@ -64,6 +64,11 @@ int main ( int argc, char * argv[] )
 
     while ( fgets ( line, sizeof ( line ), stdin ) )
     {
+	/* When debugging print the intput as well as
+	 * the output.
+	 */
+	dprintf ( "%s", line );
+
     	/* Set p to beginning of line and q to end of
 	 * line.
 	 */
