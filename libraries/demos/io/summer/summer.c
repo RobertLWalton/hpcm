@@ -1,8 +1,8 @@
 /* Solution to the Summation Checking Problem
  *
  * File:	summer.c
- * Authors:	Bob Walton (walton@deas.harvard.edu)
- * Date:	Sun Nov 25 09:02:00 EST 2012
+ * Authors:	Bob Walton (walton@seas.harvard.edu)
+ * Date:	Mon Nov 26 14:25:10 EST 2012
  *
  * The authors have placed this program in the public
  * domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
  * RCS Info (may not be true date or author):
  *
  *   $Author: walton $
- *   $Date: 2012/11/25 14:02:24 $
+ *   $Date: 2012/11/26 19:25:42 $
  *   $RCSfile: summer.c,v $
- *   $Revision: 1.2 $
+ *   $Revision: 1.3 $
  */
 
 
@@ -54,7 +54,7 @@ int main ( int argc, char * argv[] )
 
 	scanf ( "=" );
 
-	/* Read accountant computers sum. */
+	/* Read accountant computer's sum. */
 
 	assert ( scanf ( "%lf", & sum ) == 1 );
 

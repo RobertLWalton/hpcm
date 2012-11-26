@@ -1,8 +1,8 @@
 /* Solution to the Word Order Reverser Problem
  *
  * File:	reverser.c
- * Authors:	Bob Walton (walton@deas.harvard.edu)
- * Date:	Sun Nov 25 06:46:46 EST 2012
+ * Authors:	Bob Walton (walton@seas.harvard.edu)
+ * Date:	Mon Nov 26 14:26:02 EST 2012
  *
  * The authors have placed this program in the public
  * domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
  * RCS Info (may not be true date or author):
  *
  *   $Author: walton $
- *   $Date: 2012/11/25 11:49:28 $
+ *   $Date: 2012/11/26 19:26:12 $
  *   $RCSfile: reverser.c,v $
- *   $Revision: 1.3 $
+ *   $Revision: 1.4 $
  */
 
 
