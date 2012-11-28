@@ -4,7 +4,7 @@
 #
 # File:		makehelp
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Tue Nov 27 21:54:12 EST 2012
+# Date:		Tue Nov 27 22:28:42 EST 2012
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2012/11/28 03:26:06 $
+#   $Date: 2012/11/28 04:04:20 $
 #   $RCSfile: makehelp,v $
-#   $Revision: 1.4 $
+#   $Revision: 1.5 $
 #
 # The next lines start tclsh \
 trap "echo makehelp: Terminated by Signal" \
@@ -268,7 +268,7 @@ while { ! [eof $ich] } {
 		foreach l $p { puts $hich $l }
 
 		if { $item_directory == "" } {
-		    set r = {}
+		    set r {}
 		} else {
 		    set r [is_file_list \
 		               $p $item_directory ]
@@ -316,6 +316,7 @@ while { ! [eof $ich] } {
 		        # Output non-indented paragraph
 
 		        puts $hich ""
+		        puts $hich ""
 			foreach l $p {
 			    puts $hich $l
 			}
@@ -334,8 +335,14 @@ while { ! [eof $ich] } {
 			# Output file name
 
 			puts $hich ""
-			regsub "\*\*\*" $line "   " line
-			puts $hich $line
+			regsub "\\*\\*\\*" $line "   " \
+			       line
+			regexp "^($WS*)$NWS" $line \
+			       forget outline
+			set outline \
+			    "$outline[file tail \
+			                   $item_name]"
+			puts $hich $outline
 			puts $wch "<P>"
 			puts $wch \
 			     "<A HREF=\"$item_name\">\
@@ -345,7 +352,10 @@ while { ! [eof $ich] } {
 		    puts $wch "<BLOCKQUOTE>"
 		}
 	    }
-	} else {
+	} elseif { [regexp "^$NWS" $line] \
+	           || \
+		   $item_name != "" } {
+	    set p {}
 	    lappend p $line
 	    set in_p 1
 	}
