@@ -4,7 +4,7 @@
 #
 # File:		makehelp
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Thu Oct  6 08:03:06 EDT 2011
+# Date:		Tue Nov 27 21:54:12 EST 2012
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2011/10/06 12:07:20 $
+#   $Date: 2012/11/28 03:26:06 $
 #   $RCSfile: makehelp,v $
-#   $Revision: 1.3 $
+#   $Revision: 1.4 $
 #
 # The next lines start tclsh \
 trap "echo makehelp: Terminated by Signal" \
@@ -23,48 +23,186 @@ trap "echo makehelp: Terminated by Signal" \
 tclsh "$0" "$@"; exit $status
 
 set document "
-makehelp \[-h] help_index title index option ...
+makehelp help_index title index option ...
 
-    Read the index and make the help_index file which
-    has the format of a help index file with the given
-    title.  Also make the file help_index.files that
-    lists the files whose entries were included in the
-    index.
+    Read the index and make the files:
 
-    The index has item entries that begin with a header
-    line of format
+        help_index	   Index
+	help_index.html	   WWW index
+	help_index.files   List of files to print or
+	                   copy to WWW
+	                  
+    Lines beginning with `#' in index are deleted,
+    as they are comments.
+
+    Otherwise the index is treated as a sequence of
+    paragraphs composed of non-blank lines, with blank
+    lines separating the paragraphs.  Paragraphs are
+    classified as `indented' if their first character
+    is a whitespace, and `non-indented' otherwise.
+
+    Any paragraph consisting of a single line of the
+    format
 
     	*** FILENAME option ...
 
-    These lines are included with changes unless the -h
-    option is given.  The changes consist of replacing
-    the `***' with single spaces, deleting the options,
-    and keeping only the tail of the FILENAME (the part
-    after the last `/').
+    (which possible whitespace before the ***) is
+    called an `item header'.  Item headers are
+    `selected' if any of their options or their FILENAME
+    is listed as a makehelp command option.  When an
+    item header is selected, the following are output
+    in order:
 
-    FILENAMEs can also be used as options to select an
-    entry.
+	All non-indented paragraphs since the previous
+	item header that have not yet been output, if
+	any.
 
-    Lines beginning with `#' in the index are deleted,
-    as they are comments.
+	The item header if FILENAME does not name a
+	directory.
+
+	All indented paragraphs after the item header
+	and before the next item header or non-indented
+	paragraph.
 
-    If an item FILENAME is a directory and not a file,
-    instead of listing the FILENAME in help_index.files,
-    all the files in that directory whose names were
-    the first non-blank word in a line of the item are
-    listed, in the order the lines naming them occur in
-    the item.
+    An indented paragraph is a `file list' if it is
+    preceded by an item header and possible intervening
+    indented paragraphs, if the FILENAME in the item
+    header names a directory, and if each line of the
+    indented paragraph begins a whitespace surrounded
+    NAME that contains no whitespace and whose tail,
+    when viewed as a filename, names a file in the
+    directory specified by the item header filename.
+
+    This program writes a file named help_index.files
+    that is just a list of file names.  When an item
+    header whose FILENAME does NOT name a directory is
+    selected, this FILENAME is written to this file.
+    When a `file list' is recognized, the names of the
+    files listed are written to this file.
+
+    When an item header is output, the options are
+    deleted and the `***'s are converted to 3 spaces.
+
+    If the -i option is NOT given, all non-item header
+    paragraphs are output as is, and all paragraphs are
+    separated by a single blank line.
+
+    If the -i option is give, output is as follows:
+
+        If a non-indented paragraph ends in a line con-
+	taining just `-'s, then all lines containing
+	just `-'s are deleted from the paragraph, and
+	the paragraph is surrounded by <H3>...</H3>.
+	Otherwise the paragraph is surrounded by
+	<P>...</P>.
+
+	If an item description paragraph is a file list,
+	it is output as an indented table with the file
+	names as links.  Otherwise the paragraph is
+	surrounded by <P>...</P>.
+
+	All the non-indented paragraphs following a
+	selected item header are surrounded by
+	<BLOCKQUOTE>...</BLOCKQUOTE>.
 
     Unlike most HPCM judging programs, this program does
     not read any hpcm_judging.rc file and errors made by
     this program are not written to log files."
 
-# Handle -h argument.
+set WS "\[\ \t\]"
+set NWS "\[^\ \t\]"
+
+# Given a directory name `dir' and a paragraph `p',
+# check if each line of the paragraph has the form
 #
-set h 0
-if { [lindex $argv 0] == "-h" } {
-    set h 1
-    set argv [lrange $argv 1 end]
+#   ${WS}*${NAME}${WS}+${REST}${WS}*
+#
+# where NAME contains no whitespace and REST does not
+# begin or end with whitespace (and may be empty), and
+# where $dir/[file tail $NAME] names an existing
+# ordinary file (or symbolic link to such).  If NO,
+# return the empty list.  Otherwise return a list with
+# one element per line consisting of
+#
+#	{ NAME REST }
+#
+proc is_file_list { p dir } {
+    global WS NWS
+    set result {}
+    foreach line $p {
+        if { ! [regexp "^$WS*($NWS+)(|$WS.*)\$" \
+	               $line forget \
+		       name rest] } {
+	    return {}
+	}
+	if { ! [file isfile $dir/[file tail $name]] } {
+	    return {}
+	}
+	lappend result \
+	        [list $name [string trim $rest]]
+    }
+    return $result
+}
+
+# Given the result r of is_file_list above, output
+# to wch the html for the file list.  Here dirname is
+# the item header FILENAME.
+#
+proc file_list_to_html { wch r dirname } {
+    puts $wch "<TABLE>"
+    foreach line $r {
+        set name [lindex $line 0]
+        set tail [file tail $name]
+	set rest [lindex $line 1]
+        puts $wch "<TR><TD WIDTH=\"20\"></TD>"
+        puts $wch "    <TD><A HREF=\"$dirname/$tail\">"
+        puts $wch "        $name</TD>"
+        puts $wch "    <TD WIDTH=\"20\"></TD>"
+        puts $wch "    <TD>$rest</TD>"
+        puts $wch "</TR>"
+    }
+    puts $wch "</TABLE>"
+}
+
+# Given the result r of is_file_list above, output
+# to fch a list of the actual names of the files in
+# file list.  Here dirname is the concatenation of
+# the name of the directory containing the index
+# and the FILENAME from the item header.
+#
+proc file_list_to_files { fch r dirname } {
+    foreach line $r {
+        puts $fch "$dirname/[lindex $line 0]"
+    }
+}
+
+# Output non-indented paragaph to html.  If there is
+# any line containing just `-'s, delete all such
+# lines and use <H3>...</H3>.  Otherwise delete no
+# lines and output <P>...</P>.
+#
+proc p_to_html { wch p } {
+    global WS
+    set use_h2 0
+    foreach line $p {
+        if { [regexp "^$WS*\-\[ \t-\]*\$" $line] } {
+	    set use_h2 1
+	}
+    }
+    if { $use_h2 } {
+        puts $wch "<H3>"
+	foreach line $p {
+	    if { ! [regexp "^$WS*\-\[ \t-\]*\$" \
+	                   $line] } {
+		puts $wch $line
+	    }
+	}
+        puts $wch "</H3>"
+    } else {
+        puts $wch "<P>"
+	foreach line $p { puts $wch $line }
+        puts $wch "</P>"
+    }
 }
 
 # If too few arguments or first argument begins with
@@ -77,6 +215,7 @@ if { $argc < 4 || [regexp {^-} [lindex $argv 0]] } {
 
 set help_index [lindex $argv 0]
 set files "${help_index}.files"
+set html "${help_index}.html"
 set title [lindex $argv 1]
 set index [lindex $argv 2]
 set indexdir [file dirname $index]
@@ -85,6 +224,10 @@ set date [exec date]
 
 if { [catch { set hich [open $help_index w] }] } {
     puts "ERROR: could not open $help_index for writing"
+    exit 1
+}
+if { [catch { set wch [open $html w] }] } {
+    puts "ERROR: could not open $html for writing"
     exit 1
 }
 if { [catch { set fch [open $files w] }] } {
@@ -103,79 +246,117 @@ set tline "$title[string repeat " " $count]$date"
 puts $hich $tline
 puts $hich ""
 
-set WS "\[\ \t\]"
-set NWS "\[^\ \t\]"
-set in_item 0
-set in_header 0
-set header {}
-while { true } {
+set p {}
+set in_p 0
+set item_name ""
+set item_directory ""
+    # [dirname $index]/$item_name
+while { ! [eof $ich] } {
     set line [gets $ich]
-    if { [eof $ich] } break
-    if { [regexp {^#} $line] } continue
-
-    if {    ! [catch { set len [llength $line] }] \
-         && $len >= 2
-	 && [lindex $line 0] == "***" } {
-
-	# index item entry header line
-
-	set in_item 0
-	set in_header 0
-	set option_list [lrange $line 1 end]
-	foreach option $options {
-	    if { [expr [lsearch -exact \
-	                         $option_list \
-	                         $option] >= 0] } {
-		set in_item 1
-	    }
-	}
-
-	if { $in_item } {
-	    set itemfile "$indexdir/[lindex $line 1]"
-
-	    set in_directory \
-	        [file isdirectory $itemfile]
-	    if { ! $in_directory } {
-	        puts $fch $itemfile
-	    }
-
-	    foreach hline $header {
-	        puts $hich $hline
-	    }
-	    set header {}
-	}
-
-	if { ! $h && $in_item } {
-	    regexp "^(${WS}*\\*\\*\\*${WS}*)\[^\ \t]" \
-	           $line forget indent
-	    regsub "\\*\\*\\*" $indent "   " indent
-	    set name [file tail [lindex $line 1]]
-	    puts $hich "$indent$name"
-	}
-	continue
-    } elseif { $in_header } {
-        lappend header $line
-    } elseif { [regexp "^\[^\ \t\]" $line] } {
-        set header ""
-	lappend header $line
-	set in_header 1
-	set in_item 0
-    } elseif { $in_item } {
-        puts $hich $line
-	if { $in_directory } {
-	    if { [regexp \
-	            "^${WS}*(${NWS}+)(${WS}.*|)\$" \
-		    $line forget f forget1] \
+    if { [eof $ich] || [regexp "^$WS*\$" $line] } {
+        if { $in_p } {
+	    set in_p 0
+	    if { $item_name != "" \
 		 && \
-		 [file readable $indexdir/$f] } {
-	        puts $fch $indexdir/$f
+		 [llength $p] > 0 \
+		 && \
+		 [regexp "^$WS" [lindex $p 0]] } {
+
+		# Output indented paragraph
+
+		puts $hich ""
+		foreach l $p { puts $hich $l }
+
+		if { $item_directory == "" } {
+		    set r = {}
+		} else {
+		    set r [is_file_list \
+		               $p $item_directory ]
+		}
+		if { $r == {} } {
+		    puts $wch "<P>"
+		    foreach l $p { puts $wch $l }
+		    puts $wch "</P>"
+		} else {
+		    file_list_to_html \
+		        $wch $r $item_name
+		    file_list_to_files \
+		        $fch $r $item_directory
+		}
+		set p {}
 	    }
 	}
+
+	if { [eof $ich] && $item_name != "" } {
+	    puts $wch "</BLOCKQUOTE>"
+	}
+    } elseif { [regexp {^#} $line] } {
+        continue
+    } elseif { ! $in_p } {
+	if {    ! [catch { set len [llength $line] }] \
+	     && $len >= 2 \
+	     && [lindex $line 0] == "***" } {
+
+	    # item header line
+
+	    if { $item_name != "" } {
+		puts $wch "</BLOCKQUOTE>"
+	    }
+
+	    set item_name ""
+	    set item_directory ""
+
+	    set option_list [lrange $line 1 end]
+	    foreach option $options {
+		if { [expr [lsearch -exact \
+				     $option_list \
+				     $option] >= 0] } {
+		    if { $p != {} } {
+
+		        # Output non-indented paragraph
+
+		        puts $hich ""
+			foreach l $p {
+			    puts $hich $l
+			}
+			p_to_html $wch $p
+			set p {}
+		    }
+
+		    set item_name [lindex $line 1]
+		    set item_directory \
+		      "[file dirname $index]/$item_name"
+		    if { ! [file isdirectory \
+		                 $item_directory] } {
+			puts $fch $item_directory
+			set item_directory ""
+
+			# Output file name
+
+			puts $hich ""
+			regsub "\*\*\*" $line "   " line
+			puts $hich $line
+			puts $wch "<P>"
+			puts $wch \
+			     "<A HREF=\"$item_name\">\
+			      $item_name</A>"
+			puts $wch "</P>"
+		    }
+		    puts $wch "<BLOCKQUOTE>"
+		}
+	    }
+	} else {
+	    lappend p $line
+	    set in_p 1
+	}
+    } else {
+        lappend p $line
     }
 }
 
 close $hich
 close $fch
+close $wch
 close $ich
 
 exit 0
