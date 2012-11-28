@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Oct  4 07:36:12 EDT 2012
+# Date:		Wed Nov 28 00:21:59 EST 2012
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2012/10/04 11:40:00 $
+#   $Date: 2012/11/28 06:12:50 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.34 $
+#   $Revision: 1.35 $
 
 # `make help.pdf' and `make demos.pdf' make printouts of
 # all the help and demos files respectively.  Note that
@@ -33,14 +33,12 @@
 # To make these, just use `make advanced_help.ps',
 # etc.
 #
-# To make web help pages, execute `make web' and copy
-# the `web' directory to you web server, where it will
-# become a directory containing an `index.html' file.
-# The web.tar file contains the contents of the `web'
-# directory, to make copying easy.  The web page
-# contains help.pdf and demos.pdf, as well individual
-# copies of all the help and demos files and indices
-# for these.
+# To make web help pages, execute `make web', copy
+# the `web.tar' file to your web server and unpack
+# it to make a directory containing the `index.html'
+# file, .pdf files, and files listed in indices.
+# web.tar contains the contents of the `web'
+# subdirectory.
 
 all:	emailsh modes STL_doc
 
@@ -55,6 +53,8 @@ ps:	help.ps demos.ps \
 .SUFFIXES: .ps .pdf
 .ps.pdf:
 	ps2pdf $*.ps $*.pdf
+
+WEB = ""
 
 FORMAL_HELP_FILES = \
 	contest/formal_contest \
@@ -94,19 +94,14 @@ ADVANCED_HELP_FILES = \
 
 
 DEMOS_FILES = \
-	../../problem_library/demos/count/Makefile \
-	../../problem_library/demos/count/README \
-	../../problem_library/demos/count/count.in \
-	../../problem_library/demos/count/count.test \
-	../../problem_library/demos/count/count.txt \
-	../../problem_library/demos/count/count1.c \
-	../../problem_library/demos/count/count1.cc \
-	../../problem_library/demos/count/count1.java \
-	../../problem_library/demos/count/count1.lsp \
-	../../problem_library/demos/javaio/javaio.java \
-	../../problem_library/demos/javaio/Makefile \
-	../../problem_library/demos/javaio/javaio.in \
-	../../problem_library/demos/javaio/javaio.test
+	../../problem_library/demos/c/reverser/reverser.txt \
+	../../problem_library/demos/c/reverser/sample.in \
+	../../problem_library/demos/c/reverser/sample.test \
+	../../problem_library/demos/c/reverser/reverser.c \
+	../../problem_library/demos/c/summer/summer.txt \
+	../../problem_library/demos/c/summer/sample.in \
+	../../problem_library/demos/c/summer/sample.test \
+	../../problem_library/demos/c/summer/summer.c
 
 ADVANCED_DEMOS_FILES = \
 	../../problem_library/demos/intersections/intersections.txt \
@@ -115,9 +110,9 @@ ADVANCED_DEMOS_FILES = \
 	../../problem_library/demos/csearch/csearch.cc
 
 help_index:	index
-	rm -f help_index help_index.files
+	rm -f help_index help_index.html help_index.files
 	../../judge/bin/makehelp \
-	    help_index "HELP INDEX" index \
+	    help_index "HELP INDEX" index ${WEB} \
 	    ${HELP_FILES}
 
 help.ps:	help_index ${HELP_FILES}
@@ -132,9 +127,11 @@ help+.ps:	help_index ${HELP_FILES}
 	    help_index `cat help_index.files`
 
 formal_help_index:	index
-	rm -f formal_help_index formal_help_index.files
+	rm -f formal_help_index \
+	      formal_help_index.html \
+	      formal_help_index.files
 	../../judge/bin/makehelp \
-	    formal_help_index "HELP INDEX" index \
+	    formal_help_index "HELP INDEX" index ${WEB} \
 	    ${FORMAL_HELP_FILES}
 
 formal_help.ps:	formal_help_index ${FORMAL_HELP_FILES}
@@ -153,10 +150,11 @@ formal_help+.ps:	formal_help_index \
 
 advanced_help_index:	index
 	rm -f advanced_help_index \
+	      advanced_help_index.html \
 	      advanced_help_index.files
 	../../judge/bin/makehelp \
 	    advanced_help_index "ADVANCED HELP INDEX" \
-	    index ${ADVANCED_HELP_FILES}
+	    index ${WEB} ${ADVANCED_HELP_FILES}
 
 advanced_help.ps:	advanced_help_index \
 			${ADVANCED_HELP_FILES}
@@ -165,12 +163,14 @@ advanced_help.ps:	advanced_help_index \
 	    advanced_help_index \
 	    `cat advanced_help_index.files`
 
-demos_index:	../../problem_library/index
-	rm -f demos_index demos_index.files
-	../../judge/bin/makehelp -h \
+demos_index:	../../problem_library/demos_index
+	rm -f demos_index \
+	      demos_index.html \
+	      demos_index.files
+	../../judge/bin/makehelp \
 	    demos_index "DEMOS INDEX" \
-	    ../../problem_library/index \
-	    demos/count demos/javaio
+	    ../../problem_library/demos_index ${WEB} c
+
 
 demos.ps:	demos_index ${DEMOS_FILES}
 	rm -rf demos.ps
@@ -179,11 +179,12 @@ demos.ps:	demos_index ${DEMOS_FILES}
 
 advanced_demos_index:	../../problem_library/index
 	rm -f advanced_demos_index \
+	      advanced_demos_index.html \
 	      advanced_demos_index.files
-	../../judge/bin/makehelp -h \
+	../../judge/bin/makehelp \
 	    advanced_demos_index \
 	    "ADVANCED DEMOS INDEX" \
-	    ../../problem_library/index \
+	    ../../problem_library/index ${WEB} \
 	    demos/intersections demos/csearch
 
 advanced_demos.ps:	advanced_demos_index \
@@ -223,31 +224,21 @@ STL_doc:	private/STL_doc.tar.gz
 	find STL_doc -type d -exec chmod a+rx {} \;
 	find STL_doc -type f -exec chmod a+r {} \;
 
-# Web_do merely causes `make web' to remake the
-# web directory even if it exists.
+# Web_do merely causes `make web' to remake web.tar
+# even if it exists.
 #
 web_do:
 
-web:	all help.pdf demos.pdf \
-	advanced_help.pdf advanced_demos.pdf web_do
-	rm -rf web.tar web
+web:	web_do
+	rm -rf web web.tar
+	make clean
 	mkdir web
-	cp -rpL `ls | grep -v '^web$$' | \
-	              grep -v '^private$$' | \
-	              grep -v '^help.ps$$' | \
-	              grep -v '^help+.ps$$' | \
-	              grep -v '^demos.ps$$' | \
-	              grep -v '^advanced_help.ps$$' | \
-	              grep -v '^advanced_demos.ps$$' ` \
-	   web
-	cp -rpL ../../problem_library/demos web/demos
-	rm -f `find web -name '*.rc' -print`
-	rm -rf `find web -name CVS -print`
-	rm -f `find web \
-	             -name '*this_contest_prototype' \
-		     -print`
-	rm -f web/Makefile
-	find web -type f -exec chmod 444 {} \;
+	make WEB=web all pdf
+	rm -rf web.tar
+	cp index.html web/index.html
+	chmod 444 web/index.html
+	cp *.pdf web/
+	chmod 444 web/*.pdf
 	find web -type d -exec chmod 755 {} \;
 	cd web; tar cf ../web.tar *
 
