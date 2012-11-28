@@ -4,7 +4,7 @@
 #
 # File:		makehelp
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Tue Nov 27 22:28:42 EST 2012
+# Date:		Tue Nov 27 23:46:41 EST 2012
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2012/11/28 04:04:20 $
+#   $Date: 2012/11/28 06:21:29 $
 #   $RCSfile: makehelp,v $
-#   $Revision: 1.5 $
+#   $Revision: 1.6 $
 #
 # The next lines start tclsh \
 trap "echo makehelp: Terminated by Signal" \
@@ -23,14 +23,15 @@ trap "echo makehelp: Terminated by Signal" \
 tclsh "$0" "$@"; exit $status
 
 set document "
-makehelp help_index title index option ...
+makehelp help_index title index web option ...
 
     Read the index and make the files:
 
         help_index	   Index
 	help_index.html	   WWW index
-	help_index.files   List of files to print or
-	                   copy to WWW
+	help_index.files   List of files to print.
+	web/...		   Copies of files in web page
+			   directory.
 	                  
     Lines beginning with `#' in index are deleted,
     as they are comments.
@@ -78,16 +79,25 @@ makehelp help_index title index option ...
     header whose FILENAME does NOT name a directory is
     selected, this FILENAME is written to this file.
     When a `file list' is recognized, the names of the
-    files listed are written to this file.
+    files listed are written to this file.  The
+    name of the help_index files is written to the
+    beginning of this file.
+
+    Files that are listed in help_index.files are
+    also copied to the web directory, if it is not
+    \"\", except that help_index.html is copied
+    instead of help_index.  These copies are made
+    read-only to everyone.
 
     When an item header is output, the options are
     deleted and the `***'s are converted to 3 spaces.
 
-    If the -i option is NOT given, all non-item header
-    paragraphs are output as is, and all paragraphs are
-    separated by a single blank line.
-
-    If the -i option is give, output is as follows:
+    All non-item header paragraphs are output as is to
+    the help_index.  Non-indented paragraphs are
+    preceded by two blank lines, and indented paragraphs
+    are preceded by one blank line.
+
+    Output to help_index.html is as follows:
 
         If a non-indented paragraph ends in a line con-
 	taining just `-'s, then all lines containing
@@ -95,15 +105,15 @@ makehelp help_index title index option ...
 	the paragraph is surrounded by <H3>...</H3>.
 	Otherwise the paragraph is surrounded by
 	<P>...</P>.
-
+
 	If an item description paragraph is a file list,
 	it is output as an indented table with the file
 	names as links.  Otherwise the paragraph is
 	surrounded by <P>...</P>.
 
-	All the non-indented paragraphs following a
-	selected item header are surrounded by
-	<BLOCKQUOTE>...</BLOCKQUOTE>.
+	<BLOCKQUOTE>...</BLOCKQUOTE> is used to indent
+	text between non-indented paragraphs and to
+	further indent indented paragraphs.
 
     Unlike most HPCM judging programs, this program does
     not read any hpcm_judging.rc file and errors made by
@@ -144,6 +154,19 @@ proc is_file_list { p dir } {
     return $result
 }
 
+# Copy a file's name to fch and the file itself to web
+# if the latter is not "".  The file is located
+# at src and is to be copied to web/dst.
+#
+proc print_and_copy_file { fch web src dst } {
+    puts $fch $src
+    if { $web != "" } {
+	file mkdir [file dirname $web/$dst]
+	file copy -force $src $web/$dst
+	file attributes $web/$dst -permissions r--r--r--
+    }
+}
+
 # Given the result r of is_file_list above, output
 # to wch the html for the file list.  Here dirname is
 # the item header FILENAME.
@@ -162,18 +185,6 @@ proc file_list_to_html { wch r dirname } {
         puts $wch "</TR>"
     }
     puts $wch "</TABLE>"
-}
-
-# Given the result r of is_file_list above, output
-# to fch a list of the actual names of the files in
-# file list.  Here dirname is the concatenation of
-# the name of the directory containing the index
-# and the FILENAME from the item header.
-#
-proc file_list_to_files { fch r dirname } {
-    foreach line $r {
-        puts $fch "$dirname/[lindex $line 0]"
-    }
 }
 
 # Output non-indented paragaph to html.  If there is
@@ -208,7 +219,7 @@ proc p_to_html { wch p } {
 # If too few arguments or first argument begins with
 # `-', print documentation and exit with error.
 #
-if { $argc < 4 || [regexp {^-} [lindex $argv 0]] } {
+if { $argc < 5 || [regexp {^-} [lindex $argv 0]] } {
     puts $document
     exit 1
 }
@@ -219,7 +230,8 @@ set html "${help_index}.html"
 set title [lindex $argv 1]
 set index [lindex $argv 2]
 set indexdir [file dirname $index]
-set options [lrange $argv 3 end]
+set web [lindex $argv 3]
+set options [lrange $argv 4 end]
 set date [exec date]
 
 if { [catch { set hich [open $help_index w] }] } {
@@ -246,8 +258,11 @@ set tline "$title[string repeat " " $count]$date"
 puts $hich $tline
 puts $hich ""
 
+puts $fch $help_index
+
 set p {}
 set in_p 0
+set non_indented_output 0
 set item_name ""
 set item_directory ""
     # [dirname $index]/$item_name
@@ -280,14 +295,21 @@ while { ! [eof $ich] } {
 		} else {
 		    file_list_to_html \
 		        $wch $r $item_name
-		    file_list_to_files \
-		        $fch $r $item_directory
+		    foreach l $r {
+			set f [file tail [lindex $l 0]]
+			set src "$item_directory/$f"
+			set dst "$item_name/$f"
+		        print_and_copy_file \
+			    $fch $web $src $dst
+		    }
 		}
 		set p {}
 	    }
 	}
 
-	if { [eof $ich] && $item_name != "" } {
+	if {    [eof $ich] \
+	     && $item_name != "" \
+	     && $item_directory == ""} {
 	    puts $wch "</BLOCKQUOTE>"
 	}
     } elseif { [regexp {^#} $line] } {
@@ -299,7 +321,8 @@ while { ! [eof $ich] } {
 
 	    # item header line
 
-	    if { $item_name != "" } {
+	    if { $item_name != "" \
+	         && $item_directory == ""} {
 		puts $wch "</BLOCKQUOTE>"
 	    }
 
@@ -320,7 +343,12 @@ while { ! [eof $ich] } {
 			foreach l $p {
 			    puts $hich $l
 			}
+			if { $non_indented_output } {
+			    puts $wch "</BLOCKQUOTE>"
+			}
 			p_to_html $wch $p
+			set non_indented_output 1
+			puts $wch "<BLOCKQUOTE>"
 			set p {}
 		    }
 
@@ -329,7 +357,11 @@ while { ! [eof $ich] } {
 		      "[file dirname $index]/$item_name"
 		    if { ! [file isdirectory \
 		                 $item_directory] } {
-			puts $fch $item_directory
+
+			print_and_copy_file \
+			    $fch $web $item_directory \
+			              $item_name
+
 			set item_directory ""
 
 			# Output file name
@@ -348,8 +380,8 @@ while { ! [eof $ich] } {
 			     "<A HREF=\"$item_name\">\
 			      $item_name</A>"
 			puts $wch "</P>"
+			puts $wch "<BLOCKQUOTE>"
 		    }
-		    puts $wch "<BLOCKQUOTE>"
 		}
 	    }
 	} elseif { [regexp "^$NWS" $line] \
@@ -368,5 +400,12 @@ close $hich
 close $fch
 close $wch
 close $ich
+
+if { $web != "" } {
+    file copy -force "${help_index}.html"  \
+		     "${web}/${help_index}.html"
+    file attributes "${web}/${help_index}.html" \
+         -permissions r--r--r--
+}
 
 exit 0
