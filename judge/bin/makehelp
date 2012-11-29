@@ -4,7 +4,7 @@
 #
 # File:		makehelp
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Tue Nov 27 23:46:41 EST 2012
+# Date:		Thu Nov 29 07:05:40 EST 2012
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2012/11/28 06:21:29 $
+#   $Date: 2012/11/29 15:44:19 $
 #   $RCSfile: makehelp,v $
-#   $Revision: 1.6 $
+#   $Revision: 1.7 $
 #
 # The next lines start tclsh \
 trap "echo makehelp: Terminated by Signal" \
@@ -47,7 +47,7 @@ makehelp help_index title index web option ...
 
     	*** FILENAME option ...
 
-    (which possible whitespace before the ***) is
+    (with possible whitespace before the ***) is
     called an `item header'.  Item headers are
     `selected' if any of their options or their FILENAME
     is listed as a makehelp command option.  When an
@@ -188,19 +188,22 @@ proc file_list_to_html { wch r dirname } {
 }
 
 # Output non-indented paragaph to html.  If there is
-# any line containing just `-'s, delete all such
-# lines and use <H3>...</H3>.  Otherwise delete no
+# any line containing just `-'s and spaces, delete all
+# such lines and use <H3>...</H3>.  Otherwise delete no
 # lines and output <P>...</P>.
+#
+# Return 1 if some line contained just `-'s, and 0
+# otherwise.
 #
 proc p_to_html { wch p } {
     global WS
-    set use_h2 0
+    set use_h 0
     foreach line $p {
         if { [regexp "^$WS*\-\[ \t-\]*\$" $line] } {
-	    set use_h2 1
+	    set use_h 1
 	}
     }
-    if { $use_h2 } {
+    if { $use_h } {
         puts $wch "<H3>"
 	foreach line $p {
 	    if { ! [regexp "^$WS*\-\[ \t-\]*\$" \
@@ -214,6 +217,7 @@ proc p_to_html { wch p } {
 	foreach line $p { puts $wch $line }
         puts $wch "</P>"
     }
+    return $use_h
 }
 
 # If too few arguments or first argument begins with
@@ -261,23 +265,68 @@ puts $hich ""
 puts $fch $help_index
 
 set p {}
+    # current paragraph - a list of lines
 set in_p 0
-set non_indented_output 0
+    # 1 if p holds partial paragraph, 0 otherwise
+set ps {}
+    # list of previous non-indented paragraphs
+
 set item_name ""
+    # item_name if last item selected, "" otherwise
 set item_directory ""
-    # [dirname $index]/$item_name
+    # [dirname $index]/$item_name if last item is
+    # selected and names a directory, "" otherwise
+set istate ""
+    # set to type of paragraph last input:
+    #    "", item_header, indented, non_indented
+set ostate ""
+    # set to type of paragraph last output:
+    #    "", item_header, indented, non_indented
+set in_outer_blockquote 0
+    # 1 if there is unclosed outer <BLOCKQUOTE>.
+    # An outer blockquote is one that brackets
+    # all outputted item headers and indented
+    # paragraphs following an outputted non-indented
+    # paragraph.
+set in_inner_blockquote 1
+    # 1 if there is unclosed inner <BLOCKQUOTE>.
+    # An inner blockquote is one that brackets
+    # all outputted indented paragraphs following
+    # an outputted item header.
+
 while { ! [eof $ich] } {
     set line [gets $ich]
     if { [eof $ich] || [regexp "^$WS*\$" $line] } {
         if { $in_p } {
-	    set in_p 0
-	    if { $item_name != "" \
-		 && \
-		 [llength $p] > 0 \
-		 && \
-		 [regexp "^$WS" [lindex $p 0]] } {
+	    
+	    # Finish current paragraph.
+
+	    if { [llength $p] == 0 } {
+
+	        # Do nothing if zero length paragraph
+
+	    } elseif { ! [regexp "^$WS" \
+	                         [lindex $p 0]] } {
+
+		# Save non-indented paragraph
+		#
+		lappend ps $p
+
+	    } elseif { $item_name != "" } {
 
 		# Output indented paragraph
+
+		if { $ostate == "non_indented" } {
+
+		    puts $wch "<BLOCKQUOTE>"
+		    set in_outer_blockquote 1
+
+		} elseif { $ostate == "item_header" } {
+
+		    puts $wch "<BLOCKQUOTE>"
+		    set in_inner_blockquote 1
+		}
+		set ostate indented
 
 		puts $hich ""
 		foreach l $p { puts $hich $l }
@@ -303,27 +352,28 @@ while { ! [eof $ich] } {
 			    $fch $web $src $dst
 		    }
 		}
-		set p {}
 	    }
-	}
-
-	if {    [eof $ich] \
-	     && $item_name != "" \
-	     && $item_directory == ""} {
-	    puts $wch "</BLOCKQUOTE>"
+	    set in_p 0
+	    set p {}
 	}
     } elseif { [regexp {^#} $line] } {
         continue
-    } elseif { ! $in_p } {
+    } elseif { $in_p } {
+        lappend p $line
+    } else {
+
+        # Start new paragraph
+
 	if {    ! [catch { set len [llength $line] }] \
 	     && $len >= 2 \
 	     && [lindex $line 0] == "***" } {
 
 	    # item header line
 
-	    if { $item_name != "" \
-	         && $item_directory == ""} {
+	    if { $in_inner_blockquote } {
+
 		puts $wch "</BLOCKQUOTE>"
+		set in_inner_blockquote 0
 	    }
 
 	    set item_name ""
@@ -334,66 +384,115 @@ while { ! [eof $ich] } {
 		if { [expr [lsearch -exact \
 				     $option_list \
 				     $option] >= 0] } {
-		    if { $p != {} } {
 
-		        # Output non-indented paragraph
-
-		        puts $hich ""
-		        puts $hich ""
-			foreach l $p {
-			    puts $hich $l
-			}
-			if { $non_indented_output } {
-			    puts $wch "</BLOCKQUOTE>"
-			}
-			p_to_html $wch $p
-			set non_indented_output 1
-			puts $wch "<BLOCKQUOTE>"
-			set p {}
-		    }
+		    # item header is selected
 
 		    set item_name [lindex $line 1]
-		    set item_directory \
-		      "[file dirname $index]/$item_name"
-		    if { ! [file isdirectory \
-		                 $item_directory] } {
-
-			print_and_copy_file \
-			    $fch $web $item_directory \
-			              $item_name
-
-			set item_directory ""
-
-			# Output file name
-
-			puts $hich ""
-			regsub "\\*\\*\\*" $line "   " \
-			       line
-			regexp "^($WS*)$NWS" $line \
-			       forget outline
-			set outline \
-			    "$outline[file tail \
-			                   $item_name]"
-			puts $hich $outline
-			puts $wch "<P>"
-			puts $wch \
-			     "<A HREF=\"$item_name\">\
-			      $item_name</A>"
-			puts $wch "</P>"
-			puts $wch "<BLOCKQUOTE>"
-		    }
+		    break
 		}
 	    }
-	} elseif { [regexp "^$NWS" $line] \
-	           || \
-		   $item_name != "" } {
+
+	    if { $item_name != "" } {
+
+	        # Output selected item header
+
+		if { $ps != {} } {
+
+		    if { $in_outer_blockquote } {
+
+			puts $wch "</BLOCKQUOTE>"
+			set in_outer_blockquote 0
+		    }
+
+		    # Output non-indented paragraphs
+
+		    foreach np $ps {
+			if { [p_to_html $wch $np] } {
+			    puts $hich ""
+			}
+			puts $hich ""
+			foreach l $np {
+			    puts $hich $l
+			}
+		    }
+		    set ps {}
+		    set ostate non_indented
+		}
+
+		set item_directory \
+		  "[file dirname $index]/$item_name"
+		if { ! [file isdirectory \
+			     $item_directory] } {
+
+		    print_and_copy_file \
+			$fch $web $item_directory \
+				  $item_name
+
+		    set item_directory ""
+
+		    # Output item header
+
+		    if { $ostate == "non_indented" } {
+
+			puts $wch "<BLOCKQUOTE>"
+			set in_outer_blockquote 1
+		    }
+
+		    puts $hich ""
+		    regsub "\\*\\*\\*" $line "   " \
+			   line
+		    regexp "^($WS*)$NWS" $line \
+			   forget outline
+		    set outline \
+			"$outline[file tail \
+				       $item_name]"
+		    puts $hich $outline
+		    puts $wch "<P>"
+		    puts $wch \
+			 "<A HREF=\"$item_name\">\
+			  $item_name</A>"
+		    puts $wch "</P>"
+
+		    set ostate item_header
+		}
+	    }
+
+	    set istate item_header
+
+	} elseif { [regexp "^$NWS" $line] } {
+
+	    # Input non-indented paragraph
+
+	    if { $istate != "" \
+	         &&
+		 $istate != "non_indented" } {
+	        set ps {}
+	    }
+
+	    set in_p 1
 	    set p {}
 	    lappend p $line
+
+	    set istate non_indented
+
+	} else {
+
+	    # Input indented paragraph
+
 	    set in_p 1
+	    set p {}
+	    lappend p $line
+
+	    set istate indented
 	}
-    } else {
-        lappend p $line
     }
+}
+
+if { $in_inner_blockquote } {
+    puts $wch "</BLOCKQUOTE>"
+}
+if { $in_outer_blockquote } {
+    puts $wch "</BLOCKQUOTE>"
 }
 
 close $hich
@@ -402,6 +501,10 @@ close $wch
 close $ich
 
 if { $web != "" } {
+    file copy -force "${help_index}"  \
+		     "${web}/${help_index}"
+    file attributes "${web}/${help_index}" \
+         -permissions r--r--r--
     file copy -force "${help_index}.html"  \
 		     "${web}/${help_index}.html"
     file attributes "${web}/${help_index}.html" \
