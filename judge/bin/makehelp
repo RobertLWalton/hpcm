@@ -4,7 +4,7 @@
 #
 # File:		makehelp
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Thu Nov 29 07:05:40 EST 2012
+# Date:		Thu Nov 29 10:44:37 EST 2012
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2012/11/29 15:44:19 $
+#   $Date: 2012/11/29 16:15:37 $
 #   $RCSfile: makehelp,v $
-#   $Revision: 1.7 $
+#   $Revision: 1.8 $
 #
 # The next lines start tclsh \
 trap "echo makehelp: Terminated by Signal" \
@@ -40,23 +40,22 @@ makehelp help_index title index web option ...
     paragraphs composed of non-blank lines, with blank
     lines separating the paragraphs.  Paragraphs are
     classified as `indented' if their first character
-    is a whitespace, and `non-indented' otherwise.
+    is a whitespace, `item header' (see below), and
+    `non-indented' otherwise.
 
     Any paragraph consisting of a single line of the
     format
 
     	*** FILENAME option ...
 
-    (with possible whitespace before the ***) is
-    called an `item header'.  Item headers are
-    `selected' if any of their options or their FILENAME
-    is listed as a makehelp command option.  When an
-    item header is selected, the following are output
-    in order:
+    (with possible whitespace before the ***) is called
+    an `item header'.  Item headers are `selected' if
+    any of their options or their FILENAME is listed as
+    a makehelp command option.  When an item header is
+    selected, the following are output in order:
 
 	All non-indented paragraphs since the previous
-	item header that have not yet been output, if
-	any.
+	item header, if any.
 
 	The item header if FILENAME does not name a
 	directory.
@@ -69,34 +68,43 @@ makehelp help_index title index web option ...
     preceded by an item header and possible intervening
     indented paragraphs, if the FILENAME in the item
     header names a directory, and if each line of the
-    indented paragraph begins a whitespace surrounded
-    NAME that contains no whitespace and whose tail,
-    when viewed as a filename, names a file in the
-    directory specified by the item header filename.
+    indented paragraph begins with a whitespace sur-
+    rounded NAME that contains no whitespace and whose
+    tail, when viewed as a filename, names a file in the
+    directory specified by the item header FILENAME.
 
     This program writes a file named help_index.files
-    that is just a list of file names.  When an item
-    header whose FILENAME does NOT name a directory is
-    selected, this FILENAME is written to this file.
-    When a `file list' is recognized, the names of the
-    files listed are written to this file.  The
-    name of the help_index files is written to the
-    beginning of this file.
+    that is just a list of file names.  The name of
+    the help_index file is written first.  Then when an
+    item header whose FILENAME does NOT name a directory
+    is selected, FILENAME is written.  And when a
+    `file list' is recognized, the names of the files
+    listed are written.
 
-    Files that are listed in help_index.files are
-    also copied to the web directory, if it is not
-    \"\", except that help_index.html is copied
-    instead of help_index.  These copies are made
-    read-only to everyone.
+    Files that are listed in help_index.files are also
+    copied to the web directory, if it is not \"\",
+    except that help_index.html is also copied (in
+    addition to copying help_index).  These copies are
+    made read-only to everyone.
+    
+    The directory names in the FILENAMEs given in item
+    headers and the file names given in file lists
+    are the names of the subdirectories in `web' in
+    which the copied file will appear, and are not the
+    names of the directories in which the original of
+    the file appears.  In help_index.files these
+    directories names are replaced by the names of the
+    directories in which the original file appears.
 
     When an item header is output, the options are
     deleted and the `***'s are converted to 3 spaces.
-
-    All non-item header paragraphs are output as is to
-    the help_index.  Non-indented paragraphs are
-    preceded by two blank lines, and indented paragraphs
-    are preceded by one blank line.
 
+    All non-item header paragraphs are output as is to
+    the help_index.  Non-indented paragraphs ending in
+    a line containing just `-'s are preceded by two
+    blank lines, and other paragraphs are preceded by
+    one blank line.
+
     Output to help_index.html is as follows:
 
         If a non-indented paragraph ends in a line con-
@@ -106,14 +114,16 @@ makehelp help_index title index web option ...
 	Otherwise the paragraph is surrounded by
 	<P>...</P>.
 
-	If an item description paragraph is a file list,
-	it is output as an indented table with the file
-	names as links.  Otherwise the paragraph is
-	surrounded by <P>...</P>.
+	If an indented paragraph is a file list, it is
+	output as an indented table with the file names
+	as links.  Otherwise the paragraph is surrounded
+	by <P>...</P>.
 
 	<BLOCKQUOTE>...</BLOCKQUOTE> is used to indent
-	text between non-indented paragraphs and to
-	further indent indented paragraphs.
+	item headers and indented paragraphs appearing
+	between non-indented paragraphs, and to indent
+	indented paragraphs appearing between item
+	headers.
 
     Unlike most HPCM judging programs, this program does
     not read any hpcm_judging.rc file and errors made by
@@ -478,6 +488,18 @@ while { ! [eof $ich] } {
 	} else {
 
 	    # Input indented paragraph
+
+	    if { $istate == "" } {
+	        puts "ERROR: indented paragraph at\
+		      beginning of $index"
+		exit 1
+	    } elseif { $istate == "non_indented" } {
+	        puts "ERROR: indented paragraph\
+		      immediately follows non-indented\
+		      paragraph"
+		puts "       in $index"
+		exit 1
+	    }
 
 	    set in_p 1
 	    set p {}
