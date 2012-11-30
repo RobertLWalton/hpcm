@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Nov 28 00:21:59 EST 2012
+# Date:		Fri Nov 30 09:02:57 EST 2012
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,26 +11,18 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2012/11/28 06:12:50 $
+#   $Date: 2012/11/30 14:04:19 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.35 $
+#   $Revision: 1.36 $
 
 # `make help.pdf' and `make demos.pdf' make printouts of
 # all the help and demos files respectively.  Note that
 # there is no `help/this_contest' file in help.pdf.
 #
-# Execute `make EXTRAS="filename ..." help+.pdf' to
-# make a .pdf file with 'filename ...' followed by the
-# help index and the help files.  Typically filename
-# is a version of this_contest.
-#
-# You can also make help.ps, help+.ps, and demos.ps,
-# which are just the .ps versions of the .pdf files.
-#
-# In addition to help.ps and demos.ps there are files
-# advanced_help.ps and advanced_demos.ps that have
+# In addition to help.pdf and demos.pdf there are files
+# advanced_help.pdf and advanced_demos.pdf that have
 # information about more sophisticated algorithms.
-# To make these, just use `make advanced_help.ps',
+# To make these, just use `make advanced_help.pdf',
 # etc.
 #
 # To make web help pages, execute `make web', copy
@@ -44,8 +36,6 @@ all:	emailsh modes STL_doc
 
 pdf:	help.pdf demos.pdf \
 	advanced_help.pdf advanced_demos.pdf
-ps:	help.ps demos.ps \
-	advanced_help.ps advanced_demos.ps
 
 # Kill all implicit rules and make new rule:
 #
@@ -110,42 +100,28 @@ ADVANCED_DEMOS_FILES = \
 	../../problem_library/demos/csearch/csearch.cc
 
 help_index:	index
-	rm -f help_index help_index.html help_index.files
+	rm -f help_index help_index.html \
+	      help_index.files
 	../../judge/bin/makehelp \
 	    help_index "HELP INDEX" index ${WEB} \
 	    ${HELP_FILES}
 
-help.ps:	help_index ${HELP_FILES}
+help.ps:	help_index
 	rm -rf help.ps
 	../../judge/bin/fprint > help.ps -o \
-	    help_index `cat help_index.files`
-
-help+.ps:	help_index ${HELP_FILES}
-	rm -rf help+.ps
-	../../judge/bin/fprint > help+.ps -o \
-	    ${EXTRAS} \
-	    help_index `cat help_index.files`
+	    `cat help_index.files`
 
 formal_help_index:	index
 	rm -f formal_help_index \
 	      formal_help_index.html \
 	      formal_help_index.files
 	../../judge/bin/makehelp \
-	    formal_help_index "HELP INDEX" index ${WEB} \
-	    ${FORMAL_HELP_FILES}
+	    formal_help_index "HELP INDEX" index \
+	    ${WEB} ${FORMAL_HELP_FILES}
 
-formal_help.ps:	formal_help_index ${FORMAL_HELP_FILES}
+formal_help.ps:	formal_help_index
 	rm -rf formal_help.ps
 	../../judge/bin/fprint > formal_help.ps -o \
-	    formal_help_index \
-	    `cat formal_help_index.files`
-
-formal_help+.ps:	formal_help_index \
-			${FORMAL_HELP_FILES}
-	rm -rf formal_help+.ps
-	../../judge/bin/fprint > formal_help+.ps -o \
-	    ${EXTRAS} \
-	    formal_help_index \
 	    `cat formal_help_index.files`
 
 advanced_help_index:	index
@@ -156,11 +132,9 @@ advanced_help_index:	index
 	    advanced_help_index "ADVANCED HELP INDEX" \
 	    index ${WEB} ${ADVANCED_HELP_FILES}
 
-advanced_help.ps:	advanced_help_index \
-			${ADVANCED_HELP_FILES}
+advanced_help.ps:	advanced_help_index
 	rm -rf advanced_help.ps
 	../../judge/bin/fprint > advanced_help.ps -o \
-	    advanced_help_index \
 	    `cat advanced_help_index.files`
 
 demos_index:	../../problem_library/demos_index
@@ -172,10 +146,10 @@ demos_index:	../../problem_library/demos_index
 	    ../../problem_library/demos_index ${WEB} c
 
 
-demos.ps:	demos_index ${DEMOS_FILES}
+demos.ps:	demos_index
 	rm -rf demos.ps
 	../../judge/bin/fprint > demos.ps -o \
-	    demos_index `cat demos_index.files`
+	    `grep -v 'sample.*' demos_index.files`
 
 advanced_demos_index:	../../problem_library/index
 	rm -f advanced_demos_index \
@@ -191,8 +165,8 @@ advanced_demos.ps:	advanced_demos_index \
 			${ADVANCED_DEMOS_FILES}
 	rm -rf advanced_demos.ps
 	../../judge/bin/fprint > advanced_demos.ps -o \
-	    advanced_demos_index \
-	    `cat advanced_demos_index.files`
+	    `grep -v 'sample.*' \
+	             advanced_demos_index.files`
 
 emailsh:	email/sh/hpcm_extract \
 		email/sh/hpcm_submit \
