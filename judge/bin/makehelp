@@ -4,7 +4,7 @@
 #
 # File:		makehelp
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Thu Nov 29 10:44:37 EST 2012
+# Date:		Fri Nov 30 03:21:04 EST 2012
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2012/11/29 16:15:37 $
+#   $Date: 2012/11/30 08:37:44 $
 #   $RCSfile: makehelp,v $
-#   $Revision: 1.8 $
+#   $Revision: 1.9 $
 #
 # The next lines start tclsh \
 trap "echo makehelp: Terminated by Signal" \
@@ -278,6 +278,10 @@ set p {}
     # current paragraph - a list of lines
 set in_p 0
     # 1 if p holds partial paragraph, 0 otherwise
+set blank_count 0
+    # number of input blank lines preceding current
+    # input paragraph, where item headers that are not
+    # output are ignored as if they did not exist
 set ps {}
     # list of previous non-indented paragraphs
 
@@ -307,7 +311,9 @@ set in_inner_blockquote 1
 while { ! [eof $ich] } {
     set line [gets $ich]
     if { [eof $ich] || [regexp "^$WS*\$" $line] } {
-        if { $in_p } {
+        if { ! $in_p } {
+	    incr blank_count
+	} else {
 	    
 	    # Finish current paragraph.
 
@@ -338,7 +344,9 @@ while { ! [eof $ich] } {
 		}
 		set ostate indented
 
-		puts $hich ""
+		if { $blank_count > 0 } {
+		    puts $hich ""
+		}
 		foreach l $p { puts $hich $l }
 
 		if { $item_directory == "" } {
@@ -365,8 +373,9 @@ while { ! [eof $ich] } {
 	    }
 	    set in_p 0
 	    set p {}
+	    set blank_count 1
 	}
-    } elseif { [regexp {^#} $line] } {
+    } elseif { [regexp "^$WS*#" $line] } {
         continue
     } elseif { $in_p } {
         lappend p $line
@@ -464,6 +473,7 @@ while { ! [eof $ich] } {
 		    puts $wch "</P>"
 
 		    set ostate item_header
+		    set blank_count 0
 		}
 	    }
 
