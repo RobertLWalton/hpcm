@@ -4,7 +4,7 @@
 #
 # File:		makehelp
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Fri Nov 30 03:37:57 EST 2012
+# Date:		Sat Dec  1 02:23:23 EST 2012
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2012/11/30 08:51:18 $
+#   $Date: 2012/12/01 07:43:26 $
 #   $RCSfile: makehelp,v $
-#   $Revision: 1.10 $
+#   $Revision: 1.11 $
 #
 # The next lines start tclsh \
 trap "echo makehelp: Terminated by Signal" \
@@ -84,9 +84,9 @@ makehelp help_index title index web option ...
     indented paragraphs, if the FILENAME in the item
     header names a directory, and if each line of the
     indented paragraph begins with a whitespace sur-
-    rounded NAME that contains no whitespace and whose
-    tail, when viewed as a filename, names a file in the
-    directory specified by the item header FILENAME.
+    rounded NAME that contains no whitespace and which,
+    when viewed as a relative filename, names a file in
+    the directory specified by the item header FILENAME.
 
     This program writes a file named help_index.files
     that is just a list of file names.  The name of
@@ -158,10 +158,10 @@ set NWS "\[^\ \t\]"
 #
 # where NAME contains no whitespace and REST does not
 # begin or end with whitespace (and may be empty), and
-# where $dir/[file tail $NAME] names an existing
-# ordinary file (or symbolic link to such).  If NO,
-# return the empty list.  Otherwise return a list with
-# one element per line consisting of
+# where $dir/$NAME names an existing ordinary file (or
+# symbolic link to such).  If NO, return the empty list.
+# Otherwise return a list with one element per line
+# consisting of
 #
 #	{ NAME REST }
 #
@@ -174,7 +174,7 @@ proc is_file_list { p dir } {
 		       name rest] } {
 	    return {}
 	}
-	if { ! [file isfile $dir/[file tail $name]] } {
+	if { ! [file isfile $dir/$name] } {
 	    return {}
 	}
 	lappend result \
@@ -204,10 +204,9 @@ proc file_list_to_html { wch r dirname } {
     puts $wch "<TABLE>"
     foreach line $r {
         set name [lindex $line 0]
-        set tail [file tail $name]
 	set rest [lindex $line 1]
         puts $wch "<TR><TD WIDTH=\"20\"></TD>"
-        puts $wch "    <TD><A HREF=\"$dirname/$tail\">"
+        puts $wch "    <TD><A HREF=\"$dirname/$name\">"
         puts $wch "        $name</TD>"
         puts $wch "    <TD WIDTH=\"20\"></TD>"
         puts $wch "    <TD>$rest</TD>"
@@ -382,7 +381,7 @@ while { ! [eof $ich] } {
 		    file_list_to_html \
 		        $wch $r $item_name
 		    foreach l $r {
-			set f [file tail [lindex $l 0]]
+			set f [lindex $l 0]
 			set src "$item_directory/$f"
 			set dst "$item_name/$f"
 		        print_and_copy_file \
@@ -488,7 +487,7 @@ while { ! [eof $ich] } {
 		    puts $wch "<P>"
 		    puts $wch \
 			 "<A HREF=\"$item_name\">\
-			  $item_name</A>"
+			  [file tail $item_name]</A>"
 		    puts $wch "</P>"
 
 		    set ostate item_header
