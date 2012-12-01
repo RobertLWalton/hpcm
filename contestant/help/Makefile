@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Nov 30 09:02:57 EST 2012
+# Date:		Sat Dec  1 07:12:22 EST 2012
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2012/11/30 14:04:19 $
+#   $Date: 2012/12/01 12:26:48 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.36 $
+#   $Revision: 1.37 $
 
 # `make help.pdf' and `make demos.pdf' make printouts of
 # all the help and demos files respectively.  Note that
@@ -55,6 +55,7 @@ FORMAL_HELP_FILES = \
 	common/print \
 	common/scores \
 	common/scoreboard \
+	common/c \
 	common/c++ \
 	common/java \
 	common/advice
