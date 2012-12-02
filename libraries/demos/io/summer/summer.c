@@ -2,7 +2,7 @@
  *
  * File:	summer.c
  * Authors:	Bob Walton (walton@seas.harvard.edu)
- * Date:	Sat Dec  1 22:35:26 EST 2012
+ * Date:	Sat Dec  1 22:44:44 EST 2012
  *
  * The authors have placed this program in the public
  * domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
  * RCS Info (may not be true date or author):
  *
  *   $Author: walton $
- *   $Date: 2012/12/02 03:43:24 $
+ *   $Date: 2012/12/02 03:45:35 $
  *   $RCSfile: summer.c,v $
- *   $Revision: 1.4 $
+ *   $Revision: 1.5 $
  */
 
 
@@ -75,7 +75,7 @@ int main ( int argc, char * argv[] )
 	 * at maximum precision.
 	 */
 	dprintf
-	    ( "SUM = %.15f, CORRECTED SUM = %.15f\n",
+	    ( "SUM = %.16f, CORRECTED SUM = %.16f\n",
 	      sum, corrected_sum );
 
 	/* Print output.
