@@ -2,7 +2,7 @@
  *
  * File:	summer.c
  * Authors:	Bob Walton (walton@seas.harvard.edu)
- * Date:	Mon Nov 26 14:25:10 EST 2012
+ * Date:	Sat Dec  1 22:35:26 EST 2012
  *
  * The authors have placed this program in the public
  * domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
  * RCS Info (may not be true date or author):
  *
  *   $Author: walton $
- *   $Date: 2012/11/26 19:25:42 $
+ *   $Date: 2012/12/02 03:43:24 $
  *   $RCSfile: summer.c,v $
- *   $Revision: 1.3 $
+ *   $Revision: 1.4 $
  */
 
 
@@ -33,46 +33,53 @@ int main ( int argc, char * argv[] )
 
     while ( fgets ( line, sizeof ( line ), stdin ) )
     {
-	/* Print test case name. */
-
+	/* Print test case name.
+	 */
         printf ( "%s", line );
 
-	/* Read input and compute corrected sum. */
-
+	/* Read input and compute corrected sum.
+	 */
 	double corrected_sum = 0, number, sum;
 
-	/* Read number until `='. */
-
+	/* Read and sum numbers until `='.
+	 */
 	while ( scanf ( "%lf", & number ) == 1 )
 	    corrected_sum += number;
 
 	/* Skip `='.  The last scanf above failed to
 	 * read a number, BUT, it did skip over the
 	 * whitespace preceding the `=', so we do
-	 * not need to skip it here.
+	 * not need to skip whitespace here.
 	 */
-
 	scanf ( "=" );
 
-	/* Read accountant computer's sum. */
-
+	/* Read accountant computer's sum.
+	 */
 	assert ( scanf ( "%lf", & sum ) == 1 );
 
-	/* Read end of line after sum. */
-
+	/* Read end of line after sum.
+	 */
 	fgets ( line, sizeof ( line ), stdin );
+	assert ( line[0] == '\n' );
 
-	/* corrected_sum and sum are both approximations
+	/* Corrected_sum and sum are both approximations
 	 * to numbers that are exact multiples of 0.01.
-	 * So if they differ, they whould differ by at
-	 * least 0.01, approximately, and if they are
-	 * equal, they should differ by much, much less.
+	 * So if they differ, they should differ by at
+	 * least 0.01, approximately, and certainly by
+	 * more than 0.005, and if they are equal, they
+	 * should differ by much, much less than 0.01,
+	 * and most certainly by less than 0.005.
 	 */
 
+	/* If debugging, look at corrected_sum and sum
+	 * at maximum precision.
+	 */
 	dprintf
 	    ( "SUM = %.15f, CORRECTED SUM = %.15f\n",
 	      sum, corrected_sum );
 
+	/* Print output.
+	 */
 	if ( fabs ( sum - corrected_sum ) < 0.005 )
 	    printf ( "%.2f is correct\n", sum );
 	else
