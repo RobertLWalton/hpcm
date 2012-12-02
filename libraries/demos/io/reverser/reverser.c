@@ -2,7 +2,7 @@
  *
  * File:	reverser.c
  * Authors:	Bob Walton (walton@seas.harvard.edu)
- * Date:	Mon Nov 26 14:26:02 EST 2012
+ * Date:	Sat Dec  1 22:28:33 EST 2012
  *
  * The authors have placed this program in the public
  * domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
  * RCS Info (may not be true date or author):
  *
  *   $Author: walton $
- *   $Date: 2012/11/26 19:26:12 $
+ *   $Date: 2012/12/02 03:32:53 $
  *   $RCSfile: reverser.c,v $
- *   $Revision: 1.4 $
+ *   $Revision: 1.5 $
  */
 
 
@@ -32,7 +32,7 @@ char line[82];
  * if there is no such word.  Returns pointer to the
  * first character of the word printed.
  */
-char * print_word ( char * q )
+char * print_substitute_word ( char * q )
 {
     /* Move q backward to point just after word.
      */
@@ -49,7 +49,7 @@ char * print_word ( char * q )
     -- q;
     while ( q > line && isalpha ( q[-1] ) ) -- q;
 
-    /* Print word.
+    /* Print word and return.
      */
     char save = * p;
     * p = 0;
@@ -81,10 +81,20 @@ int main ( int argc, char * argv[] )
 	{
 	    if ( isalpha ( * p ) )
 	    {
+		/* At start of word. Skip word.
+		 */
 	        while ( isalpha ( * p ) ) ++ p;
-		q = print_word ( q );
+
+		/* Substitute for skipped word.
+		 */
+		q = print_substitute_word ( q );
 	    }
-	    else printf ( "%c", * p ++ );
+	    else
+	    {
+	        /* Print and skip non-letter.
+		 */
+	        printf ( "%c", * p ++ );
+	    }
 	}
     }
 
