@@ -1,25 +1,150 @@
-2D Geometry Problem Help    Fri Sep 17 15:05:52 EDT 2010
+Core 2D Geometry Help       Sat Dec  8 18:10:32 EST 2012
 
 
-For some reason many young computer scientists think
-that geometry problems are hard, and avoid them.  The
-purpose of this discussion is to demonstrate that
-geometry problems are fairly easy after all.
+Points, Distances, and Directions
+------- ---------- --- ----------
 
-We will restrict ourselves here to 2D geometry.
+2D computational geometry concerns the xy-plane.  If a
+point p in the xy-plane has x-coordinate px and
+y-coordinate py, then we represent p by the coordinate
+pair (px,py), and write p = (px,py).  The xy-plane
+origin it therefore represented by the point (0,0).
+
+The distance between two points p1 = (p1x,p1y) and
+p2 = (p2x,p2y) can, by Pythagoras' Theorem, be
+computed by
+
+    dx = p2x - p1x
+    dy = p2y - p1y
+    distance ( p1, p2 ) = sqrt ( dx * dx + dy * dy )
+
+We also find it useful to consider the direction from
+p1 to p2.  The angle of this direction can be computed
+as
+
+    angle ( p1, p2 ) = atan2 ( p2y-p1y, p2x-p1x )
+
+Here atan2(y,x) is a standard computational function
+that returns the arc tangent of y/x.  It returns +90
+degrees or +PI/2 if ty > 0 and tx = 0, and -90 degrees
+or -PI/2 if ty < 0 and tx = 0.  It is undefined only if
+(x,y) = (0,0), meaning in our situtation that
+angle(p1,p1) is undefined.
 
 
-Basics
-------
+Translations
+------------
 
-Let
-	p = (px,py) and q = (qx,qy)
-	
-be points in the plane.  The difference
+Translations are a foundational concept of computation-
+al geometry.  A translation is a motion of all the
+points in the xy-plane such that all points move the
+same distance in the same direction.
 
-	v = (vx,vy) = q - p = (qx-px,qy-py)
-	
-is the vector from p to q.  Its length is
+Suppose we are given a translation t.  If t translates
+the origin point (0,0) to the point p = (px,py), we will
+assign t the coordinates t = (tx,ty).  Given any point
+p1 = (p1x,p1y), t translates p1 to another point
+p2 = (p2x,p2y).  Can we compute the coordinates of p2?
+
+The answer is yes because
+
+    distance ( p1, p2 ) = distance ( origin, p )
+    			= sqrt ( tx*tx + ty*ty )
+    angle ( p1, p2 ) = angle ( origin, p )
+                     = atan2 ( ty, tx )
+
+Given this the answer must be
+
+    p2 = (p1x+tx,p1y+ty)
+
+So the translation t is completely determined by
+(tx,ty), the coordinates of the point to which t
+translates the origin.
+
+Given this it is natural to define the distance and
+angle of the translation t as
+
+    distance ( t ) = sqrt ( tx*tx + ty*ty )
+    angle ( t ) = atan2 ( ty, tx )
+
+Next we define the sum of translations t1 = (t1x,t1y)
+and t2 = (t2x,t2y), denoted by t1 + t2, to be the motion
+that takes a point p and translates that first by t1 to
+a point p1, and then translates p1 by t2 to a point p2.
+We compute:
+
+    p = (px,py)
+    p1 = (p1x,p1y) = (px+t1x,py+t1y)
+    p2 = (p2x,p2y) = (p1x+t2x,p1y+t2y)
+                   = (px+t1x+t2x,py+t1y+t2y)
+
+From these formulae we can see that the motion t1 + t2
+is also a translation and
+
+    t1 + t2 = (t1x+t2x,t1y+t2y)
+
+Lastly we define the `scalar product' of a real number s
+(which will be called a `scalar' below) with a transla-
+tion t1 = (tx,ty) to be the translation t2 as follows:
+
+    if s > 0:
+        distance ( t2 ) = s * distance ( t1 )
+	angle ( t2 ) = angle ( t1 )
+
+    if s < 0:
+        distance ( t2 ) = (- s) * distance ( t1 )
+	angle ( t2 ) = angle ( t1 ) + 180 degrees
+
+    if s = 0:
+        distance ( t2 ) = 0
+
+Looking at the formulae above one can check that
+
+    t2 = (t2x,t2y) = (s*t1x,s*t2y)
+        
+If s > 0, t2 just changes the magnitude of t1, i.e.,
+changes the distance moved without changing the
+direction.
+
+If s == -1, t2 is a `reflection' of t1.  t2 moves points
+the same distance as t1 but in the opposite direction.
+
+
+Vectors
+-------
+
+A 2D `vector' is a mathematicians abstraction.  A vector
+v is represented by its x and y coordinates like a
+point: v = (vx,vy).
+
+Vectors can be added:
+
+	(vx,vy) + (wx,wy) = (vx+wx,vy+wy)
+
+subtracted:
+
+	(vx,vy) - (wx,wy) = (vx-wx,vy-wy)
+
+and multiplied by a real number:
+
+	s * (vx,vy) = (s * vx,s * vy)
+
+Real numbers such as s are called `scalars' to distin-
+guish them both from vectors and from coordinates.
+
+A vector v = (vx,vy) has a length
+
+	||v|| = sqrt ( vx*vx + vy*vy )
+
+and a direction angle
+
+	angle ( v ) = atan2 ( vy, vx )
+
+TBD
+
+A vector can be thought of as representing as represent-
+ing a translation or a point.
+
 
 	|v| = sqrt( vx**2 + vy**2 )
 
@@ -520,6 +645,6 @@ file.
 RCS Info (may not be true date or author):
 
     $Author: walton $
-    $Date: 2010/09/17 19:24:59 $
+    $Date: 2012/12/09 07:01:02 $
     $RCSfile: 2D_geometry,v $
-    $Revision: 1.22 $
+    $Revision: 1.23 $
