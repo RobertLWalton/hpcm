@@ -1,4 +1,4 @@
-Core 2D Geometry Help       Sat Dec  8 18:10:32 EST 2012
+Core 2D Geometry Help       Mon Dec 10 04:28:43 EST 2012
 
 
 Points, Distances, and Directions
@@ -8,7 +8,7 @@ Points, Distances, and Directions
 point p in the xy-plane has x-coordinate px and
 y-coordinate py, then we represent p by the coordinate
 pair (px,py), and write p = (px,py).  The xy-plane
-origin it therefore represented by the point (0,0).
+origin is therefore represented by the point (0,0).
 
 The distance between two points p1 = (p1x,p1y) and
 p2 = (p2x,p2y) can, by Pythagoras' Theorem, be
@@ -25,11 +25,11 @@ as
     angle ( p1, p2 ) = atan2 ( p2y-p1y, p2x-p1x )
 
 Here atan2(y,x) is a standard computational function
-that returns the arc tangent of y/x.  It returns +90
-degrees or +PI/2 if ty > 0 and tx = 0, and -90 degrees
-or -PI/2 if ty < 0 and tx = 0.  It is undefined only if
-(x,y) = (0,0), meaning in our situtation that
-angle(p1,p1) is undefined.
+that returns the arc tangent of y/x.  It returns +PI/2
+(+90 degrees in radians) if ty > 0 and tx = 0, and -PI/2
+(-90 degrees in radians) if ty < 0 and tx = 0.  It is
+undefined only if (x,y) = (0,0), meaning in our situta-
+tion that angle(p1,p1) is undefined.
 
 
 Translations
@@ -53,7 +53,7 @@ The answer is yes because
     angle ( p1, p2 ) = angle ( origin, p )
                      = atan2 ( ty, tx )
 
-Given this the answer must be
+The only way to satisfy these equations is to set
 
     p2 = (p1x+tx,p1y+ty)
 
@@ -104,17 +104,22 @@ Looking at the formulae above one can check that
         
 If s > 0, t2 just changes the magnitude of t1, i.e.,
 changes the distance moved without changing the
-direction.
+direction.  If s > 1 this distance expands, while if
+0 < s < 1 this distance contracts.  If s == 1 then
+t2 = t1 and the translation does not change.
 
 If s == -1, t2 is a `reflection' of t1.  t2 moves points
 the same distance as t1 but in the opposite direction.
+
+If s == 0, t2 = (0,0), the translation that does nothing
+to the points.
 
 
 Vectors
 -------
 
-A 2D `vector' is a mathematicians abstraction.  A vector
-v is represented by its x and y coordinates like a
+A 2D `vector' is a mathematician's abstraction.  We can
+represent a vector v by its x and y coordinates like a
 point: v = (vx,vy).
 
 Vectors can be added:
@@ -127,25 +132,52 @@ subtracted:
 
 and multiplied by a real number:
 
-	s * (vx,vy) = (s * vx,s * vy)
+	s * (vx,vy) = (s*vx,s*vy)
 
 Real numbers such as s are called `scalars' to distin-
-guish them both from vectors and from coordinates.
+guish them from vectors.
 
 A vector v = (vx,vy) has a length
 
 	||v|| = sqrt ( vx*vx + vy*vy )
 
-and a direction angle
+and direction angle
 
 	angle ( v ) = atan2 ( vy, vx )
+
+Vectors can be used to represent points and to represent
+translations.  You compute with vectors, but some
+represent points and others represent translations.
+
+So for example, given two vectors p1 and p2 representing
+points, then p2 - p1 represents the translation that
+moves p1 to p2.  Also || p2 - p1 || is the distance
+between p1 and p2, and angle(p2-p1) is the angle(p1,p2),
+the direction of p2 when viewed from p1.
+
+To take another example, given a vector p representing a
+point and another vector t representing a translation, t
+moves p to p + t.  Also ||t|| is the length of t and
+angle(t) its direction.
+
+Note that vector addition and scalar multiplication obey
+laws of associativity, commutativity, distributivity,
+and negation:
+
+    v1 + (v2 + v3) = (v1 + v2) + v2
+    v1 + v2 = v2 + v1
+    s1*(s2*v) = (s1*s2)*v
+    s*(v1+v2) = s*v1 + s*v2
+    v1 - v2 = v2 + (-1)*v1
+
+
+Scalar Product
+--------------
+
 
 TBD
 
 A vector can be thought of as representing as represent-
-ing a translation or a point.
-
-
 	|v| = sqrt( vx**2 + vy**2 )
 
 The scalar product of two vectors
@@ -645,6 +677,6 @@ file.
 RCS Info (may not be true date or author):
 
     $Author: walton $
-    $Date: 2012/12/09 07:01:02 $
+    $Date: 2012/12/10 09:59:39 $
     $RCSfile: 2D_geometry,v $
-    $Revision: 1.23 $
+    $Revision: 1.24 $
