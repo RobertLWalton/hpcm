@@ -1,4 +1,4 @@
-Core 2D Geometry Help       Mon Dec 10 04:28:43 EST 2012
+Core 2D Geometry Help       Wed Dec 12 08:21:23 EST 2012
 
 
 Points, Distances, and Directions
@@ -222,6 +222,82 @@ theta = +90 degrees.  Then
     R(+90 degrees)(x,y) = (-y,x)
 
 	
+
+Coordinate Changes
+---------- -------
+
+Many problems in 2D computational geometry can be made
+fairly easy by changing coordinate.  The idea is to make
+one of the geometric objects involved have easy to
+manage coordinate.  For example, suppose you have been
+asked to find the distance between a finite line segment
+and a point.  If the line segment lies on the x-axis
+and has end points p1 = (x1,0) and p2 = (x2,0) with
+x1 < x2, and if the point is p = (x,y), the answer is:
+
+    x < x1:		distance ( p, p1 )
+    x1 <= x <= x2:	|y|
+    x > x2:		distance ( p, p2 )
+
+So if we are give a line segment which is NOT on an
+axis, how can we change coordinates so it IS on the
+x-axis.
+
+Its actually computationally easy, but its harder to
+see why the easy way works, so we will tread slowly and
+carefully for a while.
+
+Let p1 = (p1x,p1y) and p2 = (p2x,p2y) not necessarily be
+on any axis and let p = (x,y) be any point.
+
+First, we can move p1 to the origin by using the trans-
+lation coordinate change
+
+    (x',y')     = (x,y)     - (p1x,p1y)
+    (p1x',p1y')	= (p1x,p1y) - (p1x,p1y) = (0,0)
+    (p2x',p2y')	= (p2x,p2y) - (p1x,p1y)
+
+Now we rotate by minus the angle (p2x',p2y').  Why
+minus?  Because we want to rotate the point (p2x',p2y')
+so it is on the x-axis.  So we get:
+
+    theta = angle (p2x',p2y')
+
+    (x'',y'') = R(-theta)(x',y')
+              = ( cos(-theta)x' - sin(-theta)y',
+		  sin(-theta)x' + cos(-theta)y' )
+
+    (p2x'',p2y'') = R(-theta)(p2x',p2y')
+                  = ( cos(-theta)p2x' - sin(-theta)p2y',
+		    sin(-theta)p2x' + cos(-theta)p2y' )
+
+This looks a bit messy, but wait, we also have
+
+    (p2x',p2y') = ||p2'||*(cos(theta),sin(theta))
+
+where
+
+    p2' = (p2x',p2y')
+
+and
+
+    cos(-theta) =  cos(theta)
+    sin(-theta) = -sin(theta)
+so
+    p2x' = cos(theta)*||p2'||
+    p2y' = sin(theta)*||p2'||
+
+    (x'',y'')     = (p2x'*x'+p2y'*y',-p2y'*x'+p2x'*y')
+                  / ||p2'||
+
+    (p2x'',p2y'') = (p2x'*p2x'+p2y'*p2y',
+                     -p2y'*p2x'+p2x'*p2y')
+                  / ||p2'||
+		  
+		  = (||p2'||**2,0) / ||p2'||
+
+		  = (||p2'||,0)
+
 
 
 
@@ -731,6 +807,6 @@ file.
 RCS Info (may not be true date or author):
 
     $Author: walton $
-    $Date: 2012/12/10 14:02:54 $
+    $Date: 2012/12/12 18:33:20 $
     $RCSfile: 2D_geometry,v $
-    $Revision: 1.25 $
+    $Revision: 1.26 $
