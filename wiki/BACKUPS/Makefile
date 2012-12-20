@@ -1,7 +1,28 @@
-wiki-hpcm-2%.tgz:	never-there
-	ssh wiki-hpcm@problems1.seas.harvard.edu \
-	    'cd BACKUPS; make $@'
-	rm -f $@
-	scp wiki-hpcm@problems1.seas.harvard.edu:BACKUPS/$@ $@
+# Makefile for hpcm wiki backups.
+#
+#	File:	Makefile
+#	Author:	walton@seas.harvard.edu
+#	Date:	Thu Dec 20 12:42:40 EST 2012
 
+HOST = problems1.seas.harvard.edu
+
+wiki-hpcm-2%.tgz:	never-there
+	rm -f $@
+	@if test "${HOST}" == "`hostname -f`"; \
+	then \
+	  rm -f wiki-hpcm-2$*.mysql; \
+	  mysqldump -p${MYSQLPASSWORD} wiki_hpcm \
+		  > wiki-hpcm-2$*.mysql; \
+	  tar zcf $@ wiki-hpcm-2$*.mysql \
+		  -C ~/wiki LocalSettings.php \
+		     RCS images; \
+	  chmod 444 $@ wiki-hpcm-2$*.mysql; \
+	  ls -l $@ wiki-hpcm-2$*.mysql; \
+	else \
+	  ssh wiki-hpcm@${HOST} \
+	      'cd hpcm/wiki/BACKUPS; make $@'; \
+	  scp wiki-hpcm@${HOST}:hpcm/wiki/BACKUPS/$@ $@; \
+	  ls -l $@; \
+	fi
+     
 never-there:	
