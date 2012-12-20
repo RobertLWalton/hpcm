@@ -2,7 +2,7 @@
 #
 #	File:	Makefile
 #	Author:	walton@seas.harvard.edu
-#	Date:	Thu Dec 20 13:04:54 EST 2012
+#	Date:	Thu Dec 20 13:31:54 EST 2012
 
 HOST = problems1.seas.harvard.edu
 
@@ -19,6 +19,7 @@ wiki-hpcm-2%.tgz:	never-there
 	  chmod 444 $@ wiki-hpcm-2$*.mysql; \
 	  ls -l $@ wiki-hpcm-2$*.mysql; \
           chmod a+x . .. ../.. ../../..; \
+	  chmod a+r .; \
 	  chmod a+r Makefile; \
 	else \
 	  ssh wiki-hpcm@${HOST} \

@@ -2,7 +2,7 @@
 #
 #	File:	Makefile
 #	Author:	walton@seas.harvard.edu
-#	Date:	Thu Dec 20 13:26:02 EST 2012
+#	Date:	Thu Dec 20 13:33:21 EST 2012
 
 .SUFFIXES:	.tex .png
 
@@ -14,6 +14,7 @@ all:
 	    chmod a+r *.tex Makefile; \
 	    chmod -f a+r *.png; \
 	    chmod a+x . .. ../.. ../../..; \
+	    chmod a+r .; \
 	    shopt -s nullglob; \
 	    ls -l *.tex Makefile *.png; \
 	fi
