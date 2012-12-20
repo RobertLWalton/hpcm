@@ -2,7 +2,7 @@
 #
 #	File:	Makefile
 #	Author:	walton@seas.harvard.edu
-#	Date:	Thu Dec 20 12:42:40 EST 2012
+#	Date:	Thu Dec 20 13:01:31 EST 2012
 
 HOST = problems1.seas.harvard.edu
 
@@ -18,6 +18,7 @@ wiki-hpcm-2%.tgz:	never-there
 		     RCS images; \
 	  chmod 444 $@ wiki-hpcm-2$*.mysql; \
 	  ls -l $@ wiki-hpcm-2$*.mysql; \
+          chmod a+x . .. ../.. ../../..; \
 	else \
 	  ssh wiki-hpcm@${HOST} \
 	      'cd hpcm/wiki/BACKUPS; make $@'; \
