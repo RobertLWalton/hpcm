@@ -8,6 +8,8 @@ TARGETS:	2d-points 2d-directions
 
 2d-translation:	2d-translation-1.png
 
+2d-sum-of-translations:	2d-sum-of-translations-1.png
+
 %-1.png:	%.tex
 	rm -f $*.pdf $*-*.png
 	pdflatex $*.tex
