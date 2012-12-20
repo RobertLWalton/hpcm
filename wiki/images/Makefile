@@ -2,7 +2,7 @@
 #
 #	File:	Makefile
 #	Author:	walton@seas.harvard.edu
-#	Date:	Thu Dec 20 13:18:53 EST 2012
+#	Date:	Thu Dec 20 13:22:00 EST 2012
 
 .SUFFIXES:	.tex .png
 
@@ -11,9 +11,11 @@ HOST=problems1.seas.harvard.edu
 all:
 	@if test "${HOST}" == "`hostname -f`"; \
 	then \
-	    chmod a+r *.tex Makefile *.png; \
+	    chmod a+r *.tex Makefile; \
+	    chmod -f a+r *.png; \
 	    chmod a+x . .. ../.. ../../..; \
-	    ls -s *.tex Makefile *.png; \
+	    shopt -s nullglob; \
+	    ls -l *.tex Makefile *.png; \
 	fi
 
 
