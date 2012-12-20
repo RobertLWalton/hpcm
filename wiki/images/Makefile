@@ -1,6 +1,21 @@
+# Makefile to make hpcm/wiki graphic images using tikz
+#
+#	File:	Makefile
+#	Author:	walton@seas.harvard.edu
+#	Date:	Thu Dec 20 13:18:53 EST 2012
+
 .SUFFIXES:	.tex .png
 
-TARGETS:	2d-points 2d-directions
+HOST=problems1.seas.harvard.edu
+
+all:
+	@if test "${HOST}" == "`hostname -f`"; \
+	then \
+	    chmod a+r *.tex Makefile *.png; \
+	    chmod a+x . .. ../.. ../../..; \
+	    ls -s *.tex Makefile *.png; \
+	fi
+
 
 2d-points:	2d-points-1.png
 
