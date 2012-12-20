@@ -2,7 +2,7 @@
 #
 #	File:	Makefile
 #	Author:	walton@seas.harvard.edu
-#	Date:	Thu Dec 20 13:22:00 EST 2012
+#	Date:	Thu Dec 20 13:26:02 EST 2012
 
 .SUFFIXES:	.tex .png
 
