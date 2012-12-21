@@ -2,7 +2,7 @@
 #
 #	File:	Makefile
 #	Author:	walton@seas.harvard.edu
-#	Date:	Thu Dec 20 19:33:55 EST 2012
+#	Date:	Fri Dec 21 03:01:30 EST 2012
 
 .SUFFIXES:	.tex .png
 
@@ -34,6 +34,11 @@ all:
 2d-vector-addition:	2d-vector-addition-1.png
 
 2d-vector-subtraction:	2d-vector-subtraction-1.png
+
+2d-vector-rotation:	2d-vector-rotation-1.png
+
+2d-rotation-coordinates:	2d-rotation-coordinates-1.png
+
 
 %-1.png:	%.tex
 	rm -f $*.pdf $*-*.png
