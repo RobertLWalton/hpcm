@@ -2,7 +2,7 @@
 #
 #	File:	Makefile
 #	Author:	walton@seas.harvard.edu
-#	Date:	Sat Dec 22 04:35:56 EST 2012
+#	Date:	Mon Dec 24 11:36:45 EST 2012
 
 HOST = problems1.seas.harvard.edu
 
@@ -18,9 +18,12 @@ wiki-hpcm-2%.tgz:	never-there
 	  rm -f wiki-hpcm-2$*.mysql; \
 	  mysqldump -p${MYSQLPASSWORD} wiki_hpcm \
 		  > wiki-hpcm-2$*.mysql; \
-	  tar zcf $@ wiki-hpcm-2$*.mysql \
-		  -C ~/wiki \
-		  images; \
+	  make -C ../images; \
+	  tar zcf $@ --exclude=CVS \
+                     wiki-hpcm-2$*.mysql \
+		  -C ~/wiki images \
+                  -C ~ hpcm/wiki/images \
+                       hpcm/wiki/BACKUPS/Makefile; \
 	  chmod 444 $@ wiki-hpcm-2$*.mysql; \
 	  ls -l $@ wiki-hpcm-2$*.mysql; \
           chmod a+x . .. ../.. ../../..; \
