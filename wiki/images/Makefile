@@ -2,7 +2,7 @@
 #
 #	File:	Makefile
 #	Author:	walton@seas.harvard.edu
-#	Date:	Tue Dec 25 21:55:20 EST 2012
+#	Date:	Wed Dec 26 05:35:49 EST 2012
 
 .SUFFIXES:	.tex .png
 
@@ -46,6 +46,9 @@ all:
 
 2d-vector-scalar-product:	\
 	2d-vector-scalar-product-1.png
+
+2d-point-to-line-segment-2:	\
+	2d-point-to-line-segment-2-1.png
 
 
 %-1.png:	%.tex
