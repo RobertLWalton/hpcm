@@ -2,7 +2,7 @@
 #
 #	File:	Makefile
 #	Author:	walton@seas.harvard.edu
-#	Date:	Fri Dec 21 07:44:18 EST 2012
+#	Date:	Tue Dec 25 20:58:07 EST 2012
 
 .SUFFIXES:	.tex .png
 
@@ -37,10 +37,14 @@ all:
 
 2d-vector-rotation:	2d-vector-rotation-1.png
 
-2d-rotation-coordinates:	2d-rotation-coordinates-1.png
+2d-rotation-coordinates:	\
+	2d-rotation-coordinates-1.png
 
 2d-point-to-line-segment:	\
 	2d-point-to-line-segment-1.png
+
+2d-vector-scalar-product:	\
+	2d-vector-scalar-product-1.png
 
 
 %-1.png:	%.tex
