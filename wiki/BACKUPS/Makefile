@@ -2,9 +2,9 @@
 #
 #	File:	Makefile
 #	Author:	walton@seas.harvard.edu
-#	Date:	Mon Dec 24 11:36:45 EST 2012
+#	Tue Dec 25 21:28:37 EST 2012
 
-HOST = problems1.seas.harvard.edu
+HOST = problems1.seas
 
 # wiki-hpcm-2%.tgz contains the public backups.
 #
@@ -13,7 +13,8 @@ HOST = problems1.seas.harvard.edu
 
 wiki-hpcm-2%.tgz:	never-there
 	rm -f $@
-	@if test "${HOST}" == "`hostname -f`"; \
+	@H=`hostname`; \
+            if test `expr "$$H" : "${HOST}"` > 0; \
 	then \
 	  rm -f wiki-hpcm-2$*.mysql; \
 	  mysqldump -p${MYSQLPASSWORD} wiki_hpcm \
@@ -32,13 +33,15 @@ wiki-hpcm-2%.tgz:	never-there
 	else \
 	  ssh wiki-hpcm@${HOST} \
 	      'cd hpcm/wiki/BACKUPS; make $@'; \
-	  scp wiki-hpcm@${HOST}:hpcm/wiki/BACKUPS/$@ $@; \
+	  scp wiki-hpcm@${HOST}:hpcm/wiki/BACKUPS/$@ \
+              $@; \
 	  ls -l $@; \
 	fi
 
 wiki-hpcm-private-2%.tgz:	never-there
 	rm -f $@
-	@if test "${HOST}" == "`hostname -f`"; \
+	@H=`hostname`; \
+            if test `expr "$$H" : "${HOST}"` > 0; \
 	then \
 	  tar zcf $@ -C ~/wiki \
 	          LocalSettings.php RCS; \
@@ -47,7 +50,8 @@ wiki-hpcm-private-2%.tgz:	never-there
 	else \
 	  ssh wiki-hpcm@${HOST} \
 	      'cd hpcm/wiki/BACKUPS; make $@'; \
-	  scp wiki-hpcm@${HOST}:hpcm/wiki/BACKUPS/$@ $@; \
+	  scp wiki-hpcm@${HOST}:hpcm/wiki/BACKUPS/$@ \
+              $@; \
 	  ls -l $@; \
 	fi
      
