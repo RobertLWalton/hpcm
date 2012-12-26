@@ -2,7 +2,7 @@
 #
 #	File:	Makefile
 #	Author:	walton@seas.harvard.edu
-#	Tue Dec 25 21:28:37 EST 2012
+#	Date:	Tue Dec 25 21:50:44 EST 2012
 
 HOST = problems1.seas
 
@@ -14,7 +14,7 @@ HOST = problems1.seas
 wiki-hpcm-2%.tgz:	never-there
 	rm -f $@
 	@H=`hostname`; \
-            if test `expr "$$H" : "${HOST}"` > 0; \
+            if test `expr "$$H" : "${HOST}"` -gt 0; \
 	then \
 	  rm -f wiki-hpcm-2$*.mysql; \
 	  mysqldump -p${MYSQLPASSWORD} wiki_hpcm \
@@ -41,7 +41,7 @@ wiki-hpcm-2%.tgz:	never-there
 wiki-hpcm-private-2%.tgz:	never-there
 	rm -f $@
 	@H=`hostname`; \
-            if test `expr "$$H" : "${HOST}"` > 0; \
+            if test `expr "$$H" : "${HOST}"` -gt 0; \
 	then \
 	  tar zcf $@ -C ~/wiki \
 	          LocalSettings.php RCS; \
