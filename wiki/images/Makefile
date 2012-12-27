@@ -2,7 +2,7 @@
 #
 #	File:	Makefile
 #	Author:	walton@seas.harvard.edu
-#	Date:	Thu Dec 27 01:30:03 EST 2012
+#	Date:	Thu Dec 27 07:06:32 EST 2012
 
 .SUFFIXES:	.tex .png
 
@@ -50,8 +50,8 @@ all:
 2d-point-to-line-segment-2:	\
 	2d-point-to-line-segment-2-1.png
 
-probability-two-dice-markov-process:	\
-	probability-two-dice-markov-process-1.png
+probability-dice-markov-process:	\
+	probability-dice-markov-process-1.png
 
 
 %-1.png:	%.tex
