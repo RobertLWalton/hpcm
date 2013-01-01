@@ -2,7 +2,7 @@
 #
 #	File:	Makefile
 #	Author:	walton@seas.harvard.edu
-#	Mon Dec 31 08:38:43 EST 2012
+#	Tue Jan  1 01:04:47 EST 2013
 
 .SUFFIXES:	.tex .png
 
@@ -55,6 +55,9 @@ all:
 
 probability-dice-markov-process:	\
 	probability-dice-markov-process-1.png
+
+probability-pagerank-markov-process:	\
+	probability-pagerank-markov-process-1.png
 
 
 %-1.png:	%.tex
