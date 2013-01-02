@@ -2,9 +2,13 @@
 #
 #	File:	Makefile
 #	Author:	walton@seas.harvard.edu
-#	Date:	Tue Dec 25 21:50:44 EST 2012
+#	Date:	Wed Jan  2 11:10:56 EST 2013
 
 HOST = problems1.seas
+
+CHANGED = LocalSettings.php RCS \
+          skins/common/commonPrint.css \
+          skins/common/RCS
 
 # wiki-hpcm-2%.tgz contains the public backups.
 #
@@ -43,8 +47,7 @@ wiki-hpcm-private-2%.tgz:	never-there
 	@H=`hostname`; \
             if test `expr "$$H" : "${HOST}"` -gt 0; \
 	then \
-	  tar zcf $@ -C ~/wiki \
-	          LocalSettings.php RCS; \
+	  tar zcf $@ -C ~/wiki ${CHANGED}; \
 	  chmod 400 $@; \
 	  ls -l $@; \
 	else \
