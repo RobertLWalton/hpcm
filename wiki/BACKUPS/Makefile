@@ -2,9 +2,10 @@
 #
 #	File:	Makefile
 #	Author:	walton@seas.harvard.edu
-#	Date:	Wed Jan  2 11:10:56 EST 2013
+#	Sun Jan  6 08:16:51 EST 2013
 
-HOST = problems1.seas
+FULLHOST = problems1.seas.harvard.edu
+SHORTHOST = problems1
 
 CHANGED = LocalSettings.php RCS \
           skins/common/commonPrint.css \
@@ -18,7 +19,8 @@ CHANGED = LocalSettings.php RCS \
 wiki-hpcm-2%.tgz:	never-there
 	rm -f $@
 	@H=`hostname`; \
-            if test `expr "$$H" : "${HOST}"` -gt 0; \
+            if test `expr "$$H" : "${SHORTHOST}"` \
+	            -gt 0; \
 	then \
 	  rm -f wiki-hpcm-2$*.mysql; \
 	  mysqldump -p${MYSQLPASSWORD} wiki_hpcm \
@@ -35,26 +37,29 @@ wiki-hpcm-2%.tgz:	never-there
 	  chmod a+r .; \
 	  chmod a+r Makefile; \
 	else \
-	  ssh wiki-hpcm@${HOST} \
+	  ssh wiki-hpcm@${FULLHOST} \
 	      'cd hpcm/wiki/BACKUPS; make $@'; \
-	  scp wiki-hpcm@${HOST}:hpcm/wiki/BACKUPS/$@ \
-              $@; \
+	  scp \
+	    wiki-hpcm@${FULLHOST}:hpcm/wiki/BACKUPS/$@ \
+            $@; \
 	  ls -l $@; \
 	fi
 
 wiki-hpcm-private-2%.tgz:	never-there
 	rm -f $@
 	@H=`hostname`; \
-            if test `expr "$$H" : "${HOST}"` -gt 0; \
+            if test `expr "$$H" : "${SHORTHOST}"` \
+	             -gt 0; \
 	then \
 	  tar zcf $@ -C ~/wiki ${CHANGED}; \
 	  chmod 400 $@; \
 	  ls -l $@; \
 	else \
-	  ssh wiki-hpcm@${HOST} \
+	  ssh wiki-hpcm@${FULLHOST} \
 	      'cd hpcm/wiki/BACKUPS; make $@'; \
-	  scp wiki-hpcm@${HOST}:hpcm/wiki/BACKUPS/$@ \
-              $@; \
+	  scp \
+	    wiki-hpcm@${FULLHOST}:hpcm/wiki/BACKUPS/$@ \
+            $@; \
 	  ls -l $@; \
 	fi
      
