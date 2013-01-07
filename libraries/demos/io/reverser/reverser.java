@@ -2,7 +2,7 @@
 //
 // File:	reverser.java
 // Authors:	Bob Walton (walton@seas.harvard.edu)
-// Date:	Mon Jan  7 11:50:41 EST 2013
+// Date:	Mon Jan  7 12:44:07 EST 2013
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -54,7 +54,8 @@ public class reverser {
 		while ( true )
 		{
 		    String item;
-		    item = scan.findInLine ( separator );
+		    item =
+		        scan.findInLine ( separator );
 		    if ( item == null ) item = "";
 		    substring[n++] = item;
 		    item = scan.findInLine ( word );
