@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Dec  1 08:14:44 EST 2012
+# Date:		Tue Jan  8 02:11:16 EST 2013
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2012/12/01 13:16:14 $
+#   $Date: 2013/01/08 07:11:50 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.38 $
+#   $Revision: 1.39 $
 
 # `make help.pdf' and `make demos.pdf' make printouts of
 # all the help and demos files respectively.  Note that
@@ -84,22 +84,24 @@ ADVANCED_HELP_FILES = \
 # Not included
 #	advanced/geometry_exercises
 
-
+DEMOS = ../../problem_library/demos
 DEMOS_FILES = \
-	../../problem_library/demos/c/reverser/reverser.txt \
-	../../problem_library/demos/c/reverser/sample.in \
-	../../problem_library/demos/c/reverser/sample.test \
-	../../problem_library/demos/c/reverser/reverser.c \
-	../../problem_library/demos/c/summer/summer.txt \
-	../../problem_library/demos/c/summer/sample.in \
-	../../problem_library/demos/c/summer/sample.test \
-	../../problem_library/demos/c/summer/summer.c
+	${DEMOS}/reverser/reverser.txt \
+	${DEMOS}/reverser/sample.in \
+	${DEMOS}/reverser/sample.test \
+	${DEMOS}/c/reverser/reverser.c \
+	${DEMOS}/java/reverser/reverser.java \
+	${DEMOS}/summer/summer.txt \
+	${DEMOS}/summer/sample.in \
+	${DEMOS}/summer/sample.test \
+	${DEMOS}/c/summer/summer.c \
+	${DEMOS}/java/summer/summer.java
 
 ADVANCED_DEMOS_FILES = \
-	../../problem_library/demos/intersections/intersections.txt \
-	../../problem_library/demos/intersections/intersections.cc \
-	../../problem_library/demos/csearch/csearch.txt \
-	../../problem_library/demos/csearch/csearch.cc
+	${DEMOS}/intersections/intersections.txt \
+	${DEMOS}/intersections/intersections.cc \
+	${DEMOS}/csearch/csearch.txt \
+	${DEMOS}/csearch/csearch.cc
 
 help_index:	index
 	rm -f help_index help_index.html \
@@ -145,7 +147,8 @@ demos_index:	../../problem_library/demos_index
 	      demos_index.files
 	../../judge/bin/makehelp \
 	    demos_index "DEMOS INDEX" \
-	    ../../problem_library/demos_index ${WEB} c
+	    ../../problem_library/demos_index ${WEB} \
+	    c java
 
 
 demos.ps:	demos_index
