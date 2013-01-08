@@ -1,4 +1,4 @@
-JAVA Help		    Tue Oct 12 07:45:18 EDT 2010
+JAVA Help		    Tue Jan  8 02:54:51 EST 2013
 
 
 JAVA API documentation is usually available on-line
@@ -14,18 +14,6 @@ The next page has a suitable structure for a program
 that solves a problem named PPPP that needs only line
 input and character-within-line computations.
 
-For a program that has free format input/output (line
-feeds are sometimes treated as single space characters)
-or has floating point output, a good option is to use
-the demos/javaio/javaio.java file as a template, chang-
-ing the name `javaio' to `PPPP' in both the file and
-class name.  This program has functions that should make
-IO easier.
-
-If you use your own code, be sure any DecimalFormat you
-create uses ENGLISH local and numbers output do NOT
-contain commas.
-
 It is fairly common for JAVA programs that run well for
 the contestant to crash when run by the judge.  The
 usual cause is judge's input data that triggers an ex-
@@ -35,42 +23,98 @@ a lot of legal input data that might break the program,
 so your program will be run against it by `make submit'
 and you will observe any crash.
 
-    import java.io.*;
+import java.util.Scanner;
+import java.util.regex.Pattern;
+    // Pattern needed only if using findInLine
 
-    public class PPPP {
+public class PPP {
 
-	public static boolean debug;
+    static boolean debug = false;
 
-	public static void dprintln ( String s )
-	{
-	    if ( debug ) System.out.println ( s );
-	}
-
-	public static void main (String[] args)
-		throws IOException
-	{
-
-	    debug = ( args.length > 0 );
-
-	    BufferedReader reader
-	       = new BufferedReader
-		     ( new InputStreamReader
-			   ( System.in ) );
-
-	    while ( true )
-	    {
-
-		String line = reader.readLine();
-		if ( line == null ) break;
-
-		. . .
-
-		dprintln ( . . . );
-
-		System.out.println ( . . . );
-	    }
-	}
+    // printf ( format, ... ) prints output using the
+    // given format with ... representing the format
+    // controlled arguments.
+    //
+    static void printf
+            ( String format, Object ... args )
+    {
+        System.out.format ( format, args );
     }
+
+    // Ditto but suppress printout if debug == false.
+    //
+    static void dprintf
+            ( String format, Object ... args )
+    {
+        if ( debug )
+	    System.out.format ( format, args );
+    }
+
+    public static void main ( String[] args )
+    {
+	debug = ( args.length > 0 );
+
+	Scanner scan = new Scanner ( System.in );
+
+	Pattern YYY = Pattern.compile ( "\\GYYY" );
+	    // Only needed for findInLine.  Use
+	    // \G to insist that match start with the
+	    // the next input character, and not skip
+	    // anything before the match.
+
+	while ( scan.hasNextLine() )
+	{
+	    // Read and print test case name if there
+	    // is one.
+	    //
+	    String testcasename = scan.nextLine();
+	    System.out.println ( testcasename );
+
+	    String item = scan.findInLine ( YYY ); 
+	       // Returns null if YYY does not match
+	       // next input, OR if it matches only the
+	       // empty string.
+
+	    if ( scan.hasNextDouble() )
+	    {
+	        double d = scan.nextDouble();
+		    // WARNING: number must be termina-
+		    // ted with whitespace for this to
+		    // work, or scan delimiter must be
+		    // reset.
+		. . . . .
+		. . . Math.sin . . .
+		    // Math functions are in Math; do
+		    // not need to import but must put
+		    // `Math.' in front of their names.
+	    }
+
+	    // Check that next thing is ZZZ.  WARNING:
+	    // ZZZ must be terminated by whitespace.
+	    // If not use findInLine.
+	    //
+	    String ZZZ = scan.next();
+	    assert ( ZZZ.equals ( "ZZZ" ) );
+
+	    // Skip line feed at end of line.  Needed
+	    // because we must be at a line beginning
+	    // when we start the next test case.
+	    //
+	    scan.nextLine();
+
+	    . . . . .
+
+	    // Debugging output.
+	    //
+	    dprintf ( ... );
+
+	    // Output.
+	    //
+	    printf ( ... );
+	}
+
+    }
+}
 
 
 
@@ -86,6 +130,6 @@ file.
 RCS Info (may not be true date or author):
 
     $Author: walton $
-    $Date: 2010/10/12 11:46:40 $
+    $Date: 2013/01/08 07:54:57 $
     $RCSfile: java,v $
-    $Revision: 1.9 $
+    $Revision: 1.10 $
