@@ -2,7 +2,7 @@
 //
 // File:	summer.java
 // Authors:	Bob Walton (walton@seas.harvard.edu)
-// Date:	Tue Jan  8 02:36:56 EST 2013
+// Date:	Tue Jan  8 08:05:06 EST 2013
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -55,8 +55,7 @@ public class summer {
 	    // Read and check =-sign, which must be
 	    // surrounded by whitespace.
 	    //
-	    String equals = scan.next();
-	    assert ( equals.equals ( "=" ) );
+	    assert ( scan.next().equals ( "=" ) );
 
 	    // Read accountant computed sum and the
 	    // end of line which follows it.
