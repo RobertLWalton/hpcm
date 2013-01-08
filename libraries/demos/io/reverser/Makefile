@@ -1,7 +1,7 @@
 # Makefile for the Word Order Reverse Problem
 #
 # File:		Makefile
-# Date:		Sun Oct  2 04:35:39 EDT 2011
+# Date:		Tue Jan  8 08:09:51 EST 2013
 #
 # See demonstration Makefile for documentation.
 #
@@ -35,7 +35,7 @@ default:	$P.out
 	rm -f $* *.class core core.[0-9]*
 	javac -g $*.java
 	echo >$* '#!/bin/sh'
-	echo >>$* "exec `which java` $* \$$*"
+	echo >>$* "exec `which java` -ea $* \$$*"
 	chmod a+r *.class
 	chmod a+rx $*
 
@@ -57,9 +57,9 @@ $P.out:	$P $P.in
 	rm -f $P.out core core.[0-9]*
 	grant_access . $P ${XTRA_INPUTS}
 	hpcm_sandbox -cputime 30 \
-	             -datasize 32m \
-		     -stacksize 32m \
-		     -filesize 32m \
+	             -datasize 64m \
+		     -stacksize 16m \
+		     -filesize 64m \
 		     ${XTRA_LIMITS} \
 		     -tee $P.out \
 		     $P \
@@ -69,8 +69,8 @@ $P.debug:	$P $P.in
 	rm -f $P.debug core core.[0-9]*
 	grant_access . $P ${XTRA_INPUTS}
 	hpcm_sandbox -cputime 30 \
-	             -datasize 32m \
-		     -stacksize 32m \
+	             -datasize 64m \
+		     -stacksize 16m \
 		     ${XTRA_LIMITS} \
 		     -tee $P.debug \
 		     $P debug \
@@ -107,6 +107,6 @@ clean:
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2012/11/25 06:55:12 $
+#   $Date: 2013/01/08 13:17:49 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.1 $
+#   $Revision: 1.2 $
