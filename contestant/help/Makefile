@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Jan  8 02:11:16 EST 2013
+# Date:		Tue Jan  8 02:19:07 EST 2013
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2013/01/08 07:11:50 $
+#   $Date: 2013/01/08 07:19:16 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.39 $
+#   $Revision: 1.40 $
 
 # `make help.pdf' and `make demos.pdf' make printouts of
 # all the help and demos files respectively.  Note that
@@ -83,25 +83,6 @@ ADVANCED_HELP_FILES = \
 
 # Not included
 #	advanced/geometry_exercises
-
-DEMOS = ../../problem_library/demos
-DEMOS_FILES = \
-	${DEMOS}/reverser/reverser.txt \
-	${DEMOS}/reverser/sample.in \
-	${DEMOS}/reverser/sample.test \
-	${DEMOS}/c/reverser/reverser.c \
-	${DEMOS}/java/reverser/reverser.java \
-	${DEMOS}/summer/summer.txt \
-	${DEMOS}/summer/sample.in \
-	${DEMOS}/summer/sample.test \
-	${DEMOS}/c/summer/summer.c \
-	${DEMOS}/java/summer/summer.java
-
-ADVANCED_DEMOS_FILES = \
-	${DEMOS}/intersections/intersections.txt \
-	${DEMOS}/intersections/intersections.cc \
-	${DEMOS}/csearch/csearch.txt \
-	${DEMOS}/csearch/csearch.cc
 
 help_index:	index
 	rm -f help_index help_index.html \
