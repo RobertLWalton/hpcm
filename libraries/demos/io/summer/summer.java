@@ -2,14 +2,13 @@
 //
 // File:	summer.java
 // Authors:	Bob Walton (walton@seas.harvard.edu)
-// Date:	Mon Jan  7 19:13:39 EST 2013
+// Date:	Tue Jan  8 02:36:56 EST 2013
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
 // for this program.
 
 import java.util.Scanner;
-import java.text.Format;
 public class summer {
 
     static boolean debug = false;
