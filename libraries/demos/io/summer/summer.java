@@ -44,27 +44,38 @@ public class summer {
 	    String casename = scan.nextLine();
 	    System.out.println ( casename );
 
+	    // As long as there are numbers in the
+	    // input, read these numbers and compute
+	    // their sum.  Note we assume each number
+	    // ends just before whitespace.
+	    //
 	    double corrected_sum = 0;
-
 	    while ( scan.hasNextDouble() )
 	        corrected_sum += scan.nextDouble();
 
+	    // Read and check =-sign, which must be
+	    // surrounded by whitespace.
+	    //
 	    String equals = scan.next();
 	    assert ( equals.equals ( "=" ) );
 
+	    // Read accountant computed sum and the
+	    // end of line which follows it.
+	    //
 	    double sum  = scan.nextDouble();
-
 	    scan.nextLine();
 
 	    // If debugging, look at corrected_sum and
 	    // sum at maximum precision.
 	    //
 	    dprintf
-		( "SUM = %.16f, CORRECTED SUM = %.16f%n",
-		  sum, corrected_sum );
+	      ( "SUM = %.16f, CORRECTED SUM = %.16f%n",
+		sum, corrected_sum );
 
-	    /* Print output.
-	     */
+	    // Print output.  Errors less than 0.005
+	    // must be due to internal rounding and not
+	    // to the accountants.
+	    //
 	    if (   Math.abs ( sum - corrected_sum )
 	         < 0.005 )
 		printf ( "%.2f is correct%n", sum );
