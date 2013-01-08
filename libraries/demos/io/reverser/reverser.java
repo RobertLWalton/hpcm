@@ -2,11 +2,17 @@
 //
 // File:	reverser.java
 // Authors:	Bob Walton (walton@seas.harvard.edu)
-// Date:	Mon Jan  7 12:44:07 EST 2013
+// Date:	Mon Jan  7 19:00:53 EST 2013
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
 // for this program.
+
+// reverser [-pattern] [debug]
+//
+// Without the -pattern option this program just uses
+// hand coded scanning.  With -pattern the program uses
+// Patterns with the Scanner.
 
 import java.util.Scanner;
 import java.util.regex.Pattern;
@@ -41,6 +47,10 @@ public class reverser {
 	    Pattern.compile ( "\\G[a-z]+" );
 	Pattern separator =
 	    Pattern.compile ( "\\G[^a-z]*" );
+	    // \G anchors the pattern at the beginning
+	    // of the remaining text.  Otherwise using
+	    // a pattern may skip text that is not part
+	    // of the pattern.
 
 	String substring[] = new String[MAX_LINE+2];
 
@@ -54,25 +64,41 @@ public class reverser {
 		while ( true )
 		{
 		    String item;
+
+		    // Read separator.  If the separator
+		    // is an empty String, null is
+		    // returned instead of "".
+		    //
 		    item =
 		        scan.findInLine ( separator );
 		    if ( item == null ) item = "";
 		    substring[n++] = item;
+
+		    // Read word.  If there is none,
+		    // null is returned.
+		    //
 		    item = scan.findInLine ( word );
 		    if ( item == null ) break;
 		    substring[n++] = item;
 		}
 
+		// Skip line feed at end of line.
+		//
 		scan.nextLine();
 	    }
 	    else
 	    {
+		// Read line and scan through it using
+		// index i.
+		//
 	        String line = scan.nextLine();
 		int i = 0;
 		while ( true )
 		{
 
-		    // Skip to next letter.
+		    // Skip past non-letters, and
+		    // collect characters skipped into
+		    // a separator.
 		    //
 		    int j = i;
 		    while ( i < line.length()
@@ -83,10 +109,13 @@ public class reverser {
 		    substring[n++] =
 		        line.substring ( j, i );
 
+		    // If we are at line end, stop.
+		    //
 		    if ( i == line.length() )
 		        break;
 
-		    // Skip to next non-letter.
+		    // Skip past letters, and collect
+		    // characters skipped into a word.
 		    //
 		    j = i;
 		    while ( i < line.length()
@@ -101,6 +130,9 @@ public class reverser {
 
 	    if ( debug )
 	    {
+	        // Print contents of substrings list
+		// with elements separated by |'s.
+		//
 	        System.out.print ( "UNREVERSED: " );
 		for ( int i = 0; i < n; ++ i )
 		    System.out.print
@@ -108,9 +140,8 @@ public class reverser {
 		System.out.println ( "|" );
 	    }
 
-	    // Reverse words in line.
+	    // Reverse words in substrings.
 	    //
-	    String line = "";
 	    int i = 1;
 	    int j = n - 2;
 	    while ( i < j )
@@ -122,7 +153,7 @@ public class reverser {
 		j -= 2;
 	    }
 
-	    // Output reversed word.
+	    // Output substrings as a line.
 	    //
 	    for ( i = 0; i < n; ++ i )
 		System.out.print ( substring[i] );
