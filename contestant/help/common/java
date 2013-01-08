@@ -1,6 +1,399 @@
 JAVA Help		    Tue Jan  8 02:54:51 EST 2013
 
 
+JAVA Language Program Structure 
+---- -------- ------- ---------
+
+Typical program structure including end of file detect-
+ion, finding symbols such as `=' that end a string of
+numbers, and debugging is:
+
+    import java.util.Scanner;
+    import java.util.regex.Pattern;
+	// Pattern needed only if using findInLine
+
+    public class PPP {
+
+	static boolean debug = false;
+
+	// printf ( format, ... ) prints output using
+	// the given format with ... representing the
+	// format controlled arguments.
+	//
+	static void printf
+		( String format, Object ... args )
+	{
+	    System.out.format ( format, args );
+	}
+
+	// Ditto but suppress if debug == false.
+	//
+	static void dprintf
+		( String format, Object ... args )
+	{
+	    if ( debug )
+		System.out.format ( format, args );
+	}
+
+	public static void main ( String[] args )
+	{
+	    debug = ( args.length > 0 );
+
+	    Scanner scan = new Scanner ( System.in );
+
+	    Pattern YYY = Pattern.compile ( "\\GYYY" );
+		// Only needed for findInLine.  Use
+		// \G to insist that match start with
+		// the the next input character, and not
+		// skip anything before the match.
+
+	    while ( scan.hasNextLine() )
+	    {
+		// Read and print test case name if
+		// there is one.
+		//
+		String testcasename = scan.nextLine();
+		System.out.println ( testcasename );
+
+		String item = scan.findInLine ( YYY ); 
+		   // Returns null if YYY does not match
+		   // next input, OR if it matches ONLY
+		   // the empty string.
+
+		if ( scan.hasNextDouble() )
+		{
+		    double d = scan.nextDouble();
+			// WARNING: number must be term-
+			// inated with whitespace for
+			// this to work, or scan delimiter
+			// must be reset.
+		    . . . . .
+		    . . . Math.sin . . .
+			// Math functions do not need
+			// import but must be prefaced
+			// by `Math.'.
+		}
+
+		// Check that next thing is ZZZ.
+		// WARNING: ZZZ must be terminated by
+		// whitespace.  If not use findInLine.
+		//
+		String ZZZ = scan.next();
+		assert ( ZZZ.equals ( "ZZZ" ) );
+
+		// Skip line feed at end of line.
+		// Needed because we must be at a line
+		// beginning when we start the next test
+		// case.
+		//
+		scan.nextLine();
+
+		. . . . .
+
+		// Debugging output.
+		//
+		dprintf ( ... );
+
+		// Output.
+		//
+		printf ( ... );
+	    }
+	}
+    }
+
+
+
+Input
+-----
+
+Input is read from the standard input; you MUST NOT open
+any file for input.
+
+Test cases begin with a test case name line checked for
+by Scanner `hasNextLine' and read by `nextLine'.  As
+soon as the test case name is successfully read it is
+printed by `System.out.println'.
+
+After reading and printing the test case name line, the
+rest of the test case data is read with Scanner
+functions such as `next', `hasNextDouble' `nextDouble',
+etc.  WARNING: this assumes that input tokens are
+delimited by whitespace.
+
+Reading data with delimiters like `,', `(', and `)'
+can be done by setting the delimiter pattern of the
+scanner to include these delimiters, using `next...'
+to read numbers, and using `findInLine' to read the
+delimiters.  For example, to read
+
+	( 5.6,7.8, -9.3)
+
+use code such as
+
+    Pattern openpar ( "\\G *(" );
+    Pattern closepar ( "\\G *)" );
+    scan.useDelimiter ( "[ ,()]+" );
+    assert ( scan.findInLine ( openpar ) );
+    while  ( ! scan.findInLine ( closepar ) )
+    {
+        double d = scan.nextDouble();
+	. . . . .
+    }
+
+data may consist of numbers, perhaps with a few
+characters like `*' thrown in to indicate the end of a
+sequence of numbers.  The lines containing numbers may
+be very long, so they should be read one number at a
+time with `scanf', and NOT read in first with `fgets'.
+A `*' may be detected by looking at the return value
+of `scanf', which is the number of numbers actually
+read.  If you are expecting 4 integers or a `*', use
+`scanf ( "%d%d%d%d", ... )' which returns 4 if it read
+4 integers and 0 if it encountered a `*'.  Then in the
+latter case you must skip the `*', which can be done
+by `scanf ( " *" )' which skips first the whitespace
+between the last number read and the input `*', and
+then skips the input `*'.
+
+See the `summer' demonstration problem solution which
+reads numbers.
+
+Floating point numbers can be read by `scanf' by using
+%lf instead of %d, and non-numbers can be read by using
+%s or %c - see synopsis below.  Sometimes a problem will
+specifically ask you to read lines to be processed as
+character strings, in which case use `fgets' and be sure
+your line buffer is long enough.
+
+On some problems there are no test case name lines but
+instead each test case has one input line containing
+text and one output line containing text.  For these
+the test case input line is read the same way as the
+test case name line is read above.
+
+See the `reverser' demonstration problem solution which
+reads text lines.
+
+
+Output
+------
+
+Output is written to the standard output; you MUST NOT
+open any file for output; you MUST NOT write to the
+standard error output.
+
+Output can be written with printf.  Some formats that
+may be useful are "%.3f" to print a double with exactly
+3 decimal places in as few columns as possible, "%10.3f"
+to print the double right adjusted in 10 columns, "%10s"
+to print a string right adjusted in 10 columns, and
+"%-10s" to print a string LEFT adjusted in 10 columns.
+Here the numbers 3 and 10 are merely representative, and
+can be replaced by any other non-zero positive integers.
+
+See the `summer' demonstration problem solution which
+outputs floating point `double's.
+
+
+Debugging
+---------
+
+When your program is executed by the judge, it will
+NOT be passed ANY arguments.  A standard debugging
+technique is to output extra debugging information if
+and only if your program is passed an argument.
+
+The above program defines `debug' to be true if and
+only if the program is called with one or more argu-
+ments, and defines dprintf to do what printf does if
+and only if `debug' is true.  Thus dprintf can be used
+to print debugging information.
+
+Debugging is best done with information printed by
+`dprintf', and not with a debugger like `gdb'.  The
+exception is debugging programs that crash or go into
+an infinite loop, which is best done with a debugger
+like `gdb'.  See `help gdb' for how to use `gdb' on
+programs that crash or go into an infinite loop.
+
+It is also a good idea to use `assert' statements
+to check that assumptions you have made are valid during
+actual program execution.  For example, if you are
+certain that scanf should read 3 integers, then instead
+of writing
+
+	scanf ( "%d%d%d", ... );
+
+it might be better to write
+
+	assert ( scanf ( "%d%d%d", ... ) == 3 );
+
+Similarly, you could replace `scanf ( " *" )' in the
+above code by
+
+	assert ( scanf ( " %c", line[0] ) == 1 );
+	assert ( line[0] == '*' );
+
+See the `summer' demonstration problem solution which
+uses dprintf and assert.
+
+
+Function and Macro Synopsis
+-------- --- ----- --------
+
+You can get full documentation of the functions
+mentioned above plus other useful information by using
+the UNIX commands:
+
+	man scanf
+	man fgets
+	man 3 printf
+	man assert
+	man math.h
+	man limits.h
+	man float.h
+
+The following is an extract from `man' pages of details
+needed to use the functions mentioned above, and also a
+few numeric constants.  Here we assume you already know
+something about how to use `scanf' and `printf', so we
+do not have to explain them from scratch.
+
+Note that an `int' is guaranteed to be at least 32 bits
+and a `long long int' is guaranteed to be at least 64
+bits.  Floating point computations should always be done
+using `double's, and NOT `float's, to avoid having too
+little precision.
+
+int scanf ( const char * format, ... )
+
+    Format can contain the following directives:
+
+    %d		First skips whitespace.  Then if this is
+    		followed by non-whitespace with the
+		format of an `int', reads the `int'.
+
+    %lld	Ditto but for `long long int' instead of
+    		`int'.
+
+    %lf		Ditto but for `double' instead of `int'.
+
+    %s		Ditto but for a string of non-whitespace
+    		characters, instead of `int'.
+
+    %c		Scans a single character.  Does NOT skip
+    		preceding whitespace.
+
+    whitespace	Skips any amount of whitespace, includ-
+    		ing none.  Line feeds are whitespace in
+		this sense.
+
+    other	Skips just the given character.  E.g.,
+    character	if `*' is in the format, then `*' must
+    		be next in the input if the input is to
+		move forward.  If you want to skip
+		whitespace followed by `*', you MUST put
+		" *" and NOT just "*" in the format.
+
+    Scanf returns the number of items successfully read
+    by %... format directives.  Thus if you are expect-
+    ing either a float or a `*', `scanf ( "%lf", ... )'
+    will return 1 if a number was found and read, or 0
+    if a `*' was found and NOT read.  Note that if it
+    returns 0 it will have skipped the whitespace before
+    the `*', so the `*' will be next.
+
+
+char * fgets ( char * buffer, sizeof ( buffer ), stdin )
+
+    Read characters from the standard input into the
+    buffer until a line feed is read and stored, and
+    then store a '\0' in the buffer.  If there are NO
+    characters to be read because we are at the end of
+    file, return NULL, which can be interpreted as
+    `false'; otherwise return the address of the buffer,
+    which can be interpreted as `true'.
+
+    Note: `fgets' as it is used above is equivalent to
+    `gets ( buffer )', but the `gets' function has been
+    `deprecated', meaning that implementations need not
+    and eventually will not support it.
+
+
+int printf ( const char * format, ... )
+
+    Format can contain the following directives, in
+    in which W and P stand for sequences of decimal
+    digits, where W is used for `widths' and P for
+    `precisions':
+
+    %d		Outputs an `int' as a decimal integer
+    		with no spaces before or after.
+
+    %Wd		Outputs an `int' as a decimal integer
+    		right adjusted in W columns.
+
+    %lld	Outputs a `long long int' as a decimal
+    		integer with no spaces before or after.
+
+    %Wlld	Outputs a `long long int' as a decimal
+    		integer right adjusted in W columns.
+
+    %f		Outputs a `double' as a floating point
+    		number with 6 decimal places and no
+		spaces before or after.
+
+    %.Pf	Ditto but with P decimal places instead
+    		of 6 decimal places.
+
+    %Wf		Outputs a `double' as a floating point
+    		number with 6 decimal places right
+		adjusted in W columns.
+
+    %W.Pf	Ditto but with P decimal places instead
+    		of 6 decimal places.
+
+    %s		Outputs a `const char *' or `char *'
+    		string with no spaces before or after.
+
+    %Ws		Ditto but outputs the string RIGHT
+    		adjusted in W columns.
+
+    %-Ws	Ditto but outputs the string LEFT
+    		adjusted in W columns.
+
+    %c		Outputs a `char' as an ASCII character
+    		with no spaces before or after.
+    		
+
+INT_MAX, INT_MIN, LLONG_MAX, LLONG_MIN, DBL_MAX, DBL_MIN
+
+    These are the maximum and minimum numbers that can
+    be stored respectively in an `int', `long long int',
+    or `double'.  The integer values are from `limits.h'
+    and the floating point values from `float.h'.
+
+M_PI, M_E
+
+    The mathematical constants PI and e from math.h.
+
+
+File:		c
+Author:		Bob Walton <walton@seas.harvard.edu>
+Date:		See top of file.
+
+The authors have placed this file in the public domain;
+they make no warranty and accept no liability for this
+file.
+
+RCS Info (may not be true date or author):
+
+    $Author: walton $
+    $Date: 2013/01/08 18:08:53 $
+    $RCSfile: java,v $
+    $Revision: 1.11 $
+
+
 JAVA API documentation is usually available on-line
 during a formal contest.  The command to access it is:
 
@@ -23,98 +416,6 @@ a lot of legal input data that might break the program,
 so your program will be run against it by `make submit'
 and you will observe any crash.
 
-import java.util.Scanner;
-import java.util.regex.Pattern;
-    // Pattern needed only if using findInLine
-
-public class PPP {
-
-    static boolean debug = false;
-
-    // printf ( format, ... ) prints output using the
-    // given format with ... representing the format
-    // controlled arguments.
-    //
-    static void printf
-            ( String format, Object ... args )
-    {
-        System.out.format ( format, args );
-    }
-
-    // Ditto but suppress printout if debug == false.
-    //
-    static void dprintf
-            ( String format, Object ... args )
-    {
-        if ( debug )
-	    System.out.format ( format, args );
-    }
-
-    public static void main ( String[] args )
-    {
-	debug = ( args.length > 0 );
-
-	Scanner scan = new Scanner ( System.in );
-
-	Pattern YYY = Pattern.compile ( "\\GYYY" );
-	    // Only needed for findInLine.  Use
-	    // \G to insist that match start with the
-	    // the next input character, and not skip
-	    // anything before the match.
-
-	while ( scan.hasNextLine() )
-	{
-	    // Read and print test case name if there
-	    // is one.
-	    //
-	    String testcasename = scan.nextLine();
-	    System.out.println ( testcasename );
-
-	    String item = scan.findInLine ( YYY ); 
-	       // Returns null if YYY does not match
-	       // next input, OR if it matches only the
-	       // empty string.
-
-	    if ( scan.hasNextDouble() )
-	    {
-	        double d = scan.nextDouble();
-		    // WARNING: number must be termina-
-		    // ted with whitespace for this to
-		    // work, or scan delimiter must be
-		    // reset.
-		. . . . .
-		. . . Math.sin . . .
-		    // Math functions are in Math; do
-		    // not need to import but must put
-		    // `Math.' in front of their names.
-	    }
-
-	    // Check that next thing is ZZZ.  WARNING:
-	    // ZZZ must be terminated by whitespace.
-	    // If not use findInLine.
-	    //
-	    String ZZZ = scan.next();
-	    assert ( ZZZ.equals ( "ZZZ" ) );
-
-	    // Skip line feed at end of line.  Needed
-	    // because we must be at a line beginning
-	    // when we start the next test case.
-	    //
-	    scan.nextLine();
-
-	    . . . . .
-
-	    // Debugging output.
-	    //
-	    dprintf ( ... );
-
-	    // Output.
-	    //
-	    printf ( ... );
-	}
-
-    }
-}
 
 
 
@@ -130,6 +431,6 @@ file.
 RCS Info (may not be true date or author):
 
     $Author: walton $
-    $Date: 2013/01/08 07:54:57 $
+    $Date: 2013/01/08 18:08:53 $
     $RCSfile: java,v $
-    $Revision: 1.10 $
+    $Revision: 1.11 $

@@ -1,7 +1,7 @@
 # Makefile for the XXX Problem
 #
 # File:		Makefile
-# Date:		Sun Oct  2 04:42:16 EDT 2011
+# Date:		Tue Jan  8 08:07:07 EST 2013
 #
 # See demonstration Makefile for documentation.
 #
@@ -38,7 +38,7 @@ default:	$P.out
 	rm -f $* *.class core core.[0-9]*
 	javac -g $*.java
 	echo >$* '#!/bin/sh'
-	echo >>$* "exec `which java` $* \$$*"
+	echo >>$* "exec `which java` -ea $* \$$*"
 	chmod a+r *.class
 	chmod a+rx $*
 
@@ -60,8 +60,8 @@ $P.out:	$P $P.in
 	rm -f $P.out core core.[0-9]*
 	grant_access . $P ${XTRA_INPUTS}
 	$M hpcm_sandbox -cputime 60 \
-	                -datasize 4m \
-		        -stacksize 4m \
+	                -datasize 64m \
+		        -stacksize 16m \
 		        ${XTRA_LIMITS} \
 		        $P \
 	    <$P.in | tee $P.out
@@ -70,8 +70,8 @@ $P.debug:	$P $P.in
 	rm -f $P.debug core core.[0-9]*
 	grant_access . $P ${XTRA_INPUTS}
 	$M hpcm_sandbox -cputime 60 \
-	                -datasize 4m \
-		        -stacksize 4m \
+	                -datasize 64m \
+		        -stacksize 16m \
 		        ${XTRA_LIMITS} \
 		        $P debug \
 	    <$P.in | tee $P.out
@@ -111,6 +111,6 @@ clean:
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2011/11/20 08:08:45 $
+#   $Date: 2013/01/08 18:08:32 $
 #   $RCSfile: Makefile2,v $
-#   $Revision: 1.13 $
+#   $Revision: 1.14 $
