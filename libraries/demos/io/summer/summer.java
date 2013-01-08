@@ -2,7 +2,7 @@
 //
 // File:	summer.java
 // Authors:	Bob Walton (walton@seas.harvard.edu)
-// Date:	Mon Jan  7 13:03:39 EST 2013
+// Date:	Mon Jan  7 19:13:39 EST 2013
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -14,12 +14,18 @@ public class summer {
 
     static boolean debug = false;
 
+    // printf ( format, ... ) prints output using the
+    // given format with ... representing the format
+    // controlled arguments.
+    //
     static void printf
             ( String format, Object ... args )
     {
         System.out.format ( format, args );
     }
 
+    // Ditto but suppress printout if debug == false.
+    //
     static void dprintf
             ( String format, Object ... args )
     {
@@ -54,16 +60,16 @@ public class summer {
 	    // sum at maximum precision.
 	    //
 	    dprintf
-		( "SUM = %.16f, CORRECTED SUM = %.16f\n",
+		( "SUM = %.16f, CORRECTED SUM = %.16f%n",
 		  sum, corrected_sum );
 
 	    /* Print output.
 	     */
 	    if (   Math.abs ( sum - corrected_sum )
 	         < 0.005 )
-		printf ( "%.2f is correct\n", sum );
+		printf ( "%.2f is correct%n", sum );
 	    else
-		printf ( "%.2f should be %.2f\n",
+		printf ( "%.2f should be %.2f%n",
 			 sum, corrected_sum );
 	    }
     }
