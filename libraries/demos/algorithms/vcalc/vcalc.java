@@ -2,7 +2,7 @@
 //
 // File:	vcalc.java
 // Authors:	Bob Walton (walton@seas.harvard.edu)
-// Date:	Wed Jan  9 11:18:59 EST 2013
+// Date:	Wed Jan  9 11:57:41 EST 2013
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -14,6 +14,15 @@ import java.util.Hashtable;
 public class vcalc {
 
     static boolean debug = false;
+
+    static void dprint ( String s )
+    {
+        if ( debug ) System.out.print ( s );
+    }
+    static void dprintln ( String s )
+    {
+        if ( debug ) System.out.println ( s );
+    }
 
     final static int BOOLEAN  = 1;
     final static int SCALAR   = 2;
@@ -33,7 +42,7 @@ public class vcalc {
     static Pattern comment =
         Pattern.compile ( "\\G[ \t\f]*//[^\n]*\n" );
     static Pattern separator =
-        Pattern.compile ( "\\G[ \t\f]*([(),:\n])" );
+        Pattern.compile ( "\\G[ \t\f]*([(),:]|\n)" );
     //
     static String get_token ( )
     {
@@ -47,21 +56,22 @@ public class vcalc {
 	    while ( true )
 	    {
 		++ line_number;
-		if (    scan.findWithinHorizon
-		           ( comment, Integer.MAX_VALUE )
-		     == null )
-		    break;
+		String c =
+		    scan.findWithinHorizon
+		        ( comment, 0 );
+		if ( c == null ) break;
+		dprint ( "COMMENT " + c );
 	    }
 	}
 
         last_token =
-	    scan.findWithinHorizon
-	       ( separator, Integer.MAX_VALUE );
+	    scan.findWithinHorizon ( separator, 0 );
 	if ( last_token != null )
 	    last_token = scan.match().group ( 1 );
 	else if ( scan.hasNext() )
 	    last_token = scan.next();
 
+	dprintln ( "TOKEN " + last_token );
 	return last_token;
     }
 
@@ -86,6 +96,8 @@ public class vcalc {
 	    error ( "expected scalar and got `" +
 	            token + "'" );
 	}
+
+	return 0; // never executed
     }
 
     // Print error message and exit.
@@ -129,7 +141,7 @@ public class vcalc {
           error ( "`" + token + "' is not a variable" );
     }
 
-    class Value {
+    static class Value {
         int type;
 	boolean b;	// Value if BOOLEAN.
 	double s;	// Value if SCALAR.
@@ -217,6 +229,8 @@ public class vcalc {
 	else
 	    error
 	      ( "operand should be scalar or vector" );
+
+	return false; // never executed
     }
     static boolean is_scalar ( Value v1, Value v2 )
     {
@@ -230,16 +244,17 @@ public class vcalc {
 	else
 	    error
 	      ( "operands should be scalar or vector" );
+
+	return false; // never executed
     }
 
     static Value get_value ( )
     {
-	Value v = null;
+	Value v = new Value();
 
         String token = get_token();
 	if ( token.equals ( "(" ) )
 	{
-	    v = new Value();
 	    v.type = VECTOR;
 	    token = get_token();
 	    v.x = token_to_scalar ( token );
@@ -250,25 +265,27 @@ public class vcalc {
 	}
 	else if ( token.equals ( "true" ) )
 	{
-	    v = new Value();
 	    v.type = BOOLEAN;
 	    v.b = true;
 	}
 	else if ( token.equals ( "false" ) )
 	{
-	    v = new Value();
 	    v.type = BOOLEAN;
 	    v.b = false;
 	}
 	else if ( is_variable ( token ) )
 	{
-	    v = variable_table.get ( token );
-	    if ( v == null )
+	    Value v2 = variable_table.get ( token );
+	    if ( v2 == null )
 	        error ( "`" + token + "' unassigned" );
+	    v.type = v2.type;
+	    v.b = v2.b;
+	    v.s = v2.s;
+	    v.x = v2.x;
+	    v.y = v2.y;
 	}
 	else if ( is_scalar ( token ) )
 	{
-	    v = new Value();
 	    v.type = SCALAR;
 	    v.s = token_to_scalar ( token );
 	}
@@ -304,10 +321,9 @@ public class vcalc {
 	    String token = get_token();
 	    if ( token.equals ( "\n" ) ) break;
 	    if ( first )
-	    {
-	        System.out.print ( " " );
 		first = false;
-	    }
+	    else
+	        System.out.print ( " " );
 	    Value v = (Value)
 	        variable_table.get ( token );
 
@@ -483,6 +499,7 @@ public class vcalc {
 	    }
 	    else if ( ! op.equals ( "\n" ) )
 	        error ( "`" + op + "' unrecognized" );
+	    else backup = true;
 	}
 
 	skip ( "\n" );
@@ -509,7 +526,7 @@ public class vcalc {
 	    else
 	    {
 	        String op = get_token();
-		if ( token.equals ( "=" ) )
+		if ( op.equals ( "=" ) )
 		    execute_assign ( token );
 		else
 		    error ( "`" + token + " " + op +
