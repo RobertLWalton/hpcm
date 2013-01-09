@@ -162,6 +162,183 @@ public class vcalc {
 	System.out.println();
     }
 
+    static execute_assign ( String variable )
+    {
+        check_variable ( variable );
+        String op = get_token();
+
+	Value v1 = null;
+
+	if ( op.equals ( "-" ) )
+	{
+	    v1 = get_value();
+	    if ( is_scalar ( v1 ) )
+	        v1.s = - v1.s;
+	    else
+	    {
+	        v1.x = - v1.x;
+		v1.y = - v1.y;
+	    }
+	}
+	else if ( op.equals ( "|" ) )
+	{
+	    v1 = get_value();
+	    require_scalar ( v1 );
+	    skip ( "|" );
+	    v1.s = Math.abs ( v1.s );
+	}
+	else if ( op.equals ( "||" ) )
+	{
+	    v1 = get_value();
+	    require_vector ( v1 );
+	    skip ( "||" );
+	    double dx = v1.x - v2.x;
+	    double dy = v1.y - v2.y;
+	    v1.s = Math.sqrt ( dx*dx + dy*dy );
+	    v1.type = SCALAR;
+	}
+	else if ( op.equals ( "angle" ) )
+	{
+	    v1 = get_value();
+	    require_vector ( v1 );
+	    double dx = v1.x - v2.x;
+	    double dy = v1.y - v2.y;
+	    v1.s = Math.atan ( dy, dx );
+	    v1.s *= 180.0 / Math.PI;
+	    v1.type = SCALAR;
+	}
+	else if ( op.equals ( "!" ) )
+	{
+	    v1 = get_value();
+	    require_boolean ( v1 );
+	    v1.b = ! v1.b;
+	}
+	else
+	{
+	    backup = true;
+	    v1 = get_value();
+	    op = get_token();
+
+	    if ( op.equals ( "+" ) )
+	    {
+		Value v2 = get_value();
+		if ( is_scalar ( v1, v2 ) )
+		    v1.s += v2.s;
+		else
+		{
+		    v1.x += v2.x;
+		    v1.y += v2.y;
+		}
+	    }
+	    else if ( op.equals ( "-" ) )
+	    {
+		Value v2 = get_value();
+		if ( is_scalar ( v1, v2 ) )
+		    v1.s -= v2.s;
+		else
+		{
+		    v1.x -= v2.x;
+		    v1.y -= v2.y;
+		}
+	    }
+	    else if ( op.equals ( "*" ) )
+	    {
+		Value v2 = get_value();
+		require_scalar ( v1 );
+		if ( is_scalar ( v2 ) )
+		    v1.s *= v2.s;
+		else
+		{
+		    v1.x = v1.s * v2.x;
+		    v1.y = v1.s * v2.y;
+		    v1.type = VECTOR;
+		}
+	    }
+	    else if ( op.equals ( "/" ) )
+	    {
+		Value v2 = get_value();
+		require_scalar ( v1, v2 );
+		if ( v2.s == 0 )
+		    error ( "zero divisor" );
+		v1.s /= v2.s;
+	    }
+	    else if ( op.equals ( "^" ) )
+	    {
+		Value v2 = get_value();
+		require_vector ( v1 );
+		require_scalar ( v2 );
+		double angle = v2.s * Math.PI / 180;
+		double sin = Math.sin ( angle );
+		double cos = Math.cos ( angle );
+		double x = cos * v1.x - sin * v1.y;
+		double y = sin * v1.x + cos * v1.y;
+		v1.x = x;
+		v1.y = y;
+	    }
+	    else if ( op.equals ( "&&" ) )
+	    {
+		Value v2 = get_value();
+		require_boolean ( v1, v2 );
+		v1.b = v1.b && v2.b;
+	    }
+	    else if ( op.equals ( "||" ) )
+	    {
+		Value v2 = get_value();
+		require_boolean ( v1, v2 );
+		v1.b = v1.b || v2.b;
+	    }
+	    else if ( op.equals ( "==" ) )
+	    {
+		Value v2 = get_value();
+		require_scalar ( v1, v2 );
+		v1.b = ( v1.s == v2.s );
+		v1.type = BOOLEAN;
+	    }
+	    else if ( op.equals ( "!=" ) )
+	    {
+		Value v2 = get_value();
+		require_scalar ( v1, v2 );
+		v1.b = ( v1.s != v2.s );
+		v1.type = BOOLEAN;
+	    }
+	    else if ( op.equals ( "<" ) )
+	    {
+		Value v2 = get_value();
+		require_scalar ( v1, v2 );
+		v1.b = ( v1.s < v2.s );
+		v1.type = BOOLEAN;
+	    }
+	    else if ( op.equals ( "<=" ) )
+	    {
+		Value v2 = get_value();
+		require_scalar ( v1, v2 );
+		v1.b = ( v1.s <= v2.s );
+		v1.type = BOOLEAN;
+	    }
+	    else if ( op.equals ( ">" ) )
+	    {
+		Value v2 = get_value();
+		require_scalar ( v1, v2 );
+		v1.b = ( v1.s > v2.s );
+		v1.type = BOOLEAN;
+	    }
+	    else if ( op.equals ( ">=" ) )
+	    {
+		Value v2 = get_value();
+		require_scalar ( v1, v2 );
+		v1.b = ( v1.s >= v2.s );
+		v1.type = BOOLEAN;
+	    }
+	    else if ( ! op.equals ( "\n" ) )
+	        error ( "`" + op "' unrecognized" );
+	}
+
+	skip ( "\n" );
+
+	variable_table.put ( variable, v1 );
+    }
+	
+
 
     public static void main ( String[] args )
     {
