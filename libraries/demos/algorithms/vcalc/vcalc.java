@@ -2,7 +2,7 @@
 //
 // File:	vcalc.java
 // Authors:	Bob Walton (walton@seas.harvard.edu)
-// Date:	Wed Jan  9 10:35:34 EST 2013
+// Date:	Wed Jan  9 11:18:59 EST 2013
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -10,7 +10,7 @@
 
 import java.util.Scanner;
 import java.util.regex.Pattern;
-import java.util.HashTable;
+import java.util.Hashtable;
 public class vcalc {
 
     static boolean debug = false;
@@ -29,13 +29,13 @@ public class vcalc {
     //
     static String last_token = new String ( "\n" );
     static boolean backup = false;
-    static line_number = 0;
+    static int line_number = 0;
     static Pattern comment =
         Pattern.compile ( "\\G[ \t\f]*//[^\n]*\n" );
     static Pattern separator =
         Pattern.compile ( "\\G[ \t\f]*([(),:\n])" );
     //
-    String get_token ( void )
+    static String get_token ( )
     {
         if ( backup )
 	{
@@ -71,7 +71,7 @@ public class vcalc {
 	    Double.parseDouble ( token );
 	    return true;
 	}
-	catch ( NumberFormatException ) {
+	catch ( NumberFormatException e ) {
 	    return false;
 	}
     }
@@ -82,7 +82,7 @@ public class vcalc {
 	    double d = Double.parseDouble ( token );
 	    return d;
 	}
-	catch ( NumberFormatException ) {
+	catch ( NumberFormatException e ) {
 	    error ( "expected scalar and got `" +
 	            token + "'" );
 	}
@@ -108,15 +108,16 @@ public class vcalc {
 	{
 	    if ( token == null )
 	        token = "END-OF-FILE";
-	    if ( desired.equal ( "\n" ) )
+	    if ( desired.equals ( "\n" ) )
 	        desired = "END-OF-LINE";
 	    error ( "expected `" + desired +
 	            "' but found `" + token + "'" );
+	}
     }
 
     static boolean is_variable ( String token )
     {
-	return ( token.size() > 0
+	return ( token.length() > 0
 	         &&
 		 Character.isLetter
 		     ( token.charAt ( 0 ) ) );
@@ -125,32 +126,16 @@ public class vcalc {
     static void check_variable ( String token )
     {
        if ( ! is_variable ( token ) )
-          error ( "`" + token "' is not a variable" );
+          error ( "`" + token + "' is not a variable" );
     }
 
-    public class Value {
+    class Value {
         int type;
 	boolean b;	// Value if BOOLEAN.
 	double s;	// Value if SCALAR.
 	double x, y;	// Coordinates if VECTOR.
 
-	Value ( boolean bvalue )
-	{
-	    type = BOOLEAN;
-	    b = bvalue;
-	}
-	Value ( double svalue )
-	{
-	    type = SCALAR;
-	    s = svalue;
-	}
-	Value ( double xvalue, double yvalue )
-	{
-	    type = VECTOR;
-	    x = xvalue;
-	    y = yvalue;
-	}
-	void print ( void )
+	void print ( )
 	{
 	    if ( type == BOOLEAN )
 	        System.out.print ( b );
@@ -165,7 +150,8 @@ public class vcalc {
 	}
     }
 
-    static HashTable variable_table = new HashTable;
+    static Hashtable<String,Value> variable_table =
+	    new Hashtable<String,Value>();
         // Maps variable name Strings to Values.
 
     static void require_boolean ( Value v1 )
@@ -226,7 +212,7 @@ public class vcalc {
     {
         if ( v1.type == SCALAR )
 	    return true;
-        else if ( v2.type == VECTOR )
+        else if ( v1.type == VECTOR )
 	    return false;
 	else
 	    error
@@ -246,14 +232,14 @@ public class vcalc {
 	      ( "operands should be scalar or vector" );
     }
 
-    static Value get_value ( void)
+    static Value get_value ( )
     {
 	Value v = null;
 
         String token = get_token();
 	if ( token.equals ( "(" ) )
 	{
-	    v = new Value;
+	    v = new Value();
 	    v.type = VECTOR;
 	    token = get_token();
 	    v.x = token_to_scalar ( token );
@@ -264,13 +250,13 @@ public class vcalc {
 	}
 	else if ( token.equals ( "true" ) )
 	{
-	    v = new Value;
+	    v = new Value();
 	    v.type = BOOLEAN;
 	    v.b = true;
 	}
 	else if ( token.equals ( "false" ) )
 	{
-	    v = new Value;
+	    v = new Value();
 	    v.type = BOOLEAN;
 	    v.b = false;
 	}
@@ -278,11 +264,11 @@ public class vcalc {
 	{
 	    v = variable_table.get ( token );
 	    if ( v == null )
-	        error ( "`" + token "' unassigned" );
+	        error ( "`" + token + "' unassigned" );
 	}
 	else if ( is_scalar ( token ) )
 	{
-	    v = new Value;
+	    v = new Value();
 	    v.type = SCALAR;
 	    v.s = token_to_scalar ( token );
 	}
@@ -292,11 +278,12 @@ public class vcalc {
 	            " vector constant, " +
 	            " or variable but got `" +
 		    token + "'" );
+	return v;
     }
 
-    static void execute_clear ( void )
+    static void execute_clear ( )
     {
-        int found = false;
+        boolean found = false;
 	while ( true )
 	{
 	    String token = get_token();
@@ -309,9 +296,9 @@ public class vcalc {
 	    variable_table.clear();
     }
 
-    static void execute_print ( void )
+    static void execute_print ( )
     {
-        int first = true;
+        boolean first = true;
 	while ( true )
 	{
 	    String token = get_token();
@@ -326,15 +313,8 @@ public class vcalc {
 
 	    if ( v == null )
 	        System.out.print ( token );
-	    else if ( v.type == BOOLEAN )
-	        System.out.print
-		   ( v.b ? "true" : "false" );
-	    else if ( v.type == SCALAR )
-	        System.out.print ( v.s );
-	    else if ( v.type == VECTOR )
-	        System.out.print
-		    ( "(" + v.x + ", " + v.y + ")" );
-
+	    else 
+	        v.print();
 	}
 	System.out.println();
     }
@@ -369,18 +349,14 @@ public class vcalc {
 	    v1 = get_value();
 	    require_vector ( v1 );
 	    skip ( "||" );
-	    double dx = v1.x - v2.x;
-	    double dy = v1.y - v2.y;
-	    v1.s = Math.sqrt ( dx*dx + dy*dy );
+	    v1.s = Math.sqrt ( v1.x*v1.x + v1.y*v1.y );
 	    v1.type = SCALAR;
 	}
 	else if ( op.equals ( "angle" ) )
 	{
 	    v1 = get_value();
 	    require_vector ( v1 );
-	    double dx = v1.x - v2.x;
-	    double dy = v1.y - v2.y;
-	    v1.s = Math.atan ( dy, dx );
+	    v1.s = Math.atan2 ( v1.y, v1.x );
 	    v1.s *= 180.0 / Math.PI;
 	    v1.type = SCALAR;
 	}
@@ -506,7 +482,7 @@ public class vcalc {
 		v1.type = BOOLEAN;
 	    }
 	    else if ( ! op.equals ( "\n" ) )
-	        error ( "`" + op "' unrecognized" );
+	        error ( "`" + op + "' unrecognized" );
 	}
 
 	skip ( "\n" );
@@ -534,9 +510,9 @@ public class vcalc {
 	    {
 	        String op = get_token();
 		if ( token.equals ( "=" ) )
-		    execute_assignment ( token );
+		    execute_assign ( token );
 		else
-		    error ( "`" token + " " + op +
+		    error ( "`" + token + " " + op +
 		            "' unrecognized" );
 	    }
 	}
