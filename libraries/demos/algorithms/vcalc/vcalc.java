@@ -2,7 +2,7 @@
 //
 // File:	vcalc.java
 // Authors:	Bob Walton (walton@seas.harvard.edu)
-// Date:	Wed Jan  9 03:47:31 EST 2013
+// Date:	Wed Jan  9 10:35:34 EST 2013
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -65,6 +65,29 @@ public class vcalc {
 	return last_token;
     }
 
+    static boolean is_scalar ( String token )
+    {
+        try {
+	    Double.parseDouble ( token );
+	    return true;
+	}
+	catch ( NumberFormatException ) {
+	    return false;
+	}
+    }
+
+    static double token_to_scalar ( String token )
+    {
+        try {
+	    double d = Double.parseDouble ( token );
+	    return d;
+	}
+	catch ( NumberFormatException ) {
+	    error ( "expected scalar and got `" +
+	            token + "'" );
+	}
+    }
+
     // Print error message and exit.
     //
     static void error ( String message )
@@ -74,6 +97,21 @@ public class vcalc {
         System.out.println
 	    ( "      " + message );
 	System.exit ( 1 );
+    }
+
+    static void skip ( String desired )
+    {
+        String token = get_token();
+	if ( token == null
+	     ||
+	     ! token.equals ( desired ) )
+	{
+	    if ( token == null )
+	        token = "END-OF-FILE";
+	    if ( desired.equal ( "\n" ) )
+	        desired = "END-OF-LINE";
+	    error ( "expected `" + desired +
+	            "' but found `" + token + "'" );
     }
 
     static boolean is_variable ( String token )
@@ -96,28 +134,167 @@ public class vcalc {
 	double s;	// Value if SCALAR.
 	double x, y;	// Coordinates if VECTOR.
 
-	public Value ( boolean bvalue )
+	Value ( boolean bvalue )
 	{
 	    type = BOOLEAN;
 	    b = bvalue;
 	}
-	public Value ( double svalue )
+	Value ( double svalue )
 	{
 	    type = SCALAR;
 	    s = svalue;
 	}
-	public Value ( double xvalue, double yvalue )
+	Value ( double xvalue, double yvalue )
 	{
 	    type = VECTOR;
 	    x = xvalue;
 	    y = yvalue;
+	}
+	void print ( void )
+	{
+	    if ( type == BOOLEAN )
+	        System.out.print ( b );
+	    else if ( type == SCALAR )
+	        System.out.print ( s );
+	    else if ( type == VECTOR )
+	        System.out.print
+		    ( "(" + x + ", " + y + ")" );
+	    else
+	        System.out.print
+		    ( "BAD OBJECT TYPE " + type );
 	}
     }
 
     static HashTable variable_table = new HashTable;
         // Maps variable name Strings to Values.
 
-    static execute_clear ( void )
+    static void require_boolean ( Value v1 )
+    {
+        if ( v1.type != BOOLEAN )
+	    error ( "operand should be boolean" );
+    }
+    static void require_boolean ( Value v1, Value v2 )
+    {
+        if ( v1.type != BOOLEAN )
+	    error ( "first operand should be boolean" );
+        else if ( v2.type != BOOLEAN )
+	    error ( "second operand should be boolean" );
+    }
+
+    static void require_scalar ( Value v1 )
+    {
+        if ( v1.type != SCALAR )
+	    error ( "operand should be scalar" );
+    }
+    static void require_scalar ( Value v1, Value v2 )
+    {
+        if ( v1.type != SCALAR )
+	    error ( "first operand should be scalar" );
+        else if ( v2.type != SCALAR )
+	    error ( "second operand should be scalar" );
+    }
+
+    static void require_vector ( Value v1 )
+    {
+        if ( v1.type != VECTOR )
+	    error ( "operand should be vector" );
+    }
+    static void require_vector ( Value v1, Value v2 )
+    {
+        if ( v1.type != VECTOR )
+	    error ( "first operand should be vector" );
+        else if ( v2.type != VECTOR )
+	    error ( "second operand should be vector" );
+    }
+    static void require_scalar_vector
+            ( Value v1, Value v2 )
+    {
+        if ( v1.type != SCALAR )
+	    error ( "first operand should be scalar" );
+        else if ( v2.type != VECTOR )
+	    error ( "second operand should be vector" );
+    }
+    static void require_vector_scalar
+            ( Value v1, Value v2 )
+    {
+        if ( v1.type != VECTOR )
+	    error ( "first operand should be vector" );
+        else if ( v2.type != SCALAR )
+	    error ( "second operand should be scalar" );
+    }
+    static boolean is_scalar ( Value v1 )
+    {
+        if ( v1.type == SCALAR )
+	    return true;
+        else if ( v2.type == VECTOR )
+	    return false;
+	else
+	    error
+	      ( "operand should be scalar or vector" );
+    }
+    static boolean is_scalar ( Value v1, Value v2 )
+    {
+	if ( v1.type != v2.type )
+	    error ( "operands should both be scalar"
+	            + " or both be vector" );
+        else if ( v1.type == SCALAR )
+	    return true;
+        else if ( v2.type == VECTOR )
+	    return false;
+	else
+	    error
+	      ( "operands should be scalar or vector" );
+    }
+
+    static Value get_value ( void)
+    {
+	Value v = null;
+
+        String token = get_token();
+	if ( token.equals ( "(" ) )
+	{
+	    v = new Value;
+	    v.type = VECTOR;
+	    token = get_token();
+	    v.x = token_to_scalar ( token );
+	    skip ( "," );
+	    token = get_token();
+	    v.y = token_to_scalar ( token );
+	    skip ( ")" );
+	}
+	else if ( token.equals ( "true" ) )
+	{
+	    v = new Value;
+	    v.type = BOOLEAN;
+	    v.b = true;
+	}
+	else if ( token.equals ( "false" ) )
+	{
+	    v = new Value;
+	    v.type = BOOLEAN;
+	    v.b = false;
+	}
+	else if ( is_variable ( token ) )
+	{
+	    v = variable_table.get ( token );
+	    if ( v == null )
+	        error ( "`" + token "' unassigned" );
+	}
+	else if ( is_scalar ( token ) )
+	{
+	    v = new Value;
+	    v.type = SCALAR;
+	    v.s = token_to_scalar ( token );
+	}
+	else
+	    error ( "expected true, false, " +
+	            " scalar constant, " +
+	            " vector constant, " +
+	            " or variable but got `" +
+		    token + "'" );
+    }
+
+    static void execute_clear ( void )
     {
         int found = false;
 	while ( true )
@@ -132,7 +309,7 @@ public class vcalc {
 	    variable_table.clear();
     }
 
-    static execute_print ( void )
+    static void execute_print ( void )
     {
         int first = true;
 	while ( true )
@@ -162,7 +339,7 @@ public class vcalc {
 	System.out.println();
     }
 
-    static execute_assign ( String variable )
+    static void execute_assign ( String variable )
     {
         check_variable ( variable );
         String op = get_token();
@@ -265,8 +442,7 @@ public class vcalc {
 	    else if ( op.equals ( "^" ) )
 	    {
 		Value v2 = get_value();
-		require_vector ( v1 );
-		require_scalar ( v2 );
+		require_vector_scalar ( v1, v2 );
 		double angle = v2.s * Math.PI / 180;
 		double sin = Math.sin ( angle );
 		double cos = Math.cos ( angle );
@@ -350,8 +526,19 @@ public class vcalc {
 	{
 	    String token = get_token();
 	    if ( token == null ) break;
+	    else if ( token.equals ( "clear" ) )
+	        execute_clear();
 	    else if ( token.equals ( "print" ) )
 	        execute_print();
+	    else
+	    {
+	        String op = get_token();
+		if ( token.equals ( "=" ) )
+		    execute_assignment ( token );
+		else
+		    error ( "`" token + " " + op +
+		            "' unrecognized" );
+	    }
 	}
     }
 }
