@@ -2,7 +2,7 @@
 //
 // File:	vcalc.java
 // Authors:	Bob Walton (walton@seas.harvard.edu)
-// Date:	Thu Jan 10 00:43:01 EST 2013
+// Date:	Thu Jan 10 02:22:25 EST 2013
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -11,6 +11,7 @@
 import java.util.Scanner;
 import java.util.regex.Pattern;
 import java.util.Hashtable;
+import java.lang.Math.*;
 public class vcalc {
 
     static boolean debug = false;
@@ -54,7 +55,7 @@ public class vcalc {
     static Pattern comment =
         Pattern.compile ( "\\G[ \t\f]*//[^\n]*\n" );
     static Pattern separator =
-        Pattern.compile ( "\\G[ \t\f]*([(),:]|\n)" );
+        Pattern.compile ( "\\G[ \t\f]*([(),:\n])" );
     //
     static String get_token ( )
     {
@@ -87,29 +88,26 @@ public class vcalc {
 	return last_token;
     }
 
+    static Double token_to_number ( String token )
+    {
+        try { return Double.valueOf ( token ); }
+	catch ( NumberFormatException e )
+	    { return null; }
+    }
+
     static boolean is_scalar ( String token )
     {
-        try {
-	    Double.parseDouble ( token );
-	    return true;
-	}
-	catch ( NumberFormatException e ) {
-	    return false;
-	}
+        return token_to_number ( token ) != null;
     }
 
     static double token_to_scalar ( String token )
     {
-        try {
-	    double d = Double.parseDouble ( token );
-	    return d;
-	}
-	catch ( NumberFormatException e ) {
+	Double d = token_to_number ( token );
+	if ( d == null )
 	    error ( "expected scalar and got `" +
 	            token + "'" );
-	}
 
-	return 0; // never executed
+	return d.doubleValue();
     }
 
     // Print error message and exit.
