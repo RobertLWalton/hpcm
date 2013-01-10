@@ -2,7 +2,7 @@
 //
 // File:	vcalc.java
 // Authors:	Bob Walton (walton@seas.harvard.edu)
-// Date:	Thu Jan 10 07:14:59 EST 2013
+// Date:	Thu Jan 10 10:08:36 EST 2013
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -11,7 +11,7 @@
 import java.util.Scanner;
 import java.util.regex.Pattern;
 import java.util.Hashtable;
-import java.lang.Math.*;
+import java.text.DecimalFormat;
 public class vcalc {
 
     static boolean debug = false;
@@ -151,6 +151,13 @@ public class vcalc {
           error ( "`" + token + "' is not a variable" );
     }
 
+    // This is the only way to get a rough equivalent
+    // of the C language %.15g which deletes trailing
+    // fraction zeros.
+    //
+    static DecimalFormat decimal =
+        new DecimalFormat ( "0.###############" );
+
     static class Value {
         int type;
 	boolean b;	// Value if BOOLEAN.
@@ -162,10 +169,12 @@ public class vcalc {
 	    if ( type == BOOLEAN )
 	        System.out.print ( b );
 	    else if ( type == SCALAR )
-	        System.out.print ( s );
+	        System.out.print ( decimal.format ( s ) );
 	    else if ( type == VECTOR )
-	        System.out.print
-		    ( "(" + x + ", " + y + ")" );
+	        System.out.format
+		    ( "(%s, %s)",
+		      decimal.format ( x ),
+		      decimal.format ( y ) );
 	    else
 	        System.out.print
 		    ( "BAD OBJECT TYPE " + type );
@@ -258,6 +267,10 @@ public class vcalc {
 	return false; // never executed
     }
 
+    // Reads a constant value and returns its Value,
+    // or a variable with a value and returns a COPY
+    // of its Value.  Always returns a NEW Value.
+    //
     static Value get_value ( )
     {
 	Value v = new Value();
@@ -422,14 +435,22 @@ public class vcalc {
 	    else if ( op.equals ( "*" ) )
 	    {
 		Value v2 = get_value();
-		require_scalar ( v1 );
-		if ( is_scalar ( v2 ) )
-		    v1.s *= v2.s;
+		if ( is_scalar ( v1 ) )
+		{
+		    if ( is_scalar ( v2 ) )
+			v1.s *= v2.s;
+		    else
+		    {
+			v1.x = v1.s * v2.x;
+			v1.y = v1.s * v2.y;
+			v1.type = VECTOR;
+		    }
+		}
 		else
 		{
-		    v1.x = v1.s * v2.x;
-		    v1.y = v1.s * v2.y;
-		    v1.type = VECTOR;
+		    require_vector ( v1, v2 );
+		    v1.s = v1.x * v2.x + v1.y * v2.y;
+		    v1.type = SCALAR;
 		}
 	    }
 	    else if ( op.equals ( "/" ) )
@@ -447,6 +468,23 @@ public class vcalc {
 		double angle = v2.s * Math.PI / 180;
 		double sin = Math.sin ( angle );
 		double cos = Math.cos ( angle );
+
+		// We want perfect precision for
+		// certain angles so if v1 has
+		// integer coordinates so will
+		// the result.
+		//
+		int k = (int) ( v2.s / 90 );
+		if ( v2.s == k * 90 )
+		{
+		    switch ( k % 4 )
+		    {
+		    case 0: sin = 0; cos = 1; break;
+		    case 1: sin = 1; cos = 0; break;
+		    case 2: sin = 0; cos = -1; break;
+		    case 3: sin = -1; cos = 0; break;
+		    }
+		}
 		double x = cos * v1.x - sin * v1.y;
 		double y = sin * v1.x + cos * v1.y;
 		v1.x = x;
