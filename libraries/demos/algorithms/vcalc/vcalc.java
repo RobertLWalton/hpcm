@@ -2,7 +2,7 @@
 //
 // File:	vcalc.java
 // Authors:	Bob Walton (walton@seas.harvard.edu)
-// Date:	Wed Jan  9 11:57:41 EST 2013
+// Date:	Thu Jan 10 00:43:01 EST 2013
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -15,6 +15,18 @@ public class vcalc {
 
     static boolean debug = false;
 
+    static void print ( String s )
+    {
+        System.out.print ( s );
+    }
+    static void println ( String s )
+    {
+        System.out.println ( s );
+    }
+    static void println ( )
+    {
+        System.out.println();
+    }
     static void dprint ( String s )
     {
         if ( debug ) System.out.print ( s );
@@ -104,9 +116,9 @@ public class vcalc {
     //
     static void error ( String message )
     {
-        System.out.println
+        println
 	    ( "ERROR in line " + line_number + ":" );
-        System.out.println
+        println
 	    ( "      " + message );
 	System.exit ( 1 );
     }
@@ -323,16 +335,16 @@ public class vcalc {
 	    if ( first )
 		first = false;
 	    else
-	        System.out.print ( " " );
+	        print ( " " );
 	    Value v = (Value)
 	        variable_table.get ( token );
 
 	    if ( v == null )
-	        System.out.print ( token );
+	        print ( token );
 	    else 
 	        v.print();
 	}
-	System.out.println();
+	println();
     }
 
     static void execute_assign ( String variable )
