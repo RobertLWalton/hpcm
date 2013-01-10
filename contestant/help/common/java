@@ -9,12 +9,12 @@ ion, finding symbols such as `=' that end a string of
 numbers, and debugging is:
 
     import java.util.Scanner;
-    import java.util.regex.Pattern;
-	// Pattern needed only if using findInLine
 
     public class PPP {
 
 	static boolean debug = false;
+
+	static Scanner scan = new Scanner ( System.in );
 
 	// printf ( format, ... ) prints output using
 	// the given format with ... representing the
@@ -34,18 +34,14 @@ numbers, and debugging is:
 	    if ( debug )
 		System.out.format ( format, args );
 	}
+
+	static class MyClass {
+	    . . . . .
+	}
 
 	public static void main ( String[] args )
 	{
 	    debug = ( args.length > 0 );
-
-	    Scanner scan = new Scanner ( System.in );
-
-	    Pattern YYY = Pattern.compile ( "\\GYYY" );
-		// Only needed for findInLine.  Use
-		// \G to insist that match start with
-		// the the next input character, and not
-		// skip anything before the match.
 
 	    while ( scan.hasNextLine() )
 	    {
@@ -55,18 +51,13 @@ numbers, and debugging is:
 		String testcasename = scan.nextLine();
 		System.out.println ( testcasename );
 
-		String item = scan.findInLine ( YYY ); 
-		   // Returns null if YYY does not match
-		   // next input, OR if it matches ONLY
-		   // the empty string.
-
+		// Read a number and process a number
+		// if there is one.  WARNING: number
+		// must be terminated by whitespace.
+		//
 		if ( scan.hasNextDouble() )
 		{
 		    double d = scan.nextDouble();
-			// WARNING: number must be term-
-			// inated with whitespace for
-			// this to work, or scan delimiter
-			// must be reset.
 		    . . . . .
 		    . . . Math.sin . . .
 			// Math functions do not need
@@ -76,10 +67,9 @@ numbers, and debugging is:
 
 		// Check that next thing is ZZZ.
 		// WARNING: ZZZ must be terminated by
-		// whitespace.  If not use findInLine.
+		// whitespace.
 		//
-		String ZZZ = scan.next();
-		assert ( ZZZ.equals ( "ZZZ" ) );
+		assert ( scan.next().equals ( "ZZZ" ) );
 
 		// Skip line feed at end of line.
 		// Needed because we must be at a line
@@ -97,10 +87,26 @@ numbers, and debugging is:
 		// Output.
 		//
 		printf ( ... );
+		System.out.println ( ... + ... + ... );
+
 	    }
 	}
     }
 
+
+Remember that the main class of a program must have the
+same name as the program, and also that everything
+declared directly within this class, including subclasses,
+must be `static'.
+
+It is fairly common for JAVA programs that run well for
+the contestant to crash when run by the judge.  The
+usual cause is judge's input data that triggers an ex-
+ception not observed with contestant input data.  The
+best debugging strategy is to type into the PPPP.in file
+a lot of legal input data that might break the program,
+so your program will be run against it by `make submit'
+and you will observe any crash.
 
 
 Input
@@ -118,58 +124,21 @@ After reading and printing the test case name line, the
 rest of the test case data is read with Scanner
 functions such as `next', `hasNextDouble' `nextDouble',
 etc.  WARNING: this assumes that input tokens are
-delimited by whitespace.
+delimited by whitespace.  Dealing with delimiters other
+that whitespace is tricky if the delimiters are also
+important input, and one method of doing so is described
+in the Delimiter Tokens section below.
 
-Reading data with delimiters like `,', `(', and `)'
-can be done by setting the delimiter pattern of the
-scanner to include these delimiters, using `next...'
-to read numbers, and using `findInLine' to read the
-delimiters.  For example, to read
-
-	( 5.6,7.8, -9.3)
-
-use code such as
-
-    Pattern openpar ( "\\G *(" );
-    Pattern comma ( "\\G *," );
-    Pattern closepar ( "\\G *)" );
-    scan.useDelimiter ( "[ ,()]+" );
-    assert ( scan.findInLine ( openpar ) );
-    while  ( ! scan.findInLine ( closepar ) )
-    {
-        double d = scan.nextDouble();
-	. . . . .
-	assert ( scan.findInLine ( comma )
-	         ||
-		 scan.findInLine ( closepar ) );
-    }
-
-data may consist of numbers, perhaps with a few
-characters like `*' thrown in to indicate the end of a
+Data may consist of numbers, perhaps with a non-number
+tokens like `*' thrown in to indicate the end of a
 sequence of numbers.  The lines containing numbers may
 be very long, so they should be read one number at a
-time with `scanf', and NOT read in first with `fgets'.
-A `*' may be detected by looking at the return value
-of `scanf', which is the number of numbers actually
-read.  If you are expecting 4 integers or a `*', use
-`scanf ( "%d%d%d%d", ... )' which returns 4 if it read
-4 integers and 0 if it encountered a `*'.  Then in the
-latter case you must skip the `*', which can be done
-by `scanf ( " *" )' which skips first the whitespace
-between the last number read and the input `*', and
-then skips the input `*'.
+time and not read as a line.
 
 See the `summer' demonstration problem solution which
 reads numbers.
-
-Floating point numbers can be read by `scanf' by using
-%lf instead of %d, and non-numbers can be read by using
-%s or %c - see synopsis below.  Sometimes a problem will
-specifically ask you to read lines to be processed as
-character strings, in which case use `fgets' and be sure
-your line buffer is long enough.
 
-On some problems there are no test case name lines but
+For some problems there are no test case name lines but
 instead each test case has one input line containing
 text and one output line containing text.  For these
 the test case input line is read the same way as the
@@ -179,6 +148,7 @@ See the `reverser' demonstration problem solution which
 reads text lines.
 
 
+
 Output
 ------
 
@@ -186,14 +156,21 @@ Output is written to the standard output; you MUST NOT
 open any file for output; you MUST NOT write to the
 standard error output.
 
-Output can be written with printf.  Some formats that
-may be useful are "%.3f" to print a double with exactly
-3 decimal places in as few columns as possible, "%10.3f"
-to print the double right adjusted in 10 columns, "%10s"
-to print a string right adjusted in 10 columns, and
-"%-10s" to print a string LEFT adjusted in 10 columns.
-Here the numbers 3 and 10 are merely representative, and
-can be replaced by any other non-zero positive integers.
+Output can be written using System.out.print{ln} and the
++ string concatenation operator, or it can be written
+using System.out.format.  The latter is better if
+numbers must be written with specific numbers of decimal
+places.  Some formats that may be useful are "%.3f" to
+print a double with exactly 3 decimal places in as few
+columns as possible, "%10.3f" to print the double right
+adjusted in 10 columns, "%10s" to print a string right
+adjusted in 10 columns, and "%-10s" to print a string
+LEFT adjusted in 10 columns.  Here the numbers 3 and 10
+are merely representative, and can be replaced by any
+other non-zero positive integers.
+
+When using System.out.format, use "%n" to output an
+end-of-line.
 
 See the `summer' demonstration problem solution which
 outputs floating point `double's.
@@ -209,140 +186,183 @@ and only if your program is passed an argument.
 
 The above program defines `debug' to be true if and
 only if the program is called with one or more argu-
-ments, and defines dprintf to do what printf does if
-and only if `debug' is true.  Thus dprintf can be used
-to print debugging information.
+ments, and defines dprintf to do what System.out.
+format does if and only if `debug' is true.  Thus
+dprintf can be used to print debugging information.
 
 Debugging is best done with information printed by
-`dprintf', and not with a debugger like `gdb'.  The
-exception is debugging programs that crash or go into
-an infinite loop, which is best done with a debugger
-like `gdb'.  See `help gdb' for how to use `gdb' on
-programs that crash or go into an infinite loop.
+`dprintf', and not with a debugger.  In JAVA, crashes
+usually give the line number where the fault occured,
+so using the debugger is not required even for crashes.
+As the standard jdb debugger is difficult to use
+directly, a special program is provided to run it if
+you must: see `help jdebug' file.
 
 It is also a good idea to use `assert' statements
 to check that assumptions you have made are valid during
-actual program execution.  For example, if you are
-certain that scanf should read 3 integers, then instead
-of writing
+actual program execution.  For example, if you expect
+the next input token to be "ZZZ" you can use
 
-	scanf ( "%d%d%d", ... );
+	assert ( scan.next().equals ( "ZZZ" ) );
 
-it might be better to write
+Java is run with assert statement execution enabled
+(by the -ae option to the `java(1)' interpreter), so
+you can count on assert statements executing (which
+would not be true in other programming environments).
 
-	assert ( scanf ( "%d%d%d", ... ) == 3 );
-
-Similarly, you could replace `scanf ( " *" )' in the
-above code by
-
-	assert ( scanf ( " %c", line[0] ) == 1 );
-	assert ( line[0] == '*' );
-
 See the `summer' demonstration problem solution which
 uses dprintf and assert.
+
+Delimiter Tokens
+--------- ------
+
+If you want to use characters like `,' to delimit
+numbers, but also want to make `,' into a token, you
+have to use findWithinHorizon and some care.  The
+following code makes `,', `(', `)', and end-of-line
+(represented by `\n') into both delimiters and
+tokens.  The code also provides a means of determining
+whether a token String represents a number and extract-
+ing that number.
+
+    import java.util.Scanner;
+    import java.util.regex.Pattern;
+
+    public class PPP {
+
+	static Scanner s =
+	    new Scanner ( System.in ).useDelimiter
+	        ( "[ \t\f,()\n]+" );
+	static Pattern p =
+	    Pattern.compile ( "\\G[ \t\f]([,():\n])" );
+
+	// Return next token or null if end of file.
+	//
+	static String get_token ( void )
+	{
+	    String token = s.findWithinHorizon ( p, 0 );
+	    if ( s != null )
+	        token = s.match().group ( 1 );
+	    else if ( s.hasNext )
+	        token = s.next();
+	    return token;
+	}
+
+	// Return Double if string is a number, or null
+	// if not.  doubleValue() of the Double returns
+	// the number proper.
+	//
+	Double get_number ( String s )
+	{
+	    try { return Double.valueOf ( s ); }
+	    catch ( NumberFormatException e )
+	        { return null; }
+	}
+
+The call to findWithinHorizon looks to see if the input
+is just before whitespace other than end-of-line
+followed by one of the characters `,', `(', `)', or
+`\n'.  If so, non-null is returned and the call to
+s.match().group(1) extracts the substring that matched
+just the one character.  Groups are delimited by ()
+parentheses in the pattern regular expression, so the
+group in this case matches `([,():\n])' in the regular
+expression.  If there is no match, then hasNext() is
+called to see if there is a next token delimited by the
+delimiter specified by useDelimiter, and if yes next()
+is called to get the token, or if no then the token is
+left as null.
 
 
 Function and Macro Synopsis
 -------- --- ----- --------
 
 You can get full documentation of the functions
-mentioned above plus other useful information by using
-the UNIX commands:
+mentioned above plus other useful information by from
+your favorite web site if you are permitted to use it,
+or in the case of ACM programming contests, from the
+`javahelp' command that accesses local documentation.
+Some useful classes are
 
-	man scanf
-	man fgets
-	man 3 printf
-	man assert
-	man math.h
-	man limits.h
-	man float.h
+	String
+	Formatter
+	Hashtable
+	Double
+	Math
 
-The following is an extract from `man' pages of details
-needed to use the functions mentioned above, and also a
-few numeric constants.  Here we assume you already know
-something about how to use `scanf' and `printf', so we
+The following is an extract from JAVA documentation of
+details needed to use common functions and numeric
+numeric constants.  Here we assume you already know
+something about how to use the above classes so we
 do not have to explain them from scratch.
 
 Note that an `int' is guaranteed to be at least 32 bits
-and a `long long int' is guaranteed to be at least 64
-bits.  Floating point computations should always be done
+and a `long' is guaranteed to be at least 64 bits.
+Floating point computations should always be done
 using `double's, and NOT `float's, to avoid having too
 little precision.
 
-int scanf ( const char * format, ... )
+import java.util.Scanner;
+import java.util.regex.Pattern;
+Scanner s = new Scanner ( System.in );
+Pattern p = Pattern.compile ( "\\G[ \t\f]([,():\n])" );
 
-    Format can contain the following directives:
+    s.hasNextLine()   Returns true iff nextLine() will
+    		      not raise an exception.
+    s.nextLine()      Returns a String consisting of all
+    		      input up to the next line end, and
+		      skips that input and the line end.
 
-    %d		First skips whitespace.  Then if this is
-    		followed by non-whitespace with the
-		format of an `int', reads the `int'.
+    s.hasNextDouble() Returns true iff nextDouble(),
+    s.hasNextInt()    nextInt(), nextLong() will not
+    s.hasNextLong()   raise an exception.
 
-    %lld	Ditto but for `long long int' instead of
-    		`int'.
+    s.nextDouble()    Returns next token which must be a
+    s.nextInt()       number as a double, int, or long.
+    s.nextLong()      Number must be delimited by white-
+    		      space (if useDelimiter not used).
 
-    %lf		Ditto but for `double' instead of `int'.
+    s.hasNext()	      Returns true if next() will not
+    		      raise and exception.
+    s.next()	      Returns next token.  Token is a
+    		      non-empty String delimited by
+		      whitespace (if useDelimiter is not
+		      used).
 
-    %s		Ditto but for a string of non-whitespace
-    		characters, instead of `int'.
+    s.useDelimiter ( "[ \t\f\n,():]+" )
+	Reset token delimiter to a regular expression.
+	The example given makes whitespace and the
+	characters `,', `(', `)', `:' delimiters.
 
-    %c		Scans a single character.  Does NOT skip
-    		preceding whitespace.
+    s.findWithinHorizon ( p, 0 )
+        Return next String matching the Pattern p if
+	such exists, or null otherwise.  For the
+	example pattern above, to get a match the
+	input must consist of whitespace other than
+	end of line followed by one of the characters
+	`,', `(', `)', `:', or end of line (\n).
+    s.match().group ( 1 )
+        Return as a String the part of the last find-
+	WithinHorizon matched string that matches the
+	first () parenthesized group within the pat-
+	tern's regular expression.  If our example
+	pattern is used, one of ",", "(", ")", or "\n"
+	will be returned.
 
-    whitespace	Skips any amount of whitespace, includ-
-    		ing none.  Line feeds are whitespace in
-		this sense.
+                    
+System.out.format ( format, ... )
 
-    other	Skips just the given character.  E.g.,
-    character	if `*' is in the format, then `*' must
-    		be next in the input if the input is to
-		move forward.  If you want to skip
-		whitespace followed by `*', you MUST put
-		" *" and NOT just "*" in the format.
+    Format is a String that can contain the following
+    directives, in in which W and P stand for sequences
+    of decimal digits, where W is used for `widths' and
+    P for `precisions':
 
-    Scanf returns the number of items successfully read
-    by %... format directives.  Thus if you are expect-
-    ing either a float or a `*', `scanf ( "%lf", ... )'
-    will return 1 if a number was found and read, or 0
-    if a `*' was found and NOT read.  Note that if it
-    returns 0 it will have skipped the whitespace before
-    the `*', so the `*' will be next.
+    %d		Outputs an `int' or `long' as a decimal
+                integer with no spaces before or after.
 
-
-char * fgets ( char * buffer, sizeof ( buffer ), stdin )
+    %Wd		Outputs an `int' or `long' as a decimal
+                integer right adjusted in W columns.
 
-    Read characters from the standard input into the
-    buffer until a line feed is read and stored, and
-    then store a '\0' in the buffer.  If there are NO
-    characters to be read because we are at the end of
-    file, return NULL, which can be interpreted as
-    `false'; otherwise return the address of the buffer,
-    which can be interpreted as `true'.
-
-    Note: `fgets' as it is used above is equivalent to
-    `gets ( buffer )', but the `gets' function has been
-    `deprecated', meaning that implementations need not
-    and eventually will not support it.
-
-
-int printf ( const char * format, ... )
-
-    Format can contain the following directives, in
-    in which W and P stand for sequences of decimal
-    digits, where W is used for `widths' and P for
-    `precisions':
-
-    %d		Outputs an `int' as a decimal integer
-    		with no spaces before or after.
-
-    %Wd		Outputs an `int' as a decimal integer
-    		right adjusted in W columns.
-
-    %lld	Outputs a `long long int' as a decimal
-    		integer with no spaces before or after.
-
-    %Wlld	Outputs a `long long int' as a decimal
-    		integer right adjusted in W columns.
-
     %f		Outputs a `double' as a floating point
     		number with 6 decimal places and no
 		spaces before or after.
@@ -357,70 +377,33 @@ int printf ( const char * format, ... )
     %W.Pf	Ditto but with P decimal places instead
     		of 6 decimal places.
 
-    %s		Outputs a `const char *' or `char *'
-    		string with no spaces before or after.
+    %s		Outputs a String (or char[]) with no
+    		no spaces before or after.
 
-    %Ws		Ditto but outputs the string RIGHT
+    %Ws		Ditto but outputs the String RIGHT
     		adjusted in W columns.
 
-    %-Ws	Ditto but outputs the string LEFT
+    %-Ws	Ditto but outputs the String LEFT
     		adjusted in W columns.
 
-    %c		Outputs a `char' as an ASCII character
+    %c		Outputs a `char' as UNICODE characters
     		with no spaces before or after.
     		
 
-INT_MAX, INT_MIN, LLONG_MAX, LLONG_MIN, DBL_MAX, DBL_MIN
+Integer.MAX_VALUE, Integer.MIN_VALUE, Long.MAX_VALUE,
+Long.MIN_VALUE, Double.MAX_VALUE, Double.MIN_VALUE.
 
     These are the maximum and minimum numbers that can
-    be stored respectively in an `int', `long long int',
-    or `double'.  The integer values are from `limits.h'
-    and the floating point values from `float.h'.
+    be stored respectively in an `int', `long', or
+    `double'.
 
-M_PI, M_E
+Math.PI, Math.E
+Math.abs, Math.sin, Math.cos, Math.atan2, Math.exp.
 
-    The mathematical constants PI and e from math.h.
+    The mathematical constants PI and e, and typical
+    math functions.  These must have the `Math.'
+    prefix.
 
-
-File:		c
-Author:		Bob Walton <walton@seas.harvard.edu>
-Date:		See top of file.
-
-The authors have placed this file in the public domain;
-they make no warranty and accept no liability for this
-file.
-
-RCS Info (may not be true date or author):
-
-    $Author: walton $
-    $Date: 2013/01/08 18:10:33 $
-    $RCSfile: java,v $
-    $Revision: 1.12 $
-
-
-JAVA API documentation is usually available on-line
-during a formal contest.  The command to access it is:
-
-	javahelp
-
-In a formal contest, you should NOT use other means to
-access such documentation, as using the internet is a
-violation of formal contest rules.
-
-The next page has a suitable structure for a program
-that solves a problem named PPPP that needs only line
-input and character-within-line computations.
-
-It is fairly common for JAVA programs that run well for
-the contestant to crash when run by the judge.  The
-usual cause is judge's input data that triggers an ex-
-ception not observed with contestant input data.  The
-best debugging strategy is to type into the PPPP.in file
-a lot of legal input data that might break the program,
-so your program will be run against it by `make submit'
-and you will observe any crash.
-
-
 
 
 
@@ -435,6 +418,6 @@ file.
 RCS Info (may not be true date or author):
 
     $Author: walton $
-    $Date: 2013/01/08 18:10:33 $
+    $Date: 2013/01/10 09:40:55 $
     $RCSfile: java,v $
-    $Revision: 1.12 $
+    $Revision: 1.13 $
