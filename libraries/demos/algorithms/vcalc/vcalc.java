@@ -2,7 +2,7 @@
 //
 // File:	vcalc.java
 // Authors:	Bob Walton (walton@seas.harvard.edu)
-// Date:	Thu Jan 10 04:53:48 EST 2013
+// Date:	Thu Jan 10 07:14:59 EST 2013
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -342,7 +342,6 @@ public class vcalc {
 	    else 
 	        v.print();
 	}
-	println();
     }
 
     static void execute_assign ( String variable )
@@ -553,7 +552,15 @@ public class vcalc {
 	    if ( token.equals ( "clear" ) )
 	        execute_clear();
 	    else if ( token.equals ( "print" ) )
+	    {
 	        execute_print();
+		print ( " " );
+	    }
+	    else if ( token.equals ( "println" ) )
+	    {
+	        execute_print();
+		println();
+	    }
 	    else
 	    {
 	        String op = get_token();
