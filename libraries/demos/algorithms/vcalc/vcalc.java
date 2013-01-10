@@ -2,7 +2,7 @@
 //
 // File:	vcalc.java
 // Authors:	Bob Walton (walton@seas.harvard.edu)
-// Date:	Thu Jan 10 02:22:25 EST 2013
+// Date:	Thu Jan 10 04:53:48 EST 2013
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -84,7 +84,7 @@ public class vcalc {
 	else if ( scan.hasNext() )
 	    last_token = scan.next();
 
-	dprintln ( "TOKEN " + last_token );
+	dprint ( "[TOKEN " + last_token + "]" );
 	return last_token;
     }
 
@@ -529,7 +529,28 @@ public class vcalc {
 	{
 	    String token = get_token();
 	    if ( token == null ) break;
-	    else if ( token.equals ( "clear" ) )
+
+	    if ( token.equals ( "if" ) )
+	    {
+	        Value v = get_value();
+		require_boolean ( v );
+		if ( ! v.b )
+		{
+		    while ( true )
+		    {
+		        token = get_token();
+			if ( token == null
+			     ||
+			     token.equals ( "\n" ) )
+			    break;
+		    }
+		    continue;
+		}
+		skip ( ":" );
+		token = get_token();
+	    }
+
+	    if ( token.equals ( "clear" ) )
 	        execute_clear();
 	    else if ( token.equals ( "print" ) )
 	        execute_print();
@@ -545,4 +566,3 @@ public class vcalc {
 	}
     }
 }
-
