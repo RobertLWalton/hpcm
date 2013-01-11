@@ -1,0 +1,143 @@
+Debugging with JDEBUG       Fri Jan 11 01:58:34 EST 2013
+
+
+Introduction
+------------
+
+Jdebug is an interface to the jdb debugger which is
+needed because jdb by itself does not allow the program
+being debugged to have a standard input that is distinct
+from the standard input of the jdb debugger itself.
+
+It is recommended that a debugger like jdebug not be
+used unless your program crashes or goes into an
+infinite loop.  In all other cases it is better to put
+print statements (such as dprintf or dprintln - see
+`help java') into your code to print just exactly what
+you need to see.
+
+So in this help file we assume you are debugging a
+crash or infinite loop.
+
+
+Running the Program
+------- --- -------
+
+Assume the program you are debugging is named PPP and
+its input file is PPP.in.  Then
+
+	% jdebug PPP.in PPP
+	[main 1] cont
+
+will start the program in the debugger with PPP.in as
+its input file.  Here `cont' is the continue command.
+
+If the program is going to crash, it will do so.  Other-
+wise if the program loops indefinitely, wait until it is
+so looping, type a carriage return to get a prompt, and
+then type
+
+	> suspend
+	> thread 1
+
+to first stop the program and then tell the debugger
+that you want to look at the main thread, thread `1'.
+
+
+
+Examining a Crashed or Stopped Program
+--------- - ------- -- ------- -------
+
+Once stopped execute
+
+	> where
+
+to see the backtrace of methods that have been called.
+Each method call is referred to as a `frame' and the
+`where' command lists the frames in the stack.  The
+debugger has a `current frame' that it is looking at,
+and initially the current frame is where execution
+stopped because of the `suspend' command or the throw
+of an uncaught exception.
+
+To see the execution point in the current frame and
+the local variables use the commands
+
+	> list
+	> locals
+
+To move up or down the stack and to see where in the
+stack you are use the commands
+
+	> up
+	> where
+	> down
+	> where
+
+The `up' and `down' commands change the current frame.
+
+The following is a synopsis of useful commands.
+
+    Continue:			    > cont
+
+    Go to next statement in current
+    frame, skipping calls:	    > next
+
+    Do N nexts:			    > N next
+
+    Go to next statement in
+    current frame or frame
+    called by current frame:	    > step
+
+    Do N steps:			    > N step
+
+    Print local variables:	    > locals
+
+    Print the execution point
+    in the current frame:	    > list
+
+    Print the part of the stack
+    that ends with the current
+    frame:			    > where
+
+    Make the caller of the
+    current frame current:	    > up
+
+    Make the method called by
+    the current frame current:	    > down
+
+    Set a breakpoint at line N:	    > stop at PPP:N
+    Here PPP is the program name.
+
+    Continue to next breakpoint:    > cont
+
+    List breakpoints:		    > clear
+
+    Delete breakpoint at line N:    > clear PPP:N
+    Here PPP is the program name.
+
+    Trace methods during execution: > trace go methods
+
+    Print value of expression E:    > print E
+    A static variable V in class
+    PPP is denoted by `PPP.V'.
+
+    Dump contents of object E:      > dump E
+
+    Output documentation:	    > help
+
+
+File:		jdebug
+Author:		Bob Walton <walton@seas.harvard.edu>
+Date:		See top of file.
+
+The authors have placed this file in the public domain;
+they make no warranty and accept no liability for this
+file.
+
+RCS Info (may not be true date or author):
+
+    $Author: walton $
+    $Date: 2013/01/11 08:38:43 $
+    $RCSfile: jdebug,v $
+    $Revision: 1.1 $
