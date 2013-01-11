@@ -2,7 +2,7 @@
 //
 // File:	vcalc.java
 // Authors:	Bob Walton (walton@seas.harvard.edu)
-// Date:	Thu Jan 10 10:08:36 EST 2013
+// Date:	Fri Jan 11 10:37:27 EST 2013
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -37,23 +37,28 @@ public class vcalc {
         if ( debug ) System.out.println ( s );
     }
 
-    final static int BOOLEAN  = 1;
-    final static int SCALAR   = 2;
-    final static int VECTOR   = 3;
-
     final static Scanner scan =
         new Scanner ( System.in )
 	        .useDelimiter ( "[(),: \t\f\n]+" );
 
-    // Returns next token or null if end of file.
-    // Implements one-token backup.  Implements
-    // line_number.
+    // Returns next token or EOL if end of line or
+    // EOF if end of file.  We make EOL and EOF be
+    // printable strings as tokens are printed in
+    // many error messages.  Implements one-token
+    // backup.  Implements line_number.
     //
-    static String last_token = new String ( "\n" );
+    final static String EOL =
+        new String ( "(END-OF-LINE)" );
+    final static String EOF =
+        new String ( "(END-OF-FILE)" );
     static boolean backup = false;
+        // Set backup = true to backup.
     static int line_number = 0;
+        // Current line number; 1, 2, 3, ...
+    //
+    static String last_token = EOL;
     static Pattern comment =
-        Pattern.compile ( "\\G[ \t\f]*//[^\n]*\n" );
+        Pattern.compile ( "\\G[ \t\f]*(//[^\n]*)?\n" );
     static Pattern separator =
         Pattern.compile ( "\\G[ \t\f]*([(),:\n])" );
     //
@@ -64,7 +69,7 @@ public class vcalc {
 	    backup = false;
 	    return last_token;
 	}
-	if ( last_token.equals ( "\n" ) )
+	if ( last_token.equals ( EOL ) )
 	{
 	    while ( true )
 	    {
@@ -80,11 +85,17 @@ public class vcalc {
         last_token =
 	    scan.findWithinHorizon ( separator, 0 );
 	if ( last_token != null )
+	{
 	    last_token = scan.match().group ( 1 );
+	    if ( last_token.equals ( "\n" ) )
+		last_token = EOL;
+	}
 	else if ( scan.hasNext() )
 	    last_token = scan.next();
+	else
+	    last_token = EOF;
 
-	dprint ( "[TOKEN " + last_token + "]" );
+	dprint ( "{" + last_token + "}" );
 	return last_token;
     }
 
@@ -121,17 +132,17 @@ public class vcalc {
 	System.exit ( 1 );
     }
 
+    static void check_not_eof ( String token )
+    {
+       if ( token == EOF )
+          error ( "unexpected end of file" );
+    }
+
     static void skip ( String desired )
     {
         String token = get_token();
-	if ( token == null
-	     ||
-	     ! token.equals ( desired ) )
+	if ( ! token.equals ( desired ) )
 	{
-	    if ( token == null )
-	        token = "END-OF-FILE";
-	    if ( desired.equals ( "\n" ) )
-	        desired = "END-OF-LINE";
 	    error ( "expected `" + desired +
 	            "' but found `" + token + "'" );
 	}
@@ -158,6 +169,10 @@ public class vcalc {
     static DecimalFormat decimal =
         new DecimalFormat ( "0.###############" );
 
+    final static int BOOLEAN  = 1;
+    final static int SCALAR   = 2;
+    final static int VECTOR   = 3;
+
     static class Value {
         int type;
 	boolean b;	// Value if BOOLEAN.
@@ -169,7 +184,8 @@ public class vcalc {
 	    if ( type == BOOLEAN )
 	        System.out.print ( b );
 	    else if ( type == SCALAR )
-	        System.out.print ( decimal.format ( s ) );
+	        System.out.print
+		    ( decimal.format ( s ) );
 	    else if ( type == VECTOR )
 	        System.out.format
 		    ( "(%s, %s)",
@@ -193,9 +209,11 @@ public class vcalc {
     static void require_boolean ( Value v1, Value v2 )
     {
         if ( v1.type != BOOLEAN )
-	    error ( "first operand should be boolean" );
+	    error
+	        ( "first operand should be boolean" );
         else if ( v2.type != BOOLEAN )
-	    error ( "second operand should be boolean" );
+	    error
+	        ( "second operand should be boolean" );
     }
 
     static void require_scalar ( Value v1 )
@@ -327,7 +345,7 @@ public class vcalc {
 	while ( true )
 	{
 	    String token = get_token();
-	    if ( token.equals ( "\n" ) ) break;
+	    if ( token.equals ( EOL ) ) break;
 	    check_variable ( token );
 	    variable_table.remove ( token );
 	    found = true;
@@ -342,7 +360,7 @@ public class vcalc {
 	while ( true )
 	{
 	    String token = get_token();
-	    if ( token.equals ( "\n" ) ) break;
+	    if ( token.equals ( EOL ) ) break;
 	    if ( first )
 		first = false;
 	    else
@@ -544,16 +562,15 @@ public class vcalc {
 		v1.b = ( v1.s >= v2.s );
 		v1.type = BOOLEAN;
 	    }
-	    else if ( ! op.equals ( "\n" ) )
+	    else if ( ! op.equals ( EOL ) )
 	        error ( "`" + op + "' unrecognized" );
 	    else backup = true;
 	}
 
-	skip ( "\n" );
+	skip ( EOL );
 
 	variable_table.put ( variable, v1 );
     }
-	
 
 
     public static void main ( String[] args )
@@ -565,7 +582,7 @@ public class vcalc {
 	while ( true )
 	{
 	    String token = get_token();
-	    if ( token == null ) break;
+	    if ( token == EOF ) break;
 
 	    if ( token.equals ( "if" ) )
 	    {
@@ -576,9 +593,8 @@ public class vcalc {
 		    while ( true )
 		    {
 		        token = get_token();
-			if ( token == null
-			     ||
-			     token.equals ( "\n" ) )
+			check_not_eof ( token );
+			if ( token.equals ( EOL ) )
 			    break;
 		    }
 		    continue;
