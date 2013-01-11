@@ -4,7 +4,7 @@
 #
 # File:		jdebug
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Thu Jan 10 11:45:35 EST 2013
+# Date:		Fri Jan 11 01:46:46 EST 2013
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,22 +13,23 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2013/01/10 17:24:27 $
+#   $Date: 2013/01/11 06:46:52 $
 #   $RCSfile: jdebug,v $
-#   $Revision: 1.1 $
+#   $Revision: 1.2 $
 
 case "$1" in
      -doc* )
      		echo "
-jdebug program inputfile
+jdebug inputfile program args ...
 
     Invokes the jdb debugger on an instance of
 
-    	java -ae program < inputfile
+    	java -ae < inputfile program args ...
 
-    Here -ae enables assert statement execution.
-    jdb and the program share the standard output,
-    but have separate standard inputs."
+    Here -ae enables assert statement execution.  Jdb
+    and the program share the standard output, but have
+    separate standard inputs.  See \`help jdebug' for
+    basic jdb command descriptions."
 
     		exit 1
 		;;
@@ -36,10 +37,13 @@ esac
 
 address=`expr \( $$ \% 50000 \) + 10000` 
 agent=-agentlib:jdwp=transport=dt_socket
-java $agent,address=$address,server=y,suspend=y $1 <$2 &
+input="$1"
+program="$2"
+shift
 
+java $agent,address=$address,server=y,suspend=y \
+     <$input -ae $@
 child=$!
+trap "kill -KILL $child" EXIT
 
 jdb -attach $address
-
-kill -9 $child
