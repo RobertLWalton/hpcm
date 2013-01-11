@@ -1,4 +1,4 @@
-JAVA Help		    Tue Jan  8 02:54:51 EST 2013
+JAVA Help		    Thu Jan 10 17:36:25 EST 2013
 
 
 JAVA Language Program Structure 
@@ -36,6 +36,9 @@ numbers, and debugging is:
 	}
 
 	static class MyClass {
+	    // If you define classes, remember to make
+	    // them static.
+	    //
 	    . . . . .
 	}
 
@@ -86,8 +89,11 @@ numbers, and debugging is:
 
 		// Output.
 		//
-		printf ( ... );
+		printf ( "XXX %.6f XXX", ... );
 		System.out.println ( ... + ... + ... );
+		    // Numbers printed with println or
+		    // print may use exponential nota-
+		    // tion.
 
 	    }
 	}
@@ -106,14 +112,14 @@ ception not observed with contestant input data.  The
 best debugging strategy is to type into the PPPP.in file
 a lot of legal input data that might break the program,
 so your program will be run against it by `make submit'
-and you will observe any crash.
+and you will observe any crash before you submit.
 
 
 Input
 -----
 
-Input is read from the standard input; you MUST NOT open
-any file for input.
+Input is read from the standard input, System.in; you
+MUST NOT open any file for input.
 
 Test cases begin with a test case name line checked for
 by Scanner `hasNextLine' and read by `nextLine'.  As
@@ -152,22 +158,23 @@ reads text lines.
 Output
 ------
 
-Output is written to the standard output; you MUST NOT
-open any file for output; you MUST NOT write to the
-standard error output.
+Output is written to the standard output, System.out;
+you MUST NOT open any file for output; you MUST NOT
+write to the standard error output.
 
 Output can be written using System.out.print{ln} and the
 + string concatenation operator, or it can be written
-using System.out.format.  The latter is better if
-numbers must be written with specific numbers of decimal
-places.  Some formats that may be useful are "%.3f" to
-print a double with exactly 3 decimal places in as few
-columns as possible, "%10.3f" to print the double right
-adjusted in 10 columns, "%10s" to print a string right
-adjusted in 10 columns, and "%-10s" to print a string
-LEFT adjusted in 10 columns.  Here the numbers 3 and 10
-are merely representative, and can be replaced by any
-other non-zero positive integers.
+using System.out.format.  The latter is necessary if
+numbers must be written with decimal places, as convera-
+ting numbers to Strings with + may produce numbers in
+exponential notation.  Some formats that may be useful
+are "%.3f" to print a double with exactly 3 decimal
+places in as few columns as possible, "%10.3f" to print
+the double right adjusted in 10 columns, "%10s" to print
+a string right adjusted in 10 columns, and "%-10s" to
+print a string LEFT adjusted in 10 columns.  Here the
+numbers 3 and 10 are merely representative, and can be
+replaced by any other non-zero positive integers.
 
 When using System.out.format, use "%n" to output an
 end-of-line.
@@ -196,7 +203,9 @@ usually give the line number where the fault occured,
 so using the debugger is not required even for crashes.
 As the standard jdb debugger is difficult to use
 directly, a special program is provided to run it if
-you must: see `help jdebug' file.
+you must: see `help jdebug' file.  This is of most use
+if your program goes into an infinite loop.
+[DOES NOT WORK!]
 
 It is also a good idea to use `assert' statements
 to check that assumptions you have made are valid during
@@ -213,13 +222,14 @@ would not be true in other programming environments).
 See the `summer' demonstration problem solution which
 uses dprintf and assert.
 
+
 Delimiter Tokens
 --------- ------
 
 If you want to use characters like `,' to delimit
 numbers, but also want to make `,' into a token, you
 have to use findWithinHorizon and some care.  The
-following code makes `,', `(', `)', and end-of-line
+following code makes `,', `(', `)', `:', and end-of-line
 (represented by `\n') into both delimiters and
 tokens.  The code also provides a means of determining
 whether a token String represents a number and extract-
@@ -232,7 +242,7 @@ ing that number.
 
 	static Scanner s =
 	    new Scanner ( System.in ).useDelimiter
-	        ( "[ \t\f,()\n]+" );
+	        ( "[ \t\f,():\n]+" );
 	static Pattern p =
 	    Pattern.compile ( "\\G[ \t\f]([,():\n])" );
 
@@ -260,33 +270,34 @@ ing that number.
 	}
 
 The call to findWithinHorizon looks to see if the input
-is just before whitespace other than end-of-line
-followed by one of the characters `,', `(', `)', or
-`\n'.  If so, non-null is returned and the call to
-s.match().group(1) extracts the substring that matched
-just the one character.  Groups are delimited by ()
-parentheses in the pattern regular expression, so the
-group in this case matches `([,():\n])' in the regular
-expression.  If there is no match, then hasNext() is
-called to see if there is a next token delimited by the
-delimiter specified by useDelimiter, and if yes next()
-is called to get the token, or if no then the token is
-left as null.
+is just before whitespace within a line followed by one
+of the characters `,', `(', `)', `:', or `\n'.  If so
+non-null is returned and the call to s.match().group(1)
+extracts justs the last character of the match.  Groups
+are delimited by () parentheses in the pattern regular
+expression, so the group in this case matches
+`([,():\n])' in the regular expression.  If there is no
+match, then hasNext() is called to see if there is a
+next token delimited by the delimiter specified by
+useDelimiter, and if yes next() is called to get the
+token, or if no then the token is left as null.  If
+a token is gotten, get_number can be used to decide if
+the token is a number and extract the number if yes.
 
 
 Function and Macro Synopsis
 -------- --- ----- --------
 
-You can get full documentation of the functions
-mentioned above plus other useful information by from
-your favorite web site if you are permitted to use it,
-or in the case of ACM programming contests, from the
+You can get full documentation of the functions mention-
+ed above plus other useful information from your favor-
+ite web site if you are permitted to use the web, or in
+the case of ACM programming contests, from the
 `javahelp' command that accesses local documentation.
 Some useful classes are
 
 	String
+	Scanner
 	Formatter
-	Hashtable
 	Double
 	Math
 
@@ -314,7 +325,7 @@ Pattern p = Pattern.compile ( "\\G[ \t\f]([,():\n])" );
 		      skips that input and the line end.
 
     s.hasNextDouble() Returns true iff nextDouble(),
-    s.hasNextInt()    nextInt(), nextLong() will not
+    s.hasNextInt()    nextInt(), or nextLong() will not
     s.hasNextLong()   raise an exception.
 
     s.nextDouble()    Returns next token which must be a
@@ -326,7 +337,7 @@ Pattern p = Pattern.compile ( "\\G[ \t\f]([,():\n])" );
     		      raise and exception.
     s.next()	      Returns next token.  Token is a
     		      non-empty String delimited by
-		      whitespace (if useDelimiter is not
+		      whitespace (if useDelimiter not
 		      used).
 
     s.useDelimiter ( "[ \t\f\n,():]+" )
@@ -338,16 +349,16 @@ Pattern p = Pattern.compile ( "\\G[ \t\f]([,():\n])" );
         Return next String matching the Pattern p if
 	such exists, or null otherwise.  For the
 	example pattern above, to get a match the
-	input must consist of whitespace other than
-	end of line followed by one of the characters
-	`,', `(', `)', `:', or end of line (\n).
+	input must consist of within line whitespace
+	followed by one of the characters `,', `(', `)',
+	`:', or end of line (\n).
     s.match().group ( 1 )
         Return as a String the part of the last find-
 	WithinHorizon matched string that matches the
 	first () parenthesized group within the pat-
 	tern's regular expression.  If our example
-	pattern is used, one of ",", "(", ")", or "\n"
-	will be returned.
+	pattern is used, one of ",", "(", ")", ":", or
+	"\n" will be returned.
 
                     
 System.out.format ( format, ... )
@@ -389,6 +400,16 @@ System.out.format ( format, ... )
     %c		Outputs a `char' as UNICODE characters
     		with no spaces before or after.
     		
+import java.text.DecimalFormat;
+DecimalFormat d =
+    new DecimalFormat ( "0.###############" );
+
+    d.format ( n )
+        Returns the number n converted to a string.
+	Given d as above, the result will have up to
+	15 decimal places with fraction low order 0's
+        suppressed, unlike the %.15f format which does
+	not suppress low order 0's.
 
 Integer.MAX_VALUE, Integer.MIN_VALUE, Long.MAX_VALUE,
 Long.MIN_VALUE, Double.MAX_VALUE, Double.MIN_VALUE.
@@ -418,6 +439,6 @@ file.
 RCS Info (may not be true date or author):
 
     $Author: walton $
-    $Date: 2013/01/10 09:40:55 $
+    $Date: 2013/01/11 01:21:53 $
     $RCSfile: java,v $
-    $Revision: 1.13 $
+    $Revision: 1.14 $
