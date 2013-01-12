@@ -2,7 +2,7 @@
 #
 #	File:	Makefile
 #	Author:	walton@seas.harvard.edu
-#	Sun Jan  6 08:16:51 EST 2013
+#	Sat Jan 12 04:56:37 EST 2013
 
 FULLHOST = problems1.seas.harvard.edu
 SHORTHOST = problems1
@@ -26,6 +26,7 @@ wiki-hpcm-2%.tgz:	never-there
 	  mysqldump -p${MYSQLPASSWORD} wiki_hpcm \
 		  > wiki-hpcm-2$*.mysql; \
 	  make -C ../images; \
+	  make -C ../print; \
 	  tar zcf $@ --exclude=CVS \
                      wiki-hpcm-2$*.mysql \
 		  -C ~/wiki images \
