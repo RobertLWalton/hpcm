@@ -2,7 +2,7 @@
 //
 // File:	vcalc.java
 // Authors:	Bob Walton (walton@seas.harvard.edu)
-// Date:	Fri Jan 11 10:37:27 EST 2013
+// Date:	Sat Jan 12 02:58:18 EST 2013
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -46,6 +46,9 @@ public class vcalc {
     // printable strings as tokens are printed in
     // many error messages.  Implements one-token
     // backup.  Implements line_number.
+    //
+    // All tokens are printable Strings and none are of
+    // zero length.
     //
     final static String EOL =
         new String ( "(END-OF-LINE)" );
@@ -99,6 +102,17 @@ public class vcalc {
 	return last_token;
     }
 
+    // Print error message and exit.
+    //
+    static void error ( String message )
+    {
+        println
+	    ( "ERROR in line " + line_number + ":" );
+        println
+	    ( "      " + message );
+	System.exit ( 1 );
+    }
+
     static Double token_to_number ( String token )
     {
         try { return Double.valueOf ( token ); }
@@ -121,17 +135,6 @@ public class vcalc {
 	return d.doubleValue();
     }
 
-    // Print error message and exit.
-    //
-    static void error ( String message )
-    {
-        println
-	    ( "ERROR in line " + line_number + ":" );
-        println
-	    ( "      " + message );
-	System.exit ( 1 );
-    }
-
     static void check_not_eof ( String token )
     {
        if ( token == EOF )
@@ -150,9 +153,7 @@ public class vcalc {
 
     static boolean is_variable ( String token )
     {
-	return ( token.length() > 0
-	         &&
-		 Character.isLetter
+	return ( Character.isLetter
 		     ( token.charAt ( 0 ) ) );
     }
 
@@ -174,25 +175,24 @@ public class vcalc {
     final static int VECTOR   = 3;
 
     static class Value {
-        int type;
+        int type;	// BOOLEAN, SCALAR, or VECTOR.
 	boolean b;	// Value if BOOLEAN.
 	double s;	// Value if SCALAR.
 	double x, y;	// Coordinates if VECTOR.
 
-	void print ( )
+	void printValue ( )
 	{
 	    if ( type == BOOLEAN )
-	        System.out.print ( b );
+	        print ( String.valueOf ( b ) );
 	    else if ( type == SCALAR )
-	        System.out.print
+	        print
 		    ( decimal.format ( s ) );
 	    else if ( type == VECTOR )
-	        System.out.format
-		    ( "(%s, %s)",
-		      decimal.format ( x ),
-		      decimal.format ( y ) );
+	        print (   "("  + decimal.format ( x )
+		        + ", " + decimal.format ( y )
+			+ ")" );
 	    else
-	        System.out.print
+	        print
 		    ( "BAD OBJECT TYPE " + type );
 	}
     }
@@ -257,6 +257,10 @@ public class vcalc {
         else if ( v2.type != SCALAR )
 	    error ( "second operand should be scalar" );
     }
+ 
+    // Require v1 to be SCALAR or VECTOR and return
+    // true if SCALAR, false if VECTOR.
+    //
     static boolean is_scalar ( Value v1 )
     {
         if ( v1.type == SCALAR )
@@ -269,6 +273,11 @@ public class vcalc {
 
 	return false; // never executed
     }
+ 
+    // Require v1 and v2 to be BOTH SCALAR or BOTH
+    // VECTOR and return true if SCALAR, false if
+    // VECTOR.
+    //
     static boolean is_scalar ( Value v1, Value v2 )
     {
 	if ( v1.type != v2.type )
@@ -339,6 +348,9 @@ public class vcalc {
 	return v;
     }
 
+    // Execute `clear ...' statement after `clear' token
+    // has been read and skipped.
+    //
     static void execute_clear ( )
     {
         boolean found = false;
@@ -354,6 +366,10 @@ public class vcalc {
 	    variable_table.clear();
     }
 
+    // Execute `print{ln} ...' statement after
+    // `print{ln}' token has been read and skipped,
+    // BUT do not output final space or line end.
+    //
     static void execute_print ( )
     {
         boolean first = true;
@@ -365,16 +381,20 @@ public class vcalc {
 		first = false;
 	    else
 	        print ( " " );
-	    Value v = (Value)
-	        variable_table.get ( token );
+	    Value v = variable_table.get ( token );
 
 	    if ( v == null )
 	        print ( token );
 	    else 
-	        v.print();
+	        v.printValue();
 	}
     }
 
+    // Execute `variable = ...' statement after
+    // `variable =' tokens have been read and skipped.
+    // Check variable token to be sure its a variable
+    // name.
+    //
     static void execute_assign ( String variable )
     {
         check_variable ( variable );
@@ -412,8 +432,17 @@ public class vcalc {
 	{
 	    v1 = get_value();
 	    require_vector ( v1 );
-	    v1.s = Math.atan2 ( v1.y, v1.x );
-	    v1.s *= 180.0 / Math.PI;
+	    if ( v1.x == 0 && v1.y == 0 )
+		error ( "angle of zero vector" );
+	    else if ( v1.x == 0 )
+	        v1.s = ( v1.y > 0 ? +90 : -90 );
+	    else if ( v1.y == 0 )
+	        v1.s = ( v1.x > 0 ? 0 : +180 );
+	    else
+	    {
+		v1.s = Math.atan2 ( v1.y, v1.x );
+		v1.s *= 180.0 / Math.PI;
+	    }
 	    v1.type = SCALAR;
 	}
 	else if ( op.equals ( "!" ) )
@@ -497,10 +526,13 @@ public class vcalc {
 		{
 		    switch ( k % 4 )
 		    {
-		    case 0: sin = 0; cos = 1; break;
-		    case 1: sin = 1; cos = 0; break;
-		    case 2: sin = 0; cos = -1; break;
-		    case 3: sin = -1; cos = 0; break;
+		    case  0: sin = 0; cos = 1; break;
+		    case +1:
+		    case -3: sin = 1; cos = 0; break;
+		    case +2:
+		    case -2: sin = 0; cos = -1; break;
+		    case +3:
+		    case -1: sin = -1; cos = 0; break;
 		    }
 		}
 		double x = cos * v1.x - sin * v1.y;
