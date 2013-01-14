@@ -2,10 +2,14 @@
 //
 // File:	vcalc_geometry.in
 // Author:	walton@seas.harvard.edu
-// Date:	Mon Jan 14 08:28:12 EST 2013
+// Date:	Mon Jan 14 13:13:55 EST 2013
 
 // See Applications section of 2D Geometry help page.
+//
+// All coordinates are integers so the Testing Equality
+// subsection does not apply.
 
+clear
 println //
 println // Distance Between Point and Infinite Line
 p = (3,4)
@@ -26,6 +30,7 @@ println -- The distance from p
 println ---- to the infinite line p1 -- p2
 println ---- is dist
 
+clear
 println //
 print // Distance Between Point and Finite Line Segment
 println
@@ -64,6 +69,7 @@ if neither: println ---- is the distance from p to the
 if neither: print ---- infinite line p1 -- p2
 if neither: println = dist_pp1p2
 
+clear
 println //
 println // Sides of an Infinite Line
 p = (3,4)
@@ -80,8 +86,61 @@ if not_equal println ERROR: p1'y != p2'y
 RIGHT = p'y < p1'y
 ON = p'y == p1'y
 LEFT = p'y > p1'y
-print -- The p is to the
+print -- The point p is to the
 if RIGHT: print right
 if ON: print on
 if LEFT: print left
 println of the infinite line p1 -- p2
+
+clear
+println //
+print // Where Does a Finite Line Intersect
+println an Infinite Line
+p1 = (-5,-5)
+p2 = (3, 3)
+p3 = (-3,5)
+p4 = (3,-1)
+v = p2 - p1
+rv = v ^ 90
+p1'y = p1 * rv
+p2'y = p2 * rv
+p3'y = p3 * rv
+p4'y = p4 * rv
+not_equal = p1'y != p2'y
+if not_equal println ERROR: p1'y != p2'y
+PARALLEL = p3'y == p4'y
+PARALLEL_ON = p1'y == p4'y
+PARALLEL_ON = PARALLEL && PARALLEL_ON
+PARALLEL_OFF = p1'y != p4'y
+PARALLEL_OFF = PARALLEL && PARALLEL_OFF
+if PARALLEL: print -- The finite line segment p3 -- p4
+if PARALLEL: println is parallel to and
+if PARALLEL_OFF: print -- disjoint from
+if PARALLEL_ON: print -- on
+if PARALLEL: println the infinite line p1 -- p2
+
+NOT_PARALLEL = ! PARALLEL
+diff14 = p1'y - p4'y
+diff34 = p3'y - p4'y
+diff14>=0 = diff14 >= 0
+diff34>=diff14 = diff34 >= diff14
+INTERSECTS+ = diff34>=diff14 && diff14>=0
+diff14<=0 = diff14 <= 0
+diff34<=diff14 = diff34 <= diff14
+INTERSECTS- = diff34<=diff14 && diff14<=0
+INTERSECTS = INTERSECTS+ || INTERSECTS-
+INTERSECTS = INTERSECTS && NOT_PARALLEL
+NOT_INTERSECTS = ! INTERSECTS
+NOT_INTERSECTS = NOT_INTERSECTS && NOT_PARALLEL
+if INTERSECTS: t = diff14 / diff34
+if INTERSECTS: pt = t * p3
+if INTERSECTS: s = 1 - t
+if INTERSECTS: ps = s * p4
+if INTERSECTS: p = pt + ps
+if NOT_PARALLEL: print -- The finite line segment
+if NOT_PARALLEL: print p3 -- p4
+if INTERSECTS: println intersects
+if NOT_INTERSECTS: println does NOT intersect
+if NOT_PARALLEL: print -- the infinite line p1 -- p2
+if INTERSECTS: println at p
+if NOT_INTERSECTS: println
