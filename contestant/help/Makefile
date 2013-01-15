@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Jan 14 15:16:28 EST 2013
+# Date:		Tue Jan 15 01:19:38 EST 2013
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2013/01/14 20:16:38 $
+#   $Date: 2013/01/15 06:33:56 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.41 $
+#   $Revision: 1.42 $
 
 # `make help.pdf' and `make demos.pdf' make printouts of
 # all the help and demos files respectively.  Note that
@@ -195,7 +195,10 @@ web:	web_do
 	make clean
 	mkdir web
 	make WEB=web all pdf
-	rm -rf web.tar
+	mkdir web/algorithms
+	chmod 755 web/algorithms
+	cp -p ../../wiki/print/*.pdf web/algorithms
+	chmod 444 web/algorithms/*.pdf
 	cp index.html web/index.html
 	chmod 444 web/index.html
 	cp *.pdf web/
