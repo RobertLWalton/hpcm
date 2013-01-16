@@ -2,7 +2,7 @@
 //
 // File:	vcalc.java
 // Authors:	Bob Walton (walton@seas.harvard.edu)
-// Date:	Sat Jan 12 02:58:18 EST 2013
+// Date:	Wed Jan 16 03:41:15 EST 2013
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -161,6 +161,95 @@ public class vcalc {
     {
        if ( ! is_variable ( token ) )
           error ( "`" + token + "' is not a variable" );
+    }
+
+    static class Vector {
+        double x, y;
+	Vector ( double xval, double yval )
+	{
+	    x = xval; y = yval;
+	}
+    }
+    static Vector add ( Vector v1, Vector v2 )
+    {
+        return new Vector ( v1.x + v2.x, v1.y + v2.y );
+    }
+    static Vector subtract ( Vector v1, Vector v2 )
+    {
+        return new Vector ( v1.x - v2.x, v1.y - v2.y );
+    }
+    static double multiply ( Vector v1, Vector v2 )
+    {
+        return v1.x * v2.x + v1.y * v2.y;
+    }
+    static double length ( Vector v )
+    {
+        return Math.sqrt ( v.x * v.x + v.y * v.y );
+    }
+    static double angle ( Vector v )
+    {
+	double result;
+
+	// We take extra care with angles that are
+	// multiples of 90 degrees.  This is only
+	// necessary if one is using exact equality
+	// with integer coordinates instead of
+	// approximate equality.
+	//
+	if ( v.x == 0 && v.y == 0 )
+	{
+	    error ( "angle of zero vector" );
+	    result = Double.NaN;
+	        // Needed so compiler will not think
+		// that result does not get a value.
+	}
+	else if ( v.x == 0 )
+	    result = ( v.y > 0 ? +90 : -90 );
+	else if ( v.y == 0 )
+	    result = ( v.x > 0 ? 0 : +180 );
+	else
+	{
+	    result = Math.atan2 ( v.y, v.x );
+	    result *= 180.0 / Math.PI;
+	}
+	return result;
+    }
+    static Vector rotate ( Vector v, double angle ) 
+    {
+	double sin, cos;
+
+	// We take extra care with angles that are
+	// multiples of 90 degrees.  This is only
+	// necessary if one is using exact equality
+	// with integer coordinates instead of
+	// approximate equality.
+	//
+	int k = (int) ( angle / 90 );
+	if ( angle == k * 90 )
+	{
+	    switch ( k % 4 )
+	    {
+	    case  0: sin = 0; cos = 1; break;
+	    case +1:
+	    case -3: sin = 1; cos = 0; break;
+	    case +2:
+	    case -2: sin = 0; cos = -1; break;
+	    case +3:
+	    case -1: sin = -1; cos = 0; break;
+	    default: sin = Double.NaN; cos = Double.NaN;
+	        // Needed so compiler will not think
+		// that sin and cos do not get values.
+	    }
+	}
+	else
+	{
+	    angle *= Math.PI / 180;
+	    sin = Math.sin ( angle );
+	    cos = Math.cos ( angle );
+	}
+	return new Vector
+	    ( cos * v.x - sin * v.y,
+	      sin * v.x + cos * v.y );
     }
 
     // This is the only way to get a rough equivalent
@@ -620,6 +709,7 @@ public class vcalc {
 	    {
 	        Value v = get_value();
 		require_boolean ( v );
+		skip ( ":" );
 		if ( ! v.b )
 		{
 		    while ( true )
@@ -631,7 +721,6 @@ public class vcalc {
 		    }
 		    continue;
 		}
-		skip ( ":" );
 		token = get_token();
 	    }
 
