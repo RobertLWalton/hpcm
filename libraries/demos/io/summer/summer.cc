@@ -11,18 +11,19 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: walton $
-//   $Date: 2013/01/17 07:19:13 $
+//   $Date: 2013/01/17 07:44:09 $
 //   $RCSfile: summer.cc,v $
-//   $Revision: 1.1 $
+//   $Revision: 1.2 $
 
 #include <iostream>
-#include <cstdio>	// printf
-#include <cmath>	// fabs
-#include <cassert>
+#include <iomanip>
+#include <cstdio>
 using namespace std;
+#include <cassert>
+#include <cmath>	// fabs
 
 int debug = false;
-#define dout if ( debug ) cout
+#define dout    if ( debug ) cout
 #define dprintf if ( debug ) printf
 
 char line[82];
