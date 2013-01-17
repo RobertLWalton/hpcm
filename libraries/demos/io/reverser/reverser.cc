@@ -2,7 +2,7 @@
 //
 // File:	reverser.cc
 // Authors:	Bob Walton (walton@seas.harvard.edu)
-// Date:	Thu Jan 17 02:57:02 EST 2013
+// Date:	Thu Jan 17 03:02:18 EST 2013
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: walton $
-//   $Date: 2013/01/17 07:57:25 $
+//   $Date: 2013/01/17 08:02:55 $
 //   $RCSfile: reverser.cc,v $
-//   $Revision: 1.5 $
+//   $Revision: 1.6 $
 
 #include <iostream>
 #include <iomanip>
@@ -43,7 +43,7 @@ char * print_substitute_word ( char * q )
 	if ( isalpha ( q[-1] ) ) break;
 	-- q;
     }
-    char * p = q;  /* p points just after word. */
+    char * p = q;  // p points just after word.
 
     // Move q to point at 1st character of word.
     //
