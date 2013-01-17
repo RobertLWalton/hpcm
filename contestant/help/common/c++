@@ -1,290 +1,371 @@
-C++ Help		    Thu Oct  4 14:53:08 EDT 2012
+C++ Help		    Wed Jan 16 20:16:21 EST 2013
 
-Include Files
-------- -----
+C++ Language Program Structure 
+--- -------- ------- ---------
 
-The following are typical includes in modern C++:
+Typical program structure including end of file detect-
+ion, finding symbols such as `*' that end a string of
+numbers, and debugging is:
 
-	#include <iostream>
-	#include <iomanip>
-	#include <cmath>
-	#include <cstring>
-	#include <cctype>
-	#include <cassert>
+    // Standard Libraries.
 
-	using namespace std;
+    #include <iostream>
+    #include <iomanip>	 // ws
+    #include <cstdio>	 // printf
+    using std;
 
-It is common to have a conflict with some name defined
-in the includes.  E.g., you may have trouble naming a
+    // String and character computation.
+
+    #include <cstring>   // strcmp, strcpy, ...
+    #include <cctype>    // isalpha, islower, ...
+
+    // Math and Number Limits.
+
+    #include <cmath>     // M_PI, atan2, ...
+    #include <climits>   // INT_MIN, INT_MAX, ...
+    #include <cfloat>    // DBL_MIN, DBL_MAX
+
+    // Debugging.
+
+    #include <cassert>   // assert
+
+    bool debug = false;
+    #define dout    if ( debug ) cout
+    #define dprintf if ( debug ) printf
+
+    char line[81];
+	// You can assume lines longer than 80 charac-
+	// ters will not need to be read, UNLESS the
+	// problem statement says otherwise.  You need 1
+	// extra character for string ending '\0'.
+
+    int main ( int argc, char * argv[] )
+    {
+	// argc == number of program arguments + 1.
+
+	debug = ( argc > 1 );
+	. . . .
+	while ( cin.getline ( line, sizeof ( line ) ),
+	        cin.good() )
+	{
+	    // Print test case name. */
+
+	    cout << line << endl;
+
+	    /* Read input. */
+
+	    cin >> ...
+	    . . . . .
+
+	    // Read a string of integers ending in `*'.
+	    //
+	    while ( cin >> ..., cin.good() )
+	    {
+	       . . . . .
+	    }
+	    cin.clear();
+		// After returning a false value for
+		// cin.good(), we MUST cin.clear()
+		// to continue reading.
+
+	    // Skip `*' and preceding whitespace.
+	    //
+	    char c;
+	    cin >> ws >> c;
+	    assert ( c == '*' );
+
+	    . . . . .
+
+	    // After reading test case data with cin,
+	    // input will be just before the line feed
+	    // at the end of the test case data.  This
+	    // must be skipped or else it will be
+	    // erroneously read as an empty next test
+	    // case name.
+
+	    cin.getline ( line, sizeof ( line ) );
+		// The line read here consists of just a
+		// line feed and is discarded.
+	    assert ( line[0] == 0 );
+
+	    // Compute.
+
+	    dout << ... << endl;  // Print if debug.
+	    dprintf ( ... );      // Print if debug.
+	    . . . . .
+
+	    // Output.
+
+	    cout << ... << endl;
+	    printf ( ... );
+	}
+
+	// Return 0 from `main' to tell system there
+	// is no error.
+	//
+	return 0;
+
+    }
+
+
+Occasionally one has a conflict with some name defined
+in the `#include's.  E.g., you may have trouble naming a
 global variable `time'.   To fix this, change the name
 of your variable.  A simple way of doing this is to put
-the following right after the includes:
+the following right after the `#include's:
 
 	#define time Time
 
-If you want your code to last as include files change,
-replace the using statement above with statements such
-as the following:
 
-	using std::cin;
-	using std::cout;
-	using std::endl;
+Input
+-----
 
-
-Program Structure and Debugging
-------- --------- --- ---------
+Input is read from the standard input `cin'; you MUST
+NOT open any file for input.
 
-Typical program structure including end of file detect-
-ion and debugging is:
+Test cases begin with a test case name line that is
+read by the first `getline'.  When any input method call
+fails, `cin.good()' becomes false, so the `while' loop
+test consists of `cin.getline ( ... ), cin.good()' and
+is true if and only the `cin.getline ( ... )' succeeded.
+Thus the outer loop above processes one test case at a
+time.  As soon as the test case name is successfully
+read into `line', it is printed by `cout << line <<
+endl'.  All test case name lines are 80 characters or
+less, so `line' has enough room for 80 characters plus
+the string ending '\0' supplied by `cin.getline'.
 
-	#include ...
-	. . .
+After reading and printing the test case name line, the
+rest of the test case data is read with `cin >>'.  This
+data may consist of numbers, perhaps with a few
+characters like `*' thrown in to indicate the end of a
+sequence of numbers.  The lines containing numbers may
+be very long, so they should be read one number at a
+time with `cin >>', and NOT read in first with 
+`cin.getline'.  A `*' may be detected by looking at
+`cin.good()' which will be true if a number was success-
+fully read by `cin >>' and false if it was not because
+the next non-whitespace character in the input was, say,
+a `*'.  If this last is the case, then you must skip
+the `*', which is done by the `cin >> ws >> c' that
+skips first the whitespace between the last number read
+and the input `*', and then skips the input `*'.
 
-	bool debug;
-	#define dout if ( debug ) cout
+See the `summer' demonstration problem solution which
+reads numbers.
 
-	int main ( int argc )
-	{
-	    // argc-1 == number of program arguments.
-	    debug = ( argc > 1 );
-	    . . . .
-	    while ( true )
-	    {
-		. . . . .
-		cin >> x >> y >> z;
-		if ( cin.eof() ) break;
-		. . . . .
-		dout << . . .
-		. . . . .
-	    }
-	}
+Sometimes a problem will specifically ask you to read
+lines to be processed as character strings, in which
+case use `cin.getline' and be sure your line buffer is
+long enough.
 
-After reading with `cin >> ...', cin.eof() is true
-if and only if an end of file has occurred on cin.
-No other error indication is given.  Note that
-`cin.eof()' is normally false after successfully
-reading some value, as the input is still before
-the end of the line containing the value.
-
-Many problems require you to detect certain input
-values as end of data markers, instead of looking for
-eof.  E.g., the problem might specify that x, y, and z
-are all 0 to indicate end of data, in which case you
-replace the above `if' statement by
+For some problems there are no test case name lines but
+instead each test case has one input line containing
+text and one output line containing text.  For these
+the test case input line is read the same way as the
+test case name line is read above.
 
-	if ( x == 0 && y == 0 && z == 0 ) break;
+See the `reverser' demonstration problem solution which
+reads text lines.
 
-Above `dout' behaves just like `cout' except no output
-is produced unless your program is called with an
-argument.  One must be careful, however, to remember
-that `dout' contains an `if' statement and cannot be
-followed directly by an `else if'; i.e., the following
-will NOT work:
 
-	if (...) dout << ...;
-	else if ...
+Output
+------
 
-Put {} brackets around `dout << ...;' in this situation.
+Output is written to the standard output `cout'; you
+MUST NOT open any file for output; you MUST NOT write to
+the standard error output, `cerr'.
+
+Output can be written with `cout << ... << endl'.  Out-
+put that has special formating requirements may be
+written with `printf'.  Some `printf' formats that may
+be useful are "%.3f" to print a double with exactly 3
+decimal places in as few columns as possible, "%10.3f"
+to print the double right adjusted in 10 columns, "%10s"
+to print a string right adjusted in 10 columns, and
+"%-10s" to print a string LEFT adjusted in 10 columns.
+Here the numbers 3 and 10 are merely representative, and
+can be replaced by any other non-zero positive integers.
+
+See the `summer' demonstration problem solution which
+outputs floating point `double's using printf.
+
+
+Debugging
+---------
+
+When your program is executed by the judge, it will
+NOT be passed ANY arguments.  A standard debugging
+technique is to output extra debugging information if
+and only if your program is passed an argument.
+
+The above program defines `debug' to be true if and only
+if the program is called with one or more arguments, and
+defines dout (or dprintf) to do what cout (or printf)
+does if and only if `debug' is true.  Thus dout and
+dprintf can be used to print debugging information.
 
 Debugging is best done with information printed by
-`dout', and not with a debugger like `gdb'.  The excep-
-tion is debugging programs that crash or go into an
-infinite loop, which is best done with a debugger.
+`dout' and `dprintf', and not with a debugger like
+`gdb'.  The exception is debugging programs that crash
+or go into an infinite loop, which is best done with a
+debugger like `gdb'.  See `help gdb' for how to use
+`gdb' on programs that crash or go into an infinite
+loop.
 
 It is also a good idea to use `assert' statements
 to check that assumptions you have made are valid during
-actual program execution.
+actual program execution.  For example, if you are
+certain that `cin >> c' should read a `*', then follow
+this with
 
-
-Numeric Constants
-------- ---------
+	assert ( c == '*' );
 
-The following code imports useful constants, which are
-the minimum and maximum values of various number types,
-and the values of PI and E.
-
-    INCLUDE			IMPORTS
-
-    #include <climits>		int INT_MAX;
-				int INT_MIN;
-				long LONG_MAX;
-				long LONG_MIN;
-				unsigned long ULONG_MIN;
-
-    #include <cfloat>		double DBL_MAX;
-				double DBL_MIN;
-				float FLT_MAX;
-				float FLT_MIN;
-
-    #include <cmath>		double M_PI;
-				double M_E;
+See the `reverser' and `summer' demonstration problem
+solutions for uses of dout, dprintf, and assert.
 
 
+Function and Macro Synopsis
+-------- --- ----- --------
 
-Fixed Width Output
-------------------
+You can get full documentation of the functions
+mentioned above plus other useful information by using
+the UNIX commands:
 
-The following is useful for producing fixed width format
-numbers.
+	man 3 printf
+	man assert
+	man math.h
+	man limits.h
+	man float.h
 
-To output a right adjusted integer I in N columns use:
+and looking for web documentation for
 
-		cout << setw (N) << I;
+	istream::operator>>
+	istream::getline
+	istream::good
+	istream::clear
+	iomanip::ws
+	ostream::operator<<
+	ostream::endl
 
-Setw sets the width of the next output; but each output
-resets this to 0 so you must reset the width just before
-outputting each N column number.  The width of 0 means
-`use as many columns as necessary'.
-
-To output a right adjusted floating point number F in N
-columns with P decimal places use:
+The following is an extract from `man' and web pages of
+details needed to use the functions mentioned above, and
+also a few numeric constants.  Here we assume you
+already know something about how to use `cin', `cout',
+and `printf', so we do not have to explain them from
+scratch.
 
-    cout << setiosflags ( ios::showpoint | ios::fixed );
-    cout << setprecision (P);
-    cout << setw (N) << F;
+Note that an `int' is guaranteed to be at least 32 bits
+and a `long long int' is guaranteed to be at least 64
+bits.  Floating point computations should always be done
+using `double's, and NOT `float's, to avoid having too
+little precision.
 
-The precision P and flags do not get reset after the
-number is output.  They can be reset to defaults by
+int i; long long li; double d; char name[1000];
+cin >> i >> li >> d >> name
+cin.good()
+cin.clear()
+    cin >> v skips whitespace and reads a value into v
+    provided that one or more characters after the
+    whitespace can be interpreted as a value for v.  For
+    a char array like `name', any string of non-white-
+    space characters is considered to be a value.  After
+    successfully reading into v, cin.good() will be
+    true.  After unsuccessfully reading into v, v will
+    not be changed and flags in cin will be set so
+    cin.good() returns false, but even in this case
+    whitespace will be skipped.  When cin is set so
+    cin.good() returns false, attempts to read more
+    input will see an end of file.  To clear cin from
+    this state so more input can be read, call
+    cin.clear().
 
-  cout << resetiosflags ( ios::showpoint | ios::fixed );
-  cout << setprecision (6);
+char c; cin >> c
+    Similar to the above except that no whitespace is
+    skipped and the only failure possible would be the
+    case where cin.good() returns false before the
+    cin >> c.
 
-Sometimes you are asked to use `0' as a high order fill
-character, instead of ` ', or to output in hexadecimal
-or octal instead of decimal.  This can be done with
+cin >> ws
+    This just skips any whitespace in the input.  It
+    is mostly of use in the context of wanting to read
+    just the next non-whitespace character.
 
-   cout << setfill ('0');     // Set fill character.
-   cout << setfill (' ');     // Reset fill character.
-   cout << hex;               // Set base to 16.
-   cout << dec;               // Set base to 10.
-   cout << oct;               // Set base to 8.
+cin.getline ( char * buffer, sizeof ( buffer ) )
+    Read a line into the buffer, assuming the line plus
+    a string terminating '\0' will fit into the buffer.
+    Fails if cin is at the end of file position, in
+    which case cin is set so that cin.good() returns
+    false.
 
-To use setw etc. you need to:
+int i; long long li; double d; char name[1000]; char c;
+cout << i << li << d << name << "..." << c
+    cout << v outputs v.  Strings are '\0' terminated
+    and the '\0' is not output.  The output of numbers
+    does not output any supperfluous characters, and
+    may output scientific notation for floating point
+    numbers. If you want to format output more
+    precisely, use printf.
 
-    #include <iomanip.h>
+cout << endl
+    Output an end of line.
 
-You may also need
+int printf ( const char * format, ... )
 
-    using std::setw;
-    using std::hex;
-    using std::dec;
-    using std::setprecision;
-    using std::ios;
-
-etc.  However, somewhat counter intuitively
+    Format can contain the following directives, in
+    in which W and P stand for sequences of decimal
+    digits, where W is used for `widths' and P for
+    `precisions':
 
-    using std::setiosflags;
-    using std::resetiosflags;
+    %d		Outputs an `int' as a decimal integer
+    		with no spaces before or after.
 
-are not needed.
+    %Wd		Outputs an `int' as a decimal integer
+    		right adjusted in W columns.
 
-To left adjust use
+    %lld	Outputs a `long long int' as a decimal
+    		integer with no spaces before or after.
 
-    cout << setw ( my_width )
-         << setiosflags ( ios::left )
-         << my_string
-         << resetiosflags ( ios::left )
-	 ...
+    %Wlld	Outputs a `long long int' as a decimal
+    		integer right adjusted in W columns.
 
-Character Input
---------- -----
+    %f		Outputs a `double' as a floating point
+    		number with 6 decimal places and no
+		spaces before or after.
 
-You can use the following for character input:
+    %.Pf	Ditto but with P decimal places instead
+    		of 6 decimal places.
 
-    int c = cin.get();	// Get next character.
-    int c = cin.peek();	// Return next character
-    			// without skipping over it.
-    cin.putback ( c );	// Put the character c just
-    			// obtained by cin.get() back
-			// at the beginning of the
-			// input.
+    %Wf		Outputs a `double' as a floating point
+    		number with 6 decimal places right
+		adjusted in W columns.
 
-These return EOF for end of file.
+    %W.Pf	Ditto but with P decimal places instead
+    		of 6 decimal places.
 
+    %s		Outputs a `const char *' or `char *'
+    		string with no spaces before or after.
 
-Inputting Lines
---------- -----
+    %Ws		Ditto but outputs the string RIGHT
+    		adjusted in W columns.
 
-To input a line use the getline function, as in 
+    %-Ws	Ditto but outputs the string LEFT
+    		adjusted in W columns.
 
-	char buffer [SOME_SIZE];
-	cin.getline ( buffer, sizeof ( buffer ) );
-
-The new line at the end of the line is NOT stored in the
-buffer; a NUL character is stored at the end of the line
-in the buffer.  Do NOT try to use the `get' function in
-place of `getline': its behavior is similar but it does
-NOT skip over the new line in the input stream, and
-therefore after reading the first line it reads empty
-lines forever.
+    %c		Outputs a `char' as an ASCII character
+    		with no spaces before or after.
+    		
 
-If you use non-line-oriented code to input a value V,
-you CANNOT then use `getline' to get a following line,
-unless you first skip by the end of line after V.
-Failing to do this causes `getline' to read an empty
-line, consisting of just the line feed after V.  Typical
-correct code is:
+INT_MAX, INT_MIN, LLONG_MAX, LLONG_MIN, DBL_MAX, DBL_MIN
 
-	int x;
-	cin >> x;	// Does not skip line end.
-	while ( cin.get() != '\n' );
-	cin.getline ( ... );
+    These are the maximum and minimum numbers that can
+    be stored respectively in an `int', `long long int',
+    or `double'.  The integer values are from `climits'
+    and the floating point values from `cfloat'.
 
+M_PI, M_E
 
-Parsing Lines
-------- -----
-
-You can parse a line after it is input by code such as
-
-	#include <sstream>
-	using std::istringstream;
-
-	istringstream in ( buffer );
-
-Now `in' is an input stream whose input is taken from
-the buffer (actually, the input is copied from the
-buffer into another buffer internal to the instring-
-stream when the latter is created).
-
-Here in.eof() will be true at the end of the string.
-This is likely to be a problem because immediately after
-reading a number at the end of the buffer in.eof() will
-be true.  To compensate, check for eof BEFORE reading
-each value by first executing `in >> ws' to skip past
-whitespace, then testing in.eof(), and only then reading
-the value.  Typical code is:
-
-	in >> ws;
-	if ( in.eof() ) break;
-	in >> x;
-
-
-Writing Strings
-------- -------
-
-Strings can be written using:
-
-	#include <sstream>
-	using std::ostringstream;
-	using std::ends;
-
-	ostringstream out;
-	. . . out << . . .
-	out << ends;
-	const char * s = out.str().data();
-	cout << s;
-
-Here `out' is an output stream whose output is written
-into an INTERNAL buffer (you CANNOT make a stream that
-writes into your buffer).  You can get the starting
-address of a string that contains the contents of the
-internal buffer with `out.str().data()'.  Before doing
-this, use `out << ends' to write a NUL into the buffer.
-
-You can also use `cout << out.str()' to write the
-internal buffer to `cout' directly, but do NOT use
-`out << ends' in this case, as the NUL will be written
-to `cout' if you do.
+    The mathematical constants PI and e from cmath.
 
 
 Writing Your Own << And >> Operators
@@ -293,7 +374,6 @@ Writing Your Own << And >> Operators
 It is often convenient to define your own << operator
 to output something.  Some examples are:
 
-    using std::ostream;
     ostream & operator <<
 	    ( ostream & out, mytype & value )
     {
@@ -319,7 +399,7 @@ format.  A simple way is
     }
     . . .
     cout << myformat ( 99 );
-
+
 Here we have invented a typed structure to encapsulate
 the value when it is to be printed.  Note the argument
 to << may NOT be `myformat & s' because here s is not
@@ -329,7 +409,6 @@ may be `const myformat & s'.
 
 Input operators can be define by:
 
-    using std::istream;
     istream & operator >>
 	    ( istream & in, mytype & value )
     {
@@ -355,7 +434,6 @@ violation of formal contest rules.
 
 
 
-
 File:		c++
 Author:		Bob Walton <walton@deas.harvard.edu>
 Date:		See top of file.
@@ -367,6 +445,6 @@ file.
 RCS Info (may not be true date or author):
 
     $Author: walton $
-    $Date: 2012/10/04 18:56:22 $
+    $Date: 2013/01/17 09:49:50 $
     $RCSfile: c++,v $
-    $Revision: 1.15 $
+    $Revision: 1.16 $
