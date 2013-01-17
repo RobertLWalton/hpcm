@@ -2,7 +2,7 @@
  *
  * File:	reverser.c
  * Authors:	Bob Walton (walton@seas.harvard.edu)
- * Date:	Sat Dec  1 22:28:33 EST 2012
+ * Date:	Thu Jan 17 03:13:16 EST 2013
  *
  * The authors have placed this program in the public
  * domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
  * RCS Info (may not be true date or author):
  *
  *   $Author: walton $
- *   $Date: 2012/12/02 03:32:53 $
+ *   $Date: 2013/01/17 08:13:28 $
  *   $RCSfile: reverser.c,v $
- *   $Revision: 1.5 $
+ *   $Revision: 1.6 $
  */
 
 
@@ -22,7 +22,7 @@
 #include <ctype.h>
 #include <assert.h>
 
-int debug;
+int debug = 0;
 #define dprintf if ( debug ) printf
 
 char line[82];

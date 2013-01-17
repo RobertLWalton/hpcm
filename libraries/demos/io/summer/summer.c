@@ -2,7 +2,7 @@
  *
  * File:	summer.c
  * Authors:	Bob Walton (walton@seas.harvard.edu)
- * Date:	Sat Dec  1 22:44:44 EST 2012
+ * Date:	Thu Jan 17 03:13:50 EST 2013
  *
  * The authors have placed this program in the public
  * domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
  * RCS Info (may not be true date or author):
  *
  *   $Author: walton $
- *   $Date: 2012/12/02 03:45:35 $
+ *   $Date: 2013/01/17 08:14:03 $
  *   $RCSfile: summer.c,v $
- *   $Revision: 1.5 $
+ *   $Revision: 1.6 $
  */
 
 
@@ -22,7 +22,7 @@
 #include <math.h>	/* fabs */
 #include <assert.h>
 
-int debug;
+int debug = 0;
 #define dprintf if ( debug ) printf
 
 char line[82];
