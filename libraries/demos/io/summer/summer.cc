@@ -2,7 +2,7 @@
 //
 // File:	summer.c
 // Authors:	Bob Walton (walton@seas.harvard.edu)
-// Date:	Thu Jan 17 02:49:42 EST 2013
+// Date:	Thu Jan 17 02:56:33 EST 2013
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: walton $
-//   $Date: 2013/01/17 07:50:05 $
+//   $Date: 2013/01/17 07:56:46 $
 //   $RCSfile: summer.cc,v $
-//   $Revision: 1.4 $
+//   $Revision: 1.5 $
 
 #include <iostream>
 #include <iomanip>
@@ -33,7 +33,7 @@ int main ( int argc, char * argv[] )
     debug = ( argc > 1 );
 
     while ( cin.getline ( line, sizeof ( line ) ),
-            ! cin.fail() )
+            cin.good() )
     {
 	// Print test case name.
 	//
@@ -45,11 +45,12 @@ int main ( int argc, char * argv[] )
 
 	// Read and sum numbers until `='.
 	//
-	while ( cin >> number, ! cin.fail() )
+	while ( cin >> number, cin.good() )
 	    corrected_sum += number;
 	cin.clear();
-	    // Remember that fail must be cleared to
-	    // continue reading.
+	    // After returning a false value for
+	    // cin.good(), we MUST cin.clear()
+	    // to continue reading.
 
 	// Skip `='.  The last >> above failed to read
 	// a number, BUT, it did skip over the white-
@@ -63,7 +64,7 @@ int main ( int argc, char * argv[] )
 	// Read accountant computer's sum.
 	//
 	cin >> sum;
-	assert ( ! cin.fail() );
+	assert ( cin.good() );
 
 	// Read end of line after sum.
 	//

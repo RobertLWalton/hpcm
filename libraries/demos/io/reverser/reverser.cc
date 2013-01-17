@@ -2,7 +2,7 @@
 //
 // File:	reverser.cc
 // Authors:	Bob Walton (walton@seas.harvard.edu)
-// Date:	Thu Jan 17 02:49:09 EST 2013
+// Date:	Thu Jan 17 02:57:02 EST 2013
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: walton $
-//   $Date: 2013/01/17 07:49:18 $
+//   $Date: 2013/01/17 07:57:25 $
 //   $RCSfile: reverser.cc,v $
-//   $Revision: 1.4 $
+//   $Revision: 1.5 $
 
 #include <iostream>
 #include <iomanip>
@@ -64,7 +64,7 @@ int main ( int argc, char * argv[] )
     debug = ( argc > 1 );
 
     while ( cin.getline ( line, sizeof ( line ) ),
-            ! cin.fail() )
+            cin.good() )
     {
 	// When debugging print the intput as well as
 	// the output.
