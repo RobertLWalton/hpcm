@@ -2,7 +2,7 @@
 //
 // File:	summer.c
 // Authors:	Bob Walton (walton@seas.harvard.edu)
-// Date:	Thu Jan 17 02:45:49 EST 2013
+// Date:	Thu Jan 17 02:49:42 EST 2013
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: walton $
-//   $Date: 2013/01/17 07:46:39 $
+//   $Date: 2013/01/17 07:50:05 $
 //   $RCSfile: summer.cc,v $
-//   $Revision: 1.3 $
+//   $Revision: 1.4 $
 
 #include <iostream>
 #include <iomanip>
@@ -33,7 +33,7 @@ int main ( int argc, char * argv[] )
     debug = ( argc > 1 );
 
     while ( cin.getline ( line, sizeof ( line ) ),
-            ! cin.eof() )
+            ! cin.fail() )
     {
 	// Print test case name.
 	//
