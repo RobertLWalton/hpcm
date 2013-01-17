@@ -2,7 +2,7 @@
 //
 // File:	summer.c
 // Authors:	Bob Walton (walton@seas.harvard.edu)
-// Date:	Wed Jan 16 20:38:51 EST 2013
+// Date:	Thu Jan 17 02:45:49 EST 2013
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: walton $
-//   $Date: 2013/01/17 07:44:09 $
+//   $Date: 2013/01/17 07:46:39 $
 //   $RCSfile: summer.cc,v $
-//   $Revision: 1.2 $
+//   $Revision: 1.3 $
 
 #include <iostream>
 #include <iomanip>
@@ -26,7 +26,7 @@ int debug = false;
 #define dout    if ( debug ) cout
 #define dprintf if ( debug ) printf
 
-char line[82];
+char line[81];
 
 int main ( int argc, char * argv[] )
 {
