@@ -1,8 +1,8 @@
 // Solution to the Summation Checking Problem
 //
-// File:	summer.c
+// File:	summer.cc
 // Authors:	Bob Walton (walton@seas.harvard.edu)
-// Date:	Thu Jan 17 02:56:33 EST 2013
+// Date:	Mon Jan 21 04:12:42 EST 2013
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: walton $
-//   $Date: 2013/01/17 07:56:46 $
+//   $Date: 2013/01/21 09:12:53 $
 //   $RCSfile: summer.cc,v $
-//   $Revision: 1.5 $
+//   $Revision: 1.6 $
 
 #include <iostream>
 #include <iomanip>
