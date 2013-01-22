@@ -2,7 +2,7 @@
 //
 // File:	vcalc.cc
 // Authors:	Bob Walton (walton@seas.harvard.edu)
-// Date:	Tue Jan 22 01:29:47 EST 2013
+// Date:	Tue Jan 22 09:48:08 EST 2013
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: walton $
-//   $Date: 2013/01/22 06:43:25 $
+//   $Date: 2013/01/22 15:19:55 $
 //   $RCSfile: vcalc.cc,v $
-//   $Revision: 1.3 $
+//   $Revision: 1.4 $
 
 #include <iostream>
 #include <iomanip>
@@ -39,6 +39,18 @@ string to_string ( double d )
     return string ( buffer );
 }
 
+// Convert string to double.  Return true on success
+// and false on failure.  Assumes string is not
+// empty.
+//
+bool to_number ( string s, double & result )
+{
+    const char * p = s.c_str();
+    char * q;
+    result = strtod ( p, & q );
+    return * q == 0;
+}
+
 // Skip input until next non-whitespace or end of line
 // or end of file if `comment' is false, or until next
 // end of line or end of file if `comment' is true.
@@ -48,8 +60,8 @@ string to_string ( double d )
 //
 char skip_ws ( bool comment = false)
 {
-    char c;
-    while ( cin >> c, cin.good() )
+    int c;
+    while ( c = cin.get(), c != EOF )
     {
         if ( c == '\n' ) return c;
 	else if ( ! comment && ! isblank ( c ) )
@@ -69,9 +81,8 @@ string read_symbol ( void )
     string result = "";
     while ( true )
     {
-	char c;
-        cin >> c;
-	if ( ! cin.good() ) break;
+	int c = cin.get();
+	if ( c == EOF ) break;
 	if ( c == '(' || c == ')' ||
 	     c == ',' || c == ':' ||
 	     isspace ( c ) )
@@ -92,15 +103,10 @@ string read_symbol ( void )
     return result;
 }
 
-// Get a token which is either a number or a string or
-// a line end or an end of file.  Line end is represent-
-// ed by the string "(END-OF-LINE)" and end of file by
-// the string "(END-OF-FILE)" so that error messages are
-// easy to print. 
-//
-// Set is_number true if number, false if string.
-// If set true, `token' is set to "(NUMBER)" for
-// error messages.
+// Get a token which is either a symbol or a separator.
+// Line end is represented by the string "(END-OF-LINE)"
+// and end of file by the string "(END-OF-FILE)" so that
+// error messages are // easy to print. 
 //
 // Backup may be set true to backup one token.
 //
@@ -108,10 +114,7 @@ string read_symbol ( void )
 //
 string ELINE = "(END-OF-LINE)";
 string EFILE = "(END-OF-FILE)";
-string token = ELINE;
-	 	// String token gotten or "(NUMBER)".
-double number;	// Number token gotten.
-bool is_number;	// True if token is number.
+string token = ELINE;	// Token gotten.
 bool backup = false;
 int line_number = 0;
 static void error ( string message );
@@ -123,7 +126,7 @@ void get_token ( void )
 	return;
     }
 
-    char c;
+    int c;
     if ( token == ELINE )
     {
         while ( true )
@@ -133,9 +136,9 @@ void get_token ( void )
 
 	    if ( c == '/' )
 	    {
-		cin >> c;
+	        c = cin.get();
 
-		if ( ! cin.good() )
+		if ( c == EOF )
 		    error ( "unexpected end of file" );
 		else if ( c == '/' )
 		{
@@ -144,7 +147,9 @@ void get_token ( void )
 		}
 
 		cin.unget();
-	    }
+
+	    } else if ( c == '\n' )
+	        continue;
 
 	    break;
 	}
@@ -152,8 +157,6 @@ void get_token ( void )
     else
 	c = skip_ws();
     
-    is_number = false;
-
     if ( c == 0 )
 	token = EFILE;
     else if ( c == '\n' )
@@ -166,14 +169,10 @@ void get_token ( void )
 	token = ",";
     else if ( c == ':' )
 	token = ":";
-    else if ( cin.unget(),
-	      cin >> number, cin.good() )
-    {
-	is_number = true;
-	token = "(NUMBER)";
-    }
     else
-	cin.clear(), token = read_symbol();
+	cin.unget(), token = read_symbol();
+
+    dout << "{" << token << "}" << endl;
 }
 
 // Print error message and exit.
@@ -192,11 +191,13 @@ static void check_not_eof ( void )
       error ( "unexpected end of file" );
 }
 
-static void check_number ( void )
+static double get_number ( void )
 {
-   if ( ! is_number )
-      error ( "expected number but got `" + token
-              + "'" );
+   get_token();
+   double result;
+   if ( ! to_number ( token, result ) )
+       error ( "expected number and got `" + token + "'" );
+   return result;
 }
 
 // Read token and check that it matches desired string.
@@ -211,7 +212,7 @@ static void skip ( string desired )
 
 static bool is_variable ( void )
 {
-    return ! is_number && isalpha ( token[0] );
+    return isalpha ( token[0] );
 }
 
 static void check_variable ( void )
@@ -444,13 +445,9 @@ static Value get_value ( )
     if ( token == "(" )
     {
 	v.type = VECTOR;
-	get_token();
-	check_number();
-	double x = number;
+	double x = get_number();
 	skip ( "," );
-	get_token();
-	check_number();
-	double y = number;
+	double y = get_number();
 	skip ( ")" );
 	v.v = Vector ( x, y );
     }
@@ -468,19 +465,17 @@ static Value get_value ( )
     {
         if ( variable_table.count ( token ) == 0 )
 	    error ( "`" + token + "' unassigned" );
-	Value v = variable_table[token];
+	v = variable_table[token];
     }
-    else if ( is_number )
-    {
+    else if ( to_number ( token, v.s ) )
 	v.type = SCALAR;
-	v.s = number;
-    }
     else
 	error ( "expected true, false, "
 		" scalar constant, "
 		" vector constant, "
 		" or variable but got `" +
 		token + "'" );
+    dout << "[" << v << "]" << endl;
     return v;
 }
 
@@ -704,6 +699,8 @@ static void execute_assign ( string variable )
     skip ( ELINE );
 
     variable_table[variable] = v1;
+    dout << "ASSIGN " << v1 << " TO " << variable
+         << endl;
 }
 
 
@@ -760,7 +757,7 @@ int main ( int argc, char * argv[] )
 			" " + token +
 			"' unrecognized" );
 	}
-	else
+	else if ( token != ELINE )
 	    error ( "`" + token + "' unrecognized" );
     }
 
