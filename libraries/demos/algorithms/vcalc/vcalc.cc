@@ -2,7 +2,7 @@
 //
 // File:	vcalc.cc
 // Authors:	Bob Walton (walton@seas.harvard.edu)
-// Date:	Tue Jan 22 00:18:29 EST 2013
+// Date:	Tue Jan 22 01:29:47 EST 2013
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -11,13 +11,14 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: walton $
-//   $Date: 2013/01/22 06:28:41 $
+//   $Date: 2013/01/22 06:43:25 $
 //   $RCSfile: vcalc.cc,v $
-//   $Revision: 1.2 $
+//   $Revision: 1.3 $
 
 #include <iostream>
 #include <iomanip>
 #include <cstdio>
+#include <cstdlib>	// exit, abort
 #include <string>	// string
 #include <map>		// map
 using namespace std;
@@ -34,7 +35,7 @@ int debug = false;
 string to_string ( double d )
 {
     char buffer[100];
-    sprintf ( "%.15f", d );
+    sprintf ( buffer, "%.15f", d );
     return string ( buffer );
 }
 
@@ -87,7 +88,7 @@ string read_symbol ( void )
 	}
     }
     * p = 0;
-    * result += buffer;
+    result += buffer;
     return result;
 }
 
@@ -113,6 +114,7 @@ double number;	// Number token gotten.
 bool is_number;	// True if token is number.
 bool backup = false;
 int line_number = 0;
+static void error ( string message );
 void get_token ( void )
 {
     if ( backup )
@@ -128,19 +130,23 @@ void get_token ( void )
 	{
 	    ++ line_number;
 	    c = skip_ws();
+
 	    if ( c == '/' )
 	    {
 		cin >> c;
+
 		if ( ! cin.good() )
 		    error ( "unexpected end of file" );
 		else if ( c == '/' )
-		    skip_ws ( true );
-		else
 		{
-		    cin.unget();
-		    break;
+		    skip_ws ( true );
+		    continue;
 		}
+
+		cin.unget();
 	    }
+
+	    break;
 	}
     }
     else
@@ -208,19 +214,20 @@ static bool is_variable ( void )
     return ! is_number && isalpha ( token[0] );
 }
 
-static void check_variable ( String token )
+static void check_variable ( void )
 {
-    if ( ! is_variable ( token ) )
+    if ( ! is_variable() )
         error ( "`" + token + "' is not a variable" );
 }
 
 struct Vector {
     double x, y;
+    Vector ( void ) {}
     Vector ( double xval, double yval )
     {
 	x = xval; y = yval;
     }
-}
+};
 ostream & operator<< ( ostream & s, const Vector & v )
 {
     return s << "("  << to_string ( v.x )
@@ -316,23 +323,23 @@ enum {
     VECTOR   = 3
 };
 
-struct value {
+struct Value {
     int type;	// BOOLEAN, SCALAR, or VECTOR.
     bool b;	// Value if BOOLEAN.
     double s;	// Value if SCALAR.
     Vector v;	// Value if VECTOR.
 };
 
-ostream & operator<< ( ostream & s, value v )
+ostream & operator<< ( ostream & s, Value v )
 {
     if ( v.type == BOOLEAN )
         return s << ( v.b ? "true" : "false" );
-    else if ( type == SCALAR )
+    else if ( v.type == SCALAR )
         return s << to_string ( v.s );
-    else if ( type == VECTOR )
+    else if ( v.type == VECTOR )
 	return s << v.v;
     else
-	return s << "BAD OBJECT TYPE " << type;
+	return s << "BAD OBJECT TYPE " << v.type;
 }
 
 map<string,Value> variable_table;
@@ -396,7 +403,7 @@ static void require_vector_scalar
 // Require v1 to be SCALAR or VECTOR and return
 // true if SCALAR, false if VECTOR.
 //
-static boolean is_scalar ( Value v1 )
+static bool is_scalar ( Value v1 )
 {
     if ( v1.type == SCALAR )
 	return true;
@@ -411,7 +418,7 @@ static boolean is_scalar ( Value v1 )
 // VECTOR and return true if SCALAR, false if
 // VECTOR.
 //
-static boolean is_scalar ( Value v1, Value v2 )
+static bool is_scalar ( Value v1, Value v2 )
 {
     if ( v1.type != v2.type )
 	error ( "operands should both be scalar"
@@ -441,7 +448,7 @@ static Value get_value ( )
 	check_number();
 	double x = number;
 	skip ( "," );
-	token = get_token();
+	get_token();
 	check_number();
 	double y = number;
 	skip ( ")" );
@@ -457,7 +464,7 @@ static Value get_value ( )
 	v.type = BOOLEAN;
 	v.b = false;
     }
-    else if ( is_variable ( token ) )
+    else if ( is_variable() )
     {
         if ( variable_table.count ( token ) == 0 )
 	    error ( "`" + token + "' unassigned" );
@@ -487,7 +494,7 @@ static void execute_clear ( )
     {
 	get_token();
 	if ( token == ELINE ) break;
-	check_variable ( token );
+	check_variable();
 	variable_table.erase ( token );
 	found = true;
     }
@@ -689,7 +696,7 @@ static void execute_assign ( string variable )
 	    v1.b = ( v1.s >= v2.s );
 	    v1.type = BOOLEAN;
 	}
-	else if ( ! token == ELINE )
+	else if ( token != ELINE )
 	    error ( "`" + token + "' unrecognized" );
 	else backup = true;
     }
