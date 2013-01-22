@@ -2,7 +2,7 @@
 //
 // File:	vcalc.cc
 // Authors:	Bob Walton (walton@seas.harvard.edu)
-// Date:	Tue Jan 22 10:33:09 EST 2013
+// Date:	Tue Jan 22 09:48:08 EST 2013
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: walton $
-//   $Date: 2013/01/22 15:33:23 $
+//   $Date: 2013/01/22 15:32:10 $
 //   $RCSfile: vcalc.cc,v $
-//   $Revision: 1.6 $
+//   $Revision: 1.5 $
 
 #include <iostream>
 #include <iomanip>
@@ -199,8 +199,7 @@ static double get_number ( void )
    get_token();
    double result;
    if ( ! to_number ( token, result ) )
-       error ( "expected number and got `"
-               + token + "'" );
+       error ( "expected number and got `" + token + "'" );
    return result;
 }
 
