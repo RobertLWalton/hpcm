@@ -2,7 +2,7 @@
 //
 // File:	vcalc.java
 // Authors:	Bob Walton (walton@seas.harvard.edu)
-// Date:	Tue Jan 22 01:16:09 EST 2013
+// Date:	Tue Jan 22 10:29:37 EST 2013
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -37,13 +37,13 @@ public class vcalc {
         if ( debug ) System.out.println ( s );
     }
 
-    // This is the only way to get a rough equivalent
-    // of the C language %.15g which deletes trailing
-    // fraction zeros.  Use `decimal.format ( x )'
-    // to convert double to string.
+    // Used to get the equivalent of %.14f but with
+    // trailing fraction zeros suppressed.  Use
+    // `decimal.format ( x )' to convert double to
+    // string.
     //
     static DecimalFormat decimal =
-        new DecimalFormat ( "0.###############" );
+        new DecimalFormat ( "0.##############" );
 
     final static Scanner scan =
         new Scanner ( System.in )

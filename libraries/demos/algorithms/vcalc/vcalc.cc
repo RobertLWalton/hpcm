@@ -2,7 +2,7 @@
 //
 // File:	vcalc.cc
 // Authors:	Bob Walton (walton@seas.harvard.edu)
-// Date:	Tue Jan 22 09:48:08 EST 2013
+// Date:	Tue Jan 22 10:33:09 EST 2013
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -11,13 +11,13 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: walton $
-//   $Date: 2013/01/22 15:19:55 $
+//   $Date: 2013/01/22 15:33:23 $
 //   $RCSfile: vcalc.cc,v $
-//   $Revision: 1.4 $
+//   $Revision: 1.6 $
 
 #include <iostream>
 #include <iomanip>
-#include <cstdio>
+#include <cstdio>	// sprintf
 #include <cstdlib>	// exit, abort
 #include <string>	// string
 #include <map>		// map
@@ -35,7 +35,10 @@ int debug = false;
 string to_string ( double d )
 {
     char buffer[100];
-    sprintf ( buffer, "%.15f", d );
+    char * p = buffer + sprintf ( buffer, "%.14f", d );
+    while ( p[-1] == '0' ) -- p;
+    if ( p[-1] == '.' ) -- p;
+    * p = 0;
     return string ( buffer );
 }
 
@@ -196,7 +199,8 @@ static double get_number ( void )
    get_token();
    double result;
    if ( ! to_number ( token, result ) )
-       error ( "expected number and got `" + token + "'" );
+       error ( "expected number and got `"
+               + token + "'" );
    return result;
 }
 
