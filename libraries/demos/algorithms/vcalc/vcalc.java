@@ -2,7 +2,7 @@
 //
 // File:	vcalc.java
 // Authors:	Bob Walton (walton@seas.harvard.edu)
-// Date:	Wed Jan 16 05:09:53 EST 2013
+// Date:	Tue Jan 22 00:59:09 EST 2013
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -499,6 +499,13 @@ public class vcalc {
     static void execute_assign ( String variable )
     {
         check_variable ( variable );
+
+	if ( variable.equals ( "true" )
+	     ||
+	     variable.equals ( "false" ) )
+	    error ( "attempt to assign a value to `"
+	            + variable + "'" );
+
         String op = get_token();
 
 	Value v1 = null;
