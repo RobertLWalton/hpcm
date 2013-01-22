@@ -2,7 +2,7 @@
 //
 // File:	vcalc.cc
 // Authors:	Bob Walton (walton@seas.harvard.edu)
-// Date:	Mon Jan 21 04:13:21 EST 2013
+// Date:	Tue Jan 22 00:18:29 EST 2013
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -11,18 +11,19 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: walton $
-//   $Date: 2013/01/21 17:53:35 $
+//   $Date: 2013/01/22 06:28:41 $
 //   $RCSfile: vcalc.cc,v $
-//   $Revision: 1.1 $
+//   $Revision: 1.2 $
 
 #include <iostream>
 #include <iomanip>
 #include <cstdio>
-#include <string>
-#include <map>
+#include <string>	// string
+#include <map>		// map
 using namespace std;
 #include <cassert>
-#include <cmath>	// fabs
+#include <cctype>	// isspace, isblank
+#include <cmath>	// fabs, atan2, sqrt, M_PI
 
 int debug = false;
 #define dout    if ( debug ) cout
@@ -56,6 +57,40 @@ char skip_ws ( bool comment = false)
     return 0;
 }
 
+// Skip non-whitespace until the next separator char-
+// acter (`(', `)', `,', `:', `\n') or whitespace,
+// and return the characters skipped as a string.
+//
+string read_symbol ( void )
+{
+    char buffer[200];
+    char * p = buffer;
+    string result = "";
+    while ( true )
+    {
+	char c;
+        cin >> c;
+	if ( ! cin.good() ) break;
+	if ( c == '(' || c == ')' ||
+	     c == ',' || c == ':' ||
+	     isspace ( c ) )
+	{
+	    cin.unget();
+	    break;
+	}
+	* p ++ = c;
+	if ( p - buffer >= sizeof ( buffer ) - 1 )
+	{
+	    * p = 0;
+	    result += buffer;
+	    p = buffer;
+	}
+    }
+    * p = 0;
+    * result += buffer;
+    return result;
+}
+
 // Get a token which is either a number or a string or
 // a line end or an end of file.  Line end is represent-
 // ed by the string "(END-OF-LINE)" and end of file by
@@ -63,15 +98,21 @@ char skip_ws ( bool comment = false)
 // easy to print. 
 //
 // Set is_number true if number, false if string.
+// If set true, `token' is set to "(NUMBER)" for
+// error messages.
 //
 // Backup may be set true to backup one token.
 //
+// Note that token is never returned empty.
+//
 string ELINE = "(END-OF-LINE)";
 string EFILE = "(END-OF-FILE)";
-string token;	// String token gotten or "(NUMBER)".
+string token = ELINE;
+	 	// String token gotten or "(NUMBER)".
 double number;	// Number token gotten.
 bool is_number;	// True if token is number.
 bool backup = false;
+int line_number = 0;
 void get_token ( void )
 {
     if ( backup )
@@ -80,14 +121,15 @@ void get_token ( void )
 	return;
     }
 
+    char c;
     if ( token == ELINE )
     {
         while ( true )
 	{
 	    ++ line_number;
-	    if ( skip_ws() == '/' )
+	    c = skip_ws();
+	    if ( c == '/' )
 	    {
-	        char c;
 		cin >> c;
 		if ( ! cin.good() )
 		    error ( "unexpected end of file" );
@@ -95,34 +137,37 @@ void get_token ( void )
 		    skip_ws ( true );
 		else
 		{
-		    cin.unget(); cin.unget();
+		    cin.unget();
 		    break;
 		}
 	    }
 	}
     }
     else
+	c = skip_ws();
+    
+    is_number = false;
+
+    if ( c == 0 )
+	token = EFILE;
+    else if ( c == '\n' )
+	token = ELINE;
+    else if ( c == '(' )
+	token = "(";
+    else if ( c == ')' )
+	token = ")";
+    else if ( c == ',' )
+	token = ",";
+    else if ( c == ':' )
+	token = ":";
+    else if ( cin.unget(),
+	      cin >> number, cin.good() )
     {
-	char c = skip_ws();
-	
-	is_number = false;
-	if ( ! cin.good() )
-	    token = EFILE;
-	else if ( c == '\n' )
-	    token = ELINE;
-	else if ( c == '(' )
-	    token = "(";
-	else if ( c == ')' )
-	    token = ")";
-	else if ( c == ',' )
-	    token = ",";
-	else if ( c == ':' )
-	    token = ":";
-	else if ( cin.unget(), cin >> number, cin.good() )
-	    is_number = true;
-	else
-	    cin.clear(), cin >> token;
+	is_number = true;
+	token = "(NUMBER)";
     }
+    else
+	cin.clear(), token = read_symbol();
 }
 
 // Print error message and exit.
@@ -137,7 +182,7 @@ static void error ( string message )
 
 static void check_not_eof ( void )
 {
-   if ( token != EFILE )
+   if ( token == EFILE )
       error ( "unexpected end of file" );
 }
 
@@ -148,7 +193,7 @@ static void check_number ( void )
               + "'" );
 }
 
-// Read token and check that is matches desired string.
+// Read token and check that it matches desired string.
 //
 static void skip ( string desired )
 {
@@ -204,7 +249,7 @@ Vector operator* ( double s, Vector v )
 }
 double length ( Vector v )
 {
-    sqrt ( v.x * v.x + v.y * v.y );
+    return sqrt ( v.x * v.x + v.y * v.y );
 }
 double angle ( Vector v )
 {
@@ -290,8 +335,8 @@ ostream & operator<< ( ostream & s, value v )
 	return s << "BAD OBJECT TYPE " << type;
 }
 
-map<string,value> variable_table;
-    // Maps variable name Strings to Values.
+map<string,Value> variable_table;
+    // Maps variable name strings to Values.
 
 static void require_boolean ( Value v1 )
 {
@@ -307,7 +352,6 @@ static void require_boolean ( Value v1, Value v2 )
 	error
 	    ( "second operand should be boolean" );
 }
-
 static void require_scalar ( Value v1 )
 {
     if ( v1.type != SCALAR )
@@ -320,7 +364,6 @@ static void require_scalar ( Value v1, Value v2 )
     else if ( v2.type != SCALAR )
 	error ( "second operand should be scalar" );
 }
-
 static void require_vector ( Value v1 )
 {
     if ( v1.type != VECTOR )
@@ -482,6 +525,20 @@ static void execute_print ( )
 //
 static void execute_assign ( string variable )
 {
+    if ( variable == "true"
+	 ||
+	 variable == "false"
+	 ||
+	 variable == "!"
+	 ||
+	 variable == "-"
+	 ||
+	 variable == "|"
+	 ||
+	 variable == "||" )
+	error ( "attempt to assign a value to `"
+		+ variable + "'" );
+
     get_token();
 
     Value v1;
@@ -492,7 +549,7 @@ static void execute_assign ( string variable )
 	if ( is_scalar ( v1 ) )
 	    v1.s = - v1.s;
 	else
-	    v1.v = negate ( v1.v );
+	    v1.v = - v1.v;
     }
     else if ( token == "|" )
     {
