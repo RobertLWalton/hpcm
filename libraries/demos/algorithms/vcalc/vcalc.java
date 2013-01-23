@@ -2,7 +2,7 @@
 //
 // File:	vcalc.java
 // Authors:	Bob Walton (walton@seas.harvard.edu)
-// Date:	Tue Jan 22 10:29:37 EST 2013
+// Date:	Wed Jan 23 11:19:18 EST 2013
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -446,6 +446,8 @@ public class vcalc {
 	            " vector constant, " +
 	            " or variable but got `" +
 		    token + "'" );
+
+	dprint ( "[" + v.toString() + "]" );
 	return v;
     }
 
@@ -672,6 +674,9 @@ public class vcalc {
 	skip ( EOL );
 
 	variable_table.put ( variable, v1 );
+
+	dprintln ( "ASSIGN " + v1.toString()
+	           + " TO " + variable );
     }
 
 
