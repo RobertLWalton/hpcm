@@ -2,7 +2,7 @@
 //
 // File:	vcalc.java
 // Authors:	Bob Walton (walton@seas.harvard.edu)
-// Date:	Wed Jan 23 11:19:18 EST 2013
+// Date:	Wed Jan 23 11:21:57 EST 2013
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -504,15 +504,7 @@ public class vcalc {
 
 	if ( variable.equals ( "true" )
 	     ||
-	     variable.equals ( "false" )
-	     ||
-	     variable.equals ( "!" )
-	     ||
-	     variable.equals ( "-" )
-	     ||
-	     variable.equals ( "|" )
-	     ||
-	     variable.equals ( "||" ) )
+	     variable.equals ( "false" ) )
 	    error ( "attempt to assign a value to `"
 	            + variable + "'" );
 
