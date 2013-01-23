@@ -2,7 +2,7 @@
 //
 // File:	vcalc.cc
 // Authors:	Bob Walton (walton@seas.harvard.edu)
-// Date:	Tue Jan 22 09:48:08 EST 2013
+// Date:	Wed Jan 23 10:54:01 EST 2013
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: walton $
-//   $Date: 2013/01/22 15:32:10 $
+//   $Date: 2013/01/23 16:40:07 $
 //   $RCSfile: vcalc.cc,v $
-//   $Revision: 1.5 $
+//   $Revision: 1.7 $
 
 #include <iostream>
 #include <iomanip>
@@ -30,7 +30,8 @@ int debug = false;
 #define dout    if ( debug ) cout
 #define dprintf if ( debug ) printf
 
-// Convert double to string.
+// Convert double to string.  Use %.14f and strip
+// trailing 0's and if integer also the `.'.
 //
 string to_string ( double d )
 {
@@ -59,22 +60,21 @@ bool to_number ( string s, double & result )
 // end of line or end of file if `comment' is true.
 // Return next non-whitespace character (which is not
 // skipped), or '\n' for end of line (the line feed IS
-// skipped), or 0 for end of file.
+// skipped), or EOF for end of file.
 //
-char skip_ws ( bool comment = false)
+int skip_ws ( bool comment = false)
 {
     int c;
-    while ( c = cin.get(), c != EOF )
+    while ( c = cin.get() )
     {
-        if ( c == '\n' ) return c;
+        if ( c == '\n' || c == EOF ) return c;
 	else if ( ! comment && ! isblank ( c ) )
 	    return c;
     }
-    return 0;
 }
 
 // Skip non-whitespace until the next separator char-
-// acter (`(', `)', `,', `:', `\n') or whitespace,
+// acter (`(', `)', `,', `:', `\n'), whitespace, or EOF,
 // and return the characters skipped as a string.
 //
 string read_symbol ( void )
@@ -109,15 +109,15 @@ string read_symbol ( void )
 // Get a token which is either a symbol or a separator.
 // Line end is represented by the string "(END-OF-LINE)"
 // and end of file by the string "(END-OF-FILE)" so that
-// error messages are // easy to print. 
+// error messages are easy to print. 
 //
 // Backup may be set true to backup one token.
 //
-// Note that token is never returned empty.
+// Note that returned token is never empty.
 //
 string ELINE = "(END-OF-LINE)";
 string EFILE = "(END-OF-FILE)";
-string token = ELINE;	// Token gotten.
+string token = ELINE;	// Token is returned here.
 bool backup = false;
 int line_number = 0;
 static void error ( string message );
@@ -160,7 +160,7 @@ void get_token ( void )
     else
 	c = skip_ws();
     
-    if ( c == 0 )
+    if ( c == EOF )
 	token = EFILE;
     else if ( c == '\n' )
 	token = ELINE;
@@ -175,7 +175,7 @@ void get_token ( void )
     else
 	cin.unget(), token = read_symbol();
 
-    dout << "{" << token << "}" << endl;
+    dout << "{" << token << "}";
 }
 
 // Print error message and exit.
@@ -199,7 +199,8 @@ static double get_number ( void )
    get_token();
    double result;
    if ( ! to_number ( token, result ) )
-       error ( "expected number and got `" + token + "'" );
+       error ( "expected number and got `"
+               + token + "'" );
    return result;
 }
 
@@ -429,7 +430,7 @@ static bool is_scalar ( Value v1, Value v2 )
 		" or both be vector" );
     else if ( v1.type == SCALAR )
 	return true;
-    else if ( v2.type == VECTOR )
+    else if ( v1.type == VECTOR )
 	return false;
     else
 	error
@@ -478,7 +479,7 @@ static Value get_value ( )
 		" vector constant, "
 		" or variable but got `" +
 		token + "'" );
-    dout << "[" << v << "]" << endl;
+    dout << "[" << v << "]";
     return v;
 }
 
@@ -532,22 +533,18 @@ static void execute_assign ( string variable )
 {
     if ( variable == "true"
 	 ||
-	 variable == "false"
-	 ||
-	 variable == "!"
-	 ||
-	 variable == "-"
-	 ||
-	 variable == "|"
-	 ||
-	 variable == "||" )
+	 variable == "false" )
 	error ( "attempt to assign a value to `"
 		+ variable + "'" );
 
-    get_token();
-
     Value v1;
+        // This is both the first value read and the
+	// final resulting value.
 
+    // Read and process statement up to but not
+    // including the statement ending EOL.
+    //
+    get_token();
     if ( token == "-" )
     {
 	v1 = get_value();
@@ -586,6 +583,9 @@ static void execute_assign ( string variable )
     }
     else
     {
+        // Case where there is either a binary operator
+	// or no operator.
+	//
 	backup = true;
 	v1 = get_value();
 	get_token();
@@ -699,6 +699,8 @@ static void execute_assign ( string variable )
 	else backup = true;
     }
 
+    // Skip statement ending ELINE.
+    //
     skip ( ELINE );
 
     variable_table[variable] = v1;
@@ -720,6 +722,10 @@ int main ( int argc, char * argv[] )
 
 	if ( token == "if" )
 	{
+	    // Process `if' statement.  If condition is
+	    // true, just skip past `:'.  Otherwise skip
+	    // past ELINE and go to next statement.
+	    //
 	    Value v = get_value();
 	    require_boolean ( v );
 	    skip ( ":" );
@@ -752,13 +758,8 @@ int main ( int argc, char * argv[] )
 	else if ( is_variable() )
 	{
 	    string variable = token;
-	    get_token();
-	    if ( token == "=" )
-		execute_assign ( variable );
-	    else
-		error ( "`" + variable +
-			" " + token +
-			"' unrecognized" );
+	    skip ( "=" );
+	    execute_assign ( variable );
 	}
 	else if ( token != ELINE )
 	    error ( "`" + token + "' unrecognized" );

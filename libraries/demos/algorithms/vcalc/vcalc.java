@@ -2,7 +2,7 @@
 //
 // File:	vcalc.java
 // Authors:	Bob Walton (walton@seas.harvard.edu)
-// Date:	Wed Jan 23 11:21:57 EST 2013
+// Date:	Wed Jan 23 11:25:30 EST 2013
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -121,6 +121,9 @@ public class vcalc {
 	System.exit ( 1 );
     }
 
+    // Convert token to number.  If this is not
+    // possible, just return null.
+    //
     static Double token_to_number ( String token )
     {
         try { return Double.valueOf ( token ); }
@@ -511,7 +514,12 @@ public class vcalc {
         String op = get_token();
 
 	Value v1 = null;
+	    // This is both the first value read and the
+	    // final resulting value.
 
+	// Read and process statement up to but not
+	// including EOL.
+	//
 	if ( op.equals ( "-" ) )
 	{
 	    v1 = get_value();
@@ -550,6 +558,9 @@ public class vcalc {
 	}
 	else
 	{
+	    // Case where there is either a binary
+	    // operator or no operator.
+	    //
 	    backup = true;
 	    v1 = get_value();
 	    op = get_token();
@@ -663,6 +674,8 @@ public class vcalc {
 	    else backup = true;
 	}
 
+	// Skip statement ending EOL.
+	//
 	skip ( EOL );
 
 	variable_table.put ( variable, v1 );
@@ -685,6 +698,11 @@ public class vcalc {
 
 	    if ( token.equals ( "if" ) )
 	    {
+	        // Process `if' statement.  If condition
+		// is true, just skip past `:'.  Other-
+		// wise skip past EOL and go to next
+		// statement.
+		//
 	        Value v = get_value();
 		require_boolean ( v );
 		skip ( ":" );
@@ -716,12 +734,8 @@ public class vcalc {
 	    }
 	    else
 	    {
-	        String op = get_token();
-		if ( op.equals ( "=" ) )
-		    execute_assign ( token );
-		else
-		    error ( "`" + token + " " + op +
-		            "' unrecognized" );
+		skip ( "=" );
+		execute_assign ( token );
 	    }
 	}
     }
