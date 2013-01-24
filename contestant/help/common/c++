@@ -1,4 +1,4 @@
-C++ Help		    Wed Jan 16 20:16:21 EST 2013
+C++ Help		    Thu Jan 24 03:12:16 EST 2013
 
 C++ Language Program Structure 
 --- -------- ------- ---------
@@ -10,7 +10,6 @@ numbers, and debugging is:
     // Standard Libraries.
 
     #include <iostream>
-    #include <iomanip>	 // ws
     #include <cstdio>	 // printf
     using std;
 
@@ -38,7 +37,7 @@ numbers, and debugging is:
 	// ters will not need to be read, UNLESS the
 	// problem statement says otherwise.  You need 1
 	// extra character for string ending '\0'.
-
+
     int main ( int argc, char * argv[] )
     {
 	// argc == number of program arguments + 1.
@@ -57,25 +56,26 @@ numbers, and debugging is:
 	    cin >> ...
 	    . . . . .
 
-	    // Read a string of integers ending in `*'.
+	    // Read a string of numbers ending in `*'.
 	    //
-	    while ( cin >> ..., cin.good() )
+	    double d;
+	    while ( cin >> d, cin.good() )
 	    {
 	       . . . . .
 	    }
 	    cin.clear();
 		// After returning a false value for
 		// cin.good(), we MUST cin.clear()
-		// to continue reading.
+		// before reading more.
 
-	    // Skip `*' and preceding whitespace.
+	    // Read `*'.
 	    //
 	    char c;
-	    cin >> ws >> c;
+	    cin >> c;
 	    assert ( c == '*' );
 
 	    . . . . .
-
+
 	    // After reading test case data with cin,
 	    // input will be just before the line feed
 	    // at the end of the test case data.  This
@@ -115,13 +115,19 @@ of your variable.  A simple way of doing this is to put
 the following right after the `#include's:
 
 	#define time Time
-
+
 
 Input
 -----
 
 Input is read from the standard input `cin'; you MUST
 NOT open any file for input.
+
+You may assume that input is correctly formatted, except
+for the rare problem where you are told to produce
+special output if the input contains a formatting error.
+Do not waste time checking for input errors when you do
+not have to.
 
 Test cases begin with a test case name line that is
 read by the first `getline'.  When any input method call
@@ -147,11 +153,9 @@ time with `cin >>', and NOT read in first with
 fully read by `cin >>' and false if it was not because
 the next non-whitespace character in the input was, say,
 a `*'.  If this last is the case, then you must skip
-the `*', which is done by the `cin >> ws >> c' that
-skips first the whitespace between the last number read
-and the input `*', and then skips the input `*'.
-
-See the `summer' demonstration problem solution which
+the `*', which is done by the `cin >> c'.
+
+See the `io/summer' demonstration problem solution which
 reads numbers.
 
 Sometimes a problem will specifically ask you to read
@@ -165,8 +169,15 @@ text and one output line containing text.  For these
 the test case input line is read the same way as the
 test case name line is read above.
 
-See the `reverser' demonstration problem solution which
-reads text lines.
+See the `io/reverser' demonstration problem solution
+which reads text lines.
+
+Sometimes it is necessary to read whitespace characters
+explicitly.  In these cases cin.get() may be used to get
+the next character, and cin.unget() may be used to back
+up over a character in the input.  See the `algorithms/
+vcalc' demonstration problem solution for a use of these
+functions.
 
 
 Output
@@ -175,9 +186,19 @@ Output
 Output is written to the standard output `cout'; you
 MUST NOT open any file for output; you MUST NOT write to
 the standard error output, `cerr'.
+
+In general, to be correct your program must produce
+EXACTLY the one and only correct sequence of output
+characters.  The main exception is that when floating
+point numbers are output with a given number of decimal
+places, you are permitted to output numbers which differ
+from other correct output by one unit in the last
+decimal place.  You must use the correct upper or lower
+case and use only a single space character as a separa-
+tor unless instructed to line things up in columns.
 
 Output can be written with `cout << ... << endl'.  Out-
-put that has special formating requirements may be
+put that has special formatting requirements may be
 written with `printf'.  Some `printf' formats that may
 be useful are "%.3f" to print a double with exactly 3
 decimal places in as few columns as possible, "%10.3f"
@@ -187,7 +208,7 @@ to print a string right adjusted in 10 columns, and
 Here the numbers 3 and 10 are merely representative, and
 can be replaced by any other non-zero positive integers.
 
-See the `summer' demonstration problem solution which
+See the `io/summer' demonstration problem solution which
 outputs floating point `double's using printf.
 
 
@@ -204,7 +225,7 @@ if the program is called with one or more arguments, and
 defines dout (or dprintf) to do what cout (or printf)
 does if and only if `debug' is true.  Thus dout and
 dprintf can be used to print debugging information.
-
+
 Debugging is best done with information printed by
 `dout' and `dprintf', and not with a debugger like
 `gdb'.  The exception is debugging programs that crash
@@ -221,8 +242,8 @@ this with
 
 	assert ( c == '*' );
 
-See the `reverser' and `summer' demonstration problem
-solutions for uses of dout, dprintf, and assert.
+See the `io/reverser' and `io/summer' demonstration
+problem solutions for uses of dout, dprintf, and assert.
 
 
 Function and Macro Synopsis
@@ -237,16 +258,22 @@ the UNIX commands:
 	man math.h
 	man limits.h
 	man float.h
-
+
 and looking for web documentation for
 
 	istream::operator>>
 	istream::getline
 	istream::good
 	istream::clear
-	iomanip::ws
 	ostream::operator<<
 	ostream::endl
+
+In ACM contests in which you are not permitted access to
+the web, Standard Template Library (STL) API documenta-
+tion is usually available on-line during the contest via
+the command:
+
+	stlhelp
 
 The following is an extract from `man' and web pages of
 details needed to use the functions mentioned above, and
@@ -260,36 +287,26 @@ and a `long long int' is guaranteed to be at least 64
 bits.  Floating point computations should always be done
 using `double's, and NOT `float's, to avoid having too
 little precision.
-
-int i; long long li; double d; char name[1000];
-cin >> i >> li >> d >> name
+
+int i; long long li; double d; char name[1000], char c;
+cin >> i >> li >> d >> name >> c
 cin.good()
 cin.clear()
     cin >> v skips whitespace and reads a value into v
     provided that one or more characters after the
     whitespace can be interpreted as a value for v.  For
     a char array like `name', any string of non-white-
-    space characters is considered to be a value.  After
-    successfully reading into v, cin.good() will be
-    true.  After unsuccessfully reading into v, v will
-    not be changed and flags in cin will be set so
-    cin.good() returns false, but even in this case
-    whitespace will be skipped.  When cin is set so
-    cin.good() returns false, attempts to read more
-    input will see an end of file.  To clear cin from
-    this state so more input can be read, call
-    cin.clear().
-
-char c; cin >> c
-    Similar to the above except that no whitespace is
-    skipped and the only failure possible would be the
-    case where cin.good() returns false before the
-    cin >> c.
-
-cin >> ws
-    This just skips any whitespace in the input.  It
-    is mostly of use in the context of wanting to read
-    just the next non-whitespace character.
+    space characters is considered to be a value.  For
+    a character like `c', any non-whitespace character
+    is a value.  After successfully reading into v,
+    cin.good() will be true.  After unsuccessfully
+    reading into v, v will not be changed and flags in
+    cin will be set so cin.good() returns false, but
+    even in this case whitespace will be skipped.  When
+    cin is set so cin.good() returns false, attempts to
+    read more input will see a pseudo-end-of-file.  To
+    clear cin from this state so more input can be read,
+    call cin.clear().
 
 cin.getline ( char * buffer, sizeof ( buffer ) )
     Read a line into the buffer, assuming the line plus
@@ -297,12 +314,27 @@ cin.getline ( char * buffer, sizeof ( buffer ) )
     Fails if cin is at the end of file position, in
     which case cin is set so that cin.good() returns
     false.
+
+int c;
+c = cin.get()
+cin.unget()
+    Cin.get() returns the next input character, even if
+    that is whitespace or `\n'.  If there is no char-
+    acter because cin is at the end of file, the value
+    EOF is returned (this is typically defined in the
+    iostream header file as the integer -1).  To backup
+    one character in the input, so the next character
+    read will be the character backed up over, use
+    cin.unget().  The amount of backup allowed is un-
+    specified, but to be cautious, after reading a char-
+    acter of a line, one should not try to backup into
+    the proceeding line.
 
 int i; long long li; double d; char name[1000]; char c;
 cout << i << li << d << name << "..." << c
     cout << v outputs v.  Strings are '\0' terminated
     and the '\0' is not output.  The output of numbers
-    does not output any supperfluous characters, and
+    does not output any superfluous characters, and
     may output scientific notation for floating point
     numbers. If you want to format output more
     precisely, use printf.
@@ -322,7 +354,7 @@ int printf ( const char * format, ... )
 
     %Wd		Outputs an `int' as a decimal integer
     		right adjusted in W columns.
-
+
     %lld	Outputs a `long long int' as a decimal
     		integer with no spaces before or after.
 
@@ -362,10 +394,10 @@ INT_MAX, INT_MIN, LLONG_MAX, LLONG_MIN, DBL_MAX, DBL_MIN
     be stored respectively in an `int', `long long int',
     or `double'.  The integer values are from `climits'
     and the floating point values from `cfloat'.
-
+
 M_PI, M_E
 
-    The mathematical constants PI and e from cmath.
+    The mathematical constants PI and e from `cmath'.
 
 
 Writing Your Own << And >> Operators
@@ -375,7 +407,7 @@ It is often convenient to define your own << operator
 to output something.  Some examples are:
 
     ostream & operator <<
-	    ( ostream & out, mytype & value )
+	    ( ostream & out, const mytype & value )
     {
 	. . .
 	out << . . .
@@ -391,21 +423,20 @@ format.  A simple way is
 	myformat ( int value ) : value ( value ) {}
     };
     ostream & operator <<
-	    ( ostream & out, myformat s )
+	    ( ostream & out, const myformat & f )
     {
-    	out << ( ... s.value ... );
+    	out << ... <<  f.value << ...;
 	. . .
 	return out;
     }
     . . .
     cout << myformat ( 99 );
-
+
 Here we have invented a typed structure to encapsulate
 the value when it is to be printed.  Note the argument
-to << may NOT be `myformat & s' because here s is not
-constant, and in use the `myformat' value is a temporary
-and temporaries are read-only.  However, the argument
-may be `const myformat & s'.
+to << may NOT be `myformat & s' without the `const',
+because in use the `myformat' value is a temporary and
+temporaries are read-only.
 
 Input operators can be define by:
 
@@ -417,20 +448,6 @@ Input operators can be define by:
 	. . .
 	return in;
     }
-
-
-STL API Documentation
---- --- ------------
-
-Standard Template Library (STL) API documentation is
-usually available on-line during a formal contest.  The
-command to access it is:
-
-	stlhelp
-
-In a formal contest, you should NOT use other means to
-access such documentation, as using the internet is a
-violation of formal contest rules.
 
 
 
@@ -445,6 +462,6 @@ file.
 RCS Info (may not be true date or author):
 
     $Author: walton $
-    $Date: 2013/01/17 09:49:50 $
+    $Date: 2013/01/24 09:31:53 $
     $RCSfile: c++,v $
-    $Revision: 1.16 $
+    $Revision: 1.17 $
