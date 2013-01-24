@@ -2,7 +2,7 @@
 //
 // File:	summer.cc
 // Authors:	Bob Walton (walton@seas.harvard.edu)
-// Date:	Thu Jan 24 03:25:00 EST 2013
+// Date:	Thu Jan 24 03:26:58 EST 2013
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -11,12 +11,11 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: walton $
-//   $Date: 2013/01/24 08:25:14 $
+//   $Date: 2013/01/24 08:27:16 $
 //   $RCSfile: summer.cc,v $
-//   $Revision: 1.7 $
+//   $Revision: 1.8 $
 
 #include <iostream>
-#include <iomanip>
 #include <cstdio>
 using namespace std;
 #include <cassert>

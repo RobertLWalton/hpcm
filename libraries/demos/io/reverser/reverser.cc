@@ -2,7 +2,7 @@
 //
 // File:	reverser.cc
 // Authors:	Bob Walton (walton@seas.harvard.edu)
-// Date:	Thu Jan 17 03:02:18 EST 2013
+// Date:	Thu Jan 24 03:26:32 EST 2013
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -11,12 +11,11 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: walton $
-//   $Date: 2013/01/17 08:02:55 $
+//   $Date: 2013/01/24 08:26:43 $
 //   $RCSfile: reverser.cc,v $
-//   $Revision: 1.6 $
+//   $Revision: 1.7 $
 
 #include <iostream>
-#include <iomanip>
 #include <cstdio>
 using namespace std;
 #include <cctype>
