@@ -2,7 +2,7 @@
  *
  * File:	summer.c
  * Authors:	Bob Walton (walton@seas.harvard.edu)
- * Date:	Thu Jan 17 03:13:50 EST 2013
+ * Date:	Fri Jan 25 11:15:55 EST 2013
  *
  * The authors have placed this program in the public
  * domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
  * RCS Info (may not be true date or author):
  *
  *   $Author: walton $
- *   $Date: 2013/01/17 08:14:03 $
+ *   $Date: 2013/01/25 16:16:59 $
  *   $RCSfile: summer.c,v $
- *   $Revision: 1.6 $
+ *   $Revision: 1.7 $
  */
 
 
@@ -33,13 +33,15 @@ int main ( int argc, char * argv[] )
 
     while ( fgets ( line, sizeof ( line ), stdin ) )
     {
+	double corrected_sum, number, sum;
+
 	/* Print test case name.
 	 */
         printf ( "%s", line );
 
 	/* Read input and compute corrected sum.
 	 */
-	double corrected_sum = 0, number, sum;
+	corrected_sum = 0;
 
 	/* Read and sum numbers until `='.
 	 */

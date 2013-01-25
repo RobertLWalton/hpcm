@@ -2,7 +2,7 @@
  *
  * File:	reverser.c
  * Authors:	Bob Walton (walton@seas.harvard.edu)
- * Date:	Thu Jan 17 03:13:16 EST 2013
+ * Date:	Fri Jan 25 11:13:15 EST 2013
  *
  * The authors have placed this program in the public
  * domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
  * RCS Info (may not be true date or author):
  *
  *   $Author: walton $
- *   $Date: 2013/01/17 08:13:28 $
+ *   $Date: 2013/01/25 16:15:22 $
  *   $RCSfile: reverser.c,v $
- *   $Revision: 1.6 $
+ *   $Revision: 1.7 $
  */
 
 
@@ -34,6 +34,8 @@ char line[82];
  */
 char * print_substitute_word ( char * q )
 {
+    char * p, save;
+
     /* Move q backward to point just after word.
      */
     while ( 1 )
@@ -42,7 +44,7 @@ char * print_substitute_word ( char * q )
 	if ( isalpha ( q[-1] ) ) break;
 	-- q;
     }
-    char * p = q;  /* p points just after word. */
+    p = q;  /* p points just after word. */
 
     /* Move q to point at 1st character of word.
      */
@@ -51,7 +53,7 @@ char * print_substitute_word ( char * q )
 
     /* Print word and return.
      */
-    char save = * p;
+    save = * p;
     * p = 0;
     printf ( "%s", q );
     * p = save;
@@ -64,6 +66,8 @@ int main ( int argc, char * argv[] )
 
     while ( fgets ( line, sizeof ( line ), stdin ) )
     {
+	char * p, * q;
+
 	/* When debugging print the intput as well as
 	 * the output.
 	 */
@@ -72,7 +76,7 @@ int main ( int argc, char * argv[] )
     	/* Set p to beginning of line and q to end of
 	 * line.
 	 */
-	char * p = line, * q = line;
+	p = line, q = line;
 	while ( * q ) ++ q;
 
 	/* Print line substituting for words.

@@ -2,7 +2,7 @@
  *
  * File:	vcalc.c
  * Authors:	Bob Walton (walton@seas.harvard.edu)
- * Date:	Fri Jan 25 03:34:13 EST 2013
+ * Date:	Fri Jan 25 11:07:46 EST 2013
  *
  * The authors have placed this program in the public
  * domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
  * RCS Info (may not be true date or author):
  *
  *   $Author: walton $
- *   $Date: 2013/01/25 14:41:26 $
+ *   $Date: 2013/01/25 16:10:30 $
  *   $RCSfile: vcalc.c,v $
- *   $Revision: 1.1 $
+ *   $Revision: 1.2 $
  */
 
 #include <stdio.h>	/* sprintf */
@@ -265,8 +265,8 @@ static void check_not_eof ( void )
 
 static double get_number ( void )
 {
-   get_token();
    double result;
+   get_token();
    if ( ! to_number ( token, & result ) )
        error ( "expected number and got `%s'", token );
    return result;
@@ -596,10 +596,11 @@ static Value get_value ( )
     get_token();
     if ( token == OPENPAR )
     {
+	double x, y;
 	v.type = VECTOR;
-	double x = get_number();
+	x = get_number();
 	skip ( COMMA );
-	double y = get_number();
+	y = get_number();
 	skip ( CLOSEPAR) ;
 	v.v = new_Vector ( x, y );
     }
