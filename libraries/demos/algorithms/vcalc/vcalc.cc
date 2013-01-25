@@ -2,7 +2,7 @@
 //
 // File:	vcalc.cc
 // Authors:	Bob Walton (walton@seas.harvard.edu)
-// Date:	Wed Jan 23 10:54:01 EST 2013
+// Date:	Fri Jan 25 02:39:58 EST 2013
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -11,12 +11,11 @@
 // RCS Info (may not be true date or author):
 //
 //   $Author: walton $
-//   $Date: 2013/01/23 16:40:07 $
+//   $Date: 2013/01/25 16:18:34 $
 //   $RCSfile: vcalc.cc,v $
-//   $Revision: 1.7 $
+//   $Revision: 1.8 $
 
 #include <iostream>
-#include <iomanip>
 #include <cstdio>	// sprintf
 #include <cstdlib>	// exit, abort
 #include <string>	// string
@@ -26,7 +25,7 @@ using namespace std;
 #include <cctype>	// isspace, isblank
 #include <cmath>	// fabs, atan2, sqrt, M_PI
 
-int debug = false;
+bool debug = false;
 #define dout    if ( debug ) cout
 #define dprintf if ( debug ) printf
 
