@@ -1,4 +1,4 @@
-C Help			    Thu Jan 24 04:32:11 EST 2013
+C Help			    Sat Jan 26 13:35:06 EST 2013
 
 
 C Language Program Structure 
@@ -148,7 +148,7 @@ by `scanf ( " *" )' which skips first the whitespace
 between the last number read and the input `*', and
 then skips the input `*'.
 
-See the `summer' demonstration problem solution which
+See the `io/summer' demonstration problem solution which
 reads numbers.
 
 Floating point numbers can be read by `scanf' by using
@@ -164,10 +164,25 @@ text and one output line containing text.  For these
 the test case input line is read the same way as the
 test case name line is read above.
 
-See the `reverser' demonstration problem solution which
-reads text lines.
+See the `io/reverser' demonstration problem solution
+which reads text lines.
 
+Sometimes it is necessary to read input one character
+at a time.  `int c = getchar()' does this, returning
+the character read if there is one, or the special
+constant EOF if at the end-of-file.  Notice that c is
+an `int' and not a `char'; this is because EOF is
+usually defined to be -1.  If you have gotten the char-
+acter c this way, `ungetc ( c, stdin )' backs up one
+character in the input stream, so the next character to
+be read will be the character c again.  However ungetc
+cannot be trusted to back up by more than one character
+at a time.
 
+See the `algorithms/vcalc' demonstration problem
+solution which reads characters one at a time.
+
+
 Output
 ------
 
@@ -184,7 +199,7 @@ from other correct output by one unit in the last
 decimal place.  You must use the correct upper or lower
 case and use only a single space character as a separa-
 tor unless instructed to line things up in columns.
-
+
 Output can be written with printf.  Some formats that
 may be useful are "%.3f" to print a double with exactly
 3 decimal places in as few columns as possible, "%10.3f"
@@ -194,7 +209,7 @@ to print a string right adjusted in 10 columns, and
 Here the numbers 3 and 10 are merely representative, and
 can be replaced by any other non-zero positive integers.
 
-See the `summer' demonstration problem solution which
+See the `io/summer' demonstration problem solution which
 outputs floating point `double's.
 
 
@@ -205,7 +220,7 @@ When your program is executed by the judge, it will
 NOT be passed ANY arguments.  A standard debugging
 technique is to output extra debugging information if
 and only if your program is passed an argument.
-
+
 The above program defines `debug' to be true if and
 only if the program is called with one or more argu-
 ments, and defines dprintf to do what printf does if
@@ -218,7 +233,7 @@ exception is debugging programs that crash or go into
 an infinite loop, which is best done with a debugger
 like `gdb'.  See `help gdb' for how to use `gdb' on
 programs that crash or go into an infinite loop.
-
+
 It is also a good idea to use `assert' statements
 to check that assumptions you have made are valid during
 actual program execution.  For example, if you are
@@ -237,10 +252,10 @@ above code by
 	assert ( scanf ( " %c", line[0] ) == 1 );
 	assert ( line[0] == '*' );
 
-See the `summer' demonstration problem solution which
+See the `io/summer' demonstration problem solution which
 uses dprintf and assert.
 
-
+
 Function and Macro Synopsis
 -------- --- ----- --------
 
@@ -250,12 +265,13 @@ the UNIX commands:
 
 	man scanf
 	man fgets
+	man getchar
 	man 3 printf
 	man assert
 	man math.h
 	man limits.h
 	man float.h
-
+
 The following is an extract from `man' pages of details
 needed to use the functions mentioned above, and also a
 few numeric constants.  Here we assume you already know
@@ -278,7 +294,7 @@ int scanf ( const char * format, ... )
 
     %lld	Ditto but for `long long int' instead of
     		`int'.
-
+
     %lf		Ditto but for `double' instead of `int'.
 
     %s		Ditto but for a string of non-whitespace
@@ -290,7 +306,7 @@ int scanf ( const char * format, ... )
     whitespace	Skips any amount of whitespace, includ-
     		ing none.  Line feeds are whitespace in
 		this sense.
-
+
     other	Skips just the given character.  E.g.,
     character	if `*' is in the format, then `*' must
     		be next in the input if the input is to
@@ -316,13 +332,23 @@ char * fgets ( char * buffer, sizeof ( buffer ), stdin )
     file, return NULL, which can be interpreted as
     `false'; otherwise return the address of the buffer,
     which can be interpreted as `true'.
-
+
     Note: `fgets' as it is used above is equivalent to
     `gets ( buffer )', but the `gets' function has been
     `deprecated', meaning that implementations need not
     and eventually will not support it.
 
-
+int c = getchar()
+ungetc ( c, stdin )
+    getchar() reads one character from the standard
+    input stream, or the special constant EOF (typically
+    defined to be -1) if at end-of-file.  If c is the
+    character just read by getchar(), then the call
+    ungetc ( c, stdin) backups up one character in the
+    standard input, so c will be re-read by the next
+    getchar().  Ungetc cannot be trusted to back up over
+    more than one character at a time.
+
 int printf ( const char * format, ... )
 
     Format can contain the following directives, in
@@ -345,7 +371,7 @@ int printf ( const char * format, ... )
     %f		Outputs a `double' as a floating point
     		number with 6 decimal places and no
 		spaces before or after.
-
+
     %.Pf	Ditto but with P decimal places instead
     		of 6 decimal places.
 
@@ -361,7 +387,7 @@ int printf ( const char * format, ... )
 
     %Ws		Ditto but outputs the string RIGHT
     		adjusted in W columns.
-
+
     %-Ws	Ditto but outputs the string LEFT
     		adjusted in W columns.
 
@@ -380,7 +406,7 @@ M_PI, M_E
 
     The mathematical constants PI and e from math.h.
 
-
+
 File:		c
 Author:		Bob Walton <walton@seas.harvard.edu>
 Date:		See top of file.
@@ -392,6 +418,6 @@ file.
 RCS Info (may not be true date or author):
 
     $Author: walton $
-    $Date: 2013/01/24 09:36:02 $
+    $Date: 2013/01/26 18:53:24 $
     $RCSfile: c,v $
-    $Revision: 1.14 $
+    $Revision: 1.15 $
