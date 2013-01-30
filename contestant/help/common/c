@@ -1,4 +1,4 @@
-C Help			    Sat Jan 26 13:35:06 EST 2013
+C Help			    Wed Jan 30 03:54:56 EST 2013
 
 
 C Language Program Structure 
@@ -75,9 +75,10 @@ numbers, and debugging is:
 	     * must be skipped or else it will be
 	     * erroneously read as an empty next test
 	     * case name.  Note: you CANNOT use
-	     * scanf ("\n") to do this! */
-
+	     * scanf ("\n") to do this!
+	     */
 	    fgets ( line, sizeof ( line ), stdin );
+	    assert ( line[0] == '\n' );
 		/* The line read here consists of just a
 		 * line feed and is discarded. */
 
@@ -175,9 +176,9 @@ an `int' and not a `char'; this is because EOF is
 usually defined to be -1.  If you have gotten the char-
 acter c this way, `ungetc ( c, stdin )' backs up one
 character in the input stream, so the next character to
-be read will be the character c again.  However ungetc
-cannot be trusted to back up by more than one character
-at a time.
+be read will be the character c again.  However you
+CANNOT reliably call ungetc several times in a row to 
+back over more than one character at a time.
 
 See the `algorithms/vcalc' demonstration problem
 solution which reads characters one at a time.
@@ -300,7 +301,7 @@ int scanf ( const char * format, ... )
     %s		Ditto but for a string of non-whitespace
     		characters, instead of `int'.
 
-    %c		Scans a single character.  Does NOT skip
+    %c		Reads a single character.  Does NOT skip
     		preceding whitespace.
 
     whitespace	Skips any amount of whitespace, includ-
@@ -333,7 +334,7 @@ char * fgets ( char * buffer, sizeof ( buffer ), stdin )
     `false'; otherwise return the address of the buffer,
     which can be interpreted as `true'.
 
-    Note: `fgets' as it is used above is equivalent to
+    Note: `fgets' as it is used above is similar to
     `gets ( buffer )', but the `gets' function has been
     `deprecated', meaning that implementations need not
     and eventually will not support it.
@@ -344,10 +345,11 @@ ungetc ( c, stdin )
     input stream, or the special constant EOF (typically
     defined to be -1) if at end-of-file.  If c is the
     character just read by getchar(), then the call
-    ungetc ( c, stdin) backups up one character in the
+    ungetc ( c, stdin ) backups up one character in the
     standard input, so c will be re-read by the next
-    getchar().  Ungetc cannot be trusted to back up over
-    more than one character at a time.
+    getchar().  Ungetc CANNOT reliably be called several
+    times in a row to back over more than one character
+    at a time.
 
 int printf ( const char * format, ... )
 
@@ -418,6 +420,6 @@ file.
 RCS Info (may not be true date or author):
 
     $Author: walton $
-    $Date: 2013/01/26 18:53:24 $
+    $Date: 2013/01/30 09:05:08 $
     $RCSfile: c,v $
-    $Revision: 1.15 $
+    $Revision: 1.16 $
