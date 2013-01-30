@@ -1,4 +1,4 @@
-C++ Help		    Thu Jan 24 03:12:16 EST 2013
+C++ Help		    Wed Jan 30 04:21:31 EST 2013
 
 C++ Language Program Structure 
 --- -------- ------- ---------
@@ -133,27 +133,28 @@ Test cases begin with a test case name line that is
 read by the first `getline'.  When any input method call
 fails, `cin.good()' becomes false, so the `while' loop
 test consists of `cin.getline ( ... ), cin.good()' and
-is true if and only the `cin.getline ( ... )' succeeded.
-Thus the outer loop above processes one test case at a
-time.  As soon as the test case name is successfully
-read into `line', it is printed by `cout << line <<
+is true if `cin.getline ( ... )' succeeded and false if
+`cin.getline ( ... )' failed because cin is at an end of
+file.  So the outer loop above processes one test case
+at a time.  As soon as the test case name is successful-
+ly read into `line', it is printed by `cout << line <<
 endl'.  All test case name lines are 80 characters or
 less, so `line' has enough room for 80 characters plus
 the string ending '\0' supplied by `cin.getline'.
 
 After reading and printing the test case name line, the
-rest of the test case data is read with `cin >>'.  This
-data may consist of numbers, perhaps with a few
-characters like `*' thrown in to indicate the end of a
-sequence of numbers.  The lines containing numbers may
-be very long, so they should be read one number at a
-time with `cin >>', and NOT read in first with 
-`cin.getline'.  A `*' may be detected by looking at
-`cin.good()' which will be true if a number was success-
-fully read by `cin >>' and false if it was not because
-the next non-whitespace character in the input was, say,
-a `*'.  If this last is the case, then you must skip
-the `*', which is done by the `cin >> c'.
+remaining test case data is read with `cin >>'.  This
+data may consist of numbers, perhaps with something
+like `*' thrown in to indicate the end of a sequence of
+numbers.  Lines containing numbers may be very long, so
+they should be read one number at a time with `cin >>',
+and NOT read in first with `cin.getline'.  A `*' may be
+detected by looking at `cin.good()', which will be true
+if `cin >>' successfully read a number, and false if it
+did not because the next non-whitespace character in the
+input was, say, a `*'.  In this last case, you must
+first clear the failed state bits in cin using
+`cin.clear()', and then skip the `*' using `cin >> c'.
 
 See the `io/summer' demonstration problem solution which
 reads numbers.
@@ -173,11 +174,14 @@ See the `io/reverser' demonstration problem solution
 which reads text lines.
 
 Sometimes it is necessary to read whitespace characters
-explicitly.  In these cases cin.get() may be used to get
-the next character, and cin.unget() may be used to back
-up over a character in the input.  See the `algorithms/
-vcalc' demonstration problem solution for a use of these
-functions.
+explicitly.  In these cases `int c = cin.get()' may be
+used to get the next character, where c will be set to
+the special value EOF if cin is at the end of file.
+`cin.unget()' may be used to back up over a character in
+the input, but after reading a character from a line,
+you should not attempt to back up into a preceding line.
+See the `algorithms/vcalc' demonstration problem solu-
+tion for a use of these functions.
 
 
 Output
@@ -315,8 +319,7 @@ cin.getline ( char * buffer, sizeof ( buffer ) )
     which case cin is set so that cin.good() returns
     false.
 
-int c;
-c = cin.get()
+int c = cin.get()
 cin.unget()
     Cin.get() returns the next input character, even if
     that is whitespace or `\n'.  If there is no char-
@@ -462,6 +465,6 @@ file.
 RCS Info (may not be true date or author):
 
     $Author: walton $
-    $Date: 2013/01/24 09:31:53 $
+    $Date: 2013/01/30 11:12:29 $
     $RCSfile: c++,v $
-    $Revision: 1.17 $
+    $Revision: 1.18 $
