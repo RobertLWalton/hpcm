@@ -4,7 +4,7 @@
 #
 # File:		testproblems
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Mon Feb  4 06:22:01 EST 2013
+# Date:		Mon Feb  4 15:09:14 EST 2013
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2013/02/04 12:19:34 $
+#   $Date: 2013/02/04 20:09:22 $
 #   $RCSfile: testproblems,v $
-#   $Revision: 1.41 $
+#   $Revision: 1.42 $
 #
 # The next lines run tclsh \
 trap "echo testproblems: Terminated by Signal; exit 1" \
@@ -29,7 +29,6 @@ HPCM_SANDBOX_UNSECURE= \
 # a local directory without a+x permissions on all its
 # ancestors.
 
-set allowed_extensions "c cc java lsp"
 set tmp [lindex $argv 0]
 set argv [lrange $argv 1 end]
 
@@ -41,7 +40,7 @@ catch {
 
 set document "
 testproblems \[-p N] \[-keep|-|-contestant] \\
-             \[-ext \"EXT ...\"] \[directory ...]
+             \[-ext \".EXT ...\"] \[directory ...]
 
     The command with no arguments is equivalent to
 
@@ -112,14 +111,14 @@ testproblems \[-p N] \[-keep|-|-contestant] \\
 
     After making problem_make_files, this program
     identifies the solution files PROBLEM.EXT that are
-    to be tested.  Here EXT is restricted to values
+    to be tested.  Here .EXT is restricted to values
     in a list given by the -ext argument if that is
     given, or the problem_allowed_extensions variable
     in the PROBLEM.rc file, if that is given, or
 
         $allowed_extensions
 
-    otherwise.  For each EXT in the list such that the
+    otherwise.  For each .EXT in the list such that the
     file PROBLEM.EXT exists, the subdirectory EXT is
     made, files are linked into it, and in that direc-
     tory PROBLEM.EXT is tested.
@@ -208,8 +207,10 @@ testproblems \[-p N] \[-keep|-|-contestant] \\
     terminated.
 
     Unless the -keep option is given, after finishing a
-    directory all files listed in problem_make_files and
-    all EXT subdirectories are deleted.
+    directory `make clean' is executed in the directory,
+    all files made by problem_make_files are deleted,
+    and all EXT subdirectories of the directory are
+    deleted.
 
     If a non-directory is given the program, or if a
     directory with no Makefile is given, the program
@@ -239,8 +240,7 @@ testproblems \[-p N] \[-keep|-|-contestant] \\
 #
 set parallel_runs 0
 set keep 0
-set make 0
-set judge 0
+set contestant 0
 set SUB 0
 set SUB_filename ""
 set myargv $argv
@@ -252,8 +252,16 @@ while { 1 } {
     }
     -keep { set keep 1 }
     -     { set keep 1 }
-    -make { set make 1 }
-    -judge { set judge 1 }
+    -contestant { set contestant 1 }
+    -ext {
+	    set myargv [lrange $myargv 1 end]
+	    set allowed_extensions [lindex $myargv 0]
+	    if { [catch { llength \
+	                    $allowed_extensions }] }{
+	        error "-ext $allowed_extensions\
+		            is not legal"
+	    }
+    }
     -p {
 	    set myargv [lrange $myargv 1 end]
 	    set parallel_runs [lindex $myargv 0]
@@ -321,7 +329,7 @@ if { $parallel_runs > 0 } {
     puts "===================== Test of $parallel_runs\
           Parallel Runs"
     exec date >@ stdout
-    exec hostname -f >@ stdout
+    exec hostname >@ stdout
     puts -nonewline "testproblems -p $parallel_runs $k"
     set j 0
     foreach d $myargv {
@@ -363,10 +371,24 @@ if { $parallel_runs > 0 } {
     }
     exit 0
 } elseif { $SUB == 0 } {
+    # SUB == 0 means we can ignore -p option
+    #
     file delete -force -- $tmp
     set fd [open $tmp w]
 }
 
+# Summary report is accumulated in $tmp.  fd is file
+# descriptor of report, and exists only if report is
+# being output.
+
+# List of names of files that differ.  List item has the
+# format:
+#		{ problem file1 file2 }
+# if
+#		diff file1 file2
+#
+# returned non-empty output.
+#
 set diff_files {}
 
 proc putsfd { string } {
@@ -376,8 +398,10 @@ proc putsfd { string } {
     }
 }
 
+# Diff two files and update reports.
+#
 proc diff { file1 file2 } {
-    global problem diff_files SUB
+    global problem diff_files
     puts "diff $file1 $file2"
     catch {
 	set diffs [exec diff $file1 $file2]
@@ -385,7 +409,7 @@ proc diff { file1 file2 } {
     if { [string trim $diffs] != "" } {
 	if {    $file1 != "$problem.out" } {
 	    set diffs \
-		"========== $file1:\n$diffs"
+		"========== diff $file1 $file2:\n$diffs"
 	}
 	putsfd $diffs
 	puts $diffs
@@ -395,8 +419,9 @@ proc diff { file1 file2 } {
 }
 
 # Read .rc file to possibly set any problem_make_files,
-# and problem_{optional_,}{link,copy}_files global
-# variables.
+# problem_{optional_,}{link,copy}_files, and problem_
+# input_names global variables.  Unset these if they
+# are not set in the .rc file.
 #
 proc read_rc_file { file problem } {
     global PROBLEM EXTENSION OPTIONS \
@@ -404,11 +429,18 @@ proc read_rc_file { file problem } {
 	   problem_link_files \
 	   problem_optional_link_files \
 	   problem_copy_files \
-	   problem_optional_copy_files
+	   problem_optional_copy_files \
+	   problem_input_names
 
     set PROBLEM $problem
     set EXTENSION UNDEFINED
     set OPTIONS UNDEFINED
+    catch { unset problem_make_files }
+    catch { unset problem_link_files }
+    catch { unset problem_optional_link_files }
+    catch { unset problem_copy_files }
+    catch { unset problem_optional_copy_files }
+    catch { unset problem_input_names }
     source_file $file
 }
 
@@ -428,6 +460,63 @@ proc check_list { variable_name } {
     }
 }
 
+# Process a link instruction.  Return 1 on success and
+# 0 on failure.  Targets are in current directory and
+# links are in EXT subdirectory.
+#
+proc execute_link { EXT instruction } {
+
+    global problem
+
+    if { [catch { llength $instruction }] \
+       } {
+      error \
+	"$problem.rc\
+	 problem_{,optional_}{link,copy}_files\
+	 instruction is not a TCL\
+	 list:\n    $instruction"
+    }
+
+    set file [lindex $instruction 0]
+
+    if { $file == "" } {
+      error \
+	"$problem.rc\
+	 problem_{,optional_}{link,copy}_files\
+	 instruction has empty file\
+	 name:\n    $instruction"
+    }
+
+    # Compute desired target; File cannot be its
+    # own target unless instruction has only one
+    # element.
+    #
+    if { [llength $instruction] == 1 } {
+        set target = $file
+    } else {
+	set target ""
+	foreach t [lrange $instruction 1 end] {
+	    if { [file exists $t] } {
+		set target $t
+		break
+	    }
+	}
+	if { $target == "" } {
+	    return 0
+	}
+    }
+
+    puts "linking $EXT/$file to ../$target"
+    file link -symbolic $EXT/$file ../$target
+
+    return 1
+}
+
+
+set mregexp \
+    "^\[ \t]*P\[ \t]*=\[ \t]*(\[^ \t]\[^ \t]*)\[ \t]*\$"
+set mgrepexp \
+    "^\[ \t]*P\[ \t]*=\[ \t]*\[^ \t]\[^ \t]*\[ \t]*\$"
 foreach x $myargv {
 
     if { ! [file isdirectory $x] } {
@@ -451,7 +540,35 @@ foreach x $myargv {
     cd $x
     if { [catch {
 
-	set problem [file tail [pwd]]
+	set dir [pwd]
+
+	# Extract P = problem from Makefile
+	#
+	set pline ""
+	catch {
+	    set pline [exec grep $mgrepexp Makefile]
+	    }
+	if { ! [regexp $mregexp $pline \
+	               forget problem] } {
+	    error "CANNOT find P = ... line in Makefile"
+	}
+
+	# Make list of extensions
+	#
+	set extensions {}
+	foreach pext $allowed_extensions {
+	    if { ! [regexp "^\\.(.*)\$" $pext \
+	                   forget ext] } {
+	        error "bad extension `$pext'"
+	    }
+	    if { [file exists $problem$ext] } {
+	        lappend extensions $ext
+	    }
+	}
+	if { [llength $extensions] == 0 } {
+	    set exts [join $allowed_extensions ,]
+	    error "no $problem{$exts} solutions"
+	}
 
 	# Do initial clean.
 	#
@@ -462,10 +579,20 @@ foreach x $myargv {
 	}
 	exec make clean >&@ stdout
 
-	# List of files to be deleted at end if -keep
-	# option is absent.
+	# List of files and directories to be deleted
+	# at end if -keep option is absent.
 	#
 	set delete_at_end {}
+
+	# Compute list of names N for which either N.in
+	# or N.jin exist.
+	#
+	set input_names {}
+	foreach file [glob *.in *.jin] {
+	    set f [file rootname $file]
+	    if { [lcontain $input_names $f] } continue
+	    lappend input_names $f
+	}
 
 	# Compute make_files = problem_make_files value
 	# in any $problem.rc file.  Similarly compute
@@ -473,16 +600,15 @@ foreach x $myargv {
 	# optional_link_files = problem_optional_{link,
 	# copy}_files.
 	#
+	# If problem_input_names has a $problem.rc list
+	# value, remove from input_files names not in
+	# this list value. 
+	#
 	set make_files {}
 	set link_files {}
 	set optional_link_files {}
 	if { [file exists $problem.rc] } {
 
-	    catch { unset problem_make_files }
-	    catch { unset problem_link_files }
-	    catch { unset problem_optional_link_files }
-	    catch { unset problem_copy_files }
-	    catch { unset problem_optional_copy_files }
 	    read_rc_file $problem.rc $problem
 
 	    if { [info exists problem_make_files] } {
@@ -512,6 +638,25 @@ foreach x $myargv {
 		lappend_lists optional_copy_files \
 		    $problem_optional_link_files
 	    }
+	    if { [info exists problem_input_names] } {
+		check_list problem_input_names
+		set input_names {}
+		foreach file $problem_input_names {
+		    if {    [file exists $file.in] \
+		         || [file exists $file.jin] } {
+		        lappend input_names $file
+		    }
+		}
+	    }
+	}
+
+	# If input_names contains $problem and something
+	# else, remove $problem.
+	#
+	if {    [llength $input_names] > 1 \
+	     && [lcontain $input_names $problem] } {
+	   set i [lsearch -exact $input_names $problem]
+	   set input_names [replace $input_names $i $i]
 	}
 
 	# If there are make_files, (re)make them.
@@ -535,9 +680,7 @@ foreach x $myargv {
 			   instruction has empty file\
 			   name:\n    $instruction"
 		}
-		if { ! $make } {
-		    lappend delete_at_end $file
-		}
+		lappend delete_at_end $file
 		lappend made $file
 	    }
 
@@ -547,218 +690,182 @@ foreach x $myargv {
 			   $problem.rc"
 	}
 
-	# If there are link files or optional link
-	# files, link them if they do not exist.  If
-	# -judge and they would be linked to another
-	# existing file, insist that they are linked
-	# to this file, removing any existing file or
-	# link and relinking if necessary.  If there
-	# is no file and no way to link it, complain
-	# if the file is on link_files list (and
-	# therefore is not optional).  If not -make
-	# option, put all files that might be linked
-	# on the delete list.
+	# If -contestant convert link instructions
+	# in link_files and optional_link_files from
+	# { F F1 ... } to { F F F1 ... }.
 	#
-	set non_optional [llength $link_files]
-	    # If >= 0 file is not optional
-	foreach instruction \
-	        [concat $link_files \
-			$optional_link_files] {
-	    incr non_optional -1
+	if { $contestant }{
 
-	    if { [catch { llength $instruction }] \
-	       } {
-	      error \
-	        "$problem.rc\
-		 problem_{,optional_}{link,copy}_files\
-		 instruction is not a TCL\
-		 list:\n    $instruction"
+	    set old_link_files $link_files
+	    set link_files {}
+	    foreach inst $old_link_files {
+	        lappend link_files \
+		        [lreplace $inst 0 -1 \
+			          [lindex $inst 0 ]]
 	    }
-
-	    set file [lindex $instruction 0]
-
-	    if { $file == "" } {
-	      error \
-	        "$problem.rc\
-		 problem_{,optional_}{link,copy}_files\
-		 instruction has empty file\
-		 name:\n    $instruction"
-	    }
-
-	    if { [file exists $file] && ! $judge } \
-	        continue
-
-	    # Compute desired target; File cannot be its
-	    # own target.
-	    #
-	    set target ""
-	    foreach t [lrange $instruction 1 end] {
-	        if { [file exists $t] } {
-		    set target $t
-		    break
-		}
-	    }
-
-	    if {    $target == "" \
-	         && ! [file exists $file] \
-		 && $non_optional >= 0 } {
-	      error \
-	        "$problem.rc problem_{link,copy}_files\
-		 instruction requires that $file be\
-		 linked but this is not\
-		 possible:\n    $instruction"
-	    }
-
-	    # If no target and file exists or is
-	    # optional, skip it.
-	    #
-	    if { $target == "" } continue
-
-	    set old_target ""
-	    catch { set old_target \
-			[file readlink $file] }
-	    if { $old_target == $target } continue;
-
-	    # If old_target targets an existing file
-	    # we must have -judge at this point.
-	    # Similarly if $file exists we must have
-	    # -judge at this point.
-	    #
-	    if {    $old_target != "" \
-	         && ! [file exists $old_target] } {
-		puts "deleting link of $file to\
-		      $old_target as $old_target does\
-		      not exist"
-		file delete -force -- $file
-	    } elseif { $old_target != "" } {
-		puts "deleting link of $file to\
-		      $old_target as per -judge"
-		file delete -force -- $file
-	    } elseif { [file exists $file] } {
-		puts "deleting $file as per -judge"
-		file delete -force -- $file
-	    }
-
-	    # At this point $file does not exist
-	    # and is not a link.
-	    #
-	    puts "linking $file to $target"
-	    file link -symbolic $file $target
-
-	    if { ! $make } {
-		lappend delete_at_end $file
+	    set old_optional_link_files \
+	        $optional_link_files
+	    set optional_link_files {}
+	    foreach inst $old_optional_link_files {
+	        lappend optional_link_files \
+		        [lreplace $inst 0 -1 \
+			          [lindex $inst 0 ]]
 	    }
 	}
 
-	# If problem.in or problem.jin exist, only
-	# consider them.  Otherwise consider all
-	# *.in and *.jin.  Note that if problem.in
-	# was a link it was deleted above.
+	# We CANNOT append
+	#	{ Makefile Makefile.EXT Makefile}
+	# here because EXT is not yet determined.
+
+	# Append stuff to optional_link_files.
 	#
-	set inputs ""
-	foreach file [glob *.in *.jin] {
-	    set f [file rootname $file]
-	    if { [lcontain $inputs $f] } continue
-	    lappend inputs $f
+	foreach N $input_names {
+	    lappend optional_link_files \
+	            [list Scoring_Filter]
+	    lappend optional_link_files [list $N.in]
+	    lappend optional_link_files [list $N.jin]
+	    lappend optional_link_files \
+	            [list $N.test $N.out $N.test]
+	    lappend optional_link_files \
+	            [list $N.jtest $N.jout $N.jtest]
+	    lappend optional_link_files \
+	            [list $N.ftest $N.fout $N.ftest]
+	    lappend optional_link_files \
+	            [list $N.jftest $N.jfout $N.jftest]
 	}
-	if {    [lcontain $inputs $problem] \
-	     && [llength $inputs] > 1 } {
-	    error "ERROR: $problem.in or $problem.jin\
-	           exists\n       along with other .in\
-		   or .jin files"
-	}
-	foreach f [lsort $inputs] {
 
-	    if { $f != $problem } {
-	        puts "========== $f:"
-	    }
-	    file delete -force -- $f.in#
-	    if { ! [file exists $f.in] } {
-	        puts "jfilter -v $f.jin $f.in >& $f.in#"
-	        exec jfilter -v $f.jin $f.in >& $f.in#
-		lappend delete_at_end $f.in $f.in#
-	    } elseif { [file exists $f.jin] } {
-	        file delete -force -- $f.in+
-	        puts "jfilter -v $f.jin $f.in+\
-		      >& $f.in#"
-	        exec jfilter -v $f.jin $f.in+ >& $f.in#
-		lappend delete_at_end $f.in+ $f.in#
-		diff $f.in $f.in+
-	    }
-	    if { $f != $problem } {
-	        exec ln -s $f.in $problem.in
-	    }
+	# Process each value of EXT.
+	#
+	if { [catch { foreach EXT $extensions {
 
-	    set make_error \
-	        [catch { exec make >@ stdout } \
-		       mout]
-	    if { $make_error } {
-	        if { $f != $problem } {
-		    putsfd "========== making $f.out:"
+	    putsfd "====================\
+	            testing $problem.$EXT:"
+	    puts -nonewline "===================="
+	    puts -nonewline "===================="
+	    puts " testing $problem.$EXT:"
+
+	    file delete -force -- $EXT
+	    file mkdir $EXT
+	    lappend delete_at_end $EXT
+
+	    # Execute link instructions
+	    #
+	    set ilist $link_files
+	    lappend ilist 
+	            "Makefile Makefile.$EXT Makefile"
+	    foreach i $ilist {
+	        if { ! [execute_link $EXT $i] } {
+		    error "failed to execute link\
+		           instruction $i"
 		}
-		putsfd $mout
-		puts $mout
+	    }
+	    foreach i $optional_link_files {
+	        execute_link $EXT $i
 	    }
 
-	    if { $f != $problem } {
-	        file rename $problem.out $f.out
-		lappend delete_at_end $f.out
-		file delete $problem.in
-	    }
+	    # Change to subdirectory
+	    #
+	    cd $EXT
 
-	    if { $make_error } continue
+	    # If problem.in or problem.jin exist, only
+	    # consider them.  Otherwise consider all
+	    # *.in and *.jin.  Note that if problem.in
+	    # was a link it was deleted above.
+	    #
+	    foreach N [lsort $input_names] {
 
-	    diff $f.out $f.test
-
-	    if { [file exists Scoring_Filter] } {
-		puts "Scoring_Filter $f.in\
-		      < $f.out > $f.fout"
-		exec Scoring_Filter $f.in \
-		     < $f.out > $f.fout
-		lappend delete_at_end $f.fout
-		if { [file exists $f.ftest] } {
-		    diff $f.fout $f.ftest
+		if { $N != $problem } {
+		    puts "========== $N:"
 		}
-		if { [file exists $f.jin] } {
-		    file delete -force -- $f.jfout#
-		    puts "jfilter -v\
-			  $f.jin $f.fout $f.jfout\
-			  >& $f.jfout#"
-		    exec jfilter -v \
-			 $f.jin $f.fout $f.jfout \
-			 >& $f.jfout#
-		    lappend delete_at_end \
-		            $f.jfout $f.jfout#
-		    if { [file exists $f.jftest] } {
-			diff $f.jfout $f.jftest
+		if { ! [file exists $N.in] } {
+		    puts "jfilter -v $N.jin $N.in >& $N.in#"
+		    exec jfilter -v $N.jin $N.in >& $N.in#
+		} elseif { [file exists $N.jin] } {
+		    puts "jfilter -v $N.jin $N.in+\
+			  >& $N.in#"
+		    exec jfilter -v $N.jin $N.in+ >& $N.in#
+		    diff $N.in $N.in+
+		}
+		if { $N != $problem } {
+		    puts "ln -s $N.in $problem.in"
+		    exec ln -s $N.in $problem.in
+		}
+
+		puts "make"
+		set make_error \
+		    [catch { exec make >@ stdout } \
+			   mout]
+		if { $make_error } {
+		    if { $N != $problem } {
+			putsfd "========== making $N.out:"
 		    }
-		    diff $f.in# $f.jfout#
+		    putsfd $mout
+		    puts $mout
 		}
-	    } elseif { [file exists $f.jin] } {
-		file delete -force -- $f.jout#
-		puts "jfilter -v $f.jin $f.out\
-			      $f.jout >& $f.jout#"
-		exec jfilter -v $f.jin $f.out \
-		     $f.jout >& $f.jout#
-		lappend delete_at_end $f.jout $f.jout#
-		if { [file exists $f.jtest] } {
-		    diff $f.jout $f.jtest
-		}
-		diff $f.in# $f.jout#
-	    }
 
-	    if { ! $keep } {
-	        exec make clean >&@ stdout
-	    }
+		if { $N != $problem } {
+		    puts "mv $problem.out $N.out"
+		    file rename $problem.out $N.out
+		    puts "rm $problem.in"
+		    file delete $problem.in
+		}
+
+		if { $make_error } continue
+
+		diff $N.out $N.test
+
+		if { [file exists Scoring_Filter] } {
+		    puts "Scoring_Filter $N.in\
+			  < $N.out > $N.fout"
+		    exec Scoring_Filter $N.in \
+			 < $N.out > $N.fout
+		    if { [file exists $N.ftest] } {
+			diff $N.fout $N.ftest
+		    }
+		    if { [file exists $N.jin] } {
+			puts "jfilter -v\
+			      $N.jin $N.fout $N.jfout\
+			      >& $N.jfout#"
+			exec jfilter -v \
+			     $N.jin $N.fout $N.jfout \
+			     >& $N.jfout#
+			if { [file exists $N.jftest] } {
+			    diff $N.jfout $N.jftest
+			}
+			diff $N.in# $N.jfout#
+		    }
+		} elseif { [file exists $N.jin] } {
+		    puts "jfilter -v $N.jin $N.out\
+				  $N.jout >& $N.jout#"
+		    exec jfilter -v $N.jin $N.out \
+			 $N.jout >& $N.jout#
+		    if { [file exists $N.jtest] } {
+			diff $N.jout $N.jtest
+		    }
+		    diff $N.in# $N.jout#
+		}
+		}
+	  } } out] } {
+	    puts $out
+	    putsfd $out
+        }
+
+	cd $dir
+
+	if { ! $keep } {
+	    exec make clean >&@ stdout
 	}
+
 	if { ! $keep && [llength $delete_at_end] > 0 } {
-	    puts "rm -f $delete_at_end"
+	    puts "rm -rf $delete_at_end"
 	    eval file delete -force -- $delete_at_end
 	}
+
     } out] } {
         puts $out
 	putsfd $out
     }
+
     cd $wd
 }
 
