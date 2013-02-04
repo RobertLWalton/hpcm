@@ -4,7 +4,7 @@
 #
 # File:		testproblems
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Sun Feb  3 10:31:12 EST 2013
+# Date:		Mon Feb  4 06:22:01 EST 2013
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2013/02/04 03:55:59 $
+#   $Date: 2013/02/04 12:19:34 $
 #   $RCSfile: testproblems,v $
-#   $Revision: 1.40 $
+#   $Revision: 1.41 $
 #
 # The next lines run tclsh \
 trap "echo testproblems: Terminated by Signal; exit 1" \
@@ -40,8 +40,8 @@ source $lib_directory/judging_common.tcl
 catch {
 
 set document "
-testproblems \[-p N\] \[-keep|-|-make|-judge\] \\
-             \[directory ...\]
+testproblems \[-p N] \[-keep|-|-contestant] \\
+             \[-ext \"EXT ...\"] \[directory ...]
 
     The command with no arguments is equivalent to
 
@@ -74,40 +74,48 @@ testproblems \[-p N\] \[-keep|-|-make|-judge\] \\
     named EXT, linking appropriate files into it, and
     running:
 
-		make clean
 		make
 		diff *.out *.test
-		make clean
 
-    in the subdirectory.  The diff outputs are both
+    in the subdirectory.  After an EXT subdirectory is
+    completely processed, it is deleted, unless the
+    -keep option is used.  The diff outputs are both
     saved and outputted, and all relevant saved output
     for each directory is played back at the end of this
     program's execution.  Errors made during the above
-    run are also played back.  The -keep option suppres-
-    ses the final `make clean'.
+    run are also played back.
 
     More specifically, for each directory this program
     does the following.  First, it does a cd to the
-    directory and extracts the name PROBLEM as the last
-    component of the full name of the directory (obtain-
-    ed by pwd).  Then it deletes any symbolic link named
-    PROBLEM.in (but will NOT delete a regular file of
-    that name), and runs
+    directory and extracts the name PROBLEM from the
+    `P = PROBLEM' line of the directory's Makefile.
+    Then it deletes any symbolic link named PROBLEM.in
+    (but will NOT delete a regular file of that name)
+    and runs
 
     		make clean
+
+    Then the set of input names is formed.  Initially
+    this is the set of names N such that N.in or N.jin
+    exist.  Then if the variable problem_input_names is
+    defined in PROBLEM.rc, names not listed in that
+    variable's value are removed from the set.  Then if
+    the set has a name other than PROBLEM, the name
+    PROBLEM is removed from the set if it is in the
+    set.
 
     Next this program uses any problem_make_files value
     in any PROBLEM.rc file in the directory to make or
     remake files in the directory.  If these files exist
     when this program is run, they are deleted and
     remade if they are obsolete.
-
+
     After making problem_make_files, this program
     identifies the solution files PROBLEM.EXT that are
     to be tested.  Here EXT is restricted to values
-    in a list given by the -l argument if that is given,
-    of the problem_allowed_extensions variable in the
-    PROBLEM.rc file, if that is given, or
+    in a list given by the -ext argument if that is
+    given, or the problem_allowed_extensions variable
+    in the PROBLEM.rc file, if that is given, or
 
         $allowed_extensions
 
@@ -115,110 +123,93 @@ testproblems \[-p N\] \[-keep|-|-make|-judge\] \\
     file PROBLEM.EXT exists, the subdirectory EXT is
     made, files are linked into it, and in that direc-
     tory PROBLEM.EXT is tested.
+
+    Next files are linked from the directory to its
+    EXT subdirectory.  This is done using link
+    instructions of the form
+
+    	{ F F1 F2 F3 ... }
+
+    which mean that the file name F in the EXT subdi-
+    rectory is to be linked to F1 in the directory,
+    if that exists, else F2 in the directory, etc.
+    An instruction of the form `F' is equivalent to
+    `{F F}'.  A link instruction may be required,
+    meaning that if F cannot be linked to anything
+    subdirectory processing terminates with an error,
+    or optional, meaning the link instruction can fail
+    without error.
 
-    The files linked into the EXT subdirectory is
+    The link instructions executed are
+
+        * PROBLEM.EXT \[required]
 
     	* Those listed in problem_{link,copy}_files
-	  and problem_optional_{link,copy}_files.
-	  Note the ..._copy_files are linked and not
-	  copied, because the only reason for copying
-	  them is so the sandbox can access them, but
-	  this is not an issue for this program which
-	  disables sandboxing.  It is an error if
-	  a file in problem_{link,copy}_files cannot
-	  be linked to any file, but it is not an error
-	  if a file in problem_optional_{link,copy}_
-	  files cannot be linked to any file.
+	  \[required] or problem_optional_{link,copy}_
+	  files \[optional].  Note the ..._copy_files
+	  are linked and not copied, because the only
+	  reason for copying them is so the sandbox can
+	  access them, but this is not an issue for this
+	  program disables sandboxing.
 
-	* Makefile and Scoring_Filter.  Makefile is
-	  treated as a problem_link_files file with
-	  entry
+	* { Makefile Makefile.EXT Makefile } \[required]
+	  Scoring_Filter \[optional]
 
-	  	Makefile Makefile.EXT Makefile
+	* For each N in the set of input names:
 
-	  and Scoring_Filter is treated as a problem_
-	  options_link_files file with entry
-	  
-	  	Scoring_Filter
+	      N.in			\[optional]
+	      N.jin			\[optional]
+	      N.test N.out N.test	\[optional]
+	      N.jtest N.jout N.jtest	\[optional]
+	      N.ftest N.fout N.ftest	\[optional]
+	      N.jftest N.jfout N.jftest	\[optional]
 
-	* The \`input set' of names N such that N.in or
-	  N.jin exist in the directory is considered.
-	  If PROBLEM is in this set but is not the only
-	  member, then PROBLEM is deleted from the set.
-	  Then the following problem_{optional_,}link_
-	  files entries are executed for N in the
-	  set:
+    Then in the EXT subdirectory for each input name N
+    the following are run:
+    processed as follows.
+    
+      * If N.jin exists but N.in does not:
 
-	  Required:
+	    jfilter -v N.jin N.in >& N.in#
 
-		N.test N.out N.test
+      * If both N.jin and N.in exist:
+
+	    jfilter -v N.jin N.in+ >& N.in#
+	    diff N.in N.in+
 
-	  Optional (but one must exist):
+      * Always:
 
-	  	N.in
-	  	N.jin
+	    ln -s N.in PROBLEM.in      # if N != PROBLEM
+	    make
+	    rm PROBLEM.in              # if N != PROBLEM
+	    mv PROBLEM.out N.out       # if N != PROBLEM
+	    diff N.out N.test
 
-	  Required if Scoring_Filter not linked but
-	  N.jin linked:
+      * If N.jin exists but Scoring_Filter does not
+        exist:
 
-	  	N.jtest N.jout N.jtest
+	    jfilter -v N.jin N.out N.jout >& N.jout#
+	    diff N.jout N.jtest
+	    diff N.jin# N.jout#
 
-	  Required if Scoring_Filter linked:
+      * If Scoring_Filter exists:
 
-	  	N.ftest N.fout N.ftest
+	    Scoring_Filter N.in < N.out > N.fout
+	    diff N.fout N.ftest
 
-	  Required if Scoring_Filter linked AND N.jin
-	  linked:
+      * If N.jin and Scoring_Filter exist:
 
-	  	N.jftest N.jfout N.jftest
-
-    Unless the -keep option is given, after finishing a
-    directory all files listed in problem_make_files and
-    all EXT subdirectories are deleted.
-
-    Then the input set of names N is processed as
-    follows.  If N.jin exists but NOT N.in does not,
-    the program runs
-
-    	jfilter -v N.jin N.in >& N.in#
-	ln -s N.in PROBLEM.in          # if N != PROBLEM
-	make
-	rm PROBLEM.in                  # if N != PROBLEM
-	mv PROBLEM.out N.out           # if N != PROBLEM
-	diff N.out N.test
-
-    If N.in exists but N.jin does not, this program does
-    the same thing as for N.jin, but jfilter is not run.
-
-    If both N.in and N.jin exist, then
-
-    		jfilter -v N.jin N.in+ >& N.in#
-
-    is executed and N.in and N.in+ are diff'ed, instead
-    of making N.in from N.jin.
-
-    If after the above, Scoring_Filter does not exist,
-
-	jfilter -v N.jin N.out N.jout >& N.jout#
-
-    is executed if N.jin exists.  But if Scoring_Filter
-    does exist then
-
-	Scoring_Filter N.in < N.out > N.fout
-	jfilter -v N.jin N.fout N.jfout >& N.jfout#
-
-    is executed, with the jfilter execution suppressed
-    if N.jin does not exist.
-
-    If N.jout (N.fout, N.jfout) is made and N.jtest
-    (N.ftest, N.jftest) exists, these two files are
-    diff'ed, and if different the differences are
-    reported.  If N.jout# or N.jfout# are made, they
-    are similarly diff'ed with N.jin#.
+	    jfilter -v N.jin N.fout N.jfout >& N.jfout#
+	    diff N.jfout N.jftest
+	    diff N.jin# N.jfout#
 
     If errors occur while processing a directory, they
     are announced and processing of the directory is
     terminated.
+
+    Unless the -keep option is given, after finishing a
+    directory all files listed in problem_make_files and
+    all EXT subdirectories are deleted.
 
     If a non-directory is given the program, or if a
     directory with no Makefile is given, the program
