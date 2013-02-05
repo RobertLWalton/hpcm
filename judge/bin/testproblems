@@ -4,7 +4,7 @@
 #
 # File:		testproblems
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Tue Feb  5 04:21:52 EST 2013
+# Date:		Tue Feb  5 05:02:42 EST 2013
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2013/02/05 09:40:17 $
+#   $Date: 2013/02/05 10:38:44 $
 #   $RCSfile: testproblems,v $
-#   $Revision: 1.43 $
+#   $Revision: 1.44 $
 #
 # The next lines run tclsh \
 trap "echo testproblems: Terminated by Signal; exit 1" \
@@ -266,6 +266,9 @@ set parallel_runs 0
 set keep 0
 set contestant 0
 set quiet 0
+set stdoutq stdout
+    # reset to file descriptor sending to /dev/null
+    # if quiet
 set SUB 0
 set SUB_filename ""
 set myargv $argv
@@ -278,7 +281,10 @@ while { 1 } {
     -keep { set keep 1 }
     -     { set keep 1 }
     -contestant { set contestant 1 }
-    -quiet { set quiet 1 }
+    -q {
+           set quiet 1
+	   set stdoutq [open /dev/null w]
+    }
     -ext {
 	    set myargv [lrange $myargv 1 end]
 	    set allowed_extensions [lindex $myargv 0]
@@ -417,6 +423,8 @@ if { $parallel_runs > 0 } {
 #
 set diff_files {}
 
+# Put into report
+#
 proc putsfd { string } {
     global fd
     if { [info exists fd] } {
@@ -424,11 +432,20 @@ proc putsfd { string } {
     }
 }
 
+# Put to output if not quiet
+#
+proc putsq { args } {
+    global quiet
+    if { ! $quiet } {
+        eval puts $args
+    }
+}
+
 # Diff two files and update reports.
 #
 proc diff { file1 file2 } {
     global directory EXT problem diff_files
-    puts "diff $file1 $file2"
+    putsq "diff $file1 $file2"
     catch {
 	set diffs [exec diff $file1 $file2]
 	  } diffs
@@ -519,7 +536,7 @@ proc execute_link { EXT instruction } {
     # element.
     #
     if { [llength $instruction] == 1 } {
-        set target = $file
+        set target $file
     } else {
 	set target ""
 	foreach t [lrange $instruction 1 end] {
@@ -533,7 +550,7 @@ proc execute_link { EXT instruction } {
 	}
     }
 
-    puts "linking $EXT/$file to ../$target"
+    putsq "linking $EXT/$file to ../$target"
     file link -symbolic $EXT/$file ../$target
 
     return 1
@@ -595,6 +612,8 @@ foreach directory $myargv {
 	        error "bad allowed_extension `$pext'"
 	    }
 
+	    lappend allowed $EXT
+
 	    if { [file exists $problem.$EXT] } {
 	        lappend extensions $EXT
 	    }
@@ -611,7 +630,12 @@ foreach directory $myargv {
 	if { $type == "link" } {
 	    file delete $problem.in
 	}
-	exec make clean >&@ stdout
+	if { [catch { exec make clean >@ $stdoutq } \
+	            mout] } {
+	    puts $mout
+	    putsfd $mout
+	    continue
+	}
 
 	# List of files and directories to be deleted
 	# at end if -keep option is absent.
@@ -697,7 +721,7 @@ foreach directory $myargv {
 	# in link_files and optional_link_files from
 	# { F F1 ... } to { F F F1 ... }.
 	#
-	if { $contestant }{
+	if { $contestant } {
 
 	    set old_link_files $link_files
 	    set link_files {}
@@ -722,9 +746,9 @@ foreach directory $myargv {
 	#	{ Makefile Makefile.EXT Makefile}
 	# here because EXT is not yet determined.
 	#
+	lappend optional_link_files \
+		[list Scoring_Filter]
 	foreach N $input_names {
-	    lappend optional_link_files \
-	            [list Scoring_Filter]
 	    lappend optional_link_files [list $N.in]
 	    lappend optional_link_files [list $N.jin]
 	    lappend optional_link_files \
@@ -762,7 +786,7 @@ foreach directory $myargv {
 		lappend made $file
 	    }
 
-	    puts "(re)making $made"
+	    putsq "(re)making $made"
 	    execute_makes $make_files . \
 	                  "problem_make_files value in\
 			   $directory/$problem.rc"
@@ -776,11 +800,11 @@ foreach directory $myargv {
 	    #
 	    cd $dir
 
-	    puts -nonewline "===================="
-	    puts -nonewline "===================="
-	    puts " testing $problem.$EXT:"
+	    putsq "====================\
+	           testing $directory/$problem.$EXT:"
 
 	    file delete -force -- $EXT
+	    putsq "mkdir $EXT"
 	    file mkdir $EXT
 	    lappend delete_at_end $EXT
 
@@ -812,51 +836,46 @@ foreach directory $myargv {
 	    foreach N [lsort $input_names] {
 
 		if { $N != $problem } {
-		    puts "========== $N:"
+		    putsq "========== $N:"
 		}
 		if { ! [file exists $N.in] } {
-		    puts "jfilter -v $N.jin $N.in\
+		    putsq "jfilter -v $N.jin $N.in\
 		                  >& $N.in#"
 		    exec jfilter -v $N.jin $N.in \
 		                 >& $N.in#
 		} elseif { [file exists $N.jin] } {
-		    puts "jfilter -v $N.jin $N.in+\
+		    putsq "jfilter -v $N.jin $N.in+\
 			  >& $N.in#"
 		    exec jfilter -v $N.jin $N.in+ \
 		         >& $N.in#
 		    diff $N.in $N.in+
 		}
 		if { $N != $problem } {
-		    puts "ln -s $N.in $problem.in"
+		    putsq "ln -s $N.in $problem.in"
 		    exec ln -s $N.in $problem.in
 		}
 
-		puts "make"
-		if { $quiet } {
-		    set make_error \
-			[catch { exec make \
-			              > /dev/null } \
-			       mout]
-		} else {
-		    set make_error \
-			[catch { exec make >@ stdout } \
-			       mout]
-		}
+		putsq "make"
+		set make_error \
+		    [catch { exec make >@ $stdoutq } \
+			   mout]
 		if { $make_error } {
 		    if { $N != $problem } {
-			putsfd "  ====\
+			set makes "  ====\
 			    $directory/$problem.$EXT\
 			    ==== making $N.out:"
+			putsfd $makes
+			puts $makes
 		    }
 		    putsfd $mout
 		    puts $mout
 		}
 
 		if { $N != $problem } {
-		    puts "rm $problem.in"
+		    putsq "rm $problem.in"
 		    file delete $problem.in
 		    if { [file exists $problem.out] } {
-			puts "mv $problem.out $N.out"
+			putsq "mv $problem.out $N.out"
 			file rename $problem.out $N.out
 		    }
 		}
@@ -866,7 +885,7 @@ foreach directory $myargv {
 		diff $N.out $N.test
 
 		if { [file exists Scoring_Filter] } {
-		    puts "Scoring_Filter $N.in\
+		    putsq "Scoring_Filter $N.in\
 			  < $N.out > $N.fout"
 		    exec Scoring_Filter $N.in \
 			 < $N.out > $N.fout
@@ -874,7 +893,7 @@ foreach directory $myargv {
 			diff $N.fout $N.ftest
 		    }
 		    if { [file exists $N.jin] } {
-			puts "jfilter -v\
+			putsq "jfilter -v\
 			      $N.jin $N.fout $N.jfout\
 			      >& $N.jfout#"
 			exec jfilter -v \
@@ -886,7 +905,7 @@ foreach directory $myargv {
 			diff $N.in# $N.jfout#
 		    }
 		} elseif { [file exists $N.jin] } {
-		    puts "jfilter -v $N.jin $N.out\
+		    putsq "jfilter -v $N.jin $N.out\
 				  $N.jout >& $N.jout#"
 		    exec jfilter -v $N.jin $N.out \
 			 $N.jout >& $N.jout#
@@ -897,6 +916,7 @@ foreach directory $myargv {
 		}
 		}
 	  } } out] } {
+	    puts "  ==== $directory/$problem.$EXT:"
 	    puts $out
 	    putsfd "  ==== $directory/$problem.$EXT:"
 	    putsfd $out
@@ -907,11 +927,11 @@ foreach directory $myargv {
 	cd $dir
 
 	if { ! $keep } {
-	    exec make clean >&@ stdout
+	    exec make clean >&@ $stdoutq
 	}
 
 	if { ! $keep && [llength $delete_at_end] > 0 } {
-	    puts "rm -rf $delete_at_end"
+	    putsq "rm -rf $delete_at_end"
 	    eval file delete -force -- $delete_at_end
 	}
 
