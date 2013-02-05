@@ -4,7 +4,7 @@
 #
 # File:		testproblems
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Mon Feb  4 15:09:14 EST 2013
+# Date:		Tue Feb  5 04:21:52 EST 2013
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2013/02/04 20:09:22 $
+#   $Date: 2013/02/05 09:40:17 $
 #   $RCSfile: testproblems,v $
-#   $Revision: 1.42 $
+#   $Revision: 1.43 $
 #
 # The next lines run tclsh \
 trap "echo testproblems: Terminated by Signal; exit 1" \
@@ -39,7 +39,7 @@ source $lib_directory/judging_common.tcl
 catch {
 
 set document "
-testproblems \[-p N] \[-keep|-|-contestant] \\
+testproblems \[-p N] \[-keep|-|-contestant|-q] \\
              \[-ext \".EXT ...\"] \[directory ...]
 
     The command with no arguments is equivalent to
@@ -67,7 +67,7 @@ testproblems \[-p N] \[-keep|-|-contestant] \\
     output is for each run a list of the names of files
     with differences, if any, followed by timing infor-
     mation.
-
+
     To first approximation, this program tests a solu-
     tion in file PROBLEM.EXT by making a subdirectory
     named EXT, linking appropriate files into it, and
@@ -75,7 +75,7 @@ testproblems \[-p N] \[-keep|-|-contestant] \\
 
 		make
 		diff *.out *.test
-
+
     in the subdirectory.  After an EXT subdirectory is
     completely processed, it is deleted, unless the
     -keep option is used.  The diff outputs are both
@@ -102,13 +102,13 @@ testproblems \[-p N] \[-keep|-|-contestant] \\
     the set has a name other than PROBLEM, the name
     PROBLEM is removed from the set if it is in the
     set.
-
+
     Next this program uses any problem_make_files value
     in any PROBLEM.rc file in the directory to make or
     remake files in the directory.  If these files exist
     when this program is run, they are deleted and
     remade if they are obsolete.
-
+
     After making problem_make_files, this program
     identifies the solution files PROBLEM.EXT that are
     to be tested.  Here .EXT is restricted to values
@@ -123,9 +123,9 @@ testproblems \[-p N] \[-keep|-|-contestant] \\
     made, files are linked into it, and in that direc-
     tory PROBLEM.EXT is tested.
 
-    Next files are linked from the directory to its
-    EXT subdirectory.  This is done using link
-    instructions of the form
+    Files are linked from the problem directory to its
+    EXT subdirectory using link instructions of the
+    form:
 
     	{ F F1 F2 F3 ... }
 
@@ -163,9 +163,30 @@ testproblems \[-p N] \[-keep|-|-contestant] \\
 	      N.ftest N.fout N.ftest	\[optional]
 	      N.jftest N.jfout N.jftest	\[optional]
 
-    Then in the EXT subdirectory for each input name N
-    the following are run:
-    processed as follows.
+    The -contestant option takes link_instructions
+
+    		{ F F1 F2 ... }
+    
+    in the PROBLEM.rc file and modifies them to
+
+    		{ F F F1 F2 ...}
+
+    so if F exists in problem directory it will be
+    linked to.  An example of using this is when the
+    files F and judges_F are made and PROBLEM.rc con-
+    tains the link instruction
+
+    		{ F judges_F }
+
+    so the contestant sees the made F and the judge
+    sees the made judges_F renamed as F.  F is likely
+    to be a monitor program that executes the contest-
+    ant's submission as a subprocess and feeds it
+    input while checking its output.
+
+    After linking files into the EXT subdirectory, the
+    following are run in the EXT subdirectory for each
+    input name N:
     
       * If N.jin exists but N.in does not:
 
@@ -175,7 +196,7 @@ testproblems \[-p N] \[-keep|-|-contestant] \\
 
 	    jfilter -v N.jin N.in+ >& N.in#
 	    diff N.in N.in+
-
+
       * Always:
 
 	    ln -s N.in PROBLEM.in      # if N != PROBLEM
@@ -195,7 +216,7 @@ testproblems \[-p N] \[-keep|-|-contestant] \\
 
 	    Scoring_Filter N.in < N.out > N.fout
 	    diff N.fout N.ftest
-
+
       * If N.jin and Scoring_Filter exist:
 
 	    jfilter -v N.jin N.fout N.jfout >& N.jfout#
@@ -214,7 +235,10 @@ testproblems \[-p N] \[-keep|-|-contestant] \\
 
     If a non-directory is given the program, or if a
     directory with no Makefile is given, the program
-    merely notes this in the output."
+    merely notes this in the output.
+    
+    The -q or quiet option suppresses just the non-
+    error output from `make PROBLEM.out' commands."
 
 # Process options.
 #
@@ -241,6 +265,7 @@ testproblems \[-p N] \[-keep|-|-contestant] \\
 set parallel_runs 0
 set keep 0
 set contestant 0
+set quiet 0
 set SUB 0
 set SUB_filename ""
 set myargv $argv
@@ -253,6 +278,7 @@ while { 1 } {
     -keep { set keep 1 }
     -     { set keep 1 }
     -contestant { set contestant 1 }
+    -quiet { set quiet 1 }
     -ext {
 	    set myargv [lrange $myargv 1 end]
 	    set allowed_extensions [lindex $myargv 0]
@@ -387,7 +413,7 @@ if { $parallel_runs > 0 } {
 # if
 #		diff file1 file2
 #
-# returned non-empty output.
+# produced non-empty output.
 #
 set diff_files {}
 
@@ -401,7 +427,7 @@ proc putsfd { string } {
 # Diff two files and update reports.
 #
 proc diff { file1 file2 } {
-    global problem diff_files
+    global directory EXT problem diff_files
     puts "diff $file1 $file2"
     catch {
 	set diffs [exec diff $file1 $file2]
@@ -409,7 +435,8 @@ proc diff { file1 file2 } {
     if { [string trim $diffs] != "" } {
 	if {    $file1 != "$problem.out" } {
 	    set diffs \
-		"========== diff $file1 $file2:\n$diffs"
+		"  ==== $directory/$problem.$EXT\
+		 ==== diff $file1 $file2:\n$diffs"
 	}
 	putsfd $diffs
 	puts $diffs
@@ -515,59 +542,66 @@ proc execute_link { EXT instruction } {
 
 set mregexp \
     "^\[ \t]*P\[ \t]*=\[ \t]*(\[^ \t]\[^ \t]*)\[ \t]*\$"
+    # for regexp
 set mgrepexp \
     "^\[ \t]*P\[ \t]*=\[ \t]*\[^ \t]\[^ \t]*\[ \t]*\$"
-foreach x $myargv {
+    # for grep
 
-    if { ! [file isdirectory $x] } {
+foreach directory $myargv {
+
+    if { ! [file isdirectory $directory] } {
         puts "====================\
-	      $x is not a directory"
+	      $directory is not a directory"
 	continue
     }
 
-    if { ! [file exists $x/Makefile] } {
+    if { ! [file exists $directory/Makefile] } {
 	puts "====================\
-	      $x/Makefile does not exist"
+	      $directory/Makefile does not exist"
 	continue
     }
 
-    putsfd "==================== $x:"
+    putsfd "==================== $directory:"
     puts -nonewline "===================="
     puts -nonewline "===================="
     puts -nonewline "===================="
-    puts " $x:"
+    puts " $directory:"
 
-    cd $x
+    cd $directory
+    set dir [pwd]
+
     if { [catch {
 
-	set dir [pwd]
-
-	# Extract P = problem from Makefile
+	# Extract problem from `P = problem' line in
+	# Makefile
 	#
 	set pline ""
-	catch {
-	    set pline [exec grep $mgrepexp Makefile]
-	    }
-	if { ! [regexp $mregexp $pline \
+	if { [catch { set pline \
+	                  [exec grep $mgrepexp Makefile]
+		    }]\
+	    || \
+	    ! [regexp $mregexp $pline \
 	               forget problem] } {
 	    error "CANNOT find P = ... line in Makefile"
 	}
 
-	# Make list of extensions
+	# Make list of EXT values (extensions)
 	#
 	set extensions {}
+	set allowed {}
 	foreach pext $allowed_extensions {
 	    if { ! [regexp "^\\.(.*)\$" $pext \
-	                   forget ext] } {
-	        error "bad extension `$pext'"
+	                   forget EXT] } {
+	        error "bad allowed_extension `$pext'"
 	    }
-	    if { [file exists $problem$ext] } {
-	        lappend extensions $ext
+
+	    if { [file exists $problem.$EXT] } {
+	        lappend extensions $EXT
 	    }
 	}
 	if { [llength $extensions] == 0 } {
-	    set exts [join $allowed_extensions ,]
-	    error "no $problem{$exts} solutions"
+	    set exts [join $allowed ,]
+	    error "no $problem.{$exts} solutions"
 	}
 
 	# Do initial clean.
@@ -589,9 +623,9 @@ foreach x $myargv {
 	#
 	set input_names {}
 	foreach file [glob *.in *.jin] {
-	    set f [file rootname $file]
-	    if { [lcontain $input_names $f] } continue
-	    lappend input_names $f
+	    set N [file rootname $file]
+	    if { [lcontain $input_names $N] } continue
+	    lappend input_names $N
 	}
 
 	# Compute make_files = problem_make_files value
@@ -656,7 +690,51 @@ foreach x $myargv {
 	if {    [llength $input_names] > 1 \
 	     && [lcontain $input_names $problem] } {
 	   set i [lsearch -exact $input_names $problem]
-	   set input_names [replace $input_names $i $i]
+	   set input_names [lreplace $input_names $i $i]
+	}
+
+	# If -contestant convert link instructions
+	# in link_files and optional_link_files from
+	# { F F1 ... } to { F F F1 ... }.
+	#
+	if { $contestant }{
+
+	    set old_link_files $link_files
+	    set link_files {}
+	    foreach inst $old_link_files {
+	        lappend link_files \
+		        [lreplace $inst 0 -1 \
+			          [lindex $inst 0 ]]
+	    }
+	    set old_optional_link_files \
+	        $optional_link_files
+	    set optional_link_files {}
+	    foreach inst $old_optional_link_files {
+	        lappend optional_link_files \
+		        [lreplace $inst 0 -1 \
+			          [lindex $inst 0 ]]
+	    }
+	}
+
+	# Append stuff to optional_link_files.
+	#
+	# We CANNOT append
+	#	{ Makefile Makefile.EXT Makefile}
+	# here because EXT is not yet determined.
+	#
+	foreach N $input_names {
+	    lappend optional_link_files \
+	            [list Scoring_Filter]
+	    lappend optional_link_files [list $N.in]
+	    lappend optional_link_files [list $N.jin]
+	    lappend optional_link_files \
+	            [list $N.test $N.out $N.test]
+	    lappend optional_link_files \
+	            [list $N.jtest $N.jout $N.jtest]
+	    lappend optional_link_files \
+	            [list $N.ftest $N.fout $N.ftest]
+	    lappend optional_link_files \
+	            [list $N.jftest $N.jfout $N.jftest]
 	}
 
 	# If there are make_files, (re)make them.
@@ -687,59 +765,17 @@ foreach x $myargv {
 	    puts "(re)making $made"
 	    execute_makes $make_files . \
 	                  "problem_make_files value in\
-			   $problem.rc"
-	}
-
-	# If -contestant convert link instructions
-	# in link_files and optional_link_files from
-	# { F F1 ... } to { F F F1 ... }.
-	#
-	if { $contestant }{
-
-	    set old_link_files $link_files
-	    set link_files {}
-	    foreach inst $old_link_files {
-	        lappend link_files \
-		        [lreplace $inst 0 -1 \
-			          [lindex $inst 0 ]]
-	    }
-	    set old_optional_link_files \
-	        $optional_link_files
-	    set optional_link_files {}
-	    foreach inst $old_optional_link_files {
-	        lappend optional_link_files \
-		        [lreplace $inst 0 -1 \
-			          [lindex $inst 0 ]]
-	    }
-	}
-
-	# We CANNOT append
-	#	{ Makefile Makefile.EXT Makefile}
-	# here because EXT is not yet determined.
-
-	# Append stuff to optional_link_files.
-	#
-	foreach N $input_names {
-	    lappend optional_link_files \
-	            [list Scoring_Filter]
-	    lappend optional_link_files [list $N.in]
-	    lappend optional_link_files [list $N.jin]
-	    lappend optional_link_files \
-	            [list $N.test $N.out $N.test]
-	    lappend optional_link_files \
-	            [list $N.jtest $N.jout $N.jtest]
-	    lappend optional_link_files \
-	            [list $N.ftest $N.fout $N.ftest]
-	    lappend optional_link_files \
-	            [list $N.jftest $N.jfout $N.jftest]
+			   $directory/$problem.rc"
 	}
 
 	# Process each value of EXT.
 	#
 	if { [catch { foreach EXT $extensions {
 
-	    putsfd "====================\
-	            testing $problem.$EXT:"
+	    # Be sure we are in problem directory
+	    #
+	    cd $dir
+
 	    puts -nonewline "===================="
 	    puts -nonewline "===================="
 	    puts " testing $problem.$EXT:"
@@ -751,7 +787,8 @@ foreach x $myargv {
 	    # Execute link instructions
 	    #
 	    set ilist $link_files
-	    lappend ilist 
+	    lappend ilist $problem.$EXT
+	    lappend ilist \
 	            "Makefile Makefile.$EXT Makefile"
 	    foreach i $ilist {
 	        if { ! [execute_link $EXT $i] } {
@@ -778,12 +815,15 @@ foreach x $myargv {
 		    puts "========== $N:"
 		}
 		if { ! [file exists $N.in] } {
-		    puts "jfilter -v $N.jin $N.in >& $N.in#"
-		    exec jfilter -v $N.jin $N.in >& $N.in#
+		    puts "jfilter -v $N.jin $N.in\
+		                  >& $N.in#"
+		    exec jfilter -v $N.jin $N.in \
+		                 >& $N.in#
 		} elseif { [file exists $N.jin] } {
 		    puts "jfilter -v $N.jin $N.in+\
 			  >& $N.in#"
-		    exec jfilter -v $N.jin $N.in+ >& $N.in#
+		    exec jfilter -v $N.jin $N.in+ \
+		         >& $N.in#
 		    diff $N.in $N.in+
 		}
 		if { $N != $problem } {
@@ -792,22 +832,33 @@ foreach x $myargv {
 		}
 
 		puts "make"
-		set make_error \
-		    [catch { exec make >@ stdout } \
-			   mout]
+		if { $quiet } {
+		    set make_error \
+			[catch { exec make \
+			              > /dev/null } \
+			       mout]
+		} else {
+		    set make_error \
+			[catch { exec make >@ stdout } \
+			       mout]
+		}
 		if { $make_error } {
 		    if { $N != $problem } {
-			putsfd "========== making $N.out:"
+			putsfd "  ====\
+			    $directory/$problem.$EXT\
+			    ==== making $N.out:"
 		    }
 		    putsfd $mout
 		    puts $mout
 		}
 
 		if { $N != $problem } {
-		    puts "mv $problem.out $N.out"
-		    file rename $problem.out $N.out
 		    puts "rm $problem.in"
 		    file delete $problem.in
+		    if { [file exists $problem.out] } {
+			puts "mv $problem.out $N.out"
+			file rename $problem.out $N.out
+		    }
 		}
 
 		if { $make_error } continue
@@ -847,9 +898,12 @@ foreach x $myargv {
 		}
 	  } } out] } {
 	    puts $out
+	    putsfd "  ==== $directory/$problem.$EXT:"
 	    putsfd $out
         }
 
+	# Return to problem directory
+	#
 	cd $dir
 
 	if { ! $keep } {
