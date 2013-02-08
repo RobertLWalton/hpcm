@@ -7,7 +7,7 @@
 #
 # File:		makeweb
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Mar 25 01:30:13 EDT 2012
+# Date:		Fri Feb  8 15:22:56 EST 2013
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -16,9 +16,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2012/03/25 05:30:32 $
+#   $Date: 2013/02/08 20:47:22 $
 #   $RCSfile: makeweb,v $
-#   $Revision: 1.26 $
+#   $Revision: 1.27 $
 #
 # The next lines start tclsh \
 trap "echo makeweb: Terminated by Signal" \
@@ -160,8 +160,8 @@ foreach d $required_dirs {
     set ${d}_dir $dir
 }
 
-# Be sure solutions directory and solution_files
-# exists if needed.
+# Be sure solutions directory and problems_solution_
+# files exist if needed.
 #
 if { $web_solutions_password != "" } {
     set dir $j_d/solutions
@@ -170,7 +170,7 @@ if { $web_solutions_password != "" } {
          || ! [file readable $dir] } {
 	error "`$dir' is not a useable directory"
     }
-    set f $j_d/solution_files
+    set f $j_d/problems_solution_files
     if { ! [file readable $f] } {
         error "$f is not readable"
     }
@@ -271,7 +271,8 @@ if { $web_scoreboard_URL != "" } {
 #
 if { $web_problems_URL != "" } {
     puts $ch "
-<LI> <A HREF=\"$web_problems_URL\">Problem Descriptions</A>
+<LI> <A HREF=\"$web_problems_URL\">Problem\
+                                   Descriptions</A>
 "
 }
 
@@ -341,7 +342,8 @@ runs solutions.
 	    set p [file dirname $pfile]
 	    if { $p != $problem } continue
 	    set fname [file tail $pfile]
-	    if { [lcontain $description_files $fname] } \
+	    if { [lcontain $description_files \
+	                   $fname] } \
 	        continue
 	    set wfile $problem/$fname
 	    copy_file $j_d/solutions/$pfile $w_d/$wfile
@@ -432,7 +434,7 @@ $web_solutions_prefix
     # Process problems.
     #
     set solution_files \
-        [read_entire_file $j_d/solution_files]
+        [read_entire_file $j_d/problems_solution_files]
     foreach pdir \
             [lsort [glob -nocomplain $problems_dir/*]] {
 
