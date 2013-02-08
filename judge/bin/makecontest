@@ -6,7 +6,7 @@
 #
 # File:		makecontest
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Feb  7 09:37:48 EST 2013
+# Date:		Fri Feb  8 10:00:20 EST 2013
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2013/02/07 14:38:24 $
+#   $Date: 2013/02/08 20:22:26 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.218 $
+#   $Revision: 1.219 $
 #
 # The next lines start tclsh \
 trap "echo makecontest: Terminated by Signal" \
@@ -55,18 +55,18 @@ makecontest option ... index_specification ...
     		contestant accounts; specifically, the
 		following: -contest, -bin, -home, -help,
 		-help2, -this_contest, -solutions,
-		-mail, -print_files, -solution_files
-		-secure, -procmailrc, -who_where,
-		-trashable, -contest_commands, -judging_
-		commands, -scoreboard_commands,
-		-make_test.
+		-mail, -print_files, -problems_solution_
+		files, -demos_solution_files, -secure,
+		-procmailrc, -who_where, -trashable,
+		-contest_commands, -judging_commands,
+		-scoreboard_commands, -make_test.
     -email	Equals all options needed to have email
     		contestant accounts; specifically, the
 		following: -info, -solutions, -mail,
 		-this_contest, -procmailrc, -print_
-		files, -solution_files, -judging_
-		commands, -scoreboard_commands,
-		-make_test.
+		files, -problems_solution_files, -demos_
+		solution_files, -judging_commands,
+		-scoreboard_commands, -make_test.
     -formal     Same as -local plus -problems and
     		-demos.
     -informal   Same as -local plus -startcontest and
@@ -112,7 +112,10 @@ makecontest option ... index_specification ...
     -print_files  Make ./help_print_files,
     		       ./problems_print_files,
 		       ./demos_print_files.
-    -solution_files  Make ./solution_files.
+    -problems_solution_files
+    		Make ./problems_solution_files.
+    -demos_solution_files
+    		Make ./demos_solution_files.
 
     -mail	Make ./mail
     -procmailrc	Update ~/.procmailrc
@@ -501,7 +504,8 @@ Index Specifications
     expression in problem_solution_files and NONE of
     whose components match a regular expression in
     problem_excluded_files is a solution file.  See the
-    -solution_files option below.
+    -problems_solution_files and -demos_solution_files
+    options below.
 
     By convention, a problem or demo source file that
     has the extension `.ISF' is intended as the initial
@@ -891,21 +895,29 @@ The -print_files Option
     have the index specifications necessary to make the
     lists properly.
 
-The -solution_files Option
---- --------------- ------
+The -problems_solution_files and -demos_solution_files
+--- ------------------------ --- ---------------------
+Options
+-------
 
-    The -solution_files program option makes the
-    ./solution_files file that lists files in the
-    solutions subdirectory that can be posted on the web
-    to define solutions.  These files are defined by
-    the problem_solution_files and problem_excluded_
-    files global variables.  See PROBLEM.rc Global Vari-
-    ables above.
+    The -problems_solution_files program option makes
+    the ./problems_solution_files file that lists files
+    in the solutions subdirectory that can be posted on
+    the web to define solutions to non-demonstration
+    problems.  The -demos_solution_files option does the
+    same for demonstration problems.  The files listed
+    are defined by the problem_solution_files and
+    problem_excluded_files global variables.  See
+    PROBLEM.rc Global Variables above.
 
-    WARNING: the command `makecontest -solution_files'
-    will make an empty list as this command does not
-    have the index specifications necessary to make the
-    list properly.
+    WARNING: the files listed are in the ./solutions
+    directory and will not exist if the -solutions
+    option is not given.
+
+    WARNING: the command `makecontest -XXX_solution_
+    files' will make an empty list as this command does
+    not have the index specifications necessary to make
+    the list properly.
 
 
 The -secure Option
@@ -1226,7 +1238,9 @@ set help2_option		no
 set this_contest_option		no
 set mail_option			no
 set print_files_option		no
-set solution_files_option	no
+set problems_solution_files_option \
+				no
+set demos_solution_files_option	no
 set secure_option		no
 set ssh_option			no
 set procmailrc_option		no
@@ -1258,7 +1272,10 @@ while { $argi < $argc } {
 			  set mail_option	yes
 			  set print_files_option \
 			  			yes
-			  set solution_files_option \
+			  set problems_solution_files_option \
+			  			yes
+			  set \
+			   demos_solution_files_option \
 			  			yes
 			  set secure_option	yes
 			  set procmailrc_option	yes
@@ -1279,7 +1296,10 @@ while { $argi < $argc } {
 			  set mail_option	yes
 			  set print_files_option \
 			  			yes
-			  set solution_files_option \
+			  set problems_solution_files_option \
+			  			yes
+			  set \
+			   demos_solution_files_option \
 			  			yes
 			  set procmailrc_option	yes
 			  set judging_commands_option \
@@ -1299,7 +1319,10 @@ while { $argi < $argc } {
 			  set mail_option	yes
 			  set print_files_option \
 			  			yes
-			  set solution_files_option \
+			  set problems_solution_files_option \
+			  			yes
+			  set \
+			   demos_solution_files_option \
 			  			yes
 			  set secure_option	yes
 			  set procmailrc_option	yes
@@ -1326,7 +1349,10 @@ while { $argi < $argc } {
 			  set mail_option	yes
 			  set print_files_option \
 			  			yes
-			  set solution_files_option \
+			  set problems_solution_files_option \
+			  			yes
+			  set \
+			   demos_solution_files_option \
 			  			yes
 			  set secure_option	yes
 			  set procmailrc_option	yes
@@ -1359,7 +1385,12 @@ while { $argi < $argc } {
         -mail		{ set mail_option 	yes }
         -print_files	{ set print_files_option \
 						yes }
-        -solution_files	{ set solution_files_option \
+        -problems_solution_files {
+			  set problems_solution_files_option \
+						yes }
+        -demos_solution_files {
+			  set \
+			   demos_solution_files_option \
 						yes }
         -secure		{ set secure_option 	yes }
         -ssh		{ set ssh_option 	yes }
@@ -1907,7 +1938,9 @@ proc process_index_specification {} {
            help_index_chs problems_index_chs \
 	   demos_index_chs \
 	   help_print_files problems_print_files \
-	   demos_print_files problems_solution_files \
+	   demos_print_files \
+	   problems_solution_files \
+	   demos_solution_files \
            info_option solutions_option \
 	   problems_option demos_option \
 	   help_option description_option \
@@ -2296,12 +2329,19 @@ proc process_index_specification {} {
 
 		# Add to problems solution file list.
 		#
-		if {    [file isdirectory $source] \
-		     && $targetdir == "problems" } {
+		if { [file isdirectory $source] } {
 		    foreach f $solution_files {
-			lappend \
-			    problems_solution_files \
-			    solutions/$targettail/$f
+		         if {    $targetdir \
+			      == "problems" } {
+			    lappend \
+				problems_solution_files \
+				solutions/$targettail/$f
+			 } elseif {    $targetdir \
+			            == "demos" } {
+			    lappend \
+				demos_solution_files \
+				solutions/$targettail/$f
+			 }
 		    }
 		}
 	    }
@@ -2526,6 +2566,7 @@ set help_print_files ""
 set problems_print_files ""
 set demos_print_files ""
 set problems_solution_files ""
+set demos_solution_files ""
 
 # Set up channel lists.
 #
@@ -2719,6 +2760,34 @@ if { $solutions_option } {
     rename_directory $j_d/solutions
 }
 
+# Output `output' to `file' with renames if `file' would
+# be changed.  Specifically, if `file' exists and equals
+# `output' do nothing.  Otherwise move `file-' to
+# `file--', `file' to `file-', and write `output' to
+# `file'.  Here `file' is the name relative to `j_d'.
+#
+proc output_file { file output } {
+    global j_d
+
+    set f $j_d/$file
+    if {    ! [file readable $f] \
+	 || [read_entire_file $f] != $output } {
+	file delete -force -- $f--
+	if { [file exists $f-] } {
+	    puts "Renaming ./${file}-"
+	    puts "      to ./${file}--"
+	    file rename $f- $f--
+	}
+	if { [file exists $f] } {
+	    puts "Renaming ./${file}"
+	    puts "      to ./${file}-"
+	    file rename $f $f-
+	}
+	write_file $f $output
+	puts "Wrote ./${file}"
+    }
+}
+
 # Output print files if necessary
 #
 if { $print_files_option } {
@@ -2749,51 +2818,30 @@ if { $print_files_option } {
 	foreach f [set ${dir}_print_files] {
 	    set output "$output\n$f"
 	}
-	set f $j_d/${dir}_print_files
-	if {    ! [file readable $f] \
-	     || [read_entire_file $f] != $output } {
-	    file delete -force -- $f--
-	    if { [file exists $f-] } {
-		puts "Renaming ./${dir}_print_files-"
-		puts "      to ./${dir}_print_files--"
-		file rename $f- $f--
-	    }
-	    if { [file exists $f] } {
-		puts "Renaming ./${dir}_print_files"
-		puts "      to ./${dir}_print_files-"
-		file rename $f $f-
-	    }
-	    write_file $f $output
-	    puts "Wrote ./${dir}_print_files"
-	}
+	output_file ${dir}_print_files $output
     }
 }
 
 # Output solution files if necessary
 #
-if { $solution_files_option } {
+if { $problems_solution_files_option } {
     set output ""
     foreach f $problems_solution_files {
         set output "$output\n$f"
     }
     set output [string range $output 1 end]
-    set f $j_d/solution_files
-    if {    ! [file readable $f] \
-	 || [read_entire_file $f] != $output } {
-	file delete -force -- $f--
-	if { [file exists $f-] } {
-	    puts "Renaming ./solution_files-"
-	    puts "      to ./solution_files--"
-	    file rename $f- $f--
-	}
-	if { [file exists $f] } {
-	    puts "Renaming ./solution_files"
-	    puts "      to ./solution_files-"
-	    file rename $f $f-
-	}
-	write_file $f $output
-	puts "Wrote ./solution_files"
+    output_file problems_solution_files $output
+}
+
+# Output demos solution files if necessary
+#
+if { $demos_solution_files_option } {
+    set output ""
+    foreach f $demos_solution_files {
+        set output "$output\n$f"
     }
+    set output [string range $output 1 end]
+    output_file demos_solution_files $output
 }
 
 # Make mail directory.
