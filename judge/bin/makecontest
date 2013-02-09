@@ -6,7 +6,7 @@
 #
 # File:		makecontest
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Feb  8 10:00:20 EST 2013
+# Date:		Fri Feb  8 20:42:28 EST 2013
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2013/02/09 00:38:13 $
+#   $Date: 2013/02/09 02:31:50 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.221 $
+#   $Revision: 1.222 $
 #
 # The next lines start tclsh \
 trap "echo makecontest: Terminated by Signal" \
@@ -67,8 +67,8 @@ makecontest option ... index_specification ...
 		files, -problems_solution_files, -demos_
 		solution_files, -judging_commands,
 		-scoreboard_commands, -make_test.
-    -formal     Same as -local plus -problems and
-		-demos.
+    -formal     Same as -local plus -problems, -demos,
+		and -demos_solutions.
     -informal   Same as -local plus -startcontest and
 		-info.
 
@@ -88,6 +88,7 @@ makecontest option ... index_specification ...
 		problem description files for non-`all'
 		directory entries only if -description
 		is given.
+    -demos_solutions  Make ./contest/demos/solutions.
     -description     Include problem description (.txt,
 		.html, .ps, etc.) files in ./contest/
 		problems, ./contest/demos, or ./contest/
@@ -1234,6 +1235,7 @@ set bin_option				no
 set home_option				no
 set problems_option			no
 set demos_option			no
+set demos_solutions_option		no
 set description_option			no
 set help_option				no
 set help2_option			no
@@ -1318,6 +1320,7 @@ while { $argi < $argc } {
 	    set make_test_option		yes
 	    set problems_option			yes
 	    set demos_option			yes
+	    set demos_solutions_option		yes
 	}
 	-informal {
 	    set contest_option			yes
@@ -1349,6 +1352,11 @@ while { $argi < $argc } {
 	-home		{ set home_option	yes }
 	-problems	{ set problems_option	yes }
 	-demos		{ set demos_option	yes }
+	-demos_solutions {
+	    set demos_solutions_option	yes
+	    set contest_option		yes
+	    set solutions_option	yes
+	}
 	-description	{ set description_option yes }
 	-help		{ set help_option	yes }
 	-help2		{ set help2_option	yes }
@@ -1716,7 +1724,7 @@ proc get_index_chs { targetdir } {
 
     global info_option help_option j_d c_d \
 	   help_index_chs problems_index_chs \
-	   demos_index_chs \
+	   demos_index_chs
 
     set chs ""
     if { $info_option || $help_option } {
@@ -2614,6 +2622,19 @@ if { [file exists $c_d/help+/demos] } {
     grant_access $c_d/help+/demos
 }
 
+# Make ./contest/demos/solutions directory if necessary.
+# The demos directory is ./contest/demos+ at this point.
+#
+if { $demos_solutions_option } {
+
+    global c_d
+
+    set ds $c_d/demos+/solutions
+    file mkdir $ds
+    grant_access $ds
+}
+
+
 # Diff two directories.  If the only differences are the
 # first lines of help indices, return `no'.  Else return
 # `yes'.  Returning `yes' when one should have returned
@@ -2655,73 +2676,67 @@ proc diff_dirs { dir1 dir2 } {
     return no
 }
 
-# Rename directories iff $directory+ differs from
-# $directory as determined by `diff_dirs'.  If a
+# Rename directories iff $j_d/$directory+ differs from
+# $j_d/$directory as determined by `diff_dirs'.  If a
 # directory is not renamed, delete it.  Return `yes' if
-# directory renamed, and `no' if deleted.
+# directory renamed, and `no' if deleted.  Note that
+# `directory' argument is relative to j_d.
 #
 proc rename_directory { directory } {
 
     global j_d
-    set dname $directory
-    set len [string length $j_d]
-    incr len
-    if { [string compare -length $len \
-		 $j_d/ $directory] } {
-	set dname ./[string range $directory $len end]
-    }
 
-    if { [diff_dirs $directory $directory+] \
+    if { [diff_dirs $j_d/$directory $j_d/$directory+] \
 	 == "no" } {
-	file delete -force -- $directory+
+	file delete -force -- $j_d/$directory+
 	return no
     } else {
 
-	if { [file exists $directory--] } {
-	    file delete -force -- $directory--
+	if { [file exists $j_d/$directory--] } {
+	    file delete -force -- $j_d/$directory--
 	}
-	if { [file exists $directory-] } {
-	    puts "Renaming $dname-"
-	    puts "      to $dname--"
-	    file rename $directory- $directory--
-	    deny_access $directory--
+	if { [file exists $j_d/$directory-] } {
+	    puts "Renaming $directory-"
+	    puts "      to $directory--"
+	    file rename $j_d/$directory- $j_d/$directory--
+	    deny_access $j_d/$directory--
 	}
-	if { [file exists $directory] } {
-	    puts "Renaming $dname"
-	    puts "      to $dname-"
-	    file rename $directory $directory-
-	    deny_access $directory-
+	if { [file exists $j_d/$directory] } {
+	    puts "Renaming $directory"
+	    puts "      to $directory-"
+	    file rename $j_d/$directory $j_d/$directory-
+	    deny_access $j_d/$directory-
 	}
-	if { [file exists $directory+] } {
-	    puts "Renaming $dname+"
-	    puts "      to $dname"
-	    file rename $directory+ $directory
+	if { [file exists $j_d/$directory+] } {
+	    puts "Renaming $directory+"
+	    puts "      to $directory"
+	    file rename $j_d/$directory+ $j_d/$directory
 	}
 	return yes
     }
 }
 
 if { $info_option } {
-    rename_directory $j_d/info
+    rename_directory info
 }
 if { $problems_option } {
     if { [regexp {r.x} [get_access $c_d/problems]] } {
 	grant_access $c_d/problems+
     }
-    rename_directory $c_d/problems
+    rename_directory contest/problems
 }
 if { $help_option } {
     if { [regexp {r..} \
 		 [get_access $c_d/help/problems]] } {
 	grant_access $c_d/help+/problems
     }
-    rename_directory $c_d/help
+    rename_directory contest/help
 }
 if { $demos_option } {
-    rename_directory $c_d/demos
+    rename_directory contest/demos
 }
 if { $solutions_option } {
-    rename_directory $j_d/solutions
+    rename_directory solutions
 }
 
 # Output `output' to `file' with renames if `file' would
@@ -2786,7 +2801,7 @@ if { $print_files_option } {
     }
 }
 
-# Output solution files if necessary
+# Output problems solution files if necessary
 #
 if { $problems_solution_files_option } {
     set output ""
@@ -3826,7 +3841,7 @@ if { $stlhelp_option } {
 if { $web_option } {
     file delete -force $j_d/web+
     exec makeweb "{{directory $j_d/web+}}"
-    rename_directory $j_d/web
+    rename_directory web
     if {    ! [file exists $j_d/web.tar] \
 	 ||   [file mtime $j_d/web.tar]
 	    < [file mtime $j_d/web] } {
