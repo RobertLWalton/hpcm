@@ -6,7 +6,7 @@
 #
 # File:		makecontest
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Feb  8 20:42:28 EST 2013
+# Date:		Sat Feb  9 05:41:06 EST 2013
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2013/02/09 02:31:50 $
+#   $Date: 2013/02/09 11:19:33 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.222 $
+#   $Revision: 1.223 $
 #
 # The next lines start tclsh \
 trap "echo makecontest: Terminated by Signal" \
@@ -113,11 +113,12 @@ makecontest option ... index_specification ...
     -print_files  Make ./help_print_files,
 		       ./problems_print_files,
 		       ./demos_print_files.
+
     -problems_solution_files
 		Make ./problems_solution_files.
     -demos_solution_files
 		Make ./demos_solution_files.
-
+
     -mail	Make ./mail
     -procmailrc	Update ~/.procmailrc
 		and make ./Contest_Address
@@ -148,7 +149,7 @@ makecontest option ... index_specification ...
 		global variable to the judging_commands
 		global variable.  Implies -judging_
 		commands.
-
+
     -printer    Using the optional `contest_printer'
 		global variable make ./contest/printer,
 		and also make ./contest/printer_jobs
@@ -156,7 +157,7 @@ makecontest option ... index_specification ...
 		map' global variable make ./contest/
 		printer_map, and also make ./contest/
 		printer_jobs
-
+
     -javahelp	Make ./contest/javahelp
     -stlhelp	Make ./contest/stlhelp
 
@@ -182,7 +183,7 @@ makecontest option ... index_specification ...
     ./hpcm_judging.rc	 Parameters file.
 
 
-
+
     Given a judging directory (denoted as `./' in this
     documentation) complete with hpcm_judging.rc file,
     the `makecontest' program makes subdirectories,
@@ -191,7 +192,7 @@ makecontest option ... index_specification ...
     instructions in the index specifications and
     options.  The form of the index specifications and
     options is given above.
-
+
     This program appends instructions for its user to
     edit certain files and run certain programs to the
     ./TODO file, and prints an announcement at the end
@@ -222,7 +223,7 @@ Index Specifications
     directories.  Each item is a file or directory, and
     corresponds to an item entry in an input index file.
     The item entry has the form:
-
+
 	*** item_name item_option ...
 	    Text describing the item.
 
@@ -231,7 +232,7 @@ Index Specifications
     describe how substitutions are done below, after
     describing everything else about index specifica-
     tions, index files, and index entries.
-
+
     Before substitutions the item_name names the item,
     a file or directory, relative to the input index
     directory (see below).  After substitutions, the
@@ -256,7 +257,7 @@ Index Specifications
 	  An item entry is said to be `included' if it
 	  is being included in the ./info and ./contest
 	  directories under these rules.
-
+
       solution/nosolution
 	  An item is included in the ./solutions direc-
 	  tory if the `solution' option is present or
@@ -271,7 +272,7 @@ Index Specifications
 	  the above rules in ./{info,contest}/{demos,
 	  problems}, and an explicit `solution' over-
 	  rides `nosolution'.
-
+
       all/notall
 	  The definition of the global variable problem_
 	  source_files is changed to {.*} and the defi-
@@ -290,7 +291,7 @@ Index Specifications
     available to the PROBLEM.rc file as the value of
     the OPTIONS global variable.
 
-
+
   Output Indices
   ------ -------
 
@@ -310,7 +311,7 @@ Index Specifications
     If both ./contest and ./info directories exist,
     there may be two identical copies of each output
     index file, one in ./contest and one in ./info.
-
+
     When an item entry is copied, the `***' in the first
     line of the entry is replace by 3 space characters,
     the item name is replaced by the name after substi-
@@ -324,7 +325,7 @@ Index Specifications
     of file.  An item entry stops at the next line that
     begins a header or item entry, or at the end of
     file.
-
+
     When an item entry is copied to an output index
     file, the first header entry before the item entry
     in its index input file is copied just before the
@@ -347,7 +348,7 @@ Index Specifications
     or a `,'.  The `:' indicates the next argument is an
     input index directory name and the `,' indicates the
     next argument is a substitution pattern (see below).
-
+
     Each input index file is associated with an input
     index directory.  If this is named DDD, and an item
     entry within the input index file has item name III
@@ -355,7 +356,7 @@ Index Specifications
     itself is DDD/III.  This is either a file or a
     directory; that is, the item is either a file or
     a directory.
-
+
     An input index directory may optionally be given in
     a specification by ending the first argument of the
     specification, which names the input index file,
@@ -374,7 +375,7 @@ Index Specifications
     edited version of the input index file in the judg-
     ing directory and specify the associated input index
     directory by using a `:' in the index specification.
-
+
   PROBLEM.rc Global Variables
   ---------- ------ ---------
 
@@ -390,7 +391,7 @@ Index Specifications
     ./info directory tree, but are copied into the
     ./contest directory tree only if the `-description'
     option is given.
-
+
     Determination of which files are source and which
     are description, within a directory item, is made
     using global variable values which may be set by a
@@ -413,7 +414,7 @@ Index Specifications
     is very rare for a help file directory to need a .rc
     file: usually such directories have the `all' op-
     tion.
-
+
     The PROBLEM.rc file may define the following vari-
     ables:
 
@@ -425,7 +426,7 @@ Index Specifications
 	problem_excluded_files
 	problem_make_files
 	problem_print_files
-
+
     The values of these variables are TCL lists of
     regular expressions.  Default values are provided
     for these variables by hpcm_judging.rc, and these
@@ -448,7 +449,7 @@ Index Specifications
 	    Undefined.
 	problem_print_files:
 	    Undefined.
-
+
     The problem_make_files variable, if set, gives in-
     structions for making files in the problem direc-
     tory.  These are executed by `makecontest' as per
@@ -457,7 +458,7 @@ Index Specifications
     These instructions may make new files in the item
     directory, and these files may then be selected for
     including by the rules described below.
-
+
     The description and source file lists are lists of
     description or source file names relative to the
     index item directory.  To be listed a file must have
@@ -484,7 +485,7 @@ Index Specifications
     global variables and includes all files not excluded
     by the problem_excluded_files global variable, re-
     gardless of the setting of the -description option.
-
+
     The print files are files to be printed and given to
     contestants BEFORE the contest starts.  The list of
     print files for an item is copied into a file named
@@ -496,12 +497,14 @@ Index Specifications
     able are relative to the item directory.  Otherwise
     the sorted list of description files is used as the
     list of print files.
-
+
     The solution files are files to be put on the web
-    AFTER the contest ends.  This list is computed in
-    the same way as the source and description file
-    lists are computed: all files within a directory
-    item whose LAST name component matches a TCL regular
+    AFTER the contest ends, or for demonstration pro-
+    blems, the files put into the ./contest/demos/
+    solutions directory .  This list is computed in the
+    same way as the source and description file lists
+    are computed: all files within a directory item
+    whose LAST name component matches a TCL regular
     expression in problem_solution_files and NONE of
     whose components match a regular expression in
     problem_excluded_files is a solution file.  See the
@@ -519,14 +522,14 @@ Index Specifications
     named `foo.c' that will be submitted (by the con-
     testant executing `make submit').  `.ISF' stands for
     `initial submittable file'.
-
+
     Makecontest does nothing special with files having
     the `.ISF' extension.  It is the `hpcm_get' and
     `hpcm_extract' programs that automatically copy a
     file with a name such as `xxx.ISF' into a writable
     file named `xxx'.
 
-
+
   Item Name Substitution Patterns
   ---- ---- ------------ --------
 
@@ -552,7 +555,7 @@ Index Specifications
     Substitutions are not recursive: the result of a
     substitution is NOT subject to further substitu-
     tions.
-
+
   Option Substitution Patterns
   ------ ------------ --------
 
@@ -566,7 +569,7 @@ Index Specifications
     form:
 
 	option1s:'option11t option12t ...'
-
+
     in the index specification replaces option1s by the
     options in the list `option11t option12t ...'.
     As a special case, if `option1s' is `ALL', the
@@ -589,7 +592,7 @@ Index Specifications
     to include an item by name.  Thus an item_name is
     used twice, once as the name of the item, and once
     as an item option.
-
+
 The -contest Option
 --- -------- ------
 
@@ -597,7 +600,7 @@ The -contest Option
     must have a contest directory to hold files readable
     and executable by the contestants.  Files in the
     judging directory are not accessible to contestants.
-
+
     The -contest program option makes the contest direc-
     tory and the symbolic link `./contest' to that di-
     rectory.  This is needed for contests with local
@@ -626,14 +629,14 @@ The -bin Option
 
     The bin subdirectory of the contest directory holds
     programs executable by the contestant.
-
+
     The -bin program option makes the symbolic link
     ./contest/bin to `\$hpcm_directory/contestant/bin',
     where the `hpcm_directory' global variable defaults
     to `~/hpcm'.  If this cannot be done, it is not an
     error, but a TODO to fix the situation is written.
 
-
+
 The -home Option
 --- ----- ------
 
@@ -666,8 +669,8 @@ The -home Option
     unique account name exists.  If the prototype
     account cannot be found, it is not an error, but
     a TODO to fix the situation is written.
-
 
+
 The -info Option
 --- ----- ------
 
@@ -898,10 +901,8 @@ The -print_files Option
     have the index specifications necessary to make the
     lists properly.
 
-The -problems_solution_files and -demos_solution_files
---- ------------------------ --- ---------------------
-Options
--------
+The -{problems,demos}_solution_files Options
+--- -------------------------------- -------
 
     The -problems_solution_files program option makes
     the ./problems_solution_files file that lists files
@@ -923,6 +924,16 @@ Options
     the list properly.
 
 
+The -demos_solutions Option
+--- ---------------- ------
+
+This option makes the ./contest/demos/solutions direc-
+tory that contains the solution files for the demonstra-
+tion problems so local contestants can read them.  The
+files are just those listed in demos_solution_files.
+This option implies -solutions and -demos.
+
+
 The -secure Option
 --- ------- ------
 
@@ -937,7 +948,7 @@ The -secure Option
     go-rwx.  If the ./contest/secure/passwords file is
     made, a TODO for editing it is written, but the
     file automatically made is effectively empty.
-
+
     The hpcm_sendmail.rc file is used by the privileged
     hpcm_sendmail program when it is run by contestant
     local accounts.  It contains the judge's address and
@@ -954,7 +965,7 @@ The -secure Option
     lines of the form
 
 	account:password:who:c-email:t-email:comment
-
+
     Here `account' is a the login name of the contes-
     tant, `who' is a description of who the contestant
     is, and the `c-email' and `t-email' fields are the
@@ -977,7 +988,7 @@ The -secure Option
     line's account.  If a new password is generated for
     an existing account, a TODO is written telling how
     to reset the account's password.
-
+
 
 The -ssh Option
 --- ---- ------
@@ -993,7 +1004,7 @@ The -ssh Option
     an error, but a TODO to fix the situation is writ-
     ten.  In order to make the tar file, ./.ssh and
     ./ssh/authorized_keys are made.
-
+
     The ~/.ssh/{identity,id_rsa,id_dsa}.pub files are
     also copied by the -ssh option into the ./contest/
     .ssh directory, which is made if necessary, so these
@@ -1017,7 +1028,7 @@ The -procmailrc Option
     written to the ./Contest_Address file.  If there are
     no autojudge addresses, it is not an error, but a
     TODO to fix the situation is written.
-
+
     The -procmailrc program option also ensures that
     the entry
 
@@ -1028,7 +1039,8 @@ The -procmailrc Option
     incoming mail into the ~/hpcm_mbox file, just in
     case such a record is needed.  This entry must be
     before other entries that route mail.
-
+
+
 The -who_where Option
 --- ---------- ------
 
@@ -1053,7 +1065,7 @@ The -who_where Option
     Lines with account name `none' in the `passwords'
     file are not copied to the `who_where' file.
 
-
+
 The -trashable and -trashall Options
 --- ---------- --- --------- -------
 
@@ -1066,7 +1078,7 @@ The -trashable and -trashall Options
     option is like the -trashable option but includes
     all accounts other than `none', whether or not an
     account already exists.
-
+
     An account needs to be listed in the `trashable'
     file in order for the `TRASH_ACCOUNT' program be
     able to initialize the files in the account.  This
@@ -1092,13 +1104,14 @@ The -{contest,judging,scoreboard}_commands Options
     list elements of the judging_commands global vari-
     able.  See that variable in hpcm/lib/hpcm_judging.rc
     for details.
-
+
     The -scoreboard_commands program option appends the
     value of the scoreboard_commands global variable to
     the judging_commands global variable.  See documen-
     tation on scoreboard_commands in hpcm/judge/lib/
     hpcm_judging.rc.  Implies -judging_commands.
-
+
+
 The -printer and -printer_map Options
 --- -------- --- ------------ -------
 
@@ -1132,6 +1145,7 @@ The -printer and -printer_map Options
     printer_jobs file is also made if it does not
     exist.
 
+
 The -javahelp and -stlhelp Options
 --- --------- --- -------- -------
 
@@ -1167,6 +1181,7 @@ The -web Option
     a new ./web.tar is made and a TODO is written to
     move ./web via ./web.tar to the appropriate remote
     host.
+
 
 The -make_test Option
 --- ---------- ------
@@ -1178,6 +1193,7 @@ The -make_test Option
     the judging directory `Makefile', and allows the
     judging directory `hpcm_judging.rc' file to set up
     `make' targets for testing the contest.
+
 
 The -startcontest and -scoreboard Options
 --- ------------- --- ----------- -------
@@ -2629,9 +2645,28 @@ if { $demos_solutions_option } {
 
     global c_d
 
+    set demos {}
+    foreach d [glob -nocomplain $c_d/demos+/*] {
+        set demo [file tail $d]
+	lappend demos $demo
+    }
+
     set ds $c_d/demos+/solutions
     file mkdir $ds
     grant_access $ds
+
+    foreach f $demos_solution_files {
+	set d [file tail [file dirname $f]]
+	if { ! [lcontain $demos $d] } continue
+	set file [file tail $f]
+	if { $f != "solutions/$d/$file" } {
+	    error "bad file $f in demos_solution_files
+	}
+	file mkdir $c_d/demos+/solutions/$d
+	grant_access $c_d/demos+/solutions/$d
+	copy_file $f $c_d/demos+/solutions/$d/$file
+	grant_access $c_d/demos+/solutions/$d/$file
+    }
 }
 
 
