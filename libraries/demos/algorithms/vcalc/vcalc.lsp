@@ -2,7 +2,7 @@
 ;;
 ;; File:	vcalc.lsp
 ;; Authors:	Bob Walton (walton@seas.harvard.edu)
-;; Date:	Sun Feb 10 01:37:46 EST 2013
+;; Date:	Sun Feb 10 06:05:58 EST 2013
 ;;
 ;; The authors have placed this program in the public
 ;; domain; they make no warranty and accept no liability
@@ -19,16 +19,14 @@
 ; by the ~,14f format BUT with trailing fraction zeros
 ; suppressed, and for integers, the `.' suppressed.
 ;
-(defun number-to-string ( number )
+(defun scalar-string ( number )
   (let ((result (format nil "~,14f" number )))
     (do ((p (- (length result) 1) (- p 1)))
-        ((or (= p 0) (char!= (char result p) #\0))
+        ((or (= p 0) (char/= (char result p) #\0))
 	 (progn
 	   (if (char= (char result p) #\.) (decf p 1))
 	   (subseq result 0 p))))))
 
-; Tokens are strings
-; 
 (defvar *EOL* "END-OF-LINE")
 (defvar *EOF* "END-OF-FILE")
 ;
@@ -55,13 +53,12 @@
 			 nil my-readtable)
     my-readtable))
 
-; Returns next token or *EOL* if end of line or
-; *EOF* if end of file.  We make *EOL* and *EOF* be
-; printable strings as tokens are printed in
-; many error messages.  Implements one-token
-; backup.  Implements line_number.
+; Returns next token or *EOL* if end of line or *EOF* if
+; end of file.  We make *EOL* and *EOF* be printable
+; strings as tokens are printed in many error messages.
+; Implements one-token backup.  Implements line_number.
 ;
-; All tokens are strings and none are zero length.
+; All tokens are non-zero length strings or numbers.
 ;
 (defvar *backup* nil)
     ; Set backup = t to backup.
@@ -74,7 +71,7 @@
   (cond (*backup*
 	  (setf *backup* nil)
 	  (return *last-token*))
-	((equals *last-token* *EOL*)
+	((string= *last-token* *EOL*)
 	 (loop
 	   do (incf *line-number*)
 	   (let ((c (peek-char t nil t #\Space)))
@@ -84,7 +81,7 @@
 				       t #\Space))
 		    (if (char/= c #\/)
 		      (error "line begins with `/'"
-			     "not followed by a `/'"))
+			     " not followed by a `/'"))
 		    (loop until
 			  (char= (read-char nil
 					    t #\Newline)
@@ -96,391 +93,257 @@
   (dformat "{~A}" *last-token*)
   *last-token*)
 
-    // Print error message and exit.
-    //
-    static void error ( String message )
-    {
-        println
-	    ( "ERROR in line " + line_number + ":" );
-        println
-	    ( "      " + message );
-	System.exit ( 1 );
-    }
+; Print error message made by concatenating ~A printouts
+; of arguments without intervening space, and exit.
+;
+(defun error ( &rest args )
+  (format t "ERROR in line ~A:~5      " *line-number*)
+  (dolist x args (format t "~A" x))
+  (format t "~%")
+  (quit nil 1))
 
-    // Convert token to number.  If this is not
-    // possible, just return null.
-    //
-    static Double token_to_number ( String token )
-    {
-        try { return Double.valueOf ( token ); }
-	catch ( NumberFormatException e )
-	    { return null; }
-    }
+(defun check-not-eof ( token )
+  (if (equal token *EOF*)
+      (error "unexpected end of file" )))
 
-    static boolean is_scalar ( String token )
-    {
-        return token_to_number ( token ) != null;
-    }
+(defun skip ( desired )
+  (let ((token (get-token)))
+    (if (not (equal token desired))
+	(error "expected `" desired 
+	       "' but found `" token "'" ))))
 
-    static double token_to_scalar ( String token )
-    {
-	Double d = token_to_number ( token );
-	if ( d == null )
-	    error ( "expected scalar and got `" +
-	            token + "'" );
+(defun is-variable ( token )
+  (and (stringp token)
+       (alpha-char-p (char token 0))))
 
-	return d.doubleValue();
-    }
+(defun check-variable ( token )
+   (if (not (is-variable token))
+      (error "`" token "' is not a variable" )))
 
-    static void check_not_eof ( String token )
-    {
-       if ( token == EOF )
-          error ( "unexpected end of file" );
-    }
+(defstruct vector x y)
 
-    static void skip ( String desired )
-    {
-        String token = get_token();
-	if ( ! token.equals ( desired ) )
-	{
-	    error ( "expected `" + desired +
-	            "' but found `" + token + "'" );
-	}
-    }
+(defun vector-string ( v )
+  (format nil "(~A, ~A)"
+	  (scalar-string (vector-x v))
+	  (scalar-string (vector-y v))))
 
-    static boolean is_variable ( String token )
-    {
-	return ( Character.isLetter
-		     ( token.charAt ( 0 ) ) );
-    }
+(defun vector-negate ( Vector v )
+  (make-vector :x (- (vector-x v))
+	       :y (- (vector-y v))))
+(defun vector-add ( v1 v2 )
+  (make-vector :x (+ (vector-x v1) (vector-x v2))
+	       :y (+ (vector-y v1) (vector-y v2))
+(defun vector-subtract ( v1 v2 )
+  (make-vector :x (- (vector-x v1) (vector-x v2))
+	       :y (- (vector-y v1) (vector-y v2))
+(defun vector-multiply ( v1 v2 )
+  (+ (* (vector-x v1) (vector-x v2))
+     (* (vector-y v1) (vector-y v2))))
+(defun scalar-multiply ( s v )
+  (make-vector :x (* s (vector-x v))
+	       :y (* s (vector-y v))))
+(defun vector-length ( v )
+  (sqrt (vector-multiply v v)))
 
-    static void check_variable ( String token )
-    {
-       if ( ! is_variable ( token ) )
-          error ( "`" + token + "' is not a variable" );
-    }
+(defun vector-angle ( v )
+  ; We take extra care with angles that are
+  ; multiples of 90 degrees.  This is only
+  ; necessary if one is using exact equality
+  ; with integer coordinates instead of
+  ; approximate equality.
+  ;
+  (cond ((and (= 0 (vector-x v))
+	      (= 0 (vector-y v)))
+	 (error "angle of zero vector" ))
+	((= 0 (vector-x v))
+	 (if (> (vector-y) 0) +90 -90))
+	((= 0 (vector-y v))
+	 (if (> (vector-x) 0) 0 +180))
+	(t
+	  (* (/ 180.0 PI) (atan (vector-y v)
+			        (vector-x v))))))
 
-    static class Vector {
-        double x, y;
-	Vector ( double xval, double yval )
-	{
-	    x = xval; y = yval;
-	}
-	public String toString ( )
-	{
-	    return    "("  + decimal.format ( x )
-		    + ", " + decimal.format ( y )
-		    + ")";
-	}
-    }
-    static Vector negate ( Vector v )
-    {
-        return new Vector ( - v.x, - v.y );
-    }
-    static Vector add ( Vector v1, Vector v2 )
-    {
-        return new Vector ( v1.x + v2.x, v1.y + v2.y );
-    }
-    static Vector subtract ( Vector v1, Vector v2 )
-    {
-        return new Vector ( v1.x - v2.x, v1.y - v2.y );
-    }
-    static double multiply ( Vector v1, Vector v2 )
-    {
-        return v1.x * v2.x + v1.y * v2.y;
-    }
-    static Vector multiply ( double s, Vector v )
-    {
-        return new Vector ( s * v.x, s * v.y );
-    }
-    static double length ( Vector v )
-    {
-        return Math.sqrt ( v.x * v.x + v.y * v.y );
-    }
-    static double angle ( Vector v )
-    {
-	double result;
+(defun vector-rotate ( v angle ) 
+  (let* ((k (floor angle 90))
+	 (j (mod k 4))
+	 sin cos)
+    ; We take extra care with angles that are
+    ; multiples of 90 degrees.  This is only
+    ; necessary if one is using exact equality
+    ; with integer coordinates instead of
+    ; approximate equality.
+    ;
+    (cond ((/= angle (* 90 k))
+	   (setf angle (* (/ PI 180.0) angle))
+	   (setf sin (sin angle))
+	   (setf cos (cos angle)))
+	  ((= j 0) (setf sin 0 cos 1))
+	  ((= j 1) (setf sin 1 cos 0))
+	  ((= j 2) (setf sin 0 cos -1))
+	  ((= j 3) (setf sin -1 cos 0)))
+    (make-vector :x (- (* cos (vector-x v))
+		       (* sin (vector-y v)))
+		 :y (+ (* sin (vector-x v))
+		       (* cos (vector-y v))))))
 
-	// We take extra care with angles that are
-	// multiples of 90 degrees.  This is only
-	// necessary if one is using exact equality
-	// with integer coordinates instead of
-	// approximate equality.
-	//
-	if ( v.x == 0 && v.y == 0 )
-	{
-	    error ( "angle of zero vector" );
-	    result = Double.NaN;
-	        // Needed so compiler will not think
-		// that result does not get a value.
-	}
-	else if ( v.x == 0 )
-	    result = ( v.y > 0 ? +90 : -90 );
-	else if ( v.y == 0 )
-	    result = ( v.x > 0 ? 0 : +180 );
-	else
-	{
-	    result = Math.atan2 ( v.y, v.x );
-	    result *= 180.0 / Math.PI;
-	}
-	return result;
-    }
-    static Vector rotate ( Vector v, double angle ) 
-    {
-	double sin, cos;
 
-	// We take extra care with angles that are
-	// multiples of 90 degrees.  This is only
-	// necessary if one is using exact equality
-	// with integer coordinates instead of
-	// approximate equality.
-	//
-	int k = (int) ( angle / 90 );
-	if ( angle == k * 90 )
-	{
-	    switch ( k % 4 )
-	    {
-	    case  0: sin = 0; cos = 1; break;
-	    case +1:
-	    case -3: sin = 1; cos = 0; break;
-	    case +2:
-	    case -2: sin = 0; cos = -1; break;
-	    case +3:
-	    case -1: sin = -1; cos = 0; break;
-	    default: sin = Double.NaN; cos = Double.NaN;
-	        // Needed so compiler will not think
-		// that sin and cos do not get values.
-	    }
-	}
-	else
-	{
-	    angle *= Math.PI / 180;
-	    sin = Math.sin ( angle );
-	    cos = Math.cos ( angle );
-	}
-	return new Vector
-	    ( cos * v.x - sin * v.y,
-	      sin * v.x + cos * v.y );
-    }
+(defconstant *BOOLEAN* 1)
+(defconstant *SCALAR*  2)
+(defconstant *VECTOR*  3)
 
-    final static int BOOLEAN  = 1;
-    final static int SCALAR   = 2;
-    final static int VECTOR   = 3;
+(defstruct value
+  type	; *BOOLEAN*, *SCALAR*, or *VECTOR*.
+  b	; Value if *BOOLEAN*.
+  s	; Value if *SCALAR*.
+  v	; Value if *VECTOR*.
+  )
 
-    static class Value {
-        int type;	// BOOLEAN, SCALAR, or VECTOR.
-	boolean b;	// Value if BOOLEAN.
-	double s;	// Value if SCALAR.
-	Vector v;	// Value if VECTOR.
+(defun value-string ( v )
+  (cond ((= *BOOLEAN* (value-type v))
+	 (if (value-b v) "true" "false"))
+	((= *SCALAR* (value-type v))
+	 (scalar-string (value-s v)))
+	((= *VECTOR* (value-type v))
+	 (vector-string (value-v v)))
+	(t
+	  (error "bad value type "
+		 (format nil "~A" (value-type v))))))
 
-	public String toString ( )
-	{
-	    if ( type == BOOLEAN )
-	        return String.valueOf ( b );
-	    else if ( type == SCALAR )
-	        return decimal.format ( s );
-	    else if ( type == VECTOR )
-	        return v.toString();
-	    else
-	        return new String
-		    ( "BAD OBJECT TYPE " + type );
-	}
-    }
+(defvar *variable-table*
+  (make-hash-table :test #'equal :size 256))
+    ; Maps variable name strings to values.
 
-    static Hashtable<String,Value> variable_table =
-	    new Hashtable<String,Value>();
-        // Maps variable name Strings to Values.
+(defun require_boolean ( Value v1 )
+{
+    if ( v1.type != BOOLEAN )
+	error ( "operand should be boolean" );
+}
+(defun require_boolean ( Value v1, Value v2 )
+{
+    if ( v1.type != BOOLEAN )
+	error
+	    ( "first operand should be boolean" );
+    else if ( v2.type != BOOLEAN )
+	error
+	    ( "second operand should be boolean" );
+}
 
-    static void require_boolean ( Value v1 )
-    {
-        if ( v1.type != BOOLEAN )
-	    error ( "operand should be boolean" );
-    }
-    static void require_boolean ( Value v1, Value v2 )
-    {
-        if ( v1.type != BOOLEAN )
-	    error
-	        ( "first operand should be boolean" );
-        else if ( v2.type != BOOLEAN )
-	    error
-	        ( "second operand should be boolean" );
-    }
+(defun require_scalar ( Value v1 )
+  (if (/= (value-type v1) *SCALAR*)
+    (error "operand should be scalar" )))
 
-    static void require_scalar ( Value v1 )
-    {
-        if ( v1.type != SCALAR )
-	    error ( "operand should be scalar" );
-    }
-    static void require_scalar ( Value v1, Value v2 )
-    {
-        if ( v1.type != SCALAR )
-	    error ( "first operand should be scalar" );
-        else if ( v2.type != SCALAR )
-	    error ( "second operand should be scalar" );
-    }
+(defun require_scalar ( Value v1, Value v2 )
+  (cond ((/= (value-type v1) *SCALAR*)
+	 (error "first operand should be scalar" ))
+        ((/= (value-type v2) *SCALAR*)
+	 (error "second operand should be scalar" ))))
 
-    static void require_vector ( Value v1 )
-    {
-        if ( v1.type != VECTOR )
-	    error ( "operand should be vector" );
-    }
-    static void require_vector ( Value v1, Value v2 )
-    {
-        if ( v1.type != VECTOR )
-	    error ( "first operand should be vector" );
-        else if ( v2.type != VECTOR )
-	    error ( "second operand should be vector" );
-    }
-    static void require_scalar_vector
-            ( Value v1, Value v2 )
-    {
-        if ( v1.type != SCALAR )
-	    error ( "first operand should be scalar" );
-        else if ( v2.type != VECTOR )
-	    error ( "second operand should be vector" );
-    }
-    static void require_vector_scalar
-            ( Value v1, Value v2 )
-    {
-        if ( v1.type != VECTOR )
-	    error ( "first operand should be vector" );
-        else if ( v2.type != SCALAR )
-	    error ( "second operand should be scalar" );
-    }
+(defun require_vector ( v1 )
+  (if (/= (value-type v1) *VECTOR*)
+    (error "operand should be vector" )))
+
+(defun require_vector ( v1 v2 )
+  (cond ((/= (value-type v1) *VECTOR*)
+	 (error "first operand should be vector" ))
+        ((/= (value-type v2) *VECTOR*)
+	 (error "second operand should be vector" ))))
+
+(defun require_scalar_vector ( v1 v2 )
+  (cond ((/= (value-type v1) *SCALAR*)
+	 (error "first operand should be scalar" ))
+        ((/= (value-type v2) *VECTOR*)
+	 (error "second operand should be vector" ))))
+
+(defun require_vector_scalar ( v1 v2 )
+  (cond ((/= (value-type v1) *VECTOR*)
+	 (error "first operand should be vector" ))
+        ((/= (value-type v2) *SCALAR*)
+	 (error "second operand should be scalar" ))))
  
-    // Require v1 to be SCALAR or VECTOR and return
-    // true if SCALAR, false if VECTOR.
-    //
-    static boolean is_scalar ( Value v1 )
-    {
-        if ( v1.type == SCALAR )
-	    return true;
-        else if ( v1.type == VECTOR )
-	    return false;
-	else
-	    error
-	      ( "operand should be scalar or vector" );
-
-	return false; // never executed
-    }
+; Require v1 to be SCALAR or VECTOR and return
+; true if SCALAR, false if VECTOR.  If v2 given,
+; require it to be of the same type as v1.
+;
+(defun is-scalar ( v1 &optional v2 )
+  (cond ((and v2 (/= (value-type v1) (value-type v2)))
+	 (error "operands should both be scalar"
+	        " or both be vector"))
+	((= (value-type v1) *SCALAR*) t)
+	((= (value-type v1) *VECTOR*) nil)
+	(t
+	 (error "operand(s) should be"
+		" scalar or vector"))))
  
-    // Require v1 and v2 to be BOTH SCALAR or BOTH
-    // VECTOR and return true if SCALAR, false if
-    // VECTOR.
-    //
-    static boolean is_scalar ( Value v1, Value v2 )
-    {
-	if ( v1.type != v2.type )
-	    error ( "operands should both be scalar"
-	            + " or both be vector" );
-        else if ( v1.type == SCALAR )
-	    return true;
-        else if ( v2.type == VECTOR )
-	    return false;
-	else
-	    error
-	      ( "operands should be scalar or vector" );
 
-	return false; // never executed
-    }
+; Reads a constant value and returns its value,
+; or a variable with a value and returns a COPY
+; of its value.  Always returns a NEW value.
+;
+(defun get-value ( )
+  (let ((v (make-value))
+	(token (get-token))
+	x y))
+    (cond ((equals token "(")
+	   (setf (value-type v) *VECTOR*)
+	   (setf (value-v v) (make-vector))
+	   (setf (vector-x (value-v v)) (get-number))
+	   (skip ",")
+	   (setf (vector-y (value-v v)) (get-number))
+	   (skip ")"))
+	  ((equals token "true")
+	   (setf (value-type v) *BOOLEAN*)
+	   (setf (value-b v) t))
+	  ((equals token "false")
+	   (setf (value-type v) *BOOLEAN*)
+	   (setf (value-b v) nil))
+          ((is-variable token)
+	   (let ((v2 (gethash token *variable-table)))
+	     (if (equals v2 nil)
+	         (error "`" token "' unassigned" ))
+	     (setf (value-type v) (value-type v2)
+	           (value-b    v) (value-b    v2)
+	           (value-s    v) (value-s    v2)
+	           (value-v    v) (value-b    v2))))
+	  ((numberp token)
+	   (setf (value-type v) *SCALAR*)
+	   (setf (value-s v) token))
+	  (t
+	   (error "expected true, false, "
+		  " scalar constant, "
+		  " vector constant, "
+		  " or variable but got `"
+		  token "'" )))
+    (dformat "[~A]" (value-string v))
+    v)
 
-    // Reads a constant value and returns its Value,
-    // or a variable with a value and returns a COPY
-    // of its Value.  Always returns a NEW Value.
-    //
-    static Value get_value ( )
-    {
-	Value v = new Value();
+; Execute `clear ...' statement after `clear' token
+; has been read and skipped.
+;
+(defun execute-clear ( )
+  (let ((token (get-token)))
+    (cond ((equals token *EOL*)
+	   (maphash #'(lambda (key val)
+			(remhash key *variable-table*))
+		    *variable-table*))
+	  (t
+	    (loop until (equals token *EOL*) do
+		  (check-variable token)
+		  (remhash token *variable-table*)
+		  (setf token (get-token)))))))
 
-        String token = get_token();
-	if ( token.equals ( "(" ) )
-	{
-	    v.type = VECTOR;
-	    token = get_token();
-	    double x = token_to_scalar ( token );
-	    skip ( "," );
-	    token = get_token();
-	    double y = token_to_scalar ( token );
-	    skip ( ")" );
-	    v.v = new Vector ( x, y );
-	}
-	else if ( token.equals ( "true" ) )
-	{
-	    v.type = BOOLEAN;
-	    v.b = true;
-	}
-	else if ( token.equals ( "false" ) )
-	{
-	    v.type = BOOLEAN;
-	    v.b = false;
-	}
-	else if ( is_variable ( token ) )
-	{
-	    Value v2 = variable_table.get ( token );
-	    if ( v2 == null )
-	        error ( "`" + token + "' unassigned" );
-	    v.type = v2.type;
-	    v.b = v2.b;
-	    v.s = v2.s;
-	    v.v = v2.v;
-	}
-	else if ( is_scalar ( token ) )
-	{
-	    v.type = SCALAR;
-	    v.s = token_to_scalar ( token );
-	}
-	else
-	    error ( "expected true, false, " +
-	            " scalar constant, " +
-	            " vector constant, " +
-	            " or variable but got `" +
-		    token + "'" );
-
-	dprint ( "[" + v.toString() + "]" );
-	return v;
-    }
-
-    // Execute `clear ...' statement after `clear' token
-    // has been read and skipped.
-    //
-    static void execute_clear ( )
-    {
-        boolean found = false;
-	while ( true )
-	{
-	    String token = get_token();
-	    if ( token.equals ( EOL ) ) break;
-	    check_variable ( token );
-	    variable_table.remove ( token );
-	    found = true;
-	}
-	if ( ! found )
-	    variable_table.clear();
-    }
-
-    // Execute `print{ln} ...' statement after
-    // `print{ln}' token has been read and skipped,
-    // BUT do not output final space or line end.
-    //
-    static void execute_print ( )
-    {
-        boolean first = true;
-	while ( true )
-	{
-	    String token = get_token();
-	    if ( token.equals ( EOL ) ) break;
-	    if ( first )
-		first = false;
-	    else
-	        print ( " " );
-	    Value v = variable_table.get ( token );
-
-	    if ( v == null )
-	        print ( token );
-	    else 
-	        print ( v.toString() );
-	}
-    }
+; Execute `print{ln} ...' statement after
+; `print{ln}' token has been read and skipped,
+; BUT do not output final space or line end.
+;
+(defun execute-print ( )
+  (let ((first t) (token (get-token)) v)
+    (loop until (equals token *EOL*) do
+	  (if first (setf first nil)
+	            (format t " "))
+	  (setf v (gethash token *variable-table*))
+	  (format t (if v (value-string v)
+		          (token-string v)))
+	  (setf token (get-token))))
 
     // Execute `variable = ...' statement after
     // `variable =' tokens have been read and skipped.
