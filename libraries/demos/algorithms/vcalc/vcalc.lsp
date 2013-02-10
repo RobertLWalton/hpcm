@@ -2,7 +2,7 @@
 ;;
 ;; File:	vcalc.lsp
 ;; Authors:	Bob Walton (walton@seas.harvard.edu)
-;; Date:	Sun Feb 10 08:46:23 EST 2013
+;; Date:	Sun Feb 10 12:03:12 EST 2013
 ;;
 ;; The authors have placed this program in the public
 ;; domain; they make no warranty and accept no liability
@@ -19,8 +19,8 @@
 ; by the ~,14f format BUT with trailing fraction zeros
 ; suppressed, and for integers, the `.' suppressed.
 ;
-(defun scalar-string ( number )
-  (let ((result (format nil "~,14f" number )))
+(defun scalar-string (number)
+  (let ((result (format nil "~,14f" number)))
     (do ((p (- (length result) 1) (- p 1)))
         ((or (= p 0) (char/= (char result p) #\0))
 	 (progn
@@ -30,9 +30,9 @@
 (defvar *EOL* "END-OF-LINE")
 (defvar *EOF* "END-OF-FILE")
 ;
-(defun return-separator ( stream char )
+(defun return-separator (stream char)
   (char-name char))
-(defun return-end-of-line ( stream char )
+(defun return-end-of-line (stream char)
   *EOL*)
 
 (defvar *my-readtable*
@@ -56,7 +56,8 @@
 ; Returns next token or *EOL* if end of line or *EOF* if
 ; end of file.  We make *EOL* and *EOF* be printable
 ; strings as tokens are printed in many error messages.
-; Implements one-token backup.  Implements line_number.
+; Implements one-token backup.  Implements
+; *line-number*.
 ;
 ; All tokens are non-zero length strings or numbers.
 ;
@@ -70,7 +71,7 @@
 (defun get-token ()
   (cond (*backup*
 	  (setf *backup* nil)
-	  (return *last-token*))
+	  (return-from get-token *last-token*))
 	((string= *last-token* *EOL*)
 	 (loop
 	   do (incf *line-number*)
@@ -86,66 +87,70 @@
 			  (char= (read-char nil
 					    t #\Newline)
 			         #\Newline)))
-		   (t return))))))
+		   (t (return)))))))
 
-  (setf last-token (let ((*readtabel* *my-readtable*))
+  (setf *last-token* (let ((*readtable* *my-readtable*))
 		        (read nil t *EOF*)))
   (dformat "{~A}" *last-token*)
+  (assert (or (stringp *last-token*)
+	      (numberp *last-token*)))
   *last-token*)
 
 ; Print error message made by concatenating ~A printouts
 ; of arguments without intervening space, and exit.
 ;
-(defun error ( &rest args )
-  (format t "ERROR in line ~A:~5      " *line-number*)
-  (dolist x args (format t "~A" x))
+(shadow 'error)
+(defun error (&rest args)
+  (format t "ERROR in line ~A:~%      " *line-number*)
+  (dolist (x args) (format t "~A" x))
   (format t "~%")
   (quit nil 1))
 
-(defun check-not-eof ( token )
+(defun check-not-eof (token)
   (if (equal token *EOF*)
-      (error "unexpected end of file" )))
+      (error "unexpected end of file")))
 
-(defun skip ( desired )
+(defun skip (desired)
   (let ((token (get-token)))
     (if (not (equal token desired))
 	(error "expected `" desired 
-	       "' but found `" token "'" ))))
+	       "' but found `" token "'"))))
 
-(defun is-variable ( token )
+(defun is-variable (token)
   (and (stringp token)
        (alpha-char-p (char token 0))))
 
-(defun check-variable ( token )
+(defun check-variable (token)
    (if (not (is-variable token))
-      (error "`" token "' is not a variable" )))
+      (error "`" token "' is not a variable")))
 
+(shadow 'vector)
 (defstruct vector x y)
 
-(defun vector-string ( v )
+(defun vector-string (v)
   (format nil "(~A, ~A)"
 	  (scalar-string (vector-x v))
 	  (scalar-string (vector-y v))))
 
-(defun vector-negate ( Vector v )
+(defun vector-negate (v)
   (make-vector :x (- (vector-x v))
 	       :y (- (vector-y v))))
-(defun vector-add ( v1 v2 )
+(defun vector-add (v1 v2)
   (make-vector :x (+ (vector-x v1) (vector-x v2))
 	       :y (+ (vector-y v1) (vector-y v2))))
-(defun vector-subtract ( v1 v2 )
+(defun vector-subtract (v1 v2)
   (make-vector :x (- (vector-x v1) (vector-x v2))
 	       :y (- (vector-y v1) (vector-y v2))))
-(defun vector-multiply ( v1 v2 )
+(defun vector-multiply (v1 v2)
   (+ (* (vector-x v1) (vector-x v2))
      (* (vector-y v1) (vector-y v2))))
-(defun scalar-multiply ( s v )
+(defun scalar-multiply (s v)
   (make-vector :x (* s (vector-x v))
 	       :y (* s (vector-y v))))
-(defun vector-length ( v )
+(defun vector-length (v)
   (sqrt (vector-multiply v v)))
 
-(defun vector-angle ( v )
+(defun vector-angle (v)
   ; We take extra care with angles that are
   ; multiples of 90 degrees.  This is only
   ; necessary if one is using exact equality
@@ -154,16 +159,16 @@
   ;
   (cond ((and (= 0 (vector-x v))
 	      (= 0 (vector-y v)))
-	 (error "angle of zero vector" ))
+	 (error "angle of zero vector"))
 	((= 0 (vector-x v))
-	 (if (> (vector-y) 0) +90 -90))
+	 (if (> (vector-y v) 0) +90 -90))
 	((= 0 (vector-y v))
-	 (if (> (vector-x) 0) 0 +180))
+	 (if (> (vector-x v) 0) 0 +180))
 	(t
 	  (* (/ 180.0 PI) (atan (vector-y v)
 			        (vector-x v))))))
 
-(defun vector-rotate ( v angle ) 
+(defun vector-rotate (v angle) 
   (let* ((k (floor angle 90))
 	 (j (mod k 4))
 	 sin cos)
@@ -198,7 +203,7 @@
   v	; Value if *VECTOR*.
   )
 
-(defun value-string ( v )
+(defun value-string (v)
   (cond ((= *BOOLEAN* (value-type v))
 	 (if (value-b v) "true" "false"))
 	((= *SCALAR* (value-type v))
@@ -213,53 +218,53 @@
   (make-hash-table :test #'equal :size 256))
     ; Maps variable name strings to values.
 
-(defun require-boolean ( v1 )
+(defun require-boolean (v1)
   (if (/= (value-type v1) *BOOLEAN*)
-    (error "operand should be boolean" )))
+    (error "operand should be boolean")))
 
-(defun require-boolean ( v1, v2 )
+(defun require-boolean (v1 v2)
   (cond ((/= (value-type v1) *BOOLEAN*)
-	 (error "first operand should be boolean" ))
+	 (error "first operand should be boolean"))
         ((/= (value-type v2) *BOOLEAN*)
-	 (error "second operand should be boolean" ))))
+	 (error "second operand should be boolean"))))
 
-(defun require_scalar ( v1 )
+(defun require-scalar (v1)
   (if (/= (value-type v1) *SCALAR*)
-    (error "operand should be scalar" )))
+    (error "operand should be scalar")))
 
-(defun require_scalar ( v1 v2 )
+(defun require-scalar (v1 v2)
   (cond ((/= (value-type v1) *SCALAR*)
-	 (error "first operand should be scalar" ))
+	 (error "first operand should be scalar"))
         ((/= (value-type v2) *SCALAR*)
-	 (error "second operand should be scalar" ))))
+	 (error "second operand should be scalar"))))
 
-(defun require_vector ( v1 )
+(defun require-vector (v1)
   (if (/= (value-type v1) *VECTOR*)
-    (error "operand should be vector" )))
+    (error "operand should be vector")))
 
-(defun require_vector ( v1 v2 )
+(defun require-vector (v1 v2)
   (cond ((/= (value-type v1) *VECTOR*)
-	 (error "first operand should be vector" ))
+	 (error "first operand should be vector"))
         ((/= (value-type v2) *VECTOR*)
-	 (error "second operand should be vector" ))))
+	 (error "second operand should be vector"))))
 
-(defun require_scalar_vector ( v1 v2 )
+(defun require-scalar-vector (v1 v2)
   (cond ((/= (value-type v1) *SCALAR*)
-	 (error "first operand should be scalar" ))
+	 (error "first operand should be scalar"))
         ((/= (value-type v2) *VECTOR*)
-	 (error "second operand should be vector" ))))
+	 (error "second operand should be vector"))))
 
-(defun require_vector_scalar ( v1 v2 )
+(defun require-vector-scalar (v1 v2)
   (cond ((/= (value-type v1) *VECTOR*)
-	 (error "first operand should be vector" ))
+	 (error "first operand should be vector"))
         ((/= (value-type v2) *SCALAR*)
-	 (error "second operand should be scalar" ))))
+	 (error "second operand should be scalar"))))
  
 ; Require v1 to be SCALAR or VECTOR and return
 ; true if SCALAR, false if VECTOR.  If v2 given,
 ; require it to be of the same type as v1.
 ;
-(defun is-scalar ( v1 &optional v2 )
+(defun is-scalar (v1 &optional v2)
   (cond ((and v2 (/= (value-type v1) (value-type v2)))
 	 (error "operands should both be scalar"
 	        " or both be vector"))
@@ -274,10 +279,10 @@
 ; or a variable with a value and returns a COPY
 ; of its value.  Always returns a NEW value.
 ;
-(defun get-value ( )
+(defun get-value ()
   (let ((v (make-value))
 	(token (get-token))
-	x y))
+	x y)
     (cond ((equal token "(")
 	   (setf (value-type v) *VECTOR*)
 	   (setf (value-v v) (make-vector))
@@ -292,9 +297,9 @@
 	   (setf (value-type v) *BOOLEAN*)
 	   (setf (value-b v) nil))
           ((is-variable token)
-	   (let ((v2 (gethash token *variable-table)))
+	   (let ((v2 (gethash token *variable-table*)))
 	     (if (equal v2 nil)
-	         (error "`" token "' unassigned" ))
+	         (error "`" token "' unassigned"))
 	     (setf (value-type v) (value-type v2)
 	           (value-b    v) (value-b    v2)
 	           (value-s    v) (value-s    v2)
@@ -307,14 +312,14 @@
 		  " scalar constant, "
 		  " vector constant, "
 		  " or variable but got `"
-		  token "'" )))
+		  token "'")))
     (dformat "[~A]" (value-string v))
-    v)
+    v))
 
 ; Execute `clear ...' statement after `clear' token
 ; has been read and skipped.
 ;
-(defun execute-clear ( )
+(defun execute-clear ()
   (let ((token (get-token)))
     (cond ((equal token *EOL*)
 	   (maphash #'(lambda (key val)
@@ -330,7 +335,7 @@
 ; `print{ln}' token has been read and skipped,
 ; BUT do not output final space or line end.
 ;
-(defun execute-print ( )
+(defun execute-print ()
   (loop for token = (get-token)
 	for first = t then nil
 	with v
@@ -347,7 +352,7 @@
 ; Check variable token to be sure its a variable
 ; name.
 ;
-(defun execute-assign ( variable )
+(defun execute-assign (variable)
   (check-variable variable)
   (if (or (equal variable "true")
 	  (equal variable "false"))
@@ -410,7 +415,7 @@
 		  (setf v2 (get-value))
 		  (if (is-scalar v1 v2)
 		    (setf (value-s v1)
-			  (. (value-s v1)
+			  (- (value-s v1)
 			     (value-s v2)))
 		    (setf (value-v v1)
 			  (vector-subtract
@@ -504,7 +509,7 @@
 			    (value-s v2)))
 		  (setf (value-type v1) *BOOLEAN*))
 		 ((not (equal op *EOL*))
-	          (error "`" op "' unrecognized" ))
+	          (error "`" op "' unrecognized"))
 		 (t
 		  (setf *backup* t)))))
 
@@ -512,10 +517,10 @@
     ;
     (skip *EOL*)
 
-    (setf (gethash variable *variable-table) v1)
+    (setf (gethash variable *variable-table*) v1)
 
     (deformat "ASSIGN ~A TO ~A"
-	      (value-string v1) variable )))
+	      (value-string v1) variable)))
 
 ; Main loop to read and execute a statement.
 ;
@@ -532,7 +537,7 @@
 	    (require-boolean v)
 	    (skip ":")
 	    (if (not (value-b v))
-	      (loop for token (get-token)
+	      (loop for token = (get-token)
 	            until (equal token *EOL*)
 	            do (check-not-eof token))))
 	  (setf *backup* t))
