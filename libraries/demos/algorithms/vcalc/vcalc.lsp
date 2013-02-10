@@ -2,7 +2,7 @@
 ;;
 ;; File:	vcalc.lsp
 ;; Authors:	Bob Walton (walton@seas.harvard.edu)
-;; Date:	Sun Feb 10 06:05:58 EST 2013
+;; Date:	Sun Feb 10 08:46:23 EST 2013
 ;;
 ;; The authors have placed this program in the public
 ;; domain; they make no warranty and accept no liability
@@ -132,10 +132,10 @@
 	       :y (- (vector-y v))))
 (defun vector-add ( v1 v2 )
   (make-vector :x (+ (vector-x v1) (vector-x v2))
-	       :y (+ (vector-y v1) (vector-y v2))
+	       :y (+ (vector-y v1) (vector-y v2))))
 (defun vector-subtract ( v1 v2 )
   (make-vector :x (- (vector-x v1) (vector-x v2))
-	       :y (- (vector-y v1) (vector-y v2))
+	       :y (- (vector-y v1) (vector-y v2))))
 (defun vector-multiply ( v1 v2 )
   (+ (* (vector-x v1) (vector-x v2))
      (* (vector-y v1) (vector-y v2))))
@@ -213,26 +213,21 @@
   (make-hash-table :test #'equal :size 256))
     ; Maps variable name strings to values.
 
-(defun require_boolean ( Value v1 )
-{
-    if ( v1.type != BOOLEAN )
-	error ( "operand should be boolean" );
-}
-(defun require_boolean ( Value v1, Value v2 )
-{
-    if ( v1.type != BOOLEAN )
-	error
-	    ( "first operand should be boolean" );
-    else if ( v2.type != BOOLEAN )
-	error
-	    ( "second operand should be boolean" );
-}
+(defun require-boolean ( v1 )
+  (if (/= (value-type v1) *BOOLEAN*)
+    (error "operand should be boolean" )))
 
-(defun require_scalar ( Value v1 )
+(defun require-boolean ( v1, v2 )
+  (cond ((/= (value-type v1) *BOOLEAN*)
+	 (error "first operand should be boolean" ))
+        ((/= (value-type v2) *BOOLEAN*)
+	 (error "second operand should be boolean" ))))
+
+(defun require_scalar ( v1 )
   (if (/= (value-type v1) *SCALAR*)
     (error "operand should be scalar" )))
 
-(defun require_scalar ( Value v1, Value v2 )
+(defun require_scalar ( v1 v2 )
   (cond ((/= (value-type v1) *SCALAR*)
 	 (error "first operand should be scalar" ))
         ((/= (value-type v2) *SCALAR*)
@@ -283,22 +278,22 @@
   (let ((v (make-value))
 	(token (get-token))
 	x y))
-    (cond ((equals token "(")
+    (cond ((equal token "(")
 	   (setf (value-type v) *VECTOR*)
 	   (setf (value-v v) (make-vector))
 	   (setf (vector-x (value-v v)) (get-number))
 	   (skip ",")
 	   (setf (vector-y (value-v v)) (get-number))
 	   (skip ")"))
-	  ((equals token "true")
+	  ((equal token "true")
 	   (setf (value-type v) *BOOLEAN*)
 	   (setf (value-b v) t))
-	  ((equals token "false")
+	  ((equal token "false")
 	   (setf (value-type v) *BOOLEAN*)
 	   (setf (value-b v) nil))
           ((is-variable token)
 	   (let ((v2 (gethash token *variable-table)))
-	     (if (equals v2 nil)
+	     (if (equal v2 nil)
 	         (error "`" token "' unassigned" ))
 	     (setf (value-type v) (value-type v2)
 	           (value-b    v) (value-b    v2)
@@ -321,12 +316,12 @@
 ;
 (defun execute-clear ( )
   (let ((token (get-token)))
-    (cond ((equals token *EOL*)
+    (cond ((equal token *EOL*)
 	   (maphash #'(lambda (key val)
 			(remhash key *variable-table*))
 		    *variable-table*))
 	  (t
-	    (loop until (equals token *EOL*) do
+	    (loop until (equal token *EOL*) do
 		  (check-variable token)
 		  (remhash token *variable-table*)
 		  (setf token (get-token)))))))
@@ -336,257 +331,221 @@
 ; BUT do not output final space or line end.
 ;
 (defun execute-print ( )
-  (let ((first t) (token (get-token)) v)
-    (loop until (equals token *EOL*) do
-	  (if first (setf first nil)
-	            (format t " "))
-	  (setf v (gethash token *variable-table*))
-	  (format t (if v (value-string v)
-		          (token-string v)))
-	  (setf token (get-token))))
+  (loop for token = (get-token)
+	for first = t then nil
+	with v
+	until (equal token *EOL*)
+	do
+	(if first (setf first nil)
+	          (format t " "))
+	(setf v (gethash token *variable-table*))
+	(format t (if v (value-string v)
+	                (token-string v)))))
 
-    // Execute `variable = ...' statement after
-    // `variable =' tokens have been read and skipped.
-    // Check variable token to be sure its a variable
-    // name.
-    //
-    static void execute_assign ( String variable )
-    {
-        check_variable ( variable );
+; Execute `variable = ...' statement after
+; `variable =' tokens have been read and skipped.
+; Check variable token to be sure its a variable
+; name.
+;
+(defun execute-assign ( variable )
+  (check-variable variable)
+  (if (or (equal variable "true")
+	  (equal variable "false"))
+      (error "attempt to assign a value to `"
+	     variable "'"))
+  (let ((op (get-token)) v1 v2)
+    ; v1 is both the first value read and the final
+    ; resulting value.
 
-	if ( variable.equals ( "true" )
-	     ||
-	     variable.equals ( "false" ) )
-	    error ( "attempt to assign a value to `"
-	            + variable + "'" );
+    ; Read and process statement up to but not
+    ; including *EOL*.
+    ;
+    (cond ((equal op "-")
+	   (setf v1 (get-value))
+	   (if (is-scalar v1)
+	       (setf (value-s v1)
+		     (- (value-s v1)))
+	       (setf (value-v v1)
+		     (vector-negate (value-v v1)))))
+	  ((equal op "|")
+	   (setf v1 (get-value))
+	   (require-scalar v1)
+	   (skip "|")
+	   (setf (value-s v1) (abs (value-s v1))))
+	  ((equal op "||")
+	   (setf v1 (get-value))
+	   (require-vector v1)
+	   (skip "||")
+           (setf (value-s v1)
+		 (vector-length (value-v v1)))
+           (setf (value-type v1) *SCALAR*))
+	  ((equal op "angle")
+	   (setf v1 (get-value))
+	   (require-vector v1)
+           (setf (value-s v1)
+		 (vector-angle (value-v v1)))
+           (setf (value-type v1) *SCALAR*))
+	  ((equal op "!")
+	   (setf v1 (get-value))
+	   (require-boolean v1)
+	   (setf (value-b v1) (not (value-b v1))))
+	  (t
+	   ; Case where there is either a binary
+	   ; operator or no operator.
+	   ;
+	   (setf *backup* t)
+	   (setf v1 (get-value))
+	   (setf op (get-token))
+	   (cond ((equal op "+")
+		  (setf v2 (get-value))
+		  (if (is-scalar v1 v2)
+		    (setf (value-s v1)
+			  (+ (value-s v1)
+			     (value-s v2)))
+		    (setf (value-v v1)
+			  (vector-add
+			    (value-v v1)
+			    (value-v v2)))))
+	         ((equal op "-")
+		  (setf v2 (get-value))
+		  (if (is-scalar v1 v2)
+		    (setf (value-s v1)
+			  (. (value-s v1)
+			     (value-s v2)))
+		    (setf (value-v v1)
+			  (vector-subtract
+			    (value-v v1)
+			    (value-v v2)))))
+	         ((equal op "*")
+		  (setf v2 (get-value))
+		  (if (is-scalar v1)
+		    (if (is-scalar v2)
+		      (setf (value-s v1)
+			    (* (value-s v1)
+			       (value-s v2)))
+		      (setf (value-s v1)
+			    (scalar-multiply
+			      (value-s v1)
+			      (value-v v2))))
+		    (progn
+		      (require-vector v1 v2)
+		      (setf (value-s v1)
+			    (vector-multiply
+			      (value-v v1)
+			      (value-v v2)))
+		      (setf (value-type v1)
+			    *SCALAR*))))
+	         ((equal op "/")
+		  (setf v2 (get-value))
+		  (require-scalar v1 v2)
+		  (if (= 0 (value-s v2))
+		    (error "zero divisor"))
+		  (setf (value-s v1)
+			(/ (value-s v1)
+			   (value-s v2))))
+	         ((equal op "^")
+		  (setf v2 (get-value))
+		  (require-vector-scalar v1 v2)
+		  (setf (value-v v1)
+			(vector-rotate (value-v v1)
+			               (value-s v2))))
+	         ((equal op "||")
+		  (setf v2 (get-value))
+		  (require-boolean v1 v2)
+		  (setf (value-b v1)
+			(or (value-b v1)
+			    (value-b v2))))
+	         ((equal op "&&")
+		  (setf v2 (get-value))
+		  (require-boolean v1 v2)
+		  (setf (value-b v1)
+			(and (value-b v1)
+			     (value-b v2))))
+	         ((equal op "==")
+		  (setf v2 (get-value))
+		  (require-scalar v1 v2)
+		  (setf (value-b v1)
+			(= (value-s v1)
+			   (value-s v2)))
+		  (setf (value-type v1) *BOOLEAN*))
+	         ((equal op "!=")
+		  (setf v2 (get-value))
+		  (require-scalar v1 v2)
+		  (setf (value-b v1)
+			(/= (value-s v1)
+			    (value-s v2)))
+		  (setf (value-type v1) *BOOLEAN*))
+	         ((equal op "<")
+		  (setf v2 (get-value))
+		  (require-scalar v1 v2)
+		  (setf (value-b v1)
+			(< (value-s v1)
+			   (value-s v2)))
+		  (setf (value-type v1) *BOOLEAN*))
+	         ((equal op "<=")
+		  (setf v2 (get-value))
+		  (require-scalar v1 v2)
+		  (setf (value-b v1)
+			(<= (value-s v1)
+			    (value-s v2)))
+		  (setf (value-type v1) *BOOLEAN*))
+	         ((equal op ">")
+		  (setf v2 (get-value))
+		  (require-scalar v1 v2)
+		  (setf (value-b v1)
+			(> (value-s v1)
+			   (value-s v2)))
+		  (setf (value-type v1) *BOOLEAN*))
+	         ((equal op ">=")
+		  (setf v2 (get-value))
+		  (require-scalar v1 v2)
+		  (setf (value-b v1)
+			(>= (value-s v1)
+			    (value-s v2)))
+		  (setf (value-type v1) *BOOLEAN*))
+		 ((not (equal op *EOL*))
+	          (error "`" op "' unrecognized" ))
+		 (t
+		  (setf *backup* t)))))
 
-        String op = get_token();
+    ; Skip statement ending *EOL*.
+    ;
+    (skip *EOL*)
 
-	Value v1 = null;
-	    // This is both the first value read and the
-	    // final resulting value.
+    (setf (gethash variable *variable-table) v1)
 
-	// Read and process statement up to but not
-	// including EOL.
-	//
-	if ( op.equals ( "-" ) )
-	{
-	    v1 = get_value();
-	    if ( is_scalar ( v1 ) )
-	        v1.s = - v1.s;
-	    else
-	        v1.v = negate ( v1.v );
-	}
-	else if ( op.equals ( "|" ) )
-	{
-	    v1 = get_value();
-	    require_scalar ( v1 );
-	    skip ( "|" );
-	    v1.s = Math.abs ( v1.s );
-	}
-	else if ( op.equals ( "||" ) )
-	{
-	    v1 = get_value();
-	    require_vector ( v1 );
-	    skip ( "||" );
-	    v1.s = length ( v1.v );
-	    v1.type = SCALAR;
-	}
-	else if ( op.equals ( "angle" ) )
-	{
-	    v1 = get_value();
-	    require_vector ( v1 );
-	    v1.s = angle ( v1.v );
-	    v1.type = SCALAR;
-	}
-	else if ( op.equals ( "!" ) )
-	{
-	    v1 = get_value();
-	    require_boolean ( v1 );
-	    v1.b = ! v1.b;
-	}
-	else
-	{
-	    // Case where there is either a binary
-	    // operator or no operator.
-	    //
-	    backup = true;
-	    v1 = get_value();
-	    op = get_token();
+    (deformat "ASSIGN ~A TO ~A"
+	      (value-string v1) variable )))
 
-	    if ( op.equals ( "+" ) )
-	    {
-		Value v2 = get_value();
-		if ( is_scalar ( v1, v2 ) )
-		    v1.s += v2.s;
-		else
-		    v1.v = add ( v1.v, v2.v );
-	    }
-	    else if ( op.equals ( "-" ) )
-	    {
-		Value v2 = get_value();
-		if ( is_scalar ( v1, v2 ) )
-		    v1.s -= v2.s;
-		else
-		    v1.v = subtract ( v1.v, v2.v );
-	    }
-	    else if ( op.equals ( "*" ) )
-	    {
-		Value v2 = get_value();
-		if ( is_scalar ( v1 ) )
-		{
-		    if ( is_scalar ( v2 ) )
-			v1.s *= v2.s;
-		    else
-		    {
-			v1.v = multiply ( v1.s, v2.v );
-			v1.type = VECTOR;
-		    }
-		}
-		else
-		{
-		    require_vector ( v1, v2 );
-		    v1.s = multiply ( v1.v, v2.v );
-		    v1.type = SCALAR;
-		}
-	    }
-	    else if ( op.equals ( "/" ) )
-	    {
-		Value v2 = get_value();
-		require_scalar ( v1, v2 );
-		if ( v2.s == 0 )
-		    error ( "zero divisor" );
-		v1.s /= v2.s;
-	    }
-	    else if ( op.equals ( "^" ) )
-	    {
-		Value v2 = get_value();
-		require_vector_scalar ( v1, v2 );
-		v1.v = rotate ( v1.v, v2.s );
-	    }
-	    else if ( op.equals ( "&&" ) )
-	    {
-		Value v2 = get_value();
-		require_boolean ( v1, v2 );
-		v1.b = v1.b && v2.b;
-	    }
-	    else if ( op.equals ( "||" ) )
-	    {
-		Value v2 = get_value();
-		require_boolean ( v1, v2 );
-		v1.b = v1.b || v2.b;
-	    }
-	    else if ( op.equals ( "==" ) )
-	    {
-		Value v2 = get_value();
-		require_scalar ( v1, v2 );
-		v1.b = ( v1.s == v2.s );
-		v1.type = BOOLEAN;
-	    }
-	    else if ( op.equals ( "!=" ) )
-	    {
-		Value v2 = get_value();
-		require_scalar ( v1, v2 );
-		v1.b = ( v1.s != v2.s );
-		v1.type = BOOLEAN;
-	    }
-	    else if ( op.equals ( "<" ) )
-	    {
-		Value v2 = get_value();
-		require_scalar ( v1, v2 );
-		v1.b = ( v1.s < v2.s );
-		v1.type = BOOLEAN;
-	    }
-	    else if ( op.equals ( "<=" ) )
-	    {
-		Value v2 = get_value();
-		require_scalar ( v1, v2 );
-		v1.b = ( v1.s <= v2.s );
-		v1.type = BOOLEAN;
-	    }
-	    else if ( op.equals ( ">" ) )
-	    {
-		Value v2 = get_value();
-		require_scalar ( v1, v2 );
-		v1.b = ( v1.s > v2.s );
-		v1.type = BOOLEAN;
-	    }
-	    else if ( op.equals ( ">=" ) )
-	    {
-		Value v2 = get_value();
-		require_scalar ( v1, v2 );
-		v1.b = ( v1.s >= v2.s );
-		v1.type = BOOLEAN;
-	    }
-	    else if ( ! op.equals ( EOL ) )
-	        error ( "`" + op + "' unrecognized" );
-	    else backup = true;
-	}
+; Main loop to read and execute a statement.
+;
+(loop for token = (get-token)
+      until (equal token *EOF*)
+      do
+      (if (equal token "if")
+	  ; Process `if' statement.  If condition
+	  ; is true, just skip past `:'.  Other-
+	  ; wise skip past EOL and go to next
+	  ; statement.
+	  ;
+	  (let ((v (get-value)))
+	    (require-boolean v)
+	    (skip ":")
+	    (if (not (value-b v))
+	      (loop for token (get-token)
+	            until (equal token *EOL*)
+	            do (check-not-eof token))))
+	  (setf *backup* t))
 
-	// Skip statement ending EOL.
-	//
-	skip ( EOL );
-
-	variable_table.put ( variable, v1 );
-
-	dprintln ( "ASSIGN " + v1.toString()
-	           + " TO " + variable );
-    }
-
-
-    public static void main ( String[] args )
-    {
-	debug = ( args.length > 0 );
-
-	// Loop to read and execute a statement.
-	//
-	while ( true )
-	{
-	    String token = get_token();
-	    if ( token == EOF ) break;
-
-	    if ( token.equals ( "if" ) )
-	    {
-	        // Process `if' statement.  If condition
-		// is true, just skip past `:'.  Other-
-		// wise skip past EOL and go to next
-		// statement.
-		//
-	        Value v = get_value();
-		require_boolean ( v );
-		skip ( ":" );
-		if ( ! v.b )
-		{
-		    while ( true )
-		    {
-		        token = get_token();
-			check_not_eof ( token );
-			if ( token.equals ( EOL ) )
-			    break;
-		    }
-		    continue;
-		}
-		token = get_token();
-	    }
-
-	    if ( token.equals ( "clear" ) )
-	        execute_clear();
-	    else if ( token.equals ( "print" ) )
-	    {
-	        execute_print();
-		print ( " " );
-	    }
-	    else if ( token.equals ( "println" ) )
-	    {
-	        execute_print();
-		println();
-	    }
-	    else
-	    {
-		skip ( "=" );
-		execute_assign ( token );
-	    }
-	}
-    }
-}
-
+      (setf token (get-token))
+      (cond ((equal token "clear")
+	     (execute-clear))
+	    ((equal token "print")
+	     (execute-print)
+	     (format t " "))
+	    ((equal token "println")
+	     (execute-print)
+	     (format t "~%"))
+	    (t
+	     (skip "=")
+	     (execute-assign token))))
