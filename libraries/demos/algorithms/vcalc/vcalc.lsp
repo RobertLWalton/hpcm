@@ -2,7 +2,7 @@
 ;;
 ;; File:	vcalc.lsp
 ;; Authors:	Bob Walton (walton@seas.harvard.edu)
-;; Date:	Sun Feb 10 12:03:12 EST 2013
+;; Date:	Sun Feb 10 15:06:11 EST 2013
 ;;
 ;; The authors have placed this program in the public
 ;; domain; they make no warranty and accept no liability
@@ -27,32 +27,6 @@
 	   (if (char= (char result p) #\.) (decf p 1))
 	   (subseq result 0 p))))))
 
-(defvar *EOL* "END-OF-LINE")
-(defvar *EOF* "END-OF-FILE")
-;
-(defun return-separator (stream char)
-  (char-name char))
-(defun return-end-of-line (stream char)
-  *EOL*)
-
-(defvar *my-readtable*
-  (let ((my-readtable (copy-readtable)))
-    (do ((c (code-char (+ 1 (char-code #\Space)))
-	    (code-char (+ 1 (char-code c)))))
-        ((char= c #\Rubout))
-      (set-syntax-from-char c #\a my-readtable))
-    (set-macro-character #\( #'return-separator
-			 nil my-readtable)
-    (set-macro-character #\) #'return-separator
-			 nil my-readtable)
-    (set-macro-character #\, #'return-separator
-			 nil my-readtable)
-    (set-macro-character #\: #'return-separator
-			 nil my-readtable)
-    (set-macro-character #\Newline #'return-end-of-line
-			 nil my-readtable)
-    my-readtable))
-
 ; Returns next token or *EOL* if end of line or *EOF* if
 ; end of file.  We make *EOL* and *EOF* be printable
 ; strings as tokens are printed in many error messages.
@@ -61,12 +35,28 @@
 ;
 ; All tokens are non-zero length strings or numbers.
 ;
+(defvar *EOL* "END-OF-LINE")
+(defvar *EOF* "END-OF-FILE")
+;
 (defvar *backup* nil)
     ; Set backup = t to backup.
 (defvar *line-number* 0)
     ; Current line number; 1, 2, 3, ...
 ;
 (defvar *last-token* *EOL*)
+;
+(defun *NUL* (code-char 0))
+    ; Used internally to represent end of file.
+; If character is separator return associated
+; string, else return nil.
+;
+(defun is-separator ( c )
+  (cond ((char= c '\() "(")
+        ((char= c '\)) ")")
+        ((char= c '\,) ",")
+        ((char= c '\:) ":")
+        ((char= c '\Newline) *EOL*)
+        ((char= c *NUL*) *EOF*)))
 ;
 (defun get-token ()
   (cond (*backup*
@@ -79,7 +69,7 @@
 	     (cond ((char= c #\/)
 	            (read-char)
 		    (setf c (peek-char nil nil
-				       t #\Space))
+				       t *NUL*))
 		    (if (char/= c #\/)
 		      (error "line begins with `/'"
 			     " not followed by a `/'"))
@@ -88,9 +78,25 @@
 					    t #\Newline)
 			         #\Newline)))
 		   (t (return)))))))
+  (let* ((v (is-separator (peek-char t nil t *NUL*))))
+    (if v (setf *last-token* v)
+      (loop with s = (make-array 
+		       '(200)
+		       :element-type 'string-char
+		       :fill-pointer 0
+		       :adjustable t)
+	    for c = (peek-char nil nil t *NUL*)
+	    until (is-separator c)
+	    until (char= c #\Space)
+	    while (graphic-char-p c)
+	    do
+	    (vector-push-extend s c)
+	    finally
+	    (setf *last-token*
+		  (coerce (adjust-array s
+			    (list (fill-pointer s))
+			  'string)))))
 
-  (setf *last-token* (let ((*readtable* *my-readtable*))
-		        (read nil t *EOF*)))
   (dformat "{~A}" *last-token*)
   (assert (or (stringp *last-token*)
 	      (numberp *last-token*)))
