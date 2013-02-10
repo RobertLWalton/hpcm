@@ -1,72 +1,409 @@
 Commonlisp Help		    Thu Oct  4 14:47:15 EDT 2012
 
 
-Commonlisp
-----------
+Commonlisp Language Program Stucture
+---------- -------- ------- --------
 
-There is no reasonably standard COMMONLISP, so HPCM
-hides the exact commonlisp it is using inside the
-hpcm_clisp program.  The standard way of running a
-COMMONLISP solution interpretively is
+TBD
 
-    hpcm_clisp -I pppp.lsp
 
-This loads pppp.lsp into the interpreter and issues the
-`(main)' call.  The programmer should write a `(defun
-main ...)' for a function that reads `*terminal-io*'
-and writes `*terminal-io*'.  The output of this
-command is just what the `main' function writes to the
-`*terminal-io*', and nothing more.
+C Language Program Structure 
+- -------- ------- ---------
 
-WARNING: you must use *terminal-io* and NOT *standard-
-input/output*.  Thus you should use things like
+Typical program structure including end of file detect-
+ion, finding symbols such as `*' that end a string of
+numbers, and debugging is:
 
-	(format t ...)
-	(read-line t ...)
+    (defvar *debug* (rest *posix-argv*))
 
-The pppp.lsp file can be compiled via the command
+    (defun dformat (&rest r)
+      (if *debug* (apply #'format t r)))
 
-    hpcm_clisp -c pppp.lsp
+    (defvar *line*)
 
-and the compiled code can then be executed by
+    ; Main loop
+    ;
+    (loop while (setf *line* (read-line nil t)) do
 
-    hpcm_clisp -I pppp.fas
+      ; Print test case name.
+      ;
+      (format t "~A~%" *line*)
+
+      (let token
+
+        ; Read input.
+	;
+	(setf token (read nil t))
+        . . . . .
+
+	; Read a string of integers ending in `*'.
+	;
+	(loop while (numberp ( setf token
+	                            ( read nil t) ))
+	  do
+	  . . . . .)
+
+	; Skip `*'.
+	;
+	(assert (equal token '=))
+
+	; After reading the last token of a line, read
+	; throws away the whitespace character that
+	; terminated the token, and this disposes of
+	; the line feed that ends the last line of at
+	; test case.
+
+	; Compute.
+
+	(dformat ... )  ; Print if debug.
+	. . . . .
+
+	; Output.
+
+	(format t ... )
+
+    ))
+
+
+Occasionally one has a conflict with some name defined
+in the `#include's.  E.g., you may have trouble naming a
+global variable `time'.   To fix this, change the name
+of your variable.  A simple way of doing this is to put
+the following right after the `#include's:
+
+	#define time Time
 
 
-Program Structure
-------- ---------
+Input
+-----
 
-The following can be used as the structure of a pppp.lsp
-file:
+Input is read from the standard input; you MUST NOT open
+any file for input.
 
-    (defvar debug)
-    (defun dformat (&rest r)
-	(if debug (apply #'format t r)))
+You may assume that input is correctly formatted, except
+for the rare problem where you are told to produce
+special output if the input contains a formatting error.
+Do not waste time checking for input errors when you do
+not have to.
 
-    (defun main (&rest r)
-      (setq debug r)
+Test cases begin with a test case name line that is
+read by the first `fgets'.  `fgets' returns NULL on an
+end of file, which is interpreted as `false', so the
+outer loop above processes one test case at a time.  As
+soon as the test case name is successfully read into
+`line', it is printed by `printf ( "%s", line )'.  All
+test case name lines are 80 characters or less, so
+`line' has enough room for 80 characters plus the line
+ending '\n' and then the string ending '\0', both of
+which are supplied by `fgets'.
 
-      (loop
-	(let ( (line (read-line t nil 'eof)) )
-	  (if (eq line 'eof) (return))
+After reading and printing the test case name line, the
+rest of the test case data is read with `scanf'.  This
+data may consist of numbers, perhaps with a few
+characters like `*' thrown in to indicate the end of a
+sequence of numbers.  The lines containing numbers may
+be very long, so they should be read one number at a
+time with `scanf', and NOT read in first with `fgets'.
+A `*' may be detected by looking at the return value
+of `scanf', which is the number of numbers actually
+read.  If you are expecting 4 integers or a `*', use
+`scanf ( "%d%d%d%d", ... )' which returns 4 if it read
+4 integers and 0 if it encountered a `*'.  Then in the
+latter case you must skip the `*', which can be done
+by `scanf ( " *" )' which skips first the whitespace
+between the last number read and the input `*', and
+then skips the input `*'.
+
+See the `io/summer' demonstration problem solution which
+reads numbers.
 
-	  (dformat "..." . . .)
+Floating point numbers can be read by `scanf' by using
+%lf instead of %d, and non-numbers can be read by using
+%s or %c - see synopsis below.  Sometimes a problem will
+specifically ask you to read lines to be processed as
+character strings, in which case use `fgets' and be sure
+your line buffer is long enough.
 
-	  . . . ))
+For some problems there are no test case name lines but
+instead each test case has one input line containing
+text and one output line containing text.  For these
+the test case input line is read the same way as the
+test case name line is read above.
 
-       (format t "..." . . .))
+See the `io/reverser' demonstration problem solution
+which reads text lines.
 
-If the program is called with one or more arguments, the
-`debug' defvar is set non-nil, and `(dformat ...)' will
-do nothing.  The program can be called with arguments
-by executing
+Sometimes it is necessary to read input one character
+at a time.  `int c = getchar()' does this, returning
+the character read if there is one, or the special
+constant EOF if at the end-of-file.  Notice that c is
+an `int' and not a `char'; this is because EOF is
+usually defined to be -1.  If you have gotten the char-
+acter c this way, `ungetc ( c, stdin )' backs up one
+character in the input stream, so the next character to
+be read will be the character c again.  However you
+CANNOT reliably call ungetc several times in a row to 
+back over more than one character at a time.
 
-    hpcm_clisp -I pppp.fas argument ...
+See the `algorithms/vcalc' demonstration problem
+solution which reads characters one at a time.
 
-The `(read-line t nil 'eof)' expression will read a line
-and return it, but return the symbol eof if an end of
-file is encountered instead of a line.
+
+Output
+------
 
+Output is written to the standard output; you MUST NOT
+open any file for output; you MUST NOT write to the
+standard error output.
+
+In general, to be correct your program must produce
+EXACTLY the one and only correct sequence of output
+characters.  The main exception is that when floating
+point numbers are output with a given number of decimal
+places, you are permitted to output numbers which differ
+from other correct output by one unit in the last
+decimal place.  You must use the correct upper or lower
+case and use only a single space character as a separa-
+tor unless instructed to line things up in columns.
+
+Output can be written with printf.  Some formats that
+may be useful are "%.3f" to print a double with exactly
+3 decimal places in as few columns as possible, "%10.3f"
+to print the double right adjusted in 10 columns, "%10s"
+to print a string right adjusted in 10 columns, and
+"%-10s" to print a string LEFT adjusted in 10 columns.
+Here the numbers 3 and 10 are merely representative, and
+can be replaced by any other non-zero positive integers.
+
+See the `io/summer' demonstration problem solution which
+outputs floating point `double's.
+
+
+Execution
+---------
+
+We use `Steel Bank Commonlisp', sbcl.  The Makefile
+entry for .lsp file in the problem `pppp' directory
+creates the file `pppp' whose contents are
+
+	#! /bin/sh
+	exec sbcl --script pppp.lsp
+
+which compiles and evaluates the `pppp.lsp' COMMONLISP
+code file.
+
+
+Debugging
+---------
+
+When your program is executed by the judge, it will
+NOT be passed ANY arguments.  A standard debugging
+technique is to output extra debugging information if
+and only if your program is passed an argument.
+
+The above program defines `debug' to be true if and
+only if the program is called with one or more argu-
+ments, and defines dprintf to do what printf does if
+and only if `debug' is true.  Thus dprintf can be used
+to print debugging information.
+
+Debugging is best done with information printed by
+`dprintf', and not with a debugger like `gdb'.  The
+exception is debugging programs that crash or go into
+an infinite loop, which is best done with a debugger
+like `gdb'.  See `help gdb' for how to use `gdb' on
+programs that crash or go into an infinite loop.
+
+It is also a good idea to use `assert' statements
+to check that assumptions you have made are valid during
+actual program execution.  For example, if you are
+certain that scanf should read 3 integers, then instead
+of writing
+
+	scanf ( "%d%d%d", ... );
+
+it might be better to write
+
+	assert ( scanf ( "%d%d%d", ... ) == 3 );
+
+Similarly, you could replace `scanf ( " *" )' in the
+above code by
+
+	assert ( scanf ( " %c", line[0] ) == 1 );
+	assert ( line[0] == '*' );
+
+See the `io/summer' demonstration problem solution which
+uses dprintf and assert.
+
+
+Function and Macro Synopsis
+-------- --- ----- --------
+
+You can get full documentation of the functions
+mentioned above plus other useful information by using
+the UNIX commands:
+
+	man scanf
+	man fgets
+	man getchar
+	man 3 printf
+	man assert
+	man math.h
+	man limits.h
+	man float.h
+
+The following is an extract from `man' pages of details
+needed to use the functions mentioned above, and also a
+few numeric constants.  Here we assume you already know
+something about how to use `scanf' and `printf', so we
+do not have to explain them from scratch.
+
+Note that an `int' is guaranteed to be at least 32 bits
+and a `long long int' is guaranteed to be at least 64
+bits.  Floating point computations should always be done
+using `double's, and NOT `float's, to avoid having too
+little precision.
+
+int scanf ( const char * format, ... )
+
+    Format can contain the following directives:
+
+    %d		First skips whitespace.  Then if this is
+    		followed by non-whitespace with the
+		format of an `int', reads the `int'.
+
+    %lld	Ditto but for `long long int' instead of
+    		`int'.
+
+    %lf		Ditto but for `double' instead of `int'.
+
+    %s		Ditto but for a string of non-whitespace
+    		characters, instead of `int'.
+
+    %c		Reads a single character.  Does NOT skip
+    		preceding whitespace.
+
+    whitespace	Skips any amount of whitespace, includ-
+    		ing none.  Line feeds are whitespace in
+		this sense.
+
+    other	Skips just the given character.  E.g.,
+    character	if `*' is in the format, then `*' must
+    		be next in the input if the input is to
+		move forward.  If you want to skip
+		whitespace followed by `*', you MUST put
+		" *" and NOT just "*" in the format.
+
+    Scanf returns the number of items successfully read
+    by %... format directives.  Thus if you are expect-
+    ing either a float or a `*', `scanf ( "%lf", ... )'
+    will return 1 if a number was found and read, or 0
+    if a `*' was found and NOT read.  Note that if it
+    returns 0 it will have skipped the whitespace before
+    the `*', so the `*' will be next.
+
+
+char * fgets ( char * buffer, sizeof ( buffer ), stdin )
+
+    Read characters from the standard input into the
+    buffer until a line feed is read and stored, and
+    then store a '\0' in the buffer.  If there are NO
+    characters to be read because we are at the end of
+    file, return NULL, which can be interpreted as
+    `false'; otherwise return the address of the buffer,
+    which can be interpreted as `true'.
+
+    Note: `fgets' as it is used above is similar to
+    `gets ( buffer )', but the `gets' function has been
+    `deprecated', meaning that implementations need not
+    and eventually will not support it.
+
+int c = getchar()
+ungetc ( c, stdin )
+    getchar() reads one character from the standard
+    input stream, or the special constant EOF (typically
+    defined to be -1) if at end-of-file.  If c is the
+    character just read by getchar(), then the call
+    ungetc ( c, stdin ) backups up one character in the
+    standard input, so c will be re-read by the next
+    getchar().  Ungetc CANNOT reliably be called several
+    times in a row to back over more than one character
+    at a time.
+
+int printf ( const char * format, ... )
+
+    Format can contain the following directives, in
+    in which W and P stand for sequences of decimal
+    digits, where W is used for `widths' and P for
+    `precisions':
+
+    %d		Outputs an `int' as a decimal integer
+    		with no spaces before or after.
+
+    %Wd		Outputs an `int' as a decimal integer
+    		right adjusted in W columns.
+
+    %lld	Outputs a `long long int' as a decimal
+    		integer with no spaces before or after.
+
+    %Wlld	Outputs a `long long int' as a decimal
+    		integer right adjusted in W columns.
+
+    %f		Outputs a `double' as a floating point
+    		number with 6 decimal places and no
+		spaces before or after.
+
+    %.Pf	Ditto but with P decimal places instead
+    		of 6 decimal places.
+
+    %Wf		Outputs a `double' as a floating point
+    		number with 6 decimal places right
+		adjusted in W columns.
+
+    %W.Pf	Ditto but with P decimal places instead
+    		of 6 decimal places.
+
+    %s		Outputs a `const char *' or `char *'
+    		string with no spaces before or after.
+
+    %Ws		Ditto but outputs the string RIGHT
+    		adjusted in W columns.
+
+    %-Ws	Ditto but outputs the string LEFT
+    		adjusted in W columns.
+
+    %c		Outputs a `char' as an ASCII character
+    		with no spaces before or after.
+    		
+
+INT_MAX, INT_MIN, LLONG_MAX, LLONG_MIN, DBL_MAX, DBL_MIN
+
+    These are the maximum and minimum numbers that can
+    be stored respectively in an `int', `long long int',
+    or `double'.  The integer values are from `limits.h'
+    and the floating point values from `float.h'.
+
+M_PI, M_E
+
+    The mathematical constants PI and e from math.h.
+
+
+File:		c
+Author:		Bob Walton <walton@seas.harvard.edu>
+Date:		See top of file.
+
+The authors have placed this file in the public domain;
+they make no warranty and accept no liability for this
+file.
+
+RCS Info (may not be true date or author):
+
+    $Author: walton $
+    $Date: 2013/02/10 02:28:16 $
+    $RCSfile: commonlisp,v $
+    $Revision: 1.8 $
+
+sbcl --eval '(setf *evaluator-mode* :interpret)' --load reverser.lsp <sample.in
 
 File:		commonlisp
 Author:		Bob Walton <walton@deas.harvard.edu>
@@ -79,6 +416,6 @@ file.
 RCS Info (may not be true date or author):
 
     $Author: walton $
-    $Date: 2012/10/04 18:47:55 $
+    $Date: 2013/02/10 02:28:16 $
     $RCSfile: commonlisp,v $
-    $Revision: 1.7 $
+    $Revision: 1.8 $
