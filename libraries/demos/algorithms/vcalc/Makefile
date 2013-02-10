@@ -1,7 +1,7 @@
 # Makefile for the Simple Vector Calculator Problem
 #
 # File:		Makefile
-# Date:		Tue Jan  8 08:09:51 EST 2013
+# Date:		Sun Feb 10 01:28:21 EST 2013
 #
 # See demonstration Makefile for documentation.
 #
@@ -41,13 +41,10 @@ default:	$P.out
 
 #
 .lsp:
-	rm -f $* $*.fas $*.lib core core.[0-9]*
-	hpcm_clisp -c $*.lsp
+	rm -f $* core core.[0-9]*
 	echo >$* '#!/bin/sh'
-	echo >>$* \
-	    "exec `hpcm_clisp -which` -I $*.fas \$$*"
-	chmod a+r $*.fas
-	chmod a+rx $*
+	echo >>$* "exec sbcl --script $*.lsp"
+	chmod u+rx $*
 
 $P.in:	
 	if test -r sample.in; \
@@ -93,7 +90,7 @@ solution-submit:	$P.out
 clean:
 	rm -f $P *.class core core.[0-9]* \
 	      *.out *.debug *.fout *.jout *.jfout \
-	      $P.fas $P.lib make_$P_*input
+	      make_$P_*input
 	if cmp -s $P.in sample.in; then rm $P.in; fi
 
 #
@@ -107,6 +104,6 @@ clean:
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2013/01/09 08:46:05 $
+#   $Date: 2013/02/10 06:36:43 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.1 $
+#   $Revision: 1.2 $

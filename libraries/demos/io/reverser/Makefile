@@ -1,7 +1,7 @@
 # Makefile for the Word Order Reverse Problem
 #
 # File:		Makefile
-# Date:		Tue Jan  8 08:09:51 EST 2013
+# Date:		Sun Feb 10 01:28:21 EST 2013
 #
 # See demonstration Makefile for documentation.
 #
@@ -90,7 +90,7 @@ solution-submit:	$P.out
 clean:
 	rm -f $P *.class core core.[0-9]* \
 	      *.out *.debug *.fout *.jout *.jfout \
-	      $P.fas $P.lib make_$P_*input
+	      make_$P_*input
 	if cmp -s $P.in sample.in; then rm $P.in; fi
 
 #
@@ -104,6 +104,6 @@ clean:
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2013/02/10 00:41:52 $
+#   $Date: 2013/02/10 06:35:41 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.3 $
+#   $Revision: 1.4 $
