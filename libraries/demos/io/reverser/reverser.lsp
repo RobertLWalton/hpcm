@@ -2,7 +2,7 @@
 ;;
 ;; File:	reverser.lsp
 ;; Authors:	Bob Walton (walton@seas.harvard.edu)
-;; Date:	Sat Feb  9 09:51:48 EST 2013
+;; Date:	Sat Feb  9 19:41:42 EST 2013
 ;;
 ;; The authors have placed this program in the public
 ;; domain; they make no warranty and accept no liability
@@ -46,7 +46,7 @@
 
 ; Main loop
 ;
-(do () ((not (setf *line* (read-line nil t))))
+(loop while (setf *line* (read-line nil t)) do
 
   (dformat "~A~%" *line*)
 
@@ -57,11 +57,12 @@
 
     ; Print line substituting for words.
     ;
-    (do () ((>= p (length *line*)))
+    (loop while (< p (length *line*)) do
       (cond ((alpha-char-p (char *line* p))
-	     (do () ((or (>= p (length *line*))
-			 (not (alpha-char-p
-				(char *line* p)))))
+	     (loop while (and (< p (length *line*))
+			      (alpha-char-p
+				(char *line* p)))
+	       do
 	       (incf p))
 	     (setf q (print-substitute-word q)))
 	    (t

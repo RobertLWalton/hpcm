@@ -41,13 +41,10 @@ default:	$P.out
 
 #
 .lsp:
-	rm -f $* $*.fas $*.lib core core.[0-9]*
-	hpcm_clisp -c $*.lsp
+	rm -f $* core core.[0-9]*
 	echo >$* '#!/bin/sh'
-	echo >>$* \
-	    "exec `hpcm_clisp -which` -I $*.fas \$$*"
-	chmod a+r $*.fas
-	chmod a+rx $*
+	echo >>$* "exec sbcl --script $*.lsp"
+	chmod u+rx $*
 
 $P.in:	
 	if test -r sample.in; \
@@ -107,6 +104,6 @@ clean:
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2013/01/08 13:17:49 $
+#   $Date: 2013/02/10 00:41:52 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.2 $
+#   $Revision: 1.3 $
