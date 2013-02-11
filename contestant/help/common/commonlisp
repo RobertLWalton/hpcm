@@ -1,14 +1,8 @@
-Commonlisp Help		    Thu Oct  4 14:47:15 EDT 2012
+Commonlisp Help		    Mon Feb 11 02:59:08 EST 2013
 
 
 Commonlisp Language Program Stucture
 ---------- -------- ------- --------
-
-TBD
-
-
-C Language Program Structure 
-- -------- ------- ---------
 
 Typical program structure including end of file detect-
 ion, finding symbols such as `*' that end a string of
@@ -23,7 +17,7 @@ numbers, and debugging is:
 
     ; Main loop
     ;
-    (loop while (setf *line* (read-line nil t)) do
+    (loop while (setf *line* (read-line nil nil)) do
 
       ; Print test case name.
       ;
@@ -33,19 +27,18 @@ numbers, and debugging is:
 
         ; Read input.
 	;
-	(setf token (read nil t))
+	(setf token (read))
         . . . . .
 
 	; Read a string of integers ending in `*'.
 	;
-	(loop while (numberp ( setf token
-	                            ( read nil t) ))
+	(loop while (numberp (setf token (read)))
 	  do
 	  . . . . .)
 
 	; Skip `*'.
 	;
-	(assert (equal token '=))
+	(assert (equal token '*))
 
 	; After reading the last token of a line, read
 	; throws away the whitespace character that
@@ -64,16 +57,32 @@ numbers, and debugging is:
 
     ))
 
+All too frequently one has a conflict between a defvar
+or defun defined name and a name already defined by
+the COMMONLISP standard, and will get an error message
+about trying to redefine a name that is already defined
+in the `COMMON-LISP' package (this error message may
+mention a `lock' on the COMMON-LISP package).  There are
+two ways around this: changing your name, or shadowing.
+One good rule is to always begin and end defvar names
+with `*', so we use `*debug*' which is not defined by
+the standard, instead of `debug' which IS defined by the
+standard.  Shadowing is done as follows:
 
-Occasionally one has a conflict with some name defined
-in the `#include's.  E.g., you may have trouble naming a
-global variable `time'.   To fix this, change the name
-of your variable.  A simple way of doing this is to put
-the following right after the `#include's:
+    (shadow 'error)
+    (defun error ...)
 
-	#define time Time
+Without the `shadow' the defun will fail because it
+tries to redefine the COMMON-LISP package symbol
+`ERROR'.  You should be aware, however, that shadowing
+is not a good solution when writing large packages of
+commercial code, as one tends to forget what one has
+shadowed and get confused code.  But this is not the
+situation of a programming contest solution where you
+are working in the default COMMON-LISP-USER package
+(which imports the COMMON-LISP package).
 
-
+
 Input
 -----
 
@@ -87,42 +96,23 @@ Do not waste time checking for input errors when you do
 not have to.
 
 Test cases begin with a test case name line that is
-read by the first `fgets'.  `fgets' returns NULL on an
-end of file, which is interpreted as `false', so the
-outer loop above processes one test case at a time.  As
-soon as the test case name is successfully read into
-`line', it is printed by `printf ( "%s", line )'.  All
-test case name lines are 80 characters or less, so
-`line' has enough room for 80 characters plus the line
-ending '\n' and then the string ending '\0', both of
-which are supplied by `fgets'.
+read by the `(read-line nil nil)'.  The extra arguments
+`nil nil' cause read-line to return nil on an end of
+file, so the outer loop above processes one test case at
+a time.  As soon as the test case name is successfully
+read into `*line*', it is printed by `(format t "~A"
+*line*)'.  Notice that this is the only read statement
+that has the extra `nil t' arguments, as it is the only
+one where you expect to have an end of file.
 
 After reading and printing the test case name line, the
-rest of the test case data is read with `scanf'.  This
+rest of the test case data is read with `read'.  This
 data may consist of numbers, perhaps with a few
 characters like `*' thrown in to indicate the end of a
-sequence of numbers.  The lines containing numbers may
-be very long, so they should be read one number at a
-time with `scanf', and NOT read in first with `fgets'.
-A `*' may be detected by looking at the return value
-of `scanf', which is the number of numbers actually
-read.  If you are expecting 4 integers or a `*', use
-`scanf ( "%d%d%d%d", ... )' which returns 4 if it read
-4 integers and 0 if it encountered a `*'.  Then in the
-latter case you must skip the `*', which can be done
-by `scanf ( " *" )' which skips first the whitespace
-between the last number read and the input `*', and
-then skips the input `*'.
-
-See the `io/summer' demonstration problem solution which
-reads numbers.
+sequence of numbers.  The non-numbers read as symbols.
 
-Floating point numbers can be read by `scanf' by using
-%lf instead of %d, and non-numbers can be read by using
-%s or %c - see synopsis below.  Sometimes a problem will
-specifically ask you to read lines to be processed as
-character strings, in which case use `fgets' and be sure
-your line buffer is long enough.
+See the `summer' demonstration problem solution which
+reads numbers.
 
 For some problems there are no test case name lines but
 instead each test case has one input line containing
@@ -130,25 +120,30 @@ text and one output line containing text.  For these
 the test case input line is read the same way as the
 test case name line is read above.
 
-See the `io/reverser' demonstration problem solution
-which reads text lines.
+See the `reverser' demonstration problem solution which
+reads text lines.
 
 Sometimes it is necessary to read input one character
-at a time.  `int c = getchar()' does this, returning
-the character read if there is one, or the special
-constant EOF if at the end-of-file.  Notice that c is
-an `int' and not a `char'; this is because EOF is
-usually defined to be -1.  If you have gotten the char-
-acter c this way, `ungetc ( c, stdin )' backs up one
-character in the input stream, so the next character to
-be read will be the character c again.  However you
-CANNOT reliably call ungetc several times in a row to 
-back over more than one character at a time.
+at a time.  This is done with code like
 
-See the `algorithms/vcalc' demonstration problem
-solution which reads characters one at a time.
+    (defvar *NUL* (code-char 0))
+    . . . .
+    (setf c (read-char nil t *NUL*))
 
-
+in which `read-char' reads one character and returns
+that character or returns *NUL* on end of file.  Another
+useful function call is
+
+    (setf c (peek-char t nil t *NUL*))
+
+which skips whitespace and returns the next character
+WITHOUT skipping that character in the input.  *NUL*
+is returned on end of file.
+
+See the `vcalc' demonstration problem solution which
+reads characters one at a time.
+
+
 Output
 ------
 
@@ -166,16 +161,17 @@ decimal place.  You must use the correct upper or lower
 case and use only a single space character as a separa-
 tor unless instructed to line things up in columns.
 
-Output can be written with printf.  Some formats that
-may be useful are "%.3f" to print a double with exactly
-3 decimal places in as few columns as possible, "%10.3f"
-to print the double right adjusted in 10 columns, "%10s"
+Output can be written with `(format t ...)' using the
+`~A' format to print non-numbers.  Some other useful
+formats are "~,3F" to print a number with exactly 3
+decimal places in as few columns as possible, "~10,3F"
+to print the number right adjusted in 10 columns, "~10A"
 to print a string right adjusted in 10 columns, and
-"%-10s" to print a string LEFT adjusted in 10 columns.
+"~10@A" to print a string LEFT adjusted in 10 columns.
 Here the numbers 3 and 10 are merely representative, and
 can be replaced by any other non-zero positive integers.
 
-See the `io/summer' demonstration problem solution which
+See the `summer' demonstration problem solution which
 outputs floating point `double's.
 
 
@@ -200,7 +196,7 @@ When your program is executed by the judge, it will
 NOT be passed ANY arguments.  A standard debugging
 technique is to output extra debugging information if
 and only if your program is passed an argument.
-
+
 The above program defines `debug' to be true if and
 only if the program is called with one or more argu-
 ments, and defines dprintf to do what printf does if
@@ -208,34 +204,29 @@ and only if `debug' is true.  Thus dprintf can be used
 to print debugging information.
 
 Debugging is best done with information printed by
-`dprintf', and not with a debugger like `gdb'.  The
+`dformat', and not with the builtin lisp debugger.  The
 exception is debugging programs that crash or go into
-an infinite loop, which is best done with a debugger
-like `gdb'.  See `help gdb' for how to use `gdb' on
-programs that crash or go into an infinite loop.
+an infinite loop, which is best done with the debugger
+and with the program running in non-compiled interpre-
+tive mode.  A special program, `ldebug', makes this
+easier: see `help ldebug' for details.
 
 It is also a good idea to use `assert' statements
 to check that assumptions you have made are valid during
 actual program execution.  For example, if you are
-certain that scanf should read 3 integers, then instead
-of writing
+certain that the next thing to be read is a number,
+instead of writing
 
-	scanf ( "%d%d%d", ... );
+    (setf n (read))
 
 it might be better to write
 
-	assert ( scanf ( "%d%d%d", ... ) == 3 );
+    (assert (numberp (setf n (read))))
 
-Similarly, you could replace `scanf ( " *" )' in the
-above code by
+See the `summer' demonstration problem solution which
+uses dformat and assert.
 
-	assert ( scanf ( " %c", line[0] ) == 1 );
-	assert ( line[0] == '*' );
 
-See the `io/summer' demonstration problem solution which
-uses dprintf and assert.
-
-
 Function and Macro Synopsis
 -------- --- ----- --------
 
@@ -274,7 +265,7 @@ int scanf ( const char * format, ... )
 
     %lld	Ditto but for `long long int' instead of
     		`int'.
-
+
     %lf		Ditto but for `double' instead of `int'.
 
     %s		Ditto but for a string of non-whitespace
@@ -312,7 +303,7 @@ char * fgets ( char * buffer, sizeof ( buffer ), stdin )
     file, return NULL, which can be interpreted as
     `false'; otherwise return the address of the buffer,
     which can be interpreted as `true'.
-
+
     Note: `fgets' as it is used above is similar to
     `gets ( buffer )', but the `gets' function has been
     `deprecated', meaning that implementations need not
@@ -352,7 +343,7 @@ int printf ( const char * format, ... )
     %f		Outputs a `double' as a floating point
     		number with 6 decimal places and no
 		spaces before or after.
-
+
     %.Pf	Ditto but with P decimal places instead
     		of 6 decimal places.
 
@@ -387,7 +378,7 @@ M_PI, M_E
 
     The mathematical constants PI and e from math.h.
 
-
+
 File:		c
 Author:		Bob Walton <walton@seas.harvard.edu>
 Date:		See top of file.
@@ -399,12 +390,12 @@ file.
 RCS Info (may not be true date or author):
 
     $Author: walton $
-    $Date: 2013/02/10 02:28:16 $
+    $Date: 2013/02/11 18:58:45 $
     $RCSfile: commonlisp,v $
-    $Revision: 1.8 $
+    $Revision: 1.9 $
 
 sbcl --eval '(setf *evaluator-mode* :interpret)' --load reverser.lsp <sample.in
-
+
 File:		commonlisp
 Author:		Bob Walton <walton@deas.harvard.edu>
 Date:		See top of file.
@@ -416,6 +407,6 @@ file.
 RCS Info (may not be true date or author):
 
     $Author: walton $
-    $Date: 2013/02/10 02:28:16 $
+    $Date: 2013/02/11 18:58:45 $
     $RCSfile: commonlisp,v $
-    $Revision: 1.8 $
+    $Revision: 1.9 $
