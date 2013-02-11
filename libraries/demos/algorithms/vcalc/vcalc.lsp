@@ -2,7 +2,7 @@
 ;;
 ;; File:	vcalc.lsp
 ;; Authors:	Bob Walton (walton@seas.harvard.edu)
-;; Date:	Sun Feb 10 18:40:31 EST 2013
+;; Date:	Mon Feb 11 04:33:24 EST 2013
 ;;
 ;; The authors have placed this program in the public
 ;; domain; they make no warranty and accept no liability
@@ -32,22 +32,21 @@
 ;
 (defun string-scalar (string)
   (multiple-value-bind (r length)
-                       (read-from-string string nil)
-    (if (=> length (length string)) r)))
+                       (read-from-string string t)
+    (if (>= length (length string)) r)))
 
 ; Returns next token or *EOL* if end of line or *EOF* if
 ; end of file.  We make *EOL* and *EOF* be printable
 ; strings as tokens are printed in many error messages.
-; Implements one-token backup.  Implements
-; *line-number*.
+; Implements one-token backup and *line-number*.
 ;
-; All tokens are non-zero length strings or numbers.
+; All tokens are non-zero length strings.
 ;
-(defvar *EOL* "END-OF-LINE")
-(defvar *EOF* "END-OF-FILE")
+(defvar *EOL* "(END-OF-LINE)")
+(defvar *EOF* "(END-OF-FILE)")
 ;
 (defvar *backup* nil)
-    ; Set backup = t to backup.
+    ; Set backup = t to backup on token.
 (defvar *line-number* 0)
     ; Current line number; 1, 2, 3, ...
 ;
@@ -55,6 +54,7 @@
 ;
 (defvar *NUL* (code-char 0))
     ; Used internally to represent end of file.
+;
 ; If character is separator return associated
 ; string, else return nil.
 ;
@@ -73,17 +73,15 @@
 	((string= *last-token* *EOL*)
 	 (loop
 	   do (incf *line-number*)
-	   (let ((c (peek-char t nil t #\Space)))
+	   (let ((c (peek-char t nil t *NUL*)))
 	     (cond ((char= c #\/)
 	            (read-char)
-		    (setf c (peek-char nil nil
-				       t *NUL*))
+		    (setf c (peek-char nil))
 		    (if (char/= c #\/)
 		      (error "line begins with `/'"
 			     " not followed by a `/'"))
 		    (loop until
-			  (char= (read-char nil
-					    t #\Newline)
+			  (char= (read-char)
 			         #\Newline)))
 		   (t (return)))))))
 
@@ -100,6 +98,7 @@
 	    while (graphic-char-p c)
 	    do
 	    (vector-push-extend c s)
+	    (read-char)
 	    finally
 	    (setf *last-token*
 		  (coerce (adjust-array s
@@ -117,7 +116,7 @@
   (format t "ERROR in line ~A:~%      " *line-number*)
   (dolist (x args) (format t "~A" x))
   (format t "~%")
-  (quit nil 1))
+  (quit :unix-status 1))
 
 (defun check-not-eof (token)
   (if (equal token *EOF*)
@@ -133,7 +132,7 @@
   (let* ((token (get-token))
 	 (number (string-scalar token)))
     (if (not number)
-      (error "expected number and got `" string "'"))
+      (error "expected number and got `" token "'"))
     number))
 
 (defun is-variable (token)

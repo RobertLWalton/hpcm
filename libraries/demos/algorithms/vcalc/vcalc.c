@@ -2,7 +2,7 @@
  *
  * File:	vcalc.c
  * Authors:	Bob Walton (walton@seas.harvard.edu)
- * Date:	Fri Jan 25 11:07:46 EST 2013
+ * Date:	Mon Feb 11 05:02:25 EST 2013
  *
  * The authors have placed this program in the public
  * domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
  * RCS Info (may not be true date or author):
  *
  *   $Author: walton $
- *   $Date: 2013/01/25 16:10:30 $
+ *   $Date: 2013/02/11 10:03:31 $
  *   $RCSfile: vcalc.c,v $
- *   $Revision: 1.2 $
+ *   $Revision: 1.3 $
  */
 
 #include <stdio.h>	/* sprintf */
@@ -630,7 +630,12 @@ static Value get_value ( )
 		" or variable but got `%s'",
 		token );
 
-    if ( debug ) print_Value ( v );
+    if ( debug )
+    {
+        printf ( "[" );
+        print_Value ( v );
+        printf ( "]" );
+    }
     return v;
 }
 
