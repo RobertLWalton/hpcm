@@ -2,7 +2,7 @@
 ;;
 ;; File:	summer.lsp
 ;; Authors:	Bob Walton (walton@seas.harvard.edu)
-;; Date:	Mon Feb 11 07:13:03 EST 2013
+;; Date:	Mon Feb 11 07:17:52 EST 2013
 ;;
 ;; The authors have placed this program in the public
 ;; domain; they make no warranty and accept no liability
@@ -51,13 +51,13 @@
     ; If debugging, look at corrected-sum and sum
     ; at maximum precision.
     ;
-    (dformat "SUM = ~,16f, CORRECTED SUM = ~,16f\n"
+    (dformat "SUM = ~,16F, CORRECTED SUM = ~,16F\n"
 	     sum corrected-sum )
 
     ; Print output.
     ;
     (cond ((< (abs (- sum corrected-sum )) 0.005 )
-	   (format t "~,2f is correct~%" sum ))
+	   (format t "~,2F is correct~%" sum ))
 	  (t
-	   (format t "~,2f should be ~,2f~%"
+	   (format t "~,2F should be ~,2F~%"
 		     sum corrected-sum )))))
