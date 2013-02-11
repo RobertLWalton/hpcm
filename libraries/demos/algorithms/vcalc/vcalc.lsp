@@ -2,7 +2,7 @@
 ;;
 ;; File:	vcalc.lsp
 ;; Authors:	Bob Walton (walton@seas.harvard.edu)
-;; Date:	Sun Feb 10 15:06:11 EST 2013
+;; Date:	Sun Feb 10 18:40:31 EST 2013
 ;;
 ;; The authors have placed this program in the public
 ;; domain; they make no warranty and accept no liability
@@ -27,6 +27,14 @@
 	   (if (char= (char result p) #\.) (decf p 1))
 	   (subseq result 0 p))))))
 
+; Given a string, return the number it represents, or
+; nil if it does not represent a number.
+;
+(defun string-scalar (string)
+  (multiple-value-bind (r length)
+                       (read-from-string string nil)
+    (if (=> length (length string)) r)))
+
 ; Returns next token or *EOL* if end of line or *EOF* if
 ; end of file.  We make *EOL* and *EOF* be printable
 ; strings as tokens are printed in many error messages.
@@ -45,17 +53,17 @@
 ;
 (defvar *last-token* *EOL*)
 ;
-(defun *NUL* (code-char 0))
+(defvar *NUL* (code-char 0))
     ; Used internally to represent end of file.
 ; If character is separator return associated
 ; string, else return nil.
 ;
 (defun is-separator ( c )
-  (cond ((char= c '\() "(")
-        ((char= c '\)) ")")
-        ((char= c '\,) ",")
-        ((char= c '\:) ":")
-        ((char= c '\Newline) *EOL*)
+  (cond ((char= c #\() "(")
+        ((char= c #\)) ")")
+        ((char= c #\,) ",")
+        ((char= c #\:) ":")
+        ((char= c #\Newline) *EOL*)
         ((char= c *NUL*) *EOF*)))
 ;
 (defun get-token ()
@@ -78,6 +86,7 @@
 					    t #\Newline)
 			         #\Newline)))
 		   (t (return)))))))
+
   (let* ((v (is-separator (peek-char t nil t *NUL*))))
     (if v (setf *last-token* v)
       (loop with s = (make-array 
@@ -90,16 +99,14 @@
 	    until (char= c #\Space)
 	    while (graphic-char-p c)
 	    do
-	    (vector-push-extend s c)
+	    (vector-push-extend c s)
 	    finally
 	    (setf *last-token*
 		  (coerce (adjust-array s
-			    (list (fill-pointer s))
+			    (list (fill-pointer s)))
 			  'string)))))
 
   (dformat "{~A}" *last-token*)
-  (assert (or (stringp *last-token*)
-	      (numberp *last-token*)))
   *last-token*)
 
 ; Print error message made by concatenating ~A printouts
@@ -121,6 +128,13 @@
     (if (not (equal token desired))
 	(error "expected `" desired 
 	       "' but found `" token "'"))))
+
+(defun get-number ()
+  (let* ((token (get-token))
+	 (number (string-scalar token)))
+    (if (not number)
+      (error "expected number and got `" string "'"))
+    number))
 
 (defun is-variable (token)
   (and (stringp token)
@@ -288,7 +302,7 @@
 (defun get-value ()
   (let ((v (make-value))
 	(token (get-token))
-	x y)
+	x y n)
     (cond ((equal token "(")
 	   (setf (value-type v) *VECTOR*)
 	   (setf (value-v v) (make-vector))
@@ -310,9 +324,9 @@
 	           (value-b    v) (value-b    v2)
 	           (value-s    v) (value-s    v2)
 	           (value-v    v) (value-b    v2))))
-	  ((numberp token)
+	  ((setf n (string-scalar token))
 	   (setf (value-type v) *SCALAR*)
-	   (setf (value-s v) token))
+	   (setf (value-s v) n))
 	  (t
 	   (error "expected true, false, "
 		  " scalar constant, "
