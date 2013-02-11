@@ -2,7 +2,7 @@
 ;;
 ;; File:	reverser.lsp
 ;; Authors:	Bob Walton (walton@seas.harvard.edu)
-;; Date:	Mon Feb 11 03:30:41 EST 2013
+;; Date:	Mon Feb 11 07:12:06 EST 2013
 ;;
 ;; The authors have placed this program in the public
 ;; domain; they make no warranty and accept no liability
@@ -41,7 +41,7 @@
 
 ; Main loop
 ;
-(loop while (setf *line* (read-line nil t)) do
+(loop while (setf *line* (read-line nil nil)) do
 
   (dformat "~A~%" *line*)
 

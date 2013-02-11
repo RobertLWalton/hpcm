@@ -2,7 +2,7 @@
 ;;
 ;; File:	summer.lsp
 ;; Authors:	Bob Walton (walton@seas.harvard.edu)
-;; Date:	Mon Feb 11 04:07:30 EST 2013
+;; Date:	Mon Feb 11 07:13:03 EST 2013
 ;;
 ;; The authors have placed this program in the public
 ;; domain; they make no warranty and accept no liability
@@ -17,7 +17,7 @@
 
 ; Main loop
 ;
-(loop while (setf *line* (read-line nil t)) do
+(loop while (setf *line* (read-line nil nil)) do
 
   ; Print test case name.
   ;
