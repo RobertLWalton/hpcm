@@ -2,7 +2,7 @@
 ;;
 ;; File:	vcalc.lsp
 ;; Authors:	Bob Walton (walton@seas.harvard.edu)
-;; Date:	Mon Feb 11 04:33:24 EST 2013
+;; Date:	Mon Feb 11 05:35:50 EST 2013
 ;;
 ;; The authors have placed this program in the public
 ;; domain; they make no warranty and accept no liability
@@ -20,20 +20,23 @@
 ; suppressed, and for integers, the `.' suppressed.
 ;
 (defun scalar-string (number)
-  (let ((result (format nil "~,14f" number)))
-    (do ((p (- (length result) 1) (- p 1)))
-        ((or (= p 0) (char/= (char result p) #\0))
-	 (progn
-	   (if (char= (char result p) #\.) (decf p 1))
-	   (subseq result 0 p))))))
+  (loop with result = (format nil "~,14f" number)
+	for p = (length result) then (1- p)
+	while (char= #\0 (char result (1- p)))
+	finally (if (char= (char result (1- p)) #\.)
+		    (decf p 1))
+	        (return (subseq result 0 p))))
 
 ; Given a string, return the number it represents, or
 ; nil if it does not represent a number.
 ;
 (defun string-scalar (string)
-  (multiple-value-bind (r length)
-                       (read-from-string string t)
-    (if (>= length (length string)) r)))
+  (ignore-errors
+     (multiple-value-bind (r length)
+        (read-from-string string)
+        (if (and (>= length (length string))
+		 (numberp r))
+	  r))))
 
 ; Returns next token or *EOL* if end of line or *EOF* if
 ; end of file.  We make *EOL* and *EOF* be printable
@@ -85,25 +88,34 @@
 			         #\Newline)))
 		   (t (return)))))))
 
-  (let* ((v (is-separator (peek-char t nil t *NUL*))))
-    (if v (setf *last-token* v)
-      (loop with s = (make-array 
-		       '(200)
-		       :element-type 'string-char
-		       :fill-pointer 0
-		       :adjustable t)
-	    for c = (peek-char nil nil t *NUL*)
-	    until (is-separator c)
-	    until (char= c #\Space)
-	    while (graphic-char-p c)
-	    do
-	    (vector-push-extend c s)
-	    (read-char)
-	    finally
-	    (setf *last-token*
-		  (coerce (adjust-array s
-			    (list (fill-pointer s)))
-			  'string)))))
+  (loop for c = (peek-char nil nil t *NUL*)
+	for s = (is-separator c)
+	when s do
+	  (setf *last-token* s)
+	  (read-char)
+	  (return)
+	else when (and (graphic-char-p c)
+		       (char/= c #\Space))
+	  do
+	  (loop with s = (make-array 
+			   '(200)
+			   :element-type 'string-char
+			   :fill-pointer 0
+			   :adjustable t)
+		for c = (peek-char nil)
+		until (is-separator c)
+		until (char= c #\Space)
+		while (graphic-char-p c)
+		do
+		(vector-push-extend c s)
+		(read-char)
+		finally
+		(setf *last-token*
+		      (coerce (adjust-array s
+				(list (fill-pointer s)))
+			      'string)))
+	  (return)
+	else do (read-char))
 
   (dformat "{~A}" *last-token*)
   *last-token*)
@@ -237,34 +249,22 @@
   (make-hash-table :test #'equal :size 256))
     ; Maps variable name strings to values.
 
-(defun require-boolean (v1)
-  (if (/= (value-type v1) *BOOLEAN*)
-    (error "operand should be boolean")))
-
-(defun require-boolean (v1 v2)
+(defun require-boolean (v1 &optional v2)
   (cond ((/= (value-type v1) *BOOLEAN*)
 	 (error "first operand should be boolean"))
-        ((/= (value-type v2) *BOOLEAN*)
+        ((and v2 (/= (value-type v2) *BOOLEAN*))
 	 (error "second operand should be boolean"))))
 
-(defun require-scalar (v1)
-  (if (/= (value-type v1) *SCALAR*)
-    (error "operand should be scalar")))
-
-(defun require-scalar (v1 v2)
+(defun require-scalar (v1 &optional v2)
   (cond ((/= (value-type v1) *SCALAR*)
 	 (error "first operand should be scalar"))
-        ((/= (value-type v2) *SCALAR*)
+        ((and v2 (/= (value-type v2) *SCALAR*))
 	 (error "second operand should be scalar"))))
 
-(defun require-vector (v1)
-  (if (/= (value-type v1) *VECTOR*)
-    (error "operand should be vector")))
-
-(defun require-vector (v1 v2)
+(defun require-vector (v1 &optional v2)
   (cond ((/= (value-type v1) *VECTOR*)
 	 (error "first operand should be vector"))
-        ((/= (value-type v2) *VECTOR*)
+        ((and v2 (/= (value-type v2) *VECTOR*))
 	 (error "second operand should be vector"))))
 
 (defun require-scalar-vector (v1 v2)
@@ -322,7 +322,7 @@
 	     (setf (value-type v) (value-type v2)
 	           (value-b    v) (value-b    v2)
 	           (value-s    v) (value-s    v2)
-	           (value-v    v) (value-b    v2))))
+	           (value-v    v) (value-v    v2))))
 	  ((setf n (string-scalar token))
 	   (setf (value-type v) *SCALAR*)
 	   (setf (value-s v) n))
@@ -363,8 +363,8 @@
 	(if first (setf first nil)
 	          (format t " "))
 	(setf v (gethash token *variable-table*))
-	(format t (if v (value-string v)
-	                (token-string v)))))
+	(format t "~A" (if v (value-string v)
+	                     token))))
 
 ; Execute `variable = ...' statement after
 ; `variable =' tokens have been read and skipped.
@@ -538,8 +538,8 @@
 
     (setf (gethash variable *variable-table*) v1)
 
-    (deformat "ASSIGN ~A TO ~A"
-	      (value-string v1) variable)))
+    (dformat "ASSIGN ~A TO ~A"
+	     (value-string v1) variable)))
 
 ; Main loop to read and execute a statement.
 ;
