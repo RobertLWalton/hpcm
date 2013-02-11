@@ -2,7 +2,7 @@
 ;;
 ;; File:	reverser.lsp
 ;; Authors:	Bob Walton (walton@seas.harvard.edu)
-;; Date:	Sat Feb  9 19:41:42 EST 2013
+;; Date:	Mon Feb 11 03:30:41 EST 2013
 ;;
 ;; The authors have placed this program in the public
 ;; domain; they make no warranty and accept no liability
@@ -24,25 +24,20 @@
  
   ; Move q backward to point just after word.
   ;
-  (do () ((progn (assert (> q 0))
-		 (alpha-char-p
-		   (char *line* (- q 1)))))
-    (decf q))
+  (loop do (assert (< 0 q))
+	until (alpha-char-p (char *line* (1- q)))
+	do (decf q))
 
-  (let ((p q))
+  ; Move q to point at 1st character of word and
+  ; print the word.
+  ;
+  (loop with p = q
+	until (<= q 0)
+	until (not (alpha-char-p (char *line* (1- q))))
+	do (decf q)
+	finally (format t "~A" (subseq *line* q p)))
 
-    ; Move q to point at 1st character of word.
-    ;
-    (decf q)
-    (do () ((or (<= q 0)
-		(not (alpha-char-p
-		       (char *line* (- q 1))))))
-      (decf q))
-
-    ; Print word and return.
-    ;
-    (format t "~A" (subseq *line* q p))
-    q ))
+  q)
 
 ; Main loop
 ;
@@ -50,22 +45,27 @@
 
   (dformat "~A~%" *line*)
 
-  ; Set p to beginning of line and q to end of line.
   ;
-  (let ((p 0)
-	(q (length *line*)))
-
-    ; Print line substituting for words.
-    ;
-    (loop while (< p (length *line*)) do
-      (cond ((alpha-char-p (char *line* p))
-	     (loop while (and (< p (length *line*))
+  ; Print line substituting for words.
+  ;
+  (loop with end = (length *line*)
+	with p = 0
+	  ; p moves forward printing non-word characters
+	  ; while finding and skipping words
+	with q = end
+	  ; q moves backward finding and printing words
+        while (< p end)
+	when (alpha-char-p (char *line* p)) do
+	     ; word found; skip and use q to print
+	     (loop while (and (< p end)
 			      (alpha-char-p
 				(char *line* p)))
-	       do
-	       (incf p))
-	     (setf q (print-substitute-word q)))
-	    (t
-	      (format t "~A" (char *line* p))
-	      (incf p))))
-    (format t "~%")))
+	           do (incf p)
+		   finally
+	             (setf q (print-substitute-word q)))
+	else do ; non-word character found
+	        ; skip and print
+	        (format t "~A" (char *line* p))
+	        (incf p)
+        finally ; print line end
+	        (format t "~%")))

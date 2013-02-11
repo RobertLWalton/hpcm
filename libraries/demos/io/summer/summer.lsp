@@ -2,7 +2,7 @@
 ;;
 ;; File:	summer.lsp
 ;; Authors:	Bob Walton (walton@seas.harvard.edu)
-;; Date:	Sat Feb  9 19:45:57 EST 2013
+;; Date:	Mon Feb 11 04:07:30 EST 2013
 ;;
 ;; The authors have placed this program in the public
 ;; domain; they make no warranty and accept no liability
@@ -14,35 +14,6 @@
   (if *debug* (apply #'format t r)))
 
 (defvar *line*)
-
-; Function to find and print the first word BEFORE q,
-; where q indexes a character in *line*.  It is a
-; program error if there is no such word.  Returns
-; index of the first character of the word printed.
-;
-(defun print-substitute-word ( q )
- 
-  ; Move q backward to point just after word.
-  ;
-  (do () ((progn (assert (> q 0))
-		 (alpha-char-p
-		   (char *line* (- q 1)))))
-    (decf q))
-
-  (let ((p q))
-
-    ; Move q to point at 1st character of word.
-    ;
-    (decf q)
-    (do () ((or (<= q 0)
-		(not (alpha-char-p
-		       (char *line* (- q 1))))))
-      (decf q))
-
-    ; Print word and return.
-    ;
-    (format t "~A" (subseq *line* q p))
-    q ))
 
 ; Main loop
 ;
@@ -58,7 +29,7 @@
 
     ; Read and sum numbers until non-number.
     ;
-    (loop while (numberp (setf token (read nil t))) do
+    (loop while (numberp (setf token (read))) do
       (incf corrected-sum token))
 
     ; Skip `='.
@@ -67,7 +38,7 @@
 
     ; Read accountant computer's sum.
     ;
-    (assert (numberp (setf sum (read nil t))))
+    (assert (numberp (setf sum (read))))
 
     ; Corrected-sum and sum are both approximations
     ; to numbers that are exact multiples of 0.01.
