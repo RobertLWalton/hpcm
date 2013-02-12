@@ -5,7 +5,7 @@
 #
 # File:		autojudge
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Feb 12 07:44:37 EST 2013
+# Date:		Tue Feb 12 08:40:54 EST 2013
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2013/02/12 12:45:01 $
+#   $Date: 2013/02/12 13:48:27 $
 #   $RCSfile: autojudge,v $
-#   $Revision: 1.141 $
+#   $Revision: 1.142 $
 #
 # The next lines start tclsh \
 trap "echo autojudge: Terminated by Signal" \
@@ -495,6 +495,7 @@ if { $EXTENSION != "" \
     # should never happen
     error "/ in extension `$EXTENSION'"
 }
+set EXT [string range $EXTENSION 1 end]
 
 # Check legality of submit qualifier.
 #
@@ -859,7 +860,6 @@ if { [info exists problem_optional_copy_files] } {
 # These links are not optional, but should not be done
 # if target is an existing file or link.
 #
-set EXT [string range $EXTENSION 1 end]
 set instructions ""
 lappend instructions \
 	" Makefile Makefile_$EXT Makefile "
@@ -870,21 +870,24 @@ foreach name $input_names {
     set jin_exists [file exists $s_d/$name.jin]
     lappend instructions \
             $name.in \
-	    " $name.test $name.out $name.test "
+	    " $name.test $name.out \
+	      $name.test_$EXT $name.test "
     if { $jin_exists } {
 	lappend instructions $name.jin
     }
     if { $scoring_filter_exists } {
 	lappend instructions \
-	    " $name.ftest $name.fout $name.ftest "
+	    " $name.ftest $name.fout \
+	      $name.ftest_$EXT $name.ftest "
 	if { $jin_exists } {
 	    lappend instructions \
-		" $name.jftest $name.jfout\
-		                $name.jftest "
+		" $name.jftest $name.jfout \
+		  $name.jftest_$EXT $name.jftest "
 	}
     } elseif { $jin_exists } {
 	lappend instructions \
-	    " $name.jtest $name.jout $name.jtest "
+	    " $name.jtest $name.jout \
+	      $name.jtest_$EXT $name.jtest "
     }
 }
 execute_links_or_copies \
