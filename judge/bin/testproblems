@@ -4,7 +4,7 @@
 #
 # File:		testproblems
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Sat Feb  9 09:45:48 EST 2013
+# Date:		Tue Feb 12 04:49:53 EST 2013
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2013/02/09 14:46:07 $
+#   $Date: 2013/02/12 09:59:04 $
 #   $RCSfile: testproblems,v $
-#   $Revision: 1.47 $
+#   $Revision: 1.48 $
 #
 # The next lines run tclsh \
 trap "echo testproblems: Terminated by Signal; exit 1" \
@@ -152,17 +152,21 @@ testproblems \[-p N] \[-keep|-|-contestant|-q] \\
 	  access them, but this is not an issue for this
 	  program disables sandboxing.
 
-	* { Makefile Makefile.EXT Makefile } \[required]
+	* { Makefile Makefile_EXT Makefile } \[required]
 	  Scoring_Filter                     \[optional]
 
-	* For each N in the set of input names:
+	* For each N in the set of input names (all
+	  optional).  Note the *_EXT forms which allow
+	  for language variants, particularly for .test
+	  files for which numeric accuracy is language
+	  dependent.
 
-	      N.in			\[optional]
-	      N.jin			\[optional]
-	      N.test N.out N.test	\[optional]
-	      N.jtest N.jout N.jtest	\[optional]
-	      N.ftest N.fout N.ftest	\[optional]
-	      N.jftest N.jfout N.jftest	\[optional]
+	      N.in
+	      N.jin
+	      N.test N.out N.test_EXT N.test
+	      N.jtest N.jout N.jtest_EXT N.jtest
+	      N.ftest N.fout N.ftest_EXT N.ftest
+	      N.jftest N.jfout N.jftest_EXT N.jftest
 
     The -contestant option takes link_instructions
 
@@ -171,14 +175,14 @@ testproblems \[-p N] \[-keep|-|-contestant|-q] \\
     in the PROBLEM.rc file and modifies them to
 
     		{ F F F1 F2 ...}
-
+
     so if F exists in problem directory it will be
     linked to.  An example of using this is when the
     files F and judges_F are made and PROBLEM.rc con-
     tains the link instruction
 
     		{ F judges_F }
-
+
     so the contestant sees the made F and the judge
     sees the made judges_F renamed as F.  F is likely
     to be a monitor program that executes the contest-
@@ -205,7 +209,7 @@ testproblems \[-p N] \[-keep|-|-contestant|-q] \\
 	    make
 	    mv PROBLEM.out N.out       # if N != PROBLEM
 	    diff N.out N.test
-
+
       * If N.jin exists but Scoring_Filter does not
         exist:
 
@@ -217,7 +221,7 @@ testproblems \[-p N] \[-keep|-|-contestant|-q] \\
 
 	    Scoring_Filter N.in < N.out > N.fout
 	    diff N.fout N.ftest
-
+
       * If N.jin and Scoring_Filter exist:
 
 	    jfilter -v N.jin N.fout N.jfout >& N.jfout#
@@ -750,23 +754,14 @@ foreach directory $myargv {
 
 	# Append stuff to optional_link_files.
 	#
-	# We CANNOT append
-	#	{ Makefile Makefile.EXT Makefile}
-	# here because EXT is not yet determined.
+	# We CANNOT append *_EXT stuff here because
+	# EXT is not yet determined.
 	#
 	lappend optional_link_files \
 		[list Scoring_Filter]
 	foreach N $input_names {
 	    lappend optional_link_files [list $N.in]
 	    lappend optional_link_files [list $N.jin]
-	    lappend optional_link_files \
-	            [list $N.test $N.out $N.test]
-	    lappend optional_link_files \
-	            [list $N.jtest $N.jout $N.jtest]
-	    lappend optional_link_files \
-	            [list $N.ftest $N.fout $N.ftest]
-	    lappend optional_link_files \
-	            [list $N.jftest $N.jfout $N.jftest]
 	}
 
 	# If there are make_files, (re)make them.
@@ -822,17 +817,32 @@ foreach directory $myargv {
 
 	    # Execute link instructions
 	    #
-	    set ilist $link_files
-	    lappend ilist [list $problem.$EXT $SOLUTION]
-	    lappend ilist \
-	            "Makefile Makefile.$EXT Makefile"
-	    foreach i $ilist {
+	    set rlist $link_files
+	    lappend rlist [list $problem.$EXT $SOLUTION]
+	    lappend rlist \
+	            "Makefile Makefile_$EXT Makefile"
+	    foreach i $rlist {
 	        if { ! [execute_link $testdir $i] } {
 		    error "failed to execute link\
 		           instruction $i"
 		}
 	    }
-	    foreach i $optional_link_files {
+	    set olist $optional_link_files
+	    foreach N $input_names {
+		lappend olist \
+			[list $N.test $N.out \
+			      $N.test_$EXT $N.test]
+		lappend olist \
+			[list $N.jtest $N.jout \
+			      $N.jtest_$EXT $N.jtest]
+		lappend olist \
+			[list $N.ftest $N.fout \
+			      $N.ftest_$EXT $N.ftest]
+		lappend olist \
+			[list $N.jftest $N.jfout \
+			      $N.jftest_$EXT $N.jftest]
+	    }
+	    foreach i $olist {
 	        execute_link $testdir $i
 	    }
 
