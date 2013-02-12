@@ -2,7 +2,7 @@
 ;;
 ;; File:	vcalc.lsp
 ;; Authors:	Bob Walton (walton@seas.harvard.edu)
-;; Date:	Mon Feb 11 05:35:50 EST 2013
+;; Date:	Tue Feb 12 02:53:52 EST 2013
 ;;
 ;; The authors have placed this program in the public
 ;; domain; they make no warranty and accept no liability
@@ -33,7 +33,7 @@
 (defun string-scalar (string)
   (ignore-errors
      (multiple-value-bind (r length)
-        (read-from-string string)
+                          (read-from-string string)
         (if (and (>= length (length string))
 		 (numberp r))
 	  r))))
@@ -54,6 +54,8 @@
     ; Current line number; 1, 2, 3, ...
 ;
 (defvar *last-token* *EOL*)
+    ; When *EOL*, get-token increments *line-number*
+    ; and skips comment lines before reading next token.
 ;
 (defvar *NUL* (code-char 0))
     ; Used internally to represent end of file.
@@ -75,28 +77,29 @@
 	  (return-from get-token *last-token*))
 	((string= *last-token* *EOL*)
 	 (loop
-	   do (incf *line-number*)
-	   (let ((c (peek-char t nil t *NUL*)))
-	     (cond ((char= c #\/)
-	            (read-char)
-		    (setf c (peek-char nil))
-		    (if (char/= c #\/)
-		      (error "line begins with `/'"
-			     " not followed by a `/'"))
-		    (loop until
-			  (char= (read-char)
-			         #\Newline)))
-		   (t (return)))))))
+	   do
+	   (incf *line-number*)
+	   (cond
+	     ((char/= #\/ (peek-char t nil nil *NUL*))
+	      (return))
+	     (t
+	      (read-char)
+	      (if (char/= #\/ (read-char))
+		  (error "line begins with `/'"
+			 " not followed by a `/'"))
+	      (loop until (char= (read-char)
+				 #\Newline)))))))
 
-  (loop for c = (peek-char nil nil t *NUL*)
+  (loop for c = (peek-char nil nil nil *NUL*)
 	for s = (is-separator c)
 	when s do
 	  (setf *last-token* s)
 	  (read-char)
 	  (return)
-	else when (and (graphic-char-p c)
-		       (char/= c #\Space))
-	  do
+	else when (or (not (graphic-char-p c))
+		      (char= c #\Space))
+	     do (read-char)
+        else do
 	  (loop with s = (make-array 
 			   '(200)
 			   :element-type 'string-char
@@ -114,8 +117,7 @@
 		      (coerce (adjust-array s
 				(list (fill-pointer s)))
 			      'string)))
-	  (return)
-	else do (read-char))
+	  (return))
 
   (dformat "{~A}" *last-token*)
   *last-token*)
@@ -140,6 +142,9 @@
 	(error "expected `" desired 
 	       "' but found `" token "'"))))
 
+; Get next token, check that it is a number, else error,
+; and return the number.
+;
 (defun get-number ()
   (let* ((token (get-token))
 	 (number (string-scalar token)))
@@ -148,8 +153,7 @@
     number))
 
 (defun is-variable (token)
-  (and (stringp token)
-       (alpha-char-p (char token 0))))
+  (alpha-char-p (char token 0)))
 
 (defun check-variable (token)
    (if (not (is-variable token))
@@ -293,7 +297,6 @@
 	 (error "operand(s) should be"
 		" scalar or vector"))))
  
-
 ; Reads a constant value and returns its value,
 ; or a variable with a value and returns a COPY
 ; of its value.  Always returns a NEW value.
@@ -317,7 +320,7 @@
 	   (setf (value-b v) nil))
           ((is-variable token)
 	   (let ((v2 (gethash token *variable-table*)))
-	     (if (equal v2 nil)
+	     (if (not v2)
 	         (error "`" token "' unassigned"))
 	     (setf (value-type v) (value-type v2)
 	           (value-b    v) (value-b    v2)
@@ -356,13 +359,13 @@
 ;
 (defun execute-print ()
   (loop for token = (get-token)
-	for first = t then nil
+	for space = nil then t
 	with v
 	until (equal token *EOL*)
 	do
-	(if first (setf first nil)
-	          (format t " "))
-	(setf v (gethash token *variable-table*))
+	(if space (format t " "))
+	(setf v (and (is-variable token)
+		     (gethash token *variable-table*)))
 	(format t "~A" (if v (value-string v)
 	                     token))))
 
@@ -447,10 +450,13 @@
 		      (setf (value-s v1)
 			    (* (value-s v1)
 			       (value-s v2)))
-		      (setf (value-s v1)
-			    (scalar-multiply
-			      (value-s v1)
-			      (value-v v2))))
+		      (progn
+			(setf (value-v v1)
+			      (scalar-multiply
+			        (value-s v1)
+			        (value-v v2)))
+			(setf (value-type v1)
+			      *VECTOR*)))
 		    (progn
 		      (require-vector v1 v2)
 		      (setf (value-s v1)
@@ -548,21 +554,26 @@
       do
       (if (equal token "if")
 	  ; Process `if' statement.  If condition
-	  ; is true, just skip past `:'.  Other-
-	  ; wise skip past EOL and go to next
-	  ; statement.
+	  ; is true, just skip past `:'. and get
+	  ; following token.  Otherwise skip past
+	  ; *EOL* and set token to "(CONTINUE)"
+	  ; to continue to next statement (which
+	  ; might be another `if').
 	  ;
 	  (let ((v (get-value)))
 	    (require-boolean v)
 	    (skip ":")
-	    (if (not (value-b v))
-	      (loop for token = (get-token)
-	            until (equal token *EOL*)
-	            do (check-not-eof token))))
-	  (setf *backup* t))
+	    (if (value-b v)
+	      (setf token (get-token))
+	      (loop for token2 = (get-token)
+	            until (equal token2 *EOL*)
+	            do (check-not-eof token2)
+		    finally
+		    (setf token "(CONTINUE)")))))
 
-      (setf token (get-token))
-      (cond ((equal token "clear")
+      (cond ((equal token "(CONTINUE)"))
+	         ; (CONTINUE) does nothing
+	    ((equal token "clear")
 	     (execute-clear))
 	    ((equal token "print")
 	     (execute-print)
