@@ -1,4 +1,4 @@
-Commonlisp Help		    Mon Feb 11 02:59:08 EST 2013
+Commonlisp Help		    Tue Feb 12 11:24:33 EST 2013
 
 
 Commonlisp Language Program Stucture
@@ -32,8 +32,7 @@ numbers, and debugging is:
 
 	; Read a string of integers ending in `*'.
 	;
-	(loop while (numberp (setf token (read)))
-	  do
+	(loop while (numberp (setf token (read))) do
 	  . . . . .)
 
 	; Skip `*'.
@@ -59,7 +58,7 @@ numbers, and debugging is:
 
 All too frequently one has a conflict between a defvar
 or defun defined name and a name already defined by
-the COMMONLISP standard, and will get an error message
+the COMMONLISP standard, which gives an error message
 about trying to redefine a name that is already defined
 in the `COMMON-LISP' package (this error message may
 mention a `lock' on the COMMON-LISP package).  There are
@@ -77,17 +76,18 @@ tries to redefine the COMMON-LISP package symbol
 `ERROR'.  You should be aware, however, that shadowing
 is not a good solution when writing large packages of
 commercial code, as one tends to forget what one has
-shadowed and get confused code.  But this is not the
-situation of a programming contest solution where you
-are working in the default COMMON-LISP-USER package
-(which imports the COMMON-LISP package).
+shadowed and get confused.  But this is not the situa-
+tion of a programming contest solution where you are
+working in the default COMMON-LISP-USER package (which
+imports the COMMON-LISP package).
 
 
 Input
 -----
 
 Input is read from the standard input; you MUST NOT open
-any file for input.
+any file for input.  For read functions, `nil' can be
+used to denote the standard input stream.
 
 You may assume that input is correctly formatted, except
 for the rare problem where you are told to produce
@@ -128,13 +128,13 @@ at a time.  This is done with code like
 
     (defvar *NUL* (code-char 0))
     . . . .
-    (setf c (read-char nil t *NUL*))
+    (setf c (read-char nil nil *NUL*))
 
 in which `read-char' reads one character and returns
 that character or returns *NUL* on end of file.  Another
 useful function call is
 
-    (setf c (peek-char t nil t *NUL*))
+    (setf c (peek-char t nil nil *NUL*))
 
 which skips whitespace and returns the next character
 WITHOUT skipping that character in the input.  *NUL*
@@ -230,119 +230,65 @@ uses dformat and assert.
 Function and Macro Synopsis
 -------- --- ----- --------
 
-You can get full documentation of the functions
-mentioned above plus other useful information by using
-the UNIX commands:
+A good reference is `COMMON LISP, The Language', 2nd
+edition www.cs.cmu.edu/Groups/AI/html/cltl/clm/clm.html
 
-	man scanf
-	man fgets
-	man getchar
-	man 3 printf
-	man assert
-	man math.h
-	man limits.h
-	man float.h
+The following is an extract from this reference of
+details needed to use the functions mentioned above,
+and also a few numeric constants.  Here we assume you
+already know something about how to use `scanf' and
+`printf', so we do not have to explain them from
+scratch.
 
-The following is an extract from `man' pages of details
-needed to use the functions mentioned above, and also a
-few numeric constants.  Here we assume you already know
-something about how to use `scanf' and `printf', so we
-do not have to explain them from scratch.
+(read-line nil nil)
 
-Note that an `int' is guaranteed to be at least 32 bits
-and a `long long int' is guaranteed to be at least 64
-bits.  Floating point computations should always be done
-using `double's, and NOT `float's, to avoid having too
-little precision.
+    Reads and returns the next line as a string, or
+    returns nil if at end of file.
 
-int scanf ( const char * format, ... )
+(read)
+(read nil nil)
 
-    Format can contain the following directives:
+    Reads the next input token which should be either
+    a symbol or a number.  If a symbol, it will be
+    converted to upper case.  The form with two nil
+    arguments returns nil on end of file, while the
+    form with no extra arguments may signal an error
+    on end of file (or may not).  If a whitespace
+    characters such as a single space or line feed
+    terminates the token, that space character will be
+    skipped over.
 
-    %d		First skips whitespace.  Then if this is
-    		followed by non-whitespace with the
-		format of an `int', reads the `int'.
+(read-char)
+(defvar *NUL* (code-char 0))
+(read-char nil nil *NUL*)
 
-    %lld	Ditto but for `long long int' instead of
-    		`int'.
+    Reads one character; the form with extra arguments
+    returns a NUL character (ASCII code 0) on end of
+    file, while the form without arguments may signal
+    an error on end of file (or may not).
 
-    %lf		Ditto but for `double' instead of `int'.
+(peek-char)
+(peek-char nil nil *NUL*)
+    Ditto but does not skip over the character read.
 
-    %s		Ditto but for a string of non-whitespace
-    		characters, instead of `int'.
+(format t f ...)
 
-    %c		Reads a single character.  Does NOT skip
-    		preceding whitespace.
+    Prints the format f with replacements for ~...
+    control sequences.  Some useful control sequences
+    are the following, in which W and P stand for
+    sequences of decimal digits, where W is used for
+    `widths' and P for `precisions':
 
-    whitespace	Skips any amount of whitespace, includ-
-    		ing none.  Line feeds are whitespace in
-		this sense.
-
-    other	Skips just the given character.  E.g.,
-    character	if `*' is in the format, then `*' must
-    		be next in the input if the input is to
-		move forward.  If you want to skip
-		whitespace followed by `*', you MUST put
-		" *" and NOT just "*" in the format.
-
-    Scanf returns the number of items successfully read
-    by %... format directives.  Thus if you are expect-
-    ing either a float or a `*', `scanf ( "%lf", ... )'
-    will return 1 if a number was found and read, or 0
-    if a `*' was found and NOT read.  Note that if it
-    returns 0 it will have skipped the whitespace before
-    the `*', so the `*' will be next.
-
-
-char * fgets ( char * buffer, sizeof ( buffer ), stdin )
-
-    Read characters from the standard input into the
-    buffer until a line feed is read and stored, and
-    then store a '\0' in the buffer.  If there are NO
-    characters to be read because we are at the end of
-    file, return NULL, which can be interpreted as
-    `false'; otherwise return the address of the buffer,
-    which can be interpreted as `true'.
-
-    Note: `fgets' as it is used above is similar to
-    `gets ( buffer )', but the `gets' function has been
-    `deprecated', meaning that implementations need not
-    and eventually will not support it.
-
-int c = getchar()
-ungetc ( c, stdin )
-    getchar() reads one character from the standard
-    input stream, or the special constant EOF (typically
-    defined to be -1) if at end-of-file.  If c is the
-    character just read by getchar(), then the call
-    ungetc ( c, stdin ) backups up one character in the
-    standard input, so c will be re-read by the next
-    getchar().  Ungetc CANNOT reliably be called several
-    times in a row to back over more than one character
-    at a time.
-
-int printf ( const char * format, ... )
-
-    Format can contain the following directives, in
-    in which W and P stand for sequences of decimal
-    digits, where W is used for `widths' and P for
-    `precisions':
-
-    %d		Outputs an `int' as a decimal integer
+    ~D		Outputs an value as a decimal integer
     		with no spaces before or after.
 
-    %Wd		Outputs an `int' as a decimal integer
+    ~WD		Outputs a value as a decimal integer
     		right adjusted in W columns.
 
-    %lld	Outputs a `long long int' as a decimal
-    		integer with no spaces before or after.
-
-    %Wlld	Outputs a `long long int' as a decimal
-    		integer right adjusted in W columns.
-
-    %f		Outputs a `double' as a floating point
+    ~F		Outputs a value as a floating point
     		number with 6 decimal places and no
 		spaces before or after.
+TBD
 
     %.Pf	Ditto but with P decimal places instead
     		of 6 decimal places.
@@ -390,9 +336,9 @@ file.
 RCS Info (may not be true date or author):
 
     $Author: walton $
-    $Date: 2013/02/11 18:58:45 $
+    $Date: 2013/02/12 18:00:47 $
     $RCSfile: commonlisp,v $
-    $Revision: 1.9 $
+    $Revision: 1.10 $
 
 sbcl --eval '(setf *evaluator-mode* :interpret)' --load reverser.lsp <sample.in
 
@@ -407,6 +353,6 @@ file.
 RCS Info (may not be true date or author):
 
     $Author: walton $
-    $Date: 2013/02/11 18:58:45 $
+    $Date: 2013/02/12 18:00:47 $
     $RCSfile: commonlisp,v $
-    $Revision: 1.9 $
+    $Revision: 1.10 $
