@@ -10,14 +10,14 @@
 
 (setf *read-default-float-format* 'double-float)
 
-(defun read-double ()
-  (let ((r (read)))
+(defun read-double (&rest args)
+  (let ((r (apply #'read args)))
     (if (numberp r) (coerce r 'double-float) r)))
 
 (defvar *debug* (rest *posix-argv*))
 
-(defun dformat (&rest r)
-  (if *debug* (apply #'format t r)))
+(defun dformat (&rest args)
+  (if *debug* (apply #'format t args)))
 
 (defvar *line*)
 

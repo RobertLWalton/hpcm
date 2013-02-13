@@ -2,7 +2,7 @@
 ;;
 ;; File:	reverser.lsp
 ;; Authors:	Bob Walton (walton@seas.harvard.edu)
-;; Date:	Mon Feb 11 07:12:06 EST 2013
+;; Date:	Wed Feb 13 06:38:03 EST 2013
 ;;
 ;; The authors have placed this program in the public
 ;; domain; they make no warranty and accept no liability
@@ -10,8 +10,8 @@
 
 (defvar *debug* (rest *posix-argv*))
 
-(defun dformat (&rest r)
-  (if *debug* (apply #'format t r)))
+(defun dformat (&rest args)
+  (if *debug* (apply #'format t args)))
 
 (defvar *line*)
 

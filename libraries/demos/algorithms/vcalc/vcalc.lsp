@@ -2,7 +2,7 @@
 ;;
 ;; File:	vcalc.lsp
 ;; Authors:	Bob Walton (walton@seas.harvard.edu)
-;; Date:	Wed Feb 13 04:34:52 EST 2013
+;; Date:	Wed Feb 13 06:38:57 EST 2013
 ;;
 ;; The authors have placed this program in the public
 ;; domain; they make no warranty and accept no liability
@@ -25,8 +25,8 @@
 
 (defvar *debug* (rest *posix-argv*))
 
-(defun dformat (&rest r)
-  (if *debug* (apply #'format t r)))
+(defun dformat (&rest args)
+  (if *debug* (apply #'format t args)))
 
 (defvar *line*)
 
