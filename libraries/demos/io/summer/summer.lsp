@@ -2,11 +2,17 @@
 ;;
 ;; File:	summer.lsp
 ;; Authors:	Bob Walton (walton@seas.harvard.edu)
-;; Date:	Mon Feb 11 07:17:52 EST 2013
+;; Date:	Wed Feb 13 06:31:42 EST 2013
 ;;
 ;; The authors have placed this program in the public
 ;; domain; they make no warranty and accept no liability
 ;; for this program.
+
+(setf *read-default-float-format* 'double-float)
+
+(defun read-double ()
+  (let ((r (read)))
+    (if (numberp r) (coerce r 'double-float) r)))
 
 (defvar *debug* (rest *posix-argv*))
 
@@ -29,7 +35,7 @@
 
     ; Read and sum numbers until non-number.
     ;
-    (loop while (numberp (setf token (read))) do
+    (loop while (numberp (setf token (read-double))) do
       (incf corrected-sum token))
 
     ; Skip `='.
@@ -38,7 +44,7 @@
 
     ; Read accountant computer's sum.
     ;
-    (assert (numberp (setf sum (read))))
+    (assert (numberp (setf sum (read-double))))
 
     ; Corrected-sum and sum are both approximations
     ; to numbers that are exact multiples of 0.01.
