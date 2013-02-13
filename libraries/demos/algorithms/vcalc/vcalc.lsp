@@ -2,11 +2,26 @@
 ;;
 ;; File:	vcalc.lsp
 ;; Authors:	Bob Walton (walton@seas.harvard.edu)
-;; Date:	Tue Feb 12 02:53:52 EST 2013
+;; Date:	Wed Feb 13 04:34:52 EST 2013
 ;;
 ;; The authors have placed this program in the public
 ;; domain; they make no warranty and accept no liability
 ;; for this program.
+
+; The only type information needed for correct
+; performance is setting *read-default-float-format*
+; and coercing input integers to double-float in
+; the string-scalar function.  All other type
+; information (all the declaims, declares, and
+; defstruct slot ; types) are purely for optimization.
+;
+; Most defstruct type information can be inferred by
+; the compiler, as functions like make-vector and
+; vector-x are compiler defined and permit a lot to
+; be inferred.  We assume this and declare only
+; slot defstuct types for non-numbers.
+;
+(setf *read-default-float-format* 'double-float)
 
 (defvar *debug* (rest *posix-argv*))
 
@@ -20,6 +35,7 @@
 ; suppressed, and for integers, the `.' suppressed.
 ;
 (defun scalar-string (number)
+  (declare (type double-float number))
   (loop with result = (format nil "~,14f" number)
 	for p = (length result) then (1- p)
 	while (char= #\0 (char result (1- p)))
@@ -34,9 +50,11 @@
   (ignore-errors
      (multiple-value-bind (r length)
                           (read-from-string string)
+	(assert (typep r '(or null integer
+			           double-float)))
         (if (and (>= length (length string))
 		 (numberp r))
-	  r))))
+          (coerce r 'double-float)))))
 
 ; Returns next token or *EOL* if end of line or *EOF* if
 ; end of file.  We make *EOL* and *EOF* be printable
@@ -145,6 +163,7 @@
 ; Get next token, check that it is a number, else error,
 ; and return the number.
 ;
+(declaim (ftype ( function () double-float) get-number))
 (defun get-number ()
   (let* ((token (get-token))
 	 (number (string-scalar token)))
@@ -160,7 +179,12 @@
       (error "`" token "' is not a variable")))
 
 (shadow 'vector)
-(defstruct vector x y)
+(defstruct vector
+  (x 0d0 :type double-float) 
+  (y 0d0 :type double-float))
+    ; Use of 0d0 rather than 0 is required because
+    ; *read-default-float-format* change does not take
+    ; effect soon enough, even if eval-when is used.
 
 (defun vector-string (v)
   (format nil "(~A, ~A)"
@@ -176,15 +200,23 @@
 (defun vector-subtract (v1 v2)
   (make-vector :x (- (vector-x v1) (vector-x v2))
 	       :y (- (vector-y v1) (vector-y v2))))
+(declaim (ftype ( function (vector vector)
+			   double-float)
+		vector-multiply))
 (defun vector-multiply (v1 v2)
   (+ (* (vector-x v1) (vector-x v2))
      (* (vector-y v1) (vector-y v2))))
 (defun scalar-multiply (s v)
+  (declare (type double-float s))
   (make-vector :x (* s (vector-x v))
 	       :y (* s (vector-y v))))
+(declaim (ftype ( function (vector) double-float)
+		vector-length))
 (defun vector-length (v)
   (sqrt (vector-multiply v v)))
 
+(declaim (ftype ( function (vector) double-float)
+		vector-angle))
 (defun vector-angle (v)
   ; We take extra care with angles that are
   ; multiples of 90 degrees.  This is only
@@ -204,6 +236,7 @@
 			        (vector-x v))))))
 
 (defun vector-rotate (v angle) 
+  (declare (type double-float angle))
   (let* ((k (floor angle 90))
 	 (j (mod k 4))
 	 sin cos)
@@ -232,10 +265,11 @@
 (defconstant *VECTOR*  3)
 
 (defstruct value
-  type	; *BOOLEAN*, *SCALAR*, or *VECTOR*.
-  b	; Value if *BOOLEAN*.
-  s	; Value if *SCALAR*.
-  v	; Value if *VECTOR*.
+  (type 0 :type integer)	  ; *BOOLEAN*, *SCALAR*,
+  			          ; or *VECTOR*.
+  (b nil :type symbol)		  ; Value if *BOOLEAN*.
+  (s 0d0 :type double-float)	  ; Value if *SCALAR*.
+  (v nil :type (or null vector))  ; Value if *VECTOR*.
   )
 
 (defun value-string (v)
