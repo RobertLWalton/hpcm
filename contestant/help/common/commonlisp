@@ -1,17 +1,23 @@
 Commonlisp Help		    Wed Feb 13 03:55:26 EST 2013
 
 
-Commonlisp Language Program Stucture
----------- -------- ------- --------
+Commonlisp Language Program Structure
+---------- -------- ------- ---------
 
 Typical program structure including end of file detect-
 ion, finding symbols such as `*' that end a string of
 numbers, and debugging is:
 
+    (setf *read-default-float-format* 'double-float)
+
+    (defun read-double (&rest args)
+      (let ((r (apply #'read args)))
+	(if (numberp r) (coerce r 'double-float) r)))
+
     (defvar *debug* (rest *posix-argv*))
 
-    (defun dformat (&rest r)
-      (if *debug* (apply #'format t r)))
+    (defun dformat (&rest args)
+      (if *debug* (apply #'format t args)))
 
     (defvar *line*)
 
@@ -32,7 +38,8 @@ numbers, and debugging is:
 
 	; Read a string of integers ending in `*'.
 	;
-	(loop while (numberp (setf token (read))) do
+	(loop while (numberp (setf token
+				   (read-double))) do
 	  . . . . .)
 
 	; Skip `*'.
@@ -56,30 +63,46 @@ numbers, and debugging is:
 
     ))
 
+In COMMONLISP, if you want numeric computations to be
+done in double precision floating point, instead of
+single precision, you must take special measures to read
+numbers as `double-float's.  This is done above by set-
+ting *read-default-float-format* to 'double-float and
+coercing any integers read to double-floats.  So above
+the read-double function is used when you want numbers
+read to be floating point, while the ordinary read func-
+tion can be used to read integers.  If all the input
+numbers are double precision, the computations done with
+input numbers are double precision - but one can still
+get into trouble if you write things like `(atan 1 1)'
+in your code hoping to get PI/4, as that will produce a
+single precision result, and if you want double preci-
+sion, you need to write `(atan 1d0 1d0)'.
+
 All too frequently one has a conflict between a defvar
-or defun defined name and a name already defined by
-the COMMONLISP standard, which gives an error message
-about trying to redefine a name that is already defined
-in the `COMMON-LISP' package (this error message may
-mention a `lock' on the COMMON-LISP package).  There are
-two ways around this: changing your name, or shadowing.
-One good rule is to always begin and end defvar names
-with `*', so we use `*debug*' which is not defined by
-the standard, instead of `debug' which IS defined by the
-standard.  Shadowing is done as follows:
+or defun defined name and a name already defined by the
+COMMONLISP standard, which gives an error message about
+trying to redefine a name that is already defined in the
+`COMMON-LISP' package (this error message may mention a
+`lock' on the COMMON-LISP package).  There are two ways
+around this: changing your name, or shadowing.  One good
+rule is to always begin and end defvar names with `*',
+so we use `*debug*' which is not defined by the stand-
+ard, instead of `debug' which IS defined by the stand-
+ard.  Shadowing is done as follows:
 
     (shadow 'error)
     (defun error ...)
 
-Without the `shadow' the defun will fail because it
-tries to redefine the COMMON-LISP package symbol
-`ERROR'.  You should be aware, however, that shadowing
-is not a good solution when writing large packages of
-commercial code, as one tends to forget what one has
-shadowed and get confused.  But this is not the situa-
-tion of a programming contest solution where you are
-working in the default COMMON-LISP-USER package (which
-imports the COMMON-LISP package).
+Without the `shadow' defun will fail because it tries to
+redefine the COMMON-LISP package symbol `ERROR'.  You
+should be aware, however, that shadowing is not a good
+solution when writing large packages of commercial code,
+as one tends to forget what one has shadowed and get
+confused.  But this is not the situation of a program-
+ming contest solution where you are working in the
+default COMMON-LISP-USER package (which imports the
+COMMON-LISP package).
 
 
 Input
@@ -95,24 +118,28 @@ special output if the input contains a formatting error.
 Do not waste time checking for input errors when you do
 not have to.
 
-Test cases begin with a test case name line that is
-read by the `(read-line nil nil)'.  The extra arguments
-`nil nil' cause read-line to return nil on an end of
-file, so the outer loop above processes one test case at
-a time.  As soon as the test case name is successfully
+Test cases begin with a test case name line that is read
+by the `(read-line nil nil)'.  The extra two nil argu-
+ments cause read-line to return nil on an end of file,
+so the outer loop above processes one test case at a
+time.  As soon as the test case name is successfully
 read into `*line*', it is printed by `(format t "~A"
 *line*)'.  Notice that this is the only read statement
-that has the extra `nil t' arguments, as it is the only
-one where you expect to have an end of file.
+that has the extra nil arguments, as it is the only one
+where you expect to have an end of file.
 
 After reading and printing the test case name line, the
-rest of the test case data is read with `read'.  This
-data may consist of numbers, perhaps with a few
-characters like `*' thrown in to indicate the end of a
-sequence of numbers.  The non-numbers read as symbols.
+rest of the test case data is read with `read-double' or
+`read.  This data may consist of numbers with a few
+symbols like `*' thrown in to indicate the end of a
+sequence of numbers.  Non-numbers read as symbols.  If
+you want the numbers to be floating point, use read-
+double', as described in the `Program Structure' sec-
+tion.  If you are just reading integers, use just
+`read'.
 
 See the `summer' demonstration problem solution which
-reads numbers.
+reads floating point numbers.
 
 For some problems there are no test case name lines but
 instead each test case has one input line containing
@@ -166,10 +193,13 @@ Output can be written with `(format t ...)' using the
 formats are "~,3F" to print a number with exactly 3
 decimal places in as few columns as possible, "~10,3F"
 to print the number right adjusted in 10 columns, "~10A"
-to print a string right adjusted in 10 columns, and
-"~10@A" to print a string LEFT adjusted in 10 columns.
-Here the numbers 3 and 10 are merely representative, and
-can be replaced by any other non-zero positive integers.
+to print a string or symbol right adjusted in 10
+columns, and "~10@A" to print a string or symbol LEFT
+adjusted in 10 columns.  Here the numbers 3 and 10 are
+merely representative, and can be replaced by any other
+non-zero positive integers.  The `~A' format does NOT
+print any quotes or escaped characters for strings or
+symbols.
 
 See the `summer' demonstration problem solution which
 outputs floating point `double's.
@@ -183,7 +213,7 @@ entry for .lsp file in the problem `pppp' directory
 creates the file `pppp' whose contents are
 
 	#! /bin/sh
-	exec sbcl --script pppp.lsp
+	exec sbcl --script pppp.lsp "$@"`
 
 which compiles and evaluates the `pppp.lsp' COMMONLISP
 code file.
@@ -197,11 +227,11 @@ NOT be passed ANY arguments.  A standard debugging
 technique is to output extra debugging information if
 and only if your program is passed an argument.
 
-The above program defines `debug' to be true if and
+The above program defines `*debug*' to be true if and
 only if the program is called with one or more argu-
-ments, and defines dprintf to do what printf does if
-and only if `debug' is true.  Thus dprintf can be used
-to print debugging information.
+ments, and defines dformat to do what `(dformat t ...)'
+does if and only if `*debug*' is true.  Thus dformat can
+be used to print debugging information.
 
 Debugging is best done with information printed by
 `dformat', and not with the builtin lisp debugger.  The
@@ -236,8 +266,8 @@ edition www.cs.cmu.edu/Groups/AI/html/cltl/clm/clm.html
 The following is an extract from this reference of
 details needed to use the functions mentioned above,
 and also a few numeric constants.  Here we assume you
-already know something about how to use `scanf' and
-`printf', so we do not have to explain them from
+already know something about how to use `read' and
+`format', so we do not have to explain them from
 scratch.
 
 (read-line nil nil)
@@ -248,15 +278,15 @@ scratch.
 (read)
 (read nil nil)
 
-    Reads the next input token which should be either
-    a symbol or a number.  If a symbol, it will be
-    converted to upper case.  The form with two nil
-    arguments returns nil on end of file, while the
-    form with no extra arguments may signal an error
-    on end of file (or may not).  If a whitespace
-    characters such as a single space or line feed
-    terminates the token, that space character will be
-    skipped over.
+    Reads the next input token which should be either a
+    symbol or a number.  If a symbol, it will be conver-
+    ted to upper case.  The form with two nil arguments
+    returns nil on end of file, while the form with no
+    extra arguments signals an error on end of file
+    (which may cause the program to terminate without
+    any error messages).  If a whitespace characters
+    such as a single space or line feed terminates the
+    token, that space character will be skipped over.
 
 (read-char)
 (defvar *NUL* (code-char 0))
@@ -264,16 +294,16 @@ scratch.
 
     Reads one character; the form with extra arguments
     returns a NUL character (ASCII code 0) on end of
-    file, while the form without arguments may signal
-    an error on end of file (or may not).
+    file, while the form without arguments signals
+    an error on end of file.
 
 (peek-char)
-(peek-char nil nil *NUL*)
+(peek-char nil nil nil *NUL*)
     Ditto but does not skip over the character read.
 
-(format t f ...)
+(format t FORM ...)
 
-    Prints the format f with replacements for ~...
+    Prints the format FORM with replacements for ~...
     control sequences.  Some useful control sequences
     are the following, in which w and p stand for
     sequences of decimal digits, where w is used for
@@ -316,7 +346,7 @@ scratch.
     ~w@A	Ditto but outputs the string or symbol
     		LEFT adjusted in w columns.
 
-    ~C		Outputs a characteras an ASCII character
+    ~C		Outputs a characters an ASCII character
     		with no spaces before or after.
 
     ~%		Outputs a line feed.
@@ -346,11 +376,9 @@ file.
 RCS Info (may not be true date or author):
 
     $Author: walton $
-    $Date: 2013/02/13 13:30:57 $
+    $Date: 2013/02/13 18:33:51 $
     $RCSfile: commonlisp,v $
-    $Revision: 1.11 $
-
-sbcl --eval '(setf *evaluator-mode* :interpret)' --load reverser.lsp <sample.in
+    $Revision: 1.12 $
 
 File:		commonlisp
 Author:		Bob Walton <walton@deas.harvard.edu>
@@ -363,6 +391,6 @@ file.
 RCS Info (may not be true date or author):
 
     $Author: walton $
-    $Date: 2013/02/13 13:30:57 $
+    $Date: 2013/02/13 18:33:51 $
     $RCSfile: commonlisp,v $
-    $Revision: 1.11 $
+    $Revision: 1.12 $
