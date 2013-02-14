@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Feb 14 04:08:37 EST 2013
+# Date:		Thu Feb 14 08:40:56 EST 2013
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2013/02/14 11:44:15 $
+#   $Date: 2013/02/14 13:58:43 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.43 $
+#   $Revision: 1.44 $
 
 # `make help.pdf' and `make demos.pdf' make printouts of
 # all the help and demos files respectively.  Note that
@@ -33,8 +33,6 @@
 # subdirectory.
 
 all:	modes STL_doc
-
-all_for_web:	help_index all_demos_index
 
 pdf:	help.pdf \
 	c_io_demos.pdf c_algorithm_demos.pdf \
@@ -225,8 +223,8 @@ web:	web_do
 	rm -rf web web.tar
 	make clean
 	mkdir web
+	make WEB=web help_index all_demos_index
 	make pdf
-	make WEB=web all_for_web
 	mkdir web/algorithms
 	chmod 755 web/algorithms
 	cp -p ../../wiki/print/*.pdf web/algorithms
