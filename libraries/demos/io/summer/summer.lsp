@@ -2,7 +2,7 @@
 ;;
 ;; File:	summer.lsp
 ;; Authors:	Bob Walton (walton@seas.harvard.edu)
-;; Date:	Wed Feb 13 06:31:42 EST 2013
+;; Date:	Thu Feb 14 02:18:17 EST 2013
 ;;
 ;; The authors have placed this program in the public
 ;; domain; they make no warranty and accept no liability
@@ -57,7 +57,7 @@
     ; If debugging, look at corrected-sum and sum
     ; at maximum precision.
     ;
-    (dformat "SUM = ~,16F, CORRECTED SUM = ~,16F\n"
+    (dformat "SUM = ~,16F, CORRECTED SUM = ~,16F~%"
 	     sum corrected-sum )
 
     ; Print output.
