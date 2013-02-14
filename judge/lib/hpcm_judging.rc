@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Feb 12 08:08:08 EST 2013
+# Date:		Thu Feb 14 02:28:53 EST 2013
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2013/02/12 13:08:44 $
+#   $Date: 2013/02/14 07:33:14 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.255 $
+#   $Revision: 1.256 $
 
 # Table of Contents:
 #
@@ -47,6 +47,11 @@
 # the file containing the `source' statement can itself
 # be sourced with any descendant directory as the
 # current directory.
+#
+# For programs intended to run outside a judging
+# directory, this file is sourced directly without
+# being modified.  The HPCM_STANDALONE varible is set
+# to `yes' in this case and `no' otherwise.
 #
 # This file is sourced by code in judging_common.tcl.
 # See `Inline Code' in that file.
@@ -2056,8 +2061,13 @@ array set authentication_keys {
 #
 # TCL list of allowed extensions for submitted programs:
 #
-# set allowed_extensions {.c .cc .java .lsp}
-set allowed_extensions {.c .cc .java}
+if { $HPCM_STANDALONE } {
+    # All supported languages
+    set allowed_extensions {.c .cc .java .lsp}
+} else {
+    # ACM default
+    set allowed_extensions {.c .cc .java}
+}
 
 # Allowed Qualifiers:
 #

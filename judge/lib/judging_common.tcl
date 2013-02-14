@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Feb  2 12:12:57 EST 2012
+# Date:		Thu Feb 14 02:30:08 EST 2013
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2012/02/02 17:21:45 $
+#   $Date: 2013/02/14 07:33:14 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.157 $
+#   $Revision: 1.158 $
 #
 
 # Table of Contents
@@ -2564,8 +2564,11 @@ proc parse_block_eval_if \
 if { [catch {
 
     if { [info exists judging_directory] } {
+        set HPCM_STANDALONE yes
 	source_file $lib_directory/hpcm_judging.rc
     } else {
+
+        set HPCM_STANDALONE no
 
 	# Locate the directory containing the judging
 	# parameters file.  This should be unique.  If
