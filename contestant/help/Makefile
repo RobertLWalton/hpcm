@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Jan 15 01:19:38 EST 2013
+# Date:		Thu Feb 14 04:08:37 EST 2013
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2013/01/15 06:33:56 $
+#   $Date: 2013/02/14 11:44:15 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.42 $
+#   $Revision: 1.43 $
 
 # `make help.pdf' and `make demos.pdf' make printouts of
 # all the help and demos files respectively.  Note that
@@ -32,10 +32,15 @@
 # web.tar contains the contents of the `web'
 # subdirectory.
 
-all:	emailsh modes STL_doc
+all:	modes STL_doc
 
-pdf:	help.pdf demos.pdf \
-	advanced_help.pdf advanced_demos.pdf
+all_for_web:	help_index all_demos_index
+
+pdf:	help.pdf \
+	c_io_demos.pdf c_algorithm_demos.pdf \
+	cc_io_demos.pdf cc_algorithm_demos.pdf \
+	java_io_demos.pdf java_algorithm_demos.pdf \
+	lsp_io_demos.pdf lsp_algorithm_demos.pdf
 
 # Kill all implicit rules and make new rule:
 #
@@ -123,20 +128,46 @@ advanced_help.ps:	advanced_help_index
 	../../judge/bin/fprint > advanced_help.ps -o \
 	    `cat advanced_help_index.files`
 
-demos_index:	../../problem_library/demos_index
-	rm -f demos_index \
-	      demos_index.html \
-	      demos_index.files
+# If we replace %_demos_index by %demos_index we get
+# circularity with ../../problem_library/demos_index.
+#
+%_demos_index:	../../problem_library/demos_index
+	rm -f $*_demos_index \
+	      $*_demos_index.html \
+	      $*_demos_index.files
 	../../judge/bin/makehelp \
-	    demos_index "DEMOS INDEX" \
+	    $*_demos_index ${DEMOS_TITLE} \
 	    ../../problem_library/demos_index ${WEB} \
-	    c java
+	    $*_help
 
+%_demos.ps:	%_demos_index
+	rm -rf $*_demos.ps
+	../../judge/bin/fprint > $*_demos.ps -o \
+	    `egrep -v '.*\.(in|test).*' \
+	           $*_demos_index.files`
 
-demos.ps:	demos_index
-	rm -rf demos.ps
-	../../judge/bin/fprint > demos.ps -o \
-	    `grep -v 'sample.*' demos_index.files`
+c_io_demos_index: \
+    DEMOS_TITLE = "C IO DEMOS INDEX"
+c_algorithm_demos_index: \
+    DEMOS_TITLE = "C ALGORITHM DEMOS INDEX"
+
+cc_io_demos_index: \
+    DEMOS_TITLE = "C++ IO DEMOS INDEX"
+cc_algorithm_demos_index: \
+    DEMOS_TITLE = "C++ ALGORITHM DEMOS INDEX"
+
+java_io_demos_index: \
+    DEMOS_TITLE = "JAVA IO DEMOS INDEX"
+java_algorithm_demos_index: \
+    DEMOS_TITLE = "JAVA ALGORITHM DEMOS INDEX"
+
+lsp_io_demos_index: \
+    DEMOS_TITLE = "COMMONLISP IO DEMOS INDEX"
+lsp_algorithm_demos_index: \
+    DEMOS_TITLE = \
+        "COMMONLISP ALGORITHM DEMOS INDEX"
+
+all_demos_index: DEMOS_TITLE = "DEMOS INDEX"
 
 advanced_demos_index:	../../problem_library/index
 	rm -f advanced_demos_index \
@@ -194,7 +225,8 @@ web:	web_do
 	rm -rf web web.tar
 	make clean
 	mkdir web
-	make WEB=web all pdf
+	make pdf
+	make WEB=web all_for_web
 	mkdir web/algorithms
 	chmod 755 web/algorithms
 	cp -p ../../wiki/print/*.pdf web/algorithms
@@ -215,9 +247,10 @@ clean:
 	       email/sh/hpcm_clisp \
 	       email/sh/hpcm_clisp.lsp \
 	       web web.tar \
-	       help_index demos_index \
+	       *help_index *demos_index \
 	       formal_help_index \
 	       advanced_help_index \
 	       advanced_demos_index \
 	       *.files *.ps *.pdf \
+	       *_index.html \
 	       STL_doc
