@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Feb 14 08:40:56 EST 2013
+# Date:		Thu Feb 14 09:38:19 EST 2013
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2013/02/14 13:58:43 $
+#   $Date: 2013/02/14 15:48:21 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.44 $
+#   $Revision: 1.45 $
 
 # `make help.pdf' and `make demos.pdf' make printouts of
 # all the help and demos files respectively.  Note that
@@ -35,10 +35,18 @@
 all:	modes STL_doc
 
 pdf:	help.pdf \
-	c_io_demos.pdf c_algorithm_demos.pdf \
-	cc_io_demos.pdf cc_algorithm_demos.pdf \
-	java_io_demos.pdf java_algorithm_demos.pdf \
-	lsp_io_demos.pdf lsp_algorithm_demos.pdf
+	c_basic_io_demos.pdf \
+	c_advanced_io_demos.pdf \
+	c_algorithm_demos.pdf \
+	cc_basic_io_demos.pdf \
+	cc_advanced_io_demos.pdf \
+	cc_algorithm_demos.pdf \
+	java_basic_io_demos.pdf \
+	java_advanced_io_demos.pdf \
+	java_algorithm_demos.pdf \
+	lsp_basic_io_demos.pdf \
+	lsp_advanced_io_demos.pdf \
+	lsp_algorithm_demos.pdf
 
 # Kill all implicit rules and make new rule:
 #
@@ -144,23 +152,31 @@ advanced_help.ps:	advanced_help_index
 	    `egrep -v '.*\.(in|test).*' \
 	           $*_demos_index.files`
 
-c_io_demos_index: \
-    DEMOS_TITLE = "C IO DEMOS INDEX"
+c_basic_io_demos_index: \
+    DEMOS_TITLE = "C BASIC IO DEMOS INDEX"
+c_advanced_io_demos_index: \
+    DEMOS_TITLE = "C ADVANCED IO DEMOS INDEX"
 c_algorithm_demos_index: \
     DEMOS_TITLE = "C ALGORITHM DEMOS INDEX"
 
-cc_io_demos_index: \
-    DEMOS_TITLE = "C++ IO DEMOS INDEX"
+cc_basic_io_demos_index: \
+    DEMOS_TITLE = "C++ BASIC IO DEMOS INDEX"
+cc_advanced_io_demos_index: \
+    DEMOS_TITLE = "C++ ADVANCED IO DEMOS INDEX"
 cc_algorithm_demos_index: \
     DEMOS_TITLE = "C++ ALGORITHM DEMOS INDEX"
 
-java_io_demos_index: \
-    DEMOS_TITLE = "JAVA IO DEMOS INDEX"
+java_basic_io_demos_index: \
+    DEMOS_TITLE = "JAVA BASIC IO DEMOS INDEX"
+java_advanced_io_demos_index: \
+    DEMOS_TITLE = "JAVA ADVANCED IO DEMOS INDEX"
 java_algorithm_demos_index: \
     DEMOS_TITLE = "JAVA ALGORITHM DEMOS INDEX"
 
-lsp_io_demos_index: \
-    DEMOS_TITLE = "COMMONLISP IO DEMOS INDEX"
+lsp_basic_io_demos_index: \
+    DEMOS_TITLE = "COMMONLISP BASIC IO DEMOS INDEX"
+lsp_advanced_io_demos_index: \
+    DEMOS_TITLE = "COMMONLISP ADVANCED IO DEMOS INDEX"
 lsp_algorithm_demos_index: \
     DEMOS_TITLE = \
         "COMMONLISP ALGORITHM DEMOS INDEX"
