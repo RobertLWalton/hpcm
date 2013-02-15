@@ -2,7 +2,7 @@
 ;;
 ;; File:	vcalc.lsp
 ;; Authors:	Bob Walton (walton@seas.harvard.edu)
-;; Date:	Fri Feb 15 04:04:51 EST 2013
+;; Date:	Fri Feb 15 07:43:02 EST 2013
 ;;
 ;; The authors have placed this program in the public
 ;; domain; they make no warranty and accept no liability
@@ -79,7 +79,7 @@
 ; If character is separator return associated
 ; string, else return nil.
 ;
-(defun is-separator ( c )
+(defun is-separator (c)
   (cond ((char= c #\() "(")
         ((char= c #\)) ")")
         ((char= c #\,) ",")
@@ -120,7 +120,8 @@
 	for s = (is-separator c)
 	when s do
 	  (setf *last-token* s)
-	  (read-char)
+	  (if (string/= *last-token* *EOF*)
+	    (read-char))
 	  (return)
 	else when (or (not (graphic-char-p c))
 		      (char= c #\Space))
@@ -131,7 +132,7 @@
 			   :element-type 'string-char
 			   :fill-pointer 0
 			   :adjustable t)
-		for c = (peek-char nil)
+		for c = (peek-char nil nil nil *NUL*)
 		until (is-separator c)
 		until (char= c #\Space)
 		while (graphic-char-p c)
@@ -171,7 +172,7 @@
 ; Get next token, check that it is a number, else error,
 ; and return the number.
 ;
-(declaim (ftype ( function () double-float) get-number))
+(declaim (ftype (function () double-float) get-number))
 (defun get-number ()
   (let* ((token (get-token))
 	 (number (string-scalar token)))
@@ -208,8 +209,8 @@
 (defun vector-subtract (v1 v2)
   (make-vector :x (- (vector-x v1) (vector-x v2))
 	       :y (- (vector-y v1) (vector-y v2))))
-(declaim (ftype ( function (vector vector)
-			   double-float)
+(declaim (ftype (function (vector vector)
+			  double-float)
 		vector-multiply))
 (defun vector-multiply (v1 v2)
   (+ (* (vector-x v1) (vector-x v2))
@@ -218,12 +219,12 @@
   (declare (type double-float s))
   (make-vector :x (* s (vector-x v))
 	       :y (* s (vector-y v))))
-(declaim (ftype ( function (vector) double-float)
+(declaim (ftype (function (vector) double-float)
 		vector-length))
 (defun vector-length (v)
   (sqrt (vector-multiply v v)))
 
-(declaim (ftype ( function (vector) double-float)
+(declaim (ftype (function (vector) double-float)
 		vector-angle))
 (defun vector-angle (v)
   ; We take extra care with angles that are
@@ -240,14 +241,15 @@
 	((= 0 (vector-y v))
 	 (if (> (vector-x v) 0) 0 +180))
 	(t
-	  (* (/ 180.0 PI) (atan (vector-y v)
+	  (* (/ 180 PI) (atan (vector-y v)
 			        (vector-x v))))))
 
 (defun vector-rotate (v angle) 
   (declare (type double-float angle))
   (let* ((k (floor angle 90))
 	 (j (mod k 4))
-	 sin cos)
+	 (sin 0d0) (cos 0d0))
+    (declare (type fixnum k j) (type double-float sin cos))
     ; We take extra care with angles that are
     ; multiples of 90 degrees.  This is only
     ; necessary if one is using exact equality
@@ -255,13 +257,13 @@
     ; approximate equality.
     ;
     (cond ((/= angle (* 90 k))
-	   (setf angle (* (/ PI 180.0) angle))
+	   (setf angle (* (/ PI 180) angle))
 	   (setf sin (sin angle))
 	   (setf cos (cos angle)))
-	  ((= j 0) (setf sin 0 cos 1))
-	  ((= j 1) (setf sin 1 cos 0))
-	  ((= j 2) (setf sin 0 cos -1))
-	  ((= j 3) (setf sin -1 cos 0)))
+	  ((= j 0) (setf sin 0d0 cos 1d0))
+	  ((= j 1) (setf sin 1d0 cos 0d0))
+	  ((= j 2) (setf sin 0d0 cos -1d0))
+	  ((= j 3) (setf sin -1d0 cos 0d0)))
     (make-vector :x (- (* cos (vector-x v))
 		       (* sin (vector-y v)))
 		 :y (+ (* sin (vector-x v))
@@ -586,7 +588,7 @@
 
     (setf (gethash variable *variable-table*) v1)
 
-    (dformat "ASSIGN ~A TO ~A"
+    (dformat "ASSIGN ~A TO ~A~%"
 	     (value-string v1) variable)))
 
 ; Main loop to read and execute a statement.
