@@ -2,7 +2,7 @@
 ;;
 ;; File:	vcalc.lsp
 ;; Authors:	Bob Walton (walton@seas.harvard.edu)
-;; Date:	Fri Feb 15 07:43:02 EST 2013
+;; Date:	Fri Feb 15 07:47:24 EST 2013
 ;;
 ;; The authors have placed this program in the public
 ;; domain; they make no warranty and accept no liability
@@ -249,7 +249,8 @@
   (let* ((k (floor angle 90))
 	 (j (mod k 4))
 	 (sin 0d0) (cos 0d0))
-    (declare (type fixnum k j) (type double-float sin cos))
+    (declare (type fixnum k j)
+	     (type double-float sin cos))
     ; We take extra care with angles that are
     ; multiples of 90 degrees.  This is only
     ; necessary if one is using exact equality
