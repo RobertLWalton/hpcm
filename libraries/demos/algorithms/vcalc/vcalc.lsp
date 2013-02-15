@@ -2,7 +2,7 @@
 ;;
 ;; File:	vcalc.lsp
 ;; Authors:	Bob Walton (walton@seas.harvard.edu)
-;; Date:	Wed Feb 13 06:38:57 EST 2013
+;; Date:	Fri Feb 15 04:04:51 EST 2013
 ;;
 ;; The authors have placed this program in the public
 ;; domain; they make no warranty and accept no liability
@@ -47,14 +47,12 @@
 ; nil if it does not represent a number.
 ;
 (defun string-scalar (string)
-  (ignore-errors
-     (multiple-value-bind (r length)
-                          (read-from-string string)
-	(assert (typep r '(or null integer
-			           double-float)))
-        (if (and (>= length (length string))
-		 (numberp r))
-          (coerce r 'double-float)))))
+     (multiple-value-bind
+       (r length) (ignore-errors
+		    (read-from-string string))
+        (if (and (numberp r)
+		 (>= length (length string)))
+          (coerce r 'double-float))))
 
 ; Returns next token or *EOL* if end of line or *EOF* if
 ; end of file.  We make *EOL* and *EOF* be printable
@@ -67,7 +65,7 @@
 (defvar *EOF* "(END-OF-FILE)")
 ;
 (defvar *backup* nil)
-    ; Set backup = t to backup on token.
+    ; Set *backup* = t to backup on token.
 (defvar *line-number* 0)
     ; Current line number; 1, 2, 3, ...
 ;
@@ -94,19 +92,29 @@
 	  (setf *backup* nil)
 	  (return-from get-token *last-token*))
 	((string= *last-token* *EOL*)
+	 (incf *line-number*)
 	 (loop
+	   with in-comment = nil
+	   for c = (peek-char nil nil nil *NUL*)
 	   do
-	   (incf *line-number*)
 	   (cond
-	     ((char/= #\/ (peek-char t nil nil *NUL*))
+	     ((char= c *NUL*)
 	      (return))
-	     (t
+	     ((char= c #\Newline)
+	      (read-char)
+	      (incf *line-number*)
+	      (setf in-comment nil))
+	     ((char= c #\/)
 	      (read-char)
 	      (if (char/= #\/ (read-char))
 		  (error "line begins with `/'"
 			 " not followed by a `/'"))
-	      (loop until (char= (read-char)
-				 #\Newline)))))))
+	      (setf in-comment t))
+	     ((char= c #\Space)
+	      (read-char))
+	     ((graphic-char-p c)
+	      (if in-comment (read-char) (return)))
+	     (t (read-char))))))
 
   (loop for c = (peek-char nil nil nil *NUL*)
 	for s = (is-separator c)
