@@ -1,4 +1,4 @@
-Commonlisp Help		    Wed Feb 13 03:55:26 EST 2013
+Commonlisp Help		    Fri Feb 15 10:07:14 EST 2013
 
 
 Commonlisp Language Program Structure
@@ -12,7 +12,9 @@ numbers, and debugging is:
 
     (defun read-double (&rest args)
       (let ((r (apply #'read args)))
-	(if (numberp r) (coerce r 'double-float) r)))
+	(if (numberp r)
+	    (coerce r 'double-float)
+	    r)))
 
     (defvar *debug* (rest *posix-argv*))
 
@@ -35,8 +37,8 @@ numbers, and debugging is:
 	;
 	(setf token (read))
         . . . . .
-
-	; Read a string of integers ending in `*'.
+
+	; Read a string of double-floats ending in `*'.
 	;
 	(loop while (numberp (setf token
 				   (read-double))) do
@@ -62,7 +64,7 @@ numbers, and debugging is:
 	(format t ... )
 
     ))
-
+
 In COMMONLISP, if you want numeric computations to be
 done in double precision floating point, instead of
 single precision, you must take special measures to read
@@ -74,10 +76,10 @@ read to be floating point, while the ordinary read func-
 tion can be used to read integers.  If all the input
 numbers are double precision, the computations done with
 input numbers are double precision - but one can still
-get into trouble if you write things like `(atan 1 1)'
-in your code hoping to get PI/4, as that will produce a
-single precision result, and if you want double preci-
-sion, you need to write `(atan 1d0 1d0)'.
+get into trouble if you write things like `(cos 0)' in
+your code as the value returned will be a single float
+(use `(cos 0d0)' instead).  However the constant PI is a
+double-float.
 
 All too frequently one has a conflict between a defvar
 or defun defined name and a name already defined by the
@@ -93,16 +95,16 @@ ard.  Shadowing is done as follows:
 
     (shadow 'error)
     (defun error ...)
-
+
 Without the `shadow' defun will fail because it tries to
 redefine the COMMON-LISP package symbol `ERROR'.  You
 should be aware, however, that shadowing is not a good
 solution when writing large packages of commercial code,
 as one tends to forget what one has shadowed and get
 confused.  But this is not the situation of a program-
-ming contest solution where you are working in the
-default COMMON-LISP-USER package (which imports the
-COMMON-LISP package).
+ming contest solution where you are working on a small
+program in the default COMMON-LISP-USER package (which
+imports the COMMON-LISP package).
 
 
 Input
@@ -122,12 +124,12 @@ Test cases begin with a test case name line that is read
 by the `(read-line nil nil)'.  The extra two nil argu-
 ments cause read-line to return nil on an end of file,
 so the outer loop above processes one test case at a
-time.  As soon as the test case name is successfully
-read into `*line*', it is printed by `(format t "~A"
-*line*)'.  Notice that this is the only read statement
-that has the extra nil arguments, as it is the only one
-where you expect to have an end of file.
-
+time.  Notice that this is the only read statement that
+has the extra nil arguments, as it is the only one where
+you expect to have an end of file.  As soon as the test
+case name is successfully read into `*line*', it is
+printed by `(format t "~A~%" *line*)'.
+
 After reading and printing the test case name line, the
 rest of the test case data is read with `read-double' or
 `read.  This data may consist of numbers with a few
@@ -161,12 +163,12 @@ in which `read-char' reads one character and returns
 that character or returns *NUL* on end of file.  Another
 useful function call is
 
-    (setf c (peek-char t nil nil *NUL*))
+    (setf c (peek-char nil nil nil *NUL*))
 
-which skips whitespace and returns the next character
-WITHOUT skipping that character in the input.  *NUL*
-is returned on end of file.
-
+which returns the next character WITHOUT skipping that
+character in the input.  *NUL* is returned on end of
+file.
+
 See the `vcalc' demonstration problem solution which
 reads characters one at a time.
 
@@ -176,7 +178,9 @@ Output
 
 Output is written to the standard output; you MUST NOT
 open any file for output; you MUST NOT write to the
-standard error output.
+standard error output.  For the `format' function, `t'
+can be used to denote the standard output stream, as in
+`(format t ...)'.
 
 In general, to be correct your program must produce
 EXACTLY the one and only correct sequence of output
@@ -189,21 +193,21 @@ case and use only a single space character as a separa-
 tor unless instructed to line things up in columns.
 
 Output can be written with `(format t ...)' using the
-`~A' format to print non-numbers.  Some other useful
-formats are "~,3F" to print a number with exactly 3
-decimal places in as few columns as possible, "~10,3F"
-to print the number right adjusted in 10 columns, "~10A"
-to print a string or symbol right adjusted in 10
-columns, and "~10@A" to print a string or symbol LEFT
-adjusted in 10 columns.  Here the numbers 3 and 10 are
-merely representative, and can be replaced by any other
-non-zero positive integers.  The `~A' format does NOT
-print any quotes or escaped characters for strings or
-symbols.
+`~A' directive to print non-numbers and the `~%' direc-
+tive to output an end of line.  Some other useful direc-
+tives are `~,3F' to print a number with exactly 3 deci-
+mal places in as few columns as possible, `~10,3F' to
+print the number right adjusted in 10 columns, `~10A' to
+print a string or symbol right adjusted in 10 columns,
+and `~10@A' to print a string or symbol LEFT adjusted in
+10 columns.  Here the numbers 3 and 10 are merely repre-
+sentative, and can be replaced by any other non-zero
+positive integers.  The `~A' directive does NOT print
+any quotes or escaped characters for strings or symbols.
 
 See the `summer' demonstration problem solution which
 outputs floating point `double's.
-
+
 
 Execution
 ---------
@@ -213,10 +217,17 @@ entry for .lsp file in the problem `pppp' directory
 creates the file `pppp' whose contents are
 
 	#! /bin/sh
-	exec sbcl --script pppp.lsp "$@"`
+	exec sbcl --script pppp.lsp "$@"
 
 which compiles and evaluates the `pppp.lsp' COMMONLISP
 code file.
+
+Note that the sbcl implementation of COMMONLISP run with
+the --script option terminates the program without any
+error messages on an end of file condition for the
+standard input stream.  Thus if you use just `(read)'
+without extra arguments and hit an end of file the
+program will terminate without further output.
 
 
 Debugging
@@ -229,10 +240,10 @@ and only if your program is passed an argument.
 
 The above program defines `*debug*' to be true if and
 only if the program is called with one or more argu-
-ments, and defines dformat to do what `(dformat t ...)'
+ments, and defines dformat to do what `(format t ...)'
 does if and only if `*debug*' is true.  Thus dformat can
 be used to print debugging information.
-
+
 Debugging is best done with information printed by
 `dformat', and not with the builtin lisp debugger.  The
 exception is debugging programs that crash or go into
@@ -269,7 +280,7 @@ and also a few numeric constants.  Here we assume you
 already know something about how to use `read' and
 `format', so we do not have to explain them from
 scratch.
-
+
 (read-line nil nil)
 
     Reads and returns the next line as a string, or
@@ -282,11 +293,10 @@ scratch.
     symbol or a number.  If a symbol, it will be conver-
     ted to upper case.  The form with two nil arguments
     returns nil on end of file, while the form with no
-    extra arguments signals an error on end of file
-    (which may cause the program to terminate without
-    any error messages).  If a whitespace characters
-    such as a single space or line feed terminates the
-    token, that space character will be skipped over.
+    extra arguments signals an end of file condition.
+    If a whitespace character such as a single space or
+    line feed terminates the token, that space character
+    will be skipped over.
 
 (read-char)
 (defvar *NUL* (code-char 0))
@@ -300,22 +310,22 @@ scratch.
 (peek-char)
 (peek-char nil nil nil *NUL*)
     Ditto but does not skip over the character read.
+
+(format t CONTROL-STRING ...)
 
-(format t FORM ...)
+    Prints the CONTROL-STRING with replacements for ~...
+    directives.  Some useful directives are the follow-
+    ing, in which w and p stand for sequences of decimal
+    digits, where w is used for `widths' and p for
+    `precisions':
 
-    Prints the format FORM with replacements for ~...
-    control sequences.  Some useful control sequences
-    are the following, in which w and p stand for
-    sequences of decimal digits, where w is used for
-    `widths' and p for `precisions':
+    ~D		Outputs an integer with no spaces before
+		or after.
 
-    ~D		Outputs an value as a decimal integer
-    		with no spaces before or after.
+    ~wD		Outputs an integer right adjusted in w
+    		columns.
 
-    ~wD		Outputs a value as a decimal integer
-    		right adjusted in w columns.
-
-    ~F		Outputs a value as floating point with
+    ~F		Outputs a number as floating point with
     		as many decimal places as needed to
 		express the precision of the number;
 		for double-floats this is about 15
@@ -339,14 +349,14 @@ scratch.
     ~A		Outputs a symbol or string with no
     		spaces before or after (and no escape
 		or quote characters).
-
+
     ~wA		Ditto but outputs the string or symbol
     		RIGHT adjusted in w columns.
 
     ~w@A	Ditto but outputs the string or symbol
     		LEFT adjusted in w columns.
 
-    ~C		Outputs a characters an ASCII character
+    ~C		Outputs a character an ASCII character
     		with no spaces before or after.
 
     ~%		Outputs a line feed.
@@ -362,23 +372,8 @@ scratch.
 
 pi
 
-    The mathematical constant PI.
+    The mathematical constant PI as a double-float.
 
-
-File:		c
-Author:		Bob Walton <walton@seas.harvard.edu>
-Date:		See top of file.
-
-The authors have placed this file in the public domain;
-they make no warranty and accept no liability for this
-file.
-
-RCS Info (may not be true date or author):
-
-    $Author: walton $
-    $Date: 2013/02/13 18:33:51 $
-    $RCSfile: commonlisp,v $
-    $Revision: 1.12 $
 
 File:		commonlisp
 Author:		Bob Walton <walton@deas.harvard.edu>
@@ -391,6 +386,6 @@ file.
 RCS Info (may not be true date or author):
 
     $Author: walton $
-    $Date: 2013/02/13 18:33:51 $
+    $Date: 2013/02/15 15:13:19 $
     $RCSfile: commonlisp,v $
-    $Revision: 1.12 $
+    $Revision: 1.13 $
