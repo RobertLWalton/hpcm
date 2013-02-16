@@ -1,0 +1,289 @@
+ACM Contest Help	    Sat Feb 16 09:59:14 EST 2013
+
+
+General Contest Rules
+------- ------- -----
+
+An ACM contest has 3-person teams but only one terminal
+per team.  The problem descriptions are on paper only,
+and are handed out at the start of the contest.  The
+contest has a fixed stopping time.  Scoring is by the
+number of problems solved, with ties broken by the times
+required to solve problems, as explained in more detail
+below.
+
+All contestants run on the same fast computer and are
+therefore subject to the same load.  There may be
+differences in terminals assigned to contestants, so to
+ensure fairness, terminals are assigned to contestants
+at random (e.g., by using dice throws).
+
+You participate in an ACM contest by going to a contest
+host site.  There the contest managers will give you a
+terminal and an account name, and log in for you.  You
+will NOT be given any password.  Please check to be SURE
+your team account name matches the account logged into
+the terminal you are given.  See `help terminals' for
+advice on makine terminal windows and other things.
+
+You can printout files: see `help print'.  Your print-
+outs will be brought to you.  Do NOT try to find the
+printer.  If a printout has not been brought to you
+promptly, ask the contest support personnel to check the
+printer.
+
+During an ACM contest you may not use web browsers or
+electronic communication that is not directly part of
+the contest.  You may bring and use any printed matter-
+ial you like.  There are contest commands to display
+some language specific documentation; see the language
+specific help files (e.g., `help c++', `help java').
+
+It is VERY IMPORTANT that you NOT communicate with any-
+one or access any documentation during the contest,
+except as explicitly permitted by the contest rules or
+by contest management.
+
+
+What Problems?
+--------------
+
+When you are first logged in, there are no problems.
+You have to get the problems by executing the command
+
+	hpcm_get
+
+Before the contest starts this will just get demonstra-
+tion problems.  The demonstration problem named `pppp'
+will appear in the `~/demos/pppp' directory.  Also
+solutions to these problems will appear in the
+`~/demos/solutions' directory.  You can display an index
+of demos with the `help demos' command.
+
+Then after the contest starts you need to execute
+`hpcm_get' again, JUST ONCE, to get all the problems.
+These problems are put in the `~/problems' directory,
+with the problem named `pppp' is appearing in the
+directory named `~/problems/pppp'.  You can display an
+index of problems with the `help problems' command.
+
+
+Asking Questions:
+----------------
+
+In an ACM contest you can ask advisors in the room about
+programming tools, but not about particular problems.
+If you have a question about a particular problem, you
+must email the judge using a method that is slightly
+weird.  First, edit your email into a file of your own
+choosing.  If your first line has the form
+
+	Subject: ....
+
+and the next line is completely empty (no spaces),
+then the first line will be the subject line of the
+message.  Then
+
+	hpcm_sendmail < filename
+
+to send the file as email to the judges.
+
+Note that the subject must NOT begin with the words
+`submit' or `get'.
+
+Email to the judge by other means during an ACM contest
+will not be seen by the judge during the contest.
+
+If the judge chooses to clarify a problem, the clarifi-
+cation will be posted on the scoreboard so everyone can
+see it, rather than returned to you by email.
+
+
+Working on a Problem
+--------------------
+
+For a problem named `pppp' you should write a file named
+`pppp.c', `pppp.cc', `pppp.java', or `pppp.lsp' in your
+`~/problems/pppp' directory.  The suffix of the file you
+write determines the programming language you are using:
+
+	.c 	for C		   see `help c'
+	.cc	for C++		   see `help c++'
+	.java	for JAVA	   see `help java'
+	.lsp	for COMMONLISP	   see `help commonlisp'
+
+You must write only ONE of these files; you CANNOT have
+a solution in two different languages at once.  For each
+language there is a language specific help file detail-
+ing how to write solutions in that language.
+
+After you write your program, execute the `make' command
+in the problem directory.  This will compile your pro-
+gram, create a file named `pppp.in', run your program
+with `pppp.in' as input and `pppp.out' as output, and
+also send the output to our terminal.  You can test this
+by copying a solution from `~/demos/solutions' into some
+demonstration problem directory `~/demos/pppp' and run-
+ning `make' in that directory.  Initially `pppp.in' is
+a copy of `sample.in' in the problem directory, and if
+your program is correct, the `pppp.out' produced should
+be the essentually the same as the file `sample.test in
+the problem directory.  You can then edit additional
+test data into `pppp.in' do test your program further.
+
+
+Make Commands
+---- --------
+
+The full set of `make' commands you can execute in a
+problem directory is:
+
+    make	Same as `make pppp.out' (see below).
+
+    make pppp	Makes the binary program file `pppp' by
+                running gcc on pppp.c, or g++ on
+		pppp.cc, or javac on pppp.java, etc.
+		Does nothing if `pppp' is more up to
+		date than pppp.c, pppp.cc, etc.
+
+		In addition to making `pppp', other
+		files may be made for some languages,
+		e.g., pppp.class for JAVA.
+
+    make pppp.in
+		If the file pppp.in does NOT already
+		exist and the file sample.in does
+		exist, this copies sample.in to pppp.in
+		and makes the copy writable (editable)
+		so you can add to pppp.in.  If pppp.in
+		already exists this does nothing (even
+		if sample.in is more recent than
+		pppp.in).
+
+		sample.in is provided for more recent
+		problems and is the `Sample Input' from
+		the problem description.
+
+    make pppp.out
+		Makes `pppp' and `pppp.in' as above and
+		then runs pppp with standard input com-
+		ing from the file pppp.in.  Puts the
+		standard output in the file pppp.out,
+		and also copies that to the screen.
+		Puts any standard error output to the
+		screen before the standard output from
+		pppp.out.  Does nothing, however, if
+		pppp.out is more recent than both
+		pppp.in and pppp.
+
+		Note that the sample.test file, if it
+		exists, is the `Sample Output' from the
+		problem description, and may be compared
+		to pppp.out if pppp.in is a copy of the
+		sample.in file.  The match can be made
+		with the
+
+			diff sample.test pppp.out
+
+		command, but may not need to be exact:
+		see the `scores' help file.
+
+    make pppp.debug
+    		Ditto but runs `pppp debug' instead of
+		`pppp' and puts the standard output in
+		the file `pppp.debug' instead of
+		`pppp.out'.  You should write your
+		program to output debugging information
+		to the standard output if the program is
+		given any arguments.
+
+    make debug	Same as `make pppp.debug'.
+
+    make submit
+		Makes `pppp.out' just to be sure that
+		nothing crashes, and then e-mails
+		pppp.c, pppp.cc, pppp.java, or pppp.lsp
+		to the judges.  Note the pppp.in file
+		MUST exist to submit, to make pppp.out,
+		but pppp.in can be the minimum needed to
+		keep your program from crashing (often
+		pppp.in can be empty).
+
+    make clean	Removes `pppp', pppp.out, pppp.debug,
+    		pppp.class, etc.
+
+The `make' UNIX commands work because of the way the
+`Makefile' file in the problem directory is written.
+The `Makefile' file contains some oddities resulting
+from the fact that judges, who use the same `Makefile'
+as contestants, run solutions in a sandbox account that
+has permission problems accessing judge's files.  Any
+file, directory, or program that must be accessed from
+the sandbox account may need permissions making it
+accessible to everyone.
+
+
+Resource Limits
+-------- ------
+
+If you look at the `Makefile' in the problem directory
+you will see that it contains memory and time resource
+limits which constrain your problem.  Memory limits
+are typically a few tens of megabytes and time limits
+are typically 10 to 30 seconds.  Harder problems require
+care to be sure you stay within these limits.
+
+
+Other Issues
+----- ------
+
+The following help commands may be useful for:
+
+    Printing files:			help print
+
+    Understanding problem scores:	help scores
+
+    Understanding the scoreboard:	help scoreboard
+
+
+File:		acm_contest
+Author:		Bob Walton <walton@deas.harvard.edu>
+Date:		See top of file.
+
+The authors have placed this file in the public domain;
+they make no warranty and accept no liability for this
+file.
+
+RCS Info (may not be true date or author):
+
+    $Author: walton $
+    $Date: 2013/02/16 17:47:18 $
+    $RCSfile: acm_contest,v $
+    $Revision: 1.1 $
+
+
+A few days or so after the contest ends you will be
+given the name and password of your contest account so
+you can collect the code you wrote.  At this point the
+contest will be reconstituted as an untimed contest,
+so you can additionally submit new code to the auto-
+judge, though of course it will not count in the already
+finished formal contest.
+
+
+
+File:		formal_contest
+Author:		Bob Walton <walton@deas.harvard.edu>
+Date:		See top of file.
+
+The authors have placed this file in the public domain;
+they make no warranty and accept no liability for this
+file.
+
+RCS Info (may not be true date or author):
+
+    $Author: walton $
+    $Date: 2013/02/16 17:47:18 $
+    $RCSfile: acm_contest,v $
+    $Revision: 1.1 $
+
