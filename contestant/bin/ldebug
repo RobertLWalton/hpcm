@@ -1,0 +1,49 @@
+#!/bin/sh
+#
+# Run sbcl interpretively to debug a COMMONLISP program.
+#
+# File:		ldebug
+# Author:	Bob Walton <walton@deas.harvard.edu>
+# Date:		Fri Feb 15 11:47:13 EST 2013
+#
+# The authors have placed this program in the public
+# domain; they make no warranty and accept no liability
+# for this program.
+#
+# RCS Info (may not be true date or author):
+#
+#   $Author: walton $
+#   $Date: 2013/02/16 10:04:11 $
+#   $RCSfile: ldebug,v $
+#   $Revision: 1.1 $
+
+c=0
+
+case "$1" in
+     -doc* )
+     		echo "
+ldebug program.lsp args ...
+
+    Invokes sbc interpretively if the [-c] option is not
+    given or with compiled code otherwise to run
+    program.lsp with debugging support."
+
+    		exit 1
+		;;
+    -c )
+    	c=1
+	shift
+	;;
+esac
+
+
+program="$1"
+shift
+
+if [ $c == 0 ]
+then exec sbcl --noinform \
+               --eval '(setf *evaluator-mode*
+	                     :interpret)' \
+               --load $program "$@"
+else exec sbcl --noinform --load $program "$@"
+fi
