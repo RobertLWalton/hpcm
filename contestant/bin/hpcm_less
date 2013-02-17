@@ -1,0 +1,76 @@
+#!/bin/sh
+#
+# This is a modification of the less command that runs
+# runs until a file is modified or disappears.
+#
+# File:		hpcm_less
+# Author:	Bob Walton <walton@deas.harvard.edu>
+# Date:		Sun Feb 17 02:39:46 EST 2013
+#
+# The authors have placed this program in the public
+# domain; they make no warranty and accept no liability
+# for this program.
+#
+# RCS Info (may not be true date or author):
+#
+#   $Author: walton $
+#   $Date: 2013/02/17 12:16:00 $
+#   $RCSfile: hpcm_less,v $
+#   $Revision: 1.1 $
+
+case "$1" in
+    -doc*)
+    	echo "
+hpcm_less file s arg ...
+
+    Calls \`less arg ...' but terminates if the file
+    modification time changes or the file disappears.
+    Polls every s seconds."
+
+    	exit 1
+	;;
+esac
+
+# hpcm_less -BACKGROUND pid s reference-file target-file
+#
+# This polls every s seconds to see if the target-file
+# has ceased to exist or become older than the reference
+# file.  When this happens a -KILL signal is sent to the
+# pid.
+#
+if [ "$1" = "-BACKGROUND" ]
+then
+    while test x = x
+    do
+	sleep $3
+	if test ! -r /proc/$2
+	then
+	    exit 0
+	elif test ! -r "$5"
+	then
+	    kill -KILL $2
+	    exit 0
+	elif newer -q "$4" "$5"
+	then
+	    x=x
+	else
+	    kill -KILL $2
+	    exit 0
+	fi
+    done
+fi
+
+file="$1"
+s="$2"
+shift
+shift
+tmp=/tmp/hpcm_less_$$
+trap "rm -f $tmp" EXIT
+
+rm -f $tmp
+cp -p "$file" $tmp
+hpcm_less -BACKGROUND $$ $s $tmp "$file" &
+trap "rm -f $tmp; kill -KILL $!" EXIT
+
+less "$@"
+exit 0

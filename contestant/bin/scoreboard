@@ -4,7 +4,7 @@
 #
 # File:		scoreboard
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Mon May 23 08:18:25 EDT 2011
+# Date:		Sun Feb 17 02:03:11 EST 2013
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2011/05/23 12:18:36 $
+#   $Date: 2013/02/17 12:15:44 $
 #   $RCSfile: scoreboard,v $
-#   $Revision: 1.12 $
+#   $Revision: 1.13 $
 
 # Time between refreshes.
 #
@@ -23,23 +23,19 @@ R=30
 debug=no
 cd=${HOME}/.hpcm_contest
 
+trap "exit 0" HUP INT QUIT
+
 # Handle all arguments up to but not including the page
 # number argument.
 #
-while test x = x;
+while test x = x
 do case "$1" in
     -doc*)
     	echo "
 scoreboard [-debug] [-contest contest-directory] \\
-           [-refresh R] [contest] [page-number] [user]
+           [contest] [user]
 
-    Displays each page of the scoreboard for R seconds,
-    and then repeats, if no page-number is given.
-    Otherwise just displays the given page, and refresh-
-    es the display every R seconds.  Pages are numbered
-    1, 2, 3, ..., 8, 9.
-    
-    R defaults to 30 seconds.
+    Displays the scoreboard.
 
     An optional \`contest' can be given for a user that
     is entered in multiple contests.  The \`user' de-
@@ -47,32 +43,30 @@ scoreboard [-debug] [-contest contest-directory] \\
     not given as a program argument.
  
     If the contest name is not given, or is given as
-    \"\", it defaults to \`NONE'.  A contest name cannot
-    be a single digit, and similarly a user name cannot
-    be a single digit.  If the a user name is given and
-    no contest name is to be given, use \"\" for the
-    contest name.
+    \"\", it defaults to \`NONE'.  If the a user name is
+    given and no contest name is to be given, use \"\"
+    for the contest name.
 
     Contest-directory defaults to ~/.hpcm_contest, which
     is correct for contestant accounts.
     
-    Each page is just a file.  If <contest-directory>/
+    A scoreboard is just a file.  If contest-directory/
     scoreboard_map is readable, it consists of lines of
     the form
 
     	user-regular-expression \\
 	    contest-regular-expression \\
-	        filename ...
+	        filename
 
-    where the list of filenames gives the files contain-
-    ing page 1, page 2, etc. of the scoreboard.  The
-    first line whose regular expressions match the
-    user and contest names is selected and its list of
-    filenames is used.  The user and contest names can
-    be given as optional arguments, with the user name
-    defaulting to the current account name.
+    where the filename is the name of the file contain-
+    ing the scoreboard.  The first line whose regular
+    expressions match the user and contest names is
+    selected and its filename is used.  The user and
+    contest names can be given as optional arguments,
+    with the user name defaulting to the current account
+    name.
 
-    It is an error if <contest-directory>/scoreboard_map
+    It is an error if contest-directory/scoreboard_map
     is readable and none of its lines match.
 
     The \\ backslash character can be used in the
@@ -86,20 +80,16 @@ scoreboard [-debug] [-contest contest-directory] \\
     before the (, |, or ).  Thus one must use
     \`\\\\(a\\\\|b\\\\)'.
 
-    If <contest-directory>/scoreboard_map is not read-
-    able, the filename list defaults to:
-
-        scoreboard.1 scoreboard.2 scoreboard.3 \\
-		     scoreboard.4
+    If contest-directory/scoreboard_map is not read-
+    able, the filename defaults to \`scoreboard'.
 
     File names that do not begin with / are interpreted
-    relative to <contest-directory>.
+    relative to the contest-directory.
 
-    The file for page 1 must always be readable, as must
-    the file for any page specifically requested.  If
-    all pages are to be displayed, any page other than 1
-    whose file is unreadable is ignored.
-    
+    Solely for backward compatibility, if a scoreboard
+    file named F is not readable, but F.1 is readable,
+    then the name F.1 replaces the name F.
+
     The -debug option prints the expr(1) commands used."
 
     	exit 1
@@ -116,16 +106,6 @@ scoreboard [-debug] [-contest contest-directory] \\
 	shift
 	;;
 
-    -refresh)
-        R="$2"
-	shift
-	shift
-	;;
-
-    [1-9] )
-    	contest=NONE
-	break
-    	;;
     "" )
     	contest=NONE
 	if test $# -gt 1
@@ -141,14 +121,6 @@ scoreboard [-debug] [-contest contest-directory] \\
 esac
 done
 
-# Save and shift away any page number argument.
-#
-case "$1" in
-    [1-9])	pn=$1
-    		shift ;;
-    *)		pn="" ;;
-esac
-
 # Compute user name.
 #
 case "$1" in
@@ -157,7 +129,7 @@ case "$1" in
 esac
 
 
-# Compute pages as list of pages.
+# Compute scoreboard file name
 #
 if test -r "$cd/scoreboard_map"
 then
@@ -170,8 +142,7 @@ then
     #
     while test x = x
     do
-	read <&3 uregexp cregexp page1 page2 page3 \
-		 page4 page5 page6 page7 page8 page9
+	read <&3 uregexp cregexp file
 
 	if test $? -ne 0
 	then
@@ -202,81 +173,31 @@ then
     exec 3<&-
 
 else
-    page1=scoreboard.1
-    page2=scoreboard.2
-    page3=scoreboard.3
-    page4=scoreboard.4
-    page5=""
-    page6=""
-    page7=""
-    page8=""
-    page9=""
+    file=scoreboard
+fi
+file="$cd/$file"
+
+# Implement compatibility feature
+#
+if test ! -r "$file"
+then
+    if test -r "$file.1"
+    then
+        file="$file.1"
+    else
+        echo "ERROR: cannot read $file"
+    fi
 fi
 
-# Display pages.
+# Display file.
 #
-case "$pn" in
-    [1-9] )
-    	# Argument is page number.
-	#
-	eval "page=\"\$page$pn\""
-	case "$page" in
-	    "")
-		echo page $pn does not exist
-		exit 1
-		;;
-	    /*)	;;
-	    *)	page=$cd/$page
-	esac
-	if test ! -r "$page"
-	then
-	    echo cannot read "$page"
-	    exit 1
-	fi
-
-	while test x = x
-	do
-	    clear
-	    cat "$page"
-	    sleep $R
-	done
-	;;
-    "" )
-        # No page number argument: display all pages.
-	# Page 1 must be readable.  Cycle on first
-	# empty page name.  Ignore unreadable pages
-	# (except for the first).
-	#
-
-	while test x = x
-	do
-	    n=1
-	    while test $n -le 9
-	    do
-		eval "page=\"\$page$n\""
-		case "$page" in
-		    "")	break ;;
-		    /*)	;;
-		    *)	page=$cd/$page
-		esac
-
-		if test -r "$page"
-		then
-		    clear
-		    cat "$page"
-		    sleep $R
-		elif test $n -eq 1
-		then
-		    echo cannot read "$page"
-		    exit 1
-		fi
-		n=`expr $n + 1`
-	    done
-	done
-	;;
-    * )
-        # Other argument.
-	#
-esac
+while test x = x
+do
+    clear
+    if hpcm_less "$file" $R -F -K "$file"
+    then
+	sleep $R
+    fi
+done
 
 exit 0
