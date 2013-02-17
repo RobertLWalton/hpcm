@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Feb 16 04:27:06 EST 2013
+# Date:		Sun Feb 17 04:48:34 EST 2013
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2013/02/16 09:27:34 $
+#   $Date: 2013/02/17 09:49:21 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.41 $
+#   $Revision: 1.42 $
 
 all:	scorediff grant_access \
 	hpcm_sandbox_unsecure \
@@ -27,7 +27,7 @@ all:	scorediff grant_access \
 	elinks_helper elinks_startup_message \
 	help printer_pipe hpcm_display_graph \
 	hpcm_display_segments \
-	jdebug ldebug
+	jdebug ldebug hpcm_less
 
 # Kill all implicit rules
 #
@@ -152,6 +152,9 @@ jdebug:
 ldebug:
 	ln -s ../../contestant/bin/ldebug .
 
+hpcm_less:
+	ln -s ../../contestant/bin/hpcm_less .
+
 clean:
 	rm -f scorediff grant_access \
 		hpcm_sandbox_unsecure \
@@ -172,4 +175,4 @@ clean:
 		printer_pipe \
 		hpcm_display_graph \
 		hpcm_display_segments \
-		jdebug ldebug
+		jdebug ldebug hpcm_less
