@@ -1,0 +1,98 @@
+Debugging with LDEBUG       Mon Feb 18 08:51:46 EST 2013
+
+
+Introduction
+------------
+
+Ldebug runs a COMMONLISP program INTERPRETIVELY in sbcl
+with the sbcl debugger enabled and the compiler set to
+optimize for debugging.  This works better than running
+code interpretively in sbcl, as the latter does not make
+local variables visible.
+
+It is recommended that a debugger like ldebug not be
+used unless your program crashes or goes into an
+infinite loop.  In all other cases it is better to put
+print statements (see `help commonlisp') into your code
+to print just exactly what you need to see.
+
+So in this help file we assume you are debugging a
+crash or infinite loop in a COMMONLISP program.
+
+
+Running the Program
+------- --- -------
+
+Assume the program you are debugging has a source file
+named PPP.lsp and its input file is PPP.in.  Then
+
+	% ldebug PPP < PPP.in
+
+will run the program with debugger enabled and input
+from PPP.in.
+
+If the program is going to crash, it will do so.  Other-
+wise if the program loops indefinitely, wait until it is
+so looping, and type control-C.
+
+
+
+Examining a Crashed or Stopped Program
+--------- - ------- -- ------- -------
+
+Once stopped the debugger is looking at frame in which
+execution stopped, which is frame 0.  Its calling frame
+is frame 1, frame 1's caller is frame 2, etc.  The prompt
+is #] where # is the frame number.
+
+You can print the form being executed by the current
+frame with the `p' command.  You can print the local
+variables of the frame with the `l' command.  You can
+go `down' the stack to the current frame's calling frame
+with the `d' command, and go in reverse `up' the stack
+with the `u' command.
+
+The following is a synopsis of useful commands:
+
+    Stop the program		    control-C
+
+    Continue:			    0] 0
+    
+    Print the form being evaluated
+    by the current frame:	    #] p
+
+    Print local variables of the
+    current frame:		    #] l
+
+    Move `down' the frame stack to
+    the frame that called the
+    current frame:		    #] d
+
+    Move `up' the frame stack to
+    the frame that was called by
+    the current frame:		    #] u
+
+    Move to frame N:		    #] N
+
+    Exit to top level:		    #] control-D
+
+    Exit program:		    * control-D
+
+    Output documentation:	    #] help
+
+
+File:		ldebug
+Author:		Bob Walton <walton@seas.harvard.edu>
+Date:		See top of file.
+
+The authors have placed this file in the public domain;
+they make no warranty and accept no liability for this
+file.
+
+RCS Info (may not be true date or author):
+
+    $Author: walton $
+    $Date: 2013/02/18 17:58:46 $
+    $RCSfile: ldebug,v $
+    $Revision: 1.1 $
+
