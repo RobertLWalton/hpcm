@@ -2,7 +2,7 @@
 ;;
 ;; File:	vcalc.lsp
 ;; Authors:	Bob Walton (walton@seas.harvard.edu)
-;; Date:	Fri Feb 15 07:47:24 EST 2013
+;; Date:	Mon Feb 18 11:44:09 EST 2013
 ;;
 ;; The authors have placed this program in the public
 ;; domain; they make no warranty and accept no liability
@@ -129,7 +129,7 @@
         else do
 	  (loop with s = (make-array 
 			   '(200)
-			   :element-type 'string-char
+			   :element-type 'character
 			   :fill-pointer 0
 			   :adjustable t)
 		for c = (peek-char nil nil nil *NUL*)
@@ -157,7 +157,7 @@
   (format t "ERROR in line ~A:~%      " *line-number*)
   (dolist (x args) (format t "~A" x))
   (format t "~%")
-  (quit :unix-status 1))
+  (exit :code 1))
 
 (defun check-not-eof (token)
   (if (equal token *EOF*)
@@ -237,9 +237,9 @@
 	      (= 0 (vector-y v)))
 	 (error "angle of zero vector"))
 	((= 0 (vector-x v))
-	 (if (> (vector-y v) 0) +90 -90))
+	 (if (> (vector-y v) 0) +90d0 -90d0))
 	((= 0 (vector-y v))
-	 (if (> (vector-x v) 0) 0 +180))
+	 (if (> (vector-x v) 0) 0d0 +180d0))
 	(t
 	  (* (/ 180 PI) (atan (vector-y v)
 			        (vector-x v))))))
@@ -349,7 +349,7 @@
 (defun get-value ()
   (let ((v (make-value))
 	(token (get-token))
-	x y n)
+	n)
     (cond ((equal token "(")
 	   (setf (value-type v) *VECTOR*)
 	   (setf (value-v v) (make-vector))
