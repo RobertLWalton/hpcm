@@ -2,7 +2,7 @@
 //
 // File:	vcalc.java
 // Authors:	Bob Walton (walton@seas.harvard.edu)
-// Date:	Wed Jan 23 11:25:30 EST 2013
+// Date:	Mon Feb 18 06:17:03 EST 2013
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -68,10 +68,21 @@ public class vcalc {
         // Current line number; 1, 2, 3, ...
     //
     static String last_token = EOL;
+    //
     static Pattern comment =
-        Pattern.compile ( "\\G[ \t\f]*(//[^\n]*)?\n" );
+        Pattern.compile ( "\\G[ \t\f]*(//.*|)(?m)$" );
+	// Skips to end of line for both comment and
+	// blank line.
+    static Pattern end_of_line =
+        Pattern.compile ( "\\G\n" );
+	// Use in findWithinHorizon ( end_of_line, 1 ).
+    static Pattern end_space =
+        Pattern.compile ( "\\G[ \t\f]*(?m)$" );
+	// Skips horizontal whitespace before end of
+	// line.
     static Pattern separator =
-        Pattern.compile ( "\\G[ \t\f]*([(),:\n])" );
+        Pattern.compile ( "\\G[ \t\f]*([(),:])" );
+	// Use in findInLine ( separator ).
     //
     static String get_token ( )
     {
@@ -85,26 +96,32 @@ public class vcalc {
 	    while ( true )
 	    {
 		++ line_number;
-		String c =
-		    scan.findWithinHorizon
-		        ( comment, 0 );
-		if ( c == null ) break;
-		dprint ( "COMMENT " + c );
+		String s = scan.findInLine ( comment );
+		if ( scan.findWithinHorizon
+		        ( end_of_line, 1 )
+		     == null )
+		    break;
 	    }
 	}
 
-        last_token =
-	    scan.findWithinHorizon ( separator, 0 );
+        last_token = scan.findInLine ( separator );
 	if ( last_token != null )
-	{
 	    last_token = scan.match().group ( 1 );
-	    if ( last_token.equals ( "\n" ) )
-		last_token = EOL;
-	}
-	else if ( scan.hasNext() )
-	    last_token = scan.next();
 	else
-	    last_token = EOF;
+	{
+	    scan.findInLine ( end_space );
+	        // Get rid of any horizontal whitespace
+		// before a line feed.
+		//
+	    if ( scan.findWithinHorizon
+			( end_of_line, 1 )
+		 != null )
+		last_token = EOL;
+	    else if ( scan.hasNext() )
+		last_token = scan.next();
+	    else
+		last_token = EOF;
+	}
 
 	dprint ( "{" + last_token + "}" );
 	return last_token;
