@@ -1,4 +1,4 @@
-JAVA Help		    Wed Jan 30 08:15:20 EST 2013
+JAVA Help		    Mon Feb 18 06:24:37 EST 2013
 
 
 JAVA Language Program Structure 
@@ -150,7 +150,7 @@ sequence of numbers.  The lines containing numbers may
 be very long, so they should be read one number at a
 time and not read as a line.
 
-See the `io/summer' demonstration problem solution which
+See the `summer' demonstration problem solution which
 reads numbers.
 
 For some problems there are no test case name lines but
@@ -159,8 +159,8 @@ text and one output line containing text.  For these
 the test case input line is read the same way as the
 test case name line is read above.
 
-See the `io/reverser' demonstration problem solution
-which reads text lines.
+See the `reverser' demonstration problem solution which
+reads text lines.
 
 
 Output
@@ -197,7 +197,7 @@ replaced by any other non-zero positive integers.
 When using System.out.format, use "%n" to output an
 end-of-line.
 
-See the `io/summer' demonstration problem solution which
+See the `summer' demonstration problem solution which
 outputs floating point `double's.
 
 
@@ -237,7 +237,7 @@ interpreter), so you can count on assert statements
 executing (which would not be true in other programming
 environments).
 
-See the `io/summer' demonstration problem solution which
+See the `summer' demonstration problem solution which
 uses dprintf and assert.
 
 
@@ -246,66 +246,86 @@ Delimiter Tokens
 
 If you want to use characters like `,' to delimit
 numbers, but also want to make `,' into a token, you
-have to use findWithinHorizon and some care.  The
-following code makes `,', `(', `)', `:', and end-of-line
-(represented by `\n') into both delimiters and
-tokens.  The code also provides a means of determining
-whether a token String represents a number and extract-
-ing that number.
+have to use useDelimiter and findInLine.  If you want to
+determine whether the next thing in the input is a line
+feed, you must use findWithinHorizon with a horizon of 1
+character.  The following code makes `,', `(', `)', `:',
+and end-of-line (represented by `\n') into both delim-
+iters and tokens.  The code also provides a means of
+determining whether a token String represents a number
+and extracting that number.
 
     import java.util.Scanner;
     import java.util.regex.Pattern;
 
-    public class PPP {
+    final static Scanner scan =
+        new Scanner ( System.in )
+	        .useDelimiter ( "[(),: \t\f\n]+" );
 
-	static Scanner s =
-	    new Scanner ( System.in ).useDelimiter
-	        ( "[ \t\f,():\n]+" );
-	static Pattern p =
-	    Pattern.compile ( "\\G[ \t\f]*([,():\n])" );
+    static Pattern end_of_line =
+        Pattern.compile ( "\\G\n" );
+	// Use in findWithinHorizon ( end_of_line, 1 ).
+    static Pattern end_space =
+        Pattern.compile ( "\\G[ \t\f]*(?m)$" );
+	// Skips horizontal whitespace before end of
+	// line.  Use with findInLine.  Note that
+	// `(?m)' must be used to turn on multi-line
+	// mode so `$' matches a the point just before
+	// a line feed.
+    static Pattern separator =
+        Pattern.compile ( "\\G[ \t\f]*([(),:])" );
+	// Skips to and returns separator other than
+	// line feed.  For use with findInLine.
 
-	// Return next token or null if end of file.
-	//
-	static String get_token ( void )
-	{
-	    String token = s.findWithinHorizon ( p, 0 );
-	    if ( s != null )
-	        token = s.match().group ( 1 );
-	    else if ( s.hasNext )
-	        token = s.next();
-	    return token;
-	}
-
-	// Return Double if string is a number, or null
-	// if not.  doubleValue() of the Double returns
-	// the number proper.
-	//
-	Double get_number ( String s )
-	{
-	    try { return Double.valueOf ( s ); }
-	    catch ( NumberFormatException e )
-	        { return null; }
-	}
+    static String EOL = "(END OF LINE)";
+    static String EOF = "(END OF FILE)";
+    static String get_token ( )
+    {
+        if ( scan.findInLine ( separator ) != null )
+	    return scan.match().group ( 1 );
+	    // Match group 1 is what was matched by
+	    // the first (...) parenthesized subexpres-
+	    // sion in the pattern, i.e., `([(),:])'.
+	scan.findInLine ( end_space );
+	if ( scan.findWithinHorizon ( end_of_line, 1 )
+	     != null )
+	    return EOL;
+	if ( scan.hasNext() ) return scan.next();
+	return EOF;
+    }
 
-The call to findWithinHorizon looks to see if the input
-is just before whitespace within a line followed by one
-of the characters `,', `(', `)', `:', or `\n'.  If so
-non-null is returned and the call to s.match().group(1)
-extracts just the last character of the match.  Groups
-are delimited by () parentheses in the pattern regular
-expression, so group 1 in this case matches `([,():\n])'
-in the regular expression.  If there is no match, then
-hasNext() is called to see if there is a next token
-delimited by the delimiter specified by useDelimiter,
-and if yes next() is called to get the token, or if no
-then the token is left as null.  If a token is gotten,
-get_number can be used to decide if the token is a
-number and extract the number if yes.
+    // Return Double if string is a number, or null
+    // if not.  doubleValue() of the Double returns
+    // the number proper.
+    //
+    static Double get_number ( String s )
+    {
+	try { return Double.valueOf ( s ); }
+	catch ( NumberFormatException e )
+	    { return null; }
+    }
 
-See the `algorithms/vcalc' demonstration problem solu-
-tion which implements delimiters that are also tokens.
+The fundamental problem with findWithinHorizon is that
+you do not know what horizon to use.  If you use 0,
+which denotes infinity, your program will NOT be inter-
+active, because findWithinHorizon will read to an end
+of file before it returns anything.  So the only horizon
+you can use with an interactive program is 1 character,
+and we only use it above to find the end of line.
 
+Another difficulty is that findInLine ( end_space ),
+if called with a line feed next, returns null and NOT
+an empty string, so it cannot be used to determine that
+there is nothing before the next line feed.  So
+findWithinHorizon ( end_of_line, 1 ) is the only way to
+discover that the next character in the input is a line
+feed without possibly reading and skipping a non-white-
+space character.
 
+See the `vcalc' demonstration problem solution which
+implements delimiters that are also tokens.
+
+
 Function and Macro Synopsis
 -------- --- ----- --------
 
@@ -326,7 +346,7 @@ the web, local JAVA documentation can be accessed by the
 command:
 
 	javahelp
-
+
 The following is an extract from JAVA documentation of
 details needed to use common functions and numeric
 constants.  Here we assume you already know something
@@ -342,8 +362,10 @@ little precision.
 import java.util.Scanner;
 import java.util.regex.Pattern;
 Scanner s = new Scanner ( System.in );
-Pattern p = Pattern.compile ( "\\G[ \t\f]*([,():\n])" );
-
+Pattern p1 = Pattern.compile ( "\\G[ \t\f]*([(),:])" );
+Pattern p2 = Pattern.compile ( "\\G[ \t\f]*(?m)$" );
+Pattern p3 = Pattern.compile ( "\\G\n" );
+
     s.hasNextLine()   Returns true iff nextLine() will
     		      not raise an exception.
     s.nextLine()      Returns a String consisting of all
@@ -365,26 +387,33 @@ Pattern p = Pattern.compile ( "\\G[ \t\f]*([,():\n])" );
     		      non-empty String delimited by
 		      whitespace (if useDelimiter not
 		      used).
-
+
     s.useDelimiter ( "[ \t\f\n,():]+" )
 	Reset token delimiter to a regular expression.
 	The example given makes whitespace and the
 	characters `,', `(', `)', `:' delimiters.
-
-    s.findWithinHorizon ( p, 0 )
-        Return next String matching the Pattern p if
-	such exists, or null otherwise.  For the
-	example pattern above, to get a match the
-	input must consist of within line whitespace
-	followed by one of the characters `,', `(', `)',
-	`:', or end of line (\n).
+
+    s.findInLine ( p1 )
+        Return next String matching the Pattern p1 if
+	such exists before the next line feed, or
+	return null if there is no such String.  For
+	p1 as above, to get a match the input must
+	consist of within line whitespace followed by
+	one of the characters `,', `(', `)', or `:'.
     s.match().group ( 1 )
         Return as a String the part of the last find-
-	WithinHorizon matched string that matches the
-	first () parenthesized group within the pat-
-	tern's regular expression.  If our example
-	pattern is used, one of ",", "(", ")", ":", or
-	"\n" will be returned.
+	InLine matched string that matches the first ()
+	parenthesized group within the pattern's regular
+	expression.  For p1 this group is `([(),:])'.
+    s.findInLine ( p2 )
+        Returns any whitespace at the end of a line, or
+	returns null if a line feed is next or if there
+	is a non-whitespace character before the next
+	line feed.
+    s.findWithinHorizon ( p3, 1 )
+        If the next character in the input is a line
+	feed, returns that as a string.  Else returns
+	null.
 
     Double.valueOf ( s )
         Returns Double containing numeric double value
@@ -396,14 +425,14 @@ Pattern p = Pattern.compile ( "\\G[ \t\f]*([,():\n])" );
         Returns the double numeric value represented by
 	String s, or if s does not represent a `double'
 	number, raises the NumberFormatException.
-
+
 System.out.format ( format, ... )
 
     Format is a String that can contain the following
     directives, in which W and P stand for sequences of
     decimal digits, where W is used for `widths' and P
     for `precisions':
-
+
     %d		Outputs an `int' or `long' as a decimal
                 integer with no spaces before or after.
 
@@ -435,9 +464,9 @@ System.out.format ( format, ... )
 
     %c		Outputs a `char' as a UNICODE character
     		with no spaces before or after.
-
+
     %n		Outputs an end of line.
-	
+	
 import java.text.DecimalFormat;
 DecimalFormat d =
     new DecimalFormat ( "0.##############" );
@@ -478,6 +507,6 @@ file.
 RCS Info (may not be true date or author):
 
     $Author: walton $
-    $Date: 2013/01/30 15:46:16 $
+    $Date: 2013/02/18 13:23:00 $
     $RCSfile: java,v $
-    $Revision: 1.17 $
+    $Revision: 1.18 $
