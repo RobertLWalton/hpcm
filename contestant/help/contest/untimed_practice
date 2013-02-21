@@ -1,0 +1,288 @@
+Untimed Practice Help	    Thu Feb 21 02:55:04 EST 2013
+
+
+Introduction
+------------
+
+An untimed practice is a facility for solving program-
+ming problems.  The problems may be similar to those
+found in programming contests, hence the facility may
+be used to practice for such contests.  Or the problems
+may be designed to further the solvers practical know-
+lege of algorithms or programming methods, according to
+the general rule that to understand something well you
+must write about it, and not simply read about it.
+
+Sometimes untimed practice facilities give prizes to
+students who solve a certain number of problems, and
+such facilities are called `prize contests'.  These
+typically have extra rules concerning how much help
+you can get solving problems.
+
+We assume here that you are given an account for the
+facility and solve problems in that account.  For
+facilities that have email submissions instead, see
+`help email_practice'.
+
+For an untimed practice you are given the name of an
+account and the password of the account.  See `help
+terminals' for information about how to log into the
+account.
+
+What Problems?
+--------------
+
+Problems are solved in problem directories.  When you
+are first logged in, these do not yet exist.  You have
+to get them by executing
+
+	hpcm_get
+
+There are to kinds of problems: demos problems and
+`contest problems' (i.e., problems you are to solve).
+Solutions to demos problems are given to you if you want
+to look at them or use them to try out the facility
+tools.
+
+A directory for a demo problem named `pppp' is named
+`~/demos/pppp'.  Problem directories are where you write
+your solutions, and they each contain an important file
+named `Makefile' that defines operations you will need
+in order to solve and submit the problem.  Solutions to
+the demo problems are put by `hpcm_get' into the
+`~/demos/solutions' directory.  You can display an index
+of demo problems with the `help demos' command.
+
+A contest problem with name `pppp' has a directory named
+`~/problems/pppp'.  You can display an index of contest
+problems with `help problems'.
+
+
+Asking Questions:
+----------------
+
+The best way to ask a question is to send it to the
+judge.  While submission judging is done exclusively by
+an autojudge, all e-mails are monitored by a human
+`judge', who will respond to a query sent in the
+following somewhat wierd way.
+
+First, edit your email into a file of your own choosing
+in you practice account.  If your first line has the
+form
+
+	Subject: ....
+
+and the next line is completely empty (no spaces),
+then the first line will be the subject line of the
+message.  Be sure the subject does not begin with the
+words `submit' or `get'.
+
+Then execute
+
+	hpcm_sendmail < filename
+
+to send the file as email to the judge.  You will
+get a reply as email in your facility account.
+
+
+Working on a Problem
+--------------------
+
+For a problem named `pppp' you should write a file named
+`pppp.c', `pppp.cc', `pppp.java', or `pppp.lsp' in your
+`~/problems/pppp' directory.  The suffix of the file you
+write determines the programming language you are using:
+
+	.c 	for C		   see `help c'
+	.cc	for C++		   see `help c++'
+	.java	for JAVA	   see `help java'
+	.lsp	for COMMONLISP	   see `help commonlisp'
+
+You must write only ONE of these files; you CANNOT have
+a solution in two different languages at once.  For each
+language there is a language specific help file detail-
+ing how to write solutions in that language.
+
+After you write your program, execute the `make' command
+in the problem directory.  This will compile your pro-
+gram, create a file named `pppp.in', run your program
+with `pppp.in' as input and `pppp.out' as output, and
+also send the output to our terminal.  You can test this
+by copying a solution from `~/demos/solutions' into some
+demonstration problem directory `~/demos/pppp' and run-
+ning `make' in that directory.  Initially `pppp.in' is
+a copy of `sample.in' in the problem directory, and if
+your program is correct, the `pppp.out' produced should
+be the essentually the same as the file `sample.test in
+the problem directory.  You can then edit additional
+test data into `pppp.in' to test your program further.
+
+
+Make Commands
+---- --------
+
+The full set of `make' commands you can execute in a
+problem directory is:
+
+    make	Same as `make pppp.out' (see below).
+
+    make pppp	Makes the binary program file `pppp' by
+                running gcc on pppp.c, or g++ on
+		pppp.cc, or javac on pppp.java, etc.
+		Does nothing if `pppp' is more up to
+		date than pppp.c, pppp.cc, etc.
+
+		In addition to making `pppp', other
+		files may be made for some languages,
+		e.g., pppp.class for JAVA.
+
+    make pppp.in
+		If the file pppp.in does NOT already
+		exist and the file sample.in does
+		exist, this copies sample.in to pppp.in
+		and makes the copy writable (editable)
+		so you can add to pppp.in.  If pppp.in
+		already exists this does nothing (even
+		if sample.in is more recent than
+		pppp.in).
+
+		sample.in is the `Sample Input' from the
+		problem description.
+
+    make pppp.out
+		Makes `pppp' and `pppp.in' as above and
+		then runs pppp with standard input com-
+		ing from the file pppp.in.  Puts the
+		standard output in the file pppp.out,
+		and also copies that to the screen.
+		Also outputs any standard error output
+		to the screen.  Does nothing, however,
+		if pppp.out is more recent than both
+		pppp.in and pppp.
+
+		Note that the sample.test file, if it
+		exists, is the `Sample Output' from the
+		problem description, and may be compared
+		to pppp.out if pppp.in is a copy of the
+		sample.in file.  The match can be made
+		with the
+
+			diff sample.test pppp.out
+
+		command, but may not need to be exact:
+		see the `scores' help file.
+
+    make pppp.debug
+    		Ditto but runs `pppp debug' instead of
+		`pppp' and puts the standard output in
+		the file `pppp.debug' instead of
+		`pppp.out'.  You should write your
+		program to output debugging information
+		to the standard output if the program is
+		given any arguments.
+
+    make debug	Same as `make pppp.debug'.
+
+    make submit
+		Makes `pppp.out' just to be sure that
+		nothing crashes, and then e-mails
+		pppp.c, pppp.cc, pppp.java, or pppp.lsp
+		to the judges.  Note the pppp.in file
+		MUST exist to submit, to make pppp.out,
+		but pppp.in can be the minimum needed to
+		keep your program from crashing.
+
+    make clean	Removes `pppp', pppp.out, pppp.debug,
+    		pppp.class, etc.
+
+The `make' UNIX commands work because of the way the
+`Makefile' file in the problem directory is written.
+The `Makefile' file contains some oddities resulting
+from the fact that judges, who use the same `Makefile'
+as contestants, run solutions in a sandbox account that
+has permission problems accessing judge's files.  Any
+file, directory, or program that must be accessed from
+the sandbox account may need permissions making it
+accessible to everyone.
+
+
+Resource Limits
+-------- ------
+
+Some problems have resource limits that require their
+solutions to be time and space efficient.
+
+If you look at the `Makefile' in the problem directory
+you will see that it contains memory and time resource
+limits which constrain your problem.  Memory limits
+are typically a few tens of megabytes and time limits
+are typically 10 to 30 seconds.  Harder problems require
+care to be sure you stay within these limits.
+
+
+Scoring
+-------
+
+Solutions are submitted to an autojudge, which runs test
+cases against the solutions, grades the solutions cor-
+rect or not, and returns an email to the submitter con-
+taining the grade.  If incorrect, the email includes the
+input and output of the judge's first failed test case,
+and a little bit of other information that can be inter-
+preted by using `help scores'.  For an incorrect submis-
+sion the submitter loses 5% of the submitter's remaining
+score on the problem.  The maximum score, obtainable if
+the submitters first submission for the problem is cor-
+rect, varies with the difficulty of the problem, but is
+typically 100, 200, or 300.  The autojudge is monitored
+by a human judge and maintains a complete audit trail of
+its actions in case it misbehaves.
+
+The `scoreboard' command displays the scoreboard which
+contains an entry for each account and problem.  The
+entry is `.....' if the account has not submitted any
+solution for the problem, `.../N' if the account has
+submitted N incorrect solutions, and `SSS/N' if the
+account has submitted a correct solution and N previous
+incorrect solutions, where SSS is the problem score, and
+is equal to `MMM * 0.95^N" where MMM is the maximum
+possible score for the problem.  For most practice faci-
+lities and prize contests, the only important thing is
+how many problems you solve, and not the problem scores.
+
+If the scoreboard is too long for its display window,
+you can scroll down and up with the down and up arrow
+keys.  If the scoreboard changes the display will be
+updated and will go back to the top of the scoreboard.
+
+
+
+Other Issues
+----- ------
+
+The following help commands may be useful for:
+
+    Printing files:			help print
+
+    Making new terminal windows:	help terminals
+
+    Understanding problem scores:	help scores
+
+    Understanding the scoreboard:	help scoreboard
+
+
+File:		acm_contest
+Author:		Bob Walton <walton@seas.harvard.edu>
+Date:		See top of file.
+
+The authors have placed this file in the public domain;
+they make no warranty and accept no liability for this
+file.
+
+RCS Info (may not be true date or author):
+
+    $Author: walton $
+    $Date: 2013/02/21 12:23:21 $
+    $RCSfile: untimed_practice,v $
+    $Revision: 1.1 $
