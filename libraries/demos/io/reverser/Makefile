@@ -70,7 +70,8 @@ $P.out:	$P $P.in
 test:	$P.out $P.test
 	@echo ""
 	@echo "DIFFERENCES: $P.test ---> $P.out"
-	@diff -u $P.test $P.out
+	@if diff -u $P.test $P.out; \
+	    then echo "NO DIFFERENCES FOUND"; fi
 
 $P.debug:	$P $P.in
 	rm -f $P.debug core core.[0-9]*
@@ -116,7 +117,7 @@ clean:
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2013/02/28 10:55:07 $
+#   $Date: 2013/02/28 11:49:12 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.6 $
+#   $Revision: 1.7 $
 
