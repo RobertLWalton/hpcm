@@ -1,7 +1,7 @@
 # Makefile for the Simple Vector Calculator Problem
 #
 # File:		Makefile
-# Date:		Sun Feb 10 01:28:21 EST 2013
+# Date:		Thu Feb 28 04:08:03 EST 2013
 #
 # See demonstration Makefile for documentation.
 #
@@ -46,9 +46,14 @@ default:	$P.out
 	echo >>$* "exec sbcl --script $*.lsp" '"$$@"'
 	chmod u+rx $*
 
-$P.in:	
+$P.in:
 	if test -r sample.in; \
 	then cp sample.in $P.in; chmod u+rw $P.in; fi
+
+$P.test:
+	if test -r sample.test; \
+	then cp sample.test $P.test; \
+	     chmod u+rw $P.test; fi
 
 $P.out:	$P $P.in
 	rm -f $P.out core core.[0-9]*
@@ -61,6 +66,11 @@ $P.out:	$P $P.in
 		     -tee $P.out \
 		     $P \
 	    <$P.in
+
+test:	$P.out $P.test
+	@echo ""
+	@echo "DIFFERENCES: $P.test ---> $P.out"
+	@diff -u $P.test $P.out
 
 $P.debug:	$P $P.in
 	rm -f $P.debug core core.[0-9]*
@@ -92,6 +102,8 @@ clean:
 	      *.out *.debug *.fout *.jout *.jfout \
 	      make_$P_*input
 	if cmp -s $P.in sample.in; then rm $P.in; fi
+	if cmp -s $P.test sample.test; \
+	   then rm $P.test; fi
 
 #
 # Derived From:	Makefile1
@@ -104,6 +116,7 @@ clean:
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2013/02/11 15:01:14 $
+#   $Date: 2013/02/28 10:55:07 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.4 $
+#   $Revision: 1.5 $
+
