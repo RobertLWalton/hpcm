@@ -2,7 +2,7 @@
  *
  * File:	hpcm_sandbox.c
  * Authors:	Bob Walton (walton@deas.harvard.edu)
- * Date:	Wed Oct 14 23:19:50 EDT 2009
+ * Date:	Thu Feb 28 07:46:10 EST 2013
  *
  * The authors have placed this program in the public
  * domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
  * RCS Info (may not be true date or author):
  *
  *   $Author: walton $
- *   $Date: 2009/10/15 03:45:44 $
+ *   $Date: 2013/02/28 13:16:19 $
  *   $RCSfile: hpcm_sandbox.c,v $
- *   $Revision: 1.24 $
+ *   $Revision: 1.25 $
  */
 
 #define _GNU_SOURCE
@@ -39,6 +39,11 @@
 char documentation [] =
 "hpcm_sandbox [options] program argument ...\n"
 "\n"
+"    If HPCM_SANDBOX_UNSECURE is defined in the\n"
+"    environment and this program's effective user\n"
+"    ID is `root', this program begins by changing\n"
+"    the effective user ID to the real user ID.\n"
+"\n"
 "    This program first checks its arguments for\n"
 "    options that set resource limits:\n"
 "\n"
@@ -63,7 +68,7 @@ char documentation [] =
 "    the\n"
 "\n"
 "      -watch\n"
-"\n"
+"\f\n"
 "    option, this program forks and the parent waits\n"
 "    for the child to complete the rest of this pro-\n"
 "    gram's action.  If the child terminates with a\n"
@@ -75,7 +80,7 @@ char documentation [] =
 "    nate with a signal, and returns 128 + the pos-\n"
 "    sibly changed signal number as an exit code if\n"
 "    the child does terminate with a signal.\n"
-"\f\n"
+"\n"
 "    Alternatively, with the\n"
 "\n"
 "      -tee FILE\n"
@@ -95,11 +100,11 @@ char documentation [] =
 "    program proper otherwise, does the following.\n"
 "\n"
 "    First, if this program's effective user ID is\n"
-"    `root', this program eliminates any supplemen-\n"
-"    tary groups that the process might have, and\n"
-"    changes the effective user and group IDs to\n"
+"    (still) `root', this program eliminates any\n"
+"    supplementary groups that the process might have\n"
+"    and changes the effective user and group IDs to\n"
 "    those of `sandbox', as looked up in /etc/passwd.\n"
-"\n"
+"\f\n"
 "    Then this program sets the real user and group\n"
 "    IDs to the effective user and group IDs, sets\n"
 "    the resource limits determined by the options\n"
@@ -115,7 +120,7 @@ char documentation [] =
 "    space, tab, new line, form feed, vertical tab,\n"
 "    and backslash, respectively.  `\\ ', which de-\n"
 "    notes a single space, does not separate strings.\n"
-"\f\n"
+"\n"
 "    Normally the `sandbox' user is not allowed to\n"
 "    log in and owns no useful files or directories.\n"
 "\n"
@@ -135,6 +140,17 @@ void errno_exit ( char * m )
 */
 int main ( int argc, char ** argv )
 {
+    /* If HPCM_SANDBOX_UNSECURE defined and effective
+     * ID is root, change effective ID to real ID.
+     */
+    if ( getenv ( "HPCM_SANDBOX_UNSECURE" )
+         &&
+	 geteuid() == 0 )
+    {
+	if ( setreuid ( -1, getuid() ) < 0 )
+	     errno_exit ( "root setreuid" );
+    }
+
     /* Index of next argv to process. */
 
     int index = 1;
@@ -559,7 +575,7 @@ int main ( int argc, char ** argv )
 	/* End root execution. */
     }
 
-    /* Set the real user and group IDs to to effective
+    /* Set the real user and group IDs to effective
        user and group IDs.
     */
 
