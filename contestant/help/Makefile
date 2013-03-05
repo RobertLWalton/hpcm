@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Feb 14 09:38:19 EST 2013
+# Date:		Mon Mar  4 20:13:22 EST 2013
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,20 +11,10 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2013/02/14 15:48:21 $
+#   $Date: 2013/03/05 07:13:01 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.45 $
+#   $Revision: 1.46 $
 
-# `make help.pdf' and `make demos.pdf' make printouts of
-# all the help and demos files respectively.  Note that
-# there is no `help/this_contest' file in help.pdf.
-#
-# In addition to help.pdf and demos.pdf there are files
-# advanced_help.pdf and advanced_demos.pdf that have
-# information about more sophisticated algorithms.
-# To make these, just use `make advanced_help.pdf',
-# etc.
-#
 # To make web help pages, execute `make web', copy
 # the `web.tar' file to your web server and unpack
 # it to make a directory containing the `index.html'
@@ -34,7 +24,10 @@
 
 all:	modes STL_doc
 
-pdf:	help.pdf \
+pdf:	acm_contest_help.pdf \
+	algorithm_festival_help.pdf \
+	timed_practice_help.pdf \
+	untimed_practice_help.pdf \
 	c_basic_io_demos.pdf \
 	c_advanced_io_demos.pdf \
 	c_algorithm_demos.pdf \
@@ -57,82 +50,35 @@ pdf:	help.pdf \
 
 WEB = ""
 
-FORMAL_HELP_FILES = \
-	contest/formal_contest \
-	common/xterminals \
-	common/solving \
-	common/input \
-	common/output \
-	common/print \
-	common/scores \
-	common/scoreboard \
-	common/c \
-	common/c++ \
-	common/gdb \
-	common/java \
-	common/jdebug \
-	common/advice
-
-HELP_FILES = \
-	${FORMAL_HELP_FILES} \
-	contest/informal_contest \
-	contest/untimed_contest \
-	email/email_solving \
-	common/commonlisp
-
-
-# Removed from help files.
-#	email/email_unix_tools
-
-ADVANCED_HELP_FILES = \
-	advanced/dynamic_programming \
-	advanced/2D_geometry \
-	advanced/breadth_first_search \
-	advanced/constrained_search \
-	advanced/network_flows \
-	advanced/optimal_matchings \
-	advanced/3D_geometry
-
-# Not included
-#	advanced/geometry_exercises
-
-help_index:	index
-	rm -f help_index help_index.html \
-	      help_index.files
+# If we replace %_help_index by %help_index we get
+# circularity with ./help_index.
+#
+%_help_index:	help_index
+	rm -f $*_help_index \
+	      $*_help_index.html \
+	      $*_help_index.files
 	../../judge/bin/makehelp \
-	    help_index "HELP INDEX" index ${WEB} \
-	    ${HELP_FILES}
+	    $*_help_index ${HELP_TITLE} \
+	    help_index ${WEB} \
+	    $*_help general
 
-help.ps:	help_index
-	rm -rf help.ps
-	../../judge/bin/fprint > help.ps -o \
-	    `cat help_index.files`
+%_help.ps:	%_help_index
+	rm -rf $*_help.ps
+	../../judge/bin/fprint > $*_help.ps -o \
+	    $*_help_index.files
 
-formal_help_index:	index
-	rm -f formal_help_index \
-	      formal_help_index.html \
-	      formal_help_index.files
-	../../judge/bin/makehelp \
-	    formal_help_index "HELP INDEX" index \
-	    ${WEB} ${FORMAL_HELP_FILES}
+acm_contest_help_index: \
+    HELP_TITLE = "ACM CONTEST HELP FILES"
+algorithm_festival_help_index: \
+    HELP_TITLE = "ALGORITHM FESTIVAL HELP FILES"
+timed_practice_help_index: \
+    HELP_TITLE = "TIMED PRACTICE HELP FILES"
+untimed_practice_help_index: \
+    HELP_TITLE = "UNTIMED PRACTICE HELP FILES"
 
-formal_help.ps:	formal_help_index
-	rm -rf formal_help.ps
-	../../judge/bin/fprint > formal_help.ps -o \
-	    `cat formal_help_index.files`
+all_help_index: \
+    HELP_TITLE = "HELP FILES"
 
-advanced_help_index:	index
-	rm -f advanced_help_index \
-	      advanced_help_index.html \
-	      advanced_help_index.files
-	../../judge/bin/makehelp \
-	    advanced_help_index "ADVANCED HELP INDEX" \
-	    index ${WEB} ${ADVANCED_HELP_FILES}
-
-advanced_help.ps:	advanced_help_index
-	rm -rf advanced_help.ps
-	../../judge/bin/fprint > advanced_help.ps -o \
-	    `cat advanced_help_index.files`
 
 # If we replace %_demos_index by %demos_index we get
 # circularity with ../../problem_library/demos_index.
@@ -178,27 +124,13 @@ lsp_basic_io_demos_index: \
 lsp_advanced_io_demos_index: \
     DEMOS_TITLE = "COMMONLISP ADVANCED IO DEMOS INDEX"
 lsp_algorithm_demos_index: \
-    DEMOS_TITLE = \
-        "COMMONLISP ALGORITHM DEMOS INDEX"
+    DEMOS_TITLE = "COMMONLISP ALGORITHM DEMOS INDEX"
 
-all_demos_index: DEMOS_TITLE = "DEMOS INDEX"
+all_demos_index: \
+    DEMOS_TITLE = "DEMOS INDEX"
 
-advanced_demos_index:	../../problem_library/index
-	rm -f advanced_demos_index \
-	      advanced_demos_index.html \
-	      advanced_demos_index.files
-	../../judge/bin/makehelp \
-	    advanced_demos_index \
-	    "ADVANCED DEMOS INDEX" \
-	    ../../problem_library/index ${WEB} \
-	    demos/intersections demos/csearch
 
-advanced_demos.ps:	advanced_demos_index \
-			${ADVANCED_DEMOS_FILES}
-	rm -rf advanced_demos.ps
-	../../judge/bin/fprint > advanced_demos.ps -o \
-	    `grep -v 'sample.*' \
-	             advanced_demos_index.files`
+# Legacy email stuff
 
 emailsh:	email/sh/hpcm_extract \
 		email/sh/hpcm_submit \
@@ -239,7 +171,7 @@ web:	web_do
 	rm -rf web web.tar
 	make clean
 	mkdir web
-	make WEB=web help_index all_demos_index
+	make WEB=web all_help_index all_demos_index
 	make pdf
 	mkdir web/algorithms
 	chmod 755 web/algorithms
@@ -261,10 +193,7 @@ clean:
 	       email/sh/hpcm_clisp \
 	       email/sh/hpcm_clisp.lsp \
 	       web web.tar \
-	       *help_index *demos_index \
-	       formal_help_index \
-	       advanced_help_index \
-	       advanced_demos_index \
+	       *_help_index *_demos_index \
 	       *.files *.ps *.pdf \
 	       *_index.html \
 	       STL_doc
