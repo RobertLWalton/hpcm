@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Mar  4 20:13:22 EST 2013
+# Date:		Tue Mar  5 03:14:58 EST 2013
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2013/03/05 07:13:01 $
+#   $Date: 2013/03/05 08:49:16 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.46 $
+#   $Revision: 1.47 $
 
 # To make web help pages, execute `make web', copy
 # the `web.tar' file to your web server and unpack
@@ -28,6 +28,10 @@ pdf:	acm_contest_help.pdf \
 	algorithm_festival_help.pdf \
 	timed_practice_help.pdf \
 	untimed_practice_help.pdf \
+	c_help.pdf \
+	cc_help.pdf \
+	java_help.pdf \
+	lsp_help.pdf \
 	c_basic_io_demos.pdf \
 	c_advanced_io_demos.pdf \
 	c_algorithm_demos.pdf \
@@ -59,25 +63,51 @@ WEB = ""
 	      $*_help_index.files
 	../../judge/bin/makehelp \
 	    $*_help_index ${HELP_TITLE} \
-	    help_index ${WEB} \
-	    $*_help general
+	    help_index ${WEB} ${OPTIONS}
 
 %_help.ps:	%_help_index
 	rm -rf $*_help.ps
 	../../judge/bin/fprint > $*_help.ps -o \
-	    $*_help_index.files
+	    `cat $*_help_index.files`
 
 acm_contest_help_index: \
-    HELP_TITLE = "ACM CONTEST HELP FILES"
+    HELP_TITLE = "ACM CONTEST HELP"
+acm_contest_help_index: \
+    OPTIONS = contest/acm_contest general
 algorithm_festival_help_index: \
-    HELP_TITLE = "ALGORITHM FESTIVAL HELP FILES"
+    HELP_TITLE = "ALGORITHM FESTIVAL HELP"
+algorithm_festival_help_index: \
+    OPTIONS = contest/algorithm_festival general
 timed_practice_help_index: \
-    HELP_TITLE = "TIMED PRACTICE HELP FILES"
+    HELP_TITLE = "TIMED PRACTICE HELP"
+timed_practice_help_index: \
+    OPTIONS = contest/timed_practice general
 untimed_practice_help_index: \
-    HELP_TITLE = "UNTIMED PRACTICE HELP FILES"
+    HELP_TITLE = "UNTIMED PRACTICE HELP"
+untimed_practice_help_index: \
+    OPTIONS = contest/untimed_practice general
+
+c_help_index: \
+    HELP_TITLE = "C LANGUAGE HELP"
+c_help_index: \
+    OPTIONS = c
+cc_help_index: \
+    HELP_TITLE = "C++ LANGUAGE HELP"
+cc_help_index: \
+    OPTIONS = c++
+java_help_index: \
+    HELP_TITLE = "JAVA LANGUAGE HELP"
+java_help_index: \
+    OPTIONS = java
+lsp_help_index: \
+    HELP_TITLE = "COMMONLISP LANGUAGE HELP"
+lsp_help_index: \
+    OPTIONS = commonlisp
 
 all_help_index: \
-    HELP_TITLE = "HELP FILES"
+    HELP_TITLE = "HELP FILES INDEX"
+all_help_index: \
+    OPTIONS = contest language general
 
 
 # If we replace %_demos_index by %demos_index we get
@@ -99,32 +129,32 @@ all_help_index: \
 	           $*_demos_index.files`
 
 c_basic_io_demos_index: \
-    DEMOS_TITLE = "C BASIC IO DEMOS INDEX"
+    DEMOS_TITLE = "C BASIC IO DEMOS"
 c_advanced_io_demos_index: \
-    DEMOS_TITLE = "C ADVANCED IO DEMOS INDEX"
+    DEMOS_TITLE = "C ADVANCED IO DEMOS"
 c_algorithm_demos_index: \
-    DEMOS_TITLE = "C ALGORITHM DEMOS INDEX"
+    DEMOS_TITLE = "C ALGORITHM DEMOS"
 
 cc_basic_io_demos_index: \
-    DEMOS_TITLE = "C++ BASIC IO DEMOS INDEX"
+    DEMOS_TITLE = "C++ BASIC IO DEMOS"
 cc_advanced_io_demos_index: \
-    DEMOS_TITLE = "C++ ADVANCED IO DEMOS INDEX"
+    DEMOS_TITLE = "C++ ADVANCED IO DEMOS"
 cc_algorithm_demos_index: \
-    DEMOS_TITLE = "C++ ALGORITHM DEMOS INDEX"
+    DEMOS_TITLE = "C++ ALGORITHM DEMOS"
 
 java_basic_io_demos_index: \
-    DEMOS_TITLE = "JAVA BASIC IO DEMOS INDEX"
+    DEMOS_TITLE = "JAVA BASIC IO DEMOS"
 java_advanced_io_demos_index: \
-    DEMOS_TITLE = "JAVA ADVANCED IO DEMOS INDEX"
+    DEMOS_TITLE = "JAVA ADVANCED IO DEMOS"
 java_algorithm_demos_index: \
-    DEMOS_TITLE = "JAVA ALGORITHM DEMOS INDEX"
+    DEMOS_TITLE = "JAVA ALGORITHM DEMOS"
 
 lsp_basic_io_demos_index: \
-    DEMOS_TITLE = "COMMONLISP BASIC IO DEMOS INDEX"
+    DEMOS_TITLE = "LISP BASIC IO DEMOS"
 lsp_advanced_io_demos_index: \
-    DEMOS_TITLE = "COMMONLISP ADVANCED IO DEMOS INDEX"
+    DEMOS_TITLE = "LISP ADVANCED IO DEMOS"
 lsp_algorithm_demos_index: \
-    DEMOS_TITLE = "COMMONLISP ALGORITHM DEMOS INDEX"
+    DEMOS_TITLE = "LISP ALGORITHM DEMOS"
 
 all_demos_index: \
     DEMOS_TITLE = "DEMOS INDEX"
