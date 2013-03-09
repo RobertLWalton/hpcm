@@ -1,0 +1,300 @@
+#! /bin/sh
+#
+# Test judge on problem code.
+#
+# File:		testjudge
+# Author:	Bob Walton <walton@deas.harvard.edu>
+# Date:		Sat Mar  9 09:55:49 EST 2013
+#
+# The authors have placed this program in the public
+# domain; they make no warranty and accept no liability
+# for this program.
+#
+# RCS Info (may not be true date or author):
+#
+#   $Author: walton $
+#   $Date: 2013/03/09 17:21:07 $
+#   $RCSfile: testjudge,v $
+#   $Revision: 1.1 $
+#
+# The next lines run tclsh \
+trap "echo testjudge: Terminated by Signal; exit 1" \
+    HUP INT QUIT; \
+trap "rm -rf /tmp/testjudge$$" EXIT; \
+tclsh "$0" /tmp/testjudge$$ "$@"; exit $status
+
+set savedir [lindex $argv 0]
+set argv [lrange $argv 1 end]
+
+set lib_directory "[file dirname $argv0]/../lib"
+set judging_directory .
+set log_disable yes
+source $lib_directory/judging_common.tcl
+catch {
+
+set document "
+testjudge \[-keep savedir] \[-ext \".EXT ...\"] \\
+          \[directory ...]
+
+    If no directories are given, the directory list
+    defaults to `.'.  Savedir defaults to a subdirectory
+    of /tmp.
+
+    First this program makes `savedir' if it does not
+    exist, and links hpcm_judging.rc in that directory,
+    if this does not exist already, to the hpcm_jud-
+    ging.rc file in use by this `testjudge' program.
+    Savedir defaults to a subdirectory of /tmp that is
+    unique to the current execution of `testjudge'.
+
+    Then for each directory argument dddd and each
+    solution pppp.eee in that directory this program
+    makes a directory
+
+    	savedir/dddd/test_eee/
+
+    and in that directory a `Received_Mail' file con-
+    taining pppp.eee, and runs `autodispatch' in that
+    directory.  The from address in the `Received_
+    Mail' file is `current-account@localhost'.  This
+    program also makes the directory savedir/solutions
+    if that does not exist, and links
+
+    	savedir/solutions/dddd
+
+    to the directory dddd.
+
+    Lastly, if -keep is NOT given, savedir is deleted
+    (it is a subdirectory of /tmp in this case).
+
+    If -keep was given, `manualreply' and `lookat' can
+    be run in savedir to look at the results.  Some
+    results also appear in the `current-account' mail."
+
+# Process options.
+#
+set keep 0
+set myargv $argv
+while { 1 } {
+    switch -glob -- [lindex $myargv 0] {
+    -doc* {
+	puts $document
+	exit 1
+    }
+    -keep {
+    	set keep 1
+	set myargv [lrange $myargv 1 end]
+	set savedir [lindex $myargv 0]
+    }
+    -ext {
+	    set myargv [lrange $myargv 1 end]
+	    set allowed_extensions [lindex $myargv 0]
+	    if { [catch { llength \
+	                    $allowed_extensions }] } {
+	        error "-ext $allowed_extensions\
+		            is not legal"
+	    }
+    }
+    default break
+    }
+    set myargv [lrange $myargv 1 end]
+}
+if { [llength $myargv] == 0 } {
+    set myargv .
+}
+
+set wd [pwd]
+
+if { ! [file directory $savedir] } {
+
+    if { [file exists $savedir] } {
+        puts "$savedir is not a directory"
+    }
+    file mkdir $savedir
+}
+
+if { ! [file exists $savedir/hpcm_judging.rc] } {
+    if { $HPCM_STANDALONE } {
+	file link -symbolic \
+	     $lib_directory/hpcm_judging.rc \
+	     $savedir/hpcm_judging.rc
+    } else {
+	file link -symbolic \
+	     $judging_directory/hpcm_judging.rc \
+	     $savedir/hpcm_judging.rc
+    }
+}
+
+if { ! [file directory $savedir/solutions] } {
+
+    if { [file exists $savedir/solutions] } {
+        puts "$savedir/solutions is not a directory"
+    }
+    file mkdir $savedir/solutions
+}
+
+set delete_at_end {}
+foreach directory $myargv {
+
+    cd $wd
+
+    if { ! [file isdirectory $directory] } {
+        puts "====================\
+	      $directory is not a directory"
+	continue
+    }
+
+    if { ! [file exists $directory/Makefile] } {
+	puts "====================\
+	      $directory/Makefile does not exist"
+	continue
+    }
+
+    cd $directory
+    set dir [pwd]
+
+    if { [catch {
+
+	# Extract problem from `P = problem' line in
+	# Makefile
+	#
+	set pline ""
+	if { [catch { set pline \
+	                  [exec grep $mgrepexp Makefile]
+		    }]\
+	    || \
+	    ! [regexp $mregexp $pline \
+	               forget problem] } {
+	    error "CANNOT find P = ... line in Makefile"
+	}
+
+	# Make list of PROBLEM*.EXT values (solutions).
+	#
+	set solutions {}
+	set allowed {}
+	foreach pext $allowed_extensions {
+	    if { ! [regexp "^\\.(.*)\$" $pext \
+	                   forget EXT] } {
+	        error "bad allowed_extension `$pext'"
+	    }
+
+	    lappend allowed $EXT
+	    lappend_lists solutions \
+	                  [glob -nocomplain \
+			        "$problem*.$EXT"]
+	}
+	if { [llength $solutions] == 0 } {
+	    set exts [join $allowed ,]
+	    error "no $problem*.{$exts} solutions"
+	}
+
+	# Remove $problem.in link if any.
+	#
+	set type none
+	catch { set type [file type $problem.in] }
+	if { $type == "link" } {
+	    file delete $problem.in
+	}
+
+	# Process each value of PROBLEMXXX.EXT
+	#
+	if { [catch { foreach SOLUTION $solutions {
+
+	    # Be sure we are in problem directory
+	    #
+	    cd $dir
+
+	    regexp "^(.*)\\.(\[^.]*)\$" $SOLUTION \
+	           forget PROBLEMXXX EXT
+	    set testdir \
+	        "$savedir/test_${PROBLEMXXX}_$EXT"
+
+	    puts -nonewline "===================="
+	    puts -nonewline "===================="
+	    puts " $testdir:"
+
+	    if { [file exists $testdir] } {
+		puts "rm -rf $testdir"
+		file delete -force -- $testdir
+	    }
+	    puts "mkdir $testdir"
+	    file mkdir $testdir
+	    lappend delete_at_end $testdir
+
+	    TBD
+
+	    # Link $savedir/solutions/PROBLEMXXX
+	    #
+	    if {  
+
+	    # Change to subdirectory
+	    #
+	    cd $testdir
+
+	  } } out] } {
+	    puts "  ==== $testdir:"
+	    puts $out
+	    putsfd "  ==== $testdir:"
+	    putsfd $out
+        }
+
+	# Return to problem directory
+	#
+	cd $dir
+
+	if { ! $keep } {
+	    putsq "make clean"
+	    exec make clean >&@ $stdoutq
+	}
+
+	if { ! $keep && [llength $delete_at_end] > 0 } {
+	    putsq "rm -rf $delete_at_end"
+	    eval file delete -force -- $delete_at_end
+	}
+
+    } out] } {
+        puts $out
+	putsfd $out
+    }
+}
+
+if { $SUB == 3 } {
+    set report [open $SUB_filename a]
+} else {
+    puts ""
+    puts "******************** SUMMARY:"
+    set report stdout
+}
+
+
+if { $SUB == 0 } {
+    close $fd
+    exec cat $tmp >@ stdout
+    file delete $tmp
+}
+
+if { [llength $diff_files] > 0 } {
+    puts $report "******************** \
+          FILES THAT ARE DIFFERENT:"
+    set previous ""
+    foreach item $diff_files {
+        set location [lindex $item 0]
+        set file1 [lindex $item 1]
+        set file2 [lindex $item 2]
+	if { $previous != $location } {
+	    puts $report "  in $location:"
+	    set previous $location
+	}
+	puts $report \
+	     [format {%38s != %-38s} $file1 $file2]
+    }
+}
+if { $SUB == 3 } {
+    close $report
+}
+
+exit 0
+
+} caught_output
+caught_error
+
