@@ -4,7 +4,7 @@
 #
 # File:		testjudge
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Sun Mar 10 10:15:22 EDT 2013
+# Date:		Sun Mar 10 13:24:42 EDT 2013
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2013/03/10 17:11:34 $
+#   $Date: 2013/03/10 17:25:01 $
 #   $RCSfile: testjudge,v $
-#   $Revision: 1.4 $
+#   $Revision: 1.5 $
 #
 # The next lines run tclsh \
 trap "echo testjudge: Terminated by Signal; exit 1" \
@@ -39,28 +39,29 @@ set document "
 testjudge \[-keep savedir] \[-ext \".EXT ...\"] \\
           \[directory ...]
 
-    If no directories are given, the directory list
-    defaults to `.'.  Savedir defaults to a subdirectory
-    of /tmp.
+    The directories contain the problem solutions to be
+    tested within savedir.  If no directories are given,
+    the directory list defaults to `.'.  Savedir
+    defaults to a subdirectory of /tmp that is unique to
+    the current execution of `testjudge'.  The solutions
+    to be tested have the extensions given by the -ext
+    option if that is present, or by the allowed_
+    extensions variable value in .../judge/lib/hpcm_
+    judging.rc otherwise.
 
     First this program makes `savedir' if it does not
     exist, and then if savedir/hpcm_judging.rc does not
-    exist, makes savedir/hpcm_judging.rc to source the
-    hpcm_judging.rc file used by this `testjudge'.  Then
-    regardless of whether savedir/hpcm_judging.rc
-    pre-existed, this program appends to it a line to
-    set allowed_extensions to the proper value.  Savedir
-    defaults to a subdirectory of /tmp that is unique to
-    the current execution of `testjudge'.
+    exist, makes savedir/hpcm_judging.rc to source
+    .../judge/lib/hpcm_judging.rc.  Then regardless of
+    whether savedir/hpcm_judging.rc pre-existed, this
+    program appends to it a line to set allowed_exten-
+    sions to the list of extensions to be tested.
 
     Note that if -keep is given, savedir must be
-    accessible to the sandbox if JAVA is being tested.
-
-    The -ext option sets allowed_extensions.  Otherwise
-    this is defaulted to the value provided by the
-    hpcm_judging.rc files used by this `testjudge'.
-
-    Then for each directory argument dddd with is in
+    accessible to everyone (via chmod a+x) if JAVA or
+    COMMONLISP are being tested.
+
+    Then for each directory argument dddd which is in
     fact a directory containing a `Makefile', and for
     each solution ppppxxx.eee in that directory, this
     program makes a directory
