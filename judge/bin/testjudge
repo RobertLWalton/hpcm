@@ -4,7 +4,7 @@
 #
 # File:		testjudge
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Sun Mar 10 08:27:31 EDT 2013
+# Date:		Sun Mar 10 10:15:22 EDT 2013
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2013/03/10 13:55:42 $
+#   $Date: 2013/03/10 17:11:34 $
 #   $RCSfile: testjudge,v $
-#   $Revision: 1.3 $
+#   $Revision: 1.4 $
 #
 # The next lines run tclsh \
 trap "echo testjudge: Terminated by Signal; exit 1" \
@@ -44,14 +44,21 @@ testjudge \[-keep savedir] \[-ext \".EXT ...\"] \\
     of /tmp.
 
     First this program makes `savedir' if it does not
-    exist, and links hpcm_judging.rc in that directory,
-    if this does not exist already, to the hpcm_jud-
-    ging.rc file in use by this `testjudge' program.
-    Savedir defaults to a subdirectory of /tmp that is
-    unique to the current execution of `testjudge'.
+    exist, and then if savedir/hpcm_judging.rc does not
+    exist, makes savedir/hpcm_judging.rc to source the
+    hpcm_judging.rc file used by this `testjudge'.  Then
+    regardless of whether savedir/hpcm_judging.rc
+    pre-existed, this program appends to it a line to
+    set allowed_extensions to the proper value.  Savedir
+    defaults to a subdirectory of /tmp that is unique to
+    the current execution of `testjudge'.
 
     Note that if -keep is given, savedir must be
     accessible to the sandbox if JAVA is being tested.
+
+    The -ext option sets allowed_extensions.  Otherwise
+    this is defaulted to the value provided by the
+    hpcm_judging.rc files used by this `testjudge'.
 
     Then for each directory argument dddd with is in
     fact a directory containing a `Makefile', and for
@@ -84,8 +91,8 @@ testjudge \[-keep savedir] \[-ext \".EXT ...\"] \\
 # Process options.
 #
 set keep 0
+set ext 0
 set myargv $argv
-set extensions $allowed_extensions
 while { 1 } {
     switch -glob -- [lindex $myargv 0] {
     -doc* {
@@ -98,11 +105,12 @@ while { 1 } {
 	set savedir [lindex $myargv 0]
     }
     -ext {
+	    set ext 1
 	    set myargv [lrange $myargv 1 end]
-	    set extensions [lindex $myargv 0]
+	    set allowed_extensions [lindex $myargv 0]
 	    if { [catch { llength \
-	                    $extensions }] } {
-	        error "-ext $extensions\
+	                    $allowed_extensions }] } {
+	        error "-ext $allowed_extensions\
 		            is not legal"
 	    }
     }
@@ -116,6 +124,9 @@ if { [llength $myargv] == 0 } {
 
 set wd [pwd]
 set account [exec id -un]
+cd $lib_directory
+set libdir [pwd]
+cd $wd
 
 if { ! [file isdirectory $savedir] } {
 
@@ -135,22 +146,14 @@ if { ! [file exists $savedir/hpcm_judging.rc] } {
                         $savedir/hpcm_judging.rc}] } {
         file delete $savedir/hpcm_judging.rc
     }
-    if { $HPCM_STANDALONE } {
-	puts "ln -s\
-	     $lib_directory/hpcm_judging.rc\
-	     $savedir/hpcm_judging.rc"
-	file link -symbolic \
-	     $savedir/hpcm_judging.rc \
-	     $lib_directory/hpcm_judging.rc
-    } else {
-	puts "ln -s\
-	     $judging_directory/hpcm_judging.rc\
-	     $savedir/hpcm_judging.rc"
-	file link -symbolic \
-	     $savedir/hpcm_judging.rc \
-	     $judging_directory/hpcm_judging.rc
-    }
+    puts "making $savedir/hpcm_judging.rc"
+    set fd [open $savedir/hpcm_judging.rc w]
+    puts $fd "source $libdir/hpcm_judging.rc"
+    close $fd
 }
+exec echo "set allowed_extensions \
+               {$allowed_extensions}" \
+	  >> $savedir/hpcm_judging.rc
 
 if { ! [file isdirectory $savedir/solutions] } {
 
@@ -211,7 +214,7 @@ foreach directory $myargv {
 	#
 	set solutions {}
 	set allowed {}
-	foreach pext $extensions {
+	foreach pext $allowed_extensions {
 	    if { ! [regexp "^\\.(.*)\$" $pext \
 	                   forget EXT] } {
 	        error "bad allowed_extension `$pext'"
