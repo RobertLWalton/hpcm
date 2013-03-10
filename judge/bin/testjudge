@@ -4,7 +4,7 @@
 #
 # File:		testjudge
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Sat Mar  9 09:55:49 EST 2013
+# Date:		Sun Mar 10 03:54:29 EDT 2013
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2013/03/09 17:21:07 $
+#   $Date: 2013/03/10 08:25:29 $
 #   $RCSfile: testjudge,v $
-#   $Revision: 1.1 $
+#   $Revision: 1.2 $
 #
 # The next lines run tclsh \
 trap "echo testjudge: Terminated by Signal; exit 1" \
@@ -133,8 +133,9 @@ if { ! [file directory $savedir/solutions] } {
     file mkdir $savedir/solutions
 }
 
-set delete_at_end {}
 foreach directory $myargv {
+
+    set delete_at_end {}
 
     cd $wd
 
@@ -154,6 +155,12 @@ foreach directory $myargv {
     set dir [pwd]
 
     if { [catch {
+
+	puts -nonewline "=========="
+	puts " $dir:"
+
+	puts "make clean"
+	exec make clean >&@ $stdout
 
 	# Extract problem from `P = problem' line in
 	# Makefile
@@ -196,6 +203,25 @@ foreach directory $myargv {
 	    file delete $problem.in
 	}
 
+	# Link $savedir/solutions/$problem
+	#
+	set soldir $savedir/solutions/$problem
+	set type none
+	catch { set type [file type $soldir] }
+	if { $type == "none" } {
+	    puts "ln -s $dir $soldir"
+	    file link -symbolic $dir $soldir
+	    lappend delete_at_end $soldir
+	} elseif { $type != "link" } {
+	    error "$soldir exists but is not a link"
+	} elseif { [file link $soldir] != $dir } {
+	    puts "rm $soldir"
+	    file delete -- $soldir
+	    puts "ln -s $dir $soldir"
+	    file link -symbolic $dir $soldir
+	    lappend delete_at_end $soldir
+	}
+
 	# Process each value of PROBLEMXXX.EXT
 	#
 	if { [catch { foreach SOLUTION $solutions {
@@ -210,7 +236,6 @@ foreach directory $myargv {
 	        "$savedir/test_${PROBLEMXXX}_$EXT"
 
 	    puts -nonewline "===================="
-	    puts -nonewline "===================="
 	    puts " $testdir:"
 
 	    if { [file exists $testdir] } {
@@ -221,34 +246,34 @@ foreach directory $myargv {
 	    file mkdir $testdir
 	    lappend delete_at_end $testdir
 
-	    TBD
-
-	    # Link $savedir/solutions/PROBLEMXXX
-	    #
-	    if {  
-
 	    # Change to subdirectory
 	    #
 	    cd $testdir
 
+	    # Make Received_Mail
+	    #
+	    puts "making Received_Mail"
+	    set fd [open Received_Mail w]
+	    puts $fd "From $account@localhost"
+	    puts $fd "Subject: submit $problem.$EXT"
+	    puts $fd ""
+	    exec cat $dir/$SOLUTION >@$fd
+	    close $fd
+
+	    # Execute autodispatch
+	    puts "executing autodispatch"
+	    exec autodispatch
+
 	  } } out] } {
-	    puts "  ==== $testdir:"
 	    puts $out
-	    putsfd "  ==== $testdir:"
-	    putsfd $out
         }
 
 	# Return to problem directory
 	#
 	cd $dir
 
-	if { ! $keep } {
-	    putsq "make clean"
-	    exec make clean >&@ $stdoutq
-	}
-
 	if { ! $keep && [llength $delete_at_end] > 0 } {
-	    putsq "rm -rf $delete_at_end"
+	    puts "rm -rf $delete_at_end"
 	    eval file delete -force -- $delete_at_end
 	}
 
@@ -256,41 +281,6 @@ foreach directory $myargv {
         puts $out
 	putsfd $out
     }
-}
-
-if { $SUB == 3 } {
-    set report [open $SUB_filename a]
-} else {
-    puts ""
-    puts "******************** SUMMARY:"
-    set report stdout
-}
-
-
-if { $SUB == 0 } {
-    close $fd
-    exec cat $tmp >@ stdout
-    file delete $tmp
-}
-
-if { [llength $diff_files] > 0 } {
-    puts $report "******************** \
-          FILES THAT ARE DIFFERENT:"
-    set previous ""
-    foreach item $diff_files {
-        set location [lindex $item 0]
-        set file1 [lindex $item 1]
-        set file2 [lindex $item 2]
-	if { $previous != $location } {
-	    puts $report "  in $location:"
-	    set previous $location
-	}
-	puts $report \
-	     [format {%38s != %-38s} $file1 $file2]
-    }
-}
-if { $SUB == 3 } {
-    close $report
 }
 
 exit 0
