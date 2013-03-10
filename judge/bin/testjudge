@@ -4,7 +4,7 @@
 #
 # File:		testjudge
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Sun Mar 10 13:24:42 EDT 2013
+# Date:		Sun Mar 10 16:18:49 EDT 2013
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2013/03/10 17:25:01 $
+#   $Date: 2013/03/10 20:46:02 $
 #   $RCSfile: testjudge,v $
-#   $Revision: 1.5 $
+#   $Revision: 1.6 $
 #
 # The next lines run tclsh \
 trap "echo testjudge: Terminated by Signal; exit 1" \
@@ -61,31 +61,32 @@ testjudge \[-keep savedir] \[-ext \".EXT ...\"] \\
     accessible to everyone (via chmod a+x) if JAVA or
     COMMONLISP are being tested.
 
-    Then for each directory argument dddd which is in
-    fact a directory containing a `Makefile', and for
-    each solution ppppxxx.eee in that directory, this
-    program makes a directory
+    This program makes the directory savedir/mail if
+    that does not exist.  Then for each directory argu-
+    ment dddd which is in fact a directory containing a
+    `Makefile', and for each solution ppppxxx.eee in
+    that directory, this program makes a directory
 
-    	savedir/dddd/test_ppppxxx_eee/
+    	savedir/mail/test_ppppxxx_eee/
 
     and in that directory a `Received_Mail' file con-
     taining ppppxxx.eee, and runs `autodispatch' in that
     directory.  Here pppp is the problem name extracted
-    from the directory Makefile `P = problem' line, and
+    from the directory Makefile `P = pppp' line, and
     eee is an allowed solution extension.  The from
     address in the `Received_Mail' file is `current-
     account@localhost'.  This program also makes the
     directory savedir/solutions if that does not exist,
     and links
 
-    	savedir/solutions/dddd
+    	savedir/solutions/pppp
 
     to the directory dddd.
 
     Lastly, if -keep is NOT given, savedir is deleted
     (it is a subdirectory of /tmp in this case).
 
-    If -keep was given, `manualreply' and `lookat' can
+    If -keep was given, `tracker' and `lookat' can
     be run in savedir to look at the results.  Some
     results also appear in the `current-account' mail."
 
@@ -164,6 +165,17 @@ if { ! [file isdirectory $savedir/solutions] } {
     puts "mkdir $savedir/solutions"
     file mkdir $savedir/solutions
 }
+
+set maildir "$savedir/mail"
+if { ! [file isdirectory $maildir] } {
+
+    if { [file exists $maildir] } {
+        puts "$maildir is not a directory"
+    }
+    puts "mkdir $maildir"
+    file mkdir $maildir
+}
+file attributes $maildir -permissions a+x
 
 set mregexp \
     "^\[ \t]*P\[ \t]*=\[ \t]*(\[^ \t]\[^ \t]*)\[ \t]*\$"
@@ -269,7 +281,7 @@ foreach directory $myargv {
 		regexp "^(.*)\\.(\[^.]*)\$" $SOLUTION \
 		       forget PROBLEMXXX EXT
 		set testdir \
-		    "$savedir/test_${PROBLEMXXX}_$EXT"
+		    "$maildir/test_${PROBLEMXXX}_$EXT"
 
 		puts -nonewline "===================="
 		puts " $testdir:"
