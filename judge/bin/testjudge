@@ -4,7 +4,7 @@
 #
 # File:		testjudge
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Sun Mar 10 16:18:49 EDT 2013
+# Date:		Sun Mar 10 20:27:52 EDT 2013
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2013/03/10 20:46:02 $
+#   $Date: 2013/03/11 00:44:17 $
 #   $RCSfile: testjudge,v $
-#   $Revision: 1.6 $
+#   $Revision: 1.7 $
 #
 # The next lines run tclsh \
 trap "echo testjudge: Terminated by Signal; exit 1" \
@@ -67,7 +67,7 @@ testjudge \[-keep savedir] \[-ext \".EXT ...\"] \\
     `Makefile', and for each solution ppppxxx.eee in
     that directory, this program makes a directory
 
-    	savedir/mail/test_ppppxxx_eee/
+    	savedir/mail/DATE-<<ppppxxx_eee>>-submission
 
     and in that directory a `Received_Mail' file con-
     taining ppppxxx.eee, and runs `autodispatch' in that
@@ -87,8 +87,16 @@ testjudge \[-keep savedir] \[-ext \".EXT ...\"] \\
     (it is a subdirectory of /tmp in this case).
 
     If -keep was given, `tracker' and `lookat' can
-    be run in savedir to look at the results.  Some
-    results also appear in the `current-account' mail."
+    be run in savedir to look at the results.  Note that
+    ppppxxx_eee is the submitter name so you can use
+
+    	lookat _eee
+	lookat pppp
+
+    to see all tests with extension eee or problem pppp
+    respectively.  `tracker' is mostly of use for look-
+    ing at statistics since judging is purely automatic.
+    Results also appear in the `current-account' mail."
 
 # Process options.
 #
@@ -129,6 +137,7 @@ set account [exec id -un]
 cd $lib_directory
 set libdir [pwd]
 cd $wd
+set date [clock_to_filename_date [clock seconds]]
 
 if { ! [file isdirectory $savedir] } {
 
@@ -268,7 +277,7 @@ foreach directory $myargv {
 	    file link -symbolic $soldir $dir
 	}
 
-	# Process each value of PROBLEMXXX.EXT
+	# Process each solution
 	#
 	foreach SOLUTION $solutions {
 
@@ -281,7 +290,9 @@ foreach directory $myargv {
 		regexp "^(.*)\\.(\[^.]*)\$" $SOLUTION \
 		       forget PROBLEMXXX EXT
 		set testdir \
-		    "$maildir/test_${PROBLEMXXX}_$EXT"
+		    "$date-<<${PROBLEMXXX}_$EXT>>"
+		set testdir \
+		    $maildir/${testdir}-submission
 
 		puts -nonewline "===================="
 		puts " $testdir:"
