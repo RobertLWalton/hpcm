@@ -2,7 +2,7 @@
 #
 # File:		scoring_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Mar 16 08:52:06 EDT 2012
+# Date:		Mon Mar 11 04:15:10 EDT 2013
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2012/03/16 12:52:21 $
+#   $Date: 2013/03/11 08:20:33 $
 #   $RCSfile: scoring_common.tcl,v $
-#   $Revision: 1.71 $
+#   $Revision: 1.72 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -940,131 +940,6 @@ proc process_in_or_out_command \
     }
 }
 
-# Helper function for execute_response_commands below.
-# Just processes FIRST or SUMMARY command out-of-line to
-# make code neater.
-#
-proc process_first_or_summary_command \
-	{ command processed_commands } {
-
-    upvar $processed_commands pc
-
-    global auto_score_marker proof_array \
-           process_proof_file process_proof_prefix \
-	   process_proof_ch process_proof_number \
-	   response_instructions_summary_limit \
-	   scoring_instructions
-
-    set limit $response_instructions_summary_limit
-
-    set score_file [lindex $auto_score_marker 0]
-    if {    $score_file == "" \
-    	 || [file extension $score_file] == "" \
-         || ! [file exists $score_file] } {
-	lappend pc [list LINE "Sorry, no more detailed\
-			       scoring information is\
-			       available."]
-    } else {
-
-	# We need to find the difference types that
-	# support the automatically determined score.
-
-	if { ! [regexp {^(.*)score$} $score_file \
-		       forget prefix] } {
-	    error "SYSTEM ERROR: non-*score score file"
-	}
-	set process_proof_file ${prefix}out
-	set process_proof_prefix \
-	    [regexp {\.j[^.]*out$} $process_proof_file]
-
-	set name [file rootname $score_file]
-	set jin_instructions none
-	if { [file exists $name.jin] } {
-	    set jin_instructions \
-		[string trim [exec jfilter $name.jin]]
-	}
-	if { $jin_instructions == "none" } {
-	    compute_instruction_array \
-		$scoring_instructions \
-		"scoring_instructions\
-		 variable value"
-	} else {
-	    compute_instruction_array \
-		$jin_instructions \
-		"$name.jin file"
-	}
-	compute_score_and_proof_arrays $score_file
-	compute_score
-
-	set first_iteration yes
-	foreach x {
-	    {incorrect_output {Incorrect Output}}
-	    {incomplete_output {Incomplete Output}}
-	    {formatting_error {Formatting Error}} } {
-
-
-	    set xname  [lindex $x 0]
-	    set xscore [lindex $x 1]
-	    global ${xname}_types
-	    set proofs ""
-	    foreach difference [set ${xname}_types] {
-	        set proofs \
-		    [concat $proofs \
-		            $proof_array($difference)]
-	    }
-	    set proofs [lsort $proofs]
-
-	    if { [llength $proofs] == 0 } continue
-
-	    if { [catch {
-	    	    set process_proof_ch \
-		        [open $process_proof_file r] \
-			}] } {
-	        error "Cannot open $process_proof_file"
-	    }
-	    set process_proof_number 0
-
-	    if { $command == "FIRST" } {
-
-	        lappend pc [list LINE "The first error\
-				       supporting the\
-				       score `$xscore'\
-				       is:"]
-		process_proof [lindex $proofs 0] pc
-		break
-	    } elseif { $command == "SUMMARY" } {
-	        if { $first_iteration } {
-		    set first_iteration no
-		} else {
-		    lappend pc BAR
-		}
-	        set len [llength $proofs]
-	        lappend pc [list LINE "There are at\
-				       least $len\
-				       errors\
-				       supporting the\
-				       score `$xscore'"]
-		if { $len > $limit } {
-		    set len $limit
-		    lappend pc [list LINE "The first\
-					   $len are:"]
-		} else {
-		    lappend pc [list LINE "These are:"]
-		}
-		set i 0
-		while { $i < $len } {
-		    process_proof [lindex $proofs $i] pc
-		    incr i
-		}
-	    } else {
-	        error "Command `$command' unrecognized"
-	    }
-
-	    close $process_proof_ch
-	}
-    }
-}
-
 # Helper function for compose_response above.  Executes
 # response instruction commands after if-statement
 # processing.
@@ -1201,15 +1076,6 @@ proc execute_response_commands \
 		    lappend processed_commands \
 			    [list INPUT $f]
 		}
-	    }
-
-	    FIRST	-
-	    SUMMARY	{
-	    	if { $length != 1 } {
-		    response_error $command
-		}
-		process_first_or_summary_command \
-		    $command processed_commands
 	    }
 
 	    IN  -
