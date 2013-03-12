@@ -4,7 +4,7 @@
 #
 # File:		makescoreboard
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Jan 13 23:15:45 EST 2009
+# Date:		Tue Mar 12 08:30:07 EDT 2013
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2009/01/14 05:24:54 $
+#   $Date: 2013/03/12 16:43:59 $
 #   $RCSfile: makescoreboard,v $
-#   $Revision: 1.88 $
+#   $Revision: 1.89 $
 #
 # The next lines start tclsh \
 trap "echo makescoreboard: Terminated by Signal" \
@@ -203,16 +203,22 @@ set pfile $judging_directory/hpcm_judging.rc
 set mtime [file mtime $pfile]
 set parameter_mtime_list [list [list $mtime $pfile]]
 
-# Last time the scoreboard update was started.
+# Last time the scoreboard update was started, in
+# seconds.
 #
 set last_time ""
+
+# Ditto as time-and-date.
+#
+set scoreboard_time ""
 
 # Earliest start or stop time in an OUTPUT instruction
 # that is after last_time.  Or "" if none.
 #
 set future_time ""
 
-# Shutdown time in [clock seconds] format, or "" if none.
+# Shutdown time in [clock seconds] format, or "" if
+# none.
 #
 set shutdown_time ""
 
@@ -256,6 +262,31 @@ foreach arg $parameters {
     }
 }
 
+# Replace relative stop and freeze times by normally
+# formatted times.
+#
+set st $scoreboard_start_time
+if { ! [catch { set st [clock scan $st] }] } {
+    set stop_time $scoreboard_stop_time
+    if { [regexp {^(|\+)[0-9]+$} $stop_time] } {
+	set scoreboard_stop_time \
+	    [clock format [expr { $st + $stop_time }]]
+    }
+    set freeze_time $scoreboard_freeze_time
+    if { [regexp {^(|\+)[0-9]+$} $freeze_time] } {
+	set scoreboard_freeze_time \
+	    [clock format [expr { $st + $freeze_time }]]
+    }
+}
+
+# Set up abbreviation_array to map abbreviations like
+# TIME to values.
+#
+foreach n [array names scoreboard_abbreviation] {
+    set m $scoreboard_abbreviation($n)
+    set abbreviation_array(n) [set scoreboard_$m]
+}
+
 # Save parameter values in parameter_save.
 #
 foreach v [info globals scoreboard_*] {
@@ -280,6 +311,16 @@ proc restore_parameters {} {
 	    set $v $parameter_save($v)
 	}
     }
+}
+
+# Procedure to update saved scoreboard_time.
+#
+proc set_scoreboard_time { time } {
+    global scoreboard_time parameter_save \
+           abbreviation_array
+    set scoreboard_time $time
+    set parameter_save(scoreboard_time) $time
+    set abbreviation_array(TIME) $time
 }
 
 
@@ -349,26 +390,28 @@ proc update_required { mtime_list } {
 }
 
 # Given a value that may be an abbreviation defined in
-# the abbreviation_array, return the value it abbrevi-
-# ates, or return the original value if it is not an
-# abbreviation.
+# abbreviation_array, return the value it abbreviates,
+# or return the original value if it is not an abbrevia-
+# tion.  Convert values like START+600 to date-and-time
+# values.
 #
 proc unabbreviate { value } {
 
     global abbreviation_array
 
-    if { [info exists abbreviation_array($value)] } {
+    if { [info exists \
+               abbreviation_array($value)] } {
 	return $abbreviation_array($value)
     } elseif {    [regexp {^(.*)([+-][0-9]+)$} $value \
-			  forget abbrev inc] \
+			  forget abv inc] \
 	       && [info exists \
-			abbreviation_array($abbrev)] \
+			abbreviation_array($abv)] \
 	       && ! [catch {
-			set date \
-			    $abbreviation_array($abbrev)
-			set time \
-			    [clock scan $date]
-			   }] } {
+		      set date \
+			  $abbreviation_array($abv)
+		      set time \
+			  [clock scan $date]
+		       }] } {
 	incr time $inc
 	return [clock format $time]
     } else {
@@ -392,7 +435,6 @@ proc set_parameter { instruction } {
     } else {
 	error "$name is not a scoreboard parameter name"
     }
-
 }
 
 
@@ -431,8 +473,8 @@ proc update_scoreboard { { force no } } {
     }
 
     eval global [info globals scoreboard_*]
+    set_scoreboard_time [clock format $time]
     restore_parameters
-
     set last_time $time
     set future_time ""
     set inout_mtime_list {}
@@ -444,44 +486,6 @@ proc update_scoreboard { { force no } } {
     file delete -force -- $finder_file
     exec scorefinder -gotten > $finder_file
     make_signals_default
-
-    # Save abbreviations.  If possible, replace relative
-    # stop and freeze times by normally formatted times
-    # so if they appear in LINE's they will look OK.
-    #
-    set start_time $scoreboard_start_time
-    set abbreviation_array(START) $start_time
-
-    if { ! [regexp {^(|problem|team)$} $start_time] } {
-	if { [catch { set st [clock scan $start_time] \
-		    }] } {
-	    error "badly formatted \
-		   scoreboard_start_time: $start_time"
-	}
-    } else {
-	set st ""
-    }
-
-    set stop_time $scoreboard_stop_time
-    if {    [regexp {^(|\+)[0-9]+$} $stop_time] \
-	 && $st != "" } {
-	set stop_time \
-	    [clock format [expr { $st + $stop_time }]]
-    }
-    set abbreviation_array(STOP) $stop_time
-
-    set freeze_time $scoreboard_freeze_time
-    if {    [regexp {^(|\+)[0-9]+$} $freeze_time] \
-	 && $st != "" } {
-	set freeze_time \
-	    [clock format [expr { $st + $freeze_time }]]
-    }
-    set abbreviation_array(FREEZE) $freeze_time
-
-    set abbreviation_array(NAME)   \
-	$scoreboard_name
-    set abbreviation_array(TIME)   \
-	[clock format $last_time]
 
     # Ignore signals while processing instructions.
     #
@@ -613,6 +617,10 @@ proc update_scoreboard { { force no } } {
 	    none_OUTPUT -
 	    no_OUTPUT -
 	    yes_OUTPUT {
+
+		# Restore parameters
+		#
+		restore_parameters
 
 		# Compute output file.
 		#

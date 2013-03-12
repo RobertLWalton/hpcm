@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Oct 10 08:36:58 EDT 2012
+# Date:		Mon Mar 11 05:33:43 EDT 2013
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2012/10/10 12:37:09 $
+#   $Date: 2013/03/12 16:46:05 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.82 $
+#   $Revision: 1.83 $
 
 # Table of Contents
 #
@@ -43,38 +43,7 @@ set hpcm_directory $env(HOME)/hpcm
 #
 set contest_name "CONTEST NAME IS TBD"
 
-# Scoring type.  One of:
-#
-#	timed		Timed from time the problems are
-#			passed out.
-#
-#	feedback	Scored according to number of
-#			incorrect, in, and inout submis-
-#			sions.
-#
-#	unranked	Only date of correct submission
-#			is given.  Contestants are
-#			listed in order of the number of
-#			problems they got right.
-#
-#	timed+feedback	The contest is timed, but 12
-#			hours after the stop time the
-#			contest is converted into an
-#			feedback contest.
-#
-#	timed+unranked	The contest is timed, but 12
-#			hours after the stop time the
-#			contest is converted into a
-#			unranked contest.
-#
-# In, inout, and solution submissions are allowed during
-# feedback or unranked contests (or parts of converted
-# contests).
-#
-set scoring_type timed+feedback
-
-# For timed contests only, the start time and stop time
-# of the contest.
+# The start time and stop time of the contest.
 #
 set start_time  "Jan 1 10:00:00 2030"
 set stop_time   "Jan 1 15:00:00 2030"
@@ -86,6 +55,14 @@ set stop_time   "Jan 1 15:00:00 2030"
 # set freeze_time   "Jan 1 14:00:00 2030"
 set freeze_time   ""
 #
+# If the the contest is to be be converted from an
+# acm_contest to an untimed_practice, this is done at
+# the conversion time.  Otherwise set the conversion
+# time to "".
+#
+# set conversion_time   "Jan 1 16:00:00 2030"
+set conversion_time   ""
+#
 # The penalty in minutes for submitting an incorrect
 # solution to a problem for which a correct solution is
 # later submitted in a timed contest.
@@ -93,31 +70,13 @@ set freeze_time   ""
 set penalty_minutes 20
 # set penalty_minutes 0
 
-# If the scoring_type is "timed", "feedback", or
-# "unranked", leave this as "" if there will be a mana-
-# ger on duty during the contest to run the tracker pro-
-# gram and manually check the scoring.  Otherwise set it
-# to the email address to be notified for errors or
-# queries, and in this case the scoring will be all
-# automatic.
+# Email address of contest manager after contest has
+# been converted to an untimed practice.  Not used if
+# contest is not converted.  May be set to "" if there
+# is no manager.
+# 
 #
-# But if the scoring_type is timed+feedback or timed+
-# unranked, set this non-"" and it will be used for the
-# automatically scored feedback/unranked post contest,
-# after the timed contest is over.  In these cases where
-# a timed contest is converted to an untimed post
-# contest, the timed contest must have a manager on duty
-# to run the tracker program, and only the post contest
-# is automatically scored.
-#
-set manager_address ""
-# set manager_address "someone@somecomputer"
-
-# Set the following to "yes" if the manager_address is
-# not "" AND you want all replies to contestants to be
-# CC'ed to the manager when there is no manager on duty.
-#
-set cc_manager no
+set manager_address "someone@somecomputer"
 
 # A cc address can be added to all autojudge replies to
 # a submitter from a directory named `date-<<submitter>-
@@ -135,29 +94,6 @@ set cc_manager no
 # This allows teams to have their own response managers.
 #
 # lappend response_manager_map { regexp address }
-
-# The following are the beginning and ending of the
-# initial version of the ./help/this_contest file.  Each
-# should begin and end with a line feed, or be "".  Each
-# will then be separated from other text by a blank
-# line.  The text in each should be restricted to 56
-# columns.
-#
-# If you want to modify this_contest further, you may
-# edit the ./help/this_contest file directly after it
-# has been initially made.  The version of the file that
-# is made by this hpcm_judging.rc file will be maintain-
-# ed in ./help/this_contest_parameter for reference pur-
-# poses, while ./help/this_contest will be left untouch-
-# ed after it has been edited to be different from
-# ./help/this_contest_parameter.
-# 
-set this_contest_prefix "
-THIS FILE IS UNEDITED AND INACCURATE!
-"
-set this_contest_postfix "
-Good Hunting!
-"
 
 # The following printer_commands variable specifies the
 # printers to be used during any timed contest.  If
@@ -328,12 +264,12 @@ set web_help_URL ""
 set web_scoreboard_URL ""
 
 # The following scoreboard_commands variable specifies
-# places to send a copy of ./contest/scoreboard.1.  The
+# places to send a copy of ./contest/scoreboard.  The
 # variable value is a list of items each with one of
 # the following formats:
 #
 #	{ NAME ssh ACCOUNT [REMOTE-COMMAND] }
-#	    Pipe ./contest/scoreboard.1 through ssh to
+#	    Pipe ./contest/scoreboard through ssh to
 #	    execute REMOTE-COMMAND in the remote
 #	    ACCOUNT.  If not given, REMOTE-COMMAND
 #	    defaults to a template which can be
@@ -342,7 +278,7 @@ set web_scoreboard_URL ""
 #	    (this will be mentioned in a TODO).
 #
 #	{ NAME ... }
-#	    Pipe ./contest/scoreboard.1 to a command
+#	    Pipe ./contest/scoreboard to a command
 #	    created by appending { NAME ... } to the
 #	    judging_commands global variable: see that
 #	    variable in hpcm/judge/lib/hpcm_judging.rc
@@ -447,6 +383,28 @@ set feedback_printer_map "
 
 # Computed Parameters (Do Not Modify)
 # -------- ---------- ---------------
+
+# Compute whether we have converted to untimed practice.
+#
+set converted no
+if { $conversion_time != "" } {
+    set t1 [clock seconds]
+    set t2 [clock scan $conversion_time]
+    if { $t1 >= $t2 } {
+        set converted yes
+    }
+}
+
+if { $converted } {
+    set scoring_type timed
+} else {
+    set scoring_type untimed
+}
+
+set cc_manager yes
+if { $manager_address == "" } {
+    set cc_manager no
+}
 
 # You should NOT make changes beyond this point, unless
 # you want to tune the contest to be a variant of one of
@@ -689,10 +647,117 @@ foreach x $test_problems {
 set scoreboard_problems \
     [lrange $scoreboard_problems 1 end]
 
-# Scoreboard instructions without scoreboard freezing.
+# Scoreboard instructions
+#
+set scoreboard_instructions {
+
+    {# Pre-contest scoreboard.  Note that submitters and
+       problems are changed to allow testing demos. #}
+
+    { OUTPUT contest/scoreboard "" START }
+    GRANT_ACCESS
+    SEND
+    { LINE NAME "Pre-Contest Scoreboard" TIME }
+    BLANK
+    { INPUT contest/scoreboard.head }
+    BLANK
+    { LINE "The demo problems will disappear from the\
+            scoreboard once the contest" }
+    { LINE "starts.  Until the contest starts, dates\
+            of first correct submissions are" }
+    { LINE "displayed instead of times for the demo\
+            problems." }
+    BLANK
+    { display_mode date }
+    { start_time "" }
+    { stop_time START }
+    { problems {} }
+    { submitters {} }
+    BAR
+    BOARD
+    BAR
+
+    {# Current scoreboard for judge. #}
+
+    { OUTPUT contest/scoreboard.current START STOP+1800 }
+
+    { LINE NAME "Current Results" TIME }
+    BLANK
+    BAR
+    BOARD
+
+    {# Final scoreboard for judge. #}
+
+    { OUTPUT contest/scoreboard.final STOP STOP+1800 }
+
+    { LINE NAME "Final Results" STOP }
+    BLANK
+    BAR
+    BOARD
+    BAR
+    { INPUT contest/who_where }
+    BAR
+
+    {# Public unfrozen scoreboard during contest #}
+
+    if { $freeze_time == "" } {
+	{ OUTPUT contest/scoreboard START STOP+3600 }
+    } else {
+	{ OUTPUT contest/scoreboard START FREEZE }
+	{ stop_time FREEZE }
+    }
+    GRANT_ACCESS
+    SEND
+    { LINE NAME "Scoreboard" TIME }
+    BLANK
+    { INPUT contest/scoreboard.head }
+    BLANK
+    BAR
+    BOARD
+    BAR
+
+
+    if { $freeze_time != "" } {
+
+	{# Public frozen scoreboard during contest #}
+
+	{ OUTPUT contest/scoreboard FREEZE STOP }
+	GRANT_ACCESS
+	SEND
+	{ LINE NAME "Scoreboard" TIME }
+	BLANK
+	{ LINE "To heighten suspense, scoreboard\
+	        updating has been stopped as of:" }
+	{ LINE "" FREEZE "" }
+	{ LINE "You will be given a copy of the final\
+		scoreboard after winners have been" }
+	{ LINE "announced at the post contest\
+	        meeting." }
+	BLANK
+	{ INPUT contest/scoreboard.head }
+	BLANK
+	{ stop_time FREEZE }
+	BAR
+	BOARD
+	BAR
+    }
+
+
+    {# Public results scoreboard after post contest
+       meeting. #}
+
+    { OUTPUT contest/scoreboard.results
+             STOP+3600 STOP+3600 }
+    GRANT_ACCESS
+    { INPUT contest/scoreboard.final }
+
+
+}
+
+# Scoreboard instructions for a timed scoreboard freezing.
 # These instructions make a scoreboard page in the file:
 #
-#	JD/contest/scoreboard.1
+#	JD/contest/scoreboard
 #
 # where JD is the $judging_directory.  World read access
 # is granted to this file, which is also sent to any
@@ -701,7 +766,7 @@ set scoreboard_problems \
 #
 #   NAME        [Pre-Contest] Scoreboard            TIME
 #
-#        <contents of JD/contest/scoreboard.1head>
+#        <contents of JD/contest/scoreboard.head>
 #
 #   [<pre-contest comments>]
 #
@@ -729,13 +794,13 @@ set no_freeze_timed_scoreboard_instructions {
     {# Scoreboard displayed to contestants during
        contest. #}
 
-    { OUTPUT contest/scoreboard.1 START STOP+600 }
+    { OUTPUT contest/scoreboard START STOP+600 }
     GRANT_ACCESS
     SEND
 
     { LINE NAME "Scoreboard" TIME }
     BLANK
-    { INPUT contest/scoreboard.1head }
+    { INPUT contest/scoreboard.head }
     BLANK
     BAR
     BOARD
@@ -757,13 +822,13 @@ set no_freeze_timed_scoreboard_instructions {
        contest starts.  Put this last because it changes
        submitters and problems. #}
 
-    { OUTPUT contest/scoreboard.1 "" START }
+    { OUTPUT contest/scoreboard "" START }
     GRANT_ACCESS
     SEND
 
     { LINE NAME "Pre-Contest Scoreboard" TIME }
     BLANK
-    { INPUT contest/scoreboard.1head }
+    { INPUT contest/scoreboard.head }
     BLANK
     { LINE "The demo problems `count' and `javaio'\
             will disappear from the" }
@@ -789,7 +854,7 @@ set no_freeze_timed_scoreboard_instructions {
 # freeze.  These instructions make a scoreboard page in
 # the file:
 #
-#		JD/contest/scoreboard.1
+#		JD/contest/scoreboard
 #
 # where JD is the $judging_directory.  World read access
 # is granted to this file, which is also sent to any
@@ -800,7 +865,7 @@ set no_freeze_timed_scoreboard_instructions {
 #
 #       <contents of JD/contest/scoreboard.freeze>
 #
-#       <contents of JD/contest/scoreboard.1head>
+#       <contents of JD/contest/scoreboard.head>
 #
 #       <contents of JD/contest/scoreboard.public>
 #
@@ -885,7 +950,7 @@ set freeze_timed_scoreboard_instructions {
 
     {# Displayed scoreboard is assembled below by
        concatenating scoreboard.freeze,
-       scoreboard.1head, and scoreboard.public #}
+       scoreboard.head, and scoreboard.public #}
 
     {# scoreboard.public during contest. #}
 
@@ -935,14 +1000,14 @@ set freeze_timed_scoreboard_instructions {
     {# Assemble displayed scoreboard by concatenating
        scoreboard.{freeze,1head,public}. #}
 
-    { OUTPUT contest/scoreboard.1 }
+    { OUTPUT contest/scoreboard }
     GRANT_ACCESS
     SEND
 
     { LINE NAME "Public Scoreboard" TIME }
     { INPUT contest/scoreboard.freeze }
     BLANK
-    { INPUT contest/scoreboard.1head }
+    { INPUT contest/scoreboard.head }
     BLANK
     { INPUT contest/scoreboard.public }
 }
@@ -951,7 +1016,7 @@ set freeze_timed_scoreboard_instructions {
 # been converted from timed to feedback.  These produce
 # a `post contest scoreboard' page in the file:
 #
-#		JD/contest/scoreboard.1
+#		JD/contest/scoreboard
 #
 # where JD is the $judging_directory.  World read access
 # is granted to this file, which is also sent to any
@@ -960,7 +1025,7 @@ set freeze_timed_scoreboard_instructions {
 #
 #   NAME          Post Contest Scoreboard           TIME
 #
-#   	 <contents of JD/contest/scoreboard.1head>
+#   	 <contents of JD/contest/scoreboard.head>
 #
 #   ==== ===== ===== ===== ===== ===== ===== ===== =====
 #	             <scoreboard table>
@@ -974,7 +1039,7 @@ set freeze_timed_scoreboard_instructions {
 #
 set post_contest_scoreboard_instructions {
 
-    { OUTPUT contest/scoreboard.1 "" "" }
+    { OUTPUT contest/scoreboard "" "" }
     GRANT_ACCESS
     SEND
 
@@ -992,7 +1057,7 @@ set post_contest_scoreboard_instructions {
     {LINE "Execute `help scoreboard' to interpret\
            the scoreboard." }
     BLANK
-    { INPUT contest/scoreboard.1head }
+    { INPUT contest/scoreboard.head }
     BLANK
 
     { start_time "" }
@@ -1007,13 +1072,13 @@ set post_contest_scoreboard_instructions {
 #
 set not_timed_scoreboard_instructions {
 
-    { OUTPUT contest/scoreboard.1 "" "" }
+    { OUTPUT contest/scoreboard "" "" }
     GRANT_ACCESS
     SEND
 
     { LINE NAME "Public Scoreboard" TIME }
     BLANK
-    { INPUT contest/scoreboard.1head }
+    { INPUT contest/scoreboard.head }
     BLANK
 
     { start_time "" }
@@ -1077,171 +1142,6 @@ if { $manager_address == "" } {
     }
 }
 
-# Compute this_contest.
-#
-set sqf $scoreboard_qualifier_factors
-set in_percent [expr 100 - 100 * [lindex $sqf 0]]
-set in_percent [format {%.0f} $in_percent]
-set inout_percent [expr 100 - 100 * [lindex $sqf 1]]
-set inout_percent [format {%.0f} $inout_percent]
-set ic_percent [expr 100 - 100 * [lindex $sqf 4]]
-set ic_percent [format {%.0f} $ic_percent]
-
-set this_contest "$this_contest_prefix[
-    include_if { [regexp {^timed} $scoring_type] } "
-The command `help' will display this file.  You have
-also been given a printout of the important help and
-demonstration files.
-"][include_if { ! [regexp {^timed} $scoring_type] } "
-The command `help' will display this file.  The impor-
-tant help and demonstration problem files are available
-via the contest web page, or you have been given a
-printout of these files.
-"]
-This is a `formal' contest.  The command
-
-	help formal_contest
-
-displays more details about formal contests.
-
-To display a list of the help files available use the
-command `help index'.  Note that if something in the
-index has the name `help/topic' you use the command
-`help topic' to view it.
-[include_if { [regexp {^timed} $scoring_type] } "
-The contest managers will log in for you.  You will NOT
-be given a password.  If you have an xterminal, the xsh
-command will make more windows: see `help xterminals'.
-
-The contest managers will inform you in writing which
-account you will be using.  It is your responsibility
-to double check that the contest managers have logged
-you into the right account.
-
-The command `hpcm_get' will get a demonstration problem
-into your directory ~/demos/count (where ~ denotes your
-home directory).  Read ~/demos/count/README and ~/demos/
-count/Makefile and practice submitting the demonstra-
-tion problem.
-
-Hpcm_get will also get all the contest problems into
-your `~/problems' directory AFTER the contest official-
-ly starts.  At the contest start time you will be given
-a printout of all the problem descriptions.  The command
-`help problems' will display a list of all the problems
-AFTER the contest starts.  Also see `help solving'.
-
-The command `scoreboard' will display the scoreboard.
-The time of a problem is the time between the start
-time of the contest and the time a solution is submit-
-ted.  See `help scoreboard'.
-[include_if { $penalty_minutes == 0 } "
-There is no time penalty for an incorrect submission for
-this contest.
-"][include_if { $penalty_minutes > 0 } "
-There is a $penalty_minutes minute time penalty for an\
-    incorrect
-submission for this contest.  This is applied only to
-incorrect submissions of problems you eventually
-submit correctly.
-"]"][include_if { ! [regexp {^timed} $scoring_type] } "
-The contest managers will inform you in writing which
-account and password you will be using.
-
-The command `hpcm_get' will get the problems into your
-directory.  Included will be the demonstration problem
-~/demos/count (where ~ denotes your home directory).
-Read ~/demos/count/README and ~/demos/count/Makefile
-and practice submitting the demonstration problem.
-
-You will be given a description of the problems on the
-web or in a printout.  The command `help problems' will
-display a list of all the problems.  Also see `help
-solving'.
-
-You can print on the printer of your choice, or get
-printouts emailed to you, by making a ~/PRINTER file.
-See `help print' for details.
-"][include_if { $scoring_type == "unranked" } "
-The command `scoreboard' will display the scoreboard.
-This contains the date of each correct submission.  See
-`help scoreboard' for more details.
-"][include_if { $scoring_type == "feedback" } "
-The command `scoreboard' will display the scoreboard.
-Scoring is determined by submission types (submit,
-in-submit, inout-submit) for incorrect submissions.
-A correct submission with no previous incorrect submis-
-sions will have a score of 100.0, and the penalties for
-incorrect submissions depend on submission type as
-follows:
-
-    incorrect `submit'		$ic_percent%
-    incorrect `in-submit'	$in_percent%
-    incorrect `inout-submit'	$inout_percent%
-
-Penalties are applied only to incorrect submissions for
-problems you eventually submit correctly.  See `help
-scoreboard', feedback contests, for details.
-"]
-To send a question to the contest manager DO NOT try
-to e-mail the manager directly.  Instead edit the ques-
-tion into a file qqq and use the command:
-
-	hpcm_sendmail < qqq
-[include_if { [regexp {^timed} $scoring_type] } "
-Output of the print commands (see `help print') will
-be brought to you.  Please do NOT try to find the
-printer.  For more information see `help print'.
-
-You CANNOT use the alternative submit commands that
-make `in-submit', `inout-submit', or `solution-submit'.
-"][include_if { $browser_ok == "no" } "
-You CANNOT use a web browser.  You may use any printed
-material you like, but cannot communicate electroni-
-cally with the world outside the contest.
-"][include_if { $javaok && $stlok } "
-The `javahelp' and `stlhelp' commands give access to
-on-line Java and C++ STL documentation: see `help java'
-and `help c++'.
-"][include_if { $javaok && ! $stlok } "
-The `javahelp' command gives access to on-line Java doc-
-umentation: see `help java'.
-"][include_if { ! $javaok && $stlok } "
-The `stlhelp' command gives access to on-line C++ STL
-documentation: see `help c++'.
-"][include_if { $scoring_type == "timed+feedback" } "
-The day after the contest proper, the contest will be
-converted to a different type of contest.  You will then
-be given your account name and password, and can log in
-and in a sense continue the contest.  `in-submit',
-`inout-submit', and `solution-submit' will be allowed.
-The judging will be completely automatic.  You will be
-able to print by making a ~/PRINTER file: see `help
-print'.  The scoreboard will use the submission type
-(`submit', `in-submit', `inout-submit') of incorrect
-submissions in place of time.  A correct submission with
-no previous incorrect submissions will have a score of
-100.0, and the penalties for incorrect submissions
-depend on submission type as follows:
-
-    incorrect `submit'		$ic_percent%
-    incorrect `in-submit'	$in_percent%
-    incorrect `inout-submit'	$inout_percent%
-
-See `help scoreboard', feedback contests, for details.
-"][include_if { $scoring_type == "timed+unranked" } "
-The day after the contest proper, the contest will be
-converted to a different type of contest.  You will then
-be given your account name and password, and can log in
-and in a sense continue the contest.  `in-submit',
-`inout-submit', and `solution-submit' will be allowed.
-The judging will be completely automatic.  You will be
-able to print by making a ~/PRINTER file: see `help
-print'.  The scoreboard will merely record the number of
-correct submissions and the date of each correct sub-
-mission.
-"]$this_contest_postfix"
-
 # Computed web page parameters.
 #
 set web_title "$contest_name"

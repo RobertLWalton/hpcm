@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Sep  4 07:58:15 EDT 2011
+# Date:		Sun Mar 10 13:12:16 EDT 2013
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2011/09/04 12:02:43 $
+#   $Date: 2013/03/12 16:45:46 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.36 $
+#   $Revision: 1.37 $
 
 # make
 #	Makes documentation as fprintable .txt files in
@@ -98,6 +98,7 @@ DOCS=	overview.txt \
 	judge/stlhelp.txt \
 	contestant/stlhelp.txt \
 	judge/testproblems.txt \
+	judge/testjudge.txt \
 	judge/tracker.txt \
 	judge/trackfinder.txt \
 	contestant/TRASH_ACCOUNT.txt \
@@ -337,6 +338,11 @@ judge/testproblems.txt:	hpcm_judging.rc \
 	rm -f judge/testproblems.txt
 	-../../judge/bin/testproblems -doc \
 	    >judge/testproblems.txt
+judge/testjudge.txt:	hpcm_judging.rc \
+			../../judge/bin/testjudge
+	rm -f judge/testjudge.txt
+	-../../judge/bin/testjudge -doc \
+	    >judge/testjudge.txt
 judge/tracker.txt:	hpcm_judging.rc \
 		        ../../judge/bin/tracker
 	rm -f judge/tracker.txt

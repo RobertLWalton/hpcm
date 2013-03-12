@@ -44,7 +44,8 @@ default:	$P.out
 	rm -f $* core core.[0-9]*
 	echo >$* '#!/bin/sh'
 	echo >>$* "exec sbcl --script $*.lsp" '"$$@"'
-	chmod u+rx $*
+	chmod a+r $*.lsp
+	chmod a+rx $*
 
 $P.in:
 	if test -r sample.in; \
@@ -117,7 +118,7 @@ clean:
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2013/02/28 11:49:12 $
+#   $Date: 2013/03/12 16:48:15 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.6 $
+#   $Revision: 1.7 $
 
