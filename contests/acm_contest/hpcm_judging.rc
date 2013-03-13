@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Mar 11 05:33:43 EDT 2013
+# Date:		Wed Mar 13 06:11:54 EDT 2013
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2013/03/12 16:46:05 $
+#   $Date: 2013/03/13 10:30:34 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.83 $
+#   $Revision: 1.84 $
 
 # Table of Contents
 #
@@ -611,21 +611,18 @@ set makecontest_arguments "
 
 # Set the start/freeze/stop times for the contest.
 #
-if { $scoring_subtype == "timed" } {
-    set scoreboard_start_time  $start_time
-    set scoreboard_freeze_time $freeze_time
-    set scoreboard_stop_time   $stop_time
-    set scoreboard_penalty     \
-        [expr 60 * $penalty_minutes]
-} else {
-    set scoreboard_start_time  ""
-    set scoreboard_freeze_time ""
-    set scoreboard_stop_time   ""
-}
+set scoreboard_start_time  $start_time
+set scoreboard_freeze_time $freeze_time
+set scoreboard_stop_time   $stop_time
+set scoreboard_penalty     [expr 60 * $penalty_minutes]
 
 # Scoreboard name, i.e, the name of the contest.
 #
 set scoreboard_name $contest_name
+
+# Scoreboard mode during contest.
+#
+set scoreboard_mode timed
 
 # Compute scoreboard_submitters to exclude test
 # accounts.
@@ -656,7 +653,6 @@ set scoreboard_instructions {
 
     { OUTPUT contest/scoreboard "" START }
     GRANT_ACCESS
-    SEND
     { LINE NAME "Pre-Contest Scoreboard" TIME }
     BLANK
     { INPUT contest/scoreboard.head }
@@ -665,10 +661,9 @@ set scoreboard_instructions {
             scoreboard once the contest" }
     { LINE "starts.  Until the contest starts, dates\
             of first correct submissions are" }
-    { LINE "displayed instead of times for the demo\
-            problems." }
+    { LINE "displayed instead of problem times."}
     BLANK
-    { display_mode date }
+    { mode date }
     { start_time "" }
     { stop_time START }
     { problems {} }
@@ -717,14 +712,14 @@ set scoreboard_instructions {
     BAR
 
 
-    if { $freeze_time != "" } {
+    if { $scoreboard_freeze_time != "" } {
 
 	{# Public frozen scoreboard during contest #}
 
 	{ OUTPUT contest/scoreboard FREEZE STOP }
 	GRANT_ACCESS
 	SEND
-	{ LINE NAME "Scoreboard" TIME }
+	{ LINE NAME "Frozen Scoreboard" TIME }
 	BLANK
 	{ LINE "To heighten suspense, scoreboard\
 	        updating has been stopped as of:" }
@@ -742,7 +737,6 @@ set scoreboard_instructions {
 	BAR
     }
 
-
     {# Public results scoreboard after post contest
        meeting. #}
 
@@ -751,370 +745,20 @@ set scoreboard_instructions {
     GRANT_ACCESS
     { INPUT contest/scoreboard.final }
 
+    {# Public scoreboard after post contest meeting. #}
 
-}
-
-# Scoreboard instructions for a timed scoreboard freezing.
-# These instructions make a scoreboard page in the file:
-#
-#	JD/contest/scoreboard
-#
-# where JD is the $judging_directory.  World read access
-# is granted to this file, which is also sent to any
-# addresses in the scoreboard_addresses global variable.
-# The file has the format:
-#
-#   NAME        [Pre-Contest] Scoreboard            TIME
-#
-#        <contents of JD/contest/scoreboard.head>
-#
-#   [<pre-contest comments>]
-#
-#   ==== ===== ===== ===== ===== ===== ===== ===== =====
-#	             <scoreboard table>
-#   ==== ===== ===== ===== ===== ===== ===== ===== =====
-#
-# Before the start time problem submission dates are
-# given along with pre-contest comments.
-#
-# From the stop time of the contest until 10 minutes
-# after the stop time, the file
-#
-#		JD/contest/scoreboard.final
-#
-# is written with final scoreboard table and the con-
-# tents of the JD/contest/who_where file.  If judging
-# has not finished within 10 minutes of the end of the
-# contest, just finish judging, delete this file, and
-# wait for it to be updated automatically (which will
-# happen within 60 seconds).
-#
-set no_freeze_timed_scoreboard_instructions {
-
-    {# Scoreboard displayed to contestants during
-       contest. #}
-
-    { OUTPUT contest/scoreboard START STOP+600 }
-    GRANT_ACCESS
-    SEND
-
-    { LINE NAME "Scoreboard" TIME }
-    BLANK
-    { INPUT contest/scoreboard.head }
-    BLANK
-    BAR
-    BOARD
-    BAR
-
-    {# Final scoreboard for judges. #}
-
-    { OUTPUT contest/scoreboard.final STOP STOP+600 }
-
-    { LINE NAME "Final Results" STOP }
-    BLANK
-    BAR
-    BOARD
-    BAR
-    { INPUT contest/who_where }
-    BAR
-
-    {# Scoreboard displayed to contestants before
-       contest starts.  Put this last because it changes
-       submitters and problems. #}
-
-    { OUTPUT contest/scoreboard "" START }
-    GRANT_ACCESS
-    SEND
-
-    { LINE NAME "Pre-Contest Scoreboard" TIME }
-    BLANK
-    { INPUT contest/scoreboard.head }
-    BLANK
-    { LINE "The demo problems `count' and `javaio'\
-            will disappear from the" }
-    { LINE "scoreboard once the contest starts.  Until\
-            the contest starts, dates of" }
-    { LINE "first correct submission are displayed (for\
-            demo problems).  After the" }
-    { LINE "contest starts, problem times (differences\
-            of first correct submission" }
-    { LINE "times and contest start time) will be\
-            displayed." }
-    BLANK
-    { start_time "" }
-    { stop_time START }
-    { problems {} }
-    { submitters {} }
-    BAR
-    BOARD
-    BAR
-}
-
-# Scoreboard instructions for a timed contest WITH
-# freeze.  These instructions make a scoreboard page in
-# the file:
-#
-#		JD/contest/scoreboard
-#
-# where JD is the $judging_directory.  World read access
-# is granted to this file, which is also sent to any
-# filters in the scoreboard_commands global variable.
-# The file has the format:
-#
-#  NAME             Public Scoreboard             TIME
-#
-#       <contents of JD/contest/scoreboard.freeze>
-#
-#       <contents of JD/contest/scoreboard.head>
-#
-#       <contents of JD/contest/scoreboard.public>
-#
-# The file
-#
-#		JD/contest/scoreboard.public
-#
-# has two versions, one computed before the contest
-# start time, and one computed between the contest start
-# time and the contest freeze time.  Before the contest
-# start time it is a scoreboard table computed with ""
-# start time, so dates and not problem times are
-# displayed, that includes demo problems and test
-# accounts, with the scoreboard table being prefixed by
-# a comment that after the start time problem times will
-# be displayed and demos will not be.  After the contest
-# start time it is just a scoreboard table with the
-# freeze time as stop time, no demos, and no test
-# accounts.
-#
-# The file
-#
-#		JD/contest/scoreboard.freeze
-#
-# is a notice that the scoreboard is frozen.  This file
-# is created at the freeze time, and does not exist
-# before then.
-#
-# All this makes the publicly available scoreboard.
-# In addition there are two other scoreboards that are
-# only visible to judges.  The file
-#
-#		JD/contest/scoreboard.current
-#
-# is a scoreboard table with the contest stop time that
-# is made at freeze time and kept up-to-date indefin-
-# itely thereafter.  The file
-#
-#		JD/contest/scoreboard.final
-#
-# is a printable final scoreboard that is made from the
-# stop time until 10 minutes after the stop time, and
-# includes a scoreboard table with the contest stop time
-# followed by a copy of the
-#
-#		JD/contest/who_where
-#
-# file.  Both the .current and .final files are not
-# readable by non-judging accounts.
-#
-# If you need to update the scoreboard.final file after
-# it is no longer being made (more than 10 minutes after
-# the contest stop time), delete it and wait for it to
-# be updated automatically (which will happen within 60
-# seconds).
-#
-set freeze_timed_scoreboard_instructions {
-
-    {# Complete scoreboard after freeze time, available
-       privately to judges. #}
-
-    { OUTPUT contest/scoreboard.current FREEZE "" }
-
-    { LINE NAME "Current Scoreboard" TIME }
-    BLANK
-    BAR
-    BOARD
-    BAR
-
-    {# Final scoreboard for judges. #}
-
-    { OUTPUT contest/scoreboard.final \
-             STOP STOP+600 }
-
-    { LINE NAME "Final Results" STOP }
-    BLANK
-    BAR
-    BOARD
-    BAR
-    { INPUT contest/who_where }
-    BAR
-
-    {# Displayed scoreboard is assembled below by
-       concatenating scoreboard.freeze,
-       scoreboard.head, and scoreboard.public #}
-
-    {# scoreboard.public during contest. #}
-
-    { OUTPUT contest/scoreboard.public START FREEZE }
-
-    BAR
-    BOARD
-    BAR
-
-    {# scoreboard.public before contest starts.  Put
-       this last because it changes submitters and
-       problems. #}
-
-    { OUTPUT contest/scoreboard.public "" START }
-
-    { LINE "The demo problems `count' and `javaio'\
-            will disappear from the" }
-    { LINE "scoreboard once the contest starts.  Until\
-            the contest starts, dates of" }
-    { LINE "first correct submission are displayed (for\
-            demo problems).  After the" }
-    { LINE "contest starts, problem times (differences\
-            of first correct submission" }
-    { LINE "times and contest start time) will be\
-            displayed." }
-    { start_time "" }
-    { stop_time START }
-    { problems {} }
-    { submitters {} }
-    BAR
-    BOARD
-    BAR
-
-    {# scoreboard.freeze, which does not exist until
-       the freeze time. #}
-
-    { OUTPUT contest/scoreboard.freeze FREEZE FREEZE }
-
-    BLANK
-    { LINE "To heighten suspense, scoreboard updating\
-            has been stopped as of:" }
-    { LINE "" FREEZE "" }
-    { LINE "You will be given a copy of the final\
-            scoreboard after winners have been" }
-    { LINE "announced at the post contest meeting." }
-
-    {# Assemble displayed scoreboard by concatenating
-       scoreboard.{freeze,1head,public}. #}
-
-    { OUTPUT contest/scoreboard }
-    GRANT_ACCESS
-    SEND
-
-    { LINE NAME "Public Scoreboard" TIME }
-    { INPUT contest/scoreboard.freeze }
-    BLANK
-    { INPUT contest/scoreboard.head }
-    BLANK
-    { INPUT contest/scoreboard.public }
-}
-
-# Scoreboard instructions to be used after contest has
-# been converted from timed to feedback.  These produce
-# a `post contest scoreboard' page in the file:
-#
-#		JD/contest/scoreboard
-#
-# where JD is the $judging_directory.  World read access
-# is granted to this file, which is also sent to any
-# filters in the scoreboard_commands global variable.
-# The file has the format:
-#
-#   NAME          Post Contest Scoreboard           TIME
-#
-#   	 <contents of JD/contest/scoreboard.head>
-#
-#   ==== ===== ===== ===== ===== ===== ===== ===== =====
-#	             <scoreboard table>
-#   ==== ===== ===== ===== ===== ===== ===== ===== =====
-#
-# Whether the scoreboard table gives dates or feedback
-# problem scores is determined by the scoring_type
-# global variable value, which must be either "timed+
-# unranked" or "timed+feedback" for a post contest
-# scoreboard to exist.
-#
-set post_contest_scoreboard_instructions {
-
-    { OUTPUT contest/scoreboard "" "" }
-    GRANT_ACCESS
-    SEND
-
+    { OUTPUT contest/scoreboard STOP+3600 "" }
     { LINE NAME "Post Contest Scoreboard" TIME }
     BLANK
-    if { $scoreboard_subtype == "feedback" } {
-	{LINE "The scoreboard has been re-constituted\
-	       post-contest with feedback scoring." }
-    } else {
-	{LINE "The scoreboard has been re-constituted\
-	       post-contest with unranked scoring." }
-    }
-    {LINE "The order of contestants will differ\
-           from that of the actual contest." }
-    {LINE "Execute `help scoreboard' to interpret\
-           the scoreboard." }
+    { LINE "This is a practice style scoreboard." }
+    { LINE "To see the final contest scoreboard\
+            type `scoreboard final'.}
     BLANK
-    { INPUT contest/scoreboard.head }
-    BLANK
-
-    { start_time "" }
+    { mode untimed }
     { stop_time "" }
     BAR
     BOARD
     BAR
-}
-
-# Scoreboard instructions to be used for a feedback or
-# unranked contest:
-#
-set not_timed_scoreboard_instructions {
-
-    { OUTPUT contest/scoreboard "" "" }
-    GRANT_ACCESS
-    SEND
-
-    { LINE NAME "Public Scoreboard" TIME }
-    BLANK
-    { INPUT contest/scoreboard.head }
-    BLANK
-
-    { start_time "" }
-    { stop_time "" }
-    BAR
-    BOARD
-    BAR
-}
-
-# Scoreboard instructions for this contest:
-#
-if { $is_post_contest } {
-    set t $scoring_subtype
-    set scoreboard_subtype $scoring_subtype
-    set scoreboard_instructions \
-        $post_contest_scoreboard_instructions
-} elseif { $scoring_subtype != "timed" } {
-    set scoreboard_instructions \
-        $not_timed_scoreboard_instructions
-} elseif { $freeze_time == "" } {
-    set scoreboard_instructions \
-        $no_freeze_timed_scoreboard_instructions
-} else {
-    set scoreboard_instructions \
-        $freeze_timed_scoreboard_instructions
-}
-
-if { $scoring_subtype == "timed" } {
-    set response_mode ""
-    set scoreboard_use_feedback no
-} elseif { $scoring_subtype == "feedback" } {
-    set response_mode in+inout+solution
-    set scoreboard_use_feedback yes
-} else {
-    set response_mode in+inout+solution
-    set scoreboard_use_feedback no
 }
 
 # Set up manager for this contest.
