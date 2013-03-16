@@ -6,7 +6,7 @@
 #
 # File:		scoretable
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Jan 13 23:19:09 EST 2009
+# Date:		Sat Mar 16 04:09:52 EDT 2013
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2009/01/14 05:24:54 $
+#   $Date: 2013/03/16 08:12:26 $
 #   $RCSfile: scoretable,v $
-#   $Revision: 1.43 $
+#   $Revision: 1.44 $
 #
 # The next lines start tclsh \
 trap "echo scoretable: Terminated by Signal" \
@@ -161,15 +161,24 @@ proc label_problems {} {
 
     global scoreboard_problem_list spaces256 ppl \
            markers max_column \
-	   scoreboard_start_time \
-	   scoreboard_display_correct
+	   scoreboard_sort_mode
 
-    if { $scoreboard_display_correct == "no" } {
+    switch $scoreboard_sort_mode {
+    submitter {
         set second_line_label ""
-    } elseif { $scoreboard_start_time == "" } {
-        set second_line_label "Correct"
-    } else {
+    }
+    time      {
 	set second_line_label "Correct/Tot_Time"
+    }
+    problems  {
+	set second_line_label "Correct"
+    }
+    score      {
+	set second_line_label "Total Score"
+    }
+    subscore   {
+	set second_line_label "Correct/Tot_Score"
+    }
     }
 
     set count  0
@@ -211,28 +220,14 @@ label_problems
 #
 foreach item $scoreboard_list {
 
-    set submissions [lindex $item 1]
-    set problems_correct [lindex $item 2]
+    set submitter [lindex $item 1]
+    set submissions [lindex $item 2]
     set ranking_score [lindex $item 3]
-    set modifier [lindex $item 4]
-    set submitter [lindex $item 5]
-    set problem_scores [lrange $item 6 end]
+    set problem_scores [lrange $item 4 end]
 
     # Skip teams with 0 submissions.
     #
     if { $submissions == 0 } continue
-
-    if { $problems_correct != "" } {
-	set total_score $problems_correct
-	if { $ranking_score != "" } {
-	    set total_score $total_score/$ranking_score
-	}
-	if { $modifier == "n" } {
-	    set total_score *$total_score
-	}
-    } else {
-        set total_score ""
-    }
 
     # Print the line(s) for the team.
     #
@@ -249,7 +244,7 @@ foreach item $scoreboard_list {
 	    if { $count == 0 } {
 		set line $submitter
 	    } elseif { $count == $ppl } {
-		set line "$total_score"
+		set line "$ranking_score"
 	    } else {
 		set line ""
 	    }
@@ -259,9 +254,9 @@ foreach item $scoreboard_list {
 
 	set line "$line$m[format {%9.9s} $score]"
     }
-    if { $count <= $ppl && $total_score != "" } {
+    if { $count <= $ppl && $ranking_score != "" } {
 	puts $line
-        set line $total_score
+        set line $ranking_score
     }
     regsub -all " " [string range $line$spaces256 \
 			    0 $max_column] \

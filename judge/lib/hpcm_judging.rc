@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Mar 12 12:44:27 EDT 2013
+# Date:		Sat Mar 16 04:09:28 EDT 2013
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2013/03/12 16:45:17 $
+#   $Date: 2013/03/16 08:11:48 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.258 $
+#   $Revision: 1.259 $
 
 # Table of Contents:
 #
@@ -704,77 +704,76 @@ set judging_commands {}
 # All times are in a format that TCL `clock scan'
 # can convert.  Most date formats work.
 
-# Feedback scoring.
+# Modes.
 #
-# If scoreboard_use_feedback is `yes', ranking scores
-# are computed from the number of incorrect submissions
-# as follows.  A problem score is 100.0 times the factor
-# for each incorrect submission.  The factor is deter-
-# mined by the qualifier (none, in, inout) used for the
-# incorrect submission: see scoreboard_qualifier_factors
-# below.
+# Scoreboard_unsolved_mode determines how problems that
+# have not been solved are displayed.  The possible
+# values are:
 #
-# If scoreboard_use_feedback is `no', ranking scores are
-# computed using times (see below).
+#   count	If no incorrect submissions, `......'.
+#   		If N incorrect submissions, `..../N'.
 #
-set scoreboard_use_feedback no
+#   qualifier	If no incorrect submissions, `......'.
+#   		If incorrect submissions, `IiOoX' where
+#   		I is the number of `in' submissions, O
+#   		the number of `inout' submissions, and X
+#   		the number of unqualified submissions.
 #
+set scoreboard_unsolved_mode count
+
+# Scoreboard_solved_mode determines how solved problems
+# are displayed.  The possible values are:
+#
+#   date	Date of first correct submission and
+#   		number of submissions.
+#
+#   time	Time of first correct submission and
+#		number of submissions.
+#
+#   score	Problem score and number of submissions.
+#
+set scoreboard_solved_mode date
+
+# Scoreboard_sort_mode determines how account total
+# scores are displayed and accounts are sorted on score-
+# board.  The possible values are as follows, where P is
+# the number of problems correct:
+#
+#   submitter	Submitters are unranked and are sorted
+#   		alphabetically by name.
+#
+#   time	P/TTTT is displayed for each submitter
+#   		where TTTT is the total time and
+#   		the sort is highest P first, and then
+#   		lowest TTTT first.
+#   		
+#   problems	P is displayed for each submitter and
+#   		sort is highest P first, then alphabeti-
+#   		cally by submitter name.
+#   		
+#   score	SSSSSS.SS, the total score, is display-
+#		ed, and sort is on the SSSSSS.SS value.
+#
+#   subscore	P/SSSSSS.SS is displayed, and sort is on
+#		P first and SSSSSS.SS second.
+#
+set scoreboard_sort_mode problems
+
 # The following is the list of factors that are used
-# only if scoreboard_use_feedback is `yes'.  There
-# is a different factor for each possible submit
-# qualifier value.  The maximum score for a correct
-# problem, 100.0, is multipled by the appropriate factor
-# for each incorrect submission prior to the first cor-
-# rect submission.  The qualifier of the first correct
-# submission does not matter.  The order of the factors
-# in this list is:
+# to compute problem scores.
 #
-#	in    inout    first    summary   other
+#   scoreboard_factor("")
+#   scoreboard_factor(in)
+#   scoreboard_factor(inout)
+#       Multipliers for incorrect submissions with no
+#       qualifier, in qualifier, inout qualifier,
+#       respectively.  These need not exist if they
+#       are not to be used (to compute the score they
+#	default to 1.0 but the score may not be used).
 #
-set scoreboard_qualifier_factors \
-    {	0.8   0.7      0.85     0.8       0.9 }
-#
-# Note: `first' and `summary' are deprecated.
-
-# Correct and incorrect count displays.
-#
-# If scoreboard_display_correct is `yes', the number of
-# correct problems is displayed for each submitter,
-# along with the ranking score of the submitter if that
-# is known, and submitters are sorted by number of cor-
-# rect problems (decreasing order) in the scoreboard.
-#
-# If scoreboard_display_correct is `no', the number of
-# correct problems and ranking score are NOT displayed
-# for each submitter, and the scoreboard is sorted
-# alphabetically by submitter name.
-#
-# If scoreboard_display_incorrect is `yes', the number
-# of submissions for each submitter and problem is
-# displayed, and in the case feedback ranking scores are
-# being computed, the number of submissions with each
-# kind of qualifier is displayed.  If scoreboard_dis-
-# play_incorrect is `no', these numbers are not display-
-# ed.  Other scoreboard properties are not affected by
-# this parameter.
-#
-set scoreboard_display_correct yes
-set scoreboard_display_incorrect yes
-
-# Set the following to "no" is the ranking score is to
-# be the sum of problem scores, and to "yes" if it is
-# to be the average.  Leave unset if the ranking score
-# is to be the average for feedback ranking scores and
-# the sum otherwise.
-#
-# set scoreboard_use_average yes
-
-# Set the following to the upper bound on a problem time
-# ranking score, measured in seconds, or the lower bound
-# for a problem feedback ranking score.  Leave unset if
-# there are to be no bounds.
-#
-# set scoreboard_problem_bound
+#   scoreboard_max_score(PROBLEM)
+#       For each problem, the maximum score.  If this
+#       does not exist, 100.0 is assumed.
 
 # Contest start, stop, freeze, and cut times.
 #

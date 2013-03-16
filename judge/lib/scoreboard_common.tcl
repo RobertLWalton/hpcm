@@ -3,7 +3,7 @@
 #
 # File:		scoreboard_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Sep 18 09:14:46 EDT 2006
+# Date:		Sat Mar 16 04:09:42 EDT 2013
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -12,9 +12,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2006/09/18 13:13:53 $
+#   $Date: 2013/03/16 08:11:48 $
 #   $RCSfile: scoreboard_common.tcl,v $
-#   $Revision: 1.63 $
+#   $Revision: 1.64 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -547,102 +547,54 @@ proc prune_scoreboard_array { } {
 # The scoreboard_list global variable is an increasing
 # order sorted list of items, each of the form:
 #
-#	{ sort_code number_of_submissions
-#	  problems_correct ranking_score modifier
-#	  submitter problem_score ... }
+#	{ sort_code submitter number_of_submissions
+#	  ranking_score problem_score ... }
 #
 # Each item begins with a code to sort on, followed by
-# the number of submissions, correct problems, ranking
-# score, modifier, submitter, and scores for the indivi-
-# dual problems.
+# submitter, total number of submissions, printable
+# ranking score for the submitter, and printable
+# problem scores for each problem for the submitter.
 #
-# The modifier is `f' if all inputs used to compute the
-# previous numbers were final, and `n' if some were not
-# final (because they have been autojudged but not
-# manually reviewed).  The submitter is the submitter:
-# each submitter has one item in this list.  The pro-
-# blem_scores are the scores as they will be printed in
-# the output.  The problem names corresponding in order
-# to these scores are in the scoreboard_problem_list
-# global variable.  This last list is sorted.
+# Each submitter has one item in this list.  The problem
+# problem names corresponding in order to these scores
+# are in the scoreboard_problem_list global variable,
+# which is sorted.
 #
-# The ranking_score will be "" if it is not computed.
+# The ranking_score may be "".
 #
-# The format of the problem_scores and sort_code depend
-# upon the settings of various scoreboard parameters.
-# The problem_scores will not be more than 9 characters
-# long except in cases too rare to be given serious con-
-# sideration.  The scoreboard_list is sorted in the
-# order that submitters are to be displayed on the
-# scoreboard.
+# The format of the sort_code and ranking_score depend
+# upon the settings of scoreboard_sort_mode, which can
+# have the folloiwng values:
 #
-# If scoreboard_use_feedback is `no', scoreboard_
-# display_correct and scoreboard_display_incorrect are
-# both `yes', and scoreboard_start_time is NOT "", the
-# sort code is
+#		sort_code	ranking_score
 #
-#		     cccc.ttttttttt.ssss
+#   submitter	submitter	""
 #
-# where cccc is 10**4 - 1 - the number of correct
-# problems in four digits with leading zeros, ttttttttt
-# is the total time or 100 times the average time, in 9
-# digits with leading zeros, and ssss is 10**4 - 1 - the
-# total number of submissions, in 4 digits with leading
-# zeros.
+#   time	PPPP.TTTTTTTTT	P/TTT
 #
-# If scoreboard_use_feedback is `yes', and scoreboard_
-# display_correct and scoreboard_display_incorrect are
-# both `yes', the sort code is
+#   problems	PPPP.submitter	P
 #
-#		     cccc.qqqqqqqqq.ssss
+#   score	SSSSS.SS	SSSSS.SS
 #
-# where cccc is 10**4 - 1 - the number of correct prob-
-# lems in four digits with leading zeros, qqqqqqqqq is
-# 10**9 - 1 - 100 * the total or average qualifier
-# score, in 9 digits with leading zeros, and ssss is
-# 10**4 - 1 - the total number of submissions, in 4
-# digits with leading zeros.
+#   subscore	PPPP.SSSSSS.SS	P/SSSSS.SS
+#
+# Here P is the number of correct problems, and PPPP
+# is 9999-P in 4 digits with high order zeros if
+# necessary.  TTT is the total time in seconds, and
+# TTTTTTTTT is that time in 9 digits with high order
+# zeros as necessary.  SSSSS.SS is the score to 2 decimal
+# places and SSSSSS.SS is 999999.99-SSSSS.SS with two
+# decimal places and high order zeros if necessary to
+# make 6 integer digits.
 #
 # The scoreboard_list is sorted in INCREASING order.
-# Hence submitters with more correct submissions will be
-# first.  Those with more submissions will be first,
-# other things being equal, which seems appropriate for
-# submitters with no correct submissions.
+# Thus higher P values are earlier, higher TTT values
+# are later, higher SSSS.SS values are earlier,
+# lexically later submitters are later.
 #
-# The sort code reflects the fact that higher time
-# scores are worse but higher qualifier scores are
-# better.
-#
-# The sort code is changed according to the setting of
-# three scoreboard parameters as follows:
-#
-#    SDC = $scoreboard_display_correct
-#    SUF = $scoreboard_use_feedback
-#    SST = $scoreboard_start_time != ""
-#    SDI = $scoreboad_display_incorrect
-#    
-#	SDC/SUF/SST/SDI	    SORT_CODE
-#
-#	no /---/---/---	    submitters_name
-#
-#	yes/yes/---/yes     cccc.qqqqqqqqq.ssss
-#
-#	yes/yes/---/no      cccc.qqqqqqqqq
-#			    (.ssss is omitted)
-#
-#	yes/no /no /---	    cccc.submitters_name
-#
-#	yes/no /yes/yes	    cccc.ttttttttt.ssss
-#			    (as in text above)
-#
-#	yes/no /yes/no	    cccc.ttttttttt
-#			    (.ssss is omitted)
-#
-# Note that if scoreboard_display_incorrect is `yes',
-# problems or submitters for which there have been only
-# incorrect submissions will appear in the problem or
-# scoreboard list, but if scoreboard_display_incorrect
-# is `no', they will not.
+# The format of the problem_scores is as returned by
+# format_problem_score defined elsewhere.  The problem_
+# scores will not be more than 9 characters long.
 #
 set scoreboard_list ""
 set scoreboard_problem_list ""
@@ -653,46 +605,12 @@ set scoreboard_problem_list ""
 proc compute_scoreboard_list {} {
 
     global scoreboard_array scoreboard_list \
-           scoreboard_problem_list scoreboard_penalty \
-	   scoreboard_display_correct \
-	   scoreboard_display_incorrect \
-	   scoreboard_start_time \
-	   scoreboard_use_feedback \
-	   scoreboard_use_average \
-	   scoreboard_problem_bound
-
-    if { [info exists scoreboard_use_average] } {
-        set use_average $scoreboard_use_average
-    } elseif {    $scoreboard_use_feedback \
-    	       || $scoreboard_start_time == "problem" \
-	     } {
-        set use_average yes
-    } else {
-        set use_average no
-    }
-
-    if { [info exists scoreboard_problem_bound] } {
-        set problem_bound $scoreboard_problem_bound
-    } elseif { $scoreboard_use_feedback } {
-        set problem_bound 0
-    } else {
-        set problem_bound 999999999
-    }
+           scoreboard_problem_list \
+	   scoreboard_sort_mode \
+	   scoreboard_start_time
 
     # Compute lists of submitters and problems.
     #
-    # If we are displaying count of incorrect problems,
-    # mark a submitter or problem present if there is
-    # any submission for the submitter or problem, else
-    # mark a submitter or problem present only there is
-    # a correct submission for the submitter or problem.
-    #
-    if { $scoreboard_display_incorrect } {
-        set present_regexp {.[ic]..}
-    } else {
-        set present_regexp {.c..}
-    }
-
     foreach sap [array names scoreboard_array] {
 	regexp {^([^/]*)/([^/]*)$} $sap forget \
 	       submitter problem
@@ -701,7 +619,7 @@ proc compute_scoreboard_list {} {
 	    [lindex [lindex $scoreboard_array($sap) \
 	                    end] \
 		    1]
-	if { [regexp $present_regexp $code] } {
+	if { [regexp {.[ic]..} $code] } {
 	    set submitter_present($submitter) yes
 	    set problem_present($problem) yes
 	}
@@ -725,8 +643,8 @@ proc compute_scoreboard_list {} {
 	# Modifier is f unless some problem has the
 	# modifier n.
 	#
-	set time_score 0
-	set qualifier_score 0.0
+	set total_time 0
+	set total_score 0.0
 
 	set problems_correct 0
 	set submissions 0
@@ -776,8 +694,6 @@ proc compute_scoreboard_list {} {
 	    #
 	    set problem_i_qualified	0
 	    set problem_o_qualified	0
-	    set problem_f_qualified	0
-	    set problem_s_qualified	0
 	    set problem_x_qualified	0
 
 	    foreach item $problem_items {
@@ -814,7 +730,7 @@ proc compute_scoreboard_list {} {
 		    # Score is incorrect.
 
 		    set qualifier [string index $code 3]
-		    if { ! [lcontain {i o f s x} \
+		    if { ! [lcontain {i o x} \
 		    		     $qualifier] } {
 		        error "bad qualifier in\
 			       scorefinder code: $code"
@@ -832,95 +748,79 @@ proc compute_scoreboard_list {} {
 	    }
 
 	    # Append problem score to problem_scores
-	    # list and update time_score and qualifier
+	    # list and update total_time and qualifier
 	    # score.
 	    #
 	    lappend problem_scores \
 	            [format_problem_score \
-			 time_score \
-			 qualifier_score \
-			 $problem_bound \
+			 total_time \
+			 total_score \
+			 $problem \
 	    		 $problem_time \
 			 $problem_incorrect \
 			 $problem_modifier \
 			 [list $problem_i_qualified \
 			       $problem_o_qualified \
-			       $problem_f_qualified \
-			       $problem_s_qualified \
 			       $problem_x_qualified]]
 	}
 
 	# Compute sort_code and mark problems_correct
 	# and ranking_score missing when appropriate.
 	#
-	set cccc \
-	    [format {%04d} \
-		    [expr { 9999 - $problems_correct }]]
-	set ssss \
-	    [format {%04d} \
-		    [expr { 9999 - $submissions }]]
-	if { ! $scoreboard_display_correct } {
+	set P $problems_correct
+	set PPPP [format {%04d} [expr { 9999 - $P }]]
+	set sort_code ""
+	set ranking_score ""
+
+	if { $scoreboard_sort_mode == "submitter" } {
 	    set sort_code $submitter
-	    set problems_correct ""
 	    set ranking_score ""
-	} elseif { $scoreboard_use_feedback } {
-	    if {    $use_average \
-	         && $problems_correct > 0 } {
-	        set qualifier_score \
-		    [expr {   $qualifier_score \
-		            / $problems_correct }]
+	} elseif { $scoreboard_sort_mode == "problems" } {
+	    set sort_code $PPPP
+	    set ranking_score $P
+	} elseif { $scoreboard_sort_mode == "time" } {
+	    if { $scoreboard_start_time == "" } {
+	        error "scoreboard_sort_mode is `time'\
+		       but scoreboard_start_time is\
+		       \"\""
 	    }
-	    set qqqqqqqqq \
-		[format {%09d} \
-		        [expr { 999999999 \
-			        - round \
-				  (   100 \
-				    * $qualifier_score \
-				  ) }]]
-	    set ranking_score \
-	        [format {%.2f} $qualifier_score]
-	    if { $scoreboard_display_incorrect } {
-		set sort_code $cccc.$qqqqqqqqq.$ssss
-	    } else {
-		set sort_code $cccc.$qqqqqqqqq
-	    }
-	} elseif { $scoreboard_start_time == "" } {
-		set sort_code $cccc.$submitter
-		set ranking_score ""
+	    set TTT $total_time
+	    set TTTTTTTTT \
+	        [format {%09d} [expr 999999999 - $TTT]]
+	    set sort_code "$PPPP.$TTTTTTTTT"
+	    set ranking_score "$P/$TTT"
 	} else {
-	    if { $use_average } {
-		set time_score \
-		    [expr { double ($time_score) }]
-	        if { $problems_correct > 0 } {
-		    set time_score \
-			[expr {   $time_score \
-				/ $problems_correct }]
-		}
-		set ttttttttt \
-		    [format {%09d} \
-		            [expr { round \
-			      ( 100 * $time_score ) }]]
-		set ranking_score \
-		    [format {%.2f} $time_score]
-	    } else {
-		set ttttttttt \
-		    [format {%09d} $time_score ]
-		set ranking_score $time_score
-	    }
-	    if { $scoreboard_display_incorrect } {
-		set sort_code $cccc.$ttttttttt.$ssss
-	    } else {
-		set sort_code $cccc.$ttttttttt
+	    set SSSSS [format {%.2f} $total_score]
+	    set SSSSSSSSS \
+	        [format {%09.2f} \
+		        [expr 999999.99 - $SSSSS]]
+	    if { $scoreboard_sort_mode == "score" } {
+	        set sort_code $SSSSSSSSS
+		set ranking_score $SSSSS
+	    } elseif {    $scoreboard_sort_mode
+	               == "subscore" } {
+	        set sort_code $PPPP.$SSSSSSSSS
+		set ranking_score $P/$SSSSS
 	    }
 	}
 
+	if { $sort_code == "" } {
+	    error "`$scoreboard_sort_code' is a bad\
+	           value for scoreboard_sort_code"
+	}
+
+	if { $ranking_score != "" \
+	     && \
+	     $modifier == "n" } {
+	    set ranking_score "*${ranking_score}"
+	}
+	    
 	# Add score list item to score list.
 	#
 	lappend scoreboard_list \
-		[concat [list $sort_code $submissions \
-		              $problems_correct \
-			      $ranking_score \
-		              $modifier $submitter ] \
+		[concat [list $sort_code $submitter \
+		              $submissions \
+			      $ranking_score ] \
 		        $problem_scores]
     }
 
@@ -931,71 +831,73 @@ proc compute_scoreboard_list {} {
 # Scoreboard Functions
 # ---------- ---------
 
-# Return the printable score of a problem, given the
-# problem time (which is "" if the problem was never
-# correct), the number of incorrect submissions, and
-# the modifier which is "n" if unreviewed non-final
-# scores exist.  The problem time is the date and time
-# (as per [clock seconds]) of the correct submission if
-# scoreboard_start_time is "", and is otherwise the 
-# number of seconds between the problem start time and
-# the correct submission.  The arguments involving
-# qualified submissions are explained below.
+# Return the printable score of a problem.  The
+# arguments are:
 #
-# The problem score is also added to the time_score or
-# qualified_score if the problem was solved.
+#   total_time_name
+#       Name of variable containing account total_time
+#   total_score_name
+#       Name of variable containing account total_score
+#   problem
+#       Name of problem
+#   problem_time
+#       If "", problem has not been solved.
+#       Else if scoreboard_start_time != "", this is the
+#            difference between the time of the first
+#            correct submission and the problem start
+#            time, in seconds.
+#       Else this is the time of the first correct
+#            submission as per [clock seconds].
+#   incorrect
+#       Number of incorrect submissions
+#   modifier 
+#       "n" if some submission scores have not yet been
+#       reviewed by the human judge
+#   qualified_submissions
+#       [list I O X] where I is the number of "in"
+#       incorrect submissions, "O" the number of "inout"
+#       incorrect submissions, and X the number of ""
+#       incorrect submissions.
+#     
+# The problem score is added to total_score and if
+# problem_time and scoreboard_start_time are both not
+# "" then the problem_time is added to total_time.
 #
-# The value returned has 9 or fewer characters as long
-# as there are at most 98 incorrect submissions, or
-# there is no `*' prefix (see below) and at most 998
-# incorrect submissions, or scoreboard_display_incorrect
-# is `no', or scoreboard_use_feedback is yes and there
-# are not too many kinds of qualifiers being used.
+# The value returned has 9 or fewer characters unless
+# there are more than 99 submissions.
 #
-# If the problem time is "" indicating the problem is
-# not correct, the problem score is `......' if there
-# are no submissions or if scoreboard_display_incorrect
-# is `no', and is otherwise `..../N', where N is the
-# number of incorrect submissions.
+# If problem_time is "" indicating the problem is
+# not correct, then if incorrect is 0, "......" is
+# returned, but if incorrect is N > 0, "..../N" is
+# returned if scoreboard_unsolved_mode is "count",
+# and "IiOoX" is returned if scoreboard_unsolved_mode
+# is "qualifier".
 #
-# Otherwise if scoreboard_use_feedback is `yes', the
-# the score for the problem is computed as a floating
-# point number, as accurately as possible, and is added
-# to the qualified_score whose name must be given as an
-# argument.  In this case the qualified_submissions
-# argument must be given as a list of the format
+# Otherwise if the problem_time is NOT "" then the
+# problem score is computed and added to total_score.
+# If scoreboard_solved_mode is "score" then "SSS/N"
+# is returned where SSS is the problem score rounded
+# to the nearest integer and N = incorrect + 1 is the
+# number of submissions.
 #
-#		I O F S X
+# If the problem_time is NOT "" and scoreboard_start_
+# time is NOT "", then problem_time is the elapsed time
+# from the problem start time, and it is added to total_
+# time.  Then if scoreboard_solved_mode is "time",
+# "TTT/N" is returned where TTT is the problem time and
+# N = incorrect + 1 is the number of submissions.  Here
+# TTT has the first of the following formats that fits
+# into 6 characters:
 #
-# where I, O, F, S, X represent the following:
+#	MM:SSs		s = denotes seconds
+#	HH:MMm		m = denotes minutes
+#	DD:HHh		h = denotes hours
+#	DDDDDd		d = denotes days
 #
-#    I  number `in' qualified incorrect submissions
-#    O  number `inout' qualified incorrect submissions
-#    F  number `first' qualified incorrect submissions
-#    S  number `summary' qualified incorrect submissions
-#    X  number unqualified incorrect submissions
-#
-# The order of the list given above matches the order
-# of scoreboard_qualifier_factors: see hpcm_judging.rc.
-#
-# If scoreboard_use_feedback and scoreboard_display_
-# incorrect are both `yes', the problem score has the
-# form
-#
-#		IiOoFfSsX
-#
-# where I, O, F, S, X are as above, and if any are 0,
-# the it and any lower case letter following it are
-# omitted (instead of 2i1o0f0s2 it is 2i1o2).
-#
-# If, however, scoreboard_display_incorrect is `no', the
-# problem score is just the problem score proper,
-# rounded to the nearest integer.
-#
-# If scoreboard_use_feedback is `no' and scoreboard_
-# start_time is "", the problem time is the date and
-# time as per [clock seconds], and this is encoded in
-# the problem score as:
+# If the problem_time is NOT "" and scoreboard_start_
+# time IS "", then problem_time is the actual time of
+# first correct submission.  If problem_solved_mode is
+# "date", this time is returned in the format:
 #
 #	ddmmmyy
 #
@@ -1004,161 +906,165 @@ proc compute_scoreboard_list {} {
 # there would be more than 9 characters in the printable
 # score, the year is omitted.
 #
-# If scoreboard_use_feedback is `no' and scoreboard_
-# start_time is NOT "", the problem time an elapsed
-# time, and is encode in the problem score as:
-#
-#	MM:SSs		s = denotes seconds
-#	HH:MMm		m = denotes minutes
-#	DD:HHh		h = denotes hours
-#	DDDDDd		d = denotes days
-#
-# If the modifier is "n" and either there was a correct
-# submission or the scoreboard_display_incorrect is
-# `yes', "*" is prefixed to the score to indicate the
-# score is subject to change by manual review.
-#
-# If time is not "" indicating the problem was solved,
-# and if scoreboard_use_feedback is "yes", then the
-# problem score is added to the qualified_score.
-#
-# If time is not "" indicating the problem was solved,
-# if scoreboard_use_feedback is "no", and if
-# scoreboard_start_time is not "", then the problem
-# score is added to the time_score.
-#
-# If time > bound, then time is set to bound for the
-# purpose of computing the problem score.  If the
-# qualified problem score is < bound, then that is set
-# to bound for the purpose of computing the problem
-# score.
+# If the modifier is "n" and either there were submis-
+# sions, correct or not, "*" is prefixed to the score to
+# indicate the score is subject to change by manual
+# review.
 #
 proc format_problem_score \
-    { time_score_name qualifier_score_name bound \
-      time incorrect modifier \
+    { total_time_name total_score_name
+      problem problem_time incorrect modifier \
       qualified_submissions } {
 
     global scoreboard_start_time \
     	   scoreboard_penalty \
-           scoreboard_display_incorrect \
-	   scoreboard_use_feedback \
-	   scoreboard_qualifier_factors
+           scoreboard_solved_mode \
+           scoreboard_unsolved_mode \
+	   scoreboard_factor \
+	   scoreboard_max_score
 
     # Compute:
     #
     #	long_score	use if short enough
     #	short_score	use otherwise
 
-    if { $time == "" } {
-        if {    $scoreboard_display_incorrect \
-	     && $incorrect != 0 } {
-	    set long_score ..../$incorrect
-	} else {
-	    set long_score ......
-	}
-	set short_score $long_score
-    } elseif { $scoreboard_use_feedback } {
-        upvar $qualifier_score_name qualifier_score
-	set score 100.0
-	set long_score ""
-	set i 0
-	foreach c $qualified_submissions {
-	    set factor \
-	        [lindex $scoreboard_qualifier_factors \
-		        $i]
-	    set postfix [lindex {i o f s ""} $i]
-	    incr i
-	    if { $c == 0 } continue
-	    set score \
-	        [expr { $score * pow ($factor, $c) }]
-	    if { $scoreboard_display_incorrect } {
-	        set long_score \
-		    "$long_score$c$postfix"
+    if { $problem_time == "" } {
+
+        # Problem is unsolved.
+
+        if { $incorrect == 0 } {
+	    set long_score "......"
+	    set short_score $long_score
+	} elseif {    $scoreboard_unsolved_mode \
+	           == "count" } {
+	    set long_score "..../$incorrect"
+	    set short_score ".../$incorrect"
+	} elseif {    $scoreboard_unsolved_mode \
+	           == "qualifier" } {
+	    set i 0
+	    set long_score ""
+	    while { $i < 3 } {
+	        set count \
+		    [lindex $qualified_submissions $i]
+	        set postfix \
+		    [lindex {i o ""} $i]
+		set long_score \
+		    "$long_score$count$postfix"
+		incr i
 	    }
-	}
-	if { $score < $bound } {
-	    set score $bound
-	}
-	set round_score [expr { round($score) }]
-	if {    ! $scoreboard_display_incorrect \
-	     || $incorrect == 0 } {
-	    set long_score $round_score
 	    set short_score $long_score
 	} else {
-	    set short_score $long_score
-	    set long_score "$long_score:$round_score"
+	    error "`$scoreboard_unsolved_mode' is bad\
+	           value for scoreboard_unsolved_mode"
 	}
-	set qualifier_score \
-	    [expr $qualifier_score + $score]
-
-    } elseif { $scoreboard_start_time != "" } {
-        upvar $time_score_name time_score
-
-	if { $time > $bound } {
-	    set time $bound
-	}
-
-	set max_ranking_score 999999999
-	set problem_increment \
-	    [expr { $time + $scoreboard_penalty \
-	    		  * $incorrect }]
-	if {   [expr { $max_ranking_score \
-		       - $problem_increment }] \
-	     < $time_score } {
-	    set time_score $max_ranking_score
-	} else {
-	    incr time_score $problem_increment
-	}
-
-	set MM [expr { $time / 60 }]
-	set SS [expr { $time - 60 * $MM } ] 
-	set HH [expr { $MM / 60 }]
-	set MM [expr { $MM - 60 * $HH }]
-	set DD [expr { $HH / 24 }]
-	set HH [expr { $HH - 24 * $DD }]
-	if { $DD > 99 } {
-	    set long_score "${DD}d"
-	} elseif { $DD > 0 } {
-	    set long_score \
-	        "[format {%d:%02d} $DD $HH]h"
-	} elseif { $HH > 0 } {
-	    set long_score \
-	        "[format {%d:%02d} $HH $MM]m"
-	} else {
-	    set long_score \
-	        "[format {%d:%02d} $MM $SS]s"
-	}
-
-	if { $scoreboard_display_incorrect } {
-	    incr incorrect 1
-	    set long_score $long_score$incorrect
-	}
-	set short_score $long_score
-
     } else {
 
-        # scoreboard_start_time == ""
+        # Problem is solved.
 
-        set long_score \
-	    [string tolower \
-	       [clock format $time -format {%d%b%y}]]
-        set short_score \
-	    [string tolower \
-	       [clock format $time -format {%d%b}]]
+        set submissions [expr $incorrect + 1]
+	set long_score ""
+	    # If not reset then scoreboard_solved_mode
+	    # has a bad value.
 
-	if { $scoreboard_display_incorrect } {
-	    incr incorrect 1
-	    set long_score $long_score/$incorrect
-	    set short_score $short_score/$incorrect
+	# Compute problem score
+	#
+        if { [info exists \
+	           scoreboard_max_score($problem)] } {
+	    set score $scoreboard_max_score($problem)
+	} else {
+	    set score 100.0
+	}
+	set i 0
+	while { $i < 3 } {
+	    set count [lindex $qualified_submissions $i]
+	    set qualifier [lindex {in inout ""} $i]
+	    if { [info exists \
+	               scoreboard_factor($qualifier)] \
+		       } {
+		set factor $scoreboard_factor($qualifier)
+		set score \
+		    [expr {   $score \
+		            * pow ($factor, $count) }]
+	    }
+	    incr i
+	}
+        upvar $total_score_name total_score
+	set total_score [expr $total_score + $score]
+
+	if { $scoreboard_solved_mode == "score" } {
+	    set round_score [expr { round($score) }]
+	    set long_score "$round_score/$submissions"
+	    set short_score $round_score
+	}
+
+	if { $scoreboard_start_time != "" } {
+
+	    upvar $total_time_name total_time
+	    set max_total_time 999999999
+	    set problem_increment \
+		[expr {   $problem_time \
+			+   $scoreboard_penalty \
+			  * $incorrect }]
+	    if {   [expr { $max_total_time \
+			   - $problem_increment }] \
+		 < $total_time } {
+		set total_time $max_total_time
+	    } else {
+		incr total_time $problem_increment
+	    }
+
+	    if { $scoreboard_solved_mode == "time" } {
+
+		set MM [expr { $problem_time / 60 }]
+		set SS \
+		    [expr { $problem_time - 60 * $MM } ]
+		set HH [expr { $MM / 60 }]
+		set MM [expr { $MM - 60 * $HH }]
+		set DD [expr { $HH / 24 }]
+		set HH [expr { $HH - 24 * $DD }]
+		if { $DD > 99 } {
+		    set long_score "${DD}d"
+		} elseif { $DD > 0 } {
+		    set long_score \
+			"[format {%d:%02d} $DD $HH]h"
+		} elseif { $HH > 0 } {
+		    set long_score \
+			"[format {%d:%02d} $HH $MM]m"
+		} else {
+		    set long_score \
+			"[format {%d:%02d} $MM $SS]s"
+		}
+
+		set long_score \
+		    "$long_score/$submissions"
+		set short_score $long_score
+	    }
+	} elseif { $scoreboard_solved_mode == "time" } {
+	    error "scoreboard_solved_mode is `time' but\
+	           scoreboard_start_time is \"\""
+	} elseif { $scoreboard_solved_mode == "date" } {
+	    set short_score \
+		[string tolower \
+		   [clock format $problem_time \
+			  -format {%d%b%y}]]
+	    set long_score $short_score/$submissions
+	} else {
+	    error "`$scoreboard_solved_mode' is bad\
+	           value for scoreboard_solved_mode\n\
+		   \   when scoreboard_start_time is \"\""
 	}
     }
 
-    if { $modifier == "n" } {
-	if {    $scoreboard_display_incorrect \
-	     || $time != "" } {
-	    set long_score *$long_score
-	    set short_score *$short_score
-	}
+    if { $long_score == "" } {
+	error "`$scoreboard_solved_mode' is bad\
+	       value for scoreboard_solved_mode"
+    }
+
+    if {    $modifier == "n" \
+         && (    $incorrect != 0
+	      || $problem_time != "" ) } {
+	set long_score "*$long_score"
+	set short_score "*$short_score"
     }
 
     if { [string length $long_score] <= 9 } {
