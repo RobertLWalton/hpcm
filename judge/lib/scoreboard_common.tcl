@@ -3,7 +3,7 @@
 #
 # File:		scoreboard_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Mar 16 04:09:42 EDT 2013
+# Date:		Sat Mar 16 08:58:41 EDT 2013
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -12,9 +12,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2013/03/16 08:11:48 $
+#   $Date: 2013/03/16 13:00:45 $
 #   $RCSfile: scoreboard_common.tcl,v $
-#   $Revision: 1.64 $
+#   $Revision: 1.65 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -582,10 +582,10 @@ proc prune_scoreboard_array { } {
 # is 9999-P in 4 digits with high order zeros if
 # necessary.  TTT is the total time in seconds, and
 # TTTTTTTTT is that time in 9 digits with high order
-# zeros as necessary.  SSSSS.SS is the score to 2 decimal
-# places and SSSSSS.SS is 999999.99-SSSSS.SS with two
-# decimal places and high order zeros if necessary to
-# make 6 integer digits.
+# zeros as necessary.  SSSSS.SS is the score to 2
+# decimal places and SSSSSS.SS is 999999.99-SSSSS.SS
+# with two decimal places and high order zeros if
+# necessary to make 6 integer digits.
 #
 # The scoreboard_list is sorted in INCREASING order.
 # Thus higher P values are earlier, higher TTT values
@@ -775,7 +775,8 @@ proc compute_scoreboard_list {} {
 	if { $scoreboard_sort_mode == "submitter" } {
 	    set sort_code $submitter
 	    set ranking_score ""
-	} elseif { $scoreboard_sort_mode == "problems" } {
+	} elseif {    $scoreboard_sort_mode \
+	           == "problems" } {
 	    set sort_code $PPPP
 	    set ranking_score $P
 	} elseif { $scoreboard_sort_mode == "time" } {
@@ -981,7 +982,8 @@ proc format_problem_score \
 	    if { [info exists \
 	               scoreboard_factor($qualifier)] \
 		       } {
-		set factor $scoreboard_factor($qualifier)
+		set factor \
+		    $scoreboard_factor($qualifier)
 		set score \
 		    [expr {   $score \
 		            * pow ($factor, $count) }]
@@ -1042,22 +1044,20 @@ proc format_problem_score \
 	} elseif { $scoreboard_solved_mode == "time" } {
 	    error "scoreboard_solved_mode is `time' but\
 	           scoreboard_start_time is \"\""
-	} elseif { $scoreboard_solved_mode == "date" } {
+	}
+
+	if { $scoreboard_solved_mode == "date" } {
 	    set short_score \
 		[string tolower \
 		   [clock format $problem_time \
 			  -format {%d%b%y}]]
 	    set long_score $short_score/$submissions
-	} else {
-	    error "`$scoreboard_solved_mode' is bad\
-	           value for scoreboard_solved_mode\n\
-		   \   when scoreboard_start_time is \"\""
 	}
-    }
 
-    if { $long_score == "" } {
-	error "`$scoreboard_solved_mode' is bad\
-	       value for scoreboard_solved_mode"
+	if { $long_score == "" } {
+	    error "`$scoreboard_solved_mode' is bad\
+		   value for scoreboard_solved_mode"
+	}
     }
 
     if {    $modifier == "n" \
