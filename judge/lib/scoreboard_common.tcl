@@ -3,7 +3,7 @@
 #
 # File:		scoreboard_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Mar 16 08:58:41 EDT 2013
+# Date:		Sun Mar 17 03:56:09 EDT 2013
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -12,9 +12,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2013/03/16 13:00:45 $
+#   $Date: 2013/03/17 08:17:43 $
 #   $RCSfile: scoreboard_common.tcl,v $
-#   $Revision: 1.65 $
+#   $Revision: 1.66 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -566,17 +566,19 @@ proc prune_scoreboard_array { } {
 # upon the settings of scoreboard_sort_mode, which can
 # have the folloiwng values:
 #
-#		sort_code	ranking_score
+#			sort_code	ranking_score
 #
-#   submitter	submitter	""
+#   submitter		submitter	""
 #
-#   time	PPPP.TTTTTTTTT	P/TTT
+#   time		PPPP.TTTTTTTTT	P/TTT
 #
-#   problems	PPPP.submitter	P
+#   problems		PPPP.submitter	P
 #
-#   score	SSSSS.SS	SSSSS.SS
+#   score		SSSSS.SS	SSSSS.SS
 #
-#   subscore	PPPP.SSSSSS.SS	P/SSSSS.SS
+#   problems/score	PPPP.SSSSSS.SS	P/SSSSS.SS
+#
+#   score/problems	SSSSSS.SS.PPPP	SSSSS.SS/PPPP
 #
 # Here P is the number of correct problems, and PPPP
 # is 9999-P in 4 digits with high order zeros if
@@ -799,15 +801,19 @@ proc compute_scoreboard_list {} {
 	        set sort_code $SSSSSSSSS
 		set ranking_score $SSSSS
 	    } elseif {    $scoreboard_sort_mode
-	               == "subscore" } {
+	               == "problems/score" } {
 	        set sort_code $PPPP.$SSSSSSSSS
 		set ranking_score $P/$SSSSS
+	    } elseif {    $scoreboard_sort_mode
+	               == "score/problems" } {
+	        set sort_code $SSSSSSSSS.$PPPP
+		set ranking_score $SSSSS/$P
 	    }
 	}
 
 	if { $sort_code == "" } {
-	    error "`$scoreboard_sort_code' is a bad\
-	           value for scoreboard_sort_code"
+	    error "`$scoreboard_sort_mode' is a bad\
+	           value for scoreboard_sort_mode"
 	}
 
 	if { $ranking_score != "" \
