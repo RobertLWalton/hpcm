@@ -2,7 +2,7 @@
 #
 #	File:	Makefile
 #	Author:	walton@seas.harvard.edu
-#	Sat Jan 12 09:35:17 EST 2013
+#	Date:	Mon Mar 18 08:47:47 EDT 2013
 
 .SUFFIXES:	.tex .png
 
@@ -64,6 +64,9 @@ text-parse-tree:	\
 
 text-abstract-tree:	\
 	text-abstract-tree-1.png
+
+binary-tree-paths:	\
+	binary-tree-paths-1.png
 
 
 %-1.png:	%.tex
