@@ -2,7 +2,7 @@
 #
 # File:		scoring_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Mar 11 04:15:10 EDT 2013
+# Date:		Mon Mar 18 06:22:17 EDT 2013
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2013/03/11 08:20:33 $
+#   $Date: 2013/03/18 16:43:16 $
 #   $RCSfile: scoring_common.tcl,v $
-#   $Revision: 1.72 $
+#   $Revision: 1.73 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -743,7 +743,23 @@ proc compute_score { } {
 proc compose_response { { compose_reply_options "" } } {
 
     global response_instructions \
-           response_instructions_globals
+           response_instructions_globals \
+	   submit_qualifier response_qualifier \
+	   default_correct_qualifier \
+	   default_incorrect_qualifier \
+	   auto_score
+
+    if { $submit_qualifier == "" } {
+        if { $auto_score == "Completely Correct" } {
+	    set response_qualifier \
+	        $default_correct_qualifier
+	} else {
+	    set response_qualifier \
+	        $default_incorrect_qualifier
+	}
+    } else {
+	set response_qualifier $submit_qualifier
+    }
 
     if { [catch { llength $response_instructions }] } {
 	error "response_instructions value is\
@@ -1085,6 +1101,13 @@ proc execute_response_commands \
 		}
 		process_in_or_out_command \
 		    $command processed_commands
+	    }
+
+	    ERROR {
+	    	if { $length != 2 } {
+		    response_error $command
+		}
+		error [lindex $command 1]
 	    }
 
 	    default	{

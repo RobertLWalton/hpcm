@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Mar 17 09:40:03 EDT 2013
+# Date:		Mon Mar 18 05:48:50 EDT 2013
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2013/03/17 17:20:42 $
+#   $Date: 2013/03/18 16:42:40 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.261 $
+#   $Revision: 1.262 $
 
 # Table of Contents:
 #
@@ -1030,6 +1030,7 @@ set scoreboard_interval 60
 #	    | { INPUT filename ... }
 #	    | { parameter_name value }
 #	    | BOARD
+#	    | { ERROR error_message }
 #
 #	start ::= "<a date and time>"
 #	stop  ::= "<a date and time>"
@@ -1102,6 +1103,10 @@ set scoreboard_interval 60
 #
 #     BOARD	Include a scoreboard table computed with
 #		previously set parameters.
+#
+#     { ERROR error_message }
+#		Causes a system error with the given
+#		error message.
 #
 # An output file is not actually written until the next
 # OUTPUT command or the end of the instructions. All
@@ -1546,6 +1551,7 @@ set response_instructions_globals {
     submitted_problem
     submitted_extension
     submit_qualifier
+    response_qualifier
 }
 
 # Instructions on how to respond to the submitter when a
@@ -1606,29 +1612,24 @@ set response_instructions {
 
 	{# Output in, inout, info from the autojudge. #}
 
-	if { $submit_qualifier == "" } {
+	if { $response_qualifier == "" } {
 	} elseif { ! [lcontain \
 	                [split $response_mode +] \
-			$submit_qualifier] } {
-	    BLANK
-	    { LINE "The submit qualifier\
-	           `-SUBMIT-QUALIFIER-' is not\
-		   supported" }
-	    { LINE "by this contest and is being\
-		    ignored." }
-
+			$response_qualifier] } {
+	    { ERROR "response_qualifier is not in\
+	             response_mode" }
 	} elseif {       $auto_score \
 		      != "Completely Correct" \
 		   && [lcontain {in inout} \
-			 $submit_qualifier] } {
+			 $response_qualifier] } {
 
 	    BLANK
 	    if { [lcontain {in inout} \
-	                   $submit_qualifier] } {
+	                   $response_qualifier] } {
 		IN
 	    }
 
-	    if { $submit_qualifier == "inout" } {
+	    if { $response_qualifier == "inout" } {
 		OUT
 	    }
 	    BAR
@@ -1760,7 +1761,7 @@ set response_instructions {
          ( ! $proposed && ! $manual && \
            $auto_score == "Completely Correct" ) } {
 
-        if {    $submit_qualifier == "solution" \
+        if {    $response_qualifier == "solution" \
 	     && [regexp solution $response_mode] } {
 	    BLANK
 	    BAR
@@ -1838,6 +1839,13 @@ set response_instructions {
 #
 #   $submit_qualifier
 #	Qualifier from the submit mail `Subject' field.
+#	But usually response_qualifier is used instead.
+#
+#   $response_qualifier
+#	Equals submit_qualifier unless this is "",
+#	in which case equals default_correct_qualifier
+#       if auto_score is "Completely Correct" or
+#	default_incorrect_qualifier otherwise.
 #
 # If-statement expressions can only use the variables
 # whose names are listed in the `response_instructions_
