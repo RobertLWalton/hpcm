@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Mar 13 06:11:54 EDT 2013
+# Date:		Mon Mar 18 13:02:29 EDT 2013
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2013/03/13 10:30:34 $
+#   $Date: 2013/03/18 18:32:41 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.84 $
+#   $Revision: 1.85 $
 
 # Table of Contents
 #
@@ -365,15 +365,15 @@ set makescoreboard yes
 #
 set startcontest yes
 
-# The following is the printer map for a feedback or
-# unranked contest.  It lets each contestant determine
-# his/her own printer by placing the printer name in the
+# The following is the printer map for an untimed
+# contest.  It lets each contestant determine his/her
+# own printer by placing the printer name in the
 # ~/PRINTER file of the contestant's account.  See
 # `hpcm/contestant/bin/printer_pipe -doc' for more
 # documentation.
 #
-set feedback_printer_map "
-# Do not edit.  This is copied from the feedback_
+set untimed_printer_map "
+# Do not edit.  This is copied from the untimed_
 # printer_map global variable in the hpcm_judging.rc
 # file in the judging directory.
 #
@@ -387,18 +387,15 @@ set feedback_printer_map "
 # Compute whether we have converted to untimed practice.
 #
 set converted no
-if { $conversion_time != "" } {
+set convert_time ""
+if { $conversion_delay != "" } {
     set t1 [clock seconds]
-    set t2 [clock scan $conversion_time]
+    set t2 [clock scan $stop_time]
+    incr t2 $conversion_delay
+    set convert_time [clock format $t2]
     if { $t1 >= $t2 } {
         set converted yes
     }
-}
-
-if { $converted } {
-    set scoring_type timed
-} else {
-    set scoring_type untimed
 }
 
 set cc_manager yes
@@ -515,70 +512,27 @@ if { $allow_email_submissions == "no" } {
            $allow_email_submissions"
 }
 
-# Set scoring subtype to timed, feedback, or unranked
-# according to the contest_type, stop_time, conversion_
-# delay, and time of day.  For a timed+xxxxx contest the
-# subtype is "timed" till conversion_delay after stop_
-# time and then it is "xxxxx".
-#
-# For a convertible contest, at the time of conversion
-# makecontest is run and its output is put in the
-# file $judging_directory/post_contest_reconfiguration.
-#
-set is_post_contest no
-set scoring_subtype $scoring_type
-switch $scoring_type {
-    timed { }
-    feedback { }
-    unranked { }
-    timed+feedback -
-    timed+unranked {
-	set f $judging_directory
-	set f $f/post_contest_reconfiguration
-	if { ! [file exists $f] } {
-	    set c [clock scan $stop_time]
-	    incr c $conversion_delay
-	    set c [clock format $c]
-	    set scoreboard_shutdown_time $c
-	    proc scoreboard_shutdown {} {
-		global judging_directory \
-		       problems_arguments
-		set f $judging_directory
-		set f $f/post_contest_reconfiguration
-		#
-		# Create $f before executing
-		# makecontest so we will not execute
-		# makecontest twice.
-		#
-		if { [create_file $f] } {
-		    write_file $f \
-			[eval exec makecontest \
-			 -printer_map -scoreboard \
-			 -problems -description \
-			 $problems_arguments]
-		}
-	    }
-	    set scoring_subtype timed
-	} else {
-	    regexp {^timed\+(.*)$} $scoring_type \
-	           forget scoring_subtype
-	    set is_post_contest yes
-	}
-    }
-    default {
-        error "Bad scoring_type" $scoring_type"
-    }
-}
-
 # Set contest_printer_map according to contest subtype.
 # Catch errors in case printer_maps are undefined.
 #
-if { $scoring_subtype == "timed" } {
+if { $converted == "no" } {
     catch { set contest_printer_map \
                 $timed_printer_map }
 } else {
     catch { set contest_printer_map \
-                $feedback_printer_map }
+                $untimed_printer_map }
+
+    # Write ./contest/printer_map if that is not
+    # equal to untimed_printer_map
+    #
+    set_contest_directory
+    set printer_map \
+	[read_entire_file \
+	    $contest_directory/printer_map]
+    if { $untimed_printer_map != $printer_map } {
+	[write_file $contest_directory/printer_map \
+		    $untimed_printer_map]
+    }
 }
 
 # Default arguments to makecontest.
@@ -609,20 +563,31 @@ set makecontest_arguments "
     $problems_arguments
 "
 
-# Set the start/freeze/stop times for the contest.
-#
-set scoreboard_start_time  $start_time
+
+if { $converted } {
+    set scoring_mode auto
+    set default_correct_qualifier solution
+    set default_incorrect_qualifier inout
+    set scoreboard_solved_mode problems/score
+} else {
+    set scoring_mode auto+manual
+    set default_correct_qualifier ""
+    set default_incorrect_qualifier ""
+    set scoreboard_solved_mode time
+}
+set scoreboard_unsolved_mode count
+set allowed_qualifiers {""}
+set scoreboard_factor() 0.95
+set scoreboard_start_time $start_time
+set scoreboard_stop_time $stop_time
 set scoreboard_freeze_time $freeze_time
-set scoreboard_stop_time   $stop_time
+set scoreboard_convert_time $convert_time
+set scoreboard_abbreviation(CONVERT) convert_time
 set scoreboard_penalty     [expr 60 * $penalty_minutes]
 
 # Scoreboard name, i.e, the name of the contest.
 #
 set scoreboard_name $contest_name
-
-# Scoreboard mode during contest.
-#
-set scoreboard_mode timed
 
 # Compute scoreboard_submitters to exclude test
 # accounts.
@@ -696,7 +661,7 @@ set scoreboard_instructions {
     {# Public unfrozen scoreboard during contest #}
 
     if { $freeze_time == "" } {
-	{ OUTPUT contest/scoreboard START STOP+3600 }
+	{ OUTPUT contest/scoreboard START CONVERT }
     } else {
 	{ OUTPUT contest/scoreboard START FREEZE }
 	{ stop_time FREEZE }
@@ -741,13 +706,13 @@ set scoreboard_instructions {
        meeting. #}
 
     { OUTPUT contest/scoreboard.results
-             STOP+3600 STOP+3600 }
+             CONVERT CONVERT }
     GRANT_ACCESS
     { INPUT contest/scoreboard.final }
 
     {# Public scoreboard after post contest meeting. #}
 
-    { OUTPUT contest/scoreboard STOP+3600 "" }
+    { OUTPUT contest/scoreboard CONVERT "" }
     { LINE NAME "Post Contest Scoreboard" TIME }
     BLANK
     { LINE "This is a practice style scoreboard." }
