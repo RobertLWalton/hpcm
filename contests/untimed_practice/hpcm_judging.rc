@@ -1,0 +1,520 @@
+# TCL Parameters File for Untimed Practice Judging
+#
+# File:		hpcm_judging.rc
+# Author:	Bob Walton (walton@deas.harvard.edu)
+# Date:		Thu Mar 21 09:55:43 EDT 2013
+#
+# The authors have placed this program in the public
+# domain; they make no warranty and accept no liability
+# for this program.
+#
+# RCS Info (may not be true date or author):
+#
+#   $Author: walton $
+#   $Date: 2013/03/21 16:31:07 $
+#   $RCSfile: hpcm_judging.rc,v $
+#   $Revision: 1.1 $
+
+# Table of Contents
+#
+#	Parameters to be Modified
+#	Local Account Parameters
+#	Web Page Parameters
+#	Parameters Not Usually Modified
+#	Computed Parameters (Do Not Modify)
+#	Parameter Overrides
+
+# Parameters to be Modified
+# ---------- -- -- --------
+
+# Read standard parameters.
+#
+source $lib_directory/hpcm_judging.rc
+
+# Set to the HPCM directory.  $env(HOME) is the home
+# directory of the current (judge's) account.
+#
+set hpcm_directory $env(HOME)/hpcm
+
+# The following parameters determine the type and
+# variety of contest.
+
+# Map of contestant email (i.e., account) addresses for
+# the scoreboard.  Scores for a contestant with address
+# PPP@CCC will by treated as if the contestant name was
+# the value of
+#
+#	submitter_compress_map(PPP@CCC)
+#
+# if that exists, and as PPP otherwise.
+#
+array set submitter_compress_map {}
+# array set submitter_compress_map {
+#	PPP@CCC1	NAME1
+#	PPP@CCC2	NAME2
+# }
+
+# Contestant account type.  One of:
+#
+#	email		Contestants provide their own
+#			contest accounts and send sub-
+#			missions via email.
+#
+#	local		An account is provided by the
+#			judge for the contestant.
+#
+#	email+local	Both the above.
+#	local+email
+#
+set account_type local+email
+# set account_type email
+# set account_type local
+
+# Contest/practice name, for scoreboard etc.
+#
+set contest_name "CONTEST NAME IS TBD"
+
+# The email address to be notified for errors or
+# queries.
+#
+set manager_address "someone@somecomputer"
+
+# Set the following to "yes" if you want all replies to
+# contestants to be CC'ed to the manager, even those
+# just reporting scores or getting problems.
+#
+set cc_manager yes
+# set cc_manager no
+
+# A cc address can be added to all autojudge replies to
+# a submitter by adding the pair
+#
+#	{ regexp address }
+#
+# to the list `response_manager_map'.  If `regexp'
+# matches the submitter (account or email address) then
+# `address' is added to the `Cc' addresses of each
+# reply.  Use an lappend command as below and quote
+# `regexp' and `address' if they contain spaces.
+# `address' can have several comma separated addresses.
+#
+# This allows teams to have their own response managers.
+#
+# lappend response_manager_map { regexp address }
+
+# TCL list of TCL regular expressions that match the
+# test accounts which are NOT to appear on the score-
+# board.
+#
+set test_accounts { }
+
+# Ditto for test problems instead of accounts.  Usually
+# you need not change this.
+#
+set test_problems $demo_problems
+
+# List of makecontest arguments that specify the
+# problems.  The format is
+#
+#	INDEX-FILE-NAME,
+#	    SUBDIRECTORY/=problems/,
+#	    QUALIFIER:include
+#
+# where the problems are in the SUBDIRECTORY of the
+# directory holding the index file.  See below for
+# examples.
+#
+set problems_arguments "
+    $hpcm_directory/problem_library/bospre-ed.index, \
+	public/=problems/, \
+	    ALL:include
+"
+# Use the following if index is the file ~/ppp/iii and
+# problems are in subdirectories of ~/ppp.  Because the
+# problems are subdirectories of ~/ppp which contains
+# the index file, `SUBDIRECTORY/' is the omitted.
+# $env(HOME) is the home directory of the current
+# (judge's) account.  `ALL' means include all problems
+# listed in the index.
+#
+# set problems_arguments "
+#     $env(HOME)/ppp/iii, \
+#         =problems/, \
+#             ALL:include
+# "
+#
+# See hpcm/judge/lib/hpcm_judging.rc `makecontest_
+# arguments' for more details, and `makecontest -doc'
+# for complete details.
+
+# Maximum scores for problems.  These default to 100.
+#
+# set scoreboard_max_score(PROBLEM) 200
+
+
+# Web Page Parameters
+# --- ---- ----------
+
+# The following are passed to `makeweb' to make the con-
+# test web page, if it exists.  Leave as "" parameters
+# you do not want to use (e.g., if web_solutions_pass-
+# word is "" no solutions web page will be made).
+#
+# The web_manager_address will be listed as a contact
+# on the the practice web page, and also given as a con-
+# tact for web scoreboard and help file pages.
+#
+# The web_solutions_password PPP will be used to name a
+# subdirectory `private/PPP' of the web page directory
+# that will hold the solutions.  No link will be made to
+# this directory, and the `private' subdirectory will be
+# unreadable to the world, so PPP will act as a pass-
+# word.
+#
+# web_problems_URL, web_help_URL, and web_scoreboard_URL
+# are also passed to `makeweb' and used to make refer-
+# ences from the practice web page to the problem
+# descriptions, web help files, and scoreboard if these
+# exist.  These may be URL's relative to the practice web
+# page, or absolute URL's.
+#
+# If web_problems_URL is "" the problem descriptions
+# from the problem solution files will be put on the
+# web as a subpage of the practice web page.
+#
+set web_manager_address $manager_address
+set web_solutions_password ""
+set web_problems_URL ""
+set web_help_URL "help"
+set web_scoreboard_url "scoreboard"
+
+# The following are used to construct the practice web
+# pages.
+#
+# If the headers are left "", the page headers are auto-
+# matically constructed from the contest_name.
+#
+# The prefixes come just after the page headers and
+# the postfix comes after everything but the web page
+# manager.  There are three pages involved: the contest
+# page, the problem descriptions page if it exists, and
+# the contest solutions page if it exists.  The last
+# two pages have no postfix.
+#
+# If there are in local accounts, include in web_prefix
+# who can get an account and who to contact to get the
+# account.
+#
+set web_header ""
+set web_prefix ""
+set web_postfix ""
+set web_problems_header ""
+set web_problems_prefix ""
+set web_solutions_header ""
+set web_solutions_prefix ""
+
+# The following scoreboard_commands variable specifies
+# places to send a copy of ./contest/scoreboard.  The
+# variable value is a list of items each with one of
+# the following formats:
+#
+#	{ NAME ssh ACCOUNT [REMOTE-COMMAND] }
+#	    Pipe ./scoreboard.web through ssh to
+#	    execute REMOTE-COMMAND in the remote
+#	    ACCOUNT.  If not given, REMOTE-COMMAND
+#	    defaults to a template which can be
+#	    filled out by editing in the file
+#	    ./secure/bin/NAME after it is created
+#	    (this will be mentioned in ./TODO).
+#
+#	{ NAME sh COMMAND }
+#	    Pipe ./scoreboard.web to COMMAND executed
+#	    by /bin/sh.
+#
+#	{ NAME email ... }
+#	    See contest_commands in hpcm/judge/lib/
+#	    hpcm_judging.rc.
+#
+# These items are appended to the judging_commands
+# global variable: see hpcm/judge/lib/hpcm_judging.rc.
+#
+# NAME is the name of a command that will be created in
+# ./secure/bin to invoke the proper pipe.  It may not
+# contain whitespace or /.
+#
+set scoreboard_commands {
+}
+
+# Parameters Not Usually Modified
+# ---------- --- ------- --------
+
+# Normally you should not have to make changes below
+# this point.
+
+# Set "yes" if contestant accounts are to be enabled
+# for login by ssh using any of the public keys
+# ~/.ssh/{identity,id_rsa,id_dsa}.pub that exist.
+#
+set ssh_enable yes
+# set ssh_enable no
+
+# Scoreboard sort mode.  Determines what is reported for
+# each submitter on the scoreboard, which is also the
+# value the submitters are sorted on.  One of:
+#
+#	problems	Just number of problems correct.
+#
+#	score		Just score.
+#
+#	problems/score	Number of problems correct
+#			first, score second.
+#
+#	score/problems	Score first, number of problems
+#			correct second.
+#
+set scoreboard_sort_mode problems/score
+
+# Autojudge's email address, or "" if this is to be
+# automatically determined.
+#
+set autojudge_address ""
+# set autojudge_address "somename<someone@somecomputer>"
+
+# Set "yes" to use GMT for dates in file and directory
+# names.  Otherwise the local time zone is used.
+#
+set use_gmt no
+
+# Set the manualreply display to have a certain height
+# with a given number of blank lines above that.  If you
+# have a taller display, increase window_height.
+#
+# WARNING: If window_height is too large, programs such
+# as manualreply and lookat may appear to be malfunc-
+# tioning because some of the information they display
+# is being scrolled off the top of the screen.
+#
+set window_blank_height 16
+set window_height 24
+
+# Set to contest directory, in case the $judging_
+# directory/contest link needs to be made.  If needed
+# and not set, the name of judging directory with
+# `judging' replaced by `contest' and trailing password
+# removed will be used.
+#
+# set contest_directory $env(HOME)/contest_TBD
+
+# Set to the prototype account (as per SETUP_PROTOTYPE).
+# If not set, the unique account with name of the form
+# *[-_]proto and readable files home/setup.tar, home/
+# empty.ls, and home/setup.ls is used, if there is such
+# a unique account.
+#
+# set hpcm_prototype_account TBD
+
+# Set to "no" if you do not want makecontest to run
+# `makescoreboard start'.
+#
+set makescoreboard yes
+
+# The following is the printer map.  It lets each con-
+# testant determine his/her own printer by placing the
+# printer name in the ~/PRINTER file of the contestant's
+# account.  See `hpcm/contestant/bin/ printer_pipe -doc'
+# for more documentation.
+#
+set contest_printer_map "
+# Do not edit.  This is copied from the contest_printer_
+# map global variable in the hpcm_judging.rc file in the
+# judging directory.
+#
+.* !~/PRINTER
+"
+
+
+# Computed Parameters (Do Not Modify)
+# -------- ---------- ---------------
+
+# You should NOT make changes beyond this point, unless
+# you want to tune the contest to be a variant of one of
+# the standards supported by this file.  If you do want
+# to tune the contest, put changes at the very end of
+# this file, where they will override the settings of
+# this file.
+
+set web_title $contest_name
+
+if { $web_problems_URL == "" } {
+    set web_problems yes
+} else {
+    set web_problems no
+}
+
+if { $web_help_URL == "" } {
+    error "web_help_URL is \"\"."
+}
+
+set allow_email_submissions [regexp email $account_type]
+
+set is_makecontest \
+    [expr { [file tail $argv0] == "makecontest" }]
+
+# Compute default autojudge_address for email contest.
+#
+if {    $allow_email_submissions \
+     && $autojudge_address == "" } {
+    set aja [truename $judging_directory]
+    set aja [file tail $aja]
+    if {    ! [regexp {^judging_(.*)_[^_]*$} $aja \
+                      forget aja] \
+	 || $aja == "" } {
+        error "Cannot set default autojudge_address\
+	       for email contest"
+    }
+    set autojudge_address \
+        "$aja<[account_name]@[host_name]>"
+}
+
+# Set addresses of autojudge.
+#
+if { $autojudge_address != "" } {
+    set autojudge_addresses [list $autojudge_address]
+}
+
+# Allow inout, solution, cerr in responses.
+#
+set response_mode "inout+solution+cerr"
+
+# If email accounts, do NOT require submissions to have
+# HPCM_BEGIN/HPCM_END lines etc and authentication.
+#
+if { $allow_email_submissions } {
+    set use_authentication no
+    set format_submissions no
+} else {
+    set use_authentication yes
+    set format_submissions yes
+}
+
+# Default arguments to makecontest.
+#
+set makecontest_arguments "
+    [include_if { [regexp email $account_type] } \
+                -email] \
+    [include_if { [regexp local $account_type] } \
+                {-local -problems -demos
+		        -startcontest -printer_map}] \
+    [include_if { $javaok } "-javahelp"] \
+    [include_if { $stlok } "-stlhelp"] \
+    [include_if { [regexp get $description_type] } \
+		  "-description"] \
+    [include_if { $ssh_enable == "yes" } "-ssh"] \
+    [include_if { $makescoreboard == "yes" } \
+    		"-scoreboard"] \
+    -web \
+    $judging_directory/help/index, \
+	=help/ \
+    $hpcm_directory/contestant/help/index, \
+	common/=help/, \
+	contest/=help/, \
+	email/=help/, \
+	advanced/=help/, \
+	    [include_if { $allow_email_submissions } \
+		        email:include,] \
+	    [include_if { [regexp local \
+	                          $account_type] } \
+		        local:include,] \
+	    untimed:include, \
+	    common:include, \
+	    advanced:include \
+    $hpcm_directory/problem_library/index, \
+	    demo:include \
+    $problems_arguments
+"
+
+# Scoreboard name, i.e, the name of the contest.
+#
+set scoreboard_name $contest_name
+
+set scoreboard_correct_mode score
+set scoreboard_factor() 0.95
+
+# Compute scoreboard_submitters to exclude test
+# accounts.
+#
+set scoreboard_submitters {}
+foreach x $test_accounts {
+    lappend scoreboard_submitters & ! $x
+}
+set scoreboard_submitters \
+    [lrange $scoreboard_submitters 1 end]
+#
+# Compute scoreboard_problems to exclude test
+# problems.
+#
+set scoreboard_problems {}
+foreach x $test_problems {
+    lappend scoreboard_problems & ! $x
+}
+set scoreboard_problems \
+    [lrange $scoreboard_problems 1 end]
+
+# Scoreboard instructions for an untimed practice.
+# These make a scoreboard in the file
+#
+#	$judging_directory/scoreboard.web
+#
+# that has the format:
+#
+#   NAME               				    TIME
+#
+#   <contents of $judging_directory/scoreboard.head>
+#
+#   ==== ===== ===== ===== ===== ===== ===== ===== =====
+#	   <scoreboard table>
+#   ==== ===== ===== ===== ===== ===== ===== ===== =====
+#
+# This file is then piped to the filters named in the
+# scoreboard_commands global variable.  If the
+# scoreboard_account_type variable contains the word
+# `local', this file is also copied to $judging_direc-
+# tory/contest/scoreboard which is given a+r permis-
+# sions.
+#
+set scoreboard_account_type $account_type
+set scoreboard_instructions {
+
+    { OUTPUT scoreboard.web "" "" }
+    SEND
+
+    { LINE NAME "" TIME }
+    BLANK
+    { INPUT scoreboard.head }
+    BLANK
+
+    BAR
+    BOARD
+    BAR
+
+    if { [regexp local $scoreboard_account_type] } {
+	{ OUTPUT contest/scoreboard "" "" }
+	GRANT_ACCESS
+	{ INPUT scoreboard.web }
+    }
+}
+
+set scoring_mode auto
+set reply_mode auto
+set log_mode auto
+set log_manager $manager_address
+if { $manager_address != "" && $cc_manager } {
+    lappend response_manager_map \
+	    [list ".*" $manager_address]
+}
+
+# Parameter Overrides
+# --------- ---------
+
+# Add parameter settings here to override parameters
+# that are normally not changed above.
