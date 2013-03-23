@@ -1,8 +1,8 @@
-# Makefile for an Untimed Contest
+# Makefile for an Algorithm Festival
 #
 # File:		Makefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Jan 22 22:29:00 EST 2007
+# Date:		Sat Mar 23 07:52:26 EDT 2013
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2013/03/22 09:02:53 $
+#   $Date: 2013/03/23 18:07:04 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.1 $
+#   $Revision: 1.2 $
 #
 # To make an untimed contest named `foo':
 #
@@ -57,36 +57,26 @@
 #    After you follow an instruction, edit it out of
 #    the TODO file.
 #
-#    Some of the instructions may cause the creating of
+#    Some of the instructions cause the creating of
 #    contestant accounts.  Generally all contestant
-#    accounts in an untimed contest are assigned
+#    accounts in an algorithm festival are assigned
 #    different random passwords by `makecontest' after
 #    you have added account names to the ./contest/
-#    secure/passwords file.  If there are contestant
-#    accounts for the contest, create a special
-#    contestant `test account' that you yourself use for
-#    testing the contest, and may put `none' as the
-#    password for that account in the passwords file,
-#    so you can control the test account password by the
-#    UNIX passwd program.
+#    secure/passwords file.
+#
+#    You should create a special contestant `test
+#    account' that you yourself use for testing the
+#    contest, and put `none' as the password for that
+#    account in the passwords file, so you can control
+#    the test account password by the UNIX passwd
+#    program.
 #
 # 7.  Contest judging is automatic.  You can use the
 #     `lookat' program to invoke `manualreply' to
 #     examine submissions, if necessary.
 #
-# 8.  If the contest allows contestants to email sub-
-#     missions from their own accounts, test the contest
-#     by sending email to the contest autojudge with
-#     `Subject: get help'.  Then try emailing several
-#     demos/count solutions and the demos/javaio solu-
-#     tion with subjects of the form `submit count.xxx'
-#     (change `count1' to `count' in the subject) or
-#     `submit javaio.java'.  See the info/help/email_
-#     contests file for more details.
-#
-#     If the contest has contestant accounts, try
-#     submitting demos/count solutions from your test
-#     account.
+# 8.  Test the contest by using the test account to
+#     submit demo problem solutions.
 #
 # 9.  You can also test the contest by executing
 #     `make test'.  Then read each email reply and
@@ -229,6 +219,16 @@
 all:
 	makecontest
 
+# Web Page Rules:
+
+# Web_do_nothing merely causes `make web' to remake the
+# web directory even if it exists.
+#
+web_do_nothing:
+
+web:	web_do_nothing
+	makecontest -web
+
 # Printout Rules:
 
 .SUFFIXES: .ps .pdf
@@ -283,10 +283,10 @@ dangerous_test_clean:
 
 dangerous_clean:
 	-makescoreboard stop
+	-startcontest stop
 	rm -rf mail rerun help flag log make_test \
 	       secure .ssh web* \
-	       info* solutions* \
-	       TODO replies mbox *.ps *.pdf \
+	       solutions* TODO replies mbox *.ps *.pdf \
 	       `readlink contest` \
 	       contest \
 	       Contest_Address \
@@ -295,5 +295,6 @@ dangerous_clean:
 	       demos_print_files* \
 	       solution_files* \
 	       Scorefinder* \
+	       Startcontest_PID \
 	       Scoreboard_PID \
 	       scoreboard.web

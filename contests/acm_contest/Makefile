@@ -1,8 +1,8 @@
-# Makefile for a Formal Contest
+# Makefile for an ACM Contest
 #
 # File:		Makefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Jan 23 09:32:00 EST 2007
+# Date:		Sat Mar 23 07:52:40 EDT 2013
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,11 +11,11 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2007/01/23 14:34:11 $
+#   $Date: 2013/03/23 18:07:04 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.56 $
+#   $Revision: 1.57 $
 #
-# To make a formal contest named `foo':
+# To make an ACM contest named `foo':
 #
 # 1. Create a judging account (see `Judging', hpcm/
 #    judging/bin/judging) and import the HPCM system
@@ -59,7 +59,7 @@
 #
 #    Some of the instructions cause the creating of
 #    contestant accounts.  Generally all contestant
-#    accounts in a formal contest have the same
+#    accounts in an ACM contest are assigned the same
 #    password, which you assign when you edit the
 #    ./contest/secure/passwords file to contain the
 #    account names and passwords.  You should create
@@ -76,8 +76,8 @@
 #     `lookat' instead of `tracker' to invoke `manual-
 #     reply'.
 #
-# 8.  Test the contest by using the test account.
-#     Try submitting several demos/count solutions.
+# 8.  Test the contest by using the test account to
+#     submit demo problem solutions.
 #
 # 9.  You can also test the contest by executing
 #     `make test'.  Then read each email reply and
@@ -339,5 +339,4 @@ dangerous_clean:
 	       Scorefinder* \
 	       Startcontest_PID \
 	       Scoreboard_PID \
-	       scoreboard.web \
-	       post_contest_reconfiguration
+	       scoreboard.web
