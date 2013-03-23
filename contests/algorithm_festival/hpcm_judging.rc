@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2013/03/22 09:02:53 $
+#   $Date: 2013/03/23 05:14:57 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.1 $
+#   $Revision: 1.2 $
 
 # Table of Contents
 #
@@ -39,6 +39,22 @@ set hpcm_directory $env(HOME)/hpcm
 # The following parameters determine the type and
 # variety of contest.
 
+# Contest name, for scoreboard etc.
+#
+set contest_name "CONTEST NAME IS TBD"
+
+# Start and stop time for contest scoreboards.  Not
+# used in computing scores.  Stop time is in seconds
+# after start time.
+#
+#
+set scoreboard_start_time "Jan 1 10:00:00 2030"
+set scoreboard_stop_time  [expr 6 * 60 * 60]
+
+# Maximum scores for problems.  These default to 100.
+#
+# set scoreboard_max_score(PROBLEM) 200
+
 # Map of contestant email (i.e., account) addresses for
 # the scoreboard.  Scores for a contestant with address
 # PPP@CCC will by treated as if the contestant name was
@@ -54,21 +70,30 @@ array set submitter_compress_map {}
 #	PPP@CCC2	NAME2
 # }
 
-# Contest name, for scoreboard etc.
+# Logical expressions specifying accounts that are
+# novice or experienced.  Atoms are regular expressions
+# which match account names (BEFORE the names are com-
+# pressed).  Operators are &&, ||, !.
 #
-set contest_name "CONTEST NAME IS TBD"
+set novice_submitters {}
+set experienced_submitters {}
 
 # The email address to be notified for errors or
-# queries.
+# queries after the contest proper.
 #
 set manager_address "someone@somecomputer"
 
-# Set the following to "yes" if you want all replies to
-# contestants to be CC'ed to the manager, even those
-# just reporting scores or getting problems.
+# Time in seconds after the start time to activate
+# the above email address.
 #
-# set cc_manager yes
-set cc_manager no
+set conversion_time [expr 7 * 60 * 6]
+
+# Do you want all replies to contestants to be CC'ed to
+# the manager above after the conversion_time, even
+# those # just reporting scores.
+#
+set cc_manager yes
+# set cc_manager no
 
 # A cc address can be added to all autojudge replies to
 # a submitter by adding the pair
@@ -131,16 +156,6 @@ set problems_arguments "
 # arguments' for more details, and `makecontest -doc'
 # for complete details.
 
-# Start and stop time for contest scoreboards.  Not
-# used in computing scores.
-#
-set scoreboard_start_time "Jan 1 10:00:00 2030"
-set scoreboard_stop_time  "Jan 1 16:00:00 2030"
-
-# Maximum scores for problems.  These default to 100.
-#
-# set scoreboard_max_score(PROBLEM) 200
-
 
 # Web Page Parameters
 # --- ---- ----------
@@ -171,8 +186,8 @@ set scoreboard_stop_time  "Jan 1 16:00:00 2030"
 # If web_problems_URL is "" the problem descriptions
 # from the problem solution files will be put on the
 # web as a subpage of the practice web page, but,
-# the subpage will be protected from reading until
-# its protection is reset.
+# the subpage WILL BE PROTECTED from reading until
+# its protection is reset manually.
 #
 set web_manager_address $manager_address
 set web_solutions_password ""
@@ -362,16 +377,15 @@ set format_submissions yes
 # Default arguments to makecontest.
 #
 set makecontest_arguments "
-    [include_if { [regexp email $account_type] } \
-                -email] \
-    [include_if { [regexp local $account_type] } \
-                {-local -problems -demos
-		        -startcontest -printer_map}] \
+    -local \
+    -problems \
+    -demos \
+    -printer_map \
     [include_if { $javaok } "-javahelp"] \
     [include_if { $stlok } "-stlhelp"] \
-    [include_if { [regexp get $description_type] } \
-		  "-description"] \
     [include_if { $ssh_enable == "yes" } "-ssh"] \
+    [include_if { $startcontest == "yes" } \
+    		"-startcontest"] \
     [include_if { $makescoreboard == "yes" } \
     		"-scoreboard"] \
     -web \
@@ -382,11 +396,6 @@ set makecontest_arguments "
 	contest/=help/, \
 	email/=help/, \
 	advanced/=help/, \
-	    [include_if { $allow_email_submissions } \
-		        email:include,] \
-	    [include_if { [regexp local \
-	                          $account_type] } \
-		        local:include,] \
 	    untimed:include, \
 	    common:include, \
 	    advanced:include \
@@ -398,20 +407,9 @@ set makecontest_arguments "
 # Scoreboard name, i.e, the name of the contest.
 #
 set scoreboard_name $contest_name
-
 set scoreboard_correct_mode score
 set scoreboard_factor() 0.95
 
-# Compute scoreboard_submitters to exclude test
-# accounts.
-#
-set scoreboard_submitters {}
-foreach x $test_accounts {
-    lappend scoreboard_submitters & ! $x
-}
-set scoreboard_submitters \
-    [lrange $scoreboard_submitters 1 end]
-#
 # Compute scoreboard_problems to exclude test
 # problems.
 #
@@ -422,14 +420,14 @@ foreach x $test_problems {
 set scoreboard_problems \
     [lrange $scoreboard_problems 1 end]
 
-TBD
 
-# Scoreboard instructions for an untimed practice.
-# These make a scoreboard in the file
+# Scoreboard instructions for an algorithm festival.
+# These make two scoreboards in the files
 #
-#	$judging_directory/scoreboard.web
+#	$judging_directory/scoreboard_novice.web
+#	$judging_directory/scoreboard_experienced.web
 #
-# that has the format:
+# that have the format:
 #
 #   NAME               				    TIME
 #
@@ -439,17 +437,20 @@ TBD
 #	   <scoreboard table>
 #   ==== ===== ===== ===== ===== ===== ===== ===== =====
 #
-# This file is then piped to the filters named in the
-# scoreboard_commands global variable.  If the
+# These files are then piped to the filters named in the
+# scoreboard_commands global variable and also copied
 # scoreboard_account_type variable contains the word
-# `local', this file is also copied to $judging_direc-
-# tory/contest/scoreboard which is given a+r permis-
-# sions.
+# $judging_directory/contest/scoreboard_{novice,
+# experienced} which are given a+r permissions.
 #
-set scoreboard_account_type $account_type
+
+set scoreboard_novice $novice_submitters
+set scoreboard_abbreviation(NOVICE) novice
+set scoreboard_experienced $experienced_submitters
+set scoreboard_abbreviation(EXPERIENCED) experienced
 set scoreboard_instructions {
 
-    { OUTPUT scoreboard.web "" "" }
+    { OUTPUT scoreboard_novice.web START "" }
     SEND
 
     { LINE NAME "" TIME }
@@ -457,15 +458,17 @@ set scoreboard_instructions {
     { INPUT scoreboard.head }
     BLANK
 
+    {submitters NOVICE}
     BAR
     BOARD
     BAR
 
-    if { [regexp local $scoreboard_account_type] } {
-	{ OUTPUT contest/scoreboard "" "" }
-	GRANT_ACCESS
-	{ INPUT scoreboard.web }
-    }
+    { OUTPUT contest/scoreboard_novice START "" }
+    GRANT_ACCESS
+    { INPUT scoreboard_novice.web }
+
+    TBD
+
 }
 
 set scoring_mode auto
