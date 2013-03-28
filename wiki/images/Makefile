@@ -2,7 +2,7 @@
 #
 #	File:	Makefile
 #	Author:	walton@seas.harvard.edu
-#	Date:	Mon Mar 18 20:38:55 EDT 2013
+#	Date:	Wed Mar 27 23:28:05 EDT 2013
 
 .SUFFIXES:	.tex .png
 
@@ -73,6 +73,9 @@ binary-tree-sorted:	\
 
 binary-tree-heap:	\
 	binary-tree-heap-1.png
+
+binary-tree-rotations:	\
+	binary-tree-rotations-1.png
 
 
 %-1.png:	%.tex
