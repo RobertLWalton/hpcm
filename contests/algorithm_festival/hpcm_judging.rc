@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Mar 26 03:20:54 EDT 2013
+# Date:		Fri Mar 29 03:55:28 EDT 2013
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2013/03/26 07:21:22 $
+#   $Date: 2013/03/29 12:04:49 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.4 $
+#   $Revision: 1.5 $
 
 # Table of Contents
 #
@@ -44,17 +44,25 @@ set hpcm_directory $env(HOME)/hpcm
 set contest_name "CONTEST NAME IS TBD"
 
 # Start and stop time for contest scoreboards.  Not
-# used in computing scores.  Stop time is in seconds
-# after start time.
+# used in computing scores.  Also time to convert
+# to non-contest mode.  This merely means that after
+# conversion queries, errors, and autojudge replies
+# to contestants will be emailed to the contest
+# manager email address.  Before conversion it is
+# expected that the contest manager will run tracker
+# to get these.
 #
+# Both stop time and convert time are in seconds after
+# start time.
 #
-set scoreboard_start_time "Jan 1 10:00:00 2030"
-set scoreboard_stop_time  [expr 6 * 60 * 60]
+set start_time "Jan 1 10:00:00 2030"
+set stop_time  [expr 6 * 60 * 60]
+set convert_time  [expr 7 * 60 * 60]
 
 # Logical expressions specifying accounts that are
 # novice or experienced.  Atoms are regular expressions
 # which match account names (BEFORE the names are com-
-# pressed).  Operators are &&, ||, !.
+# pressed).  Operators are &, |, !.
 #
 set novice_submitters {}
 set experienced_submitters {}
@@ -75,17 +83,12 @@ array set submitter_compress_map {}
 # }
 
 # The email address to be notified for errors or
-# queries after the contest proper.
+# queries AFTER the contest conversion time.
 #
 set manager_address "someone@somecomputer"
 
-# Time in seconds after the start time to activate
-# the above email address.
-#
-set conversion_time [expr 7 * 60 * 6]
-
 # Do you want all replies to contestants to be CC'ed to
-# the manager above after the conversion_time, even
+# the manager above after the conversion time, even
 # those just reporting scores.
 #
 set cc_manager yes
@@ -110,7 +113,7 @@ set cc_manager yes
 
 # TCL list of TCL regular expressions that match the
 # test accounts which are NOT to appear on the score-
-# board.
+# board after the contest starts.
 #
 set test_accounts { }
 
@@ -167,7 +170,7 @@ set problems_arguments "
 # word is "" no solutions web page will be made).
 #
 # The web_manager_address will be listed as a contact
-# on the the practice web page, and also given as a con-
+# on the the festival web page, and also given as a con-
 # tact for web scoreboard and help file pages.
 #
 # The web_solutions_password PPP will be used to name a
@@ -179,16 +182,18 @@ set problems_arguments "
 #
 # web_problems_URL, web_help_URL, and web_scoreboard_URL
 # are also passed to `makeweb' and used to make refer-
-# ences from the practice web page to the problem
+# ences from the festival web page to the problem
 # descriptions, web help files, and scoreboard if these
-# exist.  These may be URL's relative to the practice web
+# exist.  These may be URL's relative to the festival web
 # page, or absolute URL's.
 #
 # If web_problems_URL is "" the problem descriptions
 # from the problem solution files will be put on the
-# web as a subpage of the practice web page, but,
+# web as a subpage of the festival web page, but,
 # the subpage WILL BE PROTECTED from reading until
-# its protection is reset manually.
+# its protection is reset manually according to
+# instructions in the problems/index.html file
+# comments.
 #
 set web_manager_address $manager_address
 set web_solutions_password ""
@@ -196,7 +201,7 @@ set web_problems_URL ""
 set web_help_URL "help"
 set web_scoreboard_url "scoreboard"
 
-# The following are used to construct the practice web
+# The following are used to construct the festival web
 # pages.
 #
 # If the headers are left "", the page headers are auto-
@@ -205,9 +210,9 @@ set web_scoreboard_url "scoreboard"
 # The prefixes come just after the page headers and
 # the postfix comes after everything but the web page
 # manager.  There are three pages involved: the contest
-# page, the problem descriptions page if it exists, and
-# the contest solutions page if it exists.  The last
-# two pages have no postfix.
+# page, the problem descriptions page if it is con-
+# structed, and the contest solutions page if it is con-
+# structed.  The last two pages have no postfix.
 #
 # If there are in local accounts, include in web_prefix
 # who can get an account and who to contact to get the
@@ -222,7 +227,7 @@ set web_solutions_header ""
 set web_solutions_prefix ""
 
 # The following scoreboard_commands variable specifies
-# places to send a copy of ./contest/scoreboard.  The
+# places to send copies of various scoreboards.  The
 # variable value is a list of items each with one of
 # the following formats:
 #
@@ -250,8 +255,24 @@ set web_solutions_prefix ""
 # ./secure/bin to invoke the proper pipe.  It may not
 # contain whitespace or /.
 #
+# The NAMEs must match those listed in the xxx_commands
+# variables below.
+#
 set scoreboard_commands {
 }
+
+# The following list the NAMEs of scoreboard_commands
+# items that are to be used to send the various
+# scoreboards.
+#
+set scoreboard_novice_commands {
+    NOVICE }
+set scoreboard_novice_final_commands {
+    NOVICE_FINAL }
+set scoreboard_experienced_commands {
+    EXPERIENCED }
+set scoreboard_experienced_final_commands {
+    EXPERIENCED_FINAL }
 
 # Parameters Not Usually Modified
 # ---------- --- ------- --------
@@ -308,10 +329,10 @@ set window_height 24
 # set contest_directory $env(HOME)/contest_TBD
 
 # Set to the prototype account (as per SETUP_PROTOTYPE).
-# If not set, the unique account with name of the form
-# *[-_]proto and readable files home/setup.tar, home/
-# empty.ls, and home/setup.ls is used, if there is such
-# a unique account.
+# If not set, the unique account with name PPP of the
+# form *[-_]proto and readable files ~PPP/home/
+# setup.tar, ~PPP/home/empty.ls, and ~PPP/home/setup.ls
+# is used, if there is such a unique account.
 #
 # set hpcm_prototype_account TBD
 
@@ -404,11 +425,13 @@ set makecontest_arguments "
     $problems_arguments
 "
 
-# Scoreboard name, i.e, the name of the contest.
+# Scoreboard parameters.
 #
 set scoreboard_name $contest_name
 set scoreboard_correct_mode score
 set scoreboard_factor() 0.95
+set scoreboard_start_time $start_time
+set scoreboard_stop_time  $stop_time
 
 # Compute scoreboard_problems to exclude test
 # problems.
@@ -444,7 +467,6 @@ set scoreboard_problems \
 # to the $judging_directory/contest directory and
 # granted a+r permissions there.
 #
-
 set scoreboard_novice $novice_submitters
 set scoreboard_abbreviation(NOVICE) novice
 set scoreboard_experienced $experienced_submitters
@@ -454,7 +476,7 @@ set scoreboard_instructions {
     {# Current Novice Scoreboard #}
 
     { OUTPUT scoreboard_novice START "" }
-    SEND
+    SEND novice_commands
 
     { LINE NAME "" TIME }
     BLANK
@@ -474,7 +496,7 @@ set scoreboard_instructions {
     {# Final Novice Scoreboard #}
 
     { OUTPUT scoreboard_novice.final STOP STOP+600 }
-    SEND
+    SEND novice_final_commands
 
     { LINE NAME "" STOP }
     BLANK
@@ -493,7 +515,7 @@ set scoreboard_instructions {
     {# Current Experienced Scoreboard #}
 
     { OUTPUT scoreboard_experienced START "" }
-    SEND
+    SEND experienced_commands
 
     { LINE NAME "" TIME }
     BLANK
@@ -514,7 +536,7 @@ set scoreboard_instructions {
 
     { OUTPUT scoreboard_experienced.final \
              STOP STOP+600 }
-    SEND
+    SEND experienced_final_commands
 
     { LINE NAME "" STOP }
     BLANK
@@ -532,13 +554,20 @@ set scoreboard_instructions {
 
 }
 
+set convert_time [absolute_time $convert_time $start_time]
+set is_converted [is_later $convert_time]
 set scoring_mode auto
-set reply_mode auto
-set log_mode auto
-set log_manager $manager_address
-if { $manager_address != "" && $cc_manager } {
-    lappend response_manager_map \
-	    [list ".*" $manager_address]
+if { $is_converted } {
+    set reply_mode auto
+    set log_mode auto
+    set log_manager $manager_address
+    if { $manager_address != "" && $cc_manager } {
+	lappend response_manager_map \
+		[list ".*" $manager_address]
+} else {
+    set reply_mode auto+manual
+    set log_mode manual
+    set log_manager ""
 }
 
 # Parameter Overrides
