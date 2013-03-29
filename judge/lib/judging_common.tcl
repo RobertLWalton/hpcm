@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Feb 14 02:30:08 EST 2013
+# Date:		Fri Mar 29 05:55:28 EDT 2013
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2013/02/14 07:33:14 $
+#   $Date: 2013/03/29 09:56:36 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.158 $
+#   $Revision: 1.159 $
 #
 
 # Table of Contents
@@ -291,6 +291,29 @@ proc filename_date_to_clock { date } {
 	    "$month/$day/$year $hour:$minute:$second" \
 	    -gmt $use_gmt]
 }
+
+# Given a time that may be relative to a base time,
+# return the time converted to an absolute time.  A
+# relative time is an optional sign followed by decimal
+# digits, and is measured in seconds from the base time.
+#
+proc absolute_time { time base_time } {
+    if { [regexp {^([+|-]|)[0-9]+$} $time] } {
+        set t [clock scan $base_time]
+	incr t $time
+	set time [clock format $t]
+    }
+    return $time
+}
+
+# Return true if the current time is later than a given
+# (absolute) time.
+#
+proc is_later { time } {
+    set time [clock scan $time]
+    return [expr $time < [clock seconds]]
+}
+
 
 # Checked File Functions
 # ------- ---- ---------
