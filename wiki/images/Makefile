@@ -80,6 +80,9 @@ binary-tree-balancing:	\
 binary-tree-rotations:	\
 	binary-tree-rotations-1.png
 
+binary-tree-pointer-rotation:	\
+	binary-tree-pointer-rotation-1.png
+
 
 %-1.png:	%.tex
 	rm -f $*.pdf $*-*.png
