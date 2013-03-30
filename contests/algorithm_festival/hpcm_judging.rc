@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Mar 29 03:55:28 EDT 2013
+# Date:		Fri Mar 29 19:19:06 EDT 2013
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2013/03/29 12:04:49 $
+#   $Date: 2013/03/30 01:17:14 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.5 $
+#   $Revision: 1.6 $
 
 # Table of Contents
 #
@@ -87,15 +87,16 @@ array set submitter_compress_map {}
 #
 set manager_address "someone@somecomputer"
 
-# Do you want all replies to contestants to be CC'ed to
-# the manager above after the conversion time, even
-# those just reporting scores.
+# Set the following to "yes" if you want ALL autojudge
+# replies to contestants to be CC'ed to the manager,
+# even those just reporting scores, AFTER the conversion
+# time.
 #
 set cc_manager yes
 # set cc_manager no
 
 # A cc address can be added to all autojudge replies to
-# a submitter after the conversion time by adding the
+# a submitter AFTER the conversion time by adding the
 # pair
 #
 #	{ regexp address }
@@ -113,7 +114,7 @@ set cc_manager yes
 
 # TCL list of TCL regular expressions that match the
 # test accounts which are NOT to appear on the score-
-# board after the contest starts.
+# board AFTER the contest starts.
 #
 set test_accounts { }
 
@@ -184,8 +185,8 @@ set problems_arguments "
 # are also passed to `makeweb' and used to make refer-
 # ences from the festival web page to the problem
 # descriptions, web help files, and scoreboard if these
-# exist.  These may be URL's relative to the festival web
-# page, or absolute URL's.
+# exist.  These may be URL's relative to the festival
+# web page, or absolute URL's.
 #
 # If web_problems_URL is "" the problem descriptions
 # from the problem solution files will be put on the
@@ -232,7 +233,7 @@ set web_solutions_prefix ""
 # the following formats:
 #
 #	{ NAME ssh ACCOUNT [REMOTE-COMMAND] }
-#	    Pipe ./scoreboard.web through ssh to
+#	    Pipe the scoreboard through ssh to
 #	    execute REMOTE-COMMAND in the remote
 #	    ACCOUNT.  If not given, REMOTE-COMMAND
 #	    defaults to a template which can be
@@ -241,7 +242,7 @@ set web_solutions_prefix ""
 #	    (this will be mentioned in ./TODO).
 #
 #	{ NAME sh COMMAND }
-#	    Pipe ./scoreboard.web to COMMAND executed
+#	    Pipe the scoreboard to COMMAND executed
 #	    by /bin/sh.
 #
 #	{ NAME email ... }
@@ -255,15 +256,25 @@ set web_solutions_prefix ""
 # ./secure/bin to invoke the proper pipe.  It may not
 # contain whitespace or /.
 #
-# The NAMEs must match those listed in the xxx_commands
-# variables below.
+# The NAMEs must match those listed in the scoreboard_
+# xxx_commands variables below.
 #
 set scoreboard_commands {
 }
 
-# The following list the NAMEs of scoreboard_commands
-# items that are to be used to send the various
-# scoreboards.
+# The following list the NAMEs of items in the score-
+# board_commands list that are to be used to send the
+# various scoreboards.  If you do not change these
+# then you should define the following scoreboard_
+# commands for scoreboards you want to be sent else-
+# where:
+# 
+#    { NOVICE ... } for the novice scoreboard
+#    { NOVICE_FINAL ... } for the contest final novice
+#			  scoreboard
+#    { EXPERIENCED ... } for the experienced scoreboard
+#    { EXPERIENCED_FINAL ... } for the contest final
+#			       experienced scoreboard
 #
 set scoreboard_novice_commands {
     NOVICE }
@@ -315,7 +326,7 @@ set use_gmt no
 # WARNING: If window_height is too large, programs such
 # as manualreply and lookat may appear to be malfunc-
 # tioning because some of the information they display
-# is being scrolled off the top of the screen.
+# is being scrolled off the bottom of the screen.
 #
 set window_blank_height 16
 set window_height 24
@@ -403,8 +414,6 @@ set makecontest_arguments "
     -problems \
     -demos \
     -printer_map \
-    [include_if { $javaok } "-javahelp"] \
-    [include_if { $stlok } "-stlhelp"] \
     [include_if { $ssh_enable == "yes" } "-ssh"] \
     [include_if { $startcontest == "yes" } \
     		"-startcontest"] \
@@ -416,12 +425,11 @@ set makecontest_arguments "
     $hpcm_directory/contestant/help/index, \
 	common/=help/, \
 	contest/=help/, \
-	email/=help/, \
-	advanced/=help/, \
-	    untimed:include \
-	    common:include, \
-    $hpcm_directory/problem_library/index, \
-	    demo:include \
+	    algorithm_festival:include \
+	    general:include, \
+	    language:include \
+    $hpcm_directory/problem_library/demos_index, \
+	    contest:include \
     $problems_arguments
 "
 
@@ -473,10 +481,25 @@ set scoreboard_experienced $experienced_submitters
 set scoreboard_abbreviation(EXPERIENCED) experienced
 set scoreboard_instructions {
 
+    {# Pre-Contest Novice Scoreboard #}
+
+    { OUTPUT scoreboard_novice "" START }
+
+    { LINE NAME "" TIME }
+    BLANK
+    { INPUT scoreboard.head }
+    BLANK
+
+    {submitters NOVICE}
+    {problems {}}
+    {stop_time ""}
+    BAR
+    BOARD
+    BAR
+
     {# Current Novice Scoreboard #}
 
     { OUTPUT scoreboard_novice START "" }
-    SEND novice_commands
 
     { LINE NAME "" TIME }
     BLANK
@@ -489,14 +512,14 @@ set scoreboard_instructions {
     BOARD
     BAR
 
-    { OUTPUT contest/scoreboard_novice START "" }
+    { OUTPUT contest/scoreboard_novice "" "" }
     GRANT_ACCESS
+    SEND novice_commands
     { INPUT scoreboard_novice }
 
     {# Final Novice Scoreboard #}
 
     { OUTPUT scoreboard_novice.final STOP STOP+600 }
-    SEND novice_final_commands
 
     { LINE NAME "" STOP }
     BLANK
@@ -508,14 +531,33 @@ set scoreboard_instructions {
     BOARD
     BAR
 
-    { OUTPUT contest/scoreboard_novice.final STOP STOP+600 }
+    { OUTPUT contest/scoreboard_novice.final \
+             STOP STOP+600 }
     GRANT_ACCESS
+    SEND novice_final_commands
     { INPUT scoreboard_novice.final }
+
+
+
+    {# Pre-Contest Experienced Scoreboard #}
+
+    { OUTPUT scoreboard_experienced "" START }
+
+    { LINE NAME "" TIME }
+    BLANK
+    { INPUT scoreboard.head }
+    BLANK
+
+    {submitters EXPERIENCED}
+    {problems {}}
+    {stop_time ""}
+    BAR
+    BOARD
+    BAR
 
     {# Current Experienced Scoreboard #}
 
     { OUTPUT scoreboard_experienced START "" }
-    SEND experienced_commands
 
     { LINE NAME "" TIME }
     BLANK
@@ -528,15 +570,15 @@ set scoreboard_instructions {
     BOARD
     BAR
 
-    { OUTPUT contest/scoreboard_experienced START "" }
+    { OUTPUT contest/scoreboard_experienced "" "" }
     GRANT_ACCESS
+    SEND experienced_commands
     { INPUT scoreboard_experienced }
 
     {# Final Experienced Scoreboard #}
 
     { OUTPUT scoreboard_experienced.final \
              STOP STOP+600 }
-    SEND experienced_final_commands
 
     { LINE NAME "" STOP }
     BLANK
@@ -548,13 +590,17 @@ set scoreboard_instructions {
     BOARD
     BAR
 
-    { OUTPUT contest/scoreboard_experienced.final STOP STOP+600 }
+    { OUTPUT contest/scoreboard_experienced.final \
+             STOP STOP+600 }
     GRANT_ACCESS
+    SEND experienced_final_commands
     { INPUT scoreboard_experienced.final }
+
 
 }
 
-set convert_time [absolute_time $convert_time $start_time]
+set convert_time \
+    [absolute_time $convert_time $start_time]
 set is_converted [is_later $convert_time]
 set scoring_mode auto
 if { $is_converted } {
