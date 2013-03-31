@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Mar 29 05:55:28 EDT 2013
+# Date:		Sun Mar 31 05:32:07 EDT 2013
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2013/03/29 09:56:36 $
+#   $Date: 2013/03/31 10:07:23 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.159 $
+#   $Revision: 1.160 $
 #
 
 # Table of Contents
@@ -2058,6 +2058,22 @@ proc read_entire_file { filename } {
     }
     close $file_ch
     return $result
+}
+
+# Write an entire file if and only if it is currently
+# different from what would be written.  Contents are
+# lines separated by \n but with NO ENDING \n.  A
+# non-existant file is always written.
+#
+proc write_file_if_different { filename contents } {
+    if { ! [file exists $filename] } {
+        write_file $filename $contents
+    } else {
+	set f [read_entire_file $filename]
+	if { $f != $contents } {
+	    write_file $filename $contents
+	}
+    }
 }
 
 # Source a file if it exists.  Before sourcing file, run
