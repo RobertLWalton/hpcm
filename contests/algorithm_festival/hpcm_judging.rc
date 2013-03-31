@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Mar 30 21:05:53 EDT 2013
+# Date:		Sun Mar 31 05:06:20 EDT 2013
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2013/03/31 01:35:44 $
+#   $Date: 2013/03/31 15:34:17 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.7 $
+#   $Revision: 1.8 $
 
 # Table of Contents
 #
@@ -382,7 +382,16 @@ set contest_printer_map "
 # this file, where they will override the settings of
 # this file.
 
-set web_title $contest_name
+# Computed web page parameters.
+#
+set web_title "$contest_name"
+set web_manager_address $manager_address
+set web_prefix "
+<H2 ALIGN=\"CENTER\">
+<FONT COLOR=\"red\">
+Contest and Problem Descriptions
+</FONT></H2>
+"
 
 if { $web_problems_URL == "" } {
     set web_problems protect
@@ -394,18 +403,51 @@ if { $web_help_URL == "" } {
     error "web_help_URL is \"\"."
 }
 
+# Compute whether we have converted to untimed practice.
+#
+set convert_time \
+    [absolute_time $convert_time $start_time]
+set is_converted [is_later $convert_time]
+
+# Set up manager for this contest.
+#
+# There is no manager for the contest proper.
+#
+if { $is_converted } {
+    set reply_mode auto
+    set log_mode auto
+    set log_manager $manager_address
+    if { $manager_address != "" && $cc_manager } {
+	lappend response_manager_map \
+		[list ".*" $manager_address]
+    }
+} else {
+    set reply_mode auto+manual
+    set log_mode manual
+    set log_manager ""
+}
+
 # Allow inout, solution, cerr in responses.
 #
 set response_mode "inout+solution+cerr"
 
-# Force inout and solution qualifiers.
+set use_authentication yes
+set format_submissions yes
+
+# Set score modes and default qualifiers.
 #
+set scoring_mode auto
 set default_correct_qualifier solution
 set default_incorrect_qualifier inout
 set allowed_qualifiers { "" }
 
-set use_authentication yes
-set format_submissions yes
+# Scoreboard parameters.
+#
+set scoreboard_name $contest_name
+set scoreboard_solved_mode score
+set scoreboard_factor() 0.95
+set scoreboard_start_time $start_time
+set scoreboard_stop_time  $stop_time
 
 # Default arguments to makecontest.
 #
@@ -413,6 +455,7 @@ set makecontest_arguments "
     -local \
     -problems \
     -demos \
+    -demos_solutions \
     -printer_map \
     [include_if { $ssh_enable == "yes" } "-ssh"] \
     [include_if { $startcontest == "yes" } \
@@ -425,21 +468,13 @@ set makecontest_arguments "
     $hpcm_directory/contestant/help/index, \
 	common/=help/, \
 	contest/=help/, \
-	    algorithm_festival:include \
+	    algorithm_festival:include, \
 	    general:include, \
 	    language:include \
     $hpcm_directory/problem_library/demos_index, \
 	    contest:include \
     $problems_arguments
 "
-
-# Scoreboard parameters.
-#
-set scoreboard_name $contest_name
-set scoreboard_correct_mode score
-set scoreboard_factor() 0.95
-set scoreboard_start_time $start_time
-set scoreboard_stop_time  $stop_time
 
 # Compute scoreboard_problems to exclude test
 # problems.
@@ -597,23 +632,6 @@ set scoreboard_instructions {
     { INPUT scoreboard_experienced.final }
 
 
-}
-
-set convert_time \
-    [absolute_time $convert_time $start_time]
-set is_converted [is_later $convert_time]
-set scoring_mode auto
-if { $is_converted } {
-    set reply_mode auto
-    set log_mode auto
-    set log_manager $manager_address
-    if { $manager_address != "" && $cc_manager } {
-	lappend response_manager_map \
-		[list ".*" $manager_address]
-} else {
-    set reply_mode auto+manual
-    set log_mode manual
-    set log_manager ""
 }
 
 # Parameter Overrides

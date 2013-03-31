@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Mar 30 21:06:48 EDT 2013
+# Date:		Sun Mar 31 05:18:45 EDT 2013
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2013/03/31 01:35:44 $
+#   $Date: 2013/03/31 15:35:05 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.5 $
+#   $Revision: 1.6 $
 
 # Table of Contents
 #
@@ -343,16 +343,36 @@ set contest_printer_map "
 # this file, where they will override the settings of
 # this file.
 
-set web_title $contest_name
+# Computed web page parameters.
+#
+set web_title "$contest_name"
+set web_manager_address $manager_address
+set web_prefix "
+<H2 ALIGN=\"CENTER\">
+<FONT COLOR=\"red\">
+Contest and Problem Descriptions
+</FONT></H2>
+"
 
 if { $web_problems_URL == "" } {
-    set web_problems yes
+    set web_problems protect
 } else {
     set web_problems no
 }
 
 if { $web_help_URL == "" } {
     error "web_help_URL is \"\"."
+}
+set web_title $contest_name
+
+# Set up manager for this contest.
+#
+set reply_mode auto
+set log_mode auto
+set log_manager $manager_address
+if { $manager_address != "" && $cc_manager } {
+    lappend response_manager_map \
+	    [list ".*" $manager_address]
 }
 
 set allow_email_submissions [regexp email $account_type]
@@ -383,12 +403,6 @@ if { $autojudge_address != "" } {
 #
 set response_mode "inout+solution+cerr"
 
-# Force inout and solution qualifiers.
-#
-set default_correct_qualifier solution
-set default_incorrect_qualifier inout
-set allowed_qualifiers { "" }
-
 # If email accounts, do NOT require submissions to have
 # HPCM_BEGIN/HPCM_END lines etc and authentication.
 #
@@ -400,13 +414,27 @@ if { $allow_email_submissions } {
     set format_submissions yes
 }
 
+# Set score modes and default qualifiers.
+#
+set scoring_mode auto
+set default_correct_qualifier solution
+set default_incorrect_qualifier inout
+set allowed_qualifiers { "" }
+
+# Scoreboard parameters.
+#
+set scoreboard_name $contest_name
+set scoreboard_solved_mode score
+set scoreboard_factor() 0.95
+
 # Default arguments to makecontest.
 #
 set makecontest_arguments "
     [include_if { [regexp email $account_type] } \
                 -email] \
     [include_if { [regexp local $account_type] } \
-                {-local -problems -demos
+                {-local -problems -demos \
+			-demos_solutions \
 		        -startcontest -printer_map}] \
     [include_if { $ssh_enable == "yes" } "-ssh"] \
     [include_if { $makescoreboard == "yes" } \
@@ -426,12 +454,6 @@ set makecontest_arguments "
 	    contest:include \
     $problems_arguments
 "
-
-# Scoreboard parameters.
-#
-set scoreboard_name $contest_name
-set scoreboard_correct_mode score
-set scoreboard_factor() 0.95
 
 # Compute scoreboard_submitters to exclude test
 # accounts.
@@ -495,15 +517,6 @@ set scoreboard_instructions {
 	GRANT_ACCESS
 	{ INPUT scoreboard.web }
     }
-}
-
-set scoring_mode auto
-set reply_mode auto
-set log_mode auto
-set log_manager $manager_address
-if { $manager_address != "" && $cc_manager } {
-    lappend response_manager_map \
-	    [list ".*" $manager_address]
 }
 
 # Parameter Overrides

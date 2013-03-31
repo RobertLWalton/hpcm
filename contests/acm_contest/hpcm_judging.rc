@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Mar 30 19:38:21 EDT 2013
+# Date:		Sun Mar 31 05:01:40 EDT 2013
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2013/03/31 01:35:44 $
+#   $Date: 2013/03/31 15:35:35 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.88 $
+#   $Revision: 1.89 $
 
 # Table of Contents
 #
@@ -393,41 +393,104 @@ set untimed_printer_map "
 # this file, where they will override the settings of
 # this file.
 
-# Compute whether we have converted to untimed practice
-# and change convert_time into date/time format so
+# Computed web page parameters.
+#
+set web_title "$contest_name"
+set web_manager_address $manager_address
+set web_prefix "
+<H2 ALIGN=\"CENTER\">
+<FONT COLOR=\"red\">
+Contest and Problem Descriptions
+</FONT></H2>
+"
+
+# Compute whether we have converted to untimed practice.
+# Also change convert_time into date/time format so
 # CONVERT abbreviation will work for scoreboard_
 # instructions.
 #
-if { [regexp {^[+0-9]} $convert_time } {
-    set ct [clock scan $start_time]
-    incr ct $convert_time
-    set convert_time [clock format $ct]
-} else {
-    set ct [clock scan $convert_time]
-}
-set converted [eval $ct <= [clock seconds]]
+set convert_time \
+    [absolute_time $convert_time $start_time]
+set is_converted [is_later $convert_time]
 
 # Set up manager for this contest.
 #
 # There is no manager for the timed contest.
 #
-set cc_manager no
-if { ! $converted } {
-    set scoring_mode auto+manual
-    set reply_mode auto+manual
-    set log_mode manual
-    set log_manager ""
-} else {
-    set scoring_mode auto
+if { $is_converted } {
     set reply_mode auto
     set log_mode auto
     set log_manager $manager_address
-    if { && $manager_address != "" } {
-	set cc_manager yes
+    if { $manager_address != "" && $cc_manager } {
 	lappend response_manager_map \
 		[list ".*" $manager_address]
     }
+} else {
+    set reply_mode auto+manual
+    set log_mode manual
+    set log_manager ""
 }
+
+# Allow inout, solution, cerr in responses.
+#
+set response_mode "inout+solution+cerr"
+
+set use_authentication yes
+set format_submissions yes
+
+# Set score modes and default qualifiers.
+#
+if { $converted } {
+    set scoring_mode auto
+    set default_correct_qualifier solution
+    set default_incorrect_qualifier inout
+    set scoreboard_solved_mode problems/score
+} else {
+    set scoring_mode auto+manual
+    set default_correct_qualifier ""
+    set default_incorrect_qualifier ""
+    set scoreboard_solved_mode time
+}
+set allowed_qualifiers {""}
+
+# Scoreboard parameters.
+#
+set scoreboard_name $contest_name
+set scoreboard_factor() 0.95
+set scoreboard_start_time $start_time
+set scoreboard_stop_time  $stop_time
+set scoreboard_freeze_time $freeze_time
+set scoreboard_convert_time $convert_time
+set scoreboard_abbreviation(CONVERT) convert_time
+set scoreboard_penalty     [expr 60 * $penalty_minutes]
+
+# Default arguments to makecontest.
+#
+set makecontest_arguments "
+    -local \
+    -problems \
+    -demos \
+    -demos_solutions \
+    -printer_map \
+    [include_if { $javaok } "-javahelp"] \
+    [include_if { $stlok } "-stlhelp"] \
+    [include_if { $ssh_enable == "yes" } "-ssh"] \
+    [include_if { $startcontest == "yes" } \
+    		"-startcontest"] \
+    [include_if { $makescoreboard == "yes" } \
+    		"-scoreboard"] \
+    $judging_directory/help/index, \
+	=help/ \
+    $hpcm_directory/contestant/help/index, \
+	common/=help/, \
+	contest/=help/, \
+	    acm_contest:include, \
+	    general:include, \
+	    language:include \
+    $hpcm_directory/problem_library/demos_index, \
+	    contest:include \
+    $problems_arguments
+"
 
 # The following computes the printer_map file value for
 # the timed contest.  This code may append items to
@@ -445,7 +508,6 @@ if { [llength $printer_commands] == 0 } {
     }
 } else {
     set_contest_directory
-    catch { unset names }
     foreach item $printer_commands {
 
 	set regexp  [lindex $item 0]
@@ -470,24 +532,21 @@ if { [llength $printer_commands] == 0 } {
     }
 }
 
-# Set ./contest/printer_map according to contest subtype.
+# Set ./contest/printer_map according to whether
+# contest has been converted to a practice.
 #
 if { ! $converted } {
     set contest_printer_map $timed_printer_map
 } else {
     set contest_printer_map $untimed_printer_map
 
-    # Write ./contest/printer_map if that is not
-    # equal to untimed_printer_map
+    # Write ./contest/printer_map if that has not yet
+    # been rewritten.
     #
     set_contest_directory
-    set printer_map \
-	[read_entire_file \
-	    $contest_directory/printer_map]
-    if { $untimed_printer_map != $printer_map } {
-	[write_file $contest_directory/printer_map \
-		    $untimed_printer_map]
-    }
+    write_file_if_different \
+	    $contest_directory/printer_map \
+	    $contest_printer_map
 }
 
 set javaok [info exists java_api_index]
@@ -517,63 +576,6 @@ if {    $stlok \
 $browser '$browser $stl_api_index'
 "
 }
-
-set use_authentication yes
-set format_submissions yes
-
-# Default arguments to makecontest.
-#
-set makecontest_arguments "
-    -formal -printer_map \
-    [include_if { $javaok } "-javahelp"] \
-    [include_if { $stlok } "-stlhelp"] \
-    [include_if { $scoring_subtype != "timed" } \
-    	        "-description"] \
-    [include_if { $ssh_enable == "yes" } "-ssh"] \
-    [include_if { $makescoreboard == "yes" } \
-    		"-scoreboard"] \
-    [include_if { $startcontest == "yes" } \
-    		"-startcontest"] \
-    $judging_directory/help/index, \
-	=help/ \
-    $hpcm_directory/contestant/help/index, \
-	common/=help/, \
-	contest/=help/, \
-	advanced/=help/, \
-	    formal:include, \
-	    local:include, \
-	    common:include, \
-	    advanced:include \
-    $hpcm_directory/problem_library/index, \
-	    demo:include \
-    $problems_arguments
-"
-
-
-if { $converted } {
-    set scoring_mode auto
-    set default_correct_qualifier solution
-    set default_incorrect_qualifier inout
-    set scoreboard_solved_mode problems/score
-} else {
-    set scoring_mode auto+manual
-    set default_correct_qualifier ""
-    set default_incorrect_qualifier ""
-    set scoreboard_solved_mode time
-}
-set scoreboard_unsolved_mode count
-set allowed_qualifiers {""}
-set scoreboard_factor() 0.95
-set scoreboard_start_time $start_time
-set scoreboard_stop_time $stop_time
-set scoreboard_freeze_time $freeze_time
-set scoreboard_convert_time $convert_time
-set scoreboard_abbreviation(CONVERT) convert_time
-set scoreboard_penalty     [expr 60 * $penalty_minutes]
-
-# Scoreboard name, i.e, the name of the contest.
-#
-set scoreboard_name $contest_name
 
 # Compute scoreboard_submitters to exclude test
 # accounts.
@@ -625,7 +627,8 @@ set scoreboard_instructions {
 
     {# Current scoreboard for judge. #}
 
-    { OUTPUT contest/scoreboard.current START STOP+1800 }
+    { OUTPUT contest/scoreboard.current \
+             START STOP+1800 }
 
     { LINE NAME "Current Results" TIME }
     BLANK
@@ -711,17 +714,6 @@ set scoreboard_instructions {
     BOARD
     BAR
 }
-
-# Computed web page parameters.
-#
-set web_title "$contest_name"
-set web_manager_address $manager_address
-set web_prefix "
-<H2 ALIGN=\"CENTER\">
-<FONT COLOR=\"red\">
-Contest and Problem Descriptions
-</FONT></H2>
-"
 
 # Parameter Overrides
 # --------- ---------
