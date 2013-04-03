@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Mar 31 05:32:07 EDT 2013
+# Date:		Tue Apr  2 10:05:55 EDT 2013
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2013/03/31 10:07:23 $
+#   $Date: 2013/04/03 00:56:28 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.160 $
+#   $Revision: 1.161 $
 #
 
 # Table of Contents
@@ -2099,6 +2099,35 @@ proc source_file { filename } {
 
 	uplevel "source $filename"
     }
+}
+
+# Read a file whose lines are each a filename of the
+# form .../PPP/FFF where PPP is a problem or demo name
+# and FFF is the last component of the filename.  Return
+# a list of all the problem or demo names PPP (with
+# duplicates deleted).  Unreadable files and badly
+# formatted file lines are detected errors.
+#
+proc get_problems_from_file { filename } {
+    if { ! [file readable $filename] } {
+        error "$filename is not readable"
+    }
+    set file_ch [open $filename r]
+    set result {}
+    while { "yes" } {
+	set f [gets $file_ch]
+	if { [eof $file_ch] } break
+	set d [file dirname $f]
+	if { $d == "." } {
+	    error "bad line in $filename: $f"
+	}
+	set p [file tail $d]
+	if { ! [lcontain $result $p] } {
+	    lappend result $p
+	}
+    }
+    close $file_ch
+    return $result
 }
 
 # Flag Functions
