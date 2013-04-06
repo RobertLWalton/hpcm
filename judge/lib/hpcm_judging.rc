@@ -3,6 +3,7 @@
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@deas.harvard.edu)
 # Date:		Wed Apr  3 08:13:32 EDT 2013
+Sat Apr  6 19:51:09 EDT 2013
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +12,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2013/04/03 12:17:05 $
+#   $Date: 2013/04/06 23:51:50 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.266 $
+#   $Revision: 1.267 $
 
 # Table of Contents:
 #
@@ -960,13 +961,17 @@ set scoreboard_penalty 0
 set scoreboard_problems { }
 set scoreboard_submitters { }
 
-# List of demonstration problems
+# Get list of demonstration problems if demos_solution_
+# files is readable, or empty list otherwise.
 #
-set dsf $judging_directory/demos_solution_files
-if { [file readable $dsf] } {
-    set demo_problems [get_problems_from_file $dsf]
-} else {
-    set demo_problems {}
+proc get_demo_problems {} {
+    global judging_directory
+    set dsf $judging_directory/demos_solution_files
+    if { [file readable $dsf] } {
+	return [get_problems_from_file $dsf]
+    } else {
+	return {}
+    }
 }
  
 # Maximum width of scoreboard in columns.
