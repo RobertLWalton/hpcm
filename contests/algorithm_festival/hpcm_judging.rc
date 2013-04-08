@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@seas.harvard.edu)
-# Date:		Sat Apr  6 19:41:29 EDT 2013
+# Date:		Mon Apr  8 11:36:34 EDT 2013
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2013/04/07 00:38:57 $
+#   $Date: 2013/04/08 15:50:10 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.9 $
+#   $Revision: 1.10 $
 
 # Table of Contents
 #
@@ -170,6 +170,9 @@ set problems_arguments "
 # (e.g., if web_solutions_password is "" no solutions
 # web page will be made).
 #
+# The web_page_URL is the URL of the web page being
+# made.
+#
 # The web_manager_address will be listed as a contact
 # on the the festival web pages.
 #
@@ -195,6 +198,7 @@ set problems_arguments "
 # instructions in the problems/index.html file
 # comments.
 #
+set web_page_URL ""
 set web_manager_address $manager_address
 set web_solutions_password ""
 set web_problems_URL ""
@@ -232,8 +236,8 @@ set web_solutions_prefix ""
 #	    execute REMOTE-COMMAND in the remote
 #	    ACCOUNT.  If not given, REMOTE-COMMAND
 #	    defaults to a template which can be
-#	    filled out by editing in the file
-#	    ./secure/bin/NAME after it is created
+#	    filled out by editing in the file ./secure/
+#	    bin/NAME_authorized_keys after it is created
 #	    (this will be mentioned in ./TODO).
 #
 #	{ NAME sh COMMAND }
@@ -285,6 +289,35 @@ set scoreboard_experienced_final_commands {
 
 # Normally you should not have to make changes below
 # this point.
+
+# This contest file:
+#
+if { $web_page_URL == "" } {
+    set this_contest "
+    This is an Algorithm Festival.
+"
+} else {
+    set this_contest "
+This is an Algorithm Festival with web page at:
+
+    $web_page_URL
+"
+}
+set this_contest "$this_contest
+The following commands may be of use:
+
+    help acm_contest
+        Display a description of Algorithm Festivals.
+
+    help index
+    	Display the index of help files.
+
+    help XXXX
+        Display the help file name XXX.
+
+    help demos
+        Display an index of demonstration problems
+"
 
 # Set "yes" if contestant accounts are to be enabled
 # for login by ssh using any of the public keys
@@ -420,6 +453,7 @@ if { $is_converted } {
     set reply_mode auto+manual
     set log_mode manual
     set log_manager ""
+    set response_manager_map {}
 }
 
 # Allow inout, solution, cerr in responses.

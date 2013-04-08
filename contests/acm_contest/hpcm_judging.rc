@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@seas.harvard.edu)
-# Date:		Sat Apr  6 19:40:58 EDT 2013
+# Date:		Mon Apr  8 11:37:30 EDT 2013
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2013/04/07 00:38:57 $
+#   $Date: 2013/04/08 15:49:44 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.90 $
+#   $Revision: 1.91 $
 
 # Table of Contents
 #
@@ -214,6 +214,9 @@ set stl_api_index \
 # (e.g., if web_solutions_password is "" no solutions
 # web page will be made).
 #
+# The web_page_URL is the URL of the web page being
+# made.
+#
 # The web_manager_address will be listed as a contact
 # on the the contest web pages.
 #
@@ -239,6 +242,7 @@ set stl_api_index \
 # instructions in the problems/index.html file
 # comments.
 #
+set web_page_URL ""
 set web_manager_address $manager_address
 set web_solutions_password ""
 set web_problems_URL ""
@@ -304,6 +308,35 @@ set scoreboard_commands {
 
 # Normally you should not have to make changes below
 # this point.
+
+# This contest file:
+#
+if { $web_page_URL == "" } {
+    set this_contest "
+    This is an ACM Programming Contest.
+"
+} else {
+    set this_contest "
+This is an ACM Programming Contest with web page at:
+
+    $web_page_URL
+"
+}
+set this_contest "$this_contest
+The following commands may be of use:
+
+    help acm_contest
+        Display a description of ACM contests.
+
+    help index
+    	Display the index of help files.
+
+    help XXXX
+        Display the help file name XXX.
+
+    help demos
+        Display an index of demonstration problems
+"
 
 # Set "yes" if contestant accounts are to be enabled
 # for login by ssh using any of the public keys
@@ -412,6 +445,9 @@ set is_converted [is_later $convert_time]
 #
 # There is no manager for the timed contest.
 #
+# Note: response_manager_map is used only when
+# scoring_mode is auto, i.e., after conversion.
+#
 if { $is_converted } {
     set reply_mode auto
     set log_mode auto
@@ -435,7 +471,7 @@ set format_submissions yes
 
 # Set score modes and default qualifiers.
 #
-if { $converted } {
+if { $is_converted } {
     set scoring_mode auto
     set default_correct_qualifier solution
     set default_incorrect_qualifier inout
@@ -530,7 +566,7 @@ if { [llength $printer_commands] == 0 } {
 # Set ./contest/printer_map according to whether
 # contest has been converted to a practice.
 #
-if { ! $converted } {
+if { ! $is_converted } {
     set contest_printer_map $timed_printer_map
 } else {
     set contest_printer_map $untimed_printer_map
