@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@seas.harvard.edu)
-# Date:		Sat Apr 20 04:42:28 EDT 2013
+# Date:		Sat Apr 20 18:32:57 EDT 2013
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2013/04/20 15:33:38 $
+#   $Date: 2013/04/20 23:04:37 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.268 $
+#   $Revision: 1.269 $
 
 # Table of Contents:
 #
@@ -128,7 +128,7 @@ THIS CONTEST
 #
 set makecontest_arguments "
     -formal \
-    help/index, \
+    $judging_directory/help/index, \
 	=help/ \
     $hpcm_directory/contestant/help/help_index, \
 	common/=help/, \
@@ -136,15 +136,13 @@ set makecontest_arguments "
 	    untimed_practice:include, \
 	    general:include, \
 	    language:include \
-    $hpcm_directory/problem_library/index, \
-	public/=problems/, \
-	private/=problems/, \
+    $hpcm_directory/problem_library/demos_index, \
+	demos/io/=demos/, \
+	demos/algorithms/=demos/, \
 	    demo:include, \
     $hpcm_directory/problem_library/index, \
 	public/=problems/, \
-	private/=problems/, \
-	    demo:include, \
-	    P1:include
+	    bospre2000:include
 "
 #
 # The first argument, -formal, tells the type of the
@@ -152,18 +150,17 @@ set makecontest_arguments "
 # entries each concerning an index file.  For example,
 # the entry:
 #
-#	    $hpcm_directory/contestant/help/index, \
-#		common/=help/, \
-#		formal/=help/, \
-#		advanced/=help/, \
-#		    formal:include, \
-#		    common:include, \
-#		    advanced:include
+#    $hpcm_directory/contestant/help/help_index, \
+#	common/=help/, \
+#	contest/=help/, \
+#	    untimed_practice:include, \
+#	    general:include, \
+#	    language:include
 #
-# concerns the index file whose name (relative to this
-# directory) is $hpcm_directory/contestant/help/index.
-# You you should look at this file.  Each item in this
-# file begins with a line of the format:
+# concerns the index file whose name is $hpcm_directory/
+# contestant/help/help_index.  You should look at this
+# file.  Each item in this file begins with a line of
+# the format:
 #
 #	*** name option ...
 #
@@ -171,14 +168,14 @@ set makecontest_arguments "
 # initial substring `common/' with `help/' in the item
 # name to make the final file name in the `info' direc-
 # tory for email contests or `contest' directory for
-# formal or informal contests.  The instruction
-# `common:include' says replace the option `common' in
-# the index file item by the option `include'.  After
-# all replacements are made in the first line of the
-# item, the item is used if and only if it has the
-# `include' option.  And if used, the item represents a
-# file or subdirectory in one of the three contest di-
-# rectories `help/', `demos/', or `problems/'.
+# local contests.  The instruction `general:include'
+# says replace the option `general' in the index file
+# item by the option `include'.  After all replacements
+# are made in the first line of the item, the item is
+# used if and only if it has the `include' option.  And
+# if used, the item represents a file or subdirectory
+# in one of the three contest directories `help/',
+# `demos/', or `problems/'.
 #
 # Index file names must begin with $hpcm_directory,
 # $judging_directory, or $env(HOME), so the index files
@@ -188,14 +185,10 @@ set makecontest_arguments "
 #
 # Note that in `$judging_directory/help/index' above
 # (not the same as `$hpcm_directory/contestant/help/
-# index') the items already have the `include' option.
-# `$judging_directory/help/index' is used to start the
-# contestants `help/index' file and provide a `this_
-# contest' item for the file `help/this_contest'.
-#
-# Note that in `$hpcm_directory/problem_library/index'
-# demo items already have file names beginning with
-# `demos/'.
+# help_index') the items already have the `include'
+# option.  `$judging_directory/help/index' is used to
+# start the contestants `help/index' file and provide a
+# `this_contest' item for the file `help/this_contest'.
 #
 # Each index file entry consists of a series of argu-
 # ments to makecontest, all but the last of which end in
