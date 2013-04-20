@@ -1,7 +1,7 @@
 # Common TCL Code for Displays
 #
 # File:		display_common.tcl
-# Author:	Bob Walton (walton@deas.harvard.edu)
+# Author:	Bob Walton (walton@seas.harvard.edu)
 # Date:		Mon Jan  8 03:26:53 EST 2007
 #
 # The authors have placed this program in the public
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2007/01/08 08:27:31 $
+#   $Date: 2013/04/20 08:44:28 $
 #   $RCSfile: display_common.tcl,v $
-#   $Revision: 1.53 $
+#   $Revision: 1.54 $
 #
 #
 # Note: An earlier version of this code used to be in

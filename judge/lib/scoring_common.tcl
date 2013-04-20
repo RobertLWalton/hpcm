@@ -1,7 +1,7 @@
 # Common TCL Code for Scoring and Scoring Displays
 #
 # File:		scoring_common.tcl
-# Author:	Bob Walton (walton@deas.harvard.edu)
+# Author:	Bob Walton (walton@seas.harvard.edu)
 # Date:		Mon Mar 18 06:22:17 EDT 2013
 #
 # The authors have placed this program in the public
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2013/03/18 16:43:16 $
+#   $Date: 2013/04/20 08:44:28 $
 #   $RCSfile: scoring_common.tcl,v $
-#   $Revision: 1.73 $
+#   $Revision: 1.74 $
 #
 #
 # Note: An earlier version of this code used to be in

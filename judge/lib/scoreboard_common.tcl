@@ -2,7 +2,7 @@
 # internal database and help build a scoreboard.
 #
 # File:		scoreboard_common.tcl
-# Author:	Bob Walton (walton@deas.harvard.edu)
+# Author:	Bob Walton (walton@seas.harvard.edu)
 # Date:		Sun Mar 17 03:56:09 EDT 2013
 #
 # The authors have placed this program in the public
@@ -12,9 +12,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2013/03/17 08:17:43 $
+#   $Date: 2013/04/20 08:44:28 $
 #   $RCSfile: scoreboard_common.tcl,v $
-#   $Revision: 1.66 $
+#   $Revision: 1.67 $
 #
 #
 # Note: An earlier version of this code used to be in

@@ -1,7 +1,7 @@
 # Common TCL Code for Judging
 #
 # File:		judging_common.tcl
-# Author:	Bob Walton (walton@deas.harvard.edu)
+# Author:	Bob Walton (walton@seas.harvard.edu)
 # Date:		Tue Apr  2 10:05:55 EDT 2013
 #
 # The authors have placed this program in the public
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2013/04/03 00:56:28 $
+#   $Date: 2013/04/20 08:44:28 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.161 $
+#   $Revision: 1.162 $
 #
 
 # Table of Contents
