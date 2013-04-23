@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@seas.harvard.edu)
-# Date:		Sun Apr 21 02:54:56 EDT 2013
+# Date:		Mon Apr 22 21:24:48 EDT 2013
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2013/04/23 01:24:37 $
+#   $Date: 2013/04/23 02:34:37 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.270 $
+#   $Revision: 1.271 $
 
 # Table of Contents:
 #
@@ -800,8 +800,9 @@ set scoreboard_sort_mode problems
 # Contest start, stop, freeze, and cut times.
 #
 # The start, stop, and cut times are used in actually
-# computing the scoreboard table (by the `scoretable'
-# program), as follows.
+# computing the scoreboard table (by the `judge/bin/
+# scoretable' program using judge/lib/scoreboard_
+# common.tcl), as follows.
 #
 # If the start time is not "", "problem", or "team", it
 # is a date and time (a legal argument for `clock scan')
@@ -810,12 +811,9 @@ set scoreboard_sort_mode problems
 # time is ignored.
 #
 # If the start time is "", the start time of a problem
-# is unknown.  If scoreboard_use_feedback is "no", then
-# instead of printing problem times, the scoreboard will
-# print dates of submission, and there will be no rank-
-# ing scores, so that instead of sorting submitters with
-# the same number of correct problems by ranking score,
-# submitters will be sorted by name alphabetically.
+# is unknown, and the time of the problem is unknown,
+# so that `time' cannot be used as a scoreboard_solved_
+# mode or scoreboard_sort_mode value.
 #
 # If the start time is "problem", the time a problem is
 # gotten is used as the start time for that problem.  If
@@ -825,9 +823,16 @@ set scoreboard_sort_mode problems
 # problems for that team.  In both these cases, if the
 # first submission regarding a problem is not a get of
 # that problem, then the problem is ignored.  Such gets
-# happen in email and informal contests, and not in
-# formal contests, so the start time of a formal contest
-# must be a date and time.
+# happen in contests where the problem directories are
+# subdirectories of judging_directory/info/problems (as
+# per the makecontest -info option) but not of $judging_
+# directory/contest/problems (i.e., the makecontest
+# -problems option is NOT used).  So a start time of
+# "problem" or "team" must be used with the makecontest
+# option -info but WITHOUT the makecontest -problems
+# option.  Conversely, if the makecontest -problems
+# option is used, the start time must be either "" or
+# a date and time.
 #
 # Cut times are used to exclude teams that stopped
 # early.  They permit a team to simultaneously enter
@@ -868,39 +873,12 @@ set scoreboard_correct_cut_time ""
 set scoreboard_incorrect_cut_time ""
 set scoreboard_final_cut_time ""
 
-# The following values are for a typical 5 hour formal
-# contest (you should adjust the start time).
+# See sample values in
 #
-# set scoreboard_start_time "Jan 1 10:00:00 2000"
-# set scoreboard_freeze_time [expr { 4 * 60 * 60 }]
-# set scoreboard_stop_time [expr { 5 * 60 * 60 }]
-# set scoreboard_correct_cut_time ""
-# set scoreboard_incorrect_cut_time ""
-# set scoreboard_final_cut_time ""
-
-# The following values are for an informal team 4 hour
-# contest in which teams can choose their own starting
-# time.  The teams effectively participate in simultan-
-# eous 3, 4, and 5 hour contests: a team that gives up
-# after 3 hours is deemed to have NOT entered the 4
-# and 5 hour contests.  A team has entered the 4 hour
-# contest if it makes a correct submission after 3 hours
-# but at or before 5 hours and 10 minutes, or if it
-# makes an incorrect submission after 3 hours and 10
-# minutes but at or before 5 hours and 10 minutes.  The
-# final cut time, here 5 hours and 10 minutes, permits
-# teams to come back and work on problems the next day
-# for practice without affecting the scoreboard.
-#
-# set scoreboard_start_time team
-# set scoreboard_freeze_time ""
-# set scoreboard_stop_time [expr { 4 * 60 * 60 }]
-# set scoreboard_correct_cut_time \
-#     [expr { 3 * 60 * 60 }]
-# set scoreboard_incorrect_cut_time \
-#     [expr { 3 * 60 * 60 + 10 * 60  }]
-# set scoreboard_final_cut_time \
-#     [expr { 5 * 60 * 60 + 10 * 60  }]
+#   hpcm/contests/acm_contest/hpcm_judging.rc
+#   hpcm/contests/timed_practice/hpcm_judging.rc
+#   hpcm/contests/untimed_practice/hpcm_judging.rc
+#   hpcm/contests/algorithm_festival/hpcm_judging.rc
 
 # The scoreboard can be shutdown or reconfigured
 # at the scoreboard_shutdown_time if that is not "".
