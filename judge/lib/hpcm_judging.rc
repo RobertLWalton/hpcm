@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@seas.harvard.edu)
-# Date:		Mon Apr 22 21:24:48 EDT 2013
+# Date:		Tue Apr 23 11:03:23 EDT 2013
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2013/04/23 02:34:37 $
+#   $Date: 2013/04/23 15:03:53 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.271 $
+#   $Revision: 1.272 $
 
 # Table of Contents:
 #
@@ -1145,11 +1145,11 @@ set scoreboard_abbreviation(START) start_time
 set scoreboard_abbreviation(STOP) stop_time
 set scoreboard_abbreviation(FREEZE) freeze_time
 #
-# which means, for example, that NAME abbreviates
-# `scoreboard_name'.  Additional abbreviations may be
-# added to this map.  `scoreboard_time' is the time when
-# the `makescoreboard' program starts executing the
-# scoreboard instructions.
+# which means, for example, that NAME abbreviates the
+# value of `scoreboard_name'.  Additional abbreviations
+# may be added to this map.  `scoreboard_time' is the
+# time when the `makescoreboard' program starts execut-
+# ing the scoreboard instructions.
 #
 # These values can also have the form of an abbreviation
 # whose value is a time + or - an integer number of
@@ -1221,28 +1221,32 @@ set web_title ""
 #
 set web_body_attributes ""
 
-# Header for web page.  If "", a default is constructed
-# from web_title.
+# There are three web pages:
 #
-set web_header ""
+#     $web_directory	
+#         Produced if web_title is not ""
+#
+#     $web_directory/problems
+#         Produced if web_title is not "" and web_problems
+#         is not "no".
+#
+#     $web_directory/private/$web_solutions_password
+#         Produced if web_title is not "" and web_
+#         solutions_password is not "".
+#
+# Each has a title made from web_title, a header that
+# is made automatically from web_title if given as "",
+# and a prefix that immediately follows the header.
+# The web_directory page also has a postfix given
+# at the end of the page just before the line that
+# specifies the web_manager as a contact.
 
-# Prefix and postfix of web page.  These should be
-# written in HTML and are typically empty.  The prefix
-# comes just after the header and the postfix comes
-# after everything but the web_manager.
-#
+set web_header ""
 set web_prefix ""
 set web_postfix ""
-
-# Header for the solutions web page.  If "", a default
-# is constructed from web_title.
-#
+set web_problems_header ""
+set web_problems_prefix ""
 set web_solutions_header ""
-
-# Prefix for the solutions web page.  This should be
-# written in HTML and is typically empty.  The prefix
-# comes just after the header.
-#
 set web_solutions_prefix ""
 
 # If not "", include in index.html as a reference to the
@@ -1251,9 +1255,13 @@ set web_solutions_prefix ""
 #
 set web_problems_URL ""
 
-# Set the following to "yes" to include problem
-# descriptions from the solution files on the web page.
-# Or "no" otherwise.
+# Set the following to "yes" to produce the $web_
+# directory/problems web page that includes descriptions
+# of the problems.  Set to "protect" to do the same
+# but make the problems inaccessible; it can be made
+# accessible by following instructions given in a
+# comment in the web_directory page.  Set to "no" to
+# not make any $wed_directory/problems web page.
 #
 set web_problems yes
 
@@ -1267,6 +1275,14 @@ set web_problems yes
 # the password is not included.
 #
 set web_solutions_password ""
+
+# If not "", include in index.html a reference to this
+# page where `More Details' about the contest are given.
+# May be relative to the web directory.  Typical values
+# are "help/acm_contest" and "help/untimed_practice" if
+# web_help_URL below has the value "help".
+#
+set web_details_URL ""
 
 # If not "", include in index.html a reference to help
 # and demo files.  This parameter is the URL of the

@@ -7,7 +7,7 @@
 #
 # File:		makeweb
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Feb  8 15:22:56 EST 2013
+# Date:		Tue Apr 23 07:03:39 EDT 2013
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -16,9 +16,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2013/02/08 20:47:22 $
+#   $Date: 2013/04/23 15:02:48 $
 #   $RCSfile: makeweb,v $
-#   $Revision: 1.27 $
+#   $Revision: 1.28 $
 #
 # The next lines start tclsh \
 trap "echo makeweb: Terminated by Signal" \
@@ -124,6 +124,9 @@ if {    ! [info exists web_directory] \
 set j_d $judging_directory
 set c_d $judging_directory/contest
 set w_d $web_directory
+set p_d $w_d/problems
+set r_d $w_d/private
+set s_d $r_d/$web_solutions_password
 
 # Complain of web directory already exists.
 #
@@ -135,7 +138,7 @@ if { [file exists $w_d] } {
 # their usability, and also check problems_print_files
 # readability.
 #
-if { $web_problems } {
+if { $web_problems != "no" } {
     set f $j_d/problems_print_files
     if { ! [file readable $f] } {
         error "$f is not readable"
@@ -186,28 +189,6 @@ grant_access $w_d
 copy_file $help_dir/this_contest $w_d/this_contest
 grant_access $w_d/this_contest
 
-# Copy problems index.
-#
-if { $web_problems } {
-    copy_file $help_dir/problems $w_d/problems
-    grant_access $w_d/problems
-}
-
-# Make solutions subdirectory if necessary.
-#
-if { $web_solutions_password != "" } {
-
-    # Set abbreviations for use in rest of this program.
-    #
-    set pdir $w_d/private
-    set sdir $pdir/$web_solutions_password
-
-    file mkdir $sdir
-    grant_access $sdir
-    deny_access $pdir
-    grant_access $pdir x
-}
-
 # Set up defaults.
 #
 if { $web_body_attributes == "" } {
@@ -220,6 +201,14 @@ if { $web_header == "" } {
 <FONT COLOR=\"red\">$web_title</FONT></H1>
 "
 }
+if { $web_problems_header == "" } {
+    set web_problems_header "
+<H1 ALIGN=\"CENTER\">
+<FONT COLOR=\"red\">$web_title</FONT></H1>
+<H2 ALIGN=\"CENTER\">
+<FONT COLOR=\"red\">Problem Descriptions</FONT></H2>
+"
+}
 if { $web_solutions_header == "" } {
     set web_solutions_header "
 <H1 ALIGN=\"CENTER\">
@@ -229,7 +218,9 @@ if { $web_solutions_header == "" } {
 "
 }
 
-# Output header for $w_d/index.html
+# Output $w_d/index.html
+
+# Output header.
 #
 set ch [open $w_d/index.html w]
 puts $ch "
@@ -240,16 +231,19 @@ $web_header
 $web_prefix
 "
 
-# Output List Start.
+# Output list start.
+#
 puts $ch "
 <UL>
 "
 
-# Output this_contest link.
+# Output web details link if any.
 #
-puts $ch "
-<LI> <A HREF=\"this_contest\">More Details</A>
+if { $web_details_URL != "" } {
+    puts $ch "
+<LI> <A HREF=\"$web_details_URL\">More Details</A>
 "
+}
 
 # Output help link.
 #
@@ -278,98 +272,23 @@ if { $web_problems_URL != "" } {
 
 # Output problem info.
 #
-if { $web_problems } {
+if { $web_problems == "yes" } {
     puts $ch "
-<LI><A HREF=\"problems\">Annotated Index of Problems</A>
-<LI>
-The problems and their files are as follows.  Note that
-files with extensions
-<TT>.txt</TT>,
-<TT>.html</TT>,
-<TT>.htm</TT>,
-<TT>.ps</TT>,
-<TT>.pdf</TT> contain problem descriptions, while
-<TT>Makefile</TT> files describe how the autojudge
-runs solutions.
-<P>
-<TABLE>
-<TR>
-<TH WIDTH=50>&nbsp;</TH>
-<TH>Problem</TH>
-<TH WIDTH=50>&nbsp;</TH>
-<TH ALIGN=\"left\">Files</TH>
-</TR>"
-
-    # Process problems.
-    #
-    set problems_print_files \
-        [read_entire_file $j_d/problems_print_files]
-    set print_files {}
-    foreach f $problems_print_files {
-	set fname [file tail $f]
-	set problem [file tail [file dir $f]]
-	if { "$problem/$fname" == "help/problems" } \
-	    continue
-	lappend print_files $problem/$fname
-    }
-    foreach pdir \
-	    [lsort [glob -nocomplain $problems_dir/*]] {
-
-	set problem [file tail $pdir]
-	file mkdir $w_d/$problem
-	grant_access $w_d/$problem
-	puts $ch "<TR>"
-	puts $ch "<TD WIDTH=50>&nbsp;</TD>"
-	puts $ch "<TD>$problem</TD>"
-	puts $ch "<TD WIDTH=50>&nbsp;</TD>"
-	puts $ch "<TD>"
-
-	set source_files {}
-	set description_files {}
-	foreach pfile [glob -nocomplain $pdir/*] {
-	    set fname [file tail $pfile]
-	    if { [lcontain $print_files \
-	    		   $problem/$fname] } {
-		lappend description_files $fname
-	    } else {
-		lappend source_files $fname
-	    }
-	    set wfile $problem/$fname
-	    copy_file $pfile $w_d/$wfile
-	    grant_access $w_d/$wfile
-	}
-	foreach pfile $print_files {
-	    set p [file dirname $pfile]
-	    if { $p != $problem } continue
-	    set fname [file tail $pfile]
-	    if { [lcontain $description_files \
-	                   $fname] } \
-	        continue
-	    set wfile $problem/$fname
-	    copy_file $j_d/solutions/$pfile $w_d/$wfile
-	    grant_access $w_d/$wfile
-	    lappend description_files $fname
-	}
-
-	foreach fname \
-	        [concat [lsort $description_files] \
-		        [lsort $source_files]] {
-	    set wfile $problem/$fname
-	    puts $ch "<A HREF=\"$wfile\">$fname</A>"
-	}
-	puts $ch "</TD>"
-	puts $ch "</TR>"
-    }
-
-    # Output trailer for problems.
-    #
+<LI><A HREF=\"problems/index.html\">Problem Files</A>
+"
+} elseif { $web_problems == "protect" } {
     puts $ch "
-</TABLE>"
+<!-- To make problems visible remove these 2 lines and
+     the comment end and execute 'chmod a+rx problems'.
+<LI><A HREF=\"problems/index.html\">Problem Files</A>
+-->
+"
 }
 
 # Output solutions information.
 #
 if { $web_solutions_password != "" } {
+
     puts $ch "
 <LI>
 Solutions are available at the URL made by adding
@@ -400,7 +319,6 @@ If you have questions email the manager of this
 web page at <TT>$address</TT>"
 }
 
-
 # Output trailer for $w_d/index.html
 #
 puts $ch "
@@ -409,13 +327,159 @@ puts $ch "
 close $ch
 grant_access $w_d/index.html
 
-# If solutions, output $sdir/index.html
+
+# If web_problems not "no", output $w_d/problems and its
+# contents.
+#
+if { $web_problems != "no" } {
+
+
+    # Make $p_d and grant access if web_problems is
+    # "yes".  Announce error if web_problems not "yes",
+    # "no", or "protect".
+    #
+    file mkdir $p_d
+    if { $web_problems == "yes" } {
+        grant_access $p_d
+    } elseif { $web_problems != "protect" } {
+        error "web_problems is not \"no\", \"yes\",\
+	       or \"protect\""
+    }
+
+    # Copy problems index.
+    #
+    copy_file $help_dir/problems $p_d/problems
+    grant_access $p_d/problems
+
+    # Output header for $p_d/index.html
+    #
+    set ch [open $p_d/index.html w]
+    puts $ch "
+<HTML>
+<TITLE>$web_title Problem Descriptions</TITLE>
+<BODY $web_body_attributes>
+$web_problems_header
+$web_problems_prefix
+<P>
+<A HREF=\"problems\">Annotated Index of the Problems</A>
+<P>
+The problems and their files are as follows.  Note that
+files with extensions
+<TT>.txt</TT>,
+<TT>.html</TT>,
+<TT>.htm</TT>,
+<TT>.ps</TT>,
+<TT>.pdf</TT> contain problem descriptions, while
+<TT>Makefile</TT> files describe how the autojudge
+runs solutions, and other files are (typically data)
+files that are needed to solve the problem.
+<P>
+<TABLE>
+<TR>
+<TH WIDTH=50>&nbsp;</TH>
+<TH>Problem</TH>
+<TH WIDTH=50>&nbsp;</TH>
+<TH ALIGN=\"left\">Files</TH>
+</TR>"
+
+    # Process problems.
+    #
+    set problems_print_files \
+        [read_entire_file $j_d/problems_print_files]
+    set print_files {}
+    foreach f $problems_print_files {
+	set fname [file tail $f]
+	set problem [file tail [file dir $f]]
+	if { "$problem/$fname" == "help/problems" } \
+	    continue
+	lappend print_files $problem/$fname
+    }
+    foreach pdir \
+	    [lsort [glob -nocomplain $problems_dir/*]] {
+
+	set problem [file tail $pdir]
+	file mkdir $p_d/$problem
+	grant_access $p_d/$problem
+	puts $ch "<TR>"
+	puts $ch "<TD WIDTH=50>&nbsp;</TD>"
+	puts $ch "<TD>$problem</TD>"
+	puts $ch "<TD WIDTH=50>&nbsp;</TD>"
+	puts $ch "<TD>"
+
+	set source_files {}
+	set description_files {}
+
+	# Get files from $problems_dir/$problem.  Files
+	# in $print_files are description_files and
+	# other files are source_files.
+	#
+	foreach pfile [glob -nocomplain $pdir/*] {
+	    set fname [file tail $pfile]
+	    if { [lcontain $print_files \
+	    		   $problem/$fname] } {
+		lappend description_files $fname
+	    } else {
+		lappend source_files $fname
+	    }
+	    set wfile $problem/$fname
+	    copy_file $pfile $p_d/$wfile
+	    grant_access $p_d/$wfile
+	}
+	
+	# Get $print_files not already gotten from
+	# $j_d/solutions/$problem and add them to
+	# description_files.
+	#
+	foreach pfile $print_files {
+	    set p [file dirname $pfile]
+	    if { $p != $problem } continue
+	    set fname [file tail $pfile]
+	    if { [lcontain $description_files \
+	                   $fname] } \
+	        continue
+	    set wfile $problem/$fname
+	    copy_file $j_d/solutions/$pfile $p_d/$wfile
+	    grant_access $p_d/$wfile
+	    lappend description_files $fname
+	}
+
+	# Output file links, description files first and
+	# then source files.
+	#
+	foreach fname \
+	        [concat [lsort $description_files] \
+		        [lsort $source_files]] {
+	    set wfile $problem/$fname
+	    puts $ch "<A HREF=\"$wfile\">$fname</A>"
+	}
+	puts $ch "</TD>"
+	puts $ch "</TR>"
+    }
+
+    # Output trailer for $p_d/index.html.
+    #
+    puts $ch "
+</TABLE>
+</BODY>
+<HTML>"
+    close $ch
+    grant_access $p_d/index.html
+}
+
+# If solutions, output $s_d/index.html
 #
 if { $web_solutions_password != "" } {
 
-    # Output header for $sdir/index.html
+    # Make solution directory.
     #
-    set ch [open $sdir/index.html w]
+    file mkdir $s_d
+    grant_access $s_d
+    deny_access $r_d
+    grant_access $r_d x
+
+    # Output header for $s_d/index.html
+    #
+    set ch [open $s_d/index.html w]
     puts $ch "
 <HTML>
 <TITLE>$web_title Problem Solutions</TITLE>
@@ -451,8 +515,8 @@ $web_solutions_prefix
 	    error "No solution files for $problem"
 	}
 
-	file mkdir $sdir/$problem
-	grant_access $sdir/$problem
+	file mkdir $s_d/$problem
+	grant_access $s_d/$problem
 
 	puts $ch "<TR>"
 	puts $ch "<TD WIDTH=50>&nbsp;</TD>"
@@ -461,8 +525,8 @@ $web_solutions_prefix
 	puts $ch "<TD>"
 
 	foreach file [lsort $files] {
-	    copy_file $soldir/$file $sdir/$problem/$file
-	    grant_access $sdir/$problem/$file
+	    copy_file $soldir/$file $s_d/$problem/$file
+	    grant_access $s_d/$problem/$file
 	    puts $ch \
 	         "<A HREF=\"$problem/$file\">$file</A>"
 	}
@@ -471,14 +535,14 @@ $web_solutions_prefix
 	puts $ch "</TR>"
     }
 
-    # Output trailer for $sdir/index.html
+    # Output trailer for $s_d/index.html
     #
     puts $ch "
 </TABLE>
 </BODY>
 <HTML>"
     close $ch
-    grant_access $sdir/index.html
+    grant_access $s_d/index.html
 }
 
 exit 0
