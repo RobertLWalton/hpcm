@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@seas.harvard.edu)
-# Date:		Sat Apr 20 18:32:57 EDT 2013
+# Date:		Sun Apr 21 02:54:56 EDT 2013
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2013/04/20 23:04:37 $
+#   $Date: 2013/04/23 01:24:37 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.269 $
+#   $Revision: 1.270 $
 
 # Table of Contents:
 #
@@ -232,7 +232,7 @@ set makecontest_arguments "
 #	    to the ~/.ssh/authorized_keys file in
 #	    ACCOUNT.  ACCOUNT must be an account name
 #	    in ssh format.  REMOTE-COMMAND may have
-#	    whitespace but no ""'s.  OPTIONS are the
+#	    whitespace but no "s.  OPTIONS are the
 #	    options passed to ssh: they are by default:
 #
 #		    "-o PasswordAuthentication=no\
@@ -245,8 +245,8 @@ set makecontest_arguments "
 #	{ NAME email ADDRESS [REGEXP REMOTE-COMMAND] }
 #	    Executing NAME executes hpcm_remote_sendmail
 #	    with the given destination address.  ADDRESS
-#	    may have spaces and ""s but may NOT contain
-#	    ''s.  If REGEXP and REMOTE-COMMAND are
+#	    may have spaces and "s but may NOT contain
+#	    's.  If REGEXP and REMOTE-COMMAND are
 #	    given, makecontest creates the file
 #		./contest/secure/bin/NAME_procmailrc
 #	    which when appended to the .procmailrc file
@@ -425,11 +425,12 @@ set judging_commands {}
 #	matches all files.
 #
 #	Note that if any source file has a name of the
-#	form xxx.ISF, it will be sent to the contestant
-#	(by autoinfo and hpcm_extract) under the name
-#	xxx.  ISF stands for `Initial Source File', and
-#	denotes an initial version of a file the contes-
-#	tant will modify and submit.
+#	form xxx.ISF, a writable copy will be made for
+#	the contestant (by hpcm_get or by autoinfo and
+#	hpcm_extract) under the name xxx.  ISF stands
+#	for `Initial Source File', and denotes an
+#	initial version of a file the contestant will
+#	modify and submit.
 #
 #   problem_binary_source_files
 #
@@ -499,9 +500,11 @@ set judging_commands {}
 #	ined) this is the sorted list of description
 #	files of the problem, as determined by problem_
 #	description_files and problem_excluded_files.
-#	The order of this list is the order in which
-#	the files are printed.  This global variable is
-#	most often defined for demonstration problems.
+#
+#	If this list is defined, its order is the order
+#	in which the files are printed.  This global
+#	variable is most often defined for demonstration
+#	problems.
 #
 #	Default: undefined.
 #
@@ -578,9 +581,10 @@ set judging_commands {}
 #       `{ F { make F } }'.
 #
 #	The COMMAND is passed to the exec_in_directory
-#	function which executes it in sh or csh.  This
-#	COMMAND is a character string parsed by a non-
-#	TCL shell, and NOT a TCL list.
+#	function which executes it in sh or csh (see
+#	the definition of this function later in this
+#	file).  This COMMAND is a character string
+#	parsed by a non-TCL shell, and NOT a TCL list.
 #
 #	The instructions are processed by autojudge in
 #	order, so previous instructions can make inputs
@@ -627,6 +631,11 @@ set judging_commands {}
 #	    N.jtest {jfilter N.jin N.test N.jtest}
 #		    N.jin N.test
 #
+#	Note that N.fout, N.jfout, and N.jout are used
+#	only if they exist (which is rare) by problem_
+#	link_files below to supercede N.ftest, N.jftest,
+#	and/or N.jtest.
+#
 #   problem_link_files
 #   problem_optional_link_files
 #
@@ -667,7 +676,7 @@ set judging_commands {}
 #
 #	    Makefile Makefile_EXT Makefile
 #
-#	    Scoring_Filter (if it exists)
+#	    Scoring_Filter [if Scoring_Filter exists]
 #
 #	where EXT is EXTENSION minus the initial `.'.
 #	For each name N in problem_input_names (see
