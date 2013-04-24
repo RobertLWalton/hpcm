@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Feb 16 05:05:15 EST 2013
+# Date:		Wed Apr 24 04:27:53 EDT 2013
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,12 +11,12 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2013/02/16 10:05:25 $
+#   $Date: 2013/04/24 08:30:45 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.30 $
+#   $Revision: 1.31 $
 
 all:	hpcm_sandbox hpcm_sendmail hpcm_display_graph \
-	hpcm_display_segments clisp modes
+	hpcm_display_segments modes
 
 # Kill all implicit rules
 #
@@ -47,27 +47,22 @@ hpcm_display_segments:	../src/hpcm_display_segments.cc
 	cp -p ../src/hpcm_display_segments .
 	chmod 555 hpcm_display_segments
 
-clisp:
-	rm -f clisp
-	ln -s `which clisp` clisp
-
 modes:
 	chmod a+rx . TRASH_ACCOUNT SETUP_PROTOTYPE \
 	           help hpcm_extract hpcm_get \
 		   hpcm_decode \
 		   hpcm_submit print print2 fprint \
 		   printer printer_pipe scoreboard \
-		   xsh xcsh grant_access hpcm_clisp \
+		   xsh xcsh grant_access \
 		   hpcm_extract_test_replies \
 		   filtered_diff email_diff \
 		   hpcm_helper javahelp stlhelp \
 		   startup_helper elinks_helper \
 		   authorize jdebug ldebug
-	chmod a+r procmailrc hpcm_clisp.lsp \
+	chmod a+r procmailrc \
 	          elinks_startup_message
 	chmod a+x .. ../.. ../../..
 
 clean:
 	rm -f hpcm_sandbox hpcm_sendmail \
-	      hpcm_display_graph hpcm_display_segments \
-	      clisp
+	      hpcm_display_graph hpcm_display_segments
