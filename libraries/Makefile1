@@ -1,7 +1,7 @@
 # Makefile for the XXX Problem
 #
 # File:		Makefile
-# Date:		Tue Jan  8 08:09:51 EST 2013
+# Date:		Thu Feb 28 04:08:03 EST 2013
 #
 # See demonstration Makefile for documentation.
 #
@@ -41,17 +41,20 @@ default:	$P.out
 
 #
 .lsp:
-	rm -f $* $*.fas $*.lib core core.[0-9]*
-	hpcm_clisp -c $*.lsp
+	rm -f $* core core.[0-9]*
 	echo >$* '#!/bin/sh'
-	echo >>$* \
-	    "exec `hpcm_clisp -which` -I $*.fas \$$*"
-	chmod a+r $*.fas
+	echo >>$* "exec sbcl --script $*.lsp" '"$$@"'
+	chmod a+r $*.lsp
 	chmod a+rx $*
 
-$P.in:	
+$P.in:
 	if test -r sample.in; \
 	then cp sample.in $P.in; chmod u+rw $P.in; fi
+
+$P.test:
+	if test -r sample.test; \
+	then cp sample.test $P.test; \
+	     chmod u+rw $P.test; fi
 
 $P.out:	$P $P.in
 	rm -f $P.out core core.[0-9]*
@@ -64,6 +67,12 @@ $P.out:	$P $P.in
 		     -tee $P.out \
 		     $P \
 	    <$P.in
+
+test:	$P.out $P.test
+	@echo ""
+	@echo "DIFFERENCES: $P.test ---> $P.out"
+	@if diff -u $P.test $P.out; \
+	    then echo "NO DIFFERENCES FOUND"; fi
 
 $P.debug:	$P $P.in
 	rm -f $P.debug core core.[0-9]*
@@ -93,8 +102,10 @@ solution-submit:	$P.out
 clean:
 	rm -f $P *.class core core.[0-9]* \
 	      *.out *.debug *.fout *.jout *.jfout \
-	      $P.fas $P.lib make_$P_*input
+	      make_$P_*input
 	if cmp -s $P.in sample.in; then rm $P.in; fi
+	if cmp -s $P.test sample.test; \
+	   then rm $P.test; fi
 
 #
 # Derived From:	Makefile1
@@ -107,6 +118,7 @@ clean:
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2013/01/08 18:08:31 $
+#   $Date: 2013/04/24 09:20:58 $
 #   $RCSfile: Makefile1,v $
-#   $Revision: 1.21 $
+#   $Revision: 1.22 $
+
