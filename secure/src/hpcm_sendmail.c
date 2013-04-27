@@ -2,7 +2,7 @@
  *
  * File:	hpcm_sendmail.c
  * Authors:	Bob Walton (walton@deas.harvard.edu)
- * Date:	Sat Apr 27 01:39:33 EDT 2013
+ * Date:	Sat Apr 27 02:12:23 EDT 2013
  *
  * The authors have placed this program in the public
  * domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
  * RCS Info (may not be true date or author):
  *
  *   $Author: walton $
- *   $Date: 2013/04/27 06:01:40 $
+ *   $Date: 2013/04/27 06:13:14 $
  *   $RCSfile: hpcm_sendmail.c,v $
- *   $Revision: 1.14 $
+ *   $Revision: 1.15 $
  */
 
 #include <stdlib.h>
@@ -441,6 +441,16 @@ int main ( int argc, char ** argv )
      */
     int test_option = 0;
 
+    /* Process -test option if any.
+     */
+    if ( argc >= 2
+         &&
+	 strcmp ( "-test", argv[1] ) == 0 )
+    {
+        test_option = 1;
+	-- argc, ++ argv;
+    }
+
 
     /* If there are too many arguments or the first
        matches -doc*, print documentation.
@@ -454,14 +464,6 @@ int main ( int argc, char ** argv )
     {
         printf ( "%s", documentation );
 	exit ( 1 );
-    }
-
-    if ( argc >= 2
-         &&
-	 strcmp ( "-test", argv[1] ) == 0 )
-    {
-        test_option = 1;
-	-- argc, ++ argv;
     }
 
     /* Compute rcfilename =
@@ -777,7 +779,7 @@ int main ( int argc, char ** argv )
     {
     	FILE * files[3];
 	char * const testmail_argv[]
-        = { "cat", NULL };
+        = { "/usr/bin/cat", NULL };
 	char * const * testmails[]
 	    = { testmail_argv, NULL };
 	pid_t child = exec_program ( files,

@@ -5,7 +5,7 @@
 #
 # File:		hpcm_sendmail
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Wed May  3 14:05:40 EDT 2006
+# Date:		Sat Apr 27 02:07:12 EDT 2013
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,16 +13,17 @@
 #
 # RCS Info (may not be true date or author):
 #
-#   $Author: hc3 $
-#   $Date: 2006/05/03 18:14:46 $
+#   $Author: walton $
+#   $Date: 2013/04/27 06:08:41 $
 #   $RCSfile: hpcm_sendmail,v $
-#   $Revision: 1.4 $
+#   $Revision: 1.5 $
 
 case "$1" in
    "")  ;;
+   "-test") ;;
    * )
    	echo "
-hpcm_sendmail
+hpcm_sendmail [-test]
 
     Call contestant/bin/hpcm_sendmail with
     <judging_directory>/contest as argument,
@@ -52,7 +53,7 @@ then
 elif test -x $found/contest
 then
     sendmail=../../contestant/bin/hpcm_sendmail
-    exec `dirname "$0"`/$sendmail $found/contest
+    exec `dirname "$0"`/$sendmail $1 $found/contest
 elif test -r $found/Contest_Address
 then
     exec 3< $found/Contest_Address
@@ -60,7 +61,10 @@ then
     to="$REPLY"
     exec 3<&-
 
-    if test -x /usr/bin/sendmail
+    if test "$1" = "-test"
+    then
+        sendmail=cat
+    elif test -x /usr/bin/sendmail
     then
 	sendmail=/usr/bin/sendmail
     elif test -x /bin/sendmail
