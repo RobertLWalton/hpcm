@@ -2,7 +2,7 @@
  *
  * File:	hpcm_sendmail.c
  * Authors:	Bob Walton (walton@deas.harvard.edu)
- * Date:	Wed Apr  3 12:14:35 EST 2002
+ * Date:	Sat Apr 27 01:39:33 EDT 2013
  *
  * The authors have placed this program in the public
  * domain; they make no warranty and accept no liability
@@ -10,10 +10,10 @@
  *
  * RCS Info (may not be true date or author):
  *
- *   $Author: hc3 $
- *   $Date: 2002/04/03 17:17:04 $
+ *   $Author: walton $
+ *   $Date: 2013/04/27 06:01:40 $
  *   $RCSfile: hpcm_sendmail.c,v $
- *   $Revision: 1.13 $
+ *   $Revision: 1.14 $
  */
 
 #include <stdlib.h>
@@ -95,7 +95,7 @@ char * sendmail_env[]  = { HPCM_SENDMAIL_ENV, NULL };
 
 char documentation [] =
 "cat your_mail_file | hpcm_sendmail"
-	" [contest-directory]\n"
+	" [-test] [contest-directory]\n"
 "\n"
 "    This program performs the same functions as:\n"
 "\n"
@@ -118,6 +118,12 @@ char documentation [] =
 "    the secure/hpcm_sendmail.rc file this program\n"
 "    needs to find the `To:' field and compute au-\n"
 "    thentication.\n"
+"\n"
+"    With the -test option this program pipes to\n"
+"    cat(1) the message that it would otherwise pipe\n"
+"    to /usr/bin/sendmail.  This is used primarily to\n"
+"    build tests in environments where procmailrc has\n"
+"    been disabled because of selinux settings.\n"
 "\n"
 "    The program will write an error message on the\n"
 "    standard error output if any system call is in\n"
@@ -431,6 +437,10 @@ int main ( int argc, char ** argv )
     */
     char signature	[MAXLEN];
 
+    /* Switch to indicate -test option is present
+     */
+    int test_option = 0;
+
 
     /* If there are too many arguments or the first
        matches -doc*, print documentation.
@@ -444,6 +454,14 @@ int main ( int argc, char ** argv )
     {
         printf ( "%s", documentation );
 	exit ( 1 );
+    }
+
+    if ( argc >= 2
+         &&
+	 strcmp ( "-test", argv[1] ) == 0 )
+    {
+        test_option = 1;
+	-- argc, ++ argv;
     }
 
     /* Compute rcfilename =
@@ -758,8 +776,14 @@ int main ( int argc, char ** argv )
     /* Send the mail. */
     {
     	FILE * files[3];
+	char * const testmail_argv[]
+        = { "cat", NULL };
+	char * const * testmails[]
+	    = { testmail_argv, NULL };
 	pid_t child = exec_program ( files,
-				     sendmails,
+				     test_option ?
+					 testmails :
+					 sendmails,
 				     sendmail_env );
 	char line [MAXLEN];
 
