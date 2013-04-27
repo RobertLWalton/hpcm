@@ -2,7 +2,7 @@
  *
  * File:	hpcm_sendmail.c
  * Authors:	Bob Walton (walton@deas.harvard.edu)
- * Date:	Sat Apr 27 02:12:23 EDT 2013
+ * Date:	Sat Apr 27 02:28:21 EDT 2013
  *
  * The authors have placed this program in the public
  * domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
  * RCS Info (may not be true date or author):
  *
  *   $Author: walton $
- *   $Date: 2013/04/27 06:13:14 $
+ *   $Date: 2013/04/27 06:44:59 $
  *   $RCSfile: hpcm_sendmail.c,v $
- *   $Revision: 1.15 $
+ *   $Revision: 1.16 $
  */
 
 #include <stdlib.h>
@@ -94,8 +94,8 @@ char * const md5sum_env[]  = { HPCM_MD5SUM_ENV, NULL };
 char * sendmail_env[]  = { HPCM_SENDMAIL_ENV, NULL };
 
 char documentation [] =
-"cat your_mail_file | hpcm_sendmail"
-	" [-test] [contest-directory]\n"
+"cat your_mail_file | \\\n"
+"    hpcm_sendmail [-test] [contest-directory]\n"
 "\n"
 "    This program performs the same functions as:\n"
 "\n"
@@ -121,9 +121,12 @@ char documentation [] =
 "\n"
 "    With the -test option this program pipes to\n"
 "    cat(1) the message that it would otherwise pipe\n"
-"    to /usr/bin/sendmail.  This is used primarily to\n"
-"    build tests in environments where procmailrc has\n"
-"    been disabled because of selinux settings.\n"
+"    to /usr/bin/sendmail, adding to the beginning\n"
+"    the `From' and `From:' lines that would be pre-\n"
+"    sent if the message were sent and received.\n"
+"    This is used primarily to build tests in envir-\n"
+"    onments where procmailrc has been disabled\n"
+"    because of selinux settings.\n"
 "\n"
 "    The program will write an error message on the\n"
 "    standard error output if any system call is in\n"
@@ -788,6 +791,16 @@ int main ( int argc, char ** argv )
 					 sendmails,
 				     sendmail_env );
 	char line [MAXLEN];
+
+	/* Output `From' and `From:' lines if -test
+	 * option
+	 */
+	if ( test_option )
+	{
+	    fprintf ( files[0], "From %s %s\n"
+	    			"From: %s\n",
+				cc, date, cc );
+	}
 
 	/* Output To and CC header fields. */
 	fprintf ( files[0], "To:%s\n"
