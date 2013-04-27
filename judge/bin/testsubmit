@@ -1,0 +1,74 @@
+#!/bin/sh
+#
+# Test submissions in a judging directory.
+#
+# File:		testsubmit
+# Author:	Bob Walton (walton@deas.harvard.edu)
+# Date:		Sat Apr 27 08:18:26 EDT 2013
+#
+# The authors have placed this program in the public
+# domain; they make no warranty and accept no liability
+# for this program.
+#
+# RCS Info (may not be true date or author):
+#
+#   $Author: walton $
+#   $Date: 2013/04/27 14:03:32 $
+#   $RCSfile: testsubmit,v $
+#   $Revision: 1.1 $
+#
+# The next lines start tclsh \
+trap "echo makeweb: Terminated by Signal" \
+    HUP INT QUIT; \
+tclsh "$0" "$@"; exit $status
+
+# Include common code and parameters:
+#
+set lib_directory "[file dirname $argv0]/../lib"
+set log_disable yes
+source $lib_directory/judging_common.tcl
+catch {
+
+set document "
+testsubmit submit-file ...
+
+For each submit file executes
+
+    cat submit-file \
+	| hpcm_sendmail -test \
+	| receivemail judging-directory \
+	| dispatchmail judging-directory
+
+which submits the file.  The file should be an email
+message with `Subject:' and `X-HPCM-Test-Subject:'
+fields, and will be submitted as if it arrived in the
+e-mail, but as `hpcm_sendmail -test' is used, there is
+no actual use of e-mail, so this program will work even
+if e-mail does not (i.e., if, say, procmailrc does not
+work because of selinux settings).
+
+To verify that the judging directory is working, read
+the replies in the judge's mailbox and compare them with
+what the X-HPCM-Test-Subject field says they should con-
+tain."
+
+# On first -doc* argument, print documentation and exit.
+#
+if { [regexp {^-doc} [lindex $argv 0]] } {
+    puts $document
+    exit 1
+}
+
+foreach sfile $argv {
+    exec hpcm_sendmail -test < $sfile \
+         | receivemail $judging_directory \
+	 | dispatchmail $judging_directory
+}
+
+exit 0
+
+# Include common error catching code:
+#
+} caught_output
+caught_error
+
