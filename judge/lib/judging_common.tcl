@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@seas.harvard.edu)
-# Date:		Tue Apr  2 10:05:55 EDT 2013
+# Date:		Sat Apr 27 08:38:25 EDT 2013
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,13 +11,14 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2013/04/20 08:44:28 $
+#   $Date: 2013/04/27 12:38:41 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.162 $
+#   $Revision: 1.163 $
 #
 
 # Table of Contents
 #
+#	Directories
 #	Including this Code
 #	List Functions
 #	Documentation Functions
@@ -33,6 +34,17 @@
 #	Logical Expression Compilation
 #	Parse Functions
 #	Inline Code
+
+# Directories
+# -----------
+
+# After this code runs the following are set:
+#
+#     judging_directory
+#         The directory containing hpcm_judging.rc
+#
+#     lib_directory
+#         The directory containing this file
 
 
 # Including this Code
