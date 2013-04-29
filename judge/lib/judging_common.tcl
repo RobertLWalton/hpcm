@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@seas.harvard.edu)
-# Date:		Sat Apr 27 08:38:25 EDT 2013
+# Date:		Mon Apr 29 02:03:40 EDT 2013
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2013/04/27 12:38:41 $
+#   $Date: 2013/04/29 06:30:45 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.163 $
+#   $Revision: 1.164 $
 #
 
 # Table of Contents
@@ -949,10 +949,9 @@ proc read_header { ch { first_line "" }
 # values global variables (see hpcm_judging.rc).  A non-
 # multipart message is treated as if its body were the
 # one and only part of the message.  It is an error if a
-# multipart message has no parts, empty or not.  How-
-# ever, if there are only empty parts, there is no
-# error, and the body as read by read_part_line is
-# merely empty.
+# multipart message has no non-empty parts.  It is NOT
+# an error if a non-multipart message is empty (it might
+# be a `get' message, for example).
 #
 # By empty part we mean a part with no non-whitespace
 # characters in its body.
@@ -1078,9 +1077,12 @@ proc read_part_header { ch } {
     # with legal Content-Type and Content-Transfer-
     # Encoding.  Set message_translated_... variables
     # to the first non-empty legal part found, or the
-    # last empty part found.
+    # last empty part found.  Set body_non_empty to
+    # "yes" if message_translated_... has a non-blank
+    # line, or to "no" otherwise.
     #
     set line ""
+    set body_non_empty no
     while { "yes" } {
 
     	# If multipart, skip to next message boundary
@@ -1304,7 +1306,6 @@ proc read_part_header { ch } {
 
 	# If body not empty, end search for parts.
 	#
-	set body_non_empty no
 	foreach tline $translated {
 	    if { [regexp $nws $tline] } {
 		set body_non_empty yes
@@ -1315,12 +1316,21 @@ proc read_part_header { ch } {
     }
 
     # If no legal part found, empty or not, set
-    # message_part_error.
+    # message_part_error.  If multi-part message and
+    # only empty body parts were found, set meesage_
+    # part_error.  A non-multipart message with an
+    # empty body is not an error (as it might be a
+    # get message, for example).
     #
     if { $message_translated_index < 0 } {
         set message_part_error \
 	    "No message part found with legal\
-	     Content-Type and\
+	     Content-Type\n       and\
+	     legal Content-Transfer-Encoding"
+    } elseif { $multipart && $body_non_empty == "no" } {
+	set message_part_error \
+	    "No non-empty message part found with\
+	     legal Content-Type\n       and\
 	     legal Content-Transfer-Encoding"
     }
 }
