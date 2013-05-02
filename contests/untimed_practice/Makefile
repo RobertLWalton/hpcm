@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Apr 26 17:29:35 EDT 2013
+# Date:		Thu May  2 10:57:12 EDT 2013
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2013/04/26 21:46:45 $
+#   $Date: 2013/05/02 14:57:40 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.2 $
+#   $Revision: 1.4 $
 #
 # To make an untimed contest named `foo':
 #
@@ -185,10 +185,10 @@ problems_print_files:	print_files_do_nothing
 help/this_contest: print_files_do_nothing
 	makecontest -this_contest
 
-# Test Rules:
+# Test Rules (see make_test global variable in
+# hpcm_judging.rc):
 #
-test:
-	echo test not yet implemented
+include make_test
 
 # Cleanup Rules:
 
