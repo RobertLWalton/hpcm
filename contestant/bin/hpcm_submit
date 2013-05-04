@@ -4,7 +4,7 @@
 #
 # File:		hpcm_submit
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Fri May  3 07:41:17 EDT 2013
+# Date:		Sat May  4 03:57:10 EDT 2013
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2013/05/03 14:48:39 $
+#   $Date: 2013/05/04 07:57:30 $
 #   $RCSfile: hpcm_submit,v $
-#   $Revision: 1.9 $
+#   $Revision: 1.10 $
 
 extensions=".c .cc .java .lsp"
 files=""
@@ -25,9 +25,13 @@ test=""
 case "$1" in
     "" | -doc*)
 	echo "
-hpcm_submit [-qualifier | -test] problem[.extension] [file ...]
+hpcm_submit [-qualifier | -test] \\
+            problem[.extension] [file ...]
 
-    Submits the files for the problem.
+    Submits the files for the problem.  Only the base-
+    name of each file is transmitted as part of the
+    submission, so \`foo/bar' appears to the judge as
+    just \`bar'.
 
     If no files are given, the problem name with exten-
     sion is taken to be the name of a single file.  If
@@ -112,9 +116,10 @@ fi
 ( echo Subject: submit $problem$qualifier; \
   for file in $files; \
   do \
+      name=`basename $file`
       echo ""; \
-      echo HPCM_BEGIN "$file"; \
+      echo HPCM_BEGIN "$name"; \
       sed -e '/^/s//../' < "$file"; \
-      echo HPCM_END "$file"; \
+      echo HPCM_END "$name"; \
   done ) \
 | hpcm_sendmail $test

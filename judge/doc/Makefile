@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Mar 10 13:12:16 EDT 2013
+# Date:		Sat May  4 04:00:20 EDT 2013
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2013/03/12 16:45:46 $
+#   $Date: 2013/05/04 08:00:45 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.37 $
+#   $Revision: 1.38 $
 
 # make
 #	Makes documentation as fprintable .txt files in
@@ -49,8 +49,6 @@ DOCS=	overview.txt \
 	contestant/fprint.txt \
 	contestant/grant_access.txt \
 	contestant/help.txt \
-	judge/hpcm_clisp.txt \
-	contestant/hpcm_clisp.txt \
 	contestant/hpcm_display_graph.txt \
 	secure/hpcm_email_passwords.txt \
 	contestant/hpcm_extract.txt \
@@ -99,6 +97,7 @@ DOCS=	overview.txt \
 	contestant/stlhelp.txt \
 	judge/testproblems.txt \
 	judge/testjudge.txt \
+	judge/testsubmit.txt \
 	judge/tracker.txt \
 	judge/trackfinder.txt \
 	contestant/TRASH_ACCOUNT.txt \
@@ -201,11 +200,6 @@ judge/fprint.txt:	hpcm_judging.rc \
 	rm -f judge/fprint.txt
 	-../../judge/bin/fprint -doc \
 	    >judge/fprint.txt
-judge/hpcm_clisp.txt:	hpcm_judging.rc \
-			../../judge/bin/hpcm_clisp
-	rm -f judge/hpcm_clisp.txt
-	-../../judge/bin/hpcm_clisp -doc \
-	    >judge/hpcm_clisp.txt
 judge/hpcm_help.txt:	hpcm_judging.rc \
 		../../judge/bin/hpcm_help
 	rm -f judge/hpcm_help.txt
@@ -343,6 +337,11 @@ judge/testjudge.txt:	hpcm_judging.rc \
 	rm -f judge/testjudge.txt
 	-../../judge/bin/testjudge -doc \
 	    >judge/testjudge.txt
+judge/testsubmit.txt:	hpcm_judging.rc \
+			../../judge/bin/testsubmit
+	rm -f judge/testsubmit.txt
+	-../../judge/bin/testsubmit -doc \
+	    >judge/testsubmit.txt
 judge/tracker.txt:	hpcm_judging.rc \
 		        ../../judge/bin/tracker
 	rm -f judge/tracker.txt
@@ -420,11 +419,6 @@ contestant/help.txt:	../../contestant/bin/help
 	rm -f contestant/help.txt
 	-../../contestant/bin/help -doc \
 	    >contestant/help.txt
-contestant/hpcm_clisp.txt:	\
-		../../contestant/bin/hpcm_clisp
-	rm -f contestant/hpcm_clisp.txt
-	-../../contestant/bin/hpcm_clisp -doc \
-	    >contestant/hpcm_clisp.txt
 contestant/hpcm_display_graph.txt:	\
 		../../contestant/bin/hpcm_display_graph
 	rm -f contestant/hpcm_display_graph.txt
