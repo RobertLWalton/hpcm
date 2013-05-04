@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Feb 17 04:48:34 EST 2013
+# Date:		Sat May  4 03:39:31 EDT 2013
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2013/02/17 09:49:21 $
+#   $Date: 2013/05/04 07:41:15 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.42 $
+#   $Revision: 1.43 $
 
 all:	scorediff grant_access \
 	hpcm_sandbox_unsecure \
@@ -21,9 +21,9 @@ all:	scorediff grant_access \
         hpcm_print_passwords \
 	hpcm_remote_sendmail \
 	hpcm_email_passwords chkpage \
-	hpcm_clisp.lsp hpcm_extract_test_replies \
+	hpcm_extract_test_replies \
 	filtered_diff email_diff hpcm_helper \
-	startup_helper \
+	hpcm_submit startup_helper \
 	elinks_helper elinks_startup_message \
 	help printer_pipe hpcm_display_graph \
 	hpcm_display_segments \
@@ -103,9 +103,6 @@ hpcm_remote_sendmail:
 	ln -s \
 	   ../../contestant/bin/hpcm_remote_sendmail .
 
-hpcm_clisp.lsp:
-	ln -s ../../contestant/bin/hpcm_clisp.lsp .
-
 hpcm_extract_test_replies:
 	C=../../contestant/bin; \
 	    ln -s $$C/hpcm_extract_test_replies .
@@ -124,6 +121,9 @@ startup_helper:
 
 elinks_helper:
 	ln -s ../../contestant/bin/elinks_helper .
+
+hpcm_submit:
+	ln -s ../../contestant/bin/hpcm_submit .
 
 elinks_startup_message:
 	ln -s ../../contestant/bin/elinks_startup_message .
@@ -162,12 +162,12 @@ clean:
 		hpcm_print_passwords chkpage \
 		hpcm_email_passwords \
 		hpcm_remote_sendmail \
-		hpcm_clisp.lsp \
 		hpcm_judging.rc \
 		hpcm_extract_test_replies \
 		filtered_diff \
 		email_diff \
 		hpcm_helper \
+		hpcm_submit \
 		startup_helper \
 		elinks_helper \
 		elinks_startup_message \
