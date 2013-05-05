@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat May  4 03:39:31 EDT 2013
+# Date:		Sun May  5 15:56:35 EDT 2013
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2013/05/04 07:41:15 $
+#   $Date: 2013/05/05 19:57:49 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.43 $
+#   $Revision: 1.44 $
 
 all:	scorediff grant_access \
 	hpcm_sandbox_unsecure \
@@ -23,7 +23,7 @@ all:	scorediff grant_access \
 	hpcm_email_passwords chkpage \
 	hpcm_extract_test_replies \
 	filtered_diff email_diff hpcm_helper \
-	hpcm_submit startup_helper \
+	hpcm_submit hpcm_test startup_helper \
 	elinks_helper elinks_startup_message \
 	help printer_pipe hpcm_display_graph \
 	hpcm_display_segments \
@@ -125,6 +125,9 @@ elinks_helper:
 hpcm_submit:
 	ln -s ../../contestant/bin/hpcm_submit .
 
+hpcm_test:
+	ln -s ../../contestant/bin/hpcm_test .
+
 elinks_startup_message:
 	ln -s ../../contestant/bin/elinks_startup_message .
 
@@ -168,6 +171,7 @@ clean:
 		email_diff \
 		hpcm_helper \
 		hpcm_submit \
+		hpcm_test \
 		startup_helper \
 		elinks_helper \
 		elinks_startup_message \
