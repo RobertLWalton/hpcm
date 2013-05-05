@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu May  2 10:57:12 EDT 2013
+# Date:		Sun May  5 16:24:12 EDT 2013
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2013/05/05 20:05:10 $
+#   $Date: 2013/05/05 20:31:22 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.5 $
+#   $Revision: 1.6 $
 #
 # To make an untimed contest named `foo':
 #
@@ -93,16 +93,10 @@
 #    out, and for those submissions the autojudge will
 #    take several tens of seconds to reply.
 #
-#    You can further test the contest by executing
-#
-#        make test_demos	Submit all demo
-#                               solutions.
-#
-#        make test_solutions	Submit all problem and
-#                               demo solutions
-#
-#    and reading each email reply to be sure it reports
-#    `Completely Correct'.
+#    There are more tests defined in the `make_test'
+#    file.  These are checked as above by using
+#    X-HPCM-Test-Subject if it exists, or by demanding
+#    a score of `Completely Correct' otherwise.
 #
 # 10. A web page containing problem descriptions, and
 #     optionally solutions, is made using the web page
