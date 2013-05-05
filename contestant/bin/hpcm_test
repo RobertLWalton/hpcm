@@ -1,0 +1,127 @@
+#!/bin/sh
+#
+# Test submissions in a judging directory.
+#
+# File:		hpcm_test
+# Author:	Bob Walton (walton@deas.harvard.edu)
+# Date:		Sun May  5 04:11:55 EDT 2013
+#
+# The authors have placed this program in the public
+# domain; they make no warranty and accept no liability
+# for this program.
+#
+# RCS Info (may not be true date or author):
+#
+#   $Author: walton $
+#   $Date: 2013/05/05 09:10:37 $
+#   $RCSfile: hpcm_test,v $
+#   $Revision: 1.1 $
+#
+
+allowed_extensions=".c .cc .java .lsp"
+
+case "$1" in
+    -doc*)
+	echo "
+hpcm_test [-ext \".EXT ...\"] file-or-directory ...
+
+For each file with .mail extension this program executes
+
+    hpcm_sendmail -test < file \\
+	| receivemail judging-directory \\
+	| dispatchmail judging-directory
+
+which submits the file.  The file should have the format
+of an email message with a \`Subject:' header field,
+and optionally other header fields such as \`X-HPCM-
+Test-Subject:'.  To verify that the judging directory is
+working, read the replies in the judge's mailbox and
+compare them with what the X-HPCM-Test-Subject field
+says they should contain.
+
+For each file with one of the allowed extensions
+
+	$allowed_extensions
+
+this program executes
+
+    hpcm_submit -test PROBLEM.EXT file \\
+	| receivemail judging-directory \\
+	| dispatchmail judging-directory
+
+where PROBLEM.EXT is the tail of the file name.  This
+submits the file as a problem solution.  To verify that
+the judging directory is working, read the replies in
+the judge's mailbox - usually they should all be
+\`Completely Correct'.
+
+Files without the .mail extension or one of the allowed
+extensions are ignored.
+
+The set of allowed extensions can be changed with the
+-ext option.
+
+For each directory, this program looks recursively at
+all the files and subdirectories in the directory.
+
+All submissions will be as if they arrived in the
+e-mail, but as \`hpcm_sendmail -test' and \`hpcm_submit
+-test' are used, there is no actual use of e-mail, and
+this program will work even if e-mail does not (i.e.,
+if, say, procmailrc does not work because of selinux
+settings)."
+	exit 0
+	;;
+    -ext)
+        allowed_extensions="$2"
+	shift
+	shift
+	;;
+esac
+
+lcontain() {
+    local i
+    for i in $1
+    do
+        if [ "$i" = "$2" ]
+	then
+	    return 0
+	fi
+    done
+    return 1
+}
+
+submit() {
+    local name ext n problem
+    name="$1"
+    if [ -d $name ]
+    then
+        for n in $name/*
+	do
+	    submit $n
+	done
+    else
+        ext=`expr "$name" : '.*\(\.[^.]*\)$'`
+	if [ "$ext" = ".mail" ]
+	then
+	    hpcm_sendmail -test < $name \
+		 | receivemail $judging_directory \
+		 | dispatchmail $judging_directory
+	    sleep 2
+	elif lcontain "$allowed_extensions" "$ext"
+	then
+	    problem=`basename $name`
+	    hpcm_submit -test $problem $name \
+		 | receivemail $judging_directory \
+		 | dispatchmail $judging_directory
+	    sleep 2
+	fi
+    fi
+}
+
+for name in "$@"
+do
+    submit $name
+done
+
+exit 0
