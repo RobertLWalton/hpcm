@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat May  4 04:00:20 EDT 2013
+# Date:		Mon May  6 04:30:59 EDT 2013
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2013/05/04 08:00:45 $
+#   $Date: 2013/05/06 08:31:24 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.38 $
+#   $Revision: 1.39 $
 
 # make
 #	Makes documentation as fprintable .txt files in
@@ -56,6 +56,7 @@ DOCS=	overview.txt \
 	contestant/hpcm_get.txt \
 	judge/hpcm_help.txt \
 	contestant/hpcm_helper.txt \
+	contestant/hpcm_test.txt \
 	secure/hpcm_make_accounts.txt \
 	secure/hpcm_print_passwords.txt \
 	contestant/hpcm_remote_sendmail.txt \
@@ -97,7 +98,6 @@ DOCS=	overview.txt \
 	contestant/stlhelp.txt \
 	judge/testproblems.txt \
 	judge/testjudge.txt \
-	judge/testsubmit.txt \
 	judge/tracker.txt \
 	judge/trackfinder.txt \
 	contestant/TRASH_ACCOUNT.txt \
@@ -337,11 +337,6 @@ judge/testjudge.txt:	hpcm_judging.rc \
 	rm -f judge/testjudge.txt
 	-../../judge/bin/testjudge -doc \
 	    >judge/testjudge.txt
-judge/testsubmit.txt:	hpcm_judging.rc \
-			../../judge/bin/testsubmit
-	rm -f judge/testsubmit.txt
-	-../../judge/bin/testsubmit -doc \
-	    >judge/testsubmit.txt
 judge/tracker.txt:	hpcm_judging.rc \
 		        ../../judge/bin/tracker
 	rm -f judge/tracker.txt
@@ -445,6 +440,11 @@ contestant/hpcm_helper.txt:	\
 	rm -f contestant/hpcm_helper.txt
 	-../../contestant/bin/hpcm_helper -doc \
 	    >contestant/hpcm_helper.txt
+contestant/hpcm_test.txt:	\
+		        ../../contestant/bin/hpcm_test
+	rm -f contestant/hpcm_test.txt
+	-../../contestant/bin/hpcm_test -doc \
+	    >contestant/hpcm_test.txt
 contestant/hpcm_remote_sendmail.txt:	\
 	    ../../contestant/bin/hpcm_remote_sendmail
 	rm -f contestant/hpcm_remote_sendmail.txt
