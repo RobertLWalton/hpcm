@@ -5,7 +5,7 @@
 #
 # File:		hpcm_sendmail
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Sat Apr 27 02:07:12 EDT 2013
+# Date:		Sun May 12 07:34:14 EDT 2013
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2013/04/27 06:08:41 $
+#   $Date: 2013/05/12 11:37:51 $
 #   $RCSfile: hpcm_sendmail,v $
-#   $Revision: 1.5 $
+#   $Revision: 1.6 $
 
 case "$1" in
    "")  ;;
@@ -66,16 +66,16 @@ then
         sendmail=cat
     elif test -x /usr/bin/sendmail
     then
-	sendmail=/usr/bin/sendmail
+	sendmail="/usr/bin/sendmail -oi -t"
     elif test -x /bin/sendmail
     then
-	sendmail=/bin/sendmail
+	sendmail="/bin/sendmail -oi -t"
     elif test -x /usr/sbin/sendmail
     then
-	sendmail=/usr/sbin/sendmail
+	sendmail="/usr/sbin/sendmail -oi -t"
     elif test -x /sbin/sendmail
     then
-	sendmail=/sbin/sendmail
+	sendmail="/sbin/sendmail -oi -t"
     else
 	echo >&2 ERROR: cannot find sendmail
 	exit 1
@@ -85,10 +85,10 @@ then
     if test `expr "$REPLY" : '[A-Z][A-Za-z-]*:'` = 0
     then
 	(echo "To: $to"; echo ""; echo "$REPLY"; cat) \
-	    | $sendmail -oi -t
+	    | $sendmail
     else
 	(echo "To: $to"; echo "$REPLY"; cat) \
-	    | $sendmail -oi -t
+	    | $sendmail
     fi
 else
     echo ERROR: Cannot access $found/contest or \
