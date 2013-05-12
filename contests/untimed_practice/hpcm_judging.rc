@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@seas.harvard.edu)
-# Date:		Sun May  5 16:24:00 EDT 2013
+# Date:		Sun May 12 17:40:00 EDT 2013
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2013/05/06 08:11:26 $
+#   $Date: 2013/05/12 21:49:59 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.19 $
+#   $Revision: 1.20 $
 
 # Table of Contents
 #
@@ -161,7 +161,8 @@ set problems_arguments "
 # web page will be made).
 #
 # The web_page_URL is the URL of the web page being
-# made.
+# made.  This variable is only used to make help/this_
+# contest, and is not use to make the web page itself.
 #
 # The web_manager_address will be listed as a contact
 # on the the practice web pages.
@@ -211,7 +212,12 @@ set web_scoreboard_URL "scoreboard"
 # account.
 #
 set web_header ""
-set web_prefix ""
+set web_prefix "
+<H2 ALIGN=\"CENTER\">
+<FONT COLOR=\"red\">
+Contest Description
+</FONT></H2>
+"
 set web_postfix ""
 set web_problems_header ""
 set web_problems_prefix ""
@@ -391,7 +397,9 @@ S=$SUBMISSIONS
 
 include $SUBMISSIONS/Makefile.mk
 
-test:	test_correct test_incorrect
+test:	test_correct test_incorrect \
+        [include_if { [regexp email $account_type] } \
+	            test_email]
 
 # Test that a demo in each programming language is
 # scored `Completely Correct'.
@@ -399,8 +407,8 @@ test:	test_correct test_incorrect
 test_correct:
 	hpcm_test $test_options \${CORRECT_TESTS}
 
-# Test that an demo submission of incorrect in each of
-# the possible ways is properly scored.
+# Test that a demo submission that is incorrect in each
+# of the possible ways is properly scored.
 #
 test_incorrect:
 	hpcm_test $test_options \${INCORRECT_TESTS}
@@ -439,17 +447,6 @@ test_solutions:
 # to tune the contest, put changes at the very end of
 # this file, where they will override the settings of
 # this file.
-
-# Computed web page parameters.
-#
-set web_title "$contest_name"
-set web_manager_address $manager_address
-set web_prefix "
-<H2 ALIGN=\"CENTER\">
-<FONT COLOR=\"red\">
-Contest Description
-</FONT></H2>
-"
 
 if { $web_problems_URL == "" } {
     set web_problems yes
@@ -524,32 +521,6 @@ set scoreboard_name $contest_name
 set scoreboard_solved_mode score
 set scoreboard_factor() 0.95
 
-# Default arguments to makecontest.
-#
-set makecontest_arguments "
-    [include_if { [regexp email $account_type] } \
-                -email] \
-    [include_if { [regexp local $account_type] } \
-                {-formal -startcontest -printer_map}] \
-    [include_if { $ssh_enable == "yes" } "-ssh"] \
-    [include_if { $makescoreboard == "yes" } \
-    		"-scoreboard"] \
-    -web \
-    $hpcm_directory/contestant/help/help_index, \
-	common/=help/, \
-	contest/=help/, \
-	    [include_if { $allow_email_submissions } \
-		        email_submission:include,] \
-	    contest/untimed_practice:include, \
-	    general:include, \
-	    language:include \
-    $hpcm_directory/problem_library/demos_index, \
-	demos/io/=demos/, \
-	demos/algorithms/=demos/, \
-	    contest:include \
-    $problems_arguments
-"
-
 # Compute scoreboard_submitters to exclude test
 # accounts.
 #
@@ -613,6 +584,33 @@ set scoreboard_instructions {
 	{ INPUT scoreboard.web }
     }
 }
+
+# Default arguments to makecontest.
+#
+set makecontest_arguments "
+    [include_if { [regexp email $account_type] } \
+                -email] \
+    [include_if { [regexp local $account_type] } \
+                {-formal -startcontest -printer_map}] \
+    [include_if {    [regexp local $account_type] \
+                  && $ssh_enable == "yes" } "-ssh"] \
+    [include_if { $makescoreboard == "yes" } \
+    		"-scoreboard"] \
+    -web \
+    $hpcm_directory/contestant/help/help_index, \
+	common/=help/, \
+	contest/=help/, \
+	    [include_if { $allow_email_submissions } \
+		        email_submission:include,] \
+	    contest/untimed_practice:include, \
+	    general:include, \
+	    language:include \
+    $hpcm_directory/problem_library/demos_index, \
+	demos/io/=demos/, \
+	demos/algorithms/=demos/, \
+	    contest:include \
+    $problems_arguments
+"
 
 # Parameter Overrides
 # --------- ---------
