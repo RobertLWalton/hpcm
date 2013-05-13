@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon May  6 03:40:46 EDT 2013
+# Date:		Mon May 13 03:29:53 EDT 2013
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2013/05/06 08:11:26 $
+#   $Date: 2013/05/13 07:57:07 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.7 $
+#   $Revision: 1.8 $
 #
 # To make an untimed contest named `foo':
 #
@@ -75,21 +75,31 @@
 #    `lookat' program to invoke `manualreply' to
 #    examine submissions, if necessary.
 #
-# 8. If the contest has contestant accounts, try sub-
-#    mitting demos_solutions from your test account.
+# 8. If the contest has contestant accounts, try out
+#    your test account.  First do `hpcm_get' to get
+#    demos and problems and then copy ~/demos/solutions/
+#    reverser/reverser.EXT into ~/demos/reverser, where
+#    EXT is the extension of our favorite language, and
+#    then run `make submit' in ~/demos/reverser and read
+#    your e-mail.  You can also try
+#
+#        hpcm_test ~/demos/solutions
+#
+#    which will submit all the demo solutions.
 # 
 #    If the contest allows contestants to email sub-
 #    missions from their own accounts, test the contest
-#    by sending email to the contest autojudge with
-#    `Subject: get help'.  Then try emailing several
-#    demos_solutions.
+#    by sending to the contest an e-mail whose body is
+#    a demo solution file such as reverser.EXT and whose
+#    subject is `submit reverser.EXT'.  Then read the
+#    e-mail reply.
 #
 # 9. You can also test the contest by executing
 #    `make test'.  Then read each email reply and
 #    compare its X-HPCM-Test-Subject field with the
 #    results in the body of the reply.
 #
-#    Note that several of the test submissions time
+#    Note that some of the test submissions time
 #    out, and for those submissions the autojudge will
 #    take several tens of seconds to reply.
 #
@@ -97,6 +107,17 @@
 #    file.  These are checked as above by using
 #    X-HPCM-Test-Subject if it exists, or by demanding
 #    a score of `Completely Correct' otherwise.
+#
+#    After running `make test' you may want to clean
+#    out all submissions made so far, as one of the
+#    tests makes a rather large output file.  Cleaning
+#    all submissions made so far can be done by
+#
+#    	make dangerous_submissions_clean
+#
+#    WARNING: Do NOT DO THIS if any contestants have
+#    submitted anything, as it will clean out their
+#    submissions too.
 #
 # 10. A web page containing problem descriptions, and
 #     optionally solutions, is made using the web page
@@ -197,10 +218,10 @@ help/this_contest: print_files_do_nothing
 
 # Cleanup Rules:
 
-dangerous_test_clean:
+dangerous_submissions_clean:
 	rm -rf mail/* flag log
 
-dangerous_clean:
+dangerous_complete_clean:
 	-makescoreboard stop
 	rm -rf mail rerun help flag log make_test \
 	       secure .ssh web* \
