@@ -4,7 +4,7 @@
 #
 # File:		makescoreboard
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed May 15 07:09:49 EDT 2013
+# Date:		Sun Mar 17 04:15:14 EDT 2013
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2013/05/15 11:20:52 $
+#   $Date: 2013/05/15 11:24:59 $
 #   $RCSfile: makescoreboard,v $
-#   $Revision: 1.92 $
+#   $Revision: 1.93 $
 #
 # The next lines start tclsh \
 trap "echo makescoreboard: Terminated by Signal" \
@@ -549,13 +549,15 @@ proc update_scoreboard { { force no } } {
 
 		    # Send email.
 		    #
-		    set bin $judging_directory
-		    set bin $bin/secure/bin
-		    foreach to $send_commands {
-			set error_data \
-			    "\nError was during\
-			     execution of $bin/$to"
-			exec $bin/$to <<$contents
+		    if { $send } {
+			set bin $judging_directory
+			set bin $bin/secure/bin
+			foreach to $send_commands {
+			    set error_data \
+				"\nError was during\
+				 execution of $bin/$to"
+			    exec $bin/$to <<$contents
+			}
 		    }
 		    lsub sent_errors $out_file
 		} error_message] } {
@@ -701,26 +703,33 @@ proc update_scoreboard { { force no } } {
 		#
 		set output_found yes
 		set contents ""
-		set send_commands {}
+		set send no
 		set grant_access no
 	    }
 
 	    yes_SEND {
 
-		# Augment send_commands for use when
+		# Compute send_commands for use when
 		# output done.
 		#
 		set name [lindex $instruction 1]
 		set send_name scoreboard_$name
 		if { $name == "" } {
+		    set send_commands {}
 		    foreach item $scoreboard_commands {
 		        lappend send_commands \
 			        [lindex $item 0]
 		    }
-		} elseif { [info exists send_name] } {
-		   lappend send_commands \
-		           [set $send_name]
+		} elseif { ! [info exists \
+				   $send_name] } {
+		   set send_commands {}
+		} else {
+		   set send_commands [set $send_name]
 		}
+
+		# Set switch to indicate SEND happened.
+		#
+		set send yes
 	    }
 
 	    yes_GRANT_ACCESS {
