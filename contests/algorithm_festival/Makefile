@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Mar 23 07:52:26 EDT 2013
+# Date:		Thu May 16 04:45:30 EDT 2013
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2013/03/23 18:07:04 $
+#   $Date: 2013/05/16 13:29:35 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.2 $
+#   $Revision: 1.3 $
 #
 # To make an untimed contest named `foo':
 #
@@ -46,9 +46,10 @@
 #    This PASSWORD is never really used, and so can be
 #    something awfully unguessable.
 #
-# 4. Put copies of the files in this directory into
-#    your judging directory, and edit the information in
-#    hpcm_judging.rc to define your contest.
+# 4. Put copies of the files in the directory containing
+#    this file into your judging directory, and edit the
+#    information in hpcm_judging.rc to define your
+#    contest.
 #
 # 5. Run `make' in your judging directory.
 #
@@ -71,43 +72,46 @@
 #    the test account password by the UNIX passwd
 #    program.
 #
-# 7.  Contest judging is automatic.  You can use the
-#     `lookat' program to invoke `manualreply' to
-#     examine submissions, if necessary.
+# 7. Contest judging is automatic.  You can use the
+#    `lookat' program to invoke `manualreply' to
+#    examine submissions, if necessary.
 #
-# 8.  Test the contest by using the test account to
-#     submit demo problem solutions.
+# 8. Try out your test account.  First do `hpcm_get' to
+#    get demos and problems and then copy ~/demos/
+#    solutions/reverser/reverser.EXT into ~/demos/
+#    reverser, where EXT is the extension of your
+#    favorite language, and then run `make submit'
+#    in ~/demos/reverser and read your e-mail.  You can
+#    also try
 #
-# 9.  You can also test the contest by executing
-#     `make test'.  Then read each email reply and
-#     compare its X-HPCM-Test-Subject field with the
-#     results in the body of the reply.
+#        hpcm_test ~/demos/solutions
 #
-#     Note that several of the test submissions time
-#     out, and for those submissions the autojudge will
-#     take over a minute to reply.
+#    which will submit all the demo solutions.
+# 
+# 9. You can also test the contest by executing
+#    `make test'.  Then read each email reply and
+#    compare its X-HPCM-Test-Subject field with the
+#    results in the body of the reply.
 #
-#     You can run subsets of the tests by using `make
-#     test_xxx' for various `xxx;: see hpcm/examples/
-#     test_submissions/Makefile.mk.
+#    Note that some of the test submissions time
+#    out, and for those submissions the autojudge will
+#    take several tens of seconds to reply.
 #
-#     You can read and analyze the email replies auto-
-#     matically by placing them in an `mbox' file in the
-#     judging directory and in that directory executing:
+#    There are more tests defined in the `make_test'
+#    file.  These are checked as above by using
+#    X-HPCM-Test-Subject if it exists, or by demanding
+#    a score of `Completely Correct' otherwise.
 #
-#		make extract_replies
-#		make diff_replies
+#    After running `make test' you may want to clean
+#    out all submissions made so far, as one of the
+#    tests makes a rather large output file.  Cleaning
+#    all submissions made so far can be done by
 #
-#     You can also transmit the contents of the hpcm/
-#     examples/test_submissions directory to a directory
-#     in the test account and then use `make test_email'
-#     in that directory to send test submissions.  If
-#     there are no contestant accounts, you can trans-
-#     mit the test_submissions directory to any UNIX
-#     account, set up the contestant UNIX tools for that
-#     account, and use `make test_email'.  See info/
-#     help/email_unix_tools and the hpcm/examples/test_
-#     submissions/Makefile file.
+#    	make dangerous_submissions_clean
+#
+#    WARNING: Do NOT DO THIS if any contestants have
+#    submitted anything, as it will clean out their
+#    submissions too.
 #
 # 10. A web page containing problem descriptions, and
 #     optionally solutions, is made using the web page
@@ -124,74 +128,32 @@
 #     board on the web.  See scoreboard_commands in
 #     ./hpcm_judging.rc.
 #
-# 11. You may want to print out handouts.  Here are
-#     some ways to make printouts, where THIS_CONTEST
-#     denotes any of
+# 11. To print handouts the following should be useful:
 #
-#	 ~/judging_foo_password/help/this_contest
-#     or
-#	 ~/contest_foo/help/this_contest
-#     or
-#	 ~/judging_foo_password/info/help/this_contest
+#	 make problems.pdf
+#	     Makes printout of problems.
 #
-#     which have the same contents when they exist.  The
-#     .pdf files made by the commands below are ready to
-#     print or put on the web.
+#	 make this_contest.pdf
+#	     Makes printout of the help/this_contest
+#	     file (not usually done)
 #
-#     You can also make .ps files instead of .pdf files
-#     simply by changing .pdf to .ps in all the commands
-#     below.
+# 12. There are two background processes whose status
+#     you may want to monitor.  The `startcontest'
+#     process starts the contest by granting permissions
+#     to the ./contest/problems directory and ./contest/
+#     help/problems file.  The `makescoreboard' process
+#     remakes the scoreboard if necessary every minute.
 #
-#     A. To make help, problems, or demos printouts
-#	 specific to this contest
-#
-#	       cd ~/judging_foo_password
-#	       make help+.pdf
-#	       make problems.pdf
-#	       make demos.pdf
-#
-#        help+.pdf will have THIS_CONTEST at its begin-
-#	 ning.
-#
-#     B. To make help and demos printouts applicable to
-#	 all contests
-#
-#	     cd ~/hpcm/contestant/help
-#	     make help.pdf demos.pdf
-#
-#	 These can then be used with either
-#
-#	       cd ~/judging_foo_password
-#	       make problems.pdf
-#	       make this_contest.pdf
-#
-#	 which makes separate printouts for problems
-#	 and for THIS_CONTEST, or with
-#
-#	       cd ~/judging_foo_password
-#	       make problems+.pdf
-#
-#	 which makes a single printout containing
-#	 THIS_CONTEST followed by the problems.
-#
-#     C. To make a printout of all help files that
-#	 begins with THIS_CONTEST
-#
-#	      cd ~/hpcm/contestant/help
-#	      make EXTRAS=THIS_CONTEST help+.pdf
-#
-# 12. There is one background process whose status you
-#     may want to monitor: the `makescoreboard' process
-#     that remakes the scoreboard if necessary every
-#     minute.
-#
-#     This process is started and managed by `make',
+#     These processes are started and managed by `make',
 #     and in the absence of special problems, rerunning
 #     `make' should be all that is necessary.
 #
-#     You can get status, stop, and start this process
-#     by
+#     You can get status, stop, and start these proces-
+#     ses by
 #
+#		startcontest status
+#		startcontest stop
+#	        startcontest start
 #		makescoreboard status
 #		makescoreboard stop
 #	        makescoreboard start
@@ -233,26 +195,13 @@ web:	web_do_nothing
 
 .SUFFIXES: .ps .pdf
 .ps.pdf:
+	rm -f $*.pdf
 	ps2pdf $*.ps $*.pdf
-
-help+.ps:	help_print_files
-	rm -f help+.ps
-	fprint -o `cat help_print_files` > help+.ps
-
-demos.ps:	demos_print_files
-	rm -f demos.ps
-	fprint -o `cat demos_print_files` > demos.ps
 
 problems.ps:	problems_print_files
 	rm -f problems.ps
 	fprint -o `cat problems_print_files` \
 	       > problems.ps
-
-problems+.ps:	help/this_contest problems_print_files
-	rm -f problems+.ps
-	fprint -o help/this_contest \
-	       `cat problems_print_files` \
-	       > problems+.ps
 
 this_contest.ps: help/this_contest
 	rm -f this_contest.ps
@@ -265,28 +214,28 @@ this_contest.ps: help/this_contest
 #
 print_files_do_nothing:
 
-help_print_files problems_print_files \
-    demos_print_files:	print_files_do_nothing
+problems_print_files:	print_files_do_nothing
 	makecontest
 
 help/this_contest: print_files_do_nothing
 	makecontest -this_contest
 
-# Test Rules:
+# Test Rules (see make_test global variable in
+# hpcm_judging.rc):
 #
 -include make_test
 
 # Cleanup Rules:
 
-dangerous_test_clean:
-	rm -rf mail/* flag log replies mbox
+dangerous_submissions_clean:
+	rm -rf mail/* flag log
 
-dangerous_clean:
+dangerous_complete_clean:
 	-makescoreboard stop
 	-startcontest stop
 	rm -rf mail rerun help flag log make_test \
 	       secure .ssh web* \
-	       solutions* TODO replies mbox *.ps *.pdf \
+	       solutions* TODO *.ps *.pdf \
 	       `readlink contest` \
 	       contest \
 	       Contest_Address \

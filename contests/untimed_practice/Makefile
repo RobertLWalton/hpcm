@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon May 13 03:29:53 EDT 2013
+# Date:		Thu May 16 08:55:06 EDT 2013
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2013/05/13 07:57:07 $
+#   $Date: 2013/05/16 13:29:35 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.8 $
+#   $Revision: 1.9 $
 #
 # To make an untimed contest named `foo':
 #
@@ -79,7 +79,7 @@
 #    your test account.  First do `hpcm_get' to get
 #    demos and problems and then copy ~/demos/solutions/
 #    reverser/reverser.EXT into ~/demos/reverser, where
-#    EXT is the extension of our favorite language, and
+#    EXT is the extension of your favorite language, and
 #    then run `make submit' in ~/demos/reverser and read
 #    your e-mail.  You can also try
 #
@@ -182,6 +182,16 @@
 all:
 	makecontest
 
+# Web Page Rules:
+
+# Web_do_nothing merely causes `make web' to remake the
+# web directory even if it exists.
+#
+web_do_nothing:
+
+web:	web_do_nothing
+	makecontest -web
+
 # Printout Rules:
 
 .SUFFIXES: .ps .pdf
@@ -226,7 +236,7 @@ dangerous_complete_clean:
 	rm -rf mail rerun help flag log make_test \
 	       secure .ssh web* \
 	       info* solutions* \
-	       TODO replies mbox *.ps *.pdf \
+	       TODO *.ps *.pdf \
 	       `readlink contest` \
 	       contest \
 	       Contest_Address \
