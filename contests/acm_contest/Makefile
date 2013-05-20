@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu May 16 09:05:56 EDT 2013
+# Date:		Mon May 20 03:01:32 EDT 2013
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2013/05/16 13:29:34 $
+#   $Date: 2013/05/20 07:03:46 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.58 $
+#   $Revision: 1.59 $
 #
 # To make an ACM contest named `foo':
 #
@@ -272,4 +272,6 @@ dangerous_complete_clean:
 	       Scorefinder* \
 	       Startcontest_PID \
 	       Scoreboard_PID \
-	       scoreboard.web
+	       scoreboard.web \
+	       demos_solution_files* \
+	       problems_solution_files*
