@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri May 24 18:31:55 EDT 2013
+# Date:		Fri May 24 18:36:39 EDT 2013
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2013/05/24 22:33:02 $
+#   $Date: 2013/05/24 22:36:53 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.49 $
+#   $Revision: 1.50 $
 
 # To make web help pages, execute `make web', copy
 # the `web.tar' file to your web server and unpack
@@ -112,7 +112,7 @@ lsp_help_index: \
 all_help_index: \
     HELP_TITLE = "HELP FILES INDEX"
 all_help_index: \
-    OPTIONS = contest language general
+    OPTIONS = contest language accounts general
 
 
 # If we replace %_demos_index by %demos_index we get
