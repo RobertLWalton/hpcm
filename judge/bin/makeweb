@@ -7,7 +7,7 @@
 #
 # File:		makeweb
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Apr 24 22:06:39 EDT 2013
+# Date:		Fri May 24 09:18:49 EDT 2013
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -16,9 +16,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2013/04/25 02:08:07 $
+#   $Date: 2013/05/24 13:54:52 $
 #   $RCSfile: makeweb,v $
-#   $Revision: 1.31 $
+#   $Revision: 1.32 $
 #
 # The next lines start tclsh \
 trap "echo makeweb: Terminated by Signal" \
@@ -242,19 +242,48 @@ puts $ch "
 <UL>
 "
 
-# Output web description link if any.
+# Output web list prefix elements if any.
+#
+if { $web_list_prefix_elements != "" } {
+    puts $ch $web_description_prefix_elements
+}
+
+# Output Contest Description if any.
 #
 if { $web_description_URL != "" } {
     puts $ch "
-<LI> <A HREF=\"$web_description_URL\">Contest Description</A>
+<LI> <A HREF=\"$web_description_URL\">Contest\
+                                      Description</A>
 "
 }
 
-# Output help link.
+# Output help link if any.
 #
 if { $web_help_URL != "" } {
     puts $ch "
 <LI> <A HREF=\"$web_help_URL\">Help and Demos Files</A>
+"
+}
+
+# Output problem info.
+#
+if { $web_problems == "yes" } {
+    puts $ch "
+<LI><A HREF=\"problems/index.html\">Problem\
+     Descriptions and Sample Input/Output</A>
+"
+} elseif { $web_problems == "protect" } {
+    puts $ch "
+<!-- To make problems visible remove these 2 lines and
+     the comment end and execute 'chmod a+rx problems'.
+<LI><A HREF=\"problems/index.html\">Problem
+     Descriptions and Sample Input/Output</A>
+-->
+"
+} elseif { $web_problems_URL != "" } {
+    puts $ch "
+<LI> <A HREF=\"$web_problems_URL\">Problem\
+                                   Descriptions</A>
 "
 }
 
@@ -263,30 +292,6 @@ if { $web_help_URL != "" } {
 if { $web_scoreboard_URL != "" } {
     puts $ch "
 <LI> <A HREF=\"$web_scoreboard_URL\">Scoreboard</A>
-"
-}
-
-# Output problems link.
-#
-if { $web_problems_URL != "" } {
-    puts $ch "
-<LI> <A HREF=\"$web_problems_URL\">Problem\
-                                   Descriptions</A>
-"
-}
-
-# Output problem info.
-#
-if { $web_problems == "yes" } {
-    puts $ch "
-<LI><A HREF=\"problems/index.html\">Problem Files</A>
-"
-} elseif { $web_problems == "protect" } {
-    puts $ch "
-<!-- To make problems visible remove these 2 lines and
-     the comment end and execute 'chmod a+rx problems'.
-<LI><A HREF=\"problems/index.html\">Problem Files</A>
--->
 "
 }
 
@@ -299,9 +304,15 @@ if { $web_solutions_password != "" } {
 Solutions are available at the URL made by adding
 &nbsp;&nbsp;&nbsp;<CODE>private/pppp</CODE>&nbsp;&nbsp;&nbsp;
 to the directory portion of the URL used to access this
-page.  Here <CODE>pppp</CODE> is a password that you must
-get from the managers of this web page.
+page.  Here <CODE>pppp</CODE> is a password that you
+must get from the managers of this web page.
 "
+}
+
+# Output web list postfix elements if any.
+#
+if { $web_list_postfix_elements != "" } {
+    puts $ch $web_description_postfix_elements
 }
 
 # Output List End and Postfix.
