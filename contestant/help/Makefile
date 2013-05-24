@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri May 24 18:26:45 EDT 2013
+# Date:		Fri May 24 18:31:55 EDT 2013
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2013/05/24 22:29:31 $
+#   $Date: 2013/05/24 22:33:02 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.48 $
+#   $Revision: 1.49 $
 
 # To make web help pages, execute `make web', copy
 # the `web.tar' file to your web server and unpack
@@ -74,19 +74,19 @@ WEB = ""
 acm_contest_help_index: \
     HELP_TITLE = "ACM CONTEST HELP"
 acm_contest_help_index: \
-    OPTIONS = contest/acm_contest general
+    OPTIONS = contest/acm_contest accounts general
 algorithm_festival_help_index: \
     HELP_TITLE = "ALGORITHM FESTIVAL HELP"
 algorithm_festival_help_index: \
-    OPTIONS = contest/algorithm_festival general
+    OPTIONS = contest/algorithm_festival accounts general
 timed_practice_help_index: \
     HELP_TITLE = "TIMED PRACTICE HELP"
 timed_practice_help_index: \
-    OPTIONS = contest/timed_practice general
+    OPTIONS = contest/timed_practice accounts general
 untimed_practice_help_index: \
     HELP_TITLE = "UNTIMED PRACTICE HELP"
 untimed_practice_help_index: \
-    OPTIONS = contest/untimed_practice general
+    OPTIONS = contest/untimed_practice accounts general
 email_practice_help_index: \
     HELP_TITLE = "EMAIL PRACTICE HELP"
 email_practice_help_index: \
