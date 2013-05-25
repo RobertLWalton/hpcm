@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@seas.harvard.edu)
-# Date:		Fri May 24 09:11:55 EDT 2013
+# Date:		Fri May 24 21:28:38 EDT 2013
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2013/05/24 13:12:15 $
+#   $Date: 2013/05/25 01:55:55 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.25 $
+#   $Revision: 1.26 $
 
 # Table of Contents
 #
@@ -199,25 +199,21 @@ set web_header ""
 set web_prefix "
 <H2 ALIGN=\"CENTER\">
 <FONT COLOR=\"red\">
-$contest_name Description
+Practice Description
 </FONT></H2>
-<P>
-<UL>
-<LI><A HREF="help/contest/untimed_practice">
-    Contest Description</A>
-<LI><A HREF="help">
-    Help and Demos Files</A>
-<LI><A HREF="problems">
-    Problem Descriptions and Sample Input/Output</A>
-<LI><A HREF="scoreboard">
-    Scoreboard</A>
-</UL>
 "
 set web_postfix ""
 set web_problems_header ""
 set web_problems_prefix ""
 set web_solutions_header ""
 set web_solutions_prefix ""
+
+# The following are the URLs of the help files and the
+# contest scoreboard.  They may be relative to the main
+# contest web page.
+#
+set web_help_URL "help"
+set web_scoreboard_URL "scoreboard"
 
 # The following scoreboard_commands variable specifies
 # places to send copies of the scoreboard.  The
@@ -446,23 +442,6 @@ test_solutions:
 # this file, where they will override the settings of
 # this file.
 
-if { $web_problems_URL == "" } {
-    set web_problems yes
-} else {
-    set web_problems no
-}
-set web_title $contest_name
-
-# Set up manager for this contest.
-#
-set reply_mode auto
-set log_mode auto
-set log_manager $manager_address
-if { $manager_address != "" && $cc_manager } {
-    lappend response_manager_map \
-	    [list ".*" $manager_address]
-}
-
 set allow_email_submissions [regexp email $account_type]
 
 # Compute default autojudge_address for email contest.
@@ -485,6 +464,47 @@ if {    $allow_email_submissions \
 #
 if { $autojudge_address != "" } {
     set autojudge_addresses [list $autojudge_address]
+}
+
+if { $web_problems_URL == "" } {
+    set web_problems yes
+} else {
+    set web_problems no
+}
+set web_title $contest_name
+if { $allow_email_submissions } {
+    set web_autojudge_address $autojudge_address
+}
+if { $account_type == "local" } {
+    set web_description_URL \
+        "$web_help_URL/contest/untimed_contest"
+} elseif { $account_type == "email" } {
+    set web_description_URL \
+        "$web_help_URL/contest/email_contest"
+} elseif { $account_type == "local+email" \
+           || $account_type == "email+local" } {
+    set hc "$web_help_URL/contest"
+    set web_list_prefix_elements "
+        <LI> <A HREF=\"$hc/untimed_contest\">
+	     Contest Description for Those with\
+	     Practice Accounts</A>
+        <LI> <A HREF=\"$hc/email_contest\">
+	     Contest Description for Email\
+	     Submitters without Practice\
+	     Accounts</A>
+	"
+} else {
+    error "Bad account type `$account_type'"
+}
+
+# Set up manager for this contest.
+#
+set reply_mode auto
+set log_mode auto
+set log_manager $manager_address
+if { $manager_address != "" && $cc_manager } {
+    lappend response_manager_map \
+	    [list ".*" $manager_address]
 }
 
 # Allow inout, solution, cerr in responses.
