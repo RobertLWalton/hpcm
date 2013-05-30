@@ -4,7 +4,7 @@
 #
 # File:		testproblems
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Thu Feb 28 07:23:04 EST 2013
+# Date:		Thu May 30 01:03:50 EDT 2013
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2013/02/28 13:19:08 $
+#   $Date: 2013/05/30 05:07:29 $
 #   $RCSfile: testproblems,v $
-#   $Revision: 1.49 $
+#   $Revision: 1.50 $
 #
 # The next lines run tclsh \
 trap "echo testproblems: Terminated by Signal; exit 1" \
@@ -561,7 +561,11 @@ proc execute_link { subdir instruction } {
     }
 
     putsq "linking $subdir/$file to ../$target"
-    file link -symbolic $subdir/$file ../$target
+    # file link -symbolic $subdir/$file ../$target
+    # On some linux systems `file link' fails when
+    # when ../$target does not exist relative to
+    # current directory.
+    link_file ../$target $subdir/$file
 
     return 1
 }
