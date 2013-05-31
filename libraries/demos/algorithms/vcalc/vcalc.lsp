@@ -2,11 +2,25 @@
 ;;
 ;; File:	vcalc.lsp
 ;; Authors:	Bob Walton (walton@seas.harvard.edu)
-;; Date:	Mon Feb 18 11:44:09 EST 2013
+;; Date:	Fri May 31 00:22:58 EDT 2013
 ;;
 ;; The authors have placed this program in the public
 ;; domain; they make no warranty and accept no liability
 ;; for this program.
+
+; Print error message made by concatenating ~A printouts
+; of arguments without intervening space, and exit.
+; This must be put before any use to avoid style error.
+;
+(shadow 'error)
+(defvar *line-number* 0)  ; see below
+(defun error (&rest args)
+  (format t "ERROR in line ~A:~%      " *line-number*)
+  (dolist (x args) (format t "~A" x))
+  (format t "~%")
+  ; There is no universal exit or quit function in
+  ; commonlisp, so:
+  (common-lisp:error "Terminating due to above errors"))
 
 ; The only type information needed for correct
 ; performance is setting *read-default-float-format*
@@ -149,16 +163,6 @@
   (dformat "{~A}" *last-token*)
   *last-token*)
 
-; Print error message made by concatenating ~A printouts
-; of arguments without intervening space, and exit.
-;
-(shadow 'error)
-(defun error (&rest args)
-  (format t "ERROR in line ~A:~%      " *line-number*)
-  (dolist (x args) (format t "~A" x))
-  (format t "~%")
-  (exit :code 1))
-
 (defun check-not-eof (token)
   (if (equal token *EOF*)
       (error "unexpected end of file")))
@@ -271,24 +275,24 @@
 		       (* cos (vector-y v))))))
 
 
-(defconstant *BOOLEAN* 1)
-(defconstant *SCALAR*  2)
-(defconstant *VECTOR*  3)
+(defconstant +BOOLEAN+ 1)
+(defconstant +SCALAR+  2)
+(defconstant +VECTOR+  3)
 
 (defstruct value
-  (type 0 :type integer)	  ; *BOOLEAN*, *SCALAR*,
-  			          ; or *VECTOR*.
-  (b nil :type symbol)		  ; Value if *BOOLEAN*.
-  (s 0d0 :type double-float)	  ; Value if *SCALAR*.
-  (v nil :type (or null vector))  ; Value if *VECTOR*.
+  (type 0 :type integer)	  ; +BOOLEAN+, +SCALAR+,
+  			          ; or +VECTOR+.
+  (b nil :type symbol)		  ; Value if +BOOLEAN+.
+  (s 0d0 :type double-float)	  ; Value if +SCALAR+.
+  (v nil :type (or null vector))  ; Value if +VECTOR+.
   )
 
 (defun value-string (v)
-  (cond ((= *BOOLEAN* (value-type v))
+  (cond ((= +BOOLEAN+ (value-type v))
 	 (if (value-b v) "true" "false"))
-	((= *SCALAR* (value-type v))
+	((= +SCALAR+ (value-type v))
 	 (scalar-string (value-s v)))
-	((= *VECTOR* (value-type v))
+	((= +VECTOR+ (value-type v))
 	 (vector-string (value-v v)))
 	(t
 	  (error "bad value type "
@@ -299,33 +303,33 @@
     ; Maps variable name strings to values.
 
 (defun require-boolean (v1 &optional v2)
-  (cond ((/= (value-type v1) *BOOLEAN*)
+  (cond ((/= (value-type v1) +BOOLEAN+)
 	 (error "first operand should be boolean"))
-        ((and v2 (/= (value-type v2) *BOOLEAN*))
+        ((and v2 (/= (value-type v2) +BOOLEAN+))
 	 (error "second operand should be boolean"))))
 
 (defun require-scalar (v1 &optional v2)
-  (cond ((/= (value-type v1) *SCALAR*)
+  (cond ((/= (value-type v1) +SCALAR+)
 	 (error "first operand should be scalar"))
-        ((and v2 (/= (value-type v2) *SCALAR*))
+        ((and v2 (/= (value-type v2) +SCALAR+))
 	 (error "second operand should be scalar"))))
 
 (defun require-vector (v1 &optional v2)
-  (cond ((/= (value-type v1) *VECTOR*)
+  (cond ((/= (value-type v1) +VECTOR+)
 	 (error "first operand should be vector"))
-        ((and v2 (/= (value-type v2) *VECTOR*))
+        ((and v2 (/= (value-type v2) +VECTOR+))
 	 (error "second operand should be vector"))))
 
 (defun require-scalar-vector (v1 v2)
-  (cond ((/= (value-type v1) *SCALAR*)
+  (cond ((/= (value-type v1) +SCALAR+)
 	 (error "first operand should be scalar"))
-        ((/= (value-type v2) *VECTOR*)
+        ((/= (value-type v2) +VECTOR+)
 	 (error "second operand should be vector"))))
 
 (defun require-vector-scalar (v1 v2)
-  (cond ((/= (value-type v1) *VECTOR*)
+  (cond ((/= (value-type v1) +VECTOR+)
 	 (error "first operand should be vector"))
-        ((/= (value-type v2) *SCALAR*)
+        ((/= (value-type v2) +SCALAR+)
 	 (error "second operand should be scalar"))))
  
 ; Require v1 to be SCALAR or VECTOR and return
@@ -336,8 +340,8 @@
   (cond ((and v2 (/= (value-type v1) (value-type v2)))
 	 (error "operands should both be scalar"
 	        " or both be vector"))
-	((= (value-type v1) *SCALAR*) t)
-	((= (value-type v1) *VECTOR*) nil)
+	((= (value-type v1) +SCALAR+) t)
+	((= (value-type v1) +VECTOR+) nil)
 	(t
 	 (error "operand(s) should be"
 		" scalar or vector"))))
@@ -351,17 +355,17 @@
 	(token (get-token))
 	n)
     (cond ((equal token "(")
-	   (setf (value-type v) *VECTOR*)
+	   (setf (value-type v) +VECTOR+)
 	   (setf (value-v v) (make-vector))
 	   (setf (vector-x (value-v v)) (get-number))
 	   (skip ",")
 	   (setf (vector-y (value-v v)) (get-number))
 	   (skip ")"))
 	  ((equal token "true")
-	   (setf (value-type v) *BOOLEAN*)
+	   (setf (value-type v) +BOOLEAN+)
 	   (setf (value-b v) t))
 	  ((equal token "false")
-	   (setf (value-type v) *BOOLEAN*)
+	   (setf (value-type v) +BOOLEAN+)
 	   (setf (value-b v) nil))
           ((is-variable token)
 	   (let ((v2 (gethash token *variable-table*)))
@@ -372,7 +376,7 @@
 	           (value-s    v) (value-s    v2)
 	           (value-v    v) (value-v    v2))))
 	  ((setf n (string-scalar token))
-	   (setf (value-type v) *SCALAR*)
+	   (setf (value-type v) +SCALAR+)
 	   (setf (value-s v) n))
 	  (t
 	   (error "expected true, false, "
@@ -390,6 +394,7 @@
   (let ((token (get-token)))
     (cond ((equal token *EOL*)
 	   (maphash #'(lambda (key val)
+			(declare (ignore val))
 			(remhash key *variable-table*))
 		    *variable-table*))
 	  (t
@@ -450,13 +455,13 @@
 	   (skip "||")
            (setf (value-s v1)
 		 (vector-length (value-v v1)))
-           (setf (value-type v1) *SCALAR*))
+           (setf (value-type v1) +SCALAR+))
 	  ((equal op "angle")
 	   (setf v1 (get-value))
 	   (require-vector v1)
            (setf (value-s v1)
 		 (vector-angle (value-v v1)))
-           (setf (value-type v1) *SCALAR*))
+           (setf (value-type v1) +SCALAR+))
 	  ((equal op "!")
 	   (setf v1 (get-value))
 	   (require-boolean v1)
@@ -501,7 +506,7 @@
 			        (value-s v1)
 			        (value-v v2)))
 			(setf (value-type v1)
-			      *VECTOR*)))
+			      +VECTOR+)))
 		    (progn
 		      (require-vector v1 v2)
 		      (setf (value-s v1)
@@ -509,7 +514,7 @@
 			      (value-v v1)
 			      (value-v v2)))
 		      (setf (value-type v1)
-			    *SCALAR*))))
+			    +SCALAR+))))
 	         ((equal op "/")
 		  (setf v2 (get-value))
 		  (require-scalar v1 v2)
@@ -542,42 +547,42 @@
 		  (setf (value-b v1)
 			(= (value-s v1)
 			   (value-s v2)))
-		  (setf (value-type v1) *BOOLEAN*))
+		  (setf (value-type v1) +BOOLEAN+))
 	         ((equal op "!=")
 		  (setf v2 (get-value))
 		  (require-scalar v1 v2)
 		  (setf (value-b v1)
 			(/= (value-s v1)
 			    (value-s v2)))
-		  (setf (value-type v1) *BOOLEAN*))
+		  (setf (value-type v1) +BOOLEAN+))
 	         ((equal op "<")
 		  (setf v2 (get-value))
 		  (require-scalar v1 v2)
 		  (setf (value-b v1)
 			(< (value-s v1)
 			   (value-s v2)))
-		  (setf (value-type v1) *BOOLEAN*))
+		  (setf (value-type v1) +BOOLEAN+))
 	         ((equal op "<=")
 		  (setf v2 (get-value))
 		  (require-scalar v1 v2)
 		  (setf (value-b v1)
 			(<= (value-s v1)
 			    (value-s v2)))
-		  (setf (value-type v1) *BOOLEAN*))
+		  (setf (value-type v1) +BOOLEAN+))
 	         ((equal op ">")
 		  (setf v2 (get-value))
 		  (require-scalar v1 v2)
 		  (setf (value-b v1)
 			(> (value-s v1)
 			   (value-s v2)))
-		  (setf (value-type v1) *BOOLEAN*))
+		  (setf (value-type v1) +BOOLEAN+))
 	         ((equal op ">=")
 		  (setf v2 (get-value))
 		  (require-scalar v1 v2)
 		  (setf (value-b v1)
 			(>= (value-s v1)
 			    (value-s v2)))
-		  (setf (value-type v1) *BOOLEAN*))
+		  (setf (value-type v1) +BOOLEAN+))
 		 ((not (equal op *EOL*))
 	          (error "`" op "' unrecognized"))
 		 (t
