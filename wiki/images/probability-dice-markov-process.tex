@@ -2,7 +2,7 @@
 %
 % File:         probability-dice-markov-process.tex
 % Author:       Bob Walton (walton@acm.org)
-% Date:      	Thu Dec 27 15:03:03 EST 2012
+% Date:      	Wed Jun 12 15:19:10 EDT 2013
   
 \documentclass{minimal}
 \usepackage[paperheight=2.2in,paperwidth=3.2in,
@@ -14,6 +14,7 @@
 \usepackage{scalefnt}
 \usepackage{tikz}
 \newcommand{\SMALL}{\scalefont{0.8}}
+\newcommand{\SMALLER}{\scalefont{0.7}}
 \usetikzlibrary{arrows}
 \begin{document}
 \raggedright
@@ -32,21 +33,40 @@
 	{
 	    \ifthenelse{\equal{\m}{\n}}
 	        {}
-		{ \draw[->] (n\n) -- (n\m)
-	             node[pos=0.25,sloped,above=-0.05in]{1/\n};
+	        {
+		    \ifthenelse{\(\n=6\and\m=1\)
+		                \or
+				\(\n=6\and\m=5\)
+		                \or
+				\(\n=5\and\m=4\)
+		                \or
+				\(\n=4\and\m=3\)
+		                \or
+				\(\n=3\and\m=2\)
+		                \or
+				\(\n=2\and\m=1\)}
+		    { \draw[->] (n\n) -- (n\m)
+			 node[pos=0.3,
+			      sloped,above=-0.05in]
+			     {\SMALLER 1/\n};
+		    }
+		    { \draw[->] (n\n) -- (n\m)
+			 node[pos=0.15,sloped,above=-0.05in]
+			     {\SMALLER 1/\n};
+		    }
 		}
 	}
 
     \foreach \n in {1,6,5}
     {
 	\draw[->] (n\n) edge[anchor=center,loop left] (n\n);
-	\draw (n\n) + (-0.4,0) node {1/\n};
+	\draw (n\n) + (-0.4,0) node {\SMALLER 1/\n};
     }
 
     \foreach \n in {2,3,4}
     {
 	\draw[->] (n\n) edge[anchor=center,loop right] (n\n);
-	\draw (n\n) + (+0.4,0) node {1/\n};
+	\draw (n\n) + (+0.4,0) node {\SMALLER 1/\n};
     }
 \end{scope}
 \end{tikzpicture}
