@@ -1,0 +1,757 @@
+# TCL Parameters File for Timed Practice Contest Judging
+#
+# File:		hpcm_judging.rc
+# Author:	Bob Walton (walton@seas.harvard.edu)
+# Date:		Sat Aug 31 05:27:51 EDT 2013
+#
+# The authors have placed this program in the public
+# domain; they make no warranty and accept no liability
+# for this program.
+#
+# RCS Info (may not be true date or author):
+#
+#   $Author: walton $
+#   $Date: 2013/09/01 07:01:11 $
+#   $RCSfile: hpcm_judging.rc,v $
+#   $Revision: 1.1 $
+
+# Table of Contents
+#
+#	Parameters to be Modified
+#	Local Account Parameters
+#	Web Page Parameters
+#	Parameters Not Usually Modified
+#	Computed Parameters (Do Not Modify)
+#	Parameter Overrides
+
+# Parameters to be Modified
+# ---------- -- -- --------
+
+# Read standard parameters.
+#
+source $lib_directory/hpcm_judging.rc
+
+# Set to the HPCM directory.  $env(HOME) is the home
+# directory of the current (judge's) account.
+#
+set hpcm_directory $env(HOME)/hpcm
+
+# The following parameters determine the type and
+# variety of contest.
+
+# Contest name, for scoreboard etc.
+#
+set contest_name "CONTEST NAME IS TBD"
+
+# Map of contestant email (i.e., account) addresses for
+# the scoreboard.  Scores for a contestant with address
+# PPP@CCC will by treated as if the contestant name was
+# the value of
+#
+#	submitter_compress_map(PPP@CCC)
+#
+# if that exists, and as PPP otherwise.
+#
+array set submitter_compress_map {}
+# array set submitter_compress_map {
+#	PPP@CCC1	NAME1
+#	PPP@CCC2	NAME2
+# }
+
+# The email address to be notified for errors or
+# queries.
+#
+set manager_address "someone@somecomputer"
+
+# Set the following to "yes" if you want ALL autojudge
+# replies to contestants to be CC'ed to the manager,
+# even those just reporting scores.
+#
+set cc_manager yes
+# set cc_manager no
+
+# A cc address can be added to ALL autojudge replies to
+# a submitter by adding the pair
+#
+#	{ regexp address }
+#
+# to the list `response_manager_map'.  If `regexp'
+# matches the submitter (account or email address) then
+# `address' is added to the `Cc' addresses of each
+# reply.  Use an lappend command as below and quote
+# `regexp' and `address' if they contain spaces.
+# `address' can have several comma separated addresses.
+#
+# This allows teams to have their own response managers.
+#
+# lappend response_manager_map { regexp address }
+
+# Contest duration, or stop time, relative to start
+# time for a team, in seconds.
+#
+set stop_time   [expr 5 * 60 * 60]
+#
+# The penalty in minutes for submitting an incorrect
+# solution to a problem for which a correct solution is
+# later submitted in a timed contest.
+#
+# set penalty_minutes 20
+set penalty_minutes 0
+
+# Set to "yes" to convert the scoreboard from a timed
+# contest to an untimed contest.
+#
+# set convert_scoreboard yes
+set convert_scoreboard no
+
+# TCL list of TCL regular expressions that match the
+# test accounts which are NOT to appear on the score-
+# board AFTER the contest starts.
+#
+set test_accounts { }
+
+# Ditto for test problems instead of accounts.  Usually
+# you need not change this.
+#
+set test_problems [get_demo_problems]
+
+# List of makecontest arguments that specify the
+# problems.  The format is
+#
+#	INDEX-FILE-NAME,
+#	    SUBDIRECTORY/=problems/,
+#	    QUALIFIER:include
+#
+# where the problems are in the SUBDIRECTORY of the
+# directory holding the index file.  See below for
+# examples.
+#
+set problems_arguments "
+    $hpcm_directory/problem_library/index, \
+	public/=problems/, \
+	    bospre2010:include
+"
+# Use the following if index is the file ~/ppp/iii and
+# problems are in subdirectories of ~/ppp.  Because the
+# problems are subdirectories of ~/ppp which contains
+# the index file, `SUBDIRECTORY/' is the omitted.
+# $env(HOME) is the home directory of the current
+# (judge's) account.  `ALL' means include all problems
+# listed in the index.
+#
+# set problems_arguments "
+#     $env(HOME)/ppp/iii, \
+#         =problems/, \
+#             ALL:include
+# "
+#
+# See hpcm/judge/lib/hpcm_judging.rc `makecontest_
+# arguments' for more details, and `makecontest -doc'
+# for complete details.
+
+# Web Page Parameters
+# --- ---- ----------
+
+# The following are passed to `makeweb' to make the web
+# page.  Leave as "" parameters you do not want to use
+# (e.g., if web_solutions_password is "" no solutions
+# web page will be made).
+#
+# The web_page_URL is the URL of the web page being
+# made.  This variable is only used to make help/this_
+# contest, and is not use to make the web page itself.
+#
+# The web_manager_address will be listed as a contact
+# on the contest web pages.
+#
+# The web_solutions_password PPP will be used to name a
+# subdirectory `private/PPP' of the web page directory
+# that will hold the solutions.  No link will be made to
+# this directory, and the `private' subdirectory will be
+# unreadable to the world, so PPP will act as a pass-
+# word.
+#
+# web_description_URL, web_problems_URL, web_help_URL,
+# and web_scoreboard_URL are also passed to `makeweb'
+# and used to make references from the practice web page
+# to the contest description, problem descriptions, web
+# help files, and scoreboard if these exist.  These may
+# be URL's relative to the practice web page, or
+# absolute URL's.
+#
+# If web_problems_URL is "" the problem descriptions
+# from the problem solution files will be put on the
+# web as a subpage of the contest web page, but,
+# the subpage WILL BE PROTECTED from reading until
+# its protection is reset manually according to
+# instructions in the problems/index.html file
+# comments.
+#
+set web_page_URL ""
+set web_manager_address $manager_address
+set web_solutions_password ""
+set web_description_URL "help/contest/timed_practice"
+set web_problems_URL ""
+set web_help_URL "help"
+set web_scoreboard_URL "scoreboard"
+
+# The following are used to construct the contest web
+# pages.
+#
+# If the headers are left "", the page headers are auto-
+# matically constructed from the contest_name.
+#
+# The prefixes come just after the page headers and
+# the postfix comes after everything but the web page
+# manager.  There are three pages involved: the practice
+# page, the problem descriptions page if it is con-
+# structed, and the practice solutions page if it is
+# constructed.  The last two pages have no postfix.
+#
+set web_header ""
+set web_prefix "
+<H2 ALIGN=\"CENTER\">
+<FONT COLOR=\"red\">
+Practice Description
+</FONT></H2>
+"
+set web_postfix ""
+set web_problems_header ""
+set web_problems_prefix ""
+set web_solutions_header ""
+set web_solutions_prefix ""
+
+# The following scoreboard_commands variable specifies
+# places to send copies of the scoreboard.  The
+# variable value is a list of items each with one of
+# the following formats:
+#
+#	{ NAME ssh ACCOUNT [REMOTE-COMMAND] }
+#	    Pipe the scoreboard through ssh to
+#	    execute REMOTE-COMMAND in the remote
+#	    ACCOUNT.  If not given, REMOTE-COMMAND
+#	    defaults to a template which can be
+#	    filled out by editing in the file ./secure/
+#	    bin/NAME_authorized_keys after it is created
+#	    (this will be mentioned in ./TODO).
+#
+#	{ NAME sh COMMAND }
+#	    Pipe the scoreboard to COMMAND executed
+#	    by /bin/sh.
+#
+#	{ NAME email ... }
+#	    See contest_commands in hpcm/judge/lib/
+#	    hpcm_judging.rc.
+#
+# These items are appended to the judging_commands
+# global variable: see hpcm/judge/lib/hpcm_judging.rc.
+#
+# NAME is the name of a command that will be created in
+# ./secure/bin to invoke the proper pipe.  It may not
+# contain whitespace or /.
+#
+set scoreboard_commands {
+}
+
+TBD
+
+# Parameters Not Usually Modified
+# ---------- --- ------- --------
+
+# Languages supported.
+#
+set allowed_extensions { .c .cc .java }
+
+# Normally you should not have to make changes below
+# this point.
+
+# This contest file:
+#
+if { $web_page_URL == "" } {
+    set this_contest "
+    This is an ACM Programming Contest.
+"
+} else {
+    set this_contest "
+This is an ACM Programming Contest with web page at:
+
+    $web_page_URL
+"
+}
+set this_contest "$this_contest
+The following commands may be of use:
+
+    help acm_contest
+        Display a description of ACM contests.
+
+    help index
+    	Display the index of help files.
+
+    help XXXX
+        Display the help file name XXX.
+
+    help demos
+        Display an index of demonstration problems
+"
+
+# Set "yes" if contestant accounts are to be enabled
+# for login by ssh using any of the public keys
+# ~/.ssh/{identity,id_rsa,id_dsa}.pub that exist.
+#
+set ssh_enable yes
+# set ssh_enable no
+
+# Set to "long" to include a contestant's primary domain
+# name (e.g. `harvard') or "short" to not include the @
+# or anything after that.
+#
+# set submitter_compress_mode long
+set submitter_compress_mode short
+
+# Set "yes" to use GMT for dates in file and directory
+# names.  Otherwise the local time zone is used.
+#
+set use_gmt no
+
+# Set the manualreply display to have a certain height
+# with a given number of blank lines above that.  If you
+# have a taller display, increase window_height.
+#
+# WARNING: If window_height is too large, programs such
+# as manualreply and lookat may appear to be malfunc-
+# tioning because some of the information they display
+# is being scrolled off the bottom of the screen.
+#
+set window_blank_height 16
+set window_height 24
+
+# Set to contest directory, in case the $judging_
+# directory/contest link needs to be made.  If needed
+# and not set, the name of judging directory with
+# `judging' replaced by `contest' and trailing password
+# removed will be used.
+#
+# set contest_directory $env(HOME)/contest_TBD
+
+# Set to the prototype account (as per SETUP_PROTOTYPE).
+# If not set, the unique account with name PPP of the
+# form *[-_]proto and readable files ~PPP/home/
+# setup.tar, ~PPP/home/empty.ls, and ~PPP/home/setup.ls
+# is used, if there is such a unique account.
+#
+# set hpcm_prototype_account TBD
+
+# Set to "no" if you do not want makecontest to run
+# `makescoreboard start'.
+#
+set makescoreboard yes
+
+# Set to "no" if you do not want makecontest to run
+# `startcontest start'.
+#
+set startcontest yes
+
+# The following is the printer map for the untimed
+# practice after the contest is converted.  It lets
+# each contestant determine his/her own printer by
+# placing the printer name in the ~/PRINTER file of the
+# contestant's account.  See `hpcm/contestant/bin/
+# printer_pipe -doc' for more documentation.
+#
+set untimed_printer_map "
+# Do not edit.  This is copied from the untimed_
+# printer_map global variable in the hpcm_judging.rc
+# file in the judging directory.
+#
+.* !~/PRINTER
+"
+
+# Set to "-nomail" to suppress use of mailer in testing.
+# This is only of use if mailer is not enabled or proc-
+# mail does not work because of SELINUX settings.
+#
+set test_nomail ""
+# set test_nomail "-nomail"
+
+# Set make_test, for the makecontest -make_test option
+# and the Makefile `make test' command.
+#
+set SUBMISSIONS \
+    $hpcm_directory/test_submissions
+set test_options \
+    "$test_nomail -ext '$allowed_extensions'"
+set make_test "
+# This file equals the `make_test' global variable in
+# hpcm_judging.rc.  Do not edit this file.
+#
+# Location of test data.
+#
+S=$SUBMISSIONS
+
+include $SUBMISSIONS/Makefile.mk
+
+test:	test_correct test_incorrect \
+	@echo 'You may also want to try:'
+	@echo '        make test_demos'
+	@echo '        make test_solutions'
+
+# Test that a demo in each programming language is
+# scored `Completely Correct'.
+#
+test_correct:
+	hpcm_test $test_options \${CORRECT_TESTS}
+
+# Test that a demo submission that is incorrect in each
+# of the possible ways is properly scored.
+#
+test_incorrect:
+	hpcm_test $test_options \${INCORRECT_TESTS}
+
+# Test that all demo solutions are `Completely Correct'.
+#
+test_demos:
+	hpcm_test $test_options contest/demos/solutions
+
+# Test that all demo AND problem solutions are
+# `Completely Correct'.
+#
+test_solutions:
+	hpcm_test $test_options solutions
+"
+
+
+# Computed Parameters (Do Not Modify)
+# -------- ---------- ---------------
+
+# You should NOT make changes beyond this point, unless
+# you want to tune the contest to be a variant of one of
+# the standards supported by this file.  If you do want
+# to tune the contest, put changes at the very end of
+# this file, where they will override the settings of
+# this file.
+
+# Computed web page parameters.
+#
+if { $web_problems_URL == "" } {
+    set web_problems protect
+} else {
+    set web_problems no
+}
+set web_title $contest_name
+
+# Compute whether we have converted to untimed practice.
+# Also change convert_time into date/time format so
+# CONVERT abbreviation will work for scoreboard_
+# instructions.
+#
+set convert_time \
+    [absolute_time $convert_time $start_time]
+set is_converted [is_later $convert_time]
+
+# Set up manager for this contest.
+#
+# There is no manager for the timed contest.
+#
+# Note: response_manager_map is used only when
+# scoring_mode is auto, i.e., after conversion.
+#
+if { $is_converted } {
+    set reply_mode auto
+    set log_mode auto
+    set log_manager $manager_address
+    if { $manager_address != "" && $cc_manager } {
+	lappend response_manager_map \
+		[list ".*" $manager_address]
+    }
+} else {
+    set reply_mode auto+manual
+    set log_mode manual
+    set log_manager ""
+}
+
+# Allow inout, solution, cerr in responses.
+#
+set response_mode "inout+solution+cerr"
+
+set use_authentication yes
+set format_submissions yes
+
+# The following computes the printer_map file value for
+# the timed contest.  This code may append items to
+# contest_commands.
+#
+set timed_printer_map "
+# Do not edit.  This is created from the printer_
+# commands global variable in the hpcm_judging.rc file
+# in the judging directory.
+#"
+if { [llength $printer_commands] == 0 } {
+    if { [info exists env(PRINTER)] } {
+        set timed_printer_map \
+	    "$timed_printer_map\n.* $env(PRINTER)"
+    }
+} else {
+    set_contest_directory
+    foreach item $printer_commands {
+
+	set regexp  [lindex $item 0]
+	set name [lindex $item 1]
+
+	if { [llength $item] > 2 } {
+	    lappend contest_commands \
+	            [lrange $item 1 end]
+	}
+
+	regsub -all {\\} $regexp {\\\\} regexp
+
+	if {    [regexp {^[!|]} $name] \
+	     || [regexp {@} $name] } {
+	    set timed_printer_map \
+		"$timed_printer_map\n$regexp $name"
+	} else {
+	    set timed_printer_map \
+		"$timed_printer_map\n$regexp\
+		 |$contest_directory/$name"
+	}
+    }
+}
+
+# Set ./contest/printer_map according to whether
+# contest has been converted to a practice.
+#
+if { ! $is_converted } {
+    set contest_printer_map $timed_printer_map
+} else {
+    set contest_printer_map $untimed_printer_map
+
+    # Write ./contest/printer_map if that has not yet
+    # been rewritten.
+    #
+    set_contest_directory
+    write_file_if_different \
+	    $contest_directory/printer_map \
+	    $contest_printer_map
+}
+
+set javaok [info exists java_api_index]
+if {    $javaok \
+     && [regexp {r..} [get_access $java_api_index]] } {
+
+    set javahelp "
+# Do not edit.  This file is generated from information
+# provided by the `browser' and `java_api_index' global
+# variables in the hpcm_judging.rc file in the judging
+# directory.
+#
+$browser '$browser $java_api_index'
+"
+}
+
+set stlok [info exists stl_api_index]
+if {    $stlok \
+     && [regexp {r..} [get_access $stl_api_index]] } {
+
+    set stlhelp "
+# Do not edit.  This file is generated from information
+# provided by the `browser' and `stl_api_index' global
+# variables in the hpcm_judging.rc file in the judging
+# directory.
+#
+$browser '$browser $stl_api_index'
+"
+}
+
+# Set score modes and default qualifiers.
+#
+if { $is_converted } {
+    set scoring_mode auto
+    set default_correct_qualifier solution
+    set default_incorrect_qualifier inout
+    set scoreboard_solved_mode problems/score
+} else {
+    set scoring_mode auto+manual
+    set default_correct_qualifier ""
+    set default_incorrect_qualifier ""
+    set scoreboard_solved_mode time
+}
+set allowed_qualifiers {""}
+
+# Scoreboard parameters.
+#
+set scoreboard_name $contest_name
+set scoreboard_factor() 0.95
+set scoreboard_start_time team
+set scoreboard_stop_time  $stop_time
+set scoreboard_convert_time $convert_time
+set scoreboard_abbreviation(CONVERT) convert_time
+set scoreboard_penalty     [expr 60 * $penalty_minutes]
+
+# Compute scoreboard_submitters to exclude test
+# accounts.
+#
+set scoreboard_submitters {}
+foreach x $test_accounts {
+    lappend scoreboard_submitters & ! $x
+}
+set scoreboard_submitters \
+    [lrange $scoreboard_submitters 1 end]
+#
+# Compute scoreboard_problems to exclude test
+# problems.
+#
+set scoreboard_problems {}
+foreach x $test_problems {
+    lappend scoreboard_problems & ! $x
+}
+set scoreboard_problems \
+    [lrange $scoreboard_problems 1 end]
+
+# Scoreboard instructions
+#
+set scoreboard_instructions {
+
+    {# Pre-contest scoreboard.  Note that submitters and
+       problems are changed to allow testing demos. #}
+
+    { OUTPUT contest/scoreboard "" START }
+    GRANT_ACCESS
+    { LINE NAME "Pre-Contest Scoreboard" TIME }
+    BLANK
+    { INPUT contest/scoreboard.head }
+    BLANK
+    { LINE "The demo problems will disappear from the\
+            scoreboard once the contest" }
+    { LINE "starts.  Until the contest starts, dates\
+            of first correct submissions are" }
+    { LINE "displayed instead of problem times."}
+    BLANK
+    { mode date }
+    { start_time "" }
+    { stop_time START }
+    { problems {} }
+    { submitters {} }
+    BAR
+    BOARD
+    BAR
+
+    {# Current scoreboard for judge. #}
+
+    { OUTPUT contest/scoreboard.current \
+             START STOP+1800 }
+
+    { LINE NAME "Current Results" TIME }
+    BLANK
+    BAR
+    BOARD
+
+    {# Final scoreboard for judge. #}
+
+    { OUTPUT contest/scoreboard.final STOP STOP+600 }
+
+    { LINE NAME "Final Results" STOP }
+    BLANK
+    BAR
+    BOARD
+    BAR
+    { INPUT contest/who_where }
+    BAR
+
+    {# Public unfrozen scoreboard during contest #}
+
+    if { $freeze_time == "" } {
+	{ OUTPUT contest/scoreboard START CONVERT }
+    } else {
+	{ OUTPUT contest/scoreboard START FREEZE }
+	{ stop_time FREEZE }
+    }
+    GRANT_ACCESS
+    SEND
+    { LINE NAME "Scoreboard" TIME }
+    BLANK
+    { INPUT contest/scoreboard.head }
+    BLANK
+    BAR
+    BOARD
+    BAR
+
+
+    if { $scoreboard_freeze_time != "" } {
+
+	{# Public frozen scoreboard during contest #}
+
+	{ OUTPUT contest/scoreboard FREEZE STOP }
+	GRANT_ACCESS
+	SEND
+	{ LINE NAME "Frozen Scoreboard" TIME }
+	BLANK
+	{ LINE "To heighten suspense, scoreboard\
+	        updating has been stopped as of:" }
+	{ LINE "" FREEZE "" }
+	{ LINE "You will be given a copy of the final\
+		scoreboard after winners have been" }
+	{ LINE "announced at the post contest\
+	        meeting." }
+	BLANK
+	{ INPUT contest/scoreboard.head }
+	BLANK
+	{ stop_time FREEZE }
+	BAR
+	BOARD
+	BAR
+    }
+
+    {# Public results scoreboard after post contest
+       meeting. #}
+
+    { OUTPUT contest/scoreboard.results
+             CONVERT CONVERT }
+    GRANT_ACCESS
+    { INPUT contest/scoreboard.final }
+
+    {# Public scoreboard after post contest meeting. #}
+
+    { OUTPUT contest/scoreboard CONVERT "" }
+    { LINE NAME "Post Contest Scoreboard" TIME }
+    BLANK
+    { LINE "This is a practice style scoreboard." }
+    { LINE "To see the final contest scoreboard\
+            type `scoreboard final'.}
+    BLANK
+    { mode untimed }
+    { stop_time "" }
+    BAR
+    BOARD
+    BAR
+}
+
+# Default arguments to makecontest.
+#
+set makecontest_arguments "
+    -formal \
+    -printer_map \
+    [include_if { $javaok } "-javahelp"] \
+    [include_if { $stlok } "-stlhelp"] \
+    [include_if { $ssh_enable == "yes" } "-ssh"] \
+    [include_if { $startcontest == "yes" } \
+    		"-startcontest"] \
+    [include_if { $makescoreboard == "yes" } \
+    		"-scoreboard"] \
+    -web \
+    $hpcm_directory/contestant/help/help_index, \
+	common/=help/, \
+	contest/=help/, \
+	    contest/acm_contest:include, \
+	    general:include, \
+	    language:include \
+    $hpcm_directory/problem_library/demos_index, \
+	demos/io/=demos/, \
+	demos/algorithms/=demos/, \
+	    contest:include \
+    $problems_arguments
+"
+
+# Parameter Overrides
+# --------- ---------
+
+# Add parameter settings here to override parameters
+# that are normally not changed above.
