@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@seas.harvard.edu)
-# Date:		Sun Sep  1 03:01:31 EDT 2013
+# Date:		Mon Sep  2 01:27:10 EDT 2013
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2013/09/01 17:36:36 $
+#   $Date: 2013/09/02 05:28:09 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.2 $
+#   $Revision: 1.3 $
 
 # Table of Contents
 #
@@ -486,142 +486,59 @@ foreach x $test_problems {
 set scoreboard_problems \
     [lrange $scoreboard_problems 1 end]
 
-TBD
-
-# Scoreboard instructions
+# Scoreboard instructions for a timed practice contest.
+# These make a scoreboard in the file
+#
+#	$judging_directory/scoreboard.web
+#
+# that has the format:
+#
+#   NAME               				    TIME
+#
+#   <contents of $judging_directory/scoreboard.head>
+#
+#   ==== ===== ===== ===== ===== ===== ===== ===== =====
+#	   <scoreboard table>
+#   ==== ===== ===== ===== ===== ===== ===== ===== =====
+#
+# This file is then piped to the filters named in the
+# scoreboard_commands global variable and also copied
+# to $judging_directory/contest/scoreboard which is
+# given a+r permissions.
 #
 set scoreboard_instructions {
 
-    {# Pre-contest scoreboard.  Note that submitters and
-       problems are changed to allow testing demos. #}
-
-    { OUTPUT contest/scoreboard "" START }
-    GRANT_ACCESS
-    { LINE NAME "Pre-Contest Scoreboard" TIME }
-    BLANK
-    { INPUT contest/scoreboard.head }
-    BLANK
-    { LINE "The demo problems will disappear from the\
-            scoreboard once the contest" }
-    { LINE "starts.  Until the contest starts, dates\
-            of first correct submissions are" }
-    { LINE "displayed instead of problem times."}
-    BLANK
-    { mode date }
-    { start_time "" }
-    { stop_time START }
-    { problems {} }
-    { submitters {} }
-    BAR
-    BOARD
-    BAR
-
-    {# Current scoreboard for judge. #}
-
-    { OUTPUT contest/scoreboard.current \
-             START STOP+1800 }
-
-    { LINE NAME "Current Results" TIME }
-    BLANK
-    BAR
-    BOARD
-
-    {# Final scoreboard for judge. #}
-
-    { OUTPUT contest/scoreboard.final STOP STOP+600 }
-
-    { LINE NAME "Final Results" STOP }
-    BLANK
-    BAR
-    BOARD
-    BAR
-    { INPUT contest/who_where }
-    BAR
-
-    {# Public unfrozen scoreboard during contest #}
-
-    if { $freeze_time == "" } {
-	{ OUTPUT contest/scoreboard START CONVERT }
-    } else {
-	{ OUTPUT contest/scoreboard START FREEZE }
-	{ stop_time FREEZE }
-    }
-    GRANT_ACCESS
+    { OUTPUT scoreboard.web "" "" }
     SEND
-    { LINE NAME "Scoreboard" TIME }
+
+    { LINE NAME "" TIME }
     BLANK
-    { INPUT contest/scoreboard.head }
+    { INPUT scoreboard.head }
     BLANK
+
     BAR
     BOARD
     BAR
 
-
-    if { $scoreboard_freeze_time != "" } {
-
-	{# Public frozen scoreboard during contest #}
-
-	{ OUTPUT contest/scoreboard FREEZE STOP }
-	GRANT_ACCESS
-	SEND
-	{ LINE NAME "Frozen Scoreboard" TIME }
-	BLANK
-	{ LINE "To heighten suspense, scoreboard\
-	        updating has been stopped as of:" }
-	{ LINE "" FREEZE "" }
-	{ LINE "You will be given a copy of the final\
-		scoreboard after winners have been" }
-	{ LINE "announced at the post contest\
-	        meeting." }
-	BLANK
-	{ INPUT contest/scoreboard.head }
-	BLANK
-	{ stop_time FREEZE }
-	BAR
-	BOARD
-	BAR
-    }
-
-    {# Public results scoreboard after post contest
-       meeting. #}
-
-    { OUTPUT contest/scoreboard.results
-             CONVERT CONVERT }
+    { OUTPUT contest/scoreboard "" "" }
     GRANT_ACCESS
-    { INPUT contest/scoreboard.final }
-
-    {# Public scoreboard after post contest meeting. #}
-
-    { OUTPUT contest/scoreboard CONVERT "" }
-    { LINE NAME "Post Contest Scoreboard" TIME }
-    BLANK
-    { LINE "This is a practice style scoreboard." }
-    { LINE "To see the final contest scoreboard\
-            type `scoreboard final'.}
-    BLANK
-    { mode untimed }
-    { stop_time "" }
-    BAR
-    BOARD
-    BAR
+    { INPUT scoreboard.web }
 }
 
 # Default arguments to makecontest.
 #
 set makecontest_arguments "
     -formal \
+    -startcontest \
     -printer_map \
-    [include_if { $javaok } "-javahelp"] \
-    [include_if { $stlok } "-stlhelp"] \
     [include_if { $ssh_enable == "yes" } "-ssh"] \
-    [include_if { $startcontest == "yes" } \
-    		"-startcontest"] \
     [include_if { $makescoreboard == "yes" } \
     		"-scoreboard"] \
     -web \
     $hpcm_directory/contestant/help/help_index, \
 	common/=help/, \
 	contest/=help/, \
+	    contest/timed_practice:include, \
 	    contest/acm_contest:include, \
 	    general:include, \
 	    language:include \
