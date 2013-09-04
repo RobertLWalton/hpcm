@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Aug 31 03:12:14 EDT 2013
+# Date:		Wed Sep  4 03:21:22 EDT 2013
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2013/08/31 09:37:27 $
+#   $Date: 2013/09/04 07:23:53 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.1 $
+#   $Revision: 1.2 $
 #
 # To make an timed practice contest named `foo':
 #
@@ -58,7 +58,7 @@
 #    After you follow an instruction, edit it out of
 #    the TODO file.
 #
-#    Some of the instructions may cause the creating of
+#    Some of the instructions cause the creating of
 #    contestant accounts.  Generally all contestant
 #    accounts in an timed practice contest are assigned
 #    different random passwords by `makecontest' after
