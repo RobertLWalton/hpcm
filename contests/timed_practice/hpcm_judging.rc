@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@seas.harvard.edu)
-# Date:		Mon Sep  2 01:27:10 EDT 2013
+# Date:		Wed Sep  4 14:46:02 EDT 2013
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2013/09/02 05:28:09 $
+#   $Date: 2013/09/04 19:00:51 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.3 $
+#   $Revision: 1.4 $
 
 # Table of Contents
 #
@@ -106,7 +106,7 @@ set convert no
 
 # TCL list of TCL regular expressions that match the
 # test accounts which are NOT to appear on the score-
-# board AFTER the contest starts.
+# board.
 #
 set test_accounts { }
 
@@ -181,11 +181,7 @@ set problems_arguments "
 #
 # If web_problems_URL is "" the problem descriptions
 # from the problem solution files will be put on the
-# web as a subpage of the contest web page, but,
-# the subpage WILL BE PROTECTED from reading until
-# its protection is reset manually according to
-# instructions in the problems/index.html file
-# comments.
+# web as a subpage of the contest web page.
 #
 set web_page_URL ""
 set web_manager_address $manager_address
@@ -195,8 +191,8 @@ set web_problems_URL ""
 set web_help_URL "help"
 set web_scoreboard_URL "scoreboard"
 
-# The following are used to construct the contest web
-# pages.
+# The following are used to construct the practice
+# contest web pages.
 #
 # If the headers are left "", the page headers are auto-
 # matically constructed from the contest_name.
@@ -204,15 +200,16 @@ set web_scoreboard_URL "scoreboard"
 # The prefixes come just after the page headers and
 # the postfix comes after everything but the web page
 # manager.  There are three pages involved: the practice
-# page, the problem descriptions page if it is con-
-# structed, and the practice solutions page if it is
-# constructed.  The last two pages have no postfix.
+# contest page, the problem descriptions page if it is
+# constructed, and the practice contest solutions page
+# if it is constructed.  The last two pages have no
+# postfix.
 #
 set web_header ""
 set web_prefix "
 <H2 ALIGN=\"CENTER\">
 <FONT COLOR=\"red\">
-Practice Description
+Practice Contest Description
 </FONT></H2>
 "
 set web_postfix ""
@@ -378,7 +375,7 @@ S=$SUBMISSIONS
 
 include $SUBMISSIONS/Makefile.mk
 
-test:	test_correct test_incorrect \
+test:	test_correct test_incorrect
 	@echo 'You may also want to try:'
 	@echo '        make test_demos'
 	@echo '        make test_solutions'
@@ -421,7 +418,7 @@ test_solutions:
 # Computed web page parameters.
 #
 if { $web_problems_URL == "" } {
-    set web_problems protect
+    set web_problems yes
 } else {
     set web_problems no
 }
@@ -450,11 +447,13 @@ set scoring_mode auto
 if { $convert } {
     set default_correct_qualifier solution
     set default_incorrect_qualifier inout
-    set scoreboard_solved_mode problems/score
+    set scoreboard_solved_mode score
+    set scoreboard_sort_mode problems/score
 } else {
     set default_correct_qualifier ""
     set default_incorrect_qualifier ""
     set scoreboard_solved_mode time
+    set scoreboard_sort_mode time
 }
 set allowed_qualifiers {""}
 
