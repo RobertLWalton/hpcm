@@ -6,7 +6,7 @@
 #
 # File:		makecontest
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun May 19 08:07:35 EDT 2013
+# Date:		Sun Sep  8 02:44:35 EDT 2013
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2013/05/19 12:07:53 $
+#   $Date: 2013/09/08 07:19:23 $
 #   $RCSfile: makecontest,v $
-#   $Revision: 1.227 $
+#   $Revision: 1.228 $
 #
 # The next lines start tclsh \
 trap "echo makecontest: Terminated by Signal" \
@@ -69,8 +69,8 @@ makecontest option ... index_specification ...
 		-scoreboard_commands, -make_test.
     -formal     Same as -local plus -problems, -demos,
 		and -demos_solutions.
-    -informal   Same as -local plus -startcontest and
-		-info.
+    -informal   Same as -local, -info, and
+                -demos_solutions.
 
     -info	Make ./info, ./info/help/index,
 		./info/help/problems, ./info/help/demos.
@@ -88,7 +88,9 @@ makecontest option ... index_specification ...
 		problem description files for non-`all'
 		directory entries only if -description
 		is given.
-    -demos_solutions  Make ./contest/demos/solutions.
+    -demos_solutions  Make ./contest/demos/solutions if
+    		./contest/demos exists, and make ./info/
+		demos/solutions if ./info/demos exists.
     -description     Include problem description (.txt,
 		.html, .ps, etc.) files in ./contest/
 		problems, ./contest/demos, or ./contest/
@@ -936,10 +938,13 @@ The -demos_solutions Option
 --- ---------------- ------
 
 This option makes the ./contest/demos/solutions direc-
-tory that contains the solution files for the demonstra-
-tion problems so local contestants can read them.  The
-files are just those listed in demos_solution_files.
-This option implies -solutions and -demos.
+tory if ./contest/demos exists, and the ./info/demos/
+solutions directory if ./info/demos exists.  The demos/
+solutions directories contain the solution files for the
+demonstration problems so local contestants can read
+them.  The files are just those listed in demos_
+solution_files.  This option implies -demos_solution_
+files and -solutions.
 
 
 The -secure Option
@@ -1367,7 +1372,7 @@ while { $argi < $argc } {
 	    set scoreboard_commands_option	yes
 	    set make_test_option		yes
 	    set info_option			yes
-	    set startcontest_option		yes
+	    set demos_solutions_option		yes
 	}
 	-info		{ set info_option	yes }
 	-solutions	{ set solutions_option	yes }
@@ -1377,9 +1382,9 @@ while { $argi < $argc } {
 	-problems	{ set problems_option	yes }
 	-demos		{ set demos_option	yes }
 	-demos_solutions {
-	    set demos_solutions_option	yes
-	    set contest_option		yes
-	    set solutions_option	yes
+	    set demos_solutions_option		yes
+	    set demos_solution_files_option	yes
+	    set solutions_option		yes
 	}
 	-description	{ set description_option yes }
 	-help		{ set help_option	yes }
@@ -2668,35 +2673,40 @@ if { $help_option } {
     }
 }
 
-# Make ./contest/demos/solutions directory if necessary.
-# The demos directory is ./contest/demos+ at this point.
+# Make ./contest/demos/solutions and/or .info/demos/
+# solutions directories if necessary.  The demos
+# directory is ./contest/demos+ at this point, and the
+# info/demos directory is ./info+/demos.
 #
 if { $demos_solutions_option } {
 
-    global c_d
+    foreach d_d [list $c_d/demos+ $j_d/info+/demos] {
 
-    set demos {}
-    foreach d [glob -nocomplain $c_d/demos+/*] {
-        set demo [file tail $d]
-	lappend demos $demo
-    }
+        if { ! [file isdirectory $d_d] } continue
 
-    set ds $c_d/demos+/solutions
-    file mkdir $ds
-    grant_access $ds
-
-    foreach f $demos_solution_files {
-	set d [file tail [file dirname $f]]
-	if { ! [lcontain $demos $d] } continue
-	set file [file tail $f]
-	if { $f != "solutions/$d/$file" } {
-	    error "bad file $f in demos_solution_files"
+	set demos {}
+	foreach d [glob -nocomplain $d_d/*] {
+	    set demo [file tail $d]
+	    lappend demos $demo
 	}
-	file mkdir $c_d/demos+/solutions/$d
-	grant_access $c_d/demos+/solutions/$d
-	copy_file solutions+/$d/$file \
-	          $c_d/demos+/solutions/$d/$file
-	grant_access $c_d/demos+/solutions/$d/$file
+
+	set ds $d_d/solutions
+	file mkdir $ds
+	grant_access $ds
+
+	foreach f $demos_solution_files {
+	    set d [file tail [file dirname $f]]
+	    if { ! [lcontain $demos $d] } continue
+	    set file [file tail $f]
+	    if { $f != "solutions/$d/$file" } {
+		error "bad file $f in demos_solution_files"
+	    }
+	    file mkdir $d_d/solutions/$d
+	    grant_access $d_d/solutions/$d
+	    copy_file solutions+/$d/$file \
+		      $d_d/solutions/$d/$file
+	    grant_access $d_d/solutions/$d/$file
+	}
     }
 }
 
