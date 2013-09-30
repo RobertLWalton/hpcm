@@ -3,7 +3,7 @@
 #
 # File:		scoreboard_common.tcl
 # Author:	Bob Walton (walton@seas.harvard.edu)
-# Date:		Sun Mar 17 03:56:09 EDT 2013
+# Date:		Sun Sep 29 15:16:45 EDT 2013
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -12,9 +12,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2013/04/20 08:44:28 $
+#   $Date: 2013/09/30 00:26:04 $
 #   $RCSfile: scoreboard_common.tcl,v $
-#   $Revision: 1.67 $
+#   $Revision: 1.68 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -788,8 +788,7 @@ proc compute_scoreboard_list {} {
 		       \"\""
 	    }
 	    set TTT $total_time
-	    set TTTTTTTTT \
-	        [format {%09d} [expr 999999999 - $TTT]]
+	    set TTTTTTTTT [format {%09d} $TTT]
 	    set sort_code "$PPPP.$TTTTTTTTT"
 	    set ranking_score "$P/$TTT"
 	} else {
