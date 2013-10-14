@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@seas.harvard.edu)
-# Date:		Mon Apr 29 02:03:40 EDT 2013
+# Date:		Mon Oct 14 14:27:52 EDT 2013
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2013/04/29 06:30:45 $
+#   $Date: 2013/10/14 19:36:38 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.164 $
+#   $Revision: 1.165 $
 #
 
 # Table of Contents
@@ -319,11 +319,17 @@ proc absolute_time { time base_time } {
 }
 
 # Return true if the current time is later than a given
-# (absolute) time.
+# (absolute) time.  WARNING: use this only in contest
+# specific hpcm_judging.rc files or when the current
+# time is needed for producing the scoreboard, as this
+# function uses scoreboard_test_time in place of
+# [clock seconds] if the former is not "".
 #
 proc is_later { time } {
-    set time [clock scan $time]
-    return [expr $time < [clock seconds]]
+    global scoreboard_test_time
+    set now $scoreboard_test_time
+    if { $now == "" } { set now [clock seconds] }
+    return [expr [clock scan $time] < $now]
 }
 
 

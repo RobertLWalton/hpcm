@@ -3,7 +3,7 @@
 #
 # File:		scoreboard_common.tcl
 # Author:	Bob Walton (walton@seas.harvard.edu)
-# Date:		Sun Sep 29 15:16:45 EDT 2013
+# Date:		Mon Oct 14 14:45:05 EDT 2013
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -12,9 +12,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2013/09/30 00:26:04 $
+#   $Date: 2013/10/14 19:36:38 $
 #   $RCSfile: scoreboard_common.tcl,v $
-#   $Revision: 1.68 $
+#   $Revision: 1.69 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -130,14 +130,20 @@
 #    6. All "g" code items are deleted.
 
 # Function to read scorefinder output and compute
-# scoreboard_array.  Scorefinder output is read from
-# input_ch (which is NOT closed by this function).
+# scoreboard_array.  Scorefinder output lines are read
+# from input_ch (which is NOT closed by this function).
+# If scoreboard_test_time is not "" then any line with
+# a date field after scoreboard_test_time is ignored.
+# Similarly scoreboard_problems, if not empty, is used
+# to ignore lines with unselected problems, and
+# scoreboard_submitters, if not empty, is used to ignore
+# read lines with unselected submitters.
 #
 proc compute_scoreboard_array { input_ch } {
 
     global scoreboard_problems scoreboard_submitters \
            scoreboard_array scoreboard_mode_array \
-	   scoring_mode
+	   scoring_mode scoreboard_test_time
 
     # Compile scoreboard_problems and scoreboard_
     # submitters.
@@ -220,6 +226,10 @@ proc compute_scoreboard_array { input_ch } {
 	}
 
 	set time [filename_date_to_clock $date]
+
+	if {    $scoreboard_test_time != "" \
+	     && $time > $scoreboard_test_time } \
+	    continue
 
 	set sap $submitter/$problem
 	set item [list [format {%015d} $time] $code]

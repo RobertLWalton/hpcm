@@ -4,7 +4,7 @@
 #
 # File:		makescoreboard
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Sep 29 15:31:46 EDT 2013
+# Date:		Mon Oct 14 14:37:02 EDT 2013
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2013/09/30 00:25:33 $
+#   $Date: 2013/10/14 19:36:46 $
 #   $RCSfile: makescoreboard,v $
-#   $Revision: 1.94 $
+#   $Revision: 1.95 $
 #
 # The next lines start tclsh \
 trap "echo makescoreboard: Terminated by Signal" \
@@ -443,10 +443,11 @@ proc update_scoreboard { { force no } } {
 	   judging_directory pid_file argv \
            finder_file errorCode errorInfo \
 	   abbreviation_array bar solid_bar space \
-	   scoreboard_commands
+	   scoreboard_commands scoreboard_test_time
 
 
-    set time [clock seconds]
+    set time $scoreboard_test_time
+    if { $time == "" } { set time [clock seconds] }
     if {    $shutdown_time != "" \
          && $shutdown_time <= $time } {
         file delete -force $pid_file
