@@ -1,0 +1,152 @@
+#!/bin/sh
+#
+# Returns files to requester by email.
+#
+# File:		autofinish
+# Author:	Bob Walton (walton@deas.harvard.edu)
+# Date:		Tue Jan 13 23:05:28 EST 2009
+#
+# The authors have placed this program in the public
+# domain; they make no warranty and accept no liability
+# for this program.
+#
+# RCS Info (may not be true date or author):
+#
+#   $Author: walton $
+#   $Date: 2013/10/15 17:41:51 $
+#   $RCSfile: autofinish,v $
+#   $Revision: 1.1 $
+#
+# The next lines start tclsh \
+trap "echo autoinfo: Terminated by Signal" \
+    HUP INT QUIT; \
+tclsh "$0" "$@"; exit $status
+
+# Include common code and parameters:
+#
+set lib_directory "[file dirname $argv0]/../lib"
+source $lib_directory/judging_common.tcl
+catch {
+
+set document "
+cd submission_directory; autofinish
+
+    Reads the `Received_Mail' file in the current
+    directory.  This file must contain a single email
+    request message with a subject line of the form:
+
+    	Subject: ***FINISHED***
+
+    The body of the message must be empty.  Otherwise
+    this program sends a reply indicating a bad request
+    and exits without error or output.
+
+    Note that whenever this program replies to a message
+    whose subject field is of the above form the subject
+    of the reply has the form
+
+	Subject: RE: ***FINISHED*** ...
+
+    This program writes the the `Finished' file which
+    has one line of the form:
+
+    		Date: current-date
+
+    If something goes very wrong, such as finding that
+    the `Received_Mail' file is not readable, this
+    program creates an error log file in the current
+    directory, does not print anything on the standard
+    output (but does print on the error output), and
+    exits with exit code 0.  This is also done if the
+    `Subject:' field value in the `Received_Mail' file
+    is not sufficient to cause `autodispatch' to dis-
+    patch to this program: or specifically, if the
+    field value is not a list of at least 1 items the
+    first of which is `***FINISHED***'."
+
+# If there are any arguments, print documentation and
+# exit.
+#
+if { $argc != 0 } {
+    puts $document
+    exit 1
+}
+
+# Reply with error.
+#
+proc request_error { what } {
+    reply { LINE "ERROR while reading requesting\
+                  email:" } \
+          [list LINE $what] \
+	  BLANK \
+	  {LINE "THIS REQUEST (see below) IGNORED" } \
+	  {LINE "YOU MUST RESUBMIT" } \
+	  BLANK \
+	  { BAR "this message replies to:" } \
+	  RECEIVED-FULL-HEADER \
+	  BLANK \
+	  RECEIVED-BODY
+    exit 0
+}
+
+# Find the subject.  If bad subject call error.
+#
+set received_ch [open Received_Mail r]
+read_header $received_ch
+if { [catch { llength $message_subject }] } {
+    error "Bad `Subject:' field in message:\n\
+	  \   Subject:$message_subject"
+}
+switch [llength $message_subject] {
+
+    0		{
+	error "No or empty `Subject:' field in message"
+    }
+
+    default	{
+	if {    [lindex $message_subject 0] \
+	     != "***FINISHED***" } {
+	    error "Bad `Subject:' field in message:\n\
+		  \   Subject:$message_subject"
+	}
+    }
+}
+
+# If non-empty body reply with error.
+#
+read_part_header $received_ch
+if { $message_part_error != "" } {
+    request_error $message_part_error
+} elseif { [blank_body $received_ch] == "no" } {
+    request_error "    Non-blank body in message."
+}
+close $received_ch
+
+set dir [file tail [pwd]]
+if { ! [regexp {^[^<>]*-<<(.*)>>-submission$} \
+	       $dir forget submitter] } {
+    error "Cannot find submitter in message"
+}
+
+# Output up to date Finished file.
+#
+if { [file exists Finished] } {
+    file delete -force Finished
+}
+set finished_ch [open Finished w]
+puts $finished_ch "Date: [clock format [clock seconds]]"
+close $finished_ch
+
+# Generate success email reply.
+#
+reply [list LINE "$submitter has successfully finished"]
+
+# Print final statement and exit
+#
+puts "$submitter has successfully finished"
+exit 0
+
+# Include common error catching code:
+#
+} caught_output
+caught_error
