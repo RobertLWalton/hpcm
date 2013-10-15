@@ -5,7 +5,7 @@
 #
 # File:		scorefinder
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Jan 13 23:18:45 EST 2009
+# Date:		Tue Oct 15 10:38:54 EDT 2013
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,9 +14,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2009/01/14 05:24:54 $
+#   $Date: 2013/10/15 17:05:32 $
 #   $RCSfile: scorefinder,v $
-#   $Revision: 1.31 $
+#   $Revision: 1.32 $
 #
 # The next lines start tclsh \
 trap "echo scorefinder: Terminated by Signal" \
@@ -31,7 +31,7 @@ source $lib_directory/judging_common.tcl
 catch {
 
 set document "
-scorefinder \[-gotten\]
+scorefinder \[-gotten | -finished\]
 
     This program examines subdirectories of the mail
     directory that have names of the form:
@@ -115,6 +115,16 @@ scorefinder \[-gotten\]
     `scoreboard_start_time' variable equals \"problem\"
     or \"team\".
 
+    If the -finished option is present, this program
+    also selects subdirectories which contain the
+    `Finished' file.  For these directories this program
+    outputs one line of the form:
+
+    	date submitter ***FINISHED*** f
+
+    The -finished flag is set automatically if the
+    `scoreboard_allow_finish' variable equals true.
+
     This program logs errors in the log directory."
 
 
@@ -123,18 +133,28 @@ scorefinder \[-gotten\]
 set my_argc $argc
 set my_argv $argv
 
-# Check for and consume -gotten option.
+# Check for and consume -gotten and -finished options.
 #
 set gotten_option no
-if { $my_argc >= 1 \
-     && [lindex $my_argv 0] == "-gotten" } {
-    set gotten_option yes
+set finished_option no
+while { $my_argc >= 1 } {
+    if { [lindex $my_argv 0] == "-gotten" } {
+	set gotten_option yes
+    } elseif { [lindex $my_argv 0] == "-finished" } {
+	set finished_option yes
+    } else break
     set my_argv [lrange $my_argv 1 end]
     incr my_argc -1
-} elseif { $scoreboard_start_time == "problem" } {
+}
+
+if { $scoreboard_start_time == "problem" } {
     set gotten_option yes
 } elseif { $scoreboard_start_time == "team" } {
     set gotten_option yes
+}
+
+if { $scoreboard_allow_finish } {
+    set finished_option yes
 }
 
 # If there are leftover arguments, print document and
@@ -211,6 +231,13 @@ foreach dir \
 		}
 	    }
 	    close $gotten_ch
+	}
+
+    } elseif { [file exists $dir/Finished] } {
+
+        if { $finished_option } {
+	    puts [list $date $submitter \
+	               ***FINISHED*** f]
 	}
 
     } elseif {    [file exists $dir/Received_Mail] \
