@@ -4,7 +4,7 @@
 #
 # File:		makescoreboard
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Oct 14 14:37:02 EDT 2013
+# Date:		Tue Oct 15 03:00:38 EDT 2013
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2013/10/14 19:36:46 $
+#   $Date: 2013/10/15 07:30:37 $
 #   $RCSfile: makescoreboard,v $
-#   $Revision: 1.95 $
+#   $Revision: 1.96 $
 #
 # The next lines start tclsh \
 trap "echo makescoreboard: Terminated by Signal" \
@@ -141,7 +141,13 @@ makescoreboard { start | status | stop | update } \\
     `start' command errors that occur during the first
     making of the scoreboard.  But after beginning
     reruns for the `start' command, this program logs
-    errors in a global log directory."
+    errors in a global log directory.
+
+    This program uses the scoreboard_test_time value
+    if that is not "" as the current time; see hpcm_
+    judging.rc.  HOWEVER, in this case makescoreboard
+    should NOT be running in background, but only
+    with `update'."
 
 # } to balance extra left bracket in documentation.
 
@@ -199,7 +205,8 @@ set mtime [file mtime $pfile]
 set parameter_mtime_list [list [list $mtime $pfile]]
 
 # Last time the scoreboard update was started, in
-# seconds.
+# seconds.  Equals scoreboard_test_time if that is
+# not "".
 #
 set last_time ""
 
@@ -208,7 +215,8 @@ set last_time ""
 set scoreboard_time ""
 
 # Earliest start or stop time in an OUTPUT instruction
-# that is after last_time.  Or "" if none.
+# that is after last_time.  Or "" if none.  NOT VALID
+# if scoreboard_test_time is NOT "".
 #
 set future_time ""
 
@@ -353,10 +361,15 @@ while { $w > 0 } {
 # is larger than last_time, or if a parameter or INPUT
 # file that existed has changed, or if an OUTPUT file
 # that existed has been deleted.
+#
+# Always returns "yes" if scoreboard_test_time is NOT
+# "".
 #	
 proc update_required { mtime_list } {
 
-    global last_time
+    global last_time scoreboard_test_time
+
+    if { $scoreboard_test_time != "" } { return "yes" }
 
     set result no
     foreach item $mtime_list {
