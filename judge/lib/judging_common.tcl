@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@seas.harvard.edu)
-# Date:		Mon Oct 14 14:27:52 EDT 2013
+# Date:		Wed Oct 16 11:02:35 EDT 2013
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2013/10/14 19:36:38 $
+#   $Date: 2013/10/16 15:36:13 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.165 $
+#   $Revision: 1.166 $
 #
 
 # Table of Contents
@@ -2706,8 +2706,9 @@ if { [catch {
     # mapping for autodispatch:
     #
     array set autodispatch_map {
-	submit	autojudge
+	submit		autojudge
 	get		autoinfo
+	***FINISHED***	autofinish
     }
 
 } caught_output] } {
