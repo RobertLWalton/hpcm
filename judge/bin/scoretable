@@ -6,7 +6,7 @@
 #
 # File:		scoretable
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Mar 17 03:58:42 EDT 2013
+# Date:		Thu Oct 17 05:34:50 EDT 2013
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,9 +15,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2013/03/17 08:16:16 $
+#   $Date: 2013/10/17 10:18:20 $
 #   $RCSfile: scoretable,v $
-#   $Revision: 1.46 $
+#   $Revision: 1.47 $
 #
 # The next lines start tclsh \
 trap "echo scoretable: Terminated by Signal" \
@@ -121,15 +121,16 @@ set spaces256 $spaces128$spaces128
 
 # Compute number of problems per line (ppl).
 # Also max_column of output (first column is 0).
-# But if there are no problems, exit program without
-# producing any output.
+# But if there are no problems and no finished
+# submitters, exit program without producing any output.
 #
 # scoreboard_width is the number of columns in the
 # scoreboard table.
 
 set ppl [expr { ( $scoreboard_width - 20 ) / 10 } ]
 set np [llength $scoreboard_problem_list]
-if { $np == 0 } { exit 0 }
+set nf [llength [array names scoreboard_finished]]
+if { $np == 0 && $nf == 0 } { exit 0 }
 if { $np < $ppl } { set ppl $np }
 set max_column [expr { 20 + 10 * $ppl - 1 }]
 
@@ -143,7 +144,11 @@ set max_column [expr { 20 + 10 * $ppl - 1 }]
 # scoreboard_markers are the marker characters used,
 # in order.
 #
-set nl [expr { ( $np + $ppl - 1 ) / $ppl }]
+if { $ppl != 0 } {
+    set nl [expr { ( $np + $ppl - 1 ) / $ppl }]
+} else {
+    set nl 1
+}
 if { $nl <= 2 } {
     set markers "X  "
 } else {
@@ -203,10 +208,16 @@ proc label_problems {} {
 	    incr count
 	    set line "$line$m[format {%9.9s} $problem]"
     }
-    if { $count <= $ppl && $second_line_label != "" } {
+    if { $count == 0 } {
+        # There were no problems
+	puts "Contestant Name"
+	set line $second_line_label
+    } elseif {    $count <= $ppl \
+               && $second_line_label != "" } {
 	puts $line
         set line $second_line_label
     }
+
     regsub -all " " [string range $line$spaces256 \
 			    0 $max_column] \
 	   "_" line
@@ -225,9 +236,10 @@ foreach item $scoreboard_list {
     set ranking_score [lindex $item 3]
     set problem_scores [lrange $item 4 end]
 
-    # Skip teams with 0 submissions.
+    # Skip teams with 0 submissions that are not *DONE*.
     #
-    if { $submissions == 0 } continue
+    if {    $submissions == 0 \
+         && ! [regexp {DONE} $ranking_score] } continue
 
     # Print the line(s) for the team.
     #
@@ -254,7 +266,12 @@ foreach item $scoreboard_list {
 
 	set line "$line$m[format {%9.9s} $score]"
     }
-    if { $count <= $ppl && $ranking_score != "" } {
+    if { $count == 0 } {
+        # There were no problems
+	puts $submitter
+	set line $ranking_score
+    } elseif {    $count <= $ppl \
+               && $ranking_score != "" } {
 	puts $line
         set line $ranking_score
     }
