@@ -3,7 +3,7 @@
 #
 # File:		scoreboard_common.tcl
 # Author:	Bob Walton (walton@seas.harvard.edu)
-# Date:		Mon Oct 14 14:45:05 EDT 2013
+# Date:		Thu Oct 17 03:21:38 EDT 2013
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -12,9 +12,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2013/10/14 19:36:38 $
+#   $Date: 2013/10/17 08:25:50 $
 #   $RCSfile: scoreboard_common.tcl,v $
-#   $Revision: 1.69 $
+#   $Revision: 1.70 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -106,6 +106,13 @@
 # mode and the scoreboard_mode_array.  The unpruned data
 # are in unsorted order.
 #
+# When scoreboard_array is computed, and before pruning,
+# scoreboard_finished is also computed.  scoreboard_
+# finished(submitter), if it exists, is the finish time
+# of the submitter, in [clock seconds] form.  If the
+# submitter finished more than once, the earliest finish
+# time is recorded.
+#
 # After pruning, the items in each array element are
 # sorted and data meets the following requirements:
 #
@@ -115,25 +122,31 @@
 #    2. Items later than the problem stop time have been
 #       deleted.
 #
-#    3. Array elements pertaining to a submitter not
+#    3. If scoreboard_allow_finish is true, items later
+#       that the submitter finish time have been
+#       deleted.
+#
+#    4. Array elements pertaining to a submitter not
 #       meeting the cut times have been deleted.
 #
-#    4. If the scoreboard_start_time is "problem" or
+#    5. If the scoreboard_start_time is "problem" or
 #	"team", any array element is deleted if its
 #	earliest item (before pruning or adding the
 #	start time "s" item) does not have code "g".
 #
-#    5. If the scoreboard_start_time is a date and time,
+#    6. If the scoreboard_start_time is a date and time,
 #	any array element is deleted if its earliest
 #	item is before this contest start time.
 #
-#    6. All "g" code items are deleted.
+#    7. All "g" code items are deleted.
 
 # Function to read scorefinder output and compute
-# scoreboard_array.  Scorefinder output lines are read
-# from input_ch (which is NOT closed by this function).
-# If scoreboard_test_time is not "" then any line with
-# a date field after scoreboard_test_time is ignored.
+# scoreboard_array and scoreboard_finished.  Scorefinder
+# output lines are read from input_ch (which is NOT
+# closed by this function).
+#
+# If scoreboard_test_time is not "" then any line with a
+# date field after scoreboard_test_time is ignored.
 # Similarly scoreboard_problems, if not empty, is used
 # to ignore lines with unselected problems, and
 # scoreboard_submitters, if not empty, is used to ignore
@@ -143,7 +156,8 @@ proc compute_scoreboard_array { input_ch } {
 
     global scoreboard_problems scoreboard_submitters \
            scoreboard_array scoreboard_mode_array \
-	   scoring_mode scoreboard_test_time
+	   scoring_mode scoreboard_test_time \
+	   scoreboard_finished
 
     # Compile scoreboard_problems and scoreboard_
     # submitters.
@@ -167,10 +181,13 @@ proc compute_scoreboard_array { input_ch } {
     }
 
     # Read the scores and accumulate them in the
-    # scoreboard_array.
+    # scoreboard_array and scoreboard_finished.
     #
     if { [array exists scoreboard_array] } {
 	unset scoreboard_array
+    }
+    if { [array exists scoreboard_finished] } {
+	unset scoreboard_finished
     }
     set code_regexp \
         "^$scoreboard_mode_array($scoring_mode)\$"
@@ -188,6 +205,23 @@ proc compute_scoreboard_array { input_ch } {
 	set submitter	[lindex $line 1]
 	set problem	[lindex $line 2]
 	set code	[lindex $line 3]
+
+	if { $code == "f" } {
+	    set time [filename_date_to_clock $date]
+	    if { [info exists \
+	               scoreboard_finished($submitter)] \
+	       } {
+	        set time2 \
+		    $scoreboard_finished($submitter)
+		if { $time < $time2 } {
+		  set scoreboard_finished($submitter) \
+		      $time
+		}
+	    } else {
+		set scoreboard_finished($submitter) $time
+	    }
+	    continue
+	}
 
 	if { ! [regexp $code_regexp $code] } continue
 
@@ -249,7 +283,9 @@ proc prune_scoreboard_array { } {
            scoreboard_correct_cut_time \
            scoreboard_incorrect_cut_time \
            scoreboard_final_cut_time \
-	   scoreboard_array
+	   scoreboard_array \
+	   scoreboard_allow_finish \
+	   scoreboard_finished
 
     # Compile times.
     #
@@ -421,6 +457,10 @@ proc prune_scoreboard_array { } {
 
 	# Compute times.
 	#
+	# Any scoreboard_finished(submitter) time
+	# replaces any greater stop_time if scoreboard_
+	# allow_finish is true.
+	#
 	switch $start_mode {
 	    "" {
 	    	set start ""
@@ -439,6 +479,7 @@ proc prune_scoreboard_array { } {
 		set start $start_time
 	    }
 	}
+
 	switch $stop_mode {
 	    "" {
 		set stop ""
@@ -451,6 +492,16 @@ proc prune_scoreboard_array { } {
 		set stop $stop_time
 	    }
 	}
+	if {    $scoreboard_allow_finish \
+	     && [info exists \
+	              scoreboard_finished($submitter)] \
+	   } {
+	    set ftime $scoreboard_finished($submitter)
+	    if { $stop == "" || $stop > $ftime } {
+		set stop $ftime
+	    }
+	}
+
 	switch $correct_cut_mode {
 	    "" {
 		set correct_cut ""
@@ -464,6 +515,7 @@ proc prune_scoreboard_array { } {
 		set correct_cut $correct_cut_time
 	    }
 	}
+
 	switch $incorrect_cut_mode {
 	    "" {
 		set incorrect_cut ""
@@ -477,6 +529,7 @@ proc prune_scoreboard_array { } {
 		set incorrect_cut $incorrect_cut_time
 	    }
 	}
+
 	switch $final_cut_mode {
 	    "" {
 		set final_cut ""
