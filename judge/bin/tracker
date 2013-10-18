@@ -7,7 +7,7 @@
 #
 # File:		tracker
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Jan 13 23:07:46 EST 2009
+# Date:		Fri Oct 18 01:49:43 EDT 2013
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -16,9 +16,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2009/01/14 05:24:54 $
+#   $Date: 2013/10/18 05:53:45 $
 #   $RCSfile: tracker,v $
-#   $Revision: 1.44 $
+#   $Revision: 1.45 $
 #
 # The next lines start tclsh \
 trap "echo tracker: Terminated by Signal" \
@@ -124,7 +124,7 @@ proc read_input { ch } {
 
     global info_array rec_array ext_array bin_array \
            out_array sco_array rep_array got_array \
-	   pid_array chk_array err_array
+	   fin_array pid_array chk_array err_array
 
     set line [gets $ch]
     if { [eof $ch] } return
@@ -174,6 +174,9 @@ proc read_input { ch } {
 	    if { [info exists got_array($dirname)] } {
 		unset got_array($dirname)
 	    }
+	    if { [info exists fin_array($dirname)] } {
+		unset fin_array($dirname)
+	    }
 	    if { [info exists chk_array($dirname)] } {
 		unset chk_array($dirname)
 	    }
@@ -222,6 +225,9 @@ proc read_input { ch } {
 	    got {
 		    save_line $line got 2 $dirname
 		}
+	    fin {
+		    save_line $line fin 2 $dirname
+		}
 	    pid {
 		    save_line $line pid 3 $dirname
 		}
@@ -268,13 +274,14 @@ proc read_all_sources {} {
            judging_directory \
 	   info_array rec_array ext_array bin_array \
            out_array sco_array rep_array got_array \
-	   pid_array chk_array err_array
+	   fin_array pid_array chk_array err_array
 
     # Unset all arrays.
     #
     foreach x { info_array rec_array ext_array bin_array
                 out_array sco_array rep_array got_array
-	        pid_array chk_array err_array } {
+	        fin_array pid_array chk_array err_array
+	      } {
     	if { [info exists $x] } {
 	    unset $x
 	}

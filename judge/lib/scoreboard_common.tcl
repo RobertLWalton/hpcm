@@ -3,7 +3,7 @@
 #
 # File:		scoreboard_common.tcl
 # Author:	Bob Walton (walton@seas.harvard.edu)
-# Date:		Thu Oct 17 03:21:38 EDT 2013
+# Date:		Thu Oct 17 05:12:12 EDT 2013
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -12,9 +12,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2013/10/17 08:25:50 $
+#   $Date: 2013/10/18 05:45:17 $
 #   $RCSfile: scoreboard_common.tcl,v $
-#   $Revision: 1.70 $
+#   $Revision: 1.71 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -623,7 +623,8 @@ proc prune_scoreboard_array { } {
 # are in the scoreboard_problem_list global variable,
 # which is sorted.
 #
-# The ranking_score may be "".
+# The ranking_score may be "".  The ranking score
+# includes annotations such as `*' and `*DONE*'.
 #
 # The format of the sort_code and ranking_score depend
 # upon the settings of scoreboard_sort_mode, which can
@@ -672,7 +673,9 @@ proc compute_scoreboard_list {} {
     global scoreboard_array scoreboard_list \
            scoreboard_problem_list \
 	   scoreboard_sort_mode \
-	   scoreboard_start_time
+	   scoreboard_start_time \
+	   scoreboard_allow_finish \
+	   scoreboard_finished
 
     # Compute lists of submitters and problems.
     #
@@ -688,6 +691,10 @@ proc compute_scoreboard_list {} {
 	    set submitter_present($submitter) yes
 	    set problem_present($problem) yes
 	}
+    }
+    foreach submitter \
+            [array names scoreboard_finished] {
+        set submitter_present($submitter) yes
     }
     set submitters \
         [lsort [array names submitter_present]]
@@ -882,6 +889,10 @@ proc compute_scoreboard_list {} {
 	     && \
 	     $modifier == "n" } {
 	    set ranking_score "*${ranking_score}"
+	}
+	if { [info exists \
+	           scoreboard_finished($submitter)] } {
+	    set ranking_score "${ranking_score} *DONE*"
 	}
 	    
 	# Add score list item to score list.
