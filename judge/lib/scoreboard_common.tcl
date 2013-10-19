@@ -3,7 +3,7 @@
 #
 # File:		scoreboard_common.tcl
 # Author:	Bob Walton (walton@seas.harvard.edu)
-# Date:		Thu Oct 17 05:12:12 EDT 2013
+# Date:		Sat Oct 19 10:15:48 EDT 2013
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -12,9 +12,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2013/10/18 05:45:17 $
+#   $Date: 2013/10/19 19:33:37 $
 #   $RCSfile: scoreboard_common.tcl,v $
-#   $Revision: 1.71 $
+#   $Revision: 1.72 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -206,6 +206,24 @@ proc compute_scoreboard_array { input_ch } {
 	set problem	[lindex $line 2]
 	set code	[lindex $line 3]
 
+	if { $submitter_expression != "" } {
+	     foreach i [array names submitter_atoms] {
+		 set submitter_values($i) \
+		     [regexp \
+		         "^($submitter_atoms($i))\$" \
+			 $submitter]
+	     }
+	     if { [catch { \
+	             set v \
+		         [expr $submitter_expression] \
+		         }] } { \
+	         error "Badly constructed\
+		        scoreboard_submitters logical\
+		        expression:\
+		        $scoreboard_submitters"
+	     } elseif { ! $v } continue;
+	}
+
 	if { $code == "f" } {
 	    set time [filename_date_to_clock $date]
 	    if { [info exists \
@@ -238,24 +256,6 @@ proc compute_scoreboard_array { input_ch } {
 		        scoreboard_problems logical\
 		        expression:\
 		        $scoreboard_problems"
-	     } elseif { ! $v } continue;
-	}
-
-	if { $submitter_expression != "" } {
-	     foreach i [array names submitter_atoms] {
-		 set submitter_values($i) \
-		     [regexp \
-		         "^($submitter_atoms($i))\$" \
-			 $submitter]
-	     }
-	     if { [catch { \
-	             set v \
-		         [expr $submitter_expression] \
-		         }] } { \
-	         error "Badly constructed\
-		        scoreboard_submitters logical\
-		        expression:\
-		        $scoreboard_submitters"
 	     } elseif { ! $v } continue;
 	}
 
