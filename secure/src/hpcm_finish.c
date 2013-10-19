@@ -2,7 +2,7 @@
  *
  * File:	hpcm_sendmail.c
  * Authors:	Bob Walton (walton@deas.harvard.edu)
- * Date:	Sat Oct 19 04:59:06 EDT 2013
+ * Date:	Sat Oct 19 05:03:26 EDT 2013
  *
  * The authors have placed this program in the public
  * domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
  * RCS Info (may not be true date or author):
  *
  *   $Author: walton $
- *   $Date: 2013/10/19 08:59:27 $
+ *   $Date: 2013/10/19 09:05:14 $
  *   $RCSfile: hpcm_finish.c,v $
- *   $Revision: 1.2 $
+ *   $Revision: 1.3 $
  */
 
 #include <stdlib.h>
@@ -896,9 +896,9 @@ int main ( int argc, char ** argv )
 	}
 
 	/* Output To and CC header fields. */
-	fprintf ( files[0], "To:%s\n"
-			    "Cc:%s\n",
-			    to, cc );
+	fprintf ( files[0], "To:%s\n", to );
+	if ( ! finish )
+	    fprintf ( files[0], "Cc:%s\n", cc );
 
 	/* Read and copy any header, stopping at empty
 	   line after header.  On `finish' replace
