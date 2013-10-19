@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Jan 20 07:20:51 EST 2007
+# Date:		Sat Oct 19 04:02:40 EDT 2013
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2007/01/20 12:21:02 $
+#   $Date: 2013/10/19 08:10:38 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.14 $
+#   $Revision: 1.15 $
 
 # Kill all implicit rules
 #
@@ -83,6 +83,9 @@ hpcm_sandbox:	hpcm_sandbox.c
 
 hpcm_sendmail:	hpcm_sendmail.c
 	gcc -o hpcm_sendmail hpcm_sendmail.c
+
+hpcm_finish:	hpcm_finish.c
+	gcc -o hpcm_finish hpcm_finish.c
 
 hpcm_wrapper:	hpcm_wrapper.c
 	gcc -o hpcm_wrapper hpcm_wrapper.c
