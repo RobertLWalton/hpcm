@@ -11,11 +11,12 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2013/09/08 09:46:58 $
+#   $Date: 2013/10/19 08:46:59 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.33 $
+#   $Revision: 1.34 $
 
-all:	hpcm_sandbox hpcm_sendmail hpcm_display_graph \
+all:	hpcm_sandbox hpcm_sendmail hpcm_finish \
+        hpcm_display_graph \
 	hpcm_display_segments modes
 
 # Kill all implicit rules
@@ -34,6 +35,13 @@ hpcm_sendmail:	../../secure/src/hpcm_sendmail.c
 	cp -p ../../secure/src/hpcm_sendmail .
 	chmod 555 hpcm_sendmail
 	chmod u+s hpcm_sendmail
+
+hpcm_finish:	../../secure/src/hpcm_finish.c
+	rm -f hpcm_finish
+	(cd ../../secure/src; make hpcm_finish)
+	cp -p ../../secure/src/hpcm_finish .
+	chmod 555 hpcm_finish
+	chmod u+s hpcm_finish
 
 hpcm_display_graph:	../src/hpcm_display_graph.cc
 	rm -f hpcm_display_graph
@@ -66,5 +74,5 @@ modes:
 	chmod a+x .. ../.. ../../..
 
 clean:
-	rm -f hpcm_sandbox hpcm_sendmail \
+	rm -f hpcm_sandbox hpcm_sendmail hpcm_finish \
 	      hpcm_display_graph hpcm_display_segments
