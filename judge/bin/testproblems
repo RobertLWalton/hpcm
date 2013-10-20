@@ -4,7 +4,7 @@
 #
 # File:		testproblems
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Sun Oct 20 02:10:19 EDT 2013
+# Date:		Sun Oct 20 02:49:23 EDT 2013
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2013/10/20 06:11:10 $
+#   $Date: 2013/10/20 07:13:59 $
 #   $RCSfile: testproblems,v $
-#   $Revision: 1.52 $
+#   $Revision: 1.53 $
 #
 # The next lines run tclsh \
 trap "echo testproblems: Terminated by Signal; exit 1" \
@@ -69,20 +69,20 @@ testproblems \[-p N] \[-keep|-|-contestant|-q] \\
     mation.
 
     To first approximation, this program tests a solu-
-    tion in file PROBLEMXXX.EXT by making a subdirectory
-    named test_PROBLEMXXX_EXT, linking appropriate files
-    into it, and running:
+    tion in file YYY.EXT by making a subdirectory named
+    test_YYY_EXT, linking appropriate files into it, and
+    running:
 
 		make
 		diff *.out *.test
 
-    in the subdirectory.  After a test_PROBLEMXXX_EXT
-    subdirectory is completely processed, it is deleted,
-    unless the -keep option is used.  The diff outputs
-    are both saved and outputted, and all relevant saved
-    output for each directory is played back at the end
-    of this program's execution.  Errors made during the
-    above run are also played back.
+    in the subdirectory.  After a test_YYY_EXT subdirec-
+    tory is completely processed, it is deleted, unless
+    the -keep option is used.  The diff outputs are both
+    saved and outputted, and all relevant saved output
+    for each directory is played back at the end of this
+    program's execution.  Errors made during the above
+    run are also played back.
 
     More specifically, for each directory this program
     does the following.  First, it does a cd to the
@@ -110,23 +110,28 @@ testproblems \[-p N] \[-keep|-|-contestant|-q] \\
     remade if they are obsolete.
 
     After making problem_make_files, this program
-    identifies the solution files PROBLEM*.EXT that are
-    to be tested.  Here .EXT is restricted to values
-    in a list given by the -ext argument if that is
-    given, or the problem_allowed_extensions variable
-    in the PROBLEM.rc file, if that is given, or
+    identifies the solution files that are to be
+    tested.  First the allowed extensions of these
+    files are identified.  These are the elements of
+    the problem_allowed_extensions variable in the
+    PROBLEM.rc file, if that is given, or of the -ext
+    argument, if that is given, or
 
         $allowed_extensions
 
-    otherwise.  For each file PROBLEMSXXX.EXT that
-    exists for some .EXT in the allowed extensions list,
-    the subdirectory test_PROBLEMSXXX_EXT is made, files
-    files are linked into it, and in that directory
-    PROBLEMXXX.EXT is tested.
-
+    otherwise.  Then the solution files are the files of
+    problem_test_files that have one of these exten-
+    sions, if problem_test_files is given and there are
+    any such files, or are otherwise all existing files
+    with names of the form PROBLEMSXXX.EXT where .EXT is
+    one of the allowed extensions.  For each solution
+    file YYY.EXT the subdirectory test_YYY_EXT is made,
+    files files are linked into it, and in that direc-
+    tory YYY.EXT is tested.
+
     Files are linked from the problem directory to its
-    test_PROBLEMXXX_EXT subdirectory using link instruc-
-    tions of the form:
+    test_YYY_EXT subdirectory using link instructions of
+    the form:
 
     	{ F F1 F2 F3 ... }
 
@@ -139,7 +144,7 @@ testproblems \[-p N] \[-keep|-|-contestant|-q] \\
     directory processing terminates with an error, or
     optional, meaning the link instruction can fail
     without error.
-
+
     The link instructions executed are
 
         * { PROBLEM.EXT PROBLEMXXX.EXT }     \[required]
@@ -154,7 +159,7 @@ testproblems \[-p N] \[-keep|-|-contestant|-q] \\
 
 	* { Makefile Makefile_EXT Makefile } \[required]
 	  Scoring_Filter                     \[optional]
-
+
 	* For each N in the set of input names (all
 	  optional).  Note the *_EXT forms which allow
 	  for language variants, particularly for .test
@@ -175,7 +180,7 @@ testproblems \[-p N] \[-keep|-|-contestant|-q] \\
     in the PROBLEM.rc file and modifies them to
 
     		{ F F F1 F2 ...}
-
+
     so if F exists in problem directory it will be
     linked to.  An example of using this is when the
     files F and judges_F are made and PROBLEM.rc con-
@@ -188,10 +193,10 @@ testproblems \[-p N] \[-keep|-|-contestant|-q] \\
     to be a monitor program that executes the contest-
     ant's submission as a subprocess and feeds it
     input while checking its output.
-
-    After linking files into the test_PROBLEMXXX_EXT
-    subdirectory, the following are run in the subdirec-
-    tory for each input name N:
+
+    After linking files into the test_YYY_EXT subdirec-
+    tory, the following are run in the subdirectory for
+    each input name N:
     
       * If N.jin exists but N.in does not:
 
@@ -209,7 +214,7 @@ testproblems \[-p N] \[-keep|-|-contestant|-q] \\
 	    make
 	    mv PROBLEM.out N.out       # if N != PROBLEM
 	    diff N.out N.test
-
+
       * If N.jin exists but Scoring_Filter does not
         exist:
 
@@ -227,7 +232,7 @@ testproblems \[-p N] \[-keep|-|-contestant|-q] \\
 	    jfilter -v N.jin N.fout N.jfout >& N.jfout#
 	    diff N.jfout N.jftest
 	    diff N.jin# N.jfout#
-
+
     If errors occur while processing a directory, they
     are announced and processing of the directory is
     terminated.
@@ -235,8 +240,8 @@ testproblems \[-p N] \[-keep|-|-contestant|-q] \\
     Unless the -keep option is given, after finishing a
     directory `make clean' is executed in the directory,
     all files made by problem_make_files are deleted,
-    and all test_PROBLEMXXX.EXT subdirectories of the
-    directory are deleted.
+    and all test_YYY.EXT subdirectories of the directory
+    are deleted.
 
     If a non-directory is given the program, or if a
     directory with no Makefile is given, the program
@@ -482,6 +487,7 @@ proc read_rc_file { file problem } {
 	   problem_copy_files \
 	   problem_optional_copy_files \
 	   problem_input_names \
+	   problem_allowed_extensions \
 	   problem_test_files
 
     set PROBLEM $problem
@@ -493,6 +499,7 @@ proc read_rc_file { file problem } {
     catch { unset problem_copy_files }
     catch { unset problem_optional_copy_files }
     catch { unset problem_input_names }
+    catch { unset problem_allowed_extensions }
     catch { unset problem_test_files }
     source_file $file
 }
@@ -620,26 +627,6 @@ foreach directory $myargv {
 	    error "CANNOT find P = ... line in Makefile"
 	}
 
-	# Make list of PROBLEM*.EXT values (solutions).
-	#
-	set solutions {}
-	set allowed {}
-	foreach pext $allowed_extensions {
-	    if { ! [regexp "^\\.(.*)\$" $pext \
-	                   forget EXT] } {
-	        error "bad allowed_extension `$pext'"
-	    }
-
-	    lappend allowed $EXT
-	    lappend_lists solutions \
-	                  [glob -nocomplain \
-			        "$problem*.$EXT"]
-	}
-	if { [llength $solutions] == 0 } {
-	    set exts [join $allowed ,]
-	    error "no $problem*.{$exts} solutions"
-	}
-
 	# Do initial clean.
 	#
 	set type none
@@ -687,6 +674,7 @@ foreach directory $myargv {
 	set make_files {}
 	set link_files {}
 	set optional_link_files {}
+	set solutions {}
 	if { [file exists $problem.rc] } {
 
 	    read_rc_file $problem.rc $problem
@@ -728,18 +716,43 @@ foreach directory $myargv {
 		    }
 		}
 	    }
+	    if { [info exists \
+	               problem_allowed_extensions] } {
+		check_list problem_allowed_extensions
+	        set allowed_extensions \
+		    $problem_allowed_extensions
+	    }
 	    if { [info exists problem_test_files] } {
+	        set use_default_solutions no
 		check_list problem_test_files
 		set solutions {}
 		foreach file $problem_test_files {
-		    if { [regexp {.*\.([^.]*)$} $file \
+		    if { [regexp {.*(\.[^.]*)$} $file \
 		                 forget EXT] \
 			 && \
-			 [lcontain $allowed $EXT] } {
+			 [lcontain $allowed_extensions \
+			           $EXT] } {
 		        lappend solutions $file
 		    }
 		}
 	    }
+	}
+
+	if { [llength $solutions] == 0 } {
+
+	    # Set to list of PROBLEM*.EXT values.
+	    #
+	    foreach EXT $allowed_extensions {
+
+		lappend_lists solutions \
+			      [glob -nocomplain \
+				    "$problem*$EXT"]
+	    }
+	}
+
+	if { [llength $solutions] == 0 } {
+	    set exts [join $allowed_extensions ,]
+	    error "no $problem*{$exts} solutions"
 	}
 
 	# If input_names contains $problem and something
