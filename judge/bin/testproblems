@@ -4,7 +4,7 @@
 #
 # File:		testproblems
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Sun Oct  6 00:32:35 EDT 2013
+# Date:		Sun Oct 20 02:10:19 EDT 2013
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2013/10/06 04:45:59 $
+#   $Date: 2013/10/20 06:11:10 $
 #   $RCSfile: testproblems,v $
-#   $Revision: 1.51 $
+#   $Revision: 1.52 $
 #
 # The next lines run tclsh \
 trap "echo testproblems: Terminated by Signal; exit 1" \
@@ -482,7 +482,7 @@ proc read_rc_file { file problem } {
 	   problem_copy_files \
 	   problem_optional_copy_files \
 	   problem_input_names \
-	   problem_solution_files
+	   problem_test_files
 
     set PROBLEM $problem
     set EXTENSION UNDEFINED
@@ -493,7 +493,7 @@ proc read_rc_file { file problem } {
     catch { unset problem_copy_files }
     catch { unset problem_optional_copy_files }
     catch { unset problem_input_names }
-    catch { unset problem_solution_files }
+    catch { unset problem_test_files }
     source_file $file
 }
 
@@ -680,9 +680,9 @@ foreach directory $myargv {
 	# value, set input_names to names N in this list
 	# for which N.in or N.jin exist.
 	#
-	# If problem_solution_files has a $problem.rc
-	# list value, set `solutions' to files in this
-	# list that have allowed extensions.
+	# If problem_test_files has a $problem.rc list
+	# value, set `solutions' to files in this list
+	# that have allowed extensions.
         #
 	set make_files {}
 	set link_files {}
@@ -728,10 +728,10 @@ foreach directory $myargv {
 		    }
 		}
 	    }
-	    if { [info exists problem_solution_files] } {
-		check_list problem_solution_files
+	    if { [info exists problem_test_files] } {
+		check_list problem_test_files
 		set solutions {}
-		foreach file $problem_solution_files {
+		foreach file $problem_test_files {
 		    if { [regexp {.*\.([^.]*)$} $file \
 		                 forget EXT] \
 			 && \
