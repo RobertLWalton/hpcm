@@ -1,4 +1,4 @@
-# Makefile for the Binary Tree Problem
+# Makefile for the Binary Tree Sort Problem
 #
 # File:		Makefile
 # Date:		Thu Feb 28 04:08:03 EST 2013
@@ -13,7 +13,7 @@
 #   XTRA_LIMITS limits that override those given
 #               previously to hpcm_sandbox
 #   
-P = bintree
+P = bintreesort
 XTRA_INPUTS =
 XTRA_LIBS =
 XTRA_LIMITS =
@@ -118,7 +118,7 @@ clean:
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2014/03/08 22:27:09 $
+#   $Date: 2014/03/09 01:22:54 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.1 $
+#   $Revision: 1.2 $
 
