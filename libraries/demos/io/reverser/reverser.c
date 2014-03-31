@@ -2,7 +2,7 @@
  *
  * File:	reverser.c
  * Authors:	Bob Walton (walton@seas.harvard.edu)
- * Date:	Fri Jan 25 11:13:15 EST 2013
+ * Date:	Mon Mar 31 03:08:17 EDT 2014
  *
  * The authors have placed this program in the public
  * domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
  * RCS Info (may not be true date or author):
  *
  *   $Author: walton $
- *   $Date: 2013/01/25 16:15:22 $
+ *   $Date: 2014/03/31 07:09:21 $
  *   $RCSfile: reverser.c,v $
- *   $Revision: 1.7 $
+ *   $Revision: 1.8 $
  */
 
 
@@ -68,7 +68,7 @@ int main ( int argc, char * argv[] )
     {
 	char * p, * q;
 
-	/* When debugging print the intput as well as
+	/* When debugging print the input as well as
 	 * the output.
 	 */
 	dprintf ( "%s", line );
