@@ -2,7 +2,7 @@
  *
  * File:	bintreesort.c
  * Authors:	Bob Walton (walton@seas.harvard.edu)
- * Date:	Sun Mar 30 09:08:19 EDT 2014
+ * Date:	Mon Mar 31 02:49:04 EDT 2014
  *
  * The authors have placed this program in the public
  * domain; they make no warranty and accept no liability
@@ -11,15 +11,21 @@
  * RCS Info (may not be true date or author):
  *
  *   $Author: walton $
- *   $Date: 2014/03/30 13:57:28 $
+ *   $Date: 2014/03/31 07:33:46 $
  *   $RCSfile: bintreesort.c,v $
- *   $Revision: 1.1 $
+ *   $Revision: 1.2 $
  */
 
 #include <stdio.h>	/* sprintf */
-#include <stdlib.h>	/* exit, abort */
+#include <stdlib.h>	/* malloc, free */
+#include <string.h>	/* strlen */
 #include <search.h>	/* tsearch, tfind, tdelete */
 #include <assert.h>
+
+/* Avoid definition of `remove' in stdio.h
+ */
+#define remove REMOVE
+
 
 int debug = 0;
 #define dprintf if ( debug ) printf
@@ -38,7 +44,7 @@ typedef double number;
  * empty tree.  Our dataset is such a tree.
  */
 typedef void node;
-const node * dataset;
+node * dataset;
 
 /* The item type contains the number, which acts as the
  * key, and pointers for a double linked list that
@@ -47,10 +53,10 @@ const node * dataset;
  * end of the list (the head is not part of the
  * dataset).
  */
-typedef struct {
+typedef struct item_struct {
     number key;
-    item * previous;
-    item * next;
+    struct item_struct * previous;
+    struct item_struct * next;
 } item;
 item head;
 
@@ -65,8 +71,8 @@ inline item * item_of ( const node * n )
  */
 int compare ( const void * xp, const void * yp )
 {
-    number x = (const item *) xp -> key;
-    number y = (const item *) yp -> key;
+    number x = ( (const item *) xp ) -> key;
+    number y = ( (const item *) yp ) -> key;
     return x < y ? -1 : x == y ? 0 : +1;
 }
 
@@ -98,7 +104,7 @@ void add ( number n )
 	head.previous = head.next = new_item;
 	return;
     }
-    else if ( item_of ( head ) != new_item )
+    else if ( item_of ( parent ) != new_item )
     {
         /* New item is not now at root of tree.  Find
 	 * its parent by removing item and then
@@ -116,20 +122,144 @@ void add ( number n )
 	 */
     }
 
-    TBD
+    assert ( parent != NULL );
+    item * pitem = item_of ( parent );
+    if ( pitem->key > new_item->key )
+    {
+        while ( 1 )
+	{
+	    item * previous = pitem->previous;
+	    if ( previous == & head ) break;
+	    if ( previous->key < new_item->key )
+	        break;
+	    pitem  = previous;
+	}
+	new_item->next = pitem;
+	new_item->previous = pitem->previous;
+	new_item->next->previous = new_item;
+	new_item->previous->next = new_item;
+    }
+    else
+    {
+	assert ( pitem->key < new_item->key );
+        while ( 1 )
+	{
+	    item * next = pitem->next;
+	    if ( next == & head ) break;
+	    if ( next->key > new_item->key )
+	        break;
+	    pitem  = next;
+	}
+	new_item->previous = pitem;
+	new_item->next = pitem->next;
+	new_item->next->previous = new_item;
+	new_item->previous->next = new_item;
+    }
+}
 
+/* Perform the `R n' operation to remove n from the
+ * database.
+ */
+void remove ( number n )
+{
+    item i;
+    i.key = n;
+    node * found_node =
+        tfind ( & i, & dataset, compare );
+    if ( found_node != NULL )
+    {
+	item * fitem = item_of ( found_node );
+	fitem->next->previous = fitem->previous;
+	fitem->previous->next = fitem->next;
+        free ( fitem );
+    }
+    head.next = & head;
+    head.previous = & head;
+}
+
+/* Perform the `P n' operation to print n in the
+ * database.
+ */
+void print ( number n )
+{
+    item i;
+    i.key = n;
+    node * found_node =
+        tfind ( & i, & dataset, compare );
+    if ( found_node == NULL )
+        printf ( "(%.0f)\n", n );
+    else
+    {
+        item * fitem = item_of ( found_node );
+	if ( fitem->previous == & head )
+	    printf ( "(none)" );
+	else
+	    printf ( "%.0f", fitem->previous->key );
+	printf ( " < %.0f < ", n );
+	if ( fitem->next == & head )
+	    printf ( "(none)\n" );
+	else
+	    printf ( "%.0f\n", fitem->next->key );
+    }
 }
 
 /* Perform the `E' operation to empty the database.
  */
 void empty ( void )
 {
+    item * ditem = head.next;
+    while ( ditem != & head )
+    {
+        tdelete ( ditem, & dataset, compare );
+	item * next = ditem->next;
+	free ( ditem );
+	ditem = next;
+    }
 }
 
-
-int main ( int argc, char ** argv )
+int main ( int argc, char * argv[] )
 {
+    debug = ( argc > 1 );
+
     head.previous = & head;
     head.next = & head;
     dataset = NULL;
+
+    char name[82];
+
+    while ( fgets ( name, sizeof ( name ), stdin ) )
+    {
+	assert ( strlen ( name ) <= 81 );
+	printf ( "%s", name );
+
+	char c = 0;
+	while ( c != 'E' )
+	{
+	    scanf ( "%c", & c );
+	    switch ( c )
+	    {
+	    case 'A':
+	    case 'R':
+	    case 'P':
+	    {
+	        number n;
+		scanf ( "%lf", & n );
+		switch ( c )
+		{
+		case 'A': add ( n ); break;
+		case 'R': remove ( n ); break;
+		case 'P': print ( n ); break;
+		}
+		break;
+	    }
+	    case 'E': empty(); break;
+	    default:
+	        assert ( ! "recognized command" );
+	    }
+	    fgets ( name, sizeof ( name ), stdin );
+	    assert ( name[0] == '\n' );
+	}
+    }
+
+    return 0;
 }
