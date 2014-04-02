@@ -11,9 +11,9 @@
  * RCS Info (may not be true date or author):
  *
  *   $Author: walton $
- *   $Date: 2014/04/02 03:58:45 $
+ *   $Date: 2014/04/02 07:46:57 $
  *   $RCSfile: make_bintreesort_input.c,v $
- *   $Revision: 1.1 $
+ *   $Revision: 1.2 $
  *
  * Input:
  *
@@ -50,16 +50,17 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include <math.h>
 #include <assert.h>
 
-define FOR(i,n) for (i = 0; i < (n); ++ i)
+#define FOR(i,n) for (i = 0; i < (n); ++ i)
 
 /* Maximum allowed value of N and M.
  */
-#define MAX_M = 1000000;
-#define MAX_N = 10000000;
-#define MAX_LINE = 80;
+#define MAX_M 1000000
+#define MAX_N 10000000
+#define MAX_LINE 80
 
 char name[MAX_LINE+3];
 int M, N;
@@ -107,7 +108,7 @@ void compute_numbers ( void )
 	    if ( h >= hsize ) h = 0;
 	}
 	if ( h < 0 ) continue;
-	humbers[h] = num;
+	numbers[h] = num;
 	++ n;
     }
 
@@ -124,15 +125,15 @@ void compute_numbers ( void )
     
 }
 
-/* The numbers in `numbers[0 .. m-1]' are in the data base
- * and the numbers in `numbers[m .. N-1]' are not.
+/* The numbers in `numbers[0 .. m-1]' are in the data
+ * base and the numbers in `numbers[m .. N-1]' are not.
  */
 int m;
 
 /* The following output the given commands and update m
- * and `numbers' accordingly, and return 1 or success and
- * 0 on failure (such as A # when data base already has
- * M elements).
+ * and `numbers' accordingly, and return 1 or success
+ * and 0 on failure (such as A # when data base already
+ * has M elements).
  */
 
 int Ain ( void )
@@ -140,7 +141,7 @@ int Ain ( void )
     int i;
     if ( m == 0 ) return 0;
     i = random() % m;
-    printf ( "A %.0lf\n", numbers[i];
+    printf ( "A %.0lf\n", numbers[i] );
     return 1;
 }
 
@@ -168,30 +169,30 @@ int Rin ( void )
     return 1;
 }
 
-void Rout ( void )
+int Rout ( void )
 {
     int i;
     if ( m == N ) return 0;
     i = m + random() % ( N - m );
-    printf ( "R %.0lf\n", numbers[i];
+    printf ( "R %.0lf\n", numbers[i] );
     return 1;
 }
 
-void Pin ( void )
+int Pin ( void )
 {
     int i;
     if ( m == 0 ) return 0;
     i = random() % m;
-    printf ( "P %.0lf\n", numbers[i];
+    printf ( "P %.0lf\n", numbers[i] );
     return 1;
 }
 
-void Pout ( void )
+int Pout ( void )
 {
     int i;
     if ( m == N ) return 0;
     i = m + random() % ( N - m );
-    printf ( "P %.0lf\n", numbers[i];
+    printf ( "P %.0lf\n", numbers[i] );
     return 1;
 }
 
@@ -207,7 +208,7 @@ int output_commands ( int c )
     int o = 0;
     while ( 1 )
     {
-        double p = ( (double) random()) % RAND_MAX;
+        double p = ( (double) random() ) / RAND_MAX;
 	int o;
 
 	if ( p <= pAin ) o += Ain();
@@ -215,7 +216,8 @@ int output_commands ( int c )
 	else if ( p <= pAin + pAout + pRin ) o += Rin();
 	else if ( p <= pAin + pAout + pRin + pRout )
 	    o += Rout();
-	else if ( p <= pAin + pAout + pRin + pRout + pPin )
+	else if ( p <= pAin + pAout + pRin + pRout
+	                            + pPin )
 	    o += Pin();
 	else
 	    o += Pout();
