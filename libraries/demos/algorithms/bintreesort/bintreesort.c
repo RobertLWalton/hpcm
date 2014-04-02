@@ -2,7 +2,7 @@
  *
  * File:	bintreesort.c
  * Authors:	Bob Walton (walton@seas.harvard.edu)
- * Date:	Mon Mar 31 02:49:04 EDT 2014
+ * Date:	Wed Apr  2 03:29:45 EDT 2014
  *
  * The authors have placed this program in the public
  * domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
  * RCS Info (may not be true date or author):
  *
  *   $Author: walton $
- *   $Date: 2014/03/31 07:33:46 $
+ *   $Date: 2014/04/02 07:40:07 $
  *   $RCSfile: bintreesort.c,v $
- *   $Revision: 1.2 $
+ *   $Revision: 1.3 $
  */
 
 #include <stdio.h>	/* sprintf */
@@ -47,7 +47,7 @@ typedef void node;
 node * dataset;
 
 /* The item type contains the number, which acts as the
- * key, and pointers for a double linked list that
+ * key, and pointers for a doubly linked list that
  * contains all items in number sorted order, with a
  * special item, the `head', as both the beginning and
  * end of the list (the head is not part of the
@@ -91,6 +91,7 @@ void add ( number n )
     if ( item_of ( found_node ) != new_item )
     {
         free ( new_item );
+	dprintf ( "A %.0f failed\n", (double) n );
 	return;
     }
 
@@ -102,6 +103,7 @@ void add ( number n )
 
 	new_item->previous = new_item->next = & head;
 	head.previous = head.next = new_item;
+	dprintf ( "A %.0f is first\n", (double) n );
 	return;
     }
     else if ( item_of ( parent ) != new_item )
@@ -126,6 +128,10 @@ void add ( number n )
     item * pitem = item_of ( parent );
     if ( pitem->key > new_item->key )
     {
+        /* pitem->key > n: move pitem down list until
+	 * it is the smallest with this property and
+	 * insert new_item before this pitem.
+	 */
         while ( 1 )
 	{
 	    item * previous = pitem->previous;
@@ -138,9 +144,15 @@ void add ( number n )
 	new_item->previous = pitem->previous;
 	new_item->next->previous = new_item;
 	new_item->previous->next = new_item;
+	dprintf ( "A %.0f before %.0f\n",
+	          (double) n, (double) pitem->key );
     }
     else
     {
+        /* pitem->key < n: move pitem down list until
+	 * it is the largest with this property and
+	 * insert new_item after this pitem.
+	 */
 	assert ( pitem->key < new_item->key );
         while ( 1 )
 	{
@@ -154,6 +166,8 @@ void add ( number n )
 	new_item->next = pitem->next;
 	new_item->next->previous = new_item;
 	new_item->previous->next = new_item;
+	dprintf ( "A %.0f after %.0f\n",
+	          (double) n, (double) pitem->key );
     }
 }
 
@@ -169,12 +183,13 @@ void remove ( number n )
     if ( found_node != NULL )
     {
 	item * fitem = item_of ( found_node );
+	tdelete ( fitem, & dataset, compare );
 	fitem->next->previous = fitem->previous;
 	fitem->previous->next = fitem->next;
         free ( fitem );
-    }
-    head.next = & head;
-    head.previous = & head;
+	dprintf ( "R %.0f succeeded\n", (double) n );
+    } else
+	dprintf ( "R %.0f failed\n", (double) n );
 }
 
 /* Perform the `P n' operation to print n in the
@@ -210,11 +225,18 @@ void empty ( void )
     item * ditem = head.next;
     while ( ditem != & head )
     {
+	dprintf ( "E removes %.0f\n",
+	          (double) ditem->key );
         tdelete ( ditem, & dataset, compare );
 	item * next = ditem->next;
 	free ( ditem );
 	ditem = next;
     }
+
+    assert ( dataset == NULL );
+
+    head.next = & head;
+    head.previous = & head;
 }
 
 int main ( int argc, char * argv[] )
@@ -225,7 +247,7 @@ int main ( int argc, char * argv[] )
     head.next = & head;
     dataset = NULL;
 
-    char name[82];
+    char name[83];
 
     while ( fgets ( name, sizeof ( name ), stdin ) )
     {
