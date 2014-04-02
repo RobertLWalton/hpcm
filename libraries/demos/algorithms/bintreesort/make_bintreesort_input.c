@@ -2,7 +2,7 @@
  *
  * File:     make_bintreesort_input.c
  * Author:   Bob Walton <walton@deas.harvard.edu>
- * Date:     Tue Apr  1 20:40:25 EDT 2014
+ * Date:     Wed Apr  2 07:23:27 EDT 2014
  *
  * The authors have placed this program in the public
  * domain; they make no warranty and accept no liability
@@ -11,41 +11,51 @@
  * RCS Info (may not be true date or author):
  *
  *   $Author: walton $
- *   $Date: 2014/04/02 07:46:57 $
+ *   $Date: 2014/04/02 11:56:34 $
  *   $RCSfile: make_bintreesort_input.c,v $
- *   $Revision: 1.2 $
+ *   $Revision: 1.3 $
  *
  * Input:
  *
  *	For each case, a line with the test case name
  *	followed by the following line:
  *
- *	    N M pAin pAout pRin pRout pPin
+ *	    N M pAin pAout pRin pRout pPin SEED
  *
  *	Output for the case is a bintreesort test case
  *	with the given test case name and data generated
  *	according to the second input line as follows.
  *	N is the maximum number of distinct numbers in
- *	the test case.  M < N is the maximum number of
- *	numbers in test case data set.  The pXyyy's are
- *	the probabilities that the next command will be
- *	an X command with a number that is `in' or `out'
- *	of the data set at the time the command is
- *	given.  pPout = 1 - pAin - pAout - pRin - pRout
- *	- pPin.  It is required that pAout > pRin so
- *	numbers are added to the data set until there
- *	are M in the data set, at which point the
- *	following switches occur
+ *	the test case.  M <= N is the maximum number of
+ *	numbers in test case data set at any one time.
+ *	The pXyyy's are the probabilities that the next
+ *	command will be an X command with a number that
+ *	is xxx=`in' or xxx=`out' of the data set at the
+ *	time the command is given.  Here
+ *
+ *	  pPout = 1 - pAin - pAout - pRin - pRout - pPin
+ *
+ *      SEED is the random number generator seed.
+ *
+ *	It is required that pAout > pRin so numbers are
+ *	added to the data set until there are M in the
+ *	data set, at which point the following switches
+ *	occur:
  *
  *		pAin    <--->   pRout
  *		pAout   <--->   pRin
  *
- *      and if C1 commands have previously been issued,
+ *      Then if C1 commands have previously been issued,
  *      then C2 more commands are issued, where C2 is
  *      choosen randomly and uniformly in the range
- *      [0,C1].  During this last phase `A' commands
- *      that would add to a data set containing M
- *      numbers are suppressed.
+ *      [0,C1].
+ *
+ *      Also, whenever a command that will not work
+ *      properly is to be output, that output is sup-
+ *      pressed.  This includes Xin commands when the
+ *      data set is empty, Aout commands when the data
+ *      set has M numbers, and Xout commands when the
+ *      dataset has N numbers (only happens if M == N).
  */
 
 #include <stdlib.h>
@@ -65,6 +75,7 @@
 char name[MAX_LINE+3];
 int M, N;
 double pAin, pAout, pRin, pRout, pPin, pPout;
+unsigned SEED;
 
 /* We begin a test case by computing N 15 digit distinct
  * random numbers in `numbers[0 .. N-1]'.
@@ -93,7 +104,7 @@ void compute_numbers ( void )
         FOR ( d, 15 )
 	{
 	    num *= 10;
-	    num += random() % 10;
+	    num += rand() % 10;
 	}
 	h = (int) fmod ( num, hsize );
 	assert ( 0 <= h && h < hsize );
@@ -131,7 +142,7 @@ void compute_numbers ( void )
 int m;
 
 /* The following output the given commands and update m
- * and `numbers' accordingly, and return 1 or success
+ * and `numbers' accordingly, and return 1 on success
  * and 0 on failure (such as A # when data base already
  * has M elements).
  */
@@ -140,18 +151,18 @@ int Ain ( void )
 {
     int i;
     if ( m == 0 ) return 0;
-    i = random() % m;
-    printf ( "A %.0lf\n", numbers[i] );
+    i = rand() % m;
+    printf ( "A %.0f\n", numbers[i] );
     return 1;
 }
 
 int Aout ( void )
 {
-    int i;
+    int i; number n;
     if ( m == M ) return 0;
-    i = m + random() % ( N - m );
-    printf ( "A %.0lf\n", numbers[i] );
-    number n = numbers[m];
+    i = m + rand() % ( N - m );
+    printf ( "A %.0f\n", numbers[i] );
+    n = numbers[m];
     numbers[m++] = numbers[i];
     numbers[i] = n;
     return 1;
@@ -159,11 +170,11 @@ int Aout ( void )
 
 int Rin ( void )
 {
-    int i;
+    int i; number n;
     if ( m == 0 ) return 0;
-    i = random() % m;
-    printf ( "R %.0lf\n", numbers[i] );
-    number n = numbers[i];
+    i = rand() % m;
+    printf ( "R %.0f\n", numbers[i] );
+    n = numbers[i];
     numbers[i] = numbers[--m];
     numbers[m] = n;
     return 1;
@@ -173,8 +184,8 @@ int Rout ( void )
 {
     int i;
     if ( m == N ) return 0;
-    i = m + random() % ( N - m );
-    printf ( "R %.0lf\n", numbers[i] );
+    i = m + rand() % ( N - m );
+    printf ( "R %.0f\n", numbers[i] );
     return 1;
 }
 
@@ -182,8 +193,8 @@ int Pin ( void )
 {
     int i;
     if ( m == 0 ) return 0;
-    i = random() % m;
-    printf ( "P %.0lf\n", numbers[i] );
+    i = rand() % m;
+    printf ( "P %.0f\n", numbers[i] );
     return 1;
 }
 
@@ -191,8 +202,8 @@ int Pout ( void )
 {
     int i;
     if ( m == N ) return 0;
-    i = m + random() % ( N - m );
-    printf ( "P %.0lf\n", numbers[i] );
+    i = m + rand() % ( N - m );
+    printf ( "P %.0f\n", numbers[i] );
     return 1;
 }
 
@@ -208,7 +219,7 @@ int output_commands ( int c )
     int o = 0;
     while ( 1 )
     {
-        double p = ( (double) random() ) / RAND_MAX;
+        double p = ( (double) rand() ) / RAND_MAX;
 	int o;
 
 	if ( p <= pAin ) o += Ain();
@@ -244,8 +255,12 @@ int main(int argc, char * argv[])
         assert ( strlen ( name ) <= MAX_LINE + 1 );
 	printf("%s", name);
 
-	scanf ( "%d %d %lf %lf %lf %lf %lf",
-	        N, M, pAin, pAout, pRin, pRout, pPin );
+	scanf ( "%d %d %lf %lf %lf %lf %lf %u",
+	        & N, & M, & pAin, & pAout,
+		          & pRin, & pRout,
+			  & pPin, & SEED );
+	fgets ( name, sizeof ( name ), stdin) ;
+	assert ( name[0] == '\n' );
 
 	assert ( 0 < N && N <= MAX_N );
 	assert ( 0 < M && M <= MAX_M );
@@ -259,13 +274,16 @@ int main(int argc, char * argv[])
 	             - pRin - pRout - pPin;
 	assert ( 0.0 <= pPout && pPout <= 1.0 );
 	assert ( pRin < pAout );
+	assert ( SEED > 0 );
+
+	srand ( SEED );
 
 	compute_numbers();
 	m = 0;
 	c = output_commands ( 0 );
 	temp = pAin; pAin = pRout; pRout = temp;
 	temp = pAout; pAout = pRin; pRin = temp;
-	output_commands ( random() % ( c + 1 ) );
+	output_commands ( rand() % ( c + 1 ) );
 	printf ( "E\n" );
     }
 
