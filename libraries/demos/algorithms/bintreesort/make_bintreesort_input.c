@@ -2,7 +2,7 @@
  *
  * File:     make_bintreesort_input.c
  * Author:   Bob Walton <walton@deas.harvard.edu>
- * Date:     Wed Apr  2 07:23:27 EDT 2014
+ * Date:     Wed Apr  2 20:51:37 EDT 2014
  *
  * The authors have placed this program in the public
  * domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
  * RCS Info (may not be true date or author):
  *
  *   $Author: walton $
- *   $Date: 2014/04/02 11:56:34 $
+ *   $Date: 2014/04/03 11:17:19 $
  *   $RCSfile: make_bintreesort_input.c,v $
- *   $Revision: 1.3 $
+ *   $Revision: 1.4 $
  *
  * Input:
  *
@@ -63,6 +63,9 @@
 #include <string.h>
 #include <math.h>
 #include <assert.h>
+
+int debug = 0;
+#define dprintf if ( debug ) printf
 
 #define FOR(i,n) for (i = 0; i < (n); ++ i)
 
@@ -220,7 +223,6 @@ int output_commands ( int c )
     while ( 1 )
     {
         double p = ( (double) rand() ) / RAND_MAX;
-	int o;
 
 	if ( p <= pAin ) o += Ain();
 	else if ( p <= pAin + pAout ) o += Aout();
@@ -248,6 +250,8 @@ int output_commands ( int c )
  */
 int main(int argc, char * argv[])
 {
+    debug = ( argc > 1 );
+
     while ( fgets ( name, sizeof ( name ), stdin) )
     {
         int c; double temp;
@@ -281,6 +285,7 @@ int main(int argc, char * argv[])
 	compute_numbers();
 	m = 0;
 	c = output_commands ( 0 );
+	dprintf ( "COMMANDS = %d\n", c );
 	temp = pAin; pAin = pRout; pRout = temp;
 	temp = pAout; pAout = pRin; pRin = temp;
 	output_commands ( rand() % ( c + 1 ) );

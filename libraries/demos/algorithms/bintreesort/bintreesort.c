@@ -2,7 +2,7 @@
  *
  * File:	bintreesort.c
  * Authors:	Bob Walton (walton@seas.harvard.edu)
- * Date:	Wed Apr  2 03:29:45 EDT 2014
+ * Date:	Wed Apr  2 20:55:14 EDT 2014
  *
  * The authors have placed this program in the public
  * domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
  * RCS Info (may not be true date or author):
  *
  *   $Author: walton $
- *   $Date: 2014/04/02 07:40:07 $
+ *   $Date: 2014/04/03 11:17:19 $
  *   $RCSfile: bintreesort.c,v $
- *   $Revision: 1.3 $
+ *   $Revision: 1.4 $
  */
 
 #include <stdio.h>	/* sprintf */
@@ -60,6 +60,11 @@ typedef struct item_struct {
 } item;
 item head;
 
+/* For debugging we keep track of the number of elements
+ * in the data set.
+ */
+int setsize = 0;
+
 /* Get the item pointed at by a node.
  */
 inline item * item_of ( const node * n )
@@ -75,7 +80,6 @@ int compare ( const void * xp, const void * yp )
     number y = ( (const item *) yp ) -> key;
     return x < y ? -1 : x == y ? 0 : +1;
 }
-
 
 /* Perform the `A n' operation to add n to the database.
  */
@@ -103,7 +107,9 @@ void add ( number n )
 
 	new_item->previous = new_item->next = & head;
 	head.previous = head.next = new_item;
-	dprintf ( "A %.0f is first\n", (double) n );
+	dprintf
+	    ( "A %.0f is first, data set size = %d\n",
+	      (double) n, ++ setsize );
 	return;
     }
     else if ( item_of ( parent ) != new_item )
@@ -144,8 +150,11 @@ void add ( number n )
 	new_item->previous = pitem->previous;
 	new_item->next->previous = new_item;
 	new_item->previous->next = new_item;
-	dprintf ( "A %.0f before %.0f\n",
-	          (double) n, (double) pitem->key );
+	dprintf
+	    ( "A %.0f before %.0f,"
+	      " data set size = %d\n",
+	      (double) n, (double) pitem->key,
+	      ++ setsize );
     }
     else
     {
@@ -166,8 +175,10 @@ void add ( number n )
 	new_item->next = pitem->next;
 	new_item->next->previous = new_item;
 	new_item->previous->next = new_item;
-	dprintf ( "A %.0f after %.0f\n",
-	          (double) n, (double) pitem->key );
+	dprintf
+	    ( "A %.0f after %.0f, data set size = %d\n",
+	      (double) n, (double) pitem->key,
+	      ++ setsize );
     }
 }
 
@@ -187,7 +198,9 @@ void remove ( number n )
 	fitem->next->previous = fitem->previous;
 	fitem->previous->next = fitem->next;
         free ( fitem );
-	dprintf ( "R %.0f succeeded\n", (double) n );
+	dprintf
+	    ( "R %.0f succeeded, data set size = %d\n",
+	      (double) n, -- setsize );
     } else
 	dprintf ( "R %.0f failed\n", (double) n );
 }
@@ -225,8 +238,9 @@ void empty ( void )
     item * ditem = head.next;
     while ( ditem != & head )
     {
-	dprintf ( "E removes %.0f\n",
-	          (double) ditem->key );
+	dprintf
+	    ( "E removes %.0f, data set size = %d\n",
+	      (double) ditem->key, -- setsize );
         tdelete ( ditem, & dataset, compare );
 	item * next = ditem->next;
 	free ( ditem );
