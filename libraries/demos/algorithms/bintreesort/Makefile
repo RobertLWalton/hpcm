@@ -16,7 +16,7 @@
 P = bintreesort
 XTRA_INPUTS =
 XTRA_LIBS =
-XTRA_LIMITS =
+XTRA_LIMITS = -cputime 60
 
 .SUFFIXES:
 .SUFFIXES: .c .cc .java .lsp
@@ -118,7 +118,7 @@ clean:
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2014/03/09 01:22:54 $
+#   $Date: 2014/04/07 08:44:35 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.2 $
+#   $Revision: 1.3 $
 

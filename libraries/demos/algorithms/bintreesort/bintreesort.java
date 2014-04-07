@@ -2,14 +2,15 @@
 //
 // File:	bintreesort.java
 // Authors:	Bob Walton (walton@seas.harvard.edu)
-// Date:	Sun Apr  6 20:52:22 EDT 2014
+// Date:	Mon Apr  7 03:23:24 EDT 2014
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
 // for this program.
 
 import java.util.Scanner;
-import java.util.treemap;
+import java.util.TreeMap;
+import java.util.NoSuchElementException;
 public class bintreesort {
 
     static boolean debug = false;
@@ -33,14 +34,22 @@ public class bintreesort {
 	    System.out.format ( format, args );
     }
 
-    // JAVA Treemap implements a red-black binary tree.
+    // Abort execution with message.
+    //
+    static void abort ( String message )
+    {
+	throw new RuntimeException ( message );
+    }
+
+    // JAVA TreeMap implements a red-black binary tree.
     // Our dataset is such a tree.  The standard
     // comparison function suffices for comparison of
     // keys, which are `doubles'.  The data associated
     // with a new is not relevant, but must have a type
     // that extends Object, so we use `Object()' data.
     //
-    static Treemap<Double,Object> dataset;
+    static TreeMap<Double,Object> dataset =
+        new TreeMap<Double,Object>();
 
     // For debugging we keep track of the number of
     // elements in the data set.
@@ -50,29 +59,29 @@ public class bintreesort {
     // Perform the `A n' operation to add n to the
     // data set.
     //
-    void add ( double n )
+    static void add ( Double n )
     {
-        if ( dataset.get ( Double ( n ) ) != null )
+        if ( dataset.get ( n ) != null )
 	    dprintf ( "A %.0f failed%n", n );
 	else
 	{
 	    dprintf ( "A %.0f succeeded," +
 	              " data set size = %d%n",
 		      n, ++ setsize );
-	    dataset.put ( Double ( n ), Object() );
+	    dataset.put ( n, new Object() );
 	}
     }
 
     // Perform the `R n' operation to remove n from the
     // data set.
     //
-    void remove ( double n )
+    static void remove ( Double n )
     {
-        if ( dataset.get ( Double ( n ) ) == null )
+        if ( dataset.get ( n ) == null )
 	    dprintf ( "R %.0f failed%n", n );
 	else
 	{
-	    dataset.remove ( Double ( n ) );
+	    dataset.remove ( n );
 	    dprintf ( "R %.0f succeeded," +
 	              " data set size = %d%n",
 		      n, -- setsize );
@@ -82,16 +91,16 @@ public class bintreesort {
     // Perform the `P n' operation to print n in the
     // data set.
     //
-    void print ( double n )
+    static void print ( Double n )
     {
-        if ( dataset.get ( Double ( n ) ) == null )
+        if ( dataset.get ( n ) == null )
 	    printf ( "(%.0f)", n );
 	else
 	{
 	    Double previous =
-	        dataset.lowerkey ( Double ( n ) );
+	        dataset.lowerKey ( n );
 	    if ( previous == null )
-	        printf ( "(null)" );
+	        printf ( "(none)" );
 	    else
 	        printf ("%.0f",
 		        previous.doubleValue() );
@@ -99,32 +108,31 @@ public class bintreesort {
 	    printf (" < %.0f < ", n );
 
 	    Double next =
-	        dataset.higherkey ( Double ( n ) );
+	        dataset.higherKey ( n );
 	    if ( next == null )
-	        printf ( "(null)" );
+	        printf ( "(none)" );
 	    else
-	        printf ("%.0f",
-		        next.doubleValue() );
+	        printf ("%.0f", next );
 	}
 	printf ( "%n" );
     }
 
     // Perform the `E' operation to empty the data set.
     //
-    void empty ( void )
+    static void empty ( )
     {
-        Double first;
-	while ( first = datset.firstkey() )
-	{
-	    dprintf ( "E removes %.0f," +
-	              " data set size = %d%n",
-		      first.doubleValue(),
-		      -- setsize );
-	    dataset.remove ( first );
-	}
-    }
+	try {
+	    while ( true )
+	    {
+		Double first = dataset.firstKey();
 
-    TBD
+		dprintf ( "E removes %.0f," +
+			  " data set size = %d%n",
+			  first, -- setsize );
+		dataset.remove ( first );
+	    }
+	} catch ( NoSuchElementException e ) {}
+    }
 
     public static void main ( String[] args )
     {
@@ -134,47 +142,40 @@ public class bintreesort {
 
 	while ( scan.hasNextLine() )
 	{
-	    String casename = scan.nextLine();
-	    System.out.println ( casename );
+	    String name = scan.nextLine();
+	    System.out.println ( name );
 
-	    // As long as there are numbers in the
-	    // input, read these numbers and compute
-	    // their sum.  Note we assume each number
-	    // ends just before whitespace.
-	    //
-	    double corrected_sum = 0;
-	    while ( scan.hasNextDouble() )
-	        corrected_sum += scan.nextDouble();
-
-	    // Read and check =-sign, which must be
-	    // surrounded by whitespace.
-	    //
-	    assert ( scan.next().equals ( "=" ) );
-
-	    // Read accountant computed sum and the
-	    // end of line which follows it.
-	    //
-	    double sum  = scan.nextDouble();
-	    scan.nextLine();
-
-	    // If debugging, look at corrected_sum and
-	    // sum at maximum precision.
-	    //
-	    dprintf
-	      ( "SUM = %.16f, CORRECTED SUM = %.16f%n",
-		sum, corrected_sum );
-
-	    // Print output.  Errors less than 0.005
-	    // must be due to internal rounding and not
-	    // to the accountants.
-	    //
-	    if (   Math.abs ( sum - corrected_sum )
-	         < 0.005 )
-		printf ( "%.2f is correct%n", sum );
-	    else
-		printf ( "%.2f should be %.2f%n",
-			 sum, corrected_sum );
+	    String c = "";
+	    while ( ! c.equals ( "E" ) )
+	    {
+	        c = scan.next();
+		switch ( c )
+		{
+		case "A":
+		case "R":
+		case "P":
+		{
+		    Double n =
+		        new Double
+			    ( scan.nextDouble() );
+		    switch ( c )
+		    {
+		    case "A": add ( n ); break;
+		    case "R": remove ( n ); break;
+		    case "P": print ( n ); break;
+		    }
+		    break;
+		}
+		case "E": empty(); break;
+		default:
+		    abort ( "ERROR: unrecognized" +
+			    " command: " + c );
+		}
+		name = scan.nextLine();
+		if ( ! name.equals ( "" ) )
+		    abort ( "ERROR: stuff at end of" +
+		            " line: `" + name  + "'");
 	    }
+	}
     }
 }
-
