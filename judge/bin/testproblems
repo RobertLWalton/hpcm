@@ -4,7 +4,7 @@
 #
 # File:		testproblems
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Sun Oct 20 02:49:23 EDT 2013
+# Date:		Sun Apr 13 04:48:47 EDT 2014
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2013/10/20 07:13:59 $
+#   $Date: 2014/04/13 09:13:16 $
 #   $RCSfile: testproblems,v $
-#   $Revision: 1.53 $
+#   $Revision: 1.54 $
 #
 # The next lines run tclsh \
 trap "echo testproblems: Terminated by Signal; exit 1" \
@@ -667,14 +667,19 @@ foreach directory $myargv {
 	# value, set input_names to names N in this list
 	# for which N.in or N.jin exist.
 	#
+	# If problem_allowed_extensions has a list value
+	# in $problem.rc, set `extensions' to this value,
+	# else set it to `allowed_extensions'.
+	#
 	# If problem_test_files has a $problem.rc list
 	# value, set `solutions' to files in this list
-	# that have allowed extensions.
+	# that have extensions in `extensions'.
         #
 	set make_files {}
 	set link_files {}
 	set optional_link_files {}
 	set solutions {}
+	set extensions $allowed_extensions
 	if { [file exists $problem.rc] } {
 
 	    read_rc_file $problem.rc $problem
@@ -719,8 +724,7 @@ foreach directory $myargv {
 	    if { [info exists \
 	               problem_allowed_extensions] } {
 		check_list problem_allowed_extensions
-	        set allowed_extensions \
-		    $problem_allowed_extensions
+	        set extensions $problem_allowed_extensions
 	    }
 	    if { [info exists problem_test_files] } {
 	        set use_default_solutions no
@@ -730,8 +734,7 @@ foreach directory $myargv {
 		    if { [regexp {.*(\.[^.]*)$} $file \
 		                 forget EXT] \
 			 && \
-			 [lcontain $allowed_extensions \
-			           $EXT] } {
+			 [lcontain $extensions $EXT] } {
 		        lappend solutions $file
 		    }
 		}
@@ -742,7 +745,7 @@ foreach directory $myargv {
 
 	    # Set to list of PROBLEM*.EXT values.
 	    #
-	    foreach EXT $allowed_extensions {
+	    foreach EXT $extensions {
 
 		lappend_lists solutions \
 			      [glob -nocomplain \
@@ -751,7 +754,7 @@ foreach directory $myargv {
 	}
 
 	if { [llength $solutions] == 0 } {
-	    set exts [join $allowed_extensions ,]
+	    set exts [join $extensions ,]
 	    error "no $problem*{$exts} solutions"
 	}
 
