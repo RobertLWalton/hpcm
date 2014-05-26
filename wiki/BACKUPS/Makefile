@@ -2,7 +2,7 @@
 #
 #	File:	Makefile
 #	Author:	walton@seas.harvard.edu
-#	Sat Jan 12 04:56:37 EST 2013
+#	Mon May 26 01:24:00 EDT 2014
 
 FULLHOST = problems1.seas.harvard.edu
 SHORTHOST = problems1
@@ -45,6 +45,17 @@ wiki-hpcm-2%.tgz:	never-there
             $@; \
 	  ls -l $@; \
 	fi
+
+wiki-hpcm-2%.restore:	never-there
+	@echo drop database if exists wiki_hpcm ';'
+	@echo create database wiki_hpcm ';'
+	@echo drop database if exists wiki_hpcm ';' \
+             create database wiki_hpcm ';' \
+	     | mysql -p${MYSQLPASSWORD}
+	@echo mysql -p... wiki_hpcm '<' \
+              wiki-hpcm-2$*.mysql
+	@mysql -p${MYSQLPASSWORD} wiki_hpcm \
+            < wiki-hpcm-2$*.mysql
 
 wiki-hpcm-private-2%.tgz:	never-there
 	rm -f $@
