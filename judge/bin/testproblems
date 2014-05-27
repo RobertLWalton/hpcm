@@ -4,7 +4,7 @@
 #
 # File:		testproblems
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Wed May 21 07:12:24 EDT 2014
+# Date:		Mon May 26 21:41:19 EDT 2014
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2014/05/21 11:31:14 $
+#   $Date: 2014/05/27 02:46:02 $
 #   $RCSfile: testproblems,v $
-#   $Revision: 1.55 $
+#   $Revision: 1.56 $
 #
 # The next lines run tclsh \
 trap "echo testproblems: Terminated by Signal; exit 1" \
@@ -241,36 +241,24 @@ testproblems \[-p N] \[-keep|-|-contestant|-q] \\
     directory `make clean' is executed in the directory,
     all files made by problem_make_files are deleted,
     and all test_YYY.EXT subdirectories of the directory
-    are deleted.
+    are deleted.  -keep is incompatible with -p.
 
     If a non-directory is given the program, or if a
     directory with no Makefile is given, the program
     merely notes this in the output.
     
-    The -q or quiet option suppresses just the non-
-    error output from `make PROBLEM.out' commands."
+    The -q or quiet option suppresses all but the
+    summary output.  It is implied by -p."
 
 # Process options.
 #
-# The `-SUB 1 filename' option is used when testproblems
+# The `-SUB 1 dirname' option is used when testproblems
 # is called recursively for the `-p' option, and
-# causes a list of names of differing files, followed by
-# a report of errors running testproblems, if any,
-# followed by timing information, to be APPENDED to the
-# named file.  There is no other output. `-SUB 2 file-
-# name' is similar but does not include the timing in-
-# formation.  `-SUB 3 filename' is similar but does not
-# include the error report or timing information and
-# does have the other output associated with test-
-# problems.  When called with -SUB 1, testproblems calls
-# `time testproblems -SUB 2 ...' and appends the timing
-# info to the named file.  When called with -SUB 2 test-
-# problems calls `testproblems > /dev/null -SUB 3 ...'
-# and if there is any returned text, which will be
-# stderr output, appends that as the error report to the
-# named file.  None of these options may be used with
-# the -p option, and there is no error checking of
-# the -SUB option arguments.
+# causes just the summary and timing information to be
+# written to $dirname.report.  There is no other
+# output.  `-SUB 2 dirname' is similar but does not
+# include the timing information.  It writes the summary
+# to $dirname.report instead stdout.
 #
 set parallel_runs 0
 set keep 0
@@ -280,7 +268,7 @@ set stdoutq stdout
     # reset to file descriptor sending to /dev/null
     # if quiet
 set SUB 0
-set SUB_filename ""
+set SUB_dirname ""
 set myargv $argv
 while { 1 } {
     switch -glob -- [lindex $myargv 0] {
@@ -319,7 +307,7 @@ while { 1 } {
 	    set myargv [lrange $myargv 1 end]
 	    set SUB [lindex $myargv 0]
 	    set myargv [lrange $myargv 1 end]
-	    set SUB_filename [lindex $myargv 0]
+	    set SUB_dirname [lindex $myargv 0]
     }
     default break
     }
@@ -333,6 +321,13 @@ set wd [pwd]
 
 if { $parallel_runs > 0 } {
 
+    if { $keep } {
+        puts "-keep is ignored if -p is given"
+    }
+    if { $quiet } {
+        puts "-q is implied if -p is given"
+    }
+
     file delete -force -- $tmp
     file mkdir $tmp
     grant_access $tmp x
@@ -345,15 +340,13 @@ if { $parallel_runs > 0 } {
 	}
 	incr i
     }
-    if { $keep } { set k -keep } else { set k "" }
     set i 1
     set pids {}
     while { $i <= $parallel_runs } {
         cd $tmp/test$i
 	lappend_lists pids \
 	     [eval exec $argv0 \
-		   -SUB 1 $tmp/test$i.report \
-		   $k $myargv &]
+		   -SUB 1 $tmp/test$i $myargv &]
 	incr i
     }
 
@@ -382,14 +375,11 @@ if { $parallel_runs > 0 } {
     puts ""
     exec fold -s -w 72 < /proc/cpuinfo >@ stdout
     puts ""
-    puts -nonewline "testproblems -p $parallel_runs $k"
-    set j 0
-    foreach d $myargv {
-        if { $j % 5 == 0 } {
-	    puts -nonewline " \\\n   "
-	}
-	puts -nonewline " $d"
-	incr j
+    puts -nonewline \
+         "testproblems -p $parallel_runs\
+	  [lindex $myargv 0]"
+    if { [llength $myargv] > 1 } {
+        puts -nonewline " ... [lindex $myargv end]"
     }
     puts ""
     puts ""
@@ -403,25 +393,20 @@ if { $parallel_runs > 0 } {
     exit 0
 
 } elseif { $SUB == 1 } {
-    if { $keep } { set k -keep } else { set k "" }
     # time writes its output to the standard error file
+    # -SUB 2 $SUB_dirname writes summary to
+    # $SUB_dirname.report
     catch { eval exec time -p $argv0 \
-                 -SUB 2 $SUB_filename $k $myargv } \
+                 -SUB 2 $SUB_dirname -q $myargv } \
 	  tout
-    set fd [open $SUB_filename a]
+    set fd [open $SUB_dirname.report a]
     puts $fd "\n$tout"
     close $fd
     exit 0
 } elseif { $SUB == 2 } {
-    if { $keep } { set k -keep } else { set k "" }
-    set eout [eval exec $argv0 > /dev/null \
-                   -SUB 3 $SUB_filename $k $myargv]
-    if { $eout != "" } {
-	set fd [open $SUB_filename a]
-	puts $fd "\nTESTPROBLEMS ERROR OUTPUT\n\n$eout"
-	close $fd
-    }
-    exit 0
+    set tmp $SUB_dirname.report
+    file delete -force -- $tmp
+    set fd [open $tmp w]
 } elseif { $SUB == 0 } {
     # SUB == 0 means we can ignore -p option
     #
@@ -429,9 +414,7 @@ if { $parallel_runs > 0 } {
     set fd [open $tmp w]
 }
 
-# Summary report is accumulated in $tmp.  fd is file
-# descriptor of report, and exists only if report is
-# being output.
+# Summary is accumulated in $tmp.  fd is file of $tmp.
 
 # List of names of files that differ.  List item has the
 # format:
@@ -448,9 +431,7 @@ set diff_files {}
 #
 proc putsfd { string } {
     global fd
-    if { [info exists fd] } {
-        puts $fd $string
-    }
+    puts $fd $string
 }
 
 # Put to output if not quiet
@@ -477,7 +458,7 @@ proc diff { subdir file1 file2 } {
 		 ==== diff $file1 $file2:\n$diffs"
 	}
 	putsfd $diffs
-	puts $diffs
+	putsq $diffs
 	lappend diff_files \
 	        [list "$directory/$subdir" \
 		      $file1 $file2]
@@ -614,10 +595,10 @@ foreach directory $myargv {
     }
 
     putsfd "==================== $directory:"
-    puts -nonewline "===================="
-    puts -nonewline "===================="
-    puts -nonewline "===================="
-    puts " $directory:"
+    putsq -nonewline "===================="
+    putsq -nonewline "===================="
+    putsq -nonewline "===================="
+    putsq " $directory:"
 
     cd $directory
     set dir [pwd]
@@ -647,7 +628,7 @@ foreach directory $myargv {
 	putsq "make clean"
 	if { [catch { exec make clean >@ $stdoutq } \
 	            mout] } {
-	    puts $mout
+	    putsq $mout
 	    putsfd $mout
 	    continue
 	}
@@ -678,8 +659,8 @@ foreach directory $myargv {
 	# for which N.in or N.jin exist.
 	#
 	# If problem_allowed_extensions has a list value
-	# in $problem.rc, set `extensions' to this value,
-	# else set it to `allowed_extensions'.
+	# in $problem.rc, set `extensions' to this
+	# value, else set it to `allowed_extensions'.
 	#
 	# If problem_test_files has a $problem.rc list
 	# value, set `solutions' to files in this list
@@ -734,7 +715,8 @@ foreach directory $myargv {
 	    if { [info exists \
 	               problem_allowed_extensions] } {
 		check_list problem_allowed_extensions
-	        set extensions $problem_allowed_extensions
+	        set extensions \
+		    $problem_allowed_extensions
 	    }
 	    if { [info exists problem_test_files] } {
 	        set use_default_solutions no
@@ -936,10 +918,10 @@ foreach directory $myargv {
 			set makes "  ==== $testdir\
 			    ==== making $N.out:"
 			putsfd $makes
-			puts $makes
+			putsq $makes
 		    }
 		    putsfd $mout
-		    puts $mout
+		    putsq $mout
 		}
 
 		if { $N != $problem } {
@@ -986,8 +968,8 @@ foreach directory $myargv {
 		}
 		}
 	  } } out] } {
-	    puts "  ==== $testdir:"
-	    puts $out
+	    putsq "  ==== $testdir:"
+	    putsq $out
 	    putsfd "  ==== $testdir:"
 	    putsfd $out
         }
@@ -1007,28 +989,13 @@ foreach directory $myargv {
 	}
 
     } out] } {
-        puts $out
+        putsq $out
 	putsfd $out
     }
 }
 
-if { $SUB == 3 } {
-    set report [open $SUB_filename a]
-} else {
-    puts ""
-    puts "******************** SUMMARY:"
-    set report stdout
-}
-
-
-if { $SUB == 0 } {
-    close $fd
-    exec cat $tmp >@ stdout
-    file delete $tmp
-}
-
 if { [llength $diff_files] > 0 } {
-    puts $report "******************** \
+    putfd "******************** \
           FILES THAT ARE DIFFERENT:"
     set previous ""
     foreach item $diff_files {
@@ -1036,18 +1003,22 @@ if { [llength $diff_files] > 0 } {
         set file1 [lindex $item 1]
         set file2 [lindex $item 2]
 	if { $previous != $location } {
-	    puts $report "  in $location:"
+	    putfd "  in $location:"
 	    set previous $location
 	}
-	puts $report \
-	     [format {%38s != %-38s} $file1 $file2]
+	putfd [format {%38s != %-38s} $file1 $file2]
     }
 }
-if { $SUB == 3 } {
-    close $report
-}
 
+close $fd
+if { $SUB == 0 } {
+    puts ""
+    puts "******************** SUMMARY:"
+    exec cat $tmp >@ stdout
+    file delete $tmp
+}
 exit 0
+
 
 } caught_output
 caught_error
