@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@seas.harvard.edu)
-# Date:		Wed Oct 16 11:02:35 EDT 2013
+# Date:		Tue May 27 04:52:18 EDT 2014
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2013/10/16 15:36:13 $
+#   $Date: 2014/05/27 08:54:03 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.166 $
+#   $Revision: 1.167 $
 #
 
 # Table of Contents
@@ -2199,11 +2199,11 @@ proc clear_flag { flagfilename } {
 # true if and only instead of making anything, the name
 # of the first file in s_d that needs to be made is
 # returned, or "" is returned if no file needs to be
-# made.
+# made.  `out' is the print output file descriptor.
 #
 proc execute_makes \
 	{ instructions s_d name \
-	  { return_first 0 } } {
+	  { return_first 0 } { out stdout } } {
 
     if { [catch { llength $instructions }] } {
         error "$name is not a TCL\
@@ -2253,7 +2253,7 @@ proc execute_makes \
 	}
 
 	if { [file exists $s_d/$target] } {
-	    puts "Deleting $s_d/$target"
+	    puts $out "Deleting $s_d/$target"
 	    file delete -force -- $s_d/$target
 	}
 	if { [llength $instruction] == 1 } {
@@ -2261,9 +2261,10 @@ proc execute_makes \
 	} else {
 	    set command [lindex $instruction 1]
 	}
-	puts "In $s_d:"
-	puts "    making $target by executing: $command"
-	exec_in_directory $s_d $command >&@ stdout
+	puts $out "In $s_d:"
+	puts $out "    making $target\
+	               by executing: $command"
+	exec_in_directory $s_d $command >&@ $out
     }
     return ""
 }
