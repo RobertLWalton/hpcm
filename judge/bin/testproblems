@@ -4,7 +4,7 @@
 #
 # File:		testproblems
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Mon May 26 21:41:19 EDT 2014
+# Date:		Tue May 27 04:42:16 EDT 2014
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2014/05/27 02:46:02 $
+#   $Date: 2014/05/27 08:48:15 $
 #   $RCSfile: testproblems,v $
-#   $Revision: 1.56 $
+#   $Revision: 1.57 $
 #
 # The next lines run tclsh \
 trap "echo testproblems: Terminated by Signal; exit 1" \
@@ -427,13 +427,6 @@ if { $parallel_runs > 0 } {
 #
 set diff_files {}
 
-# Put into report
-#
-proc putsfd { string } {
-    global fd
-    puts $fd $string
-}
-
 # Put to output if not quiet
 #
 proc putsq { args } {
@@ -457,7 +450,7 @@ proc diff { subdir file1 file2 } {
 		"  ==== $subdir\
 		 ==== diff $file1 $file2:\n$diffs"
 	}
-	putsfd $diffs
+	puts $fd $diffs
 	putsq $diffs
 	lappend diff_files \
 	        [list "$directory/$subdir" \
@@ -594,7 +587,7 @@ foreach directory $myargv {
 	continue
     }
 
-    putsfd "==================== $directory:"
+    puts $fd "==================== $directory:"
     putsq -nonewline "===================="
     putsq -nonewline "===================="
     putsq -nonewline "===================="
@@ -629,7 +622,7 @@ foreach directory $myargv {
 	if { [catch { exec make clean >@ $stdoutq } \
 	            mout] } {
 	    putsq $mout
-	    putsfd $mout
+	    puts $fd $mout
 	    continue
 	}
 
@@ -917,10 +910,10 @@ foreach directory $myargv {
 		    if { $N != $problem } {
 			set makes "  ==== $testdir\
 			    ==== making $N.out:"
-			putsfd $makes
+			puts $fd $makes
 			putsq $makes
 		    }
-		    putsfd $mout
+		    puts $fd $mout
 		    putsq $mout
 		}
 
@@ -970,8 +963,8 @@ foreach directory $myargv {
 	  } } out] } {
 	    putsq "  ==== $testdir:"
 	    putsq $out
-	    putsfd "  ==== $testdir:"
-	    putsfd $out
+	    puts $fd "  ==== $testdir:"
+	    puts $fd $out
         }
 
 	# Return to problem directory
@@ -990,12 +983,12 @@ foreach directory $myargv {
 
     } out] } {
         putsq $out
-	putsfd $out
+	puts $fd $out
     }
 }
 
 if { [llength $diff_files] > 0 } {
-    putfd "******************** \
+    puts $fd "******************** \
           FILES THAT ARE DIFFERENT:"
     set previous ""
     foreach item $diff_files {
@@ -1003,10 +996,10 @@ if { [llength $diff_files] > 0 } {
         set file1 [lindex $item 1]
         set file2 [lindex $item 2]
 	if { $previous != $location } {
-	    putfd "  in $location:"
+	    puts $fd "  in $location:"
 	    set previous $location
 	}
-	putfd [format {%38s != %-38s} $file1 $file2]
+	puts $fd [format {%38s != %-38s} $file1 $file2]
     }
 }
 
