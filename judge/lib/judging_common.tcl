@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@seas.harvard.edu)
-# Date:		Sun Sep 21 20:03:57 EDT 2014
+# Date:		Mon Sep 22 05:03:55 UTC 2014
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2014/09/22 00:05:07 $
+#   $Date: 2014/09/22 05:09:27 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.168 $
+#   $Revision: 1.169 $
 #
 
 # Table of Contents
@@ -1503,7 +1503,7 @@ proc compute_message_date {} {
     # GMT; TCLSH uses -0000 and is out of date in
     # this respect.
     #
-    set date [regsub "\[+\]0000 (UTC)\$" \
+    set date [regsub "\[+\]0000 \\(UTC\\)\$" \
                      $date "-0000"]
     set date [regsub "\[+\]0000\$" $date "-0000"]
     return $date
