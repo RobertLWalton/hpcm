@@ -4,7 +4,7 @@
 #
 # File:		makescoreboard
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Oct 15 04:17:47 EDT 2013
+# Date:		Fri Sep 26 22:01:49 EDT 2014
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -13,9 +13,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2013/10/15 08:21:26 $
+#   $Date: 2014/09/27 02:09:26 $
 #   $RCSfile: makescoreboard,v $
-#   $Revision: 1.98 $
+#   $Revision: 1.99 $
 #
 # The next lines start tclsh \
 trap "echo makescoreboard: Terminated by Signal" \
@@ -273,12 +273,15 @@ if { ! [catch { set st [clock scan $st] }] } {
     set stop_time $scoreboard_stop_time
     if { [regexp {^(|\+)[0-9]+$} $stop_time] } {
 	set scoreboard_stop_time \
-	    [clock format [expr { $st + $stop_time }]]
+	    [clock format [expr { $st + $stop_time }] \
+	                  -gmt no]
     }
     set freeze_time $scoreboard_freeze_time
     if { [regexp {^(|\+)[0-9]+$} $freeze_time] } {
 	set scoreboard_freeze_time \
-	    [clock format [expr { $st + $freeze_time }]]
+	    [clock format \
+	           [expr { $st + $freeze_time }] \
+		   -gmt no]
     }
 }
 
@@ -421,7 +424,7 @@ proc unabbreviate { value } {
 			  [clock scan $date]
 		       }] } {
 	incr time $inc
-	return [clock format $time]
+	return [clock format $time -gmt no]
     } else {
 	return $value
     }
@@ -482,7 +485,7 @@ proc update_scoreboard { { force no } } {
     }
 
     eval global [info globals scoreboard_*]
-    set_scoreboard_time [clock format $time]
+    set_scoreboard_time [clock format $time -gmt no]
     restore_parameters
     set last_time $time
     set future_time ""
