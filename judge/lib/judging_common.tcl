@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@seas.harvard.edu)
-# Date:		Mon Sep 22 05:03:55 UTC 2014
+# Date:		Fri Sep 26 21:56:36 EDT 2014
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2014/09/22 05:09:27 $
+#   $Date: 2014/09/27 01:58:41 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.169 $
+#   $Revision: 1.170 $
 #
 
 # Table of Contents
@@ -313,7 +313,7 @@ proc absolute_time { time base_time } {
     if { [regexp {^([+|-]|)[0-9]+$} $time] } {
         set t [clock scan $base_time]
 	incr t $time
-	set time [clock format $t]
+	set time [clock format $t -gmt no]
     }
     return $time
 }
@@ -586,7 +586,7 @@ proc log_error { error_output } {
     puts $log_ch "-----"
     puts $log_ch $error_output
     puts $log_ch "-----"
-    puts $log_ch "date: [clock format $date]"
+    puts $log_ch "date: [clock format $date -gmt no]"
     puts $log_ch "pwd: [pwd]"
     puts $log_ch "errorCode: $errorCode"
     puts $log_ch "errorInfo follows:"
@@ -1491,11 +1491,11 @@ proc compute_message_date {} {
     			    [llength \
 			         $message_From_line] \
 				 	}] } {
-    	return [clock format [clock seconds]]
+    	return [clock format [clock seconds] -gmt no]
     } elseif { $len >= 3 } {
 	return [lrange $message_From_line 2 end]
     } else {
-    	return [clock format [clock seconds]]
+    	return [clock format [clock seconds] -gmt no]
     }
 
     # Date may have +0000 or `+0000 (UTC)' at end;
@@ -1926,7 +1926,8 @@ proc send_reply { args } {
     #
     set history_ch  [open Reply_Mail_History a]
     puts $history_ch "From [account_name]@[host_name]\
-		      [clock format [clock seconds]]"
+		      [clock format [clock seconds] \
+		             -gmt no]"
     put_file Reply_Mail+ $history_ch
 
     # An empty line is needed before the next `From'

@@ -3,7 +3,7 @@
 #
 # File:		scoreboard_common.tcl
 # Author:	Bob Walton (walton@seas.harvard.edu)
-# Date:		Sat Oct 19 10:15:48 EDT 2013
+# Date:		Fri Sep 26 21:57:00 EDT 2014
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -12,9 +12,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2013/10/19 19:33:37 $
+#   $Date: 2014/09/27 01:58:41 $
 #   $RCSfile: scoreboard_common.tcl,v $
-#   $Revision: 1.72 $
+#   $Revision: 1.73 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -1129,7 +1129,8 @@ proc format_problem_score \
 	    set short_score \
 		[string tolower \
 		   [clock format $problem_time \
-			  -format {%d%b%y}]]
+			  -format {%d%b%y} \
+			  -gmt no]]
 	    set long_score $short_score/$submissions
 	}
 
