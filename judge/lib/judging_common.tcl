@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@seas.harvard.edu)
-# Date:		Fri Sep 26 21:56:36 EDT 2014
+# Date:		Sat Sep 27 02:03:46 EDT 2014
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2014/09/27 01:58:41 $
+#   $Date: 2014/09/27 06:36:23 $
 #   $RCSfile: judging_common.tcl,v $
-#   $Revision: 1.170 $
+#   $Revision: 1.171 $
 #
 
 # Table of Contents
@@ -275,6 +275,19 @@ proc dispatch_unlock { { directory . } } {
 # Date Functions
 # ---- ---------
 
+# Convert a [clock seconds] value to a local date
+# as per [clock format ...] and hpcm_timezone.
+# If no [clock seconds] value given, use current
+# time.
+#
+proc local_date { { seconds "" } } {
+    global hpcm_timezone
+    if { $seconds == "" } {
+        set seconds [clock seconds]
+    }
+    return [clock format $seconds \
+                  -timezone $hpcm_timezone]
+}
 
 # Convert a [clock seconds] value into a date in
 # the form yyyy-mm-dd-hh:mm:ss that is usable as
@@ -282,17 +295,23 @@ proc dispatch_unlock { { directory . } } {
 # variable.
 #
 proc clock_to_filename_date { clock } {
-    global use_gmt
+    global use_gmt hpcm_timezone
+    set tz $hpcm_timezone
+    if { $use_gmt } { set tz :UTC }
+
     return [clock format $clock \
                   -format {%Y-%m-%d-%H:%M:%S} \
-		  -gmt $use_gmt]
+		  -timezone $tz]
 }
 
 # Do the reverse conversion to that of the above
 # function.  Respect the use_gmt global variable.
 #
 proc filename_date_to_clock { date } {
-    global use_gmt
+    global use_gmt hpcm_timezone
+    set tz $hpcm_timezone
+    if { $use_gmt } { set tz :UTC }
+
     set n {([0-9]+)}
     if { ! [regexp "^$n-$n-$n-$n:$n:$n\$" $date forget \
     	           year month day \
@@ -301,7 +320,7 @@ proc filename_date_to_clock { date } {
     }
     return [clock scan \
 	    "$month/$day/$year $hour:$minute:$second" \
-	    -gmt $use_gmt]
+	    -timezone $tz]
 }
 
 # Given a time that may be relative to a base time,
@@ -313,7 +332,7 @@ proc absolute_time { time base_time } {
     if { [regexp {^([+|-]|)[0-9]+$} $time] } {
         set t [clock scan $base_time]
 	incr t $time
-	set time [clock format $t -gmt no]
+	set time [local_date $t]
     }
     return $time
 }
@@ -586,7 +605,7 @@ proc log_error { error_output } {
     puts $log_ch "-----"
     puts $log_ch $error_output
     puts $log_ch "-----"
-    puts $log_ch "date: [clock format $date -gmt no]"
+    puts $log_ch "date: [local_date $date]"
     puts $log_ch "pwd: [pwd]"
     puts $log_ch "errorCode: $errorCode"
     puts $log_ch "errorInfo follows:"
@@ -1491,11 +1510,11 @@ proc compute_message_date {} {
     			    [llength \
 			         $message_From_line] \
 				 	}] } {
-    	return [clock format [clock seconds] -gmt no]
+    	return [local_date]
     } elseif { $len >= 3 } {
 	return [lrange $message_From_line 2 end]
     } else {
-    	return [clock format [clock seconds] -gmt no]
+    	return [local_date]
     }
 
     # Date may have +0000 or `+0000 (UTC)' at end;
@@ -1926,8 +1945,7 @@ proc send_reply { args } {
     #
     set history_ch  [open Reply_Mail_History a]
     puts $history_ch "From [account_name]@[host_name]\
-		      [clock format [clock seconds] \
-		             -gmt no]"
+		      [local_date]"
     put_file Reply_Mail+ $history_ch
 
     # An empty line is needed before the next `From'

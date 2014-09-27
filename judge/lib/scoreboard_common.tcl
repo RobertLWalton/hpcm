@@ -3,7 +3,7 @@
 #
 # File:		scoreboard_common.tcl
 # Author:	Bob Walton (walton@seas.harvard.edu)
-# Date:		Fri Sep 26 21:57:00 EDT 2014
+# Date:		Sat Sep 27 02:30:32 EDT 2014
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -12,9 +12,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2014/09/27 01:58:41 $
+#   $Date: 2014/09/27 06:36:23 $
 #   $RCSfile: scoreboard_common.tcl,v $
-#   $Revision: 1.73 $
+#   $Revision: 1.74 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -1001,7 +1001,8 @@ proc format_problem_score \
            scoreboard_solved_mode \
            scoreboard_unsolved_mode \
 	   scoreboard_factor \
-	   scoreboard_max_score
+	   scoreboard_max_score \
+	   hpcm_timezone
 
     # Compute:
     #
@@ -1130,7 +1131,7 @@ proc format_problem_score \
 		[string tolower \
 		   [clock format $problem_time \
 			  -format {%d%b%y} \
-			  -gmt no]]
+			  -timezone $hpcm_timezone]]
 	    set long_score $short_score/$submissions
 	}
 
