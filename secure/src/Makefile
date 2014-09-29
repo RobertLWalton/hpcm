@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Sep 29 02:30:32 EDT 2014
+# Date:		Mon Sep 29 07:10:28 UTC 2014
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2014/09/29 06:55:05 $
+#   $Date: 2014/09/29 07:10:47 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.18 $
+#   $Revision: 1.19 $
 
 # Kill all implicit rules
 #
@@ -39,7 +39,7 @@ ${SECURE_BIN}/hpcm_sandbox_secure:	\
 	chmod u+s ${SECURE_BIN}/hpcm_sandbox_secure
 	ls -l ${SECURE_BIN}/hpcm_sandbox*
 
-${SECURE_BIN}/hpcm_sandbox.compiled:	hpcm_sandbox.c
+${SECURE_BIN}/hpcm_sandbox.compiled:	hpcm_sandbox
 	test `id -un` = root
 	test -d ${SECURE_BIN}
 	test -w ${SECURE_BIN}
