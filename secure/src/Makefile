@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Oct 19 04:47:38 EDT 2013
+# Date:		Mon Sep 29 02:30:32 EDT 2014
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2013/10/19 08:47:50 $
+#   $Date: 2014/09/29 06:55:05 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.17 $
+#   $Revision: 1.18 $
 
 # Kill all implicit rules
 #
@@ -23,31 +23,21 @@ SECURE_BIN=/sbin
 
 all: hpcm_sandbox hpcm_sendmail hpcm_finish hpcm_wrapper
 
-root_install:	${SECURE_BIN}/hpcm_sandbox
+root_install:	${SECURE_BIN}/hpcm_sandbox_secure
 root_uninstall:	${SECURE_BIN}_uninstall
 
-${SECURE_BIN}/hpcm_sandbox:	\
+${SECURE_BIN}/hpcm_sandbox_secure:	\
 		${SECURE_BIN}/hpcm_sandbox.compiled
 	test `id -un` = root
 	test -d ${SECURE_BIN}
 	test -w ${SECURE_BIN}
-	-mv -f ${SECURE_BIN}/hpcm_sandbox \
-	       ${SECURE_BIN}/hpcm_sandbox-
+	-mv -f ${SECURE_BIN}/hpcm_sandbox_secure \
+	       ${SECURE_BIN}/hpcm_sandbox_secure-
 	cp -p ${SECURE_BIN}/hpcm_sandbox.compiled \
-	      ${SECURE_BIN}/hpcm_sandbox
-	chmod 755 ${SECURE_BIN}/hpcm_sandbox
-	chmod u+s ${SECURE_BIN}/hpcm_sandbox
+	      ${SECURE_BIN}/hpcm_sandbox_secure
+	chmod 755 ${SECURE_BIN}/hpcm_sandbox_secure
+	chmod u+s ${SECURE_BIN}/hpcm_sandbox_secure
 	ls -l ${SECURE_BIN}/hpcm_sandbox*
-	@if test ! -L ../../judge/bin/hpcm_sandbox_x; \
-	 then \
-	     make --no-print-directory hpcm_sandbox_x; \
-	 elif cmp -s ${SECURE_BIN}/hpcm_sandbox \
-	             ../../judge/bin/hpcm_sandbox_x; \
-	 then \
-	     do_nothing=; \
-	 else \
-	     make --no-print-directory hpcm_sandbox_x; \
-	 fi
 
 ${SECURE_BIN}/hpcm_sandbox.compiled:	hpcm_sandbox.c
 	test `id -un` = root
@@ -66,17 +56,11 @@ ${SECURE_BIN}_uninstall:
 	test `id -un` = root
 	test -d ${SECURE_BIN}
 	test -w ${SECURE_BIN}
-	-mv -f ${SECURE_BIN}/hpcm_sandbox- \
-	       ${SECURE_BIN}/hpcm_sandbox
+	-mv -f ${SECURE_BIN}/hpcm_sandbox_secure- \
+	       ${SECURE_BIN}/hpcm_sandbox_secure
 	-mv -f ${SECURE_BIN}/hpcm_sandbox.compiled- \
 	       ${SECURE_BIN}/hpcm_sandbox.compiled
 	ls -l ${SECURE_BIN}/hpcm_sandbox*
-
-hpcm_sandbox_x:	
-	rm -f ../../judge/bin/hpcm_sandbox_x
-	cd ../../judge/bin; \
-	    ln -s ${SECURE_BIN}/hpcm_sandbox \
-	          hpcm_sandbox_x
 
 hpcm_sandbox:	hpcm_sandbox.c
 	gcc -o hpcm_sandbox hpcm_sandbox.c

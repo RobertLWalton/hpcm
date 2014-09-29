@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun May  5 15:56:35 EDT 2013
+# Date:		Mon Sep 29 02:35:10 EDT 2014
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2013/05/05 19:57:49 $
+#   $Date: 2014/09/29 06:53:30 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.44 $
+#   $Revision: 1.45 $
 
 all:	scorediff grant_access \
 	hpcm_sandbox_unsecure \
@@ -57,13 +57,14 @@ hpcm_sandbox_unsecure:	../../secure/src/hpcm_sandbox.c
 	      hpcm_sandbox_check_date; \
 
 hpcm_sandbox_secure:	hpcm_sandbox_unsecure
-	@if test -x ${SECURE_BIN}/hpcm_sandbox; \
-	then if test ! -x hpcm_sandbox_secure; \
+	@if test -x ${SECURE_BIN}/hpcm_sandbox_secure; \
+	then if test ! -x ./hpcm_sandbox_secure; \
 	     then echo ln -s \
-	               ${SECURE_BIN}/hpcm_sandbox \
-		       hpcm_sandbox_secure; \
-	          ln -s ${SECURE_BIN}/hpcm_sandbox \
-		        hpcm_sandbox_secure; \
+	            ${SECURE_BIN}/hpcm_sandbox_secure \
+		    hpcm_sandbox_secure; \
+	          ln -s \
+		    ${SECURE_BIN}/hpcm_sandbox_secure \
+		    hpcm_sandbox_secure; \
 	     fi; \
 	     make --no-print-directory \
 		   hpcm_sandbox_check_date; \
@@ -71,7 +72,7 @@ hpcm_sandbox_secure:	hpcm_sandbox_unsecure
 	@make --no-print-directory \
 	     hpcm_sandbox_check_security
 
-hpcm_sandbox_check_date:
+hpcm_sandbox_check_date:	hpcm_sandbox_unsecure
 	@if test ! -r \
 	    ${SECURE_BIN}/hpcm_sandbox.compiled; \
 	then x=x; \
@@ -80,7 +81,7 @@ hpcm_sandbox_check_date:
 	then x=x; \
 	else echo ===============================; \
 	     echo WARNING: \
-		  ${SECURE_BIN}/hpcm_sandbox \
+		  ${SECURE_BIN}/hpcm_sandbox_secure \
 		  is out of date; \
 	     echo ===============================; \
 	fi
