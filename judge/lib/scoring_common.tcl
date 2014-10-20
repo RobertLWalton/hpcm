@@ -2,7 +2,7 @@
 #
 # File:		scoring_common.tcl
 # Author:	Bob Walton (walton@seas.harvard.edu)
-# Date:		Mon Oct 20 02:46:05 EDT 2014
+# Date:		Mon Oct 20 07:28:48 UTC 2014
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2014/10/20 07:11:19 $
+#   $Date: 2014/10/20 07:29:21 $
 #   $RCSfile: scoring_common.tcl,v $
-#   $Revision: 1.75 $
+#   $Revision: 1.76 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -1106,7 +1106,8 @@ proc execute_response_commands \
 		if { [llength $solution_files] == 0 } {
 		    lappend processed_commands \
 			    [list LINE \
-			          "No solution files\
+			          "Oops!  Sorry! \
+				   No solution files\
 				   are available."]
 	        } else {
 		    foreach file $solution_files {
