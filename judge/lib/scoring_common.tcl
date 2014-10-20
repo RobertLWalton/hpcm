@@ -2,7 +2,7 @@
 #
 # File:		scoring_common.tcl
 # Author:	Bob Walton (walton@seas.harvard.edu)
-# Date:		Mon Mar 18 06:22:17 EDT 2013
+# Date:		Mon Oct 20 02:46:05 EDT 2014
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2013/04/20 08:44:28 $
+#   $Date: 2014/10/20 07:11:19 $
 #   $RCSfile: scoring_common.tcl,v $
-#   $Revision: 1.74 $
+#   $Revision: 1.75 $
 #
 #
 # Note: An earlier version of this code used to be in
@@ -968,7 +968,8 @@ proc execute_response_commands \
 	   submit_qualifier \
 	   judging_directory \
 	   problem_required_files \
-	   problem_optional_files
+	   problem_optional_files \
+	   solution_map
 
     set problem $submitted_problem$submitted_extension
 
@@ -1077,20 +1078,44 @@ proc execute_response_commands \
 		         $problem_required_files
 		} elseif { $submitted_extension \
 		           != "" } {
-		    lappend solution_files $problem
+
+		    set ext $submitted_extension
+		    if { [info exists \
+		               solution_map($ext)] \
+		       } {
+		    	set extensions \
+			    $solution_map($ext)
+		    } else {
+		    	set extensions [list $ext]
+		    }
+
+		    foreach ext $extensions {
+		        set f $submitted_problem$ext
+		        if { [file readable \
+			           $sdir/$f] } {
+			    lappend solution_files $f
+			}
+		    }
 		}
 		if { [info exists \
 		           problem_optional_files] } {
 		    lappend_lists solution_files \
 		         $problem_optional_files
 		}
-		    
-	        foreach file $solution_files {
-		    set f $sdir/$file
+
+		if { [llength $solution_files] == 0 } {
 		    lappend processed_commands \
-			    [list BAR $file:]
-		    lappend processed_commands \
-			    [list INPUT $f]
+			    [list LINE \
+			          "No solution files\
+				   are available."]
+	        } else {
+		    foreach file $solution_files {
+			set f $sdir/$file
+			lappend processed_commands \
+				[list BAR $file:]
+			lappend processed_commands \
+				[list INPUT $f]
+		    }
 		}
 	    }
 
