@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@seas.harvard.edu)
-# Date:		Sun Oct 19 05:35:41 EDT 2014
+# Date:		Mon Oct 20 07:34:39 UTC 2014
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2014/10/19 09:46:04 $
+#   $Date: 2014/10/20 07:57:01 $
 #   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.290 $
+#   $Revision: 1.291 $
 
 # Table of Contents:
 #
@@ -1612,18 +1612,18 @@ set response_mode ""
 #
 set response_manager_map ""
 
-# The following maps submitted extensions to the best
-# alternative solution extensions, for use when a
-# solution with the submitted extension cannot be found
-# by the SOLUTION response command.  The alternative
-# extensions are tested in order and the first available
-# solution is used.
+# The following maps submitted extensions to lists of
+# solution extensions.  The listed solution extensions
+# are tried in order by the SOLUTION response command,
+# and the first extension giving a readable file is
+# used.  Normally the submitted extension is listed
+# first.
 #
-array set response_solution_map {
-    .c {.cc .java .lsp}
-    .cc {.c .java .lsp}
-    .java {.cc .c .lsp}
-    .lsp {.java .cc .c}
+array set solution_ext_map {
+    .c {.c .cc .java .lsp}
+    .cc {.cc .c .java .lsp}
+    .java {.java .cc .c .lsp}
+    .lsp {.lsp .java .cc .c}
 }
 
 # List of global variables that can be referenced in
@@ -2053,13 +2053,14 @@ set response_instructions {
 #	  Include the solution files in the reply.  Each
 #	  file is proceeded by a BAR line containing the
 #	  file's name.  The solution files include all
-#	  problem_required_files and problem_optional_
-#	  files, or the file named in the submission
-#	  submission message if problem_required_files
-#	  is not set, or if this last file does not
-#	  exist, a file with the same root name but
-#	  an alternative extension that is selected
-#	  from the response_solution_map variable.
+#	  problem_required_files, or if this variable
+#	  does not exist, the first readable file with
+#	  the problem name as root name and with an
+#         extension listed in solution_ext_map(ext)
+#	  where ext is the submitted extension, or if
+#         this variable does not exist, with extension
+#	  ext.  In all cases any problem_optional_files
+#         are added to the solution files.
 #
 # Response instructions are used by the autojudge and
 # manualreply program, which compose score based replies
