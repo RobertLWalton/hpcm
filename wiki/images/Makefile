@@ -87,6 +87,6 @@ binary-tree-pointer-rotation:	\
 %-1.png:	%.tex
 	rm -f $*.pdf $*-*.png
 	pdflatex $*.tex
-	pdftoppm -png -r 100 $*.pdf $*
+	pdftoppm -png -r 300 $*.pdf $*
 clean:
 	rm -f *.aux *.log *.pdf *.png
