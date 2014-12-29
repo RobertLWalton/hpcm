@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Oct 15 01:09:57 EDT 2012
+# Date:		Mon Dec 29 03:59:00 EST 2014
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2012/10/15 05:12:39 $
+#   $Date: 2014/12/29 08:59:21 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.65 $
+#   $Revision: 1.66 $
 
 # Include file that contains the following variables:
 #
@@ -185,7 +185,19 @@ ARCHIVE_FILES = \
 # make cleanarchive
 #	Remove ARCHIVE/hpcm_${VERSION}.
 
-all:	submakes
+all:	submakes public
+
+libraries/public:
+	(cd libraries; rm -f public; \
+	 ln -s ~/hpcm_public public)
+
+public:	libraries/public
+	@if test ! -d libraries/public; then \
+	    echo "=========================="; \
+	    echo "WARNING: libraries/public" \
+	         "not defined"; \
+	    echo "=========================="; \
+	    fi
 
 signatures:	HPCM_${VERSION}_Signatures
 
