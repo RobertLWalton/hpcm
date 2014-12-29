@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri May 24 18:36:39 EDT 2013
+# Date:		Sun Dec 28 20:06:19 EST 2014
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -11,9 +11,9 @@
 # RCS Info (may not be true date or author):
 #
 #   $Author: walton $
-#   $Date: 2013/05/24 22:36:53 $
+#   $Date: 2014/12/29 01:35:42 $
 #   $RCSfile: Makefile,v $
-#   $Revision: 1.50 $
+#   $Revision: 1.51 $
 
 # To make web help pages, execute `make web', copy
 # the `web.tar' file to your web server and unpack
@@ -116,15 +116,15 @@ all_help_index: \
 
 
 # If we replace %_demos_index by %demos_index we get
-# circularity with ../../problem_library/demos_index.
+# circularity with ../../libraries/demos/demos.index.
 #
-%_demos_index:	../../problem_library/demos_index
+%_demos_index:	../../libraries/demos/demos.index
 	rm -f $*_demos_index \
 	      $*_demos_index.html \
 	      $*_demos_index.files
 	../../judge/bin/makehelp \
 	    $*_demos_index ${DEMOS_TITLE} \
-	    ../../problem_library/demos_index ${WEB} \
+	    ../../libraries/demos/demos.index ${WEB} \
 	    $*_help
 
 %_demos.ps:	%_demos_index
@@ -208,8 +208,6 @@ web:	web_do
 	mkdir web
 	make WEB=web all_help_index all_demos_index
 	make pdf
-	mkdir web/algorithms
-	chmod 755 web/algorithms
 	cp -p ../../wiki/print/*.pdf web/algorithms
 	chmod 444 web/algorithms/*.pdf
 	cp index.html web/index.html
