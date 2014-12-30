@@ -6,7 +6,7 @@
 #
 # File:		makecontest
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Dec 30 12:55:06 UTC 2014
+# Date:		Tue Dec 30 17:34:57 UTC 2014
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -1055,6 +1055,15 @@ The -procmailrc Option
     case such a record is needed.  This entry must be
     before other entries that route mail.
 
+    Lastly the -procmailrc program option puts any of
+    its changes to .procmailrc before any entry
+    starting with
+
+    		:0 h
+
+    preceded by a blank line.  Such an entry may be put
+    at the end of .procmailrc to catch email not routed
+    to the autojudge.
 
 The -who_where Option
 --- ---------- ------
@@ -3251,6 +3260,10 @@ if { $procmailrc_option } {
 
     if { $add_mbox || [llength $passwords] > 0 } {
 	set file [read_entire_file ~/.procmailrc]
+	set end_file ""
+	set file_regexp \
+	    "\\A(.*)(\n\n:0\[ \t\]+h\[ \t\]*\n.*)\\Z"
+	regexp $file_regexp $file forget file end_file
 	if { $add_mbox } {
 	    set file ":0 c:\nhpcm_mbox\n\n$file"
 	    puts "The following has been prepended\
@@ -3270,7 +3283,7 @@ if { $procmailrc_option } {
 	    puts "    | receivemail $j_d_relative | \\"
 	    puts "      dispatchmail $j_d_relative"
 	}
-	write_file ~/.procmailrc $file
+	write_file ~/.procmailrc $file$end_file
     }
 }
 
