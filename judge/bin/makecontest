@@ -6,7 +6,7 @@
 #
 # File:		makecontest
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Sep 27 02:56:05 EDT 2014
+# Date:		Tue Dec 30 12:55:06 UTC 2014
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -1024,7 +1024,7 @@ The -ssh Option
     files will be available to the `hpcm/contestant/bin/
     authorize' program.
 
-
+
 The -procmailrc Option
 --- ----------- ------
 
@@ -1037,11 +1037,13 @@ The -procmailrc Option
     hpcm_sendmail.rc exists, one autojudge address is
     taken from its contents.  The other autojudge
     addresses are listed in the `autojudge_addresses'
-    global variable.  The first autojudge address is
+    global variable.  The ./contest/secure/hpcm_
+    sendmail.rc autojudge address if it exists, or the
+    first autojudge_addresses address otherwise, is
     written to the ./Contest_Address file.  If there are
     no autojudge addresses, it is not an error, but a
     TODO to fix the situation is written.
-
+
     The -procmailrc program option also ensures that
     the entry
 
@@ -1053,7 +1055,7 @@ The -procmailrc Option
     case such a record is needed.  This entry must be
     before other entries that route mail.
 
-
+
 The -who_where Option
 --- ---------- ------
 
@@ -1238,7 +1240,8 @@ Makecontest Execution Notes
 
     Unlike most HPCM judging programs, errors made by
     this program are not written to log files, but are
-    announced on the standard error output."
+    announced on the standard error output.
+"
 
 # If no arguments are given, use the value of the
 # makecontest_arguments global variable if that
@@ -1432,7 +1435,7 @@ while { $argi < $argc } {
 #
 if {    $argi < $argc \
      && [regexp {^-} [lindex $argv $argi]] } {
-    puts $document
+    exec << $document less -F >&@ stdout
     exit 1
 }
 
@@ -2697,7 +2700,8 @@ if { $demos_solutions_option } {
 	    if { ! [lcontain $demos $d] } continue
 	    set file [file tail $f]
 	    if { $f != "solutions/$d/$file" } {
-		error "bad file $f in demos_solution_files"
+		error \
+		  "bad file $f in demos_solution_files"
 	    }
 	    file mkdir $d_d/solutions/$d
 	    grant_access $d_d/solutions/$d
@@ -2772,7 +2776,8 @@ proc rename_directory { directory } {
 	if { [file exists $j_d/$directory-] } {
 	    puts "Renaming $directory-"
 	    puts "      to $directory--"
-	    file rename $j_d/$directory- $j_d/$directory--
+	    file rename $j_d/$directory- \
+	                $j_d/$directory--
 	    deny_access $j_d/$directory--
 	}
 	if { [file exists $j_d/$directory] } {
@@ -3222,9 +3227,9 @@ if { $procmailrc_option } {
 			 "    $line" \
 			 "    . . ." \
 			 " Remove or fix entry."
-		} elseif {   [lsearch \
-				-exact $password \
-				$original_passwords] \
+		} elseif {   [lsearch -exact \
+		                $original_passwords \
+				$password] \
 			   < 0 } {
 		    TODO "Extra entry in ~/.procmail" \
 			 "    $to_line" \
