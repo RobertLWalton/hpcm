@@ -2,7 +2,7 @@
 //
 // File:	scorediff.cc
 // Authors:	Bob Walton (walton@deas.harvard.edu)
-// Date:	Fri Aug  3 20:01:25 EDT 2012
+// Date:	Mon Jan  5 04:43:55 EST 2015
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -478,14 +478,14 @@ char documentation [] =
 "        -integer absolute-diff relative-diff N\n"
 "\n"
 "    and the program does not report in any way\n"
-"    `float' or `integer' proofs that have both abso-\n"
-"    lute and relative difference less than the\n"
+"    `float' or `integer' proofs that have EITHER\n"
+"    absolute or relative difference less than the\n"
 "    values given in the program option.  In these\n"
 "    options the diff's may be `-' to denote `-1',\n"
-"    which signifies that all number proofs are to be\n"
-"    reported (this is the default); diff's may not\n"
-"    be negative numbers. The diff's may be omitted\n"
-"    if they are `-' and N is zero and the program\n"
+"    which disables the corresponding test (this\n"
+"    is the default); otherwise diff's may not be\n"
+"    negative numbers. The diff's may be omitted if\n"
+"    they are `-' and N is zero and the program\n"
 "    argument following does NOT begin with a digit\n"
 "    or decimal point.\n"
 "\n"
