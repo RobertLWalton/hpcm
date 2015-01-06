@@ -2,7 +2,7 @@
 #
 # File:		scoring_common.tcl
 # Author:	Bob Walton (walton@seas.harvard.edu)
-# Date:		Mon Oct 20 07:35:22 UTC 2014
+# Date:		Tue Jan  6 03:06:38 EST 2015
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -127,10 +127,10 @@
 #
 # Here the absolute and relative differences are includ-
 # ed only for the types `integer' and `float'.  The
-# sort-ID is an 18 digit number the first 6 digits of
-# which are the output-line number, the next 3 digits of
-# which are the output-column number, the next 6 digits
-# of which are the test-line number, and the last 3
+# sort-ID is an 36 digit number the first 9 digits of
+# which are the output-line number, the next 9 digits of
+# which are the output-column number, the next 9 digits
+# of which are the test-line number, and the last 9
 # digits of which are the test-column number.  The list
 # stored in each `proof_array(type)' is sorted, thereby
 # sorting the proofs in the list first by output-line
@@ -263,7 +263,7 @@ proc compute_score_and_proof_arrays { score_file } {
 	    }
 
 	    set sort_id \
-		[format {%06d%03d%06d%03d} \
+		[format {%09d%09d%09d%09d} \
 		        $output_line \
 			$output_begin_column \
 			$test_line \
@@ -309,6 +309,19 @@ proc compute_score_and_proof_arrays { score_file } {
         set proof_array($type) \
 	    [lsort $proof_array($type)]
     }
+}
+
+# Function to compute `score_array' and `score_marker_
+# array' from the first line returned by scorediff.  The
+# argument is this first line.
+#
+proc compute_score_arrays { line } {
+
+    global score_array score_marker_array
+
+    compute_scoring_array score_array $line \
+			  "scorediff first line" \
+			  score_marker_array
 }
 
 # Function to do the common work of the above functions.
@@ -411,13 +424,20 @@ proc compute_scoring_array \
 # `compute_instruction_array' must be called before
 # this routine is called.
 #
+# If the scorefile argument is "", this function returns
+# the output of
+#
+#     scorediff OPTION ... outfile testfile
+#
 proc compute_score_file { outfile testfile scorefile \
 			  { options {} } } {
 
     global difference_type_proof_limit \
            instruction_array fake_instruction_types
 
-    lappend options -all $difference_type_proof_limit
+    set proof_limit $difference_type_proof_limit
+    if { $scorefile == "" } { set proof_limit 0 }
+    lappend options -all $proof_limit
 
     foreach type [array names instruction_array] {
 
@@ -438,18 +458,24 @@ proc compute_score_file { outfile testfile scorefile \
 	# limit for the type is set to 0.
 	#
         if { [lcontain {number integer float} $type] } {
-	    lappend options $difference_type_proof_limit
+	    lappend options $proof_limit
 	}
     }
 
-    eval [list exec scorediff] $options \
-         [list $outfile $testfile > $scorefile]
+    if { $scorefile != "" } {
+	eval [list exec scorediff] $options \
+	     [list $outfile $testfile > $scorefile]
+    } else {
+	return [eval [list exec scorediff] $options \
+	             [list $outfile $testfile ]]
+    }
 }
 
 # Computes score based on the scoring databases computed
-# by `compute_instruction_array' and `compute_score_and_
-# proof_arrays'.  These functions must be called first.
-# Returns the score.  Also sets the variables:
+# by `compute_instruction_array' and either `compute_
+# score_and_proof_arrays' or `compute_score_arrays'.
+# These functions must be called first.  Returns the
+# score.  Also sets the variables:
 #
 #	incorrect_output_types
 #	incomplete_output_types
