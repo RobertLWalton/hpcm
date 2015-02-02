@@ -4,7 +4,7 @@
 #
 # File:		testproblems
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Tue Jan 20 04:37:36 EST 2015
+# Date:		Mon Feb  2 08:03:56 EST 2015
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -464,6 +464,17 @@ proc putsq { args } {
     }
 }
 
+# Put to summary.  If header not yet output, output it.
+#
+proc putss { args } {
+    global summary_header fd
+    if { $summary_header != "" } {
+        puts $fd $summary_header
+	set summary_header ""
+    }
+    eval puts $fd $args
+}
+
 # Diff two files and update reports.
 #
 proc diff { subdir file1 file2 } {
@@ -478,7 +489,7 @@ proc diff { subdir file1 file2 } {
 		"  ==== $subdir\
 		 ==== diff $file1 $file2:\n$diffs"
 	}
-	puts $fd $diffs
+	putss $diffs
 	putsq $diffs
 	lappend diff_files \
 	        [list "$directory/$subdir" \
@@ -516,7 +527,7 @@ proc scorediff { subdir outfile testfile \
 	lappend diff_files \
 		[list "$directory/$subdir" \
 		      $outfile $testfile $score]
-	puts $fd $out
+	putss $out
     }
     putsq $out
 }
@@ -658,7 +669,8 @@ foreach directory $myargv {
 	continue
     }
 
-    puts $fd "==================== $directory:"
+    set summary_header \
+        "==================== $directory:"
     putsq -nonewline "===================="
     putsq -nonewline "===================="
     putsq -nonewline "===================="
@@ -693,7 +705,7 @@ foreach directory $myargv {
 	if { [catch { exec make clean >@ $stdoutq } \
 	            mout] } {
 	    putsq $mout
-	    puts $fd $mout
+	    putss $mout
 	    continue
 	}
 
@@ -892,7 +904,8 @@ foreach directory $myargv {
 
 	# Process each value of PROBLEMXXX.EXT
 	#
-	set testdir_summary {}
+	set testdir_correct_summary {}
+	set testdir_incorrect_summary {}
 	if { [catch { foreach SOLUTION $solutions {
 
 	    # Be sure we are in problem directory
@@ -946,6 +959,11 @@ foreach directory $myargv {
 	    #
 	    cd $testdir
 
+	    # Compile solution; errors caught below.
+	    #
+	    puts "Compiling $problem:"
+	    exec make $problem >@ $stdoutq
+
 	    # If problem.in or problem.jin exist, only
 	    # consider them.  Otherwise consider all
 	    # *.in and *.jin.  Note that if problem.in
@@ -978,16 +996,19 @@ foreach directory $myargv {
 
 		putsq "make"
 		set make_error \
-		    [catch { exec make >@ $stdoutq } \
+		    [catch { exec /usr/bin/time \
+		                  -f "%U $N.in" \
+				  -o TIMING_INFO+ -a \
+				  make >@ $stdoutq } \
 			   mout]
 		if { $make_error } {
 		    if { $N != $problem } {
 			set makes "  ==== $testdir\
 			    ==== making $N.out:"
-			puts $fd $makes
+			putss $makes
 			putsq $makes
 		    }
-		    puts $fd $mout
+		    putss $mout
 		    putsq $mout
 		    if { [regexp -nocase -- \
 		                 $time_limit_regexp \
@@ -1072,31 +1093,57 @@ foreach directory $myargv {
 		    scorediff $testdir $N.out $N.test
 		}
 	    }
+	    puts "Sorting TIMING_INFO:"
+	    exec sort -k 1,1 -n -r \
+	         < TIMING_INFO+ > TIMING_INFO
+	    file delete TIMING_INFO+
+	    set timing_info \
+	        [exec head -n 5 < TIMING_INFO]
+	    regsub -all "\n" $timing_info \
+	           "\n            " \
+	           timing_info
+	    set max_time [lindex $timing_info 0]
+
 	    set names [array names score_counters]
 	    set out "    in $testdir:"
 	    set i 0
-	    foreach score $names {
+	    set out_names $names
+	    lappend out_names "Max Time"
+	    foreach score $out_names {
 		if { [expr { ( $i % 2 ) == 0 }] } {
 		    set out "$out\n       "
 		}
 		incr i
-		set out \
-		    "$out $score_counters($score)\
-			  $score"
+		if { $score == "Max Time" } {
+		    set value $max_time
+		} else {
+		    set value $score_counters($score)
+		}
+		set out "$out $value $score"
 	    }
+	    set out "$out\n        Max Times:"
+	    set out "$out\n            $timing_info"
 	    puts "TEST DIRECTORY SUMMARY:"
 	    puts $out
 	    if { [llength $names] > 0 \
 	         && (    [llength $names] > 1 \
 	              ||    [lindex $names 0] \
 		         != "Completely Correct" ) } {
-		lappend testdir_summary $out
+		lappend testdir_incorrect_summary $out
+	    } else {
+		set name "Completely Correct"
+		set count $score_counters($name)
+		if { $max_time != "" } {
+		    set max_time " $max_time Max Time"
+		}
+	        lappend testdir_correct_summary \
+		    "$testdir: $count $name$max_time"
 	    }
 	} } out] } {
 	    putsq "  ==== $testdir:"
 	    putsq $out
-	    puts $fd "  ==== $testdir:"
-	    puts $fd $out
+	    putss "  ==== $testdir:"
+	    putss $out
         }
 
 	# Return to problem directory
@@ -1115,7 +1162,7 @@ foreach directory $myargv {
 
     } out] } {
         putsq $out
-	puts $fd $out
+	putss $out
     }
 }
 
@@ -1144,10 +1191,15 @@ if { $SUB == 0 } {
     exec cat $tmp >@ stdout
     file delete $tmp
 
-    if { [llength $testdir_summary] > 0 } {
+    if { [llength $testdir_correct_summary] > 0 } {
+	foreach item $testdir_correct_summary {
+	    puts $item
+	}
+    }
+    if { [llength $testdir_incorrect_summary] > 0 } {
 	puts "******************** \
 	      NOT COMPLETELY CORRECT TEST DIRECTORIES:"
-	foreach item $testdir_summary {
+	foreach item $testdir_incorrect_summary {
 	    puts $item
 	}
     }
