@@ -1,7 +1,7 @@
 # Makefile for the Word Order Reverse Problem
 #
 # File:		Makefile
-# Date:		Thu Feb 28 04:08:03 EST 2013
+# Date:		Wed Feb  4 04:42:50 EST 2015
 #
 # See demonstration Makefile for documentation.
 #
@@ -17,6 +17,10 @@ P = reverser
 XTRA_INPUTS =
 XTRA_LIBS =
 XTRA_LIMITS =
+C_FLAGS = -g
+CC_FLAGS = -g
+JAVA_FLAGS = -g
+CL_FLAGS = --script
 
 .SUFFIXES:
 .SUFFIXES: .c .cc .java .lsp
@@ -25,28 +29,31 @@ default:	$P.out
 
 .c:
 	rm -f $* core core.[0-9]*
-	gcc -g -o $* $*.c -lm ${XTRA_LIBS}
+	gcc ${C_FLAGS} -o $* $*.c \
+	    -lm -lcrypt ${XTRA_LIBS}
 
 .cc:
 	rm -f $* core core.[0-9]*
-	g++ -g -o $* $*.cc -lm ${XTRA_LIBS}
+	g++ ${CC_FLAGS} -o $* $*.cc \
+	    -lm -lcrypt ${XTRA_LIBS}
 
 .java:
 	rm -f $* *.class core core.[0-9]*
-	javac -g $*.java
+	javac ${JAVA_FLAGS} $*.java
 	echo >$* '#!/bin/sh'
 	echo >>$* "exec `which java` -ea $* \$$*"
 	chmod a+r *.class
 	chmod a+rx $*
 
-#
 .lsp:
 	rm -f $* core core.[0-9]*
 	echo >$* '#!/bin/sh'
-	echo >>$* "exec sbcl --script $*.lsp" '"$$@"'
+	echo >>$* "exec sbcl ${CL_FLAGS}" \
+	          "$*.lsp" '"$$@"'
 	chmod a+r $*.lsp
 	chmod a+rx $*
 
+#
 $P.in:
 	if test -r sample.in; \
 	then cp sample.in $P.in; chmod u+rw $P.in; fi
@@ -114,11 +121,3 @@ clean:
 # The authors have placed this file in the public
 # domain; they make no warranty and accept no liability
 # for this file.
-#
-# RCS Info (may not be true date or author):
-#
-#   $Author: walton $
-#   $Date: 2013/03/12 16:48:15 $
-#   $RCSfile: Makefile,v $
-#   $Revision: 1.8 $
-
