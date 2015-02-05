@@ -1,0 +1,76 @@
+#! /bin/sh
+#
+# List directories referenced by an index.
+#
+# File:		listindex
+# Author:	Bob Walton <walton@deas.harvard.edu>
+# Date:		Thu Feb  5 06:57:39 EST 2015
+#
+# The authors have placed this program in the public
+# domain; they make no warranty and accept no liability
+# for this program.
+#
+# The next lines start tclsh \
+trap "echo makehelp: Terminated by Signal" \
+    HUP INT QUIT; \
+tclsh "$0" "$@"; exit $status
+
+set document "
+listindex index option ...
+
+    Read the index and output for each selected
+    directory reference the relative name of the
+    directory.
+
+    Only lines in the index of the form
+
+       *** directory-name option ...
+
+    are processed.  If such a line does NOT have an
+    option given as an argument to listindex, the
+    line is ignored.  Otherwise the directory name is
+    output as is."
+
+# If too few arguments or first argument begins with
+# `-', print documentation and exit with error.
+#
+if { $argc < 1 || [regexp {^-} [lindex $argv 0]] } {
+    puts $document
+    exit 1
+}
+
+set index [lindex $argv 0]
+set options [lrange $argv 1 end]
+if { [lsearch -exact $options ALL] >= 0 } {
+    set options {}
+}
+
+if { [catch { set in [open $index r] }] } {
+    puts "ERROR: could not open $index for reading"
+    exit 1
+}
+
+proc has_option { line_options } {
+    global options
+    if { $options == {} } { return 1 }
+    foreach opt $line_options {
+        if { [lsearch -exact $options $opt] >= 0 } {
+	    return 1
+	}
+    }
+    return 0
+}
+
+while { ! [eof $in] } {
+    set line [gets $in]
+    if { [eof $in] } break
+    if { [catch { set len [llength $line] }] } continue
+    if { $len < 2 } continue
+    if { [lindex $line 0] != "***" } continue
+    if { ! [has_option [lrange $line 2 end]] } continue
+    puts [lindex $line 1]
+}
+
+close $in
+
+exit 0
