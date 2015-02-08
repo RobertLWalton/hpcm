@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Sep  8 05:42:49 EDT 2013
+# Date:		Sun Feb  8 02:58:44 EST 2015
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,13 +15,17 @@
 #   $RCSfile: Makefile,v $
 #   $Revision: 1.34 $
 
-all:	hpcm_sandbox hpcm_sendmail hpcm_finish \
+all:	pdf \
+        hpcm_sandbox hpcm_sendmail hpcm_finish \
         hpcm_display_graph \
 	hpcm_display_segments modes
 
 # Kill all implicit rules
 #
 .SUFFIXES:
+
+pdf:	print
+	ln -s print pdf
 
 hpcm_sandbox:	../../secure/src/hpcm_sandbox.c
 	rm -f hpcm_sandbox

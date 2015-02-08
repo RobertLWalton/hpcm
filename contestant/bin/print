@@ -4,29 +4,29 @@
 #
 # File:		print
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Sat Mar  9 12:00:25 EST 2002
+# Date:		Sun Feb  8 02:38:35 EST 2015
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
 # for this program.
-#
-# RCS Info (may not be true date or author):
-#
-#   $Author: hc3 $
-#   $Date: 2002/03/09 17:13:25 $
-#   $RCSfile: print,v $
-#   $Revision: 1.15 $
 
 case "$1" in
    -doc* )
    	echo "
 print [filename ...]
+pdf [filename ...]
 
     Print the files named (or the standard input if
     the filenames are missing) in a format well suited
     to files with lines of 80 columns.   This format
     puts 1 file page per paper page, and permits at
     least 60 lines on a file page.
+
+    If called with the name \`pdf', makes a .pdf file
+    instead of printing.  If the first filename has the
+    form xxx.yyy, a .pdf file with the name xxx-yyy.pdf
+    is made.  If there are no file names, a file with
+    the name input.pdf is made.
 
     If ~/.hpcm_contest/who_where is readable the name of
     the current account is mapped so this account's
@@ -35,13 +35,13 @@ print [filename ...]
     is \`WHERE' or \`where' or the account does not
     match any line in ~/.hpcm_contest/who_where.
 
-    The \`printer_pipe' program is used to locate the
-    printer and update ~/.hpcm_contest/printer_jobs."
+    For printing the \`printer_pipe' program is used to
+    locate the printer and update ~/.hpcm_contest/
+    printer_jobs."
 
     	exit 1
 	;;
 esac
-
 
 
 # Compute `where' from who_where if that exists.
@@ -61,11 +61,29 @@ else
     where="$user"
 fi
 
+case "$0" in
+*pdf)
+    case "$1" in
+    "") outfile=input.pdf ;;
+    *)  outfile=`echo "$1" | tr '\.' '\-'`.pdf ;;
+    esac
+    pipe=(ps2pdf - "$outfile")
+    echo "Output file is $outfile"
+    ;;
+*)
+    case "$1" in
+    "") outfile=input ;;
+    *)  outfile="$1" ;;
+    esac
+    pipe=(printer_pipe "$where" "$outfile")
+    ;;
+esac
+
 # Print files.
 #
 enscript -j -b "\$n|%W  %C  $where|\$% of \$=" \
 	--margins=48:48:: \
 	-F Courier-Bold12 -f Courier10 \
-	-o - "$@" | printer_pipe "$where" "$1"
+	-o - "$@" | "${pipe[@]}"
 
 exit 0
