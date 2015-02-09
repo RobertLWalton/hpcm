@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Sep 29 02:35:10 EDT 2014
+# Date:		Sun Feb  8 20:45:40 EST 2015
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -27,7 +27,7 @@ all:	scorediff grant_access \
 	elinks_helper elinks_startup_message \
 	help printer_pipe hpcm_display_graph \
 	hpcm_display_segments \
-	jdebug ldebug hpcm_less
+	jdebug ldebug hpcm_less pdf
 
 # Kill all implicit rules
 #
@@ -158,6 +158,9 @@ ldebug:
 
 hpcm_less:
 	ln -s ../../contestant/bin/hpcm_less .
+
+pdf:
+	ln -s ../../contestant/bin/pdf .
 
 clean:
 	rm -f scorediff grant_access \
