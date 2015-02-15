@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Sep 29 07:10:28 UTC 2014
+# Date:		Sun Feb 15 04:07:29 EST 2015
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -39,7 +39,7 @@ ${SECURE_BIN}/hpcm_sandbox_secure:	\
 	chmod u+s ${SECURE_BIN}/hpcm_sandbox_secure
 	ls -l ${SECURE_BIN}/hpcm_sandbox*
 
-${SECURE_BIN}/hpcm_sandbox.compiled:	hpcm_sandbox
+${SECURE_BIN}/hpcm_sandbox.compiled:	hpcm_sandbox.c
 	test `id -un` = root
 	test -d ${SECURE_BIN}
 	test -w ${SECURE_BIN}
