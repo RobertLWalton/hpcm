@@ -4,7 +4,7 @@
 #
 # File:		makeindex
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Wed Feb 25 06:59:33 EST 2015
+# Date:		Wed Feb 25 07:03:18 EST 2015
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -16,18 +16,18 @@ trap "echo makeindex: Terminated by Signal" \
 tclsh "$0" "$@"; exit $status
 
 set document "
-makeindex help_index title index web option ...
+makeindex new_index title index web option ...
 
     Read the index and make the files:
 
-        help_index	   Index
-	help_index.html	   WWW index
-	help_index.files   List of files to print.
+        new_index	   Index
+	new_index.html	   WWW index
+	new_index.files    List of files to print.
 	web/...		   Copies of files in web page
 			   directory.
 
     The `title' is left adjusted in the title line of
-    help_index, with the date being right adjusted.
+    new_index, with the date being right adjusted.
 	                  
     Lines beginning with `#' in index are deleted,
     as they are comments.
@@ -63,8 +63,8 @@ makeindex help_index title index web option ...
     headers are `selected' if any of their options or
     their FILENAME is listed as a makeindex command
     option.  When an item header is selected, the
-    following are output to both help_index and
-    help_index.html in order:
+    following are output to both new_index and
+    new_index.html in order:
 
 	All non-indented paragraphs since the previous
 	item header, if any.
@@ -85,18 +85,18 @@ makeindex help_index title index web option ...
     when viewed as a relative filename, names a file in
     the directory specified by the item header FILENAME.
 
-    This program writes a file named help_index.files
+    This program writes a file named new_index.files
     that is just a list of file names.  The name of
-    the help_index file is written first.  Then when an
+    the new_index file is written first.  Then when an
     item header whose FILENAME does NOT name a directory
     is selected, FILENAME is written.  And when a
     `file list' is recognized, the names of the files
     listed are written.
 
-    Files that are listed in help_index.files are also
+    Files that are listed in new_index.files are also
     copied to the web directory, if it is not \"\",
-    except that help_index.html is also copied (in
-    addition to copying help_index).  These copies are
+    except that new_index.html is also copied (in
+    addition to copying new_index).  These copies are
     made read-only to everyone.
     
     The directory names in the FILENAMEs given in item
@@ -104,7 +104,7 @@ makeindex help_index title index web option ...
     are the names of the subdirectories in `web' in
     which the copied file will appear, and are not the
     names of the directories in which the original of
-    the file appears.  In help_index.files these `web'
+    the file appears.  In new_index.files these `web'
     directory names are replaced by the names of the
     directories in which the original file appears.
 
@@ -112,7 +112,7 @@ makeindex help_index title index web option ...
     deleted and the `***'s are converted to 3 spaces.
 
     All non-item header paragraphs are output as is to
-    the help_index.  Non-indented paragraphs ending in
+    the new_index.  Non-indented paragraphs ending in
     a line containing just `-'s are preceded by two
     blank lines, and other paragraphs are preceded by
     one blank line, except that the blank line between
@@ -121,7 +121,7 @@ makeindex help_index title index web option ...
     header is suppressed in the output if it does not
     appear in the input.
 
-    Output to help_index.html is as follows:
+    Output to new_index.html is as follows:
 
         If a non-indented paragraph ends in a line con-
 	taining just `-'s, then all lines containing
@@ -253,9 +253,9 @@ if { $argc < 5 || [regexp {^-} [lindex $argv 0]] } {
     exit 1
 }
 
-set help_index [lindex $argv 0]
-set files "${help_index}.files"
-set html "${help_index}.html"
+set new_index [lindex $argv 0]
+set files "${new_index}.files"
+set html "${new_index}.html"
 set title [lindex $argv 1]
 set index [lindex $argv 2]
 set indexdir [file dirname $index]
@@ -263,8 +263,8 @@ set web [lindex $argv 3]
 set options [lrange $argv 4 end]
 set date [exec date]
 
-if { [catch { set hich [open $help_index w] }] } {
-    puts "ERROR: could not open $help_index for writing"
+if { [catch { set hich [open $new_index w] }] } {
+    puts "ERROR: could not open $new_index for writing"
     exit 1
 }
 if { [catch { set wch [open $html w] }] } {
@@ -287,7 +287,7 @@ set tline "$title[string repeat " " $count]$date"
 puts $hich $tline
 puts $hich ""
 
-puts $fch $help_index
+puts $fch $new_index
 
 set p {}
     # current paragraph - a list of lines
@@ -548,13 +548,13 @@ close $wch
 close $ich
 
 if { $web != "" } {
-    file copy -force "${help_index}"  \
-		     "${web}/${help_index}"
-    file attributes "${web}/${help_index}" \
+    file copy -force "${new_index}"  \
+		     "${web}/${new_index}"
+    file attributes "${web}/${new_index}" \
          -permissions r--r--r--
-    file copy -force "${help_index}.html"  \
-		     "${web}/${help_index}.html"
-    file attributes "${web}/${help_index}.html" \
+    file copy -force "${new_index}.html"  \
+		     "${web}/${new_index}.html"
+    file attributes "${web}/${new_index}.html" \
          -permissions r--r--r--
 }
 
