@@ -16,7 +16,7 @@ trap "echo makeindex: Terminated by Signal" \
 tclsh "$0" "$@"; exit $status
 
 set document "
-makeindex new_index title index web option ...
+makeindex new_index index web option ...
 
     Read the index and make the files:
 
@@ -26,9 +26,6 @@ makeindex new_index title index web option ...
 	web/...		   Copies of files in web page
 			   directory.
 
-    The `title' is left adjusted in the title line of
-    new_index, with the date being right adjusted.
-	                  
     Lines beginning with `#' in index are deleted,
     as they are comments.
 
@@ -37,7 +34,9 @@ makeindex new_index title index web option ...
     lines separating the paragraphs with one exception.
     Paragraphs are classified as `indented' if their
     first character is a whitespace, `item header'
-    (see below), and `non-indented' otherwise.
+    (see below), and `non-indented' otherwise.  Non-
+    indented paragraphs can be optionally ignored or
+    can be special title paragraphs.
 
     The file syntax is
 
@@ -66,8 +65,8 @@ makeindex new_index title index web option ...
     following are output to both new_index and
     new_index.html in order:
 
-	All non-indented paragraphs since the previous
-	item header, if any.
+	All non-ignored, non-title, non-indented para-
+	graphs since the previous item header, if any.
 
 	The item header if FILENAME does not name a
 	directory.
@@ -111,15 +110,40 @@ makeindex new_index title index web option ...
     When an item header is output, the options are
     deleted and the `***'s are converted to 3 spaces.
 
+    A non-indented paragraph that begins with
+
+        *TITLE* option ...
+
+    is `selected' if any of its options is listed as
+    as a makeindex command option, and ignored other-
+    wise.  If selected the paragraph (without the
+    *TITLE* first line) is used as the title of the
+    output index.  In this case the first line of the
+    paragraph is left adjusted in the first line of
+    new_index, with the date being right adjusted in
+    that line.  Other paragraph lines are output after
+    the first line of new_index.
+
+    A non-indented paragraph that begins with
+
+        *OPTIONAL* option ...
+
+    is `selected' if any of its options is listed as
+    as a makeindex command option, and ignored other-
+    wise.  Selected non-indented paragraphs are treated
+    as other non-title, non-indented paragraphs except
+    the `*OPTIONAL* ...' line is not output.
+
     All non-item header paragraphs are output as is to
-    the new_index.  Non-indented paragraphs ending in
-    a line containing just `-'s are preceded by two
-    blank lines, and other paragraphs are preceded by
-    one blank line, except that the blank line between
-    an output (non-directory) item header and an
-    indented paragraph immediately following the item
-    header is suppressed in the output if it does not
-    appear in the input.
+    the new_index, unless they are ignored or title
+    non-indented paragraphs.  Non-indented paragraphs
+    ending in a line containing just `-'s are preceded
+    by two blank lines, and other paragraphs are
+    preceded by one blank line, except that the blank
+    line between an output (non-directory) item header
+    and an indented paragraph immediately following the
+    item header is suppressed in the output if it does
+    not appear in the input.
 
     Output to new_index.html is as follows:
 
@@ -140,6 +164,10 @@ makeindex new_index title index web option ...
 	between non-indented paragraphs, and to indent
 	indented paragraphs appearing between item
 	headers.
+
+	Titles are not output to new_index.html.  The
+	new_index.html file is designed to be appended
+	to another file not made by makeindex.
 
     Unlike most HPCM judging programs, this program does
     not read any hpcm_judging.rc file and errors made by
