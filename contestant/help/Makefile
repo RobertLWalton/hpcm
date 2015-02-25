@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Dec 28 20:06:19 EST 2014
+# Date:		Wed Feb 25 07:00:42 EST 2015
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -62,7 +62,7 @@ WEB = ""
 	rm -f $*_help_index \
 	      $*_help_index.html \
 	      $*_help_index.files
-	../../judge/bin/makehelp \
+	../../judge/bin/makeindex \
 	    $*_help_index ${HELP_TITLE} \
 	    help_index ${WEB} ${OPTIONS}
 
@@ -122,7 +122,7 @@ all_help_index: \
 	rm -f $*_demos_index \
 	      $*_demos_index.html \
 	      $*_demos_index.files
-	../../judge/bin/makehelp \
+	../../judge/bin/makeindex \
 	    $*_demos_index ${DEMOS_TITLE} \
 	    ../../libraries/demos/demos.index ${WEB} \
 	    $*_help
