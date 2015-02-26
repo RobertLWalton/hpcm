@@ -4,7 +4,7 @@
 #
 # File:		makeindex
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Wed Feb 25 07:03:18 EST 2015
+# Date:		Wed Feb 25 23:20:26 EST 2015
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -110,20 +110,26 @@ makeindex new_index index web option ...
     When an item header is output, the options are
     deleted and the `***'s are converted to 3 spaces.
 
-    A non-indented paragraph that begins with
+    A paragraph that begins with
 
         *TITLE* option ...
 
-    is `selected' if any of its options is listed as
-    as a makeindex command option, and ignored other-
-    wise.  If selected the paragraph (without the
-    *TITLE* first line) is used as the title of the
-    output index.  In this case the first line of the
-    paragraph is left adjusted in the first line of
-    new_index, with the date being right adjusted in
-    that line.  Other paragraph lines are output after
-    the first line of new_index.
+    is a title paragraph that is `selected' if any of
+    its options is listed as as a makeindex command
+    option, and ignored otherwise.  If selected the
+    paragraph (without the *TITLE* first line) is output
+    to new_index (under the presumption that this is the
+    first thing output to new_index).  The first line
+    of the title paragraph has the right adjusted date
+    prepended, while the other title paragraph lines are
+    output as is.
 
+    Title paragraphs that are selected should appear
+    before any other paragraph that is selected.  But
+    as a special case, non-indented paragraphs that
+    are immediately before a selected title paragraph
+    are ignored.
+
     A non-indented paragraph that begins with
 
         *OPTIONAL* option ...
@@ -153,12 +159,12 @@ makeindex new_index index web option ...
 	the paragraph is surrounded by <H3>...</H3>.
 	Otherwise the paragraph is surrounded by
 	<P>...</P>.
-
+
 	If an indented paragraph is a file list, it is
 	output as an indented table with the file names
 	as links.  Otherwise the paragraph is surrounded
 	by <P>...</P>.
-
+
 	<BLOCKQUOTE>...</BLOCKQUOTE> is used to indent
 	item headers and indented paragraphs appearing
 	between non-indented paragraphs, and to indent
@@ -171,7 +177,8 @@ makeindex new_index index web option ...
 
     Unlike most HPCM judging programs, this program does
     not read any hpcm_judging.rc file and errors made by
-    this program are not written to log files."
+    this program are not written to log files.
+"
 
 set WS "\[\ \t\]"
 set NWS "\[^\ \t\]"
@@ -273,10 +280,25 @@ proc p_to_html { wch p } {
     return $use_h
 }
 
+# Return true iff option_list contains a makeindex
+# option argument.
+#
+proc is_selected { option_list } {
+    global options
+    foreach option $options {
+	if { [expr [lsearch -exact \
+			     $option_list \
+			     $option] >= 0] } {
+	    return 1
+	}
+    }
+    return 0
+}
+
 # If too few arguments or first argument begins with
 # `-', print documentation and exit with error.
 #
-if { $argc < 5 || [regexp {^-} [lindex $argv 0]] } {
+if { $argc < 4 || [regexp {^-} [lindex $argv 0]] } {
     exec << $document less -F >&@ stdout
     exit 1
 }
@@ -284,11 +306,10 @@ if { $argc < 5 || [regexp {^-} [lindex $argv 0]] } {
 set new_index [lindex $argv 0]
 set files "${new_index}.files"
 set html "${new_index}.html"
-set title [lindex $argv 1]
-set index [lindex $argv 2]
+set index [lindex $argv 1]
 set indexdir [file dirname $index]
-set web [lindex $argv 3]
-set options [lrange $argv 4 end]
+set web [lindex $argv 2]
+set options [lrange $argv 3 end]
 set date [exec date]
 
 if { [catch { set hich [open $new_index w] }] } {
@@ -307,13 +328,6 @@ if { [catch { set ich [open $index r] }] } {
     puts "ERROR: could not open $index for reading"
     exit 1
 }
-
-set count [expr 56 - [string length $title] \
-                   - [string length $date]]
-set tline "$title[string repeat " " $count]$date"
-
-puts $hich $tline
-puts $hich ""
 
 puts $fch $new_index
 
@@ -335,7 +349,8 @@ set item_directory ""
     # selected and names a directory, "" otherwise
 set istate ""
     # set to type of paragraph last input:
-    #    "", item_header, indented, non_indented
+    #    "", item_header, indented, non_indented,
+    #        title, ignore
 set ostate ""
     # set to type of paragraph last output:
     #    "", item_header, indented, non_indented
@@ -360,12 +375,33 @@ while { ! [eof $ich] } {
 	    
 	    # Finish current paragraph.
 
-	    if { [llength $p] == 0 } {
+	    if {    [llength $p] == 0 \
+	         || $istate == "ignore" } {
 
 	        # Do nothing if zero length paragraph
 
-	    } elseif { ! [regexp "^$WS" \
-	                         [lindex $p 0]] } {
+	    } elseif { $istate == "title" } {
+
+		# Clear out previous non_indented
+		# paragraphs.
+		#
+		set ps {}
+
+		# Output title paragraph
+		#
+		set title [lindex $p 0]
+		set count \
+		    [expr 56 - [string length $title] \
+			     - [string length $date]]
+		set tline "$title[string repeat " " \
+		                         $count]$date"
+		puts $hich $tline
+		foreach nl [lrange $p 1 end] {
+		    puts $hich $nl
+		}
+		puts $hich ""
+
+	    } elseif { $istate == "non_indented" } {
 
 		# Save non-indented paragraph
 		#
@@ -441,20 +477,9 @@ while { ! [eof $ich] } {
 	    set item_name ""
 	    set item_directory ""
 
-	    set option_list [lrange $line 1 end]
-	    foreach option $options {
-		if { [expr [lsearch -exact \
-				     $option_list \
-				     $option] >= 0] } {
+            if { [is_selected [lrange $line 1 end]] } {
 
-		    # item header is selected
-
-		    set item_name [lindex $line 1]
-		    break
-		}
-	    }
-
-	    if { $item_name != "" } {
+		set item_name [lindex $line 1]
 
 	        # Output selected item header
 
@@ -527,16 +552,41 @@ while { ! [eof $ich] } {
 	    # Input non-indented paragraph
 
 	    if { $istate != "" \
-	         &&
+	         && \
+		 $istate != "ignore" \
+	         && \
 		 $istate != "non_indented" } {
 	        set ps {}
 	    }
 
 	    set in_p 1
 	    set p {}
-	    lappend p $line
 
-	    set istate non_indented
+	    if { ! [catch { llength $line }] } {
+	        if {    [lindex $line 0] \
+		     == "*OPTIONAL*" } {
+		    if { [is_selected \
+		              [lrange $line 1 end]] } {
+		        set istate non_indented
+		    } else {
+		        set istate ignore
+		    }
+		} elseif {    [lindex $line 0] \
+		           == "*TITLE*" } {
+		    if { [is_selected \
+		              [lrange $line 1 end]] } {
+		        set istate title
+		    } else {
+		        set istate ignore
+		    }
+		} else {
+		    lappend p $line
+		    set istate non_indented
+		}
+	    } else {
+		lappend p $line
+		set istate non_indented
+	    }
 
 	} else {
 

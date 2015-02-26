@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Feb 25 07:00:42 EST 2015
+# Date:		Wed Feb 25 23:20:18 EST 2015
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -63,7 +63,7 @@ WEB = ""
 	      $*_help_index.html \
 	      $*_help_index.files
 	../../judge/bin/makeindex \
-	    $*_help_index ${HELP_TITLE} \
+	    $*_help_index \
 	    help_index ${WEB} ${OPTIONS}
 
 %_help.ps:	%_help_index
@@ -72,47 +72,33 @@ WEB = ""
 	    `cat $*_help_index.files`
 
 acm_contest_help_index: \
-    HELP_TITLE = "ACM CONTEST HELP"
-acm_contest_help_index: \
-    OPTIONS = contest/acm_contest accounts general
+    OPTIONS = acm_contest_help_index \
+              contest/acm_contest accounts general
 algorithm_festival_help_index: \
-    HELP_TITLE = "ALGORITHM FESTIVAL HELP"
-algorithm_festival_help_index: \
-    OPTIONS = contest/algorithm_festival accounts general
+    OPTIONS = algorithm_festival_help_index \
+              contest/algorithm_festival accounts general
 timed_practice_help_index: \
-    HELP_TITLE = "TIMED PRACTICE HELP"
-timed_practice_help_index: \
-    OPTIONS = contest/timed_practice accounts general
+    OPTIONS = timed_practice_help_index \
+              contest/timed_practice accounts general
 untimed_practice_help_index: \
-    HELP_TITLE = "UNTIMED PRACTICE HELP"
-untimed_practice_help_index: \
-    OPTIONS = contest/untimed_practice accounts general
+    OPTIONS = untimed_practice_help_index \
+              contest/untimed_practice accounts general
 email_practice_help_index: \
-    HELP_TITLE = "EMAIL PRACTICE HELP"
-email_practice_help_index: \
-    OPTIONS = contest/email_practice general
+    OPTIONS = email_practice_help_index \
+              contest/email_practice general
 
 c_help_index: \
-    HELP_TITLE = "C LANGUAGE HELP"
-c_help_index: \
-    OPTIONS = c
+    OPTIONS = c_help_index c
 cc_help_index: \
-    HELP_TITLE = "C++ LANGUAGE HELP"
-cc_help_index: \
-    OPTIONS = c++
+    OPTIONS = cc_help_index c++
 java_help_index: \
-    HELP_TITLE = "JAVA LANGUAGE HELP"
-java_help_index: \
-    OPTIONS = java
+    OPTIONS = java_help_index java
 lsp_help_index: \
-    HELP_TITLE = "COMMONLISP LANGUAGE HELP"
-lsp_help_index: \
-    OPTIONS = commonlisp
+    OPTIONS = lsp_help_index commonlisp
 
 all_help_index: \
-    HELP_TITLE = "HELP FILES INDEX"
-all_help_index: \
-    OPTIONS = contest language accounts general
+    OPTIONS = all_help_index \
+              contest language accounts general
 
 
 # If we replace %_demos_index by %demos_index we get
@@ -123,7 +109,7 @@ all_help_index: \
 	      $*_demos_index.html \
 	      $*_demos_index.files
 	../../judge/bin/makeindex \
-	    $*_demos_index ${DEMOS_TITLE} \
+	    $*_demos_index \
 	    ../../libraries/demos/demos.index ${WEB} \
 	    $*_help
 
@@ -132,37 +118,6 @@ all_help_index: \
 	../../judge/bin/fprint > $*_demos.ps -o \
 	    `egrep -v '.*\.(in|test).*' \
 	           $*_demos_index.files`
-
-c_basic_io_demos_index: \
-    DEMOS_TITLE = "C BASIC IO DEMOS"
-c_advanced_io_demos_index: \
-    DEMOS_TITLE = "C ADVANCED IO DEMOS"
-c_algorithm_demos_index: \
-    DEMOS_TITLE = "C ALGORITHM DEMOS"
-
-cc_basic_io_demos_index: \
-    DEMOS_TITLE = "C++ BASIC IO DEMOS"
-cc_advanced_io_demos_index: \
-    DEMOS_TITLE = "C++ ADVANCED IO DEMOS"
-cc_algorithm_demos_index: \
-    DEMOS_TITLE = "C++ ALGORITHM DEMOS"
-
-java_basic_io_demos_index: \
-    DEMOS_TITLE = "JAVA BASIC IO DEMOS"
-java_advanced_io_demos_index: \
-    DEMOS_TITLE = "JAVA ADVANCED IO DEMOS"
-java_algorithm_demos_index: \
-    DEMOS_TITLE = "JAVA ALGORITHM DEMOS"
-
-lsp_basic_io_demos_index: \
-    DEMOS_TITLE = "LISP BASIC IO DEMOS"
-lsp_advanced_io_demos_index: \
-    DEMOS_TITLE = "LISP ADVANCED IO DEMOS"
-lsp_algorithm_demos_index: \
-    DEMOS_TITLE = "LISP ALGORITHM DEMOS"
-
-all_demos_index: \
-    DEMOS_TITLE = "DEMOS INDEX"
 
 
 # Legacy email stuff
