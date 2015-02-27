@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@seas.harvard.edu)
-# Date:		Sun Dec 28 13:32:20 EST 2014
+# Date:		Fri Feb 27 15:12:21 EST 2015
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -43,35 +43,16 @@ set hpcm_directory $env(HOME)/hpcm
 #
 set contest_name "CONTEST NAME IS TBD"
 
-# Start and stop time for contest scoreboards.  Not
-# used in computing scores.  Also time to convert
-# to non-contest mode.  This merely means that after
-# conversion queries, errors, and autojudge replies
-# to contestants will be emailed to the contest
-# manager email address.  Before conversion it is
-# expected that the contest manager will run tracker
-# to get these.
+# Start time is when the problems will be exposed and
+# when the non-demos scoreboards start.  If cc_manager
+# below is `yes', it will be disabled from start time
+# to stop_time.  Also there will be a separate contest
+# scoreboard that will stop at the stop_time.
 #
-# Both stop time and convert time are in seconds after
-# start time.
+# The stop_time is in seconds after the start time.
 #
 set start_time "Jan 1 10:00:00 2030"
-set stop_time  [expr 6 * 60 * 60]
-set convert_time  [expr 7 * 60 * 60]
-
-# Set the following to "yes" to allow hpcm_finish to be
-# used in the contest.
-#
-# set scoreboard_allow_finish no
-set scoreboard_allow_finish yes
-
-# Logical expressions specifying accounts that are
-# novice or experienced.  Atoms are regular expressions
-# which match account names (BEFORE the names are com-
-# pressed).  Operators are &, |, !.
-#
-set novice_submitters {}
-set experienced_submitters {}
+set stop_time [expr 6 * 60 * 60]
 
 # Map of contestant email (i.e., account) addresses for
 # the scoreboard.  Scores for a contestant with address
@@ -89,21 +70,20 @@ array set submitter_compress_map {}
 # }
 
 # The email address to be notified for errors or
-# queries AFTER the contest conversion time.
+# queries BEFORE the start time or AFTER the stop time.
 #
 set manager_address "someone@somecomputer"
 
 # Set the following to "yes" if you want ALL autojudge
-# replies to contestants to be CC'ed to the manager,
-# even those just reporting scores, AFTER the conversion
-# time.
+# replies to contestants to be CC'ed to the manager
+# EXCEPT between the start_time and the stop_time.
 #
 set cc_manager yes
 # set cc_manager no
 
 # A cc address can be added to all autojudge replies to
-# a submitter AFTER the conversion time by adding the
-# pair
+# a submitter BEFORE the start time or AFTER the stop
+# time by adding the pair
 #
 #	{ regexp address }
 #
@@ -118,16 +98,22 @@ set cc_manager yes
 #
 # lappend response_manager_map { regexp address }
 
-# TCL list of TCL regular expressions that match the
-# test accounts which are NOT to appear on the score-
-# board AFTER the contest starts.
+# Non-demos scoreboards.  Each element of this list has
+# the format:
 #
-set test_accounts { }
-
-# Ditto for test problems instead of accounts.  Usually
-# you need not change this.
+#    { name "TITLE" problem ... }
 #
-set test_problems [get_demo_problems]
+# where `name' is used where a short lower case name is
+# required, "TITLE" is left adjusted in the scoreboard
+# title line, and problem ... is the list of problems in
+# the scoreboard.  The scoreboard files are named
+#
+#       contest/scoreboard_name
+#	contest/scoreboard_name.head
+#
+# and the command to display the scoreboard is
+#
+#	scoreboard name
 
 # List of makecontest arguments that specify the
 # problems.  The format is
@@ -270,34 +256,8 @@ set web_solutions_prefix ""
 # ./secure/bin to invoke the proper pipe.  It may not
 # contain whitespace or /.
 #
-# The NAMEs must match those listed in the scoreboard_
-# xxx_commands variables below.
-#
 set scoreboard_commands {
 }
-
-# The following list the NAMEs of items in the score-
-# board_commands list that are to be used to send the
-# various scoreboards.  If you do not change these NAMEs
-# then you should define the following scoreboard_
-# commands for scoreboards you want to be sent else-
-# where:
-# 
-#    { NOVICE ... } for the novice scoreboard
-#    { NOVICE_FINAL ... } for the contest final novice
-#			  scoreboard
-#    { EXPERIENCED ... } for the experienced scoreboard
-#    { EXPERIENCED_FINAL ... } for the contest final
-#			       experienced scoreboard
-#
-set scoreboard_novice_commands {
-    NOVICE }
-set scoreboard_novice_final_commands {
-    NOVICE_FINAL }
-set scoreboard_experienced_commands {
-    EXPERIENCED }
-set scoreboard_experienced_final_commands {
-    EXPERIENCED_FINAL }
 
 # Parameters Not Usually Modified
 # ---------- --- ------- --------
@@ -489,17 +449,19 @@ if { $web_help_URL == "" } {
 }
 set web_title $contest_name
 
-# Compute whether we have converted to untimed practice.
+# Compute whether we have gone beyond the start_time
+# or stop_time.
 #
-set convert_time \
-    [absolute_time $convert_time $start_time]
-set is_converted [is_later $convert_time]
+set stop_time \
+    [absolute_time $stop_time $start_time]
+set is_started [is_later $start_time]
+set is_stopped [is_later $stop_time]
 
 # Set up manager for this contest.
 #
 # There is no manager for the contest proper.
 #
-if { $is_converted } {
+if { ! $is_started || $is_stopped } {
     set reply_mode auto
     set log_mode auto
     set log_manager $manager_address
@@ -528,170 +490,52 @@ set default_correct_qualifier solution
 set default_incorrect_qualifier inout
 set allowed_qualifiers { "" }
 
-# Scoreboard parameters.
+# Scoreboard instructions for an algorithm festival.
+# Scoreboards are files `contest/scoreboard_name' with
+# form
 #
-set scoreboard_name $contest_name
+#  NAME               				    TIME
+#
+#      <contents of contest/scoreboard_name.head>
+#
+#  ==== ===== ===== ===== ===== ===== ===== ===== =====
+#	   <scoreboard table>
+#  ==== ===== ===== ===== ===== ===== ===== ===== =====
+
+# Parameters common to most of the scoreboards.
+#
+set scoreboard_start_time $start_time
+set scoreboard_stop_time ""
+set scoreboard_submitters {}
 set scoreboard_solved_mode score
 set scoreboard_factor() 0.95
-set scoreboard_start_time $start_time
-set scoreboard_stop_time  $stop_time
 
-# Compute scoreboard_problems to exclude test
-# problems.
-#
-set scoreboard_problems {}
-foreach x $test_problems {
-    lappend scoreboard_problems & ! $x
-}
-set scoreboard_problems \
-    [lrange $scoreboard_problems 1 end]
-
-
-# Scoreboard instructions for an algorithm festival.
-# These make four scoreboards in the files
-#
-#   $judging_directory/scoreboard_novice
-#   $judging_directory/scoreboard_novice.final
-#   $judging_directory/scoreboard_experienced
-#   $judging_directory/scoreboard_experienced.final
-#
-# that have the format:
-#
-#   NAME               				    TIME
-#
-#   <contents of $judging_directory/scoreboard.head>
-#
-#   ==== ===== ===== ===== ===== ===== ===== ===== =====
-#	   <scoreboard table>
-#   ==== ===== ===== ===== ===== ===== ===== ===== =====
-#
-# These files are then piped to the filters named in the
-# scoreboard_commands global variable and also copied
-# to the $judging_directory/contest directory and
-# granted a+r permissions there.
-#
-set scoreboard_novice $novice_submitters
-set scoreboard_abbreviation(NOVICE) novice
-set scoreboard_experienced $experienced_submitters
-set scoreboard_abbreviation(EXPERIENCED) experienced
+set scoreboard_demos_name \
+    "$festival_name Demo Problems"
+set scoreboard_abbreviation(DEMOS_NAME) \
+    demos_name
+set scoreboard_demos_problems \
+    [get_demo_problems]
+set scoreboard_abbreviation(DEMOS_PROBLEMS) \
+    demos_problems
 set scoreboard_instructions {
 
-    {# Pre-Contest Novice Scoreboard #}
+    {# Demos Scoreboard #}
 
-    { OUTPUT scoreboard_novice "" START }
+    {start_time ""}
+    {name DEMOS_NAME}
+    (problems DEMOS_PROBLEMS}
 
-    { LINE NAME "" TIME }
-    BLANK
-    { INPUT scoreboard.head }
-    BLANK
-
-    {submitters NOVICE}
-    {problems {}}
-    {stop_time ""}
-    BAR
-    BOARD
-    BAR
-
-    {# Current Novice Scoreboard #}
-
-    { OUTPUT scoreboard_novice START "" }
+    { OUTPUT contests/scoreboard_demos }
 
     { LINE NAME "" TIME }
     BLANK
-    { INPUT scoreboard.head }
+    { INPUT contests/scoreboard_demos.head }
     BLANK
 
-    {submitters NOVICE}
-    {stop_time ""}
     BAR
     BOARD
     BAR
-
-    { OUTPUT contest/scoreboard_novice "" "" }
-    GRANT_ACCESS
-    SEND novice_commands
-    { INPUT scoreboard_novice }
-
-    {# Final Novice Scoreboard #}
-
-    { OUTPUT scoreboard_novice.final STOP STOP+600 }
-
-    { LINE NAME "" STOP }
-    BLANK
-    { INPUT scoreboard.head }
-    BLANK
-
-    {submitters NOVICE}
-    BAR
-    BOARD
-    BAR
-
-    { OUTPUT contest/scoreboard_novice.final \
-             STOP STOP+600 }
-    GRANT_ACCESS
-    SEND novice_final_commands
-    { INPUT scoreboard_novice.final }
-
-
-
-    {# Pre-Contest Experienced Scoreboard #}
-
-    { OUTPUT scoreboard_experienced "" START }
-
-    { LINE NAME "" TIME }
-    BLANK
-    { INPUT scoreboard.head }
-    BLANK
-
-    {submitters EXPERIENCED}
-    {problems {}}
-    {stop_time ""}
-    BAR
-    BOARD
-    BAR
-
-    {# Current Experienced Scoreboard #}
-
-    { OUTPUT scoreboard_experienced START "" }
-
-    { LINE NAME "" TIME }
-    BLANK
-    { INPUT scoreboard.head }
-    BLANK
-
-    {submitters EXPERIENCED}
-    {stop_time ""}
-    BAR
-    BOARD
-    BAR
-
-    { OUTPUT contest/scoreboard_experienced "" "" }
-    GRANT_ACCESS
-    SEND experienced_commands
-    { INPUT scoreboard_experienced }
-
-    {# Final Experienced Scoreboard #}
-
-    { OUTPUT scoreboard_experienced.final \
-             STOP STOP+600 }
-
-    { LINE NAME "" STOP }
-    BLANK
-    { INPUT scoreboard.head }
-    BLANK
-
-    {submitters EXPERIENCED}
-    BAR
-    BOARD
-    BAR
-
-    { OUTPUT contest/scoreboard_experienced.final \
-             STOP STOP+600 }
-    GRANT_ACCESS
-    SEND experienced_final_commands
-    { INPUT scoreboard_experienced.final }
-
-
 }
 
 # Default arguments to makecontest.
@@ -704,7 +548,6 @@ set makecontest_arguments "
     		"-startcontest"] \
     [include_if { $makescoreboard == "yes" } \
     		"-scoreboard"] \
-    -web \
     $hpcm_directory/contestant/help/help_index, \
 	common/=help/, \
 	contest/=help/, \
