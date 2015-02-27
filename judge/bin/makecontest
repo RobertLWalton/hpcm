@@ -6,7 +6,7 @@
 #
 # File:		makecontest
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Feb 27 00:15:11 EST 2015
+# Date:		Fri Feb 27 01:15:12 EST 2015
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -2140,14 +2140,27 @@ proc process_index_specification {} {
 			if { ! $last_is_blank } {
 			    lappend refined_header \
 			            $hline
-		        } elseif { [regexp \
-			              {^\*TITLE\*} \
-			              $hline] } {
+		        } elseif { \
+			      [catch \
+				 { llength $hline }] } {
+			    lappend refined_header \
+			            $hline
+		        } elseif { [lindex $hline 0] \
+			           == "*TITLE*" } {
 			    set hignore 1
-			} elseif { [regexp \
-			              {^\*OPTIONAL\*} \
-				      $hline] } {
-			    set hignore 1
+		        } elseif { [lindex $hline 0] \
+			           == "*OPTIONAL*" } {
+			    set hoptions \
+				[expand_options \
+				  [lrange $hline 1 end]]
+			    if {    [lcontain \
+			               $hoptions \
+				       noinclude] \
+				 || ! [lcontain \
+				         $hoptions \
+					 include] } {
+				set hignore 1
+			    }
 			} else {
 			    lappend refined_header \
 			            $hline
