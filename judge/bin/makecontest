@@ -6,18 +6,11 @@
 #
 # File:		makecontest
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Dec 30 17:34:57 UTC 2014
+# Date:		Fri Feb 27 00:15:11 EST 2015
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
 # for this program.
-#
-# RCS Info (may not be true date or author):
-#
-#   $Author: walton $
-#   $Date: 2014/09/27 07:01:02 $
-#   $RCSfile: makecontest,v $
-#   $Revision: 1.230 $
 #
 # The next lines start tclsh \
 trap "echo makecontest: Terminated by Signal" \
@@ -2007,8 +2000,9 @@ proc process_index_specification {} {
 
     # Last header entry encountered, and switches to
     # tell if it has been used in various indices.
+    # The header entry is a list of lines.
     #
-    set header_entry		""
+    set header_entry		{}
     set help_header_used	no
     set demos_header_used	no
     set problems_header_used	no
@@ -2124,9 +2118,51 @@ proc process_index_specification {} {
 		if { [set ${targetdir}_header_used] \
 		     == "no" } {
 		    set ${targetdir}_header_used yes
-		    if { $header_entry != "" } {
+
+		    set refined_header {}
+		    set last_is_blank 1
+		    set hignore 0
+		    foreach hline $header_entry {
+		        set is_blank \
+			    [regexp {^[ \t]*$} \
+			            $hline]
+
+			if { $hignore } {
+			    if {    ! $last_is_blank \
+			         || $is_blank } {
+			        set last_is_blank \
+				    $is_blank
+				continue
+			    }
+			    set hignore 0
+			}
+
+			if { ! $last_is_blank } {
+			    lappend refined_header \
+			            $hline
+		        } elseif { [regexp \
+			              {^\*TITLE\*} \
+			              $hline] } {
+			    set hignore 1
+			} elseif { [regexp \
+			              {^\*OPTIONAL\*} \
+				      $hline] } {
+			    set hignore 1
+			} else {
+			    lappend refined_header \
+			            $hline
+			}
+
+			set last_is_blank $is_blank
+		    }
+
+		    if {    [llength $refined_header] \
+		         != 0 } {
 			foreach ch $index_chs {
-			    puts $ch $header_entry
+			    foreach hline \
+			            $refined_header {
+				puts $ch $hline
+			    }
 			}
 		    }
 		}
@@ -2361,13 +2397,13 @@ proc process_index_specification {} {
 
 	    # Line inside header.
 
-	    set header_entry "$header_entry\n$line"
+	    lappend header_entry $line
 
 	} elseif { [regexp "^\[^\ \t\]" $line] } {
 
 	    # Beginning of header entry.
 
-	    set header_entry		$line
+	    set header_entry		[list $line]
 	    set in_header		yes
 	    set in_item			no
 	    set help_header_used	no
