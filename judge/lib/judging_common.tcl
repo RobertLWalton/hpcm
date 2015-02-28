@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@seas.harvard.edu)
-# Date:		Sat Sep 27 02:03:46 EDT 2014
+# Date:		Fri Feb 27 21:09:01 EST 2015
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -2113,17 +2113,37 @@ proc read_entire_file { filename } {
 # Write an entire file if and only if it is currently
 # different from what would be written.  Contents are
 # lines separated by \n but with NO ENDING \n.  A
-# non-existant file is always written.
+# non-existant file is always written.  Return 2 if
+# file created, 1 if written but not created, and 0 if
+# not created or written.
 #
 proc write_file_if_different { filename contents } {
     if { ! [file exists $filename] } {
         write_file $filename $contents
+	return 2
     } else {
 	set f [read_entire_file $filename]
 	if { $f != $contents } {
 	    write_file $filename $contents
-	}
+	    return 1
+	} else { return 0 }
     }
+}
+
+# Ditto but executes grant_access to file when it is
+# created and prints `Wrote $filename' whenever the
+# file is created or written.
+#
+proc write_public_file { filename contents } {
+    set result \
+        [write_file_if_different $filename $contents]
+    if { $result == 2 } {
+        grant_access $filename
+    }
+    if { $result != 0 } {
+	puts "Wrote $filename"
+    }
+    return $result
 }
 
 # Source a file if it exists.  Before sourcing file, run
