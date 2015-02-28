@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@seas.harvard.edu)
-# Date:		Fri Feb 27 19:17:27 EST 2015
+# Date:		Sat Feb 28 02:15:31 EST 2015
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -98,24 +98,57 @@ set cc_manager yes
 #
 # lappend response_manager_map { regexp address }
 
-# Non-demos scoreboards.  Each element of this list has
-# the format:
+# Scoreboards.  For a scoreboard named N, scoreboards(N)
+# must be defined and have as its value a list of
+# scoreboard parameter instructions of the form
 #
-#    { name "TITLE" problem ... }
+#	{ PARAMETER-NAME PARAMETER-VALUE }
 #
-# where `name' is used where a short lower case name is
-# required, "TITLE" is left adjusted in the scoreboard
-# title line, and problem ... is the list of problems in
-# the scoreboard.  The scoreboard files are named
 #
-#       contest/scoreboard_name
-#	contest/scoreboard_name.head
+# Some parameters of interest are:
+#
+#	title		Must be given.  E.g.
+#			"Demo Problems" or
+#			"Geometry Problems"
+#
+#	start_time	Defaults to $start_time
+#
+#	stop_time	Defaults to ""
+#
+#	problems	Defaults to {}
+#			(meaning ALL problems)
+#
+# The title is used in the scoreboard header.  The name
+# N is used to make the file names of the scoreboard:
+#
+#       contest/scoreboard_N
+#	contest/scoreboard_N.head
 #
 # and the command to display the scoreboard is
 #
-#	scoreboard name
+#	scoreboard N
 #
-set scoreboards {}
+# You may wish to edit the contests/scoreboard_N.head
+# file.
+#
+set scoreboards(demos} {
+    { title "Demo Problems" }
+    { start_time "" }
+}
+lappend scoreboards(demos) \
+    [list problems [get_demo_problems]]
+
+# set scoreboards(N) {
+#    { title "N Problems" }
+#    { problems ... }
+# }
+#
+# set scoreboards(winners) {
+#    { title "Contest Winners" }
+#    { problems ... }
+# }
+# lappend scoreboards(demos) \
+#     [list stop_time $stop_time]
 
 # List of makecontest arguments that specify the
 # problems.  The format is
@@ -512,68 +545,41 @@ set scoreboard_submitters {}
 set scoreboard_solved_mode score
 set scoreboard_factor() 0.95
 
-set scoreboard_demos_name \
-    "$festival_name Demo Problems"
-set scoreboard_abbreviation(DEMOS_NAME) \
-    demos_name
-set scoreboard_demos_problems \
-    [get_demo_problems]
-set scoreboard_abbreviation(DEMOS_PROBLEMS) \
-    demos_problems
-set scoreboard_instructions {
-
-    {# Demos Scoreboard #}
-
-    {start_time ""}
-    {name DEMOS_NAME}
-    (problems DEMOS_PROBLEMS}
-
-    { OUTPUT contests/scoreboard_demos }
-
-    { LINE NAME "" TIME }
-    BLANK
-    { INPUT contests/scoreboard_demos.head }
-    BLANK
-
-    BAR
-    BOARD
-    BAR
-}
+set scoreboard_abbreviation(TITLE) title
+set scoreboard_instructions {}
 
 set scoreboard_map ".* NONE scoreboard_index"
-set scoreboard_map \
-    "$scoreboard_map\n.* demos scoreboard_demos"
 set scoreboard_index "
 Use one of the following commands to see a scoreboard:
+"
 
-    scoreboard demos"
-
-foreach sb $scoreboards {
-    set name [lindex $sb 0]
-    set title [lindex $sb 1]
-    set problems [lrange $sb 2 end]
+foreach N [array names scoreboards] {
     lappend scoreboard_instructions \
-            "# $title Scoreboard #"  \
-    	    "OUTPUT contest/scoreboard_$name" \
-    	    [list problems $problems] \
-    	    [list LINE "$festival_name $title" TIME] \
-    	    BLANK \
-    	    "INPUT contest/scoreboard_${name}.head" \
-	    BLANK \
-	    BAR \
-	    BOARD \
-	    BAR
+            "# scoreboard $N #"  \
+    	    "OUTPUT contest/scoreboard_$N"
+    foreach instruction $scoreboards($N) {
+        lappend scoreboard_instructions $instruction
+    }
+    lappend scoreboard_instructions \
+	{LINE TITLE TIME} \
+	[list LINE $festival_name] \
+	BLANK \
+	"INPUT contest/scoreboard_${N}.head" \
+	BLANK \
+	BAR \
+	BOARD \
+	BAR
     set scoreboard_index "$scoreboard_index
-    scoreboard $name"
+    scoreboard $N"
     set scoreboard_map "$scoreboard_map
-.* $name scoreboard_$name"
+.* $N scoreboard_$N"
 
 }
 
 write_public_file \
-    contest/scoreboard_index $scoreboard_index
+    contest/scoreboard_index "$scoreboard_index\n"
 write_public_file \
-    contest/scoreboard_map $scoreboard_map
+    contest/scoreboard_map "$scoreboard_map\n"
 
 # Default arguments to makecontest.
 #
