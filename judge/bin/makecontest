@@ -6,7 +6,7 @@
 #
 # File:		makecontest
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Feb 27 21:18:46 EST 2015
+# Date:		Sat Feb 28 04:09:45 EST 2015
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -152,6 +152,9 @@ makecontest option ... index_specification ...
 		map' global variable make ./contest/
 		printer_map, and also make ./contest/
 		printer_jobs
+    -public_files  Using the optional `public_files'
+		global variable make public files
+		(usually in contest/).
 
     -javahelp	Make ./contest/javahelp
     -stlhelp	Make ./contest/stlhelp
@@ -1162,6 +1165,23 @@ The -printer and -printer_map Options
     printer_jobs file is also made if it does not
     exist.
 
+The -public_files Option
+--- ------------- ------
+
+    The -public_files program option calls
+
+        write_public_files FILENAME \$VARIABLE
+
+    for every list element of the form
+
+    	{ FILENAME VARIABLE }
+
+    in the `public_files' global variable, where 
+    VARIABLE is a global variable.  It is necessary to
+    use this indirect method of calling write_public_
+    files to ensure that the `contest/' directory is
+    created before public files are written.
+
 
 The -javahelp and -stlhelp Options
 --- --------- --- -------- -------
@@ -1288,6 +1308,7 @@ set contest_commands_option		no
 set judging_commands_option		no
 set printer_option			no
 set printer_map_option			no
+set public_files_option			no
 set javahelp_option			no
 set stlhelp_option			no
 set web_option				no
@@ -1417,6 +1438,7 @@ while { $argi < $argc } {
 	    { set judging_commands_option yes }
 	-printer	{ set printer_option	yes }
 	-printer_map	{ set printer_map_option yes }
+	-public_files	{ set public_files_option yes }
 	-javahelp	{ set javahelp_option	yes }
 	-stlhelp	{ set stlhelp_option	yes }
 	-web		{ set web_option	yes }
@@ -1533,6 +1555,7 @@ if {    $contest_option \
      || $contest_commands_option \
      || $printer_option \
      || $printer_map_option \
+     || $public_files_option \
      || $javahelp_option \
      || $stlhelp_option \
      || $startcontest_option } {
@@ -3931,6 +3954,16 @@ if { $printer_jobs_option \
     close [open $c_d/printer_jobs w]
     grant_access $c_d/printer_jobs rw
     puts "Wrote ./contest/printer_jobs"
+}
+
+# Write public files
+#
+if { $public_files_option } {
+    foreach item $public_files {
+        set filename [lindex $item 0]
+        set variable [lindex $item 1]
+	write_public_file $filename [set $variable]
+    }
 }
 
 # Make $c_d/javahelp
