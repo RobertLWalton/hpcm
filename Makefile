@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Dec 29 03:59:00 EST 2014
+# Date:		Sun Mar  1 12:27:27 EST 2015
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -185,7 +185,7 @@ ARCHIVE_FILES = \
 # make cleanarchive
 #	Remove ARCHIVE/hpcm_${VERSION}.
 
-all:	submakes public
+all:	submakes public project
 
 libraries/public:
 	(cd libraries; rm -f public; \
@@ -195,6 +195,18 @@ public:	libraries/public
 	@if test ! -d libraries/public; then \
 	    echo "=========================="; \
 	    echo "WARNING: libraries/public" \
+	         "not defined"; \
+	    echo "=========================="; \
+	    fi
+
+libraries/project:
+	(cd libraries; rm -f project; \
+	 ln -s ~/hpcm_project project)
+
+project:	libraries/project
+	@if test ! -d libraries/project; then \
+	    echo "=========================="; \
+	    echo "WARNING: libraries/project" \
 	         "not defined"; \
 	    echo "=========================="; \
 	    fi
