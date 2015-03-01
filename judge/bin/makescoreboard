@@ -4,7 +4,7 @@
 #
 # File:		makescoreboard
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Sep 27 02:57:51 EDT 2014
+# Date:		Sat Feb 28 20:22:08 EST 2015
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -282,14 +282,6 @@ if { ! [catch { set st [clock scan $st] }] } {
     }
 }
 
-# Set up abbreviation_array to map abbreviations like
-# TIME to values.
-#
-foreach n [array names scoreboard_abbreviation] {
-    set m $scoreboard_abbreviation($n)
-    set abbreviation_array($n) [set scoreboard_$m]
-}
-
 # Save parameter values in parameter_save.
 #
 foreach v [info globals scoreboard_*] {
@@ -319,11 +311,9 @@ proc restore_parameters {} {
 # Procedure to update saved scoreboard_time.
 #
 proc set_scoreboard_time { time } {
-    global scoreboard_time parameter_save \
-           abbreviation_array
+    global scoreboard_time parameter_save
     set scoreboard_time $time
     set parameter_save(scoreboard_time) $time
-    set abbreviation_array(TIME) $time
 }
 
 
@@ -398,25 +388,29 @@ proc update_required { mtime_list } {
 }
 
 # Given a value that may be an abbreviation defined in
-# abbreviation_array, return the value it abbreviates,
-# or return the original value if it is not an abbrevia-
-# tion.  Convert values like START+600 to date-and-time
-# values.
+# scoreboard_abbreviation, return the value it abbrevi-
+# ates, or return the original value if it is not an
+# abbreviation.  Convert values like START+600 to
+# date-and-time values.
 #
 proc unabbreviate { value } {
 
-    global abbreviation_array
+    global scoreboard_abbreviation
 
     if { [info exists \
-               abbreviation_array($value)] } {
-	return $abbreviation_array($value)
+               scoreboard_abbreviation($value)] } {
+        set m $scoreboard_abbreviation($value)
+	global scoreboard_$m
+	return [set scoreboard_$m]
     } elseif {    [regexp {^(.*)([+-][0-9]+)$} $value \
 			  forget abv inc] \
 	       && [info exists \
-			abbreviation_array($abv)] \
+			scoreboard_abbreviation($abv)] \
 	       && ! [catch {
-		      set date \
-			  $abbreviation_array($abv)
+		      set m \
+		        $scoreboard_abbreviation($value)
+		      global scoreboard_$m
+		      set date [set scoreboard_$m]
 		      set time \
 			  [clock scan $date]
 		       }] } {
@@ -455,7 +449,7 @@ proc update_scoreboard { { force no } } {
            shutdown_time sent_errors \
 	   judging_directory pid_file argv \
            finder_file errorCode errorInfo \
-	   abbreviation_array bar solid_bar space \
+	   bar solid_bar space \
 	   scoreboard_commands scoreboard_test_time
 
 
