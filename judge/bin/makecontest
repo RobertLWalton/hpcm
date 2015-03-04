@@ -6,7 +6,7 @@
 #
 # File:		makecontest
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Feb 28 04:09:45 EST 2015
+# Date:		Wed Mar  4 04:01:47 EST 2015
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -1922,6 +1922,24 @@ proc index_grant { dir file } {
     }
 }
 #
+# Subfunction to copy file if that has not already
+# been done.
+#
+proc index_copy_file { source target } {
+    if { ! [check_copy_file $source $target] } {
+	copy_file $source $target
+    }
+}
+#
+# Subfunction to link file if that has not already
+# been done.
+#
+proc index_link_file { source target } {
+    if { ! [check_link_file $source $target] } {
+	link_file $source $target
+    }
+}
+#
 # Subfunction to copy list of files from a source
 # directory to a target directory, making target
 # subdirectories as necessary.  Use index_grant to
@@ -1930,7 +1948,7 @@ proc index_grant { dir file } {
 proc index_copy { source dest files } {
     foreach file $files {
 	file mkdir [file dirname $dest/$file]
-	copy_file $source/$file $dest/$file
+	index_copy_file $source/$file $dest/$file
 	index_grant $dest $file
     }
 }
@@ -1942,7 +1960,7 @@ proc index_copy { source dest files } {
 proc index_link { source dest files } {
     foreach file $files {
 	file mkdir [file dirname $dest/$file]
-	link_file $source/$file $dest/$file
+	index_link_file $source/$file $dest/$file
     }
 }
 #
@@ -2284,7 +2302,8 @@ proc process_index_specification {} {
 		    if { [file isfile $source] } {
 			file mkdir \
 			     [file dirname $destination]
-			link_file $source $destination
+			index_link_file $source \
+			                $destination
 		    } elseif { [file isdirectory \
 				     $source] } {
 			file mkdir $destination
@@ -2318,7 +2337,8 @@ proc process_index_specification {} {
 		    if { [file isfile $source] } {
 			file mkdir \
 			     [file dirname $destination]
-			copy_file $source $destination
+			index_copy_file $source \
+				        $destination
 			index_grant $c_d/$targetdir+ \
 				    $targettail
 		    } elseif { [file isdirectory \
@@ -2366,7 +2386,8 @@ proc process_index_specification {} {
 			       contains a `/'"
 		    }
 		    set s_d $j_d/solutions+
-		    link_file $source $s_d/$targettail
+		    index_link_file $source \
+		                    $s_d/$targettail
 		}
 
 		# Add to print file lists.
@@ -2786,8 +2807,8 @@ if { $demos_solutions_option } {
 	    }
 	    file mkdir $d_d/solutions/$d
 	    grant_access $d_d/solutions/$d
-	    copy_file solutions+/$d/$file \
-		      $d_d/solutions/$d/$file
+	    index_copy_file solutions+/$d/$file \
+		            $d_d/solutions/$d/$file
 	    grant_access $d_d/solutions/$d/$file
 	}
     }

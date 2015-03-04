@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@seas.harvard.edu)
-# Date:		Sun Feb 15 19:45:49 EST 2015
+# Date:		Wed Mar  4 03:48:08 EST 2015
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -2500,7 +2500,7 @@ proc create_directory { dirname } {
 # linked to the source.  If no target is given, link the
 # file into the current directory.
 #
-proc link_file { source { target . } } {
+proc link_file { source target } {
     exec ln -s $source $target
 }
 
@@ -2554,6 +2554,40 @@ proc compare_files { source target } {
 	}
     }
     return 1
+}
+
+# Function that returns true if a specific copy has
+# already been done, i.e., if copy_file above has
+# already been executed with the same arguments.
+#
+# Checks that source and target are both files and
+# have equal contents, AFTER following all links.
+# BUT does not check permissions.
+#
+proc check_copy_file { source target } {
+    if { ! [file isfile $target] \
+         || \
+	 ! [file isfile $source] \
+	 || \
+	 ! [compare_files $source $target] } {
+        return 0
+    } else {
+        return 1
+    }
+}
+
+# Function that returns true if a specific link already
+# exists, i.e., link_file above has already been
+# executed with the same arguments.
+#
+proc check_link_file { source target } {
+    if { [catch { set name [file link $target] }] \
+         || \
+	 $name != $source } {
+        return 0
+    } else {
+        return 1
+    }
 }
 
 # Make an archive (e.g. tar) of a directory.  Given
