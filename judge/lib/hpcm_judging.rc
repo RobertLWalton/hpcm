@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@seas.harvard.edu)
-# Date:		Wed Mar  4 03:48:08 EST 2015
+# Date:		Wed Mar  4 04:43:46 EST 2015
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -2463,6 +2463,22 @@ proc truename { dirname } {
     return $name
 }
 
+# Function to compare two files, returning true if the
+# files are equal, false if they are not equal.
+#
+proc compare_files { source target } {
+    global errorCode errorInfo
+    if { [catch { exec cmp $source $target } \
+    		message] } {
+        if { [regexp {CHILDSTATUS.* 1$} $errorCode] } {
+	    return 0
+	} else {
+	    error $message $errorInfo $errorCode
+	}
+    }
+    return 1
+}
+
 # Function to create a file.  Returns `yes' if the file
 # was created, and `no' if it already exists.  Suffers
 # an error if there is some other problem with creating
@@ -2500,8 +2516,15 @@ proc create_directory { dirname } {
 # linked to the source.  If no target is given, link the
 # file into the current directory.
 #
+# But if target is already a link equal to source,
+# nothing is done.
+#
 proc link_file { source target } {
-    exec ln -s $source $target
+    if { [catch { set name [file link $target] }] \
+         || \
+	 $name != $source } {
+	exec ln -s $source $target
+    }
 }
 
 # Function to copy a file preserving modification date
@@ -2510,11 +2533,25 @@ proc link_file { source target } {
 # a symbolic link, but will copy the underlying file
 # instead.
 #
+# But if source and target are already files (AFTER
+# following links) and their contents are equal, nothing
+# is done (NOTE: equality of permissions is NOT
+# checked.)
+#
 proc copy_file { source target } {
-    exec cp -p $source $target
+    if { ! [file isfile $target] \
+         || \
+	 ! [file isfile $source] \
+	 || \
+	 ! [compare_files $source $target] } {
+	exec cp -p $source $target
+    }
 }
 
 # Function to copy a file encoding it in base64.
+#
+# NOTE: no check is made to see if target already
+# exists and equals base64 encoded source.
 #
 proc encode_file { source target } {
 
@@ -2538,56 +2575,6 @@ proc encode_file { source target } {
 #
 proc copy_directory { source target } {
     exec cp -rpP $source $target
-}
-
-# Function to compare two files, returning true if the
-# files are equal, false if they are not equal.
-#
-proc compare_files { source target } {
-    global errorCode errorInfo
-    if { [catch { exec cmp $source $target } \
-    		message] } {
-        if { [regexp {CHILDSTATUS.* 1$} $errorCode] } {
-	    return 0
-	} else {
-	    error $message $errorInfo $errorCode
-	}
-    }
-    return 1
-}
-
-# Function that returns true if a specific copy has
-# already been done, i.e., if copy_file above has
-# already been executed with the same arguments.
-#
-# Checks that source and target are both files and
-# have equal contents, AFTER following all links.
-# BUT does not check permissions.
-#
-proc check_copy_file { source target } {
-    if { ! [file isfile $target] \
-         || \
-	 ! [file isfile $source] \
-	 || \
-	 ! [compare_files $source $target] } {
-        return 0
-    } else {
-        return 1
-    }
-}
-
-# Function that returns true if a specific link already
-# exists, i.e., link_file above has already been
-# executed with the same arguments.
-#
-proc check_link_file { source target } {
-    if { [catch { set name [file link $target] }] \
-         || \
-	 $name != $source } {
-        return 0
-    } else {
-        return 1
-    }
 }
 
 # Make an archive (e.g. tar) of a directory.  Given
