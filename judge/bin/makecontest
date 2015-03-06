@@ -6,7 +6,7 @@
 #
 # File:		makecontest
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Mar  4 04:45:16 EST 2015
+# Date:		Fri Mar  6 15:40:42 EST 2015
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -2081,6 +2081,16 @@ proc process_index_specification {} {
 		   $line forget indent forget2
 	    regsub {\*\*\*} $indent {   } indent
 
+	    set target [make_substitutions $name]
+
+	    # Check target for legality.
+	    #
+	    if { [regexp {(^|/)(\.|-)} $target] } {
+		error "Illegal item name `$name'\
+		       after substitutions,\n\
+		       \    in `$index_file'."
+	    }
+
 	    if { [lcontain $options noinclude] } {
 
 		# Item is not included.
@@ -2098,16 +2108,6 @@ proc process_index_specification {} {
 		# Item is included.
 
 		set in_item	yes
-
-		set target [make_substitutions $name]
-
-		# Check target for legality.
-		#
-		if { [regexp {(^|/)(\.|-)} $target] } {
-		    error "Illegal item name `$name'\
-			   after substitutions,\n\
-			   \    in `$index_file'."
-		}
 
 		# Compute and check targetdir and
 		# targettail such that $target ==
@@ -2431,6 +2431,25 @@ proc process_index_specification {} {
 			 }
 		    }
 		}
+	    }
+	
+	    # Process solutions option for non-included
+	    # items.
+	    #
+	    if {    $solutions_option \
+		 && $in_item == "no" \
+		 && ( [lcontain $options solution] \
+		      && \
+		      ! [lcontain $options \
+				  nosolution] ) } {
+		if { ! [file isdirectory $source] \
+			    } {
+		    error "$source solution is not\
+			   a directory"
+		}
+		set targettail [file tail $target]
+		set s_d $j_d/solutions+
+		link_file $source $s_d/$targettail
 	    }
 
 	} elseif { $in_header } {
