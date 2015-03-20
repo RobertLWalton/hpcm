@@ -1,0 +1,211 @@
+#! /bin/sh
+#
+# Make .jin, .jtest, and .jftest files.
+#
+# File:		jmake
+# Author:	Bob Walton <walton@deas.harvard.edu>
+# Date:		Thu Mar 19 20:05:36 EDT 2015
+#
+# The authors have placed this program in the public
+# domain; they make no warranty and accept no liability
+# for this program.
+#
+# The next lines start tclsh \
+trap "echo jmake: Terminated by Signal" \
+    HUP INT QUIT; \
+tclsh "$0" "$@"; exit $status
+
+set document "
+jmake \[-vf\] \[directory-or-file ...\]
+
+    -v is the verbose option, -f the force option.  If
+    no directories or files given, the directory `.'
+    is implied.
+
+    For each F.in file listed, or for each F.in file
+    in a listed directory:
+
+    (1) Make F.jin+ by prepending
+
+	    *INPUT-CASE-HEAD* ^--
+	    *OUTPUT-CASE-HEAD* ^\[ \\t\]*--
+
+	to F.in.
+
+    (2) If F.ftest exists, make F.jftest+ by prepending
+        to each line of F.ftest `-' if the line begins
+	with `--' or `.' otherwise.
+
+	Else if F.test exists, make F.jtest+ similarly
+	from F.test.
+
+    (3) For each F.Y+ made, if F.Y does not exist, move
+        F.Y+ to F.Y.  Else if F.Y+ and F.Y compare
+	equal, remove F.Y+.  Else report the two files
+	are different and leave both files as is.
+"
+
+set verbose 0
+set force 0
+
+# Function to perform (2) above, making outF (e.g.,
+# F.jtest+) from lines of inF (e.g. F.test) by
+# prepending `-' or `.'.  Returns 1 on success and
+# 0 on failure.
+#
+proc make_jtest { inF outF } {
+
+    global verbose force
+
+    if { [catch { set in [open $inF r] } err] } {
+        puts "ERROR: $inF is not readable"
+	puts $err
+	return 0
+    }
+    if { [catch { set out [open $outF w] } err] } {
+        puts "ERROR: $outF is not writable"
+        puts $err
+	close $in
+	return 0
+    }
+    while { 1 } {
+        set line [gets $in]
+	if { [eof $in] } break
+	if { [regexp {^--} $line] } {
+	    puts $out "-$line"
+	} else {
+	    puts $out ".$line"
+	}
+    }
+    close $in
+    close $out
+    return 1
+}
+
+# Function to perform (3) above.  Assumes file+ exists
+# and is readable and tries to rename file+ to file or
+# prove the two equal.
+#
+proc jfinish_file { file } {
+
+    global verbose force
+
+    if { [file readable $file] } {
+        if { [catch { exec cmp -s $file ${file}+ } \
+	            err] } {
+	    puts "ERROR: new ${file}+ does not equal\
+	         "$file"
+	} else {
+	    file delete -force -- ${file}+
+	    if { $verbose } {
+		puts "OLD OK: $file"
+	    }
+	}
+    } else {
+	set m "MADE"
+	if { $force && [file exists $file] } {
+	    file delete -force -- $file
+	    set m "REMADE"
+	}
+        if { [catch { file rename -- ${file}+ $file } \
+                      err] } {
+	    puts "ERROR: renaming ${file}+ to $file"
+	    puts $err
+	} elseif { $verbose } {
+	    puts "NEWLY $m: $file"
+	}
+    }
+}
+
+# Function to process a single file.
+#
+proc jmake_file { F } {
+    set ext [file extension $F]
+    if { $ext != ".in" } {
+        puts "ERROR: $F does NOT have .in extension"
+	return
+    }
+
+    set F [file rootname $F]
+
+    if { [catch { set in [open ${F}.in r] } err] } {
+        puts "ERROR: ${F}.in is not readable"
+        puts $err
+	return
+    }
+    if { [catch { set out [open ${F}.jin+ w] } err] } {
+        puts "ERROR: ${F}.jin+ is not writable"
+        puts $err
+	close $in
+	return
+    }
+    puts $out "*INPUT-CASE-HEAD* ^--"
+    puts $out "*OUTPUT-CASE-HEAD* ^\[ \\t\]*--"
+    while { 1 } {
+        set line [gets $in]
+	if { [eof $in] } break
+	puts $out $line
+    }
+    close $in
+    close $out
+
+    jfinish_file ${F}.jin
+
+    if { [file readable ${F}.ftest] } {
+        if { [make_jtest ${F}.ftest ${F}.jftest+] } {
+	    jfinish_file ${F}.jftest
+	}
+    } elseif { [file readable ${F}.test] } {
+        if { [make_jtest ${F}.test ${F}.jtest+] } {
+	    jfinish_file ${F}.jtest
+	}
+    } else {
+        puts "ERROR: neither ${F}.test nor ${F}.ftest\
+	      are readable"
+    }
+}
+
+
+# If too few arguments or first argument begins with
+# `-', print documentation and exit with error.
+#
+if { $argc >= 1 && [regexp {^-doc} [lindex $argv 0]] } {
+    exec << $document less -F >&@ stdout
+    exit 1
+}
+if { $argc >= 1 && [regexp {^-} [lindex $argv 0]] } {
+    set options [lindex $argv 0]
+    set argv [lrange $argv 1 end]
+    incr argc -1
+
+    while { 1 } {
+        set options [string range $options 1 end]
+	if { $options == "" } break
+	set option [string index $options 0]
+	if { $option == "v" } {
+	    set verbose 1
+	} elseif { $option == "f" } {
+	    set force 1
+	} else {
+	    puts "ERROR: cannot understand -$option"
+	    exit 1
+	}
+    }
+}
+if { $argc == 0 } {
+    set argv {.}
+    set argc 1
+}
+
+foreach file_or_directory $argv {
+    if { [file isdirectory $file_or_directory] } {
+        foreach file [glob -nocomplain \
+	                   $file_or_directory/*.in] {
+	    jmake_file $file
+	}
+    } else {
+        jmake_file $file_or_directory
+    }
+}
+
+exit 0
