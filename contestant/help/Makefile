@@ -7,13 +7,6 @@
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
 # for this program.
-#
-# RCS Info (may not be true date or author):
-#
-#   $Author: walton $
-#   $Date: 2014/12/29 01:35:42 $
-#   $RCSfile: Makefile,v $
-#   $Revision: 1.51 $
 
 # To make web help pages, execute `make web', copy
 # the `web.tar' file to your web server and unpack
