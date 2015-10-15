@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Mar  1 12:27:27 EST 2015
+# Date:		Thu Oct 15 12:32:56 EDT 2015
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -260,6 +260,7 @@ aux auxiliary:	submakes
 submakes:
 	(cd ./contestant/bin/; make)
 	(cd ./contestant/help/; make)
+	(cd ./contestant/test_submissions/; make)
 	(cd ./judge/bin/; make)
 	(cd ./judge/doc/; make)
 
