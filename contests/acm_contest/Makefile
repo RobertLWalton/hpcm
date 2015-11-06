@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon May 20 03:01:32 EDT 2013
+# Date:		Fri Nov  6 04:52:35 EST 2015
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -82,39 +82,24 @@
 #    solutions/reverser/reverser.EXT into ~/demos/
 #    reverser, where EXT is the extension of your
 #    favorite language, and then run `make submit'
-#    in ~/demos/reverser and read your e-mail.  You can
-#    also try
+#    in ~/demos/reverser and read your e-mail.
 #
-#        hpcm_test ~/demos/solutions
+#    You can also try
 #
-#    which will submit all the demo solutions.
-# 
-# 9. You can also test the contest by executing
-#    `make test'.  Then read each email reply and
-#    compare its X-HPCM-Test-Subject field with the
-#    results in the body of the reply.
+#        hpcm_test solutions
+#        hpcm_test incorrect
+#        hpcm_test correct
+#        hpcm_test extraction
 #
-#    Note that some of the test submissions time
-#    out, and for those submissions the autojudge will
-#    take several tens of seconds to reply.
+#    which will submit all the demo solutions,
+#    a bunch of incorrect submissions, a bunch of
+#    correct submissions, and a bunch of submissions
+#    with extraction errors, respectively.  For the
+#    the incorrect and extraction submissions, the
+#    X-HPCM-Test-Subject field in the email tells
+#    what score or error message is expected.
 #
-#    There are more tests defined in the `make_test'
-#    file.  These are checked as above by using
-#    X-HPCM-Test-Subject if it exists, or by demanding
-#    a score of `Completely Correct' otherwise.
-#
-#    After running `make test' you may want to clean
-#    out all submissions made so far, as one of the
-#    tests makes a rather large output file.  Cleaning
-#    all submissions made so far can be done by
-#
-#    	make dangerous_submissions_clean
-#
-#    WARNING: Do NOT DO THIS if any contestants have
-#    submitted anything, as it will clean out their
-#    submissions too.
-#
-# 10. A web page containing problem descriptions, and
+#  9. A web page containing problem descriptions, and
 #     optionally solutions, can be made by defining the
 #     web page parameters in hpcm_judging.rc and execut-
 #     ing `make web'.
@@ -130,7 +115,7 @@
 #     board on the web.  See scoreboard_commands in
 #     ./hpcm_judging.rc.
 #
-# 11. To print handouts the following should be useful:
+# 10. To print handouts the following should be useful:
 #
 #	 make problems.pdf
 #	     Makes printout of problems.
@@ -139,7 +124,7 @@
 #	     Makes printout of the help/this_contest
 #	     file (not usually done)
 #
-# 12. At the end of the contest, the procedure for
+# 11. At the end of the contest, the procedure for
 #     finishing is typically the following.  A final
 #     scoreboard is made automatically in the file
 #     ./contest/scoreboard.final from the stop time
@@ -156,7 +141,7 @@
 #     the scoreboard.final file and wait (up to 1 minute
 #     for it to reappear.
 #
-# 13. There are two background processes whose status
+# 12. There are two background processes whose status
 #     you may want to monitor.  The `startcontest'
 #     process starts the contest by granting permissions
 #     to the ./contest/problems directory and ./contest/
@@ -182,7 +167,7 @@
 #
 #		makescoreboard update
 #
-# 14. The contest is automatically converted from a
+# 13. The contest is automatically converted from a
 #     formal contest to an untimed practice some time
 #     (typically, 1 hour) after the contest ends.  After
 #     this you may wish to give contestants access to
@@ -246,11 +231,6 @@ problems_print_files:	print_files_do_nothing
 help/this_contest: print_files_do_nothing
 	makecontest -this_contest
 
-# Test Rules (see make_test global variable in
-# hpcm_judging.rc):
-#
--include make_test
-
 # Cleanup Rules:
 
 dangerous_submissions_clean:
@@ -259,7 +239,7 @@ dangerous_submissions_clean:
 dangerous_complete_clean:
 	-makescoreboard stop
 	-startcontest stop
-	rm -rf mail rerun help flag log make_test \
+	rm -rf mail rerun help flag log \
 	       secure .ssh web* \
 	       solutions* TODO *.ps *.pdf \
 	       `readlink contest` \

@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Sep  4 03:21:22 EDT 2013
+# Date:		Fri Nov  6 05:03:41 EST 2015
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -80,39 +80,24 @@
 #    solutions/reverser/reverser.EXT into ~/demos/
 #    reverser, where EXT is the extension of your
 #    favorite language, and then run `make submit'
-#    in ~/demos/reverser and read your e-mail.  You can
-#    also try
+#    in ~/demos/reverser and read your e-mail.
 #
-#        hpcm_test ~/demos/solutions
+#    You can also try
 #
-#    which will submit all the demo solutions.
-# 
-# 9. You can also test the contest by executing
-#    `make test'.  Then read each email reply and
-#    compare its X-HPCM-Test-Subject field with the
-#    results in the body of the reply.
+#        hpcm_test solutions
+#        hpcm_test incorrect
+#        hpcm_test correct
+#        hpcm_test extraction
 #
-#    Note that some of the test submissions time
-#    out, and for those submissions the autojudge will
-#    take several tens of seconds to reply.
+#    which will submit all the demo solutions,
+#    a bunch of incorrect submissions, a bunch of
+#    correct submissions, and a bunch of submissions
+#    with extraction errors, respectively.  For the
+#    the incorrect and extraction submissions, the
+#    X-HPCM-Test-Subject field in the email tells
+#    what score or error message is expected.
 #
-#    There are more tests defined in the `make_test'
-#    file.  These are checked as above by using
-#    X-HPCM-Test-Subject if it exists, or by demanding
-#    a score of `Completely Correct' otherwise.
-#
-#    After running `make test' you may want to clean
-#    out all submissions made so far, as one of the
-#    tests makes a rather large output file.  Cleaning
-#    all submissions made so far can be done by
-#
-#    	make dangerous_submissions_clean
-#
-#    WARNING: Do NOT DO THIS if any contestants have
-#    submitted anything, as it will clean out their
-#    submissions too.
-#
-# 10. A web page containing problem descriptions, and
+#  9. A web page containing problem descriptions, and
 #     optionally solutions, is made using the web page
 #     parameters in hpcm_judging.rc.
 #
@@ -127,7 +112,7 @@
 #     board on the web.  See scoreboard_commands in
 #     ./hpcm_judging.rc.
 #
-# 11. To print handouts the following should be useful:
+# 10. To print handouts the following should be useful:
 #
 #	 make problems.pdf
 #	     Makes printout of problems.
@@ -136,7 +121,7 @@
 #	     Makes printout of the help/this_contest
 #	     file (not usually done)
 #
-# 12. There is one background process whose status you
+# 11. There is one background process whose status you
 #     may want to monitor: the `makescoreboard' process
 #     that remakes the scoreboard if necessary every
 #     minute.
@@ -157,7 +142,7 @@
 #
 #		makescoreboard update
 #
-# 13. Give contestants access to their accounts by
+# 12. Give contestants access to their accounts by
 #     creating the file ./contest/secure/passwords_
 #     header and running the hpcm_email_passwords
 #     program to email the passwords to the contestants.
@@ -213,11 +198,6 @@ problems_print_files:	print_files_do_nothing
 help/this_contest: print_files_do_nothing
 	makecontest -this_contest
 
-# Test Rules (see make_test global variable in
-# hpcm_judging.rc):
-#
--include make_test
-
 # Cleanup Rules:
 
 dangerous_submissions_clean:
@@ -225,7 +205,7 @@ dangerous_submissions_clean:
 
 dangerous_complete_clean:
 	-makescoreboard stop
-	rm -rf mail rerun help flag log make_test \
+	rm -rf mail rerun help flag log \
 	       secure .ssh web* \
 	       info* solutions* \
 	       TODO *.ps *.pdf \

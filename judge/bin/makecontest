@@ -6,7 +6,7 @@
 #
 # File:		makecontest
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Aug 21 05:26:54 EDT 2015
+# Date:		Fri Nov  6 04:50:08 EST 2015
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -46,7 +46,8 @@ makecontest option ... index_specification ...
   Options:
     -local	Equals all options needed to have local
 		contestant accounts; specifically, the
-		following: -contest, -bin, -home, -help,
+		following: -contest, -bin,
+		-test_submissions, -home, -help,
 		-help2, -this_contest, -solutions,
 		-mail, -print_files, -problems_solution_
 		files, -demos_solution_files, -secure,
@@ -72,6 +73,7 @@ makecontest option ... index_specification ...
 
     -contest	Make ./contest
     -bin	Make ./contest/bin
+    -test_submissions  Make ./contest/test_submissions
     -home	Make ./contest/home
     -problems	Make ./contest/problems.  Includes
 		problem description files for non-`all'
@@ -635,6 +637,13 @@ The -bin Option
     error, but a TODO to fix the situation is written.
 
 
+The -test_submissions Option
+--- ----------------- ------
+
+    Ditto but for .../test_submissions instead of
+    .../bin.
+
+
 The -home Option
 --- ----- ------
 
@@ -667,8 +676,8 @@ The -home Option
     unique account name exists.  If the prototype
     account cannot be found, it is not an error, but
     a TODO to fix the situation is written.
-
 
+
 The -info Option
 --- ----- ------
 
@@ -1286,6 +1295,7 @@ set info_option				no
 set solutions_option			no
 set contest_option			no
 set bin_option				no
+set test_submissions_option		no
 set home_option				no
 set problems_option			no
 set demos_option			no
@@ -1322,6 +1332,7 @@ while { $argi < $argc } {
 	-local {
 	    set contest_option			yes
 	    set bin_option			yes
+	    set test_submissions_option		yes
 	    set home_option			yes
 	    set solutions_option		yes
 	    set help_option			yes
@@ -1356,6 +1367,7 @@ while { $argi < $argc } {
 	-formal	{
 	    set contest_option			yes
 	    set bin_option			yes
+	    set test_submissions_option		yes
 	    set home_option			yes
 	    set solutions_option		yes
 	    set help_option			yes
@@ -1380,6 +1392,7 @@ while { $argi < $argc } {
 	-informal {
 	    set contest_option			yes
 	    set bin_option			yes
+	    set test_submissions_option		yes
 	    set home_option			yes
 	    set solutions_option		yes
 	    set help_option			yes
@@ -1404,6 +1417,8 @@ while { $argi < $argc } {
 	-solutions	{ set solutions_option	yes }
 	-contest	{ set contest_option	yes }
 	-bin		{ set bin_option	yes }
+	-test_submissions {
+	    set test_submissions_option	yes }
 	-home		{ set home_option	yes }
 	-problems	{ set problems_option	yes }
 	-demos		{ set demos_option	yes }
@@ -1542,6 +1557,7 @@ if { $contest_option } {
 #
 if {    $contest_option \
      || $bin_option \
+     || $test_submissions_option \
      || $home_option \
      || $problems_option \
      || $demos_option \
@@ -1574,28 +1590,32 @@ if {    $contest_option \
     }
 }
 
-# Make $c_d/bin directory.
+# Make $c_d/XXX directory for XXX = bin,
+# test_submissions.
 #
-if { $bin_option } {
-    if {    [catch { file type $c_d/bin }] \
-	 && [file isdirectory \
-		  $hpcm_directory/contestant/bin] } {
-	link_file $hpcm_directory/contestant/bin \
-		  $c_d/bin
-	puts "Linked ./contest/bin"
-	puts "    to $hpcm_directory/contestant/bin"
-    }
-    if { ! [file exists $c_d/bin] } {
-	TODO "./contest/bin does not exist." \
-	     "Link ./contest/bin to\
-	      ..../hpcm/contestant/bin"
-    } elseif { ! [file isdirectory $c_d/bin] } {
-	TODO "./contest/bin is not a directory." \
-	     "Link it to ..../hpcm/contestant/bin"
-    } elseif { ! [regexp {r.x} [get_access $c_d/bin]] \
-			} {
-	TODO "./contest/bin is not a+rx." \
-	     "Run `make' in ~/hpcm"
+foreach XXX "bin test_submissions" {
+    set contestant_d $hpcm_directory/contestant
+    if { [set ${XXX}_option] } {
+	if {    [catch { file type $c_d/$XXX }] \
+	     && [file isdirectory \
+		      $contestant_d/$XXX] } {
+	    link_file $contestant_d/$XXX $c_d/$XXX
+	    puts "Linked ./contest/$XXX"
+	    puts "    to $contestant_d/$XXX"
+	}
+	if { ! [file exists $c_d/$XXX] } {
+	    TODO "./contest/$XXX does not exist." \
+		 "Link ./contest/$XXX to\
+		  ..../hpcm/contestant/$XXX"
+	} elseif { ! [file isdirectory $c_d/$XXX] } {
+	    TODO "./contest/$XXX is not a directory." \
+		 "Link it to ..../hpcm/contestant/$XXX"
+	} elseif { ! [regexp {r.x} \
+	                     [get_access $c_d/$XXX]] \
+			    } {
+	    TODO "./contest/$XXX is not a+rx." \
+		 "Run `make' in ~/hpcm"
+	}
     }
 }
 
