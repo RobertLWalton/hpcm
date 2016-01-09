@@ -4,7 +4,7 @@
 #
 # File:		testproblems
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Mon Oct  5 21:32:03 EDT 2015
+# Date:		Sat Jan  9 05:59:00 EST 2016
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -41,7 +41,8 @@ catch {
 
 set document "
 testproblems \[-p N] \[-keep|-|-contestant|-q|-s] \\
-             \[-ext \".EXT ...\"] \[directory ...]
+             \[-ext \".EXT ...\"] \[-todo]\
+	     \[directory ...]
 
     The command with no arguments is equivalent to
 
@@ -53,6 +54,11 @@ testproblems \[-p N] \[-keep|-|-contestant|-q|-s] \\
 
     In general the default directory is `.' and the
     argument `-' is equivalent to `-keep'.
+
+    The -todo argument causes directories with a TODO
+    file to be ignored, except that the TODO file will
+    be printed and its first line will be listed in
+    the summary.
 
     The `-p N' arguments cause the run to be done N
     times in parallel, as a way of testing timing of on
@@ -263,7 +269,8 @@ testproblems \[-p N] \[-keep|-|-contestant|-q|-s] \\
     for `Completely Correct' cases.
     
     The -q or quiet option suppresses all but the
-    summary output.  It is implied by -p."
+    summary output.  It is implied by -p.
+"
 
 # Process options.
 #
@@ -277,6 +284,7 @@ testproblems \[-p N] \[-keep|-|-contestant|-q|-s] \\
 #
 set parallel_runs 0
 set keep 0
+set todo 0
 set contestant 0
 set summary 0
 set quiet 0
@@ -289,11 +297,12 @@ set myargv $argv
 while { 1 } {
     switch -glob -- [lindex $myargv 0] {
     -doc* {
-	puts $document
+	exec << $document less -F >&@ stdout
 	exit 1
     }
     -keep { set keep 1 }
     -     { set keep 1 }
+    -todo { set todo 1 }
     -contestant { set contestant 1 }
     -s { set summary 1 }
     -q {
@@ -686,6 +695,15 @@ foreach directory $myargv {
     cd $directory
     set dir [pwd]
 
+    if { $todo && [file readable TODO] } {
+        set TODO [split [read_entire_file TODO] "\n"]
+	putsq "TODO:"
+	foreach todo_line $TODO {
+	    putsq "  $todo_line" }
+	putss "TODO: [lindex $TODO 0]"
+	continue
+    }
+
     if { [catch {
 
 	# Extract problem from `P = problem' line in
@@ -966,7 +984,7 @@ foreach directory $myargv {
 
 	    # Compile solution; errors caught below.
 	    #
-	    puts "Compiling $problem:"
+	    putsq "Compiling $problem:"
 	    set make_error \
 		[catch { exec make $problem \
 		              >@ $stdoutq } \
@@ -1109,7 +1127,7 @@ foreach directory $myargv {
 		    scorediff $testdir $N.out $N.test
 		}
 	    }
-	    puts "Sorting TIMING_INFO:"
+	    putsq "Sorting TIMING_INFO:"
 	    exec sort -k 1,1 -n -r \
 	         < TIMING_INFO+ > TIMING_INFO
 	    file delete TIMING_INFO+
