@@ -4,7 +4,7 @@
 #
 # File:		testproblems
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Sat Jan  9 06:19:52 EST 2016
+# Date:		Sun Jan 10 15:37:57 EST 2016
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -294,6 +294,7 @@ set stdoutq stdout
 set SUB 0
 set SUB_dirname ""
 set myargv $argv
+set subargs {}
 while { 1 } {
     switch -glob -- [lindex $myargv 0] {
     -doc* {
@@ -302,8 +303,14 @@ while { 1 } {
     }
     -keep { set keep 1 }
     -     { set keep 1 }
-    -todo { set todo 1 }
-    -contestant { set contestant 1 }
+    -todo {
+        set todo 1
+	lappend subargs -todo
+    }
+    -contestant {
+        set contestant 1
+	lappend subargs -contestant
+    }
     -s { set summary 1 }
     -q {
            set quiet 1
@@ -317,6 +324,7 @@ while { 1 } {
 	        error "-ext $allowed_extensions\
 		            is not legal"
 	    }
+	    lappend subargs -ext $allowed_extensions
     }
     -p {
 	    set myargv [lrange $myargv 1 end]
@@ -372,7 +380,7 @@ if { $parallel_runs > 0 } {
     while { $i <= $parallel_runs } {
         cd $tmp/test$i
 	lappend_lists pids \
-	     [eval exec $argv0 \
+	     [eval exec $argv0 $subargs \
 		   -SUB 1 $tmp/test$i $myargv &]
 	incr i
     }
@@ -403,7 +411,7 @@ if { $parallel_runs > 0 } {
     exec fold -s -w 72 < /proc/cpuinfo >@ stdout
     puts ""
     puts -nonewline \
-         "testproblems -p $parallel_runs\
+         "testproblems $subargs -p $parallel_runs\
 	  [lindex $myargv 0]"
     if { [llength $myargv] > 1 } {
         puts -nonewline " ... [lindex $myargv end]"
@@ -423,7 +431,7 @@ if { $parallel_runs > 0 } {
     # time writes its output to the standard error file
     # -SUB 2 $SUB_dirname writes summary to
     # $SUB_dirname.report
-    catch { eval exec time -p $argv0 \
+    catch { eval exec time -p $argv0 $subargs \
                  -SUB 2 $SUB_dirname -q $myargv } \
 	  tout
     set fd [open $SUB_dirname.report a]
