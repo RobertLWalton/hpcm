@@ -4,7 +4,7 @@
 #
 # File:		testproblems
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Sun Jan 10 15:37:57 EST 2016
+# Date:		Sun Jan 10 18:11:41 EST 2016
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -410,6 +410,11 @@ if { $parallel_runs > 0 } {
     puts ""
     exec fold -s -w 72 < /proc/cpuinfo >@ stdout
     puts ""
+    puts ""
+    puts "/proc/meminfo:"
+    puts ""
+    exec fold -s -w 72 < /proc/meminfo >@ stdout
+    puts ""
     puts -nonewline \
          "testproblems $subargs -p $parallel_runs\
 	  [lindex $myargv 0]"
@@ -489,7 +494,8 @@ proc putsq { args } {
 # Put to summary.  If header not yet output, output it.
 #
 proc putss { args } {
-    global summary_header fd
+    global summary_header fd SUB
+    if { $SUB != 0 } return
     if { $summary_header != "" } {
         puts $fd $summary_header
 	set summary_header ""
@@ -677,6 +683,8 @@ set mgrepexp \
 
 set testdir_correct_summary {}
 set testdir_incorrect_summary {}
+set todo_count 0
+set error_count 0
 foreach directory $myargv {
 
     cd $wd
@@ -709,6 +717,7 @@ foreach directory $myargv {
 	foreach todo_line $TODO {
 	    putsq "  $todo_line" }
 	putss "TODO: [lindex $TODO 0]"
+	incr todo_count
 	continue
     }
 
@@ -1163,7 +1172,7 @@ foreach directory $myargv {
 		}
 		set out "$out $value $score"
 	    }
-	    if { ! $quiet || ! $summary } {
+	    if { $summary } {
 		set out "$out\n        Max Times:"
 		set out "$out\n            $timing_info"
 	    }
@@ -1190,6 +1199,7 @@ foreach directory $myargv {
 	    putsq $out
 	    putss "  ==== $testdir:"
 	    putss $out
+	    incr error_count
         }
 
 	# Return to problem directory
@@ -1209,6 +1219,7 @@ foreach directory $myargv {
     } out] } {
         putsq $out
 	putss $out
+	incr error_count
     }
 }
 
@@ -1251,6 +1262,18 @@ if { $SUB == 0 } {
 	    puts $item
 	}
     }
+} elseif { $SUB == 2 } {
+    set correct [llength $testdir_correct_summary]
+    set incorrect [llength $testdir_incorrect_summary]
+    puts "$correct Completely Correct"
+    puts "$incorrect Not Completely Correct"
+    if { $todo_count > 0 } {
+	puts "$todo_count TODO"
+    }
+    if { $error_count > 0 } {
+	puts "$error_count CAUGHT ERRORS"
+    }
+    puts ""
 }
 exit 0
 
