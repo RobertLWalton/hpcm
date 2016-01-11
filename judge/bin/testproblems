@@ -4,7 +4,7 @@
 #
 # File:		testproblems
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Sun Jan 10 19:43:14 EST 2016
+# Date:		Sun Jan 10 19:56:28 EST 2016
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -678,6 +678,8 @@ set testdir_correct_summary {}
 set testdir_incorrect_summary {}
 set todo_count 0
 set error_count 0
+set no_solutions_count 0
+set invalid_makefile_count 0
 foreach directory $myargv {
 
     cd $wd
@@ -714,20 +716,23 @@ foreach directory $myargv {
 	continue
     }
 
-    if { [catch {
+    # Extract problem from `P = problem' line in
+    # Makefile
+    #
+    set pline ""
+    if { [catch { set pline \
+		      [exec grep $mgrepexp Makefile]
+		}]\
+	|| \
+	! [regexp $mregexp $pline \
+		   forget problem] } {
+	putsq "CANNOT find P = ... line in Makefile"
+	putss "CANNOT find P = ... line in Makefile"
+	incr invalid_makefile_count
+	continue
+    }
 
-	# Extract problem from `P = problem' line in
-	# Makefile
-	#
-	set pline ""
-	if { [catch { set pline \
-	                  [exec grep $mgrepexp Makefile]
-		    }]\
-	    || \
-	    ! [regexp $mregexp $pline \
-	               forget problem] } {
-	    error "CANNOT find P = ... line in Makefile"
-	}
+    if { [catch {
 
 	# Do initial clean.
 	#
@@ -858,7 +863,10 @@ foreach directory $myargv {
 
 	if { [llength $solutions] == 0 } {
 	    set exts [join $extensions ,]
-	    error "no $problem*{$exts} solutions"
+	    putss "no $problem*{$exts} solutions"
+	    putsq "no $problem*{$exts} solutions"
+	    incr no_solutions_count
+	    error "ALREADY-OUTPUT"
 	}
 
 	# If input_names contains $problem and something
@@ -1188,11 +1196,13 @@ foreach directory $myargv {
 		    "$testdir: $count $name$max_time"
 	    }
 	} } out] } {
-	    putsq "  ==== $testdir:"
-	    putsq $out
-	    putss "  ==== $testdir:"
-	    putss $out
-	    incr error_count
+	    if { $out != "ALREADY-OUTPUT" } {
+		putsq "  ==== $testdir:"
+		putsq $out
+		putss "  ==== $testdir:"
+		putss $out
+		incr error_count
+	    }
         }
 
 	# Return to problem directory
@@ -1255,13 +1265,24 @@ if { $SUB == 0 } {
 	    puts $item
 	}
     }
-} elseif { $SUB == 2 } {
+    puts ""
+}
+
+if { $SUB == 0 || $SUB == 2 } {
     set correct [llength $testdir_correct_summary]
     set incorrect [llength $testdir_incorrect_summary]
     puts "$correct Completely Correct"
     puts "$incorrect Not Completely Correct"
     if { $todo_count > 0 } {
 	puts "$todo_count TODO"
+    }
+    if { $no_solutions_count > 0 } {
+	puts "$no_solutions_count\
+	      Directories with NO SOLUTION"
+    }
+    if { $invalid_makefile_count > 0 } {
+	puts "$invalid_makefile_count\
+	      Directories with invalid Makefile"
     }
     if { $error_count > 0 } {
 	puts "$error_count CAUGHT ERRORS"
