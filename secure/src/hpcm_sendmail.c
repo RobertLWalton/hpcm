@@ -2,7 +2,7 @@
  *
  * File:	hpcm_sendmail.c
  * Authors:	Bob Walton (walton@deas.harvard.edu)
- * Date:	Sat Apr 27 02:28:21 EDT 2013
+ * Date:	Wed Mar  9 13:45:26 EST 2016
  *
  * The authors have placed this program in the public
  * domain; they make no warranty and accept no liability
@@ -687,20 +687,16 @@ int main ( int argc, char ** argv )
 
 	* p ++ = '@';
 
-	/* We have to use gethostbyname to get the
-	   full name of the current host. */
+	struct utsname unames;
 
-	if ( gethostname ( hostname, MAXLEN - 5 ) < 0 )
-	    errno_exit ( "gethostname" );
-	if ( strlen ( hostname ) > MAXLEN - 10 )
+	if ( uname ( & unames ) < 0 )
+	    errno_exit ( "uname" );
+	if ( strlen ( unames.nodename ) > MAXLEN - 10 )
 	    too_big_exit ( "hostname" );
-	hostentp = gethostbyname ( hostname );
-	if ( hostentp == NULL )
-	    errno_exit ( "gethostbyname" );
-	if ( p + strlen ( hostentp->h_name )
+	if ( p + strlen ( unames.nodename )
 	         > endp - 10 )
 	    too_big_exit ( "Reply-To: field value" );
-	strcpy ( p, hostentp->h_name );
+	strcpy ( p, unames.nodename );
     }
 
     /* Compute date. */
