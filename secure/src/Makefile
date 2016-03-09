@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Feb 15 04:07:29 EST 2015
+# Date:		Wed Mar  9 07:12:40 EST 2016
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -19,7 +19,7 @@
 #
 .SUFFIXES:
 
-SECURE_BIN=/sbin
+SECURE_BIN=/usr/sbin
 
 all: hpcm_sandbox hpcm_sendmail hpcm_finish hpcm_wrapper
 
