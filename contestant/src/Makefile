@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Oct 26 04:53:57 EDT 2012
+# Date:		Thu Mar 10 03:41:30 EST 2016
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -20,7 +20,8 @@
 .SUFFIXES:
 %.out:	%
 
-all:	hpcm_display_graph
+all:	hpcm_display_graph \
+        hpcm_display_segments
 
 test_ps:	hpcm_display_graph_test.ps
 
@@ -51,4 +52,5 @@ test_X:		hpcm_display_graph
 
 clean:
 	rm -f hpcm_display_graph \
-	      hpcm_display_graph_test.ps
+	      hpcm_display_graph_test.ps \
+	      hpcm_display_segments
