@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@seas.harvard.edu)
-# Date:		Sat Feb 28 20:46:38 EST 2015
+# Date:		Mon Mar 14 14:52:23 EDT 2016
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -36,15 +36,17 @@ set hpcm_directory $env(HOME)/hpcm
 #
 set festival_name "FESTIVAL NAME IS TBD"
 
-# Start time is when the problems will be exposed and
-# when the non-demos scoreboards start.  If cc_manager
-# below is `yes', it will be disabled from start time
-# to stop_time.  Also there may be a separate contest
-# scoreboard that stops at the stop_time.
+# If start_time is not "", it is the time when the
+# problems will be exposed and the non-demos
+# scoreboards will start.  In this case stop_time
+# is in seconds after the start time.
 #
-# The stop_time is in seconds after the start time.
+# If start_time is "", the problems will be exposed and
+# scoreboards will run all the time, and stop_time is
+# not used.
 #
-set start_time "Jan 1 10:00:00 2030"
+set start_time ""
+# set start_time "Jan 1 10:00:00 2030"
 set stop_time [expr 6 * 60 * 60]
 
 # Map of contestant email (i.e., account) addresses for
@@ -63,20 +65,20 @@ array set submitter_compress_map {}
 # }
 
 # The email address to be notified for errors or
-# queries BEFORE the start time or AFTER the stop time.
+# queries.
 #
 set manager_address "someone@somecomputer"
 
 # Set the following to "yes" if you want ALL autojudge
-# replies to contestants to be CC'ed to the manager
-# EXCEPT between the start_time and the stop_time.
+# replies to contestants to be CC'ed to the manager_
+# address.  Otherwise only queries and errors are
+# emailed to the manager_address.
 #
 set cc_manager yes
 # set cc_manager no
 
 # A cc address can be added to all autojudge replies to
-# a submitter BEFORE the start time or AFTER the stop
-# time by adding the pair
+# a submitter (except system errors) by adding the pair
 #
 #	{ regexp address }
 #
@@ -151,6 +153,8 @@ lappend scoreboards(demos) \
 #    { title "N Problems" }
 #    { problems ... }
 # }
+#
+# Use following only if start_time != "":
 #
 # set scoreboards(winners) {
 #    { title "Contest Winners" }
@@ -447,31 +451,14 @@ if { $makeweb } {
     set web_title $festival_name
 }
 
-# Compute whether we have gone beyond the start_time
-# or stop_time.
-#
-set stop_time \
-    [absolute_time $stop_time $start_time]
-set is_started [is_later $start_time]
-set is_stopped [is_later $stop_time]
-
 # Set up manager for this contest.
 #
-# There is no manager for the contest proper.
-#
-if { ! $is_started || $is_stopped } {
-    set reply_mode auto
-    set log_mode auto
-    set log_manager $manager_address
-    if { $manager_address != "" && $cc_manager } {
-	lappend response_manager_map \
-		[list ".*" $manager_address]
-    }
-} else {
-    set reply_mode auto+manual
-    set log_mode manual
-    set log_manager ""
-    set response_manager_map {}
+set reply_mode auto
+set log_mode auto
+set log_manager $manager_address
+if { $manager_address != "" && $cc_manager } {
+    lappend response_manager_map \
+	    [list ".*" $manager_address]
 }
 
 # Allow inout, solution, cerr in responses.
