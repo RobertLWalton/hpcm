@@ -1,38 +1,41 @@
 #! /bin/sh
 #
-# Email account names and passwords.
+# Email accounts a file and optionally passwords.
 #
-# File:		hpcm_email_passwords
-# Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Sun Feb 22 04:21:14 EST 2009
+# File:		hpcm_email_accounts
+# Author:	Bob Walton <walton@seas.harvard.edu>
+# Date:		Sat Apr  2 13:01:28 EDT 2016
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
 # for this program.
-#
-# RCS Info (may not be true date or author):
-#
-#   $Author: walton $
-#   $Date: 2009/02/22 09:29:48 $
-#   $RCSfile: hpcm_email_passwords,v $
-#   $Revision: 1.11 $
 
 case "$1" in
     -doc* )
 	    echo "
-hpcm_email_passwords [account ...] -[no]send \\
-		     [formail-option ...]
+hpcm_email_accounts [-password] message-file \\
+                    [account ...] \\
+                    -[no]send [formail-option ...]
 
-    Account names and passwords taken from the file
-    \`./passwords' are emailed to the coaches email
-    address taken from the same file.  Each name and
-    password is emailed in a separate message, and in
-    that message is prefixed by the contents of the
-    \`./passwords_header' file if that file exists,
-    and postfixed by the contents of the \`./passwords_
-    trailer' file if that file exists.  The hostname
-    for the account is that returned by the
-    \`hostname -f' UNIX command.
+    Account names, team names (who field), passwords,
+    and coach's email addresses are taken from the file
+    \`./passwords'.  Then the account name, hostname,
+    team name, account password (optional), and message_
+    file is emailed to the coach's email address, for
+    each selected account (see below).  The hostname
+    is that returned by the \`hostname -f' UNIX command.
+
+    The email body format is:
+
+	BLANK-LINE
+        RE: Account:   ACCOUNT-NAME@HOST-NAME
+	    For:       TEAM-NAME
+	    Password:  PASSWORD
+	BLANK-LINE
+	message_file CONTENTS
+	    
+    where the \`Password: ...' line is omitted if the
+    -password option is not given.
 
     With -nosend the messages are sent to the standard
     output instead of being sent to sendmail.  The mes-
@@ -54,7 +57,8 @@ hpcm_email_passwords [account ...] -[no]send \\
 
     If an account name or password is \`none' in the
     \`./passwords' file, or the coaches email address
-    is empty in that file, the account is ignored."
+    is empty in that file, the account is ignored." \
+    | less -F
 
 	    exit 1
 	    ;;
@@ -82,8 +86,29 @@ else
     exit 1
 fi
 
+send_password=no
+message_file=
 accounts=
 mailer=
+
+if test "$1" = "-password"
+then
+    send_password=yes
+    shift
+fi
+if test $# -eq 0
+then
+    echo >&2 ERROR: too few arguments
+    exit 1
+fi
+message_file="$1"
+shift
+if test ! -r "$message_file"
+then
+    echo >&2 ERROR: cannot read "$message_file"
+    exit 1
+fi
+
 while test $# -ne 0
 do
     if test "$1" = "-send"
@@ -147,7 +172,7 @@ do
 
     if test "$who" = ""
     then for_who=""
-    else for_who=" for $who"
+    else for_who="$who"
     fi
 
     if test "$found" = "no"
@@ -165,18 +190,13 @@ do
            echo "Subject:" \
 	        "your programming contest account"; \
 	   echo ""; \
-	   if test -r passwords_header; \
-	   then cat passwords_header; \
+	   echo "RE: Account:   $user@$hostname"; \
+	   echo "    For:       $for_who"; \
+	   if test "$send_password" = "yes"; \
+	   then echo "    Password:  $password"; \
 	   fi; \
 	   echo ""; \
-	   echo "The account name and" \
-	        "password$for_who are:"; \
-	   echo ""; \
-	   echo "$user@$hostname      $password"; \
-	   echo ""; \
-	   if test -r passwords_trailer; \
-	   then cat passwords_trailer; \
-	   fi; \
+	   cat "$message_file"; \
 	   if test "$mailer" = "cat"; \
 	   then echo "--------------------------"; \
 	   fi; \

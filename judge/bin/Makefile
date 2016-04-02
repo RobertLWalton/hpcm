@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Mar  9 07:17:33 EST 2016
+# Date:		Sat Apr  2 13:24:22 EDT 2016
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -20,7 +20,7 @@ all:	scorediff grant_access \
         hpcm_sandbox_secure \
         hpcm_print_passwords \
 	hpcm_remote_sendmail \
-	hpcm_email_passwords chkpage \
+	hpcm_email_accounts chkpage \
 	hpcm_extract_test_replies \
 	filtered_diff email_diff hpcm_helper \
 	hpcm_submit hpcm_test startup_helper \
@@ -97,8 +97,8 @@ hpcm_sandbox_check_security:
 hpcm_print_passwords:
 	ln -s ../../secure/bin/hpcm_print_passwords .
 
-hpcm_email_passwords:
-	ln -s ../../secure/bin/hpcm_email_passwords .
+hpcm_email_accounts:
+	ln -s ../../secure/bin/hpcm_email_accounts .
 
 hpcm_remote_sendmail:
 	ln -s \
@@ -167,7 +167,7 @@ clean:
 		hpcm_sandbox_unsecure \
 	        hpcm_sandbox_secure \
 		hpcm_print_passwords chkpage \
-		hpcm_email_passwords \
+		hpcm_email_accounts \
 		hpcm_remote_sendmail \
 		hpcm_judging.rc \
 		hpcm_extract_test_replies \
