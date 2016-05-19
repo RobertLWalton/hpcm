@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon May  6 04:30:59 EDT 2013
+# Date:		Thu May 19 04:17:43 EDT 2016
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -50,7 +50,7 @@ DOCS=	overview.txt \
 	contestant/grant_access.txt \
 	contestant/help.txt \
 	contestant/hpcm_display_graph.txt \
-	secure/hpcm_email_passwords.txt \
+	secure/hpcm_email_accounts.txt \
 	contestant/hpcm_extract.txt \
 	contestant/hpcm_extract_test_replies.txt \
 	contestant/hpcm_get.txt \
@@ -350,11 +350,11 @@ judge/trackfinder.txt:	hpcm_judging.rc \
 
 # ../../secure/bin docs
 #
-secure/hpcm_email_passwords.txt:    hpcm_judging.rc \
-		../../secure/bin/hpcm_email_passwords
-	rm -f secure/hpcm_email_passwords.txt
-	-../../secure/bin/hpcm_email_passwords -doc \
-	    >secure/hpcm_email_passwords.txt
+secure/hpcm_email_accounts.txt:    hpcm_judging.rc \
+		../../secure/bin/hpcm_email_accounts
+	rm -f secure/hpcm_email_accounts.txt
+	-../../secure/bin/hpcm_email_accounts -doc \
+	    >secure/hpcm_email_accounts.txt
 secure/hpcm_make_accounts.txt:	\
 		../../secure/bin/hpcm_make_accounts
 	rm -f secure/hpcm_make_accounts.txt
