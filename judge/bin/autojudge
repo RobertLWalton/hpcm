@@ -5,7 +5,7 @@
 #
 # File:		autojudge
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Feb 12 08:40:54 EST 2013
+# Date:		Tue Jul 26 15:45:58 EDT 2016
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -173,6 +173,18 @@ autojudge \[-rerun|-manual\]
 	the only required file if EXTENSION is not
 	empty.
 
+      . Files listed in the problem_make_files global
+        variable, which gives instructions on when and
+	how to make files in the problem's solution
+	directory.  E.g., the Scoring_Filter program
+	may be compiled there if necessary.  The default
+	is to make for each input name N, N.in, N.fout,
+	N.jout, N.jfout, N.ftest, N.jtest, and N.jftest
+	files whenever the input files needed to make
+	them exist.  This if N.out and Scoring_Filter
+	exist, N.fout will be made, and if N.jin also
+	exists, then N.jfout will be made.
+
       . A list of input names is computed.  If the
         global variable problem_input_names exists, its
 	value is the list of input names.  Otherwise N
@@ -185,18 +197,6 @@ autojudge \[-rerun|-manual\]
 	then it is an error.  Otherwise if there is some
 	N on the list besides PROBLEM, PROBLEM is re-
 	moved from the list.
-
-      . Files listed in the problem_make_files global
-        variable, which gives instructions on when and
-	how to make files in the problem's solution
-	directory.  E.g., the Scoring_Filter program
-	may be compiled there if necessary.  The default
-	is to make for each input name N, N.in, N.fout,
-	N.jout, N.jfout, N.ftest, N.jtest, and N.jftest
-	files whenever the input files needed to make
-	them exist.  This if N.out and Scoring_Filter
-	exist, N.fout will be made, and if N.jin also
-	exists, then N.jfout will be made.
 
       * Files listed in the problem_{link,copy}_files
         and problem_optional_{link,copy}_files global
@@ -348,7 +348,8 @@ autojudge \[-rerun|-manual\]
     It is a system error if the `Received_Mail' file is
     not readable, of if `extractmail' returns a system
     error.  It is a system error if an existing global
-    variable value is misformatted."
+    variable value is misformatted.
+"
 
 # Do not change argc or argv so error printouts will be
 # correct.
@@ -373,7 +374,7 @@ if { [lindex $my_argv 0] == "-manual" } {
 # If too many arguments print documentation and exit.
 #
 if { $my_argc > 0 } {
-    puts $document
+    exec << $document less -F >&@ stdout
     exit 1
 }
 
