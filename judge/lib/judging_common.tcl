@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@seas.harvard.edu)
-# Date:		Fri Feb 27 21:09:01 EST 2015
+# Date:		Tue Jul 26 07:38:02 EDT 2016
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -2305,7 +2305,8 @@ proc execute_makes \
 	}
 	puts $out "In $s_d:"
 	puts $out "    making $target\
-	               by executing: $command"
+	               by executing:"
+	puts $out "    $command"
 	exec_in_directory $s_d $command >&@ $out
     }
     return ""
