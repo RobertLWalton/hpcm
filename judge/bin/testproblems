@@ -4,7 +4,7 @@
 #
 # File:		testproblems
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Sun Jan 10 20:13:46 EST 2016
+# Date:		Tue Jul 26 15:22:08 EDT 2016
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -94,21 +94,12 @@ testproblems \[-p N] \[-keep|-|-contestant|-q|-s] \\
 
     		make clean
 
-    Then the set of input names is formed.  Initially
-    this is the set of names N such that N.in or N.jin
-    exist.  Then if the variable problem_input_names is
-    defined in PROBLEM.rc, names not listed in that
-    variable's value are removed from the set.  Then if
-    the set has a name other than PROBLEM, the name
-    PROBLEM is removed from the set if it is in the
-    set.
-
     Next this program uses any problem_make_files value
     in any PROBLEM.rc file in the directory to make or
     remake files in the directory.  If these files exist
     when this program is run, they are deleted and
     remade if they are obsolete.
-
+
     After making problem_make_files, this program
     identifies the solution files that are to be
     tested.  First the allowed extensions of these
@@ -128,6 +119,15 @@ testproblems \[-p N] \[-keep|-|-contestant|-q|-s] \\
     file YYY.EXT the subdirectory test_YYY_EXT is made,
     files files are linked into it, and in that direc-
     tory YYY.EXT is tested.
+
+    Then the set of input names is formed.  If the vari-
+    able problem_input_names is defined in PROBLEM.rc,
+    the set consists of names listed in that variable's
+    value which have either a .jin or .in file.  Other-
+    wise the set consists of names N such that either
+    the N.in file or the N.jin file exists.  Finally, if
+    the set has a name other than PROBLEM, the name
+    PROBLEM is removed from the set if it is in the set.
 
     Files are linked from the problem directory to its
     test_YYY_EXT subdirectory using link instructions of
@@ -754,16 +754,6 @@ foreach directory $myargv {
 	#
 	set delete_at_end {}
 
-	# Compute list of names N for which either N.in
-	# or N.jin exist.
-	#
-	set input_names {}
-	foreach file [glob *.in *.jin] {
-	    set N [file rootname $file]
-	    if { [lcontain $input_names $N] } continue
-	    lappend input_names $N
-	}
-
 	# Compute make_files = problem_make_files value
 	# in any $problem.rc file.  Similarly compute
 	# link_files = problem_{link,copy}_files and
@@ -786,6 +776,7 @@ foreach directory $myargv {
 	set link_files {}
 	set optional_link_files {}
 	set solutions {}
+	catch { unset input_names }
 	set extensions $allowed_extensions
 	if { [file exists $problem.rc] } {
 
@@ -849,6 +840,38 @@ foreach directory $myargv {
 	    }
 	}
 
+	# If there are make_files, (re)make them.
+	#
+	if { [llength $make_files] > 0 } {
+
+	    set made {}
+
+	    foreach instruction $make_files {
+		if { [catch { llength $instruction }] \
+		   } {
+		    error "$problem.rc\
+		           problem_make_files\
+			   instruction is not a TCL\
+			   list:\n    $instruction"
+		}
+		set file [lindex $instruction 0]
+		if { $file == "" } {
+		    error "$problem.rc\
+		           problem_make_files\
+			   instruction has empty file\
+			   name:\n    $instruction"
+		}
+		lappend delete_at_end $file
+		lappend made $file
+	    }
+
+	    putsq "(re)making $made"
+	    execute_makes $make_files . \
+	                  "problem_make_files value in\
+			   $directory/$problem.rc" \
+			   0 $stdoutq
+	}
+
 	if { [llength $solutions] == 0 } {
 
 	    # Set to list of PROBLEM*.EXT values.
@@ -867,6 +890,19 @@ foreach directory $myargv {
 	    putsq "no $problem*{$exts} solutions"
 	    incr no_solutions_count
 	    error "ALREADY-OUTPUT"
+	}
+
+	# If input_names not set, compute list of names
+	# N for which either N.in or N.jin exist.
+	#
+	if { ! [info exists input_names] } {
+	    set input_names {}
+	    foreach file [glob *.in *.jin] {
+		set N [file rootname $file]
+		if { [lcontain $input_names $N] } \
+		    continue
+		lappend input_names $N
+	    }
 	}
 
 	# If input_names contains $problem and something
@@ -911,38 +947,6 @@ foreach directory $myargv {
 	foreach N $input_names {
 	    lappend optional_link_files [list $N.in]
 	    lappend optional_link_files [list $N.jin]
-	}
-
-	# If there are make_files, (re)make them.
-	#
-	if { [llength $make_files] > 0 } {
-
-	    set made {}
-
-	    foreach instruction $make_files {
-		if { [catch { llength $instruction }] \
-		   } {
-		    error "$problem.rc\
-		           problem_make_files\
-			   instruction is not a TCL\
-			   list:\n    $instruction"
-		}
-		set file [lindex $instruction 0]
-		if { $file == "" } {
-		    error "$problem.rc\
-		           problem_make_files\
-			   instruction has empty file\
-			   name:\n    $instruction"
-		}
-		lappend delete_at_end $file
-		lappend made $file
-	    }
-
-	    putsq "(re)making $made"
-	    execute_makes $make_files . \
-	                  "problem_make_files value in\
-			   $directory/$problem.rc" \
-			   0 $stdoutq
 	}
 
 	# Process each value of PROBLEMXXX.EXT
