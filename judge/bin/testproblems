@@ -4,7 +4,7 @@
 #
 # File:		testproblems
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Sun Aug 21 20:46:20 EDT 2016
+# Date:		Mon Aug 22 03:01:58 EDT 2016
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -33,7 +33,7 @@ source $lib_directory/scoring_common.tcl
 catch {
 
 set document "
-testproblems \[-p N] \[-keep|-|-contestant|-q|-s] \\
+testproblems \[-p N] \[-keep|-|-contestant|-q|-s|-v] \\
              \[-ext \".EXT ...\"] \[-todo]\
 	     \[directory ...]
 
@@ -49,8 +49,8 @@ testproblems \[-p N] \[-keep|-|-contestant|-q|-s] \\
     argument `-' is equivalent to `-keep'.
 
     The -todo argument causes directories with a TODO
-    file to be ignored, except that the TODO file will
-    be printed and its first line will be listed in
+    file to be processed.  Otherwise the TODO file will
+    just be printed and its first line will be listed in
     the summary.
 
     The `-p N' arguments cause the run to be done N
@@ -88,23 +88,30 @@ testproblems \[-p N] \[-keep|-|-contestant|-q|-s] \\
     does the following.  First, it does a cd to the
     directory and extracts the name PROBLEM from the
     `P = PROBLEM' line of the directory's Makefile.
-    Then it deletes any symbolic link named PROBLEM.in
-    (but will NOT delete a regular file of that name)
-    and runs
-
-    		make clean
+    Then it cleans the directory by removing PROBLEM.in
+    and PROBLEM.test if they are symbolic links or if
+    they are files equal to sample.in or sample.test.
+    Also removed are any *.out, *.fout, *.jout, and
+    *.jfout files.  Note that `make clean' is NOT run,
+    as it would remove the PROBLEM file which in some
+    cases is the root of a long list of files to be
+    made by problem_make_files.
 
     Next this program uses any problem_make_files value
     in any PROBLEM.rc file in the directory to make or
     remake files in the directory.  If these files exist
     when this program is run, they are deleted and
-    remade if they are obsolete.
+    remade only if they are obsolete.
+
+    Next, if PROBLEM.md5sum exists, this program
+    checks that all the files listed in that file have
+    the correct MD5 sums, as given in that file.  Errors
+    are noted in the summary but otherwise ignored.
 
-    After making problem_make_files, this program
-    identifies the solution files that are to be
-    tested.  First the allowed extensions of these
-    files are identified.  These are the elements of
-    the problem_allowed_extensions variable in the
+    Then this program identifies the solution files that
+    are to be tested.  First the allowed extensions of
+    these files are identified.  These are the elements
+    of the problem_allowed_extensions variable in the
     PROBLEM.rc file, if that is given, or of the -ext
     argument, if that is given, or
 
@@ -114,7 +121,7 @@ testproblems \[-p N] \[-keep|-|-contestant|-q|-s] \\
     problem_test_files that have one of these exten-
     sions, if problem_test_files is given and there are
     any such files, or are otherwise all existing files
-    with names of the form PROBLEMSXXX.EXT where .EXT is
+    with names of the form PROBLEMXXX.EXT where .EXT is
     one of the allowed extensions.  For each solution
     file YYY.EXT the subdirectory test_YYY_EXT is made,
     files files are linked into it, and in that direc-
@@ -250,7 +257,7 @@ testproblems \[-p N] \[-keep|-|-contestant|-q|-s] \\
 
     Unless the -keep option is given, after finishing a
     directory `make clean' is executed in the directory,
-    all files made by problem_make_files are deleted,
+    all files listed in problem_make_files are deleted,
     and all test_YYY.EXT subdirectories of the directory
     are deleted.  -keep is incompatible with -p.
 
@@ -258,11 +265,15 @@ testproblems \[-p N] \[-keep|-|-contestant|-q|-s] \\
     directory with no Makefile is given, the program
     merely notes this in the output.
 
-    The -s option produces a more detailed summary
-    for `Completely Correct' cases.
+    The -s (summary) option produces a more detailed
+    summary for `Completely Correct' cases.
+
+    When `make' is used to make *.out files, its stand-
+    ard output is discarded unless the -v (verbose)
+    option is given.
     
-    The -q or quiet option suppresses all but the
-    summary output.  It is implied by -p.
+    The -q (quiet) option suppresses all other
+    non-summary output.  It is implied by -p.
 "
 
 # Process options.
@@ -281,9 +292,13 @@ set todo 0
 set contestant 0
 set summary 0
 set quiet 0
+set verbose 0
 set stdoutq stdout
     # reset to file descriptor sending to /dev/null
     # if quiet
+set stdoutv stdout
+    # reset to file descriptor sending to /dev/null
+    # if NOT verbose
 set SUB 0
 set SUB_dirname ""
 set myargv $argv
@@ -305,6 +320,7 @@ while { 1 } {
 	lappend subargs -contestant
     }
     -s { set summary 1 }
+    -v { set verbose 1 }
     -q {
            set quiet 1
 	   set stdoutq [open /dev/null w]
@@ -340,6 +356,9 @@ while { 1 } {
     }
     set myargv [lrange $myargv 1 end]
 }
+
+if { ! $verbose } { set stdoutv [open /dev/null w] }
+
 if { [llength $myargv] == 0 } {
     set myargv .
 }
@@ -706,7 +725,7 @@ foreach directory $myargv {
     cd $directory
     set dir [pwd]
 
-    if { $todo && [file readable TODO] } {
+    if { ! $todo && [file readable TODO] } {
         set TODO [split [read_entire_file TODO] "\n"]
 	putsq "TODO:"
 	foreach todo_line $TODO {
@@ -1074,7 +1093,7 @@ foreach directory $myargv {
 		    [catch { exec /usr/bin/time \
 		                  -f "%U $N.in" \
 				  -o TIMING_INFO+ -a \
-				  make >@ $stdoutq } \
+				  make >@ $stdoutv } \
 			   mout]
 		if { $make_error } {
 		    if { $N != $problem } {
