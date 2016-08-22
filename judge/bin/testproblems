@@ -4,7 +4,7 @@
 #
 # File:		testproblems
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Sun Aug 21 16:50:02 EDT 2016
+# Date:		Sun Aug 21 20:46:20 EDT 2016
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -736,17 +736,30 @@ foreach directory $myargv {
 
 	# Do initial clean.
 	#
-	set type none
-	catch { set type [file type $problem.in] }
-	if { $type == "link" } {
-	    file delete $problem.in
+	foreach EXT {.in .test} {
+	    set type none
+	    catch { set type [file type $problem$EXT] }
+	    if { $type == "link" } {
+		putsq "delete $problem$EXT link"
+		file delete $problem$EXT
+	    } elseif { $type == "file" \
+	               && \
+		       [file readable sample$EXT] \
+		       && \
+		       [compare_files $problem$EXT \
+		                      sample$EXT] } {
+		putsq "delete $problem$EXT copy of\
+		       sample$EXT"
+		file delete $problem$EXT
+	    }
 	}
-	putsq "make clean"
-	if { [catch { exec make clean >@ $stdoutq } \
-	            mout] } {
-	    putsq $mout
-	    putss $mout
-	    continue
+	foreach file \
+	    [glob -nocomplain \
+	          "*.out" "*.fout" "*.jout" "*.jfout"] {
+	    if { [file exists $file] } {
+		putsq "delete $file"
+		file delete $file
+	    }
 	}
 
 	# List of files and directories to be deleted
@@ -870,81 +883,12 @@ foreach directory $myargv {
 	# md5sums.
 	#
 	if { [file exists $problem.md5sum] } {
-	    set md5fd [open $problem.md5sum]
-	    set md5regexp {^([A-Fa-f0-9]+) +([^ ]*)$}
-	    set md5correct 0
-	    set md5tested 0
-	    while { 1 } {
-	        set md5line [gets $md5fd]
-		if { [eof $md5fd] } break
-		incr md5tested
-		if { ! [regexp $md5regexp $md5line \
-		               forget md5sum \
-			       md5file] } {
-		    set md5err \
-		        "bad $problem.md5sum line:"
-		    putss $md5err
-		    putss "    $md5line"
-		    putsq $md5err
-		    putsq "    $md5line"
-		    lappend testdir_incorrect_summary \
-			  $md5err \
-			  "    $md5line"
-		    continue
-		}
-		if { ! [file readable $md5file ] } {
-		    set md5err "cannot read $md5file"
-		    putss $md5err
-		    putsq $md5err
-		    lappend testdir_incorrect_summary \
-			$md5err
-		    continue
-		}
-		if { [catch { exec md5sum $md5file } \
-		            md5out] } {
-		    putss "Executing md5sum $md5file:\n"
-		    putss $md5out
-		    putsq $md5out
-		    lappend testdir_incorrect_summary \
-			"error executing:\
-			 md5sum $md5file"
-		    continue
-		}
-		if { ! [regexp \
-		          {^([A-Fa-f0-9]+)( .*|)$} \
-			  $md5out forget filemd5sum \
-			  forget2 ] } {
-		    set md5err \
-			"bad md5sum $md5file output:"
-		    putss $md5err
-		    putss "    $md5out"
-		    putsq $md5err
-		    putsq "    $md5out"
-		    lappend testdir_incorrect_summary \
-			  $md5err \
-			  "    $md5out"
-		    continue
-		}
-		if { $md5sum != $filemd5sum } {
-		    set md5err1 \
-			"md5sum of $md5file is\
-			 $filemd5sum"
-		    set md5err2 \
-			"          but should be\
-			 $md5sum"
-		    putss $md5err1
-		    putss $md5err2
-		    putsq $md5err1
-		    putsq $md5err2
-		    lappend testdir_incorrect_summary \
-		        $md5err1 $md5err2
-		    continue
-		}
-		incr md5correct
+	    set out [check_md5sums $problem.md5sum]
+	    if { $out != "" } {
+		putss "Checking $problem.md5sum:\n"
+		putss $out
+		putsq $out
 	    }
-	    close $md5fd
-	    putss "in $problem.md5sum: $md5correct\
-	           files out of $md5tested were OK"
 	}
 
 	if { [llength $solutions] == 0 } {

@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@seas.harvard.edu)
-# Date:		Wed Mar 16 14:17:46 EDT 2016
+# Date:		Sun Aug 21 21:07:40 EDT 2016
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -2787,6 +2787,19 @@ proc diff_files { file1 file2 output { options "" } } {
     write_file $output "===== $command $file1 $file2"
     catch { eval exec $command \
                  [list $file1 $file2 >>& $output] }
+}
+
+# Given a file whose lines have format
+#
+# 	MD5SUM	FILENAME
+#
+# check that each file exists and has the given MD5 sum.
+# If yes, return "".  Otherwise return error message
+# lines.
+#
+proc check_md5sums { file } {
+    catch { exec md5sum -c --quiet $file } out
+    return $out
 }
 
 # Function to execute a command in another directory.
