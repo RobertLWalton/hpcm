@@ -227,7 +227,7 @@ proc compute_scoreboard_array { input_ch } {
 	if { $code == "f" } {
 	    set time [filename_date_to_clock $date]
 	    if { [info exists \
-	               scoreboard_finished($submitter)] \
+		    scoreboard_finished($submitter)] \
 	       } {
 	        set time2 \
 		    $scoreboard_finished($submitter)
@@ -236,7 +236,8 @@ proc compute_scoreboard_array { input_ch } {
 		      $time
 		}
 	    } else {
-		set scoreboard_finished($submitter) $time
+		set scoreboard_finished($submitter) \
+		    $time
 	    }
 	    continue
 	}
