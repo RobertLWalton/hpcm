@@ -6,7 +6,7 @@
 #
 # File:		makecontest
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Dec  3 08:08:27 EST 2015
+# Date:		Sat Aug 27 05:40:35 EDT 2016
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -2269,6 +2269,18 @@ proc process_index_specification {} {
 			    $source \
 			    "problem_make_files value\
 			     for $PROBLEM"
+		    }
+		    set md5file $source/$PROBLEM.md5sum
+		    if { [file exists $md5file] } {
+			set md5out \
+			    [check_md5sums $source \
+			        $PROBLEM.md5sum]
+			if { $md5out != "" } { 
+			    eval TODO \
+			         [list "Fix $md5file\
+				        error:"] \
+				 [split $md5out "\n"]
+			}
 		    }
 		    if { [lcontain $options all] \
 			 && \
