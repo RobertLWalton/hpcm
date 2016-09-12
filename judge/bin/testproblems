@@ -4,7 +4,7 @@
 #
 # File:		testproblems
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Tue Aug 30 04:53:51 EDT 2016
+# Date:		Mon Sep 12 03:02:02 EDT 2016
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -111,9 +111,9 @@ testproblems \[-p N] \[-keep|-|-contestant|-q|-s|-v] \\
     Then this program identifies the solution files that
     are to be tested.  First the allowed extensions of
     these files are identified.  These are the elements
-    of the problem_allowed_extensions variable in the
-    PROBLEM.rc file, if that is given, or of the -ext
-    argument, if that is given, or
+    of the allowed_extensions variable, which can be set
+    in the PROBLEM.rc file, if that is given, or by the
+    -ext argument, if that is given, or by default to
 
         $allowed_extensions
 
@@ -365,6 +365,7 @@ if { [llength $myargv] == 0 } {
 
 set wd [pwd]
 set default_scoring_instructions $scoring_instructions
+set default_allowed_extensions $allowed_extensions
 
 if { $parallel_runs > 0 } {
 
@@ -574,12 +575,13 @@ proc scorediff { subdir outfile testfile \
 
 # Read .rc file to possibly set any problem_make_files,
 # problem_{optional_,}{link,copy}_files, problem_input_
-# _names, problem_allowed_extensions, problem_test_
-# files, and scoring_instructions global variables.
-# Unset these if they are not set in the .rc file,
-# except for scoring_instructions which is set to
-# default_scoring_instructions (the value read from
-# judge/lib/hpcm_judging.rc).
+# _names, problem_test_files, scoring_instructions, and
+# allowed_extensions global variables.  Unset these if
+# they are not set in the .rc file, except for scoring_
+# instructions and allowed_extensions which are set to
+# default_scoring_instructions and default_allowed_
+# extensions (the values read from judge/lib/
+# hpcm_judging.rc or set by -ext).
 #
 proc read_rc_file { file problem } {
     global PROBLEM EXTENSION OPTIONS \
@@ -589,10 +591,11 @@ proc read_rc_file { file problem } {
 	   problem_copy_files \
 	   problem_optional_copy_files \
 	   problem_input_names \
-	   problem_allowed_extensions \
 	   problem_test_files \
 	   scoring_instructions \
 	   default_scoring_instructions \
+	   allowed_extensions \
+	   default_allowed_extensions \
 	   problem_rc
 
     set PROBLEM $problem
@@ -600,13 +603,14 @@ proc read_rc_file { file problem } {
     set OPTIONS UNDEFINED
     set scoring_instructions \
         $default_scoring_instructions
+    set allowed_extensions \
+        $default_allowed_extensions
     catch { unset problem_make_files }
     catch { unset problem_link_files }
     catch { unset problem_optional_link_files }
     catch { unset problem_copy_files }
     catch { unset problem_optional_copy_files }
     catch { unset problem_input_names }
-    catch { unset problem_allowed_extensions }
     catch { unset problem_test_files }
     source_file $file
     if { [info exists problem_rc($PROBLEM)] } {
@@ -800,20 +804,15 @@ foreach directory $myargv {
 	# value, set input_names to names N in this list
 	# for which N.in or N.jin exist.
 	#
-	# If problem_allowed_extensions has a list value
-	# in $problem.rc, set `extensions' to this
-	# value, else set it to `allowed_extensions'.
-	#
-	# If problem_test_files has a $problem.rc list
-	# value, set `solutions' to files in this list
-	# that have extensions in `extensions'.
-        #
 	set make_files {}
 	set link_files {}
 	set optional_link_files {}
 	set solutions {}
 	catch { unset input_names }
-	set extensions $allowed_extensions
+	set scoring_instructions \
+	    $default_scoring_instructions
+	set allowed_extensions \
+	    $default_allowed_extensions
 	if { [file exists $problem.rc] } {
 
 	    read_rc_file $problem.rc $problem
@@ -849,12 +848,6 @@ foreach directory $myargv {
 		check_list problem_input_names
 		set input_names $problem_input_names
 	    }
-	    if { [info exists \
-	               problem_allowed_extensions] } {
-		check_list problem_allowed_extensions
-	        set extensions \
-		    $problem_allowed_extensions
-	    }
 	    if { [info exists problem_test_files] } {
 	        set use_default_solutions no
 		check_list problem_test_files
@@ -863,7 +856,8 @@ foreach directory $myargv {
 		    if { [regexp {.*(\.[^.]*)$} $file \
 		                 forget EXT] \
 			 && \
-			 [lcontain $extensions $EXT] } {
+			 [lcontain $allowed_extensions \
+			           $EXT] } {
 		        lappend solutions $file
 		    }
 		}
@@ -920,7 +914,7 @@ foreach directory $myargv {
 
 	    # Set to list of PROBLEM*.EXT values.
 	    #
-	    foreach EXT $extensions {
+	    foreach EXT $allowed_extensions {
 
 		lappend_lists solutions \
 			      [glob -nocomplain \
@@ -929,7 +923,7 @@ foreach directory $myargv {
 	}
 
 	if { [llength $solutions] == 0 } {
-	    set exts [join $extensions ,]
+	    set exts [join $allowed_extensions ,]
 	    putss "no $problem*{$exts} solutions"
 	    putsq "no $problem*{$exts} solutions"
 	    incr no_solutions_count
