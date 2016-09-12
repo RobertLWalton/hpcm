@@ -6,7 +6,7 @@
 #
 # File:		trackfinder
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Oct 18 01:45:33 EDT 2013
+# Date:		Sun Sep 11 21:32:48 EDT 2016
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -180,12 +180,16 @@ proc get_file { file } {
 proc submittable_files { rc_file problem extension } {
     global PROBLEM EXTENSION \
            problem_required_files \
-	   problem_optional_files
+	   problem_optional_files \
+	   problem_rc
     set PROBLEM $problem
     set EXTENSION $extension
     catch { unset problem_required_files }
     catch { unset problem_optional_files }
     source_file $rc_file
+    if { [info exists problem_rc($PROBLEM)] } {
+	eval $problem_rc($PROBLEM)
+    }
     if { ! [info exists problem_required_files] } {
         set problem_required_files ""
 	if { $EXTENSION != "" } {

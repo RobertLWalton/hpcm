@@ -592,7 +592,8 @@ proc read_rc_file { file problem } {
 	   problem_allowed_extensions \
 	   problem_test_files \
 	   scoring_instructions \
-	   default_scoring_instructions
+	   default_scoring_instructions \
+	   problem_rc
 
     set PROBLEM $problem
     set EXTENSION UNDEFINED
@@ -608,6 +609,9 @@ proc read_rc_file { file problem } {
     catch { unset problem_allowed_extensions }
     catch { unset problem_test_files }
     source_file $file
+    if { [info exists problem_rc($PROBLEM)] } {
+	eval $problem_rc($PROBLEM)
+    }
 }
 
 # Test that a $problem.rc global variable value is a

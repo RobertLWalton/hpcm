@@ -6,7 +6,7 @@
 #
 # File:		makecontest
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Aug 30 04:59:11 EDT 2016
+# Date:		Sun Sep 11 21:35:47 EDT 2016
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -1850,11 +1850,15 @@ proc read_rc_file { file problem options } {
 	   problem_description_files \
 	   problem_excluded_files \
 	   problem_make_files \
-	   problem_print_files
+	   problem_print_files \
+	   problem_rc
     set PROBLEM $problem
     set EXTENSION UNDEFINED
     set OPTIONS $options
     source_file $file
+    if { [info exists problem_rc($PROBLEM)] } {
+	eval $problem_rc($PROBLEM)
+    }
 }
 # Subfunction that returns true if item matches any
 # regexp in a list of regexps.
@@ -2008,7 +2012,8 @@ proc process_index_specification {} {
 	   problem_solution_files \
 	   problem_excluded_files \
 	   problem_make_files \
-	   problem_print_files
+	   problem_print_files \
+	   problem_rc
 
     # Save hpcm_judging.rc defined values of global
     # variables reset by PROBLEM.rc file.
