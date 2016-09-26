@@ -4,7 +4,7 @@
 #
 # File:		hpcm_setup_accounts
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Mon Sep 26 02:28:50 EDT 2016
+# Date:		Mon Sep 26 03:03:11 EDT 2016
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -39,7 +39,9 @@ hpcm_setup_accounts [-all|-force] contest-directory-name
     contest-directory-name/secure/passwords is assigned
     to the account, unless the password is \`none' or
     \`'.  Next the account's /var/mail/ACCOUNT-NAME file
-    is made if it does not exist.  Lastly
+    is made if it does not exist, or truncated (made
+    empty) if it does exist and the -force option is
+    given.  Lastly
     
     	hpcm/contestant/bin/TRASH_ACCOUNT
 	
@@ -181,8 +183,12 @@ do
     	touch /var/mail/$user
 	chown $user /var/mail/$user
 	chgrp mail /var/mail/$user
-	chmod 660 /var/name/$user
+	chmod 660 /var/mail/$user
 	ls -l /var/mail/$user
+    elif test $force = "yes"
+    then
+        echo Truncating /var/mail/$user
+    	truncate /var/mail/$user
     fi
 
     # Trash account
