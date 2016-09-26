@@ -4,18 +4,11 @@
 #
 # File:		hpcm_setup_accounts
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Mon Sep 13 07:14:39 EDT 2010
+# Date:		Mon Sep 26 02:28:50 EDT 2016
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
 # for this program.
-#
-# RCS Info (may not be true date or author):
-#
-#   $Author: walton $
-#   $Date: 2010/09/13 11:15:24 $
-#   $RCSfile: hpcm_setup_accounts,v $
-#   $Revision: 1.6 $
 
 all=no
 force=no
@@ -45,16 +38,18 @@ hpcm_setup_accounts [-all|-force] contest-directory-name
     For each account made, the password listed in
     contest-directory-name/secure/passwords is assigned
     to the account, unless the password is \`none' or
-    \`'.  Then hpcm/contestant/bin/TRASH_ACCOUNT is run
-    for the account if the account name is listed as a
-    separate line in the contest-directory-name/
-    trashable file and either the account has no
+    \`'.  Next the account's /var/mail/ACCOUNT-NAME file
+    is made if it does not exist.  Lastly
+    
+    	hpcm/contestant/bin/TRASH_ACCOUNT
+	
+    is run for the account if the account has no
     .hpcm_contest link or the -force option is given.
 
-    If the -all option is given, passwords are set and
-    accounts trashed even if the account already
-    exists, provided the account is listed in contest-
-    directory-name/trashable."
+    If the -all option is given, accounts are (re)made
+    even if they already exist, provided they are
+    listed in contest-directory-name/trashable." \
+    | less -F
 
     exit 1
     ;;
@@ -175,6 +170,19 @@ do
 	(sleep 2; echo "$password"; \
 	 sleep 2; echo "$password") \
 		| passwd "$user"
+    fi
+
+    # Make /var/mail/$user if it does not
+    # exist.
+    #
+    if test ! -e /var/mail/$user
+    then
+        echo Making /var/mail/$user
+    	touch /var/mail/$user
+	chown $user /var/mail/$user
+	chgrp mail /var/mail/$user
+	chmod 660 /var/name/$user
+	ls -l /var/mail/$user
     fi
 
     # Trash account
