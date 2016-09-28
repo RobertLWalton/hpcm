@@ -1,11 +1,11 @@
 # Makefile for the `count' Demonstration Problem
 #
 # File:		Makefile
-# Date:		Wed Sep 28 04:21:26 EDT 2016
+# Date:		Wed Sep 28 06:13:11 EDT 2016
 #
-# Exactly ONE of the four files count.c (C), count.cc
-# (C++), count.java (Java), or count.lsp (Commonlisp)
-# should exist.
+# Exactly ONE of the five files count.c (C), count.cc
+# (C++), count.java (Java), count.py (Python), or
+# count.lsp (Commonlisp) should exist.
 #
 # UNIX commands supported by this Makefile:
 #
