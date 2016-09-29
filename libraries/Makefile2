@@ -1,7 +1,7 @@
 # Makefile for the XXX Problem
 #
 # File:		Makefile
-# Date:		Wed Feb  4 05:30:09 EST 2015
+# Date:		Thu Sep 29 15:15:02 EDT 2016
 #
 # See demonstration Makefile for documentation.
 #
@@ -13,37 +13,43 @@
 #   XTRA_LIBS	extra libraries for C and C++ programs
 #   XTRA_LIMITS limits that override those given
 #               previously to hpcm_sandbox
+#   XTRA_CLEANS extra files to remove on `clean'
 #   
 P = problem_name
 M = monitor_name
+
 XTRA_INPUTS =
 XTRA_LIBS =
 XTRA_LIMITS =
+XTRA_CLEANS =
+
 C_FLAGS = -g
 CC_FLAGS = -g
 JAVA_FLAGS = -g
 CL_FLAGS = --script
+PY_FLAGS =
 
 .SUFFIXES:
-.SUFFIXES: .c .cc .java .lsp
+.SUFFIXES: .c .cc .java .lsp .py
 
 default:	$P.out
 
 .c:
 	rm -f $* core core.[0-9]*
 	gcc ${C_FLAGS} -o $* $*.c \
-	    -lm -lcrypt ${XTRA_LIBS}
+	    -lm -lcrypto ${XTRA_LIBS}
 
 .cc:
 	rm -f $* core core.[0-9]*
 	g++ ${CC_FLAGS} -o $* $*.cc \
-	    -lm -lcrypt ${XTRA_LIBS}
+	    -lm -lcrypto ${XTRA_LIBS}
 
 .java:
 	rm -f $* *.class core core.[0-9]*
 	javac ${JAVA_FLAGS} $*.java
 	echo >$* '#!/bin/sh'
-	echo >>$* "exec `which java` -ea $* \$$*"
+	echo >>$* "exec `which java`" \
+	          -ea $* '"$$@"'
 	chmod a+r *.class
 	chmod a+rx $*
 
@@ -53,6 +59,14 @@ default:	$P.out
 	echo >>$* "exec sbcl ${CL_FLAGS}" \
 	          "$*.lsp" '"$$@"'
 	chmod a+r $*.lsp
+	chmod a+rx $*
+
+.py:
+	rm -f $* core core.[0-9]*
+	echo >$* '#!/bin/sh'
+	echo >>$* "exec python ${PY_FLAGS}" \
+	          "$*.py" '"$$@"'
+	chmod a+r $*.py
 	chmod a+rx $*
 
 #
@@ -72,8 +86,9 @@ $P.out:	$P $P.in
 	                -datasize 64m \
 		        -stacksize 16m \
 		        ${XTRA_LIMITS} \
+	    		-tee $P.out \
 		        $P \
-	    <$P.in | tee $P.out
+	    <$P.in
 
 test:	$P.out $P.test
 	@echo ""
@@ -88,8 +103,9 @@ $P.debug:	$P $P.in
 	                -datasize 64m \
 		        -stacksize 16m \
 		        ${XTRA_LIMITS} \
+	    		-tee $P.debug \
 		        $P debug \
-	    <$P.in | tee $P.debug
+	    <$P.in
 
 debug:		$P.debug
 
@@ -108,7 +124,7 @@ solution-submit:	$P.out
 clean:
 	rm -f $P *.class core core.[0-9]* \
 	      *.out *.debug *.fout *.jout *.jfout \
-	      make_$P_*input
+	      make_$P_*input ${XTRA_CLEANS}
 	if cmp -s $P.in sample.in; then rm $P.in; fi
 	if cmp -s $P.test sample.test; \
 	   then rm $P.test; fi

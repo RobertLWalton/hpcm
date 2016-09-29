@@ -1,7 +1,7 @@
 # Makefile for the `count' Demonstration Problem
 #
 # File:		Makefile
-# Date:		Wed Sep 28 06:13:11 EDT 2016
+# Date:		Thu Sep 29 14:53:23 EDT 2016
 #
 # Exactly ONE of the five files count.c (C), count.cc
 # (C++), count.java (Java), count.py (Python), or
@@ -16,13 +16,13 @@
 #			means depending on which of
 #			count.c, count.cc, count.java,
 #			count.py, or count.lsp exist.
-#			E.g., compiled count.c using
+#			E.g., compiles count.c using
 #			gcc, or writes a shell script
 #			envoking python on count.py.
 #			Does nothing if `count' is more
 #			up to date than count.c,
-#			count.cc, count.java, or
-#			count.lsp.
+#			count.cc, count.java, count.py,
+#			or count.lsp.
 #
 #	make count.in	If count.in does not exist,
 #			makes it by copying sample.in.
@@ -49,19 +49,19 @@
 #			as above and prints a difference
 #			listing of these two files.
 #
-#	make count.debug  Ditto but runs `count debug'
-#			(with the one argument `debug')
-#			instead of `count' and puts the
-#			output in count.debug instead
-#			of count.out.
+#	make count.debug  Like `make count.out' but runs
+#	                `count debug' (with one argument
+#	                `debug') instead of `count' and
+#	                puts the output in count.debug
+#	                instead of count.out.
 #
 #	make debug	Same as `make count.debug'.
 #			
 #	make submit	Makes `count.out' just to be
 #			sure that nothing crashes, and
 #			then e-mails count.c, count.cc,
-#			count.java, or count.lsp to the
-#			judges.
+#			count.java, count.py, or
+#			count.lsp to the judges.
 #
 #	make in-submit	Ditto, but requests that if
 #			the score is `Incorrect Output'
@@ -84,8 +84,8 @@
 #	
 #	make clean	Removes `count', count.out, and
 #			other intermediate files that
-#			might exist, such as `core',
-#			`count.class', or count.fas.
+#			might exist, such as `core' or
+#			`count.class'.
 
 .SUFFIXES:
 .SUFFIXES: .c .cc .java .lsp .py
@@ -104,7 +104,7 @@ default:	count.out
 	rm -f $* *.class core core.[0-9]*
 	javac -g $*.java
 	echo >$* '#!/bin/sh'
-	echo >>$* "exec `which java` -ea $* \$$*"
+	echo >>$* "exec `which java`" -ea $* '"$$@"'
 	chmod a+r *.class
 	chmod a+rx $*
 
@@ -199,10 +199,3 @@ clean:
 # The authors have placed this file in the public
 # domain; they make no warranty and accept no liability
 # for this file.
-#
-# RCS Info (may not be true date or author):
-#
-#   $Author: walton $
-#   $Date: 2011/09/21 23:36:12 $
-#   $RCSfile: Makefile,v $
-#   $Revision: 1.32 $

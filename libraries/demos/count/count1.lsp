@@ -1,37 +1,34 @@
-(defvar debug)
+(defvar *debug* (rest *posix-argv*))
 (defun dformat (&rest r)
-    (if debug (apply #'format t r)))
+    (if *debug* (apply #'format t r)))
 
-(defun main (&rest r)
-  (setq debug r)
-  (read-a-paragraph 1))
 
 ;; Counts are expressed as a triple:
 ;;
 ;;	(line-count word-count character-count)
 
-(defvar blank-line '(1 0 0))
-(defvar end-of-file '(0 0 0))
+(defvar *blank-line* '(1 0 0))
+(defvar *end-of-file* '(0 0 0))
 
 (defun read-a-paragraph (paragraph)
   (let ( (counts (read-a-line)) )
     (cond
-      ((equal counts blank-line)
+      ((equal counts *blank-line*)
        (read-a-paragraph paragraph))
-      ((not (equal counts end-of-file))
+      ((not (equal counts *end-of-file*))
        (read-rest-of-paragraph counts paragraph)))))
 
 (defun read-rest-of-paragraph (counts paragraph)
   (apply #'dformat ". ~A ~A ~A~%" (reverse counts))
   (let ( (line-counts (read-a-line)))
-    (cond ((or (equal line-counts blank-line)
-	       (equal line-counts end-of-file))
+    (cond ((or (equal line-counts *blank-line*)
+	       (equal line-counts *end-of-file*))
 	   (format t "Paragraph ~S" paragraph)
 	   (format t ": ~S lines" (first counts))
 	   (format t ", ~S words" (second counts))
 	   (format t ", ~S characters.~%"
 	           (third counts))
-	   (if (equal line-counts blank-line)
+	   (if (equal line-counts *blank-line*)
 	       (read-a-paragraph (1+ paragraph))))
 	  (t
 	   (read-rest-of-paragraph
@@ -63,3 +60,5 @@
      (read-a-word line (1+ index) length (1+ count)))
     (t
      (read-rest-of-word line (1+ index) length count))))
+
+(read-a-paragraph 1)

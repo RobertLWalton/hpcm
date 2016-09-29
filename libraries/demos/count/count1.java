@@ -8,13 +8,6 @@
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
 // for this program.
-//
-// RCS Info (may not be true date or author):
-//
-//   $Author: hc3 $
-//   $Date: 2006/05/04 14:06:33 $
-//   $RCSfile: count1.java,v $
-//   $Revision: 1.7 $
 
 import java.io.*;
 import java.util.StringTokenizer;
