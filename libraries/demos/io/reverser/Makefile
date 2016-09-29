@@ -47,7 +47,8 @@ default:	$P.out
 	rm -f $* *.class core core.[0-9]*
 	javac ${JAVA_FLAGS} $*.java
 	echo >$* '#!/bin/sh'
-	echo >>$* "exec `which java` -ea $* \$$*"
+	echo >>$* "exec `which java`" \
+	          -ea $* '"$$@"'
 	chmod a+r *.class
 	chmod a+rx $*
 

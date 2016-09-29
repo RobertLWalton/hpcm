@@ -14,8 +14,6 @@
 # hand coded scanning.  With -pattern the program uses
 # regular expressions.
 
-MAX_LINE = 80
-
 import sys
 import re
 
