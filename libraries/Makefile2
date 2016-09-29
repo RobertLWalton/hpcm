@@ -1,7 +1,7 @@
 # Makefile for the XXX Problem
 #
 # File:		Makefile
-# Date:		Thu Sep 29 15:15:02 EDT 2016
+# Date:		Thu Sep 29 15:52:34 EDT 2016
 #
 # See demonstration Makefile for documentation.
 #
@@ -86,9 +86,10 @@ $P.out:	$P $P.in
 	                -datasize 64m \
 		        -stacksize 16m \
 		        ${XTRA_LIMITS} \
-	    		-tee $P.out \
 		        $P \
-	    <$P.in
+	    <$P.in | tee $P.out \
+
+# WARNING: -tee does not work for monitored runs.
 
 test:	$P.out $P.test
 	@echo ""
@@ -103,9 +104,10 @@ $P.debug:	$P $P.in
 	                -datasize 64m \
 		        -stacksize 16m \
 		        ${XTRA_LIMITS} \
-	    		-tee $P.debug \
 		        $P debug \
-	    <$P.in
+	    <$P.in | tee $P.debug
+
+# WARNING: -tee does not work for monitored runs.
 
 debug:		$P.debug
 
