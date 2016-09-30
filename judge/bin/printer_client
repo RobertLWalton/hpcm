@@ -1,0 +1,78 @@
+#! /bin/sh
+#
+# Get and print files from remote queue.
+#
+# File:		printer_client
+# Author:	Bob Walton <walton@deas.harvard.edu>
+# Date:		Fri Sep 30 03:45:26 EDT 2016
+#
+# The authors have placed this program in the public
+# domain; they make no warranty and accept no liability
+# for this program.
+
+# NOTE: This file is not to be executed by the judge,
+#       but is to be sent to whoever needs to print
+#       files in printer queues set up by the judge.
+
+case "$1" in
+   -* )
+   	echo "
+printer_client PRIVATE-KEY REMOTE-ACCOUNT PRINTER
+
+    Get files queued for printing in a remote queue and
+    print them on a local printer.  The PRIVATE-KEY is
+    a file containing an ssh private key.  The REMOTE-
+    ACCOUNT is an ssh login account name and names the
+    remote queue.  The PRINTER is the local printer.
+
+    The authorized_keys file of the REMOTE-ACCOUNT must
+    contain the line
+
+        command=\"printer_server QUEUE-DIRECTORY\" ...
+
+    which invokes the printer_server program that works
+    with printer_client to move files to be printed
+    from the remote QUEUE-DIRECTORY to the local /tmp
+    files and from there to the printer.
+
+    Printer_client reads and executes commands from its
+    standard input.  If no input is received within a
+    set time (default 30 seconds), printer_client exe-
+    cutes the \`get' command which gets and prints any
+    unprinted queue files, and then resumes waiting for
+    another command (or another timeout).
+
+    The commands are:
+
+        get	Get any unprinted files and print them.
+
+	list	List recent status: files recently
+	        printed, etc.
+
+	listall	List everything known by the server,
+	        including metadata for all files ever
+		put in the remote queue.
+
+	time SECONDS
+		Reset the time interval between when
+		printer_client is ready to read the
+		next command and when it executes an
+		automatic \`get' command.  The interval
+		time is in seconds, with default of 30
+		seconds.  The value 0 means infinity.
+
+	debug [on|off|doc]
+		If the debug switch is on, a trace of
+		communications between printer_client
+		and the remote server is printed.  With
+		no option, the switch is toggled.  The
+		\`on' and \`off' options set the switch.
+		The \`doc' option prints documentation
+		describing the trace lines.
+"	| less -F -K
+    	exit 1
+	;;
+esac
+
+
+exit 0
