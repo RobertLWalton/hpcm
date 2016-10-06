@@ -4,7 +4,7 @@
 #
 # File:		printer_client
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Wed Oct  5 13:08:07 EDT 2016
+# Date:		Thu Oct  6 06:26:38 EDT 2016
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -32,7 +32,7 @@ printer_client PRIVATE-KEY REMOTE-ACCOUNT PRINTER
 
     which invokes the printer_server program that works
     with printer_client to move files to be printed
-    from the remote QUEUE-DIRECTORY to a local /tmp
+    from the remote QUEUE-DIRECTORY to the current
     directory and from there to the printer.
 
     Printer_client reads and executes commands from its
@@ -42,17 +42,21 @@ printer_client PRIVATE-KEY REMOTE-ACCOUNT PRINTER
     unprinted queue files, and then resumes waiting for
     another command (or another timeout).
 
-    The commands are:
+    The common commands are:
 
         get	Get any unprinted files and print them.
+		Files in the queue with extension .ps
+		are copied to the current directory
+		(of the printer_client program).  Then
+		they are printed and their extension
+		is changed to .done in both the server
+		queue and in the current printer_
+		client directory.
 
-	list	List recent status: files recently
-	        printed, etc.
-
-	listall	List everything known by the server,
-	        including all files ever put in the
-		remote queue.
-
+	list	List recent files.  Ready (.ps) files
+		and recently printed (recent .done)
+		files are listed.
+
 	time SECONDS
 		Reset the time interval between when
 		printer_client is ready to read the
@@ -61,14 +65,49 @@ printer_client PRIVATE-KEY REMOTE-ACCOUNT PRINTER
 		time is in seconds, with default of 30
 		seconds.  The value 0 means infinity.
 
+    Other occassionally useful command are:
+
+	listall	List all the files in the server queue.
+		File names have date and time and are
+		in cronological order.  File extensions
+		are changed to indicate status:
+
+		    .out    Still being written.
+		    .ps	    Ready to print.
+		    .done   Printed.
+
+	get FILE
+		Copy FILE from server into current
+		directory.
+
+	print FILE
+		Ditto but then print file and if its
+		extension is .ps, change its extension
+		to .done in current and server
+		directories.
+
+	done FILE
+		If FILE has the .ps extension, just
+		change the extension to .done in the
+		current and server directories.
+
+	ready FILE
+		If FILE has the .done extension, just
+		change the extension to .ps in the
+		current and server directories.
+
 	debug [on|off]
 		If the debug switch is on, a trace of
 		communications between printer_client
 		and the remote server is printed.  With
 		no option, the switch is toggled.  The
 		\`on' and \`off' options set the switch.
-		See \`printer_server -doc' for documen-
-		tation describing the traced lines.
+
+		Lines sent to the server are prefaced
+		with \`>> ', and lines received from the
+		server are prefaced with \`<< '.  See
+		\`printer_server -doc' for documentation
+		describing the traced lines.
 "	| less -F -K
     	exit 1
 	;;

@@ -4,7 +4,7 @@
 #
 # File:		printer_server
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Thu Oct  6 00:03:17 EDT 2016
+# Date:		Thu Oct  6 07:31:17 EDT 2016
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -51,9 +51,11 @@ printer_server QUEUE-DIRECTORY
 
     	%%-HPCM_DONE-%%
 
-    Any errors are announced first in lines of the form:
+    Any errors terminate the command and output:
 
-        %%-HPCM_ERROR-%% error message
+        %%-HPCM_ERROR-%%
+	error messages
+	%%-HPCM_DONE-%%
 
     It is assumed such lines never appear in a post-
     script file or as a file name.
@@ -62,5 +64,39 @@ printer_server QUEUE-DIRECTORY
 	;;
 esac
 
+dir="$1"
+
+while read -r
+do
+    case "$REPLY" in
+    listall )
+        out="`if cd $dir 2>&1; then ls -1; else exit 1; fi`"
+	if [ $? -ne 0 ]
+	then
+	    echo '%%-HPCM_ERROR-%%'
+	fi
+	echo "$out"
+	echo '%%-HPCM_DONE-%%'
+	;;
+    get*)
+        if [[ "$REPLY" =~ \
+	          ^get[\ \t]+(.*[^\ \t])[\ \t]*$ ]]
+	then
+	    file="${BASH_REMATCH[1]}"
+	    if test -r "$dir/$file"
+	    then
+	        cat "$dir/$file"
+	    else
+		echo '%%-HPCM_ERROR-%%'
+		echo Cannot read "$dir/$file"
+	    fi
+	else
+	    echo '%%-HPCM_ERROR-%%'
+	    echo Badly Formed Command: $REPLY
+	fi
+	echo '%%-HPCM_DONE-%%'
+	;;
+    esac
+done
 
 exit 0
