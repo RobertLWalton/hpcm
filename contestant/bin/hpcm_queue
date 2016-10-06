@@ -1,0 +1,42 @@
+#! /bin/sh
+#
+# Place postscript file in a queue directory.
+#
+# File:		hpcm_queue
+# Author:	Bob Walton <walton@deas.harvard.edu>
+# Date:		Wed Oct  5 23:29:03 EDT 2016
+#
+# The authors have placed this program in the public
+# domain; they make no warranty and accept no liability
+# for this program.
+
+case "$1" in
+   "" | -doc* )
+   	echo "
+hpcm_queue queue-directory extension
+
+    Copy the standard input to a file in the queue-
+    directory.  The file name is initially
+
+    	year-month-day-hour-minute-second-ID.out
+
+    where ID is the ID of the process executing this
+    program.  After the copy is completed, the file
+    extension is changed from to .out to \`extension',
+    where \`extension' must include the leading \`.'
+    and may be empty."
+
+    	exit 1
+	;;
+esac
+
+dir="$1"
+ext="$2"
+base=`date +%F-%H-%M-%S`-$$
+
+trap "rm -f $dir/$base.out" EXIT
+cat >$dir/$base.out
+
+mv $dir/$base.out $dir/$base$ext
+
+exit 0

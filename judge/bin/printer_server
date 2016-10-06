@@ -1,0 +1,66 @@
+#! /bin/sh
+#
+# Server to get and print files from remote queue.
+#
+# File:		printer_server
+# Author:	Bob Walton <walton@deas.harvard.edu>
+# Date:		Thu Oct  6 00:03:17 EDT 2016
+#
+# The authors have placed this program in the public
+# domain; they make no warranty and accept no liability
+# for this program.
+
+case "$1" in
+   "" | -* )
+   	echo "
+printer_server QUEUE-DIRECTORY
+
+    Act as a server for printer_client: see that program
+    for user documentation.
+
+    This program is intended to be invoked from an
+    .ssh/authorized_keys file line of the form:
+
+        command=\"printer_server QUEUE-DIRECTORY\" ...
+
+    The QUEUE-DIRECTORY name must be absolute.
+
+    The QUEUE-DIRECTORY holds files to be printed.  When
+    it is being written, such a file has the .out
+    extension.  When it is ready for printing, the
+    extension name is changed to .ps.  When it has been
+    printed, the extension name is changed to .done.
+
+    The printer_server reads commands from its standard
+    input and executes them.  These commands are:
+
+    get FILE
+        Return the QUEUE-DIRECTORY/FILE file in the
+	standard output.
+
+    done FILE
+        Change the extension of QUEUE-DIRECTORY/FILE to
+	.done.
+
+    listall
+        List all the files in the QUEUE-DIRECTORY, one
+	line per file name, in lexical order.
+
+    After producing any required output, each of these
+    commands outputs a line containing just:
+
+    	%%-HPCM_DONE-%%
+
+    Any errors are announced first in lines of the form:
+
+        %%-HPCM_ERROR-%% error message
+
+    It is assumed such lines never appear in a post-
+    script file or as a file name.
+"	| less -F -K
+    	exit 1
+	;;
+esac
+
+
+exit 0

@@ -6,7 +6,7 @@
 #
 # File:		makecontest
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Sep 11 21:35:47 EDT 2016
+# Date:		Wed Oct  5 23:40:38 EDT 2016
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -3775,6 +3775,28 @@ foreach case { contest judging } {
 		write_file \
 		    $bin/$name \
 		    "#!/bin/sh\nexec $command"
+		grant_user_access $bin/$name x
+		deny_group_access $bin/$name
+		puts "Made $dirbin/$name"
+	    }
+	}
+	qps {
+	    if { [llength $item] != 3 } {
+		error "Bad item in ${case}_commands:\
+		       $item"
+	    }
+	    set queue [lindex $item 2]
+	    if { ! [regexp {^/} $queue] } {
+		error "Directory name not absolute in\
+		       ${case}_commands: $item"
+	    }
+
+	    if { ! [file exists $bin/$name] } {
+
+		write_file \
+		    $bin/$name \
+		    "#!/bin/sh\n\
+		     exec hpcm_queue $queue .ps"
 		grant_user_access $bin/$name x
 		deny_group_access $bin/$name
 		puts "Made $dirbin/$name"
