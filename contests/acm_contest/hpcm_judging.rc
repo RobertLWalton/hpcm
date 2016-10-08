@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@seas.harvard.edu)
-# Date:		Thu Oct  6 14:59:27 EDT 2016
+# Date:		Sat Oct  8 10:43:14 EDT 2016
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -202,21 +202,20 @@ set problems_arguments "
 # arguments' for more details, and `makecontest -doc'
 # for complete details.
 
-# Browser to use for javahelp and/or stlhelp.
+# Browser to use for javahelp, c++help, pythonhelp.
 #
 set browser elinks_helper
 
-# Location of JAVA API index for browser to use to
-# implement javahelp.  If not set, the javahelp contes-
-# tant command is not enabled.
+# Location of XXX web page for browser to use to
+# implement XXXhelp, for XXX = java, c++, python.  If
+# not set, the XXXhelp contestant command is not enabled.
 #
-set java_api_index "http://docs.oracle.com/javase/6/docs/api/"
-
-# Location of STL API index for browser to use to
-# implement stlhelp.  If not set, the stlhelp contestant
-# command is not enabled.
-#
-set stl_api_index "http://www.cplusplus.com/reference/"
+set java_web_page \
+    "http://docs.oracle.com/javase/6/docs/api/"
+set c++_web_page \
+    "http://www.cplusplus.com/reference/"
+set python_web_page \
+    "https://docs.python.org/2/index.html"
 
 # Web Page Parameters
 # --- ---- ----------
@@ -548,30 +547,19 @@ if { ! $is_converted } {
 	    $contest_printer_map
 }
 
-set javaok [info exists java_api_index]
-if { $javaok } {
+foreach XXX {java c++ python} {
+    set ${XXX}ok [info exists ${XXX}_web_page]
+    if { [set ${XXX}ok] } {
 
-    set javahelp "
+	set ${XXX}help "
 # Do not edit.  This file is generated from information
-# provided by the `browser' and `java_api_index' global
+# provided by the `browser' and `${XXX}_web_page' global
 # variables in the hpcm_judging.rc file in the judging
 # directory.
 #
-$browser '$browser $java_api_index'
+$browser '$browser [set ${XXX}_web_page]'
 "
-}
-
-set stlok [info exists stl_api_index]
-if { $stlok } {
-
-    set stlhelp "
-# Do not edit.  This file is generated from information
-# provided by the `browser' and `stl_api_index' global
-# variables in the hpcm_judging.rc file in the judging
-# directory.
-#
-$browser '$browser $stl_api_index'
-"
+    }
 }
 
 # Set score modes and default qualifiers.
@@ -746,7 +734,8 @@ set makecontest_arguments "
     -formal \
     -printer_map \
     [include_if { $javaok } "-javahelp"] \
-    [include_if { $stlok } "-stlhelp"] \
+    [include_if { ${c++ok} } "-c++help"] \
+    [include_if { $pythonok } "-pythonhelp"] \
     [include_if { $ssh_enable == "yes" } "-ssh"] \
     [include_if { $startcontest == "yes" } \
     		"-startcontest"] \

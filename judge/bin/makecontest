@@ -6,7 +6,7 @@
 #
 # File:		makecontest
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Oct  8 07:26:45 EDT 2016
+# Date:		Sat Oct  8 12:49:59 EDT 2016
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -4056,60 +4056,24 @@ if { $public_files_option } {
     }
 }
 
-# Make $c_d/javahelp
+# Make $c_d/XXXhelp
 #
-if { $javahelp_option } {
-    if { ! [info exists javahelp] } {
+foreach XXX {java c++ python } {
+    if { [set ${XXX}help_option] } {
+	if { ! [info exists ${XXX}help] } {
 
-	TODO "Set the javahelp global variable" \
-	     "in hpcm_judging.rc and run\
-	      `makecontest -javahelp'"
+	    TODO "Set the ${XXX}help global variable" \
+		 "in hpcm_judging.rc and run\
+		  `makecontest -${XXX}help'"
 
-    } elseif {    ! [file exists $c_d/javahelp] \
-	       ||    [read_entire_file \
-			  $c_d/javahelp] \
-		  != $javahelp } {
-	write_file $c_d/javahelp $javahelp
-	grant_access $c_d/javahelp
-	puts "Wrote ./contest/javahelp"
-    }
-}
-
-# Make $c_d/c++help
-#
-if { ${c++help_option} } {
-    if { ! [info exists c++help] } {
-
-	TODO "Set the c++help global variable" \
-	     "in hpcm_judging.rc and run\
-	      `makecontest -c++help'"
-
-    } elseif {    ! [file exists $c_d/c++help] \
-	       ||    [read_entire_file \
-			  $c_d/c++help] \
-		  != ${c++help} } {
-	write_file $c_d/c++help ${c++help}
-	grant_access $c_d/c++help
-	puts "Wrote ./contest/c++help"
-    }
-}
-
-# Make $c_d/pythonhelp
-#
-if { $pythonhelp_option } {
-    if { ! [info exists pythonhelp] } {
-
-	TODO "Set the pythonhelp global variable" \
-	     "in hpcm_judging.rc and run\
-	      `makecontest -pythonhelp'"
-
-    } elseif {    ! [file exists $c_d/pythonhelp] \
-	       ||    [read_entire_file \
-			  $c_d/pythonhelp] \
-		  != $pythonhelp } {
-	write_file $c_d/pythonhelp $pythonhelp
-	grant_access $c_d/pythonhelp
-	puts "Wrote ./contest/pythonhelp"
+	} elseif {    ! [file exists $c_d/${XXX}help] \
+		   ||    [read_entire_file \
+			      $c_d/${XXX}help] \
+		      != [set ${XXX}help] } {
+	    write_file $c_d/${XXX}help [set ${XXX}help]
+	    grant_access $c_d/${XXX}help
+	    puts "Wrote ./contest/${XXX}help"
+	}
     }
 }
 
