@@ -4,7 +4,7 @@
 #
 # File:		printer_client
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Sun Oct  9 05:31:18 EDT 2016
+# Date:		Sun Oct  9 07:36:30 EDT 2016
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -133,8 +133,8 @@ key="$1"
 account="$2"
 printer="$3"
 
-DEBUGOUT="echo :>"
-DEBUGIN="echo <:"
+DEBUGOUT=nop
+DEBUGIN=nop
 READ_TIMEOUT=30
 
 COPROC_TIMEOUT=30
@@ -181,10 +181,11 @@ function listall() {
 	then
 	    $DEBUGIN "$REPLY"
 	    get_error
-	    return
+	    return 1
 	fi
 	echo "$REPLY"
     done
+    return 0
 }
 
 function get_file() {
@@ -208,7 +209,7 @@ function get_file() {
 	then
 	    $DEBUGIN "$REPLY"
 	    get_error
-	    return
+	    return 1
 	fi
 	echo "$REPLY" >&$fileout
     done
@@ -216,7 +217,9 @@ function get_file() {
     if [[ $COPROC_DIED == 0 ]]
     then
 	mv -f "$base.out" "$base$ext"
+	return 0
     fi
+    return 1
 }
 
 function get_sum() {
@@ -236,7 +239,7 @@ function get_sum() {
         elif [[ "$REPLY" == "%%-HPCM_ERROR-%%" ]]
 	then
 	    get_error
-	    return
+	    return 1
         elif [[ "$sum" != "MISSING MD5 SUM" ]]
 	then
 	    sum="MALFORMED MD5 SUM"
@@ -245,6 +248,7 @@ function get_sum() {
 	fi
     done
     SUM="$sum"
+    return 0
 }
 
 while [ x = x ]
@@ -295,11 +299,42 @@ do
 		    fi
 		    case $op in
 		    get)
-			get_file $base $ext
+			get_file "$base" "$ext"
+			if [[ $? == 0 ]]
+			then
+			    ls -l "$base$ext"
+			fi
 			;;
 		    sum)
-			get_sum $base $ext
-			echo SUM IS $SUM
+			if [ -r "$base$ext" ]
+			then
+			    get_sum "$base" "$ext"
+			    if [[ $? != 0 ]]
+			    then
+			        continue
+			    fi
+			    locsum=`md5sum \
+			        "$base$ext"`
+			    [[ "$locsum" =~ \
+			       ^(${NWS}*)${WS} ]]
+			    locsum="${BASH_REMATCH[1]}"
+			    if [[ "$locsum" == \
+			          "$SUM" ]]
+			    then
+			        echo Local and Server \
+				     "$file" MD5 Sums \
+				     Are Equal
+			    else
+			        echo Local "$file" MD5 \
+				     Sum == "$locsum"
+				echo !=
+			        echo Server "$file" \
+				     MD5 Sum == "$SUM"
+			    fi
+			else
+			    echo Local "$file" Not \
+			         Found "(Unreadable)"
+			fi
 			;;
 		    esac
 		else
@@ -313,6 +348,30 @@ do
 	listall)
 	    listall
 	    ;;
+	debug*)
+	    if [[ "$REPLY" =~ \
+		     ^debug${WS}+(.*${NWS})${WS}*$ ]]
+	    then
+		toggle="${BASH_REMATCH[1]}"
+	    elif [[ "$DEBUGOUT" == "nop" ]]
+	    then
+	        toggle=on
+	    else
+	        toggle=off
+	    fi
+	    case "$toggle" in
+	    on)
+		DEBUGOUT="echo --->"
+		DEBUGIN="echo <---"
+		;;
+	    off)
+		DEBUGOUT=nop
+		DEBUGIN=nop
+		;;
+	    *)
+	        echo ERROR: cannot understand $toggle
+	    ;;
+	    esac
 	esac
 	if [[ $COPROC_DIED == 1 ]]
 	then
