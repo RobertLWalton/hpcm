@@ -4,7 +4,7 @@
 #
 # File:		printer_client
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Sat Oct  8 13:54:44 EDT 2016
+# Date:		Sun Oct  9 05:31:18 EDT 2016
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -17,13 +17,15 @@
 case "$1" in
    "" | -* )
    	echo "
-printer_client PRIVATE-KEY REMOTE-ACCOUNT PRINTER
+printer_client PRIVATE-KEY REMOTE-ACCOUNT [PRINTER]
 
     Get files queued for printing in a remote queue and
     print them on a local printer.  The PRIVATE-KEY is
     a file containing an ssh private key.  The REMOTE-
     ACCOUNT is an ssh login account name and names the
-    remote queue.  The PRINTER is the local printer.
+    remote queue.  The PRINTER is the local printer,
+    or the local default printer if PRINTER is not
+    given.
 
     The authorized_keys file of the REMOTE-ACCOUNT must
     contain the line
@@ -131,9 +133,22 @@ key="$1"
 account="$2"
 printer="$3"
 
+DEBUGOUT="echo :>"
+DEBUGIN="echo <:"
 READ_TIMEOUT=30
+
 COPROC_TIMEOUT=30
 COPROC_DIED=0
+
+WS='[\ 	]'
+NWS='[^\ 	]'
+
+function nop() {
+    if [ x = y ]
+    then
+        echo NEVER
+    fi
+}
 
 function get_error() {
     echo "ERROR:"
@@ -141,12 +156,35 @@ function get_error() {
     do
         if [[ "$REPLY" == "%%-HPCM_DONE-%%" ]]
 	then
+	    $DEBUGIN "$REPLY"
 	    COPROC_DIED=0
 	    return
 	fi
 	echo "    $REPLY"
     done
     COPROC_DIED=1
+}
+
+function listall() {
+    echo >&$in listall
+    $DEBUGOUT listall
+
+    COPROC_DIED=1
+    while read -r <&$out -t $COPROC_TIMEOUT
+    do
+        if [[ "$REPLY" == "%%-HPCM_DONE-%%" ]]
+	then
+	    $DEBUGIN "$REPLY"
+	    COPROC_DIED=0
+	    break
+        elif [[ "$REPLY" == "%%-HPCM_ERROR-%%" ]]
+	then
+	    $DEBUGIN "$REPLY"
+	    get_error
+	    return
+	fi
+	echo "$REPLY"
+    done
 }
 
 function get_file() {
@@ -156,16 +194,19 @@ function get_file() {
     rm -f $base.out
     exec {fileout}>$base.out
     echo >&$in get "$base$ext"
+    $DEBUGOUT get "$base$ext"
 
     COPROC_DIED=1
     while read -r <&$out -t $COPROC_TIMEOUT
     do
         if [[ "$REPLY" == "%%-HPCM_DONE-%%" ]]
 	then
+	    $DEBUGIN "$REPLY"
 	    COPROC_DIED=0
 	    break
         elif [[ "$REPLY" == "%%-HPCM_ERROR-%%" ]]
 	then
+	    $DEBUGIN "$REPLY"
 	    get_error
 	    return
 	fi
@@ -183,9 +224,11 @@ function get_sum() {
     local ext="$2"
     local sum="MISSING MD5 SUM"
     echo >&$in sum "$base$ext"
+    $DEBUGOUT sum "$base$ext"
     COPROC_DIED=1
     while read -r <&$out -t $COPROC_TIMEOUT
     do
+	$DEBUGIN "$REPLY"
         if [[ "$REPLY" == "%%-HPCM_DONE-%%" ]]
 	then
 	    COPROC_DIED=0
@@ -201,7 +244,7 @@ function get_sum() {
 	    sum="$REPLY"
 	fi
     done
-    echo "$sum"
+    SUM="$sum"
 }
 
 while [ x = x ]
@@ -221,7 +264,6 @@ do
     do
         read -r -t $READ_TIMEOUT
 	STATUS=$?
-	echo STATUS $STATUS
 	if [[ $STATUS > 128 ]]
 	then
 	    echo TIMEOUT
@@ -237,10 +279,10 @@ do
 	             ^(get|sum|print|done|ready) ]]
 	    op=${BASH_REMATCH[1]}
 	    if [[ "$REPLY" =~ \
-		     ^${op}[\ \t]+(.*[^\ \t])[\ \t]*$ ]]
+		     ^${op}${WS}+(.*${NWS})${WS}*$ ]]
 	    then
 		file="${BASH_REMATCH[1]}"
-		if [[ "$file" =~ ^(.*)(\.[^\ \t.]*)$ ]]
+		if [[ "$file" =~ ^(.*)(\.${NWS}*)$ ]]
 		then
 		    base="${BASH_REMATCH[1]}"
 		    ext="${BASH_REMATCH[2]}"
@@ -256,8 +298,8 @@ do
 			get_file $base $ext
 			;;
 		    sum)
-			sum=`get_sum $base $ext`
-			echo SUM IS $sum
+			get_sum $base $ext
+			echo SUM IS $SUM
 			;;
 		    esac
 		else
@@ -267,6 +309,9 @@ do
 	        echo "ERROR: badly formed file name" \
 		     "in $REPLY"
 	    fi
+	    ;;
+	listall)
+	    listall
 	    ;;
 	esac
 	if [[ $COPROC_DIED == 1 ]]
