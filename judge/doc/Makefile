@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu May 19 04:17:43 EDT 2016
+# Date:		Mon Oct 10 19:50:27 EDT 2016
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -94,8 +94,10 @@ DOCS=	overview.txt \
 	contestant/SETUP_PROTOTYPE.txt \
 	judge/sloc_counts.txt \
 	judge/startcontest.txt \
-	judge/stlhelp.txt \
-	contestant/stlhelp.txt \
+	judge/c++help.txt \
+	contestant/c++help.txt \
+	judge/pythonhelp.txt \
+	contestant/pythonhelp.txt \
 	judge/testproblems.txt \
 	judge/testjudge.txt \
 	judge/tracker.txt \
@@ -322,11 +324,16 @@ judge/startcontest.txt:	hpcm_judging.rc \
 	rm -f judge/startcontest.txt
 	-../../judge/bin/startcontest -doc \
 	    >judge/startcontest.txt
-judge/stlhelp.txt:	hpcm_judging.rc \
-		        ../../judge/bin/stlhelp
-	rm -f judge/stlhelp.txt
-	-../../judge/bin/stlhelp -doc \
-	    >judge/stlhelp.txt
+judge/c++help.txt:	hpcm_judging.rc \
+		        ../../judge/bin/c++help
+	rm -f judge/c++help.txt
+	-../../judge/bin/c++help -doc \
+	    >judge/c++help.txt
+judge/pythonhelp.txt:	hpcm_judging.rc \
+		        ../../judge/bin/pythonhelp
+	rm -f judge/pythonhelp.txt
+	-../../judge/bin/pythonhelp -doc \
+	    >judge/pythonhelp.txt
 judge/testproblems.txt:	hpcm_judging.rc \
 			../../judge/bin/testproblems
 	rm -f judge/testproblems.txt
@@ -497,11 +504,16 @@ contestant/SETUP_PROTOTYPE.txt:	\
 	rm -f contestant/SETUP_PROTOTYPE.txt
 	-../../contestant/bin/SETUP_PROTOTYPE -doc \
 	    >contestant/SETUP_PROTOTYPE.txt
-contestant/stlhelp.txt:	\
-		../../contestant/bin/stlhelp
-	rm -f contestant/stlhelp.txt
-	-../../contestant/bin/stlhelp -doc \
-	    >contestant/stlhelp.txt
+contestant/c++help.txt:	\
+		../../contestant/bin/c++help
+	rm -f contestant/c++help.txt
+	-../../contestant/bin/c++help -doc \
+	    >contestant/c++help.txt
+contestant/pythonhelp.txt:	\
+		../../contestant/bin/pythonhelp
+	rm -f contestant/pythonhelp.txt
+	-../../contestant/bin/pythonhelp -doc \
+	    >contestant/pythonhelp.txt
 contestant/TRASH_ACCOUNT.txt:	\
 		../../contestant/bin/TRASH_ACCOUNT
 	rm -f contestant/TRASH_ACCOUNT.txt

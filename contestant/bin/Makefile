@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Feb  8 02:58:44 EST 2015
+# Date:		Mon Oct 10 19:49:04 EDT 2016
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -70,7 +70,8 @@ modes:
 		   hpcm_test \
 		   hpcm_extract_test_replies \
 		   filtered_diff email_diff \
-		   hpcm_helper javahelp stlhelp \
+		   hpcm_helper javahelp c++help \
+		   pythonhelp \
 		   startup_helper elinks_helper \
 		   authorize jdebug ldebug
 	chmod a+r procmailrc \
