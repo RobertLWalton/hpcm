@@ -6,7 +6,7 @@
 #
 # File:		makecontest
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Oct  8 12:49:59 EDT 2016
+# Date:		Mon Oct 10 21:00:41 EDT 2016
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -3791,6 +3791,13 @@ foreach case { contest judging } {
 	    if { ! [regexp {^/} $queue] } {
 		error "Directory name not absolute in\
 		       ${case}_commands: $item"
+	    }
+	    if { ! [file isdirectory $queue] } {
+		TODO "mkdir $queue"
+	    } elseif { ! [file readable $queue] } {
+	        error "$queue is not readable"
+	    } elseif { ! [file writable $queue] } {
+	        error "$queue is not writable"
 	    }
 
 	    if { ! [file exists $bin/$name] } {
