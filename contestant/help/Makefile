@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Feb 25 23:20:18 EST 2015
+# Date:		Tue Oct 11 11:06:18 EDT 2016
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -25,6 +25,7 @@ pdf:	acm_contest_help.pdf \
 	c_help.pdf \
 	cc_help.pdf \
 	java_help.pdf \
+	python_help.pdf \
 	lsp_help.pdf \
 	c_basic_io_demos.pdf \
 	c_advanced_io_demos.pdf \
@@ -35,6 +36,7 @@ pdf:	acm_contest_help.pdf \
 	java_basic_io_demos.pdf \
 	java_advanced_io_demos.pdf \
 	java_algorithm_demos.pdf \
+	python_basic_io_demos.pdf \
 	lsp_basic_io_demos.pdf \
 	lsp_advanced_io_demos.pdf \
 	lsp_algorithm_demos.pdf
@@ -86,6 +88,8 @@ cc_help_index: \
     OPTIONS = cc_help_index c++
 java_help_index: \
     OPTIONS = java_help_index java
+python_help_index: \
+    OPTIONS = python_help_index python
 lsp_help_index: \
     OPTIONS = lsp_help_index commonlisp
 
