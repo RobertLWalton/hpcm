@@ -210,10 +210,17 @@ function finish() {
     return $superfluous_found
 }
 
+# This function puts the listed files in the `files'
+# array and does not print them.
+#
+declare -a files
+declare -i nfiles
 function listfiles() {
     echo >&$in listfiles
     $DEBUGOUT listfiles
 
+    files=()
+    nfiles=0
     COPROC_DIED=1
     while read -r <&$out -t $COPROC_TIMEOUT
     do
@@ -228,7 +235,8 @@ function listfiles() {
 	    get_error
 	    return 1
 	fi
-	echo "$REPLY"
+	files[$nfiles]="$REPLY"
+	(( nfiles += 1 ))
     done
     return 0
 }
@@ -262,7 +270,7 @@ function get_file() {
     exec {fileout}>&-
     if [[ $COPROC_DIED == 0 ]]
     then
-	mv -f "$base.out" "$base$ext"
+	mv -f "$base.out" "$base$ext" >& /dev/null
 	return 0
     else
 	rm -f "$base.out"
@@ -291,34 +299,21 @@ function print_file {
     finish
     if [[ $? == 0 ]]
     then
-	mv -f "$base.ps" \
-	       "$base.done"
+	mv -f "$base.ps" "$base.done" >& /dev/null
     fi
     return 0
 }
 
 function get_all() {
-    echo >&$in listfiles
-    $DEBUGOUT listfiles
+    listfiles
+    if [[ $? != 0 ]]
+    then
+        return 1
+    fi
 
-    declare -a files=()
-    declare -i i=0
-    COPROC_DIED=1
-    while read -r <&$out -t $COPROC_TIMEOUT
+    for file in "${files[@]}"
     do
-        if [[ "$REPLY" == "%%-HPCM_DONE-%%" ]]
-	then
-	    $DEBUGIN "$REPLY"
-	    COPROC_DIED=0
-	    break
-        elif [[ "$REPLY" == "%%-HPCM_ERROR-%%" ]]
-	then
-	    $DEBUGIN "$REPLY"
-	    get_error
-	    return 1
-	fi
-
-	if [[ "$REPLY" =~ ^(.*)(\.${NWS}*)$ ]]
+	if [[ "$file" =~ ^(.*)(\.${NWS}*)$ ]]
 	then
 	    base="${BASH_REMATCH[1]}"
 	    ext="${BASH_REMATCH[2]}"
@@ -326,16 +321,12 @@ function get_all() {
 	    then
 	        continue
 	    fi
-	    file[$i]="$base"
-	    (( i += 1 ))
 	else
 	    echo "ERROR: badly formed file name" \
-		     "returned by server: $REPLY"
+		     "returned by server: $file"
+	    continue
 	fi
-    done
 
-    for base in "${files[@]}"
-    do
         print_file $base .ps
 	if [[ $COPROC_DIED == 1 ]]
 	then
@@ -381,7 +372,7 @@ do
 	wait $COPROC_PID >&/dev/null
 	echo ERROR: coprocess died: restarting
     fi
-    coproc printer_server ../lib
+    coproc printer_server q
     out=${COPROC[0]}
     in=${COPROC[1]}
     COPROC_DIED=0
@@ -406,6 +397,10 @@ do
 	case "$REPLY" in
 	listfiles)
 	    listfiles
+	    for file in "${files[@]}"
+	    do
+	        echo "$file"
+	    done
 	    ;;
 	time* )
 	    if [[ "$REPLY" =~ ^time${WS}*$ ]]
@@ -511,7 +506,8 @@ do
 			if [[ $? == 0 ]]
 			then
 			    mv -f "$base.ps" \
-			           "$base.done"
+			           "$base.done" \
+				   >& /dev/null
 			fi
 			;;
 		    ready )
@@ -520,7 +516,8 @@ do
 			if [[ $? == 0 ]]
 			then
 			    mv -f "$base.done" \
-			           "$base.ps"
+			           "$base.ps" \
+				   >& /dev/null
 			fi
 			;;
 		    esac

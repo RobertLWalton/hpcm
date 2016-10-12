@@ -96,7 +96,12 @@ do
 	then
 	    echo '%%-HPCM_ERROR-%%'
 	fi
-	echo "$out"
+	if [[ "$out" =~ ^${WS}*$ ]]
+	then
+	    x=x # do nothing
+	else
+	    echo "$out"
+	fi
 	echo '%%-HPCM_DONE-%%'
 	;;
     listdir )
@@ -168,7 +173,8 @@ do
 			if [ -e "$dir/${base}.$src" ]
 			then
 			    mv -f "$dir/${base}.$src" \
-			       "$dir/${base}.$des"
+			       "$dir/${base}.$des" \
+			       >& /dev/null
 			elif [ ! -e \
 			       "$dir/${base}.$des" ]
 			then
