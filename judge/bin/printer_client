@@ -4,7 +4,7 @@
 #
 # File:		printer_client
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Wed Oct 12 02:54:03 EDT 2016
+# Date:		Wed Oct 12 08:17:41 EDT 2016
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -79,7 +79,8 @@ printer_client PRIVATE-KEY REMOTE-ACCOUNT [PRINTER]
     sion .ps or .done.
 
 
-	listall	List all the files in the server queue.
+	listfiles
+	        List all the files in the server queue.
 		File names have date and time and are
 		in cronological order.  File extensions
 		are changed to indicate status:
@@ -129,10 +130,10 @@ printer_client PRIVATE-KEY REMOTE-ACCOUNT [PRINTER]
 		\`on' and \`off' options set the switch.
 
 		Lines sent to the server are prefaced
-		with \`>> ', and lines received from the
-		server are prefaced with \`<< '.  See
-		\`printer_server -doc' for documentation
-		describing the traced lines.
+		with \`---> ', and lines received from
+		the server are prefaced with \`<--- '.
+		See \`printer_server -doc' for documen-
+		tation describing the traced lines.
 "	| less -F -K
     	exit 1
 	;;
@@ -154,10 +155,7 @@ WS='[\ 	]'
 NWS='[^\ 	]'
 
 function nop() {
-    if [ x = y ]
-    then
-        echo NEVER
-    fi
+    return 0
 }
 
 # Call when %%-HPCM_ERROR-%% has been read.  Reads from
@@ -212,9 +210,9 @@ function finish() {
     return $superfluous_found
 }
 
-function listall() {
-    echo >&$in listall
-    $DEBUGOUT listall
+function listfiles() {
+    echo >&$in listfiles
+    $DEBUGOUT listfiles
 
     COPROC_DIED=1
     while read -r <&$out -t $COPROC_TIMEOUT
@@ -272,9 +270,36 @@ function get_file() {
     fi
 }
 
+function print_file {
+    local base="$1"
+    local ext="$2"
+    if [ ! -r "$base$ext" ]
+    then
+	get_file "$base" "$ext"
+	if [[ $? != 0 ]]
+	then
+	    return 1
+	fi
+    fi
+    if [[ "$printer" == "" ]]
+    then
+	lpr < "$base$ext"
+    else
+	lpr -P"$printer" < "$base$ext"
+    fi
+    echo >&$in done "$base$ext"
+    finish
+    if [[ $? == 0 ]]
+    then
+	mv -f "$base.ps" \
+	       "$base.done"
+    fi
+    return 0
+}
+
 function get_all() {
-    echo >&$in listall
-    $DEBUGOUT listall
+    echo >&$in listfiles
+    $DEBUGOUT listfiles
 
     declare -a files=()
     declare -i i=0
@@ -311,21 +336,10 @@ function get_all() {
 
     for base in "${files[@]}"
     do
-	if [ ! -r "$base.ps" ]
+        print_file $base .ps
+	if [[ $COPROC_DIED == 1 ]]
 	then
-	    get_file "$base" .ps
-	    if [[ $? != 0 ]]
-	    then
-		break
-	    fi
-	fi
-	lpr -P"$printer" < "$base.ps"
-	echo >&$in done "$base.ps"
-	finish
-	if [[ $? == 0 ]]
-	then
-	    mv -f "$base.ps" \
-		   "$base.done"
+	    return
 	fi
     done
 }
@@ -390,8 +404,8 @@ do
 	    exit 0
 	fi
 	case "$REPLY" in
-	listall)
-	    listall
+	listfiles)
+	    listfiles
 	    ;;
 	time* )
 	    if [[ "$REPLY" =~ ^time${WS}*$ ]]
@@ -424,8 +438,26 @@ do
 		then
 		    base="${BASH_REMATCH[1]}"
 		    ext="${BASH_REMATCH[2]}"
-		    if [[ "$ext" != ".done" \
-		          && "$ext" != ".ps" ]]
+		    if [[ $op == "remove" ]]
+		    then
+		        if [[ "$ext" =~ \
+			      ^(.out|.ps|.done)$ ]]
+			then
+			    echo >&$in remove \
+			               "$base$ext"
+			    finish
+			    if [[ $? == 0 ]]
+			    then
+				rm -f "$base.ext"
+			    fi
+			else
+			    echo "ERROR: $file" \
+			         "extension is not" \
+				 ".out, .ps, or .done"
+			fi
+			continue
+		    elif [[ "$ext" != ".done" \
+		              && "$ext" != ".ps" ]]
 		    then
 		        echo "ERROR: $file extension" \
 			     "is not .ps or .done"
@@ -470,6 +502,9 @@ do
 			         Found "(Unreadable)"
 			fi
 			;;
+		    print )
+		        print_file "$base" "$ext"
+			;;
 		    done )
 			echo >&$in done "$base$ext"
 			finish
@@ -486,15 +521,6 @@ do
 			then
 			    mv -f "$base.done" \
 			           "$base.ps"
-			fi
-			;;
-		    remove )
-			echo >&$in remove "$base$ext"
-			finish
-			if [[ $? == 0 ]]
-			then
-			    rm -f "$base.done" \
-			          "$base.ps"
 			fi
 			;;
 		    esac
@@ -530,6 +556,10 @@ do
 	        echo ERROR: cannot understand $toggle
 	    ;;
 	    esac
+	    ;;
+	*)
+	    echo "ERROR: Could not understand: $REPLY"
+	    ;;
 	esac
 	if [[ $COPROC_DIED == 1 ]]
 	then

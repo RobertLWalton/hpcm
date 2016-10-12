@@ -4,7 +4,7 @@
 #
 # File:		printer_server
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Sat Oct  8 13:39:17 EDT 2016
+# Date:		Wed Oct 12 07:49:33 EDT 2016
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -51,9 +51,17 @@ printer_server QUEUE-DIRECTORY
         Ditto but change the extension to .ps instead
 	of to .done.
 
-    listall
+    remove FILE
+        Remove QUEUE-DIRECTORY/FILE.  File must have
+	extension .out, .ps, or .done.
+
+    listfiles
         List all the files in the QUEUE-DIRECTORY, one
 	line per file name, in lexical order.
+
+    listdir
+        List QUEUE-DIRECTORY as per \`ls -l'.  Error
+	messages are treated as standard outout.
 
     After producing any required output, each of these
     commands outputs a line containing just:
@@ -75,10 +83,13 @@ esac
 
 dir="$1"
 
+WS='[\ 	]'
+NWS='[^\ 	]'
+
 while read -r
 do
     case "$REPLY" in
-    listall )
+    listfiles )
         out="`if cd $dir 2>&1; then ls -1; \
 	                       else exit 1; fi`"
 	if [ $? -ne 0 ]
@@ -88,11 +99,15 @@ do
 	echo "$out"
 	echo '%%-HPCM_DONE-%%'
 	;;
+    listdir )
+        (cd $dir; ls -l 2>&1 )
+	echo '%%-HPCM_DONE-%%'
+	;;
     get* | sum* )
 	[[ "$REPLY" =~ ^(get|sum) ]]
 	op=${BASH_REMATCH[1]}
         if [[ "$REPLY" =~ \
-	          ^${op}[\ \t]+(.*[^\ \t])[\ \t]*$ ]]
+	          ^${op}${WS}+(.*${NWS})${WS}*$ ]]
 	then
 	    file="${BASH_REMATCH[1]}"
 	    if test -r "$dir/$file"
@@ -102,7 +117,7 @@ do
 		    cat "$dir/$file"
 		else
 		    [[ `md5sum "$dir/$file"` \
-		       =~ ^([^\ \t]*)[\ \t] ]]
+		       =~ ^([^\ \t]*)${WS} ]]
 		    echo "${BASH_REMATCH[1]}"
 		fi
 	    else
@@ -115,9 +130,9 @@ do
 	fi
 	echo '%%-HPCM_DONE-%%'
 	;;
-    done* | ready* )
+    done* | ready* | remove* )
 
-	[[ "$REPLY" =~ ^(done|ready) ]]
+	[[ "$REPLY" =~ ^(done|ready|remove) ]]
 	op=${BASH_REMATCH[1]}
 	if [ $op = "done" ]
 	then
@@ -129,23 +144,45 @@ do
 	fi
 
         if [[ "$REPLY" =~ \
-	          ^${op}[\ \t]+(.*[^\ \t])[\ \t]*$ ]]
+	          ^${op}${WS}+(.*${NWS})${WS}*$ ]]
 	then
 	    file="${BASH_REMATCH[1]}"
-	    if [[ "$file" =~ ^(.*)(\.[^\ \t.]*)$ ]]
+	    if [[ "$file" =~ ^(.*)(\.${NWS}*)$ ]]
 	    then
 		base="${BASH_REMATCH[1]}"
 		ext="${BASH_REMATCH[2]}"
-		if [ -e "$dir/${base}.$src" ]
-		then
-		    mv -f "$dir/${base}.$src" \
-		       "$dir/${base}.$des"
-		elif [ ! -e "$dir/${base}.$des" ]
-		then
-		    echo '%%-HPCM_ERROR-%%'
-		    echo "${base}.{ps,done}" does \
-		         not exist
-		fi
+		case $op in
+		remove)
+		    if [[ "$ext" =~ (.out|.ps|.done) ]]
+		    then
+			rm -f "$dir/$file"
+		    else
+			echo '%%-HPCM_ERROR-%%'
+			echo "extension of $file is" \
+			     "not .out, .ps, or .done"
+		    fi
+		    ;;
+		done | ready )
+		    if [[ "$ext" =~ (.ps|.done) ]]
+		    then
+			if [ -e "$dir/${base}.$src" ]
+			then
+			    mv -f "$dir/${base}.$src" \
+			       "$dir/${base}.$des"
+			elif [ ! -e \
+			       "$dir/${base}.$des" ]
+			then
+			    echo '%%-HPCM_ERROR-%%'
+			    echo "${base}.{ps,done}" \
+			         does not exist
+			fi
+		    else
+			echo '%%-HPCM_ERROR-%%'
+			echo "extension of $file is" \
+			     "not .ps or .done"
+		    fi
+		    ;;
+		esac
 	    else
 		echo '%%-HPCM_ERROR-%%'
 		echo "$file" does not have \
@@ -155,6 +192,11 @@ do
 	    echo '%%-HPCM_ERROR-%%'
 	    echo Badly Formed Command: $REPLY
 	fi
+	echo '%%-HPCM_DONE-%%'
+	;;
+    * )
+	echo '%%-HPCM_ERROR-%%'
+	echo Cannot understand: $REPLY
 	echo '%%-HPCM_DONE-%%'
 	;;
     esac
