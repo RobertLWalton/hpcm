@@ -4,7 +4,7 @@
 #
 # File:		printer_client
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Thu Oct 13 04:01:47 EDT 2016
+# Date:		Thu Oct 13 10:13:17 EDT 2016
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -89,7 +89,7 @@ printer_client -test \\
 	control-D
 	control-C
 
-    Other occassionally useful commands are the follow-
+    Other occasionally useful commands are the follow-
     ing.  In all these commands, FILE must have exten-
     sion .ps or .done, except for the \`remove' command
     it may also have extension .out.
@@ -98,7 +98,7 @@ printer_client -test \\
 	listfiles
 	        List all the files in the server queue.
 		File names have date and time and are
-		in cronological order.  File extensions
+		in chronological order.  File extensions
 		are changed to indicate status:
 
 		    .out    Still being written.
@@ -109,30 +109,26 @@ printer_client -test \\
 		Copy FILE from server into current
 		directory.
 
-	sum FILE
-		Check that the server and the local
-		directory both have a copy of FILE and
-		both copies have the same MD5 sum.
-		The extension may be .ps or .done and
-		need not match the extension of either
-		copy of the file if that extension is
-		either .ps or .done.
-
 	print FILE
 		Ditto but then print file and if its
-		extension is .ps, change its extension
-		to .done in current and server
-		directories.
+		extension is .ps, and after printing
+		change its extension to .done in current
+		and server directories.
 
 	done FILE
 		If FILE has the .ps extension, just
 		change the extension to .done in the
 		current and server directories.
-
+
 	ready FILE
 		If FILE has the .done extension, just
 		change the extension to .ps in the
 		current and server directories.
+
+	sum FILE
+		Check that the server and the local
+		directory both have a copy of FILE and
+		both copies have the same MD5 sum.
 
 	remove FILE
 		Remove the file from local directory and
@@ -159,7 +155,7 @@ printer_client -test \\
 
 	?	Print command list.
 	help
-
+
 	exit	Exit.
 	quit
 	control-D
@@ -243,8 +239,8 @@ function get_error() {
 # %%-HPCM_ERROR-%%.  If any argument given, echoes
 # lines read before %%-HPCM_DONE-%% or %%HPCM-ERROR%%.
 # Otherwise complains that such lines are in error.
-# COPROC_DIED if coprocess output stops prematurely.
-# Returns 0 normally and 1 if any error.
+# Sets COPROC_DIED if coprocess output stops prema-
+# turely.  Returns 0 normally and 1 if any error.
 #
 function finish() {
 
@@ -604,8 +600,8 @@ do
 	time* )
 	    if [[ "$REPLY" =~ ^time${WS}*$ ]]
 	    then
-	        echo "time interval is $READ_TIMEOUT" \
-		     "seconds"
+	        echo "    time interval is" \
+		     "$READ_TIMEOUT seconds"
 	    elif [[ "$REPLY" =~ \
 	            ^time${WS}+([0-9]+)${WS}*$ ]]
 	    then
@@ -641,6 +637,11 @@ do
 		then
 		    echo "ERROR: $file contains a" \
 		         "slash (/)"
+		    continue
+		elif [[ "$file" =~ ^\. ]]
+		then
+		    echo "ERROR: $file begins with a" \
+		         "dot (.)"
 		    continue
 		elif [[ "$file" =~ ^(.*)(\.${NWS}*)$ ]]
 		then

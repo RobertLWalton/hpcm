@@ -4,7 +4,7 @@
 #
 # File:		printer_server
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Thu Oct 13 02:59:01 EDT 2016
+# Date:		Thu Oct 13 10:09:58 EDT 2016
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -32,7 +32,9 @@ printer_server QUEUE-DIRECTORY
     printed, the extension name is changed to .done.
 
     The printer_server reads commands from its standard
-    input and executes them.  These commands are:
+    input and executes them.  In these commands FILE
+    refers to a file name that cannot contain a slash
+    (/) or begin with a dot (.).  The commands are:
 
     get FILE
         Return the QUEUE-DIRECTORY/FILE file in the
@@ -61,7 +63,7 @@ printer_server QUEUE-DIRECTORY
 
     listdir
         List QUEUE-DIRECTORY as per \`ls -l'.  Error
-	messages are treated as standard outout.
+	messages are treated as standard output
 
     After producing any required output, each of these
     commands outputs a line containing just:
@@ -119,6 +121,10 @@ do
 	    then
 		echo '%%-HPCM_ERROR-%%'
 		echo "$file contains a slash (/)"
+	    elif [[ "$file" =~ ^\. ]]
+	    then
+		echo '%%-HPCM_ERROR-%%'
+		echo "$file begins with a dot (.)"
 	    elif test -r "$dir/$file"
 	    then
 	        if [ $op = "get" ]
@@ -160,6 +166,10 @@ do
 	    then
 		echo '%%-HPCM_ERROR-%%'
 		echo "$file contains a slash (/)"
+	    elif [[ "$file" =~ ^\. ]]
+	    then
+		echo '%%-HPCM_ERROR-%%'
+		echo "$file begins with a dot (.)"
 	    elif [[ "$file" =~ ^(.*)(\.${NWS}*)$ ]]
 	    then
 		base="${BASH_REMATCH[1]}"
