@@ -4,7 +4,7 @@
 #
 # File:		printer_server
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Wed Oct 12 07:49:33 EDT 2016
+# Date:		Thu Oct 13 02:59:01 EDT 2016
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -115,7 +115,11 @@ do
 	          ^${op}${WS}+(.*${NWS})${WS}*$ ]]
 	then
 	    file="${BASH_REMATCH[1]}"
-	    if test -r "$dir/$file"
+	    if [[ "$file" =~ ^.*/.*$ ]]
+	    then
+		echo '%%-HPCM_ERROR-%%'
+		echo "$file contains a slash (/)"
+	    elif test -r "$dir/$file"
 	    then
 	        if [ $op = "get" ]
 		then
@@ -152,7 +156,11 @@ do
 	          ^${op}${WS}+(.*${NWS})${WS}*$ ]]
 	then
 	    file="${BASH_REMATCH[1]}"
-	    if [[ "$file" =~ ^(.*)(\.${NWS}*)$ ]]
+	    if [[ "$file" =~ ^.*/.*$ ]]
+	    then
+		echo '%%-HPCM_ERROR-%%'
+		echo "$file contains a slash (/)"
+	    elif [[ "$file" =~ ^(.*)(\.${NWS}*)$ ]]
 	    then
 		base="${BASH_REMATCH[1]}"
 		ext="${BASH_REMATCH[2]}"

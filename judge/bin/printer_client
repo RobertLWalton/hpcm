@@ -4,7 +4,7 @@
 #
 # File:		printer_client
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Wed Oct 12 20:49:55 EDT 2016
+# Date:		Thu Oct 13 02:44:10 EDT 2016
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -15,25 +15,34 @@
 #       files in printer queues set up by the judge.
 
 document="
-printer_client PRIVATE-KEY REMOTE-ACCOUNT [PRINTER]
+printer_client REMOTE-ACCOUNT PRIVATE-KEY [PRINTER]
+printer_client -test \\
+               PRINTER_SERVER QUEUE-DIRECTORY [PRINTER]
 
     Get files queued for printing in a remote queue and
-    print them on a local printer.  The PRIVATE-KEY is
-    a file containing an ssh private key.  The REMOTE-
-    ACCOUNT is an ssh login account name and names the
-    remote queue.  The PRINTER is the local printer,
-    or the local default printer if PRINTER is not
-    given.
+    print them on a local printer.  The REMOTE-ACCOUNT
+    is an ssh login account name, and PRIVATE-KEY is
+    a file containing the private key to be used with
+    the account.  The REMOVE-ACCOUNT/PRIVATE-KEY pair
+    names the remote queue.  The PRINTER is the local
+    printer, or the local default printer if PRINTER
+    is not given.
 
     The authorized_keys file of the REMOTE-ACCOUNT must
     contain the line
 
         command=\"printer_server QUEUE-DIRECTORY\" ...
 
-    which invokes the printer_server program that works
-    with printer_client to move files to be printed
-    from the remote QUEUE-DIRECTORY to the current
-    directory and from there to the printer.
+    where ... is the public key corresponding to
+    PRIVATE-KEY.  This line invokes the printer_server
+    program that works with printer_client to move
+    files to be printed from the remote QUEUE-
+    DIRECTORY to the current directory and from there
+    to the printer.
+
+    If the -test option is given, the queue is not
+    remote and the next two arguments are the command
+    which is executed locally.
 
     Printer_client reads and executes commands from its
     standard input.  If no input is received within a
@@ -45,7 +54,7 @@ printer_client PRIVATE-KEY REMOTE-ACCOUNT [PRINTER]
     current directory with extension .ps, and when the
     file is printed, its extension there is changed to
     .done.
-
+
     The common commands are:
 
         get	Get any unprinted files and print them.
@@ -56,7 +65,7 @@ printer_client PRIVATE-KEY REMOTE-ACCOUNT [PRINTER]
 		is changed to .done in both the server
 		queue and in the current printer_
 		client directory.
-
+
 	list	List recent files.  Ready (.ps) files
 		and recently printed (recent .done)
 		files are listed.
@@ -79,10 +88,11 @@ printer_client PRIVATE-KEY REMOTE-ACCOUNT [PRINTER]
 	exit
 	control-D
 	control-C
-
+
     Other occassionally useful commands are the follow-
     ing.  In all these commands, FILE must have exten-
-    sion .ps or .done.
+    sion .ps or .done, except for the \`remove' command
+    it may also have extension .out.
 
 
 	listfiles
@@ -107,7 +117,7 @@ printer_client PRIVATE-KEY REMOTE-ACCOUNT [PRINTER]
 		need not match the extension of either
 		copy of the file if that extension is
 		either .ps or .done.
-
+
 	print FILE
 		Ditto but then print file and if its
 		extension is .ps, change its extension
@@ -118,7 +128,7 @@ printer_client PRIVATE-KEY REMOTE-ACCOUNT [PRINTER]
 		If FILE has the .ps extension, just
 		change the extension to .done in the
 		current and server directories.
-
+
 	ready FILE
 		If FILE has the .done extension, just
 		change the extension to .ps in the
@@ -141,27 +151,65 @@ printer_client PRIVATE-KEY REMOTE-ACCOUNT [PRINTER]
 		See \`printer_server -doc' for documen-
 		tation describing the traced lines.
 
+	listdir List remote queue directory as per
+		\`ls -l'.
+
+	localdir Ditto for printer_client current local
+	        directory.
+
+	?	Print command list.
+	help
+
+	exit	Exit.
+	quit
+	control-D
+	control-C
+
 	doc	Print this document.
 "
 
 case "$1" in
-   "" | -* )
+   "" | -doc* )
    	echo "$document" | less -F -K
     	exit 1
 	;;
+   -test )
+	test=1
+        server="$2"
+        queue="$3"
+	printer="$4"
+        if [[ "$queue" == "" ]]
+        then
+            echo ERROR: Too few arguments
+	    exit 1
+	fi
+        ;;
+    * )
+	test=0
+        account="$1"
+        key="$2"
+	printer="$3"
+        if [[ "$key" == "" ]]
+        then
+            echo ERROR: Too few arguments
+	    exit 1
+	fi
+        ;;
 esac
 
-
-key="$1"
-account="$2"
-printer="$3"
 
 DEBUGOUT=nop
 DEBUGIN=nop
 READ_TIMEOUT=30
 
+# coprocess runs ssh or local printer_server
+#
 COPROC_TIMEOUT=30
 COPROC_DIED=0
+# out is set to file descriptor used to read output
+#     written by coprocess
+# in  is set to file descriptor used to write input
+#     read by by coprocess
 
 WS='[\ 	]'
 NWS='[^\ 	]'
@@ -172,7 +220,8 @@ function nop() {
 
 # Call when %%-HPCM_ERROR-%% has been read.  Reads from
 # server until %%-HPCM_DONE-%% read and and prints error
-# message.
+# message.  Sets COPROC_DIED if coprocess output stops
+# prematurely.
 #
 function get_error() {
     echo "ERROR:"
@@ -191,8 +240,11 @@ function get_error() {
 
 # Call to finish server command that has no output.
 # Reads until %%-HPCM_DONE-%% read, looking for
-# %%-HPCM_ERROR-%%, and complaining if any other
-# lines encountered.
+# %%-HPCM_ERROR-%%.  If any argument given, echoes
+# lines read before %%-HPCM_DONE-%% or %%HPCM-ERROR%%.
+# Otherwise complains that such lines are in error.
+# COPROC_DIED if coprocess output stops prematurely.
+# Returns 0 normally and 1 if any error.
 #
 function finish() {
 
@@ -224,8 +276,10 @@ function finish() {
     return $superfluous_found
 }
 
-# This function puts the listed files in the `files'
-# array and does not print them.
+# Get a list of all files in the remote queue.  The
+# list is put in the `files' array, with the length
+# of that array in `nfiles'.  Returns 0 on success
+# and 1 on error.
 #
 declare -a files
 declare -i nfiles
@@ -242,7 +296,7 @@ function listfiles() {
 	then
 	    $DEBUGIN "$REPLY"
 	    COPROC_DIED=0
-	    break
+	    return 0
         elif [[ "$REPLY" == "%%-HPCM_ERROR-%%" ]]
 	then
 	    $DEBUGIN "$REPLY"
@@ -252,9 +306,14 @@ function listfiles() {
 	files[$nfiles]="$REPLY"
 	(( nfiles += 1 ))
     done
-    return 0
+    return 1
 }
 
+# get_file BASE EXT
+#
+# Gets file with given base name and extension.  Returns
+# 0 on success and 1 on error.
+#
 function get_file() {
     local base="$1"
     local ext="$2"
@@ -276,15 +335,16 @@ function get_file() {
         elif [[ "$REPLY" == "%%-HPCM_ERROR-%%" ]]
 	then
 	    $DEBUGIN "$REPLY"
+	    exec {fileout}>&-
 	    get_error
 	    rm -f "$base.out"
-	    trap EXIT
+	    trap - EXIT
 	    return 1
 	fi
 	echo "$REPLY" >&$fileout
     done
     exec {fileout}>&-
-    trap EXIT
+    trap - EXIT
     if [[ $COPROC_DIED == 0 ]]
     then
 	mv -f "$base.out" "$base$ext" >& /dev/null
@@ -295,6 +355,12 @@ function get_file() {
     fi
 }
 
+# print_file BASE EXT
+#
+# Prints file with given base name and extension.  Gets
+# file first, and sets file status to `done' after
+# printing.  Returns 0 on success and 1 on error.
+#
 function print_file {
     local base="$1"
     local ext="$2"
@@ -320,15 +386,19 @@ function print_file {
     if [[ $? == 0 ]]
     then
 	mv -f "$base.ps" "$base.done" >& /dev/null
+	return 0
+    else
+	return 1
     fi
-    return 0
 }
 
+# Executes `get' command.
+#
 function get_all() {
     listfiles
     if [[ $? != 0 ]]
     then
-        return 1
+        return
     fi
 
     for file in "${files[@]}"
@@ -355,11 +425,13 @@ function get_all() {
     done
 }
 
+# Executes `list' command.
+#
 function list() {
     listfiles
     if [[ $? != 0 ]]
     then
-        return 1
+        return
     fi
 
     local -a goodfiles=()
@@ -375,7 +447,7 @@ function list() {
 	    then
 	        if [[ $first == -1 ]]
 		then
-		    (( first = $ngoodfiles - 1 ))
+		    first=$ngoodfiles
 		fi
 	    elif [[ "$ext" != ".done" ]]
 	    then
@@ -402,10 +474,16 @@ function list() {
     done
 }
 
+# get_sum BASE EXT
+#
+# Gets MD5 sum of remote file and returns it in SUM.
+# Returns 0 on success and 1 on error.
+#
+declare SUM=
 function get_sum() {
     local base="$1"
     local ext="$2"
-    local sum="MISSING MD5 SUM"
+    local nsum=0
     echo >&$in sum "$base$ext"
     $DEBUGOUT sum "$base$ext"
     COPROC_DIED=1
@@ -415,22 +493,38 @@ function get_sum() {
         if [[ "$REPLY" == "%%-HPCM_DONE-%%" ]]
 	then
 	    COPROC_DIED=0
-	    break
+	    if (( $nsum == 0 ))
+	    then
+	        echo "ERROR: no sum returned by server"
+		return 1
+	    else
+	    	return 0
+	    fi
         elif [[ "$REPLY" == "%%-HPCM_ERROR-%%" ]]
 	then
 	    get_error
 	    return 1
-        elif [[ "$sum" != "MISSING MD5 SUM" ]]
+        elif (( $nsum == 0 ))
 	then
-	    sum="MALFORMED MD5 SUM"
-	else
-	    sum="$REPLY"
+	    SUM="$REPLY"
+	elif (( $nsum == 1 ))
+	then
+	    echo "ERROR: Superfluous line from server:"
+	    echo "       $SUM"
 	fi
+	(( nsum += 1 ))
+	if (( $nsum > 1 ))
+	then
+	    echo "       $REPLY"
+	fi
+
     done
-    SUM="$sum"
-    return 0
+    return 1
 }
 
+# Outer loop: creates or recreates coprocess that runs
+# remote or local printer_server.
+#
 while [ x = x ]
 do
     if [[ "$COPROC_PID" != "" ]]
@@ -439,11 +533,18 @@ do
 	wait $COPROC_PID >&/dev/null
 	echo ERROR: coprocess died: restarting
     fi
-    coproc printer_server q
+    if [[ $test ]]
+    then
+	coproc "$server" "$queue"
+    else
+	coproc ssh -i "$key" "$account"
+    fi
     out=${COPROC[0]}
     in=${COPROC[1]}
     COPROC_DIED=0
 
+    # Inner loop: read and execute commands.
+    #
     while [ x = x ]
     do
 	if [[ $READ_TIMEOUT != 0 ]]
@@ -525,6 +626,9 @@ do
 	    $DEBUGOUT listdir
 	    finish echo
 	    ;;
+	localdir)
+	    ls -l
+	    ;;
 	get* | sum* | print* | done* | ready* \
 	     | remove* )
 	    
@@ -533,10 +637,16 @@ do
 	    then
 		op="${BASH_REMATCH[1]}"
 		file="${BASH_REMATCH[2]}"
-		if [[ "$file" =~ ^(.*)(\.${NWS}*)$ ]]
+		if [[ "$file" =~ ^.*/.*$ ]]
+		then
+		    echo "ERROR: $file contains a" \
+		         "slash (/)"
+		    continue
+		elif [[ "$file" =~ ^(.*)(\.${NWS}*)$ ]]
 		then
 		    base="${BASH_REMATCH[1]}"
 		    ext="${BASH_REMATCH[2]}"
+
 		    if [[ $op == "remove" ]]
 		    then
 		        if [[ "$ext" =~ \
@@ -564,6 +674,7 @@ do
 			     "is not .ps or .done"
 			continue
 		    fi
+
 		    case $op in
 		    get)
 			get_file "$base" "$ext"
@@ -588,18 +699,21 @@ do
 			    if [[ "$locsum" == \
 			          "$SUM" ]]
 			    then
-			        echo Local and Server \
+			        echo "    Local and" \
+				     Server \
 				     "$file" MD5 Sums \
 				     Are Equal
 			    else
-			        echo Local "$file" MD5 \
+			        echo "    Local $file" \
+				     MD5 \
 				     Sum == "$locsum"
-				echo !=
-			        echo Server "$file" \
+				echo "    !="
+			        echo "    Server" \
+				     "$file" \
 				     MD5 Sum == "$SUM"
 			    fi
 			else
-			    echo Local "$file" Not \
+			    echo "    Local $file Not" \
 			         Found "(Unreadable)"
 			fi
 			;;
