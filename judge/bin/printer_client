@@ -4,7 +4,7 @@
 #
 # File:		printer_client
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Wed Oct 12 19:00:31 EDT 2016
+# Date:		Wed Oct 12 20:48:47 EDT 2016
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -528,13 +528,11 @@ do
 	get* | sum* | print* | done* | ready* \
 	     | remove* )
 	    
-	    [[ "$REPLY" =~ \
-	             ^(get|sum|print|done|ready) ]]
-	    op=${BASH_REMATCH[1]}
 	    if [[ "$REPLY" =~ \
-		     ^${op}${WS}+(.*${NWS})${WS}*$ ]]
+		  ^(${NWS}+)${WS}+(.*${NWS})${WS}*$ ]]
 	    then
-		file="${BASH_REMATCH[1]}"
+		op="${BASH_REMATCH[1]}"
+		file="${BASH_REMATCH[2]}"
 		if [[ "$file" =~ ^(.*)(\.${NWS}*)$ ]]
 		then
 		    base="${BASH_REMATCH[1]}"
@@ -631,13 +629,17 @@ do
 				   >& /dev/null
 			fi
 			;;
+		    * )
+		        echo "ERROR: unknown command" \
+			     "in $REPLY"
+			;;
 		    esac
 		else
 		    echo "ERROR: $file has no extension"
 		fi
 	    else
-	        echo "ERROR: badly formed file name" \
-		     "in $REPLY"
+	        echo "ERROR: badly formed command or" \
+		     "file name in $REPLY"
 	    fi
 	    ;;
 	debug*)
