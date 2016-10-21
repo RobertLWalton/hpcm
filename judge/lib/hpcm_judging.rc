@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@seas.harvard.edu)
-# Date:		Thu Oct  6 14:55:25 EDT 2016
+# Date:		Fri Oct 21 14:53:36 EDT 2016
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -2769,14 +2769,19 @@ proc call_shell {} {
 }
 
 # Function to invoke the `make' program for a given
-# `name' on a Makefile in the current directory.
+# `name' on a Makefile in the current directory.  Only
+# the first 1000 lines of the standard output is kept,
+# and the rest is discarded.  The error output is saved
+# in err_file.
 #
-# The standard output of `make' is always sent to the
-# standard output.  The error output of `make' is
-# written to the err_file.
+# We use sed instead of head as it must not exit until
+# all the lines, even those beyond the first 1000, are
+# read, as if it does, make(1) will declare an error
+# which will be written to err_file.
 #
 proc make_file { name err_file } {
-    exec make $name >@ stdout 2> $err_file
+    exec make $name 2> $err_file | \
+         sed -e 1001,\$d >@ stdout
 }
 
 # Diff two directories and return the output as a
