@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Oct 10 19:49:04 EDT 2016
+# Date:		Fri Oct 21 04:56:40 EDT 2016
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -65,7 +65,9 @@ modes:
 		   hpcm_decode hpcm_less \
 		   hpcm_submit print print2 fprint \
 		   printer printer_pipe scoreboard \
-		   who_where \
+		   hpcm_queue who_where \
+		   hpcm_remote_sendmail \
+		   printer_client printer_server \
 		   xsh xcsh grant_access \
 		   hpcm_test \
 		   hpcm_extract_test_replies \

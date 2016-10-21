@@ -4,7 +4,7 @@
 #
 # File:		hpcm_queue
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Wed Oct  5 23:29:03 EDT 2016
+# Date:		Fri Oct 21 04:14:35 EDT 2016
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -14,6 +14,7 @@ case "$1" in
    "" | -doc* )
    	echo "
 hpcm_queue queue-directory extension
+hpcm_queue -local
 
     Copy the standard input to a file in the queue-
     directory.  The file name is initially
@@ -24,14 +25,35 @@ hpcm_queue queue-directory extension
     program.  After the copy is completed, the file
     extension is changed from to .out to \`extension',
     where \`extension' must include the leading \`.'
-    and may be empty."
+    and may be empty.
 
+    The -local option is equivalent to the two arguments
+
+    	~/printerq .ps
+
+    In addition, in this case ~/printerq is made if it
+    does not exist.
+"
     	exit 1
 	;;
+
+   -local)
+	dir=~/printerq
+	ext=.ps
+	if [ ! -e "$dir" ]
+	then
+	    mkdir "$dir"
+	fi
+	;;
+
+    *)
+	dir="$1"
+	ext="$2"
+	;;
+      
 esac
 
-dir="$1"
-ext="$2"
+
 base=`date +%F-%H-%M-%S`-$$
 
 trap "rm -f $dir/$base.out" EXIT

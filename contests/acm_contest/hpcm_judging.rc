@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@seas.harvard.edu)
-# Date:		Sat Oct  8 10:43:14 EDT 2016
+# Date:		Fri Oct 21 05:00:46 EDT 2016
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -511,17 +511,16 @@ if { [llength $printer_commands] == 0 } {
 	set regexp  [lindex $item 0]
 	set name [lindex $item 1]
 
-	if { [llength $item] > 2 } {
-	    lappend contest_commands \
-	            [lrange $item 1 end]
-	}
-
 	regsub -all {\\} $regexp {\\\\} regexp
 
 	if {    [regexp {^[!|]} $name] \
 	     || [regexp {@} $name] } {
+	    set command [join [lrange $item 1 end]]
 	    set timed_printer_map \
-		"$timed_printer_map\n$regexp $name"
+		"$timed_printer_map\n$regexp $command"
+	} elseif { [llength $item] > 2 } {
+	    lappend contest_commands \
+	            [lrange $item 1 end]
 	} else {
 	    set timed_printer_map \
 		"$timed_printer_map\n$regexp\

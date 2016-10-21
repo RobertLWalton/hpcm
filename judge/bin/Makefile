@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Oct  5 23:41:40 EDT 2016
+# Date:		Fri Oct 21 05:11:20 EDT 2016
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -21,6 +21,7 @@ all:	scorediff grant_access \
         hpcm_print_passwords \
 	hpcm_remote_sendmail \
 	hpcm_queue \
+	printer_client printer_server \
 	hpcm_email_accounts chkpage \
 	hpcm_extract_test_replies \
 	filtered_diff email_diff hpcm_helper \
@@ -106,8 +107,13 @@ hpcm_remote_sendmail:
 	   ../../contestant/bin/hpcm_remote_sendmail .
 
 hpcm_queue:
-	ln -s \
-	   ../../contestant/bin/hpcm_queue .
+	ln -s ../../contestant/bin/hpcm_queue .
+
+printer_client:
+	ln -s ../../contestant/bin/printer_client .
+
+printer_server:
+	ln -s ../../contestant/bin/printer_server .
 
 hpcm_extract_test_replies:
 	C=../../contestant/bin; \
