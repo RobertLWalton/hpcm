@@ -2,7 +2,7 @@
 #
 # File:		scoring_common.tcl
 # Author:	Bob Walton (walton@seas.harvard.edu)
-# Date:		Mon Oct 24 04:37:04 EDT 2016
+# Date:		Mon Oct 24 06:32:17 EDT 2016
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -984,6 +984,7 @@ proc execute_response_commands \
 	{ compose_reply_options commands } {
 
     global auto_score manual_score proposed_score \
+           old_auto_score \
 	   submitted_problem submitted_extension \
 	   submit_qualifier \
 	   judging_directory \

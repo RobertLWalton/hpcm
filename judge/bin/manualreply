@@ -5,7 +5,7 @@
 #
 # File:		manualreply
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Oct 24 04:11:03 EDT 2016
+# Date:		Mon Oct 24 06:25:43 EDT 2016
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -978,7 +978,7 @@ proc send_score_reply {} {
 #
 proc run_autojudge {} {
 
-    global proposed_score manual_score
+    global proposed_score manual_score old_auto_score
 
     puts "Running autojudge -rerun"
 
@@ -1021,6 +1021,10 @@ proc run_autojudge {} {
     } elseif { ! $syserr } {
        
 	set proposed_score [read_file Auto_Score]
+	if { [file exists Old_Auto_Score] } {
+	    set old_auto_score \
+	        [read_file Old_Auto_Score]
+	}
 
         puts ""
 	if { [file exists Manual_Score] } {
@@ -1034,12 +1038,14 @@ proc run_autojudge {} {
 			   Proposed_Score\
 			   ($proposed_score)\
 			   use send score(ss)"
+	    }
 	} else {
 	    puts "NOTE: Manual_Score does NOT EXIST;"
 	    puts "      To set it to Proposed_Score\
 			($proposed_score)\
 			use send score(ss)"
 	}
+	puts ""
     }
 
     continue?
@@ -1103,6 +1109,7 @@ set menu $main_menu
 
 set directory [file tail [pwd]]
 set proposed_score None
+set old_auto_score None
 set last_file ""
 set last_display ""
 
