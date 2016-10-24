@@ -2,19 +2,13 @@
 #
 # File:		scoring_common.tcl
 # Author:	Bob Walton (walton@seas.harvard.edu)
-# Date:		Tue Jan  6 03:06:38 EST 2015
+# Date:		Mon Oct 24 04:37:04 EDT 2016
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
 # for this program.
 #
-# RCS Info (may not be true date or author):
-#
-#   $Author: walton $
-#   $Date: 2014/10/20 07:57:01 $
-#   $RCSfile: scoring_common.tcl,v $
-#   $Revision: 1.77 $
-#
+#   vi:filetype=tcl
 #
 # Note: An earlier version of this code used to be in
 # manualreply.
@@ -1061,10 +1055,15 @@ proc execute_response_commands \
 			}
 		    }
 		}
+		# -OLD-AUTO-SCORE- must be substituted
+		# before -AUTO-SCORE-.
+		#
 		foreach string  \
 			[lrange $command 1 end] {
 		    regsub -all -- {-PROBLEM-} \
 		           $string $problem string
+		    regsub -all -- {-OLD-AUTO-SCORE-} \
+		           $string $old_auto_score string
 		    regsub -all -- {-AUTO-SCORE-} \
 		           $string $auto_score string
 		    regsub -all -- {-MANUAL-SCORE-} \

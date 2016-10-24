@@ -5,18 +5,13 @@
 #
 # File:		manualreply
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Sep 27 03:03:31 EDT 2014
+# Date:		Mon Oct 24 04:11:03 EDT 2016
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
 # for this program.
 #
-# RCS Info (may not be true date or author):
-#
-#   $Author: walton $
-#   $Date: 2014/09/27 07:09:08 $
-#   $RCSfile: manualreply,v $
-#   $Revision: 1.90 $
+#   vi:filetype=tcl
 #
 # The next lines start tclsh \
 trap "echo manualreply: Terminated by Signal" \
@@ -983,6 +978,8 @@ proc send_score_reply {} {
 #
 proc run_autojudge {} {
 
+    global proposed_score manual_score
+
     puts "Running autojudge -rerun"
 
     # Copy previous autodispatch.log if it exists to
@@ -1022,17 +1019,27 @@ proc run_autojudge {} {
 	puts "Autojudge -rerun FAILED to make\
 	                Auto_Score"
     } elseif { ! $syserr } {
+       
+	set proposed_score [read_file Auto_Score]
+
         puts ""
 	if { [file exists Manual_Score] } {
-	    puts "WARNING: To change the Manual_Score\
-	                   ([read_file Manual_Score])"
+	    set manual_score [read_file Manual_Score]
+	    if { $proposed_score == $manual_score } {
+	        puts "NOTE: new AUTO_SCORE ==\
+		      MANUAL_SCORE ($manual_score)"
+	    } else {
+	        puts "NOTE To change the Manual_Score\
+	                   ($manual_score) to\
+			   Proposed_Score\
+			   ($proposed_score)\
+			   use send score(ss)"
 	} else {
-	    puts "WARNING: Manual_Score does NOT EXIST;\
-	                   to create it"
+	    puts "NOTE: Manual_Score does NOT EXIST;"
+	    puts "      To set it to Proposed_Score\
+			($proposed_score)\
+			use send score(ss)"
 	}
-	puts "         you must use the scoring menu\
-	               (sm) and send score(ss)"
-        puts ""
     }
 
     continue?
