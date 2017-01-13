@@ -4,18 +4,13 @@
 #
 # File:		testjudge
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Thu Jan 12 07:57:05 EST 2017
+# Date:		Fri Jan 13 04:14:32 EST 2017
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
 # for this program.
 #
-# RCS Info (may not be true date or author):
-#
-#   $Author: walton $
-#   $Date: 2013/03/11 00:44:17 $
-#   $RCSfile: testjudge,v $
-#   $Revision: 1.7 $
+#   vi:filetype=tcl
 #
 # The next lines run tclsh \
 trap "echo testjudge: Terminated by Signal; exit 1" \
@@ -37,7 +32,7 @@ catch {
 
 set document "
 testjudge \[-keep savedir] \[-ext \".EXT ...\"] \\
-          \[directory ...]
+          \[-solutions SOLUTIONS] \[directory ...]
 
     The directories contain the problem solutions to be
     tested within savedir.  If no directories are given,
@@ -48,6 +43,12 @@ testjudge \[-keep savedir] \[-ext \".EXT ...\"] \\
     option if that is present, or by the allowed_
     extensions variable value in .../judge/lib/hpcm_
     judging.rc otherwise.
+
+    If a -solutions is given, SOLUTIONS is used as the
+    name of the solution to be tested instead of the
+    normal solutions in a directory.  SOLUTIONS must be
+    relative to the solution directory, but may contain
+    wildcards.  -solutions and -ext are not compatible.
 
     First this program makes `savedir' if it does not
     exist, and then if savedir/hpcm_judging.rc does not
@@ -103,6 +104,7 @@ testjudge \[-keep savedir] \[-ext \".EXT ...\"] \\
 #
 set keep 0
 set ext 0
+set solutions 0
 set myargv $argv
 while { 1 } {
     switch -glob -- [lindex $myargv 0] {
@@ -121,9 +123,15 @@ while { 1 } {
 	    set allowed_extensions [lindex $myargv 0]
 	    if { [catch { llength \
 	                    $allowed_extensions }] } {
-	        error "-ext $allowed_extensions\
-		            is not legal"
+	        puts "ERROR: -ext $allowed_extensions\
+		           is not legal"
+		exit 1
 	    }
+    }
+    -solutions {
+	    set solutions 1
+	    set myargv [lrange $myargv 1 end]
+	    set SOLUTIONS [lindex $myargv 0]
     }
     default break
     }
@@ -131,6 +139,10 @@ while { 1 } {
 }
 if { [llength $myargv] == 0 } {
     set myargv .
+}
+if { $ext && $solutions } {
+    puts "ERROR: -solutions and -ext are not compatible"
+    exit 1
 }
 
 set wd [pwd]
@@ -144,7 +156,8 @@ set date [clock_to_filename_date [clock seconds]]
 if { ! [file isdirectory $savedir] } {
 
     if { [file exists $savedir] } {
-        error "$savedir is not a directory"
+        puts "ERROR: $savedir is not a directory"
+	exit 1
     }
     puts "mkdir $savedir"
     file mkdir $savedir
@@ -233,22 +246,31 @@ foreach directory $myargv {
 
 	# Make list of PROBLEM*.EXT values (solutions).
 	#
-	set solutions {}
-	set allowed {}
-	foreach pext $allowed_extensions {
-	    if { ! [regexp "^\\.(.*)\$" $pext \
-	                   forget EXT] } {
-	        error "bad allowed_extension `$pext'"
+	set solution_files {}
+	if { $solutions } {
+	    set solution_files \
+	        [glob -nocomplain $SOLUTIONS]
+	    if { [llength $solution_files] == 0 } {
+		error "no $SOLUTIONS solutions"
 	    }
+	} else {
+	    set allowed {}
+	    foreach pext $allowed_extensions {
+		if { ! [regexp "^\\.(.*)\$" $pext \
+			       forget EXT] } {
+		    error "bad allowed_extension\
+		           `$pext'"
+		}
 
-	    lappend allowed $EXT
-	    lappend_lists solutions \
-	                  [glob -nocomplain \
-			        "$problem*.$EXT"]
-	}
-	if { [llength $solutions] == 0 } {
-	    set exts [join $allowed ,]
-	    error "no $problem*.{$exts} solutions"
+		lappend allowed $EXT
+		lappend_lists solution_files \
+			      [glob -nocomplain \
+				    "$problem*.$EXT"]
+	    }
+	    if { [llength $solution_files] == 0 } {
+		set exts [join $allowed ,]
+		error "no $problem*.{$exts} solutions"
+	    }
 	}
 
 	# Remove $problem.in link if any.
@@ -278,7 +300,7 @@ foreach directory $myargv {
 
 	# Process each solution
 	#
-	foreach SOLUTION $solutions {
+	foreach solution_file $solution_files {
 
 	    if { [catch {
 
@@ -286,7 +308,8 @@ foreach directory $myargv {
 		#
 		cd $dir
 
-		regexp "^(.*)\\.(\[^.]*)\$" $SOLUTION \
+		regexp "^(.*)\\.(\[^.]*)\$" \
+		       $solution_file \
 		       forget PROBLEMXXX EXT
 		set testdir \
 		    "$date-<<${PROBLEMXXX}_$EXT>>"
@@ -316,7 +339,7 @@ foreach directory $myargv {
 		puts $fd "From $account@$host"
 		puts $fd "Subject: submit $problem.$EXT"
 		puts $fd ""
-		exec cat $dir/$SOLUTION >@$fd
+		exec cat $dir/$solution_file >@$fd
 		close $fd
 
 		# Execute autodispatch

@@ -5,7 +5,7 @@
 #
 # File:		autojudge
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Jan 13 02:54:08 EST 2017
+# Date:		Fri Jan 13 03:11:58 EST 2017
 #
 #   vi:filetype=tcl
 #
@@ -1087,12 +1087,31 @@ if { [should_be_made \
 # as "".  The `marker' variable value is not meaningful
 # unless `score' is not "".
 #
+# If the above processing of a name did not update the
+# `score' or `fmarker' variables, delete any name*out
+# and name*err files made.
+#
+# If `score' is set for a particular name, further names
+# are not tested.  Thus this process stops after the
+# first input file that has an error other than a
+# formatting error.
+#
 set score ""
 set marker ""
 set fmarker ""
 set score_mtime 0
 #
 foreach name $input_names {
+
+    # If `score' set by last name, exit.
+    #
+    if { $score != "" } break
+
+    # List of *out and *err files made.  Save of
+    # previous fmarker.
+    #
+    set out_files_made {}
+    set previous_fmarker $fmarker
  
     # Make .out and .err files as necessary.
     #
@@ -1127,8 +1146,11 @@ foreach name $input_names {
 			  $name.$ext"
 		    file delete -force -- $name.$ext
 		    file rename $PROBLEM.$ext $name.$ext
+		    lappend out_files_made $name.$ext
 		}
 	    }
+	} else {
+	    lappend out_files_made $name.out $name.err
 	}
 
 	# The .out file should exist but may be empty.
@@ -1148,6 +1170,7 @@ foreach name $input_names {
 	    puts "Making $name.fout"
 	    exec Scoring_Filter $name.in \
 	         < $name.out > $name.fout
+	    lappend out_files_made $name.fout
 	}
 	if { [should_be_made \
 		 [list $name.jfout] \
@@ -1156,6 +1179,7 @@ foreach name $input_names {
 	    puts "Making $name.jfout"
 	    exec jfilter \
 	         $name.jin $name.fout $name.jfout
+	    lappend out_files_made $name.jfout
 	}
     } else {
 	if { [should_be_made \
@@ -1164,6 +1188,7 @@ foreach name $input_names {
 
 	    puts "Making $name.jout"
 	    exec jfilter $name.jin $name.out $name.jout
+	    lappend out_files_made $name.jout
 	}
     }
 
@@ -1343,13 +1368,43 @@ foreach name $input_names {
 	close $error_fd
 	puts "============================="
 	puts ""
-	break
     } elseif { [file size $name.out] == 0 } {
 	puts "Empty `$name.out' file produced"
 	set score "Program Crashed"
-	break
-    } elseif { $score != "" } {
-        break
+    }
+
+    # Delete name*out and name*err files if they are
+    # no longer needed, or print that they are being
+    # retained.
+    #
+    puts "Score for $name.in"
+    puts -nonewline "          is "
+    if { $score == "" \
+         && ( $fmarker == "" \
+	     || $previous_fmarker != "" ) } {
+	if { $fmarker != "" } {
+	    puts -nonewline \
+	         "non-initial Formatting Error"
+	} else {
+	    puts -nonewline "Completely Correct"
+	}
+	puts "; Therefore:"
+        foreach outfile $out_files_made {
+	    puts "  Deleting no-longer-needed $outfile"
+	    file delete -force $outfile
+	}
+    } else {
+	if { $score != "" } {
+	    puts -nonewline "not Completely Correct\
+	                     or Formatting Error"
+	} else {
+	    puts -nonewline \
+	         "initial Formatting Error"
+	}
+	puts "; Therefore:"
+        foreach outfile $out_files_made {
+	    puts "  Retaining $outfile"
+	}
     }
 }
 
