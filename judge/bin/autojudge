@@ -5,18 +5,9 @@
 #
 # File:		autojudge
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Oct 24 15:46:16 EDT 2016
+# Date:		Fri Jan 13 02:54:08 EST 2017
 #
-# The authors have placed this program in the public
-# domain; they make no warranty and accept no liability
-# for this program.
-#
-# RCS Info (may not be true date or author):
-#
-#   $Author: walton $
-#   $Date: 2013/02/12 13:48:27 $
-#   $RCSfile: autojudge,v $
-#   $Revision: 1.142 $
+#   vi:filetype=tcl
 #
 # The next lines start tclsh \
 trap "echo autojudge: Terminated by Signal" \
@@ -1075,9 +1066,36 @@ if { [should_be_made \
     }
 }
 
-# Make .out and .err files as necessary.
+# For each name in input_names compute if necessary
+# (according to should_be_made) the output file
+# ${name}.${fix}out where fix is "", f, j, or jf.  Then
+# compute ${name}.${fix}score if necessary.  Record the
+# maximum of all ${name}.${fix}score in mtimes in
+# score_mtime for use in deciding whether to recompute
+# the Auto_Score file.
+#
+# Then update `score', `marker', and `fmarker' from
+# the ${name}.${fix}score file.  The first error found
+# sets the `score' and `marker' variables, EXCEPT, if a
+# Formatting Error is found, it just sets the `fmarker'
+# variable to the first formatting error marker.
+# Markers have the form
+#
+#	{ scoring-file-name group-number case-number }
+#
+# If no non-formatting errors are found, `score' is left
+# as "".  The `marker' variable value is not meaningful
+# unless `score' is not "".
+#
+set score ""
+set marker ""
+set fmarker ""
+set score_mtime 0
 #
 foreach name $input_names {
+ 
+    # Make .out and .err files as necessary.
+    #
     if { [should_be_made \
 	     [list $name.out $name.err] \
 	     [concat [list $PROBLEM] \
@@ -1119,11 +1137,9 @@ foreach name $input_names {
 	    error "File $name.out should exist"
 	}
     }
-}
 
-# Make .fout, .jout, or .jfout files as appropriate.
-#
-foreach name $input_names {
+    # Make .fout, .jout, or .jfout files as appropriate.
+    #
     if { $scoring_filter_exists } {
 	if { [should_be_made \
 		 [list $name.fout] \
@@ -1150,22 +1166,9 @@ foreach name $input_names {
 	    exec jfilter $name.jin $name.out $name.jout
 	}
     }
-}
 
-# Make .*score files.
-#
-# Compute the mtime of the most recent .*score file for
-# use in deciding whether to recompute the Auto_Score
-# file.
-#
-# For each input name, add {name fix} to the score_fixes
-# list, where a fix is "", f, j, or jf so the score file
-# is ${name}.${fix}score.
-#
-set score_fixes {}
-set score_mtime 0
-#
-foreach name $input_names {
+    # Make .*score files.
+    #
     if { [file exists $name.jin] } {
         set jin_instructions [exec jfilter $name.jin]
 	set jin_instructions \
@@ -1225,40 +1228,6 @@ foreach name $input_names {
     if { $mtime > $score_mtime } {
         set score_mtime $mtime
     }
-
-    lappend score_fixes [list $name $fix]
-}
-
-# If .*score files have not changed since Auto_Score
-# file changed, exit.
-#
-if {    [file exists Auto_Score] \
-     &&    [file mtime Auto_Score] \
-        >= $score_mtime } {
-    exit_cleanup
-    exit 0
-}
-
-# Compute Auto_Score from .*score, .*out, and *.err
-# files.
-#
-# The first error found sets the score and marker
-# variable, EXCEPT, if a Formatting Error is found, it
-# just sets the fmarker variable to the formatting error
-# marker.  Markers have the form
-#
-#	{ scoring-file-name group-number case-number }
-#
-# The `marker' variable value is not meaningful unless
-# `score' is not "".
-#
-set score ""
-set marker ""
-set fmarker ""
-#
-foreach item $score_fixes {
-    set name [lindex $item 0]
-    set fix [lindex $item 1]
 
     # Compute markers.
     #
@@ -1382,6 +1351,16 @@ foreach item $score_fixes {
     } elseif { $score != "" } {
         break
     }
+}
+
+# If .*score files used to compute score have not
+# changed since Auto_Score file changed, exit.
+#
+if {    [file exists Auto_Score] \
+     &&    [file mtime Auto_Score] \
+        >= $score_mtime } {
+    exit_cleanup
+    exit 0
 }
 
 if { $score != "" } {
