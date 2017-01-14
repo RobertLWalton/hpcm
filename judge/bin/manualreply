@@ -5,7 +5,7 @@
 #
 # File:		manualreply
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Oct 24 06:25:43 EDT 2016
+# Date:		Sat Jan 14 01:10:29 EST 2017
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -978,7 +978,8 @@ proc send_score_reply {} {
 #
 proc run_autojudge {} {
 
-    global proposed_score manual_score old_auto_score
+    global auto_score proposed_score manual_score \
+           old_auto_score
 
     puts "Running autojudge -rerun"
 
@@ -1004,13 +1005,15 @@ proc run_autojudge {} {
     puts $logch "Start of autojudge -rerun:\
 		 [local_date]"
     puts $logch "----------------------------------"
-    set syserr [catch { exec autojudge -rerun } out]
-    puts $logch $out
+    close $logch
+    set syserr [catch { exec autojudge -rerun |& \
+                             tee -a autodispatch.log \
+			          >&@ stdout } ]
+    set logch [open autodispatch.log a]
     puts $logch "----------------------------------"
     puts $logch "End of autojudge -rerun:\
 		 [local_date]"
     close $logch
-    puts $out
 
     if { $syserr } {
         puts "Autojudge -rerun suffered a SYSTEM ERROR"
@@ -1020,10 +1023,10 @@ proc run_autojudge {} {
 	                Auto_Score"
     } elseif { ! $syserr } {
        
-	set proposed_score [read_file Auto_Score]
+	read_auto_score
+	set proposed_score $auto_score
 	if { [file exists Old_Auto_Score] } {
-	    set old_auto_score \
-	        [read_file Old_Auto_Score]
+	    read_old_auto_score
 	}
 
         puts ""
@@ -1110,6 +1113,9 @@ set menu $main_menu
 set directory [file tail [pwd]]
 set proposed_score None
 set old_auto_score None
+if { [file exists Old_Auto_Score] } {
+    read_old_auto_score
+}
 set last_file ""
 set last_display ""
 
@@ -1152,29 +1158,27 @@ proc refresh_info {} {
 Scoring Instructions: [string trim \
 			      $scoring_instructions]"
 
-	if { $manual_score == "None" } {
+	if { $old_auto_score == "None" } {
 	    set scoring_info "$scoring_info
-Scores:  Auto: $auto_score   Proposed: $proposed_score"
+Scores:  Auto: $auto_score   "
+        } else {
+	    set scoring_info "$scoring_info
+Scores:  Old Auto: $old_auto_score   "
+        }
+
+	if {    $manual_score == "None" } {
+	    set scoring_info "${scoring_info}Proposed:\
+		              $proposed_score"
 	    set window_info_height 8
 	} elseif { $proposed_score == "None" } {
-	    set scoring_info "$scoring_info
-Scores:  Auto: $auto_score   Manual: $manual_score"
+	    set scoring_info "${scoring_info}Manual:\
+                              $manual_score"
 	    set window_info_height 8
 	} else {
-	    set scoring_info "$scoring_info
-Scores:  Auto: $auto_score   Manual: $manual_score
+	    set scoring_info "${scoring_info}Manual:\
+                              $manual_score
          Proposed: $proposed_score"
 	    set window_info_height 9
-	}
-	if { $old_auto_score != "None" } {
-	    if { $window_info_height == 8 } {
-	        set scoring_info "$scoring_info
-         OLD_AUTO_SCORE: $old_auto_score"
-		incr window_info_height
-	    } else {
-	        set scoring_info "$scoring_info  \
-                    OLD_AUTO_SCORE: $old_auto_score"
-	    }
 	}
     }
 
