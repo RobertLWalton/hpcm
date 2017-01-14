@@ -5,7 +5,7 @@
 #
 # File:		autojudge
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Jan 13 03:11:58 EST 2017
+# Date:		Sat Jan 14 00:09:40 EST 2017
 #
 #   vi:filetype=tcl
 #
@@ -36,10 +36,10 @@ autojudge \[-rerun|-manual\]
     ectory, and given that the submission directory
     contains the file `Received_Mail', this program
     makes everything needed to compute the score file,
-    `Auto_Score', and then automatically computes that
-    file.  This program may report the score to the sub-
-    mitter by creating and sending the `Reply_Mail' file
-    as specified by the `scoring_mode' global variable.
+    `Auto_Score', and automatically computes that file.
+    This program may report the score to the submitter
+    by creating and sending the `Reply_Mail' file as
+    specified by the `scoring_mode' global variable.
 
     If the -manual program option is given, it sets the
     scoring_mode to `manual' while this program is run-
@@ -219,28 +219,58 @@ autojudge \[-rerun|-manual\]
 	Auto_Score file is written and autojudge termi-
 	nates.
 
-      . For each input name N, PROBLEM.in is linked to
-        N.in, PROBLEM.out is made by executing `make
-	PROBLEM.out' using the Makefile, the standard
-	error from make is directed to PROBLEM.err, and
-	PROBLEM.out and PROBLEM.err are then renamed
-	N.err and N.out.  If N == PROBLEM this is done
-	without the linking or renaming.
-
-      . For each input name N, N.fout is made if
-        Scoring_Filter exists, N.jfout if in addition
-	N.jin exists, and N.jout is made if N.jin exists
-	but Scoring_Filter does not.
-
-      . For each input name N, one of N.score, N.fscore,
-        N.jscore, or N.jfscore is made, according to
-	whether or not Scoring_Filter and N.jin exist.
+      . For each input name N, the score of the submis-
+        sion for input N.in is computed.  Input names
+	are processed in order and the process stops
+	as soon a score other than Completely Correct
+	or Formatting Error is computed.  The N*out
+	files computed in order to compute the score
+	are deleted if the score for N is Completely
+	Correct or if N is NOT the first input name
+	whose score is Formatting Error.  Other N*out
+	files are retained.  The N*score files that
+	are computed are retained.
 
-      . Auto_Score is computed from the resulting
-	.*score files.  Whenever Auto_Score is made, the
-	Score_Flag is set, and a Reply_Mail file is made
-	and sent to to the submitter if the scoring_mode
-	is not `manual'.
+	The processing of input name N is in detail:
+	
+          . PROBLEM.in is linked to N.in, PROBLEM.out
+	    is made by executing `make PROBLEM.out'
+	    using the Makefile, the standard error from
+	    make is directed to PROBLEM.err, and
+	    PROBLEM.out and PROBLEM.err are then renamed
+	    N.err and N.out.  If N == PROBLEM this is
+	    done without the linking or renaming.
+
+          . N.fout is made if Scoring_Filter exists,
+	    N.jfout if in addition N.jin exists, and
+	    N.jout is made if N.jin exists but
+	    Scoring_Filter does not.
+
+          . For each input name N, one of N.score,
+	    N.fscore, N.jscore, or N.jfscore is made,
+	    according to whether or not Scoring_Filter
+	    and N.jin exist.
+
+	  . The score for N is computed form the N*score
+	    file that was made.
+
+      . Auto_Score is computed from the results of
+        processing the input files.  If all input files
+	had the score Completely Correct, Auto_Score has
+	this score.  If several had Formatting Error and
+	the rest had Completely Correct, Auto_Score has
+	the score Formatting Error.  Otherwise Auto_
+	Score has the score of the last input file
+	processed, and this score is neither Completely
+	Correct nor Formatting Error.  Autoscore also
+	contains the name of the *out file and the group
+	and case numbers of the test case in error,
+	unless the score is Completely Correct.
+
+	Whenever Auto_Score is made, the Score_Flag is
+	set, and a Reply_Mail file is made and sent to
+	the submitter if the scoring_mode is not
+	`manual'.
 
     Here files marked with * are linked into the current
     submission directory from the problem's solution
@@ -268,7 +298,7 @@ autojudge \[-rerun|-manual\]
     to the submitter as the final word on the submis-
     sion.  In either case this program terminates after
     reporting the error.
-
+
     Errors in extraction are classified as system errors
     if extractmail outputs the phrase `SYSTEM ERROR' and
     submitter errors otherwise.  SYSTEM ERRORs are log-
@@ -276,7 +306,7 @@ autojudge \[-rerun|-manual\]
     ter according to the logging mode, so autojudge just
     prints the output and exits when an extractmail
     system error occurs.
-
+
     While making files in the problem solution direc-
     tory, this program locks the solution directory with
     a Dispatch_PID file.
@@ -295,7 +325,7 @@ autojudge \[-rerun|-manual\]
     response instructions is described in hpcm_
     judging.rc, where a default value is also given for
     the `response_instructions' variable.
-
+
     With default response instructions, this program
     sends a reply if the score is `Completely Correct'
     or the scoring_mode is `auto' or `auto+manual'.  If
@@ -314,7 +344,7 @@ autojudge \[-rerun|-manual\]
     erate a final reply.
 
     This program prints information about its progress.
-
+
     Unless this program creates a Reply_Mail file that
     is intended to be the final reply to the submitter
     (e.g., because the score is `Completely Correct' or
@@ -329,7 +359,7 @@ autojudge \[-rerun|-manual\]
     sets the score flag (the flag directory Score_Flag
     file), to signal that any scoreboards need to be
     recomputed.
-
+
     Problem names that contain `/' or `.' or begin with
     `-' or have no solution directory are illegal, and
     are submitter errors.  Similarly extension names

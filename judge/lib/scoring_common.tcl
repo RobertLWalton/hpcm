@@ -1064,7 +1064,8 @@ proc execute_response_commands \
 		    regsub -all -- {-PROBLEM-} \
 		           $string $problem string
 		    regsub -all -- {-OLD-AUTO-SCORE-} \
-		           $string $old_auto_score string
+		           $string $old_auto_score \
+			   string
 		    regsub -all -- {-AUTO-SCORE-} \
 		           $string $auto_score string
 		    regsub -all -- {-MANUAL-SCORE-} \
