@@ -1,8 +1,8 @@
 /* Programming Contest Sendmail Program 
  *
  * File:	hpcm_sendmail.c
- * Authors:	Bob Walton (walton@deas.harvard.edu)
- * Date:	Wed Mar  9 13:45:26 EST 2016
+ * Authors:	Bob Walton (walton@seas.harvard.edu)
+ * Date:	Fri Mar 24 21:08:21 EDT 2017
  *
  * The authors have placed this program in the public
  * domain; they make no warranty and accept no liability
@@ -150,10 +150,11 @@ void too_big_exit ( char * m )
 
 /* Start a child running the program with arguments
    given by argv, where the first argument is the
-   name of the program.  The environment is changed
-   to env.  Return the pid_t of the child that runs
-   this program.  Also return in the files argument
-   three FILE's:
+   name of the program.  Variables named in env are
+   added to the environment with value "1", or reset
+   to "1" if they are already in the environment.
+   Return the pid_t of the child that runs this program.
+   Also return in the files argument three FILE's:
 
    	files[0]	write stdin input to child
    	files[1]	read stdout output from child
@@ -172,6 +173,7 @@ pid_t exec_program
     int err_pipe[2];
     pid_t child;
     char * const ** argvp;
+    char * const * envp;
 
     if ( pipe ( in_pipe ) < 0
          ||
@@ -255,11 +257,18 @@ pid_t exec_program
 	    	close ( fd );
 	}
 
+	envp = env;
+	while ( * envp )
+	{
+	    if ( setenv ( * envp ++, "1", 1 ) < 0 )
+	        errno_exit ( "setenv" );
+	}
+
 	argvp = argvs;
 	while ( * argvp )
 	{
 	    char * const * argv = * argvp ++;
-	    execve ( argv[0], argv, env );
+	    execv ( argv[0], argv );
 	}
 	argvp = argvs;
 	while ( * argvp )
