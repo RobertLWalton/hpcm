@@ -2,7 +2,7 @@
 //
 // File:	hpcm_display_polygon.cc
 // Authors:	Bob Walton (walton@deas.harvard.edu)
-// Date:	Sun Mar 26 04:41:47 EDT 2017
+// Date:	Sun Mar 26 08:10:55 EDT 2017
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -340,6 +340,21 @@ int main ( int argc, char ** argv )
 	        drawing[i].end.y;
 	}
 
+	// Set up point scaling.  Insist on a margin
+	// of 5% to allow lines to be inside graph
+	// box.
+	//
+	double dx = xmax - xmin;
+	double dy = ymax - ymin;
+	if ( dx == 0 ) dx = 1;
+	if ( dy == 0 ) dy = 1;
+	xmax += margin * dx;
+	xmin -= margin * dx;
+	ymax += margin * dy;
+	ymin -= margin * dy;
+	dx = xmax - xmin;
+	dy = ymax - ymin;
+
 	while ( true )
 	{
 	    double title_top, title_height, title_width,
@@ -398,21 +413,6 @@ int main ( int argc, char ** argv )
 
 		line_size = page_line_size;
 	    }
-
-	    // Set up point scaling.  Insist on a margin
-	    // of 5% to allow lines to be inside graph
-	    // box.
-	    //
-	    double dx = xmax - xmin;
-	    double dy = ymax - ymin;
-	    if ( dx == 0 ) dx = 1;
-	    if ( dy == 0 ) dy = 1;
-	    xmax += margin * dx;
-	    xmin -= margin * dx;
-	    ymax += margin * dy;
-	    ymin -= margin * dy;
-	    dx = xmax - xmin;
-	    dy = ymax - ymin;
 
 	    double xscale =
 	        ( graph_width - 4 * line_size ) / dx;
@@ -518,6 +518,13 @@ int main ( int argc, char ** argv )
 				right_control_pressed )
 			    )
 		        goto PROGRAM_DONE;
+		    else if ( key == XK_l
+		              &&
+			      ( left_control_pressed
+			        ||
+				right_control_pressed )
+			    )
+		        break;
 		    else
 		       goto PAGE_DONE;
 		    // Go to next test case.
