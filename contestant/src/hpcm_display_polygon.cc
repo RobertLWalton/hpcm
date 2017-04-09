@@ -28,6 +28,7 @@
 #include <cmath>
 #include <cassert>
 using std::cout;
+using std::cerr;
 using std::endl;
 using std::ifstream;
 using std::string;
@@ -39,6 +40,7 @@ extern "C" {
 #define XK_MISCELLANY
 #define XK_LATIN1
 #include <X11/keysymdef.h>
+#include <unistd.h>
 }
 
 const char * const documentation = "\n"
@@ -497,10 +499,12 @@ int main ( int argc, char ** argv )
 		cairo_stroke ( graph_c );
 	    }
 
+	    cairo_show_page ( graph_c );
 	    cairo_show_page ( title_c );
 
 	    if ( display != NULL ) while ( true )
 	    {
+		usleep ( 100000 );
 	        XEvent e;
 		XNextEvent ( display, & e );
 		if ( e.type == KeyPress )
@@ -538,11 +542,19 @@ int main ( int argc, char ** argv )
 		    else if ( key == XK_Control_R )
 		        right_control_pressed = false;
 		}
-		if ( e.type == Expose
-		     &&
-		     e.xexpose.count == 0 )
+		else if ( e.type == Expose
+		          &&
+		          e.xexpose.count == 0 )
 		    break;
 		    // Redraw current window.
+		else if ( e.type == ConfigureNotify )
+		    break;
+		    // Redraw current window.
+		else
+		{
+		    cerr << "Unhandled Event (type = "
+		         << e.type << " )" << endl;
+		}
 	    }
 	    else goto PAGE_DONE;
 	}
