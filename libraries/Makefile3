@@ -1,7 +1,7 @@
 # Makefile for the XXX Problem
 #
 # File:		Makefile
-# Date:		Wed Mar  8 01:09:33 EST 2017
+# Date:		Wed May 17 12:38:06 EDT 2017
 #
 # See demonstration Makefile for documentation.
 #
@@ -36,20 +36,17 @@ default:	$P.out
 
 .c:
 	rm -f $* core core.[0-9]*
-	gcc ${C_FLAGS} -o $* $*.c \
-	    -lm -lcrypto ${XTRA_LIBS}
+	gcc ${C_FLAGS} -o $* $*.c -lm ${XTRA_LIBS}
 
 .cc:
 	rm -f $* core core.[0-9]*
-	g++ ${CC_FLAGS} -o $* $*.cc \
-	    -lm -lcrypto ${XTRA_LIBS}
+	g++ ${CC_FLAGS} -o $* $*.cc ${XTRA_LIBS}
 
 .java:
 	rm -f $* *.class core core.[0-9]*
-	javac ${JAVA_FLAGS} $*.java
+	javac ${JAVA_FLAGS} -sourcepath . -d . $*.java
 	echo >$* '#!/bin/sh'
-	echo >>$* "exec `which java`" \
-	          -ea $* '"$$@"'
+	echo >>$* "exec `which java`" -ea $* '"$$@"'
 	chmod a+r *.class
 	chmod a+rx $*
 
@@ -62,11 +59,11 @@ default:	$P.out
 	chmod a+rx $*
 
 .py:
-	rm -f $* core core.[0-9]*
+	rm -f $* *.pyc core core.[0-9]*
+	python2 -m py_compile ${PY_FLAGS} $*.py
 	echo >$* '#!/bin/sh'
-	echo >>$* "exec python ${PY_FLAGS}" \
-	          "$*.py" '"$$@"'
-	chmod a+r $*.py
+	echo >>$* "exec python2" "$*.pyc" '"$$@"'
+	chmod a+r $*.pyc
 	chmod a+rx $*
 
 #
@@ -82,7 +79,7 @@ $P.test:
 $P.out:	$P $P.in
 	rm -f $P.out core core.[0-9]*
 	grant_access . $P ${XTRA_INPUTS}
-	$G <$P.in | hpcm_sandbox -cputime 60 \
+	$G <$P.in | hpcm_sandbox -cputime 30 \
 	                         -datasize 64m \
 		                 -stacksize 16m \
 	                         -filesize 64m \
@@ -99,7 +96,7 @@ test:	$P.out $P.test
 $P.debug:	$P $P.in
 	rm -f $P.debug core core.[0-9]*
 	grant_access . $P ${XTRA_INPUTS}
-	$G <$P.in | hpcm_sandbox -cputime 60 \
+	$G <$P.in | hpcm_sandbox -cputime 30 \
 	                         -datasize 64m \
 		                 -stacksize 16m \
 		                 ${XTRA_LIMITS} \
@@ -121,7 +118,7 @@ solution-submit:	$P.out
 	hpcm_submit -solution $P
 
 clean:
-	rm -f $P *.class core core.[0-9]* \
+	rm -f $P *.class *.pyc core core.[0-9]* \
 	      *.out *.debug *.fout *.jout *.jfout \
 	      make_$P_*input ${XTRA_CLEANS}
 	if cmp -s $P.in sample.in; then rm $P.in; fi
