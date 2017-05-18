@@ -2,7 +2,7 @@
 //
 // File:	vcalc.cc
 // Authors:	Bob Walton (walton@seas.harvard.edu)
-// Date:	Fri Jan 25 02:39:58 EST 2013
+// Date:	Thu May 18 05:35:32 EDT 2017
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -24,6 +24,9 @@ using namespace std;
 #include <cassert>
 #include <cctype>	// isspace, isblank
 #include <cmath>	// fabs, atan2, sqrt, M_PI
+#define to_string TO_STRING
+#define is_scalar IS_SCALAR
+			// Defined in libraries
 
 bool debug = false;
 #define dout    if ( debug ) cout

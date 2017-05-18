@@ -1,7 +1,7 @@
 # Makefile for the Simple Vector Calculator Problem
 #
 # File:		Makefile
-# Date:		Wed May 17 11:12:45 EDT 2017
+# Date:		Thu May 18 05:22:17 EDT 2017
 #
 # See demonstration Makefile for documentation.
 #
@@ -34,16 +34,19 @@ default:	$P.out
 
 .c:
 	rm -f $* core core.[0-9]*
-	gcc ${C_FLAGS} -o $* $*.c -lm ${XTRA_LIBS}
+	gcc -Dinline=static -std=gnu11 ${C_FLAGS} \
+	    -o $* $*.c -lm ${XTRA_LIBS}
 
 .cc:
 	rm -f $* core core.[0-9]*
-	g++ ${CC_FLAGS} -o $* $*.cc ${XTRA_LIBS}
+	g++ -std=gnu++11 ${CC_FLAGS} \
+	    -o $* $*.cc ${XTRA_LIBS}
 
 #
 .java:
 	rm -f $* *.class core core.[0-9]*
-	javac ${JAVA_FLAGS} -sourcepath . -d . $*.java
+	javac -encoding UTF-8 -sourcepath . -d . \
+	      ${JAVA_FLAGS} $*.java
 	echo >$* '#!/bin/sh'
 	echo >>$* "exec `which java`" -ea $* '"$$@"'
 	chmod a+r *.class
