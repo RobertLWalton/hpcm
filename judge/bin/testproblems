@@ -4,11 +4,13 @@
 #
 # File:		testproblems
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Tue May  9 21:50:12 EDT 2017
+# Date:		Sun May 21 04:12:49 EDT 2017
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
 # for this program.
+#
+#   vi:filetype=tcl
 #
 # The next lines run tclsh \
 trap "echo testproblems: Terminated by Signal; exit 1" \
@@ -34,8 +36,9 @@ catch {
 
 set document "
 testproblems \[-p N] \[-keep|-|-contestant|-q|-s|-v] \\
-             \[-ext \".EXT ...\"] \[-todo]\
-	     \[directory ...]
+             \[-ext \".EXT ...\"]\
+	     \[-sol \"SOLUTION ...\"] \\
+             \[-todo] \[directory ...]
 
     The command with no arguments is equivalent to
 
@@ -109,11 +112,13 @@ testproblems \[-p N] \[-keep|-|-contestant|-q|-s|-v] \\
     are noted in the summary but otherwise ignored.
 
     Then this program identifies the solution files that
-    are to be tested.  First the allowed extensions of
-    these files are identified.  These are the elements
-    of the allowed_extensions variable, which can be set
-    in the PROBLEM.rc file, if that is given, or by the
-    -ext argument, if that is given, or by default to
+    are to be tested.  If the -sol argument is given,
+    these are the files listed by it.  Otherwise the
+    allowed extensions of solutions are identified.
+    These are the elements of the allowed_extensions
+    variable, which can be set in the PROBLEM.rc file,
+    if that is given, or by the -ext argument, if that
+    is given, or by default to
 
         $allowed_extensions
 
@@ -122,10 +127,11 @@ testproblems \[-p N] \[-keep|-|-contestant|-q|-s|-v] \\
     sions, if problem_test_files is given and there are
     any such files, or are otherwise all existing files
     with names of the form PROBLEMXXX.EXT where .EXT is
-    one of the allowed extensions.  For each solution
-    file YYY.EXT the subdirectory test_YYY_EXT is made,
-    files files are linked into it, and in that direc-
-    tory YYY.EXT is tested.
+    one of the allowed extensions.
+    
+    For each solution file YYY.EXT the subdirectory
+    test_YYY_EXT is made, files files are linked into
+    it, and in that directory YYY.EXT is tested.
 
     Then the set of input names is formed.  If the vari-
     able problem_input_names is defined in PROBLEM.rc,
@@ -286,6 +292,7 @@ testproblems \[-p N] \[-keep|-|-contestant|-q|-s|-v] \\
 # include the timing information.  It writes the summary
 # to $dirname.report instead stdout.
 #
+set solutions {}
 set parallel_runs 0
 set keep 0
 set todo 0
@@ -324,6 +331,15 @@ while { 1 } {
     -q {
            set quiet 1
 	   set stdoutq [open /dev/null w]
+    }
+    -sol {
+	    set myargv [lrange $myargv 1 end]
+	    set solutions [lindex $myargv 0]
+	    if { [catch { llength $solutions }] } {
+	        error "-sol $solutions\
+		            is not legal"
+	    }
+	    lappend subargs -sol $solutions
     }
     -ext {
 	    set myargv [lrange $myargv 1 end]
@@ -807,7 +823,6 @@ foreach directory $myargv {
 	set make_files {}
 	set link_files {}
 	set optional_link_files {}
-	set solutions {}
 	catch { unset input_names }
 	set scoring_instructions \
 	    $default_scoring_instructions
@@ -848,10 +863,10 @@ foreach directory $myargv {
 		check_list problem_input_names
 		set input_names $problem_input_names
 	    }
-	    if { [info exists problem_test_files] } {
-	        set use_default_solutions no
+	    if { [info exists problem_test_files] \
+	         && \
+		 [length $solutions] == 0 } {
 		check_list problem_test_files
-		set solutions {}
 		foreach file $problem_test_files {
 		    if { [regexp {.*(\.[^.]*)$} $file \
 		                 forget EXT] \
@@ -920,12 +935,28 @@ foreach directory $myargv {
 			      [glob -nocomplain \
 				    "$problem*$EXT"]
 	    }
+	} else {
+
+	    set sol $solutions
+	    set solutions {}
+	    foreach SOLUTION $sol {
+		if { ! [file readable $SOLUTION] } {
+		    putss "solution file is not\
+			   readable: $SOLUTION"
+		    putsq "solution file is not\
+			   readable: $SOLUTION"
+		} else {
+		    lappend solutions $SOLUTION
+		}
+	    }
 	}
 
 	if { [llength $solutions] == 0 } {
 	    set exts [join $allowed_extensions ,]
-	    putss "no $problem*{$exts} solutions"
-	    putsq "no $problem*{$exts} solutions"
+	    putss "no readable -sol files or\
+	           $problem*{$exts} solutions"
+	    putsq "no readable -sol files or\
+	           $problem*{$exts} solutions"
 	    incr no_solutions_count
 	    error "ALREADY-OUTPUT"
 	}
@@ -1067,7 +1098,7 @@ foreach directory $myargv {
 	    foreach N $input_names {
 
 		if { $N != $problem } {
-		    putsq "========== $N:"
+		    putsq "========== $N \[$testdir]:"
 		}
 		if { ! [file exists $N.in] } {
 		    putsq "jfilter -v $N.jin $N.in\
