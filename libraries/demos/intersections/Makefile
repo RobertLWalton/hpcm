@@ -1,7 +1,7 @@
 # Makefile for the Line Segment Intersections Problem
 #
 # File:		Makefile
-# Date:		Thu May 18 05:22:17 EDT 2017
+# Date:		Sun Jun 11 15:06:55 EDT 2017
 #
 # See demonstration Makefile for documentation.
 #
@@ -48,7 +48,10 @@ default:	$P.out
 	javac -encoding UTF-8 -sourcepath . -d . \
 	      ${JAVA_FLAGS} $*.java
 	echo >$* '#!/bin/sh'
-	echo >>$* "exec `which java`" -ea $* '"$$@"'
+	echo >>$* "exec `which java`" \
+		  -XX:+UseSerialGC \
+		  -Xss64m -Xms1920m -Xmx1920m \
+	          -ea $* '"$$@"'
 	chmod a+r *.class
 	chmod a+rx $*
 

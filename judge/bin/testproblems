@@ -4,7 +4,7 @@
 #
 # File:		testproblems
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Sun May 21 04:12:49 EDT 2017
+# Date:		Sun Jun 11 16:25:22 EDT 2017
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -292,7 +292,7 @@ testproblems \[-p N] \[-keep|-|-contestant|-q|-s|-v] \\
 # include the timing information.  It writes the summary
 # to $dirname.report instead stdout.
 #
-set solutions {}
+set sol {}
 set parallel_runs 0
 set keep 0
 set todo 0
@@ -334,12 +334,11 @@ while { 1 } {
     }
     -sol {
 	    set myargv [lrange $myargv 1 end]
-	    set solutions [lindex $myargv 0]
-	    if { [catch { llength $solutions }] } {
-	        error "-sol $solutions\
-		            is not legal"
+	    set sol [lindex $myargv 0]
+	    if { [catch { llength $sol }] } {
+	        error "-sol $sol is not legal"
 	    }
-	    lappend subargs -sol $solutions
+	    lappend subargs -sol $sol
     }
     -ext {
 	    set myargv [lrange $myargv 1 end]
@@ -828,6 +827,7 @@ foreach directory $myargv {
 	    $default_scoring_instructions
 	set allowed_extensions \
 	    $default_allowed_extensions
+	set solutions $sol
 	if { [file exists $problem.rc] } {
 
 	    read_rc_file $problem.rc $problem
@@ -937,9 +937,9 @@ foreach directory $myargv {
 	    }
 	} else {
 
-	    set sol $solutions
+	    set old_solutions $solutions
 	    set solutions {}
-	    foreach SOLUTION $sol {
+	    foreach SOLUTION $old_solutions {
 		if { ! [file readable $SOLUTION] } {
 		    putss "solution file is not\
 			   readable: $SOLUTION"
