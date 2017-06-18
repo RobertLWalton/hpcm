@@ -1,7 +1,7 @@
 # Makefile for the Word Order Reverse Problem
 #
 # File:		Makefile
-# Date:		Sun Jun 11 15:06:55 EDT 2017
+# Date:		Sun Jun 18 12:44:34 EDT 2017
 #
 # See demonstration Makefile for documentation.
 #
@@ -19,17 +19,25 @@ P = reverser
 XTRA_INPUTS =
 XTRA_LIBS =
 XTRA_LIMITS =
+XTRA_LIMITS_c =
+XTRA_LIMITS_cc =
+XTRA_LIMITS_java =
+XTRA_LIMITS_py =
+XTRA_LIMITS_lsp =
 XTRA_CLEANS =
 
 C_FLAGS = -g
 CC_FLAGS = -g
-JAVA_FLAGS = -g
+JAVAC_FLAGS = -g
+JAVA_FLAGS =
 CL_FLAGS = --script
+PYC_FLAGS =
 PY_FLAGS =
 
 .SUFFIXES:
 .SUFFIXES: .c .cc .java .lsp .py
 
+#
 default:	$P.out
 
 .c:
@@ -42,13 +50,12 @@ default:	$P.out
 	g++ -std=gnu++11 ${CC_FLAGS} \
 	    -o $* $*.cc ${XTRA_LIBS}
 
-#
 .java:
 	rm -f $* *.class core core.[0-9]*
 	javac -encoding UTF-8 -sourcepath . -d . \
-	      ${JAVA_FLAGS} $*.java
+	      ${JAVAC_FLAGS} $*.java
 	echo >$* '#!/bin/sh'
-	echo >>$* "exec `which java`" \
+	echo >>$* "exec `which java` ${JAVA_FLAGS}" \
 		  -XX:+UseSerialGC \
 		  -Xss64m -Xms1920m -Xmx1920m \
 	          -ea $* '"$$@"'
@@ -63,11 +70,13 @@ default:	$P.out
 	chmod a+r $*.lsp
 	chmod a+rx $*
 
+#
 .py:
 	rm -f $* *.pyc core core.[0-9]*
-	python2 -m py_compile ${PY_FLAGS} $*.py
+	python2 -m py_compile ${PYC_FLAGS} $*.py
 	echo >$* '#!/bin/sh'
-	echo >>$* "exec python2" "$*.pyc" '"$$@"'
+	echo >>$* "exec python2 ${PY_FLAGS}" \
+	          "$*.pyc" '"$$@"'
 	chmod a+r $*.pyc
 	chmod a+rx $*
 
@@ -80,7 +89,6 @@ $P.test:
 	then cp sample.test $P.test; \
 	     chmod u+rw $P.test; fi
 
-#
 $P.out:	$P $P.in
 	rm -f $P.out core core.[0-9]*
 	grant_access . $P ${XTRA_INPUTS}
@@ -89,6 +97,7 @@ $P.out:	$P $P.in
 		     -stacksize 16m \
 		     -filesize 64m \
 		     ${XTRA_LIMITS} \
+		     ${XTRA_LIMITS_${HPCM_EXT}} \
 		     -tee $P.out \
 		     $P \
 	    <$P.in
@@ -99,6 +108,7 @@ test:	$P.out $P.test
 	@if diff -u $P.test $P.out; \
 	    then echo "NO DIFFERENCES FOUND"; fi
 
+#
 $P.debug:	$P $P.in
 	rm -f $P.debug core core.[0-9]*
 	grant_access . $P ${XTRA_INPUTS}
@@ -106,6 +116,7 @@ $P.debug:	$P $P.in
 	             -datasize 64m \
 		     -stacksize 16m \
 		     ${XTRA_LIMITS} \
+		     ${XTRA_LIMITS_${HPCM_EXT}} \
 		     -tee $P.debug \
 		     $P debug \
 	    <$P.in
@@ -121,7 +132,6 @@ in-submit:	$P.out
 inout-submit:	$P.out
 	hpcm_submit -inout $P
 
-#
 solution-submit:	$P.out
 	hpcm_submit -solution $P
 
@@ -133,6 +143,7 @@ clean:
 	if cmp -s $P.test sample.test; \
 	   then rm $P.test; fi
 
+#
 # Derived From:	Makefile1
 # Author:	walton@seas.harvard.edu
 #
