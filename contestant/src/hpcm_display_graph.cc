@@ -2,7 +2,7 @@
 //
 // File:	hpcm_display_graph.cc
 // Authors:	Bob Walton (walton@deas.harvard.edu)
-// Date:	Sun Sep 30 22:04:11 EDT 2012
+// Date:	Thu Jun 29 16:09:23 EDT 2017
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -34,7 +34,7 @@ using std::string;
 using std::istringstream;
 
 extern "C" {
-#include <cairo-ps.h>
+#include <cairo-pdf.h>
 #include <cairo-xlib.h>
 #define XK_MISCELLANY
 #define XK_LATIN1
@@ -42,7 +42,7 @@ extern "C" {
 }
 
 const char * const documentation = "\n"
-"hpcm_display_graph [-ps|-X] input-file output-file\n"
+"hpcm_display_graph [-pdf|-X] input-file output-file\n"
 "\n"
 "    This program displays undirected graphs defined\n"
 "    by points in the input-file and edges in the\n"
@@ -80,7 +80,7 @@ const char * const documentation = "\n"
 "    whitespace character, and thus can be distin-\n"
 "    guished from edge lines.\n"
 "\f\n"
-"    With the -ps option, postscript is written to\n"
+"    With the -pdf option, pdf is written to\n"
 "    the standard output.\n"
 "\n"
 "    With the -X option, an X-window is opened and\n"
@@ -114,7 +114,7 @@ inline int & edges ( int i, int j )
     return edges_vector[i*N + j];
 }
 
-// For postscript output, units are 1/72".
+// For pdf output, units are 1/72".
 
 // You MUST declare the entire paper size, 8.5x11",
 // else you get a non-centered printout.
@@ -174,17 +174,17 @@ int main ( int argc, char ** argv )
 
 	char * name = argv[1] + 1;
 
-        if (    strcmp ( "ps", name ) == 0 )
+        if (    strcmp ( "pdf", name ) == 0 )
 	{
 	    if ( page != NULL )
 	    {
-		cout << "At most one -ps or -X option"
+		cout << "At most one -pdf or -X option"
 			" allowed"
 		     << endl;
 		exit (1);
 	    }
 
-	    page = cairo_ps_surface_create_for_stream
+	    page = cairo_pdf_surface_create_for_stream
 	    		( write_to_cout, NULL,
 			  page_width, page_height );
 	}
@@ -192,7 +192,7 @@ int main ( int argc, char ** argv )
 	{
 	    if ( page != NULL )
 	    {
-		cout << "At most one -ps or -X option"
+		cout << "At most one -pdf or -X option"
 			" allowed"
 		     << endl;
 		exit (1);
