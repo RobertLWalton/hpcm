@@ -2,7 +2,7 @@
 //
 // File:	hpcm_display_segments.cc
 // Authors:	Bob Walton (walton@deas.harvard.edu)
-// Date:	Sun Sep 30 12:29:30 EDT 2012
+// Date:	Thu Jun 29 15:08:14 EDT 2017
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -42,10 +42,14 @@ extern "C" {
 }
 
 const char * const documentation = "\n"
-"hpcm_display_segments [-ps|-X] file\n"
+"hpcm_display_segments [-ps|-X] [-dot] file\n"
 "\n"
 "    This program displays line segment drawings\n"
-"    defined in the given file.\n"
+"    defined in the given file.  If -dot is"
+	" specified,\n"
+"    the end points of the line segments are"
+	" indicated\n"
+"    by dots.\n"
 "\n"
 "    The format of the file is a set of test cases,\n"
 "    each beginning with a 1-line test case name that\n"
@@ -68,6 +72,7 @@ const char * const documentation = "\n"
 "    riage return goes to the next test case, and\n"
 "    typing control-C terminates the display.\n";
 
+bool dot = false;
 
 // Current test case data.
 //
@@ -93,6 +98,7 @@ const double page_title_height = 72+36;	    // 1.5"
 const double title_font_size = 16;	    // 16/72"
 
 const double page_line_size = 1;    	    // 1/72"
+const double page_dot_size = 2;    	    // 2/72"
 
 const double print_box = page_width - 2 * side_margin;
 
@@ -105,7 +111,8 @@ const int window_width = 600;
 const char window_foot[] =
     "Type SPACE for next page, control-C to quit.";
 
-const int window_line_size = 1;
+const int window_line_size = 2;
+const int window_dot_size = 3;
 
 // cairo_write_func_t to write data to cout.
 //
@@ -134,7 +141,9 @@ int main ( int argc, char ** argv )
 
 	char * name = argv[1] + 1;
 
-        if (    strcmp ( "ps", name ) == 0 )
+        if (    strcmp ( "dot", name ) == 0 )
+	    dot = true;
+        else if (    strcmp ( "ps", name ) == 0 )
 	{
 	    if ( page != NULL )
 	    {
@@ -205,7 +214,7 @@ int main ( int argc, char ** argv )
 	}
 	else
 	{
-	    cout << "Cannot understand -:" << name
+	    cout << "Cannot understand -" << name
 	         << endl << endl;
 	    cout << documentation;
 	    exit (1);
@@ -346,7 +355,7 @@ int main ( int argc, char ** argv )
 	    double title_top, title_height, title_width,
 	           graph_top, graph_height,
 		   graph_left, graph_width,
-		   line_size, foot_top;
+		   line_size, dot_size, foot_top;
 
 	    if ( display != NULL )
 	    {
@@ -381,6 +390,7 @@ int main ( int argc, char ** argv )
 		graph_width = width;
 
 		line_size = window_line_size;
+		dot_size = window_dot_size;
 	    }
 	    else
 	    {
@@ -398,6 +408,7 @@ int main ( int argc, char ** argv )
 		    page_width - 2 * side_margin;
 
 		line_size = page_line_size;
+		dot_size = page_dot_size;
 	    }
 
 	    // Set up point scaling.  Insist on a margin
@@ -480,15 +491,29 @@ int main ( int argc, char ** argv )
 	    //
 	    for ( int i = 0; i < drawing.size(); ++ i )
 	    {
+		cairo_set_line_width
+		    ( graph_c, line_size );
 		cairo_move_to
 		    ( graph_c,
 		      CONVERT(drawing[i].begin) );
 		cairo_line_to
 		    ( graph_c,
 		      CONVERT(drawing[i].end) );
-		cairo_set_line_width
-		    ( graph_c, line_size );
 		cairo_stroke ( graph_c );
+
+		if ( dot )
+		{
+		    cairo_arc
+		        ( graph_c,
+			  CONVERT(drawing[i].begin),
+			  dot_size, 0, 2*M_PI);
+		    cairo_fill ( graph_c );
+		    cairo_arc
+		        ( graph_c,
+			  CONVERT(drawing[i].end),
+			  dot_size, 0, 2*M_PI);
+		    cairo_fill ( graph_c );
+		}
 	    }
 
 	    cairo_show_page ( title_c );
