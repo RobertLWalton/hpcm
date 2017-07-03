@@ -2,7 +2,7 @@
 //
 // File:	hpcm_display_graph.cc
 // Authors:	Bob Walton (walton@deas.harvard.edu)
-// Date:	Thu Jun 29 16:09:23 EDT 2017
+// Date:	Mon Jul  3 14:34:31 EDT 2017
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -32,6 +32,7 @@ using std::ws;
 using std::ifstream;
 using std::string;
 using std::istringstream;
+using std::ostream;
 
 extern "C" {
 #include <cairo-pdf.h>
@@ -113,6 +114,15 @@ inline int & edges ( int i, int j )
 {
     return edges_vector[i*N + j];
 }
+
+// For debugging
+//
+ostream & operator <<
+	( ostream & s, const point_struct & p )
+{
+    return s << "(" << p.x << "," << p.y << ")";
+}
+
 
 // For pdf output, units are 1/72".
 
@@ -623,6 +633,9 @@ int main ( int argc, char ** argv )
 	    else goto PAGE_DONE;
 	}
 	PAGE_DONE:;
+
+	delete [] edges_vector;
+	delete [] point;
     }
 
     PROGRAM_DONE:
