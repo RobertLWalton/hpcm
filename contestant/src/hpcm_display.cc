@@ -1,8 +1,8 @@
-// Display
+// Display Points, Lines, and Arcs
 //
 // File:	hpcm_display.cc
 // Authors:	Bob Walton (walton@deas.harvard.edu)
-// Date:	Fri Jul  7 04:30:16 EDT 2017
+// Date:	Fri Jul  7 16:56:49 EDT 2017
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -44,8 +44,7 @@ const char * const documentation = "\n"
 "    in the given file or standard input.  The file\n"
 "    consists of pages each consisting of a name line\n"
 "    followed by command lines followed by a line\n"
-"    containing just `*'.
-
+"    containing just `*'.\n"
 "\n"
 "    The display commands are chosen from among the\n"
 "    following, where * denotes one or more\n"
@@ -105,6 +104,12 @@ vector operator + ( vector v1, vector v2 )
 vector operator - ( vector v1, vector v2 )
 {
     vector r = { v1.x - v2.x, v1.y - v2.y };
+    return r;
+}
+
+vector operator - ( vector v )
+{
+    vector r = { - v.x, - v.y };
     return r;
 }
 
@@ -200,8 +205,8 @@ void compute_bounds ( void )
 	    vector d1 = 0.5 * A.m;
 	    vector d2 = { d1.x, - d1.y };
 	    vector ll = - d1;
-	    vector lr = + d2;
-	    vector ur = + d1;
+	    vector lr =   d2;
+	    vector ur =   d1;
 	    vector ul = - d2;
 	    BOUND ( A.c + ll^A.r );
 	    BOUND ( A.c + lr^A.r );
@@ -210,6 +215,7 @@ void compute_bounds ( void )
 	}
 	default:
 	    assert ( ! "bounding bad command" );
+	}
     }
 #   undef BOUND
 }
@@ -242,6 +248,12 @@ void delete_command ( void )
 // end of file.
 //
 int line_number = 0;
+void bad_modifier ( int c )
+{
+    cerr << "ERROR in line " << line_number
+         << ": bad modifier `" << (char) c
+	 << "' - ignored" << endl;
+}
 bool read_testcase ( istream & in )
 {
     ++ line_number;
@@ -267,8 +279,8 @@ bool read_testcase ( istream & in )
 	case 'P':
 	{
 	    point & P = * new point();
-	    P.next = command;
-	    command = & P;
+	    P.next = commands;
+	    commands = & P;
 	    in >> P.command;
 	    assert ( P.command == 'P' );
 	    while ( ! isspace ( in.peek() ) )
@@ -279,20 +291,20 @@ bool read_testcase ( istream & in )
 	case 'L':
 	{
 	    line & L = * new line();
-	    L.next = command;
-	    command = & L;
+	    L.next = commands;
+	    commands = & L;
 	    in >> L.command;
 	    assert ( L.command == 'L' );
-	    L.width = SMALL;
+	    L.w = SMALL;
 	    L.arrow = false;
 	    while ( ! isspace ( in.peek() ) )
 	    {
 		int c = in.get();
 	        switch ( c )
 		{
-		case 'S': L.width = SMALL; break;
-		case 'M': L.width = MEDIUM; break;
-		case 'L': L.width = LARGE; break;
+		case 'S': L.w = SMALL; break;
+		case 'M': L.w = MEDIUM; break;
+		case 'L': L.w = LARGE; break;
 		case 'A': L.arrow = true; break;
 		default:  bad_modifier ( c );
 		}
@@ -302,21 +314,21 @@ bool read_testcase ( istream & in )
 	case 'A':
 	{
 	    arc & A = * new arc();
-	    A.next = command;
-	    command = & A;
+	    A.next = commands;
+	    commands = & A;
 	    in >> A.command;
 	    assert ( A.command == 'A' );
-	    A.width = SMALL;
+	    A.w = SMALL;
 	    A.arrow = false;
 	    while ( ! isspace ( in.peek() ) )
 	    {
 		int c = in.get();
 	        switch ( c )
 		{
-		case 'S': L.width = SMALL; break;
-		case 'M': L.width = MEDIUM; break;
-		case 'L': L.width = LARGE; break;
-		case 'A': L.arrow = true; break;
+		case 'S': A.w = SMALL; break;
+		case 'M': A.w = MEDIUM; break;
+		case 'L': A.w = LARGE; break;
+		case 'A': A.arrow = true; break;
 		default:  bad_modifier ( c );
 		}
 	    }
@@ -421,9 +433,7 @@ int main ( int argc, char ** argv )
 
 	char * name = argv[1] + 1;
 
-        if (    strcmp ( "dot", name ) == 0 )
-	    dot = true;
-        else if (    strcmp ( "pdf", name ) == 0 )
+        if (    strcmp ( "pdf", name ) == 0 )
 	{
 	    if ( page != NULL )
 	    {
@@ -524,7 +534,7 @@ int main ( int argc, char ** argv )
 
     // Open file.
     //
-    ifstream in();
+    ifstream in;
     const char * file = NULL;
     if ( argc == 2 )
     {
@@ -559,7 +569,9 @@ int main ( int argc, char ** argv )
     bool left_control_pressed = false;
     bool right_control_pressed = false;
 
-    while ( read_testcase() )
+    while ( read_testcase
+                ( file != NULL ? * (istream *) & in :
+		               cin ) )
     {
         compute_bounds();
 
@@ -703,30 +715,113 @@ int main ( int argc, char ** argv )
 
 	    // Execute drawing commands.
 	    //
-	    for ( int i = 0; i < drawing.size(); ++ i )
+	    for ( command * c = commands; c != NULL;
+	                                  c = c->next )
 	    {
-		cairo_set_line_width
-		    ( graph_c, line_size );
-		cairo_move_to
-		    ( graph_c,
-		      CONVERT(drawing[i].begin) );
-		cairo_line_to
-		    ( graph_c,
-		      CONVERT(drawing[i].end) );
-		cairo_stroke ( graph_c );
-
-		if ( dot )
+	        switch ( c->command )
 		{
+		case 'P':
+		{
+		    point & P = * (point *) c;
 		    cairo_arc
 		        ( graph_c,
-			  CONVERT(drawing[i].begin),
-			  dot_size, 0, 2*M_PI);
+			  CONVERT(P.p),
+			  P.w * dot_size,
+			  0, 2*M_PI);
 		    cairo_fill ( graph_c );
+		    break;
+		}
+		case 'L':
+		{
+		    line & L = * (line *) c;
+		    cairo_move_to
+			( graph_c,
+			  CONVERT(L.p1) );
+		    cairo_line_to
+			( graph_c,
+			  CONVERT(L.p2) );
+		    cairo_set_line_width
+			( graph_c,
+			  L.w * line_size );
+		    cairo_stroke ( graph_c );
+
+		    if ( L.dotted )
+		    {
+			cairo_arc
+			    ( graph_c,
+			      CONVERT(L.p1),
+			      L.w * dot_size,
+			      0, 2*M_PI);
+			cairo_fill ( graph_c );
+			cairo_arc
+			    ( graph_c,
+			      CONVERT(L.p2),
+			      L.w * dot_size,
+			      0, 2*M_PI);
+			cairo_fill ( graph_c );
+		    }
+		    break;
+		}
+		case 'A':
+		{
+		    arc & A = * (arc *) c;
+
+		    double g1 = M_PI * A.g.x / 180;
+		    double g2 = M_PI * A.g.y / 180;
+		    double r  = M_PI * A.r   / 180;
+
+		    cairo_matrix_t saved_matrix;
+		    cairo_get_matrix
+		        ( graph_c, & saved_matrix );
+		    cairo_scale
+		        ( graph_c, CONVERT(A.m) );
+		    cairo_rotate
+		        ( graph_c, r );
+		    cairo_translate
+		        ( graph_c, CONVERT(A.c) );
+
+		    vector zero = { 0, 0 };
+
+		    cairo_new_path ( graph_c );
 		    cairo_arc
-		        ( graph_c,
-			  CONVERT(drawing[i].end),
-			  dot_size, 0, 2*M_PI);
-		    cairo_fill ( graph_c );
+			( graph_c,
+			  CONVERT(zero),
+			  1, g1, g2 );
+
+		    cairo_set_matrix
+		        ( graph_c, & saved_matrix );
+		    cairo_set_line_width
+			( graph_c,
+			  A.w * line_size );
+		    cairo_stroke ( graph_c );
+
+		    if ( A.dotted )
+		    {
+			double s1 = sin ( g1 );
+			double c1 = cos ( g1 );
+			double s2 = sin ( g2 );
+			double c2 = cos ( g2 );
+			vector p1 =
+			    { c1 * A.m.x, s1 * A.m.y };
+			vector p2 =
+			    { c2 * A.m.x, s2 * A.m.y };
+			p1 = A.c + p1 ^ r;
+			p2 = A.c + p2 ^ r;
+
+			cairo_arc
+			    ( graph_c,
+			      CONVERT(p1),
+			      A.w * dot_size,
+			      0, 2*M_PI);
+			cairo_fill ( graph_c );
+			cairo_arc
+			    ( graph_c,
+			      CONVERT(p2),
+			      A.w * dot_size,
+			      0, 2*M_PI);
+			cairo_fill ( graph_c );
+		    }
+		}
 		}
 	    }
 
