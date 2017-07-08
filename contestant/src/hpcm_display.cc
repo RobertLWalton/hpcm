@@ -2,7 +2,7 @@
 //
 // File:	hpcm_display.cc
 // Authors:	Bob Walton (walton@deas.harvard.edu)
-// Date:	Fri Jul  7 16:56:49 EDT 2017
+// Date:	Sat Jul  8 03:25:29 EDT 2017
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -26,6 +26,7 @@ using std::cerr;
 using std::cin;
 using std::ws;
 using std::istream;
+using std::ostream;
 using std::ifstream;
 using std::string;
 
@@ -36,6 +37,9 @@ extern "C" {
 #define XK_LATIN1
 #include <X11/keysymdef.h>
 }
+
+bool debug = false;
+# define dout if ( debug ) cerr
 
 const char * const documentation = "\n"
 "hpcm_display [-pdf|-X] [file]\n"
@@ -135,7 +139,7 @@ vector operator ^ ( vector v, double angle )
 string testname;
 
 struct command { command * next; char command; };
-enum width { SMALL, MEDIUM, LARGE };
+enum width { SMALL = 1, MEDIUM = 2, LARGE = 3 };
 struct point : public command
 {
     vector p; // At p.
@@ -174,6 +178,8 @@ void compute_bounds ( void )
     xmin = ymin = DBL_MAX;
     xmax = ymax = DBL_MIN;
 #   define BOUND(v) \
+	 dout << "BOUND " << (v).x << " " << (v).y \
+	      << endl; \
          if ( (v).x < xmin ) xmin = (v).x; \
          if ( (v).x > xmax ) xmax = (v).x; \
          if ( (v).y < ymin ) ymin = (v).y; \
@@ -188,12 +194,14 @@ void compute_bounds ( void )
 	{
 	    point & P = * (point *) c;
 	    BOUND ( P.p );
+	    break;
 	}
 	case 'L':
 	{
 	    line & L = * (line *) c;
 	    BOUND ( L.p1 );
 	    BOUND ( L.p2 );
+	    break;
 	}
 	case 'A':
 	{
@@ -212,12 +220,17 @@ void compute_bounds ( void )
 	    BOUND ( A.c + lr^A.r );
 	    BOUND ( A.c + ur^A.r );
 	    BOUND ( A.c + ul^A.r );
+	    break;
 	}
 	default:
 	    assert ( ! "bounding bad command" );
 	}
     }
 #   undef BOUND
+
+    dout <<  "XMIN " << xmin << " XMAX " << xmax
+         << " YMIN " << ymin << " YMAX " << ymax
+         << endl; 
 }
 
 // Delete first command.
@@ -244,6 +257,56 @@ void delete_command ( void )
     commands = next;
 }
 
+// Print command for debugging.
+//
+ostream & print_command_and_options
+	( ostream & s, char command, width w,
+	  bool dotted = false, bool arrow = false )
+{
+    s << command
+      << ( w == SMALL ? "S" :
+           w == MEDIUM ? "M" :
+           w == LARGE ? "L" :
+                        "W?" )
+      << ( dotted ? "D" : "" )
+      << ( arrow ? "A" : "" );
+    return s;
+}
+//
+ostream & operator << ( ostream & s, const command & c )
+{
+    switch ( c.command )
+    {
+    case 'P':
+    {
+        point & P = * (point *) & c;
+	return print_command_and_options
+	       ( s, P.command, P.w )
+	    << " " << P.p.x << " " << P.p.y;
+    }
+    case 'L':
+    {
+        line & L = * (line *) & c;
+	return print_command_and_options
+	       ( s, L.command, L.w, L.dotted, L.arrow )
+	    << " " << L.p1.x << " " << L.p1.y
+	    << " " << L.p2.x << " " << L.p2.y;
+    }
+    case 'A':
+    {
+        arc & A = * (arc *) & c;
+	return print_command_and_options
+	       ( s, A.command, A.w, A.dotted, A.arrow )
+	    << " " << A.c.x << " " << A.c.y
+	    << " " << A.m.x << " " << A.m.y
+	    << " " << A.r
+	    << " " << A.g.x << " " << A.g.y;
+    }
+    default:
+        return s << "BAD COMMAND " << c.command;
+    }
+}
+
 // Read test case.  Return true if read and false if
 // end of file.
 //
@@ -254,6 +317,14 @@ void bad_modifier ( int c )
          << ": bad modifier `" << (char) c
 	 << "' - ignored" << endl;
 }
+void skip ( istream & in )
+{
+    int c;
+    while ( c = in.peek(),
+            isspace ( c ) && c != '\n' )
+        in.get();
+}
+
 bool read_testcase ( istream & in )
 {
     ++ line_number;
@@ -263,8 +334,17 @@ bool read_testcase ( istream & in )
     while ( commands != NULL )
         delete_command();
         
-    while ( ! in.eof() )
+    bool done = false;
+    while ( ! done )
     {
+        if ( in.eof() )
+	{
+	    cerr << "ERROR after line " << line_number
+	         << "; unexpected end of file"
+		    " - `*' inserted" << endl;
+	    break;
+	}
+	   
 	++ line_number;
 	int errors = 0;
 #	define ERROR(s) { \
@@ -283,10 +363,20 @@ bool read_testcase ( istream & in )
 	    commands = & P;
 	    in >> P.command;
 	    assert ( P.command == 'P' );
+	    P.w = SMALL;
 	    while ( ! isspace ( in.peek() ) )
 	    {
+		int c = in.get();
+	        switch ( c )
+		{
+		case 'S': P.w = SMALL; break;
+		case 'M': P.w = MEDIUM; break;
+		case 'L': P.w = LARGE; break;
+		default:  bad_modifier ( c );
+		}
 	    }
 	    in >> P.p.x >> P.p.y;
+	    break;
 	}
 	case 'L':
 	{
@@ -305,11 +395,13 @@ bool read_testcase ( istream & in )
 		case 'S': L.w = SMALL; break;
 		case 'M': L.w = MEDIUM; break;
 		case 'L': L.w = LARGE; break;
+		case 'D': L.dotted = true; break;
 		case 'A': L.arrow = true; break;
 		default:  bad_modifier ( c );
 		}
 	    }
 	    in >> L.p1.x >> L.p1.y >> L.p2.x >> L.p2.y;
+	    break;
 	}
 	case 'A':
 	{
@@ -328,6 +420,7 @@ bool read_testcase ( istream & in )
 		case 'S': A.w = SMALL; break;
 		case 'M': A.w = MEDIUM; break;
 		case 'L': A.w = LARGE; break;
+		case 'D': A.dotted = true; break;
 		case 'A': A.arrow = true; break;
 		default:  bad_modifier ( c );
 		}
@@ -338,9 +431,26 @@ bool read_testcase ( istream & in )
 	    {
 	        if ( A.m.x <= 0 )
 		    ERROR ( "minor axis < 0" )
-		if ( A.m.x > A.m.y )
+		if ( A.m.x < A.m.y )
 		    ERROR ( "major axis < minor axis" )
 	    }
+	    break;
+	}
+	case '*':
+	{
+	    assert ( in.get() == '*' );
+	    done = true;
+	    break;
+	}
+	default:
+	{
+	    cerr << "ERROR in line " << line_number
+	         << "; cannot understand command `"
+		 << (char) in.peek()
+		 << "' line ignored" << endl;
+	    string line;
+	    getline ( in, line );
+	    continue;
 	}
 	}
 #       undef ERROR
@@ -364,15 +474,17 @@ bool read_testcase ( istream & in )
 	    string extra;
 	    getline ( in, extra );
 	}
-	else if ( in >> ws, in.get() != '\n' )
+	else if ( skip ( in ), in.get() != '\n' )
 	{
 	    cerr << "ERROR in line " << line_number
 		 << ": extra stuff at end of line - ignored"
 		 << endl;
 	    string extra;
 	    getline ( in, extra );
+	    cerr << "STUFF: " << extra << endl;
 	}
     }
+    return true;
 }
 
 // For pdf output, units are 1/72".
@@ -494,6 +606,8 @@ int main ( int argc, char ** argv )
 		if ( e.type == MapNotify ) break;
 	    }
 	}
+        else if ( strncmp ( "deb", name, 3 ) == 0 )
+	    debug = true;
         else if ( strncmp ( "doc", name, 3 ) == 0 )
 	{
 	    // Any -doc* option prints documentation
@@ -666,6 +780,12 @@ int main ( int argc, char ** argv )
 	        - 0.5 * (   graph_height
 		          - ( ymax - ymin ) * yscale );
 
+	    dout << "LEFT " << left
+	         << " XSCALE " << xscale
+	         << " BOTTOM " << bottom
+	         << " YSCALE " << yscale
+		 << endl;
+
 #	    define CONVERT(p) \
 		  left + ((p).x - xmin) * xscale, \
 		  bottom - ((p).y - ymin) * yscale
@@ -718,6 +838,7 @@ int main ( int argc, char ** argv )
 	    for ( command * c = commands; c != NULL;
 	                                  c = c->next )
 	    {
+		dout << "EXECUTE " << * c << endl;
 	        switch ( c->command )
 		{
 		case 'P':
@@ -773,19 +894,19 @@ int main ( int argc, char ** argv )
 		    cairo_matrix_t saved_matrix;
 		    cairo_get_matrix
 		        ( graph_c, & saved_matrix );
-		    cairo_scale
-		        ( graph_c, CONVERT(A.m) );
-		    cairo_rotate
-		        ( graph_c, r );
 		    cairo_translate
 		        ( graph_c, CONVERT(A.c) );
-
-		    vector zero = { 0, 0 };
+		    cairo_rotate
+		        ( graph_c, - r );
+		    cairo_scale
+		        ( graph_c,
+			  0.5 * A.m.x * xscale,
+			  - 0.5 * A.m.y * yscale );
 
 		    cairo_new_path ( graph_c );
 		    cairo_arc
 			( graph_c,
-			  CONVERT(zero),
+			  0, 0,
 			  1, g1, g2 );
 
 		    cairo_set_matrix
@@ -802,9 +923,11 @@ int main ( int argc, char ** argv )
 			double s2 = sin ( g2 );
 			double c2 = cos ( g2 );
 			vector p1 =
-			    { c1 * A.m.x, s1 * A.m.y };
+			    { 0.5 * c1 * A.m.x,
+			      0.5 * s1 * A.m.y };
 			vector p2 =
-			    { c2 * A.m.x, s2 * A.m.y };
+			    { 0.5 * c2 * A.m.x,
+			      0.5 * s2 * A.m.y };
 			p1 = A.c + p1 ^ r;
 			p2 = A.c + p2 ^ r;
 
