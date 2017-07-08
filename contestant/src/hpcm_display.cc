@@ -11,8 +11,8 @@
 #include <iostream>
 #include <iomanip>
 #include <fstream>
+#include <algorithm>
 #include <string>
-#include <vector>
 #include <sstream>
 #include <cstdlib>
 #include <cstring>
@@ -28,6 +28,7 @@ using std::ws;
 using std::istream;
 using std::ostream;
 using std::ifstream;
+using std::min;
 using std::string;
 
 extern "C" {
@@ -123,7 +124,14 @@ vector operator * ( double s, vector v )
     return r;
 }
 
+double operator * ( vector v1, vector v2 )
+{
+    return v1.x * v2.x + v1.y * v2.y;
+}
+
 // Rotate v by angle.
+//
+// WARING: ^ has lower precedence than + or -.
 //
 vector operator ^ ( vector v, double angle )
 {
@@ -216,10 +224,10 @@ void compute_bounds ( void )
 	    vector lr =   d2;
 	    vector ur =   d1;
 	    vector ul = - d2;
-	    BOUND ( A.c + ll^A.r );
-	    BOUND ( A.c + lr^A.r );
-	    BOUND ( A.c + ur^A.r );
-	    BOUND ( A.c + ul^A.r );
+	    BOUND ( A.c + ( ll^A.r ) );
+	    BOUND ( A.c + ( lr^A.r ) );
+	    BOUND ( A.c + ( ur^A.r ) );
+	    BOUND ( A.c + ( ul^A.r ) );
 	    break;
 	}
 	default:
@@ -528,6 +536,40 @@ cairo_status_t write_to_cout
     return CAIRO_STATUS_SUCCESS;
 }
 
+// Drawing data.
+//
+double xscale, yscale, left, bottom;
+double dot_size, line_size;
+cairo_t * graph_c;
+
+# define CONVERT(p) \
+    left + ((p).x - xmin) * xscale, \
+    bottom - ((p).y - ymin) * yscale
+
+// Draw dot at position p with width w.
+//
+void draw_dot ( vector p, width w )
+{
+    cairo_arc
+        ( graph_c, CONVERT(p), w * dot_size, 0, 2*M_PI);
+    cairo_fill ( graph_c );
+}
+
+// Draw dot at position p with direction d and width w.
+//
+void draw_arrow ( vector p, vector d, width w )
+{
+    d = ( 1 / sqrt ( d * d ) ) * d;
+    d = ( min ( xmax - xmin, ymax - ymin ) / 50 ) * d;
+    vector d1 = d^45;
+    vector d2 = d^(-45);
+    cairo_move_to ( graph_c, CONVERT(p-d1) );
+    cairo_line_to ( graph_c, CONVERT(p) );
+    cairo_line_to ( graph_c, CONVERT(p-d2) );
+    cairo_set_line_width ( graph_c, w * line_size );
+    cairo_stroke ( graph_c );
+}
+
 // Main program.
 //
 int main ( int argc, char ** argv )
@@ -673,7 +715,7 @@ int main ( int argc, char ** argv )
     assert (    cairo_status ( title_c )
 	     == CAIRO_STATUS_SUCCESS );
 
-    cairo_t * graph_c = cairo_create ( page );
+    graph_c = cairo_create ( page );
     cairo_set_source_rgb ( graph_c, 0.0, 0.0, 0.0 );
     assert (    cairo_status ( graph_c )
 	     == CAIRO_STATUS_SUCCESS );
@@ -694,7 +736,7 @@ int main ( int argc, char ** argv )
 	    double title_top, title_height, title_width,
 	           graph_top, graph_height,
 		   graph_left, graph_width,
-		   line_size, dot_size, foot_top;
+		   foot_top;
 
 	    if ( display != NULL )
 	    {
@@ -758,9 +800,9 @@ int main ( int argc, char ** argv )
 	    double dy = ymax - ymin;
 	    if ( dx == 0 ) dx = 1;
 	    if ( dy == 0 ) dy = 1;
-	    double xscale =
+	    xscale =
 	        ( graph_width - 4 * line_size ) / dx;
-	    double yscale =
+	    yscale =
 	        ( graph_height - 4 * line_size ) / dy;
 
 	    // Make the scales the same.
@@ -773,10 +815,10 @@ int main ( int argc, char ** argv )
 	    // Compute left and bottom of graph so as
 	    // to center graph.
 	    //
-	    double left = graph_left
+	    left = graph_left
 	        + 0.5 * (   graph_width
 		          - ( xmax - xmin ) * xscale );
-	    double bottom = graph_top + graph_height
+	    bottom = graph_top + graph_height
 	        - 0.5 * (   graph_height
 		          - ( ymax - ymin ) * yscale );
 
@@ -785,10 +827,6 @@ int main ( int argc, char ** argv )
 	         << " BOTTOM " << bottom
 	         << " YSCALE " << yscale
 		 << endl;
-
-#	    define CONVERT(p) \
-		  left + ((p).x - xmin) * xscale, \
-		  bottom - ((p).y - ymin) * yscale
 
 	    // Display test case name.
 	    //
@@ -844,12 +882,7 @@ int main ( int argc, char ** argv )
 		case 'P':
 		{
 		    point & P = * (point *) c;
-		    cairo_arc
-		        ( graph_c,
-			  CONVERT(P.p),
-			  P.w * dot_size,
-			  0, 2*M_PI);
-		    cairo_fill ( graph_c );
+		    draw_dot ( P.p, P.w );
 		    break;
 		}
 		case 'L':
@@ -868,19 +901,12 @@ int main ( int argc, char ** argv )
 
 		    if ( L.dotted )
 		    {
-			cairo_arc
-			    ( graph_c,
-			      CONVERT(L.p1),
-			      L.w * dot_size,
-			      0, 2*M_PI);
-			cairo_fill ( graph_c );
-			cairo_arc
-			    ( graph_c,
-			      CONVERT(L.p2),
-			      L.w * dot_size,
-			      0, 2*M_PI);
-			cairo_fill ( graph_c );
+			draw_dot ( L.p1, L.w );
+			draw_dot ( L.p2, L.w );
 		    }
+		    if ( L.arrow )
+			draw_arrow
+			    ( L.p2, L.p2 - L.p1, L.w );
 		    break;
 		}
 		case 'A':
@@ -928,21 +954,25 @@ int main ( int argc, char ** argv )
 			vector p2 =
 			    { 0.5 * c2 * A.m.x,
 			      0.5 * s2 * A.m.y };
-			p1 = A.c + p1 ^ r;
-			p2 = A.c + p2 ^ r;
+			p1 = A.c + ( p1 ^ A.r );
+			p2 = A.c + ( p2 ^ A.r );
 
-			cairo_arc
-			    ( graph_c,
-			      CONVERT(p1),
-			      A.w * dot_size,
-			      0, 2*M_PI);
-			cairo_fill ( graph_c );
-			cairo_arc
-			    ( graph_c,
-			      CONVERT(p2),
-			      A.w * dot_size,
-			      0, 2*M_PI);
-			cairo_fill ( graph_c );
+			draw_dot ( p1, A.w );
+			draw_dot ( p2, A.w );
+		    }
+		    if ( A.arrow )
+		    {
+			double s = sin ( g2 );
+			double c = cos ( g2 );
+			vector p =
+			    { 0.5 * c * A.m.x,
+			      0.5 * s * A.m.y };
+			vector v =
+			    { - 0.5 * s * A.m.x,
+			      0.5 * c * A.m.y };
+			p = A.c + ( p ^ A.r );
+			v = v ^ A.r;
+			draw_arrow ( p, v, A.w );
 		    }
 		}
 		}
