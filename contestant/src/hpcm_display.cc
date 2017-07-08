@@ -2,7 +2,7 @@
 //
 // File:	hpcm_display.cc
 // Authors:	Bob Walton (walton@deas.harvard.edu)
-// Date:	Sat Jul  8 03:25:29 EDT 2017
+// Date:	Sat Jul  8 10:09:41 EDT 2017
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -29,6 +29,7 @@ using std::istream;
 using std::ostream;
 using std::ifstream;
 using std::min;
+using std::max;
 using std::string;
 
 extern "C" {
@@ -43,7 +44,7 @@ bool debug = false;
 # define dout if ( debug ) cerr
 
 const char * const documentation = "\n"
-"hpcm_display [-pdf|-X] [file]\n"
+"hpcm_display [-pdf|-X] [-debug] [file]\n"
 "\n"
 "    This program displays line drawings defined\n"
 "    in the given file or standard input.  The file\n"
@@ -52,41 +53,57 @@ const char * const documentation = "\n"
 "    containing just `*'.\n"
 "\n"
 "    The display commands are chosen from among the\n"
-"    following, where * denotes one or more\n"
+"    following, where + denotes one or more\n"
 "    qualifiers, and lower case letters denote para-\n"
 "    meters:\n"
 "\n"
-"        P* x y\n"
+"        P+ x y\n"
 "            Display a point at (x,y).  Qualifiers:\n"
-"                S = small (default)\n"
-"                M = medium\n"
-"                L = large\n"
+"              S = small (default)\n"
+"              M = medium\n"
+"              L = large\n"
 "\n"
-"        L* x1 y1 x2 y2\n"
+"        L+ x1 y1 x2 y2\n"
 "            Display a line from (x1,y1) to (x2,y2).\n"
 "            Qualifiers:\n"
-"                S = small width (default)\n"
-"                M = medium width\n"
-"                L = large width\n"
-"                D = put dots on ends\n"
-"                A = put arrow head at (x2,y2) end\n"
+"              S = small width (default)\n"
+"              M = medium width\n"
+"              L = large width\n"
+"              D = put dot on end(s)\n"
+"              F = put forward arrow head at end(s)\n"
+"              R = put rearward arrow head at end(s)\n"
+"              B = put last dot or arrow head only at\n"
+"                  beginning of oriented line\n"
+"              E = put last dot or arrow head only at\n"
+"                  end of oriented line\n"
 "\n"
-"        A* x y a b r g1 g2\n"
-"            Display elliptical arc centered at (x,y)\n"
-"            with ellipse major axis a and minor axis\n"
-"            b, all rotated by angle r.  The angles\n"
-"            g1 and g2 bound the arc ends before rota-\n"
-"            tion by r.  Angles are in degrees\n"
-"            counter-clockwise.\n"
+"        A+ x y xa ya r g1 g2\n"
+"            Display elliptical arc centered at (x,y).\n"
+"            The ellipse is first drawn with axes\n"
+"            parallel to the x- and y-axes; with x\n"
+"            axis xa and y axis ya.  Then the ellipse\n"
+"            is rotated by angle r.  The angles\n"
+"            g1 and g2 bound the arc ends before\n"
+"            rotation by r.  Angles are in degrees.\n"
+"            If g1 < g2 the arc goes counter-clock-\n"
+"            wise; if g2 < g1 the arc goes clockwise.\n"
+"            Any integer multiple of 360 added to\n"
+"            BOTH g1 and g2 does not affect the\n"
+"            result.\n"
 "\n"
 "            For circular arc use a = b, r = 0.\n"
 "            For entire ellipse use g1 = 0, g2 = 360.\n"
 "            Qualifiers:\n"
-"                S = small width (default)\n"
-"                M = medium width\n"
-"                L = large width\n"
-"                D = put dots on ends\n"
-"                A = put arrow head at g2 end\n"
+"              S = small width (default)\n"
+"              M = medium width\n"
+"              L = large width\n"
+"              D = put dot on end(s)\n"
+"              F = put forward arrow head at end(s)\n"
+"              R = put rearward arrow head at end(s)\n"
+"              B = put last dot or arrow head only at\n"
+"                  beginning of oriented arc\n"
+"              E = put last dot or arrow head only at\n"
+"                  end of oriented arc\n"
 "\n"
 "    With the -pdf option, pdf is written to\n"
 "    the standard output.\n"
@@ -148,27 +165,31 @@ string testname;
 
 struct command { command * next; char command; };
 enum width { SMALL = 1, MEDIUM = 2, LARGE = 3 };
+enum head { NEITHER = 0, BEGIN = 1, END = 2, BOTH = 3 };
+struct qualifiers
+{
+    width w;
+    head dot;
+    head forward;
+    head rearward;
+};
 struct point : public command
 {
     vector p; // At p.
-    width w;
+    qualifiers q;
 };
 struct line : public command
 {
     vector p1, p2;  // From p1 to p2.
-    width w;
-    bool dotted;
-    bool arrow;
+    qualifiers q;
 };
 struct arc : public command
 {
     vector c;  // Center.
-    vector m;  // (major axis, minor axis)
+    vector a;  // (x axis, y axis )
     double r;
     vector g;  // (g1,g2)
-    width w;
-    bool dotted;
-    bool arrow;
+    qualifiers q;
 };
 
 // List of all commands:
@@ -218,7 +239,7 @@ void compute_bounds ( void )
 	    // and bound the corners.
 	    //
 	    arc & A = * (arc *) c;
-	    vector d1 = 0.5 * A.m;
+	    vector d1 = 0.5 * A.a;
 	    vector d2 = { d1.x, - d1.y };
 	    vector ll = - d1;
 	    vector lr =   d2;
@@ -267,17 +288,30 @@ void delete_command ( void )
 
 // Print command for debugging.
 //
-ostream & print_command_and_options
-	( ostream & s, char command, width w,
-	  bool dotted = false, bool arrow = false )
+ostream & print_command_and_qualifiers
+	( ostream & s, char command,
+	  const qualifiers & q )
 {
     s << command
-      << ( w == SMALL ? "S" :
-           w == MEDIUM ? "M" :
-           w == LARGE ? "L" :
-                        "W?" )
-      << ( dotted ? "D" : "" )
-      << ( arrow ? "A" : "" );
+      << ( q.w == SMALL ?  "S" :
+           q.w == MEDIUM ? "M" :
+           q.w == LARGE ?  "L" :
+                           "W?" )
+      << ( q.dot == NEITHER ? "" :
+           q.dot == BEGIN ?   "DB" :
+           q.dot == END ?     "DE" :
+           q.dot == BOTH ?    "D" :
+	                      "D?" )
+      << ( q.forward == NEITHER ? "" :
+           q.forward == BEGIN ?   "FB" :
+           q.forward == END ?     "FE" :
+           q.forward == BOTH ?    "F" :
+	                          "F?" )
+      << ( q.rearward == NEITHER ? "" :
+           q.rearward == BEGIN ?   "RB" :
+           q.rearward == END ?     "RE" :
+           q.rearward == BOTH ?    "R" :
+	                           "R?" );
     return s;
 }
 //
@@ -288,25 +322,25 @@ ostream & operator << ( ostream & s, const command & c )
     case 'P':
     {
         point & P = * (point *) & c;
-	return print_command_and_options
-	       ( s, P.command, P.w )
+	return print_command_and_qualifiers
+	       ( s, P.command, P.q )
 	    << " " << P.p.x << " " << P.p.y;
     }
     case 'L':
     {
         line & L = * (line *) & c;
-	return print_command_and_options
-	       ( s, L.command, L.w, L.dotted, L.arrow )
+	return print_command_and_qualifiers
+	       ( s, L.command, L.q )
 	    << " " << L.p1.x << " " << L.p1.y
 	    << " " << L.p2.x << " " << L.p2.y;
     }
     case 'A':
     {
         arc & A = * (arc *) & c;
-	return print_command_and_options
-	       ( s, A.command, A.w, A.dotted, A.arrow )
+	return print_command_and_qualifiers
+	       ( s, A.command, A.q )
 	    << " " << A.c.x << " " << A.c.y
-	    << " " << A.m.x << " " << A.m.y
+	    << " " << A.a.x << " " << A.a.y
 	    << " " << A.r
 	    << " " << A.g.x << " " << A.g.y;
     }
@@ -319,11 +353,74 @@ ostream & operator << ( ostream & s, const command & c )
 // end of file.
 //
 int line_number = 0;
-void bad_modifier ( int c )
+
+void read_qualifiers
+    ( istream & in,
+      qualifiers & q, bool heads_allowed = true )
 {
-    cerr << "ERROR in line " << line_number
-         << ": bad modifier `" << (char) c
-	 << "' - ignored" << endl;
+    head * last_head = NULL;
+    q.w = SMALL;
+    q.dot = NEITHER;
+    q.forward = NEITHER;
+    q.rearward = NEITHER;
+    while ( ! isspace ( in.peek() ) )
+    {
+	int c = in.get();
+	bool found = true;
+	switch ( c )
+	{
+	case 'S': q.w = SMALL;
+	          break;
+	case 'M': q.w = MEDIUM;
+	          break;
+	case 'L': q.w = LARGE;
+	          break;
+	default:  found = false;
+	}
+	if ( ! found && heads_allowed )
+	{
+	    found = true;
+	    switch ( c )
+	    {
+	    case 'D': q.dot = BOTH;
+		      last_head = & q.dot;
+		      break;
+	    case 'F': q.forward = BOTH;
+		      last_head = & q.forward;
+		      break;
+	    case 'R': q.rearward = BOTH;
+		      last_head = & q.rearward;
+		      break;
+	    case 'B':
+	    case 'E':
+		      if ( last_head == NULL )
+			  cerr << "ERROR in line "
+			       << line_number
+			       << ": no preceeding"
+			          " D, F, or R - `"
+			       << (char) c
+			       << "' ignored" << endl;
+		      else if ( * last_head != BOTH )
+			  cerr << "ERROR in line "
+			       << line_number
+			       << ": B and E conflict"
+			          " - `"
+			       << (char) c
+			       << "' ignored" << endl;
+		      else
+			  * last_head =
+			      ( c == 'B' ? BEGIN
+			                 : END );
+		      break;
+	    default:  found = false;  
+	    }
+	}
+
+	if ( ! found )
+	    cerr << "ERROR in line " << line_number
+		 << ": unknown qualifer `" << (char) c
+		 << "' - ignored" << endl;
+    }
 }
 void skip ( istream & in )
 {
@@ -332,7 +429,6 @@ void skip ( istream & in )
             isspace ( c ) && c != '\n' )
         in.get();
 }
-
 bool read_testcase ( istream & in )
 {
     ++ line_number;
@@ -371,18 +467,7 @@ bool read_testcase ( istream & in )
 	    commands = & P;
 	    in >> P.command;
 	    assert ( P.command == 'P' );
-	    P.w = SMALL;
-	    while ( ! isspace ( in.peek() ) )
-	    {
-		int c = in.get();
-	        switch ( c )
-		{
-		case 'S': P.w = SMALL; break;
-		case 'M': P.w = MEDIUM; break;
-		case 'L': P.w = LARGE; break;
-		default:  bad_modifier ( c );
-		}
-	    }
+	    read_qualifiers ( in, P.q, false );
 	    in >> P.p.x >> P.p.y;
 	    break;
 	}
@@ -393,21 +478,7 @@ bool read_testcase ( istream & in )
 	    commands = & L;
 	    in >> L.command;
 	    assert ( L.command == 'L' );
-	    L.w = SMALL;
-	    L.arrow = false;
-	    while ( ! isspace ( in.peek() ) )
-	    {
-		int c = in.get();
-	        switch ( c )
-		{
-		case 'S': L.w = SMALL; break;
-		case 'M': L.w = MEDIUM; break;
-		case 'L': L.w = LARGE; break;
-		case 'D': L.dotted = true; break;
-		case 'A': L.arrow = true; break;
-		default:  bad_modifier ( c );
-		}
-	    }
+	    read_qualifiers ( in, L.q );
 	    in >> L.p1.x >> L.p1.y >> L.p2.x >> L.p2.y;
 	    break;
 	}
@@ -418,29 +489,15 @@ bool read_testcase ( istream & in )
 	    commands = & A;
 	    in >> A.command;
 	    assert ( A.command == 'A' );
-	    A.w = SMALL;
-	    A.arrow = false;
-	    while ( ! isspace ( in.peek() ) )
-	    {
-		int c = in.get();
-	        switch ( c )
-		{
-		case 'S': A.w = SMALL; break;
-		case 'M': A.w = MEDIUM; break;
-		case 'L': A.w = LARGE; break;
-		case 'D': A.dotted = true; break;
-		case 'A': A.arrow = true; break;
-		default:  bad_modifier ( c );
-		}
-	    }
-	    in >> A.c.x >> A.c.y >> A.m.x >> A.m.y
+	    read_qualifiers ( in, A.q );
+	    in >> A.c.x >> A.c.y >> A.a.x >> A.a.y
 	       >> A.r >> A.g.x >> A.g.y;
 	    if ( in.good() )
 	    {
-	        if ( A.m.x <= 0 )
-		    ERROR ( "minor axis < 0" )
-		if ( A.m.x < A.m.y )
-		    ERROR ( "major axis < minor axis" )
+	        if ( A.a.x <= 0 )
+		    ERROR ( "x axis < 0" )
+	        if ( A.a.y <= 0 )
+		    ERROR ( "y axis < 0" )
 	    }
 	    break;
 	}
@@ -485,7 +542,8 @@ bool read_testcase ( istream & in )
 	else if ( skip ( in ), in.get() != '\n' )
 	{
 	    cerr << "ERROR in line " << line_number
-		 << ": extra stuff at end of line - ignored"
+		 << ": extra stuff at end of line"
+		    " - ignored"
 		 << endl;
 	    string extra;
 	    getline ( in, extra );
@@ -882,7 +940,7 @@ int main ( int argc, char ** argv )
 		case 'P':
 		{
 		    point & P = * (point *) c;
-		    draw_dot ( P.p, P.w );
+		    draw_dot ( P.p, P.q.w );
 		    break;
 		}
 		case 'L':
@@ -896,17 +954,29 @@ int main ( int argc, char ** argv )
 			  CONVERT(L.p2) );
 		    cairo_set_line_width
 			( graph_c,
-			  L.w * line_size );
+			  L.q.w * line_size );
 		    cairo_stroke ( graph_c );
 
-		    if ( L.dotted )
-		    {
-			draw_dot ( L.p1, L.w );
-			draw_dot ( L.p2, L.w );
-		    }
-		    if ( L.arrow )
+		    if ( L.q.dot & BEGIN )
+			draw_dot ( L.p1, L.q.w );
+		    if ( L.q.dot & END )
+			draw_dot ( L.p2, L.q.w );
+		    if ( L.q.forward & BEGIN )
 			draw_arrow
-			    ( L.p2, L.p2 - L.p1, L.w );
+			    ( L.p1, L.p2 - L.p1,
+			      L.q.w );
+		    if ( L.q.forward & END )
+			draw_arrow
+			    ( L.p2, L.p2 - L.p1,
+			      L.q.w );
+		    if ( L.q.rearward & BEGIN )
+			draw_arrow
+			    ( L.p1, L.p1 - L.p2,
+			      L.q.w );
+		    if ( L.q.rearward & END )
+			draw_arrow
+			    ( L.p2, L.p1 - L.p2,
+			      L.q.w );
 		    break;
 		}
 		case 'A':
@@ -926,54 +996,60 @@ int main ( int argc, char ** argv )
 		        ( graph_c, - r );
 		    cairo_scale
 		        ( graph_c,
-			  0.5 * A.m.x * xscale,
-			  - 0.5 * A.m.y * yscale );
+			  0.5 * A.a.x * xscale,
+			  - 0.5 * A.a.y * yscale );
 
 		    cairo_new_path ( graph_c );
 		    cairo_arc
 			( graph_c,
-			  0, 0,
-			  1, g1, g2 );
+			  0, 0, 1,
+			  min ( g1, g2 ),
+			  max ( g1, g2 ) );
 
 		    cairo_set_matrix
 		        ( graph_c, & saved_matrix );
 		    cairo_set_line_width
 			( graph_c,
-			  A.w * line_size );
+			  A.q.w * line_size );
 		    cairo_stroke ( graph_c );
 
-		    if ( A.dotted )
-		    {
-			double s1 = sin ( g1 );
-			double c1 = cos ( g1 );
-			double s2 = sin ( g2 );
-			double c2 = cos ( g2 );
-			vector p1 =
-			    { 0.5 * c1 * A.m.x,
-			      0.5 * s1 * A.m.y };
-			vector p2 =
-			    { 0.5 * c2 * A.m.x,
-			      0.5 * s2 * A.m.y };
-			p1 = A.c + ( p1 ^ A.r );
-			p2 = A.c + ( p2 ^ A.r );
+		    double s1 = sin ( g1 );
+		    double c1 = cos ( g1 );
+		    double s2 = sin ( g2 );
+		    double c2 = cos ( g2 );
+		    vector p1 =
+			{ 0.5 * c1 * A.a.x,
+			  0.5 * s1 * A.a.y };
+		    vector d1 =
+			{ - 0.5 * s1 * A.a.x,
+			    0.5 * c1 * A.a.y };
+		    vector p2 =
+			{ 0.5 * c2 * A.a.x,
+			  0.5 * s2 * A.a.y };
+		    vector d2 =
+			{ - 0.5 * s2 * A.a.x,
+			    0.5 * c2 * A.a.y };
+		    p1 = A.c + ( p1 ^ A.r );
+		    p2 = A.c + ( p2 ^ A.r );
+		    d1 = d1 ^ A.r;
+		    d2 = d2 ^ A.r;
 
-			draw_dot ( p1, A.w );
-			draw_dot ( p2, A.w );
-		    }
-		    if ( A.arrow )
-		    {
-			double s = sin ( g2 );
-			double c = cos ( g2 );
-			vector p =
-			    { 0.5 * c * A.m.x,
-			      0.5 * s * A.m.y };
-			vector v =
-			    { - 0.5 * s * A.m.x,
-			      0.5 * c * A.m.y };
-			p = A.c + ( p ^ A.r );
-			v = v ^ A.r;
-			draw_arrow ( p, v, A.w );
-		    }
+		    if ( A.q.dot & BEGIN )
+			draw_dot ( p1, A.q.w );
+		    if ( A.q.dot & END )
+			draw_dot ( p2, A.q.w );
+		    if ( A.q.forward & BEGIN )
+			draw_arrow
+			    ( p1, d1, A.q.w );
+		    if ( A.q.forward & END )
+			draw_arrow
+			    ( p2, d2, A.q.w );
+		    if ( A.q.rearward & BEGIN )
+			draw_arrow
+			    ( p1, - d1, A.q.w );
+		    if ( A.q.rearward & END )
+			draw_arrow
+			    ( p2, - d2, A.q.w );
 		}
 		}
 	    }
