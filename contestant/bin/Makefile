@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Oct 21 04:56:40 EDT 2016
+# Date:		Sat Jul  8 15:31:48 EDT 2017
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -17,8 +17,11 @@
 
 all:	pdf \
         hpcm_sandbox hpcm_sendmail hpcm_finish \
+        hpcm_display \
         hpcm_display_graph \
-	hpcm_display_segments modes
+	hpcm_display_segments \
+        hpcm_display_polygon \
+	modes
 
 # Kill all implicit rules
 #
@@ -47,6 +50,12 @@ hpcm_finish:	../../secure/src/hpcm_finish.c
 	chmod 555 hpcm_finish
 	chmod u+s hpcm_finish
 
+hpcm_display:	../src/hpcm_display.cc
+	rm -f hpcm_display
+	(cd ../src; make hpcm_display)
+	cp -p ../src/hpcm_display .
+	chmod 555 hpcm_display
+
 hpcm_display_graph:	../src/hpcm_display_graph.cc
 	rm -f hpcm_display_graph
 	(cd ../src; make hpcm_display_graph)
@@ -58,6 +67,12 @@ hpcm_display_segments:	../src/hpcm_display_segments.cc
 	(cd ../src; make hpcm_display_segments)
 	cp -p ../src/hpcm_display_segments .
 	chmod 555 hpcm_display_segments
+
+hpcm_display_polygon:	../src/hpcm_display_polygon.cc
+	rm -f hpcm_display_polygon
+	(cd ../src; make hpcm_display_polygon)
+	cp -p ../src/hpcm_display_polygon .
+	chmod 555 hpcm_display_polygon
 
 modes:
 	chmod a+rx . TRASH_ACCOUNT SETUP_PROTOTYPE \

@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Oct 21 05:11:20 EDT 2016
+# Date:		Sat Jul  8 15:37:23 EDT 2017
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -27,8 +27,11 @@ all:	scorediff grant_access \
 	filtered_diff email_diff hpcm_helper \
 	hpcm_submit hpcm_test startup_helper \
 	elinks_helper elinks_startup_message \
-	help printer_pipe hpcm_display_graph \
+	help printer_pipe \
+	hpcm_display \
+	hpcm_display_graph \
 	hpcm_display_segments \
+	hpcm_display_polygon \
 	jdebug ldebug hpcm_less pdf
 
 # Kill all implicit rules
@@ -155,11 +158,17 @@ chkpage:	../src/chkpage.c
 printer_pipe:
 	ln -s ../../contestant/bin/printer_pipe .
 
+hpcm_display:
+	ln -s ../../contestant/bin/hpcm_display .
+
 hpcm_display_graph:
 	ln -s ../../contestant/bin/hpcm_display_graph .
 
 hpcm_display_segments:
 	ln -s ../../contestant/bin/hpcm_display_segments .
+
+hpcm_display_polygon:
+	ln -s ../../contestant/bin/hpcm_display_polygon .
 
 jdebug:
 	ln -s ../../contestant/bin/jdebug .

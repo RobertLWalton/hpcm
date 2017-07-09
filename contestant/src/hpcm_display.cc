@@ -2,7 +2,7 @@
 //
 // File:	hpcm_display.cc
 // Authors:	Bob Walton (walton@deas.harvard.edu)
-// Date:	Sat Jul  8 10:09:41 EDT 2017
+// Date:	Sun Jul  9 05:33:58 EDT 2017
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -81,15 +81,15 @@ const char * const documentation = "\n"
 "            Display elliptical arc centered at (x,y).\n"
 "            The ellipse is first drawn with axes\n"
 "            parallel to the x- and y-axes; with x\n"
-"            axis xa and y axis ya.  Then the ellipse\n"
-"            is rotated by angle r.  The angles\n"
-"            g1 and g2 bound the arc ends before\n"
-"            rotation by r.  Angles are in degrees.\n"
-"            If g1 < g2 the arc goes counter-clock-\n"
-"            wise; if g2 < g1 the arc goes clockwise.\n"
-"            Any integer multiple of 360 added to\n"
-"            BOTH g1 and g2 does not affect the\n"
-"            result.\n"
+"            semi-axis xa and y semi-axis ya.  Then\n"
+"            the ellipse is rotated by angle r.  The\n"
+"            angles g1 and g2 bound the arc ends\n"
+"            before rotation by r.  Angles are in\n"
+"            degrees. If g1 < g2 the arc goes\n"
+"            counter-clock-wise; if g2 < g1 the arc\n"
+"            goes clockwise. Any integer multiple of\n"
+"            360 added to BOTH g1 and g2 does not\n"
+"            affect the result.\n"
 "\n"
 "            For circular arc use a = b, r = 0.\n"
 "            For entire ellipse use g1 = 0, g2 = 360.\n"
@@ -239,7 +239,7 @@ void compute_bounds ( void )
 	    // and bound the corners.
 	    //
 	    arc & A = * (arc *) c;
-	    vector d1 = 0.5 * A.a;
+	    vector d1 = A.a;
 	    vector d2 = { d1.x, - d1.y };
 	    vector ll = - d1;
 	    vector lr =   d2;
@@ -495,9 +495,9 @@ bool read_testcase ( istream & in )
 	    if ( in.good() )
 	    {
 	        if ( A.a.x <= 0 )
-		    ERROR ( "x axis < 0" )
+		    ERROR ( "x semi-axis < 0" )
 	        if ( A.a.y <= 0 )
-		    ERROR ( "y axis < 0" )
+		    ERROR ( "y semi-axis < 0" )
 	    }
 	    break;
 	}
@@ -996,8 +996,8 @@ int main ( int argc, char ** argv )
 		        ( graph_c, - r );
 		    cairo_scale
 		        ( graph_c,
-			  0.5 * A.a.x * xscale,
-			  - 0.5 * A.a.y * yscale );
+			  A.a.x * xscale,
+			  - A.a.y * yscale );
 
 		    cairo_new_path ( graph_c );
 		    cairo_arc
@@ -1018,17 +1018,17 @@ int main ( int argc, char ** argv )
 		    double s2 = sin ( g2 );
 		    double c2 = cos ( g2 );
 		    vector p1 =
-			{ 0.5 * c1 * A.a.x,
-			  0.5 * s1 * A.a.y };
+			{ c1 * A.a.x,
+			  s1 * A.a.y };
 		    vector d1 =
-			{ - 0.5 * s1 * A.a.x,
-			    0.5 * c1 * A.a.y };
+			{ - s1 * A.a.x,
+			    c1 * A.a.y };
 		    vector p2 =
-			{ 0.5 * c2 * A.a.x,
-			  0.5 * s2 * A.a.y };
+			{ c2 * A.a.x,
+			  s2 * A.a.y };
 		    vector d2 =
-			{ - 0.5 * s2 * A.a.x,
-			    0.5 * c2 * A.a.y };
+			{ - s2 * A.a.x,
+			    c2 * A.a.y };
 		    p1 = A.c + ( p1 ^ A.r );
 		    p2 = A.c + ( p2 ^ A.r );
 		    d1 = d1 ^ A.r;
