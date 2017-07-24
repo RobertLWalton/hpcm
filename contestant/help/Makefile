@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Oct 11 11:06:18 EDT 2016
+# Date:		Mon Jul 24 16:47:08 EDT 2017
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -68,7 +68,8 @@ WEB = ""
 
 acm_contest_help_index: \
     OPTIONS = acm_contest_help_index \
-              contest/acm_contest accounts general
+              contest/acm_contest \
+	      accounts general practice
 algorithm_festival_help_index: \
     OPTIONS = algorithm_festival_help_index \
               contest/algorithm_festival accounts general
@@ -95,7 +96,7 @@ lsp_help_index: \
 
 all_help_index: \
     OPTIONS = all_help_index \
-              contest language accounts general
+              contest language accounts general practice
 
 
 # If we replace %_demos_index by %demos_index we get
