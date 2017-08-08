@@ -6,7 +6,7 @@
 #
 # File:		makecontest
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Oct 21 04:29:57 EDT 2016
+# Date:		Tue Aug  8 14:55:20 EDT 2017
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -1302,6 +1302,7 @@ set bin_option				no
 set test_submissions_option		no
 set home_option				no
 set problems_option			no
+set practice_option			no
 set demos_option			no
 set demos_solutions_option		no
 set description_option			no
@@ -1311,6 +1312,7 @@ set this_contest_option			no
 set mail_option				no
 set print_files_option			no
 set problems_solution_files_option	no
+set practice_solution_files_option	no
 set demos_solution_files_option		no
 set secure_option			no
 set ssh_option				no
@@ -1346,6 +1348,7 @@ while { $argi < $argc } {
 	    set mail_option			yes
 	    set print_files_option		yes
 	    set problems_solution_files_option	yes
+	    set practice_solution_files_option	yes
 	    set demos_solution_files_option	yes
 	    set secure_option			yes
 	    set procmailrc_option		yes
@@ -1363,6 +1366,7 @@ while { $argi < $argc } {
 	    set mail_option			yes
 	    set print_files_option		yes
 	    set problems_solution_files_option	yes
+	    set practice_solution_files_option	yes
 	    set demos_solution_files_option	yes
 	    set procmailrc_option		yes
 	    set judging_commands_option		yes
@@ -1381,6 +1385,7 @@ while { $argi < $argc } {
 	    set mail_option			yes
 	    set print_files_option		yes
 	    set problems_solution_files_option	yes
+	    set practice_solution_files_option	yes
 	    set demos_solution_files_option	yes
 	    set secure_option			yes
 	    set procmailrc_option		yes
@@ -1391,6 +1396,7 @@ while { $argi < $argc } {
 	    set scoreboard_commands_option	yes
 	    set make_test_option		yes
 	    set problems_option			yes
+	    set practice_option			yes
 	    set demos_option			yes
 	    set demos_solutions_option		yes
 	}
@@ -1406,6 +1412,7 @@ while { $argi < $argc } {
 	    set mail_option			yes
 	    set print_files_option		yes
 	    set problems_solution_files_option	yes
+	    set practice_solution_files_option	yes
 	    set demos_solution_files_option	yes
 	    set secure_option			yes
 	    set procmailrc_option		yes
@@ -1426,6 +1433,7 @@ while { $argi < $argc } {
 	    set test_submissions_option	yes }
 	-home		{ set home_option	yes }
 	-problems	{ set problems_option	yes }
+	-practice	{ set practice_option	yes }
 	-demos		{ set demos_option	yes }
 	-demos_solutions {
 	    set demos_solutions_option		yes
@@ -1440,6 +1448,10 @@ while { $argi < $argc } {
 	-print_files	{ set print_files_option yes }
 	-problems_solution_files {
 	    set problems_solution_files_option	yes
+	    set solutions_option		yes
+	}
+	-practice_solution_files {
+	    set practice_solution_files_option	yes
 	    set solutions_option		yes
 	}
 	-demos_solution_files {
@@ -1566,6 +1578,7 @@ if {    $contest_option \
      || $test_submissions_option \
      || $home_option \
      || $problems_option \
+     || $practice_option \
      || $demos_option \
      || $help_option \
      || $help2_option \
@@ -1787,6 +1800,7 @@ proc make_substitutions { name } {
 #			listed here.
 #   demos_index_chs	Ditto for help/demos file.
 #   problems_index_chs	Ditto for help/problems file.
+#   practice_index_chs	Ditto for help/practice file.
 #   option_array	option substitutions
 #			(see above)
 #   substitutions	filename substitutions
@@ -1794,6 +1808,7 @@ proc make_substitutions { name } {
 #   info_option		options
 #   solutions_option
 #   problems_option
+#   practice_option
 #   demos_option
 #   help_option
 #   j_d			directory names
@@ -1807,7 +1822,7 @@ proc get_index_chs { targetdir } {
 
     global info_option help_option j_d c_d \
 	   help_index_chs problems_index_chs \
-	   demos_index_chs
+	   practice_index_chs demos_index_chs
 
     set chs ""
     if { $info_option || $help_option } {
@@ -1816,6 +1831,8 @@ proc get_index_chs { targetdir } {
 			  set head "Help Index" }
 	problems	{ set file problems
 			  set head "Problems Index" }
+	practice	{ set file practice
+			  set head "Practice Index" }
 	demos		{ set file demos
 			  set head "Demos Index" }
 	}
@@ -1998,13 +2015,15 @@ proc process_index_specification {} {
 
     global index_file index_directory \
 	   help_index_chs problems_index_chs \
-	   demos_index_chs \
+	   practice_index_chs demos_index_chs \
 	   help_print_files problems_print_files \
-	   demos_print_files \
+	   practice_print_files demos_print_files \
 	   problems_solution_files \
+	   practice_solution_files \
 	   demos_solution_files \
 	   info_option solutions_option \
-	   problems_option demos_option \
+	   problems_option practice_option \
+	   demos_option \
 	   help_option description_option \
 	   j_d c_d \
 	   problem_description_files \
@@ -2065,6 +2084,7 @@ proc process_index_specification {} {
     set help_header_used	no
     set demos_header_used	no
     set problems_header_used	no
+    set practice_header_used	no
 
     # Switches to tell if any items have been written
     # into the various indices.
@@ -2072,6 +2092,7 @@ proc process_index_specification {} {
     set help_index_written	no
     set demos_index_written	no
     set problems_index_written	no
+    set practice_index_written	no
 
     while { "yes" } {
 
@@ -2147,14 +2168,15 @@ proc process_index_specification {} {
 		# is the first component of the name
 		# $target, and has no /'s.
 		#
-		# Targetdir must == `help', `demos', or
-		# `problems'.
+		# Targetdir must == `help', `demos',
+		# `problems', or `practice'.
 		#
 		if { ! [regexp {^([^/]*)/+([^/].*)$} \
 			       $target forget \
 			       targetdir targettail] \
 		     || ! [lcontain \
-			     {help demos problems} \
+			     {help demos problems \
+			                 practice} \
 			     $targetdir] } {
 		    error "Bad item name directory\
 			   after substitution: $target"
@@ -2397,7 +2419,8 @@ proc process_index_specification {} {
 		# Process solutions option.
 		#
 		if {    $solutions_option \
-		     && [lcontain {problems demos} \
+		     && [lcontain {problems practice \
+		                   demos} \
 				  $targetdir] \
 		     && ( [lcontain $options solution] \
 			  || \
@@ -2436,7 +2459,8 @@ proc process_index_specification {} {
 		} else {
 		    set t $j_d/contest/$target
 		}
-		if {    [lcontain {problems demos} \
+		if {    [lcontain {problems practice \
+		                            demos} \
 				  $targetdir] \
 		     && [file exists $s] } {
 		    set print_target \
@@ -2459,7 +2483,7 @@ proc process_index_specification {} {
 			    $print_target
 		}
 
-		# Add to problems solution file list.
+		# Add to XXX solution file list.
 		#
 		if { [file isdirectory $source] } {
 		    foreach f $solution_files {
@@ -2467,6 +2491,11 @@ proc process_index_specification {} {
 			      == "problems" } {
 			    lappend \
 			      problems_solution_files \
+			      solutions/$targettail/$f
+			 } elseif {    $targetdir \
+				    == "practice" } {
+			    lappend \
+			      practice_solution_files \
 			      solutions/$targettail/$f
 			 } elseif {    $targetdir \
 				    == "demos" } {
@@ -2513,6 +2542,7 @@ proc process_index_specification {} {
 	    set help_header_used	no
 	    set demos_header_used	no
 	    set problems_header_used	no
+	    set practice_header_used	no
 
 	} elseif { $in_item } {
 
@@ -2528,7 +2558,7 @@ proc process_index_specification {} {
     # lines to separate this input index file's entries
     # from those of the next input index file.
     #
-    foreach dir {help problems demos} {
+    foreach dir {help problems practice demos} {
 	if { [set ${dir}_index_written] } {
 	    foreach ch [set ${dir}_index_chs] {
 		puts $ch ""
@@ -2556,8 +2586,8 @@ proc process_index_specification {} {
 	$default_excluded_files
 }
 
-# Set up info+, solutions+, problems+, demos+, and
-# help+ directories.
+# Set up info+, solutions+, problems+, practice+,
+# demos+, and help+ directories.
 #
 if { $info_option } {
     if { [file exists $j_d/info+] } {
@@ -2567,7 +2597,7 @@ if { $info_option } {
     file mkdir $j_d/info+
     file mkdir $j_d/info+/help
 }
-foreach dir {problems demos help} {
+foreach dir {problems practice demos help} {
     if { [set ${dir}_option] } {
 	if { [file exists $c_d/$dir+] } {
 	    puts "Deleting out-of-date ./contest/$dir+"
@@ -2618,6 +2648,9 @@ Indices:
 
     help/demos
 	Index of contest demonstration problems.
+
+    help/practice
+	Index of contest practice problems.
 
     help/problems
 	Index of contest problems.
@@ -2715,8 +2748,10 @@ Introductory Information:
 #
 set help_print_files ""
 set problems_print_files ""
+set practice_print_files ""
 set demos_print_files ""
 set problems_solution_files ""
+set practice_solution_files ""
 set demos_solution_files ""
 
 # Set up channel lists.
@@ -2724,6 +2759,7 @@ set demos_solution_files ""
 set help_index_chs	""
 set demos_index_chs	""
 set problems_index_chs	""
+set practice_index_chs	""
 
 # Process arguments, forming index specifications
 # encoded in global variables, and call process_index_
@@ -2789,7 +2825,7 @@ if { $mode != "file" } {
 
 # Finish up index output files.
 #
-foreach dir {problems help demos} {
+foreach dir {problems practice help demos} {
     foreach ch [set ${dir}_index_chs] {
 	close $ch
     }
@@ -2878,7 +2914,8 @@ proc diff_dirs { dir1 dir2 } {
 	if { [regexp $diffexp [lindex $out 0] \
 		     forget index1 index2] \
 	     && $index1 == $index2 \
-	     && [lcontain {demos problems index} \
+	     && [lcontain {demos problems practice \
+	                         index} \
 			  $index1] } {
 	    if { [lindex $out 1] != "1c1" } {
 		return yes
@@ -2953,6 +2990,12 @@ if { $problems_option } {
     }
     rename_directory contest/problems
 }
+if { $practice_option } {
+    if { [regexp {r.x} [get_access $c_d/practice]] } {
+	grant_access $c_d/practice+
+    }
+    rename_directory contest/practice
+}
 if { $help_option } {
     if { [regexp {r..} \
 		 [get_access $c_d/help/problems]] } {
@@ -3005,7 +3048,7 @@ if { $print_files_option } {
     } else {
 	set target UNKNOWN/help
     }
-    foreach dir {problems demos help} {
+    foreach dir {problems practice demos help} {
 	if { $dir == "help" } {
 	    set output $target/index
 
@@ -3038,6 +3081,17 @@ if { $problems_solution_files_option } {
     }
     set output [string range $output 1 end]
     output_file problems_solution_files $output
+}
+
+# Output practice solution files if necessary
+#
+if { $practice_solution_files_option } {
+    set output ""
+    foreach f $practice_solution_files {
+	set output "$output\n$f"
+    }
+    set output [string range $output 1 end]
+    output_file practice_solution_files $output
 }
 
 # Output demos solution files if necessary
