@@ -2,19 +2,14 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@seas.harvard.edu)
-# Date:		Tue Aug  8 15:25:32 EDT 2017
+# Date:		Fri Aug 11 06:58:33 EDT 2017
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
 # for this program.
 #
-# RCS Info (may not be true date or author):
+#   vi:filetype=tcl
 #
-#   $Author: walton $
-#   $Date: 2014/12/28 18:38:47 $
-#   $RCSfile: hpcm_judging.rc,v $
-#   $Revision: 1.109 $
-
 # Table of Contents
 #
 #	Parameters to be Modified
@@ -203,13 +198,15 @@ set problems_arguments "
 # for complete details.
 
 # Same as above but for practice problems instead of
-# contest problems.
+# contest problems.  Must be "" if there are no
+# practice problems.
 #
 set practice_arguments "
     $hpcm_directory/libraries/public/public.index, \
 	=practice/, \
 	    bospre2010:include
 "
+# set practice_arguments ""
 
 # Browser to use for javahelp, c++help, pythonhelp.
 #
@@ -749,12 +746,18 @@ set makecontest_arguments "
     		"-startcontest"] \
     [include_if { $makescoreboard == "yes" } \
     		"-scoreboard"] \
+    [include_if { $practice_arguments != "" } \
+    		"-practice"] \
+    [include_if { $practice_arguments != "" } \
+    		"-practice_solution_files"] \
     $hpcm_directory/contestant/help/help_index, \
 	common/=help/, \
 	contest/=help/, \
 	    contest/acm_contest:include, \
 	    general:include, \
 	    accounts:include, \
+    [include_if { $practice_arguments != "" } \
+    		"practice:include,"] \
 	    language:include \
     $hpcm_directory/libraries/demos/demos.index, \
 	io/=demos/, \
