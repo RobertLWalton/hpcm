@@ -2,7 +2,7 @@
 #
 # File:		hpcm_judging.rc
 # Author:	Bob Walton (walton@seas.harvard.edu)
-# Date:		Fri Aug 11 06:58:33 EDT 2017
+# Date:		Sat Aug 12 03:48:34 EDT 2017
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -158,11 +158,6 @@ set printer_commands {
 #
 set test_accounts { }
 
-# Ditto for test problems instead of accounts.  Usually
-# you need not change this.
-#
-set test_problems [get_demo_problems]
-
 # List of makecontest arguments that specify the
 # problems.  The format is
 #
@@ -214,7 +209,8 @@ set browser elinks_helper
 
 # Location of XXX web page for browser to use to
 # implement XXXhelp, for XXX = java, c++, python.  If
-# not set, the XXXhelp contestant command is not enabled.
+# not set, the XXXhelp contestant command is not
+# enabled.
 #
 set java_web_page \
     "http://docs.oracle.com/javase/6/docs/api/"
@@ -605,15 +601,23 @@ foreach x $test_accounts {
 set scoreboard_submitters \
     [lrange $scoreboard_submitters 1 end]
 #
-# Compute scoreboard_problems to exclude test
-# problems.
+# Compute scoreboard_problems to include only real
+# problems, scoreboard_precontest_problems to include
+# these and demos problems, and scoreboard_practice_
+# problems to include just practice problems.
 #
-set scoreboard_problems {}
-foreach x $test_problems {
-    lappend scoreboard_problems & ! $x
-}
 set scoreboard_problems \
-    [lrange $scoreboard_problems 1 end]
+    [join [get_problems problems] " | "]
+set scoreboard_precontest_problems \
+    [join [concat [get_problems problems] \
+                  [get_problems demos]] \
+	  " | "]
+set scoreboard_practice_problems \
+    [join [get_problems practice] " | "]
+set scoreboard_abbreviation(PRECONTEST_PROBLEMS) \
+    precontest_problems
+set scoreboard_abbreviation(PRACTICE_PROBLEMS) \
+    practice_problems
 
 # Scoreboard instructions
 #
@@ -638,7 +642,7 @@ set scoreboard_instructions {
     { sort_mode problems }
     { start_time "" }
     { stop_time START }
-    { problems {} }
+    { problems PRECONTEST_PROBLEMS }
     { submitters {} }
     BAR
     BOARD
@@ -731,6 +735,35 @@ set scoreboard_instructions {
     BAR
     BOARD
     BAR
+}
+
+if { $practice_arguments != "" } {
+    set practice_scoreboard_instructions {
+
+	{# practice problems scoreboard #}
+
+	{ OUTPUT contest/practice_scoreboard "" "" }
+	GRANT_ACCESS
+	{ LINE NAME "Practice Problems Scoreboard" \
+	            TIME }
+	BLANK
+	{ LINE "WARNING: These practice problems DO NOT\
+	                 count toward your contest\
+			 score." }
+	BLANK
+	{ solved_mode date }
+	{ sort_mode problems }
+	{ start_time "" }
+	{ stop_time "" }
+	{ problems PRACTICE_PROBLEMS }
+	{ submitters {} }
+	BAR
+	BOARD
+	BAR
+    }
+    foreach x $practice_scoreboard_instructions {
+	lappend scoreboard_instructions $x
+    }
 }
 
 # Default arguments to makecontest.
