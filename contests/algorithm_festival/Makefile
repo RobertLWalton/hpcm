@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Nov  6 05:02:22 EST 2015
+# Date:		Mon Aug 14 15:50:30 EDT 2017
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -178,19 +178,16 @@ web:	web_do_nothing
 
 # Printout Rules:
 
-.SUFFIXES: .ps .pdf
-.ps.pdf:
-	rm -f $*.pdf
-	ps2pdf $*.ps $*.pdf
+.SUFFIXES: .pdf
 
-problems.ps:	problems_print_files
-	rm -f problems.ps
+problems.pdf:	problems_print_files
+	rm -f problems.pdf
 	fprint -o `cat problems_print_files` \
-	       > problems.ps
+	       > problems.pdf
 
-this_contest.ps: help/this_contest
-	rm -f this_contest.ps
-	fprint -o help/this_contest >this_contest.ps
+this_contest.pdf: help/this_contest
+	rm -f this_contest.pdf
+	fprint -o help/this_contest >this_contest.pdf
 
 
 # Print_files_do_nothing merely causes the print files
@@ -215,7 +212,7 @@ dangerous_complete_clean:
 	-startcontest stop
 	rm -rf mail rerun help flag log \
 	       secure .ssh web* \
-	       solutions* TODO *.ps *.pdf \
+	       solutions* TODO *.pdf \
 	       `readlink contest` \
 	       contest \
 	       Contest_Address \

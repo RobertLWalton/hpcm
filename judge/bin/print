@@ -1,0 +1,456 @@
+#! /bin/bash
+#
+# Print files, in 60 line x 80 column format by default,
+# or in other formats by option.
+#
+# File:		print
+# Author:	Bob Walton <walton@deas.harvard.edu>
+# Date:		Mon Aug 14 12:10:53 EDT 2017
+#
+# The authors have placed this program in the public
+# domain; they make no warranty and accept no liability
+# for this program.
+#
+# RCS Info (may not be true date or author):
+#
+#   $Author: walton $
+#   $Date: 2009/01/14 15:36:34 $
+#   $RCSfile: print,v $
+#   $Revision: 1.19 $
+
+landscape=""
+border="-j"
+filename="\$n"
+date="%D %T"
+login=" %n "
+pagenumber="\$% of \$="
+font=10
+titlefont=12
+switches=""
+style="Courier"
+oswitch=0
+
+case "$PRINTER" in
+    "" ) printer= ;;
+    * )  printer="-P $PRINTER"
+esac
+
+case "$1" in
+    -doc* )
+   	echo "
+print [-12FfdlpWNVEbo] [-P printer] [filename ...]
+
+    Print the files named, or the standard input if no
+    files are named.
+
+    Any file with a name ending in .pdf is simply copied
+    to the output.  Any file with a name ending in .ps
+    is passed through ps2pdf(1) and the result copied to
+    the output.  In both cases the files should produce
+    an integral number of pages.  All other files are
+    printed by enscript(1) followed by ps2pdf(1), using
+    options determined by the following paragraphs.
+
+    Normally one column is printed; -2 prints two
+    columns per page in landscape.  -1 prints one column
+    per page in landscape.
+    
+    Normally the column width is 80 characters; -W is
+    a wide column of 100 characters; -N is a narrow col-
+    umn of 56 characters; -V is a very wide column of
+    132 characters.  -E is for emailable files with a
+    column width of 72 characters.  Minimal page lengths
+    are 60 lines normally, 40 lines for -N, 50 lines for
+    -E, 70 lines for -W, and 100 lines for -V.  -N is
+    optimal for printing viewgraphs for overhead projec-
+    tors, and for printing two columns per page (-2
+    option) with reasonable sized font.  -V is NOT
+    allowed with -2.
+
+    The -1 (1-column landscape) option changes the mini-
+    mal page lengths to 30 lines normally, 20 lines for
+    -N, 35 for -W, 45 for -V, and 25 for -E.
+
+    Normally the header line is bold and the rest of the
+    text is not.  -B makes the rest of the text bold.
+    
+    The header normally includes file name, date, login
+    name, and page number.  -f suppresses the file name;
+    -d suppresses the date; -l suppresses the login
+    name; -p suppresses the page number, -h suppresses
+    all of these but the page number, and -H suppresses
+    all including the page number.  -F prints the full
+    file name instead of just the last component of the
+    file name.
+
+    Normally the page has a border, but -b suppresses
+    the border.
+
+    The printer used is the value of the PRINTER
+    environment variable, if that exists, or the default
+    printer otherwise.  The -P printer option changes
+    the printer used.  The -o option merges all the pdf
+    files using pdfunite(1) and routes the merged result
+    to the standard output, instead of to a printer.
+    Note that remarks are always printed on the standard
+    error, so the standard error and standard output
+    should NOT be combined if the -o option is used." \
+    | less -F
+
+    	exit 1
+	;;
+    -P ) ;;
+    -* )
+    	switches="$1"
+	if test `expr "$1" : '\-[21FfdlphHWNVEboB]*$'` \
+	        -le 1
+	then
+	    echo ERROR: bad option in "$1"
+	    echo \`print -doc\' prints documentation.
+	    exit 1
+	fi
+	case "$1" in
+	*W*[NVE]* | *N*[WVE]* | *V*[WNE]* | *E*[VWN]* )
+		echo ERROR: -W, -N, -V, or -E options \
+			    conflict.
+		echo \`print -doc\' prints \
+		     documentation.
+		exit 1
+		;;
+	*V*2* | *2*V* )
+		echo ERROR: -V and -2 options \
+			    conflict.
+		echo \`print -doc\' prints \
+		     documentation.
+		exit 1
+		;;
+	*1*2* | *2*1* )
+		echo ERROR: -1 and -2 options \
+			    conflict.
+		echo \`print -doc\' prints \
+		     documentation.
+		exit 1
+		;;
+	*f*F* | *F*f* )
+		echo ERROR: both -f and -F options \
+			    given.
+		echo \`print -doc\' prints \
+		     documentation.
+		exit 1
+		;;
+	*2*)	landscape="-2r"	
+		font=7
+		case "$1" in
+		*W*)	font=6; titlefont=10 ;;
+		*N*)	font=10 ;;
+		*E*)	font=8; titlefont=10 ;;
+		esac
+		;;
+	*1*)	landscape="-r"
+		font=14
+		titlefont=14
+		case "$1" in
+		*V*)	font=9; titlefont=9 ;;
+		*W*)	font=12; titlefont=10 ;;
+		*N*)	font=20; titlefont=20 ;;
+		*E*)	font=16; titlefont=16 ;;
+		esac
+		;;
+	*)
+		case "$1" in
+		*V*)	font=6; titlefont=10 ;;
+		*W*)	font=8; titlefont=10 ;;
+		*N*)	font=15; titlefont=15 ;;
+		*E*)	font=11; titlefont=12 ;;
+		esac
+	esac
+
+	case "$1" in
+	*b*)	border=""
+	esac
+
+	case "$1" in
+	*f*)	filename=""
+	esac
+
+	case "$1" in
+	*F*)	filename="\$N"
+	esac
+
+	case "$1" in
+	*d*)	date=""
+	esac
+
+	case "$1" in
+	*l*)	login=""
+	esac
+
+	case "$1" in
+	*p*)	pagenumber=""
+	esac
+
+	case "$1" in
+	*h*)	filename=""
+		date=""
+		login=""
+	esac
+
+	case "$1" in
+	*H*)	filename=""
+		date=""
+		login=""
+		pagenumber=""
+	esac
+
+	case "$1" in
+	*o*)	oswitch=1
+		tmpdir=/tmp/print-$$-tmp
+		trap "rm -rf $tmpdir" EXIT
+		rm -rf $tmpdir
+		mkdir $tmpdir
+	esac
+
+	case "$1" in
+	*B*)	style="Courier-Bold"
+	esac
+
+	shift
+esac
+
+
+case "$1" in
+    -P )
+	case "$switches" in
+	*o* )
+		echo ERROR: both -o and -P options \
+		     given.
+		echo \`print -doc\' prints \
+		     documentation.
+		exit 1
+		;;
+	esac
+    	shift
+	output="lpr -P $1"
+	echo >&2 Printer is $1
+	shift
+    	;;
+esac
+
+options=
+number=0
+for file in "$@" "" ""
+do
+    DATE=""
+    case "$file" in
+    -*)
+        options="$options $file"
+	continue
+	;;
+    "")
+        if [ $number -ne 0 ]
+	then
+	    break
+	fi
+	FILENAME="STANDARD INPUT"
+	if [ -n "$date" ]
+	then
+	    DATE=`date +"$date"`
+	fi
+	;;
+    *.pdf )
+	number=$((number+1))
+	if [ $oswitch -eq 1 ]
+	then
+	    cp -p $file $tmpdir/${number}.pdf
+	else
+	    lpr $printer $file
+	fi
+	continue
+	;;
+    *.ps )
+	number=$((number+1))
+	if [ $oswitch -eq 1 ]
+	then
+	    ps2pdf $file $tmpdir/${number}.pdf
+	else
+	    lpr $printer $file
+	fi
+	continue
+	;;
+    *)
+	case "$filename" in
+	*n)
+	    FILENAME=`basename $file`
+	    ;;
+	*N)
+	    FILENAME="$file"
+	    ;;
+	*)
+	    FILENAME=""
+	    ;;
+	esac
+	if [ -n "$date" ]
+	then
+	    DATE=`date -r $file +"$date"`
+	fi
+    esac
+
+    number=$((number+1))
+    if [ $oswitch -eq 1 ]
+    then
+	cat $file | unicode2latin1 | \
+	    enscript $landscape $border \
+		-b "$FILENAME|$DATE$login|$pagenumber" \
+		--margins=48:48:: \
+		-F Courier-Bold$titlefont -f $style$font \
+		-p - $options | \
+		ps2pdf - $tmpdir/${number}.pdf
+    else
+	cat $file | unicode2latin1 | \
+	    enscript $landscape $border \
+		-b "$FILENAME|$DATE$login|$pagenumber" \
+		--margins=48:48:: \
+		-F Courier-Bold$titlefont -f $style$font \
+		$printer $options
+    fi
+done
+
+if [ $oswitch -eq 1 ]
+then
+    pdfunite $tmpdir/*.pdf $tmpdir/result.pdf
+    cat $tmpdir/result.pdf
+fi
+
+exit 0
+
+
+
+Test Lines
+
+
+56 columns:
+01234567890123456789012345678901234567890123456789012345
+
+72 columns:
+012345708901234567890123456789012345678901234567890123456789012345678901
+
+80 columns:
+01234567890123456789012345678901234567890123456789012345678901234567890123456789
+
+100 columns:
+0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789
+
+132 columns:
+012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901
+
+
+1 line numbers
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63
+64
+65
+66
+67
+68
+69
+70
+71
+72
+73
+74
+75
+76
+77
+78
+79
+80
+81
+82
+83
+84
+85
+86
+87
+88
+89
+90
+91
+92
+93
+94
+95
+96
+97
+98
+99
+100
+101
+102
+103
+104
+105
+106
+107
+108
+109
+110  last line

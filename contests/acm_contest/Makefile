@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Nov  6 04:52:35 EST 2015
+# Date:		Mon Aug 14 15:27:05 EDT 2017
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -120,6 +120,9 @@
 #	 make problems.pdf
 #	     Makes printout of problems.
 #
+#	 make practice_problems.pdf
+#	     Makes printout of practice problems.
+#
 #	 make this_contest.pdf
 #	     Makes printout of the help/this_contest
 #	     file (not usually done)
@@ -204,19 +207,21 @@ web:	web_do_nothing
 
 # Printout Rules:
 
-.SUFFIXES: .ps .pdf
-.ps.pdf:
-	rm -f $*.pdf
-	ps2pdf $*.ps $*.pdf
+.SUFFIXES: .pdf
 
-problems.ps:	problems_print_files
-	rm -f problems.ps
+problems.pdf:	problems_print_files
+	rm -f problems.pdf
 	fprint -o `cat problems_print_files` \
-	       > problems.ps
+	       > problems.pdf
 
-this_contest.ps: help/this_contest
-	rm -f this_contest.ps
-	fprint -o help/this_contest >this_contest.ps
+practice_problems.pdf:	practice_print_files
+	rm -f practice_problems.pdf
+	fprint -o `cat practice_print_files` \
+	       > practice_problems.pdf
+
+this_contest.pdfs: help/this_contest
+	rm -f this_contest.pdf
+	fprint -o help/this_contest >this_contest.pdf
 
 
 # Print_files_do_nothing merely causes the print files
@@ -226,6 +231,9 @@ this_contest.ps: help/this_contest
 print_files_do_nothing:
 
 problems_print_files:	print_files_do_nothing
+	makecontest
+
+practice_print_files:	print_files_do_nothing
 	makecontest
 
 help/this_contest: print_files_do_nothing
@@ -241,7 +249,7 @@ dangerous_complete_clean:
 	-startcontest stop
 	rm -rf mail rerun help flag log \
 	       secure .ssh web* \
-	       solutions* TODO *.ps *.pdf \
+	       solutions* TODO *.pdf \
 	       `readlink contest` \
 	       contest \
 	       Contest_Address \
