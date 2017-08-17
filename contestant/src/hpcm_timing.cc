@@ -2,7 +2,7 @@
 //
 // File:	hpcm_timing.cc
 // Authors:	Bob Walton (walton@deas.harvard.edu)
-// Date:	Thu Aug 17 11:07:37 EDT 2017
+// Date:	Thu Aug 17 16:23:21 EDT 2017
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -83,16 +83,16 @@ int main ( int argc, char ** argv )
         unsigned count = 453849;
 	for ( int r = 0; r < repetitions; ++ r )
 	{
-	    count += 242632;
-	    count ^= 8593672;
-	    count -= 58367;
-	    count ^= 9605145;
-	    count += 325342;
-	    count ^= 537489;
-	    count -= 249484;
+	    count += 647242632;
+	    count ^= 859367289;
+	    count -= 583676478;
+	    count ^= 960514578;
+	    count += 325342201;
+	    count ^= 537489278;
+	    count -= 249484387;
 	    count ^= 352625467;
 	    count += 463784987;
-	    count ^= 0xFFFF0000;
+	    count ^= 356281765;
 	}
 	cout << count << endl;
     }
@@ -108,16 +108,26 @@ int main ( int argc, char ** argv )
 	count = 547281909;
 	for ( int r = 0; r < repetitions/10; ++ r )
 	{
-	    count += buffer[count&0x7FFFF] << 20;
-	    count ^= buffer[count&0x7FFFF] >> 10;
-	    count -= buffer[count&0x7FFFF] <<  8;
-	    count += buffer[count&0x7FFFF] << 23;
-	    count ^= buffer[count&0x7FFFF] >> 15;
-	    count -= buffer[count&0x7FFFF] <<  9;
-	    count += buffer[count&0x7FFFF] >>  2;
-	    count ^= buffer[count&0x7FFFF] << 16;
-	    count -= buffer[count&0x7FFFF] << 21;
-	    count += buffer[count&0x7FFFF] >> 13;
+	    count += 647242632;
+	    count += buffer[count&0x7FFFF];
+	    count ^= 859367289;
+	    count += buffer[count&0x7FFFF];
+	    count -= 583676478;
+	    count += buffer[count&0x7FFFF];
+	    count ^= 960514578;
+	    count += buffer[count&0x7FFFF];
+	    count += 325342201;
+	    count += buffer[count&0x7FFFF];
+	    count ^= 537489278;
+	    count += buffer[count&0x7FFFF];
+	    count -= 249484387;
+	    count += buffer[count&0x7FFFF];
+	    count ^= 352625467;
+	    count += buffer[count&0x7FFFF];
+	    count += 463784987;
+	    count += buffer[count&0x7FFFF];
+	    count ^= 356281765;
+	    count += buffer[count&0x7FFFF];
 	}
 	cout << count << endl;
     }
@@ -133,16 +143,26 @@ int main ( int argc, char ** argv )
 	count = 547281909;
 	for ( int r = 0; r < repetitions/10; ++ r )
 	{
-	    count += buffer[count&0xFFFFFFF] << 20;
-	    count ^= buffer[count&0xFFFFFFF] >> 10;
-	    count -= buffer[count&0xFFFFFFF] <<  8;
-	    count += buffer[count&0xFFFFFFF] << 23;
-	    count ^= buffer[count&0xFFFFFFF] >> 15;
-	    count -= buffer[count&0xFFFFFFF] <<  9;
-	    count += buffer[count&0xFFFFFFF] >>  2;
-	    count ^= buffer[count&0xFFFFFFF] << 16;
-	    count -= buffer[count&0xFFFFFFF] << 21;
-	    count += buffer[count&0xFFFFFFF] >> 13;
+	    count += 647242632;
+	    count += buffer[count&0xFFFFFFF];
+	    count ^= 859367289;
+	    count += buffer[count&0xFFFFFFF];
+	    count -= 583676478;
+	    count += buffer[count&0xFFFFFFF];
+	    count ^= 960514578;
+	    count += buffer[count&0xFFFFFFF];
+	    count += 325342201;
+	    count += buffer[count&0xFFFFFFF];
+	    count ^= 537489278;
+	    count += buffer[count&0xFFFFFFF];
+	    count -= 249484387;
+	    count += buffer[count&0xFFFFFFF];
+	    count ^= 352625467;
+	    count += buffer[count&0xFFFFFFF];
+	    count += 463784987;
+	    count += buffer[count&0xFFFFFFF];
+	    count ^= 356281765;
+	    count += buffer[count&0xFFFFFFF];
 	}
 	cout << count << endl;
     }
