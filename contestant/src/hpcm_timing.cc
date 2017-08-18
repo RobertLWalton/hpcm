@@ -10,12 +10,18 @@
 
 #include <iostream>
 #include <cstdlib>
+#include <cstdio>
 #include <cstring>
 #include <cmath>
 #include <cassert>
 using std::cout;
 using std::endl;
 using std::cin;
+
+extern "C" {
+# include <unistd.h>
+# include <sys/times.h>
+}
 
 bool debug = false;
 # define dout if ( debug ) cerr
@@ -52,6 +58,79 @@ unsigned PRIME_2M = 1999993;
 unsigned PRIME_1G = 999999937;
     // Largest prime < 1 billion.
 
+// We embed the random number generator so it cannot
+// change on us.  This is the same as lrand48 in 2016.
+// Note that for this random number generator the
+// low order k bits produced depend only on the low
+// order k bits of the seed.  Thus the generator is
+// only good at generating floating point numbers in
+// the range 0 .. 1.  To get small random numbers, use
+// random ( n ) below.  To get large random numbers
+// use lrandom ( n ) below.
+//
+# include <cmath>
+# define random RANDOM
+# define srandom SRANDOM
+    // To avoid conflict with libraries.
+unsigned long long last_random_number;
+const unsigned long long MAX_RANDOM_NUMBER =
+	( 1ull << 32 ) - 1;
+void srandom ( unsigned long long seed )
+{
+    seed &= MAX_RANDOM_NUMBER;
+    last_random_number = ( seed << 16 ) + 0x330E;
+}
+// Return floating point random number in range [0 .. 1)
+//
+inline double drandom ( void )
+{
+    last_random_number =
+        0x5DEECE66Dull * last_random_number + 0xB;
+    unsigned long long v =
+          ( last_random_number >> 16 )
+	& MAX_RANDOM_NUMBER;
+    return (double) v / (MAX_RANDOM_NUMBER + 1 );
+}
+// Return a random number in the range 0 .. n - 1.
+//
+inline unsigned long random ( unsigned long n )
+{
+    return (unsigned long) floor ( drandom() * n );
+}
+// Return a random number in the range [first,last].
+//
+inline long random ( long first, long last )
+{
+    assert ( first <= last );
+    return first + random ( last - first + 1 );
+}
+
+double seconds_per_tick = -1;
+
+double user_time ( void )
+{
+    if ( seconds_per_tick < 0 )
+    {
+        seconds_per_tick = 1.0 / sysconf(_SC_CLK_TCK);
+    }
+
+    struct tms t;
+    times ( & t );
+    return t.tms_utime * seconds_per_tick;
+}
+
+const char header[] =
+    "  Action   Repetitions  mil/sec  iters";
+void print_time
+	( const char * name, int repetitions,
+	  double time, double iter_time )
+{
+    double iters = time / iter_time;
+    double mps = repetitions / ( time * 1e6 );
+    printf ( "%7s%14d%8.1f%9.2f\n",
+              name, repetitions, mps, iters );
+}
+
 // Main program.
 //
 int main ( int argc, char ** argv )
@@ -70,17 +149,30 @@ int main ( int argc, char ** argv )
     }
 
     char * p;
-    long repetitions = strtol ( argv[1], & p, 10 );
+    unsigned repetitions = strtol ( argv[1], & p, 10 );
     if ( * p != 0 || repetitions <= 0 )
     {
         cout << "ERROR: first argument not integer > 0"
 	     << endl;
 	return 1;
     }
+    unsigned long long SEED =
+	strtoul ( argv[2], & p, 10 );
+    if ( * p != 0 || SEED < 1e8 || SEED >= 1e9 )
+    {
+        cout << "ERROR: SEED not in range" << endl;
+	return 1;
+    }
 
-    if ( strcmp ( argv[2], "iter" ) == 0 )
+    srandom ( SEED );
+    for ( int i = 0; i < ( 1 << 28 ); ++ i )
+        buffer[i] = random ( 1 << 31 );
+
+
+    double iter_time;
     {
         unsigned count = 453849;
+	double start = user_time();
 	for ( int r = 0; r < repetitions; ++ r )
 	{
 	    count += 647242632;
@@ -94,81 +186,60 @@ int main ( int argc, char ** argv )
 	    count += 463784987;
 	    count ^= 356281765;
 	}
-	cout << count << endl;
+	iter_time = user_time() - start;
+	cout << "ITER " << count << " "
+	     << iter_time << " seconds" << endl;
     }
-    else if ( strcmp ( argv[2], "cache" ) == 0 )
+    double cache_time;
     {
-        unsigned count = 648576;
-	for ( int i = 0; i < ( 1 << 19 ); ++ i )
-	{
-	    buffer[i] = count;
-	    count >>= 1;
-	    count *= 16807;
-	}
-	count = 547281909;
-	for ( int r = 0; r < repetitions/10; ++ r )
+	unsigned count = 547281909;
+	double start = user_time();
+	for ( int r = 0; r < repetitions; ++ r )
 	{
 	    count += 647242632;
-	    count += buffer[count&0x7FFFF];
 	    count ^= 859367289;
-	    count += buffer[count&0x7FFFF];
 	    count -= 583676478;
-	    count += buffer[count&0x7FFFF];
 	    count ^= 960514578;
 	    count += buffer[count&0x7FFFF];
-	    count += 325342201;
-	    count += buffer[count&0x7FFFF];
 	    count ^= 537489278;
-	    count += buffer[count&0x7FFFF];
 	    count -= 249484387;
-	    count += buffer[count&0x7FFFF];
 	    count ^= 352625467;
 	    count += buffer[count&0x7FFFF];
-	    count += 463784987;
-	    count += buffer[count&0x7FFFF];
 	    count ^= 356281765;
-	    count += buffer[count&0x7FFFF];
 	}
-	cout << count << endl;
+	cache_time = user_time() - start - iter_time;
+	cout << "CACHE " << count << " "
+	     << cache_time << " + "
+	     << iter_time << " seconds" << endl;
+	cache_time *= 5;
     }
-    else if ( strcmp ( argv[2], "miss" ) == 0 )
+    double miss_time;
     {
-        unsigned count = 648576;
-	for ( int i = 0; i < ( 1 << 26 ); ++ i )
-	{
-	    buffer[i] = count;
-	    count >>= 1;
-	    count *= 16807;
-	}
-	count = 547281909;
-	for ( int r = 0; r < repetitions/10; ++ r )
+	unsigned count = 547281909;
+	double start = user_time();
+	for ( int r = 0; r < repetitions; ++ r )
 	{
 	    count += 647242632;
-	    count += buffer[count&0xFFFFFFF];
 	    count ^= 859367289;
-	    count += buffer[count&0xFFFFFFF];
 	    count -= 583676478;
-	    count += buffer[count&0xFFFFFFF];
 	    count ^= 960514578;
 	    count += buffer[count&0xFFFFFFF];
-	    count += 325342201;
-	    count += buffer[count&0xFFFFFFF];
 	    count ^= 537489278;
-	    count += buffer[count&0xFFFFFFF];
 	    count -= 249484387;
-	    count += buffer[count&0xFFFFFFF];
 	    count ^= 352625467;
 	    count += buffer[count&0xFFFFFFF];
-	    count += 463784987;
-	    count += buffer[count&0xFFFFFFF];
 	    count ^= 356281765;
-	    count += buffer[count&0xFFFFFFF];
 	}
-	cout << count << endl;
+	miss_time = user_time() - start - iter_time;
+	cout << "MISS " << count << " "
+	     << miss_time << " + "
+	     << iter_time << " seconds" << endl;
+	miss_time *= 5;
     }
-    else if ( strcmp ( argv[2], "trig" ) == 0 )
+    double trig_time;
     {
 	double count = 0.78239240;
+	double start = user_time();
 	for ( int r = 0; r < repetitions/10; ++ r )
 	{
 	    count = sin ( count ) + 0.43543897;
@@ -182,13 +253,21 @@ int main ( int argc, char ** argv )
 	    count = sin ( count ) + 0.29503876;
 	    count = cos ( count ) + 0.19267389;
 	}
-	cout << count << endl;
+	trig_time = user_time() - start;
+	cout << "TRIG " << count << " "
+	     << trig_time << " seconds" << endl;
+	trig_time *= 10;
     }
-    else
-	cout << "ERROR: cannot understand: `"
-	     << argv[2] << "'" << endl;
 
-
+    cout << header << endl;
+    print_time ( "ITER", repetitions,
+                 iter_time, iter_time );
+    print_time ( "CACHE", repetitions,
+                 cache_time, iter_time );
+    print_time ( "MISS", repetitions,
+                 miss_time, iter_time );
+    print_time ( "TRIG", repetitions,
+                 trig_time, iter_time );
 
     // Return from main function without error.
 
