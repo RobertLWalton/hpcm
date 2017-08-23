@@ -27,28 +27,35 @@ bool debug = false;
 # define dout if ( debug ) cerr
 
 const char * const documentation = "\n"
-"hpcm_timing repetitions action\n"
+"hpcm_timing repetitions seed\n"
 "\n"
-"    Execute the given number of repetitions of the\n"
-"    given action in a tight loop.  The time taken\n"
-"    by this, measured independently by time(1),\n"
-"    can then be divided by the repetitions to\n"
-"    estimate the time of the action.\n"
+"    Execute the given number of repetitions of\n"
+"    several different actions in a tight loop.  The\n"
+"    process user time taken by this is reported\n"
+"    for each action (along with a meaningless\n"
+"    number computed by the loop that must be\n"
+"    printed to avoid having the optimizer delete\n"
+"    the entire loop).  The seed is used to\n"
+"    initialize a random number generator that\n"
+"    determines which words are read from either a\n"
+"    small array for cache memory reference actions\n"
+"    or a very large array for cache miss actions.\n"
 "\n"
 "    The possible actions are:\n"
 "\n"
-"        iter            10 inline instructions\n"
+"        ITER            10 inline instructions\n"
+"                        performing integer +, -, ^\n"
 "\n"
-"        cache           1 cache memory reference\n"
+"        CACHE           1 cache memory reference\n"
 "\n"
-"        miss            1 cache miss\n"
+"        MISS            1 cache miss\n"
 "\n"
-"        trig            1 call to a trig function\n"
+"        TRIG            1 call to a trig function\n"
 "\n"
-"   A meaningless number is printed which is the\n"
-"   result of a computation performed by the\n"
-"   repeated actions and is necessary to prevent the\n"
-"   optimizer from optimizing away the action code.\n";
+"    At the end a table is printed giving for each\n"
+"    action the number of million actions per second\n"
+"    (i.e., 1.0/number-actions-per-second) and the\n"
+"    ratio of this to the ITER action.\n";
 
 unsigned buffer[1<<28];
     // 1 gigabyte buffer
@@ -120,15 +127,14 @@ double user_time ( void )
 }
 
 const char header[] =
-    "  Action   Repetitions  mil/sec  iters";
+    "  Action   millions/sec  ratio to iters";
 void print_time
 	( const char * name, int repetitions,
 	  double time, double iter_time )
 {
     double iters = time / iter_time;
     double mps = repetitions / ( time * 1e6 );
-    printf ( "%7s%14d%8.1f%9.2f\n",
-              name, repetitions, mps, iters );
+    printf ( "%7s%13.1f%14.2f\n", name, mps, iters );
 }
 
 // Main program.
@@ -211,7 +217,7 @@ int main ( int argc, char ** argv )
 	cout << "CACHE " << count << " "
 	     << cache_time << " + "
 	     << iter_time << " seconds" << endl;
-	cache_time *= 5;
+	cache_time /= 2;
     }
     double miss_time;
     {
@@ -234,7 +240,7 @@ int main ( int argc, char ** argv )
 	cout << "MISS " << count << " "
 	     << miss_time << " + "
 	     << iter_time << " seconds" << endl;
-	miss_time *= 5;
+	miss_time /= 2;
     }
     double trig_time;
     {
@@ -256,9 +262,13 @@ int main ( int argc, char ** argv )
 	trig_time = user_time() - start;
 	cout << "TRIG " << count << " "
 	     << trig_time << " seconds" << endl;
-	trig_time *= 10;
     }
 
+    cout << endl;
+    cout << "*************************************"
+         << endl;
+    cout << repetitions << " REPETITIONS; SEED = "
+         << SEED << endl;
     cout << header << endl;
     print_time ( "ITER", repetitions,
                  iter_time, iter_time );
