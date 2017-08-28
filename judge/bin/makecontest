@@ -6,7 +6,7 @@
 #
 # File:		makecontest
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Aug 14 15:54:25 EDT 2017
+# Date:		Mon Aug 28 02:43:00 EDT 2017
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -2910,21 +2910,24 @@ proc diff_dirs { dir1 dir2 } {
     while { [llength $out] > 0 } {
 	set diffexp \
 	  {^diff -r .*/([^/ ]*) .*/([^/ ]*)$}
+	set indexexp \
+	  {( [^ ]+)* Index}
 	if { [regexp $diffexp [lindex $out 0] \
 		     forget index1 index2] \
 	     && $index1 == $index2 \
-	     && [lcontain {demos problems practice \
+	     && [lcontain {demos problems \
+	                         practice_problems \
 	                         index} \
 			  $index1] } {
 	    if { [lindex $out 1] != "1c1" } {
 		return yes
-	    } elseif { ! [regexp {^< [^ ]* Index} \
-				  [lindex $out 2]] } {
+	    } elseif { ! [regexp "^<$indexexp" \
+				 [lindex $out 2]] } {
 		return yes
 	    } elseif { [lindex $out 3] != "---" } {
 		return yes
-	    } elseif { ! [regexp {^> [^ ]* Index} \
-				  [lindex $out 4]] } {
+	    } elseif { ! [regexp "^>$indexexp" \
+				 [lindex $out 4]] } {
 		return yes
 	    }
 	    set out [lrange $out 5 end]
