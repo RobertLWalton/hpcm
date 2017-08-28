@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Aug 14 15:27:05 EDT 2017
+# Date:		Mon Aug 28 03:04:32 EDT 2017
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -211,17 +211,17 @@ web:	web_do_nothing
 
 problems.pdf:	problems_print_files
 	rm -f problems.pdf
-	fprint -o `cat problems_print_files` \
+	fprint -oB `cat problems_print_files` \
 	       > problems.pdf
 
 practice_problems.pdf:	practice_print_files
 	rm -f practice_problems.pdf
-	fprint -o `cat practice_print_files` \
+	fprint -oB `cat practice_print_files` \
 	       > practice_problems.pdf
 
 this_contest.pdfs: help/this_contest
 	rm -f this_contest.pdf
-	fprint -o help/this_contest >this_contest.pdf
+	fprint -oB help/this_contest >this_contest.pdf
 
 
 # Print_files_do_nothing merely causes the print files
