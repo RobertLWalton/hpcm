@@ -2,7 +2,7 @@
 //
 // File:     make_dictionary.cc
 // Authors:  Bob Walton <walton@seas.harvard.edu>
-// Date:     Tue Aug 29 05:11:11 EDT 2017
+// Date:     Tue Aug 29 17:13:48 EDT 2017
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -10,8 +10,9 @@
 
 #include <iostream>
 #include <fstream>
-#include <algorithm>
+#include <string>
 #include <unordered_map>
+#include <algorithm>
 #include <cstdlib>
 #include <cstring>
 #include <cctype>
@@ -21,7 +22,9 @@ using std::endl;
 using std::cerr;
 using std::cin;
 using std::ifstream;
+using std::string;
 using std::unordered_map;
+using std::sort;
 
 const int MAX_WORDS = 1e6;
     // Maximum number of distinct words that can be
@@ -50,7 +53,7 @@ const char * const documentation = "\n"
 "        4    adv             Adverb\n"
 "        5    pron            Pronoun\n"
 "        6    rel             Relative Pronoun\n"
-"        7    mod             Modal Verb\n"
+"        7    modal           Modal Verb\n"
 "        8    inf             Infinitive Marker\n"
 "        9    det             Determiner\n"
 "        10   cconj           Coordinating\n"
@@ -96,13 +99,14 @@ const char * const documentation = "\n"
 
 const int MAX_CODE = 13;
 const char * abbreviation[MAX_CODE+1] = {
+    NULL,	// 0
     "n",	// 1
     "v",	// 2
     "adj",	// 3
     "adv",	// 4
     "pron",	// 5
     "rel",	// 6
-    "mod",	// 7
+    "modal",	// 7
     "inf",	// 8
     "det",	// 9
     "cconj",	// 10
@@ -111,7 +115,14 @@ const char * abbreviation[MAX_CODE+1] = {
     "inter"	// 13
 };
 
-const int senset_type[6] = { 0, 1, 2, 3, 4, 3 };
+enum {
+    NOUN = 1 << 1,
+    VERB = 1 << 2
+};
+
+const int MAX_SENSET_TYPE = 5;
+const int senset_type[MAX_SENSET_TYPE+1] =
+	{ 0, 1, 2, 3, 4, 3 };
     // index.sense line format is:
     //
     //     word%T...
@@ -124,7 +135,7 @@ const int senset_type[6] = { 0, 1, 2, 3, 4, 3 };
 
 struct entry  // dictionary entry
 {
-    const char * word;
+    string word;
     int parts;
         // Bit 1 << c is set is parts if the word has
 	// the part of speech with code c.
@@ -132,6 +143,7 @@ struct entry  // dictionary entry
         // Include in output; i.e., word is one of
 	// the `size' most frequent.
 } dictionary[MAX_WORDS];
+int D;    // Number of entries in dictionary.
 
 // Sort included entries before not included entries
 // and otherwise sort by word lexical order.
@@ -140,14 +152,33 @@ bool operator < ( const entry & e1, const entry & e2 )
 {
     if ( ! e1.include && e2.include ) return false;
     else if ( e1.include && ! e2.include ) return true;
-    else return strcmp ( e1.word, e2.word ) < 0;
+    else return e1.word < e2.word;
 }
 
-unordered_map<const char *, entry *> hashtable;
-typedef unordered_map<const char *, entry *>::iterator
+unordered_map<string, entry *> hashtable;
+typedef unordered_map<string, entry *>::iterator
     hashp;
 
 bool output_abbreviations = false;
+long size;
+
+// Include a word if it is in the dictionary and
+// has one of the parts of speech indicated.  Return
+// true if successful and false if word not found or
+// did not have one of the parts of speech indicated.
+// Increment included_count if true returned.
+//
+int included_count = 0;
+bool include ( string word, int parts = -1 )
+{
+    hashp hp = hashtable.find ( word );
+    if ( hp == hashtable.end() ) return false;
+    entry & e = * hp->second;
+    if ( ( e.parts & parts ) == 0 ) return false;
+    e.include = true;
+    ++ included_count;
+    return true;
+}
 
 // Main program.
 //
@@ -173,16 +204,227 @@ int main ( int argc, char ** argv )
 	exit (1);
     }
 
+    char * p;
+    size = strtol ( argv[1], & p, 10 );
+    if ( size < 0 || * p )
+    {
+        cerr << "ERROR: bad size argument."
+	     << endl;
+	exit ( 1 );
+    }
+
+    ifstream in;
 
     // Process senset file.
     //
-    ifstream in;
     in.open ( senset_file );
     if ( ! in )
     {
 	cout << "Cannot open " << senset_file << endl;
 	exit ( 1 );
     }
+    char line[5000];
+    while ( in.getline ( line, sizeof ( line ) ),
+            in.good() )
+    {
+        assert
+	    ( strlen ( line ) < sizeof ( line ) - 1 );
+	char * p = line;
+	while ( * p && * p != '%' ) ++ p;
+	assert ( * p == '%' );
+	* p ++ = 0;
+	int i = * p - '0';
+	assert ( 1 <= i && i <= MAX_SENSET_TYPE );
+	int c = senset_type[i];
+
+	string word = line;
+	hashp hp = hashtable.find ( word );
+	if ( hp == hashtable.end() )
+	{
+	    entry & e = dictionary[D++];
+	    e.word = word;
+	    e.parts = 1 << c;
+	    e.include = false;
+	    hashtable.emplace ( word, & e );
+	}
+	else
+	{
+	    entry & e = * hp->second;
+	    e.parts |= 1 << c;
+	}
+    }
+    in.close();
+    int Dsenset = D;
+    cerr << "Senset file added " << Dsenset
+         << " dictionary entries." << endl;
+
+    // Process part-of-speech file.
+    //
+    in.open ( part_file );
+    if ( ! in )
+    {
+	cout << "Cannot open " << part_file << endl;
+	exit ( 1 );
+    }
+    while ( in.getline ( line, sizeof ( line ) ),
+            in.good() )
+    {
+        assert
+	    ( strlen ( line ) < sizeof ( line ) - 1 );
+	if ( line[0] == '#' ) continue;
+	if ( line[0] == 0 ) continue;
+
+	char * p = line;
+	while ( * p && ! isspace ( * p ) ) ++ p;
+	* p ++ = 0;
+	int i = * p - '0';
+	int c = 0;
+	for ( int i = 1; i <= MAX_CODE; ++ i )
+	{
+	    if ( strcmp ( abbreviation[i], p ) == 0 )
+	    {
+	        c = i;
+		break;
+	    }
+	}
+	if ( c == 0 )
+	{
+	    cerr << "ERROR: Could not recognize `"
+	         << p
+		 << "' as part of speech for word `"
+		 << line << "'" << endl;
+	    continue;
+	}
+
+	string word = line;
+	hashp hp = hashtable.find ( word );
+	if ( hp == hashtable.end() )
+	{
+	    entry & e = dictionary[D++];
+	    e.word = word;
+	    e.parts = 1 << c;
+	    e.include = false;
+	    hashtable.emplace ( word, & e );
+	}
+	else
+	{
+	    entry & e = * hp->second;
+	    e.parts |= 1 << c;
+	}
+    }
+    in.close();
+    int Dpart = D - Dsenset;
+    cerr << "Part of speech file added " << Dpart
+         << " dictionary entries." << endl;
+
+    // Process word frequency file.
+    //
+    in.open ( frequency_file );
+    if ( ! in )
+    {
+	cout << "Cannot open " << frequency_file << endl;
+	exit ( 1 );
+    }
+    int position = 0;
+    included_count = 0;
+    while ( in.getline ( line, sizeof ( line ) ),
+            in.good() && position < size )
+    {
+        assert
+	    ( strlen ( line ) < sizeof ( line ) - 1 );
+
+	string word = line;
+	++ position;
+
+	if ( include ( word ) ) continue;
+	int wsize = word.size();
+	if ( wsize >= 4 && word[wsize-1] == 's' )
+	{
+	    string word2 = word.substr ( 0, wsize - 1 );
+	    if ( include ( word2, NOUN | VERB ) )
+	        continue;
+	}
+	if (    wsize >= 5
+	     && word.substr ( wsize - 2, 2 ) == "ed" )
+	{
+	    string word2 =
+	        word.substr ( 0, wsize - 2 );
+	    if ( include ( word2, VERB ) )
+	        continue;
+	    word2 += "e";
+	    if ( include ( word2, VERB ) )
+	        continue;
+	}
+	if (    wsize >= 5
+	     && word.substr ( wsize - 2, 2 ) == "es" )
+	{
+	    string word2 =
+	        word.substr ( 0, wsize - 2 );
+	    if ( include ( word2, NOUN ) )
+	        continue;
+	}
+	if (    wsize >= 5
+	     && word.substr ( wsize - 3, 3 ) == "ies" )
+	{
+	    string word2 =
+	        word.substr ( 0, wsize - 3 ) + "y";
+	    if ( include ( word2, NOUN ) )
+	        continue;
+	}
+	if (    wsize >= 5
+	     && word.substr ( wsize - 3, 3 ) == "ied" )
+	{
+	    string word2 =
+	        word.substr ( 0, wsize - 3 ) + "y";
+	    if ( include ( word2, VERB ) )
+	        continue;
+	}
+	if (    wsize >= 5
+	     && word.substr ( wsize - 3, 3 ) == "ing" )
+	{
+	    string word2 = word.substr ( 0, wsize - 3 );
+	    if ( include ( word2, VERB ) )
+	        continue;
+	    word2 += "e";
+	    if ( include ( word2, VERB ) )
+	        continue;
+	}
+	cerr << "ERROR: could find no parts of"
+		" speech for `" << word
+	     << "' of position " << position
+	     << endl;
+    }
+    in.close();
+    cerr << "Found " << included_count << " out of "
+         << position << " frequency file words."
+	 << endl;
+
+    sort ( dictionary, dictionary + D );
+
+    int count = 0;
+    for ( int i = 0; i < D; ++ i )
+    {
+        entry & e = dictionary[i];
+	if ( ! e.include ) break;
+
+	string word = e.word;
+	unsigned wsize = word.size();
+	if ( wsize == 1 )
+	{
+	    if ( word == "i" ) word = "I";
+	    else if ( word != "a" ) continue;
+	}
+
+	++ count;
+	for ( int c = 1; c <= MAX_CODE; ++ c )
+	{
+	    if ( ( 1 << c ) & e.parts )
+	        cout << word << " "
+		     << abbreviation[c]
+		     << endl;
+	}
+    }
+    cerr << "Output " << count << " words." << endl;
 
     // Return from main function without error.
 
