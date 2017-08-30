@@ -1,13 +1,15 @@
 # Makefile for Making Dictionaries
 #
 # File:		Makefile
-# Date:		Wed Aug 30 04:00:07 EDT 2017
+# Date:		Wed Aug 30 04:21:53 EDT 2017
 #
 # The authors have placed this file in the public
 # domain; they make no warranty and accept no liability
 # for this file.
 
 BUILDING_FILES = \
+	Makefile \
+	make_dictionary \
 	adj.exc \
 	adv.exc \
 	index.adj \
