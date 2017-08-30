@@ -2,7 +2,7 @@
 //
 // File:     make_dictionary.cc
 // Authors:  Bob Walton <walton@seas.harvard.edu>
-// Date:     Tue Aug 29 17:13:48 EDT 2017
+// Date:     Tue Aug 29 21:16:31 EDT 2017
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -29,19 +29,105 @@ using std::sort;
 const int MAX_WORDS = 1e6;
     // Maximum number of distinct words that can be
     // processed.
-const char * senset_file = "index.sense";
-const char * frequency_file = "words-by-frequency.txt";
-const char * part_file = "part-of-speech.txt";
+
+const int MAX_CODE = 13;
+const char * abbreviation[MAX_CODE+1] = {
+    NULL,	// 0
+    "n",	// 1
+    "v",	// 2
+    "adj",	// 3
+    "adv",	// 4
+    "pron",	// 5
+    "rel",	// 6
+    "modal",	// 7
+    "inf",	// 8
+    "det",	// 9
+    "cconj",	// 10
+    "sconj",	// 11
+    "prep",	// 12
+    "inter"	// 13
+};
+
+enum {
+    NOUN = 1 << 1,
+    VERB = 1 << 2,
+    ADJ  = 1 << 3,
+    ADV  = 1 << 4
+};
+
+const int MAX_SENSET_TYPE = 5;
+const int senset_type[MAX_SENSET_TYPE+1] =
+	{ 0, 1, 2, 3, 4, 3 };
+    // index.sense line format is:
+    //
+    //     word%T...
+    //
+    // where T is the senset type digit and
+    //
+    //     senset_type[T-'0']
+    //
+    // is the corresponding part of speech code.
+
+const char * senset_file =
+    "index.sense";
+const char * frequency_file =
+    "words-by-frequency.txt";
+const char * spell_checker_file =
+    "spell-checker-file.txt";
+const char * part_of_speech_file =
+    "part-of-speech.txt";
+
+const int NUMBER_PART_FILES = 8;
+struct part_file
+{
+    const char * file_name;
+    int part;
+} part_files[NUMBER_PART_FILES] = {
+    { "index.noun", NOUN },
+    { "noun.exc", NOUN },
+    { "index.verb", VERB },
+    { "verb.exc", VERB },
+    { "index.adj", ADJ },
+    { "adj.exc", ADJ },
+    { "index.adv", ADV },
+    { "adv.exc", ADV } };
+
+const int NUMBER_MORPH_RULES = 18;
+struct morph_rule
+{
+    int suffix_length;
+    const char * suffix;
+    const char * replacement_suffix;
+    int parts;
+} morph_rules[NUMBER_MORPH_RULES] = {
+    { 1, "s", "", NOUN | VERB },
+    { 2, "es", "", VERB },
+    { 2, "es", "s", VERB },
+    { 2, "ed", "e", VERB },
+    { 2, "ed", "", VERB },
+    { 2, "er", "e", ADJ },
+    { 2, "er", "", ADJ },
+    { 3, "ses", "s", NOUN },
+    { 3, "xes", "x", NOUN },
+    { 3, "zes", "z", NOUN },
+    { 3, "men", "man", NOUN },
+    { 3, "ies", "y", NOUN | VERB },
+    { 3, "ing", "e", VERB },
+    { 3, "ing", "", VERB },
+    { 3, "est", "e", ADJ },
+    { 3, "est", "", ADJ },
+    { 4, "ches", "ch", NOUN },
+    { 4, "shes", "sh", NOUN } };
 
 const char * const documentation = "\n"
-"make_dictionary [-a] size\n"
+"make_dictionary [-[ac]] size\n"
 "\n"
-"    Output a dictionary whose entries are words and\n"
-"    their parts of speech.  The most frequently used\n"
-"    `size' words are included.  The lines have the\n"
-"    format:\n"
+"    Given input listing words in order of importance\n"
+"    (e.g., in frequency order), output these words\n"
+"    with their parts of speech.  Input has one word\n"
+"    per line.  Output lines have the form:\n"
 "\n"
-"        word part-of-speech\n"
+"        word code abbreviation\n"
 "\n"
 "    The possible parts of speech are:\n"
 "\n"
@@ -63,15 +149,19 @@ const char * const documentation = "\n"
 "        12   prep            Preposition\n"
 "        13   inter           Interjection\n"
 "\n"
-"    The -a option outputs the `abbreviation' for the\n"
-"    part of speech; otherwise the `code' is output.\n"
+"    The code and/or abbreviation can be omitted\n"
+"    from the output.  The -a option omits the\n"
+"    abbreviation and the -c option omits the code.\n"
 "\n"
-"    The words are output in alphabetical order.\n"
+"    The words are sorted after they are all input\n"
+"    and then output in alphabetical order, unless\n"
+"    the -d option is given, in which case the words\n"
+"    are output as soon as they are input, for\n"
+"    debugging purposes.\n"
 "\n"
 "    A separate line is output for each part of\n"
 "    speech that a word has, if the word has more\n"
-"    than one.  Word frequency is computed without\n"
-"    regard to part of speech.\n"
+"    than one.\n"
 "\n"
 "    The input files are:\n"
 "\n"
@@ -96,42 +186,6 @@ const char * const documentation = "\n"
 "            with comment lines beginning with #.\n"
 "\n"
 ;
-
-const int MAX_CODE = 13;
-const char * abbreviation[MAX_CODE+1] = {
-    NULL,	// 0
-    "n",	// 1
-    "v",	// 2
-    "adj",	// 3
-    "adv",	// 4
-    "pron",	// 5
-    "rel",	// 6
-    "modal",	// 7
-    "inf",	// 8
-    "det",	// 9
-    "cconj",	// 10
-    "sconj",	// 11
-    "prep",	// 12
-    "inter"	// 13
-};
-
-enum {
-    NOUN = 1 << 1,
-    VERB = 1 << 2
-};
-
-const int MAX_SENSET_TYPE = 5;
-const int senset_type[MAX_SENSET_TYPE+1] =
-	{ 0, 1, 2, 3, 4, 3 };
-    // index.sense line format is:
-    //
-    //     word%T...
-    //
-    // where T is the senset type digit and
-    //
-    //     senset_type[T-'0']
-    //
-    // is the corresponding part of speech code.
 
 struct entry  // dictionary entry
 {
@@ -159,25 +213,83 @@ unordered_map<string, entry *> hashtable;
 typedef unordered_map<string, entry *>::iterator
     hashp;
 
-bool output_abbreviations = false;
+bool output_abbreviations = true;
+bool output_codes = true;
+bool debug = false;
 long size;
 
-// Include a word if it is in the dictionary and
-// has one of the parts of speech indicated.  Return
-// true if successful and false if word not found or
-// did not have one of the parts of speech indicated.
-// Increment included_count if true returned.
+// Add a word to the dictionary with the given parts
+// of speech.
 //
-int included_count = 0;
-bool include ( string word, int parts = -1 )
+void add_word ( const char * word, int parts )
 {
-    hashp hp = hashtable.find ( word );
-    if ( hp == hashtable.end() ) return false;
-    entry & e = * hp->second;
-    if ( ( e.parts & parts ) == 0 ) return false;
-    e.include = true;
-    ++ included_count;
-    return true;
+    string word_str = word;
+    hashp hp = hashtable.find ( word_str );
+    if ( hp == hashtable.end() )
+    {
+	entry & e = dictionary[D++];
+	e.word = word_str;
+	e.parts = parts;
+	e.include = false;
+	hashtable.emplace ( word_str, & e );
+    }
+    else
+    {
+	entry & e = * hp->second;
+	e.parts |= parts;
+    }
+}
+
+// Given a word, check if one of its morphs is in the
+// dictionary, and if so, add the word with the parts
+// found designated for the morph rule that are found
+// for the morph in the dictionary.
+//
+void add_morphs ( const char * word )
+{
+    unsigned wsize = strlen ( word );
+    for ( int i = 0; i < NUMBER_MORPH_RULES; ++ i )
+    {
+        morph_rule & mr = morph_rules[i];
+	if (    wsize <= mr.suffix_length
+	     || strcmp
+	          ( word + wsize - mr.suffix_length,
+		    mr.suffix ) != 0 )
+	    continue;
+
+	string sword =
+	      string ( word, wsize - mr.suffix_length )
+	    + mr.replacement_suffix;
+	hashp hp = hashtable.find ( sword );
+	if ( hp == hashtable.end() ) continue;
+	entry & e = * hp->second;
+	int parts = e.parts & mr.parts;
+	if ( parts == 0 ) continue;
+	add_word ( word, parts );
+    }
+}
+
+// Output entry, one line for each part of speech
+// of entry.
+//
+void output ( entry & e )
+{
+    string word = e.word;
+    unsigned wsize = word.size();
+    if ( word == "i" ) word = "I";
+
+    for ( int c = 1; c <= MAX_CODE; ++ c )
+    {
+	if ( ( 1 << c ) & e.parts )
+	{
+	    cout << word;
+	    if ( output_codes )
+	        cout << " " << c;
+	    if ( output_abbreviations )
+		cout << abbreviation[c];
+	    cout << endl;
+	}
+    }
 }
 
 // Main program.
@@ -187,10 +299,25 @@ int main ( int argc, char ** argv )
 
     // Process options.
 
-    if (    argc >= 2
-         && strcmp( argv[1], "-a" ) == 0 )
+    if ( argc >= 2 && argv[1][0] == '-' )
     {
-        output_abbreviations = true;
+        const char * p = argv[1] + 1;
+	while ( * p )
+	{
+	    switch ( * p ) {
+	    case 'd': debug = true;
+	              break;
+	    case 'a': output_abbreviations = false;
+	              break;
+	    case 'c': output_codes = false;
+	              break;
+	    default:
+	        cerr << "Unrecognized option -" << *p
+		     << endl;
+		exit ( 1 );
+	    }
+	    ++ p;
+	}
 	-- argc, ++ argv;
     }
 
@@ -214,6 +341,42 @@ int main ( int argc, char ** argv )
     }
 
     ifstream in;
+    char line[5000];
+
+    // Process part files.
+    //
+    for ( int i= 0; i < NUMBER_PART_FILES; ++ i )
+    {
+        part_file & pf = part_files[i];
+	in.open ( pf.file_name );
+	if ( ! in )
+	{
+	    cout << "Cannot open " << pf.file_name
+	         << endl;
+	    exit ( 1 );
+	}
+
+	int Dstart = D;
+	while ( in.getline ( line, sizeof ( line ) ),
+		in.good() )
+	{
+	    assert
+	      ( strlen ( line ) < sizeof ( line ) - 1 );
+
+	    char * p = line;
+	    while ( * p && ! isspace ( * p ) ) ++ p;
+	    * p = 0;
+
+	    add_word ( line, pf.part );
+	}
+	in.close();
+	cerr << "File " << pf.file_name
+	     << " added " << D - Dstart
+	     << " dictionary entries." << endl;
+    }
+    int Dparts = D;
+    cerr << "Part files added " << Dparts
+         << " dictionary entries." << endl;
 
     // Process senset file.
     //
@@ -223,7 +386,6 @@ int main ( int argc, char ** argv )
 	cout << "Cannot open " << senset_file << endl;
 	exit ( 1 );
     }
-    char line[5000];
     while ( in.getline ( line, sizeof ( line ) ),
             in.good() )
     {
@@ -237,33 +399,20 @@ int main ( int argc, char ** argv )
 	assert ( 1 <= i && i <= MAX_SENSET_TYPE );
 	int c = senset_type[i];
 
-	string word = line;
-	hashp hp = hashtable.find ( word );
-	if ( hp == hashtable.end() )
-	{
-	    entry & e = dictionary[D++];
-	    e.word = word;
-	    e.parts = 1 << c;
-	    e.include = false;
-	    hashtable.emplace ( word, & e );
-	}
-	else
-	{
-	    entry & e = * hp->second;
-	    e.parts |= 1 << c;
-	}
+	add_word ( line, 1 << c );
     }
     in.close();
-    int Dsenset = D;
+    int Dsenset = D - Dparts;
     cerr << "Senset file added " << Dsenset
          << " dictionary entries." << endl;
 
     // Process part-of-speech file.
     //
-    in.open ( part_file );
+    in.open ( part_of_speech_file );
     if ( ! in )
     {
-	cout << "Cannot open " << part_file << endl;
+	cout << "Cannot open " << part_of_speech_file
+	     << endl;
 	exit ( 1 );
     }
     while ( in.getline ( line, sizeof ( line ) ),
@@ -292,43 +441,45 @@ int main ( int argc, char ** argv )
 	    cerr << "ERROR: Could not recognize `"
 	         << p
 		 << "' as part of speech for word `"
-		 << line << "'" << endl;
+		 << line << "'." << endl;
 	    continue;
 	}
 
-	string word = line;
-	hashp hp = hashtable.find ( word );
-	if ( hp == hashtable.end() )
-	{
-	    entry & e = dictionary[D++];
-	    e.word = word;
-	    e.parts = 1 << c;
-	    e.include = false;
-	    hashtable.emplace ( word, & e );
-	}
-	else
-	{
-	    entry & e = * hp->second;
-	    e.parts |= 1 << c;
-	}
+	add_word ( line, 1 << c );
     }
     in.close();
-    int Dpart = D - Dsenset;
+    int Dpart = D - Dsenset - Dparts;
     cerr << "Part of speech file added " << Dpart
          << " dictionary entries." << endl;
 
-    // Process word frequency file.
+    // Process spell checker file.
     //
-    in.open ( frequency_file );
+    in.open ( spell_checker_file );
     if ( ! in )
     {
-	cout << "Cannot open " << frequency_file << endl;
+	cout << "Cannot open " << spell_checker_file
+	     << endl;
 	exit ( 1 );
     }
-    int position = 0;
-    included_count = 0;
     while ( in.getline ( line, sizeof ( line ) ),
-            in.good() && position < size )
+            in.good() )
+    {
+        assert
+	    ( strlen ( line ) < sizeof ( line ) - 1 );
+
+	add_morphs ( line );
+    }
+    in.close();
+    int Dchecker = D - Dsenset - Dparts - Dpart;
+    cerr << "Spell checker file added " << Dchecker
+         << " dictionary entries." << endl;
+
+    // Process input.
+    //
+    int position = 0;
+    int included_count = 0;
+    while ( cin.getline ( line, sizeof ( line ) ),
+            cin.good() && included_count < size )
     {
         assert
 	    ( strlen ( line ) < sizeof ( line ) - 1 );
@@ -336,67 +487,28 @@ int main ( int argc, char ** argv )
 	string word = line;
 	++ position;
 
-	if ( include ( word ) ) continue;
-	int wsize = word.size();
-	if ( wsize >= 4 && word[wsize-1] == 's' )
+	hashp hp = hashtable.find ( word );
+	if ( hp == hashtable.end() )
 	{
-	    string word2 = word.substr ( 0, wsize - 1 );
-	    if ( include ( word2, NOUN | VERB ) )
-	        continue;
+	    cerr << "ERROR: could find no parts of"
+		    " speech for `" << word
+		 << "' of position. " << position
+		 << endl;
+	    continue;
 	}
-	if (    wsize >= 5
-	     && word.substr ( wsize - 2, 2 ) == "ed" )
-	{
-	    string word2 =
-	        word.substr ( 0, wsize - 2 );
-	    if ( include ( word2, VERB ) )
-	        continue;
-	    word2 += "e";
-	    if ( include ( word2, VERB ) )
-	        continue;
-	}
-	if (    wsize >= 5
-	     && word.substr ( wsize - 2, 2 ) == "es" )
-	{
-	    string word2 =
-	        word.substr ( 0, wsize - 2 );
-	    if ( include ( word2, NOUN ) )
-	        continue;
-	}
-	if (    wsize >= 5
-	     && word.substr ( wsize - 3, 3 ) == "ies" )
-	{
-	    string word2 =
-	        word.substr ( 0, wsize - 3 ) + "y";
-	    if ( include ( word2, NOUN ) )
-	        continue;
-	}
-	if (    wsize >= 5
-	     && word.substr ( wsize - 3, 3 ) == "ied" )
-	{
-	    string word2 =
-	        word.substr ( 0, wsize - 3 ) + "y";
-	    if ( include ( word2, VERB ) )
-	        continue;
-	}
-	if (    wsize >= 5
-	     && word.substr ( wsize - 3, 3 ) == "ing" )
-	{
-	    string word2 = word.substr ( 0, wsize - 3 );
-	    if ( include ( word2, VERB ) )
-	        continue;
-	    word2 += "e";
-	    if ( include ( word2, VERB ) )
-	        continue;
-	}
-	cerr << "ERROR: could find no parts of"
-		" speech for `" << word
-	     << "' of position " << position
-	     << endl;
+	entry & e = * hp->second;
+	if ( e.include )
+	    cerr << "ERROR: `" << word
+		 << " input more than once."
+		 << endl;
+	e.include = true;
+	++ included_count;
+	if ( debug ) output ( e );
+
     }
     in.close();
     cerr << "Found " << included_count << " out of "
-         << position << " frequency file words."
+         << position << " input words."
 	 << endl;
 
     sort ( dictionary, dictionary + D );
@@ -407,22 +519,8 @@ int main ( int argc, char ** argv )
         entry & e = dictionary[i];
 	if ( ! e.include ) break;
 
-	string word = e.word;
-	unsigned wsize = word.size();
-	if ( wsize == 1 )
-	{
-	    if ( word == "i" ) word = "I";
-	    else if ( word != "a" ) continue;
-	}
-
+	output ( e );
 	++ count;
-	for ( int c = 1; c <= MAX_CODE; ++ c )
-	{
-	    if ( ( 1 << c ) & e.parts )
-	        cout << word << " "
-		     << abbreviation[c]
-		     << endl;
-	}
     }
     cerr << "Output " << count << " words." << endl;
 
