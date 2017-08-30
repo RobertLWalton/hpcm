@@ -2,7 +2,7 @@
 //
 // File:     make_dictionary.cc
 // Authors:  Bob Walton <walton@seas.harvard.edu>
-// Date:     Tue Aug 29 21:16:31 EDT 2017
+// Date:     Wed Aug 30 03:28:51 EDT 2017
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -32,7 +32,7 @@ const int MAX_WORDS = 1e6;
 
 const int MAX_CODE = 13;
 const char * abbreviation[MAX_CODE+1] = {
-    NULL,	// 0
+    "ignored",	// 0
     "n",	// 1
     "v",	// 2
     "adj",	// 3
@@ -49,10 +49,11 @@ const char * abbreviation[MAX_CODE+1] = {
 };
 
 enum {
-    NOUN = 1 << 1,
-    VERB = 1 << 2,
-    ADJ  = 1 << 3,
-    ADV  = 1 << 4
+    IGNORED = 1 << 0,
+    NOUN    = 1 << 1,
+    VERB    = 1 << 2,
+    ADJ     = 1 << 3,
+    ADV     = 1 << 4
 };
 
 const int MAX_SENSET_TYPE = 5;
@@ -76,6 +77,8 @@ const char * spell_checker_file =
     "spell-checker-file.txt";
 const char * part_of_speech_file =
     "part-of-speech.txt";
+const char * ignored_words_file =
+    "ignored-words.txt";
 
 const int NUMBER_PART_FILES = 8;
 struct part_file
@@ -120,7 +123,7 @@ struct morph_rule
     { 4, "shes", "sh", NOUN } };
 
 const char * const documentation = "\n"
-"make_dictionary [-[ac]] size\n"
+"make_dictionary [-[acdi]] size\n"
 "\n"
 "    Given input listing words in order of importance\n"
 "    (e.g., in frequency order), output these words\n"
@@ -158,6 +161,14 @@ const char * const documentation = "\n"
 "    the -d option is given, in which case the words\n"
 "    are output as soon as they are input, for\n"
 "    debugging purposes.\n"
+"\n"
+"    Normally input words whose part of speech\n"
+"    cannot be determined are listed in error\n"
+"    messages.  If the -i option is given, they are\n"
+"    each output on a line by themselves, and the\n"
+"    normal output is suppressed.  This is to make\n"
+"    it easy to construct the `ignored-words.txt'\n"
+"    file.\n"
 "\n"
 "    A separate line is output for each part of\n"
 "    speech that a word has, if the word has more\n"
@@ -215,6 +226,7 @@ typedef unordered_map<string, entry *>::iterator
 
 bool output_abbreviations = true;
 bool output_codes = true;
+bool output_ignored_words = false;
 bool debug = false;
 long size;
 
@@ -286,7 +298,7 @@ void output ( entry & e )
 	    if ( output_codes )
 	        cout << " " << c;
 	    if ( output_abbreviations )
-		cout << abbreviation[c];
+		cout << " " << abbreviation[c];
 	    cout << endl;
 	}
     }
@@ -310,6 +322,8 @@ int main ( int argc, char ** argv )
 	    case 'a': output_abbreviations = false;
 	              break;
 	    case 'c': output_codes = false;
+	              break;
+	    case 'i': output_ignored_words = true;
 	              break;
 	    default:
 	        cerr << "Unrecognized option -" << *p
@@ -474,10 +488,35 @@ int main ( int argc, char ** argv )
     cerr << "Spell checker file added " << Dchecker
          << " dictionary entries." << endl;
 
+    // Process ignored words file.
+    //
+    int ignored_count = 0;
+    in.open ( ignored_words_file );
+    if ( ! in )
+    {
+	cout << "Cannot open " << ignored_words_file
+	     << endl;
+	exit ( 1 );
+    }
+    while ( in.getline ( line, sizeof ( line ) ),
+            in.good() )
+    {
+        assert
+	    ( strlen ( line ) < sizeof ( line ) - 1 );
+
+	add_word ( line, IGNORED );
+    }
+    in.close();
+    int Dignored =
+        D - Dsenset - Dparts - Dpart - Dchecker;
+    cerr << "Ignored words file added " << Dignored
+         << " dictionary entries." << endl;
+
     // Process input.
     //
     int position = 0;
     int included_count = 0;
+    ignored_count = 0;
     while ( cin.getline ( line, sizeof ( line ) ),
             cin.good() && included_count < size )
     {
@@ -490,10 +529,14 @@ int main ( int argc, char ** argv )
 	hashp hp = hashtable.find ( word );
 	if ( hp == hashtable.end() )
 	{
-	    cerr << "ERROR: could find no parts of"
-		    " speech for `" << word
-		 << "' of position. " << position
-		 << endl;
+	    if ( output_ignored_words )
+	        cout << word << endl;
+	    else
+		cerr << "ERROR: could find no parts of"
+			" speech for `" << word
+		     << "' of position. " << position
+		     << endl;
+	    ++ ignored_count;
 	    continue;
 	}
 	entry & e = * hp->second;
@@ -502,7 +545,10 @@ int main ( int argc, char ** argv )
 		 << " input more than once."
 		 << endl;
 	e.include = true;
-	++ included_count;
+	if ( e.parts == IGNORED )
+	    ++ ignored_count;
+	else
+	    ++ included_count;
 	if ( debug ) output ( e );
 
     }
@@ -510,6 +556,12 @@ int main ( int argc, char ** argv )
     cerr << "Found " << included_count << " out of "
          << position << " input words."
 	 << endl;
+    cerr << "Ignored " << ignored_count << " words"
+            " whose part of speech could not be"
+	    " determined." << endl;
+
+    if ( output_ignored_words )
+        return 0;
 
     sort ( dictionary, dictionary + D );
 
@@ -518,6 +570,7 @@ int main ( int argc, char ** argv )
     {
         entry & e = dictionary[i];
 	if ( ! e.include ) break;
+	if ( e.parts == IGNORED ) continue;
 
 	output ( e );
 	++ count;
