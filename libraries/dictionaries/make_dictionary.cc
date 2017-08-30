@@ -2,7 +2,7 @@
 //
 // File:     make_dictionary.cc
 // Authors:  Bob Walton <walton@seas.harvard.edu>
-// Date:     Wed Aug 30 03:28:51 EDT 2017
+// Date:     Wed Aug 30 04:46:10 EDT 2017
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -176,17 +176,11 @@ const char * const documentation = "\n"
 "\n"
 "    The input files are:\n"
 "\n"
-"        index.sense\n"
-"            Word Net (Princeton) index.sense file.\n"
+"        index.*\n"
+"        *.exc\n"
+"            Word Net (Princeton) files.\n"
 "            Determines which words are nouns, verbs,\n"
 "            adjectives, or adverbs.\n"
-"\n"
-"        words-by-frequency.txt\n"
-"            Word frequency list derived by from the\n"
-"            Google Web Trillion Word Corpus by Peter\n"
-"            Norvig and filtered to remove word\n"
-"            frequency counts and words beyond the\n"
-"            first several tens of thousands.\n"
 "\n"
 "        part-of-speech.txt\n"
 "            Part of speech information not in Word\n"
@@ -195,6 +189,20 @@ const char * const documentation = "\n"
 "                word part-of-speech-abbreviation\n"
 "\n"
 "            with comment lines beginning with #.\n"
+"\n"
+"        spell-checker.txt\n"
+"            Legal word list.  Parts of speech of\n"
+"            these rules are determined by applying\n"
+"            morpheme formation rules to them and\n"
+"            looking up the base words using parts\n"
+"            determined by the above files.\n"
+"\n"
+"        ignored-words.txt\n"
+"            Illegal word list.  These words are\n"
+"            ignored if they appear in the input and\n"
+"            their parts of speech cannot be\n"
+"            determined.  Otherwise such words cause\n"
+"            error messages.\n"
 "\n"
 ;
 
@@ -335,7 +343,9 @@ int main ( int argc, char ** argv )
 	-- argc, ++ argv;
     }
 
-    if ( argc != 2 || argv[1][0] == '-' )
+    if ( debug ?
+         argc != 1 :
+         argc != 2 || argv[1][0] == '-' )
     {
 
 	// Any unrecognized -* option prints documenta-
@@ -345,13 +355,18 @@ int main ( int argc, char ** argv )
 	exit (1);
     }
 
-    char * p;
-    size = strtol ( argv[1], & p, 10 );
-    if ( size < 0 || * p )
+    if ( debug )
+        size = 1e9;
+    else
     {
-        cerr << "ERROR: bad size argument."
-	     << endl;
-	exit ( 1 );
+	char * p;
+	size = strtol ( argv[1], & p, 10 );
+	if ( size < 0 || * p )
+	{
+	    cerr << "ERROR: bad size argument."
+		 << endl;
+	    exit ( 1 );
+	}
     }
 
     ifstream in;
@@ -542,11 +557,17 @@ int main ( int argc, char ** argv )
 	entry & e = * hp->second;
 	if ( e.include )
 	    cerr << "ERROR: `" << word
-		 << " input more than once."
+		 << "' input more than once."
 		 << endl;
 	e.include = true;
+
 	if ( e.parts == IGNORED )
+	{
 	    ++ ignored_count;
+	    if ( debug )
+	        cout << "NOTE: `" << e.word
+		      << "' is ignored." << endl;
+	}
 	else
 	    ++ included_count;
 	if ( debug ) output ( e );
@@ -560,7 +581,7 @@ int main ( int argc, char ** argv )
             " whose part of speech could not be"
 	    " determined." << endl;
 
-    if ( output_ignored_words )
+    if ( output_ignored_words || debug )
         return 0;
 
     sort ( dictionary, dictionary + D );
