@@ -1,7 +1,7 @@
 # Makefile for Making Dictionaries
 #
 # File:		Makefile
-# Date:		Wed Aug 30 04:21:53 EDT 2017
+# Date:		Wed Aug 30 04:55:11 EDT 2017
 #
 # The authors have placed this file in the public
 # domain; they make no warranty and accept no liability
@@ -18,6 +18,7 @@ BUILDING_FILES = \
 	index.sense \
 	index.verb \
 	noun.exc \
+	part-of-speech.txt \
 	spell-checker-file.txt \
 	verb.exc \
 	words-by-frequency.txt

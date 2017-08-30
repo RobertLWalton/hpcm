@@ -2,7 +2,7 @@
 //
 // File:     make_dictionary.cc
 // Authors:  Bob Walton <walton@seas.harvard.edu>
-// Date:     Wed Aug 30 04:46:10 EDT 2017
+// Date:     Wed Aug 30 05:02:52 EDT 2017
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -391,6 +391,8 @@ int main ( int argc, char ** argv )
 	{
 	    assert
 	      ( strlen ( line ) < sizeof ( line ) - 1 );
+
+	    if ( line[0] == ' ' ) continue;
 
 	    char * p = line;
 	    while ( * p && ! isspace ( * p ) ) ++ p;
