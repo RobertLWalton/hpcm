@@ -2,7 +2,7 @@
 //
 // File:     make_dictionary.cc
 // Authors:  Bob Walton <walton@seas.harvard.edu>
-// Date:     Wed Aug 30 05:02:52 EDT 2017
+// Date:     Thu Aug 31 04:35:48 EDT 2017
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -79,6 +79,8 @@ const char * part_of_speech_file =
     "part-of-speech.txt";
 const char * ignored_words_file =
     "ignored-words.txt";
+const char * approvals_file =
+    "word-approvals.txt";
 
 const int NUMBER_PART_FILES = 8;
 struct part_file
@@ -123,7 +125,7 @@ struct morph_rule
     { 4, "shes", "sh", NOUN } };
 
 const char * const documentation = "\n"
-"make_dictionary [-[acdi]] size\n"
+"make_dictionary [-[acdi]] [size approvals]\n"
 "\n"
 "    Given input listing words in order of importance\n"
 "    (e.g., in frequency order), output these words\n"
@@ -156,11 +158,21 @@ const char * const documentation = "\n"
 "    from the output.  The -a option omits the\n"
 "    abbreviation and the -c option omits the code.\n"
 "\n"
+"    The `size' argument gives the number of words to\n"
+"    be output.  The `approvals' argument gives the\n"
+"    number of approvals a word must have to appear\n"
+"    in the output.  A word gets one approval for\n"
+"    each spell checker file it appears in.  The\n"
+"    `size' and `approvals' arguments must not be\n"
+"    given if -d is used.\n"
+"\n"
 "    The words are sorted after they are all input\n"
 "    and then output in alphabetical order, unless\n"
 "    the -d option is given, in which case the words\n"
 "    are output as soon as they are input, for\n"
-"    debugging purposes.\n"
+"    debugging purposes.  If -d is given the\n"
+"    approvals A of the word are also output by\n"
+"    appending `/A' to the word.\n"
 "\n"
 "    Normally input words whose part of speech\n"
 "    cannot be determined are listed in error\n"
@@ -184,25 +196,53 @@ const char * const documentation = "\n"
 "\n"
 "        part-of-speech.txt\n"
 "            Part of speech information not in Word\n"
-"            Net files.  In format:\n"
+"            Net files.  File lines have the formats:\n"
 "\n"
 "                word part-of-speech-abbreviation\n"
+"                word !part-of-speech-abbreviation\n"
 "\n"
-"            with comment lines beginning with #.\n"
+"            where the first form adds the part of\n"
+"            speech to the word and the second form\n"
+"            removes the part of speech from the\n"
+"            word.\n"
+"\n"
+"            The file may also have comment lines\n"
+"            beginning with #.\n"
 "\n"
 "        spell-checker.txt\n"
 "            Legal word list.  Parts of speech of\n"
-"            these rules are determined by applying\n"
+"            these words are determined by applying\n"
 "            morpheme formation rules to them and\n"
 "            looking up the base words using parts\n"
 "            determined by the above files.\n"
 "\n"
+"            A word appearing in this file gets one\n"
+"            approval.\n"
+"\n"
+"            Currently there is only one spell\n"
+"            checker file.\n"
+"\n"
 "        ignored-words.txt\n"
-"            Illegal word list.  These words are\n"
-"            ignored if they appear in the input and\n"
-"            their parts of speech cannot be\n"
-"            determined.  Otherwise such words cause\n"
-"            error messages.\n"
+"            Illegal word list.  Words that appear\n"
+"            in the input but have no known parts of\n"
+"            speech cause error messages unless they\n"
+"            are listed in this file.\n"
+"\n"
+"            The file may also have comment lines\n"
+"            beginning with #.\n"
+"\n"
+"        word-approvals.txt\n"
+"            This file sets the number of approvals\n"
+"            of particular words.  The file lines\n"
+"            have the format:\n"
+"\n"
+"                word number-of-approvals\n"
+"\n"
+"            and override approval counts from spell\n"
+"            checker files.\n"
+"\n"
+"            The file may also have comment lines\n"
+"            beginning with #.\n"
 "\n"
 ;
 
@@ -212,6 +252,10 @@ struct entry  // dictionary entry
     int parts;
         // Bit 1 << c is set is parts if the word has
 	// the part of speech with code c.
+    short approvals;
+        // Number of spell checker files that contain
+	// the word, thereby indicating it is a
+	// real word (and not just `m' or `sh').
     bool include;
         // Include in output; i.e., word is one of
 	// the `size' most frequent.
@@ -237,6 +281,7 @@ bool output_codes = true;
 bool output_ignored_words = false;
 bool debug = false;
 long size;
+long required_approvals;
 
 // Add a word to the dictionary with the given parts
 // of speech.
@@ -250,6 +295,7 @@ void add_word ( const char * word, int parts )
 	entry & e = dictionary[D++];
 	e.word = word_str;
 	e.parts = parts;
+	e.approvals = 0;
 	e.include = false;
 	hashtable.emplace ( word_str, & e );
     }
@@ -289,6 +335,42 @@ void add_morphs ( const char * word )
     }
 }
 
+// Remove parts of speech from a word IF the word
+// is in the dictionary.
+//
+void remove_parts ( const char * word, int parts )
+{
+    string sword = word;
+    hashp hp = hashtable.find ( sword );
+    if ( hp == hashtable.end() ) return;
+    entry & e = * hp->second;
+    e.parts &= ~ parts;
+}
+
+// Increment the approval count of a word IF the word
+// is in the dictionary.
+//
+void approve_word ( const char * word )
+{
+    string sword = word;
+    hashp hp = hashtable.find ( sword );
+    if ( hp == hashtable.end() ) return;
+    entry & e = * hp->second;
+    ++ e.approvals;
+}
+
+// Set the approval count of a word IF the word
+// is in the dictionary.
+//
+void set_approvals ( const char * word, int approvals )
+{
+    string sword = word;
+    hashp hp = hashtable.find ( sword );
+    if ( hp == hashtable.end() ) return;
+    entry & e = * hp->second;
+    e.approvals = approvals;
+}
+
 // Output entry, one line for each part of speech
 // of entry.
 //
@@ -303,6 +385,7 @@ void output ( entry & e )
 	if ( ( 1 << c ) & e.parts )
 	{
 	    cout << word;
+	    if ( debug ) cout << "/" << e.approvals;
 	    if ( output_codes )
 	        cout << " " << c;
 	    if ( output_abbreviations )
@@ -345,7 +428,7 @@ int main ( int argc, char ** argv )
 
     if ( debug ?
          argc != 1 :
-         argc != 2 || argv[1][0] == '-' )
+         argc != 3 || argv[1][0] == '-' )
     {
 
 	// Any unrecognized -* option prints documenta-
@@ -356,7 +439,7 @@ int main ( int argc, char ** argv )
     }
 
     if ( debug )
-        size = 1e9;
+        size = 1e9, required_approvals = 0;
     else
     {
 	char * p;
@@ -364,6 +447,14 @@ int main ( int argc, char ** argv )
 	if ( size < 0 || * p )
 	{
 	    cerr << "ERROR: bad size argument."
+		 << endl;
+	    exit ( 1 );
+	}
+	required_approvals =
+	    strtol ( argv[2], & p, 10 );
+	if ( required_approvals < 0 || * p )
+	{
+	    cerr << "ERROR: bad approvals argument."
 		 << endl;
 	    exit ( 1 );
 	}
@@ -457,7 +548,8 @@ int main ( int argc, char ** argv )
 	char * p = line;
 	while ( * p && ! isspace ( * p ) ) ++ p;
 	* p ++ = 0;
-	int i = * p - '0';
+	bool remove = ( * p == '!' );
+	if ( remove ) ++ p;
 	int c = 0;
 	for ( int i = 1; i <= MAX_CODE; ++ i )
 	{
@@ -476,7 +568,10 @@ int main ( int argc, char ** argv )
 	    continue;
 	}
 
-	add_word ( line, 1 << c );
+	if ( remove )
+	    remove_parts ( line, 1 << c );
+	else
+	    add_word ( line, 1 << c );
     }
     in.close();
     int Dpart = D - Dsenset - Dparts;
@@ -499,6 +594,7 @@ int main ( int argc, char ** argv )
 	    ( strlen ( line ) < sizeof ( line ) - 1 );
 
 	add_morphs ( line );
+	approve_word ( line );
     }
     in.close();
     int Dchecker = D - Dsenset - Dparts - Dpart;
@@ -520,6 +616,8 @@ int main ( int argc, char ** argv )
     {
         assert
 	    ( strlen ( line ) < sizeof ( line ) - 1 );
+	if ( line[0] == '#' ) continue;
+	if ( line[0] == 0 ) continue;
 
 	add_word ( line, IGNORED );
     }
@@ -529,11 +627,42 @@ int main ( int argc, char ** argv )
     cerr << "Ignored words file added " << Dignored
          << " dictionary entries." << endl;
 
+    // Process word approvals file.
+    //
+    int approvals_count = 0;
+    in.open ( approvals_file );
+    if ( ! in )
+    {
+	cout << "Cannot open " << approvals_file
+	     << endl;
+	exit ( 1 );
+    }
+    while ( in.getline ( line, sizeof ( line ) ),
+            in.good() )
+    {
+        assert
+	    ( strlen ( line ) < sizeof ( line ) - 1 );
+	if ( line[0] == '#' ) continue;
+	if ( line[0] == 0 ) continue;
+
+	char * p = line;
+	while ( * p && ! isspace ( * p ) ) ++ p;
+	* p ++ = 0;
+	long approvals = strtol ( p, & p, 10 );
+	assert ( * p == 0 );
+	set_approvals ( line, approvals );
+	++ approvals_count;
+    }
+    in.close();
+    cerr << "Approvals set for " << approvals_count
+         << " dictionary entries." << endl;
+
     // Process input.
     //
     int position = 0;
     int included_count = 0;
     ignored_count = 0;
+    int unapproved_count = 0;
     while ( cin.getline ( line, sizeof ( line ) ),
             cin.good() && included_count < size )
     {
@@ -561,7 +690,9 @@ int main ( int argc, char ** argv )
 	    cerr << "ERROR: `" << word
 		 << "' input more than once."
 		 << endl;
-	e.include = true;
+	bool approved =
+	    ( e.approvals >= required_approvals );
+	e.include = approved;
 
 	if ( e.parts == IGNORED )
 	{
@@ -570,14 +701,20 @@ int main ( int argc, char ** argv )
 	        cout << "NOTE: `" << e.word
 		      << "' is ignored." << endl;
 	}
-	else
+	else if ( approved )
 	    ++ included_count;
+	else
+	    ++ unapproved_count;
 	if ( debug ) output ( e );
 
     }
     in.close();
-    cerr << "Found " << included_count << " out of "
+    cerr << "Included " << included_count << " out of "
          << position << " input words."
+	 << endl;
+    cerr << "Excluded " << unapproved_count
+         << " words that were not in enough spell"
+	    " checker files."
 	 << endl;
     cerr << "Ignored " << ignored_count << " words"
             " whose part of speech could not be"
