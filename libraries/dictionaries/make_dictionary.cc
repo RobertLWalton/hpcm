@@ -125,7 +125,7 @@ struct morph_rule
     { 4, "shes", "sh", NOUN } };
 
 const char * const documentation = "\n"
-"make_dictionary [-[acdi]] [size approvals]\n"
+"make_dictionary [-[acdn]] [size approvals]\n"
 "\n"
 "    Given input listing words in order of importance\n"
 "    (e.g., in frequency order), output these words\n"
@@ -175,12 +175,10 @@ const char * const documentation = "\n"
 "    appending `/A' to the word.\n"
 "\n"
 "    Normally input words whose part of speech\n"
-"    cannot be determined are listed in error\n"
-"    messages.  If the -i option is given, they are\n"
-"    each output on a line by themselves, and the\n"
-"    normal output is suppressed.  This is to make\n"
-"    it easy to construct the `ignored-words.txt'\n"
-"    file.\n"
+"    cannot be determined are ignored.  If the -n\n"
+"    option is given, each such word not listed in\n"
+"    the ignored-words.txt file is output on a line\n"
+"    by itself, and the normal output is suppressed.\n"
 "\n"
 "    A separate line is output for each part of\n"
 "    speech that a word has, if the word has more\n"
@@ -223,10 +221,8 @@ const char * const documentation = "\n"
 "            checker file.\n"
 "\n"
 "        ignored-words.txt\n"
-"            Illegal word list.  Words that appear\n"
-"            in the input but have no known parts of\n"
-"            speech cause error messages unless they\n"
-"            are listed in this file.\n"
+"            Illegal word list.  These words will\n"
+"            NOT be output.\n"
 "\n"
 "            The file may also have comment lines\n"
 "            beginning with #.\n"
@@ -278,7 +274,7 @@ typedef unordered_map<string, entry *>::iterator
 
 bool output_abbreviations = true;
 bool output_codes = true;
-bool output_ignored_words = false;
+bool output_no_parts_words = false;
 bool debug = false;
 long size;
 long required_approvals;
@@ -380,7 +376,7 @@ void output ( entry & e )
     unsigned wsize = word.size();
     if ( word == "i" ) word = "I";
 
-    for ( int c = 1; c <= MAX_CODE; ++ c )
+    for ( int c = 0; c <= MAX_CODE; ++ c )
     {
 	if ( ( 1 << c ) & e.parts )
 	{
@@ -414,7 +410,7 @@ int main ( int argc, char ** argv )
 	              break;
 	    case 'c': output_codes = false;
 	              break;
-	    case 'i': output_ignored_words = true;
+	    case 'n': output_no_parts_words = true;
 	              break;
 	    default:
 	        cerr << "Unrecognized option -" << *p
@@ -426,7 +422,7 @@ int main ( int argc, char ** argv )
 	-- argc, ++ argv;
     }
 
-    if ( debug ?
+    if ( debug || output_no_parts_words ?
          argc != 1 :
          argc != 3 || argv[1][0] == '-' )
     {
@@ -438,7 +434,7 @@ int main ( int argc, char ** argv )
 	exit (1);
     }
 
-    if ( debug )
+    if ( debug || output_no_parts_words )
         size = 1e9, required_approvals = 0;
     else
     {
@@ -663,6 +659,7 @@ int main ( int argc, char ** argv )
     int included_count = 0;
     ignored_count = 0;
     int unapproved_count = 0;
+    int no_parts_count = 0;
     while ( cin.getline ( line, sizeof ( line ) ),
             cin.good() && included_count < size )
     {
@@ -675,14 +672,9 @@ int main ( int argc, char ** argv )
 	hashp hp = hashtable.find ( word );
 	if ( hp == hashtable.end() )
 	{
-	    if ( output_ignored_words )
+	    if ( output_no_parts_words )
 	        cout << word << endl;
-	    else
-		cerr << "ERROR: could find no parts of"
-			" speech for `" << word
-		     << "' of position. " << position
-		     << endl;
-	    ++ ignored_count;
+	    ++ no_parts_count;
 	    continue;
 	}
 	entry & e = * hp->second;
@@ -692,19 +684,17 @@ int main ( int argc, char ** argv )
 		 << endl;
 	bool approved =
 	    ( e.approvals >= required_approvals );
-	e.include = approved;
 
-	if ( e.parts == IGNORED )
-	{
+	if ( e.parts & IGNORED )
 	    ++ ignored_count;
-	    if ( debug )
-	        cout << "NOTE: `" << e.word
-		      << "' is ignored." << endl;
-	}
 	else if ( approved )
+	{
 	    ++ included_count;
+	    e.include = true;
+	}
 	else
 	    ++ unapproved_count;
+
 	if ( debug ) output ( e );
 
     }
@@ -712,15 +702,19 @@ int main ( int argc, char ** argv )
     cerr << "Included " << included_count << " out of "
          << position << " input words."
 	 << endl;
-    cerr << "Excluded " << unapproved_count
-         << " words that were not in enough spell"
-	    " checker files."
+    cerr << "Excluded " << ignored_count
+         << " words listed in ignored-words.txt file."
 	 << endl;
-    cerr << "Ignored " << ignored_count << " words"
+    cerr << "Excluded " << no_parts_count
+         << " additional words"
             " whose part of speech could not be"
 	    " determined." << endl;
+    cerr << "Excluded " << unapproved_count
+         << " additional words with too low approval"
+	    " count."
+	 << endl;
 
-    if ( output_ignored_words || debug )
+    if ( output_no_parts_words || debug )
         return 0;
 
     sort ( dictionary, dictionary + D );
@@ -730,7 +724,6 @@ int main ( int argc, char ** argv )
     {
         entry & e = dictionary[i];
 	if ( ! e.include ) break;
-	if ( e.parts == IGNORED ) continue;
 
 	output ( e );
 	++ count;

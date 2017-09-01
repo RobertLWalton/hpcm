@@ -1,7 +1,7 @@
 # Makefile for Making Dictionaries
 #
 # File:		Makefile
-# Date:		Thu Aug 31 04:57:37 EDT 2017
+# Date:		Fri Sep  1 07:03:23 EDT 2017
 #
 # The authors have placed this file in the public
 # domain; they make no warranty and accept no liability
@@ -21,6 +21,7 @@ BUILDING_FILES = \
 	part-of-speech.txt \
 	spell-checker-file.txt \
 	verb.exc \
+	ignored-words.txt \
 	word-approvals.txt \
 	words-by-frequency.txt
 
@@ -64,6 +65,15 @@ most-common-20000-with-part-code.dict:	\
 	make_dictionary -a 20000 1 \
 	    < words-by-frequency.txt \
 	    > most-common-20000-with-part-code.dict
+
+find_abbreviations:	find_abbreviations.cc
+	g++ -g -std=c++11 -o find_abbreviations \
+	    find_abbreviations.cc
+
+ignored-words.txt:	find_abbreviations \
+                        /usr/share/dict/words
+	sort /usr/share/dict/words \
+	    | find_abbreviations > ignored-words.txt
 
 clean:
 	rm -f make_dictionary
