@@ -1,7 +1,7 @@
 # Makefile for the Binary Tree Sort Problem
 #
 # File:		Makefile
-# Date:		Sun Jun 18 12:44:34 EDT 2017
+# Date:		Sun Sep 17 06:16:42 EDT 2017
 #
 # See demonstration Makefile for documentation.
 #
@@ -26,7 +26,7 @@ XTRA_LIMITS_py =
 XTRA_LIMITS_lsp =
 XTRA_CLEANS =
 
-C_FLAGS = -g
+C_FLAGS = -g -Dinline=static
 CC_FLAGS = -g
 JAVAC_FLAGS = -g
 JAVA_FLAGS =
@@ -42,7 +42,7 @@ default:	$P.out
 
 .c:
 	rm -f $* core core.[0-9]*
-	gcc -Dinline=static -std=gnu11 ${C_FLAGS} \
+	gcc -std=gnu11 ${C_FLAGS} \
 	    -o $* $*.c -lm ${XTRA_LIBS}
 
 .cc:
