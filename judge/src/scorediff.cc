@@ -2,7 +2,7 @@
 //
 // File:	scorediff.cc
 // Authors:	Bob Walton (walton@deas.harvard.edu)
-// Date:	Mon Jan  5 04:43:55 EST 2015
+// Date:	Sun Sep 17 04:28:17 EDT 2017
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -45,7 +45,7 @@ using namespace std;
 // Maximum size of a token, or of whitespace preceding
 // a token.
 //
-unsigned const MAX_SIZE = 10100;
+unsigned const MAX_SIZE = 1100000;
 
 // Default maximum number of proof lines containing any
 // one type of difference.
