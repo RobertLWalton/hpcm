@@ -176,12 +176,12 @@ web:	web_do_nothing
 
 problems.pdf:	problems_print_files
 	rm -f problems.pdf
-	fprint -oB `cat problems_print_files` \
+	fprint -o `cat problems_print_files` \
 	       > problems.pdf
 
 this_contest.pdf: help/this_contest
 	rm -f this_contest.pdf
-	fprint -oB help/this_contest >this_contest.pdf
+	fprint -o help/this_contest >this_contest.pdf
 
 
 # Print_files_do_nothing merely causes the print files
