@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Jul  8 15:31:48 EDT 2017
+# Date:		Fri Sep 22 04:13:25 EDT 2017
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -90,7 +90,8 @@ modes:
 		   hpcm_helper javahelp c++help \
 		   pythonhelp \
 		   startup_helper elinks_helper \
-		   authorize jdebug ldebug
+		   authorize jdebug ldebug \
+		   practice
 	chmod a+r procmailrc \
 	          elinks_startup_message
 	chmod a+x .. ../.. ../../..

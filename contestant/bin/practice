@@ -1,0 +1,76 @@
+#! /bin/sh
+#
+# Execute commands relating to practice problems.
+#
+# File:		practice
+# Author:	Bob Walton <walton@deas.harvard.edu>
+# Date:		Fri Sep 22 03:56:47 EDT 2017
+#
+# The authors have placed this program in the public
+# domain; they make no warranty and accept no liability
+# for this program.
+
+# Time between scoreboard.
+#
+R=30
+cd=${HOME}/.hpcm_contest
+
+trap "exit 0" HUP INT QUIT
+
+case "$1" in
+   -doc* )
+   	echo "
+practice index
+    Display index of practice problems.
+
+practice scoreboard
+    Display practice problem scoreboard.
+
+practice print
+    Print practice problem descriptions."
+
+    	exit 1
+	;;
+
+index)
+    less -F $cd/help/practice_problems
+    ;;
+
+scoreboard)
+
+    file=$cd/practice_scoreboard
+
+    while test x = x
+    do
+	clear
+	if hpcm_less "$file" $R -F -K "$file"
+	then
+	    sleep $R
+	fi
+    done
+    ;;
+
+print)
+
+    # Compute `where' from who_where if that exists.
+    #
+    user=`id -un`
+
+    if test -r $cd/who_where; then
+	whowhere=`grep "^$user:" $cd/who_where`
+	where=`echo "$whowhere" | cut -d: -f2`
+	case "$where" in
+	"" | WHERE | where )
+	    where="$user"
+	    ;;
+	esac
+    else
+	where="$user"
+    fi
+    pdf2ps $cd/practice_problems.pdf - | \
+        printer_pipe "$where" "practice_problems"
+    ;;
+
+esac
+
+exit 0
