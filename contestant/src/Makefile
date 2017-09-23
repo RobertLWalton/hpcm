@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Thu Aug 17 11:41:23 EDT 2017
+# Date:		Sat Sep 23 01:54:23 EDT 2017
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -44,6 +44,11 @@ hpcm_display_graph_test.ps:	\
 	    hpcm_display_graph_test.in \
 	    hpcm_display_graph_test.out \
 	    > hpcm_display_graph_test.ps
+
+hpcm_display_graph:	hpcm_display_graph.cc
+	g++ -I /usr/include/cairo \
+	    -o hpcm_display_graph \
+	    hpcm_display_graph.cc -lcairo -lX11
 
 hpcm_display_segments:	hpcm_display_segments.cc
 	g++ -I /usr/include/cairo \
