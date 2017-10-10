@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Mon Oct 10 19:50:27 EDT 2016
+# Date:		Tue Oct 10 07:51:01 EDT 2017
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -83,6 +83,8 @@ DOCS=	overview.txt \
 	contestant/print2.txt \
 	contestant/printer_pipe.txt \
 	judge/printer_broadcast.txt \
+	judge/printer_client.txt \
+	judge/printer_server.txt \
 	judge/receivemail.txt \
 	judge/remakeMakefile.txt \
 	judge/rerun_contest.txt \
@@ -289,6 +291,16 @@ judge/printer_broadcast.txt:	hpcm_judging.rc \
 	rm -f judge/printer_broadcast.txt
 	-../../judge/bin/printer_broadcast -doc \
 	    >judge/printer_broadcast.txt
+judge/printer_client.txt:	hpcm_judging.rc \
+		    ../../judge/bin/printer_client
+	rm -f judge/printer_client.txt
+	-../../judge/bin/printer_client -doc \
+	    >judge/printer_client.txt
+judge/printer_server.txt:	hpcm_judging.rc \
+		    ../../judge/bin/printer_server
+	rm -f judge/printer_server.txt
+	-../../judge/bin/printer_server -doc \
+	    >judge/printer_server.txt
 judge/receivemail.txt:	hpcm_judging.rc \
 			../../judge/bin/receivemail
 	rm -f judge/receivemail.txt
