@@ -2,7 +2,7 @@
 //
 // File:	hpcm_display.cc
 // Authors:	Bob Walton (walton@deas.harvard.edu)
-// Date:	Sun Jul  9 05:33:58 EDT 2017
+// Date:	Thu Jun  7 12:51:51 EDT 2018
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -618,7 +618,7 @@ void draw_dot ( vector p, width w )
 void draw_arrow ( vector p, vector d, width w )
 {
     d = ( 1 / sqrt ( d * d ) ) * d;
-    d = ( min ( xmax - xmin, ymax - ymin ) / 50 ) * d;
+    d = ( min ( xmax - xmin, ymax - ymin ) / 25 ) * d;
     vector d1 = d^45;
     vector d2 = d^(-45);
     cairo_move_to ( graph_c, CONVERT(p-d1) );
