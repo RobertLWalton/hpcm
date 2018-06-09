@@ -2,7 +2,7 @@
  *
  * File:	hpcm_sandbox.c
  * Authors:	Bob Walton (walton@deas.harvard.edu)
- * Date:	Thu Feb 28 07:46:10 EST 2013
+ * Date:	Fri Jun  8 22:08:49 EDT 2018
  *
  * The authors have placed this program in the public
  * domain; they make no warranty and accept no liability
@@ -123,6 +123,14 @@ char documentation [] =
 "\n"
 "    Normally the `sandbox' user is not allowed to\n"
 "    log in and owns no useful files or directories.\n"
+"\n"
+"    If the environment variable HPCM_SANDBOX_TIME\n"
+"    is defined and either the -watch or -tee option\n"
+"    is given, the environment variable names a local\n"
+"    file into which the execution times of the child\n"
+"    process are are placed, in the form of a single\n"
+"    line of format `USER-TIME SYSTEM-TIME' where\n"
+"    times are floating point numbers of CPU seconds.\n"
 "\n"
 "    The program will write an error message on the\n"
 "    standard error output if any system call is in\n"
@@ -476,6 +484,51 @@ int main ( int argc, char ** argv )
 
 	    if ( wait ( & status ) < 0 )
 		errno_exit ( "wait" );
+
+            const char * times_file =
+	        getenv ( "HPCM_SANDBOX_TIMES" );
+	    if ( times_file != NULL )
+	    {
+	        struct rusage usage;
+		if ( getrusage ( RUSAGE_CHILDREN,
+		                 & usage ) < 0 )
+		    errno_exit
+		        ( "genrusage RUSAGE_CHILDREN" );
+
+		int times_fd =
+		    open ( times_file,
+			   O_WRONLY|O_CREAT|O_TRUNC,
+			   0666 );
+
+		if ( times_fd < 0 )
+		    errno_exit
+		        ( "opening HPCM_SANDBOX_TIMES"
+		           " file" );
+		char times_buffer[1000];
+		int chars = sprintf
+		    ( times_buffer, "%.6f %.6f\n",
+		        usage.ru_utime.tv_sec
+		      + 1e-6 * usage.ru_utime.tv_usec,
+		        usage.ru_stime.tv_sec
+		      + 1e-6 * usage.ru_stime.tv_usec );
+		char * p = times_buffer;
+		while ( chars > 0 )
+		{
+		    int c = write
+		        ( times_fd, p, chars );
+		    if ( c < 0 && errno == EINTR )
+		        continue;
+		    if ( c < 0 )
+			errno_exit
+			  ( "writing HPCM_SANDBOX_TIMES"
+			    " file" );
+		    chars -= c, p += c;
+		}
+	        if ( close ( times_fd ) < 0 )
+		    errno_exit
+		        ( "closing HPCM_SANDBOX_TIMES"
+		           " file" );
+	    }
 
 	    if ( WIFSIGNALED ( status ) )
 	    {
