@@ -4,7 +4,7 @@
 #
 # File:		testproblems
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Sun Jun 18 07:08:52 EDT 2017
+# Date:		Sat Jun 16 17:05:20 EDT 2018
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -1031,6 +1031,8 @@ foreach directory $myargv {
 	    set testdir "test_${PROBLEMXXX}_$EXT"
 
 	    set env(HPCM_EXT) $EXT
+	    set env(HPCM_SANDBOX_TIMES) \
+	        SOLUTION_TIMING_INFO
 
 	    putsq "==================== $testdir:"
 
@@ -1124,10 +1126,19 @@ foreach directory $myargv {
 		putsq "make"
 		set make_error \
 		    [catch { exec /usr/bin/time \
-		                  -f "%U $N.in" \
-				  -o TIMING_INFO+ -a \
+		                  -f "%U" \
+				  -o MAKE_TIMING_INFO \
 				  make >@ $stdoutv } \
 			   mout]
+		set make_time \
+		    [read_file MAKE_TIMING_INFO]
+		set solution_time \
+		    [lindex [read_file \
+		                SOLUTION_TIMING_INFO] 0]
+		lappend timing_info \
+		    [list [format "%.3f" \
+		                   $solution_time] \
+                          $make_time $N.in]
 		if { $make_error } {
 		    if { $N != $problem } {
 			set makes "  ==== $testdir\
@@ -1220,16 +1231,17 @@ foreach directory $myargv {
 		    scorediff $testdir $N.out $N.test
 		}
 	    }
-	    putsq "Sorting TIMING_INFO:"
-	    exec sort -k 1,1 -n -r \
-	         < TIMING_INFO+ > TIMING_INFO
-	    file delete TIMING_INFO+
+	    putsq "Writing TIMING_INFO:"
 	    set timing_info \
-	        [exec head -n 10 < TIMING_INFO]
-	    regsub -all "\n" $timing_info \
-	           "\n            " \
-	           timing_info
-	    set max_time [lindex $timing_info 0]
+	        [lsort -decreasing -real -index 0 \
+		       $timing_info]
+	    set timing_ch [open TIMING_INFO w]
+	    foreach line $timing_info {
+	        puts $timing_ch $line
+	    }
+	    close $timing_ch
+	    set max_time \
+	        [lindex [lindex $timing_info 0] 0]
 
 	    set names [array names score_counters]
 	    set out "    in $testdir:"
@@ -1249,8 +1261,11 @@ foreach directory $myargv {
 		set out "$out $value $score"
 	    }
 	    if { $summary } {
-		set out "$out\n        Max Times:"
-		set out "$out\n            $timing_info"
+		set out "$out\n        Max\
+		                Solution/Make Times:"
+		foreach line $timing_info {
+		    set out "$out\n            $line"
+		}
 	    }
 	    putsq "TEST DIRECTORY SUMMARY:"
 	    putsq $out
