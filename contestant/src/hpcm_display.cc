@@ -2,7 +2,7 @@
 //
 // File:	hpcm_display.cc
 // Authors:	Bob Walton (walton@deas.harvard.edu)
-// Date:	Thu Jun  7 12:51:51 EDT 2018
+// Date:	Mon Jun 25 14:27:30 EDT 2018
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -15,6 +15,7 @@
 #include <string>
 #include <sstream>
 #include <cstdlib>
+#include <cstdio>
 #include <cstring>
 #include <cctype>
 #include <cfloat>
@@ -62,6 +63,8 @@ const char * const documentation = "\n"
 "              S = small (default)\n"
 "              M = medium\n"
 "              L = large\n"
+"              G|GG|GGG = color is light,medium,dark\n"
+"                         gray (default is black)\n"
 "\n"
 "        L+ x1 y1 x2 y2\n"
 "            Display a line from (x1,y1) to (x2,y2).\n"
@@ -76,9 +79,12 @@ const char * const documentation = "\n"
 "                  beginning of oriented line\n"
 "              E = put last dot or arrow head only at\n"
 "                  end of oriented line\n"
+"              G|GG|GGG = color is light,medium,dark\n"
+"                         gray (default is black)\n"
 "\n"
 "        A+ x y xa ya r g1 g2\n"
-"            Display elliptical arc centered at (x,y).\n"
+"            Display elliptical arc centered at"
+                                          " (x,y).\n"
 "            The ellipse is first drawn with axes\n"
 "            parallel to the x- and y-axes; with x\n"
 "            semi-axis xa and y semi-axis ya.  Then\n"
@@ -104,6 +110,8 @@ const char * const documentation = "\n"
 "                  beginning of oriented arc\n"
 "              E = put last dot or arrow head only at\n"
 "                  end of oriented arc\n"
+"              G|GG|GGG = color is light,medium,dark\n"
+"                         gray (default is black)\n"
 "\n"
 "    With the -pdf option, pdf is written to\n"
 "    the standard output.\n"
@@ -166,12 +174,15 @@ string testname;
 struct command { command * next; char command; };
 enum width { SMALL = 1, MEDIUM = 2, LARGE = 3 };
 enum head { NEITHER = 0, BEGIN = 1, END = 2, BOTH = 3 };
+enum color { BLACK = 0, DARK_GRAY = 1,
+             MEDIUM_GRAY = 2, LIGHT_GRAY = 3 };
 struct qualifiers
 {
     width w;
     head dot;
     head forward;
     head rearward;
+    color c;
 };
 struct point : public command
 {
@@ -311,7 +322,12 @@ ostream & print_command_and_qualifiers
            q.rearward == BEGIN ?   "RB" :
            q.rearward == END ?     "RE" :
            q.rearward == BOTH ?    "R" :
-	                           "R?" );
+	                           "R?" )
+      << ( q.c == BLACK ? "" :
+           q.c == DARK_GRAY ?   "GGG" :
+           q.c == MEDIUM_GRAY ? "GG" :
+           q.c == LIGHT_GRAY ?  "G" :
+	                        "G?" );
     return s;
 }
 //
@@ -363,6 +379,7 @@ void read_qualifiers
     q.dot = NEITHER;
     q.forward = NEITHER;
     q.rearward = NEITHER;
+    q.c = BLACK;
     while ( ! isspace ( in.peek() ) )
     {
 	int c = in.get();
@@ -374,6 +391,8 @@ void read_qualifiers
 	case 'M': q.w = MEDIUM;
 	          break;
 	case 'L': q.w = LARGE;
+	          break;
+	case 'G': q.c = (color) ( ( q.c + 3 ) % 4 );
 	          break;
 	default:  found = false;
 	}
@@ -604,6 +623,14 @@ cairo_t * graph_c;
     left + ((p).x - xmin) * xscale, \
     bottom - ((p).y - ymin) * yscale
 
+// Set color of graph_c.
+//
+void set_color ( color c )
+{
+    double rgb = 0.25 * c;
+    cairo_set_source_rgb ( graph_c, rgb, rgb, rgb );
+}
+
 // Draw dot at position p with width w.
 //
 void draw_dot ( vector p, width w )
@@ -711,10 +738,12 @@ int main ( int argc, char ** argv )
         else if ( strncmp ( "doc", name, 3 ) == 0 )
 	{
 	    // Any -doc* option prints documentation
-	    // and exits with error status.
+	    // and exits.
 	    //
-	    cout << documentation;
-	    exit (1);
+	    FILE * out = popen ( "less -F", "w" );
+	    fputs ( documentation, out );
+	    pclose ( out );
+	    exit ( 0 );
 	}
 	else
 	{
@@ -940,12 +969,14 @@ int main ( int argc, char ** argv )
 		case 'P':
 		{
 		    point & P = * (point *) c;
+		    set_color ( P.q.c );
 		    draw_dot ( P.p, P.q.w );
 		    break;
 		}
 		case 'L':
 		{
 		    line & L = * (line *) c;
+		    set_color ( L.q.c );
 		    cairo_move_to
 			( graph_c,
 			  CONVERT(L.p1) );
@@ -982,6 +1013,7 @@ int main ( int argc, char ** argv )
 		case 'A':
 		{
 		    arc & A = * (arc *) c;
+		    set_color ( A.q.c );
 
 		    double g1 = M_PI * A.g.x / 180;
 		    double g2 = M_PI * A.g.y / 180;
