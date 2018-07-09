@@ -2,7 +2,7 @@
 //
 // File:	hpcm_display.cc
 // Authors:	Bob Walton (walton@deas.harvard.edu)
-// Date:	Mon Jul  9 01:28:25 EDT 2018
+// Date:	Mon Jul  9 15:04:03 EDT 2018
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -594,8 +594,8 @@ const double top_margin = 36;		    // 0.5"
 const double bottom_margin = 36;	    // 0.5"
 const double side_margin = 54;		    // 0.75"
 const double separation = 8;		    // 8/72"
-const double page_title_height = 36;	    // 0.5"
-const double title_font_size = 16;	    // 16/72"
+const double title_large_font_size = 16;    // 16/72"
+const double title_small_font_size = 10;    // 10/72"
 
 const double page_line_size = 1;    	    // 1/72"
 const double page_dot_size = 2;    	    // 2/72"
@@ -668,7 +668,8 @@ cairo_status_t write_to_cout
 // Drawing data.
 //
 cairo_t * title_c;
-double title_left, title_top, title_height, title_width,
+double title_font_size,
+       title_left, title_top, title_height, title_width,
        graph_top, graph_height,
        graph_left, graph_width;
 cairo_t * graph_c;
@@ -1043,6 +1044,9 @@ int main ( int argc, char ** argv )
     cairo_select_font_face ( title_c, "sans-serif",
                              CAIRO_FONT_SLANT_NORMAL,
 			     CAIRO_FONT_WEIGHT_BOLD );
+    title_font_size =
+        ( C == 1 ? title_large_font_size :
+	           title_small_font_size );
     cairo_set_font_size ( title_c, title_font_size );
     assert (    cairo_status ( title_c )
 	     == CAIRO_STATUS_SUCCESS );
@@ -1070,10 +1074,10 @@ int main ( int argc, char ** argv )
 	case_height /= R;
 
 	title_width = case_width;
-	title_height = page_title_height;
+	title_height = 2 * title_font_size;
 
 	graph_height = case_height
-	             - page_title_height;
+	             - 2 * title_font_size;
 	graph_width = case_width;
 
 	line_size = page_line_size;
@@ -1095,7 +1099,7 @@ int main ( int argc, char ** argv )
 	    graph_top = top_margin
 		      + case_height * ( curR - 1 )
 	              + separation * ( curR - 1 )
-		      + page_title_height;
+		      + 2 * title_font_size;
 	    graph_left = side_margin
 	    	       + case_width * ( curC - 1 )
 	               + separation * ( curC - 1 );
