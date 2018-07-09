@@ -2,7 +2,7 @@
 //
 // File:	hpcm_display.cc
 // Authors:	Bob Walton (walton@deas.harvard.edu)
-// Date:	Sun Jul  8 22:33:07 EDT 2018
+// Date:	Mon Jul  9 01:28:25 EDT 2018
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -667,7 +667,7 @@ cairo_status_t write_to_cout
 // Drawing data.
 //
 cairo_t * title_c;
-double title_top, title_height, title_width,
+double title_left, title_top, title_height, title_width,
        graph_top, graph_height,
        graph_left, graph_width;
 cairo_t * graph_c;
@@ -756,7 +756,8 @@ void draw_test_case ( void )
     assert (    cairo_status ( title_c )
 	     == CAIRO_STATUS_SUCCESS );
     cairo_move_to
-	( title_c, title_width/2 - te.width/2,
+	( title_c, 
+	  title_left + title_width/2 - te.width/2,
 	  title_top
 	  +
 	  title_font_size
@@ -1057,31 +1058,55 @@ int main ( int argc, char ** argv )
 
     if ( display == NULL )
     {
-	title_top = top_margin;
-	title_width = page_width;
+	double case_width = page_width
+	                  - 2 * side_margin;
+	case_width /= C;
+	double case_height =
+	    page_height - top_margin
+			- bottom_margin;
+	case_height /= R;
+
+	title_width = case_width;
 	title_height = page_title_height;
 
-	graph_top = top_margin
-		  + page_title_height;
-	graph_height =
-	    page_height - graph_top
-			- bottom_margin;
-	graph_left = side_margin;
-	graph_width =
-	    page_width - 2 * side_margin;
+	graph_height = case_height
+	             - page_title_height;
+	graph_width = case_width;
 
 	line_size = page_line_size;
 	dot_size = page_dot_size;
 
+	int curR = 1, curC = 1;
 	while ( read_testcase
 		    ( file != NULL ?
 		      * (istream *) & in :
 		      cin ) )
 	{
+	    title_top = top_margin
+	              + case_height * ( curR - 1 );
+	    title_left = side_margin
+	               + case_width * ( curC - 1 );
+
+	    graph_top = top_margin
+		      + case_height * ( curR - 1 )
+		      + page_title_height;
+	    graph_left = side_margin
+	    	       + case_width * ( curC - 1 );
+
 	    compute_bounds();
 	    draw_test_case();
-	    cairo_show_page ( title_c );
+	    if ( ++ curC > C )
+	    {
+		curC = 1;
+		if ( ++ curR > R )
+		{
+		    curR = 1;
+		    cairo_show_page ( title_c );
+		}
+	    }
 	}
+	if ( curR != 1 || curC != 1 )
+	    cairo_show_page ( title_c );
     }
     else // if ( display != NULL )
     {
@@ -1114,6 +1139,7 @@ int main ( int argc, char ** argv )
 		title_top = 0;
 		title_width = width;
 		title_height = window_title_height;
+		title_left = 0;
 
 		foot_top = height
 			 - window_foot_height;
