@@ -592,8 +592,9 @@ const double page_width = 8*72 + 72/2;	    // 8.5"
 
 const double top_margin = 36;		    // 0.5"
 const double bottom_margin = 36;	    // 0.5"
-const double side_margin = 72;		    // 1.0"
-const double page_title_height = 72+36;	    // 1.5"
+const double side_margin = 54;		    // 0.75"
+const double separation = 8;		    // 8/72"
+const double page_title_height = 36;	    // 0.5"
 const double title_font_size = 16;	    // 16/72"
 
 const double page_line_size = 1;    	    // 1/72"
@@ -1059,11 +1060,13 @@ int main ( int argc, char ** argv )
     if ( display == NULL )
     {
 	double case_width = page_width
-	                  - 2 * side_margin;
+	                  - 2 * side_margin
+			  - ( C - 1 ) * separation;
 	case_width /= C;
 	double case_height =
 	    page_height - top_margin
-			- bottom_margin;
+			- bottom_margin
+			- ( R - 1 ) * separation; 
 	case_height /= R;
 
 	title_width = case_width;
@@ -1083,15 +1086,19 @@ int main ( int argc, char ** argv )
 		      cin ) )
 	{
 	    title_top = top_margin
-	              + case_height * ( curR - 1 );
+	              + case_height * ( curR - 1 )
+	              + separation * ( curR - 1 );
 	    title_left = side_margin
-	               + case_width * ( curC - 1 );
+	               + case_width * ( curC - 1 )
+	               + separation * ( curC - 1 );
 
 	    graph_top = top_margin
 		      + case_height * ( curR - 1 )
+	              + separation * ( curR - 1 )
 		      + page_title_height;
 	    graph_left = side_margin
-	    	       + case_width * ( curC - 1 );
+	    	       + case_width * ( curC - 1 )
+	               + separation * ( curC - 1 );
 
 	    compute_bounds();
 	    draw_test_case();
