@@ -2,7 +2,7 @@
 //
 // File:	hpcm_display.cc
 // Authors:	Bob Walton (walton@deas.harvard.edu)
-// Date:	Mon Jul  9 15:04:03 EDT 2018
+// Date:	Mon Jul  9 15:14:54 EDT 2018
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -45,7 +45,7 @@ bool debug = false;
 # define dout if ( debug ) cerr
 
 const char * const documentation = "\n"
-"hpcm_display [-pdf|-LBRxC|-X] [-debug] [file]\n"
+"hpcm_display [-pdf|-RxC|-X] [-debug] [file]\n"
 "\n"
 "    This program displays line drawings defined\n"
 "    in the given file or standard input.  The file\n"
@@ -116,14 +116,12 @@ const char * const documentation = "\n"
 "    With the -pdf option, pdf is written to\n"
 "    the standard output.\n"
 "\n"
-"    With the -LBRxC options, pdf is written to the\n"
-"    standard output as per the -pdf option.  L\n"
-"    changes the format from portrait to landscape.\n"
-"    B adds borders to each page.  RxC, where R and C\n"
-"    are small integers, prints multiple testcase\n"
-"    pages per physical paper page.  There are R rows\n"
-"    of C columns each of test cases on each physical\n"
-"    page.\n"
+"    With the -RxC option, pdf is written to the\n"
+"    standard output as per the -pdf option, but with\n"
+"    multiple testcase pages per physical paper page.\n"
+"    Here R and C are very small integers, and there\n"
+"    are R rows of C columns each of test cases on\n"
+"    each physical page.\n"
 "\n"
 "    With the -X option, an X-window is opened and\n"
 "    the first test case displayed.  Typing a car-\n"
@@ -616,8 +614,6 @@ const int window_dot_size = 3;
 
 // PDF Options
 //
-bool landscape = false;
-bool borders = false;
 int R = 1, C = 1;
 
 // Parse -LBRxC and return true on success and false
@@ -625,15 +621,10 @@ int R = 1, C = 1;
 //
 bool pdfoptions ( const char * name )
 {
-    bool landscape = false, borders = false;
     long R = 1, C = 1;
     while ( * name )
     {
-        if ( * name == 'L' )
-	    landscape = true, ++ name;
-        else if ( * name == 'B' )
-	    borders = true, ++ name;
-	else if ( '0' <= * name && * name <= '9' )
+	if ( '0' <= * name && * name <= '9' )
 	{
 	    char * endp;
 	    R = strtol ( name, & endp, 10 );
@@ -648,8 +639,6 @@ bool pdfoptions ( const char * name )
 	}
 	else return false;
     }
-    ::landscape = landscape;
-    ::borders = borders;
     ::R = R;
     ::C = C;
     return true;
