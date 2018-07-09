@@ -2,7 +2,7 @@
 //
 // File:	hpcm_display.cc
 // Authors:	Bob Walton (walton@deas.harvard.edu)
-// Date:	Mon Jun 25 14:27:30 EDT 2018
+// Date:	Sun Jul  8 22:33:07 EDT 2018
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -45,7 +45,7 @@ bool debug = false;
 # define dout if ( debug ) cerr
 
 const char * const documentation = "\n"
-"hpcm_display [-pdf|-X] [-debug] [file]\n"
+"hpcm_display [-pdf|-LBRxC|-X] [-debug] [file]\n"
 "\n"
 "    This program displays line drawings defined\n"
 "    in the given file or standard input.  The file\n"
@@ -116,10 +116,20 @@ const char * const documentation = "\n"
 "    With the -pdf option, pdf is written to\n"
 "    the standard output.\n"
 "\n"
+"    With the -LBRxC options, pdf is written to the\n"
+"    standard output as per the -pdf option.  L\n"
+"    changes the format from portrait to landscape.\n"
+"    B adds borders to each page.  RxC, where R and C\n"
+"    are small integers, prints multiple testcase\n"
+"    pages per physical paper page.  There are R rows\n"
+"    of C columns each of test cases on each physical\n"
+"    page.\n"
+"\n"
 "    With the -X option, an X-window is opened and\n"
 "    the first test case displayed.  Typing a car-\n"
 "    riage return goes to the next test case, and\n"
-"    typing control-C terminates the display.\n";
+"    typing control-C terminates the display.\n"
+;
 
 // Vectors:
 //
@@ -603,6 +613,47 @@ const char window_foot[] =
 const int window_line_size = 2;
 const int window_dot_size = 3;
 
+// PDF Options
+//
+bool landscape = false;
+bool borders = false;
+int R = 1, C = 1;
+
+// Parse -LBRxC and return true on success and false
+// on failure.
+//
+bool pdfoptions ( const char * name )
+{
+    bool landscape = false, borders = false;
+    long R = 1, C = 1;
+    while ( * name )
+    {
+        if ( * name == 'L' )
+	    landscape = true, ++ name;
+        else if ( * name == 'B' )
+	    borders = true, ++ name;
+	else if ( '0' <= * name && * name <= '9' )
+	{
+	    char * endp;
+	    R = strtol ( name, & endp, 10 );
+	    if ( endp == name ) return false;
+	    if ( R < 1 || R > 30 ) return false;
+	    name = endp;
+	    if ( * name ++ != 'x' ) return false;
+	    C = strtol ( name, & endp, 10 );
+	    if ( endp == name ) return false;
+	    if ( C < 1 || C > 30 ) return false;
+	    name = endp;
+	}
+	else return false;
+    }
+    ::landscape = landscape;
+    ::borders = borders;
+    ::R = R;
+    ::C = C;
+    return true;
+}
+
 // cairo_write_func_t to write data to cout.
 //
 cairo_status_t write_to_cout
@@ -615,9 +666,13 @@ cairo_status_t write_to_cout
 
 // Drawing data.
 //
+cairo_t * title_c;
+double title_top, title_height, title_width,
+       graph_top, graph_height,
+       graph_left, graph_width;
+cairo_t * graph_c;
 double xscale, yscale, left, bottom;
 double dot_size, line_size;
-cairo_t * graph_c;
 
 # define CONVERT(p) \
     left + ((p).x - xmin) * xscale, \
@@ -655,11 +710,197 @@ void draw_arrow ( vector p, vector d, width w )
     cairo_stroke ( graph_c );
 }
 
+void draw_test_case ( void )
+{
+    // Set up point scaling.  Insist on a margin
+    // of 4 * line_size to allow lines to be
+    // inside graph box.
+    //
+    double dx = xmax - xmin;
+    double dy = ymax - ymin;
+    if ( dx == 0 ) dx = 1;
+    if ( dy == 0 ) dy = 1;
+    xscale =
+	( graph_width - 4 * line_size ) / dx;
+    yscale =
+	( graph_height - 4 * line_size ) / dy;
+
+    // Make the scales the same.
+    //
+    if ( xscale > yscale )
+	xscale = yscale;
+    else if ( xscale < yscale )
+	yscale = xscale;
+
+    // Compute left and bottom of graph so as
+    // to center graph.
+    //
+    left = graph_left
+	+ 0.5 * (   graph_width
+		  - ( xmax - xmin ) * xscale );
+    bottom = graph_top + graph_height
+	- 0.5 * (   graph_height
+		  - ( ymax - ymin ) * yscale );
+
+    dout << "LEFT " << left
+	 << " XSCALE " << xscale
+	 << " BOTTOM " << bottom
+	 << " YSCALE " << yscale
+	 << endl;
+
+    // Display test case name.
+    //
+    cairo_text_extents_t te;
+    cairo_text_extents
+	( title_c, testname.c_str(), & te );
+    assert (    cairo_status ( title_c )
+	     == CAIRO_STATUS_SUCCESS );
+    cairo_move_to
+	( title_c, title_width/2 - te.width/2,
+	  title_top
+	  +
+	  title_font_size
+	  +
+	    ( title_height - title_font_size )
+	  / 2 );
+    cairo_show_text
+	( title_c, testname.c_str() );
+    assert (    cairo_status ( title_c )
+	     == CAIRO_STATUS_SUCCESS );
+
+    // Execute drawing commands.
+    //
+    for ( command * c = commands; c != NULL;
+				  c = c->next )
+    {
+	dout << "EXECUTE " << * c << endl;
+	switch ( c->command )
+	{
+	case 'P':
+	{
+	    point & P = * (point *) c;
+	    set_color ( P.q.c );
+	    draw_dot ( P.p, P.q.w );
+	    break;
+	}
+	case 'L':
+	{
+	    line & L = * (line *) c;
+	    set_color ( L.q.c );
+	    cairo_move_to
+		( graph_c,
+		  CONVERT(L.p1) );
+	    cairo_line_to
+		( graph_c,
+		  CONVERT(L.p2) );
+	    cairo_set_line_width
+		( graph_c,
+		  L.q.w * line_size );
+	    cairo_stroke ( graph_c );
+
+	    if ( L.q.dot & BEGIN )
+		draw_dot ( L.p1, L.q.w );
+	    if ( L.q.dot & END )
+		draw_dot ( L.p2, L.q.w );
+	    if ( L.q.forward & BEGIN )
+		draw_arrow
+		    ( L.p1, L.p2 - L.p1,
+		      L.q.w );
+	    if ( L.q.forward & END )
+		draw_arrow
+		    ( L.p2, L.p2 - L.p1,
+		      L.q.w );
+	    if ( L.q.rearward & BEGIN )
+		draw_arrow
+		    ( L.p1, L.p1 - L.p2,
+		      L.q.w );
+	    if ( L.q.rearward & END )
+		draw_arrow
+		    ( L.p2, L.p1 - L.p2,
+		      L.q.w );
+	    break;
+	}
+	case 'A':
+	{
+	    arc & A = * (arc *) c;
+	    set_color ( A.q.c );
+
+	    double g1 = M_PI * A.g.x / 180;
+	    double g2 = M_PI * A.g.y / 180;
+	    double r  = M_PI * A.r   / 180;
+
+	    cairo_matrix_t saved_matrix;
+	    cairo_get_matrix
+		( graph_c, & saved_matrix );
+	    cairo_translate
+		( graph_c, CONVERT(A.c) );
+	    cairo_rotate
+		( graph_c, - r );
+	    cairo_scale
+		( graph_c,
+		  A.a.x * xscale,
+		  - A.a.y * yscale );
+
+	    cairo_new_path ( graph_c );
+	    cairo_arc
+		( graph_c,
+		  0, 0, 1,
+		  min ( g1, g2 ),
+		  max ( g1, g2 ) );
+
+	    cairo_set_matrix
+		( graph_c, & saved_matrix );
+	    cairo_set_line_width
+		( graph_c,
+		  A.q.w * line_size );
+	    cairo_stroke ( graph_c );
+
+	    double s1 = sin ( g1 );
+	    double c1 = cos ( g1 );
+	    double s2 = sin ( g2 );
+	    double c2 = cos ( g2 );
+	    vector p1 =
+		{ c1 * A.a.x,
+		  s1 * A.a.y };
+	    vector d1 =
+		{ - s1 * A.a.x,
+		    c1 * A.a.y };
+	    vector p2 =
+		{ c2 * A.a.x,
+		  s2 * A.a.y };
+	    vector d2 =
+		{ - s2 * A.a.x,
+		    c2 * A.a.y };
+	    p1 = A.c + ( p1 ^ A.r );
+	    p2 = A.c + ( p2 ^ A.r );
+	    d1 = d1 ^ A.r;
+	    d2 = d2 ^ A.r;
+
+	    if ( A.q.dot & BEGIN )
+		draw_dot ( p1, A.q.w );
+	    if ( A.q.dot & END )
+		draw_dot ( p2, A.q.w );
+	    if ( A.q.forward & BEGIN )
+		draw_arrow
+		    ( p1, d1, A.q.w );
+	    if ( A.q.forward & END )
+		draw_arrow
+		    ( p2, d2, A.q.w );
+	    if ( A.q.rearward & BEGIN )
+		draw_arrow
+		    ( p1, - d1, A.q.w );
+	    if ( A.q.rearward & END )
+		draw_arrow
+		    ( p2, - d2, A.q.w );
+	}
+	}
+    }
+}
+
 // Main program.
 //
 int main ( int argc, char ** argv )
 {
-
     cairo_surface_t * page = NULL;
     Display * display = NULL;
     Window window;
@@ -672,20 +913,7 @@ int main ( int argc, char ** argv )
 
 	char * name = argv[1] + 1;
 
-        if (    strcmp ( "pdf", name ) == 0 )
-	{
-	    if ( page != NULL )
-	    {
-		cout << "At most one -pdf or -X option"
-			" allowed"
-		     << endl;
-		exit (1);
-	    }
-	    page = cairo_pdf_surface_create_for_stream
-	    		( write_to_cout, NULL,
-			  page_width, page_height );
-	}
-        else if (    strcmp ( "X", name ) == 0 )
+        if (    strcmp ( "X", name ) == 0 )
 	{
 	    if ( page != NULL )
 	    {
@@ -745,6 +973,21 @@ int main ( int argc, char ** argv )
 	    pclose ( out );
 	    exit ( 0 );
 	}
+        else if (    strcmp ( "pdf", name ) == 0
+	             ||
+		     pdfoptions ( name ) )
+	{
+	    if ( page != NULL )
+	    {
+		cout << "At most one -pdf or -X option"
+			" allowed"
+		     << endl;
+		exit (1);
+	    }
+	    page = cairo_pdf_surface_create_for_stream
+	    		( write_to_cout, NULL,
+			  page_width, page_height );
+	}
 	else
 	{
 	    cout << "Cannot understand -" << name
@@ -793,7 +1036,7 @@ int main ( int argc, char ** argv )
     // 4 is the max number of allowed cairo contexts.
     // This seems to be undocumented?
     //
-    cairo_t * title_c = cairo_create ( page );
+    title_c = cairo_create ( page );
     cairo_set_source_rgb ( title_c, 0.0, 0.0, 0.0 );
     cairo_select_font_face ( title_c, "sans-serif",
                              CAIRO_FONT_SLANT_NORMAL,
@@ -812,43 +1055,68 @@ int main ( int argc, char ** argv )
     bool left_control_pressed = false;
     bool right_control_pressed = false;
 
-    while ( read_testcase
-                ( file != NULL ? * (istream *) & in :
-		               cin ) )
+    if ( display == NULL )
     {
-        compute_bounds();
+	title_top = top_margin;
+	title_width = page_width;
+	title_height = page_title_height;
 
-	while ( true )
+	graph_top = top_margin
+		  + page_title_height;
+	graph_height =
+	    page_height - graph_top
+			- bottom_margin;
+	graph_left = side_margin;
+	graph_width =
+	    page_width - 2 * side_margin;
+
+	line_size = page_line_size;
+	dot_size = page_dot_size;
+
+	while ( read_testcase
+		    ( file != NULL ?
+		      * (istream *) & in :
+		      cin ) )
 	{
-	    double title_top, title_height, title_width,
-	           graph_top, graph_height,
-		   graph_left, graph_width,
-		   foot_top;
+	    compute_bounds();
+	    draw_test_case();
+	    cairo_show_page ( title_c );
+	}
+    }
+    else // if ( display != NULL )
+    {
+	while ( read_testcase
+		    ( file != NULL ?
+		      * (istream *) & in :
+		      cin ) )
+	{
+	    compute_bounds();
 
-	    if ( display != NULL )
+	    while ( true )
 	    {
+		double foot_top;
 
 		// Find window width and height.
 		//
 		Window parent;
 		int x, y;
 		unsigned width, height,
-		         border_width, depth;
+			 border_width, depth;
 		XGetGeometry ( display, window,
-		               & parent,
+			       & parent,
 			       & x, & y,
 			       & width, & height,
 			       & border_width,
 			       & depth );
 		XClearArea ( display, window, 0, 0,
-		             width, height, false );
+			     width, height, false );
 
-	        title_top = 0;
+		title_top = 0;
 		title_width = width;
 		title_height = window_title_height;
 
 		foot_top = height
-		         - window_foot_height;
+			 - window_foot_height;
 
 		graph_top = window_title_height;
 		graph_height = height
@@ -859,86 +1127,12 @@ int main ( int argc, char ** argv )
 
 		line_size = window_line_size;
 		dot_size = window_dot_size;
-	    }
-	    else
-	    {
-	        title_top = top_margin;
-		title_width = page_width;
-		title_height = page_title_height;
 
-		graph_top = top_margin
-		          + page_title_height;
-		graph_height =
-		    page_height - graph_top
-		                - bottom_margin;
-		graph_left = side_margin;
-		graph_width =
-		    page_width - 2 * side_margin;
+		draw_test_case();
 
-		line_size = page_line_size;
-		dot_size = page_dot_size;
-	    }
-
-	    // Set up point scaling.  Insist on a margin
-	    // of 4 * line_size to allow lines to be
-	    // inside graph box.
-	    //
-	    double dx = xmax - xmin;
-	    double dy = ymax - ymin;
-	    if ( dx == 0 ) dx = 1;
-	    if ( dy == 0 ) dy = 1;
-	    xscale =
-	        ( graph_width - 4 * line_size ) / dx;
-	    yscale =
-	        ( graph_height - 4 * line_size ) / dy;
-
-	    // Make the scales the same.
-	    //
-	    if ( xscale > yscale )
-	        xscale = yscale;
-	    else if ( xscale < yscale )
-	        yscale = xscale;
-
-	    // Compute left and bottom of graph so as
-	    // to center graph.
-	    //
-	    left = graph_left
-	        + 0.5 * (   graph_width
-		          - ( xmax - xmin ) * xscale );
-	    bottom = graph_top + graph_height
-	        - 0.5 * (   graph_height
-		          - ( ymax - ymin ) * yscale );
-
-	    dout << "LEFT " << left
-	         << " XSCALE " << xscale
-	         << " BOTTOM " << bottom
-	         << " YSCALE " << yscale
-		 << endl;
-
-	    // Display test case name.
-	    //
-	    cairo_text_extents_t te;
-	    cairo_text_extents
-		( title_c, testname.c_str(), & te );
-	    assert (    cairo_status ( title_c )
-		     == CAIRO_STATUS_SUCCESS );
-	    cairo_move_to
-		( title_c, title_width/2 - te.width/2,
-		  title_top
-		  +
-		  title_font_size
-		  +
-		    ( title_height - title_font_size )
-		  / 2 );
-	    cairo_show_text
-	        ( title_c, testname.c_str() );
-	    assert (    cairo_status ( title_c )
-		     == CAIRO_STATUS_SUCCESS );
-
-	    // Display foot for X-windows.
-	    //
-	    if ( display != NULL )
-	    {
+		// Display foot for X-windows.
+		//
+		cairo_text_extents_t te;
 		cairo_text_extents
 		    ( title_c, window_foot, & te );
 		assert (    cairo_status ( title_c )
@@ -946,189 +1140,66 @@ int main ( int argc, char ** argv )
 		cairo_move_to
 		    ( title_c,
 		      title_width/2 - te.width/2,
-		        foot_top
+			foot_top
 		      +
 		      title_font_size
 		      +   (   window_foot_height
-		            - title_font_size )
+			    - title_font_size )
 			/ 2 );
 		cairo_show_text
 		    ( title_c, window_foot );
 		assert (    cairo_status ( title_c )
 			 == CAIRO_STATUS_SUCCESS );
-	    }
 
-	    // Execute drawing commands.
-	    //
-	    for ( command * c = commands; c != NULL;
-	                                  c = c->next )
-	    {
-		dout << "EXECUTE " << * c << endl;
-	        switch ( c->command )
+		cairo_show_page ( title_c );
+
+		while ( true )
 		{
-		case 'P':
-		{
-		    point & P = * (point *) c;
-		    set_color ( P.q.c );
-		    draw_dot ( P.p, P.q.w );
-		    break;
-		}
-		case 'L':
-		{
-		    line & L = * (line *) c;
-		    set_color ( L.q.c );
-		    cairo_move_to
-			( graph_c,
-			  CONVERT(L.p1) );
-		    cairo_line_to
-			( graph_c,
-			  CONVERT(L.p2) );
-		    cairo_set_line_width
-			( graph_c,
-			  L.q.w * line_size );
-		    cairo_stroke ( graph_c );
-
-		    if ( L.q.dot & BEGIN )
-			draw_dot ( L.p1, L.q.w );
-		    if ( L.q.dot & END )
-			draw_dot ( L.p2, L.q.w );
-		    if ( L.q.forward & BEGIN )
-			draw_arrow
-			    ( L.p1, L.p2 - L.p1,
-			      L.q.w );
-		    if ( L.q.forward & END )
-			draw_arrow
-			    ( L.p2, L.p2 - L.p1,
-			      L.q.w );
-		    if ( L.q.rearward & BEGIN )
-			draw_arrow
-			    ( L.p1, L.p1 - L.p2,
-			      L.q.w );
-		    if ( L.q.rearward & END )
-			draw_arrow
-			    ( L.p2, L.p1 - L.p2,
-			      L.q.w );
-		    break;
-		}
-		case 'A':
-		{
-		    arc & A = * (arc *) c;
-		    set_color ( A.q.c );
-
-		    double g1 = M_PI * A.g.x / 180;
-		    double g2 = M_PI * A.g.y / 180;
-		    double r  = M_PI * A.r   / 180;
-
-		    cairo_matrix_t saved_matrix;
-		    cairo_get_matrix
-		        ( graph_c, & saved_matrix );
-		    cairo_translate
-		        ( graph_c, CONVERT(A.c) );
-		    cairo_rotate
-		        ( graph_c, - r );
-		    cairo_scale
-		        ( graph_c,
-			  A.a.x * xscale,
-			  - A.a.y * yscale );
-
-		    cairo_new_path ( graph_c );
-		    cairo_arc
-			( graph_c,
-			  0, 0, 1,
-			  min ( g1, g2 ),
-			  max ( g1, g2 ) );
-
-		    cairo_set_matrix
-		        ( graph_c, & saved_matrix );
-		    cairo_set_line_width
-			( graph_c,
-			  A.q.w * line_size );
-		    cairo_stroke ( graph_c );
-
-		    double s1 = sin ( g1 );
-		    double c1 = cos ( g1 );
-		    double s2 = sin ( g2 );
-		    double c2 = cos ( g2 );
-		    vector p1 =
-			{ c1 * A.a.x,
-			  s1 * A.a.y };
-		    vector d1 =
-			{ - s1 * A.a.x,
-			    c1 * A.a.y };
-		    vector p2 =
-			{ c2 * A.a.x,
-			  s2 * A.a.y };
-		    vector d2 =
-			{ - s2 * A.a.x,
-			    c2 * A.a.y };
-		    p1 = A.c + ( p1 ^ A.r );
-		    p2 = A.c + ( p2 ^ A.r );
-		    d1 = d1 ^ A.r;
-		    d2 = d2 ^ A.r;
-
-		    if ( A.q.dot & BEGIN )
-			draw_dot ( p1, A.q.w );
-		    if ( A.q.dot & END )
-			draw_dot ( p2, A.q.w );
-		    if ( A.q.forward & BEGIN )
-			draw_arrow
-			    ( p1, d1, A.q.w );
-		    if ( A.q.forward & END )
-			draw_arrow
-			    ( p2, d2, A.q.w );
-		    if ( A.q.rearward & BEGIN )
-			draw_arrow
-			    ( p1, - d1, A.q.w );
-		    if ( A.q.rearward & END )
-			draw_arrow
-			    ( p2, - d2, A.q.w );
-		}
+		    XEvent e;
+		    XNextEvent ( display, & e );
+		    if ( e.type == KeyPress )
+		    {
+			KeySym key =
+			    XLookupKeysym
+			        ( & e.xkey, 0 );
+			if ( key == XK_Control_L )
+			    left_control_pressed =
+			        true;
+			else if ( key == XK_Control_R )
+			    right_control_pressed =
+			        true;
+			else
+			if ( key == XK_c
+			     &&
+			     ( left_control_pressed
+			       ||
+			       right_control_pressed ) )
+			    goto PROGRAM_DONE;
+			else
+			    goto PAGE_DONE;
+			// Go to next test case.
+		    }
+		    else if ( e.type == KeyRelease )
+		    {
+			KeySym key =
+			    XLookupKeysym
+			        ( & e.xkey, 0 );
+			if ( key == XK_Control_L )
+			    left_control_pressed =
+			        false;
+			else if ( key == XK_Control_R )
+			    right_control_pressed =
+			        false;
+		    }
+		    if ( e.type == Expose
+			 &&
+			 e.xexpose.count == 0 )
+			break;
+			// Redraw current window.
 		}
 	    }
-
-	    cairo_show_page ( title_c );
-
-	    if ( display != NULL ) while ( true )
-	    {
-	        XEvent e;
-		XNextEvent ( display, & e );
-		if ( e.type == KeyPress )
-		{
-		    KeySym key =
-		        XLookupKeysym ( & e.xkey, 0 );
-		    if ( key == XK_Control_L )
-		        left_control_pressed = true;
-		    else if ( key == XK_Control_R )
-		        right_control_pressed = true;
-		    else if ( key == XK_c
-		              &&
-			      ( left_control_pressed
-			        ||
-				right_control_pressed )
-			    )
-		        goto PROGRAM_DONE;
-		    else
-		       goto PAGE_DONE;
-		    // Go to next test case.
-		}
-		else if ( e.type == KeyRelease )
-		{
-		    KeySym key =
-		        XLookupKeysym ( & e.xkey, 0 );
-		    if ( key == XK_Control_L )
-		        left_control_pressed = false;
-		    else if ( key == XK_Control_R )
-		        right_control_pressed = false;
-		}
-		if ( e.type == Expose
-		     &&
-		     e.xexpose.count == 0 )
-		    break;
-		    // Redraw current window.
-	    }
-	    else goto PAGE_DONE;
-	}
 	PAGE_DONE:;
+	}
     }
 
     PROGRAM_DONE:
