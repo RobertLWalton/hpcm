@@ -2,7 +2,7 @@
 //
 // File:	hpcm_display.cc
 // Authors:	Bob Walton (walton@deas.harvard.edu)
-// Date:	Mon Jul  9 15:14:54 EDT 2018
+// Date:	Sat Jul 28 13:35:52 EDT 2018
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -692,8 +692,8 @@ void draw_arrow ( vector p, vector d, width w )
 {
     d = ( 1 / sqrt ( d * d ) ) * d;
     d = ( min ( xmax - xmin, ymax - ymin ) / 25 ) * d;
-    vector d1 = d^45;
-    vector d2 = d^(-45);
+    vector d1 = d^20;
+    vector d2 = d^(-20);
     cairo_move_to ( graph_c, CONVERT(p-d1) );
     cairo_line_to ( graph_c, CONVERT(p) );
     cairo_line_to ( graph_c, CONVERT(p-d2) );
