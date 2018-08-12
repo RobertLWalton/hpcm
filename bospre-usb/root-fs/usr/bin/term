@@ -1,0 +1,82 @@
+#!/bin/sh
+
+# `term TYPE ACCOUNT' will set bospre type /proc/cmdline does
+# not have a `bospre=type' option and TYPE is `term' or `practice'.
+# This allows debugging
+
+type=""
+for x in $(cat /proc/cmdline)
+do
+    case "$x" in
+    bospre=*)
+	type="${x#bospre=}"
+	;;
+    esac
+done
+
+if [ "$type" != "" ]
+then
+    x=x
+elif [ "$1" = "term" ] || [ "$1" = "practice" ]
+then
+    type="$1"
+    shift
+elif [ -e ~/.bospre-type ]
+then
+    type="`cat ~/.bospre-type`"
+else
+    echo "ERROR: Not a BOSPRE USB TERMINAL or PRACTICE system"
+    exit 1
+fi
+
+case "$type" in
+term )
+    REMOTE=problems2.seas.harvard.edu
+    ;;
+practice )
+    REMOTE=problems1.seas.harvard.edu
+    ;;
+* )
+    echo "SYSTEM ERROR in computing BOSPRE type"
+    exit 1
+    ;;
+esac
+
+echo "$type" >~/.bospre-type
+
+case "$1" in
+-doc* )
+    echo "term [ACCOUNT]"
+    echo ""
+    echo "creats a new terminal window executing"
+    echo ""
+    echo "    ssh -X ACCOUNT@$REMOTE"
+    echo ""
+    echo "and remembers ACCOUNT so \`term' by itself can be used"
+    echo "to create more terminal windows."
+    exit 1
+    ;;
+esac
+
+ACCOUNT=""
+if [ "$1" != "" ]
+then
+    echo "$1" > ~/.bospre-account
+fi
+
+if [ -r ~/.bospre-account ]
+then
+    ACCOUNT="`cat ~/.bospre-account`"
+else
+    echo "term ACCOUNT"
+    echo ""
+    echo "creats a new terminal window executing"
+    echo ""
+    echo "    ssh -X ACCOUNT@$REMOTE"
+    echo ""
+    echo "and remembers ACCOUNT so \`term' by itself can be used"
+    echo "to create more terminal windows."
+    exit 1
+fi
+
+gnome-terminal -- ssh -X $ACCOUNT@$REMOTE

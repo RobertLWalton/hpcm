@@ -1,0 +1,50 @@
+#!/bin/sh
+
+. ./config
+
+case "$1" in
+-doc* )
+    echo "./get-initrd [INITRD.XX]"
+    echo ""
+    echo "Unpacks INITRD.XX into ./initrd which must not exist"
+    echo "when this is called.  .XX can be .gz or .lz or .lzma."
+    echo "INITRD.XX defaults to $ISOFS/casper/initrd.lz."
+    exit 1
+    ;;
+"" )
+    INITRD=$ISOFS/casper/initrd.lz
+    ;;
+* )
+    INITRD="$1"
+esac
+
+if [ `id -run` != root ]
+then
+    echo "ERROR: must be run as root"
+    exit 1
+fi
+
+if [ -e ./initrd ]
+then
+    echo "ERROR: ./initrd exists; delete it first."
+    exit 1
+fi
+
+tmp=/tmp/initrd$$
+trap "rm -rf $tmp" EXIT
+mkdir $tmp
+
+case "$INITRD" in
+*.lzma | *.lz)
+    cp "$INITRD" $tmp/initrd.lzma
+    unlzma -v $tmp/initrd.lzma
+    ;;
+*.gz )
+    cp "$INITRD" $tmp/initrd.gz
+    gunzip $tmp/initrd.gz
+    ;;
+esac
+
+mkdir ./initrd
+(cd ./initrd; cpio -i < $tmp/initrd)
+echo "$INITRD has been unpacked into ./initrd"

@@ -1,0 +1,49 @@
+#!/bin/sh
+
+. ./config
+
+case "$1" in
+-doc* )
+    echo "./update-root"
+    echo ""
+    echo "Copy files from root-fs to $ROOTFS, set the mode of"
+    echo "the copied files to a+rX, and adjust $ROOTFS in"
+    echo "other ways.  Prints what it does."
+    exit 0
+    ;;
+esac
+
+if [ `id -run` != root ]
+then
+    echo "ERROR: must be run as root"
+    exit 1
+fi
+
+set -e
+
+for x in `cd root-fs; find . -type f -print`
+do
+    echo "copying $x and setting its permissions"
+    rm -f "$ROOTFS/$x"
+    cp -p "root-fs/$x" "$ROOTFS/$x"
+    chmod a+rX "$ROOTFS/$x"
+done
+
+chroot $ROOTFS << EOF
+. /root/init-root
+#
+# enabling bospre.service
+#
+systemctl enable bospre
+systemctl is-enabled bospre
+#
+# relinking /etc/localtime to New York time
+#
+rm -f /etc/localtime
+ln -s /usr/share/zoneinfo/America/New_York /etc/localtime
+. /root/exit-root
+EOF
+
+echo 'changing permissions on /usr/share/backgrounds/*'
+chmod go-rwx $ROOTFS/usr/share/backgrounds/*
+chmod 644 $ROOTFS/usr/share/backgrounds/bospre*.png

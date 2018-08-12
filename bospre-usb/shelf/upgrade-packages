@@ -1,0 +1,25 @@
+#!/bin/sh
+
+. ./config
+
+case "$1" in
+-doc* )
+    echo "./upgrade-packages"
+    echo ""
+    echo "Performs apt-get update and dist-upgrade in $ROOTFS."
+    exit 1
+esac
+
+if [ `id -run` != root ]
+then
+    echo "ERROR: must be run as root"
+    exit 1
+fi
+
+chroot $ROOTFS << 'EOF'
+. /root/init-root
+apt-get -y update
+apt-get -y dist-upgrade
+apt-get clean
+. /root/exit-root
+EOF

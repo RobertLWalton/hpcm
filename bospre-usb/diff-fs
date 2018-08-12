@@ -1,0 +1,24 @@
+#!/bin/sh
+
+case "$1" in
+-doc* | "" )
+    echo "./diff-fs SRCDIR DESDIR"
+    echo ""
+    echo "For each file within the SRCDIR directory that differs"
+    echo "from the corresponding file in the DESDIR directory, list"
+    echo "the difference.  Files not in SRCDIR are not considered."
+    exit 0
+    ;;
+esac
+
+for x in $(cd "$1"; find . -type f -printf ' %P')
+do
+    if [ ! -e "$2/$x" ]
+    then
+        echo "$2/$x does not exist"
+    elif ! cmp -s "$1/$x" "$2/$x"
+    then
+	echo "DIFF OF $x:"
+	diff "$1/$x" "$2/$x"
+    fi
+done

@@ -1,0 +1,71 @@
+#!/bin/sh
+
+. ./config
+
+case "$1" in
+-doc* )
+    echo "./finish"
+    echo ""
+    echo "Makes $IMG.  The following should be run in order first:"
+    echo ""
+    echo "  Run                 If Changes Have Been Made To:"
+    echo ""
+    echo "  update-root         root-fs/**"
+    echo "  update-iso          iso-fs/**"
+    echo "  install-initrd      root-fs/usr/share/initramfs-tools/**"
+    echo "                      root-fs/etc/casper.conf"
+    exit 1
+    ;;
+esac
+
+if [ `id -run` != root ]
+then
+    echo "ERROR: must be run as root"
+    exit 1
+fi
+
+set -e
+
+rm -f $ISOFS/casper/filesystem.squashfs.gpg
+rm -f $ISOFS/casper/filesystem.squashfs
+mksquashfs $ROOTFS $ISOFS/casper/filesystem.squashfs
+ls -l $ISOFS/casper/filesystem.squashfs
+
+rm -f $ISOFS/casper/filesystem.size
+printf $(du -sx --block-size=1 $ROOTFS | cut -f1) \
+    > $ISOFS/casper/filesystem.size
+ls -l $ISOFS/casper/filesystem.size
+
+rm -f $ISOFS/md5sum.txt md5sum.txt
+(cd $ISOFS; find -type f -print0 | \
+            xargs -0 md5sum | \
+            grep -v isolinux/boot.cat ) \
+            > md5sum.txt
+mv md5sum.txt $ISOFS
+ls -l $ISOFS/md5sum.txt
+
+rm -f $IMG
+truncate -s 2147483648 $IMG
+LABEL=`od -t x4 -N 4 </dev/urandom | cut -d ' ' -f2 | head -1`
+sfdisk $IMG <<EOF
+label: dos
+label-id: 0x$LABEL
+unit: sectors
+
+start=2048, type=c, bootable
+EOF
+#    start = 2048 blocks of 512 bytes each = 1MB
+truncate -s 1048576 $IMG
+rm -f $IMG+
+mkfs.fat -C $IMG+ $IMGBLOCKS
+rm -rf mnt
+mkdir mnt
+mount -o loop $IMG+ mnt
+rsync -r $ISOFS/ mnt/
+echo "DU SIZE: `du -s mnt`"
+umount mnt
+cat $IMG+ >> $IMG
+rm $IMG+
+ls -l $IMG
+
+echo now you may copy $IMG to usb

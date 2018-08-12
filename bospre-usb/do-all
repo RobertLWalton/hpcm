@@ -1,0 +1,62 @@
+#!/bin/sh
+
+. ./config
+
+case "$1" in
+-doc* | "" )
+    echo './do-all MOUNTED-ISO-DIRECTORY'
+    echo ''
+    echo "Makes $IMG directly from MOUNTED-ISO-DIRECTORY."
+    exit 1
+esac
+
+if [ `id -run` != root ]
+then
+    echo "ERROR: must be run as root"
+    exit 1
+fi
+
+if [ -e $ISOFS ]
+then
+    echo "$ISOFS already exists; delete it first"
+    exit 1
+fi
+
+if [ ! -d "$1/casper" ]
+then
+    echo "$1/casper is not a directory"
+    exit 1
+fi
+
+
+if [ -e $ROOTFS ]
+then
+    echo "$ROOTFS already exists; delete it first"
+fi
+
+set -e
+
+echo ""
+echo RUNNING ./get-iso-fs "$1"
+./get-iso-fs "$1"
+echo ""
+echo RUNNING ./get-root-fs
+./get-root-fs
+echo ""
+echo RUNNING ./update-root
+./update-root
+echo ""
+echo RUNNING ./remove-packages
+./remove-packages
+echo ""
+echo RUNNING ./list-packages
+./list-packages
+echo ""
+echo RUNNING ./install-initrd
+./install-initrd
+echo ""
+echo RUNNING ./update-iso
+./update-iso
+echo ""
+echo RUNNING ./finish
+./finish

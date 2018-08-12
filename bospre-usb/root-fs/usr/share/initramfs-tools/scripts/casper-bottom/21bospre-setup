@@ -1,0 +1,67 @@
+#!/bin/sh
+
+# Must execute before 22desktop_settings
+
+PREREQ=""
+DESCRIPTION="BOSPRE setup"
+
+prereqs()
+{
+       echo "$PREREQ"
+}
+
+case $1 in
+# get pre-requisites
+prereqs)
+       prereqs
+       exit 0
+       ;;
+esac
+
+. /scripts/casper-functions
+load_confmodule
+
+log_begin_msg "$DESCRIPTION"
+
+type=""
+for x in $(cat /proc/cmdline)
+do
+    case "$x" in
+    bospre=*)
+	type="${x#bospre=}"
+	;;
+    esac
+done
+
+rm -f /root/usr/share/backgrounds/bospre-background.png
+case "$type" in
+
+    term)
+        ( cd /root/usr/share/backgrounds; \
+          mv bospre-background-term.png bospre-background.png; \
+          rm bospre-background-*.* )
+	rm -f /root/usr/bin/bospre-web
+	rm -f /root/usr/bin/bospre-practice
+	;;
+    web)
+        ( cd /root/usr/share/backgrounds; \
+          mv bospre-background-web.png bospre-background.png; \
+          rm bospre-background-*.* )
+	rm -f /root/usr/bin/bospre-term
+	rm -f /root/usr/bin/bospre-practice
+	;;
+    practice)
+        ( cd /root/usr/share/backgrounds; \
+          mv bospre-background-practice.png bospre-background.png; \
+          rm bospre-background-*.* )
+	rm -f /root/usr/bin/bospre-term
+	rm -f /root/usr/bin/bospre-web
+	;;
+    *)
+        ( cd /root/usr/share/backgrounds; \
+          mv bospre-background-other.png bospre-background.png; \
+          rm bospre-background-*.* )
+	;;
+esac
+
+log_end_msg

@@ -1,0 +1,33 @@
+#!/bin/sh
+
+. ./config
+
+case "$1" in
+-doc* | "" )
+    echo './get-iso-fs MOUNTED-ISO-DIRECTORY'
+    echo ''
+    echo "Makes $ISOFS containing a copy of MOUNTED-ISO-DIRECTORY."
+    exit 1
+esac
+
+if [ `id -run` != root ]
+then
+    echo "ERROR: must be run as root"
+    exit 1
+fi
+
+if [ -e $ISOFS ]
+then
+    echo "$ISOFS already exists; delete it first"
+    exit 1
+fi
+
+if [ ! -d "$1/casper" ]
+then
+    echo "$1/casper is not a directory"
+    exit 1
+fi
+
+mkdir $ISOFS
+rsync -rl "$1/" $ISOFS/
+# Don't preserve owner, group, times, or permissions 

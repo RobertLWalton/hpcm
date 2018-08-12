@@ -1,0 +1,28 @@
+#!/bin/sh
+
+. ./config
+
+case "$1" in
+-doc* )
+    echo "./remove-packages"
+    echo ""
+    echo "Removes all the packages listed in ./packages-removed."
+    echo "Also copies ./packages-removed to $ROOTFS."
+    exit 1
+esac
+
+if [ `id -run` != root ]
+then
+    echo "ERROR: must be run as root"
+    exit 1
+fi
+
+rm -f $ROOTFS/packages-removed
+cp -p packages-removed $ROOTFS
+
+chroot $ROOTFS << 'EOF'
+. /root/init-root
+apt-get -y purge `cat /packages-removed`
+apt-get clean
+. /root/exit-root
+EOF

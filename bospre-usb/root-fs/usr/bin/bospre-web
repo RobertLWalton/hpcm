@@ -1,0 +1,17 @@
+#!/bin/sh
+
+set -x
+
+e=`sudo /sbin/bospre-connect`
+if [ $? != 0 ]
+then
+    notify-send -u critical 'ERROR setting firewall' "$e"
+    exit 1
+elif [ "$e" != "web" ]
+then
+    notify-send -u critical 'ERROR setting firewall' \
+                            "Booted as $e client"
+    exit 1
+else
+    exec firefox http://hc3.seas.harvard.edu/hc3/bospre/documents
+fi

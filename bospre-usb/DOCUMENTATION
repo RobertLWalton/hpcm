@@ -1,0 +1,208 @@
+Making A Copy of BOSPRE USB
+------ - ---- -- ------ ---
+
+* Download a copy of of the file bospre-usb-vX.img, where X is the
+  version number.
+
+* The following must be done a root.  Use `sudo bash'.
+
+* Insert a blank flash disk of size at least 2GB.
+
+* Use the command `mount' to see if this mounted.
+  If it mounted on /dev/sdY (where Y is, e.g., `b') , execute
+
+	umount /dev/sdY
+
+  If the flash disk is not mounted, use `lsblk' to find the block
+  device /dev/sdY of the flash disk.
+
+* Execute:	dd if=bospre-usb-vX.img of=/dev/sdY
+
+  This will take a long time to complete, and print the number of
+  blocks transmitted upon completion.
+
+* To check the result, execute:    cmp bospre-usb-vX.img /dev/sdY
+
+  This will take a long time to complete, and on success will print
+  `EOF on bospre-usb-vX.img'.
+
+
+Making a BOSPRE-USB Image
+------ - ---------- -----
+
+* As the starting point, obtain a BOSPRE USB or an UBUNTU ISO USB
+  and insert it into the computer.  It should mount.  The following
+  assumes it mounts on /media/MMMM for some MMMM (which may contain
+  /'s).   If you do `ls -l /media/MMMM' you should see a subdirectory
+  named `casper'.
+
+  The only differences between a mounted BOSPRE USB and a mounted
+  UBUNTU ISO USB are that the former has a vfat file system and the
+  latter has an iso9660 file system, and of course, the former has
+  some changes already installed.
+
+* Obtain a copy of bospre-usb-X.tar, the code used to make the
+  modifications, where X is the version number.  If you are starting
+  from a BOSPRE USB with version Y, preferably X >= Y.
+
+* The following must be done a root.  Use `sudo bash'.
+
+* Make a working directory.  The following is done in this
+  working directory.
+
+* Move bospre-usb-X.tar into the working directory and Unpack it by
+  executing
+
+	tar xpf bospre-usb-X.tar
+
+* Change the VERSION in the config file.  E.g., if you initials are
+  `kz' change the version from X to Xkx1.
+
+* The programs are all in the working directory.  Documentation of
+  program PPPP can be obtained by running `./PPPP -doc'.
+
+* The config file defines the following
+
+	ISOFS=bospre-iso-fs
+	ROOTFS=bospre-root-fs
+	IMG=bospre-usb-${VERSION}.img
+	TAR=bospre-usb-${VERSION}.tar
+
+  where the variable values above are standard but can be changed.
+  We use the variable names in the following.
+
+* *IF* you do *NOT* intend to make any changes to IMG, but merely want
+  to convert an UBUNTU ISO USB to a BOSPRE USB, execute
+
+		./do-all
+
+  and skip the rest of this document section.  The new IMG will be
+  made.
+
+* Add your name to the authors list in NOTICE.  If you want your
+  modifications/additions to be private or proprietary, say so
+  at the top of the NOTICE and say your version is based on public
+  domain version X to which the remainder of the NOTICE applies.
+
+* Make ISOFS, a working copy of the /media/MMMM file system,
+  by executing
+
+		./get-iso-fs /media/MMMM
+
+* Make ROOTFS, the root file system of the Live USB when it runs,
+  by executing
+
+		./get-root-fs
+
+  This unpacks $ISOFS/casper/filesystem.squashfs which contains
+  ROOTFS.  The logic is that ISOFS may be a vfat or iso9660 file
+  system that does not support symbolic links, long file names,
+  etc., so a UNIX file system is packed into a squashfs in ISOFS.
+
+* Install files into ROOTFS, and adjust ROOTFS.  Execute
+
+		./update-root
+
+  If you want to change a ROOTFS file, put the changed version
+  in root-fs/ and rerun this command.  If you want to delete
+  a ROOTFS file or make a symbolic link you must add the
+  code to do this to ./update-root.
+
+* To list the current packages installed in ROOTFS, execute:
+
+		./list-packages
+
+  The list of packages is also left in ROOTFS/package-list.
+
+* If you want to inspect the packages to be removed BEFORE they
+  are removed, execute
+
+		./list-packages-to-be-removed
+
+  To remove the packages listed in ./packages-removed, execute:
+
+		./remove-packages
+
+  ./packages-removed is also copied to ROOTFS/packages-removed.
+
+  Then rerun
+		./list-packages
+
+  If you see any more packages you want to remove, add them
+  to ./packages-removed and rerun ./remove-packages.
+
+* Note that seems to be no way to update, upgrade, or install
+  packages in ROOTFS using apt-get.  The problem is that the
+  network is inaccessible within chroot.
+
+* To install ISOFS/casper/initrd.lz, the root file system installed
+  by the grub bootstrap loader and used during system initialization,
+  execute:
+
+		./install-initrd
+
+  Be sure to remove packages first.  Also, if you ever change files
+  in {root-fs,ROOTFS}/usr/share/initramfs-tools, or if you change
+  {root-fs,ROOTFS}/etc/casper.conf, you need to rerun this command.
+
+* Install file changes into ISOFS.  Execute
+
+		./update-iso
+
+  If you want to change a ISOFS file, put the changed version
+  in iso-fs/ and rerun this command.  Currently only the grub
+  configuration file is changed this way.  Several files in ISOFS
+  are updated separately:
+
+    FILE				UPDATED BY
+
+    ISOFS/casper/initrd.lz		./install-initrd
+    ISOFS/casper/filesystem.squashfs	./finish
+    ISOFS/casper/filesystem.size	./finish
+
+
+
+
+  a ROOTFS file or make a symbolic link you must add the
+  code to do this to ./update-root.
+
+* Make IMG by executing
+
+		./finish
+
+* Save any changs you made to root-fs/, iso-fs/, ./update-root by
+  re-making TAR via
+
+		./save
+
+
+Inspection Tools
+---------- -----
+
+The following allow you to inspect changes you make.
+
+
+* To inspect the differences between iso-fs/ and ISOFS, or between
+  root-fs/ and ROOTFS, execute
+
+		./diff-fs iso-fs/ ISOFS
+		./diff-fs root-fs/ ROOTFS
+
+* To list the packages currently installed in ROOTFS, execute
+
+		./list-packages
+
+  To list just those packages in the ./packages-removed list, execute
+
+		./list-packages-to-be-removed
+
+* To unpack the initial boot root file system made by ./install-initrd,
+  execute
+		./get-initrd
+
+  The unpacked file system will be put into ./initrd.
+
+* To inspect the differences between TAR and the current directory,
+  exclusive of new files in the current directory, execute
+
+		./diff-tar

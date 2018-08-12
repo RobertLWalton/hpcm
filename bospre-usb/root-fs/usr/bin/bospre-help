@@ -1,0 +1,84 @@
+#!/bin/sh
+
+# bosper-help TYPE
+#
+# specifies boot TYPE if `bospre=TYPE' not in /proc/cmdline for debugging.
+
+type=
+for x in $(cat /proc/cmdline)
+do
+    case "$x" in
+    bospre=*)
+	type="${x#bospre=}"
+	;;
+    esac
+done
+
+if [ "$type" = "" ]
+then
+    type="$1"
+fi
+
+case "$type" in
+term)
+    echo "To create a window that logs into your contest account, use:"
+    echo ""
+    echo "    term YOUR-ACCOUNT"
+    echo ""
+    echo "This is equivalent to"
+    echo ""
+    echo "    gnome-terminal -- \\"
+    echo "        ssh -X YOUR-ACCOUNT@problems2.seas.harvard.edu"
+    echo ""
+    echo "After using \`term YOUR-ACCOUNT' you may use just \`term' to get"
+    echo "more windows with the same account."
+    echo ""
+    echo "OR, you may re-boot as:"
+    echo ""
+    echo "    BOSPRE PRACTICE:    To log into your practice account."
+    echo "    BOSPRE WEB:         To browse the web."
+    echo ""
+    echo "The firewall will not allow you to ssh to any other computer or"
+    echo "to browse the web.  The command \`faq' will answer more questions."
+    ;;
+practice)
+    echo "To create a window that logs into your practice account, use:"
+    echo ""
+    echo "    term YOUR-ACCOUNT"
+    echo ""
+    echo "This is equivalent to"
+    echo ""
+    echo "    gnome-terminal -- \\"
+    echo "        ssh -X YOUR-ACCOUNT@problems1.seas.harvard.edu"
+    echo ""
+    echo "After using \`term YOUR-ACCOUNT' you may use just \`term' to get"
+    echo "more windows with the same account."
+    echo ""
+    echo "OR, you may re-boot as:"
+    echo ""
+    echo "    BOSPRE TERMINAL:    To log into your contest account."
+    echo "    BOSPRE WEB:         To browse the web."
+    echo ""
+    echo "The firewall will not allow you to ssh to any other computer or"
+    echo "to browse the web.  The command \`faq' will answer more questions."
+    ;;
+web)
+    echo "You booted as \`BOSPRE WEB' and may browse the web, but the firewall"
+    echo "will NOT let you ssh into any computer."
+    echo ""
+    echo "You may re-boot as:"
+    echo ""
+    echo "    BOSPRE TERMINAL:    To log into your contest account."
+    echo "    BOSPRE PRACTICE:    To log into your practice account."
+    ;;
+*)
+    echo "The firewall is set to forbid ssh and browser access to the internet."
+    echo ""
+    echo "You may re-boot as:"
+    echo ""
+    echo "    BOSPRE TERMINAL:    To log into your contest account."
+    echo "    BOSPRE PRACTICE:    To log into your practice account."
+    echo "    BOSPRE WEB:         To browse the web."
+    ;;
+
+esac

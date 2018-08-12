@@ -1,0 +1,30 @@
+#!/bin/sh
+
+. ./config
+
+case "$1" in
+-doc* )
+    echo "./list-packages"
+    echo ""
+    echo "Makes $ROOTFS/package-list containing a list of"
+    echo "all the packages in $ROOTFS and their sizes,"
+    echo "sorted by increasing size.  Finishes by printing"
+    echo "$ROOTFS/package-list."
+    exit 1
+esac
+
+if [ `id -run` != root ]
+then
+    echo "ERROR: must be run as root"
+    exit 1
+fi
+
+chroot $ROOTFS << 'EOF'
+. /root/init-root
+rm -f /package-list
+dpkg-query -W \
+    --showformat='${Installed-Size}\t${Package}\n' \
+    | sort -n > /package-list
+. /root/exit-root
+EOF
+cat $ROOTFS/package-list

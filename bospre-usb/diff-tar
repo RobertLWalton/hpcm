@@ -1,0 +1,36 @@
+#!/bin/sh
+
+. ./config
+
+case "$1" in
+-doc* )
+    echo "./diff-tar [FILE.tar]"
+    echo ""
+    echo "For each file within the FILE.tar tar file that differs"
+    echo "from the corresponding file in the current directory, list"
+    echo "the difference.  Files not in FILE.tar are not considered."
+    echo "FILE.tar defaults to $TAR."
+    exit 0
+    ;;
+"" )
+    ;;
+*)
+    TAR="$1"
+    ;;
+esac
+
+tmp=/tmp/tar$$
+trap "rm -rf $tmp" EXIT
+rm -rf $tmp
+mkdir $tmp
+
+case "$TAR" in
+/*)
+    ;;
+*)
+    TAR=`pwd -P`/$TAR
+esac
+
+(cd $tmp; tar xpf "$TAR")
+
+./diff-fs $tmp .

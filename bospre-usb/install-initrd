@@ -1,0 +1,38 @@
+#!/bin/sh
+
+. ./config
+
+case "$1" in
+-doc* )
+    echo "./install-initrd"
+    echo ""
+    echo "Makes $ISOFS/casper/initrd.lz from"
+    echo "$ROOTFS/usr/share/initramfs-tools files."
+    exit 1
+esac
+
+if [ `id -run` != root ]
+then
+    echo "ERROR: must be run as root"
+    exit 1
+fi
+
+set -e
+
+rm -f $ROOTFS/initrd.gz $ROOTFS/initrd $ROOTFS/initrd.lzma
+v=`file -b $ISOFS/casper/vmlinuz`
+v=`expr "$v" : '.*version  *\([^ ]*\) '`
+
+chroot $ROOTFS << EOF
+. /root/init-root
+mkinitramfs -o /initrd.gz $v
+. /root/exit-root
+EOF
+ls -l $ROOTFS/initrd.gz
+gunzip $ROOTFS/initrd.gz
+ls -l $ROOTFS/initrd
+lzma -v $ROOTFS/initrd
+rm -f iso-fs/casper/initrd.lz
+mv $ROOTFS/initrd.lzma $ISOFS/casper/initrd.lz
+rm -f $ROOTFS/initrd.gz $ROOTFS/initrd
+ls -l $ISOFS/casper/initrd.lz

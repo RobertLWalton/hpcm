@@ -1,0 +1,27 @@
+#!/bin/sh
+
+if [ `id -run` != root ]
+then
+    echo "ERROR: must be run as root"
+    exit 1
+fi
+
+log=/var/log/bospre-boot.log
+rm -f $log
+exec >$log 2>&1
+
+echo BOSPRE USB Boot Service - /lib/systemd/bospre.boot
+echo Executes once late during boostrap.
+echo Blocks tcp connections.
+
+set -x
+
+iptables -F
+
+iptables -A INPUT -i lo -j ACCEPT
+iptables -A INPUT -p tcp -j DROP
+
+iptables -A OUTPUT -o lo -j ACCEPT
+iptables -A OUTPUT -p tcp -j REJECT
+
+iptables -L -v

@@ -1,0 +1,154 @@
+#!/bin/sh
+
+# On error, exits with error status and one line error
+# message suitable for notify-send BODY.
+
+# On success, exits WITHOUT error status and one line
+# containing BOSPRE type (term, web, "").
+
+# If not run in a BOSPRE bootstrap system (i.e., if
+# /proc/cmdline has no `bospre=type' option), and
+# if 1 argument given and run as root, uses argument
+# as `type' of bospre system and sets -x flag to
+# output executed commands.  This is for debugging.
+
+TERM_DST=problems2.seas.harvard.edu
+PRACTICE_DST=problems1.seas.harvard.edu
+ROOT_URLS=/etc/BOSPRE-WEB-URLS
+USER_URLS=${HOME}/BOSPRE-WEB-URLS
+
+type=
+for x in $(cat /proc/cmdline)
+do
+    case "$x" in
+    bospre=*)
+	type="${x#bospre=}"
+	;;
+    esac
+done
+
+if [ `id -run` != root ]
+then
+    echo "bospre-connect not run as root (via sudo)"
+    exit 1
+else
+    if [ "$type" = "" -a "$1" != "" ]
+    then
+	type="$1"
+	set -x
+    else
+	exec 2>/dev/null
+    fi
+fi
+
+if [ "$type" = "" ]
+then
+    echo "system not a BOSPRE bootstrap system"
+    exit 1
+fi
+
+if ! ping -c 1 www.google.com >/dev/null 2>&1
+then
+    if ! ping -c 1 www.harvard.edu >/dev/null 2>&1
+    then
+        echo "network not connected: connect or retry"
+        exit 1
+    fi
+fi
+
+DST=""
+case "$type" in
+term ) DST="$TERM_DST"
+       ;;
+practice ) DST="$PRACTICE_DST"
+       ;;
+esac
+
+ADR=XXX
+if [ "$DST" != "" ]
+then
+    ADR=`avahi-resolve-host-name $DST 2>/dev/null`
+    ADR=`expr "$ADR" : $DST'	\(.*\)$'`
+    if [ "$ADR" = "" ]
+    then
+        echo "$DST is not available; retry"
+        exit 1
+    fi
+fi
+
+trap "" 1 2 3
+trap "echo 'bospre-connect: system error: iptables'; exit 1" EXIT
+set -e
+
+case "$type" in
+
+    term | practice )
+	iptables -F
+
+	iptables -A INPUT -i lo -j ACCEPT
+	iptables -A INPUT -p tcp \
+                 -m state --state=ESTABLISHED,RELATED \
+		 -j ACCEPT
+	iptables -A INPUT -p tcp -j DROP
+
+	iptables -A OUTPUT -o lo -j ACCEPT
+	iptables -A OUTPUT -p tcp --dport ssh \
+		 -d "$ADR" -j ACCEPT
+	iptables -A OUTPUT -p tcp -j REJECT
+	;;
+    web)
+	iptables -F
+
+	iptables -A INPUT -i lo -j ACCEPT
+	iptables -A INPUT -p tcp \
+                 -m state --state=ESTABLISHED,RELATED \
+		 -j ACCEPT
+	iptables -A INPUT -p tcp -j DROP
+
+	iptables -A OUTPUT -o lo -j ACCEPT
+	iptables -A OUTPUT -p tcp --dport ssh \
+		 -j REJECT
+
+	root_URLs=""
+	if [ -r $ROOT_URLS ]
+	then
+	    root_URLs="`cat $ROOT_URLS`"
+	fi
+	user_URLs=""
+	if [ -r $USER_URLS ]
+	then
+	    user_URLs="`cat $USER_URLS`"
+	fi
+
+	if [ "$root_URLs" != "" ] || [ "$user_URLs" != "" ]
+	then
+	    iptables -A OUTPUT -p tcp \
+                     -m state --state=ESTABLISHED,RELATED \
+		     -j ACCEPT
+
+	    for URL in $root_URLs $user_URLs
+	    do
+	        if ! iptables -A OUTPUT -p tcp -d "$URL" \
+                              -m state --state=NEW \
+		              -j ACCEPT 2>/dev/null
+		then
+		    notify-send -u critical \
+                                'Could not open firewall to:' \
+			        "$URL"
+		fi
+	    done
+
+	    iptables -A OUTPUT -p tcp -j REJECT
+	fi
+	;;
+    *)
+	trap EXIT
+	echo "BOSPRE bootstrap type ($type) unknown"
+	exit 1
+	;;
+esac
+
+trap EXIT
+
+echo "$type"
+exit 0

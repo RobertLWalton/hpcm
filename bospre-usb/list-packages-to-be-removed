@@ -1,0 +1,28 @@
+#!/bin/sh
+
+. ./config
+
+case "$1" in
+-doc* )
+    echo "./list-packages-to-be-removed"
+    echo ""
+    echo "Lists $ROOTFS packages in the ./packages-removed list."
+    echo "Also copies ./packages-removed to $ROOTFS."
+    exit 1
+    ;;
+esac
+
+if [ `id -run` != root ]
+then
+    echo "ERROR: must be run as root"
+    exit 1
+fi
+
+rm -f $ROOTFS/packages-removed
+cp -p packages-removed $ROOTFS
+
+chroot $ROOTFS << 'EOF'
+. /root/init-root
+dpkg-query -l `cat /packages-removed` 2>&1
+. /root/exit-root
+EOF

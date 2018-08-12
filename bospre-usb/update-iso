@@ -1,0 +1,31 @@
+#!/bin/sh
+
+. ./config
+
+case "$1" in
+-doc* )
+    echo "./update-iso"
+    echo ""
+    echo "Copy files from root-fs to $ISOFS, set the mode of"
+    echo "the copied files to a+rX, and adjust $ISOFS in"
+    echo "other ways.  Prints what it does."
+    exit 0
+    ;;
+esac
+
+if [ `id -run` != root ]
+then
+    echo "ERROR: must be run as root"
+    exit 1
+fi
+
+set -e
+
+for x in `cd iso-fs; find . -type f -print`
+do
+    echo "copying $x and setting its permissions"
+    rm -f "$ISOFS/$x"
+    cp -p "iso-fs/$x" "$ISOFS/$x"
+    chmod a+rX "$ISOFS/$x"
+done
+

@@ -1,0 +1,17 @@
+#!/bin/sh
+
+set -x
+
+e=`sudo /sbin/bospre-connect`
+if [ $? != 0 ]
+then
+    notify-send -u critical 'ERROR setting firewall' "$e"
+    exit 1
+elif [ "$e" != "term" ]
+then
+    notify-send -u critical 'ERROR setting firewall' \
+                            "Booted as $e client"
+    exit 1
+else
+    exec gnome-terminal -- /usr/bin/bospre-launch
+fi

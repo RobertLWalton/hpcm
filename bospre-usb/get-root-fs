@@ -1,0 +1,26 @@
+#!/bin/sh
+
+. ./config
+
+case "$1" in
+-doc* )
+    echo './get-root-fs'
+    echo ''
+    echo "Makes $ROOTFS containing a copy of unsquashed"
+    echo "      $ISOFS/casper/filesystem.squashfs."
+    exit 1
+esac
+
+if [ `id -run` != root ]
+then
+    echo "ERROR: must be run as root"
+    exit 1
+fi
+
+if [ -e $ROOTFS ]
+then
+    echo "$ROOTFS already exists; delete it first"
+    exit 1
+fi
+
+unsquashfs -d "$ROOTFS" "$ISOFS/casper/filesystem.squashfs"
