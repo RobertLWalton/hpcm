@@ -11,9 +11,9 @@ case "$1" in
     echo "  Run                 If Changes Have Been Made To:"
     echo ""
     echo "  update-root         root-fs/**"
-    echo "  update-iso          iso-fs/**"
     echo "  install-initrd      root-fs/usr/share/initramfs-tools/**"
     echo "                      root-fs/etc/casper.conf"
+    echo "  update-iso          iso-fs/**"
     exit 1
     ;;
 esac
@@ -44,8 +44,19 @@ rm -f $ISOFS/md5sum.txt md5sum.txt
 mv md5sum.txt $ISOFS
 ls -l $ISOFS/md5sum.txt
 
+blocks=$((${IMGBLOCKS}+1024))
+bytes=$((1024*$blocks))
+echo "------------------------------------------------------"
+echo "$IMG layout is (block = 1024 bytes):"
+echo "  partition table       1024 blocks"
+echo "  FAT file system       $IMGBLOCKS blocks"
+echo ""
+echo "Total size: $blocks blocks = $bytes bytes"
+echo "Note: size < 2GB = $((2*1024*1024*1024)) bytes"
+echo "------------------------------------------------------"
+
 rm -f $IMG
-truncate -s 2147483648 $IMG
+truncate -s $bytes $IMG
 LABEL=`od -t x4 -N 4 </dev/urandom | cut -d ' ' -f2 | head -1`
 sfdisk $IMG <<EOF
 label: dos
@@ -62,10 +73,12 @@ rm -rf mnt
 mkdir mnt
 mount -o loop $IMG+ mnt
 rsync -r $ISOFS/ mnt/
-echo "DU SIZE: `du -s mnt`"
+echo "DU SIZE: `du -s mnt` (1024 byte blocks)"
 umount mnt
 cat $IMG+ >> $IMG
 rm $IMG+
 ls -l $IMG
 
+echo ""
+echo "-----------------------------------------------"
 echo now you may copy $IMG to usb

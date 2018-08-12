@@ -1,10 +1,10 @@
 Making A Copy of BOSPRE USB
 ------ - ---- -- ------ ---
 
-* Download a copy of of the file bospre-usb-vX.img, where X is the
+* Download a copy of of the file bospre-usb-X.img, where X is the
   version number.
 
-* The following must be done a root.  Use `sudo bash'.
+* The following must be done as root.  Use `sudo bash'.
 
 * Insert a blank flash disk of size at least 2GB.
 
@@ -16,15 +16,15 @@ Making A Copy of BOSPRE USB
   If the flash disk is not mounted, use `lsblk' to find the block
   device /dev/sdY of the flash disk.
 
-* Execute:	dd if=bospre-usb-vX.img of=/dev/sdY
+* Execute:	dd if=bospre-usb-X.img of=/dev/sdY
 
   This will take a long time to complete, and print the number of
   blocks transmitted upon completion.
 
-* To check the result, execute:    cmp bospre-usb-vX.img /dev/sdY
+* To check the result, execute:    cmp bospre-usb-X.img /dev/sdY
 
   This will take a long time to complete, and on success will print
-  `EOF on bospre-usb-vX.img'.
+  `EOF on bospre-usb-X.img'.
 
 
 Making a BOSPRE-USB Image
@@ -45,10 +45,10 @@ Making a BOSPRE-USB Image
   modifications, where X is the version number.  If you are starting
   from a BOSPRE USB with version Y, preferably X >= Y.
 
-* The following must be done a root.  Use `sudo bash'.
+* The following must be done as root.  Use `sudo bash'.
 
-* Make a working directory.  The following is done in this
-  working directory.
+* Make a working directory.  The following is done in this working
+  directory, which is referred to as `./'.
 
 * Move bospre-usb-X.tar into the working directory and Unpack it by
   executing
@@ -56,11 +56,8 @@ Making a BOSPRE-USB Image
 	tar xpf bospre-usb-X.tar
 	chown -R root.root .
 
-* Change the VERSION in the config file.  E.g., if you initials are
-  `kz' change the version from X to Xkx1.
-
-* The programs are all in the working directory.  Documentation of
-  program PPPP can be obtained by running `./PPPP -doc'.
+* Change the VERSION in the ./config file.  E.g., if your initials are
+  `kz' change the version from X to Xkz1.
 
 * The config file defines the following
 
@@ -71,6 +68,9 @@ Making a BOSPRE-USB Image
 
   where the variable values above are standard but can be changed.
   We use the variable names in the following.
+
+* The programs used to build IMG are all in the working directory.
+  Documentation of program PPPP can be obtained by running `./PPPP -doc'.
 
 * *IF* you do *NOT* intend to make any changes to IMG, but merely want
   to convert an UBUNTU ISO USB to a BOSPRE USB, execute
@@ -95,12 +95,12 @@ Making a BOSPRE-USB Image
 
 		./get-root-fs
 
-  This unpacks $ISOFS/casper/filesystem.squashfs which contains
+  This unpacks ISOFS/casper/filesystem.squashfs which contains
   ROOTFS.  The logic is that ISOFS may be a vfat or iso9660 file
   system that does not support symbolic links, long file names,
   etc., so a UNIX file system is packed into a squashfs in ISOFS.
 
-* Install files into ROOTFS, and adjust ROOTFS.  Execute
+* Install files into ROOTFS, and adjust ROOTFS, by executing
 
 		./update-root
 
@@ -132,8 +132,8 @@ Making a BOSPRE-USB Image
   If you see any more packages you want to remove, add them
   to ./packages-removed and rerun ./remove-packages.
 
-* Note that seems to be no way to update, upgrade, or install
-  packages in ROOTFS using apt-get.  The problem is that the
+* Note that there seems to be no way to update, upgrade, or install
+  packages in ROOTFS using apt-get.  The problem seems to be that the
   network is inaccessible within chroot.
 
 * To install ISOFS/casper/initrd.lz, the root file system installed
@@ -150,7 +150,7 @@ Making a BOSPRE-USB Image
 
 		./update-iso
 
-  If you want to change a ISOFS file, put the changed version
+  If you want to change an ISOFS file, put the changed version
   in iso-fs/ and rerun this command.  Currently only the grub
   configuration file is changed this way.  Several files in ISOFS
   are updated separately:
@@ -161,17 +161,11 @@ Making a BOSPRE-USB Image
     ISOFS/casper/filesystem.squashfs	./finish
     ISOFS/casper/filesystem.size	./finish
 
-
-
-
-  a ROOTFS file or make a symbolic link you must add the
-  code to do this to ./update-root.
-
 * Make IMG by executing
 
 		./finish
 
-* Save any changs you made to root-fs/, iso-fs/, ./update-root by
+* Save any changes you made to root-fs/, iso-fs/, ./update-root by
   re-making TAR via
 
 		./save
