@@ -77,8 +77,22 @@ echo "DU SIZE: `du -s mnt` (1024 byte blocks)"
 umount mnt
 cat $IMG+ >> $IMG
 rm $IMG+
-ls -l $IMG
+
+md5sum=`md5sum $IMG`
+md5sum=`expr "$md5sum" : '\([^ ]*\)[ 	]'`
+
+rm -f $IMG.info
+cat >$IMG.info << EOF
+Version:  $VERSION
+Name:     $IMG
+Size:     $blocks 1KB blocks
+          $bytes bytes
+MD5SUM:   $md5sum
+EOF
 
 echo ""
 echo "-----------------------------------------------"
+cat $IMG.info
+echo "-----------------------------------------------"
+echo ""
 echo now you may copy $IMG to usb
