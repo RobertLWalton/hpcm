@@ -6,7 +6,7 @@
 #
 # File:		makecontest
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Sep 22 03:15:35 EDT 2017
+# Date:		Wed Sep 12 07:01:58 EDT 2018
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -26,6 +26,7 @@ set contestant_help_directory \
     "[file dirname $argv0]/../../contestant/help"
 set log_disable yes
 source $lib_directory/judging_common.tcl
+source $lib_directory/make_password.tcl
 catch {
 
 # Compute true name of judging_directory, with no
@@ -1518,18 +1519,6 @@ proc TODO { args } {
     foreach line $args {
 	puts $TODO_ch "    $line"
     }
-}
-
-# Make 10 character random password.
-#
-proc make_password {} {
-    return \
-      [format {%02x%02x%02x%02x%02x} \
-	      [expr { int ( rand() * 256 ) % 256 }] \
-	      [expr { int ( rand() * 256 ) % 256 }] \
-	      [expr { int ( rand() * 256 ) % 256 }] \
-	      [expr { int ( rand() * 256 ) % 256 }] \
-	      [expr { int ( rand() * 256 ) % 256 }]]
 }
 
 # The judging directory name relative to the home
@@ -4258,6 +4247,8 @@ if { $TODO_ch != "" } {
 	  old instructions for you in it."
     puts "           There a no new instructions."
 }
+
+puts [password_statistics]
 
 exit 0
 

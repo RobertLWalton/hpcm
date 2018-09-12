@@ -2,7 +2,7 @@
 #
 # File:		make_password.tcl
 # Author:	Bob Walton (walton@seas.harvard.edu)
-# Date:		Thu Aug 16 11:52:38 EDT 2018
+# Date:		Wed Sep 12 07:10:04 EDT 2018
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -19,18 +19,15 @@
 # decimal digit in the range [2-9].  WWW is chosen from
 # a list of 1024 words.
 #
-# Uses /dev/random if available.   Prints
+# Uses /dev/random if available.  Keeps statistics for
+# password_statistics.
 #
-# 	Making Random Password Using ...
-#
-# unless first argument is 0 or `no'.
-#
-proc make_password { { message 1 } } {
+set dev_random_passwords 0
+set rand_passwords 0
+proc make_password {} {
+    global dev_random_passwords rand_passwords
     if { [file readable /dev/random] } {
-	if { $message } {
-	    puts "Making Random Password Using\
-	          /dev/random"
-	}
+	incr dev_random_passwords
 	set fp [open /dev/random r]
 	fconfigure $fp -translation binary
 	set data [read $fp 32]
@@ -39,9 +36,7 @@ proc make_password { { message 1 } } {
 	if { $r1 < 0 } { incr r1 [expr 1 << 16] }
 	if { $r2 < 0 } { incr r2 [expr 1 << 16] }
     } else {
-	if { $message } {
-	    puts "Making Random Password Using rand()"
-	}
+	incr rand_passwords
         set r1hi [expr int ( rand() * 256 ) % 256 ]
         set r1lo [expr int ( rand() * 256 ) % 256 ]
         set r2hi [expr int ( rand() * 256 ) % 256 ]
@@ -61,6 +56,40 @@ proc make_password { { message 1 } } {
     set d3 [lindex [expr ( $r2 >> 10 ) % 8 + 2]]
     set d4 [lindex [expr ( $r2 >> 13 ) % 8 + 2]]
     return "$w1$d1$d2$w2$d3$d4"
+}
+
+# Returns a message giving password statistics.
+# If no passwords made the message is "".
+#
+proc password_statistics {} {
+    global dev_random_passwords rand_passwords
+    if { $dev_random_passwords > 0 } {
+        if { $rand_passwords > 0 } {
+	    return "Made $dev_random_passwords\
+	            /dev/random passwords and\
+		    $rand_passwords rand()\
+		    passwords."
+	} else {
+	    return "Made $dev_random_passwords\
+	            /dev/random passwords."
+	}
+    } else {
+        if { $rand_passwords > 0 } {
+	    return "Made $rand_passwords rand()\
+	            passwords."
+	} else {
+	    return ""
+	}
+    }
+}
+
+# Zero password statistics.  Statistics are zero on
+# initial load, so it may not be necessary to call this.
+#
+proc zero_password_statistics {} {
+    global dev_random_passwords rand_passwords
+    set dev_random_passwords 0
+    set rand_passwords 0
 }
 
 # These are 3 lower case letter words taken from
