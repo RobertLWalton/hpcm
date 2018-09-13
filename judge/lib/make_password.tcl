@@ -2,7 +2,7 @@
 #
 # File:		make_password.tcl
 # Author:	Bob Walton (walton@seas.harvard.edu)
-# Date:		Wed Sep 12 07:10:04 EDT 2018
+# Date:		Thu Sep 13 05:41:38 EDT 2018
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -27,14 +27,15 @@ set rand_passwords 0
 proc make_password {} {
     global dev_random_passwords rand_passwords
     if { [file readable /dev/random] } {
-	incr dev_random_passwords
-	set fp [open /dev/random r]
-	fconfigure $fp -translation binary
-	set data [read $fp 32]
-	close $fp
-	binary scan $data ss r1 r2
-	if { $r1 < 0 } { incr r1 [expr 1 << 16] }
-	if { $r2 < 0 } { incr r2 [expr 1 << 16] }
+        if { $dev_random_passwords == 0 } {
+	    puts "Making passwords from /dev/random"
+	}
+        incr dev_random_passwords
+	# For some reason we cannot read /dev/random
+	# directly from tclsh on all systems.
+	set data [exec hpcm_read_random]
+	set r1 [lindex $data 0]
+	set r2 [lindex $data 1]
     } else {
 	incr rand_passwords
         set r1hi [expr int ( rand() * 256 ) % 256 ]

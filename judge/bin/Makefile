@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Jul  8 15:37:23 EDT 2017
+# Date:		Thu Sep 13 05:33:02 EDT 2018
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -21,6 +21,7 @@ all:	scorediff grant_access \
         hpcm_print_passwords \
 	hpcm_remote_sendmail \
 	hpcm_queue \
+	hpcm_read_random \
 	printer_client printer_server \
 	hpcm_email_accounts chkpage \
 	hpcm_extract_test_replies \
@@ -51,6 +52,11 @@ scorediff:	../src/scorediff.cc
 grant_access:
 	ln -s \
 	   ../../contestant/bin/grant_access .
+
+hpcm_read_random:	../../secure/src/hpcm_read_random.c
+	rm -f hpcm_read_random
+	(cd ../../secure/src; make hpcm_read_random)
+	cp -p ../../secure/src/hpcm_read_random .
 
 hpcm_sandbox_unsecure:	../../secure/src/hpcm_sandbox.c
 	rm -f hpcm_sandbox_unsecure
@@ -190,6 +196,7 @@ clean:
 		hpcm_email_accounts \
 		hpcm_remote_sendmail \
 		hpcm_queue \
+		hpcm_read_random \
 		hpcm_judging.rc \
 		hpcm_extract_test_replies \
 		filtered_diff \

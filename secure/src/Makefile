@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Wed Mar  9 07:12:40 EST 2016
+# Date:		Thu Sep 13 05:28:08 EDT 2018
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -74,6 +74,9 @@ hpcm_finish:	hpcm_finish.c
 hpcm_wrapper:	hpcm_wrapper.c
 	gcc -o hpcm_wrapper hpcm_wrapper.c
 
+hpcm_read_random:	hpcm_read_random.c
+	gcc -o hpcm_read_random hpcm_read_random.c
+
 clean:
 	rm -f hpcm_sandbox hpcm_sendmail hpcm_finish \
-	      hpcm_wrapper
+	      hpcm_wrapper hpcm_read_random
