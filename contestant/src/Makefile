@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Jun  5 06:47:59 EDT 2018
+# Date:		Tue Sep 18 11:47:27 EDT 2018
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -18,7 +18,8 @@ all:	hpcm_display \
         hpcm_display_segments \
         hpcm_display_polygon \
 	hpcm_timing_g \
-	hpcm_timing_O2
+	hpcm_timing_O2 \
+	hpcm_general_position
 
 test_ps:	hpcm_display_graph_test.ps
 
@@ -58,6 +59,10 @@ hpcm_timing_g:	hpcm_timing.cc
 
 hpcm_timing_O2:	hpcm_timing.cc
 	g++ -O2 -o hpcm_timing_O2 hpcm_timing.cc
+
+hpcm_general_position:	hpcm_general_position.cc
+	g++ -o hpcm_general_position \
+	    hpcm_general_position.cc
 
 test_X:		hpcm_display_graph
 	hpcm_display -X \
