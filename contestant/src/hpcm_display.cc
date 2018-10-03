@@ -2,11 +2,17 @@
 //
 // File:	hpcm_display.cc
 // Authors:	Bob Walton (walton@deas.harvard.edu)
-// Date:	Sat Jul 28 13:35:52 EDT 2018
+// Date:	Wed Oct  3 07:30:28 EDT 2018
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
 // for this program.
+
+// Compile with:
+//
+//	g++ -I /usr/include/cairo \
+//	    -o hpcm_display \
+//	    hpcm_display.cc -lcairo -lX11
 
 #include <iostream>
 #include <iomanip>
