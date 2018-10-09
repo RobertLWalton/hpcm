@@ -4,7 +4,7 @@
 #
 # File:		printer_client
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Tue Oct  9 03:17:25 EDT 2018
+# Date:		Tue Oct  9 06:19:43 EDT 2018
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -405,13 +405,13 @@ function print_file {
     fi
 }
 
-# Executes `get' command.
+# Executes `get' command.  Returns 0 on success and 1 on
+# error.
 #
 function get_all() {
-    listfiles
-    if [[ $? != 0 ]]
+    if ! listfiles
     then
-        return
+        return 1
     fi
 
     for file in "${files[@]}"
@@ -433,18 +433,19 @@ function get_all() {
         print_file $base .ps
 	if [[ $COPROC_DIED == 1 ]]
 	then
-	    return
+	    return 1
 	fi
     done
+    return 0
 }
 
-# Executes `list' command.
+# Executes `list' command.  Returns 0 on success and 1
+# on error.
 #
 function list() {
-    listfiles
-    if [[ $? != 0 ]]
+    if ! listfiles
     then
-        return
+        return 1
     fi
 
     local -a goodfiles=()
@@ -485,6 +486,8 @@ function list() {
         echo "    ${goodfiles[$first]}"
 	(( first += 1 ))
     done
+
+    return 0
 }
 
 # get_sum BASE EXT
@@ -584,11 +587,17 @@ do
 	then
 	    echo get "[at `date +%T`]"
 	    get_all
-	    continue
+	    if [[ $COPROC_DIED == 1 ]]
+	    then
+	        break
+	    else
+	    	continue
+	    fi
 	elif [[ $STATUS != 0 ]]
 	then
 	    exit 0
 	fi
+
 	case "$REPLY" in
 	doc)
 	    echo "$document" | less -F -K
