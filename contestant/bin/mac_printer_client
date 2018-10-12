@@ -1,0 +1,842 @@
+#! /bin/bash
+#
+# Get and print files from remote queue.
+#
+# File:		printer_client
+# Author:	Bob Walton <walton@deas.harvard.edu>
+# Date:		Wed Oct 10 12:57:46 EDT 2018
+#
+# The authors have placed this program in the public
+# domain; they make no warranty and accept no liability
+# for this program.
+
+# This is the version that DOES NOT USE `coproc'.
+
+# NOTE: This file is not to be executed by the judge,
+#       but is to be sent to whoever needs to print
+#       files in printer queues set up by the judge.
+
+# shopt -s compat32
+
+document="
+printer_client REMOTE-ACCOUNT PRIVATE-KEY [PRINTER]
+printer_client -test \\
+               PRINTER_SERVER QUEUE-DIRECTORY [PRINTER]
+
+    Get files queued for printing in a remote queue and
+    print them on a local printer.  The REMOTE-ACCOUNT
+    is an ssh login account name, and PRIVATE-KEY is
+    a file containing the private key to be used with
+    the account.  The REMOTE-ACCOUNT/PRIVATE-KEY pair
+    names the remote queue.  The PRINTER is the local
+    printer, or the local default printer if PRINTER
+    is not given.
+
+    The authorized_keys file of the REMOTE-ACCOUNT must
+    contain the line
+
+        command=\"printer_server QUEUE-DIRECTORY\" ...
+
+    where ... is the public key corresponding to
+    PRIVATE-KEY.  This line invokes the printer_server
+    program that works with printer_client to move
+    files to be printed from the remote QUEUE-
+    DIRECTORY to the current directory and from there
+    to the printer.
+
+    If the -test option is given, the queue is not
+    remote and the next two arguments are the command
+    which is executed locally.
+
+    Printer_client reads and executes commands from its
+    standard input.  If no input is received within a
+    set time (default 30 seconds), printer_client exe-
+    cutes the \`get' command which gets and prints any
+    unprinted queue files, and then resumes waiting for
+    another command (or another timeout).  Files to be
+    printed are put in the local (printer_client's)
+    current directory with extension .ps, and when the
+    file is printed, its extension there is changed to
+    .done.
+
+    The common commands are:
+
+        get	Get any unprinted files and print them.
+		Files in the queue with extension .ps
+		are copied to the current directory
+		(of the printer_client program).  Then
+		they are printed and their extension
+		is changed to .done in both the server
+		queue and in the current printer_
+		client directory.
+
+	list	List recent files.  Ready (.ps) files
+		and recently printed (recent .done)
+		files are listed.
+
+	time [SECONDS]
+		Reset the time interval between when
+		printer_client is ready to read the
+		next command and when it executes an
+		automatic \`get' command.  The interval
+		time is in seconds, with default of 30
+		seconds.  The value 0 means infinity.
+
+		If [SECONDS] is not given, the current
+		time is printed.
+
+	?	Print list of commands.
+	help
+
+	quit	Exit
+	exit
+	control-D
+	control-C
+
+    Other occasionally useful commands are the follow-
+    ing.  In all these commands, FILE must have exten-
+    sion .ps or .done, except for the \`remove' command
+    it may also have extension .out.
+
+
+	listfiles
+	        List all the files in the server queue.
+		File names have date and time and are
+		in chronological order.  File extensions
+		are changed to indicate status:
+
+		    .out    Still being written.
+		    .ps	    Ready to print.
+		    .done   Printed.
+
+	get FILE
+		Copy FILE from server into current
+		directory.
+
+	print FILE
+		Ditto but then print file and if its
+		extension is .ps, and after printing
+		change its extension to .done in current
+		and server directories.
+
+	done FILE
+		If FILE has the .ps extension, just
+		change the extension to .done in the
+		current and server directories.
+
+	ready FILE
+		If FILE has the .done extension, just
+		change the extension to .ps in the
+		current and server directories.
+
+	sum FILE
+		Check that the server and the local
+		directory both have a copy of FILE and
+		both copies have the same MD5 sum.
+
+	remove FILE
+		Remove the file from local directory and
+		and server.
+
+	debug [on|off]
+		If the debug switch is on, a trace of
+		communications between printer_client
+		and the remote server is printed.  With
+		no option, the switch is toggled.  The
+		\`on' and \`off' options set the switch.
+
+		Lines sent to the server are prefaced
+		with \`---> ', and lines received from
+		the server are prefaced with \`<--- '.
+		See \`printer_server -doc' for documen-
+		tation describing the traced lines.
+
+	listdir List remote queue directory as per
+		\`ls -l'.
+
+	localdir Ditto for printer_client current local
+	        directory.
+
+	?	Print command list.
+	help
+
+	exit	Exit.
+	quit
+	control-D
+	control-C
+
+	doc	Print this document.
+"
+
+case "$1" in
+   "" | -doc* )
+   	echo "$document" | less -F -K
+    	exit 1
+	;;
+   -test )
+	test=1
+        server="$2"
+        queue="$3"
+	printer="$4"
+        if [[ "$queue" == "" ]]
+        then
+            echo ERROR: Too few arguments
+	    exit 1
+	fi
+        ;;
+    * )
+	test=0
+        account="$1"
+        key="$2"
+	printer="$3"
+        if [[ "$key" == "" ]]
+        then
+            echo ERROR: Too few arguments
+	    exit 1
+	fi
+        ;;
+esac
+
+FIFOIN=/tmp/printer_client_$$_fifo_in
+FIFOOUT=/tmp/printer_client_$$_fifo_out
+FIFO="$FIFOIN $FIFOOUT"
+trap "rm -f $FIFO" EXIT
+trap "" PIPE
+
+DEBUGOUT=nop
+DEBUGIN=nop
+READ_TIMEOUT=30
+
+# coprocess runs ssh or local printer_server
+#
+COPROC_TIMEOUT=30
+COPROC_DIED=0
+COPROC_PID=""
+# out is set to file descriptor used to read output
+#     written by coprocess
+# in  is set to file descriptor used to write input
+#     read by by coprocess
+
+WS='[\ 	]'
+NWS='[^\ 	]'
+
+function nop() {
+    return 0
+}
+
+# Call when %%-HPCM_ERROR-%% has been read.  Reads from
+# server until %%-HPCM_DONE-%% read and and prints error
+# message.  Sets COPROC_DIED if coprocess output stops
+# prematurely.
+#
+function get_error() {
+    echo "ERROR:"
+    while read -r <&$out -t $COPROC_TIMEOUT
+    do
+        if [[ "$REPLY" == "%%-HPCM_DONE-%%" ]]
+	then
+	    $DEBUGIN "$REPLY"
+	    COPROC_DIED=0
+	    return
+	fi
+	echo "    $REPLY"
+    done
+    COPROC_DIED=1
+}
+
+# Call to finish server command that has no output.
+# Reads until %%-HPCM_DONE-%% read, looking for
+# %%-HPCM_ERROR-%%.  If any argument given, echoes
+# lines read before %%-HPCM_DONE-%% or %%HPCM-ERROR%%.
+# Otherwise complains that such lines are in error.
+# Sets COPROC_DIED if coprocess output stops prema-
+# turely.  Returns 0 normally and 1 if any error.
+#
+function finish() {
+
+    echo="$1"
+    COPROC_DIED=1
+    superfluous_found=0
+    while read -r <&$out -t $COPROC_TIMEOUT
+    do
+        if [[ "$REPLY" == "%%-HPCM_DONE-%%" ]]
+	then
+	    $DEBUGIN "$REPLY"
+	    COPROC_DIED=0
+	    break
+        elif [[ "$REPLY" == "%%-HPCM_ERROR-%%" ]]
+	then
+	    $DEBUGIN "$REPLY"
+	    get_error
+	    return 1
+	fi
+	if [[ "$echo" == "" && \
+	      $superfluous_found == 0 ]]
+	then
+	    echo "ERROR:"
+	    echo "    Superfluous output from server:"
+	    superfluous_found=1
+	fi
+	echo "    $REPLY"
+    done
+    return $superfluous_found
+}
+
+# Get a list of all files in the remote queue.  The
+# list is put in the `files' array, with the length
+# of that array in `nfiles'.  Returns 0 on success
+# and 1 on error.
+#
+declare -a files
+declare -i nfiles
+function listfiles() {
+
+    files=()
+    nfiles=0
+    COPROC_DIED=1
+    $DEBUGOUT listfiles
+    if ! echo >&$in listfiles
+    then
+        return 1
+    fi
+    while read -r <&$out -t $COPROC_TIMEOUT
+    do
+        if [[ "$REPLY" == "%%-HPCM_DONE-%%" ]]
+	then
+	    $DEBUGIN "$REPLY"
+	    COPROC_DIED=0
+	    return 0
+        elif [[ "$REPLY" == "%%-HPCM_ERROR-%%" ]]
+	then
+	    $DEBUGIN "$REPLY"
+	    get_error
+	    return 1
+	fi
+	files[$nfiles]="$REPLY"
+	(( nfiles += 1 ))
+    done
+    return 1
+}
+
+# get_file BASE EXT
+#
+# Gets file with given base name and extension.  Returns
+# 0 on success and 1 on error.
+#
+function get_file() {
+    local base="$1"
+    local ext="$2"
+    local fileout
+    rm -f $base.out
+    trap "rm -f $base.out $FIFO" EXIT
+    exec {fileout}>$base.out
+
+    COPROC_DIED=1
+    $DEBUGOUT get "$base$ext"
+    if ! echo >&$in get "$base$ext"
+    then
+        return 1
+    fi
+    while read -r <&$out -t $COPROC_TIMEOUT
+    do
+        if [[ "$REPLY" == "%%-HPCM_DONE-%%" ]]
+	then
+	    $DEBUGIN "$REPLY"
+	    COPROC_DIED=0
+	    break
+        elif [[ "$REPLY" == "%%-HPCM_ERROR-%%" ]]
+	then
+	    $DEBUGIN "$REPLY"
+	    exec {fileout}>&-
+	    get_error
+	    rm -f "$base.out"
+	    trap "rm -f $FIFO" EXIT
+	    return 1
+	fi
+	echo "$REPLY" >&$fileout
+    done
+    exec {fileout}>&-
+    trap "rm -f $FIFO" EXIT
+    if [[ $COPROC_DIED == 0 ]]
+    then
+	mv -f "$base.out" "$base$ext" >& /dev/null
+	return 0
+    else
+	rm -f "$base.out"
+	return 1
+    fi
+}
+
+# print_file BASE EXT
+#
+# Prints file with given base name and extension.  Gets
+# file first, and sets file status to `done' after
+# printing.  Returns 0 on success and 1 on error.
+#
+function print_file {
+    local base="$1"
+    local ext="$2"
+    if [ ! -r "$base$ext" ]
+    then
+	get_file "$base" "$ext"
+	if [[ $? != 0 ]]
+	then
+	    return 1
+	fi
+    fi
+    if [[ "$printer" == "" ]]
+    then
+	echo "    lpr" "$base$ext"
+	lpr "$base$ext"
+    else
+	echo "    lpr" -P"$printer" "$base$ext"
+	lpr -P"$printer" "$base$ext"
+    fi
+
+    $DEBUGOUT done "$base$ext"
+    if ! echo >&$in done "$base$ext"
+    then
+	COPROC_DIED=1
+	return 1
+    elif finish
+    then
+	mv -f "$base.ps" "$base.done" >& /dev/null
+	return 0
+    else
+	return 1
+    fi
+}
+
+# Executes `get' command.  Returns 0 on success and 1 on
+# error.
+#
+function get_all() {
+    if ! listfiles
+    then
+        return 1
+    fi
+
+    for file in "${files[@]}"
+    do
+	if [[ "$file" =~ ^(.*)(\.${NWS}*)$ ]]
+	then
+	    base="${BASH_REMATCH[1]}"
+	    ext="${BASH_REMATCH[2]}"
+	    if [[ "$ext" != ".ps" ]]
+	    then
+	        continue
+	    fi
+	else
+	    echo "ERROR: badly formed file name" \
+		     "returned by server: $file"
+	    continue
+	fi
+
+        print_file $base .ps
+	if [[ $COPROC_DIED == 1 ]]
+	then
+	    return 1
+	fi
+    done
+    return 0
+}
+
+# Executes `list' command.  Returns 0 on success and 1
+# on error.
+#
+function list() {
+    if ! listfiles
+    then
+        return 1
+    fi
+
+    local -a goodfiles=()
+    local -i ngoodfiles=0
+    local -i first=-1
+    for file in "${files[@]}"
+    do
+	if [[ "$file" =~ ^(.*)(\.${NWS}*)$ ]]
+	then
+	    base="${BASH_REMATCH[1]}"
+	    ext="${BASH_REMATCH[2]}"
+	    if [[ "$ext" == ".ps" ]]
+	    then
+	        if [[ $first == -1 ]]
+		then
+		    first=$ngoodfiles
+		fi
+	    elif [[ "$ext" != ".done" ]]
+	    then
+	        continue
+	    fi
+	else
+	    continue
+	fi
+	goodfiles[$ngoodfiles]="$file"
+	(( ngoodfiles += 1 ))
+    done
+
+    if (( $first <= 10 ))
+    then
+    	first=0
+    else
+    	(( first -= 10 ))
+    fi
+
+    while (( $first < $ngoodfiles ))
+    do
+        echo "    ${goodfiles[$first]}"
+	(( first += 1 ))
+    done
+
+    return 0
+}
+
+# get_sum BASE EXT
+#
+# Gets MD5 sum of remote file and returns it in SUM.
+# Returns 0 on success and 1 on error.
+#
+declare SUM=
+function get_sum() {
+    local base="$1"
+    local ext="$2"
+    local nsum=0
+    COPROC_DIED=1
+    $DEBUGOUT sum "$base$ext"
+    if !  echo >&$in sum "$base$ext"
+    then
+        return 1
+    fi
+    while read -r <&$out -t $COPROC_TIMEOUT
+    do
+	$DEBUGIN "$REPLY"
+        if [[ "$REPLY" == "%%-HPCM_DONE-%%" ]]
+	then
+	    COPROC_DIED=0
+	    if (( $nsum == 0 ))
+	    then
+	        echo "ERROR: no sum returned by server"
+		return 1
+	    else
+	    	return 0
+	    fi
+        elif [[ "$REPLY" == "%%-HPCM_ERROR-%%" ]]
+	then
+	    get_error
+	    return 1
+        elif (( $nsum == 0 ))
+	then
+	    SUM="$REPLY"
+	elif (( $nsum == 1 ))
+	then
+	    echo "ERROR: Superfluous line from server:"
+	    echo "       $SUM"
+	fi
+	(( nsum += 1 ))
+	if (( $nsum > 1 ))
+	then
+	    echo "       $REPLY"
+	fi
+
+    done
+    return 1
+}
+
+# Outer loop: creates or recreates coprocess that runs
+# remote or local printer_server.
+#
+while [ x = x ]
+do
+    if [[ "$COPROC_PID" != "" ]]
+    then
+	kill -9 $COPROC_PID >&/dev/null
+	wait $COPROC_PID >&/dev/null
+	echo ERROR: coprocess died: restarting
+	exec {in}>&- {out}<&-
+    fi
+
+    rm -f $FIFOIN $FIFOOUT
+    if ! mkfifo $FIFOIN $FIFOOUT
+    then
+        ERROR "mkfifo failed"
+	exit 1
+    fi
+
+    if (( $test == 1 ))
+    then
+	"$server" "$queue" <$FIFOIN >$FIFOOUT &
+    else
+	ssh -T -i "$key" "$account" \
+	    <$FIFOIN >$FIFOOUT &
+    fi
+    COPROC_PID=$!
+    exec {in}> $FIFOIN {out}< $FIFOOUT
+    COPROC_DIED=0
+
+    # Inner loop: read and execute commands.
+    #
+    while [[ $COPROC_DIED == 0 ]]
+    do
+	if [[ $READ_TIMEOUT != 0 ]]
+	then
+	    read -r -t $READ_TIMEOUT
+	else
+	    read -r
+	fi
+	STATUS=$?
+	if [[ $STATUS > 128 ]]
+	then
+	    echo get "[at `date +%T`]"
+	    get_all
+	    if [[ $COPROC_DIED == 1 ]]
+	    then
+	        break
+	    else
+	    	continue
+	    fi
+	elif [[ $STATUS != 0 ]]
+	then
+	    exit 0
+	fi
+
+	case "$REPLY" in
+	doc)
+	    echo "$document" | less -F -K
+	    ;;
+	\? | help )
+	    echo "get             Get and print ready" \
+	                          files
+	    echo "list            List ready and" \
+	                          recently printed files
+	    echo "time [TIMEOUT]  Print or reset" \
+	                          timeout
+	    echo ""
+	    echo "quit            Exit"
+	    echo "exit            Exit"
+	    echo "control-D       Exit"
+	    echo "control-C       Exit"
+	    echo ""
+	    echo "get FILE        Get file"
+	    echo "sum FILE        Check file MD5 sums"
+	    echo "done FILE       Mark file done" \
+	    		          '(printed)'
+	    echo "ready FILE      Mark file ready to" \
+	    		          print
+	    echo "print FILE      Print file"
+	    echo "remove FILE     Remove file"
+	    echo "debug [on|off]  Set or toggle debug" \
+	    			  output
+	    ;;
+	quit | exit )
+	    exit 0
+	    ;;
+	listfiles)
+	    listfiles
+	    for file in "${files[@]}"
+	    do
+	        echo "    $file"
+	    done
+	    ;;
+	time* )
+	    if [[ "$REPLY" =~ ^time${WS}*$ ]]
+	    then
+	        echo "    time interval is" \
+		     "$READ_TIMEOUT seconds"
+	    elif [[ "$REPLY" =~ \
+	            ^time${WS}+([0-9]+)${WS}*$ ]]
+	    then
+	        READ_TIMEOUT=${BASH_REMATCH[1]}
+	    else
+	        echo "ERROR: badly formed time" \
+		     "interval in $REPLY"
+	    fi
+	    ;;
+	get)
+	    get_all
+	    ;;
+	list)
+	    list
+	    ;;
+	listdir)
+	    $DEBUGOUT listdir
+	    if ! echo >&$in listdir
+	    then
+		COPROC_DIED=1
+	    else
+		finish echo
+	    fi
+	    ;;
+	localdir)
+	    ls -l
+	    ;;
+	get* | sum* | print* | done* | ready* \
+	     | remove* )
+	    
+	    if [[ "$REPLY" =~ \
+		  ^(${NWS}+)${WS}+(.*${NWS})${WS}*$ ]]
+	    then
+		op="${BASH_REMATCH[1]}"
+		file="${BASH_REMATCH[2]}"
+		if [[ "$file" =~ ^.*/.*$ ]]
+		then
+		    echo "ERROR: $file contains a" \
+		         "slash (/)"
+		    continue
+		elif [[ "$file" =~ ^\. ]]
+		then
+		    echo "ERROR: $file begins with a" \
+		         "dot (.)"
+		    continue
+		elif [[ "$file" =~ ^(.*)(\.${NWS}*)$ ]]
+		then
+		    base="${BASH_REMATCH[1]}"
+		    ext="${BASH_REMATCH[2]}"
+
+		    if [[ $op == "remove" ]]
+		    then
+		        if [[ "$ext" =~ \
+			      ^(.out|.ps|.done)$ ]]
+			then
+			    $DEBUGOUT remove \
+			              "$base$ext"
+			    if ! echo >&$in remove \
+			            "$base$ext"
+			    then
+				COPROC_DIED=1
+			    elif finish 
+			    then
+				rm -f "$base$ext"
+			    fi
+			else
+			    echo "ERROR: $file" \
+			         "extension is not" \
+				 ".out, .ps, or .done"
+			fi
+			continue
+		    elif [[ "$ext" != ".done" \
+		              && "$ext" != ".ps" ]]
+		    then
+		        echo "ERROR: $file extension" \
+			     "is not .ps or .done"
+			continue
+		    fi
+
+		    case $op in
+		    get)
+			get_file "$base" "$ext"
+			if [[ $? == 0 ]]
+			then
+			    ls -l "$base$ext"
+			fi
+			;;
+		    sum)
+			if [ -r "$base$ext" ]
+			then
+			    get_sum "$base" "$ext"
+			    if [[ $? != 0 ]]
+			    then
+			        continue
+			    fi
+			    locsum=`md5sum \
+			        "$base$ext"`
+			    [[ "$locsum" =~ \
+			       ^(${NWS}*)${WS} ]]
+			    locsum="${BASH_REMATCH[1]}"
+			    if [[ "$locsum" == \
+			          "$SUM" ]]
+			    then
+			        echo "    Local and" \
+				     Server \
+				     "$file" MD5 Sums \
+				     Are Equal
+			    else
+			        echo "    Local $file" \
+				     MD5 \
+				     Sum == "$locsum"
+				echo "    !="
+			        echo "    Server" \
+				     "$file" \
+				     MD5 Sum == "$SUM"
+			    fi
+			else
+			    echo "    Local $file Not" \
+			         Found "(Unreadable)"
+			fi
+			;;
+		    print )
+		        print_file "$base" "$ext"
+			;;
+		    done )
+			$DEBUGOUT done "$base$ext"
+			if ! echo >&$in done "$base$ext"
+			then
+			    COPROC_DIED=1
+			elif finish 
+			then
+			    mv -f "$base.ps" \
+			           "$base.done" \
+				   >& /dev/null
+			fi
+			;;
+		    ready )
+			$DEBUGOUT ready "$base$ext"
+			if ! echo >&$in ready \
+			          "$base$ext"
+			then
+			    COPROC_DIED=1
+			elif finish 
+			then
+			    mv -f "$base.done" \
+			           "$base.ps" \
+				   >& /dev/null
+			fi
+			;;
+		    * )
+		        echo "ERROR: unknown command" \
+			     "in $REPLY"
+			;;
+		    esac
+		else
+		    echo "ERROR: $file has no extension"
+		fi
+	    else
+	        echo "ERROR: badly formed command or" \
+		     "file name in $REPLY"
+	    fi
+	    ;;
+	debug*)
+	    if [[ "$REPLY" =~ \
+		     ^debug${WS}+(.*${NWS})${WS}*$ ]]
+	    then
+		toggle="${BASH_REMATCH[1]}"
+	    elif [[ "$DEBUGOUT" == "nop" ]]
+	    then
+	        toggle=on
+	    else
+	        toggle=off
+	    fi
+	    case "$toggle" in
+	    on)
+		DEBUGOUT="echo --->"
+		DEBUGIN="echo <---"
+		;;
+	    off)
+		DEBUGOUT=nop
+		DEBUGIN=nop
+		;;
+	    *)
+	        echo ERROR: cannot understand $toggle
+	    ;;
+	    esac
+	    ;;
+	*)
+	    echo "ERROR: Could not understand: $REPLY"
+	    echo "       The \`help' command prints" \
+	                 command list.
+	    ;;
+	esac
+    done
+done
+
+exit 0
