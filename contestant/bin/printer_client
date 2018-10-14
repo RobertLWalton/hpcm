@@ -1,18 +1,22 @@
-#! /bin/sh
+#! /bin/bash
 #
 # Get and print files from remote queue.
 #
 # File:		printer_client
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Thu Oct 13 10:13:17 EDT 2016
+# Date:		Wed Oct 10 12:57:46 EDT 2018
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
 # for this program.
 
+# This is the version that DOES NOT USE `coproc'.
+
 # NOTE: This file is not to be executed by the judge,
 #       but is to be sent to whoever needs to print
 #       files in printer queues set up by the judge.
+
+# shopt -s compat32
 
 document="
 printer_client REMOTE-ACCOUNT PRIVATE-KEY [PRINTER]
@@ -193,6 +197,11 @@ case "$1" in
         ;;
 esac
 
+FIFOIN=/tmp/printer_client_$$_fifo_in
+FIFOOUT=/tmp/printer_client_$$_fifo_out
+FIFO="$FIFOIN $FIFOOUT"
+trap "rm -f $FIFO" EXIT
+trap "" PIPE
 
 DEBUGOUT=nop
 DEBUGIN=nop
@@ -202,6 +211,7 @@ READ_TIMEOUT=30
 #
 COPROC_TIMEOUT=30
 COPROC_DIED=0
+COPROC_PID=""
 # out is set to file descriptor used to read output
 #     written by coprocess
 # in  is set to file descriptor used to write input
@@ -280,12 +290,15 @@ function finish() {
 declare -a files
 declare -i nfiles
 function listfiles() {
-    echo >&$in listfiles
-    $DEBUGOUT listfiles
 
     files=()
     nfiles=0
     COPROC_DIED=1
+    $DEBUGOUT listfiles
+    if ! echo >&$in listfiles
+    then
+        return 1
+    fi
     while read -r <&$out -t $COPROC_TIMEOUT
     do
         if [[ "$REPLY" == "%%-HPCM_DONE-%%" ]]
@@ -315,12 +328,15 @@ function get_file() {
     local ext="$2"
     local fileout
     rm -f $base.out
-    trap "rm -f $base.out" EXIT
+    trap "rm -f $base.out $FIFO" EXIT
     exec {fileout}>$base.out
-    echo >&$in get "$base$ext"
-    $DEBUGOUT get "$base$ext"
 
     COPROC_DIED=1
+    $DEBUGOUT get "$base$ext"
+    if ! echo >&$in get "$base$ext"
+    then
+        return 1
+    fi
     while read -r <&$out -t $COPROC_TIMEOUT
     do
         if [[ "$REPLY" == "%%-HPCM_DONE-%%" ]]
@@ -334,13 +350,13 @@ function get_file() {
 	    exec {fileout}>&-
 	    get_error
 	    rm -f "$base.out"
-	    trap - EXIT
+	    trap "rm -f $FIFO" EXIT
 	    return 1
 	fi
 	echo "$REPLY" >&$fileout
     done
     exec {fileout}>&-
-    trap - EXIT
+    trap "rm -f $FIFO" EXIT
     if [[ $COPROC_DIED == 0 ]]
     then
 	mv -f "$base.out" "$base$ext" >& /dev/null
@@ -376,10 +392,13 @@ function print_file {
 	echo "    lpr" -P"$printer" "$base$ext"
 	lpr -P"$printer" "$base$ext"
     fi
-    echo >&$in done "$base$ext"
+
     $DEBUGOUT done "$base$ext"
-    finish
-    if [[ $? == 0 ]]
+    if ! echo >&$in done "$base$ext"
+    then
+	COPROC_DIED=1
+	return 1
+    elif finish
     then
 	mv -f "$base.ps" "$base.done" >& /dev/null
 	return 0
@@ -388,13 +407,13 @@ function print_file {
     fi
 }
 
-# Executes `get' command.
+# Executes `get' command.  Returns 0 on success and 1 on
+# error.
 #
 function get_all() {
-    listfiles
-    if [[ $? != 0 ]]
+    if ! listfiles
     then
-        return
+        return 1
     fi
 
     for file in "${files[@]}"
@@ -416,18 +435,19 @@ function get_all() {
         print_file $base .ps
 	if [[ $COPROC_DIED == 1 ]]
 	then
-	    return
+	    return 1
 	fi
     done
+    return 0
 }
 
-# Executes `list' command.
+# Executes `list' command.  Returns 0 on success and 1
+# on error.
 #
 function list() {
-    listfiles
-    if [[ $? != 0 ]]
+    if ! listfiles
     then
-        return
+        return 1
     fi
 
     local -a goodfiles=()
@@ -468,6 +488,8 @@ function list() {
         echo "    ${goodfiles[$first]}"
 	(( first += 1 ))
     done
+
+    return 0
 }
 
 # get_sum BASE EXT
@@ -480,9 +502,12 @@ function get_sum() {
     local base="$1"
     local ext="$2"
     local nsum=0
-    echo >&$in sum "$base$ext"
-    $DEBUGOUT sum "$base$ext"
     COPROC_DIED=1
+    $DEBUGOUT sum "$base$ext"
+    if !  echo >&$in sum "$base$ext"
+    then
+        return 1
+    fi
     while read -r <&$out -t $COPROC_TIMEOUT
     do
 	$DEBUGIN "$REPLY"
@@ -528,20 +553,30 @@ do
 	kill -9 $COPROC_PID >&/dev/null
 	wait $COPROC_PID >&/dev/null
 	echo ERROR: coprocess died: restarting
+	exec {in}>&- {out}<&-
     fi
+
+    rm -f $FIFOIN $FIFOOUT
+    if ! mkfifo $FIFOIN $FIFOOUT
+    then
+        ERROR "mkfifo failed"
+	exit 1
+    fi
+
     if (( $test == 1 ))
     then
-	coproc "$server" "$queue"
+	"$server" "$queue" <$FIFOIN >$FIFOOUT &
     else
-	coproc ssh -T -i "$key" "$account"
+	ssh -T -i "$key" "$account" \
+	    <$FIFOIN >$FIFOOUT &
     fi
-    out=${COPROC[0]}
-    in=${COPROC[1]}
+    COPROC_PID=$!
+    exec {in}> $FIFOIN {out}< $FIFOOUT
     COPROC_DIED=0
 
     # Inner loop: read and execute commands.
     #
-    while [ x = x ]
+    while [[ $COPROC_DIED == 0 ]]
     do
 	if [[ $READ_TIMEOUT != 0 ]]
 	then
@@ -554,11 +589,17 @@ do
 	then
 	    echo get "[at `date +%T`]"
 	    get_all
-	    continue
+	    if [[ $COPROC_DIED == 1 ]]
+	    then
+	        break
+	    else
+	    	continue
+	    fi
 	elif [[ $STATUS != 0 ]]
 	then
 	    exit 0
 	fi
+
 	case "$REPLY" in
 	doc)
 	    echo "$document" | less -F -K
@@ -618,9 +659,13 @@ do
 	    list
 	    ;;
 	listdir)
-	    echo >&$in listdir
 	    $DEBUGOUT listdir
-	    finish echo
+	    if ! echo >&$in listdir
+	    then
+		COPROC_DIED=1
+	    else
+		finish echo
+	    fi
 	    ;;
 	localdir)
 	    ls -l
@@ -653,14 +698,15 @@ do
 		        if [[ "$ext" =~ \
 			      ^(.out|.ps|.done)$ ]]
 			then
-			    echo >&$in remove \
-			               "$base$ext"
 			    $DEBUGOUT remove \
 			              "$base$ext"
-			    finish
-			    if [[ $? == 0 ]]
+			    if ! echo >&$in remove \
+			            "$base$ext"
 			    then
-				rm -f "$base.ext"
+				COPROC_DIED=1
+			    elif finish 
+			    then
+				rm -f "$base$ext"
 			    fi
 			else
 			    echo "ERROR: $file" \
@@ -722,10 +768,11 @@ do
 		        print_file "$base" "$ext"
 			;;
 		    done )
-			echo >&$in done "$base$ext"
 			$DEBUGOUT done "$base$ext"
-			finish
-			if [[ $? == 0 ]]
+			if ! echo >&$in done "$base$ext"
+			then
+			    COPROC_DIED=1
+			elif finish 
 			then
 			    mv -f "$base.ps" \
 			           "$base.done" \
@@ -733,10 +780,12 @@ do
 			fi
 			;;
 		    ready )
-			echo >&$in ready "$base$ext"
 			$DEBUGOUT ready "$base$ext"
-			finish
-			if [[ $? == 0 ]]
+			if ! echo >&$in ready \
+			          "$base$ext"
+			then
+			    COPROC_DIED=1
+			elif finish 
 			then
 			    mv -f "$base.done" \
 			           "$base.ps" \
@@ -787,10 +836,6 @@ do
 	                 command list.
 	    ;;
 	esac
-	if [[ $COPROC_DIED == 1 ]]
-	then
-	    break
-	fi
     done
 done
 
