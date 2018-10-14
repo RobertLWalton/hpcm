@@ -2,21 +2,23 @@
 #
 # Get and print files from remote queue.
 #
-# File:		printer_client
+# File:		mac_printer_client
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Wed Oct 10 12:57:46 EDT 2018
+# Date:		Fri Oct 12 11:40:09 EDT 2018
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
 # for this program.
 
-# This is the version that DOES NOT USE `coproc'.
+# This version is tweaked to be compatible with MAC,
+# at the cost of treating EOF on the standard input
+# as a read timeout.
 
 # NOTE: This file is not to be executed by the judge,
 #       but is to be sent to whoever needs to print
 #       files in printer queues set up by the judge.
 
-# shopt -s compat32
+# shopt -s compat31
 
 document="
 printer_client REMOTE-ACCOUNT PRIVATE-KEY [PRINTER]
@@ -62,7 +64,7 @@ printer_client -test \\
     The common commands are:
 
         get	Get any unprinted files and print them.
-		Files in the queue with extension .ps
+	cntrl-D	Files in the queue with extension .ps
 		are copied to the current directory
 		(of the printer_client program).  Then
 		they are printed and their extension
@@ -90,8 +92,7 @@ printer_client -test \\
 
 	quit	Exit
 	exit
-	control-D
-	control-C
+	cntrl-C
 
     Other occasionally useful commands are the follow-
     ing.  In all these commands, FILE must have exten-
@@ -162,8 +163,7 @@ printer_client -test \\
 
 	exit	Exit.
 	quit
-	control-D
-	control-C
+	cntrl-C
 
 	doc	Print this document.
 "
@@ -216,6 +216,12 @@ COPROC_PID=""
 #     written by coprocess
 # in  is set to file descriptor used to write input
 #     read by by coprocess
+# fout is used to write a file
+in=3
+out=4
+fout=5
+   # All these are also hardcoded below because $xx>
+   # does not work and {xx}> does not work on the MAC.
 
 WS='[\ 	]'
 NWS='[^\ 	]'
@@ -326,10 +332,9 @@ function listfiles() {
 function get_file() {
     local base="$1"
     local ext="$2"
-    local fileout
     rm -f $base.out
     trap "rm -f $base.out $FIFO" EXIT
-    exec {fileout}>$base.out
+    exec 5>$base.out
 
     COPROC_DIED=1
     $DEBUGOUT get "$base$ext"
@@ -347,15 +352,15 @@ function get_file() {
         elif [[ "$REPLY" == "%%-HPCM_ERROR-%%" ]]
 	then
 	    $DEBUGIN "$REPLY"
-	    exec {fileout}>&-
+	    exec 5>&-
 	    get_error
 	    rm -f "$base.out"
 	    trap "rm -f $FIFO" EXIT
 	    return 1
 	fi
-	echo "$REPLY" >&$fileout
+	echo "$REPLY" >&$fout
     done
-    exec {fileout}>&-
+    exec 5>&-
     trap "rm -f $FIFO" EXIT
     if [[ $COPROC_DIED == 0 ]]
     then
@@ -553,7 +558,7 @@ do
 	kill -9 $COPROC_PID >&/dev/null
 	wait $COPROC_PID >&/dev/null
 	echo ERROR: coprocess died: restarting
-	exec {in}>&- {out}<&-
+	exec 3>&- 4<&-
     fi
 
     rm -f $FIFOIN $FIFOOUT
@@ -571,7 +576,7 @@ do
 	    <$FIFOIN >$FIFOOUT &
     fi
     COPROC_PID=$!
-    exec {in}> $FIFOIN {out}< $FIFOOUT
+    exec 3> $FIFOIN 4< $FIFOOUT
     COPROC_DIED=0
 
     # Inner loop: read and execute commands.
@@ -585,7 +590,11 @@ do
 	    read -r
 	fi
 	STATUS=$?
-	if [[ $STATUS > 128 ]]
+	# On a MAC we cannot tell the difference between
+	# a timeout and an end of file.
+	#
+	# if [[ $STATUS > 128 ]]
+	if [[ $STATUS != 0 ]]
 	then
 	    echo get "[at `date +%T`]"
 	    get_all
@@ -595,9 +604,9 @@ do
 	    else
 	    	continue
 	    fi
-	elif [[ $STATUS != 0 ]]
-	then
-	    exit 0
+	# elif [[ $STATUS != 0 ]]
+	# then
+	#     exit 0
 	fi
 
 	case "$REPLY" in
@@ -614,8 +623,9 @@ do
 	    echo ""
 	    echo "quit            Exit"
 	    echo "exit            Exit"
-	    echo "control-D       Exit"
-	    echo "control-C       Exit"
+	    echo "cntrl-D         Get and print ready" \
+                                  files
+	    echo "cntrl-C         Exit"
 	    echo ""
 	    echo "get FILE        Get file"
 	    echo "sum FILE        Check file MD5 sums"
