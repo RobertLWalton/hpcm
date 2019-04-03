@@ -2,7 +2,7 @@
 //
 // File:	hpcm_display.cc
 // Authors:	Bob Walton (walton@deas.harvard.edu)
-// Date:	Wed Oct  3 07:30:28 EDT 2018
+// Date:	Wed Apr  3 05:57:56 EDT 2019
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -216,6 +216,12 @@ struct arc : public command
     vector g;  // (g1,g2)
     qualifiers q;
 };
+struct text : public command
+{
+    vector p; // At p.
+    string t; // Text to display.
+    qualifiers q;
+};
 
 // List of all commands:
 //
@@ -276,6 +282,11 @@ void compute_bounds ( void )
 	    BOUND ( A.c + ( ul^A.r ) );
 	    break;
 	}
+	case 'T':
+	{
+	    // TBD
+	    break;
+	}
 	default:
 	    assert ( ! "bounding bad command" );
 	}
@@ -304,6 +315,9 @@ void delete_command ( void )
 	break;
     case 'A':
 	delete (arc *) commands;
+	break;
+    case 'T':
+	delete (text *) commands;
 	break;
     default:
 	assert ( ! "deleting bad command" );
@@ -373,6 +387,14 @@ ostream & operator << ( ostream & s, const command & c )
 	    << " " << A.a.x << " " << A.a.y
 	    << " " << A.r
 	    << " " << A.g.x << " " << A.g.y;
+    }
+    case 'T':
+    {
+        text & T = * (text *) & c;
+	return print_command_and_qualifiers
+	       ( s, T.command, T.q )
+	    << " " << T.p.x << " " << T.p.y
+	    << " " << T.t;
     }
     default:
         return s << "BAD COMMAND " << c.command;
@@ -534,6 +556,25 @@ bool read_testcase ( istream & in )
 	    }
 	    break;
 	}
+	case 'T':
+	{
+	    text & T = * new text();
+	    T.next = commands;
+	    commands = & T;
+	    in >> T.command;
+	    assert ( T.command == 'T' );
+	    read_qualifiers ( in, T.q );
+	    in >> T.p.x >> T.p.y;
+	    while ( in.peek() != '\n' )
+	        T.t.push_back ( in.get() );
+	    int f = 0, l = T.t.size();
+	    while ( f < l && isspace ( T.t[f] ) )
+	        ++ f;
+	    while ( f < l && isspace ( T.t[l-1] ) )
+	        ++ l;
+	    T.t = T.t.substr ( f, l - f );
+	    break;
+	}
 	case '*':
 	{
 	    assert ( in.get() == '*' );
@@ -600,6 +641,9 @@ const double side_margin = 54;		    // 0.75"
 const double separation = 8;		    // 8/72"
 const double title_large_font_size = 16;    // 16/72"
 const double title_small_font_size = 10;    // 10/72"
+const double text_large_font_size = 16;     // 16/72"
+const double text_medium_font_size = 12;    // 12/72"
+const double text_small_font_size = 8;      // 8/72"
 
 const double page_line_size = 1;    	    // 1/72"
 const double page_dot_size = 2;    	    // 2/72"
@@ -705,6 +749,29 @@ void draw_arrow ( vector p, vector d, width w )
     cairo_line_to ( graph_c, CONVERT(p-d2) );
     cairo_set_line_width ( graph_c, w * line_size );
     cairo_stroke ( graph_c );
+}
+
+void draw_text ( vector p, width w, string t )
+{
+    double font_size =
+        ( w == SMALL ?  text_small_font_size :
+          w == MEDIUM ? text_medium_font_size :
+          w == LARGE ?  text_large_font_size :
+                        0 );
+    cairo_set_font_size ( graph_c, font_size );
+    assert (    cairo_status ( graph_c )
+	     == CAIRO_STATUS_SUCCESS );
+
+    cairo_text_extents_t te;
+    cairo_text_extents ( graph_c, t.c_str(), & te );
+    assert (    cairo_status ( graph_c )
+	     == CAIRO_STATUS_SUCCESS );
+    cairo_move_to
+	( graph_c, 
+	  p.x - te.width/2, p.y - font_size / 2 );
+    cairo_show_text ( graph_c, t.c_str() );
+    assert (    cairo_status ( graph_c )
+	     == CAIRO_STATUS_SUCCESS );
 }
 
 void draw_test_case ( void )
@@ -890,6 +957,13 @@ void draw_test_case ( void )
 	    if ( A.q.rearward & END )
 		draw_arrow
 		    ( p2, - d2, A.q.w );
+	    break;
+	}
+	case 'T':
+	{
+	    text & T = * (text *) c;
+	    draw_text ( T.p, T.q.w, T.t );
+	    break;
 	}
 	}
     }
@@ -1048,6 +1122,9 @@ int main ( int argc, char ** argv )
 
     graph_c = cairo_create ( page );
     cairo_set_source_rgb ( graph_c, 0.0, 0.0, 0.0 );
+    cairo_select_font_face ( graph_c, "sans-serif",
+                             CAIRO_FONT_SLANT_NORMAL,
+			     CAIRO_FONT_WEIGHT_BOLD );
     assert (    cairo_status ( graph_c )
 	     == CAIRO_STATUS_SUCCESS );
 
