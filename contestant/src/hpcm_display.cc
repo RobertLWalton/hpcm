@@ -2,7 +2,7 @@
 //
 // File:	hpcm_display.cc
 // Authors:	Bob Walton (walton@deas.harvard.edu)
-// Date:	Wed Apr  3 05:57:56 EDT 2019
+// Date:	Wed Apr  3 11:59:37 EDT 2019
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -119,8 +119,19 @@ const char * const documentation = "\n"
 "              G|GG|GGG = color is light,medium,dark\n"
 "                         gray (default is black)\n"
 "\n"
-"    With the -pdf option, pdf is written to\n"
-"    the standard output.\n"
+"        T+ x y text\n"
+"            Display text with center of text at"
+                                         " (x,y).\n"
+"            The text is everything on the input line\n"
+"            after y, but with whitespace trimmed\n"
+"            from its ends.\n"
+"            Qualifiers:\n"
+"              S = 8 point font (default)\n"
+"              M = 12 point font\n"
+"              L = 16 point font\n"
+"\n"
+"    With the -pdf option, pdf is written to the\n"
+"    standard output.\n"
 "\n"
 "    With the -RxC option, pdf is written to the\n"
 "    standard output as per the -pdf option, but with\n"
@@ -753,6 +764,7 @@ void draw_arrow ( vector p, vector d, width w )
 
 void draw_text ( vector p, width w, string t )
 {
+    vector pc = { CONVERT(p) };
     double font_size =
         ( w == SMALL ?  text_small_font_size :
           w == MEDIUM ? text_medium_font_size :
@@ -768,10 +780,11 @@ void draw_text ( vector p, width w, string t )
 	     == CAIRO_STATUS_SUCCESS );
     cairo_move_to
 	( graph_c, 
-	  p.x - te.width/2, p.y - font_size / 2 );
+	  pc.x - te.width/2, pc.y - te.height/2 );
     cairo_show_text ( graph_c, t.c_str() );
     assert (    cairo_status ( graph_c )
 	     == CAIRO_STATUS_SUCCESS );
+
 }
 
 void draw_test_case ( void )
