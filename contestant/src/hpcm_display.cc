@@ -780,7 +780,7 @@ void draw_text ( vector p, width w, string t )
 	     == CAIRO_STATUS_SUCCESS );
     cairo_move_to
 	( graph_c, 
-	  pc.x - te.width/2, pc.y - te.height/2 );
+	  pc.x - te.width/2, pc.y + te.height/2 );
     cairo_show_text ( graph_c, t.c_str() );
     assert (    cairo_status ( graph_c )
 	     == CAIRO_STATUS_SUCCESS );
