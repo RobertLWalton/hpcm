@@ -2,7 +2,7 @@
 //
 // File:	hpcm_display.cc
 // Authors:	Bob Walton (walton@deas.harvard.edu)
-// Date:	Wed Apr  3 11:59:37 EDT 2019
+// Date:	Sun Apr  7 13:33:34 EDT 2019
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -130,6 +130,12 @@ const char * const documentation = "\n"
 "              M = 12 point font\n"
 "              L = 16 point font\n"
 "\n"
+"        M t b l r\n"
+"            Set the margins for top (t), bottom\n"
+"            (b), left (l), and right(r).  These\n"
+"            default to 0.  Max of all M commands\n"
+"            is used for each margin.\n"
+"\n"
 "    With the -pdf option, pdf is written to the\n"
 "    standard output.\n"
 "\n"
@@ -233,81 +239,14 @@ struct text : public command
     string t; // Text to display.
     qualifiers q;
 };
+struct margin : public command
+{
+    double t, b, l, r;
+};
 
 // List of all commands:
 //
 command * commands;
-
-double xmin, xmax, ymin, ymax;
-    // Bounds on x and y over all commands.
-    // Used to set scale.  Does NOT account
-    // for width of lines or points.  Bounds
-    // entire ellipse and not just the arc.
-
-void compute_bounds ( void )
-{
-    xmin = ymin = DBL_MAX;
-    xmax = ymax = DBL_MIN;
-#   define BOUND(v) \
-	 dout << "BOUND " << (v).x << " " << (v).y \
-	      << endl; \
-         if ( (v).x < xmin ) xmin = (v).x; \
-         if ( (v).x > xmax ) xmax = (v).x; \
-         if ( (v).y < ymin ) ymin = (v).y; \
-         if ( (v).y > ymax ) ymax = (v).y;
-
-    for ( command * c = commands; c != NULL;
-                                  c = c->next )
-    {
-        switch ( c->command )
-	{
-	case 'P':
-	{
-	    point & P = * (point *) c;
-	    BOUND ( P.p );
-	    break;
-	}
-	case 'L':
-	{
-	    line & L = * (line *) c;
-	    BOUND ( L.p1 );
-	    BOUND ( L.p2 );
-	    break;
-	}
-	case 'A':
-	{
-	    // Compute bounding rectangle of ellipse,
-	    // rotate it by A.r, translate it by A.c,
-	    // and bound the corners.
-	    //
-	    arc & A = * (arc *) c;
-	    vector d1 = A.a;
-	    vector d2 = { d1.x, - d1.y };
-	    vector ll = - d1;
-	    vector lr =   d2;
-	    vector ur =   d1;
-	    vector ul = - d2;
-	    BOUND ( A.c + ( ll^A.r ) );
-	    BOUND ( A.c + ( lr^A.r ) );
-	    BOUND ( A.c + ( ur^A.r ) );
-	    BOUND ( A.c + ( ul^A.r ) );
-	    break;
-	}
-	case 'T':
-	{
-	    // TBD
-	    break;
-	}
-	default:
-	    assert ( ! "bounding bad command" );
-	}
-    }
-#   undef BOUND
-
-    dout <<  "XMIN " << xmin << " XMAX " << xmax
-         << " YMIN " << ymin << " YMAX " << ymax
-         << endl; 
-}
 
 // Delete first command.
 //
@@ -329,6 +268,9 @@ void delete_command ( void )
 	break;
     case 'T':
 	delete (text *) commands;
+	break;
+    case 'M':
+	delete (margin *) commands;
 	break;
     default:
 	assert ( ! "deleting bad command" );
@@ -406,6 +348,13 @@ ostream & operator << ( ostream & s, const command & c )
 	       ( s, T.command, T.q )
 	    << " " << T.p.x << " " << T.p.y
 	    << " " << T.t;
+    }
+    case 'M':
+    {
+        margin & M = * (margin *) & c;
+	return s << M.command << " "
+	         << M.t << " " << M.b << " "
+		 << M.l << " " << M.r;
     }
     default:
         return s << "BAD COMMAND " << c.command;
@@ -586,6 +535,16 @@ bool read_testcase ( istream & in )
 	    T.t = T.t.substr ( f, l - f );
 	    break;
 	}
+	case 'M':
+	{
+	    margin & M = * new margin();
+	    M.next = commands;
+	    commands = & M;
+	    in >> M.command;
+	    assert ( M.command == 'M' );
+	    in >> M.t >> M.b >> M.l >> M.r;
+	    break;
+	}
 	case '*':
 	{
 	    assert ( in.get() == '*' );
@@ -725,6 +684,105 @@ double title_font_size,
 cairo_t * graph_c;
 double xscale, yscale, left, bottom;
 double dot_size, line_size;
+
+double xmin, xmax, ymin, ymax;
+    // Bounds on x and y over all commands.
+    // Used to set scale.  Does NOT account
+    // for width of lines or points.  Bounds
+    // entire ellipse and not just the arc.
+
+double tmax, bmax, lmax, rmax;
+    // Margins for top(t), bottom(b), left(l), and
+    // right(r).  Max of all margins is used.  Margins
+    // are in same units as xmin, ... .
+
+void compute_bounds ( void )
+{
+    xmin = ymin = DBL_MAX;
+    xmax = ymax = DBL_MIN;
+    tmax = bmax = lmax = rmax = 0;
+
+#   define BOUND(v) \
+	 dout << "BOUND " << (v).x << " " << (v).y \
+	      << endl; \
+         if ( (v).x < xmin ) xmin = (v).x; \
+         if ( (v).x > xmax ) xmax = (v).x; \
+         if ( (v).y < ymin ) ymin = (v).y; \
+         if ( (v).y > ymax ) ymax = (v).y;
+
+    for ( command * c = commands; c != NULL;
+                                  c = c->next )
+    {
+        switch ( c->command )
+	{
+	case 'P':
+	{
+	    point & P = * (point *) c;
+	    BOUND ( P.p );
+	    break;
+	}
+	case 'L':
+	{
+	    line & L = * (line *) c;
+	    BOUND ( L.p1 );
+	    BOUND ( L.p2 );
+	    break;
+	}
+	case 'A':
+	{
+	    // Compute bounding rectangle of ellipse,
+	    // rotate it by A.r, translate it by A.c,
+	    // and bound the corners.
+	    //
+	    arc & A = * (arc *) c;
+	    vector d1 = A.a;
+	    vector d2 = { d1.x, - d1.y };
+	    vector ll = - d1;
+	    vector lr =   d2;
+	    vector ur =   d1;
+	    vector ul = - d2;
+	    BOUND ( A.c + ( ll^A.r ) );
+	    BOUND ( A.c + ( lr^A.r ) );
+	    BOUND ( A.c + ( ur^A.r ) );
+	    BOUND ( A.c + ( ul^A.r ) );
+	    break;
+	}
+	case 'T':
+	{
+	    // Add text center point to bounds.  We
+	    // CANNOT compute bounding rectangle for
+	    // text as text extent is in different units
+	    // than our bounds and we do not know
+	    // conversion factors at this time.
+	    // 
+	    text & T = * (text *) c;
+	    BOUND ( T.p );
+	    break;
+	}
+	case 'M':
+	{
+	    // Max margins.
+	    // 
+	    margin & M = * (margin *) c;
+	    if ( M.t > tmax ) tmax = M.t;
+	    if ( M.b > bmax ) bmax = M.b;
+	    if ( M.l > lmax ) lmax = M.l;
+	    if ( M.r > rmax ) rmax = M.r;
+	    break;
+	}
+	default:
+	    assert ( ! "bounding bad command" );
+	}
+    }
+#   undef BOUND
+
+    xmin -= lmax; xmax += rmax;
+    ymin -= bmax; ymax += tmax;
+
+    dout <<  "XMIN " << xmin << " XMAX " << xmax
+         << " YMIN " << ymin << " YMAX " << ymax
+         << endl; 
+}
 
 # define CONVERT(p) \
     left + ((p).x - xmin) * xscale, \
@@ -978,6 +1036,8 @@ void draw_test_case ( void )
 	    draw_text ( T.p, T.q.w, T.t );
 	    break;
 	}
+	case 'M':
+	    break;
 	}
     }
 }
