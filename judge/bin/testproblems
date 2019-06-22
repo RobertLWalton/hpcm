@@ -4,7 +4,7 @@
 #
 # File:		testproblems
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Sat Jun 22 05:29:59 EDT 2019
+# Date:		Sat Jun 22 10:10:07 EDT 2019
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -1131,6 +1131,48 @@ foreach directory $myargv {
 				  -o MAKE_TIMING_INFO \
 				  make >@ $stdoutv } \
 			   mout]
+		set make_time \
+		    [read_file MAKE_TIMING_INFO]
+		# Apparently not all files written by
+		# hpcm_sandbox are available at this
+		# time.  We wait until the timing file
+		# written by hpcm_sandbox is written.
+		# This requires hpcm_sandbox to have
+		# the -watch or -tee option.
+		#
+		set timer [clock milliseconds]
+		while { 1 } {
+		    if { [expr { [clock milliseconds]
+		                 - $timer > 3000 }] } {
+		          set extra \
+			      "SOLUTION_TIMING_INFO\
+			       not written;\n    -watch\
+			       or -tee hpcm_sandbox\
+			       option needed"
+			  if { $mout == "" } {
+			      set mout $extra
+			  } else {
+			      set mout "$mout\n$extra"
+			  }
+			  break
+		    }
+
+		    if { [catch {
+		           set solution_time \
+			    [lindex \
+			      [read_file \
+				SOLUTION_TIMING_INFO] 0]
+			   }] } continue
+		    if { [catch {
+		           set solution_time \
+			       [format "%.3f" \
+				       $solution_time]
+			   }] } continue
+		    lappend timing_info \
+			    [list $solution_time \
+				  $make_time $N.in]
+		    break
+		}
 		if { $mout != "" } {
 		    if { $N != $problem } {
 			set makes "  ==== $testdir\
@@ -1163,15 +1205,6 @@ foreach directory $myargv {
 			incr score_counters($score)
 		    }
 		}
-		set make_time \
-		    [read_file MAKE_TIMING_INFO]
-		set solution_time \
-		    [lindex [read_file \
-		                SOLUTION_TIMING_INFO] 0]
-		lappend timing_info \
-		    [list [format "%.3f" \
-		                   $solution_time] \
-                          $make_time $N.in]
 
 		if { $N != $problem } {
 		    if { [file exists $problem.out] } {

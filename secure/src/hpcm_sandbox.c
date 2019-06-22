@@ -2,7 +2,7 @@
  *
  * File:	hpcm_sandbox.c
  * Authors:	Bob Walton (walton@deas.harvard.edu)
- * Date:	Fri Jun  8 22:08:49 EDT 2018
+ * Date:	Sat Jun 22 08:52:31 EDT 2019
  *
  * The authors have placed this program in the public
  * domain; they make no warranty and accept no liability
@@ -528,6 +528,12 @@ int main ( int argc, char ** argv )
 		    errno_exit
 		        ( "closing HPCM_SANDBOX_TIMES"
 		           " file" );
+		if ( debug )
+		    fprintf
+		        ( stderr,
+		          "hpcm_sandbox: wrote %s\n",
+			  times_file );
+
 	    }
 
 	    if ( WIFSIGNALED ( status ) )
@@ -642,13 +648,13 @@ int main ( int argc, char ** argv )
 
     if ( debug )
     {
-        fprintf ( stderr, "uid is now %d\n",
+        fprintf ( stderr, "hpcm_sandbox: uid is now %d\n",
 	                  getuid() );
-        fprintf ( stderr, "gid is now %d\n",
+        fprintf ( stderr, "hpcm_sandbox: gid is now %d\n",
 	                  getgid() );
-        fprintf ( stderr, "euid is now %d\n",
+        fprintf ( stderr, "hpcm_sandbox: euid is now %d\n",
 	                  geteuid() );
-        fprintf ( stderr, "egid is now %d\n",
+        fprintf ( stderr, "hpcm_sandbox: egid is now %d\n",
 	                  getegid() );
     }
 
