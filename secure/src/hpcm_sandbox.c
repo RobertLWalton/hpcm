@@ -2,7 +2,7 @@
  *
  * File:	hpcm_sandbox.c
  * Authors:	Bob Walton (walton@deas.harvard.edu)
- * Date:	Sat Jun 22 08:52:31 EDT 2019
+ * Date:	Fri Jun 28 04:25:27 EDT 2019
  *
  * The authors have placed this program in the public
  * domain; they make no warranty and accept no liability
@@ -266,7 +266,7 @@ int main ( int argc, char ** argv )
 
 	{
 	    char * s = argv[index];
-	    int n = 0;
+	    rlim_t n = 0;
 	    int c;
 	    int digit_found = 0;
 
