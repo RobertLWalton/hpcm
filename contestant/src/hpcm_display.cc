@@ -2,7 +2,7 @@
 //
 // File:	hpcm_display.cc
 // Authors:	Bob Walton (walton@deas.harvard.edu)
-// Date:	Sun Apr  7 13:33:34 EDT 2019
+// Date:	Sat Sep  7 08:04:29 EDT 2019
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -40,6 +40,7 @@ using std::max;
 using std::string;
 
 extern "C" {
+#include <unistd.h>
 #include <cairo-pdf.h>
 #include <cairo-xlib.h>
 #define XK_MISCELLANY
@@ -51,7 +52,7 @@ bool debug = false;
 # define dout if ( debug ) cerr
 
 const char * const documentation = "\n"
-"hpcm_display [-pdf|-RxC|-X] [-debug] [file]\n"
+"hpcm_display [-pdf|-RxC|-X|-I] [-debug] [file]\n"
 "\n"
 "    This program displays line drawings defined\n"
 "    in the given file or standard input.  The file\n"
@@ -150,6 +151,12 @@ const char * const documentation = "\n"
 "    the first test case displayed.  Typing a car-\n"
 "    riage return goes to the next test case, and\n"
 "    typing control-C terminates the display.\n"
+"\n"
+"    The -I option (interactive) is like the -X\n"
+"    option but does not require typing a carriage\n"
+"    return to go to the next case, but instead goes\n"
+"    to the next case as soon as it can read the\n"
+"    first line of input for the next case.\n"
 ;
 
 // Vectors:
@@ -1048,6 +1055,7 @@ int main ( int argc, char ** argv )
 {
     cairo_surface_t * page = NULL;
     Display * display = NULL;
+    bool interactive = false;
     Window window;
     Visual * visual = NULL;
 
@@ -1058,8 +1066,11 @@ int main ( int argc, char ** argv )
 
 	char * name = argv[1] + 1;
 
-        if (    strcmp ( "X", name ) == 0 )
+        if (    strcmp ( "X", name ) == 0
+	        ||
+		strcmp ( "I", name ) == 0 )
 	{
+	    interactive = ( name[0] == 'I' );
 	    if ( page != NULL )
 	    {
 		cout << "At most one -pdf or -X option"
@@ -1338,7 +1349,12 @@ int main ( int argc, char ** argv )
 		while ( true )
 		{
 		    XEvent e;
-		    XNextEvent ( display, & e );
+		    if ( ! XCheckMaskEvent
+		               ( display, -1, & e ) )
+		    {
+		        usleep ( 2000 );
+		        continue;
+		    }
 		    if ( e.type == KeyPress )
 		    {
 			KeySym key =
