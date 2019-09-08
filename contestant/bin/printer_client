@@ -4,7 +4,7 @@
 #
 # File:		printer_client
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Sun Sep  8 03:47:07 EDT 2019
+# Date:		Sun Sep  8 05:21:08 EDT 2019
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -19,34 +19,46 @@
 # shopt -s compat32
 
 document="
-printer_client REMOTE-ACCOUNT PRIVATE-KEY [PRINTER]
-printer_client -test \\
-               PRINTER_SERVER QUEUE-DIRECTORY [PRINTER]
+printer_client [-doc|RESOURCE_FILE]
 
     Get files queued for printing in a remote queue and
-    print them on a local printer.  The REMOTE-ACCOUNT
-    is an ssh login account name, and PRIVATE-KEY is
-    a file containing the private key to be used with
-    the account.  The REMOTE-ACCOUNT/PRIVATE-KEY pair
-    names the remote queue.  The PRINTER is the local
-    printer, or the local default printer if PRINTER
-    is not given.
+    print them on a local printer.
 
-    The authorized_keys file of the REMOTE-ACCOUNT must
+    The RESOURCE_FILE defines parameters of operation.
+    The default is ~/printer_client.rc
+
+    In normal mode the RESOURCE_FILE defines:
+
+        printer		The printer to use.
+
+	local_queue	The directory in which files to
+			be printed are queued.  After
+			printing, their extension is
+			changed to \`.done'.  This
+			directory is made if it does not
+			exist.
+
+	remote_account	The remote ssh account running
+			the printer_server program.
+
+	private_key	The file name of the local file
+			containing the private key for
+			remote_account.
+
+    The authorized_keys file of the remote_account must
     contain the line
 
-        command=\"printer_server QUEUE-DIRECTORY\" ...
+        command=\"printer_server SERVER-QUEUE\" ...
 
-    where ... is the public key corresponding to
-    PRIVATE-KEY.  This line invokes the printer_server
+    where ... is the public key corresponding to the
+    private_key.  This line invokes the printer_server
     program that works with printer_client to move
-    files to be printed from the remote QUEUE-
-    DIRECTORY to the current directory and from there
-    to the printer.
+    files to be printed from the remote SERVER-QUEUE
+    directory to the local_queue directory and from
+    there to the printer.
 
-    If the -test option is given, the queue is not
-    remote and the next two arguments are the command
-    which is executed locally.
+    The RESOURCE-FILE can also be set up to run printer_
+    client in test mode.  See the end of this document.
 
     Printer_client reads and executes commands from its
     standard input.  If no input is received within a
@@ -54,25 +66,24 @@ printer_client -test \\
     cutes the \`get' command which gets and prints any
     unprinted queue files, and then resumes waiting for
     another command (or another timeout).  Files to be
-    printed are put in the local (printer_client's)
-    current directory with extension .ps, and when the
-    file is printed, its extension there is changed to
-    .done.
+    printed are put in the local_queue directory with
+    extension .ps.  When a file is printed, its exten-
+    sion is changed from .ps to .done in both the local_
+    queue and server queue
 
     The common commands are:
 
         get	Get any unprinted files and print them.
-		Files in the queue with extension .ps
-		are copied to the current directory
-		(of the printer_client program).  Then
-		they are printed and their extension
-		is changed to .done in both the server
-		queue and in the current printer_
-		client directory.
+		Files in the server queue with extension
+		.ps are copied to the local_queue direc-
+		tory.  Then they are printed and their
+		extension is changed to .done in both
+		the local_queue and server queue direc-
+		tories.
 
 	list	List recent files.  Ready (.ps) files
 		and recently printed (recent .done)
-		files are listed.
+		files in the server queue are listed.
 
 	time [SECONDS]
 		Reset the time interval between when
@@ -103,31 +114,33 @@ printer_client -test \\
 	        List all the files in the server queue.
 		File names have date and time and are
 		in chronological order.  File extensions
-		are changed to indicate status:
+		indicate status:
 
 		    .out    Still being written.
 		    .ps	    Ready to print.
 		    .done   Printed.
 
 	get FILE
-		Copy FILE from server into current
+		Copy FILE from server into local queue
 		directory.
 
 	print FILE
 		Ditto but then print FILE and, if its
 		extension is .ps, change its extension
-		to .done in current and server direc-
-		tories after printing it.
+		to .done in local queue and server
+		queue directories after printing it.
 
 	done FILE
 		If FILE has the .ps extension, just
 		change the extension to .done in the
-		current and server directories.
+		local queue and server queue director-
+		ies.
 
 	ready FILE
 		If FILE has the .done extension, just
 		change the extension to .ps in the
-		current and server directories.
+		local queue and server queue director-
+		ies.
 
 	sum FILE
 		Check that the server and the local
@@ -141,8 +154,8 @@ printer_client -test \\
 	debug [on|off]
 		If the debug switch is on, a trace of
 		communications between printer_client
-		and the remote server is printed.  With
-		no option, the switch is toggled.  The
+		and the server is printed.  With no
+		option, the switch is toggled.  The
 		\`on' and \`off' options set the switch.
 
 		Lines sent to the server are prefaced
@@ -151,10 +164,10 @@ printer_client -test \\
 		See \`printer_server -doc' for documen-
 		tation describing the traced lines.
 
-	listdir List remote queue directory as per
+	listdir List server queue directory as per
 		\`ls -l'.
 
-	localdir Ditto for printer_client current local
+	localdir Ditto for printer_client local queue
 	        directory.
 
 	?	Print command list.
@@ -166,36 +179,131 @@ printer_client -test \\
 	control-C
 
 	doc	Print this document.
+
+    In test mode the RESOURCE_FILE does NOT define
+    remote_account or private_key but instead defines:
+
+	server		The program to run as server.
+
+	server_queue	The server queue directory.
+			This directory is made if it
+			does not exist.
 "
 
 case "$1" in
-   "" | -doc* )
+   -doc* )
    	echo "$document" | less -F -K
     	exit 1
 	;;
-   -test )
-	test=1
-        server="$2"
-        queue="$3"
-	printer="$4"
-        if [[ "$queue" == "" ]]
-        then
-            echo ERROR: Too few arguments
-	    exit 1
-	fi
-        ;;
-    * )
-	test=0
-        account="$1"
-        key="$2"
-	printer="$3"
-        if [[ "$key" == "" ]]
-        then
-            echo ERROR: Too few arguments
-	    exit 1
-	fi
-        ;;
+   "" )
+	resource_file=~/printer_client.rc
+	;;
+   * )
+	resource_file="$1"
+	;;
 esac
+
+if [[ ! -r "$resource_file" ]]
+then
+    echo ERROR: Cannot read "$resource_file"
+    exit 1
+fi
+
+echo ------------------------------------------------
+echo Reading Resource File: "$resource_file"
+. $resource_file
+
+if [[ "$printer" == "" ]]
+then
+    echo "Printer is Default Printer"
+else
+    echo "Printer is $printer"
+fi
+if [[ "$local_queue" != "" ]]
+then
+    echo "Local Queue Directory is $local_queue"
+fi
+if [[ "$remote_account" != "" ]]
+then
+    echo "Remote Account is $remote_account"
+fi
+if [[ "$private_key" != "" ]]
+then
+    echo "Private Key File is $private_key"
+fi
+if [[ "$server" != "" ]]
+then
+    echo "Server for Test Mode is $server"
+fi
+if [[ "$server_queue" != "" ]]
+then
+    echo "Server Queue for Test Mode is $server_queue"
+fi
+echo ------------------------------------------------
+
+if [[ "$remote_account" != "" ]]
+then
+    test=0
+
+    if [[ "$server" != "" ]]
+    then
+        echo ERROR: Cannot define both Remote Account \
+	            and Server
+	exit 1
+    fi
+    if [[ "$server_queue" != "" ]]
+    then
+        echo ERROR: Cannot define both Remote Account \
+	            and Server Queue
+	exit 1
+    fi
+    if [[ ! -r "$printer_key" ]]
+    then
+        echo ERROR: Cannot read Private Key File \
+	            "$private_key"
+	exit 1
+    fi
+elif [[ "$server" == "" ]]
+then
+    echo ERROR: Remote Account and Server BOTH undefined
+    exit 1
+elif [[ "$server_queue" == "" ]]
+then
+    echo ERROR: Remote Account and Server Queue BOTH \
+                undefined
+    exit 1
+elif [[ ! -x "$server" ]]
+then
+    echo ERROR: Server "$server" is not executable
+    exit 1
+else
+    test=1
+fi
+
+if [[ "$local_queue" == "" ]]
+then
+    echo ERROR: Local Queue undefined
+    exit 1
+elif [[ ! -d "$local_queue" ]]
+then
+    echo Making "$local_queue"
+    if ! mkdir "$local_queue"
+    then
+        echo ERROR: Cannot make "$local_queue" directory
+	exit 1
+    fi
+fi
+
+if [[ "$server_queue" != "" && ! -d "$server_queue" ]]
+then
+    echo Making "$server_queue"
+    if ! mkdir "$server_queue"
+    then
+	echo ERROR: Cannot make "$server_queue" \
+		    directory
+	exit 1
+    fi
+fi
 
 FIFOIN=/tmp/printer_client_$$_fifo_in
 FIFOOUT=/tmp/printer_client_$$_fifo_out
@@ -271,7 +379,7 @@ function finish() {
 	    return 1
 	fi
 	if [[ "$echo" == "" && \
-	      $superfluous_found == 0 ]]
+	      $superfluous_found -eq 0 ]]
 	then
 	    echo "ERROR:"
 	    echo "    Superfluous output from server:"
@@ -300,7 +408,7 @@ function remote() {
     return 1
 }
 
-# Get a list of all files in the remote queue.  The
+# Get a list of all files in the server queue.  The
 # list is put in the `files' array, with the length
 # of that array in `nfiles'.  Returns 0 on success
 # and 1 on error.
@@ -375,7 +483,7 @@ function get_file() {
     done
     exec {fileout}>&-
     trap "rm -f $FIFO" EXIT
-    if [[ $COPROC_DIED == 0 ]]
+    if (( $COPROC_DIED == 0 ))
     then
 	mv -f "$base.out" "$base$ext" >& /dev/null
 	return 0
@@ -395,7 +503,7 @@ function get_file() {
 function print_file {
     local base="$1"
     local ext="$2"
-    if [ ! -r "$base$ext" ]
+    if [[ ! -r "$base$ext" ]]
     then
 	get_file "$base" "$ext"
 	if [[ $? != 0 ]]
@@ -449,7 +557,7 @@ function get_all() {
 	fi
 
         print_file $base .ps
-	if [[ $COPROC_DIED == 1 ]]
+	if (( $COPROC_DIED == 1 ))
 	then
 	    return 1
 	fi
@@ -477,7 +585,7 @@ function list() {
 	    ext="${BASH_REMATCH[2]}"
 	    if [[ "$ext" == ".ps" ]]
 	    then
-	        if [[ $first == -1 ]]
+	        if (( $first == -1 ))
 		then
 		    first=$ngoodfiles
 		fi
@@ -562,7 +670,7 @@ function get_sum() {
 # Outer loop: creates or recreates coprocess that runs
 # remote or local printer_server.
 #
-while [ x = x ]
+while [[ x = x ]]
 do
     if [[ "$COPROC_PID" != "" ]]
     then
@@ -581,9 +689,10 @@ do
 
     if (( $test == 1 ))
     then
-	"$server" "$queue" <$FIFOIN >$FIFOOUT &
+	"$server" "$server_queue" \
+	          <$FIFOIN >$FIFOOUT &
     else
-	ssh -T -i "$key" "$account" \
+	ssh -T -i "$private_key" "$remote_account" \
 	    <$FIFOIN >$FIFOOUT &
     fi
     COPROC_PID=$!
@@ -592,7 +701,7 @@ do
 
     # Inner loop: read and execute commands.
     #
-    while [[ $COPROC_DIED == 0 ]]
+    while (( $COPROC_DIED == 0 ))
     do
 	if [[ $READ_TIMEOUT != 0 ]]
 	then
@@ -605,7 +714,7 @@ do
 	then
 	    echo get "[at `date +%T`]"
 	    get_all
-	    if [[ $COPROC_DIED == 1 ]]
+	    if (( $COPROC_DIED == 1 ))
 	    then
 	        break
 	    else
@@ -754,7 +863,7 @@ do
 			fi
 			;;
 		    sum)
-			if [ -r "$base$ext" ]
+			if [[ -r "$base$ext" ]]
 			then
 			    get_sum "$base" "$ext"
 			    if [[ $? != 0 ]]
