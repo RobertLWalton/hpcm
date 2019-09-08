@@ -4,7 +4,7 @@
 #
 # File:		printer_client
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Sat Sep  7 08:03:29 EDT 2019
+# Date:		Sun Sep  8 03:47:07 EDT 2019
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -114,10 +114,10 @@ printer_client -test \\
 		directory.
 
 	print FILE
-		Ditto but then print file and if its
-		extension is .ps, and after printing
-		change its extension to .done in current
-		and server directories.
+		Ditto but then print FILE and, if its
+		extension is .ps, change its extension
+		to .done in current and server direc-
+		tories after printing it.
 
 	done FILE
 		If FILE has the .ps extension, just
@@ -231,6 +231,7 @@ function nop() {
 #
 function get_error() {
     echo "ERROR:"
+    COPROC_DIED=1
     while read -r <&$out -t $COPROC_TIMEOUT
     do
         if [[ "$REPLY" == "%%-HPCM_DONE-%%" ]]
@@ -241,7 +242,6 @@ function get_error() {
 	fi
 	echo "    $REPLY"
     done
-    COPROC_DIED=1
 }
 
 # Call to finish server command that has no output.
@@ -280,6 +280,24 @@ function finish() {
 	echo "    $REPLY"
     done
     return $superfluous_found
+}
+
+# remote COMMAND
+#
+# Execute command remotely and return 0 on success and
+# 1 on error.
+#
+function remote() {
+    local command="$1"
+    $DEBUGOUT "$command"
+    if ! echo >&$in "$command"
+    then
+	COPROC_DIED=1
+    elif finish 
+    then
+        return 0
+    fi
+    return 1
 }
 
 # Get a list of all files in the remote queue.  The
@@ -370,8 +388,9 @@ function get_file() {
 # print_file BASE EXT
 #
 # Prints file with given base name and extension.  Gets
-# file first, and sets file status to `done' after
-# printing.  Returns 0 on success and 1 on error.
+# file first, and if extension is .ps sets file status
+# to .done locally and in server after printing.
+# Returns 0 on success and 1 on error.
 #
 function print_file {
     local base="$1"
@@ -393,18 +412,15 @@ function print_file {
 	lpr -P"$printer" "$base$ext"
     fi
 
-    $DEBUGOUT done "$base$ext"
-    if ! echo >&$in done "$base$ext"
+    if [[ "$ext" == ".ps" ]]
     then
-	COPROC_DIED=1
-	return 1
-    elif finish
-    then
+	if ! remote "done $base$ext"
+	then
+	    return 1
+	fi
 	mv -f "$base.ps" "$base.done" >& /dev/null
-	return 0
-    else
-	return 1
     fi
+    return 0
 }
 
 # Executes `get' command.  Returns 0 on success and 1 on
@@ -627,6 +643,11 @@ do
 	    echo "remove FILE     Remove file"
 	    echo "debug [on|off]  Set or toggle debug" \
 	    			  output
+	    echo ""
+	    echo "help            Print this help info"
+	    echo "?               Print this help info"
+	    echo "doc             Print full" \
+	    			  documentation
 	    ;;
 	quit | exit )
 	    exit 0
@@ -722,6 +743,8 @@ do
 			continue
 		    fi
 
+		    # Now $ext is either .ps or .done
+
 		    case $op in
 		    get)
 			get_file "$base" "$ext"
@@ -765,14 +788,10 @@ do
 			fi
 			;;
 		    print )
-		        print_file "$base" "$ext"
+			print_file "$base" "$ext"
 			;;
 		    done )
-			$DEBUGOUT done "$base$ext"
-			if ! echo >&$in done "$base$ext"
-			then
-			    COPROC_DIED=1
-			elif finish 
+			if remote "done $base$ext"
 			then
 			    mv -f "$base.ps" \
 			           "$base.done" \
@@ -780,12 +799,7 @@ do
 			fi
 			;;
 		    ready )
-			$DEBUGOUT ready "$base$ext"
-			if ! echo >&$in ready \
-			          "$base$ext"
-			then
-			    COPROC_DIED=1
-			elif finish 
+			if remote "ready $base$ext"
 			then
 			    mv -f "$base.done" \
 			           "$base.ps" \
