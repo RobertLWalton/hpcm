@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Fri Sep 22 04:13:25 EDT 2017
+# Date:		Sun Sep  8 21:02:12 EDT 2019
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -93,7 +93,9 @@ modes:
 		   authorize jdebug ldebug \
 		   practice
 	chmod a+r procmailrc \
-	          elinks_startup_message
+	          elinks_startup_message \
+		  printer_client.rc \
+		  printer_client_test.rc
 	chmod a+x .. ../.. ../../..
 
 clean:
