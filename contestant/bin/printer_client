@@ -4,7 +4,7 @@
 #
 # File:		printer_client
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Sun Sep  8 22:39:07 EDT 2019
+# Date:		Mon Sep  9 10:57:02 EDT 2019
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -58,7 +58,7 @@ printer_client [-doc|RESOURCE_FILE]
     files to be printed from the remote SERVER-QUEUE
     directory to the local_queue directory and from
     there to the printer.
-
+
     The RESOURCE-FILE can also be set up to run printer_
     client in test mode.  See the end of this document.
 
@@ -72,11 +72,11 @@ printer_client [-doc|RESOURCE_FILE]
     extension .ps.  When a file is printed, its exten-
     sion is changed from .ps to .done in both the local_
     queue and server queue
-
+
     The common commands are:
 
         get	Get any unprinted files and print them.
-		Files in the server queue with extension
+	cntrl-D	Files in the server queue with extension
 		.ps are copied to the local_queue direc-
 		tory.  Then they are printed and their
 		extension is changed to .done in both
@@ -97,15 +97,14 @@ printer_client [-doc|RESOURCE_FILE]
 
 		If [SECONDS] is not given, the current
 		time is printed.
-
+
 	?	Print list of commands.
 	help
 
 	quit	Exit
 	exit
-	control-D
-	control-C
-
+	cntrl-C
+
     Other occasionally useful commands are the follow-
     ing.  In all these commands, FILE must have exten-
     sion .ps or .done, except for the \`remove' command
@@ -137,13 +136,13 @@ printer_client [-doc|RESOURCE_FILE]
 		change the extension to .done in the
 		local queue and server queue director-
 		ies.
-
+
 	ready FILE
 		If FILE has the .done extension, just
 		change the extension to .ps in the
 		local queue and server queue director-
 		ies.
-
+
 	sum FILE
 		Check that the server and the local
 		directory both have a copy of FILE and
@@ -174,14 +173,8 @@ printer_client [-doc|RESOURCE_FILE]
 
 	?	Print command list.
 	help
-
-	exit	Exit.
-	quit
-	control-D
-	control-C
-
 	doc	Print this document.
-
+
     In test mode the RESOURCE_FILE does NOT define
     remote_account or private_key but instead defines:
 
@@ -326,6 +319,12 @@ COPROC_PID=""
 #     written by coprocess
 # in  is set to file descriptor used to write input
 #     read by by coprocess
+# fout is used to write a file
+in=3
+out=4
+fileout=5
+   # On the MAC $xx> and {xx}> do not work.  However
+   # >$xx, <$xx, `eval exec "$xx>&-"' etc. work.
 
 WS='[\ 	]'
 NWS='[^\ 	]'
@@ -454,10 +453,9 @@ function listfiles() {
 function get_file() {
     local base="$1"
     local ext="$2"
-    local fileout
     rm -f "$local_queue/$base.out"
     trap "rm -f $local_queue/$base.out $FIFO" EXIT
-    exec {fileout}>$local_queue/$base.out
+    eval exec "$fileout>$local_queue/$base.out"
 
     COPROC_DIED=1
     $DEBUGOUT get "$base$ext"
@@ -475,7 +473,7 @@ function get_file() {
         elif [[ "$REPLY" == "%%-HPCM_ERROR-%%" ]]
 	then
 	    $DEBUGIN "$REPLY"
-	    exec {fileout}>&-
+	    eval exec "$fileout>&-"
 	    get_error
 	    rm -f "$local_queue/$base.out"
 	    trap "rm -f $FIFO" EXIT
@@ -483,7 +481,7 @@ function get_file() {
 	fi
 	echo "$REPLY" >&$fileout
     done
-    exec {fileout}>&-
+    eval exec "$fileout>&-"
     trap "rm -f $FIFO" EXIT
     if (( $COPROC_DIED == 0 ))
     then
@@ -682,7 +680,7 @@ do
 	kill -9 $COPROC_PID >&/dev/null
 	wait $COPROC_PID >&/dev/null
 	echo ERROR: coprocess died: restarting
-	exec {in}>&- {out}<&-
+	eval exec "$in>&-" "$out<&-"
     fi
 
     rm -f $FIFOIN $FIFOOUT
@@ -701,7 +699,7 @@ do
 	    <$FIFOIN >$FIFOOUT &
     fi
     COPROC_PID=$!
-    exec {in}> $FIFOIN {out}< $FIFOOUT
+    eval exec "$in>$FIFOIN" "$out<$FIFOOUT"
     COPROC_DIED=0
 
     # Inner loop: read and execute commands.
@@ -714,8 +712,13 @@ do
 	else
 	    read -r
 	fi
+	#
+	# On the MAC we cannot tell the difference
+	# between a timeout and a control-D, so we
+	# treat them the same.
+	#
 	STATUS=$?
-	if [[ $STATUS > 128 ]]
+	if (( $STATUS != 0 ))
 	then
 	    echo get "[at `date +%T`]"
 	    get_all
@@ -725,9 +728,6 @@ do
 	    else
 	    	continue
 	    fi
-	elif [[ $STATUS != 0 ]]
-	then
-	    exit 0
 	fi
 
 	case "$REPLY" in
@@ -737,6 +737,7 @@ do
 	\? | help )
 	    echo "get             Get and print ready" \
 	                          files
+	    echo "control-D       Ditto"
 	    echo "list            List ready and" \
 	                          recently printed files
 	    echo "time [TIMEOUT]  Print or reset" \
@@ -744,7 +745,6 @@ do
 	    echo ""
 	    echo "quit            Exit"
 	    echo "exit            Exit"
-	    echo "control-D       Exit"
 	    echo "control-C       Exit"
 	    echo ""
 	    echo "get FILE        Get file"
