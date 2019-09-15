@@ -2,7 +2,7 @@
 //
 // File:	hpcm_display.cc
 // Authors:	Bob Walton (walton@deas.harvard.edu)
-// Date:	Sat Sep  7 08:04:29 EDT 2019
+// Date:	Sun Sep 15 13:14:54 EDT 2019
 //
 // The authors have placed this program in the public
 // domain; they make no warranty and accept no liability
@@ -12,6 +12,7 @@
 //
 //	g++ -I /usr/include/cairo \
 //	    -o hpcm_display \
+//	    -std=c++11 \
 //	    hpcm_display.cc -lcairo -lX11
 
 #include <iostream>
@@ -20,6 +21,9 @@
 #include <algorithm>
 #include <string>
 #include <sstream>
+#include <future>
+#include <chrono>
+
 #include <cstdlib>
 #include <cstdio>
 #include <cstring>
@@ -38,6 +42,11 @@ using std::ifstream;
 using std::min;
 using std::max;
 using std::string;
+using std::future;
+using std::async;
+using std::chrono::microseconds;
+using std::future_status;
+using std::launch;
 
 extern "C" {
 #include <unistd.h>
@@ -1049,6 +1058,8 @@ void draw_test_case ( void )
     }
 }
 
+int check_ready ( void ) { return cin.peek(); }
+
 // Main program.
 //
 int main ( int argc, char ** argv )
@@ -1325,29 +1336,48 @@ int main ( int argc, char ** argv )
 
 		// Display foot for X-windows.
 		//
-		cairo_text_extents_t te;
-		cairo_text_extents
-		    ( title_c, window_foot, & te );
-		assert (    cairo_status ( title_c )
-			 == CAIRO_STATUS_SUCCESS );
-		cairo_move_to
-		    ( title_c,
-		      title_width/2 - te.width/2,
-			foot_top
-		      +
-		      title_font_size
-		      +   (   window_foot_height
-			    - title_font_size )
-			/ 2 );
-		cairo_show_text
-		    ( title_c, window_foot );
-		assert (    cairo_status ( title_c )
-			 == CAIRO_STATUS_SUCCESS );
+		if ( ! interactive )
+		{
+		    cairo_text_extents_t te;
+		    cairo_text_extents
+			( title_c, window_foot, & te );
+		    assert (    cairo_status ( title_c )
+			     == CAIRO_STATUS_SUCCESS );
+		    cairo_move_to
+			( title_c,
+			  title_width/2 - te.width/2,
+			    foot_top
+			  +
+			  title_font_size
+			  +   (   window_foot_height
+				- title_font_size )
+			    / 2 );
+		    cairo_show_text
+			( title_c, window_foot );
+		    assert (    cairo_status ( title_c )
+			     == CAIRO_STATUS_SUCCESS );
+		}
 
 		cairo_show_page ( title_c );
 
+		future<int> input_ready;
+		if ( interactive )
+		    input_ready = async
+		        ( launch::async, check_ready );
+			// Must NOT use auto launch.
+
 		while ( true )
 		{
+		    if ( interactive
+		         &&
+			    input_ready.wait_for
+			        ( microseconds(0) )
+			 == future_status::ready )
+		    {
+			input_ready.get();
+		        goto PAGE_DONE;
+		    }
+
 		    XEvent e;
 		    if ( ! XCheckMaskEvent
 		               ( display, -1, & e ) )
@@ -1355,6 +1385,16 @@ int main ( int argc, char ** argv )
 		        usleep ( 2000 );
 		        continue;
 		    }
+
+		    if ( e.type == Expose
+			 &&
+			 e.xexpose.count == 0 )
+			break;
+			// Redraw current window.
+
+		    // if ( interactive ) continue;
+		        // Don't react to key presses.
+
 		    if ( e.type == KeyPress )
 		    {
 			KeySym key =
@@ -1389,11 +1429,6 @@ int main ( int argc, char ** argv )
 			    right_control_pressed =
 			        false;
 		    }
-		    if ( e.type == Expose
-			 &&
-			 e.xexpose.count == 0 )
-			break;
-			// Redraw current window.
 		}
 	    }
 	PAGE_DONE:;

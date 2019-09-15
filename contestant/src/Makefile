@@ -2,7 +2,7 @@
 #
 # File:		Makefile
 # Authors:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Tue Sep 18 11:47:27 EDT 2018
+# Date:		Sun Sep 15 13:25:33 EDT 2019
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -27,6 +27,7 @@ test_ps:	hpcm_display_graph_test.ps
 hpcm_display:	hpcm_display.cc
 	g++ -I /usr/include/cairo \
 	    -o hpcm_display \
+	    -std=c++11 \
 	    hpcm_display.cc -lcairo -lX11
 
 hpcm_display_graph_test.ps:	\
