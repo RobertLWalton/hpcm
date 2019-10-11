@@ -1,7 +1,7 @@
 # Makefile for the XXX Problem
 #
 # File:		Makefile
-# Date:		Fri Jun 15 04:11:26 EDT 2018
+# Date:		Thu Oct 10 20:20:06 EDT 2019
 #
 # See demonstration Makefile for documentation.
 #
@@ -76,9 +76,10 @@ default:	$P.out
 #
 .py:
 	rm -f $* *.pyc core core.[0-9]*
-	python2 -m py_compile ${PYC_FLAGS} $*.py
+	python -m py_compile ${PYC_FLAGS} $*.py
+	mv -f __pycache__/*.pyc "$*.pyc"
 	echo >$* '#!/bin/sh'
-	echo >>$* "exec python2 ${PY_FLAGS}" \
+	echo >>$* "exec python ${PY_FLAGS}" \
 	          "$*.pyc" '"$$@"'
 	chmod a+r $*.pyc
 	chmod a+rx $*
@@ -98,10 +99,11 @@ $P.out:	$P $P.in
 	$M hpcm_sandbox -cputime 30 \
 	                -space 2g \
 		        -stacksize 2g \
+			-watch \
 		        ${XTRA_LIMITS} \
 		        ${XTRA_LIMITS_${HPCM_EXT}} \
 		        $P \
-	    <$P.in | tee $P.out \
+	    <$P.in | tee $P.out
 
 # WARNING: -tee does not work for monitored runs.
 
