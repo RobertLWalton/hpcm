@@ -1,7 +1,7 @@
 # Makefile for the `count' Demonstration Problem
 #
 # File:		Makefile
-# Date:		Thu Sep 29 14:53:23 EDT 2016
+# Date:		Fri Oct 11 07:18:21 EDT 2019
 #
 # Exactly ONE of the five files count.c (C), count.cc
 # (C++), count.java (Java), count.py (Python), or
@@ -119,7 +119,7 @@ default:	count.out
 .py:
 	rm -f $* core core.[0-9]*
 	echo >$* '#!/bin/sh'
-	echo >>$* "exec python $*.py" '"$$@"'
+	echo >>$* "exec python3 $*.py" '"$$@"'
 	chmod a+r $*.py
 	chmod a+rx $*
 

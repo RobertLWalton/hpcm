@@ -2,7 +2,7 @@
  *
  * File:	hpcm_sandbox.c
  * Authors:	Bob Walton (walton@deas.harvard.edu)
- * Date:	Fri Jun 28 04:25:27 EDT 2019
+ * Date:	Fri Oct 11 08:21:41 EDT 2019
  *
  * The authors have placed this program in the public
  * domain; they make no warranty and accept no liability
@@ -61,8 +61,9 @@ char documentation [] =
 "    can end with `k' to multiply it by 1024 or `m'\n"
 "    to multiply it by 1024 * 1024 or `g' to multiply\n"
 "    it by 1024 * 1024 * 1024 (`g' is only valid on\n"
-"    64 bit computers).  If not set a resource is\n"
-"    unlimited.\n"
+"    64 bit computers).  N can also be `u' standing\n"
+"    for unlimited.  If not set a resource is"
+				    " unlimited.\n"
 "\n"
 "    There are also two other options.  First, with\n"
 "    the\n"
@@ -331,6 +332,11 @@ int main ( int argc, char ** argv )
 		    exit (1);
 		}
 		n <<= 10;
+	    } else if ( c == 'u' && ! digit_found )
+	    {
+	        c = * s ++;
+		n = RLIM_INFINITY;
+		digit_found = 1;
 	    }
 
 	    if ( c != 0 || ! digit_found )

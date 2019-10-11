@@ -29,12 +29,12 @@ def dprint (*args):
     global debug
     if debug:
         for arg in args:
-	    print arg,
-	print
+            print ( arg, end='' )
+        print ()
 
 def read():
     try:
-        result = raw_input().rstrip ( '\n' )
+        result = input().rstrip ( '\n' )
     except EOFError:
         result = None
     finally:
@@ -57,38 +57,38 @@ while True:
     # at least 1 character.
 
     if use_pattern:
-	items = re.findall ( regexp, line )
-	if len ( items ) == 0:
-	    items.append ( '' )
-	else:
-	    if items[0].isalpha():
-	        items = [''] + items
-	    if items[-1].isalpha():
-	        items = items + ['']
+        items = re.findall ( regexp, line )
+        if len ( items ) == 0:
+            items.append ( '' )
+        else:
+            if items[0].isalpha():
+                items = [''] + items
+            if items[-1].isalpha():
+                items = items + ['']
     else:
-	items = []
-	next = ''
-	mode = 'separator'
-	for c in line:
-	    if mode == 'separator':
-	        if not c.isalpha():
-		    next += c
-		else:
-		    items.append ( next )
-		    next = c
-		    mode = 'word'
-	    else:
-	        if c.isalpha():
-		    next += c
-		else:
-		    items.append ( next )
-		    next = c
-		    mode = 'separator'
+        items = []
+        next = ''
+        mode = 'separator'
+        for c in line:
+            if mode == 'separator':
+                if not c.isalpha():
+                    next += c
+                else:
+                    items.append ( next )
+                    next = c
+                    mode = 'word'
+            else:
+                if c.isalpha():
+                    next += c
+                else:
+                    items.append ( next )
+                    next = c
+                    mode = 'separator'
 
-	items.append ( next )
-	if mode == 'word':
-	    items.append ( '' )
-	    
+        items.append ( next )
+        if mode == 'word':
+            items.append ( '' )
+            
     dprint ( items )
 
     # Reverse words in items.
@@ -96,14 +96,14 @@ while True:
     i = 1
     j = len ( items ) - 2
     while i < j:
-	tmp = items[i]
-	items[i] = items[j]
-	items[j] = tmp
-	i += 2
-	j -= 2
+        tmp = items[i]
+        items[i] = items[j]
+        items[j] = tmp
+        i += 2
+        j -= 2
 
     # Output items as a line.
     #
     for item in items:
-	sys.stdout.write ( item )
-    print
+        sys.stdout.write ( item )
+    print ()

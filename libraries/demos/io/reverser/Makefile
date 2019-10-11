@@ -1,7 +1,7 @@
 # Makefile for the Word Order Reverse Problem
 #
 # File:		Makefile
-# Date:		Sun Sep 17 06:16:42 EDT 2017
+# Date:		Fri Oct 11 07:07:24 EDT 2019
 #
 # See demonstration Makefile for documentation.
 #
@@ -21,7 +21,7 @@ XTRA_LIBS =
 XTRA_LIMITS =
 XTRA_LIMITS_c =
 XTRA_LIMITS_cc =
-XTRA_LIMITS_java =
+XTRA_LIMITS_java = -space u
 XTRA_LIMITS_py =
 XTRA_LIMITS_lsp =
 XTRA_CLEANS =
@@ -73,9 +73,10 @@ default:	$P.out
 #
 .py:
 	rm -f $* *.pyc core core.[0-9]*
-	python2 -m py_compile ${PYC_FLAGS} $*.py
+	python3 -m py_compile ${PYC_FLAGS} $*.py
+	mv -f __pycache__/*.pyc "$*.pyc"
 	echo >$* '#!/bin/sh'
-	echo >>$* "exec python2 ${PY_FLAGS}" \
+	echo >>$* "exec python3 ${PY_FLAGS}" \
 	          "$*.pyc" '"$$@"'
 	chmod a+r $*.pyc
 	chmod a+rx $*
@@ -93,8 +94,8 @@ $P.out:	$P $P.in
 	rm -f $P.out core core.[0-9]*
 	grant_access . $P ${XTRA_INPUTS}
 	hpcm_sandbox -cputime 30 \
-	             -datasize 64m \
-		     -stacksize 16m \
+	             -space 2g \
+		     -stacksize 2g \
 		     -filesize 64m \
 		     ${XTRA_LIMITS} \
 		     ${XTRA_LIMITS_${HPCM_EXT}} \
@@ -113,8 +114,8 @@ $P.debug:	$P $P.in
 	rm -f $P.debug core core.[0-9]*
 	grant_access . $P ${XTRA_INPUTS}
 	hpcm_sandbox -cputime 30 \
-	             -datasize 64m \
-		     -stacksize 16m \
+	             -space 2g \
+		     -stacksize 2g \
 		     ${XTRA_LIMITS} \
 		     ${XTRA_LIMITS_${HPCM_EXT}} \
 		     -tee $P.debug \

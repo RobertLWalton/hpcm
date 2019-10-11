@@ -2,7 +2,7 @@
 #
 # File:		summer.py
 # Authors:	Bob Walton (walton@seas.harvard.edu)
-# Date:		Thu Sep 29 02:11:38 EDT 2016
+# Date:		Fri Oct 11 07:23:43 EDT 2019
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -16,12 +16,12 @@ def dprint (*args):
     global debug
     if debug:
         for arg in args:
-	    print arg,
-	print
+            print ( arg, end='' )
+        print ()
 
 def read():
     try:
-        result = raw_input().rstrip ( '\n' )
+        result = input().rstrip ( '\n' )
     except EOFError:
         result = None
     finally:
@@ -33,7 +33,7 @@ while True:
     if line == None:
         break
 
-    print line
+    print ( line )
 
     line = read()
     items = line.split()
@@ -45,7 +45,7 @@ while True:
     desired = float ( items[-1] )
 
     if desired == actual:
-	print '{:.2f} is correct'.format ( actual )
+        print ( '{:.2f} is correct'.format ( actual ) )
     else:
-        print '{:.2f} should be {:.2f}' \
-	      .format ( desired, actual )
+        print ( '{:.2f} should be {:.2f}' \
+                .format ( desired, actual ) )
