@@ -4,7 +4,7 @@
 #
 # File:		testproblems
 # Author:	Bob Walton <walton@deas.harvard.edu>
-# Date:		Sat Jun 22 10:10:07 EDT 2019
+# Date:		Sun Oct 20 06:55:53 EDT 2019
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -248,6 +248,10 @@ testproblems \[-p N] \[-keep|-|-contestant|-q|-s|-v] \\
 	    jfilter -v N.jin N.fout N.jfout >& N.jfout#
 	    diff N.jin# N.jfout#
 	    scorediff N.jfout N.jftest
+
+    Here the option -h JHEAD or -h N.jhead is passed
+    to jfilter if the JHEAD or N.jhead files exist.
+    If both exist, N.jhead is used.
 
     If scorediff is supposed to run but its *test file
     does not exist, the score is \"Test File Missing\",
@@ -1102,21 +1106,43 @@ foreach directory $myargv {
 	    set timing_info {}
 	    foreach N $input_names {
 
+		set J ""
+		if { [file exists $N.jin] } {
+		    set J $N.jin
+		} elseif { [file exists $N.in] } {
+		    set J $N.in
+		} else {
+		    putss "ERROR: neither $N.jin\
+		           or $N.in exist"
+		    putsq "ERROR: neither $N.jin\
+		           or $N.in exist"
+		    continue
+		}
+
+	        if { [file exists $N.jhead] } {
+		    set J "$-h $N.jhead $J"
+		} elseif { [file exists JHEAD] } {
+		    set J "$-h JHEAD $J"
+		} elseif { ! [file exists $N.jin] } {
+		    set J ""
+		}
+
 		if { $N != $problem } {
 		    putsq "========== $N \[$testdir]:"
 		}
-		if { ! [file exists $N.in] } {
-		    putsq "jfilter -v $N.jin $N.in\
-		                  >& $N.in#"
-		    exec jfilter -v $N.jin $N.in \
-		                 >& $N.in#
-		} elseif { [file exists $N.jin] } {
-		    putsq "jfilter -v $N.jin $N.in+\
-			  >& $N.in#"
-		    exec jfilter -v $N.jin $N.in+ \
-		         >& $N.in#
+
+		if { $J == "" } {
+		    # do nothing
+		} elseif { ! [file exists $N.in] } {
+		    putsq "jfilter -v $J $N.in \
+		                         >& $N.in#"
+		    exec jfilter -v $J $N.in >& $N.in#
+		} else {
+		    putsq "jfilter -v $J $N.in+ >& $N.in#"
+		    exec jfilter -v $J $N.in+ >& $N.in#
 		    diff $testdir $N.in $N.in+
 		}
+
 		if { $N != $problem } {
 		    putsq "rm -f $problem.in"
 		    file delete -force -- $problem.in
@@ -1215,26 +1241,24 @@ foreach directory $myargv {
 
 		if { $make_error } continue
 
-		if { [file exists $N.jin] } {
+		if { $J != "" } {
 		    set jin_instructions \
-		        [exec jfilter $N.jin]
-		    set jin_instructions \
-		        [string trim $jin_instructions]
-		    if { $jin_instructions == "none" } {
-		        compute_instruction_array \
-			    $scoring_instructions \
-			    "scoring_instructions\
-			     variable value"
-		    } else {
-		        compute_instruction_array \
-			    $jin_instructions \
-			    "$N.jin file"
-		    }
+		        [exec jfilter $J]
 		} else {
+		    set jin_instructions none
+		}
+		set jin_instructions \
+		    [string trim $jin_instructions]
+		if { $jin_instructions == "none" } {
 		    compute_instruction_array \
 			$scoring_instructions \
 			"scoring_instructions\
-			     variable value"
+			 variable value"
+		} else {
+		    compute_instruction_array \
+			$jin_instructions \
+			"$N.jin, $N.jhead, or JHEAD\
+			 file"
 		}
 
 		if { [file exists Scoring_Filter] } {
@@ -1242,12 +1266,12 @@ foreach directory $myargv {
 			  < $N.out > $N.fout"
 		    exec Scoring_Filter $N.in \
 			 < $N.out > $N.fout
-		    if { [file exists $N.jin] } {
-			putsq "jfilter -v\
-			      $N.jin $N.fout $N.jfout\
+		    if { $J != "" } {
+			putsq "jfilter -v \
+			      $J $N.fout $N.jfout\
 			      >& $N.jfout#"
 			exec jfilter -v \
-			     $N.jin $N.fout $N.jfout \
+			     $J $N.fout $N.jfout \
 			     >& $N.jfout#
 			diff $testdir $N.in# $N.jfout#
 			scorediff $testdir \
@@ -1257,10 +1281,10 @@ foreach directory $myargv {
 			scorediff $testdir \
 			          $N.fout $N.ftest
 		    }
-		} elseif { [file exists $N.jin] } {
-		    putsq "jfilter -v $N.jin $N.out\
-				  $N.jout >& $N.jout#"
-		    exec jfilter -v $N.jin $N.out \
+		} elseif { $J != "" } {
+		    putsq "jfilter -v $J $N.out\
+				   $N.jout >& $N.jout#"
+		    exec jfilter -v $J $N.out \
 			 $N.jout >& $N.jout#
 		    diff $testdir $N.in# $N.jout#
 		    scorediff $testdir \
