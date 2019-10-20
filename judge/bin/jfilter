@@ -5,18 +5,13 @@
 #
 # File:		jfilter
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Oct 20 05:18:24 EDT 2019
+# Date:		Sun Oct 20 08:17:43 EDT 2019
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
 # for this program.
 #
-# RCS Info (may not be true date or author):
-#
-#   $Author: walton $
-#   $Date: 2014/12/24 13:02:02 $
-#   $RCSfile: jfilter,v $
-#   $Revision: 1.35 $
+#   vi:filetype=tcl
 #
 # The next lines start tclsh \
 trap "echo jfilter: Terminated by Signal" \
@@ -30,15 +25,17 @@ jfilter \[options\] judging_input_file \\
 jfilter \[options\] judging_input_file \\
                   output_file filtered_output_file
 
-    A judging_input_file (e.g., a .jin file) has scoring
-    parameter definition lines and marker lines, and
-    judge's input to test a submitted program.  The
-    parameter definition and marker lines define both
-    scoring instructions for scoring any output produced
-    from the judge's input in the file, and a means of
-    dividing both the judge's input and all output pro-
-    duced therefrom into test cases and into test groups
-    of test cases.
+    A judging_input_file may have parameter definition
+    lines and marker lines as well as judge's input to
+    test a submitted program.  Parameter definitions and
+    marker lines define a means of dividing the judge's
+    input input and all output produced therefrom into
+    test cases and into test groups of test cases.
+
+    A `-h judging_header_file' option may also be used
+    to provide parameter definitions.  Parameter defini-
+    tions can also be used to provide scoring instruc-
+    tions to score this output.
 
     The 1-file-name command reads the judging_input_file
     (e.g., a .jin file) and prints scoring instructions
@@ -538,8 +535,8 @@ proc read_parameter_definitions { } {
 	set designator ""
 	set variable ""
 	set separator ""
-	regexp {^[\ \t]*([^\ \t]+)([\ \t].*|)$} $jin_line \
-	       forget designator rest
+	regexp {^[\ \t]*([^\ \t]+)([\ \t].*|)$} \
+	       $jin_line forget designator rest
 	switch -- $designator {
 	*COMMENT*
 	    { set variable comment }
@@ -591,7 +588,8 @@ proc read_parameter_definitions { } {
 	if { $last_designator != $designator } {
 	    set $variable $rest
 	} elseif { $rest != "" } {
-	    set $variable "[set $variable]$separator$rest"
+	    set $variable \
+	        "[set $variable]$separator$rest"
 	}
 	set last_designator $designator
 	set jin_line [gets $jin]
