@@ -5,7 +5,7 @@
 #
 # File:		jfilter
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sat Jan 24 05:43:55 EST 2015
+# Date:		Sun Oct 20 05:18:24 EDT 2019
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -68,6 +68,11 @@ jfilter \[options\] judging_input_file \\
 
     Options modify the above commands as follows:
 
+        -h judging_header_file
+
+	   Reads judging parameter definitions from the
+	   judging_header_file.
+
         -v For the 2- and 3-file-name commands, when a
 	   new group starts, print the group number on
 	   a line by itself, and when a new case starts,
@@ -88,7 +93,7 @@ jfilter \[options\] judging_input_file \\
 	    be used as feedback for a submitter whose
 	    submission first failed on the given test
 	    case.
-
+
 	    If the *ONE-GROUP* parameter value is `no'
 	    (see below for parameter definitions), then
 	    for test cases outside any test group, the
@@ -99,7 +104,7 @@ jfilter \[options\] judging_input_file \\
 	    case or the end of file.  Thus if there are
 	    no test groups, only the designated test
 	    case is output.
-
+
 	    For test cases in test groups, the portion
 	    output consists of the lines in the test
 	    group containing the test case, up to and
@@ -127,12 +132,12 @@ jfilter \[options\] judging_input_file \\
 	    Lines before the beginning of the first case
 	    in a group are considered to be in test case
 	    0 of that group.
-
+
 	    If just the <case-number> is given, and the
 	    `<group-number>:' is omitted, the <group-
 	    number> is 0.  This is useful if the file
 	    has no groups.
-
+
         -g <group-number>:<case-number>
 	-g <case-number>
 
@@ -166,15 +171,17 @@ jfilter \[options\] judging_input_file \\
 	-keep-head <yes-or-no>
 	-count <yes-or-no>
 	-scoring <scoring-instructions>
-
+
 	    Set the default value of the designated
 	    parameter.  These parameters can then be
 	    reset by parameter definitions in the
 	    judging_input_file.
 
-
-    The judging_input_file begins zero or more parameter
-    definitions, each having one of the following forms:
+
+    The judging_header_file contains parameter defini-
+    tions, and the judging_input_file may begin with
+    zero or more parameter definitions.  Each parameter
+    definition has one of the following forms:
 
     *COMMENT* <comment-regexp>
 
@@ -204,13 +211,13 @@ jfilter \[options\] judging_input_file \\
 
     *END-MARK* <input-end-mark-regexp>
     *INPUT-END-MARK* <input-end-mark-regexp>
-
+
     *ONE-GROUP* <yes-or-no>
     *KEEP-HEAD* <yes-or-no>
     *COUNT* <yes-or-no>
 
     *SCORING* <scoring-instruction> ...
-
+
     These consist of a parameter-designator, the first
     thing on the line (e.g., *CASE-HEAD*), followed by
     parameters.  In a parameter designator, `OUTPUT-'
@@ -230,7 +237,7 @@ jfilter \[options\] judging_input_file \\
     or group that is extracted from the input.  INPUT-
     END is like INPUT-CASE but always includes its
     `end case' in any filtered_input_file.
-
+
     The regexp parameters are TCL regular expressions
     that are matched to lines of files.  Input regexps
     match lines in the judging_input_file, while output
@@ -247,7 +254,7 @@ jfilter \[options\] judging_input_file \\
     from the filtered version of the file: marks are
     only used for the judging_input_file, to mark the
     beginning of test groups, test cases, and end cases.
-
+
     The only difference between a separator line and a
     terminator line is that if the output would other-
     wise end with a separator line, that line is sup-
@@ -270,7 +277,7 @@ jfilter \[options\] judging_input_file \\
     both the *INPUT-SEPARATOR* and *INPUT-TERMINATOR*
     are active, or if both the *OUTPUT-SEPARATOR* and
     *OUTPUT-TERMINATOR* are active.
-
+
     Any line matching the comment regexp is ignored.
     Comments are even recognized among parameters, but
     comment lines before any *COMMENT* parameter are
@@ -287,7 +294,7 @@ jfilter \[options\] judging_input_file \\
 
     The *SCORING* parameters are just exactly what is
     printed on a single line by the 1-file-name command.
-
+
     Parameter definitions can be continued across lines
     by writing a sequence of lines with the same para-
     meter-designator.  Thus
@@ -307,7 +314,7 @@ jfilter \[options\] judging_input_file \\
 
     	*SCORING* xxx
     	*SCORING* yyy
-
+
     is the same as
 
     	*SCORING* xxx yyy
@@ -321,7 +328,7 @@ jfilter \[options\] judging_input_file \\
     regexp begins with a `$', in which case the regexp
     without the beginning `$' is matched without the
     -nocase option (so the match is case sensitive).
-
+
     Whitespace is trimmed from the beginning and end of
     any regexp in a parameter definition.  This means
     that if the regexp is to end with a space character,
@@ -346,7 +353,7 @@ jfilter \[options\] judging_input_file \\
 	*INPUT-TERMINATOR*
 
 	*END-HEAD*
-
+
 	*CASE-MARK* ^\\*CASE*\\$
 	*GROUP-MARK* ^\\*GROUP\\*$
 
@@ -357,7 +364,7 @@ jfilter \[options\] judging_input_file \\
 	*COUNT* no
 
 	*SCORING* none
-
+
     These mean that by default input is separated into
     test groups, test cases, and end cases by `*GROUP*',
     `*CASE*', and `*END*' mark lines, every line of out-
@@ -399,6 +406,7 @@ proc jfregexp { regexp string } {
 
 # Process options.
 #
+set jhead_file ""
 set comment "^\[ \\t\]*\\*\\*\\*\\*"
 set output_case_head "^"
 set output_group_head ""
@@ -426,6 +434,8 @@ while { [regexp {^-} [lindex $argv 0]] } {
 	    exec << $document less -F >&@ stdout
 	    exit 0
 	 }
+    -h			{ set jhead_file \
+                              [lindex $argv 1] }
     -comment		{ set comment [lindex $argv 1] }
     -case-head		-
     -output-case-head	{ set output_case_head \
@@ -503,83 +513,115 @@ switch $number_args {
         set jout_file [lindex $argv 2] }
 }
 
+# Read lines from jin file descriptor into jin_line,
+# and process lines if they are parameter definitions.
+# Stop when non-parameter definition line read into
+# jin_line, or on end of file.
+#
+set jin ""
+set jin_line ""
+proc read_parameter_definitions { } {
+
+    global jin jin_line comment
+
+    set jin_line [gets $jin]
+
+    set last_designator ""
+    while { ! [eof $jin] } {
+
+	if {    $comment != "" \
+	     && [jfregexp $comment $jin_line] } {
+	    set jin_line [gets $jin]
+	    continue
+	}
+
+	set designator ""
+	set variable ""
+	set separator ""
+	regexp {^[\ \t]*([^\ \t]+)([\ \t].*|)$} $jin_line \
+	       forget designator rest
+	switch -- $designator {
+	*COMMENT*
+	    { set variable comment }
+	*CASE-HEAD*	-
+	*OUTPUT-CASE-HEAD*
+	    { set variable output_case_head }
+	*GROUP-HEAD* -
+	*OUTPUT-GROUP-HEAD*
+	    { set variable output_group_head }
+	*SEPARATOR* -
+	*OUTPUT-SEPARATOR*
+	    { set variable output_separator }
+	*TERMINATOR* -
+	*OUTPUT-TERMINATOR*
+	    { set variable output_terminator }
+	*INPUT-CASE-HEAD*
+	    { set variable input_case_head }
+	*INPUT-GROUP-HEAD*
+	    { set variable input_group_head }
+	*INPUT-SEPARATOR*
+	    { set variable input_separator }
+	*INPUT-TERMINATOR*
+	    { set variable input_terminator }
+	*END-HEAD*	-
+	*INPUT-END-HEAD*
+	    { set variable input_end_head }
+	*CASE-MARK*	-
+	*INPUT-CASE-MARK*
+	    { set variable input_case_mark }
+	*GROUP-MARK* -
+	*INPUT-GROUP-MARK*
+	    { set variable input_group_mark }
+	*END-MARK*	-
+	*INPUT-END-MARK*
+	    { set variable input_end_mark }
+	*SCORING*
+	    { set variable scoring
+	      set separator " " }
+	*ONE-GROUP*
+	    { set variable one_group }
+	*KEEP-HEAD*
+	    { set variable keep_head }
+	*COUNT*
+	    { set variable count }
+	default { break }
+	}
+	set rest [string trim $rest]
+	global $variable
+	if { $last_designator != $designator } {
+	    set $variable $rest
+	} elseif { $rest != "" } {
+	    set $variable "[set $variable]$separator$rest"
+	}
+	set last_designator $designator
+	set jin_line [gets $jin]
+    }
+}
+
+
 # Read and process parameter definitions.
 #
+if { $jhead_file != "" } {
+    if { [catch { set jin [open $jhead_file r] }] } {
+	puts stderr "ERROR: cannot open $jhead_file"
+	exit 1
+    }
+    read_parameter_definitions
+    if { ! [eof $jin] } {
+	puts stderr "ERROR: extra stuff or unrecognized\
+	             parameter name at end of\
+		     $jhead_file"
+	exit 1
+    }
+    close $jin
+}
+
+
 if { [catch { set jin [open $jin_file r] }] } {
     puts stderr "ERROR: cannot open $jin_file"
     exit 1
 }
-set jin_line [gets $jin]
-
-set last_designator ""
-while { ! [eof $jin] } {
-
-    if {    $comment != "" \
-         && [jfregexp $comment $jin_line] } {
-	set jin_line [gets $jin]
-        continue
-    }
-
-    set designator ""
-    set variable ""
-    set separator ""
-    regexp {^[\ \t]*([^\ \t]+)([\ \t].*|)$} $jin_line \
-           forget designator rest
-    switch -- $designator {
-    *COMMENT*
-        { set variable comment }
-    *CASE-HEAD*	-
-    *OUTPUT-CASE-HEAD*
-        { set variable output_case_head }
-    *GROUP-HEAD* -
-    *OUTPUT-GROUP-HEAD*
-        { set variable output_group_head }
-    *SEPARATOR* -
-    *OUTPUT-SEPARATOR*
-        { set variable output_separator }
-    *TERMINATOR* -
-    *OUTPUT-TERMINATOR*
-        { set variable output_terminator }
-    *INPUT-CASE-HEAD*
-        { set variable input_case_head }
-    *INPUT-GROUP-HEAD*
-        { set variable input_group_head }
-    *INPUT-SEPARATOR*
-        { set variable input_separator }
-    *INPUT-TERMINATOR*
-        { set variable input_terminator }
-    *END-HEAD*	-
-    *INPUT-END-HEAD*
-        { set variable input_end_head }
-    *CASE-MARK*	-
-    *INPUT-CASE-MARK*
-        { set variable input_case_mark }
-    *GROUP-MARK* -
-    *INPUT-GROUP-MARK*
-        { set variable input_group_mark }
-    *END-MARK*	-
-    *INPUT-END-MARK*
-        { set variable input_end_mark }
-    *SCORING*
-        { set variable scoring
-	  set separator " " }
-    *ONE-GROUP*
-        { set variable one_group }
-    *KEEP-HEAD*
-        { set variable keep_head }
-    *COUNT*
-        { set variable count }
-    default { break }
-    }
-    set rest [string trim $rest]
-    if { $last_designator != $designator } {
-        set $variable $rest
-    } elseif { $rest != "" } {
-        set $variable "[set $variable]$separator$rest"
-    }
-    set last_designator $designator
-    set jin_line [gets $jin]
-}
+read_parameter_definitions
 
 # Process 1 argument case.
 #

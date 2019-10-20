@@ -5,7 +5,7 @@
 #
 # File:		autojudge
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Jun 18 07:25:44 EDT 2017
+# Date:		Sun Oct 20 04:53:57 EDT 2019
 #
 #   vi:filetype=tcl
 #
@@ -82,8 +82,8 @@ autojudge \[-rerun|-manual\]
     number and case number to be given to jfilter to
     locate the associated judge's input and output.
     Here <group> or <case> may be 0 if they are missing
-    because they cannot be computed (e.g., no .jin file,
-    or no groups in the input).
+    because they cannot be computed (e.g., no .jin,
+    .jhead, or JHEAD file, or no groups in the input).
 
     The first error to occur determines the score,
     except in the case of Formatting Error, which is
@@ -173,8 +173,9 @@ autojudge \[-rerun|-manual\]
 	N.jout, N.jfout, N.ftest, N.jtest, and N.jftest
 	files whenever the input files needed to make
 	them exist.  This if N.out and Scoring_Filter
-	exist, N.fout will be made, and if N.jin also
-	exists, then N.jfout will be made.
+	exist, N.fout will be made, and if N.jin,
+	N.jhead, or JHEAD also exists, then N.jfout will
+	be made.
 
       . A list of input names is computed.  If the
         global variable problem_input_names exists, its
@@ -197,8 +198,8 @@ autojudge \[-rerun|-manual\]
 	they do not exist in the submission directory
 	and they do exist in the solution directory:
 	Makefile, Scoring_Filter, and for each input
-	names N, N.in, N.test, N.jin, N.ftest, N.jtest,
-	N.jftest.
+	names N, N.in, N.test, N.jin, N.jhead, N.ftest,
+	N.jtest, N.jftest.
 
 	Note that if N.out exists in the problem solu-
 	tion directory, it will be linked to N.test in
@@ -230,6 +231,11 @@ autojudge \[-rerun|-manual\]
 	whose score is Formatting Error.  Other N*out
 	files are retained.  The N*score files that
 	are computed are retained.
+
+	In the following, N.jout and N.jfout files are
+	made by the jfilter program, using N.jhead or
+	JHEADER as a -h option if they exist.  N.jhead
+	takes precedence over JHEADER if both exist.
 
 	The processing of input name N is in detail:
 	
@@ -242,14 +248,15 @@ autojudge \[-rerun|-manual\]
 	    done without the linking or renaming.
 
           . N.fout is made if Scoring_Filter exists,
-	    N.jfout if in addition N.jin exists, and
-	    N.jout is made if N.jin exists but
-	    Scoring_Filter does not.
+	    N.jfout if in addition N.jin, N.jhead, or
+	    JHEAD exists, and N.jout is made if N.jin,
+	    N.jhead, or JHEAD exists but Scoring_Filter
+	    does not.
 
           . For each input name N, one of N.score,
 	    N.fscore, N.jscore, or N.jfscore is made,
-	    according to whether or not Scoring_Filter
-	    and N.jin exist.
+	    according to whether or not Scoring_Filter,
+	    N.jin, N.jhead, and JHEAD exist.
 
 	  . The score for N is computed form the N*score
 	    file that was made.
@@ -803,6 +810,8 @@ if { [info exists problem_input_names] } {
 #
 set scoring_filter_exists \
     [file exists $s_d/Scoring_Filter]
+
+# TBD
 
 # Make .in files from .jin files.
 #
