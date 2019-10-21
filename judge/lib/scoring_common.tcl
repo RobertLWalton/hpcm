@@ -2,7 +2,7 @@
 #
 # File:		scoring_common.tcl
 # Author:	Bob Walton (walton@seas.harvard.edu)
-# Date:		Mon Oct 24 06:32:17 EDT 2016
+# Date:		Mon Oct 21 04:30:21 EDT 2019
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -920,13 +920,33 @@ proc process_in_or_out_command \
 
     if { $score_file != "" } {
 	set name [file rootname $score_file]
-	set jin_exists [file exists $name.jin]
+
+	if { [file exists $name.jhead] } {
+	    set H "-h $name.jhead"
+	    set S [list $name.jhead]
+	} elseif { [file exists JHEAD] } {
+	    set H "-h JHEAD"
+	    set S [list JHEAD]
+	} else {
+	    set H ""
+	    set S ""
+	}
+
+	if { [file exists $name.jin] } {
+	    set J "jin"
+	    lappend S $name.jin
+	} elseif { $H != "" } { 
+	    set J "in"
+	    lappend S $name.in
+	} else {
+	    set J ""
+	}
     }
 
     if {    $score_file == "" \
-         || (    ! $jin_exists \
+         || (    $J == "" \
 	      && [llength $problem_input_names] < 2 ) \
-	 || (    $jin_exists \
+	 || (    $J != "" \
 	      && (    $group == "" \
     	           || $case == "" \
                    || $case == 0 ) ) } {
@@ -943,12 +963,12 @@ proc process_in_or_out_command \
 	error "SYSTEM ERROR: non-*score score file"
     }
 
-    if { $jin_exists } {
+    if { $J != "" } {
 	set id $name:$group:$case
 	if { $command == "IN" } {
 	    file delete -force -- $id.in
-	    exec jfilter -c $group:$case $name.jin \
-	         $id.in >@ stdout
+	    eval exec jfilter -c $group:$case \
+	         $H $name.$J $id.in >@ stdout
 	    lappend pc [list BAR "Judge's Input $id:"]
 	    lappend pc [list INPUT $id.in]
 	} else {
@@ -956,7 +976,8 @@ proc process_in_or_out_command \
 		error "SYSTEM ERROR: no $name.test file"
 	    }
 	    file delete -force -- $id.test
-	    exec jfilter -c $group:$case $name.jin \
+	    eval exec jfilter -c $group:$case \
+	         $H $name.$J \
 		 $name.test $id.test >@ stdout
 	    lappend pc [list BAR "Judge's Output $id:"]
 	    lappend pc [list INPUT $id.test]
