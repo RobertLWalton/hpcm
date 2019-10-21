@@ -2,7 +2,7 @@
 #
 # File:		judging_common.tcl
 # Author:	Bob Walton (walton@seas.harvard.edu)
-# Date:		Tue Jul 26 07:38:02 EDT 2016
+# Date:		Sun Oct 20 16:42:27 EDT 2019
 #
 # The authors have placed this program in the public
 # domain; they make no warranty and accept no liability
@@ -2242,6 +2242,10 @@ proc clear_flag { flagfilename } {
 # of the first file in s_d that needs to be made is
 # returned, or "" is returned if no file needs to be
 # made.  `out' is the print output file descriptor.
+# 
+# The make instructions are executed in order.  If
+# a file is made by several instructions, the first
+# instruction to be enabled will be used.
 #
 proc execute_makes \
 	{ instructions s_d name \

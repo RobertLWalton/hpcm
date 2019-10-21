@@ -5,7 +5,7 @@
 #
 # File:		autojudge
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Oct 20 04:53:57 EDT 2019
+# Date:		Sun Oct 20 16:22:57 EDT 2019
 #
 #   vi:filetype=tcl
 #
@@ -174,8 +174,9 @@ autojudge \[-rerun|-manual\]
 	files whenever the input files needed to make
 	them exist.  This if N.out and Scoring_Filter
 	exist, N.fout will be made, and if N.jin,
-	N.jhead, or JHEAD also exists, then N.jfout will
-	be made.
+	N.jhead, or JHEAD also exists, then N.jout or
+	N.jfout will be made, and N.jtest or N.jftest
+	will be made.
 
       . A list of input names is computed.  If the
         global variable problem_input_names exists, its
@@ -197,14 +198,14 @@ autojudge \[-rerun|-manual\]
 	directory.  Then the following are linked if
 	they do not exist in the submission directory
 	and they do exist in the solution directory:
-	Makefile, Scoring_Filter, and for each input
-	names N, N.in, N.test, N.jin, N.jhead, N.ftest,
-	N.jtest, N.jftest.
+	Makefile, Scoring_Filter, JHEAD, and for each
+	input name N, N.in, N.test, N.jin, N.jhead,
+	N.ftest, N.jtest, N.jftest.
 
 	Note that if N.out exists in the problem solu-
 	tion directory, it will be linked to N.test in
 	the submission directory, in preference over
-	N.test in the solution directory.  Ditto for
+	N.test in the solution directory.  Similarly for
 	.ftest, .jtest, .jftest.
 
         The only reason for copying files instead of
@@ -234,8 +235,8 @@ autojudge \[-rerun|-manual\]
 
 	In the following, N.jout and N.jfout files are
 	made by the jfilter program, using N.jhead or
-	JHEADER as a -h option if they exist.  N.jhead
-	takes precedence over JHEADER if both exist.
+	JHEAD as a -h option if they exist.  N.jhead
+	takes precedence over JHEAD if both exist.
 
 	The processing of input name N is in detail:
 	
@@ -250,7 +251,7 @@ autojudge \[-rerun|-manual\]
           . N.fout is made if Scoring_Filter exists,
 	    N.jfout if in addition N.jin, N.jhead, or
 	    JHEAD exists, and N.jout is made if N.jin,
-	    N.jhead, or JHEAD exists but Scoring_Filter
+	    N.jhead, or JHEAD exist but Scoring_Filter
 	    does not.
 
           . For each input name N, one of N.score,
@@ -811,8 +812,6 @@ if { [info exists problem_input_names] } {
 set scoring_filter_exists \
     [file exists $s_d/Scoring_Filter]
 
-# TBD
-
 # Make .in files from .jin files.
 #
 # If Scoring_Filter exists, make .fout files from .out
@@ -824,37 +823,71 @@ set scoring_filter_exists \
 #
 set instructions ""
 foreach name $input_names {
-    lappend instructions \
-            "$name.in {jfilter $name.jin $name.in}\
-	              $name.jin"
+
+    if { [file exists $s_d/$name.jhead] } {
+        set H "-h $name.jhead"
+	set S "$name.jhead"
+    } elseif { [file exists $s_d/JHEAD] } {
+        set H "-h JHEAD"
+	set S "JHEAD"
+    } else {
+        set H ""
+	set S ""
+    }
+
+    if { [file exists $s_d/$name.jin] } {
+        set J "jin"
+	set S "$S $name.jin"
+    } elseif { ! [file exists $s_d/$name.in] } {
+        continue
+	# No way to make $name.in
+    } elseif { $H != "" } { 
+        set J "in"
+	set S "$S $name.in"
+    } else {
+        set J ""
+    }
+
+    if { $J == "jin" } {
+	lappend instructions \
+            "$name.in {jfilter $H $name.$J $name.in} $S"
+    }
+
     if { $scoring_filter_exists } {
+
 	lappend instructions \
 		"$name.fout\
 		 {Scoring_Filter $name.in <$name.out\
-		                 >$name.fout}\
+		                 >$name.fout} \
 	         Scoring_Filter $name.in $name.out" \
 		"$name.ftest\
 		 {Scoring_Filter $name.in <$name.test\
-		                 >$name.ftest}\
+		                 >$name.ftest} \
 	         Scoring_Filter $name.in $name.test" \
+
+	if { $J != "" } {
+	    lappend instructions \
 		"$name.jfout\
-		 {jfilter $name.jin $name.fout\
-		          $name.jfout}\
-		 $name.jin $name.fout" \
+		 {jfilter $H $name.$J $name.fout\
+		          $name.jfout} \
+		 $S $name.fout" \
 		"$name.jftest\
-		 {jfilter $name.jin $name.ftest\
-		          $name.jftest}\
-		 $name.jin $name.ftest"
-    } else {
+		 {jfilter $H $name.$J $name.ftest\
+		          $name.jftest} \
+		 $S $name.ftest"
+	}
+
+    } elseif { $J != "" } {
+
 	lappend instructions \
 		"$name.jout\
-		 {jfilter $name.jin $name.out\
-		          $name.jout}\
-		 $name.jin $name.out" \
+		 {jfilter $H $name.$J $name.out\
+		          $name.jout} \
+		 $S $name.out" \
 		"$name.jtest\
-		 {jfilter $name.jin $name.test\
-		          $name.jtest}\
-		 $name.jin $name.test"
+		 {jfilter $H $name.$J $name.test\
+		          $name.jtest} \
+		 $S $name.test"
     }
 }
 
