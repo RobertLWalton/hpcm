@@ -2,7 +2,7 @@
  *
  * File:	hpcm_sandbox.c
  * Authors:	Bob Walton (walton@deas.harvard.edu)
- * Date:	Mon Oct 21 07:59:57 EDT 2019
+ * Date:	Mon Oct 21 11:06:28 EDT 2019
  *
  * The authors have placed this program in the public
  * domain; they make no warranty and accept no liability
@@ -38,11 +38,11 @@ char documentation [] =
 "    ID is `root', this program begins by changing\n"
 "    the effective user ID to the real user ID.\n"
 "\n"
-"    If HPCM_EXT is not defined in the current\n"
-"    environment, and the effective user ID is not\n"
-"    `root', then this program ignores -space\n"
-"    options, as JAVA will not run with limited \n"
-"    virtual address space.\n"
+"    If HPCM_EXT is defined to equal `java' in the\n"
+"    current environment, OR the effective user ID\n"
+"    is NOT `root', then this program ignores\n"
+"    -space options, as JAVA will not run with\n"
+"    limited virtual address space.\n"
 "\n"
 "    This program first checks its arguments for\n"
 "    options that set resource limits:\n"
@@ -361,14 +361,19 @@ int main ( int argc, char ** argv )
     if (    index >= argc
 	 || strncmp ( "-doc", argv[index], 4 ) == 0 )
     {
-        printf ( "%s", documentation );
+	FILE * out = popen ( "less -F", "w" );
+	fputs ( documentation, out );
+	pclose ( out );
 	exit ( 1 );
     }
 
     /* Fix up space parameter for .java
     */
     if (    geteuid() != 0
-         && getenv ( "HPCM_EXT" ) == NULL )
+         || ( getenv ( "HPCM_EXT" ) != NULL
+	      &&
+	      strcmp ( getenv ( "HPCM_EXT" ), "java" )
+	          == 0 ) )
 	space = RLIM_INFINITY;
 
     /* If -watch or -tee, start child and watch it. */
@@ -661,14 +666,18 @@ int main ( int argc, char ** argv )
 
     if ( debug )
     {
-        fprintf ( stderr, "hpcm_sandbox: uid is now %d\n",
-	                  getuid() );
-        fprintf ( stderr, "hpcm_sandbox: gid is now %d\n",
-	                  getgid() );
-        fprintf ( stderr, "hpcm_sandbox: euid is now %d\n",
-	                  geteuid() );
-        fprintf ( stderr, "hpcm_sandbox: egid is now %d\n",
-	                  getegid() );
+        fprintf ( stderr,
+	          "hpcm_sandbox: uid is now %d\n",
+		  getuid() );
+        fprintf ( stderr,
+	          "hpcm_sandbox: gid is now %d\n",
+		  getgid() );
+        fprintf ( stderr,
+	          "hpcm_sandbox: euid is now %d\n",
+		  geteuid() );
+        fprintf ( stderr,
+	          "hpcm_sandbox: egid is now %d\n",
+		  getegid() );
     }
 
     {
