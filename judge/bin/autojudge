@@ -5,7 +5,7 @@
 #
 # File:		autojudge
 # Author:	Bob Walton (walton@deas.harvard.edu)
-# Date:		Sun Oct 20 16:22:57 EDT 2019
+# Date:		Mon Oct 21 04:27:03 EDT 2019
 #
 #   vi:filetype=tcl
 #
@@ -807,10 +807,11 @@ if { [info exists problem_input_names] } {
     set problem_input_names $input_names
 }
 
-# Set switch for future reference.
+# Set switches for future reference.
 #
 set scoring_filter_exists \
     [file exists $s_d/Scoring_Filter]
+set JHEAD_exists [file exists $s_d/JHEAD]
 
 # Make .in files from .jin files.
 #
@@ -943,8 +944,15 @@ lappend instructions \
 if { $scoring_filter_exists } {
     lappend instructions " Scoring_Filter "
 }
+if { $JHEAD_exists } {
+    lappend instructions " JHEAD "
+}
 foreach name $input_names {
     set jin_exists [file exists $s_d/$name.jin]
+    set jhead_exists [file exists $s_d/$name.jhead]
+    set j_exists [expr {    $JHEAD_exists \
+                         || $jin_exists \
+                         || $jhead_exists }]
     lappend instructions \
             $name.in \
 	    " $name.test $name.out \
@@ -952,16 +960,19 @@ foreach name $input_names {
     if { $jin_exists } {
 	lappend instructions $name.jin
     }
+    if { $jhead_exists } {
+	lappend instructions $name.jhead
+    }
     if { $scoring_filter_exists } {
 	lappend instructions \
 	    " $name.ftest $name.fout \
 	      $name.ftest_$EXT $name.ftest "
-	if { $jin_exists } {
+	if { $j_exists } {
 	    lappend instructions \
 		" $name.jftest $name.jfout \
 		  $name.jftest_$EXT $name.jftest "
 	}
-    } elseif { $jin_exists } {
+    } elseif { $j_exists } {
 	lappend instructions \
 	    " $name.jtest $name.jout \
 	      $name.jtest_$EXT $name.jtest "
@@ -1238,6 +1249,27 @@ foreach name $input_names {
 
     # Make .fout, .jout, or .jfout files as appropriate.
     #
+    if { [file exists $name.jhead] } {
+        set H "-h $name.jhead"
+	set S [list $name.jhead]
+    } elseif { [file exists JHEAD] } {
+        set H "-h JHEAD"
+	set S [list JHEAD]
+    } else {
+        set H ""
+	set S ""
+    }
+
+    if { [file exists $name.jin] } {
+        set J "jin"
+	lappend S $name.jin
+    } elseif { $H != "" } { 
+        set J "in"
+	lappend S $name.in
+    } else {
+        set J ""
+    }
+
     if { $scoring_filter_exists } {
 	if { [should_be_made \
 		 [list $name.fout] \
@@ -1248,30 +1280,34 @@ foreach name $input_names {
 	         < $name.out > $name.fout
 	    lappend out_files_made $name.fout
 	}
-	if { [should_be_made \
-		 [list $name.jfout] \
-		 [list $name.jin $name.fout]] } {
+	if { J != "" \
+	     && [should_be_made \
+		    [list $name.jfout] \
+		    [concat $S [list $name.fout]]] } {
 
 	    puts "Making $name.jfout"
-	    exec jfilter \
-	         $name.jin $name.fout $name.jfout
+	    eval exec jfilter $H  \
+	         $name.$J $name.fout $name.jfout
 	    lappend out_files_made $name.jfout
 	}
     } else {
-	if { [should_be_made \
-		 [list $name.jout] \
-		 [list $name.out $name.jin]] } {
+	if { $J != "" \
+	     && [should_be_made \
+		   [list $name.jout] \
+		   [concat $S [list $name.out]]] } {
 
 	    puts "Making $name.jout"
-	    exec jfilter $name.jin $name.out $name.jout
+	    eval exec jfilter $H \
+	         $name.$J $name.out $name.jout
 	    lappend out_files_made $name.jout
 	}
     }
 
     # Make .*score files.
     #
-    if { [file exists $name.jin] } {
-        set jin_instructions [exec jfilter $name.jin]
+    if { $J != "" } {
+        set jin_instructions \
+	    [eval exec jfilter $H $name.$J]
 	set jin_instructions \
 	    [string trim $jin_instructions]
 	if { $jin_instructions == "none" } {
@@ -1280,7 +1316,7 @@ foreach name $input_names {
 		"scoring_instructions variable value"
 	} else {
 	    compute_instruction_array \
-		$jin_instructions "$name.jin file"
+		$jin_instructions "$S file(s)"
 	}
 	if { $scoring_filter_exists } {
 	    if { [should_be_made [list $name.jfscore] \
