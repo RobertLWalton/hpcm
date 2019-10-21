@@ -2,7 +2,7 @@
  *
  * File:	hpcm_sandbox.c
  * Authors:	Bob Walton (walton@deas.harvard.edu)
- * Date:	Mon Oct 21 04:54:41 EDT 2019
+ * Date:	Mon Oct 21 07:59:57 EDT 2019
  *
  * The authors have placed this program in the public
  * domain; they make no warranty and accept no liability
@@ -30,10 +30,6 @@
 #include <errno.h>
 #include <pwd.h>
 
-const char * allowed_extensions[] = {
-    "c", "cc", "java", "py", "lsp",
-    (const char *) NULL };
-
 char documentation [] =
 "hpcm_sandbox [options] program argument ...\n"
 "\n"
@@ -42,10 +38,11 @@ char documentation [] =
 "    ID is `root', this program begins by changing\n"
 "    the effective user ID to the real user ID.\n"
 "\n"
-"    If HPCM_EXT is NOT defined in the environment,\n"
-"    it is set to EXT if `program.EXT' exists for\n"
-"    EXACTLY ONE of the EXT values: c, cc, java, py,\n"
-"    lsp.\n"
+"    If HPCM_EXT is not defined in the current\n"
+"    environment, and the effective user ID is not\n"
+"    `root', then this program ignores -space\n"
+"    options, as JAVA will not run with limited \n"
+"    virtual address space.\n"
 "\n"
 "    This program first checks its arguments for\n"
 "    options that set resource limits:\n"
@@ -367,6 +364,12 @@ int main ( int argc, char ** argv )
         printf ( "%s", documentation );
 	exit ( 1 );
     }
+
+    /* Fix up space parameter for .java
+    */
+    if (    geteuid() != 0
+         && getenv ( "HPCM_EXT" ) == NULL )
+	space = RLIM_INFINITY;
 
     /* If -watch or -tee, start child and watch it. */
 
@@ -748,44 +751,15 @@ int main ( int argc, char ** argv )
 	   executed.
 	*/
 
-	/* If HPCM_EXT not set in environment, compute
-	   value to set it to in EXT.
-	*/ 
-	char EXT[100] = { 0 };
-	if (    getenv ( "HPCM_EXT" ) == NULL
-	     && strlen ( argv[index] ) <= 1000 )
-	{
-	    const char ** p = allowed_extensions;
-	    char buffer[1100];
-	    struct stat s;
-	    while ( * p != NULL )
-	    {
-	        sprintf ( buffer, "%s.%s",
-		          argv[index], * p );
-		if ( stat ( buffer, & s ) >= 0 )
-		{
-		    if ( EXT[0] != 0 )
-		    {
-		        EXT[0] = 0;
-			break;
-		    }
-		    sprintf ( EXT, "HPCM_EXT=%s", *p );
-		}
-		++ p;
-	    }
-	}
-
 	char * hpcm_sandbox_env =
 	    getenv ( "HPCM_SANDBOX_ENV" );
 
 	if ( hpcm_sandbox_env == NULL )
 	{
-	    env = realloc ( NULL, 3 * sizeof (char *) );
+	    env = realloc ( NULL, 2 * sizeof (char *) );
 	    if ( env == NULL ) errno_exit ( "realloc" );
-	    int i = 0;
-	    env[i++] = "SANDBOX";
-	    if ( EXT[0] != 0 ) env[i++] = EXT;
-	    env[i++] = NULL;
+	    env[0] = "SANDBOX";
+	    env[1] = NULL;
 	}
 	else
 	{
@@ -818,7 +792,7 @@ int main ( int argc, char ** argv )
 		while ( isspace ( * ep ) ) ++ ep;
 		if ( * ep == 0 ) break;
 
-		if ( i >= size - 2 )
+		if ( i >= size - 1 )
 		{
 		    size *= 2;
 		    env = realloc
@@ -867,7 +841,6 @@ int main ( int argc, char ** argv )
 
 		* bp ++ = 0;
 	    }
-	    if ( EXT[0] != 0 ) env[i++] = EXT;
 	    env[i] = NULL;
 	}
     }
